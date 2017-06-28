@@ -2,40 +2,32 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+
 namespace System.DirectoryServices.Protocols
 {
-    using System;
-    using System.Net;
-    using System.IO;
-    using System.Collections;
-    using System.Diagnostics;
-    using System.Globalization;
-
     public class SearchResultReference
     {
-        private Uri[] _resultReferences = null;
-        private DirectoryControl[] _resultControls = null;
+        private Uri[] _resultReferences;
+        private DirectoryControl[] _resultControls;
 
-        internal SearchResultReference(Uri[] uris)
-        {
-            _resultReferences = uris;
-        }
+        internal SearchResultReference(Uri[] uris) => _resultReferences = uris;
 
         public Uri[] Reference
         {
             get
             {
                 if (_resultReferences == null)
-                    return new Uri[0];
-                else
                 {
-                    Uri[] tempUri = new Uri[_resultReferences.Length];
-                    for (int i = 0; i < _resultReferences.Length; i++)
-                    {
-                        tempUri[i] = new Uri(_resultReferences[i].AbsoluteUri);
-                    }
-                    return tempUri;
+                    return Array.Empty<Uri>();
                 }
+
+                Uri[] tempUri = new Uri[_resultReferences.Length];
+                for (int i = 0; i < _resultReferences.Length; i++)
+                {
+                    tempUri[i] = new Uri(_resultReferences[i].AbsoluteUri);
+                }
+                return tempUri;
             }
         }
 
@@ -43,21 +35,17 @@ namespace System.DirectoryServices.Protocols
         {
             get
             {
-                DirectoryControl[] controls = null;
-
                 if (_resultControls == null)
-                    return new DirectoryControl[0];
-                else
                 {
-                    controls = new DirectoryControl[_resultControls.Length];
-                    for (int i = 0; i < _resultControls.Length; i++)
-                    {
-                        controls[i] = new DirectoryControl(_resultControls[i].Type, _resultControls[i].GetValue(), _resultControls[i].IsCritical, _resultControls[i].ServerSide);
-                    }
+                    return Array.Empty<DirectoryControl>();
                 }
 
+                DirectoryControl[] controls = new DirectoryControl[_resultControls.Length];
+                for (int i = 0; i < _resultControls.Length; i++)
+                {
+                    controls[i] = new DirectoryControl(_resultControls[i].Type, _resultControls[i].GetValue(), _resultControls[i].IsCritical, _resultControls[i].ServerSide);
+                }
                 DirectoryControl.TransformControls(controls);
-
                 return controls;
             }
         }
@@ -65,96 +53,51 @@ namespace System.DirectoryServices.Protocols
 
     public class SearchResultReferenceCollection : ReadOnlyCollectionBase
     {
-        internal SearchResultReferenceCollection()
-        {
-        }
+        internal SearchResultReferenceCollection() { }
 
-        public SearchResultReference this[int index]
-        {
-            get
-            {
-                return (SearchResultReference)InnerList[index];
-            }
-        }
+        public SearchResultReference this[int index] => (SearchResultReference)InnerList[index];
 
-        internal int Add(SearchResultReference reference)
-        {
-            return InnerList.Add(reference);
-        }
+        internal int Add(SearchResultReference reference) => InnerList.Add(reference);
 
-        public bool Contains(SearchResultReference value)
-        {
-            return InnerList.Contains(value);
-        }
+        public bool Contains(SearchResultReference value) => InnerList.Contains(value);
 
-        public int IndexOf(SearchResultReference value)
-        {
-            return InnerList.IndexOf(value);
-        }
+        public int IndexOf(SearchResultReference value) => InnerList.IndexOf(value);
 
-        public void CopyTo(SearchResultReference[] values, int index)
-        {
-            InnerList.CopyTo(values, index);
-        }
+        public void CopyTo(SearchResultReference[] values, int index) => InnerList.CopyTo(values, index);
 
-        internal void Clear()
-        {
-            InnerList.Clear();
-        }
+        internal void Clear() => InnerList.Clear();
     }
 
     public class SearchResultEntry
     {
-        private string _distinguishedName = null;
-        private SearchResultAttributeCollection _attributes = new SearchResultAttributeCollection();
         private DirectoryControl[] _resultControls = null;
 
-        internal SearchResultEntry(string dn, SearchResultAttributeCollection attrs)
+        internal SearchResultEntry(string dn) => DistinguishedName = dn;
+
+        internal SearchResultEntry(string dn, SearchResultAttributeCollection attrs) : this(dn)
         {
-            _distinguishedName = dn;
-            _attributes = attrs;
+            Attributes = attrs;
         }
 
-        internal SearchResultEntry(string dn)
-        {
-            _distinguishedName = dn;
-        }
+        public string DistinguishedName { get; internal set; }
 
-        public string DistinguishedName
-        {
-            get
-            {
-                return _distinguishedName;
-            }
-        }
-
-        public SearchResultAttributeCollection Attributes
-        {
-            get
-            {
-                return _attributes;
-            }
-        }
+        public SearchResultAttributeCollection Attributes { get; }
 
         public DirectoryControl[] Controls
         {
             get
             {
-                DirectoryControl[] controls = null;
-
                 if (_resultControls == null)
-                    return new DirectoryControl[0];
-                else
                 {
-                    controls = new DirectoryControl[_resultControls.Length];
-                    for (int i = 0; i < _resultControls.Length; i++)
-                    {
-                        controls[i] = new DirectoryControl(_resultControls[i].Type, _resultControls[i].GetValue(), _resultControls[i].IsCritical, _resultControls[i].ServerSide);
-                    }
+                    return Array.Empty<DirectoryControl>();
                 }
 
+                DirectoryControl[] controls = new DirectoryControl[_resultControls.Length];
+                for (int i = 0; i < _resultControls.Length; i++)
+                {
+                    controls[i] = new DirectoryControl(_resultControls[i].Type, _resultControls[i].GetValue(), _resultControls[i].IsCritical, _resultControls[i].ServerSide);
+                }
                 DirectoryControl.TransformControls(controls);
-
                 return controls;
             }
         }
@@ -162,42 +105,18 @@ namespace System.DirectoryServices.Protocols
 
     public class SearchResultEntryCollection : ReadOnlyCollectionBase
     {
-        internal SearchResultEntryCollection()
-        {
-        }
+        internal SearchResultEntryCollection() { }
 
-        public SearchResultEntry this[int index]
-        {
-            get
-            {
-                return (SearchResultEntry)InnerList[index];
-            }
-        }
+        public SearchResultEntry this[int index] => (SearchResultEntry)InnerList[index];
 
-        internal int Add(SearchResultEntry entry)
-        {
-            return InnerList.Add(entry);
-        }
+        internal int Add(SearchResultEntry entry) => InnerList.Add(entry);
 
-        public bool Contains(SearchResultEntry value)
-        {
-            return InnerList.Contains(value);
-        }
+        public bool Contains(SearchResultEntry value) => InnerList.Contains(value);
 
-        public int IndexOf(SearchResultEntry value)
-        {
-            return InnerList.IndexOf(value);
-        }
+        public int IndexOf(SearchResultEntry value) => InnerList.IndexOf(value);
 
-        public void CopyTo(SearchResultEntry[] values, int index)
-        {
-            InnerList.CopyTo(values, index);
-        }
+        public void CopyTo(SearchResultEntry[] values, int index) => InnerList.CopyTo(values, index);
 
-        internal void Clear()
-        {
-            InnerList.Clear();
-        }
+        internal void Clear() => InnerList.Clear();
     }
 }
-

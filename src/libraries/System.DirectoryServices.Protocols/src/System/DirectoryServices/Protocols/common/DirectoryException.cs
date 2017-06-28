@@ -2,12 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.Serialization;
+
 namespace System.DirectoryServices.Protocols
 {
-    using System.Globalization;
-    using System.Runtime.Serialization;
-    using System.Security.Permissions;
-
     public class DirectoryException : Exception
     {
         protected DirectoryException(SerializationInfo info, StreamingContext context) : base(info, context)
@@ -30,7 +28,6 @@ namespace System.DirectoryServices.Protocols
 
     public class DirectoryOperationException : DirectoryException, ISerializable
     {
-        internal DirectoryResponse response = null;
         protected DirectoryOperationException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 
         public DirectoryOperationException() : base() { }
@@ -39,40 +36,29 @@ namespace System.DirectoryServices.Protocols
 
         public DirectoryOperationException(string message, Exception inner) : base(message, inner) { }
 
-        public DirectoryOperationException(DirectoryResponse response) : base(String.Format(CultureInfo.CurrentCulture, SR.DefaultOperationsError))
+        public DirectoryOperationException(DirectoryResponse response) : base(SR.DefaultOperationsError)
         {
-            this.response = response;
+            Response = response;
         }
 
         public DirectoryOperationException(DirectoryResponse response, string message) : base(message)
         {
-            this.response = response;
+            Response = response;
         }
 
         public DirectoryOperationException(DirectoryResponse response, string message, Exception inner) : base(message, inner)
         {
-            this.response = response;
+            Response = response;
         }
 
-        public DirectoryResponse Response
-        {
-            get
-            {
-                return response;
-            }
-        }
-        
-        public override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
-        {
-            base.GetObjectData(serializationInfo, streamingContext);
-        }
+        public DirectoryResponse Response { get; internal set; }
     }
 
     public class BerConversionException : DirectoryException
     {
         protected BerConversionException(SerializationInfo info, StreamingContext context) : base(info, context) { }
 
-        public BerConversionException() : base(String.Format(CultureInfo.CurrentCulture, SR.BerConversionError))
+        public BerConversionException() : base(SR.BerConversionError)
         {
         }
 

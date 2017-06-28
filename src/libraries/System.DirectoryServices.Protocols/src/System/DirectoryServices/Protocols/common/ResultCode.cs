@@ -2,12 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+
 namespace System.DirectoryServices.Protocols
 {
-    using System;
-    using System.Collections;
-    using System.Globalization;
-
     public enum ResultCode
     {
         Success = 0,
@@ -57,60 +55,57 @@ namespace System.DirectoryServices.Protocols
 
     internal class OperationErrorMappings
     {
-        private static Hashtable s_resultCodeHash = null;
-
-        static OperationErrorMappings()
+        private static readonly Dictionary<ResultCode, string> s_resultCodeMapping = new Dictionary<ResultCode, string>(capacity: 43)
         {
-            s_resultCodeHash = new Hashtable();
+            { ResultCode.Success, SR.LDAP_SUCCESS },
+            { ResultCode.OperationsError, SR.LDAP_OPERATIONS_ERROR },
+            { ResultCode.ProtocolError, SR.LDAP_PROTOCOL_ERROR },
+            { ResultCode.TimeLimitExceeded, SR.LDAP_TIMELIMIT_EXCEEDED },
+            { ResultCode.SizeLimitExceeded, SR.LDAP_SIZELIMIT_EXCEEDED },
+            { ResultCode.CompareFalse, SR.LDAP_COMPARE_FALSE },
+            { ResultCode.CompareTrue, SR.LDAP_COMPARE_TRUE },
+            { ResultCode.AuthMethodNotSupported, SR.LDAP_AUTH_METHOD_NOT_SUPPORTED },
+            { ResultCode.StrongAuthRequired, SR.LDAP_STRONG_AUTH_REQUIRED },
+            { ResultCode.ReferralV2, SR.LDAP_PARTIAL_RESULTS },
+            { ResultCode.Referral, SR.LDAP_REFERRAL },
+            { ResultCode.AdminLimitExceeded, SR.LDAP_ADMIN_LIMIT_EXCEEDED },
+            { ResultCode.UnavailableCriticalExtension, SR.LDAP_UNAVAILABLE_CRIT_EXTENSION },
+            { ResultCode.ConfidentialityRequired, SR.LDAP_CONFIDENTIALITY_REQUIRED },
+            { ResultCode.SaslBindInProgress, SR.LDAP_SASL_BIND_IN_PROGRESS },
+            { ResultCode.NoSuchAttribute, SR.LDAP_NO_SUCH_ATTRIBUTE },
+            { ResultCode.UndefinedAttributeType, SR.LDAP_UNDEFINED_TYPE },
+            { ResultCode.InappropriateMatching, SR.LDAP_INAPPROPRIATE_MATCHING },
+            { ResultCode.ConstraintViolation, SR.LDAP_CONSTRAINT_VIOLATION },
+            { ResultCode.AttributeOrValueExists, SR.LDAP_ATTRIBUTE_OR_VALUE_EXISTS },
+            { ResultCode.InvalidAttributeSyntax, SR.LDAP_INVALID_SYNTAX },
+            { ResultCode.NoSuchObject, SR.LDAP_NO_SUCH_OBJECT },
+            { ResultCode.AliasProblem, SR.LDAP_ALIAS_PROBLEM },
+            { ResultCode.InvalidDNSyntax, SR.LDAP_INVALID_DN_SYNTAX },
+            { ResultCode.AliasDereferencingProblem, SR.LDAP_ALIAS_DEREF_PROBLEM },
+            { ResultCode.InappropriateAuthentication, SR.LDAP_INAPPROPRIATE_AUTH },
+            { ResultCode.InsufficientAccessRights, SR.LDAP_INSUFFICIENT_RIGHTS },
+            { ResultCode.Busy, SR.LDAP_BUSY },
+            { ResultCode.Unavailable, SR.LDAP_UNAVAILABLE },
+            { ResultCode.UnwillingToPerform, SR.LDAP_UNWILLING_TO_PERFORM },
+            { ResultCode.LoopDetect, SR.LDAP_LOOP_DETECT },
+            { ResultCode.SortControlMissing, SR.LDAP_SORT_CONTROL_MISSING },
+            { ResultCode.OffsetRangeError, SR.LDAP_OFFSET_RANGE_ERROR },
+            { ResultCode.NamingViolation, SR.LDAP_NAMING_VIOLATION },
+            { ResultCode.ObjectClassViolation, SR.LDAP_OBJECT_CLASS_VIOLATION },
+            { ResultCode.NotAllowedOnNonLeaf, SR.LDAP_NOT_ALLOWED_ON_NONLEAF },
+            { ResultCode.NotAllowedOnRdn, SR.LDAP_NOT_ALLOWED_ON_RDN },
+            { ResultCode.EntryAlreadyExists, SR.LDAP_ALREADY_EXISTS },
+            { ResultCode.ObjectClassModificationsProhibited, SR.LDAP_NO_OBJECT_CLASS_MODS },
+            { ResultCode.ResultsTooLarge, SR.LDAP_RESULTS_TOO_LARGE },
+            { ResultCode.AffectsMultipleDsas, SR.LDAP_AFFECTS_MULTIPLE_DSAS },
+            { ResultCode.VirtualListViewError, SR.LDAP_VIRTUAL_LIST_VIEW_ERROR },
+            { ResultCode.Other, SR.LDAP_OTHER }
+        };
 
-            s_resultCodeHash.Add(ResultCode.Success, String.Format(CultureInfo.CurrentCulture, SR.LDAP_SUCCESS));
-            s_resultCodeHash.Add(ResultCode.OperationsError, String.Format(CultureInfo.CurrentCulture, SR.LDAP_OPERATIONS_ERROR));
-            s_resultCodeHash.Add(ResultCode.ProtocolError, String.Format(CultureInfo.CurrentCulture, SR.LDAP_PROTOCOL_ERROR));
-            s_resultCodeHash.Add(ResultCode.TimeLimitExceeded, String.Format(CultureInfo.CurrentCulture, SR.LDAP_TIMELIMIT_EXCEEDED));
-            s_resultCodeHash.Add(ResultCode.SizeLimitExceeded, String.Format(CultureInfo.CurrentCulture, SR.LDAP_SIZELIMIT_EXCEEDED));
-            s_resultCodeHash.Add(ResultCode.CompareFalse, String.Format(CultureInfo.CurrentCulture, SR.LDAP_COMPARE_FALSE));
-            s_resultCodeHash.Add(ResultCode.CompareTrue, String.Format(CultureInfo.CurrentCulture, SR.LDAP_COMPARE_TRUE));
-            s_resultCodeHash.Add(ResultCode.AuthMethodNotSupported, String.Format(CultureInfo.CurrentCulture, SR.LDAP_AUTH_METHOD_NOT_SUPPORTED));
-            s_resultCodeHash.Add(ResultCode.StrongAuthRequired, String.Format(CultureInfo.CurrentCulture, SR.LDAP_STRONG_AUTH_REQUIRED));
-            s_resultCodeHash.Add(ResultCode.ReferralV2, String.Format(CultureInfo.CurrentCulture, SR.LDAP_PARTIAL_RESULTS));
-            s_resultCodeHash.Add(ResultCode.Referral, String.Format(CultureInfo.CurrentCulture, SR.LDAP_REFERRAL));
-            s_resultCodeHash.Add(ResultCode.AdminLimitExceeded, String.Format(CultureInfo.CurrentCulture, SR.LDAP_ADMIN_LIMIT_EXCEEDED));
-            s_resultCodeHash.Add(ResultCode.UnavailableCriticalExtension, String.Format(CultureInfo.CurrentCulture, SR.LDAP_UNAVAILABLE_CRIT_EXTENSION));
-            s_resultCodeHash.Add(ResultCode.ConfidentialityRequired, String.Format(CultureInfo.CurrentCulture, SR.LDAP_CONFIDENTIALITY_REQUIRED));
-            s_resultCodeHash.Add(ResultCode.SaslBindInProgress, String.Format(CultureInfo.CurrentCulture, SR.LDAP_SASL_BIND_IN_PROGRESS));
-            s_resultCodeHash.Add(ResultCode.NoSuchAttribute, String.Format(CultureInfo.CurrentCulture, SR.LDAP_NO_SUCH_ATTRIBUTE));
-            s_resultCodeHash.Add(ResultCode.UndefinedAttributeType, String.Format(CultureInfo.CurrentCulture, SR.LDAP_UNDEFINED_TYPE));
-            s_resultCodeHash.Add(ResultCode.InappropriateMatching, String.Format(CultureInfo.CurrentCulture, SR.LDAP_INAPPROPRIATE_MATCHING));
-            s_resultCodeHash.Add(ResultCode.ConstraintViolation, String.Format(CultureInfo.CurrentCulture, SR.LDAP_CONSTRAINT_VIOLATION));
-            s_resultCodeHash.Add(ResultCode.AttributeOrValueExists, String.Format(CultureInfo.CurrentCulture, SR.LDAP_ATTRIBUTE_OR_VALUE_EXISTS));
-            s_resultCodeHash.Add(ResultCode.InvalidAttributeSyntax, String.Format(CultureInfo.CurrentCulture, SR.LDAP_INVALID_SYNTAX));
-            s_resultCodeHash.Add(ResultCode.NoSuchObject, String.Format(CultureInfo.CurrentCulture, SR.LDAP_NO_SUCH_OBJECT));
-            s_resultCodeHash.Add(ResultCode.AliasProblem, String.Format(CultureInfo.CurrentCulture, SR.LDAP_ALIAS_PROBLEM));
-            s_resultCodeHash.Add(ResultCode.InvalidDNSyntax, String.Format(CultureInfo.CurrentCulture, SR.LDAP_INVALID_DN_SYNTAX));
-            s_resultCodeHash.Add(ResultCode.AliasDereferencingProblem, String.Format(CultureInfo.CurrentCulture, SR.LDAP_ALIAS_DEREF_PROBLEM));
-            s_resultCodeHash.Add(ResultCode.InappropriateAuthentication, String.Format(CultureInfo.CurrentCulture, SR.LDAP_INAPPROPRIATE_AUTH));
-            s_resultCodeHash.Add(ResultCode.InsufficientAccessRights, String.Format(CultureInfo.CurrentCulture, SR.LDAP_INSUFFICIENT_RIGHTS));
-            s_resultCodeHash.Add(ResultCode.Busy, String.Format(CultureInfo.CurrentCulture, SR.LDAP_BUSY));
-            s_resultCodeHash.Add(ResultCode.Unavailable, String.Format(CultureInfo.CurrentCulture, SR.LDAP_UNAVAILABLE));
-            s_resultCodeHash.Add(ResultCode.UnwillingToPerform, String.Format(CultureInfo.CurrentCulture, SR.LDAP_UNWILLING_TO_PERFORM));
-            s_resultCodeHash.Add(ResultCode.LoopDetect, String.Format(CultureInfo.CurrentCulture, SR.LDAP_LOOP_DETECT));
-            s_resultCodeHash.Add(ResultCode.SortControlMissing, String.Format(CultureInfo.CurrentCulture, SR.LDAP_SORT_CONTROL_MISSING));
-            s_resultCodeHash.Add(ResultCode.OffsetRangeError, String.Format(CultureInfo.CurrentCulture, SR.LDAP_OFFSET_RANGE_ERROR));
-            s_resultCodeHash.Add(ResultCode.NamingViolation, String.Format(CultureInfo.CurrentCulture, SR.LDAP_NAMING_VIOLATION));
-            s_resultCodeHash.Add(ResultCode.ObjectClassViolation, String.Format(CultureInfo.CurrentCulture, SR.LDAP_OBJECT_CLASS_VIOLATION));
-            s_resultCodeHash.Add(ResultCode.NotAllowedOnNonLeaf, String.Format(CultureInfo.CurrentCulture, SR.LDAP_NOT_ALLOWED_ON_NONLEAF));
-            s_resultCodeHash.Add(ResultCode.NotAllowedOnRdn, String.Format(CultureInfo.CurrentCulture, SR.LDAP_NOT_ALLOWED_ON_RDN));
-            s_resultCodeHash.Add(ResultCode.EntryAlreadyExists, String.Format(CultureInfo.CurrentCulture, SR.LDAP_ALREADY_EXISTS));
-            s_resultCodeHash.Add(ResultCode.ObjectClassModificationsProhibited, String.Format(CultureInfo.CurrentCulture, SR.LDAP_NO_OBJECT_CLASS_MODS));
-            s_resultCodeHash.Add(ResultCode.ResultsTooLarge, String.Format(CultureInfo.CurrentCulture, SR.LDAP_RESULTS_TOO_LARGE));
-            s_resultCodeHash.Add(ResultCode.AffectsMultipleDsas, String.Format(CultureInfo.CurrentCulture, SR.LDAP_AFFECTS_MULTIPLE_DSAS));
-            s_resultCodeHash.Add(ResultCode.VirtualListViewError, String.Format(CultureInfo.CurrentCulture, SR.LDAP_VIRTUAL_LIST_VIEW_ERROR));
-            s_resultCodeHash.Add(ResultCode.Other, String.Format(CultureInfo.CurrentCulture, SR.LDAP_OTHER));
-        }
-
-        static public string MapResultCode(int errorCode)
+        public static string MapResultCode(int errorCode)
         {
-            return (string)s_resultCodeHash[(ResultCode)errorCode];
+            s_resultCodeMapping.TryGetValue((ResultCode)errorCode, out string errorMessage);
+            return errorMessage;
         }
     }
 

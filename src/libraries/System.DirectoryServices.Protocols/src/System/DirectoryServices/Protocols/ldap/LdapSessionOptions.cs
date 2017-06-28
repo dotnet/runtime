@@ -844,7 +844,7 @@ namespace System.DirectoryServices.Protocols
 
                         errorMessage = OperationErrorMappings.MapResultCode(error);
                         ExtendedResponse response = new ExtendedResponse(null, null, (ResultCode)error, errorMessage, responseReferral);
-                        response.name = "1.3.6.1.4.1.1466.20037";
+                        response.ResponseName = "1.3.6.1.4.1.1466.20037";
                         throw new TlsOperationException(response);
                     }
                     else if (Utility.IsLdapError((LdapError)error))

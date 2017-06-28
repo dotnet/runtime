@@ -4,12 +4,9 @@
 
 namespace System.DirectoryServices.Protocols
 {
-    using System;
-    using System.Xml;
-
     public abstract class DirectoryOperation
     {
-        internal string directoryRequestID = null;
+        internal string _directoryRequestID;
 
         protected DirectoryOperation() { }
     }

@@ -2,229 +2,118 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel;
+using System.Collections.Specialized;
+
 namespace System.DirectoryServices.Protocols
 {
-    using System;
-    using System.Collections;
-    using System.IO;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.ComponentModel;
-    using System.Collections.Specialized;
-    using System.Security.Permissions;
-
     public abstract class DirectoryRequest : DirectoryOperation
     {
-        internal DirectoryControlCollection directoryControlCollection = null;
-
         internal DirectoryRequest()
         {
-            directoryControlCollection = new DirectoryControlCollection();
         }
 
         public string RequestId
         {
-            get
-            {
-                return directoryRequestID;
-            }
-            set
-            {
-                directoryRequestID = value;
-            }
+            get => _directoryRequestID;
+            set => _directoryRequestID = value;
         }
 
-        public DirectoryControlCollection Controls
-        {
-            get
-            {
-                return directoryControlCollection;
-            }
-        }
+        public DirectoryControlCollection Controls { get; } = new DirectoryControlCollection();
     }
 
     public class DeleteRequest : DirectoryRequest
     {
-        //
-        // Public
-        //
-
         public DeleteRequest() { }
 
         public DeleteRequest(string distinguishedName)
         {
-            _dn = distinguishedName;
+            DistinguishedName = distinguishedName;
         }
 
-        // Member properties
-        public string DistinguishedName
-        {
-            get
-            {
-                return _dn;
-            }
-
-            set
-            {
-                _dn = value;
-            }
-        }
-
-        //
-        // Private/protected
-        //
-
-        private string _dn;
+        public string DistinguishedName { get; set; }
     }
 
     public class AddRequest : DirectoryRequest
     {
-        //
-        // Public
-        //
-
-        public AddRequest()
-        {
-            _attributeList = new DirectoryAttributeCollection();
-        }
+        public AddRequest() { }
 
         public AddRequest(string distinguishedName, params DirectoryAttribute[] attributes) : this()
         {
-            // Store off the distinguished name
-            _dn = distinguishedName;
+            DistinguishedName = distinguishedName;
 
             if (attributes != null)
             {
                 for (int i = 0; i < attributes.Length; i++)
                 {
-                    _attributeList.Add(attributes[i]);
+                    Attributes.Add(attributes[i]);
                 }
             }
         }
 
         public AddRequest(string distinguishedName, string objectClass) : this()
         {
-            // parameter validation
             if (objectClass == null)
-                throw new ArgumentNullException("objectClass");
+            {
+                throw new ArgumentNullException(nameof(objectClass));
+            }
+            
+            DistinguishedName = distinguishedName;
 
-            // Store off the distinguished name
-            _dn = distinguishedName;
-
-            // Store off the objectClass in an object class attribute
-            DirectoryAttribute objClassAttr = new DirectoryAttribute();
-
-            objClassAttr.Name = "objectClass";
+            var objClassAttr = new DirectoryAttribute()
+            {
+                Name = "objectClass"
+            };
             objClassAttr.Add(objectClass);
-            _attributeList.Add(objClassAttr);
+            Attributes.Add(objClassAttr);
         }
 
-        // Properties
-        public string DistinguishedName
-        {
-            get
-            {
-                return _dn;
-            }
+        public string DistinguishedName { get; set; }
 
-            set
-            {
-                _dn = value;
-            }
-        }
-
-        public DirectoryAttributeCollection Attributes
-        {
-            get
-            {
-                return _attributeList;
-            }
-        }
-
-        //
-        // Private/protected
-        //
-
-        private string _dn;
-        private DirectoryAttributeCollection _attributeList;
+        public DirectoryAttributeCollection Attributes { get; } = new DirectoryAttributeCollection();
     }
 
     public class ModifyRequest : DirectoryRequest
     {
-        //
-        // Public
-        //
-        public ModifyRequest()
-        {
-            _attributeModificationList = new DirectoryAttributeModificationCollection();
-        }
+        public ModifyRequest() { }
 
         public ModifyRequest(string distinguishedName, params DirectoryAttributeModification[] modifications) : this()
         {
-            // Store off the distinguished name
-            _dn = distinguishedName;
-
-            // Store off the initial list of modifications
-            _attributeModificationList.AddRange(modifications);
+            DistinguishedName = distinguishedName;
+            Modifications.AddRange(modifications);
         }
 
         public ModifyRequest(string distinguishedName, DirectoryAttributeOperation operation, string attributeName, params object[] values) : this()
         {
-            // Store off the distinguished name
-            _dn = distinguishedName;
-
-            // validate the attributeName
             if (attributeName == null)
-                throw new ArgumentNullException("attributeName");
+            {
+                throw new ArgumentNullException(nameof(attributeName));
+            }
 
-            DirectoryAttributeModification mod = new DirectoryAttributeModification();
-            mod.Operation = operation;
-            mod.Name = attributeName;
+            DistinguishedName = distinguishedName;
+            var mod = new DirectoryAttributeModification()
+            {
+                Operation = operation,
+                Name = attributeName
+            };
             if (values != null)
             {
                 for (int i = 0; i < values.Length; i++)
+                {
                     mod.Add(values[i]);
+                }
             }
 
-            _attributeModificationList.Add(mod);
+            Modifications.Add(mod);
         }
 
-        // Properties
-        public string DistinguishedName
-        {
-            get
-            {
-                return _dn;
-            }
+        public string DistinguishedName { get; set; }
 
-            set
-            {
-                _dn = value;
-            }
-        }
-
-        public DirectoryAttributeModificationCollection Modifications
-        {
-            get
-            {
-                return _attributeModificationList;
-            }
-        }
-
-        //
-        // Private/protected
-        //
-
-        private string _dn;
-        private DirectoryAttributeModificationCollection _attributeModificationList;
-
+        public DirectoryAttributeModificationCollection Modifications { get; } = new DirectoryAttributeModificationCollection();
     }
 
     public class CompareRequest : DirectoryRequest
     {
-        //
-        // Public
-        //
         public CompareRequest() { }
 
         public CompareRequest(string distinguishedName, string attributeName, string value)
@@ -245,155 +134,67 @@ namespace System.DirectoryServices.Protocols
         public CompareRequest(string distinguishedName, DirectoryAttribute assertion)
         {
             if (assertion == null)
-                throw new ArgumentNullException("assertion");
-
+            {
+                throw new ArgumentNullException(nameof(assertion));
+            }
             if (assertion.Count != 1)
-                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.WrongNumValuesCompare));
+            {
+                throw new ArgumentException(SR.WrongNumValuesCompare);
+            }
 
             CompareRequestHelper(distinguishedName, assertion.Name, assertion[0]);
         }
 
         private void CompareRequestHelper(string distinguishedName, string attributeName, object value)
         {
-            // parameter validation
             if (attributeName == null)
-                throw new ArgumentNullException("attributeName");
-
+            {
+                throw new ArgumentNullException(nameof(attributeName));
+            }
             if (value == null)
-                throw new ArgumentNullException("value");
-
-            // store off the DN
-            _dn = distinguishedName;
-
-            // store off the attribute name and value            
-            _attribute.Name = attributeName;
-            _attribute.Add(value);
-        }
-
-        // Properties
-        public string DistinguishedName
-        {
-            get
             {
-                return _dn;
+                throw new ArgumentNullException(nameof(value));
             }
 
-            set
-            {
-                _dn = value;
-            }
+            DistinguishedName = distinguishedName;           
+            Assertion.Name = attributeName;
+            Assertion.Add(value);
         }
 
-        public DirectoryAttribute Assertion
-        {
-            get
-            {
-                return _attribute;
-            }
-        }
+        public string DistinguishedName { get; set; }
 
-        //
-        // Private/protected
-        //
-
-        private string _dn;
-        private DirectoryAttribute _attribute = new DirectoryAttribute();
+        public DirectoryAttribute Assertion { get; } = new DirectoryAttribute();
     }
 
     public class ModifyDNRequest : DirectoryRequest
     {
-        //
-        // Public
-        //
         public ModifyDNRequest() { }
 
-        public ModifyDNRequest(string distinguishedName,
-                                string newParentDistinguishedName,
-                                string newName)
+        public ModifyDNRequest(string distinguishedName, string newParentDistinguishedName, string newName)
         {
-            // store off the DN
-            _dn = distinguishedName;
-
-            _newSuperior = newParentDistinguishedName;
-            _newRDN = newName;
+            DistinguishedName = distinguishedName;
+            NewParentDistinguishedName = newParentDistinguishedName;
+            NewName = newName;
         }
 
-        // Properties
-        public string DistinguishedName
-        {
-            get
-            {
-                return _dn;
-            }
+        public string DistinguishedName { get; set; }
 
-            set
-            {
-                _dn = value;
-            }
-        }
+        public string NewParentDistinguishedName { get; set; }
 
-        public string NewParentDistinguishedName
-        {
-            get
-            {
-                return _newSuperior;
-            }
+        public string NewName { get; set; }
 
-            set
-            {
-                _newSuperior = value;
-            }
-        }
-
-        public string NewName
-        {
-            get
-            {
-                return _newRDN;
-            }
-
-            set
-            {
-                _newRDN = value;
-            }
-        }
-
-        public bool DeleteOldRdn
-        {
-            get
-            {
-                return _deleteOldRDN;
-            }
-
-            set
-            {
-                _deleteOldRDN = value;
-            }
-        }
-
-        //
-        // Private/protected
-        //
-
-        private string _dn;
-        private string _newSuperior;
-        private string _newRDN;
-        private bool _deleteOldRDN = true;
+        public bool DeleteOldRdn { get; set; } = true;
     }
 
-    /// <summary>
-    /// The representation of a <extendedRequest>
-    /// </summary>
     public class ExtendedRequest : DirectoryRequest
     {
-        //
-        // Public
-        //
+        private byte[] _requestValue = null;
+
         public ExtendedRequest() { }
 
         public ExtendedRequest(string requestName)
         {
-            _requestName = requestName;
+            RequestName = requestName;
         }
 
         public ExtendedRequest(string requestName, byte[] requestValue) : this(requestName)
@@ -401,128 +202,75 @@ namespace System.DirectoryServices.Protocols
             _requestValue = requestValue;
         }
 
-        // Properties
-        public string RequestName
-        {
-            get
-            {
-                return _requestName;
-            }
-
-            set
-            {
-                _requestName = value;
-            }
-        }
+        public string RequestName { get; set; }
 
         public byte[] RequestValue
         {
             get
             {
                 if (_requestValue == null)
-                    return new byte[0];
-                else
                 {
-                    byte[] tempValue = new byte[_requestValue.Length];
-                    for (int i = 0; i < _requestValue.Length; i++)
-                        tempValue[i] = _requestValue[i];
-
-                    return tempValue;
+                    return Array.Empty<byte>();
                 }
-            }
 
-            set
-            {
-                _requestValue = value;
+                byte[] tempValue = new byte[_requestValue.Length];
+                for (int i = 0; i < _requestValue.Length; i++)
+                {
+                    tempValue[i] = _requestValue[i];
+                }
+                return tempValue;
             }
+            set => _requestValue = value;
         }
-
-        //
-        // Private/protected
-        //
-
-        private string _requestName;
-        private byte[] _requestValue = null;
     }
 
     public class SearchRequest : DirectoryRequest
     {
-        //
-        // Public
-        //
-        public SearchRequest()
-        {
-            _directoryAttributes = new StringCollection();
-        }
+        public SearchRequest() { }
 
-        public SearchRequest(string distinguishedName,
-                             string ldapFilter,
-                             SearchScope searchScope,
-                             params string[] attributeList) : this()
+        public SearchRequest(string distinguishedName, string ldapFilter, SearchScope searchScope, params string[] attributeList) : this()
         {
-            _dn = distinguishedName;
+            DistinguishedName = distinguishedName;
 
             if (attributeList != null)
             {
                 for (int i = 0; i < attributeList.Length; i++)
-                    _directoryAttributes.Add(attributeList[i]);
+                {
+                    Attributes.Add(attributeList[i]);
+                }
             }
 
             Scope = searchScope;
-
             Filter = ldapFilter;
         }
 
-        // Properties
-        public string DistinguishedName
-        {
-            get
-            {
-                return _dn;
-            }
+        public string DistinguishedName { get; set; }
 
-            set
-            {
-                _dn = value;
-            }
-        }
-
-        public StringCollection Attributes
-        {
-            get
-            {
-                return _directoryAttributes;
-            }
-        }
+        public StringCollection Attributes { get; } = new StringCollection();
 
         public object Filter
         {
-            get
-            {
-                return _directoryFilter;
-            }
-
+            get => _directoryFilter;
             set
             {
-                // do we need to validate the filter here?
-                if ((value is string) || (value == null))
-                    _directoryFilter = value;
-                else
-                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.ValidFilterType), "value");
+                if (value != null && !(value is string))
+                {
+                    throw new ArgumentException(SR.ValidFilterType, nameof(value));
+                }
+
+                _directoryFilter = value;
             }
         }
 
         public SearchScope Scope
         {
-            get
-            {
-                return _directoryScope;
-            }
-
+            get => _directoryScope;
             set
             {
                 if (value < SearchScope.Base || value > SearchScope.Subtree)
-                    throw new InvalidEnumArgumentException("value", (int)value, typeof(SearchScope));
+                {
+                    throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(SearchScope));
+                }
 
                 _directoryScope = value;
             }
@@ -530,15 +278,13 @@ namespace System.DirectoryServices.Protocols
 
         public DereferenceAlias Aliases
         {
-            get
-            {
-                return _directoryRefAlias;
-            }
-
+            get => _directoryRefAlias;
             set
             {
                 if (value < DereferenceAlias.Never || value > DereferenceAlias.Always)
-                    throw new InvalidEnumArgumentException("value", (int)value, typeof(DereferenceAlias));
+                {
+                    throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(DereferenceAlias));
+                }
 
                 _directoryRefAlias = value;
             }
@@ -546,16 +292,12 @@ namespace System.DirectoryServices.Protocols
 
         public int SizeLimit
         {
-            get
-            {
-                return _directorySizeLimit;
-            }
-
+            get => _directorySizeLimit;
             set
             {
                 if (value < 0)
                 {
-                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NoNegativeSizeLimit), "value");
+                    throw new ArgumentException(SR.NoNegativeSizeLimit, nameof(value));
                 }
 
                 _directorySizeLimit = value;
@@ -564,79 +306,42 @@ namespace System.DirectoryServices.Protocols
 
         public TimeSpan TimeLimit
         {
-            get
-            {
-                return _directoryTimeLimit;
-            }
-
+            get => _directoryTimeLimit;
             set
             {
                 if (value < TimeSpan.Zero)
                 {
-                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NoNegativeTime), "value");
+                    throw new ArgumentException(SR.NoNegativeTime, nameof(value));
                 }
 
-                // prevent integer overflow
-                if (value.TotalSeconds > Int32.MaxValue)
-                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.TimespanExceedMax), "value");
+                // Prevent integer overflow.
+                if (value.TotalSeconds > int.MaxValue)
+                {
+                    throw new ArgumentException(SR.TimespanExceedMax, nameof(value));
+                }
 
                 _directoryTimeLimit = value;
             }
         }
 
-        public bool TypesOnly
-        {
-            get
-            {
-                return _directoryTypesOnly;
-            }
+        public bool TypesOnly { get; set; }
 
-            set
-            {
-                _directoryTypesOnly = value;
-            }
-        }
-
-        //
-        // Private/protected
-        //
-
-        private string _dn = null;
-        private StringCollection _directoryAttributes = new StringCollection();
         private object _directoryFilter = null;
         private SearchScope _directoryScope = SearchScope.Subtree;
         private DereferenceAlias _directoryRefAlias = DereferenceAlias.Never;
         private int _directorySizeLimit = 0;
         private TimeSpan _directoryTimeLimit = new TimeSpan(0);
-        private bool _directoryTypesOnly = false;
     }
 }
 
 namespace System.DirectoryServices.Protocols
 {
-    using System;
-
     public class DsmlAuthRequest : DirectoryRequest
     {
-        private string _directoryPrincipal = "";
+        public DsmlAuthRequest() => Principal = string.Empty;
 
-        public DsmlAuthRequest() { }
+        public DsmlAuthRequest(string principal) => Principal = principal;
 
-        public DsmlAuthRequest(string principal)
-        {
-            _directoryPrincipal = principal;
-        }
-
-        public string Principal
-        {
-            get
-            {
-                return _directoryPrincipal;
-            }
-            set
-            {
-                _directoryPrincipal = value;
-            }
-        }
+        public string Principal { get; set; }
     }
 }

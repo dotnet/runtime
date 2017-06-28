@@ -2,22 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+using System.ComponentModel;
+using System.Globalization;
+using System.Text;
+
 namespace System.DirectoryServices.Protocols
 {
-    using System;
-    using System.Collections;
-    using System.ComponentModel;
-    using System.Globalization;
-    using System.Diagnostics;
-    using System.Text;
-
     public class DirectoryAttribute : CollectionBase
     {
         private string _attributeName = "";
-        internal bool isSearchResult = false;
-        // does not request Unicode byte order mark prefix be emitted, but turn on error detection
+        internal bool _isSearchResult = false;
+        // Does not request Unicode byte order mark prefix be emitted, but turn on error detection.
         private static UTF8Encoding s_utf8EncoderWithErrorDetection = new UTF8Encoding(false, true);
-        // with no error detection on
+        // No Error detection.
         private static UTF8Encoding s_encoder = new UTF8Encoding();
 
         public DirectoryAttribute()
@@ -39,30 +37,25 @@ namespace System.DirectoryServices.Protocols
         internal DirectoryAttribute(string name, object value) : this()
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             if (value == null)
-                throw new ArgumentNullException("value");
+                throw new ArgumentNullException(nameof(value));
 
-            // set the name
             Name = name;
-
-            // set the value;
             Add(value);
         }
 
         public DirectoryAttribute(string name, params object[] values) : this()
         {
             if (name == null)
-                throw new ArgumentNullException("name");
+                throw new ArgumentNullException(nameof(name));
 
             if (values == null)
-                throw new ArgumentNullException("values");
+                throw new ArgumentNullException(nameof(values));
 
-            // set the name
             Name = name;
 
-            // set the value;
             for (int i = 0; i < values.Length; i++)
             {
                 Add(values[i]);
@@ -71,22 +64,13 @@ namespace System.DirectoryServices.Protocols
 
         public string Name
         {
-            get
-            {
-                return _attributeName;
-            }
-            set
-            {
-                if (value == null)
-                    throw new ArgumentNullException("value");
-
-                _attributeName = value;
-            }
+            get => _attributeName;
+            set => _attributeName = value ?? throw new ArgumentNullException(nameof(value));
         }
 
         public object[] GetValues(Type valuesType)
         {
-            // user wants to return binary value
+            // Return the binary value.
             if (valuesType == typeof(byte[]))
             {
                 int count = List.Count;
@@ -95,18 +79,22 @@ namespace System.DirectoryServices.Protocols
                 for (int i = 0; i < count; i++)
                 {
                     if (List[i] is string)
+                    {
                         results[i] = s_encoder.GetBytes((string)List[i]);
+                    }
                     else if (List[i] is byte[])
                     {
                         results[i] = (byte[])List[i];
                     }
                     else
-                        throw new NotSupportedException(String.Format(CultureInfo.CurrentCulture, SR.DirectoryAttributeConversion));
+                    {
+                        throw new NotSupportedException(SR.DirectoryAttributeConversion);
+                    }
                 }
 
                 return results;
             }
-            // user wants to return string value
+            // Return the string value.
             else if (valuesType == typeof(string))
             {
                 int count = List.Count;
@@ -115,81 +103,80 @@ namespace System.DirectoryServices.Protocols
                 for (int i = 0; i < count; i++)
                 {
                     if (List[i] is string)
+                    {
                         results[i] = (string)List[i];
+                    }
                     else if (List[i] is byte[])
+                    {
                         results[i] = s_encoder.GetString((byte[])List[i]);
+                    }
                     else
-                        throw new NotSupportedException(String.Format(CultureInfo.CurrentCulture, SR.DirectoryAttributeConversion));
+                    {
+                        throw new NotSupportedException(SR.DirectoryAttributeConversion);
+                    }
                 }
 
                 return results;
             }
-            else
-                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.ValidDirectoryAttributeType), "valuesType");
+
+            throw new ArgumentException(SR.ValidDirectoryAttributeType, nameof(valuesType));
         }
 
         public object this[int index]
         {
             get
             {
-                if (!isSearchResult)
+                if (!_isSearchResult)
                 {
                     return List[index];
                 }
-                else
+
+                if (List[index] is byte[] temp)
                 {
-                    byte[] temp = List[index] as byte[];
-                    if (temp != null)
+                    try
                     {
-                        try
-                        {
-                            return s_utf8EncoderWithErrorDetection.GetString(temp);
-                        }
-                        catch (ArgumentException)
-                        {
-                            return List[index];
-                        }
+                        return s_utf8EncoderWithErrorDetection.GetString(temp);
                     }
-                    else
+                    catch (ArgumentException)
                     {
-                        // should not happen
                         return List[index];
                     }
                 }
+                
+                // This hould not happen.
+                return List[index];
             }
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("value");
-                else if ((value is string) || (value is byte[]) || (value is Uri))
-                    List[index] = value;
-                else
-                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.ValidValueType), "value");
+                {
+                    throw new ArgumentNullException(nameof(value));
+                }
+                else if (!(value is string) && !(value is byte[]) && !(value is Uri))
+                {
+                    throw new ArgumentException(SR.ValidValueType, nameof(value));
+                }
+
+                List[index] = value;
             }
         }
 
-        public int Add(byte[] value)
-        {
-            return Add((object)value);
-        }
+        public int Add(byte[] value) => Add((object)value);
 
-        public int Add(string value)
-        {
-            return Add((object)value);
-        }
+        public int Add(string value) => Add((object)value);
 
-        public int Add(Uri value)
-        {
-            return Add((object)value);
-        }
+        public int Add(Uri value) => Add((object)value);
 
         internal int Add(object value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
-
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
             if (!(value is string) && !(value is byte[]) && !(value is Uri))
-                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.ValidValueType), "value");
+            {
+                throw new ArgumentException(SR.ValidValueType, nameof(value));
+            }
 
             return List.Add(value);
         }
@@ -197,68 +184,59 @@ namespace System.DirectoryServices.Protocols
         public void AddRange(object[] values)
         {
             if (values == null)
-                throw new ArgumentNullException("values");
-
+            {
+                throw new ArgumentNullException(nameof(values));
+            }
             if (!(values is string[]) && !(values is byte[][]) && !(values is Uri[]))
-                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.ValidValuesType), "values");
+            {
+                throw new ArgumentException(SR.ValidValuesType, nameof(values));
+            }
 
             for (int i = 0; i < values.Length; i++)
+            {
                 if (values[i] == null)
-                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NullValueArray), "values");
+                {
+                    throw new ArgumentException(SR.NullValueArray, nameof(values));
+                }
+            }
 
             InnerList.AddRange(values);
         }
 
-        public bool Contains(object value)
-        {
-            return List.Contains(value);
-        }
+        public bool Contains(object value) => List.Contains(value);
 
-        public void CopyTo(object[] array, int index)
-        {
-            List.CopyTo(array, index);
-        }
+        public void CopyTo(object[] array, int index) => List.CopyTo(array, index);
 
-        public int IndexOf(object value)
-        {
-            return List.IndexOf(value);
-        }
+        public int IndexOf(object value) => List.IndexOf(value);
 
-        public void Insert(int index, byte[] value)
-        {
-            Insert(index, (object)value);
-        }
+        public void Insert(int index, byte[] value) => Insert(index, (object)value);
 
-        public void Insert(int index, string value)
-        {
-            Insert(index, (object)value);
-        }
+        public void Insert(int index, string value) => Insert(index, (object)value);
 
-        public void Insert(int index, Uri value)
-        {
-            Insert(index, (object)value);
-        }
+        public void Insert(int index, Uri value) => Insert(index, (object)value);
 
         private void Insert(int index, object value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
 
             List.Insert(index, value);
         }
 
-        public void Remove(object value)
-        {
-            List.Remove(value);
-        }
+        public void Remove(object value) => List.Remove(value);
 
-        protected override void OnValidate(Object value)
+        protected override void OnValidate(object value)
         {
             if (value == null)
-                throw new ArgumentNullException("value");
-
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
             if (!(value is string) && !(value is byte[]) && !(value is Uri))
-                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.ValidValueType), "value");
+            {
+                throw new ArgumentException(SR.ValidValueType, nameof(value));
+            }
         }
     }
 
@@ -272,19 +250,17 @@ namespace System.DirectoryServices.Protocols
 
         public DirectoryAttributeOperation Operation
         {
-            get
-            {
-                return _attributeOperation;
-            }
+            get => _attributeOperation;
             set
             {
                 if (value < DirectoryAttributeOperation.Add || value > DirectoryAttributeOperation.Replace)
-                    throw new InvalidEnumArgumentException("value", (int)value, typeof(DirectoryAttributeOperation));
+                {
+                    throw new InvalidEnumArgumentException(nameof(value), (int)value, typeof(DirectoryAttributeOperation));
+                }
 
                 _attributeOperation = value;
             }
         }
-
     }
 
     public class SearchResultAttributeCollection : DictionaryBase
@@ -296,25 +272,18 @@ namespace System.DirectoryServices.Protocols
             get
             {
                 if (attributeName == null)
-                    throw new ArgumentNullException("attributeName");
+                {
+                    throw new ArgumentNullException(nameof(attributeName));
+                }
 
                 object objectName = attributeName.ToLower(CultureInfo.InvariantCulture);
                 return (DirectoryAttribute)InnerHashtable[objectName];
             }
         }
 
-        public ICollection AttributeNames
-        {
-            get { return Dictionary.Keys; }
-        }
+        public ICollection AttributeNames => Dictionary.Keys;
 
-        public ICollection Values
-        {
-            get
-            {
-                return Dictionary.Values;
-            }
-        }
+        public ICollection Values => Dictionary.Values;
 
         internal void Add(string name, DirectoryAttribute value)
         {
@@ -324,16 +293,15 @@ namespace System.DirectoryServices.Protocols
         public bool Contains(string attributeName)
         {
             if (attributeName == null)
-                throw new ArgumentNullException("attributeName");
+            {
+                throw new ArgumentNullException(nameof(attributeName));
+            }
 
             object objectName = attributeName.ToLower(CultureInfo.InvariantCulture);
             return Dictionary.Contains(objectName);
         }
 
-        public void CopyTo(DirectoryAttribute[] array, int index)
-        {
-            Dictionary.Values.CopyTo((Array)array, index);
-        }
+        public void CopyTo(DirectoryAttribute[] array, int index) => Dictionary.Values.CopyTo(array, index);
     }
 
     public class DirectoryAttributeCollection : CollectionBase
@@ -344,23 +312,16 @@ namespace System.DirectoryServices.Protocols
 
         public DirectoryAttribute this[int index]
         {
-            get
-            {
-                return (DirectoryAttribute)List[index];
-            }
-            set
-            {
-                if (value == null)
-                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NullDirectoryAttributeCollection));
-
-                List[index] = value;
-            }
+            get => (DirectoryAttribute)List[index];
+            set => List[index] = value ?? throw new ArgumentException(SR.NullDirectoryAttributeCollection);
         }
 
         public int Add(DirectoryAttribute attribute)
         {
             if (attribute == null)
-                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NullDirectoryAttributeCollection));
+            {
+                throw new ArgumentException(SR.NullDirectoryAttributeCollection);
+            }
 
             return List.Add(attribute);
         }
@@ -368,13 +329,15 @@ namespace System.DirectoryServices.Protocols
         public void AddRange(DirectoryAttribute[] attributes)
         {
             if (attributes == null)
-                throw new ArgumentNullException("attributes");
-
-            foreach (DirectoryAttribute c in attributes)
             {
-                if (c == null)
+                throw new ArgumentNullException(nameof(attributes));
+            }
+
+            foreach (DirectoryAttribute attribute in attributes)
+            {
+                if (attribute == null)
                 {
-                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NullDirectoryAttributeCollection));
+                    throw new ArgumentException(SR.NullDirectoryAttributeCollection);
                 }
             }
 
@@ -385,50 +348,44 @@ namespace System.DirectoryServices.Protocols
         {
             if (attributeCollection == null)
             {
-                throw new ArgumentNullException("attributeCollection");
+                throw new ArgumentNullException(nameof(attributeCollection));
             }
+
             int currentCount = attributeCollection.Count;
             for (int i = 0; i < currentCount; i = ((i) + (1)))
             {
-                this.Add(attributeCollection[i]);
+                Add(attributeCollection[i]);
             }
         }
 
-        public bool Contains(DirectoryAttribute value)
-        {
-            return List.Contains(value);
-        }
+        public bool Contains(DirectoryAttribute value) => List.Contains(value);
 
-        public void CopyTo(DirectoryAttribute[] array, int index)
-        {
-            List.CopyTo(array, index);
-        }
+        public void CopyTo(DirectoryAttribute[] array, int index) => List.CopyTo(array, index);
 
-        public int IndexOf(DirectoryAttribute value)
-        {
-            return List.IndexOf(value);
-        }
+        public int IndexOf(DirectoryAttribute value) => List.IndexOf(value);
 
         public void Insert(int index, DirectoryAttribute value)
         {
             if (value == null)
-                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NullDirectoryAttributeCollection));
+            {
+                throw new ArgumentException(SR.NullDirectoryAttributeCollection);
+            }
 
             List.Insert(index, value);
         }
 
-        public void Remove(DirectoryAttribute value)
-        {
-            List.Remove(value);
-        }
+        public void Remove(DirectoryAttribute value) => List.Remove(value);
 
-        protected override void OnValidate(Object value)
+        protected override void OnValidate(object value)
         {
             if (value == null)
-                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NullDirectoryAttributeCollection));
-
+            {
+                throw new ArgumentException(SR.NullDirectoryAttributeCollection);
+            }
             if (!(value is DirectoryAttribute))
-                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.InvalidValueType, "DirectoryAttribute"), "value");
+            {
+                throw new ArgumentException(SR.Format(SR.InvalidValueType, nameof(DirectoryAttribute)), nameof(value));
+            }
         }
     }
 
@@ -440,23 +397,16 @@ namespace System.DirectoryServices.Protocols
 
         public DirectoryAttributeModification this[int index]
         {
-            get
-            {
-                return (DirectoryAttributeModification)List[index];
-            }
-            set
-            {
-                if (value == null)
-                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NullDirectoryAttributeCollection));
-
-                List[index] = value;
-            }
+            get => (DirectoryAttributeModification)List[index];
+            set => List[index] = value ?? throw new ArgumentException(SR.NullDirectoryAttributeCollection);
         }
 
         public int Add(DirectoryAttributeModification attribute)
         {
             if (attribute == null)
-                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NullDirectoryAttributeCollection));
+            {
+                throw new ArgumentException(SR.NullDirectoryAttributeCollection);
+            }
 
             return List.Add(attribute);
         }
@@ -464,13 +414,15 @@ namespace System.DirectoryServices.Protocols
         public void AddRange(DirectoryAttributeModification[] attributes)
         {
             if (attributes == null)
-                throw new ArgumentNullException("attributes");
-
-            foreach (DirectoryAttributeModification c in attributes)
             {
-                if (c == null)
+                throw new ArgumentNullException(nameof(attributes));
+            }
+
+            foreach (DirectoryAttributeModification attribute in attributes)
+            {
+                if (attribute == null)
                 {
-                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NullDirectoryAttributeCollection));
+                    throw new ArgumentException(SR.NullDirectoryAttributeCollection);
                 }
             }
 
@@ -481,51 +433,44 @@ namespace System.DirectoryServices.Protocols
         {
             if (attributeCollection == null)
             {
-                throw new ArgumentNullException("attributeCollection");
+                throw new ArgumentNullException(nameof(attributeCollection));
             }
+
             int currentCount = attributeCollection.Count;
             for (int i = 0; i < currentCount; i = ((i) + (1)))
             {
-                this.Add(attributeCollection[i]);
+                Add(attributeCollection[i]);
             }
         }
 
-        public bool Contains(DirectoryAttributeModification value)
-        {
-            return List.Contains(value);
-        }
+        public bool Contains(DirectoryAttributeModification value) => List.Contains(value);
 
-        public void CopyTo(DirectoryAttributeModification[] array, int index)
-        {
-            List.CopyTo(array, index);
-        }
+        public void CopyTo(DirectoryAttributeModification[] array, int index) => List.CopyTo(array, index);
 
-        public int IndexOf(DirectoryAttributeModification value)
-        {
-            return List.IndexOf(value);
-        }
+        public int IndexOf(DirectoryAttributeModification value) => List.IndexOf(value);
 
         public void Insert(int index, DirectoryAttributeModification value)
         {
             if (value == null)
-                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NullDirectoryAttributeCollection));
+            {
+                throw new ArgumentException(SR.NullDirectoryAttributeCollection);
+            }
 
             List.Insert(index, value);
         }
 
-        public void Remove(DirectoryAttributeModification value)
-        {
-            List.Remove(value);
-        }
+        public void Remove(DirectoryAttributeModification value) => List.Remove(value);
 
-        protected override void OnValidate(Object value)
+        protected override void OnValidate(object value)
         {
             if (value == null)
-                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NullDirectoryAttributeCollection));
-
+            {
+                throw new ArgumentException(SR.NullDirectoryAttributeCollection);
+            }
             if (!(value is DirectoryAttributeModification))
-                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.InvalidValueType, "DirectoryAttributeModification"), "value");
+            {
+                throw new ArgumentException(SR.Format(SR.InvalidValueType, nameof(DirectoryAttributeModification)), nameof(value));
+            }
         }
     }
 }
-
