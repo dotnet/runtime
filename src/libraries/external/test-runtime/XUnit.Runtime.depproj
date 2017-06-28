@@ -74,7 +74,7 @@
       <Version>1.0.0-prerelease</Version>
     </PackageReference>
     <PackageReference Include="System.Drawing.Common.TestData">
-      <Version>1.0.1</Version>
+      <Version>1.0.2</Version>
     </PackageReference>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
