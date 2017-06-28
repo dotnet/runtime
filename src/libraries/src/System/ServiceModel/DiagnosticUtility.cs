@@ -19,27 +19,27 @@ namespace Microsoft.ServiceModel
 {
     internal static class DiagnosticUtility
     {
-        static object lockObject = new object();
-        private static ExceptionUtility exceptionUtility;
+        private static object s_lockObject = new object();
+        private static ExceptionUtility s_exceptionUtility;
 
         internal static ExceptionUtility ExceptionUtility
         {
             get
             {
-                return DiagnosticUtility.exceptionUtility ?? GetExceptionUtility();
+                return DiagnosticUtility.s_exceptionUtility ?? GetExceptionUtility();
             }
         }
 
-        static ExceptionUtility GetExceptionUtility()
+        private static ExceptionUtility GetExceptionUtility()
         {
-            lock (DiagnosticUtility.lockObject)
+            lock (DiagnosticUtility.s_lockObject)
             {
-                if (DiagnosticUtility.exceptionUtility == null)
+                if (DiagnosticUtility.s_exceptionUtility == null)
                 {
-                    DiagnosticUtility.exceptionUtility = new ExceptionUtility();
+                    DiagnosticUtility.s_exceptionUtility = new ExceptionUtility();
                 }
             }
-            return DiagnosticUtility.exceptionUtility;
+            return DiagnosticUtility.s_exceptionUtility;
         }
 
         // TODO, mconnew: Tracing - need to wire this in to the tracing infrastructure

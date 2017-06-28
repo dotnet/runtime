@@ -11,7 +11,7 @@ namespace Microsoft.ServiceModel.Syndication
     using System.Xml.Schema;
     using System.Xml.Serialization;
 
-    static class TextSyndicationContentKindHelper
+    internal static class TextSyndicationContentKindHelper
     {
         public static bool IsDefined(TextSyndicationContentKind kind)
         {
