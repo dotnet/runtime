@@ -89,8 +89,8 @@ namespace System.DirectoryServices.Protocols
         public LdapConnection(LdapDirectoryIdentifier identifier, NetworkCredential credential, AuthType authType)
         {
             _fd = new GetLdapResponseCallback(ConstructResponse);
-            directoryIdentifier = identifier;
-            directoryCredential = (credential != null) ? new NetworkCredential(credential.UserName, credential.Password, credential.Domain) : null;
+            _directoryIdentifier = identifier;
+            _directoryCredential = (credential != null) ? new NetworkCredential(credential.UserName, credential.Password, credential.Domain) : null;
 
             _connectionAuthType = authType;
 
@@ -98,7 +98,7 @@ namespace System.DirectoryServices.Protocols
                 throw new InvalidEnumArgumentException("authType", (int)authType, typeof(AuthType));
 
             // if user wants to do anonymous bind, but specifies credential, error out
-            if (AuthType == AuthType.Anonymous && (directoryCredential != null && ((directoryCredential.Password != null && directoryCredential.Password.Length != 0) || (directoryCredential.UserName != null && directoryCredential.UserName.Length != 0))))
+            if (AuthType == AuthType.Anonymous && (_directoryCredential != null && ((_directoryCredential.Password != null && _directoryCredential.Password.Length != 0) || (_directoryCredential.UserName != null && _directoryCredential.UserName.Length != 0))))
                 throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.InvalidAuthCredential));
 
             Init();
@@ -108,10 +108,10 @@ namespace System.DirectoryServices.Protocols
 
         internal LdapConnection(LdapDirectoryIdentifier identifier, NetworkCredential credential, AuthType authType, IntPtr handle)
         {
-            directoryIdentifier = identifier;
+            _directoryIdentifier = identifier;
             needDispose = false;
             ldapHandle = new ConnectionHandle(handle, needDispose);
-            directoryCredential = credential;
+            _directoryCredential = credential;
             _connectionAuthType = authType;
             _options = new LdapSessionOptions(this);
             clientCertificateRoutine = new QUERYCLIENTCERT(ProcessClientCertificate);
@@ -126,7 +126,7 @@ namespace System.DirectoryServices.Protocols
         {
             get
             {
-                return connectionTimeOut;
+                return _connectionTimeOut;
             }
             set
             {
@@ -139,7 +139,7 @@ namespace System.DirectoryServices.Protocols
                 if (value.TotalSeconds > Int32.MaxValue)
                     throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.TimespanExceedMax), "value");
 
-                connectionTimeOut = value;
+                _connectionTimeOut = value;
             }
         }
 
@@ -176,10 +176,10 @@ namespace System.DirectoryServices.Protocols
         {
             set
             {
-                if (_bounded && !SameCredential(directoryCredential, value))
+                if (_bounded && !SameCredential(_directoryCredential, value))
                     _needRebind = true;
 
-                directoryCredential = (value != null) ? new NetworkCredential(value.UserName, value.Password, value.Domain) : null;
+                _directoryCredential = (value != null) ? new NetworkCredential(value.UserName, value.Password, value.Domain) : null;
             }
         }
 
@@ -214,7 +214,7 @@ namespace System.DirectoryServices.Protocols
         internal void Init()
         {
             string hostname = null;
-            string[] servers = (directoryIdentifier == null ? null : ((LdapDirectoryIdentifier)directoryIdentifier).Servers);
+            string[] servers = (_directoryIdentifier == null ? null : ((LdapDirectoryIdentifier)_directoryIdentifier).Servers);
             if (servers != null && servers.Length != 0)
             {
                 StringBuilder temp = new StringBuilder(200);
@@ -232,13 +232,13 @@ namespace System.DirectoryServices.Protocols
             }
 
             // user wants to setup a connectionless session with server
-            if (((LdapDirectoryIdentifier)directoryIdentifier).Connectionless == true)
+            if (((LdapDirectoryIdentifier)_directoryIdentifier).Connectionless == true)
             {
-                ldapHandle = new ConnectionHandle(Wldap32.cldap_open(hostname, ((LdapDirectoryIdentifier)directoryIdentifier).PortNumber), needDispose);
+                ldapHandle = new ConnectionHandle(Wldap32.cldap_open(hostname, ((LdapDirectoryIdentifier)_directoryIdentifier).PortNumber), needDispose);
             }
             else
             {
-                ldapHandle = new ConnectionHandle(Wldap32.ldap_init(hostname, ((LdapDirectoryIdentifier)directoryIdentifier).PortNumber), needDispose);
+                ldapHandle = new ConnectionHandle(Wldap32.ldap_init(hostname, ((LdapDirectoryIdentifier)_directoryIdentifier).PortNumber), needDispose);
             }
 
             // create a WeakReference object with the target of ldapHandle and put it into our handle table.
@@ -254,7 +254,7 @@ namespace System.DirectoryServices.Protocols
         public override DirectoryResponse SendRequest(DirectoryRequest request)
         {
             // no request specific timeout is specified, use the connection timeout
-            return SendRequest(request, connectionTimeOut);
+            return SendRequest(request, _connectionTimeOut);
         }
 
         public DirectoryResponse SendRequest(DirectoryRequest request, TimeSpan requestTimeout)
@@ -305,7 +305,7 @@ namespace System.DirectoryServices.Protocols
 
         public IAsyncResult BeginSendRequest(DirectoryRequest request, PartialResultProcessing partialMode, AsyncCallback callback, object state)
         {
-            return BeginSendRequest(request, connectionTimeOut, partialMode, callback, state);
+            return BeginSendRequest(request, _connectionTimeOut, partialMode, callback, state);
         }
 
         public IAsyncResult BeginSendRequest(DirectoryRequest request, TimeSpan requestTimeout, PartialResultProcessing partialMode, AsyncCallback callback, object state)
@@ -948,7 +948,7 @@ namespace System.DirectoryServices.Protocols
 
             // connect explicitly to the server
             LDAP_TIMEVAL timeout = new LDAP_TIMEVAL();
-            timeout.tv_sec = (int)(connectionTimeOut.Ticks / TimeSpan.TicksPerSecond);
+            timeout.tv_sec = (int)(_connectionTimeOut.Ticks / TimeSpan.TicksPerSecond);
             Debug.Assert(!ldapHandle.IsInvalid);
             error = Wldap32.ldap_connect(ldapHandle, timeout);
             // failed, throw exception
@@ -966,7 +966,7 @@ namespace System.DirectoryServices.Protocols
 
         public void Bind()
         {
-            BindHelper(directoryCredential, false /* no need to reset credential */);
+            BindHelper(_directoryCredential, false /* no need to reset credential */);
         }
 
         public void Bind(NetworkCredential newCredential)
@@ -997,9 +997,9 @@ namespace System.DirectoryServices.Protocols
 
             // set the credential
             if (needSetCredential)
-                directoryCredential = tempCredential = (newCredential != null ? new NetworkCredential(newCredential.UserName, newCredential.Password, newCredential.Domain) : null);
+                _directoryCredential = tempCredential = (newCredential != null ? new NetworkCredential(newCredential.UserName, newCredential.Password, newCredential.Domain) : null);
             else
-                tempCredential = directoryCredential;
+                tempCredential = _directoryCredential;
 
             // connect to the server first
             if (!_connected)
@@ -1399,8 +1399,8 @@ namespace System.DirectoryServices.Protocols
                                         }
                                     }
 
-                                    ((ExtendedResponse)response).name = name;
-                                    ((ExtendedResponse)response).value = requestValueArray;
+                                    ((ExtendedResponse)response).ResponseName = name;
+                                    ((ExtendedResponse)response).ResponseValue = requestValueArray;
                                 }
                             }
                         }
@@ -1445,8 +1445,8 @@ namespace System.DirectoryServices.Protocols
                                 referenceMessage = Wldap32.ldap_next_reference(ldapHandle, referenceMessage);
                             }
 
-                            ((SearchResponse)response).SetEntries(searchResultEntries);
-                            ((SearchResponse)response).SetReferences(searchResultReferences);
+                            ((SearchResponse)response).Entries = searchResultEntries;
+                            ((SearchResponse)response).References = searchResultReferences;
                         }
 
                         if (resulterror != (int)ResultCode.Success && resulterror != (int)ResultCode.CompareFalse && resulterror != (int)ResultCode.CompareTrue && resulterror != (int)ResultCode.Referral && resulterror != (int)ResultCode.ReferralV2)
@@ -1674,7 +1674,7 @@ namespace System.DirectoryServices.Protocols
         internal DirectoryAttribute ConstructAttribute(IntPtr entryMessage, IntPtr attributeName)
         {
             DirectoryAttribute attribute = new DirectoryAttribute();
-            attribute.isSearchResult = true;
+            attribute._isSearchResult = true;
 
             // get name
             string name = Marshal.PtrToStringUni(attributeName);

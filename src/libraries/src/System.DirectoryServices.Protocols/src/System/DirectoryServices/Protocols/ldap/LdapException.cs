@@ -2,14 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
+using System.Runtime.Serialization;
+
 namespace System.DirectoryServices.Protocols
 {
-    using System;
-    using System.Collections;
-    using System.Globalization;
-    using System.Runtime.Serialization;
-    using System.Security.Permissions;
-
     internal enum LdapError
     {
         IsLeaf = 0x23,
@@ -36,40 +33,34 @@ namespace System.DirectoryServices.Protocols
 
     internal class LdapErrorMappings
     {
-        private static Hashtable s_resultCodeHash = null;
-
-        static LdapErrorMappings()
+        private static readonly Dictionary<LdapError, string> s_resultCodeMapping = new Dictionary<LdapError, string>(capacity: 20)
         {
-            s_resultCodeHash = new Hashtable();
+            { LdapError.IsLeaf, SR.LDAP_IS_LEAF },
+            { LdapError.InvalidCredentials, SR.LDAP_INVALID_CREDENTIALS },
+            { LdapError.ServerDown, SR.LDAP_SERVER_DOWN },
+            { LdapError.LocalError, SR.LDAP_LOCAL_ERROR },
+            { LdapError.EncodingError, SR.LDAP_ENCODING_ERROR },
+            { LdapError.DecodingError, SR.LDAP_DECODING_ERROR },
+            { LdapError.TimeOut, SR.LDAP_TIMEOUT },
+            { LdapError.AuthUnknown, SR.LDAP_AUTH_UNKNOWN },
+            { LdapError.FilterError, SR.LDAP_FILTER_ERROR },
+            { LdapError.UserCancelled, SR.LDAP_USER_CANCELLED },
+            { LdapError.ParameterError, SR.LDAP_PARAM_ERROR },
+            { LdapError.NoMemory, SR.LDAP_NO_MEMORY },
+            { LdapError.ConnectError, SR.LDAP_CONNECT_ERROR },
+            { LdapError.NotSupported, SR.LDAP_NOT_SUPPORTED },
+            { LdapError.NoResultsReturned, SR.LDAP_NO_RESULTS_RETURNED },
+            { LdapError.ControlNotFound, SR.LDAP_CONTROL_NOT_FOUND },
+            { LdapError.MoreResults, SR.LDAP_MORE_RESULTS_TO_RETURN },
+            { LdapError.ClientLoop, SR.LDAP_CLIENT_LOOP },
+            { LdapError.ReferralLimitExceeded, SR.LDAP_REFERRAL_LIMIT_EXCEEDED },
+            { LdapError.SendTimeOut, SR.LDAP_SEND_TIMEOUT }
+        };
 
-            s_resultCodeHash.Add(LdapError.IsLeaf, String.Format(CultureInfo.CurrentCulture, SR.LDAP_IS_LEAF));
-            s_resultCodeHash.Add(LdapError.InvalidCredentials, String.Format(CultureInfo.CurrentCulture, SR.LDAP_INVALID_CREDENTIALS));
-            s_resultCodeHash.Add(LdapError.ServerDown, String.Format(CultureInfo.CurrentCulture, SR.LDAP_SERVER_DOWN));
-            s_resultCodeHash.Add(LdapError.LocalError, String.Format(CultureInfo.CurrentCulture, SR.LDAP_LOCAL_ERROR));
-            s_resultCodeHash.Add(LdapError.EncodingError, String.Format(CultureInfo.CurrentCulture, SR.LDAP_ENCODING_ERROR));
-            s_resultCodeHash.Add(LdapError.DecodingError, String.Format(CultureInfo.CurrentCulture, SR.LDAP_DECODING_ERROR));
-            s_resultCodeHash.Add(LdapError.TimeOut, String.Format(CultureInfo.CurrentCulture, SR.LDAP_TIMEOUT));
-            s_resultCodeHash.Add(LdapError.AuthUnknown, String.Format(CultureInfo.CurrentCulture, SR.LDAP_AUTH_UNKNOWN));
-            s_resultCodeHash.Add(LdapError.FilterError, String.Format(CultureInfo.CurrentCulture, SR.LDAP_FILTER_ERROR));
-            s_resultCodeHash.Add(LdapError.UserCancelled, String.Format(CultureInfo.CurrentCulture, SR.LDAP_USER_CANCELLED));
-            s_resultCodeHash.Add(LdapError.ParameterError, String.Format(CultureInfo.CurrentCulture, SR.LDAP_PARAM_ERROR));
-            s_resultCodeHash.Add(LdapError.NoMemory, String.Format(CultureInfo.CurrentCulture, SR.LDAP_NO_MEMORY));
-            s_resultCodeHash.Add(LdapError.ConnectError, String.Format(CultureInfo.CurrentCulture, SR.LDAP_CONNECT_ERROR));
-            s_resultCodeHash.Add(LdapError.NotSupported, String.Format(CultureInfo.CurrentCulture, SR.LDAP_NOT_SUPPORTED));
-            s_resultCodeHash.Add(LdapError.NoResultsReturned, String.Format(CultureInfo.CurrentCulture, SR.LDAP_NO_RESULTS_RETURNED));
-            s_resultCodeHash.Add(LdapError.ControlNotFound, String.Format(CultureInfo.CurrentCulture, SR.LDAP_CONTROL_NOT_FOUND));
-            s_resultCodeHash.Add(LdapError.MoreResults, String.Format(CultureInfo.CurrentCulture, SR.LDAP_MORE_RESULTS_TO_RETURN));
-            s_resultCodeHash.Add(LdapError.ClientLoop, String.Format(CultureInfo.CurrentCulture, SR.LDAP_CLIENT_LOOP));
-            s_resultCodeHash.Add(LdapError.ReferralLimitExceeded, String.Format(CultureInfo.CurrentCulture, SR.LDAP_REFERRAL_LIMIT_EXCEEDED));
-            s_resultCodeHash.Add(LdapError.SendTimeOut, String.Format(CultureInfo.CurrentCulture, SR.LDAP_SEND_TIMEOUT));
-        }
-
-        /// <summary>
-        /// This function maps a string containing a DSML v2 errorResult into a LDAPResultCode.
-        /// </summary>
-		static public string MapResultCode(int errorCode)
+        public static string MapResultCode(int errorCode)
         {
-            return (string)s_resultCodeHash[(LdapError)errorCode];
+            s_resultCodeMapping.TryGetValue((LdapError)errorCode, out string errorMessage);
+            return errorMessage;
         }
     }
 
@@ -86,7 +77,7 @@ namespace System.DirectoryServices.Protocols
 
         public LdapException(string message, Exception inner) : base(message, inner) { }
 
-        public LdapException(int errorCode) : base(String.Format(CultureInfo.CurrentCulture, SR.DefaultLdapError))
+        public LdapException(int errorCode) : base(SR.DefaultLdapError)
         {
             _errorCode = errorCode;
         }

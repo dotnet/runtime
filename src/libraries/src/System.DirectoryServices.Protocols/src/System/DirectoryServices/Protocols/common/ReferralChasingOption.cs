@@ -13,4 +13,3 @@ namespace System.DirectoryServices.Protocols
         All = Subordinate | External
     }
 }
-

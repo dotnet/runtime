@@ -173,7 +173,7 @@ namespace System.DirectoryServices.Protocols
                         asyncResult.response = response;
 
                     // set the response back to the exception so it holds all the results up to now
-                    ((DirectoryOperationException)e).response = asyncResult.response;
+                    ((DirectoryOperationException)e).Response = asyncResult.response;
                 }
                 else if (e is LdapException)
                 {
