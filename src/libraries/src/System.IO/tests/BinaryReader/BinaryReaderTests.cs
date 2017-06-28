@@ -115,7 +115,7 @@ namespace System.IO.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Difference in behavior that added extra checks to BinaryReader/Writer buffers on .Net Core")]
-        [ActiveIssue(20753, TargetFrameworkMonikers.UapAot)]
+        [ActiveIssue(21645, TargetFrameworkMonikers.UapAot)] // BinaryReader in CoreRT needs updating
         public void Read_InvalidEncoding()
         {
             using (var str = CreateStream())
