@@ -3550,6 +3550,16 @@ static int ComputeAvailableSrcCount(GenTree* node)
 }
 #endif // DEBUG
 
+static GenTree* GetFirstOperand(GenTree* node)
+{
+    GenTree* firstOperand = nullptr;
+    node->VisitOperands([&firstOperand](GenTree* operand) -> GenTree::VisitResult {
+        firstOperand = operand;
+        return GenTree::VisitResult::Abort;
+    });
+    return firstOperand;
+}
+
 void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
                                           BasicBlock*               block,
                                           LocationInfoListNodePool& listNodePool,
@@ -3686,12 +3696,11 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
 
         // Contained nodes map to the concatenated lists of their operands.
         LocationInfoList locationInfoList;
-        for (GenTree* op : tree->Operands())
-        {
+        tree->VisitOperands([&](GenTree* op) -> GenTree::VisitResult {
             if (!op->gtLsraInfo.definesAnyRegisters)
             {
                 assert(ComputeOperandDstCount(op) == 0);
-                continue;
+                return GenTree::VisitResult::Continue;
             }
 
             LocationInfoList operandList;
@@ -3699,7 +3708,8 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
             assert(removed);
 
             locationInfoList.Append(operandList);
-        }
+            return GenTree::VisitResult::Continue;
+        });
 
         if (!locationInfoList.IsEmpty())
         {
@@ -3749,7 +3759,7 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
             {
                 // Get the location info for the register defined by the first operand.
                 LocationInfoList operandDefs;
-                bool             found = operandToLocationInfoMap.TryGetValue(*(tree->OperandsBegin()), &operandDefs);
+                bool             found = operandToLocationInfoMap.TryGetValue(GetFirstOperand(tree), &operandDefs);
                 assert(found);
 
                 // Since we only expect to consume one register, we should only have a single register to
@@ -3896,7 +3906,7 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
 
         // Get the register information for the first operand of the node.
         LocationInfoList operandDefs;
-        bool             found = operandToLocationInfoMap.TryGetValue(*(tree->OperandsBegin()), &operandDefs);
+        bool             found = operandToLocationInfoMap.TryGetValue(GetFirstOperand(tree), &operandDefs);
         assert(found);
 
         // Preference the destination to the interval of the first register defined by the first operand.
@@ -3921,29 +3931,21 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
     int internalCount = buildInternalRegisterDefsForNode(tree, currentLoc, internalRefs DEBUG_ARG(minRegCount));
 
     // pop all ref'd tree temps
-    LocationInfoList operandDefs;
-    for (GenTree* operand : tree->Operands())
-    {
+    tree->VisitOperands([&](GenTree* operand) -> GenTree::VisitResult {
         // Skip operands that do not define any registers, whether directly or indirectly.
         if (!operand->gtLsraInfo.definesAnyRegisters)
         {
-            continue;
-        }
-
-        // If we have already processed a previous operand, return its `LocationInfo` list to the
-        // pool.
-        if (!operandDefs.IsEmpty())
-        {
-            assert(!operandDefs.IsEmpty());
-            listNodePool.ReturnNodes(operandDefs);
+            return GenTree::VisitResult::Continue;
         }
 
         // Remove the list of registers defined by the current operand from the map. Note that this
         // is only correct because tree nodes are singly-used: if this property ever changes (e.g.
         // if tree nodes are eventually allowed to be multiply-used), then the removal is only
         // correct at the last use.
+        LocationInfoList operandDefs;
         bool removed = operandToLocationInfoMap.TryRemove(operand, &operandDefs);
         assert(removed);
+        assert(!operandDefs.IsEmpty());
 
         LocationInfoListNode* const operandDefsEnd = operandDefs.End();
         for (LocationInfoListNode* operandDefsIterator = operandDefs.Begin(); operandDefsIterator != operandDefsEnd; operandDefsIterator = operandDefsIterator->Next())
@@ -4068,13 +4070,12 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
                 pos->setAllocateIfProfitable(true);
             }
         }
-    }
-    JITDUMP("\n");
 
-    if (!operandDefs.IsEmpty())
-    {
         listNodePool.ReturnNodes(operandDefs);
-    }
+
+        return GenTree::VisitResult::Continue;
+    });
+    JITDUMP("\n");
 
     buildInternalRegisterUsesForNode(tree, currentLoc, internalRefs, internalCount DEBUG_ARG(minRegCount));
 
