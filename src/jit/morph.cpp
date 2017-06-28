@@ -1439,6 +1439,13 @@ void fgArgInfo::ArgsComplete()
             continue;
 #endif
         }
+#if defined(_TARGET_ARM_) && !defined(LEGACY_BACKEND)
+        else if (curArgTabEntry->isSplit)
+        {
+            hasStructRegArg = true;
+            hasStackArgs    = true;
+        }
+#endif
         else // we have a register argument, next we look for a struct type.
         {
             if (varTypeIsStruct(argx) FEATURE_UNIX_AMD64_STRUCT_PASSING_ONLY(|| curArgTabEntry->isStruct))
@@ -1557,6 +1564,12 @@ void fgArgInfo::ArgsComplete()
                 {
                     prevArgTabEntry->needPlace = true;
                 }
+#if defined(_TARGET_ARM_) && !defined(LEGACY_BACKEND)
+                else if (prevArgTabEntry->isSplit)
+                {
+                    prevArgTabEntry->needPlace = true;
+                }
+#endif
 #endif
             }
         }
@@ -1565,9 +1578,6 @@ void fgArgInfo::ArgsComplete()
 #if FEATURE_MULTIREG_ARGS
         // For RyuJIT backend we will expand a Multireg arg into a GT_FIELD_LIST
         // with multiple indirections, so here we consider spilling it into a tmp LclVar.
-        //
-        // Note that Arm32 is a LEGACY_BACKEND and it defines FEATURE_MULTIREG_ARGS
-        // so we skip this for ARM32 until it is ported to use RyuJIT backend
         //
 
         bool isMultiRegArg = (curArgTabEntry->numRegs > 1);
@@ -1579,6 +1589,10 @@ void fgArgInfo::ArgsComplete()
                 // Spill multireg struct arguments that have Assignments or Calls embedded in them
                 curArgTabEntry->needTmp = true;
             }
+#ifndef _TARGET_ARM_
+            // TODO-Arm: This optimization is not implemented for ARM32
+            // so we skip this for ARM32 until it is ported to use RyuJIT backend
+            //
             else
             {
                 // We call gtPrepareCost to measure the cost of evaluating this tree
@@ -1610,7 +1624,6 @@ void fgArgInfo::ArgsComplete()
                                 curArgTabEntry->needTmp = true;
                             }
                             break;
-
                         case 11:
                         case 13:
                         case 14:
@@ -1632,6 +1645,7 @@ void fgArgInfo::ArgsComplete()
                     }
                 }
             }
+#endif // !_TARGET_ARM_
         }
 #endif // FEATURE_MULTIREG_ARGS
 #endif // LEGACY_BACKEND
@@ -3415,11 +3429,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     size = (unsigned)(roundUp(info.compCompHnd->getClassSize(argx->gtArgPlace.gtArgPlaceClsHnd),
                                               TARGET_POINTER_SIZE)) /
                            TARGET_POINTER_SIZE;
-                    if (isHfaArg)
-                    {
-                        hasMultiregStructArgs = true;
-                    }
-                    else if (size > 1 && size <= 4)
+                    if (isHfaArg || size > 1)
                     {
                         hasMultiregStructArgs = true;
                     }
@@ -3806,18 +3816,10 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     hasMultiregStructArgs = true;
                 }
 #elif defined(_TARGET_ARM_)
-                // TODO-Arm: Need to handle the case
-                // where structs passed by value can be split between registers and stack.
-                if (size > 1 && size <= 4)
+                if (size > 1)
                 {
                     hasMultiregStructArgs = true;
                 }
-#ifndef LEGACY_BACKEND
-                else if (size > 4 && passUsingIntRegs)
-                {
-                    NYI_ARM("Struct can be split between registers and stack");
-                }
-#endif // !LEGACY_BACKEND
 #endif // _TARGET_ARM_
             }
 
@@ -4110,9 +4112,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 #ifdef _TARGET_ARM_
                         if (fltArgRegNum > MAX_FLOAT_REG_ARG)
                         {
-#ifndef LEGACY_BACKEND
-                            NYI_ARM("Struct split between float registers and stack");
-#endif // !LEGACY_BACKEND
                             // This indicates a partial enregistration of a struct type
                             assert(varTypeIsStruct(argx));
                             unsigned numRegsPartial = size - (fltArgRegNum - MAX_FLOAT_REG_ARG);
@@ -4142,9 +4141,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 #ifdef _TARGET_ARM_
                         if (intArgRegNum > MAX_REG_ARG)
                         {
-#ifndef LEGACY_BACKEND
-                            NYI_ARM("Struct split between integer registers and stack");
-#endif // !LEGACY_BACKEND
                             // This indicates a partial enregistration of a struct type
                             assert((isStructArg) || argx->OperIsFieldList() || argx->OperIsCopyBlkOp() ||
                                    (argx->gtOper == GT_COMMA && (args->gtFlags & GTF_ASG)));
@@ -4766,6 +4762,30 @@ GenTreePtr Compiler::fgMorphMultiregStructArg(GenTreePtr arg, fgArgTabEntryPtr f
 
 #ifndef _TARGET_ARMARCH_
     NYI("fgMorphMultiregStructArg requires implementation for this target");
+#endif
+
+#ifdef _TARGET_ARM_
+    if (fgEntryPtr->isSplit)
+    {
+        if (fgEntryPtr->isHfaRegArg)
+        {
+            // We cannot handle split struct morphed to GT_FIELD_LIST yet
+            NYI_ARM("Struct split between float registers and stack");
+        }
+        else if (fgEntryPtr->numSlots + fgEntryPtr->numRegs > 4)
+        {
+            return arg;
+        }
+        else
+        {
+            // We cannot handle split struct morphed to GT_FIELD_LIST yet
+            NYI_ARM("Struct split between integer registers and stack");
+        }
+    }
+    else if (!fgEntryPtr->isHfaRegArg && fgEntryPtr->numSlots > 4)
+    {
+        return arg;
+    }
 #endif
 
 #if FEATURE_MULTIREG_ARGS
