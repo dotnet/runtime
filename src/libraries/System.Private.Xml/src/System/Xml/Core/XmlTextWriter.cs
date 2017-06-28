@@ -10,6 +10,7 @@ using System.Text;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.Versioning;
+using System.Threading;
 
 namespace System.Xml
 {
@@ -138,7 +139,14 @@ namespace System.Xml
         private Formatting _formatting;
         private bool _indented; // perf - faster to check a boolean.
         private int _indentation;
-        private char _indentChar;
+        private char[] _indentChars;
+        private static char[] s_defaultIndentChars = CreateDefaultIndentChars();
+
+        // This method is needed as the native code compiler fails when this initialization is inline
+        private static char[] CreateDefaultIndentChars()
+        {
+            return new string(DefaultIndentChar, IndentArrayLength).ToCharArray();
+        }
 
         // element stack
         private TagInfo[] _stack;
@@ -172,6 +180,8 @@ namespace System.Xml
         //
         // Constants and constant tables
         //
+        private const int IndentArrayLength = 64;
+        private const char DefaultIndentChar = ' ';
         private const int NamespaceStackInitialSize = 8;
 #if DEBUG
         private const int MaxNamespacesWalkCount = 3;
@@ -253,7 +263,8 @@ namespace System.Xml
             _namespaces = true;
             _formatting = Formatting.None;
             _indentation = 2;
-            _indentChar = ' ';
+            _indentChars = s_defaultIndentChars;
+
             // namespaces
             _nsStack = new Namespace[NamespaceStackInitialSize];
             _nsTop = -1;
@@ -345,8 +356,25 @@ namespace System.Xml
         // Gets or sets which character to use for indenting when Formatting is set to "Indented".
         public char IndentChar
         {
-            get { return _indentChar; }
-            set { _indentChar = value; }
+            get { return _indentChars[0]; }
+            set
+            {
+                if (value == DefaultIndentChar)
+                {
+                    _indentChars = s_defaultIndentChars;
+                    return;
+                }
+
+                if (ReferenceEquals(_indentChars, s_defaultIndentChars))
+                {
+                    _indentChars = new char[IndentArrayLength];
+                }
+
+                for (int i = 0; i < IndentArrayLength; i++)
+                {
+                    _indentChars[i] = value;
+                }
+            }
         }
 
         // Gets or sets which character to use to quote attribute values.
@@ -1294,6 +1322,8 @@ namespace System.Xml
             }
         }
 
+        private static readonly char[] s_selfClosingTagOpen = new char[] { '<', '/' };
+
         private void InternalWriteEndElement(bool longFormat)
         {
             try
@@ -1310,8 +1340,7 @@ namespace System.Xml
                     {
                         Indent(true);
                     }
-                    _textWriter.Write('<');
-                    _textWriter.Write('/');
+                    _textWriter.Write(s_selfClosingTagOpen);
                     if (_namespaces && _stack[_top].prefix != null)
                     {
                         _textWriter.Write(_stack[_top].prefix);
@@ -1337,6 +1366,8 @@ namespace System.Xml
             }
         }
 
+        private static readonly char[] s_closeTagEnd = new char[] { ' ', '/', '>' };
+
         private void WriteEndStartTag(bool empty)
         {
             _xmlEncoder.StartAttribute(false);
@@ -1344,8 +1375,7 @@ namespace System.Xml
             {
                 if (!_nsStack[i].declared)
                 {
-                    _textWriter.Write(" xmlns");
-                    _textWriter.Write(':');
+                    _textWriter.Write(" xmlns:");
                     _textWriter.Write(_nsStack[i].prefix);
                     _textWriter.Write('=');
                     _textWriter.Write(_quoteChar);
@@ -1357,8 +1387,7 @@ namespace System.Xml
             if ((_stack[_top].defaultNs != _stack[_top - 1].defaultNs) &&
                 (_stack[_top].defaultNsState == NamespaceState.DeclaredButNotWrittenOut))
             {
-                _textWriter.Write(" xmlns");
-                _textWriter.Write('=');
+                _textWriter.Write(" xmlns=");
                 _textWriter.Write(_quoteChar);
                 _xmlEncoder.Write(_stack[_top].defaultNs);
                 _textWriter.Write(_quoteChar);
@@ -1367,9 +1396,12 @@ namespace System.Xml
             _xmlEncoder.EndAttribute();
             if (empty)
             {
-                _textWriter.Write(" /");
+                _textWriter.Write(s_closeTagEnd);
             }
-            _textWriter.Write('>');
+            else
+            {
+                _textWriter.Write('>');
+            }
         }
 
         private void WriteEndAttributeQuote()
@@ -1393,10 +1425,18 @@ namespace System.Xml
             else if (!_stack[_top].mixed)
             {
                 _textWriter.WriteLine();
-                int i = beforeEndElement ? _top - 1 : _top;
-                for (i *= _indentation; i > 0; i--)
+                int i = (beforeEndElement ? _top - 1 : _top) * _indentation;
+                if(i <= _indentChars.Length)
                 {
-                    _textWriter.Write(_indentChar);
+                    _textWriter.Write(_indentChars, 0, i);
+                }
+                else
+                {
+                    while(i > 0)
+                    {
+                        _textWriter.Write(_indentChars, 0, Math.Min(i, _indentChars.Length));
+                        i -= _indentChars.Length;
+                    }
                 }
             }
         }

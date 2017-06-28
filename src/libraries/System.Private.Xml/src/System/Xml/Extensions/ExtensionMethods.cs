@@ -40,16 +40,12 @@ namespace System.Xml.Extensions
 
         internal static ConstructorInfo GetConstructor(this Type type, BindingFlags bindingFlags, Type[] parameterTypes)
         {
-            var constructorInfos = type.GetConstructors(bindingFlags);
-            var constructorInfo = FilterMethodBases(constructorInfos.Cast<MethodBase>().ToArray(), parameterTypes, ".ctor");
-            return constructorInfo != null ? (ConstructorInfo)constructorInfo : null;
+            return type.GetConstructor(bindingFlags, null, parameterTypes, null);
         }
 
         internal static MethodInfo GetMethod(this Type type, string methodName, BindingFlags bindingFlags, Type[] parameterTypes)
         {
-            var methodInfos = type.GetMethods(bindingFlags);
-            var methodInfo = FilterMethodBases(methodInfos.Cast<MethodBase>().ToArray(), parameterTypes, methodName);
-            return methodInfo != null ? (MethodInfo)methodInfo : null;
+            return type.GetMethod(methodName, bindingFlags, null, parameterTypes, null);
         }
 
 #if XMLSERIALIZERGENERATOR

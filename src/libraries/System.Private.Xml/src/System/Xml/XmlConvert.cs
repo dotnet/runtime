@@ -37,6 +37,7 @@ namespace System.Xml
         // Static fields with implicit initialization
         //
         private static XmlCharType s_xmlCharType = XmlCharType.Instance;
+        private static CultureInfo s_invariantCultureInfo = CultureInfo.InvariantCulture;
 
         internal static char[] crt = new char[] { '\n', '\r', '\t' };
 
@@ -688,7 +689,7 @@ namespace System.Xml
         [CLSCompliant(false)]
         public static string ToString(SByte value)
         {
-            return value.ToString(null, NumberFormatInfo.InvariantInfo);
+            return value.ToString(null, s_invariantCultureInfo);
         }
 
         ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString4"]/*' />
@@ -697,7 +698,7 @@ namespace System.Xml
         /// </devdoc>
         public static string ToString(Int16 value)
         {
-            return value.ToString(null, NumberFormatInfo.InvariantInfo);
+            return value.ToString(null, s_invariantCultureInfo);
         }
 
         ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString5"]/*' />
@@ -706,7 +707,7 @@ namespace System.Xml
         /// </devdoc>
         public static string ToString(Int32 value)
         {
-            return value.ToString(null, NumberFormatInfo.InvariantInfo);
+            return value.ToString(null, s_invariantCultureInfo);
         }
 
         ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString15"]/*' />
@@ -715,7 +716,7 @@ namespace System.Xml
         /// </devdoc>
         public static string ToString(Int64 value)
         {
-            return value.ToString(null, NumberFormatInfo.InvariantInfo);
+            return value.ToString(null, s_invariantCultureInfo);
         }
 
         ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString6"]/*' />
@@ -724,7 +725,7 @@ namespace System.Xml
         /// </devdoc>
         public static string ToString(Byte value)
         {
-            return value.ToString(null, NumberFormatInfo.InvariantInfo);
+            return value.ToString(null, s_invariantCultureInfo);
         }
 
         ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString7"]/*' />
@@ -734,7 +735,7 @@ namespace System.Xml
         [CLSCompliant(false)]
         public static string ToString(UInt16 value)
         {
-            return value.ToString(null, NumberFormatInfo.InvariantInfo);
+            return value.ToString(null, s_invariantCultureInfo);
         }
 
         ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString8"]/*' />
@@ -744,7 +745,7 @@ namespace System.Xml
         [CLSCompliant(false)]
         public static string ToString(UInt32 value)
         {
-            return value.ToString(null, NumberFormatInfo.InvariantInfo);
+            return value.ToString(null, s_invariantCultureInfo);
         }
 
         ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString16"]/*' />
@@ -754,7 +755,7 @@ namespace System.Xml
         [CLSCompliant(false)]
         public static string ToString(UInt64 value)
         {
-            return value.ToString(null, NumberFormatInfo.InvariantInfo);
+            return value.ToString(null, s_invariantCultureInfo);
         }
 
         ///<include file='doc\XmlConvert.uex' path='docs/doc[@for="XmlConvert.ToString9"]/*' />
