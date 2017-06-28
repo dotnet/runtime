@@ -328,6 +328,9 @@ void GenTree::InitNodeSize()
     // TODO-Throughput: This should not need to be a large node. The object info should be
     // obtained from the child node.
     GenTree::s_gtNodeSizes[GT_PUTARG_STK]       = TREE_NODE_SZ_LARGE;
+#if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
+    GenTree::s_gtNodeSizes[GT_PUTARG_SPLIT]     = TREE_NODE_SZ_LARGE;
+#endif
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 
     assert(GenTree::s_gtNodeSizes[GT_RETURN] == GenTree::s_gtNodeSizes[GT_ASG]);
@@ -390,6 +393,9 @@ void GenTree::InitNodeSize()
     // TODO-Throughput: This should not need to be a large node. The object info should be
     // obtained from the child node.
     static_assert_no_msg(sizeof(GenTreePutArgStk)    <= TREE_NODE_SZ_LARGE);
+#if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
+    static_assert_no_msg(sizeof(GenTreePutArgSplit)  <= TREE_NODE_SZ_LARGE);
+#endif
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 
 #ifdef FEATURE_SIMD
@@ -1742,6 +1748,22 @@ regMaskTP GenTree::gtGetRegMask() const
                 }
             }
         }
+#if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
+        else if (OperIsPutArgSplit())
+        {
+            GenTree*            tree     = const_cast<GenTree*>(this);
+            GenTreePutArgSplit* splitArg = tree->AsPutArgSplit();
+            unsigned            regCount = splitArg->gtNumRegs;
+
+            resultMask = RBM_NONE;
+            for (unsigned i = 0; i < regCount; ++i)
+            {
+                regNumber reg = splitArg->GetRegNumByIdx(i);
+                assert(reg != REG_NA);
+                resultMask |= genRegMask(reg);
+            }
+        }
+#endif
         else
         {
             resultMask = genRegMask(gtRegNum);
@@ -9540,6 +9562,9 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_PHYSREGDST:
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
+#if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
+        case GT_PUTARG_SPLIT:
+#endif // !LEGACY_BACKEND && _TARGET_ARM_
         case GT_RETURNTRAP:
             m_edge = &m_node->AsUnOp()->gtOp1;
             assert(*m_edge != nullptr);
@@ -12128,6 +12153,68 @@ void Compiler::gtGetArgMsg(
         }
         else
         {
+#ifdef _TARGET_ARM_
+            if (curArgTabEntry->isSplit)
+            {
+                regNumber firstReg = curArgTabEntry->regNum;
+                if (listCount == -1)
+                {
+                    if (curArgTabEntry->numRegs == 1)
+                    {
+                        sprintf_s(bufp, bufLength, "arg%d %s out+%02x%c", argNum, compRegVarName(firstReg),
+                                  (curArgTabEntry->slotNum) * TARGET_POINTER_SIZE, 0);
+                    }
+                    else
+                    {
+                        regNumber lastReg   = REG_STK;
+                        char      separator = (curArgTabEntry->numRegs == 2) ? ',' : '-';
+                        if (curArgTabEntry->isHfaRegArg)
+                        {
+                            unsigned lastRegNum = genMapFloatRegNumToRegArgNum(firstReg) + curArgTabEntry->numRegs - 1;
+                            lastReg             = genMapFloatRegArgNumToRegNum(lastRegNum);
+                        }
+                        else
+                        {
+                            unsigned lastRegNum = genMapIntRegNumToRegArgNum(firstReg) + curArgTabEntry->numRegs - 1;
+                            lastReg             = genMapIntRegArgNumToRegNum(lastRegNum);
+                        }
+                        sprintf_s(bufp, bufLength, "arg%d %s%c%s out+%02x%c", argNum, compRegVarName(firstReg),
+                                  separator, compRegVarName(lastReg), (curArgTabEntry->slotNum) * TARGET_POINTER_SIZE,
+                                  0);
+                    }
+                }
+                else
+                {
+                    unsigned curArgNum = BAD_VAR_NUM;
+                    bool     isFloat   = curArgTabEntry->isHfaRegArg;
+                    if (isFloat)
+                    {
+                        curArgNum = genMapFloatRegNumToRegArgNum(firstReg) + listCount;
+                    }
+                    else
+                    {
+                        curArgNum = genMapIntRegNumToRegArgNum(firstReg) + listCount;
+                    }
+
+                    if (!isFloat && curArgNum < MAX_REG_ARG)
+                    {
+                        regNumber curReg = genMapIntRegArgNumToRegNum(curArgNum);
+                        sprintf_s(bufp, bufLength, "arg%d m%d %s%c", argNum, listCount, compRegVarName(curReg), 0);
+                    }
+                    else if (isFloat && curArgNum < MAX_FLOAT_REG_ARG)
+                    {
+                        regNumber curReg = genMapFloatRegArgNumToRegNum(curArgNum);
+                        sprintf_s(bufp, bufLength, "arg%d m%d %s%c", argNum, listCount, compRegVarName(curReg), 0);
+                    }
+                    else
+                    {
+                        unsigned stackSlot = listCount - curArgTabEntry->numRegs;
+                        sprintf_s(bufp, bufLength, "arg%d m%d out+%s%c", argNum, listCount, stackSlot, 0);
+                    }
+                }
+                return;
+            }
+#endif // _TARGET_ARM_
 #if FEATURE_FIXED_OUT_ARGS
             if (listCount == -1)
             {

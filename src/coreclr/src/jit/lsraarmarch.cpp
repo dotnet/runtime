@@ -582,6 +582,13 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
 #endif // _TARGET_ARM_
             }
         }
+#ifdef _TARGET_ARM_
+        else if (argNode->OperGet() == GT_PUTARG_SPLIT)
+        {
+            fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(call, argNode);
+            TreeNodeInfoInitPutArgSplit(argNode->AsPutArgSplit(), *info, curArgTabEntry);
+        }
+#endif
         else
         {
             TreeNodeInfoInitPutArgReg(argNode->AsUnOp(), curArgTabEntry->regNum, *info, false, &callHasFloatRegArgs);
@@ -612,6 +619,13 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
 
                 TreeNodeInfoInitPutArgStk(arg->AsPutArgStk(), curArgTabEntry);
             }
+#ifdef _TARGET_ARM_
+            else if (arg->OperGet() == GT_PUTARG_SPLIT)
+            {
+                fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(call, arg);
+                TreeNodeInfoInitPutArgSplit(arg->AsPutArgSplit(), *info, curArgTabEntry);
+            }
+#endif
             else
             {
                 TreeNodeInfo* argInfo = &(arg->gtLsraInfo);
@@ -722,6 +736,57 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode, fgArgTabEntr
 #endif // !_TARGET_ARM_
     }
 }
+
+#ifdef _TARGET_ARM_
+//------------------------------------------------------------------------
+// TreeNodeInfoInitPutArgSplit: Set the NodeInfo for a GT_PUTARG_SPLIT node
+//
+// Arguments:
+//    argNode - a GT_PUTARG_SPLIT node
+//
+// Return Value:
+//    None.
+//
+// Notes:
+//    Set the child node(s) to be contained
+//
+void Lowering::TreeNodeInfoInitPutArgSplit(GenTreePutArgSplit* argNode, TreeNodeInfo& info, fgArgTabEntryPtr argInfo)
+{
+    assert(argNode->gtOper == GT_PUTARG_SPLIT);
+
+    GenTreePtr putArgChild = argNode->gtOp.gtOp1;
+
+    // Initialize 'argNode' as not contained, as this is both the default case
+    //  and how MakeSrcContained expects to find things setup.
+    //
+    argNode->gtLsraInfo.srcCount = 1;
+    argNode->gtLsraInfo.dstCount = argInfo->numRegs;
+    info.srcCount += argInfo->numRegs;
+
+    regNumber argReg  = argInfo->regNum;
+    regMaskTP argMask = RBM_NONE;
+    for (unsigned i = 0; i < argInfo->numRegs; i++)
+    {
+        argMask |= genRegMask((regNumber)((unsigned)argReg + i));
+    }
+    argNode->gtLsraInfo.setDstCandidates(m_lsra, argMask);
+
+    assert(putArgChild->TypeGet() == TYP_STRUCT);
+    assert(putArgChild->OperGet() == GT_OBJ);
+    // We could use a ldr/str sequence so we need a internal register
+    argNode->gtLsraInfo.internalIntCount = 1;
+
+    GenTreePtr objChild = putArgChild->gtOp.gtOp1;
+    if (objChild->OperGet() == GT_LCL_VAR_ADDR)
+    {
+        // We will generate all of the code for the GT_PUTARG_SPLIT, the GT_OBJ and the GT_LCL_VAR_ADDR
+        // as one contained operation
+        //
+        MakeSrcContained(putArgChild, objChild);
+    }
+    MakeSrcContained(argNode, putArgChild);
+}
+#endif // _TARGET_ARM_
 
 //------------------------------------------------------------------------
 // TreeNodeInfoInitBlockStore: Set the NodeInfo for a block store.

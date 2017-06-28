@@ -295,6 +295,9 @@ GTNODE(PINVOKE_PROLOG   , GenTree            ,0,GTK_LEAF|GTK_NOVALUE)   // pinvo
 GTNODE(PINVOKE_EPILOG   , GenTree            ,0,GTK_LEAF|GTK_NOVALUE)   // pinvoke epilog seq
 GTNODE(PUTARG_REG       , GenTreeOp          ,0,GTK_UNOP)               // operator that places outgoing arg in register
 GTNODE(PUTARG_STK       , GenTreePutArgStk   ,0,GTK_UNOP|GTK_NOVALUE)   // operator that places outgoing arg in stack
+#if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
+GTNODE(PUTARG_SPLIT     , GenTreePutArgSplit ,0,GTK_UNOP)               // operator that places outgoing arg in registers with stack (split struct in ARM32)
+#endif // !LEGACY_BACKEND && _TARGET_ARM_
 GTNODE(RETURNTRAP       , GenTreeOp          ,0,GTK_UNOP|GTK_NOVALUE)   // a conditional call to wait on gc
 GTNODE(SWAP             , GenTreeOp          ,0,GTK_BINOP|GTK_NOVALUE)  // op1 and op2 swap (registers)
 GTNODE(IL_OFFSET        , GenTreeStmt        ,0,GTK_LEAF|GTK_NOVALUE)   // marks an IL offset for debugging purposes

@@ -1293,6 +1293,15 @@ public:
         return OperIsStoreBlk(OperGet());
     }
 
+    bool OperIsPutArgSplit() const
+    {
+#if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
+        return gtOper == GT_PUTARG_SPLIT;
+#else
+        return false;
+#endif
+    }
+
     bool OperIsPutArgStk() const
     {
         return gtOper == GT_PUTARG_STK;
@@ -1305,7 +1314,7 @@ public:
 
     bool OperIsPutArg() const
     {
-        return OperIsPutArgStk() || OperIsPutArgReg();
+        return OperIsPutArgStk() || OperIsPutArgReg() || OperIsPutArgSplit();
     }
 
     bool OperIsAddrMode() const
@@ -4907,6 +4916,9 @@ struct GenTreePutArgStk : public GenTreeUnOp
     unsigned gtNumSlots;             // Number of slots for the argument to be passed on stack
     unsigned gtNumberReferenceSlots; // Number of reference slots.
     BYTE*    gtGcPtrs;               // gcPointers
+#ifdef _TARGET_ARM_
+    bool gtIsHfa;
+#endif
 
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 
@@ -4920,6 +4932,212 @@ struct GenTreePutArgStk : public GenTreeUnOp
     }
 #endif
 };
+
+#if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
+// Represent the struct argument: split value in register(s) and stack
+struct GenTreePutArgSplit : public GenTreePutArgStk
+{
+    unsigned gtNumRegs;
+
+    GenTreePutArgSplit(GenTreePtr op1,
+                       unsigned slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(unsigned numSlots),
+                       unsigned     numRegs,
+                       bool         isHfa,
+                       bool         putIncomingArgArea = false,
+                       GenTreeCall* callNode           = nullptr)
+        : GenTreePutArgStk(GT_PUTARG_SPLIT,
+                           TYP_STRUCT,
+                           op1,
+                           slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(numSlots),
+                           putIncomingArgArea,
+                           callNode)
+        , gtNumRegs(numRegs)
+    {
+        gtIsHfa = isHfa;
+        ClearOtherRegs();
+        ClearOtherRegFlags();
+    }
+
+    // Type required to support multi-reg struct arg.
+    var_types m_regType[MAX_REG_ARG];
+
+    // First reg of struct is always given by gtRegNum.
+    // gtOtherRegs holds the other reg numbers of struct.
+    // HFA args is not yet handled.
+    regNumberSmall gtOtherRegs[MAX_REG_ARG - 1];
+
+    // GTF_SPILL or GTF_SPILLED flag on a multi-reg struct node indicates that one or
+    // more of its result regs are in that state.  The spill flag of each of the
+    // return register is stored here. We only need 2 bits per register,
+    // so this is treated as a 2-bit array.
+    static const unsigned PACKED_GTF_SPILL   = 1;
+    static const unsigned PACKED_GTF_SPILLED = 2;
+    unsigned char         gtSpillFlags;
+
+    //---------------------------------------------------------------------------
+    // GetRegNumByIdx: get ith register allocated to this struct argument.
+    //
+    // Arguments:
+    //     idx   -   index of the struct
+    //
+    // Return Value:
+    //     Return regNumber of ith register of this struct argument
+    //
+    regNumber GetRegNumByIdx(unsigned idx) const
+    {
+        assert(idx < MAX_REG_ARG);
+
+        if (idx == 0)
+        {
+            return gtRegNum;
+        }
+
+        return (regNumber)gtOtherRegs[idx - 1];
+    }
+
+    //----------------------------------------------------------------------
+    // SetRegNumByIdx: set ith register of this struct argument
+    //
+    // Arguments:
+    //    reg    -   reg number
+    //    idx    -   index of the struct
+    //
+    // Return Value:
+    //    None
+    //
+    void SetRegNumByIdx(regNumber reg, unsigned idx)
+    {
+        assert(idx < MAX_REG_ARG);
+        if (idx == 0)
+        {
+            gtRegNum = reg;
+        }
+        else
+        {
+            gtOtherRegs[idx - 1] = reg;
+            assert(gtOtherRegs[idx - 1] == reg);
+        }
+    }
+
+    //----------------------------------------------------------------------------
+    // ClearOtherRegs: clear multi-reg state to indicate no regs are allocated
+    //
+    // Arguments:
+    //    None
+    //
+    // Return Value:
+    //    None
+    //
+    void ClearOtherRegs()
+    {
+        for (unsigned i = 0; i < MAX_REG_ARG - 1; ++i)
+        {
+            gtOtherRegs[i] = REG_NA;
+        }
+    }
+
+    //----------------------------------------------------------------------
+    // GetRegSpillFlagByIdx: get spill flag associated with the register
+    // specified by its index.
+    //
+    // Arguments:
+    //    idx  -  Position or index of the register
+    //
+    // Return Value:
+    //    Returns GTF_* flags associated with the register. Only GTF_SPILL and GTF_SPILLED are considered.
+    //
+    unsigned GetRegSpillFlagByIdx(unsigned idx) const
+    {
+        assert(idx < MAX_REG_ARG);
+
+        unsigned bits = gtSpillFlags >> (idx * 2); // It doesn't matter that we possibly leave other high bits here.
+        unsigned spillFlags = 0;
+        if (bits & PACKED_GTF_SPILL)
+        {
+            spillFlags |= GTF_SPILL;
+        }
+        if (bits & PACKED_GTF_SPILLED)
+        {
+            spillFlags |= GTF_SPILLED;
+        }
+
+        return spillFlags;
+    }
+
+    //----------------------------------------------------------------------
+    // SetRegSpillFlagByIdx: set spill flags for the register
+    // specified by its index.
+    //
+    // Arguments:
+    //    flags  -  GTF_* flags. Only GTF_SPILL and GTF_SPILLED are allowed.
+    //    idx    -  Position or index of the register
+    //
+    // Return Value:
+    //    None
+    //
+    void SetRegSpillFlagByIdx(unsigned flags, unsigned idx)
+    {
+        assert(idx < MAX_REG_ARG);
+
+        unsigned bits = 0;
+        if (flags & GTF_SPILL)
+        {
+            bits |= PACKED_GTF_SPILL;
+        }
+        if (flags & GTF_SPILLED)
+        {
+            bits |= PACKED_GTF_SPILLED;
+        }
+
+        // Clear anything that was already there by masking out the bits before 'or'ing in what we want there.
+        gtSpillFlags = (gtSpillFlags & ~(0xffU << (idx * 2))) | (bits << (idx * 2));
+    }
+
+    //--------------------------------------------------------------------------
+    // GetRegType:  Get var_type of the register specified by index.
+    //
+    // Arguments:
+    //    index - Index of the register.
+    //            First register will have an index 0 and so on.
+    //
+    // Return Value:
+    //    var_type of the register specified by its index.
+
+    var_types GetRegType(unsigned index)
+    {
+        assert(index < gtNumRegs);
+        var_types result = m_regType[index];
+        return result;
+    }
+
+    //-------------------------------------------------------------------
+    // clearOtherRegFlags: clear GTF_* flags associated with gtOtherRegs
+    //
+    // Arguments:
+    //     None
+    //
+    // Return Value:
+    //     None
+    //
+    void ClearOtherRegFlags()
+    {
+        gtSpillFlags = 0;
+    }
+
+#ifdef FEATURE_PUT_STRUCT_ARG_STK
+    unsigned getArgSize()
+    {
+        return (gtNumSlots + gtNumRegs) * TARGET_POINTER_SIZE;
+    }
+#endif // FEATURE_PUT_STRUCT_ARG_STK
+
+#if DEBUGGABLE_GENTREE
+    GenTreePutArgSplit() : GenTreePutArgStk()
+    {
+    }
+#endif
+};
+#endif // !LEGACY_BACKEND && _TARGET_ARM_
 
 // Represents GT_COPY or GT_RELOAD node
 struct GenTreeCopyOrReload : public GenTreeUnOp
@@ -5476,7 +5694,7 @@ inline bool GenTree::IsMultiRegNode() const
     }
 
 #if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
-    if (gtOper == GT_MUL_LONG)
+    if (gtOper == GT_MUL_LONG || OperIsPutArgSplit())
     {
         return true;
     }
