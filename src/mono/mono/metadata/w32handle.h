@@ -116,6 +116,9 @@ mono_w32handle_new (MonoW32HandleType type, gpointer handle_specific);
 gpointer
 mono_w32handle_new_fd (MonoW32HandleType type, int fd, gpointer handle_specific);
 
+gpointer
+mono_w32handle_duplicate (gpointer handle);
+
 gboolean
 mono_w32handle_close (gpointer handle);
 
@@ -133,12 +136,6 @@ mono_w32handle_foreach (gboolean (*on_each)(gpointer handle, gpointer data, gpoi
 
 void
 mono_w32handle_dump (void);
-
-void
-mono_w32handle_ref (gpointer handle);
-
-void
-mono_w32handle_unref (gpointer handle);
 
 void
 mono_w32handle_register_capabilities (MonoW32HandleType type, MonoW32HandleCapability caps);

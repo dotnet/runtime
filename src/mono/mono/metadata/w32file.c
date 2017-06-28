@@ -1073,8 +1073,7 @@ ves_icall_System_IO_MonoIO_DuplicateHandle (HANDLE source_process_handle, HANDLE
 	ret=DuplicateHandle (source_process_handle, source_handle, target_process_handle, target_handle, access, inherit, options);
 	MONO_EXIT_GC_SAFE;
 #else
-	mono_w32handle_ref (source_handle);
-	*target_handle = source_handle;
+	*target_handle = mono_w32handle_duplicate (source_handle);
 	ret = TRUE;
 #endif
 
