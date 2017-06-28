@@ -83,6 +83,7 @@ namespace System.Xml.Schema
 
         // Maximum number of fraction digits;
         private const short maxFractionDigits = 7;
+        private const int ticksToFractionDivisor = 10000000;
 
         private static readonly int s_lzyyyy = "yyyy".Length;
         private static readonly int s_lzyyyy_ = "yyyy-".Length;
@@ -106,6 +107,30 @@ namespace System.Xml.Schema
         private static readonly int s_lz__mm_dd = "--MM-dd".Length;
         private static readonly int s_Lz___ = "---".Length;
         private static readonly int s_lz___dd = "---dd".Length;
+
+        // These values were copied from the DateTime class and are
+        // needed to convert ticks to year, month and day. See comment
+        // for method GetYearMonthDay for rationale.
+        // Number of 100ns ticks per time unit
+        private const long TicksPerMillisecond = 10000;
+        private const long TicksPerSecond = TicksPerMillisecond * 1000;
+        private const long TicksPerMinute = TicksPerSecond * 60;
+        private const long TicksPerHour = TicksPerMinute * 60;
+        private const long TicksPerDay = TicksPerHour * 24;
+
+        // Number of days in a non-leap year
+        private const int DaysPerYear = 365;
+        // Number of days in 4 years
+        private const int DaysPer4Years = DaysPerYear * 4 + 1;       // 1461
+        // Number of days in 100 years
+        private const int DaysPer100Years = DaysPer4Years * 25 - 1;  // 36524
+        // Number of days in 400 years
+        private const int DaysPer400Years = DaysPer100Years * 4 + 1; // 146097
+
+        private static readonly int[] DaysToMonth365 = {
+            0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365};
+        private static readonly int[] DaysToMonth366 = {
+            0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366};
 
         /// <summary>
         /// Constructs an XsdDateTime from a string using specific format.
@@ -304,7 +329,7 @@ namespace System.Xml.Schema
         /// </summary>
         public int Fraction
         {
-            get { return (int)(_dt.Ticks - new DateTime(_dt.Year, _dt.Month, _dt.Day, _dt.Hour, _dt.Minute, _dt.Second).Ticks); }
+            get { return (int)(_dt.Ticks % ticksToFractionDivisor); }
         }
 
         /// <summary>
@@ -538,12 +563,67 @@ namespace System.Xml.Schema
         private void PrintDate(StringBuilder sb)
         {
             char[] text = new char[s_lzyyyy_MM_dd];
-            IntToCharArray(text, 0, Year, 4);
+            int year, month, day;
+            GetYearMonthDay(out year, out month, out day);
+            IntToCharArray(text, 0, year, 4);
             text[s_lzyyyy] = '-';
-            ShortToCharArray(text, s_lzyyyy_, Month);
+            ShortToCharArray(text, s_lzyyyy_, month);
             text[s_lzyyyy_MM] = '-';
-            ShortToCharArray(text, s_lzyyyy_MM_, Day);
+            ShortToCharArray(text, s_lzyyyy_MM_, day);
             sb.Append(text);
+        }
+
+        // When printing the date, we need the year, month and the day. When
+        // requesting these values from DateTime, it needs to redo the year
+        // calculation before it can calculate the month, and it needs to redo
+        // the year and month calculation before it can calculate the day. This
+        // results in the year being calculated 3 times, the month twice and the
+        // day once. As we know that we need all 3 values, by duplicating the
+        // logic here we can calculate the number of days and return the intermediate
+        // calculations for month and year without the added cost.
+        private void GetYearMonthDay(out int year, out int month, out int day)
+        {
+            long ticks = _dt.Ticks;
+            // n = number of days since 1/1/0001
+            int n = (int)(ticks / TicksPerDay);
+            // y400 = number of whole 400-year periods since 1/1/0001
+            int y400 = n / DaysPer400Years;
+            // n = day number within 400-year period
+            n -= y400 * DaysPer400Years;
+            // y100 = number of whole 100-year periods within 400-year period
+            int y100 = n / DaysPer100Years;
+            // Last 100-year period has an extra day, so decrement result if 4
+            if (y100 == 4)
+                y100 = 3;
+            // n = day number within 100-year period
+            n -= y100 * DaysPer100Years;
+            // y4 = number of whole 4-year periods within 100-year period
+            int y4 = n / DaysPer4Years;
+            // n = day number within 4-year period
+            n -= y4 * DaysPer4Years;
+            // y1 = number of whole years within 4-year period
+            int y1 = n / DaysPerYear;
+            // Last year has an extra day, so decrement result if 4
+            if (y1 == 4)
+                y1 = 3;
+
+            year = y400 * 400 + y100 * 100 + y4 * 4 + y1 + 1;
+
+            // n = day number within year
+            n -= y1 * DaysPerYear;
+
+            // Leap year calculation looks different from IsLeapYear since y1, y4,
+            // and y100 are relative to year 1, not year 0
+            bool leapYear = y1 == 3 && (y4 != 24 || y100 == 3);
+            int[] days = leapYear ? DaysToMonth366 : DaysToMonth365;
+            // All months have less than 32 days, so n >> 5 is a good conservative
+            // estimate for the month
+            month = n >> 5 + 1;
+            // m = 1-based month number
+            while (n >= days[month])
+                month++;
+
+            day = n - days[month - 1] + 1;
         }
 
         // Serialize hour, minute, second and fraction

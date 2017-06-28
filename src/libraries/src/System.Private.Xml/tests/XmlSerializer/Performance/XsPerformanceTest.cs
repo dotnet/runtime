@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Runtime.Serialization;
 using Microsoft.Xunit.Performance;
 using Xunit;
@@ -15,6 +16,20 @@ namespace System.Xml.XmlSerializer.Tests.Performance
 
     public class XsPerformanceTest
     {
+#if ReflectionOnly
+        private static readonly string SerializationModeSetterName = "set_Mode";
+
+        static XsPerformanceTest()
+        {
+            if (!PlatformDetection.IsFullFramework)
+            {
+                MethodInfo method = typeof(Serialization.XmlSerializer).GetMethod(SerializationModeSetterName, BindingFlags.NonPublic | BindingFlags.Static);
+                Assert.True(method != null, $"No method named {SerializationModeSetterName}");
+                method.Invoke(null, new object[] { 1 });    
+            }
+        }
+#endif
+
         public static IEnumerable<object[]> SerializeMemberData()
         {
             foreach (PerfTestConfig config in PerformanceTestCommon.PerformanceTestConfigurations())

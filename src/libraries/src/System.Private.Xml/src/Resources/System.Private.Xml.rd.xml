@@ -14,6 +14,9 @@
           </Method>
           <Property Name="Mode" Dynamic="Required" />
         </Type>
+        <Type Name="ReflectionXmlSerializationReaderHelper" Dynamic="Required All" />
+          <!--<Method Name="GetSetMemberValueDelegateWithType{TObj, TParam}" Dynamic="Required" />
+        </Type>-->
       </Namespace>
       <Namespace Name="System.Xml.Schema" Dynamic="Public" />
     </Assembly>

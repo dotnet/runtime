@@ -13,7 +13,7 @@ namespace System.Xml
         private int _leftOverBytesCount;
         private char[] _charsLine;
 
-        internal const int Base64LineSize = 76;
+        internal const int Base64LineSize = 1024;
         internal const int LineSizeInBytes = Base64LineSize / 4 * 3;
 
         internal Base64Encoder()
@@ -79,7 +79,7 @@ namespace System.Xml
                 }
             }
 
-            // encode buffer in 76 character long chunks
+            // encode buffer in 1024 character long chunks
             int endIndex = index + count;
             int chunkSize = LineSizeInBytes;
             while (index < endIndex)

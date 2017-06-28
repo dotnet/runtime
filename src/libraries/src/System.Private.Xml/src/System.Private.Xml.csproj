@@ -499,6 +499,9 @@
     </EmbeddedResource>-->
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="System\Xml\XmlCharType.bin">
+      <LogicalName>XmlCharType.bin</LogicalName>
+    </EmbeddedResource>
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'uapaot'">
@@ -509,6 +512,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\System.Threading.Tasks.Extensions\src\System.Threading.Tasks.Extensions.csproj" />
     <Reference Include="System.Collections" />
+    <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.Console" />
@@ -518,6 +522,7 @@
     <Reference Include="System.Diagnostics.TraceSource" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Linq" />
+    <Reference Include="System.Linq.Expressions" />
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Net.Requests" />
     <Reference Include="System.Net.Primitives" />
@@ -531,6 +536,7 @@
     <Reference Include="System.Text.RegularExpressions" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Tasks" />
+    <Reference Include="System.Threading.Thread" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCompiledXsl)' == 'true'">
     <Compile Include="System\Xml\Xsl\IlGen\GenerateHelper.cs" />
