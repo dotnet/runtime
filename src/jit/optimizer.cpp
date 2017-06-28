@@ -8105,7 +8105,7 @@ void Compiler::optOptimizeBoolsGcStress(BasicBlock* condBlock)
 
     // Bump up the ref-counts of any variables in 'comparandClone'
     compCurBB = condBlock;
-    fgWalkTreePre(&comparandClone, Compiler::lvaIncRefCntsCB, (void*)this, true);
+    IncLclVarRefCountsVisitor::WalkTree(this, comparandClone);
 
     noway_assert(relop->gtOp.gtOp1 == comparand);
     genTreeOps oper   = compStressCompile(STRESS_OPT_BOOLS_GC, 50) ? GT_OR : GT_AND;
