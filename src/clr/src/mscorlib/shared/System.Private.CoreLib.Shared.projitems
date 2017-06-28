@@ -470,8 +470,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.CancelIoEx.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.CloseHandle.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.CreateFile.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.CreateFile2.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.CreateFile.cs" Condition="'$(EnableWinRT)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.CreateFile2.cs" Condition="'$(EnableWinRT)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.FileAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.FILE_INFO_BY_HANDLE_CLASS.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.FileTypes.cs" />
@@ -509,13 +509,13 @@
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\User32\Interop.Constants.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\User32\Interop.SendMessageTimeout.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\SafeFileHandle.Windows.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\HijriCalendar.Win32.cs" Condition="'$(IsProjectNLibrary)' != 'true' and '$(EnableDummyGlobalizationImplementation)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\HijriCalendar.WinRT.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\JapaneseCalendar.Win32.cs" Condition="'$(IsProjectNLibrary)' != 'true' and '$(EnableDummyGlobalizationImplementation)' != 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\JapaneseCalendar.WinRT.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Win32.cs" Condition="'$(IsProjectNLibrary)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\HijriCalendar.Win32.cs" Condition="'$(EnableWinRT)' != 'true' and '$(EnableDummyGlobalizationImplementation)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\HijriCalendar.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\JapaneseCalendar.Win32.cs" Condition="'$(EnableWinRT)' != 'true' and '$(EnableDummyGlobalizationImplementation)' != 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\JapaneseCalendar.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Win32.cs" Condition="'$(EnableWinRT)' != 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.Windows.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.WinRT.cs" Condition="'$(IsProjectNLibrary)' == 'true'" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.WinRT.cs" Condition="'$(EnableWinRT)' == 'true'" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStreamCompletionSource.Win32.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\Path.Windows.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\PathHelper.Windows.cs" />
