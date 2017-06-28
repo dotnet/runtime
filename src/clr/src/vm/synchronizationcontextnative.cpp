@@ -17,6 +17,7 @@
 #ifdef FEATURE_APPX
 #include <roapi.h>
 #include <windows.ui.core.h>
+#include "winrtdispatcherqueue.h"
 #endif
 #include "synchronizationcontextnative.h"
 
@@ -129,6 +130,46 @@ void* QCALLTYPE SynchronizationContextNative::GetWinRTDispatcherForCurrentThread
                     pCoreDispatcher.SuppressRelease();
                     result = (void*)pCoreDispatcher;
                 }
+            }
+        }
+    }
+
+    // If we didn't find a CoreDispatcher for the thread, let's see if we can get a DispatcherQueue.
+    if (result == NULL)
+    {
+        SafeComHolderPreemp<Windows::System::IDispatcherQueueStatics> pDispatcherQueueStatics;
+        {
+            HRESULT hr = clr::winrt::GetActivationFactory(RuntimeClass_Windows_System_DispatcherQueue,
+                                                         (Windows::System::IDispatcherQueueStatics**)pDispatcherQueueStatics.GetAddr());
+
+            // This interface was added in RS3 along with the public DispatcherQueue support. Older
+            // Windows builds don't support it and will return one of two HRESULTs from the call
+            // to GetActivationFactory above:
+            //    - Pre-RS2 will return REGDB_E_CLASSNOTREG since Windows.System.DispatcherQueue
+            //      does not exist at all.
+            //    - RS2 will return E_NOINTERFACE since Windows.System.DispatcherQueue does exist
+            //      in a limited fashion, but does not support the interface ID that we want.
+            //
+            // We should just return null if we see these two HRESULTs rather than throwing.
+            if (hr != REGDB_E_CLASSNOTREG && hr != E_NOINTERFACE)
+            {
+                IfFailThrow(hr);
+            }
+        }
+
+        if (pDispatcherQueueStatics != NULL)
+        {
+            //
+            // Get the current IDispatcherQueue
+            //
+            SafeComHolderPreemp<Windows::System::IDispatcherQueue> pDispatcherQueue;
+
+            pDispatcherQueueStatics->GetForCurrentThread(&pDispatcherQueue);
+
+            if (pDispatcherQueue != NULL)
+            {
+                pDispatcherQueue.SuppressRelease();
+                result = (void*)pDispatcherQueue;
             }
         }
     }
