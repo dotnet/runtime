@@ -6536,7 +6536,7 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** use)
             return TryGetUseBinOp(def, use);
     }
 
-    return false;
+    unreached();
 }
 
 bool GenTree::TryGetUseList(GenTree* def, GenTree*** use)
