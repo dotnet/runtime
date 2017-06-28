@@ -3102,6 +3102,7 @@ void MethodContext::recGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     value.accessAllowed                 = (DWORD)pResult->accessAllowed;
     value.accessCalloutHelper.helperNum = (DWORD)pResult->accessCalloutHelper.helperNum;
     value.accessCalloutHelper.numArgs   = (DWORD)pResult->accessCalloutHelper.numArgs;
+    value.fieldLookup                   = SpmiRecordsHelper::StoreAgnostic_CORINFO_CONST_LOOKUP(&pResult->fieldLookup);
     for (int i = 0; i < CORINFO_ACCESS_ALLOWED_MAX_ARGS; i++)
     {
         value.accessCalloutHelper.args[i].constant = (DWORDLONG)pResult->accessCalloutHelper.args[i].constant;
@@ -3144,7 +3145,7 @@ void MethodContext::dmpGetFieldInfo(const Agnostic_GetFieldInfo& key, const Agno
                 break;
         }
     }
-    printf("}");
+    printf(" fl %s}", SpmiDumpHelper::DumpAgnostic_CORINFO_CONST_LOOKUP(value.fieldLookup).c_str());
 }
 void MethodContext::repGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                                     CORINFO_METHOD_HANDLE   callerHandle,
@@ -3207,6 +3208,7 @@ void MethodContext::repGetFieldInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
     pResult->accessAllowed                 = (CorInfoIsAccessAllowedResult)value.accessAllowed;
     pResult->accessCalloutHelper.helperNum = (CorInfoHelpFunc)value.accessCalloutHelper.helperNum;
     pResult->accessCalloutHelper.numArgs   = (unsigned)value.accessCalloutHelper.numArgs;
+    pResult->fieldLookup                   = SpmiRecordsHelper::RestoreCORINFO_CONST_LOOKUP(value.fieldLookup);
     for (int i = 0; i < CORINFO_ACCESS_ALLOWED_MAX_ARGS; i++)
     {
         pResult->accessCalloutHelper.args[i].constant = (size_t)value.accessCalloutHelper.args[i].constant;
