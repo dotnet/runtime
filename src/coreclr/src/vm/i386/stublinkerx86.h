@@ -250,10 +250,14 @@ class StubLinkerCPU : public StubLinker
                               );
         VOID X86EmitPushEBPframe();
 
+#if defined(_TARGET_X86_)
+#if defined(PROFILING_SUPPORTED) && !defined(FEATURE_STUBS_AS_IL)
         // These are used to emit calls to notify the profiler of transitions in and out of
         // managed code through COM->COM+ interop or N/Direct
         VOID EmitProfilerComCallProlog(TADDR pFrameVptr, X86Reg regFrame);
         VOID EmitProfilerComCallEpilog(TADDR pFrameVptr, X86Reg regFrame);
+#endif // PROFILING_SUPPORTED && !FEATURE_STUBS_AS_IL
+#endif // _TARGET_X86_
 
 
 
