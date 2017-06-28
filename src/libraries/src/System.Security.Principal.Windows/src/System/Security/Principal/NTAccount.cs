@@ -316,14 +316,14 @@ namespace System.Security.Principal
                 }
                 else if (ReturnCode != 0)
                 {
-                    int win32ErrorCode = Interop.NtDll.RtlNtStatusToDosError(unchecked((int)ReturnCode));
+                    uint win32ErrorCode = Interop.Advapi32.LsaNtStatusToWinError(ReturnCode);
 
-                    if (win32ErrorCode != Interop.Errors.ERROR_TRUSTED_RELATIONSHIP_FAILURE)
+                    if (unchecked((int)win32ErrorCode) != Interop.Errors.ERROR_TRUSTED_RELATIONSHIP_FAILURE)
                     {
                         Debug.Assert(false, string.Format(CultureInfo.InvariantCulture, "Interop.LsaLookupNames(2) returned unrecognized error {0}", win32ErrorCode));
                     }
 
-                    throw new Win32Exception(win32ErrorCode);
+                    throw new Win32Exception(unchecked((int)win32ErrorCode));
                 }
 
                 //

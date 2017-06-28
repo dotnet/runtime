@@ -3,6 +3,7 @@ advapi32.dll!LsaClose
 advapi32.dll!LsaFreeMemory
 advapi32.dll!LsaLookupNames2
 advapi32.dll!LsaLookupSids
+advapi32.dll!LsaNtStatusToWinError
 advapi32.dll!LsaOpenPolicy
 advapi32.dll!OpenProcessToken
 ntdll.dll!RtlNtStatusToDosError
