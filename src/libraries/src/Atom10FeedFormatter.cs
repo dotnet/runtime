@@ -306,6 +306,14 @@ namespace Microsoft.ServiceModel.Syndication
                         result.LastUpdatedTime = DateFromString(await reader.ReadStringAsync(), reader);
                         await reader.ReadEndElementAsync();
                         break;
+
+
+                    case Atom10Constants.IconTag:
+                        result.IconUrl = new Uri(await reader.ReadElementStringAsync());
+                        break;
+
+
+
                     default:
                         return false;
                 }

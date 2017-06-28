@@ -454,6 +454,32 @@ namespace Microsoft.ServiceModel.Syndication.Tests
             }
         }
 
+        [Fact]
+        public static async Task SyndicationFeed__Atom_Optional_Icon()
+        {
+
+            // *** SETUP *** \\
+            XmlReaderSettings setting = new XmlReaderSettings();
+            setting.Async = true;
+            XmlReader reader = null;
+
+            try
+            {
+                reader = XmlReader.Create(@"TestFeeds\atom_spec_example.xml", setting);
+                // *** EXECUTE *** \\
+                Task<SyndicationFeed> atom = SyndicationFeed.LoadAsync(reader);
+                await Task.WhenAll(atom);
+                // *** ASSERT *** \\
+                Assert.True(atom.Result.IconUrl.AbsoluteUri == "https://avatars0.githubusercontent.com/u/9141961");
+            }
+            finally
+            {
+                // *** CLEANUP *** \\
+                reader.Close();
+            }
+        }
+
+
     }
 }
 
