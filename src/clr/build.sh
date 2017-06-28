@@ -29,6 +29,7 @@ usage()
     echo "      - will use ROOTFS_DIR environment variable if set."
     echo "crosscomponent - optional argument to build cross-architecture component,"
     echo "               - will use CAC_ROOTFS_DIR environment variable if set."
+    echo "nopgooptimize - do not use profile guided optimizations."
     echo "pgoinstrument - generate instrumented code for profile guided optimization enabled binaries."
     echo "ibcinstrument - generate IBC-tuning-enabled native images when invoking crossgen."
     echo "configureonly - do not perform any builds; just configure the build."
@@ -363,7 +364,7 @@ build_cross_arch_component()
         fi
     fi
 
-    __ExtraCmakeArgs="-DCLR_CMAKE_TARGET_ARCH=$__BuildArch -DCLR_CMAKE_TARGET_OS=$__BuildOS -DCLR_CMAKE_PACKAGES_DIR=$__PackagesDir -DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument -DCLR_CMAKE_OPTDATA_VERSION=$__PgoOptDataVersion"
+    __ExtraCmakeArgs="-DCLR_CMAKE_TARGET_ARCH=$__BuildArch -DCLR_CMAKE_TARGET_OS=$__BuildOS -DCLR_CMAKE_PACKAGES_DIR=$__PackagesDir -DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument -DCLR_CMAKE_OPTDATA_VERSION=$__PgoOptDataVersion -DCLR_CMAKE_PGO_OPTIMIZE=$__PgoOptimize"
     build_native $__SkipCrossArchBuild "$__CrossArch" "$__CrossCompIntermediatesDir" "$__ExtraCmakeArgs" "cross-architecture component"
    
     # restore ROOTFS_DIR, CROSSCOMPONENT, and CROSSCOMPILE 
@@ -595,6 +596,7 @@ __MSBCleanBuildArgs=
 __UseNinja=0
 __VerboseBuild=0
 __PgoInstrument=0
+__PgoOptimize=1
 __IbcTuning=""
 __ConfigureOnly=0
 __SkipConfigure=0
@@ -728,6 +730,11 @@ while :; do
 
         pgoinstrument)
             __PgoInstrument=1
+            ;;
+
+        nopgooptimize)
+            __PgoOptimize=0
+            __SkipRestoreOptData=1
             ;;
 
         ibcinstrument)
@@ -936,7 +943,7 @@ restore_optdata
 generate_event_logging_sources
 
 # Build the coreclr (native) components.
-__ExtraCmakeArgs="-DCLR_CMAKE_TARGET_OS=$__BuildOS -DCLR_CMAKE_PACKAGES_DIR=$__PackagesDir -DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument -DCLR_CMAKE_OPTDATA_VERSION=$__PgoOptDataVersion"
+__ExtraCmakeArgs="-DCLR_CMAKE_TARGET_OS=$__BuildOS -DCLR_CMAKE_PACKAGES_DIR=$__PackagesDir -DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument -DCLR_CMAKE_OPTDATA_VERSION=$__PgoOptDataVersion -DCLR_CMAKE_PGO_OPTIMIZE=$__PgoOptimize"
 build_native $__SkipCoreCLR "$__BuildArch" "$__IntermediatesDir" "$__ExtraCmakeArgs" "CoreCLR component"
 
 # Build cross-architecture components
