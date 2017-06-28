@@ -39,7 +39,7 @@ def get_buildos():
         return 'OSX' if sysname.lower() == 'Darwin'.lower() else sysname
 
 def get_optdata_version(tool):
-    """Returns the version string specified in project.json for the given tool."""
+    """Returns the version string specified in project file for the given tool."""
     element_name = {
         'IBC': 'IbcDataPackageVersion',
         'PGO': 'PgoDataPackageVersion',
