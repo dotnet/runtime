@@ -87,7 +87,7 @@ namespace System.Drawing.Tests
         [Fact]
         public void Ctor_NullFormat_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("format", () => new StringFormat(null));
+            AssertExtensions.Throws<ArgumentNullException>("format", () => new StringFormat(null));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -283,7 +283,7 @@ namespace System.Drawing.Tests
         {
             using (var format = new StringFormat())
             {
-                Assert.Throws<InvalidEnumArgumentException>("value", () => format.Alignment = alignment);
+                AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => format.Alignment = alignment);
             }
         }
 
@@ -356,7 +356,7 @@ namespace System.Drawing.Tests
         {
             using (var format = new StringFormat())
             {
-                Assert.Throws<InvalidEnumArgumentException>("value", () => format.LineAlignment = alignment);
+                AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => format.LineAlignment = alignment);
             }
         }
 
@@ -389,7 +389,7 @@ namespace System.Drawing.Tests
         {
             using (var format = new StringFormat())
             {
-                Assert.Throws<InvalidEnumArgumentException>("value", () => format.HotkeyPrefix = prefix);
+                AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => format.HotkeyPrefix = prefix);
             }
         }
 
@@ -420,7 +420,7 @@ namespace System.Drawing.Tests
         {
             using (var format = new StringFormat())
             {
-                Assert.Throws<InvalidEnumArgumentException>("value", () => format.Trimming = trimming);
+                AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => format.Trimming = trimming);
             }
         }
 

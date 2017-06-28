@@ -31,7 +31,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             {
                 CertificateRequest request = new CertificateRequest("", ecdsa, HashAlgorithmName.SHA256);
 
-                Assert.Throws<ArgumentNullException>("signatureGenerator", () => request.CreateSigningRequest(null));
+                AssertExtensions.Throws<ArgumentNullException>("signatureGenerator", () => request.CreateSigningRequest(null));
             }
         }
 

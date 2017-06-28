@@ -96,9 +96,9 @@ namespace System.Drawing.Tests
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Ctor_NullFilePath_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("path", () => new Icon((string)null));
-            Assert.Throws<ArgumentNullException>("path", () => new Icon((string)null, new Size(32, 32)));
-            Assert.Throws<ArgumentNullException>("path", () => new Icon((string)null, 32, 32));
+            AssertExtensions.Throws<ArgumentNullException>("path", () => new Icon((string)null));
+            AssertExtensions.Throws<ArgumentNullException>("path", () => new Icon((string)null, new Size(32, 32)));
+            AssertExtensions.Throws<ArgumentNullException>("path", () => new Icon((string)null, 32, 32));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -455,7 +455,7 @@ namespace System.Drawing.Tests
                 var icon = Icon.FromHandle(source.Handle);
                 icon.Dispose();
 
-                Assert.Throws<ArgumentNullException>("dataStream", () => icon.Save(null));
+                AssertExtensions.Throws<ArgumentNullException>("dataStream", () => icon.Save(null));
             }
         }
 

@@ -45,14 +45,14 @@ namespace System.Collections.Tests
         public void TryAdd_NullIDictionary_ThrowsArgumentNullException()
         {
             IDictionary<string, string> dictionary = null;
-            Assert.Throws<ArgumentNullException>("dictionary", () => dictionary.TryAdd("key", "value"));
+            AssertExtensions.Throws<ArgumentNullException>("dictionary", () => dictionary.TryAdd("key", "value"));
         }
 
         [Fact]
         public void TryAdd_NullKeyIDictionary_ThrowsArgumentNullException()
         {
             IDictionary<string, string> dictionary = new SortedDictionary<string, string>();
-            Assert.Throws<ArgumentNullException>("key", () => dictionary.TryAdd(null, "value"));
+            AssertExtensions.Throws<ArgumentNullException>("key", () => dictionary.TryAdd(null, "value"));
         }
 
         [Fact]
@@ -76,7 +76,7 @@ namespace System.Collections.Tests
         {
             IDictionary<string, string> dictionary = null;
             string value = null;
-            Assert.Throws<ArgumentNullException>("dictionary", () => dictionary.Remove("key", out value));
+            AssertExtensions.Throws<ArgumentNullException>("dictionary", () => dictionary.Remove("key", out value));
             Assert.Null(value);
         }
 
@@ -85,7 +85,7 @@ namespace System.Collections.Tests
         {
             IDictionary<string, string> dictionary = new SortedDictionary<string, string>();
             string value = null;
-            Assert.Throws<ArgumentNullException>("key", () => dictionary.Remove(null, out value));
+            AssertExtensions.Throws<ArgumentNullException>("key", () => dictionary.Remove(null, out value));
             Assert.Null(value);
         }
 

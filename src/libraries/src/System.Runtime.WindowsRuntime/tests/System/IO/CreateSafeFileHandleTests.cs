@@ -15,28 +15,28 @@ namespace System.IO
         public void NullStorageFile_ThrowsArgumentNull()
         {
             IStorageFile file = null;
-            Assert.Throws<ArgumentNullException>("windowsRuntimeFile", () => file.CreateSafeFileHandle());
+            AssertExtensions.Throws<ArgumentNullException>("windowsRuntimeFile", () => file.CreateSafeFileHandle());
         }
 
         [Fact]
         public void FromStorageFile_BadAccessThrowsOutOfRange()
         {
             IStorageFile file = new StorageFileMock();
-            Assert.Throws<ArgumentOutOfRangeException>("access", () => file.CreateSafeFileHandle((FileAccess)100));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("access", () => file.CreateSafeFileHandle((FileAccess)100));
         }
 
         [Fact]
         public void FromStorageFile_BadSharingThrowsOutOfRange()
         {
             IStorageFile file = new StorageFileMock();
-            Assert.Throws<ArgumentOutOfRangeException>("share", () => file.CreateSafeFileHandle(FileAccess.ReadWrite, (FileShare)100));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("share", () => file.CreateSafeFileHandle(FileAccess.ReadWrite, (FileShare)100));
         }
 
         [Fact]
         public void FromStorageFile_BadOptionsThrowsOutOfRange()
         {
             IStorageFile file = new StorageFileMock();
-            Assert.Throws<ArgumentOutOfRangeException>("options", () => file.CreateSafeFileHandle(FileAccess.ReadWrite, FileShare.Read, (FileOptions)100));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => file.CreateSafeFileHandle(FileAccess.ReadWrite, FileShare.Read, (FileOptions)100));
         }
 
         [Fact]
@@ -65,42 +65,42 @@ namespace System.IO
         public void NullStorageFolder_ThrowsArgumentNull()
         {
             IStorageFolder folder = null;
-            Assert.Throws<ArgumentNullException>("rootDirectory", () => folder.CreateSafeFileHandle("foo", FileMode.OpenOrCreate));
+            AssertExtensions.Throws<ArgumentNullException>("rootDirectory", () => folder.CreateSafeFileHandle("foo", FileMode.OpenOrCreate));
         }
 
         [Fact]
         public void NullStorageFolder_ThrowsArgumentNull2()
         {
             IStorageFolder folder = null;
-            Assert.Throws<ArgumentNullException>("rootDirectory", () => folder.CreateSafeFileHandle("foo", FileMode.OpenOrCreate, FileAccess.Write));
+            AssertExtensions.Throws<ArgumentNullException>("rootDirectory", () => folder.CreateSafeFileHandle("foo", FileMode.OpenOrCreate, FileAccess.Write));
         }
 
         [Fact]
         public void FromStorageFolder_BadModeThrowsOutOfRange()
         {
             IStorageFolder folder = new StorageFolderMock();
-            Assert.Throws<ArgumentOutOfRangeException>("mode", () => folder.CreateSafeFileHandle("Foo", (FileMode)100));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("mode", () => folder.CreateSafeFileHandle("Foo", (FileMode)100));
         }
 
         [Fact]
         public void FromStorageFolder_BadAccessThrowsOutOfRange()
         {
             IStorageFolder folder = new StorageFolderMock();
-            Assert.Throws<ArgumentOutOfRangeException>("access", () => folder.CreateSafeFileHandle("Foo", FileMode.OpenOrCreate, (FileAccess)100));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("access", () => folder.CreateSafeFileHandle("Foo", FileMode.OpenOrCreate, (FileAccess)100));
         }
 
         [Fact]
         public void FromStorageFolder_BadSharingThrowsOutOfRange()
         {
             IStorageFolder folder = new StorageFolderMock();
-            Assert.Throws<ArgumentOutOfRangeException>("share", () => folder.CreateSafeFileHandle("Foo", FileMode.OpenOrCreate, FileAccess.ReadWrite, (FileShare)100));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("share", () => folder.CreateSafeFileHandle("Foo", FileMode.OpenOrCreate, FileAccess.ReadWrite, (FileShare)100));
         }
 
         [Fact]
         public void FromStorageFolder_BadOptionsThrowsOutOfRange()
         {
             IStorageFolder folder = new StorageFolderMock();
-            Assert.Throws<ArgumentOutOfRangeException>("options", () => folder.CreateSafeFileHandle("Foo", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read, (FileOptions)100));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("options", () => folder.CreateSafeFileHandle("Foo", FileMode.OpenOrCreate, FileAccess.ReadWrite, FileShare.Read, (FileOptions)100));
         }
 
         [Fact]

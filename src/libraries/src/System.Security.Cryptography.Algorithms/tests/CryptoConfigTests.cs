@@ -42,13 +42,13 @@ namespace System.Security.Cryptography.CryptoConfigTests
         [Fact]
         public static void AddOID_NullOid_Throws()
         {
-            Assert.Throws<ArgumentNullException>("oid", () => CryptoConfig.AddOID(null, string.Empty));
+            AssertExtensions.Throws<ArgumentNullException>("oid", () => CryptoConfig.AddOID(null, string.Empty));
         }
 
         [Fact]
         public static void AddOID_NullNames_Throws()
         {
-            Assert.Throws<ArgumentNullException>("names", () => CryptoConfig.AddOID(string.Empty, null));
+            AssertExtensions.Throws<ArgumentNullException>("names", () => CryptoConfig.AddOID(string.Empty, null));
         }
 
         [Fact]
@@ -84,13 +84,13 @@ namespace System.Security.Cryptography.CryptoConfigTests
         [Fact]
         public static void AddAlgorithm_NullAlgorithm_Throws()
         {
-            Assert.Throws<ArgumentNullException>("algorithm", () => CryptoConfig.AddAlgorithm(null, string.Empty));
+            AssertExtensions.Throws<ArgumentNullException>("algorithm", () => CryptoConfig.AddAlgorithm(null, string.Empty));
         }
 
         [Fact]
         public static void AddAlgorithm_NullNames_Throws()
         {
-            Assert.Throws<ArgumentNullException>("names", () => CryptoConfig.AddAlgorithm(typeof(CryptoConfigTests), null));
+            AssertExtensions.Throws<ArgumentNullException>("names", () => CryptoConfig.AddAlgorithm(typeof(CryptoConfigTests), null));
         }
 
         [Fact]
