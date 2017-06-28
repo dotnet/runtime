@@ -490,30 +490,6 @@ class MarshalClassTests
         }
 
         Console.WriteLine("DONE testing Copy.");
-        
-#if ISSUE_6605
-        //////////////////////////////////////////////////////////////
-        //IsComObject
-        /////////////////////////////////////////////////////////////
-        Console.WriteLine("\nTesting IsComObject...");
-        Console.WriteLine("\n\tPassing Object = null ");
-        try
-        {
-            Marshal.IsComObject(null);
-            retVal = 0;
-            Console.WriteLine("\t\tNO EXCEPTION THROWN! FAILED!");
-        }
-        catch (ArgumentNullException ane)
-        {
-            Console.WriteLine("\t\tCaught Expected Exception:\n\t\t\t" + ane.ToString());
-        }
-        catch (Exception e)
-        {
-            retVal = 0;
-            Console.WriteLine("\t\tUNEXPECTED EXCEPTION:\n\t\t\t" + e.ToString());
-        }
-#endif
-        Console.WriteLine("DONE testing IsComObject.");
 
         return retVal;
     }
