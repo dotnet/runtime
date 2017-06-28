@@ -339,7 +339,6 @@ namespace Tests.Collections
         }
 
         [Fact]
-        [ActiveIssue(1170)]
         public void EnumeratePastEndThenModify()
         {
             object[] items = GenerateItems(EnumerableSize);
@@ -354,7 +353,7 @@ namespace Tests.Collections
             VerifyModifiedEnumerator(
                 enumerator,
                 DefaultValue,
-                true,
+                false,
                 true);
         }
 
