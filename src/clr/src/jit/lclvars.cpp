@@ -2688,16 +2688,6 @@ BasicBlock::weight_t BasicBlock::getBBWeight(Compiler* comp)
     }
 }
 
-/*****************************************************************************
- *
- *  Callback used by the tree walker to call lvaDecRefCnts
- */
-Compiler::fgWalkResult Compiler::lvaDecRefCntsCB(GenTreePtr* pTree, fgWalkData* data)
-{
-    data->compiler->lvaDecRefCnts(*pTree);
-    return WALK_CONTINUE;
-}
-
 // Decrement the ref counts for all locals contained in the tree and its children.
 void Compiler::lvaRecursiveDecRefCounts(GenTreePtr tree)
 {
@@ -2714,28 +2704,25 @@ void Compiler::lvaRecursiveDecRefCounts(GenTreePtr tree)
     }
     else
     {
-        fgWalkTreePre(&tree, Compiler::lvaDecRefCntsCB, (void*)this, true);
+        DecLclVarRefCountsVisitor::WalkTree(this, tree);
     }
 }
 
-// Increment the ref counts for all locals contained in the tree and its children.
-void Compiler::lvaRecursiveIncRefCounts(GenTreePtr tree)
+DecLclVarRefCountsVisitor::DecLclVarRefCountsVisitor(Compiler* compiler)
+    : GenTreeVisitor<DecLclVarRefCountsVisitor>(compiler)
 {
-    assert(lvaLocalVarRefCounted);
+}
 
-    // We could just use the recursive walker for all cases but that is a
-    // fairly heavyweight thing to spin up when we're usually just handling a leaf.
-    if (tree->OperIsLeaf())
-    {
-        if (tree->OperIsLocal())
-        {
-            lvaIncRefCnts(tree);
-        }
-    }
-    else
-    {
-        fgWalkTreePre(&tree, Compiler::lvaIncRefCntsCB, (void*)this, true);
-    }
+Compiler::fgWalkResult DecLclVarRefCountsVisitor::PreOrderVisit(GenTree** use, GenTree* user)
+{
+    m_compiler->lvaDecRefCnts(*use);
+    return fgWalkResult::WALK_CONTINUE;
+}
+
+Compiler::fgWalkResult DecLclVarRefCountsVisitor::WalkTree(Compiler* compiler, GenTree* tree)
+{
+    DecLclVarRefCountsVisitor visitor(compiler);
+    return static_cast<GenTreeVisitor<DecLclVarRefCountsVisitor>*>(&visitor)->WalkTree(&tree, nullptr);
 }
 
 /*****************************************************************************
@@ -2796,14 +2783,41 @@ void Compiler::lvaDecRefCnts(BasicBlock* block, GenTreePtr tree)
     }
 }
 
-/*****************************************************************************
- *
- *  Callback used by the tree walker to call lvaIncRefCnts
- */
-Compiler::fgWalkResult Compiler::lvaIncRefCntsCB(GenTreePtr* pTree, fgWalkData* data)
+// Increment the ref counts for all locals contained in the tree and its children.
+void Compiler::lvaRecursiveIncRefCounts(GenTreePtr tree)
 {
-    data->compiler->lvaIncRefCnts(*pTree);
-    return WALK_CONTINUE;
+    assert(lvaLocalVarRefCounted);
+
+    // We could just use the recursive walker for all cases but that is a
+    // fairly heavyweight thing to spin up when we're usually just handling a leaf.
+    if (tree->OperIsLeaf())
+    {
+        if (tree->OperIsLocal())
+        {
+            lvaIncRefCnts(tree);
+        }
+    }
+    else
+    {
+        IncLclVarRefCountsVisitor::WalkTree(this, tree);
+    }
+}
+
+IncLclVarRefCountsVisitor::IncLclVarRefCountsVisitor(Compiler* compiler)
+    : GenTreeVisitor<IncLclVarRefCountsVisitor>(compiler)
+{
+}
+
+Compiler::fgWalkResult IncLclVarRefCountsVisitor::PreOrderVisit(GenTree** use, GenTree* user)
+{
+    m_compiler->lvaIncRefCnts(*use);
+    return fgWalkResult::WALK_CONTINUE;
+}
+
+Compiler::fgWalkResult IncLclVarRefCountsVisitor::WalkTree(Compiler* compiler, GenTree* tree)
+{
+    IncLclVarRefCountsVisitor visitor(compiler);
+    return static_cast<GenTreeVisitor<IncLclVarRefCountsVisitor>*>(&visitor)->WalkTree(&tree, nullptr);
 }
 
 /*****************************************************************************
@@ -3778,24 +3792,30 @@ void Compiler::SetVolatileHint(LclVarDsc* varDsc)
 
 /*****************************************************************************
  *
- *  Helper passed to Compiler::fgWalkTreePre() to do variable ref marking.
- */
-
-/* static */
-Compiler::fgWalkResult Compiler::lvaMarkLclRefsCallback(GenTreePtr* pTree, fgWalkData* data)
-{
-    data->compiler->lvaMarkLclRefs(*pTree);
-
-    return WALK_CONTINUE;
-}
-
-/*****************************************************************************
- *
  *  Update the local variable reference counts for one basic block
  */
 
 void Compiler::lvaMarkLocalVars(BasicBlock* block)
 {
+    class MarkLocalVarsVisitor final : public GenTreeVisitor<MarkLocalVarsVisitor>
+    {
+    public:
+        enum
+        {
+            DoPreOrder = true,
+        };
+
+        MarkLocalVarsVisitor(Compiler* compiler) : GenTreeVisitor<MarkLocalVarsVisitor>(compiler)
+        {
+        }
+
+        Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+        {
+            m_compiler->lvaMarkLclRefs(*use);
+            return WALK_CONTINUE;
+        }
+    };
+
 #if ASSERTION_PROP
     lvaMarkRefsCurBlock = block;
 #endif
@@ -3809,9 +3829,10 @@ void Compiler::lvaMarkLocalVars(BasicBlock* block)
     }
 #endif
 
+    MarkLocalVarsVisitor visitor(this);
     for (GenTreePtr tree = block->FirstNonPhiDef(); tree; tree = tree->gtNext)
     {
-        noway_assert(tree->gtOper == GT_STMT);
+        assert(tree->gtOper == GT_STMT);
 
 #if ASSERTION_PROP
         lvaMarkRefsCurStmt = tree;
@@ -3824,7 +3845,7 @@ void Compiler::lvaMarkLocalVars(BasicBlock* block)
         }
 #endif
 
-        fgWalkTreePre(&tree->gtStmt.gtStmtExpr, Compiler::lvaMarkLclRefsCallback, (void*)this, false);
+        visitor.WalkTree(&tree->gtStmt.gtStmtExpr, nullptr);
     }
 }
 
