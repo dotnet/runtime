@@ -66,7 +66,7 @@ namespace System.Reflection.Emit.Tests
         public void AddInterfaceImplementation_ByRefInterfaceType_ThrowsArgumentExceptioN()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
-            Assert.Throws<ArgumentException>(null, () => type.AddInterfaceImplementation(typeof(int).MakeByRefType()));
+            AssertExtensions.Throws<ArgumentException>(null, () => type.AddInterfaceImplementation(typeof(int).MakeByRefType()));
         }
 
         [Fact]

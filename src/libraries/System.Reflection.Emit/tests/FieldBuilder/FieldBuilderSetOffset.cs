@@ -63,7 +63,7 @@ namespace System.Reflection.Emit.Tests
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Abstract);
 
             FieldBuilder field = type.DefineField("TestField", typeof(int), FieldAttributes.Public);
-            Assert.Throws<ArgumentException>(null, () => field.SetOffset(-1));
+            AssertExtensions.Throws<ArgumentException>(null, () => field.SetOffset(-1));
         }
     }
 }

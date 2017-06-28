@@ -88,11 +88,11 @@ namespace System.Collections.Specialized.Tests
             AssertExtensions.Throws<ArgumentNullException>("key", () => hybridDictionary.Add(null, "value"));
 
             hybridDictionary.Add("key", "value");
-            Assert.Throws<ArgumentException>(null, () => hybridDictionary.Add("key", "value"));
+            AssertExtensions.Throws<ArgumentException>(null, () => hybridDictionary.Add("key", "value"));
 
             if (caseInsensitive)
             {
-                Assert.Throws<ArgumentException>(null, () => hybridDictionary.Add("KEY", "value"));
+                AssertExtensions.Throws<ArgumentException>(null, () => hybridDictionary.Add("KEY", "value"));
             }
             else
             {

@@ -87,12 +87,12 @@ namespace BasicEventSourceTests
                           e.Message);
 
 #if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
-            e = Assert.Throws<ArgumentException>(GetResourceString("EventSource_MaxChannelExceeded"),
+            e = AssertExtensions.Throws<ArgumentException>(GetResourceString("EventSource_MaxChannelExceeded"),
                 () => EventSource.GenerateManifest(typeof(Sdt.TooManyChannelsEventSource), string.Empty));
 #endif
 
 #if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
-            e = Assert.Throws<ArgumentException>(GetResourceString("EventSource_EventWithAdminChannelMustHaveMessage", "WriteInteger", "Admin"),
+            e = AssertExtensions.Throws<ArgumentException>(GetResourceString("EventSource_EventWithAdminChannelMustHaveMessage", "WriteInteger", "Admin"),
                 () => EventSource.GenerateManifest(typeof(Sdt.EventWithAdminChannelNoMessageEventSource), string.Empty, strictOptions));
 #endif // USE_ETW
 

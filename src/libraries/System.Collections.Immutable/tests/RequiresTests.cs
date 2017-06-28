@@ -13,7 +13,7 @@ namespace System.Collections.Immutable.Tests
         {
             Requires.Argument(true);
             Requires.Argument(true, "parameterName", "message");
-            Assert.Throws<ArgumentException>(null, () => Requires.Argument(false));
+            AssertExtensions.Throws<ArgumentException>(null, () => Requires.Argument(false));
             AssertExtensions.Throws<ArgumentException>("parameterName", () => Requires.Argument(false, "parameterName", "message"));
         }
 

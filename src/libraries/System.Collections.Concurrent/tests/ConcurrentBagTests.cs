@@ -18,6 +18,8 @@ namespace System.Collections.Concurrent.Tests
         protected override bool TryPeek<T>(IProducerConsumerCollection<T> pcc, out T result) => ((ConcurrentBag<T>)pcc).TryPeek(out result);
         protected override IProducerConsumerCollection<int> CreateOracle(IEnumerable<int> collection) => new BagOracle(collection);
 
+        protected override string CopyToNoLengthParamName => "index";
+
         [Theory]
         [InlineData(1, 10)]
         [InlineData(3, 100)]

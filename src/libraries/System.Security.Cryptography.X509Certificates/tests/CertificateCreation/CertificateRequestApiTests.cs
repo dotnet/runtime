@@ -44,7 +44,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
                 var request = new CertificateRequest("CN=Test", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
 
-                Assert.Throws<ArgumentException>(
+                AssertExtensions.Throws<ArgumentException>(
                     null,
                     () => request.CreateSelfSigned(DateTimeOffset.MaxValue, DateTimeOffset.MinValue));
             }
@@ -69,15 +69,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 DateTimeOffset notAfter = testRoot.NotAfter;
                 DateTimeOffset notBefore = testRoot.NotBefore;
 
-                Assert.Throws<ArgumentException>(
+                AssertExtensions.Throws<ArgumentException>(
                     null,
                     () => request.Create(testRoot, notAfter, notBefore, null));
 
-                Assert.Throws<ArgumentException>(
+                AssertExtensions.Throws<ArgumentException>(
                     "serialNumber",
                     () => request.Create(testRoot, notBefore, notAfter, null));
 
-                Assert.Throws<ArgumentException>(
+                AssertExtensions.Throws<ArgumentException>(
                     "serialNumber",
                     () => request.Create(testRoot, notBefore, notAfter, Array.Empty<byte>()));
             }
@@ -104,7 +104,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
             using (key)
             {
-                Assert.Throws<ArgumentException>(
+                AssertExtensions.Throws<ArgumentException>(
                     "hashAlgorithm",
                     () => new CertificateRequest(subjectName, key, hashAlgorithm));
             }
@@ -131,7 +131,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
             using (key)
             {
-                Assert.Throws<ArgumentException>(
+                AssertExtensions.Throws<ArgumentException>(
                     "hashAlgorithm",
                     () => new CertificateRequest(subjectName, key, hashAlgorithm));
             }
@@ -159,7 +159,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
             using (key)
             {
-                Assert.Throws<ArgumentException>(
+                AssertExtensions.Throws<ArgumentException>(
                     "hashAlgorithm",
                     () => new CertificateRequest(subjectName, key, hashAlgorithm, padding));
 
@@ -193,7 +193,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
 
             using (key)
             {
-                Assert.Throws<ArgumentException>(
+                AssertExtensions.Throws<ArgumentException>(
                     "hashAlgorithm",
                     () => new CertificateRequest(subjectName, key, hashAlgorithm, padding));
 
@@ -228,7 +228,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                 publicKey = generator.PublicKey;
             }
 
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>(
                 "hashAlgorithm",
                 () => new CertificateRequest(subjectName, publicKey, hashAlgorithm));
         }

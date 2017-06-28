@@ -79,38 +79,38 @@ namespace System.IO.Pipes.Tests
                 Assert.True(pipe.CanRead);
 
                 // offset out of bounds
-                Assert.Throws<ArgumentException>(null, () => pipe.Read(new byte[1], 1, 1));
+                AssertExtensions.Throws<ArgumentException>(null, () => pipe.Read(new byte[1], 1, 1));
 
                 // offset out of bounds for 0 count read
-                Assert.Throws<ArgumentException>(null, () => pipe.Read(new byte[1], 2, 0));
+                AssertExtensions.Throws<ArgumentException>(null, () => pipe.Read(new byte[1], 2, 0));
 
                 // offset out of bounds even for 0 length buffer
-                Assert.Throws<ArgumentException>(null, () => pipe.Read(new byte[0], 1, 0));
+                AssertExtensions.Throws<ArgumentException>(null, () => pipe.Read(new byte[0], 1, 0));
 
                 // combination offset and count out of bounds
-                Assert.Throws<ArgumentException>(null, () => pipe.Read(new byte[2], 1, 2));
+                AssertExtensions.Throws<ArgumentException>(null, () => pipe.Read(new byte[2], 1, 2));
 
                 // edges
-                Assert.Throws<ArgumentException>(null, () => pipe.Read(new byte[0], int.MaxValue, 0));
-                Assert.Throws<ArgumentException>(null, () => pipe.Read(new byte[0], int.MaxValue, int.MaxValue));
+                AssertExtensions.Throws<ArgumentException>(null, () => pipe.Read(new byte[0], int.MaxValue, 0));
+                AssertExtensions.Throws<ArgumentException>(null, () => pipe.Read(new byte[0], int.MaxValue, int.MaxValue));
 
                 AssertExtensions.Throws<ArgumentException>(null, () => pipe.Read(new byte[5], 3, 4));
 
                 // offset out of bounds
-                Assert.Throws<ArgumentException>(null, () => { pipe.ReadAsync(new byte[1], 1, 1); });
+                AssertExtensions.Throws<ArgumentException>(null, () => { pipe.ReadAsync(new byte[1], 1, 1); });
 
                 // offset out of bounds for 0 count read
-                Assert.Throws<ArgumentException>(null, () => { pipe.ReadAsync(new byte[1], 2, 0); });
+                AssertExtensions.Throws<ArgumentException>(null, () => { pipe.ReadAsync(new byte[1], 2, 0); });
 
                 // offset out of bounds even for 0 length buffer
-                Assert.Throws<ArgumentException>(null, () => { pipe.ReadAsync(new byte[0], 1, 0); });
+                AssertExtensions.Throws<ArgumentException>(null, () => { pipe.ReadAsync(new byte[0], 1, 0); });
 
                 // combination offset and count out of bounds
-                Assert.Throws<ArgumentException>(null, () => { pipe.ReadAsync(new byte[2], 1, 2); });
+                AssertExtensions.Throws<ArgumentException>(null, () => { pipe.ReadAsync(new byte[2], 1, 2); });
 
                 // edges
-                Assert.Throws<ArgumentException>(null, () => { pipe.ReadAsync(new byte[0], int.MaxValue, 0); });
-                Assert.Throws<ArgumentException>(null, () => { pipe.ReadAsync(new byte[0], int.MaxValue, int.MaxValue); });
+                AssertExtensions.Throws<ArgumentException>(null, () => { pipe.ReadAsync(new byte[0], int.MaxValue, 0); });
+                AssertExtensions.Throws<ArgumentException>(null, () => { pipe.ReadAsync(new byte[0], int.MaxValue, int.MaxValue); });
 
                 AssertExtensions.Throws<ArgumentException>(null, () => { pipe.ReadAsync(new byte[5], 3, 4); });
             }

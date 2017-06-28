@@ -35,7 +35,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void GetConstructor_TypeNotTypeBuilder_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(null, () => TypeBuilder.GetConstructor(typeof(int), typeof(int).GetConstructor(new Type[0])));
+            AssertExtensions.Throws<ArgumentException>(null, () => TypeBuilder.GetConstructor(typeof(int), typeof(int).GetConstructor(new Type[0])));
         }
 
         [Fact]

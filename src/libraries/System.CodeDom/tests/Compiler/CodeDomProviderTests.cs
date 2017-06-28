@@ -283,7 +283,7 @@ namespace System.CodeDom.Compiler.Tests
         [Fact]
         public void CreateEscapedIdentifier_CallsGeneratorMethod()
         {
-            Assert.Throws<ArgumentException>(null, () => new CustomProvider().CreateEscapedIdentifier("value"));
+            AssertExtensions.Throws<ArgumentException>(null, () => new CustomProvider().CreateEscapedIdentifier("value"));
         }
 
         [Fact]

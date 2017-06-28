@@ -56,7 +56,7 @@ namespace System.Drawing.Tests
             Pen pen = penThunk();
             Assert.Equal(expectedColor, pen.Color);
             Assert.Equal(PenType.SolidColor, pen.PenType);
-            Assert.Throws<ArgumentException>(null, () => pen.Color = Color.AliceBlue);
+            AssertExtensions.Throws<ArgumentException>(null, () => pen.Color = Color.AliceBlue);
 
             Assert.Same(pen, penThunk());
         }
@@ -64,7 +64,7 @@ namespace System.Drawing.Tests
         [Fact]
         public void FromSystemColor_NotSystemColor_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(null, () => SystemPens.FromSystemColor(Color.Blue));
+            AssertExtensions.Throws<ArgumentException>(null, () => SystemPens.FromSystemColor(Color.Blue));
         }
     }
 }

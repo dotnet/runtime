@@ -78,13 +78,13 @@ namespace System.Security.Cryptography.Encoding.Tests
             AssertExtensions.Throws<ArgumentNullException>("inputBuffer", () => transform.TransformBlock(null, 0, 0, null, 0));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("inputOffset", () => transform.TransformBlock(Array.Empty<byte>(), -1, 0, null, 0));
             AssertExtensions.Throws<ArgumentNullException>("dst", () => transform.TransformBlock(data_4bytes, 0, 4, null, 0));
-            Assert.Throws<ArgumentException>(null, () => transform.TransformBlock(Array.Empty<byte>(), 0, 1, null, 0));
-            Assert.Throws<ArgumentException>(null, () => transform.TransformBlock(Array.Empty<byte>(), 1, 0, null, 0));
+            AssertExtensions.Throws<ArgumentException>(null, () => transform.TransformBlock(Array.Empty<byte>(), 0, 1, null, 0));
+            AssertExtensions.Throws<ArgumentException>(null, () => transform.TransformBlock(Array.Empty<byte>(), 1, 0, null, 0));
 
             AssertExtensions.Throws<ArgumentNullException>("inputBuffer", () => transform.TransformFinalBlock(null, 0, 0));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("inputOffset", () => transform.TransformFinalBlock(Array.Empty<byte>(), -1, 0));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("inputOffset", () => transform.TransformFinalBlock(Array.Empty<byte>(), -1, 0));
-            Assert.Throws<ArgumentException>(null, () => transform.TransformFinalBlock(Array.Empty<byte>(), 1, 0));
+            AssertExtensions.Throws<ArgumentException>(null, () => transform.TransformFinalBlock(Array.Empty<byte>(), 1, 0));
         }
 
         [Theory, MemberData(nameof(TestData_Ascii))]

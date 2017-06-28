@@ -154,7 +154,7 @@ namespace System.Linq.Parallel.Tests
         public static void WithExecutionMode_ArgumentException(Labeled<ParallelQuery<int>> labeled, int count)
         {
             ParallelQuery<int> query = labeled.Item;
-            Assert.Throws<ArgumentException>(null, () => query.WithExecutionMode((ParallelExecutionMode)2));
+            AssertExtensions.Throws<ArgumentException>(null, () => query.WithExecutionMode((ParallelExecutionMode)2));
         }
 
         [Theory]

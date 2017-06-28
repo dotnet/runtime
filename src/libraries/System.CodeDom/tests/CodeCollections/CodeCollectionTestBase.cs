@@ -156,7 +156,7 @@ namespace System.CodeDom.Tests
         public void Remove_NoSuchObject_ThrowsArgumentException()
         {
             var collection = Ctor();
-            Assert.Throws<ArgumentException>(null, () => Remove(collection, new TItem()));
+            AssertExtensions.Throws<ArgumentException>(null, () => Remove(collection, new TItem()));
         }
 
         [Fact]

@@ -134,8 +134,8 @@ namespace System.Drawing.Drawing2D.Tests
         [InlineData(4)]
         public void Ctor_PointsLengthNotThree_ThrowsArgumentNullException(int length)
         {
-            Assert.Throws<ArgumentException>(null, () => new Matrix(new RectangleF(), new PointF[length]));
-            Assert.Throws<ArgumentException>(null, () => new Matrix(new Rectangle(), new Point[length]));
+            AssertExtensions.Throws<ArgumentException>(null, () => new Matrix(new RectangleF(), new PointF[length]));
+            AssertExtensions.Throws<ArgumentException>(null, () => new Matrix(new Rectangle(), new Point[length]));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -169,7 +169,7 @@ namespace System.Drawing.Drawing2D.Tests
             var matrix = new Matrix();
             matrix.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => matrix.Clone());
+            AssertExtensions.Throws<ArgumentException>(null, () => matrix.Clone());
         }
 
         public static IEnumerable<object[]> Equals_TestData()
@@ -222,7 +222,7 @@ namespace System.Drawing.Drawing2D.Tests
             var matrix = new Matrix();
             matrix.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => matrix.Equals(new Matrix()));
+            AssertExtensions.Throws<ArgumentException>(null, () => matrix.Equals(new Matrix()));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -231,7 +231,7 @@ namespace System.Drawing.Drawing2D.Tests
             var matrix = new Matrix();
             matrix.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => new Matrix().Equals(matrix));
+            AssertExtensions.Throws<ArgumentException>(null, () => new Matrix().Equals(matrix));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -240,7 +240,7 @@ namespace System.Drawing.Drawing2D.Tests
             var matrix = new Matrix();
             matrix.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => matrix.Elements);
+            AssertExtensions.Throws<ArgumentException>(null, () => matrix.Elements);
         }
 
         public static IEnumerable<object[]> Invert_TestData()
@@ -278,12 +278,12 @@ namespace System.Drawing.Drawing2D.Tests
             using (var matrix5 = new Matrix(1, 2, 3, 4, f, 6))
             using (var matrix6 = new Matrix(1, 2, 3, 4, 5, f))
             {
-                Assert.Throws<ArgumentException>(null, () => matrix1.Invert());
-                Assert.Throws<ArgumentException>(null, () => matrix2.Invert());
-                Assert.Throws<ArgumentException>(null, () => matrix3.Invert());
-                Assert.Throws<ArgumentException>(null, () => matrix4.Invert());
-                Assert.Throws<ArgumentException>(null, () => matrix5.Invert());
-                Assert.Throws<ArgumentException>(null, () => matrix6.Invert());
+                AssertExtensions.Throws<ArgumentException>(null, () => matrix1.Invert());
+                AssertExtensions.Throws<ArgumentException>(null, () => matrix2.Invert());
+                AssertExtensions.Throws<ArgumentException>(null, () => matrix3.Invert());
+                AssertExtensions.Throws<ArgumentException>(null, () => matrix4.Invert());
+                AssertExtensions.Throws<ArgumentException>(null, () => matrix5.Invert());
+                AssertExtensions.Throws<ArgumentException>(null, () => matrix6.Invert());
             }
         }
 
@@ -293,7 +293,7 @@ namespace System.Drawing.Drawing2D.Tests
             var matrix = new Matrix();
             matrix.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => matrix.Invert());
+            AssertExtensions.Throws<ArgumentException>(null, () => matrix.Invert());
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -302,7 +302,7 @@ namespace System.Drawing.Drawing2D.Tests
             var matrix = new Matrix();
             matrix.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => matrix.IsIdentity);
+            AssertExtensions.Throws<ArgumentException>(null, () => matrix.IsIdentity);
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -311,7 +311,7 @@ namespace System.Drawing.Drawing2D.Tests
             var matrix = new Matrix();
             matrix.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => matrix.IsInvertible);
+            AssertExtensions.Throws<ArgumentException>(null, () => matrix.IsInvertible);
         }
 
         public static IEnumerable<object[]> Multiply_TestData()
@@ -383,7 +383,7 @@ namespace System.Drawing.Drawing2D.Tests
             using (var matrix = new Matrix())
             using (var other = new Matrix())
             {
-                Assert.Throws<ArgumentException>(null, () => matrix.Multiply(other, order));
+                AssertExtensions.Throws<ArgumentException>(null, () => matrix.Multiply(other, order));
             }
         }
 
@@ -395,8 +395,8 @@ namespace System.Drawing.Drawing2D.Tests
 
             using (var other = new Matrix())
             {
-                Assert.Throws<ArgumentException>(null, () => matrix.Multiply(other));
-                Assert.Throws<ArgumentException>(null, () => matrix.Multiply(other, MatrixOrder.Prepend));
+                AssertExtensions.Throws<ArgumentException>(null, () => matrix.Multiply(other));
+                AssertExtensions.Throws<ArgumentException>(null, () => matrix.Multiply(other, MatrixOrder.Prepend));
             }
         }
 
@@ -408,8 +408,8 @@ namespace System.Drawing.Drawing2D.Tests
                 var other = new Matrix();
                 other.Dispose();
 
-                Assert.Throws<ArgumentException>(null, () => matrix.Multiply(other));
-                Assert.Throws<ArgumentException>(null, () => matrix.Multiply(other, MatrixOrder.Prepend));
+                AssertExtensions.Throws<ArgumentException>(null, () => matrix.Multiply(other));
+                AssertExtensions.Throws<ArgumentException>(null, () => matrix.Multiply(other, MatrixOrder.Prepend));
             }
         }
 
@@ -432,7 +432,7 @@ namespace System.Drawing.Drawing2D.Tests
             var matrix = new Matrix();
             matrix.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => matrix.Reset());
+            AssertExtensions.Throws<ArgumentException>(null, () => matrix.Reset());
         }
 
         public static IEnumerable<object[]> Rotate_TestData()
@@ -527,7 +527,7 @@ namespace System.Drawing.Drawing2D.Tests
             var matrix = new Matrix();
             matrix.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => matrix.Rotate(1, MatrixOrder.Append));
+            AssertExtensions.Throws<ArgumentException>(null, () => matrix.Rotate(1, MatrixOrder.Append));
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -537,7 +537,7 @@ namespace System.Drawing.Drawing2D.Tests
         {
             using (var matrix = new Matrix())
             {
-                Assert.Throws<ArgumentException>(null, () => matrix.Rotate(1, order));
+                AssertExtensions.Throws<ArgumentException>(null, () => matrix.Rotate(1, order));
             }
         }
 
@@ -547,8 +547,8 @@ namespace System.Drawing.Drawing2D.Tests
             var matrix = new Matrix();
             matrix.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => matrix.RotateAt(1, PointF.Empty));
-            Assert.Throws<ArgumentException>(null, () => matrix.RotateAt(1, PointF.Empty, MatrixOrder.Append));
+            AssertExtensions.Throws<ArgumentException>(null, () => matrix.RotateAt(1, PointF.Empty));
+            AssertExtensions.Throws<ArgumentException>(null, () => matrix.RotateAt(1, PointF.Empty, MatrixOrder.Append));
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -558,7 +558,7 @@ namespace System.Drawing.Drawing2D.Tests
         {
             using (var matrix = new Matrix())
             {
-                Assert.Throws<ArgumentException>(null, () => matrix.RotateAt(1, PointF.Empty, order));
+                AssertExtensions.Throws<ArgumentException>(null, () => matrix.RotateAt(1, PointF.Empty, order));
             }
         }
 
@@ -623,7 +623,7 @@ namespace System.Drawing.Drawing2D.Tests
         {
             using (var matrix = new Matrix())
             {
-                Assert.Throws<ArgumentException>(null, () => matrix.Shear(1, 2, order));
+                AssertExtensions.Throws<ArgumentException>(null, () => matrix.Shear(1, 2, order));
             }
         }
 
@@ -633,8 +633,8 @@ namespace System.Drawing.Drawing2D.Tests
             var matrix = new Matrix();
             matrix.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => matrix.Scale(1, 2));
-            Assert.Throws<ArgumentException>(null, () => matrix.Scale(1, 2, MatrixOrder.Append));
+            AssertExtensions.Throws<ArgumentException>(null, () => matrix.Scale(1, 2));
+            AssertExtensions.Throws<ArgumentException>(null, () => matrix.Scale(1, 2, MatrixOrder.Append));
         }
 
         public static IEnumerable<object[]> Shear_TestData()
@@ -699,7 +699,7 @@ namespace System.Drawing.Drawing2D.Tests
         {
             using (var matrix = new Matrix())
             {
-                Assert.Throws<ArgumentException>(null, () => matrix.Shear(1, 2, order));
+                AssertExtensions.Throws<ArgumentException>(null, () => matrix.Shear(1, 2, order));
             }
         }
 
@@ -709,8 +709,8 @@ namespace System.Drawing.Drawing2D.Tests
             var matrix = new Matrix();
             matrix.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => matrix.Shear(1, 2));
-            Assert.Throws<ArgumentException>(null, () => matrix.Shear(1, 2, MatrixOrder.Append));
+            AssertExtensions.Throws<ArgumentException>(null, () => matrix.Shear(1, 2));
+            AssertExtensions.Throws<ArgumentException>(null, () => matrix.Shear(1, 2, MatrixOrder.Append));
         }
 
         public static IEnumerable<object[]> Translate_TestData()
@@ -765,7 +765,7 @@ namespace System.Drawing.Drawing2D.Tests
         {
             using (var matrix = new Matrix())
             {
-                Assert.Throws<ArgumentException>(null, () => matrix.Translate(1, 2, order));
+                AssertExtensions.Throws<ArgumentException>(null, () => matrix.Translate(1, 2, order));
             }
         }
 
@@ -775,8 +775,8 @@ namespace System.Drawing.Drawing2D.Tests
             var matrix = new Matrix();
             matrix.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => matrix.Translate(1, 2));
-            Assert.Throws<ArgumentException>(null, () => matrix.Translate(1, 2, MatrixOrder.Append));
+            AssertExtensions.Throws<ArgumentException>(null, () => matrix.Translate(1, 2));
+            AssertExtensions.Throws<ArgumentException>(null, () => matrix.Translate(1, 2, MatrixOrder.Append));
         }
 
         public static IEnumerable<object[]> TransformPoints_TestData()
@@ -832,8 +832,8 @@ namespace System.Drawing.Drawing2D.Tests
         {
             using (var matrix = new Matrix())
             {
-                Assert.Throws<ArgumentException>(null, () => matrix.TransformPoints(new Point[0]));
-                Assert.Throws<ArgumentException>(null, () => matrix.TransformPoints(new PointF[0]));
+                AssertExtensions.Throws<ArgumentException>(null, () => matrix.TransformPoints(new Point[0]));
+                AssertExtensions.Throws<ArgumentException>(null, () => matrix.TransformPoints(new PointF[0]));
             }
         }
 
@@ -843,8 +843,8 @@ namespace System.Drawing.Drawing2D.Tests
             var matrix = new Matrix();
             matrix.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => matrix.TransformPoints(new Point[1]));
-            Assert.Throws<ArgumentException>(null, () => matrix.TransformPoints(new PointF[1]));
+            AssertExtensions.Throws<ArgumentException>(null, () => matrix.TransformPoints(new Point[1]));
+            AssertExtensions.Throws<ArgumentException>(null, () => matrix.TransformPoints(new PointF[1]));
         }
 
         public static IEnumerable<object[]> TransformVectors_TestData()
@@ -916,9 +916,9 @@ namespace System.Drawing.Drawing2D.Tests
         {
             using (var matrix = new Matrix())
             {
-                Assert.Throws<ArgumentException>(null, () => matrix.VectorTransformPoints(new Point[0]));
-                Assert.Throws<ArgumentException>(null, () => matrix.TransformVectors(new Point[0]));
-                Assert.Throws<ArgumentException>(null, () => matrix.TransformVectors(new PointF[0]));
+                AssertExtensions.Throws<ArgumentException>(null, () => matrix.VectorTransformPoints(new Point[0]));
+                AssertExtensions.Throws<ArgumentException>(null, () => matrix.TransformVectors(new Point[0]));
+                AssertExtensions.Throws<ArgumentException>(null, () => matrix.TransformVectors(new PointF[0]));
             }
         }
 
@@ -928,9 +928,9 @@ namespace System.Drawing.Drawing2D.Tests
             var matrix = new Matrix();
             matrix.Dispose();
 
-            Assert.Throws<ArgumentException>(null, () => matrix.VectorTransformPoints(new Point[1]));
-            Assert.Throws<ArgumentException>(null, () => matrix.TransformPoints(new Point[1]));
-            Assert.Throws<ArgumentException>(null, () => matrix.TransformVectors(new PointF[1]));
+            AssertExtensions.Throws<ArgumentException>(null, () => matrix.VectorTransformPoints(new Point[1]));
+            AssertExtensions.Throws<ArgumentException>(null, () => matrix.TransformPoints(new Point[1]));
+            AssertExtensions.Throws<ArgumentException>(null, () => matrix.TransformVectors(new PointF[1]));
         }
 
         private static void AssertEqualFloatArray(float[] expected, float[] actual)

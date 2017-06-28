@@ -16,7 +16,7 @@ namespace System.Reflection.Emit.Tests
             yield return new object[] { "A!?123C", typeof(int), FieldAttributes.Assembly, FieldAttributes.Assembly };
             yield return new object[] { "a\0b\0c", typeof(string), FieldAttributes.FamANDAssem, FieldAttributes.FamANDAssem };
             yield return new object[] { "\uD800\uDC00", Helpers.DynamicType(TypeAttributes.Public).AsType(), FieldAttributes.Family, FieldAttributes.Family };
-            yield return new object[] { "привет", typeof(EmptyNonGenericInterface1), FieldAttributes.FamORAssem, FieldAttributes.FamORAssem };
+            yield return new object[] { "\u043F\u0440\u0438\u0432\u0435\u0442", typeof(EmptyNonGenericInterface1), FieldAttributes.FamORAssem, FieldAttributes.FamORAssem };
             yield return new object[] { "Test Name With Spaces", typeof(EmptyEnum), FieldAttributes.Public, FieldAttributes.Public };
             yield return new object[] { "TestName", typeof(EmptyNonGenericClass), FieldAttributes.HasDefault, FieldAttributes.PrivateScope };
             yield return new object[] { "TestName", typeof(EmptyNonGenericStruct), FieldAttributes.HasFieldMarshal, FieldAttributes.PrivateScope };
@@ -99,7 +99,7 @@ namespace System.Reflection.Emit.Tests
         public void DefineField_VoidFieldType_ThrowsArgumentException()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
-            Assert.Throws<ArgumentException>(null, () => type.DefineField("Name", typeof(void), FieldAttributes.Public));
+            AssertExtensions.Throws<ArgumentException>(null, () => type.DefineField("Name", typeof(void), FieldAttributes.Public));
         }
 
         [Fact]

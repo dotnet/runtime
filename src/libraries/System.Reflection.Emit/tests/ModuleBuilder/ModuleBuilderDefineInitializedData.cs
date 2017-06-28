@@ -35,7 +35,7 @@ namespace System.Reflection.Emit.Tests
         public void DefineInitializedData_InvalidDataLength_ThrowsArgumentException(int length)
         {
             ModuleBuilder module = Helpers.DynamicModule();
-            Assert.Throws<ArgumentException>(null, () => module.DefineInitializedData("MyField", new byte[length], FieldAttributes.Public));
+            AssertExtensions.Throws<ArgumentException>(null, () => module.DefineInitializedData("MyField", new byte[length], FieldAttributes.Public));
         }
 
         [Fact]

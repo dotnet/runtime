@@ -466,8 +466,8 @@ namespace System.Collections.Immutable.Tests
 
             var map1 = map.Add(key, value1);
             var map2 = map.Add(key, value2);
-            Assert.Throws<ArgumentException>(null, () => map1.Add(key, value2));
-            Assert.Throws<ArgumentException>(null, () => map2.Add(key, value1));
+            AssertExtensions.Throws<ArgumentException>(null, () => map1.Add(key, value2));
+            AssertExtensions.Throws<ArgumentException>(null, () => map2.Add(key, value1));
         }
 
         protected void ContainsKeyTestHelper<TKey, TValue>(IImmutableDictionary<TKey, TValue> map, TKey key, TValue value)

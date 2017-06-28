@@ -344,7 +344,7 @@ namespace System.Collections.Tests
             }
             else
             {
-                Assert.Throws<ArgumentException>(null, () => bitArray.CopyTo(array, index));
+                AssertExtensions.Throws<ArgumentException>(null, () => bitArray.CopyTo(array, index));
             }
         }
 

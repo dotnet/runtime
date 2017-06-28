@@ -162,7 +162,7 @@ namespace System.Reflection.Emit.Tests
         public void DefineNestedType_InvalidAttributes_ThrowsArgumentException(TypeAttributes attributes, string paramName)
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
-            Assert.Throws<ArgumentException>(paramName, () => type.DefineNestedType("Name", attributes));
+            AssertExtensions.Throws<ArgumentException>(paramName, () => type.DefineNestedType("Name", attributes));
         }
         
         [Fact]
@@ -211,7 +211,7 @@ namespace System.Reflection.Emit.Tests
         public void DefineNestedType_ByRefInterfaceType_ThrowsArgumentException()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Public);
-            Assert.Throws<ArgumentException>(null, () => type.DefineNestedType("Name", TypeAttributes.NestedPublic, typeof(object), new Type[] { typeof(int).MakeByRefType() }));
+            AssertExtensions.Throws<ArgumentException>(null, () => type.DefineNestedType("Name", TypeAttributes.NestedPublic, typeof(object), new Type[] { typeof(int).MakeByRefType() }));
         }
 
         public static IEnumerable<object[]> InvalidInterfaceType_TestData()

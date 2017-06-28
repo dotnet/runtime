@@ -117,7 +117,7 @@ namespace System.Reflection.Emit.Tests
         public void DefineLiteral_InvalidLiteralValue_ThrowsArgumentException(Type underlyingType, object literalValue)
         {
             EnumBuilder enumBuilder = Helpers.DynamicEnum(TypeAttributes.Public, underlyingType);
-            Assert.Throws<ArgumentException>(null, () => enumBuilder.DefineLiteral("LiteralName", literalValue));
+            AssertExtensions.Throws<ArgumentException>(null, () => enumBuilder.DefineLiteral("LiteralName", literalValue));
         }
 
         public static IEnumerable<object[]> DefineLiteral_InvalidLiteralValue_ThrowsTypeLoadExceptionOnCreation_TestData()

@@ -62,8 +62,8 @@ namespace System.Reflection.Emit.Tests
             SignatureHelper helper = SignatureHelper.GetFieldSigHelper(module);
             helper.GetSignature();
 
-            Assert.Throws<ArgumentException>(null, () => helper.AddArgument(typeof(string)));
-            Assert.Throws<ArgumentException>(null, () => helper.AddArgument(typeof(string), null, null));
+            AssertExtensions.Throws<ArgumentException>(null, () => helper.AddArgument(typeof(string)));
+            AssertExtensions.Throws<ArgumentException>(null, () => helper.AddArgument(typeof(string), null, null));
         }
 
         [Fact]
@@ -73,8 +73,8 @@ namespace System.Reflection.Emit.Tests
             SignatureHelper helper = SignatureHelper.GetFieldSigHelper(module);
             helper.GetSignature();
 
-            Assert.Throws<ArgumentException>(null, () => helper.AddArgument(typeof(string), new Type[] { typeof(int) }, null));
-            Assert.Throws<ArgumentException>(null, () => helper.AddArgument(typeof(string), null, new Type[] { typeof(int) }));
+            AssertExtensions.Throws<ArgumentException>(null, () => helper.AddArgument(typeof(string), new Type[] { typeof(int) }, null));
+            AssertExtensions.Throws<ArgumentException>(null, () => helper.AddArgument(typeof(string), null, new Type[] { typeof(int) }));
         }
     }
 }

@@ -58,8 +58,8 @@ namespace System.Runtime.Serialization.Formatters.Tests
         [MemberData(nameof(GetUninitializedObject_NotSupportedType_TestData))]
         public void GetUninitializedObject_NotSupportedType_ThrowsArgumentException(Type type)
         {
-            Assert.Throws<ArgumentException>(null, () => FormatterServices.GetUninitializedObject(type));
-            Assert.Throws<ArgumentException>(null, () => FormatterServices.GetSafeUninitializedObject(type));
+            AssertExtensions.Throws<ArgumentException>(null, () => FormatterServices.GetUninitializedObject(type));
+            AssertExtensions.Throws<ArgumentException>(null, () => FormatterServices.GetSafeUninitializedObject(type));
         }
 
         [Theory]

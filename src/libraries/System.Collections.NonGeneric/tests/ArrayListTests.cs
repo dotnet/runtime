@@ -592,8 +592,8 @@ namespace System.Collections.Tests
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => arrList2.BinarySearch(-1, arrList2.Count, 1, comparer)); // Index < 0
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => arrList2.BinarySearch(0, -1, 1, comparer)); // Count < 0
 
-                Assert.Throws<ArgumentException>(null, () => arrList2.BinarySearch(1, arrList2.Count, 1, comparer)); // Index + Count >= list.Count
-                Assert.Throws<ArgumentException>(null, () => arrList2.BinarySearch(3, arrList2.Count - 2, 1, comparer)); // Index + Count >= list.Count
+                AssertExtensions.Throws<ArgumentException>(null, () => arrList2.BinarySearch(1, arrList2.Count, 1, comparer)); // Index + Count >= list.Count
+                AssertExtensions.Throws<ArgumentException>(null, () => arrList2.BinarySearch(3, arrList2.Count - 2, 1, comparer)); // Index + Count >= list.Count
             });
         }
 
@@ -817,7 +817,9 @@ namespace System.Collections.Tests
                 AssertExtensions.Throws<ArgumentException>("array", null, () => arrList2.CopyTo(new object[10, 10])); // Array is multidimensional
 
                 Assert.Throws<ArgumentOutOfRangeException>(() => arrList2.CopyTo(arrCopy, -1)); // Index < 0
-                Assert.Throws<ArgumentException>(() => arrList2.CopyTo(new object[11], 2)); // Invalid index and length
+
+                bool hasParamName = arrList2.GetType().Name != "Range";
+                AssertExtensions.Throws<ArgumentException>(hasParamName ? "destinationArray" : null, hasParamName ? "" : null, () => arrList2.CopyTo(new object[11], 2)); // Invalid index and length
             });
         }
 
@@ -1177,7 +1179,7 @@ namespace System.Collections.Tests
                 // Invalid parameters    
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => arrList2.GetEnumerator(-1, arrList2.Count)); // Index < 0
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => arrList2.GetEnumerator(0, -1)); // Count < 0
-                Assert.Throws<ArgumentException>(null, () => arrList2.GetEnumerator(0, arrList2.Count + 1)); // Count + list.Count
+                AssertExtensions.Throws<ArgumentException>(null, () => arrList2.GetEnumerator(0, arrList2.Count + 1)); // Count + list.Count
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => arrList2.GetEnumerator(-1, arrList2.Count + 1)); // Index < 0 and count > list.Count
             });
         }
@@ -1301,8 +1303,8 @@ namespace System.Collections.Tests
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => arrList2.GetRange(-1, 50)); // Index < 0
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => arrList2.GetRange(0, -1)); // Count < 0
 
-                Assert.Throws<ArgumentException>(null, () => arrList2.GetRange(0, 500)); // Index + count > list.count
-                Assert.Throws<ArgumentException>(null, () => arrList2.GetRange(arrList2.Count, 1)); // Index >= list.count
+                AssertExtensions.Throws<ArgumentException>(null, () => arrList2.GetRange(0, 500)); // Index + count > list.count
+                AssertExtensions.Throws<ArgumentException>(null, () => arrList2.GetRange(arrList2.Count, 1)); // Index >= list.count
             });
         }
 
@@ -2016,9 +2018,9 @@ namespace System.Collections.Tests
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => arrList2.RemoveRange(-1, 1)); // Index < 0
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => arrList2.RemoveRange(1, -1)); // Count < 0
 
-                Assert.Throws<ArgumentException>(null, () => arrList2.RemoveRange(arrList2.Count, 1)); // Index > list.Count
-                Assert.Throws<ArgumentException>(null, () => arrList2.RemoveRange(0, arrList2.Count + 1)); // Count > list.Count
-                Assert.Throws<ArgumentException>(null, () => arrList2.RemoveRange(5, arrList2.Count - 1)); // Index + count > list.Count
+                AssertExtensions.Throws<ArgumentException>(null, () => arrList2.RemoveRange(arrList2.Count, 1)); // Index > list.Count
+                AssertExtensions.Throws<ArgumentException>(null, () => arrList2.RemoveRange(0, arrList2.Count + 1)); // Count > list.Count
+                AssertExtensions.Throws<ArgumentException>(null, () => arrList2.RemoveRange(5, arrList2.Count - 1)); // Index + count > list.Count
             });
         }
 
@@ -2190,7 +2192,7 @@ namespace System.Collections.Tests
 
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => arrList2.Reverse(-1, arrList2.Count)); // Index < 0
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => arrList2.Reverse(0, -1)); // Count < 0
-                Assert.Throws<ArgumentException>(null, () => arrList2.Reverse(1000, arrList2.Count)); // Index is too big
+                AssertExtensions.Throws<ArgumentException>(null, () => arrList2.Reverse(1000, arrList2.Count)); // Index is too big
             });
         }
 
@@ -2323,8 +2325,8 @@ namespace System.Collections.Tests
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => arrList2.Sort(-1, arrList2.Count, null)); // Index < 0
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => arrList2.Sort(0, -1, null)); // Count < 0
 
-                Assert.Throws<ArgumentException>(null, () => arrList2.Sort(arrList2.Count, arrList2.Count, null)); // Index >= list.Count
-                Assert.Throws<ArgumentException>(null, () => arrList2.Sort(0, arrList2.Count + 1, null)); // Count = list.Count
+                AssertExtensions.Throws<ArgumentException>(null, () => arrList2.Sort(arrList2.Count, arrList2.Count, null)); // Index >= list.Count
+                AssertExtensions.Throws<ArgumentException>(null, () => arrList2.Sort(0, arrList2.Count + 1, null)); // Count = list.Count
             });
         }
 

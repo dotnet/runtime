@@ -63,7 +63,7 @@ namespace System.Reflection.Emit.Tests
             ModuleBuilder module = Helpers.DynamicModule();
             foreach (int size in new int[] { -1, 0, 0x003f0000, 0x003f0000 + 1 })
             {
-                Assert.Throws<ArgumentException>(null, () => module.DefineUninitializedData("TestField", size, attributes));
+                AssertExtensions.Throws<ArgumentException>(null, () => module.DefineUninitializedData("TestField", size, attributes));
             }
         }
 

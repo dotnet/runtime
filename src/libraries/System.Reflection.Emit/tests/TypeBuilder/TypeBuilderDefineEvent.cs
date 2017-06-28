@@ -116,7 +116,7 @@ namespace System.Reflection.Emit.Tests
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
 
-            Assert.Throws<ArgumentException>(null, () => type.DefineEvent("Name", EventAttributes.None, typeof(int).MakeByRefType()));
+            AssertExtensions.Throws<ArgumentException>(null, () => type.DefineEvent("Name", EventAttributes.None, typeof(int).MakeByRefType()));
         }
 
         [Fact]

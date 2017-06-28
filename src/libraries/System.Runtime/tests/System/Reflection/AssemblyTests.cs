@@ -422,8 +422,8 @@ namespace System.Reflection.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Assembly.LoadFrom() not supported on UapAot")]
         public void LoadFrom_EmptyAssemblyFile_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>((() => Assembly.LoadFrom("")));
-            Assert.Throws<ArgumentException>((() => Assembly.UnsafeLoadFrom("")));
+            AssertExtensions.Throws<ArgumentException>("path", null, (() => Assembly.LoadFrom("")));
+            AssertExtensions.Throws<ArgumentException>("path", null, (() => Assembly.UnsafeLoadFrom("")));
         }
 
         [Fact]

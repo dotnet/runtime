@@ -86,7 +86,7 @@ namespace System.ComponentModel.DataAnnotations.Tests
         public static void Validate_InvalidPattern_ThrowsArgumentException()
         {
             RegularExpressionAttribute attribute = new RegularExpressionAttribute("foo(?<1bar)");
-            Assert.Throws<ArgumentException>(null, () => attribute.Validate("Any", new ValidationContext(new object())));
+            AssertExtensions.Throws<ArgumentException>(null, () => attribute.Validate("Any", new ValidationContext(new object())));
         }
         
         public class ClassWithValidToString

@@ -94,7 +94,7 @@ namespace System.Reflection.Emit.Tests
         {
             ModuleBuilder module = Helpers.DynamicModule();
             module.DefineEnum("Name", TypeAttributes.Public, typeof(int));
-            Assert.Throws<ArgumentException>(null, () => module.DefineEnum("Name", TypeAttributes.Public, typeof(int)));
+            AssertExtensions.Throws<ArgumentException>(null, () => module.DefineEnum("Name", TypeAttributes.Public, typeof(int)));
         }
 
         [Fact]
@@ -143,7 +143,7 @@ namespace System.Reflection.Emit.Tests
         public void DefineEnum_IncorrectVisibilityAttributes_ThrowsArgumentException(TypeAttributes visibility, string paramName)
         {
             ModuleBuilder module = Helpers.DynamicModule();
-            Assert.Throws<ArgumentException>(paramName, () => module.DefineEnum("Enum", visibility, typeof(int)));
+            AssertExtensions.Throws<ArgumentException>(paramName, () => module.DefineEnum("Enum", visibility, typeof(int)));
         }
 
         [Fact]
@@ -157,7 +157,7 @@ namespace System.Reflection.Emit.Tests
         public void DefineEnum_VoidUnderlyingType_ThrowsArgumentException()
         {
             ModuleBuilder module = Helpers.DynamicModule();
-            Assert.Throws<ArgumentException>(null, () => module.DefineEnum("Name", TypeAttributes.Public, typeof(void)));
+            AssertExtensions.Throws<ArgumentException>(null, () => module.DefineEnum("Name", TypeAttributes.Public, typeof(void)));
         }
 
         [Fact]

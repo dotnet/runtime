@@ -257,8 +257,7 @@ namespace Test
                        () => Task<int>.Factory.ContinueWhenAny<int>((Task<int>[])antecedents, t => 0));
 
 
-                    Assert.Throws<ArgumentException>(
-                       () => { Task<int>.Factory.ContinueWhenAny<int>(new Task<int>[] { }, t => 0); });
+                    AssertExtensions.Throws<ArgumentException>("tasks", () => Task<int>.Factory.ContinueWhenAny(new Task<int>[0], t => 0));
 
                     //
                     // Test for exception on null continuation function
@@ -300,8 +299,7 @@ namespace Test
                        () => Task<int>.Factory.ContinueWhenAny(antecedents, (t) => 0));
 
 
-                    Assert.Throws<ArgumentException>(
-                       () => { Task<int>.Factory.ContinueWhenAny(new Task[] { }, t => 0); });
+                    AssertExtensions.Throws<ArgumentException>("tasks", () => Task<int>.Factory.ContinueWhenAny(new Task[0], t => 0));
 
                     //
                     // Test for exception on null continuation function
@@ -343,8 +341,7 @@ namespace Test
                         Assert.ThrowsAsync<ArgumentException>(
                            () => Task.Factory.ContinueWhenAny<int, int>((Task<int>[])antecedents, t => 0));
 
-                        Assert.Throws<ArgumentException>(
-                           () => { Task.Factory.ContinueWhenAny<int, int>(new Task<int>[] { }, t => 0); });
+                        AssertExtensions.Throws<ArgumentException>("tasks", () => Task.Factory.ContinueWhenAny(new Task<int>[0], t => 0));
 
                         //
                         // Test for exception on null continuation function
@@ -381,8 +378,7 @@ namespace Test
                            () => Task.Factory.ContinueWhenAny<int>(antecedents, t => 0));
 
 
-                        Assert.Throws<ArgumentException>(
-                           () => { Task.Factory.ContinueWhenAny<int>(new Task[] { }, t => 0); });
+                        AssertExtensions.Throws<ArgumentException>("tasks", () => Task.Factory.ContinueWhenAny(new Task[0], t => 0));
 
                         //
                         // Test for exception on null continuation function
@@ -422,8 +418,7 @@ namespace Test
                         Assert.ThrowsAsync<ArgumentException>(
                             () => Task.Factory.ContinueWhenAny<int>((Task<int>[])antecedents, t => { }));
 
-                        Assert.Throws<ArgumentException>(
-                            () => { Task.Factory.ContinueWhenAny<int>(new Task<int>[] { }, t => { }); });
+                        AssertExtensions.Throws<ArgumentException>("tasks", () => Task.Factory.ContinueWhenAny(new Task<int>[] { }, t => { }));
 
                         //
                         // Test for exception on null continuation action
@@ -459,8 +454,7 @@ namespace Test
                         Assert.ThrowsAsync<ArgumentException>(
                            () => Task.Factory.ContinueWhenAny(antecedents, t => { }));
 
-                        Assert.Throws<ArgumentException>(
-                           () => { Task.Factory.ContinueWhenAny(new Task[] { }, t => { }); });
+                        AssertExtensions.Throws<ArgumentException>("tasks",() => Task.Factory.ContinueWhenAny(new Task[0], t => { }));
 
                         //
                         // Test for exception on null continuation action

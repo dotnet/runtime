@@ -29,7 +29,7 @@ namespace System.Security.Cryptography.CryptoConfigTests
         [Fact]
         public static void AddOID_EmptyString_Throws()
         {
-            Assert.Throws<ArgumentException>(null, () => CryptoConfig.AddOID(string.Empty, string.Empty));
+            AssertExtensions.Throws<ArgumentException>(null, () => CryptoConfig.AddOID(string.Empty, string.Empty));
         }
 
         [Fact]
@@ -61,7 +61,7 @@ namespace System.Security.Cryptography.CryptoConfigTests
         [Fact]
         public static void AddAlgorithm_NonVisibleType()
         {
-            Assert.Throws<ArgumentException>("algorithm", () => CryptoConfig.AddAlgorithm(typeof(AESFancy), "AESFancy"));
+            AssertExtensions.Throws<ArgumentException>("algorithm", () => CryptoConfig.AddAlgorithm(typeof(AESFancy), "AESFancy"));
         }
 
         private class AESFancy
@@ -71,7 +71,7 @@ namespace System.Security.Cryptography.CryptoConfigTests
         [Fact]
         public static void AddAlgorithm_EmptyString_Throws()
         {
-            Assert.Throws<ArgumentException>(null, () => CryptoConfig.AddAlgorithm(typeof(CryptoConfigTests), string.Empty));
+            AssertExtensions.Throws<ArgumentException>(null, () => CryptoConfig.AddAlgorithm(typeof(CryptoConfigTests), string.Empty));
         }
 
         [Fact]

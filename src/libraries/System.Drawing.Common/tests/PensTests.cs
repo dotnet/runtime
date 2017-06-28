@@ -164,7 +164,7 @@ namespace System.Drawing.Tests
             Pen pen = penThunk();
             Assert.Equal(expectedColor, pen.Color);
             Assert.Equal(PenType.SolidColor, pen.PenType);
-            Assert.Throws<ArgumentException>(null, () => pen.Color = Color.AliceBlue);
+            AssertExtensions.Throws<ArgumentException>(null, () => pen.Color = Color.AliceBlue);
 
             Assert.Same(pen, penThunk());
         }

@@ -110,7 +110,7 @@ namespace System.Net.Tests
 
             // Exception thrown when not empty.
             listener.Prefixes.Add("http://localhost:9200/");
-            Assert.Throws<ArgumentException>(null, () => listener.Prefixes.CopyTo(new object[1, 1], 0));
+            AssertExtensions.Throws<ArgumentException>(null, () => listener.Prefixes.CopyTo(new object[1, 1], 0));
         }
 
         [Fact]

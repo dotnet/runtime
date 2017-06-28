@@ -55,14 +55,14 @@ namespace System.ComponentModel.DataAnnotations.Tests
         public static void Validate_Indexer_ThrowsArgumentException_Netcoreapp()
         {
             CompareAttribute attribute = new CompareAttribute("Item");
-            Assert.Throws<ArgumentException>(null, () => attribute.Validate("b", s_context));
+            AssertExtensions.Throws<ArgumentException>(null, () => attribute.Validate("b", s_context));
         }
 
         [Fact]
         public static void Validate_SetOnlyProperty_ThrowsArgumentException()
         {
             CompareAttribute attribute = new CompareAttribute(nameof(CompareObject.SetOnlyProperty));
-            Assert.Throws<ArgumentException>(null, () => attribute.Validate("b", s_context));
+            AssertExtensions.Throws<ArgumentException>(null, () => attribute.Validate("b", s_context));
         }
 
         [Fact]
