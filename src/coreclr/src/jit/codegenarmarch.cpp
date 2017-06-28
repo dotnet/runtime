@@ -276,6 +276,12 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             genPutArgReg(treeNode->AsOp());
             break;
 
+#ifdef _TARGET_ARM_
+        case GT_PUTARG_SPLIT:
+            genPutArgSplit(treeNode->AsPutArgSplit());
+            break;
+#endif
+
         case GT_CALL:
             genCallInstruction(treeNode->AsCall());
             break;
@@ -884,6 +890,151 @@ void CodeGen::genPutArgReg(GenTreeOp* tree)
 
     genProduceReg(tree);
 }
+
+#ifdef _TARGET_ARM_
+//---------------------------------------------------------------------
+// genPutArgSplit - generate code for a GT_PUTARG_SPLIT node
+//
+// Arguments
+//    tree - the GT_PUTARG_SPLIT node
+//
+// Return value:
+//    None
+//
+void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
+{
+    assert(treeNode->OperIs(GT_PUTARG_SPLIT));
+
+    GenTreePtr source = treeNode->gtOp1;
+    emitter*   emit   = getEmitter();
+
+    noway_assert(source->OperGet() == GT_OBJ);
+
+    var_types targetType = source->TypeGet();
+    noway_assert(varTypeIsStruct(targetType));
+
+    regNumber baseReg = treeNode->ExtractTempReg();
+    regNumber addrReg = REG_NA;
+
+    GenTreeLclVarCommon* varNode  = nullptr;
+    GenTreePtr           addrNode = nullptr;
+
+    addrNode = source->gtOp.gtOp1;
+
+    // addrNode can either be a GT_LCL_VAR_ADDR or an address expression
+    //
+    if (addrNode->OperGet() == GT_LCL_VAR_ADDR)
+    {
+        // We have a GT_OBJ(GT_LCL_VAR_ADDR)
+        //
+        // We will treat this case the same as above
+        // (i.e if we just had this GT_LCL_VAR directly as the source)
+        // so update 'source' to point this GT_LCL_VAR_ADDR node
+        // and continue to the codegen for the LCL_VAR node below
+        //
+        varNode  = addrNode->AsLclVarCommon();
+        addrNode = nullptr;
+    }
+
+    // Either varNode or addrNOde must have been setup above,
+    // the xor ensures that only one of the two is setup, not both
+    assert((varNode != nullptr) ^ (addrNode != nullptr));
+
+    // Setup the structSize, isHFa, and gcPtrCount
+    BYTE*    gcPtrs     = treeNode->gtGcPtrs;
+    unsigned gcPtrCount = treeNode->gtNumberReferenceSlots; // The count of GC pointers in the struct
+    int      structSize = treeNode->getArgSize();
+    bool     isHfa      = treeNode->gtIsHfa;
+
+    // This is the varNum for our load operations,
+    // only used when we have a struct with a LclVar source
+    unsigned srcVarNum = BAD_VAR_NUM;
+
+    if (varNode != nullptr)
+    {
+        srcVarNum = varNode->gtLclNum;
+        assert(srcVarNum < compiler->lvaCount);
+    }
+    else // addrNode is used
+    {
+        assert(addrNode != nullptr);
+
+        // Generate code to load the address that we need into a register
+        genConsumeAddress(addrNode);
+        addrReg = addrNode->gtRegNum;
+    }
+
+    // If we have an HFA we can't have any GC pointers,
+    // if not then the max size for the the struct is 16 bytes
+    if (isHfa)
+    {
+        noway_assert(gcPtrCount == 0);
+    }
+
+    unsigned varNumOut    = compiler->lvaOutgoingArgSpaceVar;
+    unsigned argOffsetMax = compiler->lvaOutgoingArgSpaceSize;
+    unsigned argOffsetOut = treeNode->gtSlotNum * TARGET_POINTER_SIZE;
+
+    // Put on stack first
+    unsigned nextIndex     = treeNode->gtNumRegs;
+    unsigned structOffset  = nextIndex * TARGET_POINTER_SIZE;
+    int      remainingSize = structSize - structOffset;
+
+    // remainingSize is always multiple of TARGET_POINTER_SIZE
+    assert(remainingSize % TARGET_POINTER_SIZE == 0);
+    while (remainingSize > 0)
+    {
+        var_types type = compiler->getJitGCType(gcPtrs[nextIndex]);
+
+        if (varNode != nullptr)
+        {
+            // Load from our varNumImp source
+            emit->emitIns_R_S(INS_ldr, emitTypeSize(type), baseReg, srcVarNum, structOffset);
+        }
+        else
+        {
+            // check for case of destroying the addrRegister while we still need it
+            assert(baseReg != addrReg);
+
+            // Load from our address expression source
+            emit->emitIns_R_R_I(INS_ldr, emitTypeSize(type), baseReg, addrReg, structOffset);
+        }
+
+        // Emit str instruction to store the register into the outgoing argument area
+        emit->emitIns_S_R(INS_str, emitTypeSize(type), baseReg, varNumOut, argOffsetOut);
+        argOffsetOut += TARGET_POINTER_SIZE;  // We stored 4-bytes of the struct
+        assert(argOffsetOut <= argOffsetMax); // We can't write beyound the outgoing area area
+        remainingSize -= TARGET_POINTER_SIZE; // We loaded 4-bytes of the struct
+        structOffset += TARGET_POINTER_SIZE;
+        nextIndex += 1;
+    }
+
+    // Set registers
+    structOffset = 0;
+    for (unsigned idx = 0; idx < treeNode->gtNumRegs; idx++)
+    {
+        regNumber targetReg = treeNode->GetRegNumByIdx(idx);
+        var_types type      = treeNode->GetRegType(idx);
+
+        if (varNode != nullptr)
+        {
+            // Load from our varNumImp source
+            emit->emitIns_R_S(INS_ldr, emitTypeSize(type), targetReg, srcVarNum, structOffset);
+        }
+        else
+        {
+            // check for case of destroying the addrRegister while we still need it
+            assert(targetReg != addrReg);
+
+            // Load from our address expression source
+            emit->emitIns_R_R_I(INS_ldr, emitTypeSize(type), targetReg, addrReg, structOffset);
+        }
+        structOffset += TARGET_POINTER_SIZE;
+    }
+
+    genProduceReg(treeNode);
+}
+#endif // _TARGET_ARM_
 
 //----------------------------------------------------------------------------------
 // genMultiRegCallStoreToLocal: store multi-reg return value of a call node to a local
@@ -1616,6 +1767,22 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 #endif // _TARGET_ARM_
             }
         }
+#ifdef _TARGET_ARM_
+        else if (curArgTabEntry->isSplit)
+        {
+            assert(curArgTabEntry->numRegs >= 1);
+            genConsumeArgSplitStruct(argNode->AsPutArgSplit());
+            for (unsigned idx = 0; idx < curArgTabEntry->numRegs; idx++)
+            {
+                regNumber argReg   = (regNumber)((unsigned)curArgTabEntry->regNum + idx);
+                regNumber allocReg = argNode->AsPutArgSplit()->GetRegNumByIdx(idx);
+                if (argReg != allocReg)
+                {
+                    inst_RV_RV(ins_Move_Extend(argNode->TypeGet(), true), argReg, allocReg);
+                }
+            }
+        }
+#endif
         else
         {
             regNumber argReg = curArgTabEntry->regNum;

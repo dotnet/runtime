@@ -231,6 +231,9 @@ private:
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
     void LowerPutArgStk(GenTreePutArgStk* tree);
     void TreeNodeInfoInitPutArgStk(GenTreePutArgStk* tree);
+#ifdef _TARGET_ARM_
+    void TreeNodeInfoInitPutArgSplit(GenTreePutArgSplit* tree, TreeNodeInfo& info, fgArgTabEntryPtr argInfo);
+#endif
 #endif // FEATURE_PUT_STRUCT_ARG_STK
     void TreeNodeInfoInitLclHeap(GenTree* tree);
 
