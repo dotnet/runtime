@@ -13033,7 +13033,7 @@ RelativePath=CoreMangLib\cti\system\math\MathRound3\MathRound3.cmd
 WorkingDir=CoreMangLib\cti\system\math\MathRound3
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri1;RT;EXPECTED_PASS
+Categories=Pri1;RT;EXPECTED_FAIL;12549
 HostStyle=0
 
 [MathRound4.cmd_1804]
@@ -89401,7 +89401,7 @@ RelativePath=JIT\Performance\CodeQuality\Span\SpanBench\SpanBench.cmd
 WorkingDir=JIT\Performance\CodeQuality\Span\SpanBench
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW
+Categories=EXPECTED_FAIL;NEW;12549
 HostStyle=0
 
 [Generated1202.cmd_11489]
