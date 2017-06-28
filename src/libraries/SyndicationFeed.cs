@@ -22,24 +22,24 @@ namespace Microsoft.ServiceModel.Syndication
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     public class SyndicationFeed : IExtensibleSyndicationObject
     {
-        Collection<SyndicationPerson> authors;
-        Uri baseUri;
-        Collection<SyndicationCategory> categories;
-        Collection<SyndicationPerson> contributors;
-        TextSyndicationContent copyright;
-        TextSyndicationContent description;
-        ExtensibleSyndicationObject extensions = new ExtensibleSyndicationObject();
-        string generator;
-        string id;
-        Uri imageUrl;
-        IEnumerable<SyndicationItem> items;
-        string language;
-        DateTimeOffset lastUpdatedTime;
-        Collection<SyndicationLink> links;
-        TextSyndicationContent title;
+        private Collection<SyndicationPerson> _authors;
+        private Uri _baseUri;
+        private Collection<SyndicationCategory> _categories;
+        private Collection<SyndicationPerson> _contributors;
+        private TextSyndicationContent _copyright;
+        private TextSyndicationContent _description;
+        private ExtensibleSyndicationObject _extensions = new ExtensibleSyndicationObject();
+        private string _generator;
+        private string _id;
+        private Uri _imageUrl;
+        private IEnumerable<SyndicationItem> _items;
+        private string _language;
+        private DateTimeOffset _lastUpdatedTime;
+        private Collection<SyndicationLink> _links;
+        private TextSyndicationContent _title;
 
         public SyndicationFeed()
-            : this((IEnumerable<SyndicationItem>) null)
+            : this((IEnumerable<SyndicationItem>)null)
         {
         }
 
@@ -67,19 +67,19 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (title != null)
             {
-                this.title = new TextSyndicationContent(title);
+                _title = new TextSyndicationContent(title);
             }
             if (description != null)
             {
-                this.description = new TextSyndicationContent(description);
+                _description = new TextSyndicationContent(description);
             }
             if (feedAlternateLink != null)
             {
                 this.Links.Add(SyndicationLink.CreateAlternateLink(feedAlternateLink));
             }
-            this.id = id;
-            this.lastUpdatedTime = lastUpdatedTime;
-            this.items = items;
+            _id = id;
+            _lastUpdatedTime = lastUpdatedTime;
+            _items = items;
         }
 
         protected SyndicationFeed(SyndicationFeed source, bool cloneItems)
@@ -88,21 +88,21 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("source");
             }
-            this.authors = FeedUtils.ClonePersons(source.authors);
-            this.categories = FeedUtils.CloneCategories(source.categories);
-            this.contributors = FeedUtils.ClonePersons(source.contributors);
-            this.copyright = FeedUtils.CloneTextContent(source.copyright);
-            this.description = FeedUtils.CloneTextContent(source.description);
-            this.extensions = source.extensions.Clone();
-            this.generator = source.generator;
-            this.id = source.id;
-            this.imageUrl = source.imageUrl;
-            this.language = source.language;
-            this.lastUpdatedTime = source.lastUpdatedTime;
-            this.links = FeedUtils.CloneLinks(source.links);
-            this.title = FeedUtils.CloneTextContent(source.title);
-            this.baseUri = source.baseUri;
-            IList<SyndicationItem> srcList = source.items as IList<SyndicationItem>;
+            _authors = FeedUtils.ClonePersons(source._authors);
+            _categories = FeedUtils.CloneCategories(source._categories);
+            _contributors = FeedUtils.ClonePersons(source._contributors);
+            _copyright = FeedUtils.CloneTextContent(source._copyright);
+            _description = FeedUtils.CloneTextContent(source._description);
+            _extensions = source._extensions.Clone();
+            _generator = source._generator;
+            _id = source._id;
+            _imageUrl = source._imageUrl;
+            _language = source._language;
+            _lastUpdatedTime = source._lastUpdatedTime;
+            _links = FeedUtils.CloneLinks(source._links);
+            _title = FeedUtils.CloneTextContent(source._title);
+            _baseUri = source._baseUri;
+            IList<SyndicationItem> srcList = source._items as IList<SyndicationItem>;
             if (srcList != null)
             {
                 Collection<SyndicationItem> tmp = new NullNotAllowedCollection<SyndicationItem>();
@@ -110,7 +110,7 @@ namespace Microsoft.ServiceModel.Syndication
                 {
                     tmp.Add((cloneItems) ? srcList[i].Clone() : srcList[i]);
                 }
-                this.items = tmp;
+                _items = tmp;
             }
             else
             {
@@ -118,43 +118,43 @@ namespace Microsoft.ServiceModel.Syndication
                 {
                     throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.GetString(SR.UnbufferedItemsCannotBeCloned)));
                 }
-                this.items = source.items;
+                _items = source._items;
             }
         }
 
         public Dictionary<XmlQualifiedName, string> AttributeExtensions
         {
-            get { return this.extensions.AttributeExtensions; }
+            get { return _extensions.AttributeExtensions; }
         }
 
         public Collection<SyndicationPerson> Authors
         {
             get
             {
-                if (this.authors == null)
+                if (_authors == null)
                 {
-                    this.authors = new NullNotAllowedCollection<SyndicationPerson>();
+                    _authors = new NullNotAllowedCollection<SyndicationPerson>();
                 }
-                return authors;
+                return _authors;
             }
         }
 
 
         public Uri BaseUri
         {
-            get { return this.baseUri; }
-            set { this.baseUri = value; }
+            get { return _baseUri; }
+            set { _baseUri = value; }
         }
 
         public Collection<SyndicationCategory> Categories
         {
             get
             {
-                if (this.categories == null)
+                if (_categories == null)
                 {
-                    this.categories = new NullNotAllowedCollection<SyndicationCategory>();
+                    _categories = new NullNotAllowedCollection<SyndicationCategory>();
                 }
-                return categories;
+                return _categories;
             }
         }
 
@@ -162,58 +162,58 @@ namespace Microsoft.ServiceModel.Syndication
         {
             get
             {
-                if (this.contributors == null)
+                if (_contributors == null)
                 {
-                    this.contributors = new NullNotAllowedCollection<SyndicationPerson>();
+                    _contributors = new NullNotAllowedCollection<SyndicationPerson>();
                 }
-                return contributors;
+                return _contributors;
             }
         }
 
         public TextSyndicationContent Copyright
         {
-            get { return this.copyright; }
-            set { this.copyright = value; }
+            get { return _copyright; }
+            set { _copyright = value; }
         }
 
         public TextSyndicationContent Description
         {
-            get { return this.description; }
-            set { this.description = value; }
+            get { return _description; }
+            set { _description = value; }
         }
 
         public SyndicationElementExtensionCollection ElementExtensions
         {
-            get { return this.extensions.ElementExtensions; }
+            get { return _extensions.ElementExtensions; }
         }
 
         public string Generator
         {
-            get { return generator; }
-            set { generator = value; }
+            get { return _generator; }
+            set { _generator = value; }
         }
 
         public string Id
         {
-            get { return id; }
-            set { id = value; }
+            get { return _id; }
+            set { _id = value; }
         }
 
         public Uri ImageUrl
         {
-            get { return imageUrl; }
-            set { imageUrl = value; }
+            get { return _imageUrl; }
+            set { _imageUrl = value; }
         }
 
         public IEnumerable<SyndicationItem> Items
         {
             get
             {
-                if (this.items == null)
+                if (_items == null)
                 {
-                    this.items = new NullNotAllowedCollection<SyndicationItem>();
+                    _items = new NullNotAllowedCollection<SyndicationItem>();
                 }
-                return this.items;
+                return _items;
             }
             set
             {
@@ -221,38 +221,38 @@ namespace Microsoft.ServiceModel.Syndication
                 {
                     throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("value");
                 }
-                this.items = value;
+                _items = value;
             }
         }
 
         public string Language
         {
-            get { return language; }
-            set { language = value; }
+            get { return _language; }
+            set { _language = value; }
         }
 
         public DateTimeOffset LastUpdatedTime
         {
-            get { return lastUpdatedTime; }
-            set { lastUpdatedTime = value; }
+            get { return _lastUpdatedTime; }
+            set { _lastUpdatedTime = value; }
         }
 
         public Collection<SyndicationLink> Links
         {
             get
             {
-                if (this.links == null)
+                if (_links == null)
                 {
-                    this.links = new NullNotAllowedCollection<SyndicationLink>();
+                    _links = new NullNotAllowedCollection<SyndicationLink>();
                 }
-                return this.links;
+                return _links;
             }
         }
 
         public TextSyndicationContent Title
         {
-            get { return this.title; }
-            set { this.title = value; }
+            get { return _title; }
+            set { _title = value; }
         }
 
         public static SyndicationFeed Load(XmlReader reader)
@@ -261,7 +261,7 @@ namespace Microsoft.ServiceModel.Syndication
         }
 
         public static TSyndicationFeed Load<TSyndicationFeed>(XmlReader reader)
-            where TSyndicationFeed : SyndicationFeed, new ()
+            where TSyndicationFeed : SyndicationFeed, new()
         {
             if (reader == null)
             {
@@ -344,22 +344,22 @@ namespace Microsoft.ServiceModel.Syndication
 
         protected internal virtual void WriteAttributeExtensions(XmlWriter writer, string version)
         {
-            this.extensions.WriteAttributeExtensions(writer);
+            _extensions.WriteAttributeExtensions(writer);
         }
 
         protected internal virtual void WriteElementExtensions(XmlWriter writer, string version)
         {
-            this.extensions.WriteElementExtensions(writer);
+            _extensions.WriteElementExtensions(writer);
         }
 
         internal void LoadElementExtensions(XmlReader readerOverUnparsedExtensions, int maxExtensionSize)
         {
-            this.extensions.LoadElementExtensions(readerOverUnparsedExtensions, maxExtensionSize);
+            _extensions.LoadElementExtensions(readerOverUnparsedExtensions, maxExtensionSize);
         }
 
         internal void LoadElementExtensions(XmlBuffer buffer)
         {
-            this.extensions.LoadElementExtensions(buffer);
+            _extensions.LoadElementExtensions(buffer);
         }
     }
 }

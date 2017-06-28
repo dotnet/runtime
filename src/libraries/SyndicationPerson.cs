@@ -17,10 +17,10 @@ namespace Microsoft.ServiceModel.Syndication
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     public class SyndicationPerson : IExtensibleSyndicationObject
     {
-        string email;
-        ExtensibleSyndicationObject extensions = new ExtensibleSyndicationObject();
-        string name;
-        string uri;
+        private string _email;
+        private ExtensibleSyndicationObject _extensions = new ExtensibleSyndicationObject();
+        private string _name;
+        private string _uri;
 
         public SyndicationPerson()
             : this((string)null)
@@ -35,9 +35,9 @@ namespace Microsoft.ServiceModel.Syndication
         [SuppressMessage("Microsoft.Design", "CA1054:UriParametersShouldNotBeStrings", MessageId = "2#", Justification = "The Uri represents a unique category and not a network location")]
         public SyndicationPerson(string email, string name, string uri)
         {
-            this.name = name;
-            this.email = email;
-            this.uri = uri;
+            _name = name;
+            _email = email;
+            _uri = uri;
         }
 
         protected SyndicationPerson(SyndicationPerson source)
@@ -46,39 +46,39 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("source");
             }
-            this.email = source.email;
-            this.name = source.name;
-            this.uri = source.uri;
-            this.extensions = source.extensions.Clone();
+            _email = source._email;
+            _name = source._name;
+            _uri = source._uri;
+            _extensions = source._extensions.Clone();
         }
 
         public Dictionary<XmlQualifiedName, string> AttributeExtensions
         {
-            get { return this.extensions.AttributeExtensions; }
+            get { return _extensions.AttributeExtensions; }
         }
 
         public SyndicationElementExtensionCollection ElementExtensions
         {
-            get { return this.extensions.ElementExtensions; }
+            get { return _extensions.ElementExtensions; }
         }
 
         public string Email
         {
-            get { return email; }
-            set { email = value; }
+            get { return _email; }
+            set { _email = value; }
         }
 
         public string Name
         {
-            get { return name; }
-            set { name = value; }
+            get { return _name; }
+            set { _name = value; }
         }
 
         [SuppressMessage("Microsoft.Design", "CA1056:UriPropertiesShouldNotBeStrings", Scope = "property", Justification = "The Uri represents a unique category and not a network location")]
         public string Uri
         {
-            get { return uri; }
-            set { uri = value; }
+            get { return _uri; }
+            set { _uri = value; }
         }
 
         public virtual SyndicationPerson Clone()
@@ -98,22 +98,22 @@ namespace Microsoft.ServiceModel.Syndication
 
         protected internal virtual void WriteAttributeExtensions(XmlWriter writer, string version)
         {
-            this.extensions.WriteAttributeExtensions(writer);
+            _extensions.WriteAttributeExtensions(writer);
         }
 
         protected internal virtual void WriteElementExtensions(XmlWriter writer, string version)
         {
-            this.extensions.WriteElementExtensions(writer);
+            _extensions.WriteElementExtensions(writer);
         }
 
         internal void LoadElementExtensions(XmlReader readerOverUnparsedExtensions, int maxExtensionSize)
         {
-            this.extensions.LoadElementExtensions(readerOverUnparsedExtensions, maxExtensionSize);
+            _extensions.LoadElementExtensions(readerOverUnparsedExtensions, maxExtensionSize);
         }
 
         internal void LoadElementExtensions(XmlBuffer buffer)
         {
-            this.extensions.LoadElementExtensions(buffer);
+            _extensions.LoadElementExtensions(buffer);
         }
     }
 }

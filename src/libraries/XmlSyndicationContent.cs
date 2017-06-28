@@ -14,9 +14,9 @@ namespace Microsoft.ServiceModel.Syndication
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     public class XmlSyndicationContent : SyndicationContent
     {
-        XmlBuffer contentBuffer;
-        SyndicationElementExtension extension;
-        string type;
+        private XmlBuffer _contentBuffer;
+        private SyndicationElementExtension _extension;
+        private string _type;
 
         // Saves the element in the reader to the buffer (attributes preserved)
         // Type is populated from type attribute on reader
@@ -37,7 +37,7 @@ namespace Microsoft.ServiceModel.Syndication
                     string value = reader.Value;
                     if (name == Atom10Constants.TypeTag && ns == string.Empty)
                     {
-                        this.type = value;
+                        _type = value;
                     }
                     else if (!FeedUtils.IsXmlns(name, ns))
                     {
@@ -46,26 +46,26 @@ namespace Microsoft.ServiceModel.Syndication
                 }
                 reader.MoveToElement();
             }
-            this.type = string.IsNullOrEmpty(this.type) ? Atom10Constants.XmlMediaType : this.type;
-            this.contentBuffer = new XmlBuffer(int.MaxValue);
-            using (XmlDictionaryWriter writer = this.contentBuffer.OpenSection(XmlDictionaryReaderQuotas.Max))
+            _type = string.IsNullOrEmpty(_type) ? Atom10Constants.XmlMediaType : _type;
+            _contentBuffer = new XmlBuffer(int.MaxValue);
+            using (XmlDictionaryWriter writer = _contentBuffer.OpenSection(XmlDictionaryReaderQuotas.Max))
             {
                 writer.WriteNode(reader, false);
             }
-            contentBuffer.CloseSection();
-            contentBuffer.Close();
+            _contentBuffer.CloseSection();
+            _contentBuffer.Close();
         }
 
         public XmlSyndicationContent(string type, object dataContractExtension, XmlObjectSerializer dataContractSerializer)
         {
-            this.type = string.IsNullOrEmpty(type) ? Atom10Constants.XmlMediaType : type;
-            this.extension = new SyndicationElementExtension(dataContractExtension, dataContractSerializer);
+            _type = string.IsNullOrEmpty(type) ? Atom10Constants.XmlMediaType : type;
+            _extension = new SyndicationElementExtension(dataContractExtension, dataContractSerializer);
         }
 
         public XmlSyndicationContent(string type, object xmlSerializerExtension, XmlSerializer serializer)
         {
-            this.type = string.IsNullOrEmpty(type) ? Atom10Constants.XmlMediaType : type;
-            this.extension = new SyndicationElementExtension(xmlSerializerExtension, serializer);
+            _type = string.IsNullOrEmpty(type) ? Atom10Constants.XmlMediaType : type;
+            _extension = new SyndicationElementExtension(xmlSerializerExtension, serializer);
         }
 
         public XmlSyndicationContent(string type, SyndicationElementExtension extension)
@@ -74,8 +74,8 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("extension");
             }
-            this.type = string.IsNullOrEmpty(type) ? Atom10Constants.XmlMediaType : type;
-            this.extension = extension;
+            _type = string.IsNullOrEmpty(type) ? Atom10Constants.XmlMediaType : type;
+            _extension = extension;
         }
 
         protected XmlSyndicationContent(XmlSyndicationContent source)
@@ -85,22 +85,22 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("source");
             }
-            this.contentBuffer = source.contentBuffer;
-            this.extension = source.extension;
-            this.type = source.type;
+            _contentBuffer = source._contentBuffer;
+            _extension = source._extension;
+            _type = source._type;
         }
 
         public SyndicationElementExtension Extension
         {
             get
             {
-                return this.extension;
+                return _extension;
             }
         }
 
         public override string Type
         {
-            get { return this.type; }
+            get { return _type; }
         }
 
         public override SyndicationContent Clone()
@@ -111,12 +111,12 @@ namespace Microsoft.ServiceModel.Syndication
         public XmlDictionaryReader GetReaderAtContent()
         {
             EnsureContentBuffer();
-            return this.contentBuffer.GetReader(0);
+            return _contentBuffer.GetReader(0);
         }
 
         public TContent ReadContent<TContent>()
         {
-            return ReadContent<TContent>((DataContractSerializer) null);
+            return ReadContent<TContent>((DataContractSerializer)null);
         }
 
         public TContent ReadContent<TContent>(XmlObjectSerializer dataContractSerializer)
@@ -125,18 +125,18 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 dataContractSerializer = new DataContractSerializer(typeof(TContent));
             }
-            if (this.extension != null)
+            if (_extension != null)
             {
-                return this.extension.GetObject<TContent>(dataContractSerializer);
+                return _extension.GetObject<TContent>(dataContractSerializer);
             }
             else
             {
                 //Fx.Assert(this.contentBuffer != null, "contentBuffer cannot be null");
-                using (XmlDictionaryReader reader = this.contentBuffer.GetReader(0))
+                using (XmlDictionaryReader reader = _contentBuffer.GetReader(0))
                 {
                     // skip past the content element
                     reader.ReadStartElement();
-                    return (TContent) dataContractSerializer.ReadObject(reader, false);
+                    return (TContent)dataContractSerializer.ReadObject(reader, false);
                 }
             }
         }
@@ -147,18 +147,18 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 serializer = new XmlSerializer(typeof(TContent));
             }
-            if (this.extension != null)
+            if (_extension != null)
             {
-                return this.extension.GetObject<TContent>(serializer);
+                return _extension.GetObject<TContent>(serializer);
             }
             else
             {
                 //Fx.Assert(this.contentBuffer != null, "contentBuffer cannot be null");
-                using (XmlDictionaryReader reader = this.contentBuffer.GetReader(0))
+                using (XmlDictionaryReader reader = _contentBuffer.GetReader(0))
                 {
                     // skip past the content element
                     reader.ReadStartElement();
-                    return (TContent) serializer.Deserialize(reader);
+                    return (TContent)serializer.Deserialize(reader);
                 }
             }
         }
@@ -170,13 +170,13 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("writer");
             }
-            if (this.extension != null)
+            if (_extension != null)
             {
-                this.extension.WriteTo(writer);
+                _extension.WriteTo(writer);
             }
-            else if (this.contentBuffer != null)
+            else if (_contentBuffer != null)
             {
-                using (XmlDictionaryReader reader = this.contentBuffer.GetReader(0))
+                using (XmlDictionaryReader reader = _contentBuffer.GetReader(0))
                 {
                     reader.MoveToStartElement();
                     if (!reader.IsEmptyElement)
@@ -191,9 +191,9 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        void EnsureContentBuffer()
+        private void EnsureContentBuffer()
         {
-            if (this.contentBuffer == null)
+            if (_contentBuffer == null)
             {
                 XmlBuffer tmp = new XmlBuffer(int.MaxValue);
                 using (XmlDictionaryWriter writer = tmp.OpenSection(XmlDictionaryReaderQuotas.Max))
@@ -202,7 +202,7 @@ namespace Microsoft.ServiceModel.Syndication
                 }
                 tmp.CloseSection();
                 tmp.Close();
-                this.contentBuffer = tmp;
+                _contentBuffer = tmp;
             }
         }
     }

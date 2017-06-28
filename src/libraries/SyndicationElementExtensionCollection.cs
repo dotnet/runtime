@@ -16,45 +16,45 @@ namespace Microsoft.ServiceModel.Syndication
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     public sealed class SyndicationElementExtensionCollection : Collection<SyndicationElementExtension>
     {
-        XmlBuffer buffer;
-        bool initialized;
+        private XmlBuffer _buffer;
+        private bool _initialized;
 
         internal SyndicationElementExtensionCollection()
-            : this((XmlBuffer) null)
+            : this((XmlBuffer)null)
         {
         }
 
         internal SyndicationElementExtensionCollection(XmlBuffer buffer)
             : base()
         {
-            this.buffer = buffer;
-            if (this.buffer != null)
+            _buffer = buffer;
+            if (_buffer != null)
             {
                 PopulateElements();
             }
-            initialized = true;
+            _initialized = true;
         }
 
         internal SyndicationElementExtensionCollection(SyndicationElementExtensionCollection source)
             : base()
         {
-            this.buffer = source.buffer;
+            _buffer = source._buffer;
             for (int i = 0; i < source.Items.Count; ++i)
             {
                 base.Add(source.Items[i]);
             }
-            initialized = true;
+            _initialized = true;
         }
 
         public void Add(object extension)
         {
             if (extension is SyndicationElementExtension)
             {
-                base.Add((SyndicationElementExtension) extension);
+                base.Add((SyndicationElementExtension)extension);
             }
             else
             {
-                this.Add(extension, (DataContractSerializer) null);
+                this.Add(extension, (DataContractSerializer)null);
             }
         }
 
@@ -136,9 +136,9 @@ namespace Microsoft.ServiceModel.Syndication
 
         internal void WriteTo(XmlWriter writer)
         {
-            if (this.buffer != null)
+            if (_buffer != null)
             {
-                using (XmlDictionaryReader reader = this.buffer.GetReader(0))
+                using (XmlDictionaryReader reader = _buffer.GetReader(0))
                 {
                     reader.ReadStartElement();
                     while (reader.IsStartElement())
@@ -160,9 +160,9 @@ namespace Microsoft.ServiceModel.Syndication
         {
             base.ClearItems();
             // clear the cached buffer if the operation is happening outside the constructor
-            if (initialized)
+            if (_initialized)
             {
-                this.buffer = null;
+                _buffer = null;
             }
         }
 
@@ -174,9 +174,9 @@ namespace Microsoft.ServiceModel.Syndication
             }
             base.InsertItem(index, item);
             // clear the cached buffer if the operation is happening outside the constructor
-            if (initialized)
+            if (_initialized)
             {
-                this.buffer = null;
+                _buffer = null;
             }
         }
 
@@ -184,9 +184,9 @@ namespace Microsoft.ServiceModel.Syndication
         {
             base.RemoveItem(index);
             // clear the cached buffer if the operation is happening outside the constructor
-            if (initialized)
+            if (_initialized)
             {
-                this.buffer = null;
+                _buffer = null;
             }
         }
 
@@ -198,17 +198,17 @@ namespace Microsoft.ServiceModel.Syndication
             }
             base.SetItem(index, item);
             // clear the cached buffer if the operation is happening outside the constructor
-            if (initialized)
+            if (_initialized)
             {
-                this.buffer = null;
+                _buffer = null;
             }
         }
 
-        XmlBuffer GetOrCreateBufferOverExtensions()
+        private XmlBuffer GetOrCreateBufferOverExtensions()
         {
-            if (this.buffer != null)
+            if (_buffer != null)
             {
-                return this.buffer;
+                return _buffer;
             }
             XmlBuffer newBuffer = new XmlBuffer(int.MaxValue);
             using (XmlWriter writer = newBuffer.OpenSection(XmlDictionaryReaderQuotas.Max))
@@ -222,26 +222,26 @@ namespace Microsoft.ServiceModel.Syndication
             }
             newBuffer.CloseSection();
             newBuffer.Close();
-            this.buffer = newBuffer;
+            _buffer = newBuffer;
             return newBuffer;
         }
 
-        void PopulateElements()
+        private void PopulateElements()
         {
-            using (XmlDictionaryReader reader = this.buffer.GetReader(0))
+            using (XmlDictionaryReader reader = _buffer.GetReader(0))
             {
                 reader.ReadStartElement();
                 int index = 0;
                 while (reader.IsStartElement())
                 {
-                    base.Add(new SyndicationElementExtension(this.buffer, index, reader.LocalName, reader.NamespaceURI));
+                    base.Add(new SyndicationElementExtension(_buffer, index, reader.LocalName, reader.NamespaceURI));
                     reader.Skip();
                     ++index;
                 }
             }
         }
 
-        Collection<TExtension> ReadExtensions<TExtension>(string extensionName, string extensionNamespace, XmlObjectSerializer dcSerializer, XmlSerializer xmlSerializer)
+        private Collection<TExtension> ReadExtensions<TExtension>(string extensionName, string extensionNamespace, XmlObjectSerializer dcSerializer, XmlSerializer xmlSerializer)
         {
             if (string.IsNullOrEmpty(extensionName))
             {

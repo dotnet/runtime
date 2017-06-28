@@ -19,11 +19,11 @@ namespace Microsoft.ServiceModel.Syndication
     [DataContract]
     public abstract class SyndicationFeedFormatter
     {
-        SyndicationFeed feed;
+        private SyndicationFeed _feed;
 
         protected SyndicationFeedFormatter()
         {
-            this.feed = null;
+            _feed = null;
         }
 
         protected SyndicationFeedFormatter(SyndicationFeed feedToWrite)
@@ -32,14 +32,14 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("feedToWrite");
             }
-            this.feed = feedToWrite;
+            _feed = feedToWrite;
         }
 
         public SyndicationFeed Feed
         {
             get
             {
-                return this.feed;
+                return _feed;
             }
         }
 
@@ -376,7 +376,7 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("feed");
             }
-            this.feed = feed;
+            _feed = feed;
         }
 
         internal static void CloseBuffer(XmlBuffer buffer, XmlDictionaryWriter extWriter)
@@ -409,7 +409,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
             else
             {
-                return (SyndicationFeed) Activator.CreateInstance(feedType);
+                return (SyndicationFeed)Activator.CreateInstance(feedType);
             }
         }
 
@@ -465,7 +465,6 @@ namespace Microsoft.ServiceModel.Syndication
 
         internal static void MoveToStartElement(XmlReader reader)
         {
-            
             if (!reader.IsStartElement())
             {
                 XmlExceptionHelper.ThrowStartElementExpected(XmlDictionaryReader.CreateDictionaryReader(reader));
@@ -573,7 +572,7 @@ namespace Microsoft.ServiceModel.Syndication
 
         protected abstract SyndicationFeed CreateFeedInstance();
 
-        static T GetNonNullValue<T>(T value, string errorMsg)
+        private static T GetNonNullValue<T>(T value, string errorMsg)
         {
             if (value == null)
             {
@@ -582,9 +581,9 @@ namespace Microsoft.ServiceModel.Syndication
             return value;
         }
 
-        static class XmlExceptionHelper
+        private static class XmlExceptionHelper
         {
-            static void ThrowXmlException(XmlDictionaryReader reader, string res, string arg1)
+            private static void ThrowXmlException(XmlDictionaryReader reader, string res, string arg1)
             {
                 string s = SR.GetString(res, arg1);
                 IXmlLineInfo lineInfo = reader as IXmlLineInfo;
@@ -596,7 +595,7 @@ namespace Microsoft.ServiceModel.Syndication
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new XmlException(s));
             }
 
-            static string GetName(string prefix, string localName)
+            private static string GetName(string prefix, string localName)
             {
                 if (prefix.Length == 0)
                     return localName;
@@ -604,7 +603,7 @@ namespace Microsoft.ServiceModel.Syndication
                     return string.Concat(prefix, ":", localName);
             }
 
-            static string GetWhatWasFound(XmlDictionaryReader reader)
+            private static string GetWhatWasFound(XmlDictionaryReader reader)
             {
                 if (reader.EOF)
                     return SR.GetString(SR.XmlFoundEndOfFile);

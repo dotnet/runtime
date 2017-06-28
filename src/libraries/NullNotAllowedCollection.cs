@@ -6,7 +6,7 @@ namespace Microsoft.ServiceModel.Syndication
 {
     using System.Collections.ObjectModel;
 
-    class NullNotAllowedCollection<TCollectionItem> : Collection<TCollectionItem>
+    internal class NullNotAllowedCollection<TCollectionItem> : Collection<TCollectionItem>
         where TCollectionItem : class
     {
         public NullNotAllowedCollection()

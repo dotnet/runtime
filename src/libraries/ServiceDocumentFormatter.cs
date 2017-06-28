@@ -15,7 +15,7 @@ namespace Microsoft.ServiceModel.Syndication
     [DataContract]
     public abstract class ServiceDocumentFormatter
     {
-        ServiceDocument document;
+        private ServiceDocument _document;
 
         protected ServiceDocumentFormatter()
         {
@@ -26,12 +26,12 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull("documentToWrite");
             }
-            this.document = documentToWrite;
+            _document = documentToWrite;
         }
 
         public ServiceDocument Document
         {
-            get { return this.document; }
+            get { return _document; }
         }
 
         public abstract string Version
@@ -305,7 +305,7 @@ namespace Microsoft.ServiceModel.Syndication
 
         protected virtual void SetDocument(ServiceDocument document)
         {
-            this.document = document;
+            _document = document;
         }
     }
 }

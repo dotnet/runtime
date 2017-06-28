@@ -9,10 +9,10 @@ namespace System.ServiceModel.Channels
     using Microsoft.ServiceModel;
     using Microsoft.ServiceModel.Syndication.Resources;
 
-    class UriGenerator
+    internal class UriGenerator
     {
-        long id;
-        string prefix;
+        private long _id;
+        private string _prefix;
 
         public UriGenerator()
             : this("uuid")
@@ -32,13 +32,13 @@ namespace System.ServiceModel.Channels
             if (scheme.Length == 0)
                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentException(SR.GetString(SR.UriGeneratorSchemeMustNotBeEmpty), "scheme"));
 
-            prefix = string.Concat(scheme, ":", Guid.NewGuid().ToString(), delimiter, "id=");
+            _prefix = string.Concat(scheme, ":", Guid.NewGuid().ToString(), delimiter, "id=");
         }
 
         public string Next()
         {
-            long nextId = Interlocked.Increment(ref id);
-            return prefix + nextId.ToString(CultureInfo.InvariantCulture);
+            long nextId = Interlocked.Increment(ref _id);
+            return _prefix + nextId.ToString(CultureInfo.InvariantCulture);
         }
     }
 }
