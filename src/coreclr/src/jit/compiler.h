@@ -2636,11 +2636,9 @@ public:
 
     VARSET_VALRET_TP lvaStmtLclMask(GenTreePtr stmt);
 
-    static fgWalkPreFn lvaIncRefCntsCB;
     void lvaIncRefCnts(GenTreePtr tree);
-
-    static fgWalkPreFn lvaDecRefCntsCB;
     void lvaDecRefCnts(GenTreePtr tree);
+
     void lvaDecRefCnts(BasicBlock* basicBlock, GenTreePtr tree);
     void lvaRecursiveDecRefCounts(GenTreePtr tree);
     void lvaRecursiveIncRefCounts(GenTreePtr tree);
@@ -2820,7 +2818,6 @@ protected:
 #endif
     BasicBlock::weight_t lvaMarkRefsWeight;
 
-    static fgWalkPreFn lvaMarkLclRefsCallback;
     void lvaMarkLclRefs(GenTreePtr tree);
 
     bool IsDominatedByExceptionalEntry(BasicBlock* block);
@@ -4481,14 +4478,6 @@ public:
 #endif
     };
 
-    template <bool      computeStack>
-    static fgWalkResult fgWalkTreePreRec(GenTreePtr* pTree, fgWalkData* fgWalkPre);
-
-    // general purpose tree-walker that is capable of doing pre- and post- order
-    // callbacks at the same time
-    template <bool doPreOrder, bool doPostOrder>
-    static fgWalkResult fgWalkTreeRec(GenTreePtr* pTree, fgWalkData* fgWalkPre);
-
     fgWalkResult fgWalkTreePre(GenTreePtr*  pTree,
                                fgWalkPreFn* visitor,
                                void*        pCallBackData = nullptr,
@@ -4503,9 +4492,6 @@ public:
     void fgWalkAllTreesPre(fgWalkPreFn* visitor, void* pCallBackData);
 
     //----- Postorder
-
-    template <bool      computeStack>
-    static fgWalkResult fgWalkTreePostRec(GenTreePtr* pTree, fgWalkData* fgWalkPre);
 
     fgWalkResult fgWalkTreePost(GenTreePtr*   pTree,
                                 fgWalkPostFn* visitor,
@@ -9404,6 +9390,579 @@ inline LclVarDsc::LclVarDsc(Compiler* comp)
     lvPerSsaData(comp->getAllocator())
 {
 }
+
+//---------------------------------------------------------------------------------------------------------------------
+// GenTreeVisitor: a flexible tree walker implemented using the curiosly-recurring-template pattern.
+//
+// This class implements a configurable walker for IR trees. There are five configuration options (defaults values are
+// shown in parentheses):
+//
+// - ComputeStack (false): when true, the walker will push each node onto the `m_ancestors` stack. "Ancestors" is a bit
+//                         of a misnomer, as the first entry will always be the current node.
+//
+// - DoPreOrder (false): when true, the walker will invoke `TVisitor::PreOrderVisit` with the current node as an
+//                       argument before visiting the node's operands.
+//
+// - DoPostOrder (false): when true, the walker will invoke `TVisitor::PostOrderVisit` with the current node as an
+//                        argument after visiting the node's operands.
+//
+// - DoLclVarsOnly (false): when true, the walker will only invoke `TVisitor::PreOrderVisit` for lclVar nodes.
+//                          `DoPreOrder` must be true if this option is true.
+//
+// - UseExecutionOrder (false): when true, then walker will visit a node's operands in execution order (e.g. if a
+//                              binary operator has the `GTF_REVERSE_OPS` flag set, the second operand will be
+//                              visited before the first).
+//
+// At least one of `DoPreOrder` and `DoPostOrder` must be specified.
+//
+// A simple pre-order visitor might look something like the following:
+//
+//     class CountingVisitor final : public GenTreeVisitor<CountingVisitor>
+//     {
+//     public:
+//         enum
+//         {
+//             DoPreOrder = true
+//         };
+//
+//         unsigned m_count;
+//
+//         CountingVisitor(Compiler* compiler)
+//             : GenTreeVisitor<CountingVisitor>(compiler), m_count(0)
+//         {
+//         }
+//
+//         Compiler::fgWalkResult PreOrderVisit(GenTree* node)
+//         {
+//             m_count++;
+//         }
+//     };
+//
+// This visitor would then be used like so:
+//
+//     CountingVisitor countingVisitor(compiler);
+//     countingVisitor.WalkTree(root);
+//
+template <typename TVisitor>
+class GenTreeVisitor
+{
+protected:
+    typedef Compiler::fgWalkResult fgWalkResult;
+
+    enum
+    {
+        ComputeStack      = false,
+        DoPreOrder        = false,
+        DoPostOrder       = false,
+        DoLclVarsOnly     = false,
+        UseExecutionOrder = false,
+    };
+
+    Compiler*            m_compiler;
+    ArrayStack<GenTree*> m_ancestors;
+
+    GenTreeVisitor(Compiler* compiler) : m_compiler(compiler), m_ancestors(compiler)
+    {
+        assert(compiler != nullptr);
+
+        static_assert_no_msg(TVisitor::DoPreOrder || TVisitor::DoPostOrder);
+        static_assert_no_msg(!TVisitor::DoLclVarsOnly || TVisitor::DoPreOrder);
+    }
+
+    fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+    {
+        return fgWalkResult::WALK_CONTINUE;
+    }
+
+    fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+    {
+        return fgWalkResult::WALK_CONTINUE;
+    }
+
+public:
+    fgWalkResult WalkTree(GenTree** use, GenTree* user)
+    {
+        assert(use != nullptr);
+
+        GenTree* node = *use;
+
+        if (TVisitor::ComputeStack)
+        {
+            m_ancestors.Push(node);
+        }
+
+        fgWalkResult result = fgWalkResult::WALK_CONTINUE;
+        if (TVisitor::DoPreOrder && !TVisitor::DoLclVarsOnly)
+        {
+            result = reinterpret_cast<TVisitor*>(this)->PreOrderVisit(use, user);
+            if (result == fgWalkResult::WALK_ABORT)
+            {
+                return result;
+            }
+
+            node = *use;
+            if ((node == nullptr) || (result == fgWalkResult::WALK_SKIP_SUBTREES))
+            {
+                goto DONE;
+            }
+        }
+
+        switch (node->OperGet())
+        {
+            // Leaf lclVars
+            case GT_LCL_VAR:
+            case GT_LCL_FLD:
+            case GT_LCL_VAR_ADDR:
+            case GT_LCL_FLD_ADDR:
+                if (TVisitor::DoLclVarsOnly)
+                {
+                    result = reinterpret_cast<TVisitor*>(this)->PreOrderVisit(use, user);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                }
+                __fallthrough;
+
+            // Leaf nodes
+            case GT_CATCH_ARG:
+            case GT_LABEL:
+            case GT_FTN_ADDR:
+            case GT_RET_EXPR:
+            case GT_CNS_INT:
+            case GT_CNS_LNG:
+            case GT_CNS_DBL:
+            case GT_CNS_STR:
+            case GT_MEMORYBARRIER:
+            case GT_JMP:
+            case GT_JCC:
+            case GT_SETCC:
+            case GT_NO_OP:
+            case GT_START_NONGC:
+            case GT_PROF_HOOK:
+#if !FEATURE_EH_FUNCLETS
+            case GT_END_LFIN:
+#endif // !FEATURE_EH_FUNCLETS
+            case GT_PHI_ARG:
+#ifndef LEGACY_BACKEND
+            case GT_JMPTABLE:
+#endif // LEGACY_BACKEND
+            case GT_REG_VAR:
+            case GT_CLS_VAR:
+            case GT_CLS_VAR_ADDR:
+            case GT_ARGPLACE:
+            case GT_PHYSREG:
+            case GT_EMITNOP:
+            case GT_PINVOKE_PROLOG:
+            case GT_PINVOKE_EPILOG:
+            case GT_IL_OFFSET:
+                break;
+
+            // Lclvar unary operators
+            case GT_STORE_LCL_VAR:
+            case GT_STORE_LCL_FLD:
+                if (TVisitor::DoLclVarsOnly)
+                {
+                    result = reinterpret_cast<TVisitor*>(this)->PreOrderVisit(use, user);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                }
+                __fallthrough;
+
+            // Standard unary operators
+            case GT_NOT:
+            case GT_NEG:
+            case GT_COPY:
+            case GT_RELOAD:
+            case GT_ARR_LENGTH:
+            case GT_CAST:
+            case GT_CKFINITE:
+            case GT_LCLHEAP:
+            case GT_ADDR:
+            case GT_IND:
+            case GT_OBJ:
+            case GT_BLK:
+            case GT_BOX:
+            case GT_ALLOCOBJ:
+            case GT_INIT_VAL:
+            case GT_JTRUE:
+            case GT_SWITCH:
+            case GT_NULLCHECK:
+            case GT_PHYSREGDST:
+            case GT_PUTARG_REG:
+            case GT_PUTARG_STK:
+            case GT_RETURNTRAP:
+            case GT_NOP:
+            case GT_RETURN:
+            case GT_RETFILT:
+            case GT_PHI:
+            {
+                GenTreeUnOp* const unOp = node->AsUnOp();
+                if (unOp->gtOp1 != nullptr)
+                {
+                    result = WalkTree(&unOp->gtOp1, unOp);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                }
+                break;
+            }
+
+            // Special nodes
+            case GT_CMPXCHG:
+            {
+                GenTreeCmpXchg* const cmpXchg = node->AsCmpXchg();
+
+                result = WalkTree(&cmpXchg->gtOpComparand, cmpXchg);
+                if (result == fgWalkResult::WALK_ABORT)
+                {
+                    return result;
+                }
+                result = WalkTree(&cmpXchg->gtOpValue, cmpXchg);
+                if (result == fgWalkResult::WALK_ABORT)
+                {
+                    return result;
+                }
+                result = WalkTree(&cmpXchg->gtOpLocation, cmpXchg);
+                if (result == fgWalkResult::WALK_ABORT)
+                {
+                    return result;
+                }
+                break;
+            }
+
+            case GT_ARR_BOUNDS_CHECK:
+#ifdef FEATURE_SIMD
+            case GT_SIMD_CHK:
+#endif // FEATURE_SIMD
+            {
+                GenTreeBoundsChk* const boundsChk = node->AsBoundsChk();
+
+                result = WalkTree(&boundsChk->gtIndex, boundsChk);
+                if (result == fgWalkResult::WALK_ABORT)
+                {
+                    return result;
+                }
+                result = WalkTree(&boundsChk->gtArrLen, boundsChk);
+                if (result == fgWalkResult::WALK_ABORT)
+                {
+                    return result;
+                }
+                break;
+            }
+
+            case GT_FIELD:
+            {
+                GenTreeField* const field = node->AsField();
+
+                if (field->gtFldObj != nullptr)
+                {
+                    result = WalkTree(&field->gtFldObj, field);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                }
+                break;
+            }
+
+            case GT_ARR_ELEM:
+            {
+                GenTreeArrElem* const arrElem = node->AsArrElem();
+
+                result = WalkTree(&arrElem->gtArrObj, arrElem);
+                if (result == fgWalkResult::WALK_ABORT)
+                {
+                    return result;
+                }
+
+                const unsigned rank = arrElem->gtArrRank;
+                for (unsigned dim = 0; dim < rank; dim++)
+                {
+                    result = WalkTree(&arrElem->gtArrInds[dim], arrElem);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                }
+                break;
+            }
+
+            case GT_ARR_OFFSET:
+            {
+                GenTreeArrOffs* const arrOffs = node->AsArrOffs();
+
+                result = WalkTree(&arrOffs->gtOffset, arrOffs);
+                if (result == fgWalkResult::WALK_ABORT)
+                {
+                    return result;
+                }
+                result = WalkTree(&arrOffs->gtIndex, arrOffs);
+                if (result == fgWalkResult::WALK_ABORT)
+                {
+                    return result;
+                }
+                result = WalkTree(&arrOffs->gtArrObj, arrOffs);
+                if (result == fgWalkResult::WALK_ABORT)
+                {
+                    return result;
+                }
+                break;
+            }
+
+            case GT_DYN_BLK:
+            {
+                GenTreeDynBlk* const dynBlock = node->AsDynBlk();
+
+                GenTree** op1Use = &dynBlock->gtOp1;
+                GenTree** op2Use = &dynBlock->gtDynamicSize;
+
+                if (TVisitor::UseExecutionOrder && dynBlock->gtEvalSizeFirst)
+                {
+                    std::swap(op1Use, op2Use);
+                }
+
+                result = WalkTree(op1Use, dynBlock);
+                if (result == fgWalkResult::WALK_ABORT)
+                {
+                    return result;
+                }
+                result = WalkTree(op2Use, dynBlock);
+                if (result == fgWalkResult::WALK_ABORT)
+                {
+                    return result;
+                }
+                break;
+            }
+
+            case GT_STORE_DYN_BLK:
+            {
+                GenTreeDynBlk* const dynBlock = node->AsDynBlk();
+
+                GenTree** op1Use = &dynBlock->gtOp1;
+                GenTree** op2Use = &dynBlock->gtOp2;
+                GenTree** op3Use = &dynBlock->gtDynamicSize;
+
+                if (TVisitor::UseExecutionOrder)
+                {
+                    if (dynBlock->IsReverseOp())
+                    {
+                        std::swap(op1Use, op2Use);
+                    }
+                    if (dynBlock->gtEvalSizeFirst)
+                    {
+                        std::swap(op3Use, op2Use);
+                        std::swap(op2Use, op1Use);
+                    }
+                }
+
+                result = WalkTree(op1Use, dynBlock);
+                if (result == fgWalkResult::WALK_ABORT)
+                {
+                    return result;
+                }
+                result = WalkTree(op2Use, dynBlock);
+                if (result == fgWalkResult::WALK_ABORT)
+                {
+                    return result;
+                }
+                result = WalkTree(op3Use, dynBlock);
+                if (result == fgWalkResult::WALK_ABORT)
+                {
+                    return result;
+                }
+                break;
+            }
+
+            case GT_CALL:
+            {
+                GenTreeCall* const call = node->AsCall();
+
+                if (call->gtCallObjp != nullptr)
+                {
+                    result = WalkTree(&call->gtCallObjp, call);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                }
+
+                for (GenTreeArgList* args = call->gtCallArgs; args != nullptr; args = args->Rest())
+                {
+                    result = WalkTree(args->pCurrent(), call);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                }
+
+                for (GenTreeArgList* args = call->gtCallLateArgs; args != nullptr; args = args->Rest())
+                {
+                    result = WalkTree(args->pCurrent(), call);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                }
+
+                if (call->gtCallType == CT_INDIRECT)
+                {
+                    if (call->gtCallCookie != nullptr)
+                    {
+                        result = WalkTree(&call->gtCallCookie, call);
+                        if (result == fgWalkResult::WALK_ABORT)
+                        {
+                            return result;
+                        }
+                    }
+
+                    result = WalkTree(&call->gtCallAddr, call);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                }
+
+                if (call->gtControlExpr != nullptr)
+                {
+                    result = WalkTree(&call->gtControlExpr, call);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                }
+
+                break;
+            }
+
+            // Binary nodes
+            default:
+            {
+                assert(node->OperIsBinary());
+
+                GenTreeOp* const op = node->AsOp();
+
+                GenTree** op1Use = &op->gtOp1;
+                GenTree** op2Use = &op->gtOp2;
+
+                if (TVisitor::UseExecutionOrder && node->IsReverseOp())
+                {
+                    std::swap(op1Use, op2Use);
+                }
+
+                if (*op1Use != nullptr)
+                {
+                    result = WalkTree(op1Use, op);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                }
+
+                if (*op2Use != nullptr)
+                {
+                    result = WalkTree(op2Use, op);
+                    if (result == fgWalkResult::WALK_ABORT)
+                    {
+                        return result;
+                    }
+                }
+                break;
+            }
+        }
+
+    DONE:
+        // Finally, visit the current node
+        if (TVisitor::DoPostOrder)
+        {
+            result = reinterpret_cast<TVisitor*>(this)->PostOrderVisit(use, user);
+        }
+
+        if (TVisitor::ComputeStack)
+        {
+            m_ancestors.Pop();
+        }
+
+        return result;
+    }
+};
+
+template <bool computeStack, bool doPreOrder, bool doPostOrder, bool doLclVarsOnly, bool useExecutionOrder>
+class GenericTreeWalker final
+    : public GenTreeVisitor<GenericTreeWalker<computeStack, doPreOrder, doPostOrder, doLclVarsOnly, useExecutionOrder>>
+{
+public:
+    enum
+    {
+        ComputeStack      = computeStack,
+        DoPreOrder        = doPreOrder,
+        DoPostOrder       = doPostOrder,
+        DoLclVarsOnly     = doLclVarsOnly,
+        UseExecutionOrder = useExecutionOrder,
+    };
+
+private:
+    Compiler::fgWalkData* m_walkData;
+
+public:
+    GenericTreeWalker(Compiler::fgWalkData* walkData)
+        : GenTreeVisitor<GenericTreeWalker<computeStack, doPreOrder, doPostOrder, doLclVarsOnly, useExecutionOrder>>(
+              walkData->compiler)
+        , m_walkData(walkData)
+    {
+        assert(walkData != nullptr);
+
+        if (computeStack)
+        {
+            walkData->parentStack = &this->m_ancestors;
+        }
+    }
+
+    Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
+    {
+        m_walkData->parent = user;
+        return m_walkData->wtprVisitorFn(use, m_walkData);
+    }
+
+    Compiler::fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
+    {
+        m_walkData->parent = user;
+        return m_walkData->wtpoVisitorFn(use, m_walkData);
+    }
+};
+
+class IncLclVarRefCountsVisitor final : public GenTreeVisitor<IncLclVarRefCountsVisitor>
+{
+public:
+    enum
+    {
+        DoPreOrder    = true,
+        DoLclVarsOnly = true
+    };
+
+    IncLclVarRefCountsVisitor(Compiler* compiler);
+    Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user);
+
+    static Compiler::fgWalkResult WalkTree(Compiler* compiler, GenTree* tree);
+};
+
+class DecLclVarRefCountsVisitor final : public GenTreeVisitor<DecLclVarRefCountsVisitor>
+{
+public:
+    enum
+    {
+        DoPreOrder    = true,
+        DoLclVarsOnly = true
+    };
+
+    DecLclVarRefCountsVisitor(Compiler* compiler);
+    Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user);
+
+    static Compiler::fgWalkResult WalkTree(Compiler* compiler, GenTree* tree);
+};
 
 /*
 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
