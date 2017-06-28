@@ -126,7 +126,7 @@ namespace System.Drawing.Tests
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Ctor_NullRegionData_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("rgnData", () => new Region((RegionData)null));
+            AssertExtensions.Throws<ArgumentNullException>("rgnData", () => new Region((RegionData)null));
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -264,7 +264,7 @@ namespace System.Drawing.Tests
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Ctor_NullGraphicsPath_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("path", () => new Region((GraphicsPath)null));
+            AssertExtensions.Throws<ArgumentNullException>("path", () => new Region((GraphicsPath)null));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -448,7 +448,7 @@ namespace System.Drawing.Tests
         {
             using (var region = new Region())
             {
-                Assert.Throws<ArgumentNullException>("region", () => region.Complement((Region)null));
+                AssertExtensions.Throws<ArgumentNullException>("region", () => region.Complement((Region)null));
             }
         }
 
@@ -575,7 +575,7 @@ namespace System.Drawing.Tests
         {
             using (var region = new Region())
             {
-                Assert.Throws<ArgumentNullException>("path", () => region.Complement((GraphicsPath)null));
+                AssertExtensions.Throws<ArgumentNullException>("path", () => region.Complement((GraphicsPath)null));
             }
         }
 
@@ -667,7 +667,7 @@ namespace System.Drawing.Tests
         {
             using (var region = new Region())
             {
-                Assert.Throws<ArgumentNullException>("region", () => region.Equals(null, s_graphic));
+                AssertExtensions.Throws<ArgumentNullException>("region", () => region.Equals(null, s_graphic));
             }
         }
 
@@ -676,7 +676,7 @@ namespace System.Drawing.Tests
         {
             using (var region = new Region())
             {
-                Assert.Throws<ArgumentNullException>("g", () => region.Equals(region, null));
+                AssertExtensions.Throws<ArgumentNullException>("g", () => region.Equals(region, null));
             }
         }
 
@@ -900,7 +900,7 @@ namespace System.Drawing.Tests
         {
             using (var region = new Region())
             {
-                Assert.Throws<ArgumentNullException>("region", () => region.Exclude((Region)null));
+                AssertExtensions.Throws<ArgumentNullException>("region", () => region.Exclude((Region)null));
             }
         }
 
@@ -1008,7 +1008,7 @@ namespace System.Drawing.Tests
         {
             using (var region = new Region())
             {
-                Assert.Throws<ArgumentNullException>("path", () => region.Exclude((GraphicsPath)null));
+                AssertExtensions.Throws<ArgumentNullException>("path", () => region.Exclude((GraphicsPath)null));
             }
         }
 
@@ -1088,7 +1088,7 @@ namespace System.Drawing.Tests
         {
             using (var region = new Region())
             {
-                Assert.Throws<ArgumentNullException>("g", () => region.GetHrgn(null));
+                AssertExtensions.Throws<ArgumentNullException>("g", () => region.GetHrgn(null));
             }
         }
 
@@ -1106,7 +1106,7 @@ namespace System.Drawing.Tests
         {
             using (var region = new Region())
             {
-                Assert.Throws<ArgumentNullException>("regionHandle", () => region.ReleaseHrgn(IntPtr.Zero));
+                AssertExtensions.Throws<ArgumentNullException>("regionHandle", () => region.ReleaseHrgn(IntPtr.Zero));
             }
         }
 
@@ -1115,7 +1115,7 @@ namespace System.Drawing.Tests
         {
             using (var region = new Region())
             {
-                Assert.Throws<ArgumentNullException>("g", () => region.GetBounds(null));
+                AssertExtensions.Throws<ArgumentNullException>("g", () => region.GetBounds(null));
             }
         }
 
@@ -1169,7 +1169,7 @@ namespace System.Drawing.Tests
         {
             using (var region = new Region())
             {
-                Assert.Throws<ArgumentNullException>("matrix", () => region.GetRegionScans(null));
+                AssertExtensions.Throws<ArgumentNullException>("matrix", () => region.GetRegionScans(null));
             }
         }
 
@@ -1309,7 +1309,7 @@ namespace System.Drawing.Tests
         {
             using (var region = new Region())
             {
-                Assert.Throws<ArgumentNullException>("region", () => region.Intersect((Region)null));
+                AssertExtensions.Throws<ArgumentNullException>("region", () => region.Intersect((Region)null));
             }
         }
 
@@ -1445,7 +1445,7 @@ namespace System.Drawing.Tests
         {
             using (var region = new Region())
             {
-                Assert.Throws<ArgumentNullException>("path", () => region.Intersect((GraphicsPath)null));
+                AssertExtensions.Throws<ArgumentNullException>("path", () => region.Intersect((GraphicsPath)null));
             }
         }
 
@@ -1470,7 +1470,7 @@ namespace System.Drawing.Tests
         {
             using (var region = new Region())
             {
-                Assert.Throws<ArgumentNullException>("g", () => region.IsEmpty(null));
+                AssertExtensions.Throws<ArgumentNullException>("g", () => region.IsEmpty(null));
             }
         }
 
@@ -1488,7 +1488,7 @@ namespace System.Drawing.Tests
         {
             using (var region = new Region())
             {
-                Assert.Throws<ArgumentNullException>("g", () => region.IsInfinite(null));
+                AssertExtensions.Throws<ArgumentNullException>("g", () => region.IsInfinite(null));
             }
         }
 
@@ -1958,7 +1958,7 @@ namespace System.Drawing.Tests
         {
             using (var region = new Region())
             {
-                Assert.Throws<ArgumentNullException>("region", () => region.Union((Region)null));
+                AssertExtensions.Throws<ArgumentNullException>("region", () => region.Union((Region)null));
             }
         }
 
@@ -2066,7 +2066,7 @@ namespace System.Drawing.Tests
         {
             using (var region = new Region())
             {
-                Assert.Throws<ArgumentNullException>("path", () => region.Union((GraphicsPath)null));
+                AssertExtensions.Throws<ArgumentNullException>("path", () => region.Union((GraphicsPath)null));
             }
         }
 
@@ -2169,7 +2169,7 @@ namespace System.Drawing.Tests
         {
             using (var region = new Region())
             {
-                Assert.Throws<ArgumentNullException>("matrix", () => region.Transform(null));
+                AssertExtensions.Throws<ArgumentNullException>("matrix", () => region.Transform(null));
             }
         }
 
@@ -2389,7 +2389,7 @@ namespace System.Drawing.Tests
         {
             using (var region = new Region())
             {
-                Assert.Throws<ArgumentNullException>("region", () => region.Xor((Region)null));
+                AssertExtensions.Throws<ArgumentNullException>("region", () => region.Xor((Region)null));
             }
         }
 
@@ -2497,7 +2497,7 @@ namespace System.Drawing.Tests
         {
             using (var region = new Region())
             {
-                Assert.Throws<ArgumentNullException>("path", () => region.Xor((GraphicsPath)null));
+                AssertExtensions.Throws<ArgumentNullException>("path", () => region.Xor((GraphicsPath)null));
             }
         }
 

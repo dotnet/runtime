@@ -453,7 +453,7 @@ namespace System.Net.Tests
         {
             var listener = new HttpListener();
             string longPrefix = "http://" + new string('a', 256) + "/";
-            Assert.Throws<ArgumentOutOfRangeException>("hostName", () => listener.Prefixes.Add(longPrefix));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("hostName", () => listener.Prefixes.Add(longPrefix));
 
             // Ouch: even though adding the prefix threw an exception, the prefix was still added.
             Assert.Equal(1, listener.Prefixes.Count);

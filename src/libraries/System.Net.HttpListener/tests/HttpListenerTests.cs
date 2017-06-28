@@ -129,7 +129,7 @@ namespace System.Net.Tests
         {
             using (var listener = new HttpListener())
             {
-                Assert.Throws<ArgumentNullException>("asyncResult", () => listener.EndGetContext(null));
+                AssertExtensions.Throws<ArgumentNullException>("asyncResult", () => listener.EndGetContext(null));
             }
         }
 

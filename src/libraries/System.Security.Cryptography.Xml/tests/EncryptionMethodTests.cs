@@ -46,7 +46,7 @@ namespace System.Security.Cryptography.Xml.Tests
         {
             EncryptionMethod method = new EncryptionMethod();
             if (PlatformDetection.IsFullFramework)
-                Assert.Throws<ArgumentOutOfRangeException>("The key size should be a non negative integer.", () => method.KeySize = value);
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("The key size should be a non negative integer.", () => method.KeySize = value);
             else
                 AssertExtensions.Throws<ArgumentOutOfRangeException>("value", () => method.KeySize = value);
         }

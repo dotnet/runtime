@@ -128,7 +128,7 @@ namespace System.Drawing.Tests
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void FromHdc_ZeroHdc_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("hdc", () => Graphics.FromHdc(IntPtr.Zero));
+            AssertExtensions.Throws<ArgumentNullException>("hdc", () => Graphics.FromHdc(IntPtr.Zero));
         }
         
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -292,7 +292,7 @@ namespace System.Drawing.Tests
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void FromImage_NullImage_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("image", () => Graphics.FromImage(null));
+            AssertExtensions.Throws<ArgumentNullException>("image", () => Graphics.FromImage(null));
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]

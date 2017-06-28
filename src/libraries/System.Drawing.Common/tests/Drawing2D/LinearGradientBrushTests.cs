@@ -239,8 +239,8 @@ namespace System.Drawing.Drawing2D.Tests
         [InlineData(LinearGradientMode.BackwardDiagonal + 1)]
         public void Ctor_InvalidLinearGradientMode_ThrowsEnumArgumentException(LinearGradientMode linearGradientMode)
         {
-            Assert.Throws<InvalidEnumArgumentException>("linearGradientMode", () => new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Empty, Color.Empty, linearGradientMode));
-            Assert.Throws<InvalidEnumArgumentException>("linearGradientMode", () => new LinearGradientBrush(new RectangleF(1, 2, 3, 4), Color.Empty, Color.Empty, linearGradientMode));
+            AssertExtensions.Throws<InvalidEnumArgumentException>("linearGradientMode", () => new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Empty, Color.Empty, linearGradientMode));
+            AssertExtensions.Throws<InvalidEnumArgumentException>("linearGradientMode", () => new LinearGradientBrush(new RectangleF(1, 2, 3, 4), Color.Empty, Color.Empty, linearGradientMode));
         }
 
         public static IEnumerable<object[]> Ctor_HatchStyle_ForeColor_BackColor_TestData()
@@ -656,7 +656,7 @@ namespace System.Drawing.Drawing2D.Tests
         public void WrapMode_SetInvalid_ThrowsInvalidEnumArgumentException(WrapMode wrapMode)
         {
             var brush = new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Plum, Color.Red, 45, true);
-            Assert.Throws<InvalidEnumArgumentException>("value", () => brush.WrapMode = wrapMode);
+            AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => brush.WrapMode = wrapMode);
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]

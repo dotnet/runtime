@@ -124,8 +124,8 @@ namespace System.Drawing.Drawing2D.Tests
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Ctor_NullPoints_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>("plgpts", () => new Matrix(new RectangleF(), null));
-            Assert.Throws<ArgumentNullException>("plgpts", () => new Matrix(new Rectangle(), null));
+            AssertExtensions.Throws<ArgumentNullException>("plgpts", () => new Matrix(new RectangleF(), null));
+            AssertExtensions.Throws<ArgumentNullException>("plgpts", () => new Matrix(new Rectangle(), null));
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -370,8 +370,8 @@ namespace System.Drawing.Drawing2D.Tests
         {
             using (var matrix = new Matrix())
             {
-                Assert.Throws<ArgumentNullException>("matrix", () => matrix.Multiply(null));
-                Assert.Throws<ArgumentNullException>("matrix", () => matrix.Multiply(null, MatrixOrder.Prepend));
+                AssertExtensions.Throws<ArgumentNullException>("matrix", () => matrix.Multiply(null));
+                AssertExtensions.Throws<ArgumentNullException>("matrix", () => matrix.Multiply(null, MatrixOrder.Prepend));
             }
         }
 
@@ -822,8 +822,8 @@ namespace System.Drawing.Drawing2D.Tests
         {
             using (var matrix = new Matrix())
             {
-                Assert.Throws<ArgumentNullException>("pts", () => matrix.TransformPoints((Point[])null));
-                Assert.Throws<ArgumentNullException>("pts", () => matrix.TransformPoints((PointF[])null));
+                AssertExtensions.Throws<ArgumentNullException>("pts", () => matrix.TransformPoints((Point[])null));
+                AssertExtensions.Throws<ArgumentNullException>("pts", () => matrix.TransformPoints((PointF[])null));
             }
         }
 
@@ -905,9 +905,9 @@ namespace System.Drawing.Drawing2D.Tests
         {
             using (var matrix = new Matrix())
             {
-                Assert.Throws<ArgumentNullException>("pts", () => matrix.VectorTransformPoints(null));
-                Assert.Throws<ArgumentNullException>("pts", () => matrix.TransformVectors((Point[])null));
-                Assert.Throws<ArgumentNullException>("pts", () => matrix.TransformVectors((PointF[])null));
+                AssertExtensions.Throws<ArgumentNullException>("pts", () => matrix.VectorTransformPoints(null));
+                AssertExtensions.Throws<ArgumentNullException>("pts", () => matrix.TransformVectors((Point[])null));
+                AssertExtensions.Throws<ArgumentNullException>("pts", () => matrix.TransformVectors((PointF[])null));
             }
         }
 

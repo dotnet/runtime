@@ -42,7 +42,7 @@ namespace System.Security.AccessControl
         {
             var fileSystemRights = (FileSystemRights)(-1);
             var identity = new SecurityIdentifier(WellKnownSidType.WorldSid, null);
-            Assert.Throws<ArgumentOutOfRangeException>("fileSystemRights", () => new FileSystemAuditRule(@"MYDOMAIN\MyAccount", fileSystemRights, AuditFlags.Failure));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("fileSystemRights", () => new FileSystemAuditRule(@"MYDOMAIN\MyAccount", fileSystemRights, AuditFlags.Failure));
         }
 
 

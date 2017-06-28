@@ -26,7 +26,7 @@ namespace System.IO
         public void FileSystemAccessRule_InvalidFileSystemRights()
         {
             var identity = new SecurityIdentifier(WellKnownSidType.WorldSid, null);
-            Assert.Throws<ArgumentOutOfRangeException>("fileSystemRights", () =>
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("fileSystemRights", () =>
             new FileSystemAccessRule(identity, (FileSystemRights)(-1), AccessControlType.Allow));
         }
 
