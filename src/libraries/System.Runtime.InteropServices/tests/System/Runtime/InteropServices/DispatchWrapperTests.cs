@@ -11,10 +11,18 @@ namespace System.Runtime.InteropServices.Tests
     {
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Throws PlatformNotSupportedException in UapAot")]
         public void Ctor_NullWindows_Success()
         {
             var wrapper = new DispatchWrapper(null);
             Assert.Null(wrapper.WrappedObject);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.UapAot, "Throws PlatformNotSupportedException in UapAot")]
+        public void Ctor_NullUapAot_ThrowsPlatformNotSupportedException()
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => new DispatchWrapper(null));
         }
 
         [Fact]

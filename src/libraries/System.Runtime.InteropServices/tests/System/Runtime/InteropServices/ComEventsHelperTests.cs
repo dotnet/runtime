@@ -11,9 +11,17 @@ namespace System.Runtime.InteropServices.Tests
     {
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Throws PlatformNotSupportedException in UapAot")]
         public void Combine_NullRcwWindows_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>(null, () => ComEventsHelper.Combine(null, Guid.Empty, 1, null));
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.UapAot, "Throws PlatformNotSupportedException in UapAot")]
+        public void Combine_NullRcwUapAot_PlatformNotSupportedException()
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => ComEventsHelper.Combine(null, Guid.Empty, 1, null));
         }
         
         [Fact]
@@ -32,9 +40,16 @@ namespace System.Runtime.InteropServices.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Throws PlatformNotSupportedException in UapAot")]
         public void Remove_NullRcwWindows_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>(null, () => ComEventsHelper.Remove(null, Guid.Empty, 1, null));
+        }
+
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.UapAot, "Throws PlatformNotSupportedException in UapAot")]
+        public void Remove_NullRcwUapAot_ThrowsPlatformNotSupportedException()
+        {
+            Assert.Throws<PlatformNotSupportedException>(() => ComEventsHelper.Remove(null, Guid.Empty, 1, null));
         }
 
         [Fact]
