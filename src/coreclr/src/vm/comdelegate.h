@@ -234,6 +234,4 @@ struct ShuffleEntry
 
 #include <poppack.h>
 
-void __stdcall DoDelegateInvokeForHostCheck(Object* pDelegate);
-
 #endif  // _COMDELEGATE_H_
