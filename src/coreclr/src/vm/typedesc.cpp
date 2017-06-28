@@ -40,7 +40,7 @@ BOOL ParamTypeDesc::Verify() {
     STATIC_CONTRACT_DEBUG_ONLY;
     STATIC_CONTRACT_SUPPORTS_DAC;
 
-    _ASSERTE(m_TemplateMT.IsNull() || m_TemplateMT.GetValue()->SanityCheck());
+    _ASSERTE(m_TemplateMT.IsNull() || GetTemplateMethodTableInternal()->SanityCheck());
     _ASSERTE(!GetTypeParam().IsNull());
     BAD_FORMAT_NOTHROW_ASSERT(GetTypeParam().IsTypeDesc() || !GetTypeParam().AsMethodTable()->IsArray());
     BAD_FORMAT_NOTHROW_ASSERT(CorTypeInfo::IsModifier_NoThrow(GetInternalCorElementType()) ||
@@ -59,7 +59,7 @@ BOOL ArrayTypeDesc::Verify() {
     STATIC_CONTRACT_SUPPORTS_DAC;
 
     // m_TemplateMT == 0 may be null when building types involving TypeVarTypeDesc's
-    BAD_FORMAT_NOTHROW_ASSERT(m_TemplateMT.IsNull() || m_TemplateMT.GetValue()->IsArray());
+    BAD_FORMAT_NOTHROW_ASSERT(m_TemplateMT.IsNull() || GetTemplateMethodTable()->IsArray());
     BAD_FORMAT_NOTHROW_ASSERT(CorTypeInfo::IsArray_NoThrow(GetInternalCorElementType()));
     ParamTypeDesc::Verify();
     return(true);
@@ -844,7 +844,7 @@ OBJECTREF ParamTypeDesc::GetManagedClassObject()
         if (OwnsTemplateMethodTable())
         {
             // Set the handle on template methodtable as well to make Object.GetType for arrays take the fast path
-            EnsureWritablePages(m_TemplateMT.GetValue()->GetWriteableDataForWrite())->m_hExposedClassObject = m_hExposedClassObject;
+            EnsureWritablePages(GetTemplateMethodTableInternal()->GetWriteableDataForWrite())->m_hExposedClassObject = m_hExposedClassObject;
         }
 
         // Log the TypeVarTypeDesc access
@@ -1011,7 +1011,7 @@ void TypeDesc::DoFullyLoad(Generics::RecursionGraph *pVisited, ClassLoadLevel le
         // Fully load the template method table
         if (!pPTD->m_TemplateMT.IsNull())
         {
-            pPTD->m_TemplateMT.GetValue()->DoFullyLoad(&newVisited, level, pPending, &fBailed, pInstContext);
+            pPTD->GetTemplateMethodTableInternal()->DoFullyLoad(&newVisited, level, pPending, &fBailed, pInstContext);
         }
     }
 
@@ -1189,8 +1189,8 @@ void ParamTypeDesc::Save(DataImage *image)
     if (OwnsTemplateMethodTable())
     {
         // This TypeDesc should be the only one saving this MT
-        _ASSERTE(!image->IsStored(m_TemplateMT.GetValue()));
-        Module::SaveMethodTable(image, m_TemplateMT.GetValue(), 0);
+        _ASSERTE(!image->IsStored(GetTemplateMethodTableInternal()));
+        Module::SaveMethodTable(image, GetTemplateMethodTableInternal(), 0);
     }
 
 }
@@ -1219,8 +1219,8 @@ void ParamTypeDesc::Fixup(DataImage *image)
             // TypeDesc and the MT are "tightly-knit") In other words if one is present in
             // an NGEN image then then other will be, and if one is "used" at runtime then
             // the other will be too.
-            image->FixupPointerField(this, offsetof(ParamTypeDesc, m_TemplateMT));
-            m_TemplateMT.GetValue()->Fixup(image);
+            image->FixupMethodTablePointer(this, &m_TemplateMT);
+            GetTemplateMethodTableInternal()->Fixup(image);
         }
         else
         {
@@ -1275,14 +1275,14 @@ BOOL ParamTypeDesc::ComputeNeedsRestore(DataImage *image, TypeHandleList *pVisit
     { 
         if (OwnsTemplateMethodTable())
         {
-            if (m_TemplateMT.GetValue()->ComputeNeedsRestore(image, pVisited))
+            if (GetTemplateMethodTableInternal()->ComputeNeedsRestore(image, pVisited))
             {
                 res = TRUE;
             }
         }
         else
         {
-            if (!image->CanPrerestoreEagerBindToMethodTable(m_TemplateMT.GetValue(), pVisited))
+            if (!image->CanPrerestoreEagerBindToMethodTable(GetTemplateMethodTableInternal(), pVisited))
             {
                 res = TRUE;
             }
@@ -2419,7 +2419,7 @@ ParamTypeDesc::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     SUPPORTS_DAC;
     DAC_ENUM_DTHIS();
 
-    PTR_MethodTable pTemplateMT = m_TemplateMT.GetValue();
+    PTR_MethodTable pTemplateMT = GetTemplateMethodTableInternal();
     if (pTemplateMT.IsValid())
     {
         pTemplateMT->EnumMemoryRegions(flags);

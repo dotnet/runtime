@@ -2818,13 +2818,13 @@ void EEClass::Save(DataImage *image, MethodTable *pMT)
 
         if (pInfo->m_numCTMFields > 0)
         {
-            ZapStoredStructure * pNode = image->StoreStructure(pInfo->m_pFieldMarshalers,
+            ZapStoredStructure * pNode = image->StoreStructure(pInfo->GetFieldMarshalers(),
                                             pInfo->m_numCTMFields * MAXFIELDMARSHALERSIZE,
                                             DataImage::ITEM_FIELD_MARSHALERS);
 
             for (UINT iField = 0; iField < pInfo->m_numCTMFields; iField++)
             {
-                FieldMarshaler *pFM = (FieldMarshaler*)((BYTE *)pInfo->m_pFieldMarshalers + iField * MAXFIELDMARSHALERSIZE);
+                FieldMarshaler *pFM = (FieldMarshaler*)((BYTE *)pInfo->GetFieldMarshalers() + iField * MAXFIELDMARSHALERSIZE);
                 pFM->Save(image);
 
                 if (iField > 0)
@@ -3029,11 +3029,11 @@ void EEClass::Fixup(DataImage *image, MethodTable *pMT)
 
     if (HasLayout())
     {
-        image->FixupPointerField(this, offsetof(LayoutEEClass, m_LayoutInfo.m_pFieldMarshalers));
+        image->FixupRelativePointerField(this, offsetof(LayoutEEClass, m_LayoutInfo.m_pFieldMarshalers));
 
         EEClassLayoutInfo *pInfo = &((LayoutEEClass*)this)->m_LayoutInfo;
 
-        FieldMarshaler *pFM = pInfo->m_pFieldMarshalers;
+        FieldMarshaler *pFM = pInfo->GetFieldMarshalers();
         FieldMarshaler *pFMEnd = (FieldMarshaler*) ((BYTE *)pFM + pInfo->m_numCTMFields*MAXFIELDMARSHALERSIZE);
         while (pFM < pFMEnd)
         {
