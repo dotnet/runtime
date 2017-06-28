@@ -9391,6 +9391,58 @@ inline LclVarDsc::LclVarDsc(Compiler* comp)
 {
 }
 
+//---------------------------------------------------------------------------------------------------------------------
+// GenTreeVisitor: a flexible tree walker implemented using the curiosly-recurring-template pattern.
+//
+// This class implements a configurable walker for IR trees. There are five configuration options (defaults values are
+// shown in parentheses):
+//
+// - ComputeStack (false): when true, the walker will push each node onto the `m_ancestors` stack. "Ancestors" is a bit
+//                         of a misnomer, as the first entry will always be the current node.
+//
+// - DoPreOrder (false): when true, the walker will invoke `TVisitor::PreOrderVisit` with the current node as an
+//                       argument before visiting the node's operands.
+//
+// - DoPostOrder (false): when true, the walker will invoke `TVisitor::PostOrderVisit` with the current node as an
+//                        argument after visiting the node's operands.
+//
+// - DoLclVarsOnly (false): when true, the walker will only invoke `TVisitor::PreOrderVisit` for lclVar nodes.
+//                          `DoPreOrder` must be true if this option is true.
+//
+// - UseExecutionOrder (false): when true, then walker will visit a node's operands in execution order (e.g. if a
+//                              binary operator has the `GTF_REVERSE_OPS` flag set, the second operand will be
+//                              visited before the first).
+//
+// At least one of `DoPreOrder` and `DoPostOrder` must be specified.
+//
+// A simple pre-order visitor might look something like the following:
+//
+//     class CountingVisitor final : public GenTreeVisitor<CountingVisitor>
+//     {
+//     public:
+//         enum
+//         {
+//             DoPreOrder = true
+//         };
+//
+//         unsigned m_count;
+//
+//         CountingVisitor(Compiler* compiler)
+//             : GenTreeVisitor<CountingVisitor>(compiler), m_count(0)
+//         {
+//         }
+//
+//         Compiler::fgWalkResult PreOrderVisit(GenTree* node)
+//         {
+//             m_count++;
+//         }
+//     };
+//
+// This visitor would then be used like so:
+//
+//     CountingVisitor countingVisitor(compiler);
+//     countingVisitor.WalkTree(root);
+//
 template <typename TVisitor>
 class GenTreeVisitor
 {
@@ -9790,6 +9842,8 @@ public:
             // Binary nodes
             default:
             {
+                assert(node->OperIsBinary());
+
                 GenTreeOp* const op = node->AsOp();
 
                 GenTree** op1Use = &op->gtOp1;
