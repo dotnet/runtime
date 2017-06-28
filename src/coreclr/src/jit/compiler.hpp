@@ -2909,7 +2909,6 @@ inline Compiler::fgWalkResult Compiler::fgWalkTree(GenTreePtr*  pTree,
     return result;
 }
 
-
 /*****************************************************************************
  *
  * Has this block been added to throw an inlined exception

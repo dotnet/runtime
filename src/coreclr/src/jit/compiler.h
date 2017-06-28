@@ -9451,18 +9451,17 @@ protected:
 
     enum
     {
-        ComputeStack = false,
-        DoPreOrder = false,
-        DoPostOrder = false,
-        DoLclVarsOnly = false,
+        ComputeStack      = false,
+        DoPreOrder        = false,
+        DoPostOrder       = false,
+        DoLclVarsOnly     = false,
         UseExecutionOrder = false,
     };
 
     Compiler*            m_compiler;
     ArrayStack<GenTree*> m_ancestors;
 
-    GenTreeVisitor(Compiler* compiler)
-        : m_compiler(compiler), m_ancestors(compiler)
+    GenTreeVisitor(Compiler* compiler) : m_compiler(compiler), m_ancestors(compiler)
     {
         assert(compiler != nullptr);
 
@@ -9541,13 +9540,13 @@ public:
             case GT_NO_OP:
             case GT_START_NONGC:
             case GT_PROF_HOOK:
-    #if !FEATURE_EH_FUNCLETS
+#if !FEATURE_EH_FUNCLETS
             case GT_END_LFIN:
-    #endif // !FEATURE_EH_FUNCLETS
+#endif // !FEATURE_EH_FUNCLETS
             case GT_PHI_ARG:
-    #ifndef LEGACY_BACKEND
+#ifndef LEGACY_BACKEND
             case GT_JMPTABLE:
-    #endif // LEGACY_BACKEND
+#endif // LEGACY_BACKEND
             case GT_REG_VAR:
             case GT_CLS_VAR:
             case GT_CLS_VAR_ADDR:
@@ -9636,9 +9635,9 @@ public:
             }
 
             case GT_ARR_BOUNDS_CHECK:
-    #ifdef FEATURE_SIMD
+#ifdef FEATURE_SIMD
             case GT_SIMD_CHK:
-    #endif // FEATURE_SIMD
+#endif // FEATURE_SIMD
             {
                 GenTreeBoundsChk* const boundsChk = node->AsBoundsChk();
 
@@ -9892,15 +9891,16 @@ public:
 };
 
 template <bool computeStack, bool doPreOrder, bool doPostOrder, bool doLclVarsOnly, bool useExecutionOrder>
-class GenericTreeWalker final : public GenTreeVisitor<GenericTreeWalker<computeStack, doPreOrder, doPostOrder, doLclVarsOnly, useExecutionOrder>>
+class GenericTreeWalker final
+    : public GenTreeVisitor<GenericTreeWalker<computeStack, doPreOrder, doPostOrder, doLclVarsOnly, useExecutionOrder>>
 {
 public:
     enum
     {
-        ComputeStack = computeStack,
-        DoPreOrder = doPreOrder,
-        DoPostOrder = doPostOrder,
-        DoLclVarsOnly = doLclVarsOnly,
+        ComputeStack      = computeStack,
+        DoPreOrder        = doPreOrder,
+        DoPostOrder       = doPostOrder,
+        DoLclVarsOnly     = doLclVarsOnly,
         UseExecutionOrder = useExecutionOrder,
     };
 
@@ -9909,7 +9909,9 @@ private:
 
 public:
     GenericTreeWalker(Compiler::fgWalkData* walkData)
-        : GenTreeVisitor<GenericTreeWalker<computeStack, doPreOrder, doPostOrder, doLclVarsOnly, useExecutionOrder>>(walkData->compiler), m_walkData(walkData)
+        : GenTreeVisitor<GenericTreeWalker<computeStack, doPreOrder, doPostOrder, doLclVarsOnly, useExecutionOrder>>(
+              walkData->compiler)
+        , m_walkData(walkData)
     {
         assert(walkData != nullptr);
 
@@ -9937,7 +9939,7 @@ class IncLclVarRefCountsVisitor final : public GenTreeVisitor<IncLclVarRefCounts
 public:
     enum
     {
-        DoPreOrder = true,
+        DoPreOrder    = true,
         DoLclVarsOnly = true
     };
 
@@ -9952,7 +9954,7 @@ class DecLclVarRefCountsVisitor final : public GenTreeVisitor<DecLclVarRefCounts
 public:
     enum
     {
-        DoPreOrder = true,
+        DoPreOrder    = true,
         DoLclVarsOnly = true
     };
 
