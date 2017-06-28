@@ -12,7 +12,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <CLRTestPriority>1</CLRTestPriority>
-    <CLRTestExecutionArguments>/loops:500000 /addVal:1</CLRTestExecutionArguments>
+    <CLRTestExecutionArguments>/loops:10000 /addVal:1</CLRTestExecutionArguments>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
