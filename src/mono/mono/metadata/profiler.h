@@ -14,6 +14,13 @@
 MONO_BEGIN_DECLS
 
 /*
+ * This value will be incremented whenever breaking changes to the profiler API
+ * are made. This macro is intended for use in profiler modules that wish to
+ * support older versions of the profiler API.
+ */
+#define MONO_PROFILER_API_VERSION 2
+
+/*
  * Loads a profiler module based on the specified description. The description
  * can be of the form "name:args" or just "name". For example, "log:sample" and
  * "log" will both load "libmono-profiler-log.so". The description is passed to
