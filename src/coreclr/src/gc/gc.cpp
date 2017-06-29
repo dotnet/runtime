@@ -749,7 +749,7 @@ public:
             if (color == join_struct.lock_color)
             {
 respin:
-                int spin_count = 4096 * g_num_processors;
+                int spin_count = 4096 * (gc_heap::n_heaps - 1);
                 for (int j = 0; j < spin_count; j++)
                 {
                     if (color != join_struct.lock_color)
@@ -850,7 +850,7 @@ respin:
                 if (!join_struct.wait_done)
                 {
         respin:
-                    int spin_count = 2 * 4096 * g_num_processors;
+                    int spin_count = 2 * 4096 * (gc_heap::n_heaps - 1);
                     for (int j = 0; j < spin_count; j++)
                     {
                         if (join_struct.wait_done)
@@ -5336,7 +5336,7 @@ void gc_heap::gc_thread_function ()
         }
         else
         {
-            int spin_count = 32 * (g_num_processors - 1);
+            int spin_count = 32 * (gc_heap::n_heaps - 1);
 
             // wait until RestartEE has progressed to a stage where we can restart user threads
             while (!gc_heap::internal_gc_done && !GCHeap::SafeToRestartManagedThreads())
