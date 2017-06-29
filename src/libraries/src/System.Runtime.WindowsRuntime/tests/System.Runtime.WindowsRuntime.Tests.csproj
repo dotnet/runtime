@@ -8,18 +8,27 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="..\..\Common\tests\System\AssertExtensions.cs">
-      <Link>AssertExtensions.cs</Link>
-    </Compile>
     <Compile Include="System\IO\AsWinRTStreamTests.cs" />
     <Compile Include="System\IO\TestStreamProvider.cs" />
     <Compile Include="System\IO\StorageFileMock.cs" />
     <Compile Include="System\IO\CreateSafeFileHandleTests.cs" />
     <Compile Include="System\IO\StorageFolderMock.cs" />
     <Compile Include="System\IO\WriteOnlyStream.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntimeBufferExtensionsTests.cs" />
+    <Compile Include="System\Runtime\InteropServices\WindowsRuntimeBufferTests.cs" />
+    <Compile Include="Windows\Foundation\PointTests.cs" />
+    <Compile Include="Windows\Foundation\RectTests.cs" />
+    <Compile Include="Windows\Foundation\SizeTests.cs" />
+    <Compile Include="Windows\UI\ColorTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
+      <Link>Common\System\AssertExtensions.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Windows" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
