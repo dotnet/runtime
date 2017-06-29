@@ -1204,6 +1204,25 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObjectHandle obj,
 
 #ifndef DISABLE_REFLECTION_EMIT
 
+static gboolean
+assemblybuilderaccess_can_refonlyload (guint32 access)
+{
+	return (access & 0x4) != 0;
+}
+
+static gboolean
+assemblybuilderaccess_can_run (guint32 access)
+{
+	return (access & MonoAssemblyBuilderAccess_Run) != 0;
+}
+
+static gboolean
+assemblybuilderaccess_can_save (guint32 access)
+{
+	return (access & MonoAssemblyBuilderAccess_Save) != 0;
+}
+
+
 /*
  * mono_reflection_dynimage_basic_init:
  * @assembly: an assembly builder object
@@ -1260,8 +1279,8 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 			assembly->assembly.aname.revision = 0;
         }
 
-	assembly->run = assemblyb->access != 2;
-	assembly->save = assemblyb->access != 1;
+	assembly->run = assemblybuilderaccess_can_run (assemblyb->access);
+	assembly->save = assemblybuilderaccess_can_save (assemblyb->access);
 	assembly->domain = domain;
 
 	char *assembly_name = mono_string_to_utf8_checked (assemblyb->name, &error);
