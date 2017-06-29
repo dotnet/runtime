@@ -66,7 +66,6 @@ namespace System.Runtime.InteropServices.Tests
 
         public static IEnumerable<object[]> InvalidPinnedObject_TestData()
         {
-            yield return new object[] { new object() };
             yield return new object[] { new NonBlittable() };
             yield return new object[] { new object[0] };
             yield return new object[] { new NonBlittable[0] };
@@ -74,7 +73,6 @@ namespace System.Runtime.InteropServices.Tests
 
         [Theory]
         [MemberData(nameof(InvalidPinnedObject_TestData))]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/21651", TargetFrameworkMonikers.UapAot)]
         public void Alloc_InvalidPinnedObject_ThrowsArgumentException(object value)
         {
             AssertExtensions.Throws<ArgumentException>(null, () => GCHandle.Alloc(value, GCHandleType.Pinned));
