@@ -16,14 +16,14 @@ namespace System.Net.Http.Headers
         private static readonly HashSet<string> s_invalidHeaders = CreateInvalidHeaders();
 
         private const int AcceptSlot = 0;
-        private const int ExpectSlot = 1;
-        private const int IfMatchSlot = 2;
-        private const int IfNoneMatchSlot = 3;
-        private const int TransferEncodingSlot = 4;
-        private const int UserAgentSlot = 5;
-        private const int AcceptCharsetSlot = 6;
-        private const int AcceptEncodingSlot = 7;
-        private const int AcceptLanguageSlot = 8;
+        private const int AcceptCharsetSlot = 1;
+        private const int AcceptEncodingSlot = 2;
+        private const int AcceptLanguageSlot = 3;
+        private const int ExpectSlot = 4;
+        private const int IfMatchSlot = 5;
+        private const int IfNoneMatchSlot = 6;
+        private const int TransferEncodingSlot = 7;
+        private const int UserAgentSlot = 8;
         private const int NumCollectionsSlots = 9;
 
         private object[] _specialCollectionsSlots;

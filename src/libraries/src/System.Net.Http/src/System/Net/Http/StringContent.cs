@@ -11,7 +11,7 @@ namespace System.Net.Http
 {
     public class StringContent : ByteArrayContent
     {
-        private const string defaultMediaType = "text/plain";
+        private const string DefaultMediaType = "text/plain";
 
         public StringContent(string content)
             : this(content, null, null)
@@ -27,7 +27,7 @@ namespace System.Net.Http
             : base(GetContentByteArray(content, encoding))
         {
             // Initialize the 'Content-Type' header with information provided by parameters. 
-            MediaTypeHeaderValue headerValue = new MediaTypeHeaderValue((mediaType == null) ? defaultMediaType : mediaType);
+            MediaTypeHeaderValue headerValue = new MediaTypeHeaderValue((mediaType == null) ? DefaultMediaType : mediaType);
             headerValue.CharSet = (encoding == null) ? HttpContent.DefaultStringEncoding.WebName : encoding.WebName;
 
             Headers.ContentType = headerValue;
@@ -53,8 +53,8 @@ namespace System.Net.Http
             return encoding.GetBytes(content);
         }
 
-        internal override ValueTask<Stream> CreateContentReadStreamValueAsync() =>
-            GetType() == typeof(StringContent) ? new ValueTask<Stream>(CreateMemoryStreamForByteArray()) :
-            base.CreateContentReadStreamValueAsync();
+        internal override Stream TryCreateContentReadStream() =>
+            GetType() == typeof(StringContent) ? CreateMemoryStreamForByteArray() : // type check ensures we use possible derived type's CreateContentReadStreamAsync override
+            null;
     }
 }

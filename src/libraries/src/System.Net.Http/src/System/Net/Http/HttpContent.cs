@@ -19,7 +19,7 @@ namespace System.Net.Http
     {
         private HttpContentHeaders _headers;
         private MemoryStream _bufferedContent;
-        private ValueTask<Stream>? _contentReadStream;
+        private object _contentReadStream; // Stream or Task<Stream>
         private bool _disposed;
         private bool _canCalculateLength;
 
@@ -249,23 +249,57 @@ namespace System.Net.Http
         {
             CheckDisposed();
 
-            Task<Stream> t = ReadAsStreamValueAsync().AsTask();
-            _contentReadStream = new ValueTask<Stream>(t); // avoid AsTask potentially allocating another task on subsequent calls
-            return t;
+            // _contentReadStream will be either null (nothing yet initialized), a Stream (it was previously
+            // initialized in TryReadAsStream), or a Task<Stream> (it was previously initialized here
+            // in ReadAsStreamAsync).
+
+            if (_contentReadStream == null) // don't yet have a Stream
+            {
+                Task<Stream> t = TryGetBuffer(out ArraySegment<byte> buffer) ?
+                    Task.FromResult<Stream>(new MemoryStream(buffer.Array, buffer.Offset, buffer.Count, writable: false)) :
+                    CreateContentReadStreamAsync();
+                _contentReadStream = t;
+                return t;
+            }
+            else if (_contentReadStream is Task<Stream> t) // have a Task<Stream>
+            {
+                return t;
+            }
+            else
+            {
+                Debug.Assert(_contentReadStream is Stream, $"Expected a Stream, got ${_contentReadStream}");
+                Task<Stream> ts = Task.FromResult((Stream)_contentReadStream);
+                _contentReadStream = ts;
+                return ts;
+            }
         }
 
-        internal ValueTask<Stream> ReadAsStreamValueAsync()
+        internal Stream TryReadAsStream()
         {
             CheckDisposed();
 
-            if (_contentReadStream == null)
-            {
-                _contentReadStream = TryGetBuffer(out ArraySegment<byte> buffer) ?
-                    new ValueTask<Stream>(new MemoryStream(buffer.Array, buffer.Offset, buffer.Count, writable: false)) :
-                    CreateContentReadStreamValueAsync();
-            }
+            // _contentReadStream will be either null (nothing yet initialized), a Stream (it was previously
+            // initialized here in TryReadAsStream), or a Task<Stream> (it was previously initialized
+            // in ReadAsStreamAsync).
 
-            return _contentReadStream.GetValueOrDefault();
+            if (_contentReadStream == null) // don't yet have a Stream
+            {
+                Stream s = TryGetBuffer(out ArraySegment<byte> buffer) ?
+                    new MemoryStream(buffer.Array, buffer.Offset, buffer.Count, writable: false) :
+                    TryCreateContentReadStream();
+                _contentReadStream = s;
+                return s;
+            }
+            else if (_contentReadStream is Stream s) // have a Stream
+            {
+                return s;
+            }
+            else // have a Task<Stream>
+            {
+                Debug.Assert(_contentReadStream is Task<Stream>, $"Expected a Task<Stream>, got ${_contentReadStream}");
+                Task<Stream> t = (Task<Stream>)_contentReadStream;
+                return t.Status == TaskStatus.RanToCompletion ? t.Result : null;
+            }
         }
 
         protected abstract Task SerializeToStreamAsync(Stream stream, TransportContext context);
@@ -409,10 +443,9 @@ namespace System.Net.Http
 
         // As an optimization for internal consumers of HttpContent (e.g. HttpClient.GetStreamAsync), and for
         // HttpContent-derived implementations that override CreateContentReadStreamAsync in a way that always
-        // or frequently returns synchronously-completed tasks, we can avoid the task allocation by also overriding
-        // this ValueTask-returning variant and using that instead.
-        internal virtual ValueTask<Stream> CreateContentReadStreamValueAsync() =>
-            new ValueTask<Stream>(CreateContentReadStreamAsync());
+        // or frequently returns synchronously-completed tasks, we can avoid the task allocation by enabling
+        // callers to try to get the Stream first synchronously.
+        internal virtual Stream TryCreateContentReadStream() => null;
 
         // Derived types return true if they're able to compute the length. It's OK if derived types return false to
         // indicate that they're not able to compute the length. The transport channel needs to decide what to do in
@@ -484,12 +517,10 @@ namespace System.Net.Http
 
                 if (_contentReadStream != null)
                 {
-                    ValueTask<Stream> t = _contentReadStream.GetValueOrDefault();
-                    if (t.IsCompletedSuccessfully)
-                    {
-                        t.Result?.Dispose();
-                        _contentReadStream = null;
-                    }
+                    Stream s = _contentReadStream as Stream ??
+                        (_contentReadStream is Task<Stream> t && t.Status == TaskStatus.RanToCompletion ? t.Result : null);
+                    s?.Dispose();
+                    _contentReadStream = null;
                 }
 
                 if (IsBuffered)
