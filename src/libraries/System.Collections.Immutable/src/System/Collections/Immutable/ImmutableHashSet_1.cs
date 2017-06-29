@@ -104,7 +104,7 @@ namespace System.Collections.Immutable
 
             public bool Equals(HashBucket x, HashBucket y) => x.EqualsByRef(y);
 
-            public int GetHashCode(HashBucket obj) => obj.GetHashCodeByRef();
+            public int GetHashCode(HashBucket obj) => throw new NotSupportedException();
         }
 
         private class HashBucketByValueEqualityComparer : IEqualityComparer<HashBucket>
@@ -123,7 +123,7 @@ namespace System.Collections.Immutable
 
             public bool Equals(HashBucket x, HashBucket y) => x.EqualsByValue(y, _valueComparer);
 
-            public int GetHashCode(HashBucket obj) => obj.GetHashCodeByValue(_valueComparer);
+            public int GetHashCode(HashBucket obj) => throw new NotSupportedException();
         }
 
         /// <summary>
