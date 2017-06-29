@@ -12,7 +12,6 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    [ActiveIssue(20010, TargetFrameworkMonikers.Uap)]
     public class HttpClientHandler_DefaultProxyCredentials_Test : RemoteExecutorTestBase
     {
         [Fact]
@@ -30,6 +29,10 @@ namespace System.Net.Http.Functional.Tests
             using (var handler = new HttpClientHandler())
             {
                 var creds = new NetworkCredential("username", "password", "domain");
+
+                handler.DefaultProxyCredentials = null;
+                Assert.Null(handler.DefaultProxyCredentials);
+
                 handler.DefaultProxyCredentials = creds;
                 Assert.Same(creds, handler.DefaultProxyCredentials);
 
@@ -38,6 +41,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ActiveIssue(20010, TargetFrameworkMonikers.Uap)]
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void ProxyExplicitlyProvided_DefaultCredentials_Ignored()
