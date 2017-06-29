@@ -438,18 +438,16 @@ namespace System.Resources
         // security check in each constructor prevents it.
         private void CommonAssemblyInit()
         {
-            if (_bUsingModernResourceManagement == false)
-            {
-                UseManifest = true;
+            // Now we can use the managed resources even when using PRI's to support the APIs GetObject, GetStream...etc.
+            UseManifest = true;
 
-                _resourceSets = new Dictionary<String, ResourceSet>();
-                _lastUsedResourceCache = new CultureNameResourceSetPair();
+            _resourceSets = new Dictionary<String, ResourceSet>();
+            _lastUsedResourceCache = new CultureNameResourceSetPair();
 
-                _fallbackLoc = UltimateResourceFallbackLocation.MainAssembly;
+            _fallbackLoc = UltimateResourceFallbackLocation.MainAssembly;
 
-                ResourceManagerMediator mediator = new ResourceManagerMediator(this);
-                resourceGroveler = new ManifestBasedResourceGroveler(mediator);
-            }
+            ResourceManagerMediator mediator = new ResourceManagerMediator(this);
+            resourceGroveler = new ManifestBasedResourceGroveler(mediator);
 
             _neutralResourcesCulture = ManifestBasedResourceGroveler.GetNeutralResourcesLanguage(MainAssembly, ref _fallbackLoc);
         }
