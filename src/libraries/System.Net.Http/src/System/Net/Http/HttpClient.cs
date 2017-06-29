@@ -152,7 +152,7 @@ namespace System.Net.Http
 
                     // Since the underlying byte[] will never be exposed, we use an ArrayPool-backed
                     // stream to which we copy all of the data from the response.
-                    using (Stream responseStream = await c.ReadAsStreamAsync().ConfigureAwait(false))
+                    using (Stream responseStream = c.TryReadAsStream() ?? await c.ReadAsStreamAsync().ConfigureAwait(false))
                     using (var buffer = new HttpContent.LimitArrayPoolWriteStream(_maxResponseContentBufferSize, (int)headers.ContentLength.GetValueOrDefault()))
                     {
                         await responseStream.CopyToAsync(buffer).ConfigureAwait(false);
@@ -192,7 +192,7 @@ namespace System.Net.Http
                     return await c.ReadAsByteArrayAsync().ConfigureAwait(false);
 #else
                     HttpContentHeaders headers = c.Headers;
-                    using (Stream responseStream = await c.ReadAsStreamAsync().ConfigureAwait(false))
+                    using (Stream responseStream = c.TryReadAsStream() ?? await c.ReadAsStreamAsync().ConfigureAwait(false))
                     {
                         long? contentLength = headers.ContentLength;
                         Stream buffer; // declared here to share the state machine field across both if/else branches
@@ -252,7 +252,9 @@ namespace System.Net.Http
             HttpResponseMessage response = await getTask.ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
             HttpContent c = response.Content;
-            return c != null ? await c.ReadAsStreamAsync().ConfigureAwait(false) : Stream.Null;
+            return c != null ?
+                (c.TryReadAsStream() ?? await c.ReadAsStreamAsync().ConfigureAwait(false)) :
+                Stream.Null;
         }
 
         #endregion Simple Get Overloads

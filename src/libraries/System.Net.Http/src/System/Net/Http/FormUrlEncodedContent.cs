@@ -53,5 +53,9 @@ namespace System.Net.Http
             // Escape spaces as '+'.
             return Uri.EscapeDataString(data).Replace("%20", "+");
         }
+
+        internal override Stream TryCreateContentReadStream() =>
+            GetType() == typeof(FormUrlEncodedContent) ? CreateMemoryStreamForByteArray() : // type check ensures we use possible derived type's CreateContentReadStreamAsync override
+            null;
     }
 }

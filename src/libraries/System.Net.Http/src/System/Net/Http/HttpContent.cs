@@ -19,8 +19,8 @@ namespace System.Net.Http
     {
         private HttpContentHeaders _headers;
         private MemoryStream _bufferedContent;
+        private object _contentReadStream; // Stream or Task<Stream>
         private bool _disposed;
-        private Task<Stream> _contentReadStream;
         private bool _canCalculateLength;
 
         internal const int MaxBufferSize = int.MaxValue;
@@ -249,19 +249,57 @@ namespace System.Net.Http
         {
             CheckDisposed();
 
-            ArraySegment<byte> buffer;
-            if (_contentReadStream == null && TryGetBuffer(out buffer))
-            {
-                _contentReadStream = Task.FromResult<Stream>(new MemoryStream(buffer.Array, buffer.Offset, buffer.Count, writable: false));
-            }
+            // _contentReadStream will be either null (nothing yet initialized), a Stream (it was previously
+            // initialized in TryReadAsStream), or a Task<Stream> (it was previously initialized here
+            // in ReadAsStreamAsync).
 
-            if (_contentReadStream != null)
+            if (_contentReadStream == null) // don't yet have a Stream
             {
-                return _contentReadStream;
+                Task<Stream> t = TryGetBuffer(out ArraySegment<byte> buffer) ?
+                    Task.FromResult<Stream>(new MemoryStream(buffer.Array, buffer.Offset, buffer.Count, writable: false)) :
+                    CreateContentReadStreamAsync();
+                _contentReadStream = t;
+                return t;
             }
+            else if (_contentReadStream is Task<Stream> t) // have a Task<Stream>
+            {
+                return t;
+            }
+            else
+            {
+                Debug.Assert(_contentReadStream is Stream, $"Expected a Stream, got ${_contentReadStream}");
+                Task<Stream> ts = Task.FromResult((Stream)_contentReadStream);
+                _contentReadStream = ts;
+                return ts;
+            }
+        }
 
-            _contentReadStream = CreateContentReadStreamAsync();
-            return _contentReadStream;
+        internal Stream TryReadAsStream()
+        {
+            CheckDisposed();
+
+            // _contentReadStream will be either null (nothing yet initialized), a Stream (it was previously
+            // initialized here in TryReadAsStream), or a Task<Stream> (it was previously initialized
+            // in ReadAsStreamAsync).
+
+            if (_contentReadStream == null) // don't yet have a Stream
+            {
+                Stream s = TryGetBuffer(out ArraySegment<byte> buffer) ?
+                    new MemoryStream(buffer.Array, buffer.Offset, buffer.Count, writable: false) :
+                    TryCreateContentReadStream();
+                _contentReadStream = s;
+                return s;
+            }
+            else if (_contentReadStream is Stream s) // have a Stream
+            {
+                return s;
+            }
+            else // have a Task<Stream>
+            {
+                Debug.Assert(_contentReadStream is Task<Stream>, $"Expected a Task<Stream>, got ${_contentReadStream}");
+                Task<Stream> t = (Task<Stream>)_contentReadStream;
+                return t.Status == TaskStatus.RanToCompletion ? t.Result : null;
+            }
         }
 
         protected abstract Task SerializeToStreamAsync(Stream stream, TransportContext context);
@@ -403,6 +441,12 @@ namespace System.Net.Http
             return WaitAndReturnAsync(LoadIntoBufferAsync(), this, s => (Stream)s._bufferedContent);
         }
 
+        // As an optimization for internal consumers of HttpContent (e.g. HttpClient.GetStreamAsync), and for
+        // HttpContent-derived implementations that override CreateContentReadStreamAsync in a way that always
+        // or frequently returns synchronously-completed tasks, we can avoid the task allocation by enabling
+        // callers to try to get the Stream first synchronously.
+        internal virtual Stream TryCreateContentReadStream() => null;
+
         // Derived types return true if they're able to compute the length. It's OK if derived types return false to
         // indicate that they're not able to compute the length. The transport channel needs to decide what to do in
         // that case (send chunked, buffer first, etc.).
@@ -471,10 +515,11 @@ namespace System.Net.Http
             {
                 _disposed = true;
 
-                if (_contentReadStream != null &&
-                    _contentReadStream.Status == TaskStatus.RanToCompletion)
+                if (_contentReadStream != null)
                 {
-                    _contentReadStream.Result.Dispose();
+                    Stream s = _contentReadStream as Stream ??
+                        (_contentReadStream is Task<Stream> t && t.Status == TaskStatus.RanToCompletion ? t.Result : null);
+                    s?.Dispose();
                     _contentReadStream = null;
                 }
 
