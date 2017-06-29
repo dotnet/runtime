@@ -530,7 +530,6 @@
     <Compile Include="$(BclSourcesRoot)\System\IO\__Error.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\__HResults.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\BinaryReader.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\IO\BinaryWriter.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\Directory.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\SearchOption.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IO\DriveNotFoundException.cs" />
