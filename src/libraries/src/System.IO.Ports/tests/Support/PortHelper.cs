@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
 
 namespace Legacy.Support
 {
@@ -66,9 +67,10 @@ namespace Legacy.Support
 
             if (retval != null)
             {
+                var serialRegex = new Regex(@"^COM\d{1,3}$");
                 foreach (string str in retval)
                 {
-                    if (str.StartsWith("COM"))
+                    if (serialRegex.IsMatch(str))
                     {
                         ports.Add(str);
                         Debug.WriteLine("Installed serial ports :" + str);
