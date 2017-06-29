@@ -916,10 +916,9 @@ namespace System.Drawing
                 // and pass it to GDI+ to retrieve dash array elements
 
                 IntPtr buf = Marshal.AllocHGlobal(checked(4 * count));
-                status = SafeNativeMethods.Gdip.GdipGetPenDashArray(new HandleRef(this, NativePen), buf, count);
-
                 try
                 {
+                    status = SafeNativeMethods.Gdip.GdipGetPenDashArray(new HandleRef(this, NativePen), buf, count);
                     if (status != SafeNativeMethods.Gdip.Ok)
                     {
                         throw SafeNativeMethods.Gdip.StatusException(status);

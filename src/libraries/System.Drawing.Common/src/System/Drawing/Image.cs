@@ -409,14 +409,13 @@ namespace System.Drawing
                 return null;
 
             IntPtr buffer = Marshal.AllocHGlobal(size);
-
-            status = SafeNativeMethods.Gdip.GdipGetEncoderParameterList(new HandleRef(this, nativeImage),
-                                                         ref encoder,
-                                                         size,
-                                                         buffer);
-
             try
             {
+                status = SafeNativeMethods.Gdip.GdipGetEncoderParameterList(new HandleRef(this, nativeImage),
+                                                             ref encoder,
+                                                             size,
+                                                             buffer);
+
                 if (status != SafeNativeMethods.Gdip.Ok)
                 {
                     throw SafeNativeMethods.Gdip.StatusException(status);
@@ -870,11 +869,9 @@ namespace System.Drawing
             //    ARGB Entries[size]
 
             IntPtr memory = Marshal.AllocHGlobal(size);
-
-            status = SafeNativeMethods.Gdip.GdipGetImagePalette(new HandleRef(this, nativeImage), memory, size);
-
             try
             {
+                status = SafeNativeMethods.Gdip.GdipGetImagePalette(new HandleRef(this, nativeImage), memory, size);
                 if (status != SafeNativeMethods.Gdip.Ok)
                 {
                     throw SafeNativeMethods.Gdip.StatusException(status);
@@ -1090,10 +1087,9 @@ namespace System.Drawing
             if (propdata == IntPtr.Zero)
                 throw SafeNativeMethods.Gdip.StatusException(SafeNativeMethods.Gdip.OutOfMemory);
 
-            status = SafeNativeMethods.Gdip.GdipGetPropertyItem(new HandleRef(this, nativeImage), propid, size, propdata);
-
             try
             {
+                status = SafeNativeMethods.Gdip.GdipGetPropertyItem(new HandleRef(this, nativeImage), propid, size, propdata);
                 if (status != SafeNativeMethods.Gdip.Ok)
                 {
                     throw SafeNativeMethods.Gdip.StatusException(status);
@@ -1159,26 +1155,20 @@ namespace System.Drawing
                     return new PropertyItem[0];
 
                 IntPtr propdata = Marshal.AllocHGlobal(size);
-
-                status = SafeNativeMethods.Gdip.GdipGetAllPropertyItems(new HandleRef(this, nativeImage), size, count, propdata);
-
-                PropertyItem[] props = null;
-
                 try
                 {
+                    status = SafeNativeMethods.Gdip.GdipGetAllPropertyItems(new HandleRef(this, nativeImage), size, count, propdata);
                     if (status != SafeNativeMethods.Gdip.Ok)
                     {
                         throw SafeNativeMethods.Gdip.StatusException(status);
                     }
 
-                    props = PropertyItemInternal.ConvertFromMemory(propdata, count);
+                    return PropertyItemInternal.ConvertFromMemory(propdata, count);
                 }
                 finally
                 {
                     Marshal.FreeHGlobal(propdata);
                 }
-
-                return props;
             }
         }
 
