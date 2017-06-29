@@ -72,6 +72,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
         }
 
         [Fact]
+        [ActiveIssue(21682, TargetFrameworkMonikers.UapAot)]
         public void CopyArray_RankGreaterThanTwoAndNonMatchingBounds_ThrowsArrayTypeMismatchException()
         {
             Array array1 = Array.CreateInstance(typeof(int), new int[] { 1, 2, 3 }, new int[] { 2, 3, 4 });
@@ -81,6 +82,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
         }
 
         [Fact]
+        [ActiveIssue(21682, TargetFrameworkMonikers.UapAot)]
         public void CopyArray_NonMatchingBounds_ThrowsArgumentOutOfRangeException()
         {
             Array array1 = Array.CreateInstance(typeof(int), new int[] { 1, 2 }, new int[] { 2, 3 });
