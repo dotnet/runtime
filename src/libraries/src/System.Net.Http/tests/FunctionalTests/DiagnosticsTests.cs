@@ -19,7 +19,8 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.NetFramework, "uap: dotnet/corefx #20010, netfx: .NET Core specific diagnostic test")]
+    [ActiveIssue(20470, TargetFrameworkMonikers.UapAot)]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetEventSource is only part of .NET Core.")]
     public class DiagnosticsTest : RemoteExecutorTestBase
     {
         [Fact]

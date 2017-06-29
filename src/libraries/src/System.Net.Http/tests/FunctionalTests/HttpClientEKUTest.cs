@@ -15,6 +15,7 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
+    [ActiveIssue(21738, TargetFrameworkMonikers.Uap)] // If Capability.IsTrustedRootCertificateInstalled()==true, the tests are hanging.
     public class HttpClientEKUTest
     {
         // Curl + OSX SecureTransport doesn't support the custom certificate callback.

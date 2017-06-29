@@ -26,7 +26,7 @@ namespace System.Net.Test.Common
             {
                 if (PlatformDetection.IsUap)
                 {
-                    // TODO: dotnet/coreclr#11306
+                    // UWP doesn't support Global mutexes.
                     m = new Mutex(false, "Local\\CoreFXTest.Configuration.Certificates.LoadPfxCertificate");
                 }
                 else

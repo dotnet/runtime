@@ -11,7 +11,8 @@ namespace System.Net.NameResolution.Tests
     public static class LoggingTest
     {
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework | TargetFrameworkMonikers.UapAot, "NetEventSource is only part of .NET Core and requires internal Reflection.")]
+        [ActiveIssue(20470, TargetFrameworkMonikers.UapAot)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetEventSource is only part of .NET Core.")]
         public static void EventSource_ExistsWithCorrectId()
         {
             Type esType = typeof(Dns).GetTypeInfo().Assembly.GetType("System.Net.NetEventSource", throwOnError: true, ignoreCase: false);
