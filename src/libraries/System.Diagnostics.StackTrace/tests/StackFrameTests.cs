@@ -143,13 +143,7 @@ namespace System.Diagnostics.Tests
 
         private static void VerifyStackFrame(StackFrame stackFrame, bool hasFileInfo, int skipFrames, MethodInfo expectedMethod, bool isCurrentFrame = false)
         {
-            // It appears that .NET Core on Windows strips this metadata in Debug mode.
-#if DEBUG
-            bool hasNoMetadata = PlatformDetection.IsWindows && !PlatformDetection.IsFullFramework;
-#else
-            bool hasNoMetadata = false;
-#endif
-            if (hasNoMetadata || !hasFileInfo)
+            if (!hasFileInfo)
             {
                 Assert.Null(stackFrame.GetFileName());
                 Assert.Equal(0, stackFrame.GetFileLineNumber());
