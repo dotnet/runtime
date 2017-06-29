@@ -21,7 +21,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Net.Native.Compiler">
-      <Version>1.6.1</Version>
+      <Version>$(MicrosoftNetNativeCompilerPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Private.CoreFx.UAP">
       <Version>$(CoreFxVersion)</Version>
