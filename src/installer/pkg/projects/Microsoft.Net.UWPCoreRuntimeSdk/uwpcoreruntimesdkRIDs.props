@@ -5,11 +5,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <OfficialBuildRID Include="win-x86">
+    <OfficialBuildRID Include="win10-x86">
       <Platform>x86</Platform>
     </OfficialBuildRID>
-    <OfficialBuildRID Include="win-x64"/>
-    <OfficialBuildRID Include="win-arm">
+    <OfficialBuildRID Include="win10-x64"/>
+    <OfficialBuildRID Include="win10-arm">
       <Platform>arm</Platform>
     </OfficialBuildRID>
   </ItemGroup>
