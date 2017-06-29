@@ -3150,6 +3150,7 @@ HCIMPL2(Object*, JIT_NewArr1_R2R, CORINFO_CLASS_HANDLE arrayTypeHnd_, INT_PTR si
     ArrayTypeDesc *pArrayTypeDesc = arrayTypeHandle.AsArray();
     MethodTable *pArrayMT = pArrayTypeDesc->GetTemplateMethodTable();
 
+    ENDFORBIDGC();
     return HCCALL2(JIT_NewArr1, (CORINFO_CLASS_HANDLE)pArrayMT, size);
 }
 HCIMPLEND
