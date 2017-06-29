@@ -1637,6 +1637,9 @@ public:
 #ifdef FEATURE_SIMD
             case GT_SIMD:
 #endif // !FEATURE_SIMD
+#if !defined(LEGACY_BACKEND) && _TARGET_ARM_
+            case GT_PUTARG_REG:
+#endif // !defined(LEGACY_BACKEND) && _TARGET_ARM_
                 return true;
             default:
                 return false;
@@ -3818,16 +3821,17 @@ struct GenTreeCmpXchg : public GenTree
 };
 
 #if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
-struct GenTreeMulLong : public GenTreeOp
+struct GenTreeMultiRegOp : public GenTreeOp
 {
     regNumber gtOtherReg;
 
-    GenTreeMulLong(var_types type, GenTreePtr op1, GenTreePtr op2) : GenTreeOp(GT_MUL_LONG, type, op1, op2)
+    GenTreeMultiRegOp(genTreeOps oper, var_types type, GenTreePtr op1, GenTreePtr op2)
+        : GenTreeOp(oper, type, op1, op2), gtOtherReg(REG_NA)
     {
     }
 
 #if DEBUGGABLE_GENTREE
-    GenTreeMulLong() : GenTreeOp()
+    GenTreeMultiRegOp() : GenTreeOp()
     {
     }
 #endif
@@ -5694,7 +5698,7 @@ inline bool GenTree::IsMultiRegNode() const
     }
 
 #if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
-    if (gtOper == GT_MUL_LONG || OperIsPutArgSplit())
+    if (gtOper == GT_MUL_LONG || gtOper == GT_PUTARG_REG || gtOper == GT_COPY || OperIsPutArgSplit())
     {
         return true;
     }
