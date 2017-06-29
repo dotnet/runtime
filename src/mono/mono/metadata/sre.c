@@ -1279,6 +1279,7 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb)
 			assembly->assembly.aname.revision = 0;
         }
 
+	assembly->assembly.ref_only = assemblybuilderaccess_can_refonlyload (assemblyb->access);
 	assembly->run = assemblybuilderaccess_can_run (assemblyb->access);
 	assembly->save = assemblybuilderaccess_can_save (assemblyb->access);
 	assembly->domain = domain;
