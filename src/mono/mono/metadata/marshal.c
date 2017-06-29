@@ -4416,7 +4416,7 @@ mono_marshal_get_runtime_invoke_full (MonoMethod *method, gboolean virtual_, gbo
 	csig->call_convention = MONO_CALL_C;
 #endif
 
-	name = mono_signature_to_name (callsig, virtual_ ? "runtime_invoke_virtual" : "runtime_invoke");
+	name = mono_signature_to_name (callsig, virtual_ ? "runtime_invoke_virtual" : (need_direct_wrapper ? "runtime_invoke_direct" : "runtime_invoke"));
 	mb = mono_mb_new (target_klass, name,  MONO_WRAPPER_RUNTIME_INVOKE);
 	g_free (name);
 
@@ -4481,6 +4481,9 @@ mono_marshal_get_runtime_invoke (MonoMethod *method, gboolean virtual_)
 	gboolean need_direct_wrapper = FALSE;
 
 	if (virtual_)
+		need_direct_wrapper = TRUE;
+
+	if (method->dynamic)
 		need_direct_wrapper = TRUE;
 
 	if (method->klass->rank && (method->iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) &&
