@@ -112,7 +112,7 @@ namespace Microsoft.ServiceModel.Syndication
             await ReadItem(reader);
         }
 
-        public override void WriteTo(XmlWriter writer)
+        public override async Task WriteTo(XmlWriter writer)
         {
             if (writer == null)
             {
@@ -141,7 +141,7 @@ namespace Microsoft.ServiceModel.Syndication
                 throw new InvalidOperationException(SR.ItemFormatterDoesNotHaveItem);
             }
             XmlDictionaryWriter w = XmlDictionaryWriter.CreateDictionaryWriter(writer);
-            _feedSerializer.WriteItemContents(w, this.Item);
+            _feedSerializer.WriteItemContentsAsync(w, this.Item);
         }
     }
 

@@ -116,13 +116,13 @@ namespace Microsoft.ServiceModel.Syndication
         }
 
         
-        void WriteXml(XmlWriter writer)
+        async Task WriteXml(XmlWriter writer)
         {
             if (writer == null)
             {
                 throw new ArgumentNullException("writer");
             }
-            WriteItem(writer);
+            await WriteItem(writer);
         }
 
         public override async Task ReadFromAsync(XmlReader reader)
@@ -135,15 +135,18 @@ namespace Microsoft.ServiceModel.Syndication
             await ReadItemAsync(XmlReaderWrapper.CreateFromReader(reader));
         }
 
-        public override void WriteTo(XmlWriter writer)
+        public override async Task WriteTo(XmlWriter writer)
         {
             if (writer == null)
             {
                 throw new ArgumentNullException("writer");
             }
-            writer.WriteStartElement(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace);
-            WriteItem(writer);
-            writer.WriteEndElement();
+
+            XmlWriterWrapper writerWrapper = XmlWriterWrapper.CreateFromWriter(writer);
+
+            await writerWrapper.WriteStartElementAsync(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace);
+            await WriteItem(writer);
+            await writerWrapper.WriteEndElementAsync();
         }
 
         protected override SyndicationItem CreateItemInstance()
@@ -157,14 +160,14 @@ namespace Microsoft.ServiceModel.Syndication
             await _feedSerializer.ReadItemFromAsync(XmlReaderWrapper.CreateFromReader(XmlDictionaryReader.CreateDictionaryReader(reader)), this.Item);
         }
 
-        private void WriteItem(XmlWriter writer)
+        private async Task WriteItem(XmlWriter writer)
         {
             if (this.Item == null)
             {
                 throw new InvalidOperationException(SR.ItemFormatterDoesNotHaveItem);
             }
             XmlDictionaryWriter w = XmlDictionaryWriter.CreateDictionaryWriter(writer);
-            _feedSerializer.WriteItemContents(w, this.Item);
+            await _feedSerializer.WriteItemContentsAsync(w, this.Item);
         }
     }
 

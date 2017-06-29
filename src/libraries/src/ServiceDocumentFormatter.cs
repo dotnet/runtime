@@ -38,7 +38,7 @@ namespace Microsoft.ServiceModel.Syndication
 
         public abstract Task<bool> CanReadAsync(XmlReader reader);
         public abstract Task ReadFromAsync(XmlReader reader);
-        public abstract void WriteTo(XmlWriter writer);
+        public abstract Task WriteTo(XmlWriter writer);
 
         internal static void LoadElementExtensions(XmlBuffer buffer, XmlDictionaryWriter writer, CategoriesDocument categories)
         {
