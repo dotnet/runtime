@@ -34,7 +34,7 @@ function(add_pgo TargetName)
                 set_property(TARGET ${TargetName} APPEND_STRING PROPERTY LINK_FLAGS " -flto -fuse-ld=gold -fprofile-instr-generate")
             endif(UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELEASE OR UPPERCASE_CMAKE_BUILD_TYPE STREQUAL RELWITHDEBINFO)
         endif(WIN32)
-    else(CLR_CMAKE_PGO_INSTRUMENT)
+    elseif(CLR_CMAKE_PGO_OPTIMIZE)
         # If we don't have profile data availble, gracefully fall back to a non-PGO opt build
         if(EXISTS ${ProfilePath})
             if(WIN32)
