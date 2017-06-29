@@ -25,7 +25,8 @@
   </Target>
 
   <Target Name="RestoreOptData">
-    <Exec Command="$(DotnetRestoreCommand) $(SourceDir).nuget/optdata/optdata.csproj" />
+    <Exec Command="$(DotnetRestoreCommand) $(SourceDir).nuget/optdata/optdata.csproj"
+          StandardOutputImportance="Low" />
   </Target>
 
   <!--
