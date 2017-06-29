@@ -1191,7 +1191,6 @@ namespace System.Tests
             Assert.Throws<ArrayTypeMismatchException>(() => sourceArray.CopyTo(destinationArray, destinationArray.GetLowerBound(0)));
         }
 
-#if !uapaot //Issue https://github.com/dotnet/corefx/issues/17480
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The full .NET framework has a bug and incorrectly allows copying between void* and object")]
         public static void Copy_SourceAndDestinationPointers_ThrowsArrayTypeMismatchException()
@@ -1202,7 +1201,6 @@ namespace System.Tests
                 Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new object[1], new void*[1], 0));
             }
         }
-#endif
 
         public static IEnumerable<object[]> Copy_UnreliableCoversion_CantPerform_TestData()
         {
@@ -3317,7 +3315,6 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentException>("destinationArray", "", () => iList.CopyTo(new int[7], 8)); // Index > destinationArray.Length
         }
 
-#if !uapaot //Issue https://github.com/dotnet/corefx/issues/17480
         [Fact]
         public static unsafe void GetValue_ArrayOfPointers_ThrowsNotSupportedException()
         {
@@ -3368,7 +3365,6 @@ namespace System.Tests
             Array.Reverse((Array)new int*[0]);
             Array.Reverse((Array)new int*[1]);
         }
-#endif
 
         private static void VerifyArray(Array array, Type elementType, int[] lengths, int[] lowerBounds, object repeatedValue)
         {
