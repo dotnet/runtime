@@ -1008,7 +1008,7 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
 #endif // FEATURE_MULTIREG_ARGS
 #endif // not defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
             {
-                putArg = comp->gtNewOperNode(GT_PUTARG_REG, type, arg);
+                putArg = comp->gtNewPutArgReg(type, arg);
             }
         }
         else
@@ -1224,12 +1224,13 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
     {
 
 #ifdef _TARGET_ARMARCH_
-        // For vararg call, reg args should be all integer.
+        // For vararg call or on armel, reg args should be all integer.
         // Insert a copy to move float value to integer register.
         if ((call->IsVarargs() || comp->opts.compUseSoftFP) && varTypeIsFloating(type))
         {
-            var_types  intType = (type == TYP_DOUBLE) ? TYP_LONG : TYP_INT;
-            GenTreePtr intArg  = comp->gtNewOperNode(GT_COPY, intType, arg);
+            var_types intType = (type == TYP_DOUBLE) ? TYP_LONG : TYP_INT;
+
+            GenTreePtr intArg = new (comp, GT_COPY) GenTreeCopyOrReload(GT_COPY, intType, arg);
 
             info->node = intArg;
             ReplaceArgWithPutArgOrCopy(ppArg, intArg);
