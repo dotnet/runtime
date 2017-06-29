@@ -403,7 +403,17 @@ void Lowering::TreeNodeInfoInitPutArgReg(
     info.srcCount++;
 
     // Set the register requirements for the node.
-    const regMaskTP argMask = genRegMask(argReg);
+    regMaskTP argMask = genRegMask(argReg);
+#ifdef ARM_SOFTFP
+    // If type of node is `long` then it is actually `double`.
+    // The actual `long` types must have been transformed as a field list with two fields.
+    if (node->TypeGet() == TYP_LONG)
+    {
+        info.srcCount++;
+        assert(genRegArgNext(argReg) == REG_NEXT(argReg));
+        argMask |= genRegMask(REG_NEXT(argReg));
+    }
+#endif // ARM_SOFTFP
     node->gtLsraInfo.setDstCandidates(m_lsra, argMask);
     node->gtLsraInfo.setSrcCandidates(m_lsra, argMask);
 
