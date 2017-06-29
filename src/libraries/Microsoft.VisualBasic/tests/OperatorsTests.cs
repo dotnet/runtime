@@ -168,6 +168,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
 
         [Theory]
         [MemberData(nameof(AddObject_Idempotent_TestData))]
+        [ActiveIssue(21682, TargetFrameworkMonikers.UapAot)]
         public void AddObject_Convertible_ReturnsExpected(object left, object right, object expected)
         {
             Assert.Equal(expected, Operators.AddObject(left, right));
@@ -238,6 +239,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
 
         [Theory]
         [MemberData(nameof(IncompatibleAddObject_TestData))]
+        [ActiveIssue(21682, TargetFrameworkMonikers.UapAot)]
         public void AddObject_Incompatible_ThrowsInvalidCastException(object left, object right)
         {
             Assert.Throws<InvalidCastException>(() => Operators.AddObject(left, right));
