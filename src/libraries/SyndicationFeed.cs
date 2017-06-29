@@ -52,8 +52,8 @@ namespace Microsoft.ServiceModel.Syndication
         {
             get
             {
-                if (_textInput == null)
-                    _textInput = new SyndicationTextInput();
+                //if (_textInput == null)
+                //    _textInput = new SyndicationTextInput();
                 return _textInput;
             }
             set

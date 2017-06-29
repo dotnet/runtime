@@ -75,6 +75,48 @@ namespace Microsoft.ServiceModel.Syndication.Tests
             }
         }
 
+
+        [Fact]
+        public static void SyndicationFeed_Load_Write_RSS_Feed_Async()
+        {
+            string path = "SyndicationFeed-Load-Write-Async.xml";
+
+            try
+            {
+                // *** SETUP *** \\\
+                XmlReaderSettings settingsReader = new XmlReaderSettings();
+                settingsReader.Async = true;
+                XmlReader xmlr = XmlReader.Create(@"TestFeeds\RssSpecExample.xml",settingsReader);
+                SyndicationFeed sf;
+                Task < SyndicationFeed > rss = null;
+                rss = SyndicationFeed.LoadAsync(xmlr);
+
+                Task.WhenAll(rss);
+                sf = rss.Result;
+                Assert.True(sf != null);
+
+                // *** EXECUTE *** \\
+                //Write the same feed that was read.
+                XmlWriterSettings settingsWriter = new XmlWriterSettings();
+                settingsWriter.Async = true;
+                XmlWriter xmlw = XmlWriter.Create(path,settingsWriter);
+                Rss20FeedFormatter atomFeed = new Rss20FeedFormatter(sf);
+                Task write = atomFeed.WriteTo(xmlw);
+
+                Task.WhenAll(write);
+
+                xmlw.Close();
+
+                // *** VALIDATE *** \\
+                Assert.True(File.Exists(path));
+            }
+            finally
+            {
+                // *** CLEANUP *** \\
+                //File.Delete(path);
+            }
+        }
+        
         [Fact]
         public static void SyndicationFeed_Load_Write_Atom_Feed()
         {
@@ -103,6 +145,44 @@ namespace Microsoft.ServiceModel.Syndication.Tests
                 File.Delete(path);
             }
         }
+
+        [Fact]
+        public static void SyndicationFeed_Load_Write_Atom_Feed_Async()
+        {
+            string path = "SyndicationFeed-Load-Write-Atom-Async.xml";
+
+            try
+            {
+                // *** SETUP *** \\\
+                XmlReaderSettings readerSettings = new XmlReaderSettings();
+                readerSettings.Async = true;
+                XmlReader xmlr = XmlReader.Create(@"TestFeeds\SimpleAtomFeed.xml",readerSettings);
+                Task<SyndicationFeed> rss = SyndicationFeed.LoadAsync(xmlr);
+                SyndicationFeed sf = rss.Result;
+                Assert.True(sf != null);
+
+                // *** EXECUTE *** \\
+                //Write the same feed that was read.
+                XmlWriterSettings writerSettings = new XmlWriterSettings();
+                writerSettings.Async = true;
+
+                XmlWriter xmlw = XmlWriter.Create(path,writerSettings);
+                Atom10FeedFormatter atomFeed = new Atom10FeedFormatter(sf);
+                Task write = atomFeed.WriteTo(xmlw);
+
+                Task.WhenAll(write);
+                xmlw.Close();
+
+                // *** VALIDATE *** \\
+                Assert.True(File.Exists(path));
+            }
+            finally
+            {
+                // *** CLEANUP *** \\
+                File.Delete(path);
+            }
+        }
+
         [Fact]
         public static void SyndicationFeed_Write_RSS_Atom()
         {
@@ -135,7 +215,10 @@ namespace Microsoft.ServiceModel.Syndication.Tests
 
                 // Write to XML > rss
 
-                XmlWriter xmlwRss = XmlWriter.Create(RssPath);
+                XmlWriterSettings settings = new XmlWriterSettings();
+                settings.Async = true;
+
+                XmlWriter xmlwRss = XmlWriter.Create(RssPath,settings);
                 Rss20FeedFormatter rssff = new Rss20FeedFormatter(feed);
 
                 // Write to XML > atom
@@ -145,7 +228,9 @@ namespace Microsoft.ServiceModel.Syndication.Tests
 
 
                 // *** EXECUTE *** \\
-                rssff.WriteTo(xmlwRss);
+                Task rss = rssff.WriteTo(xmlwRss);
+                Task.WaitAll(rss);
+
                 xmlwRss.Close();
 
                 atomf.WriteTo(xmlwAtom);
@@ -158,8 +243,8 @@ namespace Microsoft.ServiceModel.Syndication.Tests
             finally
             {
                 // *** CLEANUP *** \\
-                //File.Delete(RssPath);
-                //File.Delete(AtomPath);
+                File.Delete(RssPath);
+                File.Delete(AtomPath);
             }
         }
 

@@ -50,7 +50,7 @@ namespace Microsoft.ServiceModel.Syndication
             return String.Format(CultureInfo.CurrentCulture, "{0}, SyndicationVersion={1}", this.GetType(), this.Version);
         }
 
-        public abstract void WriteTo(XmlWriter writer);
+        public abstract Task WriteTo(XmlWriter writer);
 
         internal static protected SyndicationCategory CreateCategory(SyndicationFeed feed)
         {

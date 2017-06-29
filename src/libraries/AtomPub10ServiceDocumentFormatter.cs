@@ -82,7 +82,7 @@ namespace Microsoft.ServiceModel.Syndication
             await ReadDocumentAsync(reader);
         }
 
-        void WriteXml(XmlWriter writer)
+        async Task WriteXml(XmlWriter writer)
         {
             if (writer == null)
             {
@@ -92,7 +92,7 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 throw new InvalidOperationException(SR.DocumentFormatterDoesNotHaveDocument);
             }
-            WriteDocument(writer);
+            await WriteDocumentAsync(XmlWriterWrapper.CreateFromWriter(writer));
         }
 
         public override async Task ReadFromAsync(XmlReader reader)
@@ -113,7 +113,7 @@ namespace Microsoft.ServiceModel.Syndication
             await ReadDocumentAsync(wrappedReader);
         }
 
-        public override void WriteTo(XmlWriter writer)
+        public override async Task WriteTo(XmlWriter writer)
         {
             if (writer == null)
             {
@@ -123,9 +123,12 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 throw new InvalidOperationException(SR.DocumentFormatterDoesNotHaveDocument);
             }
-            writer.WriteStartElement(App10Constants.Prefix, App10Constants.Service, App10Constants.Namespace);
-            WriteDocument(writer);
-            writer.WriteEndElement();
+
+            XmlWriterWrapper wrappedWriter = XmlWriterWrapper.CreateFromWriter(writer);
+
+            await wrappedWriter.WriteStartElementAsync(App10Constants.Prefix, App10Constants.Service, App10Constants.Namespace);
+            await WriteDocumentAsync(wrappedWriter);
+            await wrappedWriter.WriteEndElementAsync();
         }
 
         internal static async Task<CategoriesDocument> ReadCategories(XmlReaderWrapper reader, Uri baseUri, CreateInlineCategoriesDelegate inlineCategoriesFactory, CreateReferencedCategoriesDelegate referencedCategoriesFactory, string version, bool preserveElementExtensions, bool preserveAttributeExtensions, int maxExtensionSize)
@@ -140,14 +143,14 @@ namespace Microsoft.ServiceModel.Syndication
             else
             {
                 ReferencedCategoriesDocument referencedCategories = referencedCategoriesFactory();
-                await ReadReferencedCategories(reader, referencedCategories, baseUri, new Uri(link, UriKind.RelativeOrAbsolute), version, preserveElementExtensions, preserveAttributeExtensions, maxExtensionSize);
+                await ReadReferencedCategoriesAsync(reader, referencedCategories, baseUri, new Uri(link, UriKind.RelativeOrAbsolute), version, preserveElementExtensions, preserveAttributeExtensions, maxExtensionSize);
                 return referencedCategories;
             }
         }
 
 
 
-        internal static void WriteCategoriesInnerXml(XmlWriter writer, CategoriesDocument categories, Uri baseUri, string version)
+        internal static async Task WriteCategoriesInnerXml(XmlWriter writer, CategoriesDocument categories, Uri baseUri, string version)
         {
             Uri baseUriToWrite = FeedUtils.GetBaseUriToWrite(baseUri, categories.BaseUri);
             if (baseUriToWrite != null)
@@ -160,7 +163,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
             if (categories.IsInline)
             {
-                WriteInlineCategoriesContent(writer, (InlineCategoriesDocument)categories, version);
+                await WriteInlineCategoriesContentAsync(XmlWriterWrapper.CreateFromWriter(writer), (InlineCategoriesDocument)categories, version);
             }
             else
             {
@@ -275,7 +278,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        private static async Task ReadReferencedCategories(XmlReaderWrapper reader, ReferencedCategoriesDocument referencedCategories, Uri baseUri, Uri link, string version, bool preserveElementExtensions, bool preserveAttributeExtensions, int maxExtensionSize)
+        private static async Task ReadReferencedCategoriesAsync(XmlReaderWrapper reader, ReferencedCategoriesDocument referencedCategories, Uri baseUri, Uri link, string version, bool preserveElementExtensions, bool preserveAttributeExtensions, int maxExtensionSize)
         {
             referencedCategories.BaseUri = baseUri;
             referencedCategories.Link = link;
@@ -353,28 +356,30 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        private static void WriteCategories(XmlWriter writer, CategoriesDocument categories, Uri baseUri, string version)
+        private static async Task WriteCategories(XmlWriterWrapper writer, CategoriesDocument categories, Uri baseUri, string version)
         {
-            writer.WriteStartElement(App10Constants.Prefix, App10Constants.Categories, App10Constants.Namespace);
+            await writer.WriteStartElementAsync(App10Constants.Prefix, App10Constants.Categories, App10Constants.Namespace);
             WriteCategoriesInnerXml(writer, categories, baseUri, version);
-            writer.WriteEndElement();
+            await writer.WriteEndElementAsync();
         }
 
-        private static void WriteInlineCategoriesContent(XmlWriter writer, InlineCategoriesDocument categories, string version)
+        private static async Task WriteInlineCategoriesContentAsync(XmlWriterWrapper writer, InlineCategoriesDocument categories, string version)
         {
+            XmlWriterWrapper wrappedWriter = XmlWriterWrapper.CreateFromWriter(writer);
             if (!string.IsNullOrEmpty(categories.Scheme))
             {
-                writer.WriteAttributeString(Atom10Constants.SchemeTag, categories.Scheme);
+                await writer.WriteAttributeStringAsync(Atom10Constants.SchemeTag, categories.Scheme);
             }
             // by default, categories are not fixed
             if (categories.IsFixed)
             {
-                writer.WriteAttributeString(App10Constants.Fixed, "yes");
+                await writer.WriteAttributeStringAsync(App10Constants.Fixed, "yes");
             }
             WriteAttributeExtensions(writer, categories, version);
+
             for (int i = 0; i < categories.Categories.Count; ++i)
             {
-                Atom10FeedFormatter.WriteCategory(writer, categories.Categories[i], version);
+                await Atom10FeedFormatter.WriteCategoryAsync(wrappedWriter, categories.Categories[i], version);
             }
             WriteElementExtensions(writer, categories, version);
         }
@@ -675,9 +680,9 @@ namespace Microsoft.ServiceModel.Syndication
             return result;
         }
 
-        private void WriteCollection(XmlWriter writer, ResourceCollectionInfo collection, Uri baseUri)
+        private async Task WriteCollectionAsync(XmlWriterWrapper writer, ResourceCollectionInfo collection, Uri baseUri)
         {
-            writer.WriteStartElement(App10Constants.Prefix, App10Constants.Collection, App10Constants.Namespace);
+            await writer.WriteStartElementAsync(App10Constants.Prefix, App10Constants.Collection, App10Constants.Namespace);
             Uri baseUriToWrite = FeedUtils.GetBaseUriToWrite(baseUri, collection.BaseUri);
             if (baseUriToWrite != null)
             {
@@ -686,7 +691,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
             if (collection.Link != null)
             {
-                writer.WriteAttributeString(App10Constants.Href, FeedUtils.GetUriString(collection.Link));
+                await writer.WriteAttributeStringAsync(App10Constants.Href, FeedUtils.GetUriString(collection.Link));
             }
             WriteAttributeExtensions(writer, collection, this.Version);
             if (collection.Title != null)
@@ -695,20 +700,20 @@ namespace Microsoft.ServiceModel.Syndication
             }
             for (int i = 0; i < collection.Accepts.Count; ++i)
             {
-                writer.WriteElementString(App10Constants.Prefix, App10Constants.Accept, App10Constants.Namespace, collection.Accepts[i]);
+                await writer.WriteElementStringAsync(App10Constants.Prefix, App10Constants.Accept, App10Constants.Namespace, collection.Accepts[i]);
             }
             for (int i = 0; i < collection.Categories.Count; ++i)
             {
-                WriteCategories(writer, collection.Categories[i], baseUri, this.Version);
+                await WriteCategories(writer, collection.Categories[i], baseUri, this.Version);
             }
             WriteElementExtensions(writer, collection, this.Version);
-            writer.WriteEndElement();
+            await writer.WriteEndElementAsync();
         }
 
-        private void WriteDocument(XmlWriter writer)
+        private async Task WriteDocumentAsync(XmlWriterWrapper writer)
         {
             // declare the atom10 namespace upfront for compactness
-            writer.WriteAttributeString(Atom10Constants.Atom10Prefix, Atom10FeedFormatter.XmlNsNs, Atom10Constants.Atom10Namespace);
+            await writer.WriteAttributeStringAsync(Atom10Constants.Atom10Prefix, Atom10FeedFormatter.XmlNsNs, Atom10Constants.Atom10Namespace);
             if (!string.IsNullOrEmpty(this.Document.Language))
             {
                 WriteXmlLang(writer, this.Document.Language);
@@ -722,14 +727,14 @@ namespace Microsoft.ServiceModel.Syndication
 
             for (int i = 0; i < this.Document.Workspaces.Count; ++i)
             {
-                WriteWorkspace(writer, this.Document.Workspaces[i], baseUri);
+                await WriteWorkspaceAsync(writer, this.Document.Workspaces[i], baseUri);
             }
             WriteElementExtensions(writer, this.Document, this.Version);
         }
 
-        private void WriteWorkspace(XmlWriter writer, Workspace workspace, Uri baseUri)
+        private async Task WriteWorkspaceAsync(XmlWriterWrapper writer, Workspace workspace, Uri baseUri)
         {
-            writer.WriteStartElement(App10Constants.Prefix, App10Constants.Workspace, App10Constants.Namespace);
+            await writer.WriteStartElementAsync(App10Constants.Prefix, App10Constants.Workspace, App10Constants.Namespace);
             Uri baseUriToWrite = FeedUtils.GetBaseUriToWrite(baseUri, workspace.BaseUri);
             if (baseUriToWrite != null)
             {
@@ -743,10 +748,10 @@ namespace Microsoft.ServiceModel.Syndication
             }
             for (int i = 0; i < workspace.Collections.Count; ++i)
             {
-                WriteCollection(writer, workspace.Collections[i], baseUri);
+                await WriteCollectionAsync(writer, workspace.Collections[i], baseUri);
             }
             WriteElementExtensions(writer, workspace, this.Version);
-            writer.WriteEndElement();
+            await writer.WriteEndElementAsync();
         }
     }
 
