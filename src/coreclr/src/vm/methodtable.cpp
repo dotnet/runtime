@@ -4470,18 +4470,20 @@ BOOL MethodTable::ComputeNeedsRestoreWorker(DataImage *image, TypeHandleList *pV
 
     if (g_CorCompileVerboseLevel == CORCOMPILE_VERBOSE)
     {
-        DefineFullyQualifiedNameForClass();
-        LPCUTF8 name = GetFullyQualifiedNameForClass(this);
-        printf ("MethodTable %s needs restore? ", name);
+        DefineFullyQualifiedNameForClassW();
+        LPCWSTR name = GetFullyQualifiedNameForClassW(this);
+        WszOutputDebugString(W("MethodTable "));
+        WszOutputDebugString(name);
+        WszOutputDebugString(W(" needs restore? "));
     }
     if (g_CorCompileVerboseLevel >= CORCOMPILE_STATS && GetModule()->GetNgenStats())
         GetModule()->GetNgenStats()->MethodTableRestoreNumReasons[TotalMethodTables]++;
 
-    #define UPDATE_RESTORE_REASON(c)                         \
-        if (g_CorCompileVerboseLevel == CORCOMPILE_VERBOSE)  \
-            printf ("Yes, " #c " \n");                       \
-        if (g_CorCompileVerboseLevel >= CORCOMPILE_STATS && GetModule()->GetNgenStats())    \
-            GetModule()->GetNgenStats()->MethodTableRestoreNumReasons[c]++;
+    #define UPDATE_RESTORE_REASON(ARG)                                                    \
+        if (g_CorCompileVerboseLevel == CORCOMPILE_VERBOSE)                               \
+            { WszOutputDebugString(W("Yes, ")); WszOutputDebugString(W(#ARG "\n")); }          \
+        if (g_CorCompileVerboseLevel >= CORCOMPILE_STATS && GetModule()->GetNgenStats())  \
+            GetModule()->GetNgenStats()->MethodTableRestoreNumReasons[ARG]++;
 
     // The special method table for IL stubs has to be prerestored. Restore is not able to handle it
     // because of it does not have a token. In particular, this is a problem for /profiling native images.
@@ -4570,7 +4572,9 @@ BOOL MethodTable::ComputeNeedsRestoreWorker(DataImage *image, TypeHandleList *pV
     }
 
     if (g_CorCompileVerboseLevel == CORCOMPILE_VERBOSE)
-        printf ("No \n");
+    {
+        WszOutputDebugString(W("No\n"));
+    }
     return FALSE;
 }
 
