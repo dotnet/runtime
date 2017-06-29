@@ -364,13 +364,7 @@ namespace System.Diagnostics.Tests
             {
                 StackFrame stackFrame = stackFrames[i];
 
-                // It appears that .NET Core on Windows strips this metadata.
-#if DEBUG
-                bool hasNoMetadata = PlatformDetection.IsWindows && !PlatformDetection.IsFullFramework;
-#else
-                bool hasNoMetadata = false;
-#endif
-                if (hasNoMetadata || !hasFileInfo)
+                if (!hasFileInfo)
                 {
                     Assert.Null(stackFrame.GetFileName());
                     Assert.Equal(0, stackFrame.GetFileLineNumber());
