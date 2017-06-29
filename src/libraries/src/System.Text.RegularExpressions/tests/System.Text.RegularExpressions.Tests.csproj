@@ -5,12 +5,12 @@
     <ProjectGuid>{94B106C2-D574-4392-80AB-3EE308A078DF}</ProjectGuid>
     <AppDesignerFolder>Properties</AppDesignerFolder>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
-  <!-- Compiled Source Files -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Release|AnyCPU'" />
   <!-- [ActiveIssue(https://github.com/dotnet/corefx/issues/21547)] times out in uap. -->
   <ItemGroup Condition="'$(TargetGroup)' != 'uap'">
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">

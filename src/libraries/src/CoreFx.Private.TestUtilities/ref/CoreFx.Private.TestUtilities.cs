@@ -5,7 +5,17 @@
 using System.IO;
 using System.Threading.Tasks;
 using System.Runtime.CompilerServices;
+using System.Collections.Generic;
+using Xunit;
 
+namespace System
+{
+    public static class TheoryExtensions
+    {
+        [CLSCompliant(false)]
+        public static TheoryData ToTheoryData<T>(this IEnumerable<T> data) { throw null; }
+    }
+}
 namespace System.Diagnostics
 {
     public abstract partial class RemoteExecutorTestBase : System.IO.FileCleanupTestBase
