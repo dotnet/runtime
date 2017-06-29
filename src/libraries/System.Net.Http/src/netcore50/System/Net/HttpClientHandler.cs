@@ -32,7 +32,11 @@ namespace System.Net.Http
         private const string ClientAuthenticationOID = "1.3.6.1.5.5.7.3.2";
         private static readonly Lazy<bool> s_RTCookieUsageBehaviorSupported =
             new Lazy<bool>(InitRTCookieUsageBehaviorSupported);
-        
+        private static bool RTCookieUsageBehaviorSupported => s_RTCookieUsageBehaviorSupported.Value;
+        private static readonly Lazy<bool> s_RTNoCacheSupported =
+            new Lazy<bool>(InitRTNoCacheSupported);
+        private static bool RTNoCacheSupported => s_RTNoCacheSupported.Value;
+
         #region Fields
 
         private readonly RTHttpBaseProtocolFilter _rtFilter;
@@ -271,14 +275,6 @@ namespace System.Net.Http
             }
         }
 
-        private bool RTCookieUsageBehaviorSupported
-        { 
-            get
-            {
-                return s_RTCookieUsageBehaviorSupported.Value;
-            }
-        }
-
         public X509CertificateCollection ClientCertificates
         {
             // TODO: Not yet implemented. Issue #7623.
@@ -357,7 +353,12 @@ namespace System.Net.Http
 
             _clientCertificateOptions = ClientCertificateOption.Manual;
 
-            InitRTCookieUsageBehavior();
+            // Always turn off WinRT cookie processing if the WinRT API supports turning it off.
+            // Use .NET CookieContainer handling only.
+            if (RTCookieUsageBehaviorSupported)
+            {
+                _rtFilter.CookieUsageBehavior = RTHttpCookieUsageBehavior.NoCookies;
+            }
 
             _useCookies = true; // deal with cookies by default.
             _cookieContainer = new CookieContainer(); // default container used for dealing with auto-cookies.
@@ -370,9 +371,9 @@ namespace System.Net.Http
             _rtFilter.AllowUI = false;
             
             // The .NET Desktop System.Net Http APIs (based on HttpWebRequest/HttpClient) uses no caching by default.
-            // To preserve app-compat, we turn off caching (as much as possible) in the WinRT HttpClient APIs.
-            // TODO (#7877): use RTHttpCacheReadBehavior.NoCache when available in the next version of WinRT HttpClient API.
-            _rtFilter.CacheControl.ReadBehavior = RTHttpCacheReadBehavior.MostRecent; 
+            // To preserve app-compat, we turn off caching in the WinRT HttpClient APIs.
+            _rtFilter.CacheControl.ReadBehavior = RTNoCacheSupported ?
+                RTHttpCacheReadBehavior.NoCache : RTHttpCacheReadBehavior.MostRecent;
             _rtFilter.CacheControl.WriteBehavior = RTHttpCacheWriteBehavior.NoCache;
         }
 
@@ -418,7 +419,7 @@ namespace System.Net.Http
                 if (!string.IsNullOrWhiteSpace(cookieHeader))
                 {
                     bool success = request.Headers.TryAddWithoutValidation(HttpKnownHeaderNames.Cookie, cookieHeader);
-                    System.Diagnostics.Debug.Assert(success);
+                    Debug.Assert(success);
                 }
             }
         }
@@ -474,7 +475,7 @@ namespace System.Net.Http
         {
             // The WinRT PasswordCredential object does not have a special credentials value for "default credentials".
             // In general, the UWP HTTP platform automatically manages sending default credentials, if no explicit
-            // credential was specificed, based on if the app has EnterpriseAuthentication capability and if the endpoint
+            // credential was specified, based on if the app has EnterpriseAuthentication capability and if the endpoint
             // is listed in an intranet zone.
             //
             // A WinRT PasswordCredential object that is either null or created with the default constructor (i.e. with
@@ -521,7 +522,7 @@ namespace System.Net.Http
 
         private void SetFilterProxyCredential()
         {
-            // We don't support changing the proxy settings in the NETNative version of HttpClient since it's layered on
+            // We don't support changing the proxy settings in the UAP version of HttpClient since it's layered on
             // WinRT HttpClient. But we do support passing in explicit proxy credentials, if specified, which we can
             // get from the specified or default proxy.
             ICredentials proxyCredentials = null;
@@ -676,33 +677,11 @@ namespace System.Net.Http
                 "CookieUsageBehavior");
         }
 
-        // Regardless of whether we're running on a machine that supports this WinRT API, we still might not be able
-        // to call the API. This is due to the calling app being compiled against an older Windows 10 Tools SDK. Since
-        // this library was compiled against the newer SDK, having these new API calls in this class will cause JIT
-        // failures in CoreCLR which generate a MissingMethodException before the code actually runs. So, we need
-        // these helper methods and try/catch handling.
-
-        private void InitRTCookieUsageBehavior()
+        private static bool InitRTNoCacheSupported()
         {
-            try
-            {
-                InitRTCookieUsageBehaviorHelper();
-            }
-            catch (MissingMethodException)
-            {
-                Debug.WriteLine("HttpClientHandler.InitRTCookieUsageBehavior: MissingMethodException");
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.NoInlining)]
-        private void InitRTCookieUsageBehaviorHelper()
-        {
-            // Always turn off WinRT cookie processing if the WinRT API supports turning it off.
-            // Use .NET CookieContainer handling only.
-            if (RTCookieUsageBehaviorSupported)
-            {
-                _rtFilter.CookieUsageBehavior = RTHttpCookieUsageBehavior.NoCookies;
-            }
+            return RTApiInformation.IsEnumNamedValuePresent(
+                "Windows.Web.Http.Filters.HttpCacheReadBehavior",
+                "NoCache");
         }
 
         #endregion Helpers
