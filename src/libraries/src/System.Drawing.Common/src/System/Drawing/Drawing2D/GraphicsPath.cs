@@ -201,7 +201,6 @@ namespace System.Drawing.Drawing2D
                 try
                 {
                     IntPtr typesPtr = typesHandle.AddrOfPinnedObject();
-                    //IntPtr typesPtr = Marshal.AddrOfArrayElement(pathData.Types, IntPtr.Zero);
 
                     Marshal.StructureToPtr(numPts, memoryPathData, false);
                     Marshal.StructureToPtr(memoryPoints, (IntPtr)((long)memoryPathData + IntPtr.Size), false);

@@ -176,16 +176,21 @@ namespace System.Drawing
             return FromGDIplus(bitmap);
         }
 
-        public static Bitmap FromResource(IntPtr hinstance, String bitmapName)
+        public static Bitmap FromResource(IntPtr hinstance, string bitmapName)
         {
             IntPtr bitmap;
             IntPtr name = Marshal.StringToHGlobalUni(bitmapName);
-
-            int status = SafeNativeMethods.Gdip.GdipCreateBitmapFromResource(new HandleRef(null, hinstance),
-                                                              new HandleRef(null, name),
-                                                              out bitmap);
-            Marshal.FreeHGlobal(name);
-            SafeNativeMethods.Gdip.CheckStatus(status);
+            try
+            {
+                int status = SafeNativeMethods.Gdip.GdipCreateBitmapFromResource(new HandleRef(null, hinstance),
+                                                                  new HandleRef(null, name),
+                                                                  out bitmap);
+                SafeNativeMethods.Gdip.CheckStatus(status);
+            }
+            finally
+            {
+                Marshal.FreeHGlobal(name);
+            }
 
             return FromGDIplus(bitmap);
         }
