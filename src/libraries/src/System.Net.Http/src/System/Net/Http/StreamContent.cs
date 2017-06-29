@@ -93,6 +93,10 @@ namespace System.Net.Http
             return Task.FromResult<Stream>(new ReadOnlyStream(_content));
         }
 
+        internal override Stream TryCreateContentReadStream() =>
+            GetType() == typeof(StreamContent) ? new ReadOnlyStream(_content) : // type check ensures we use possible derived type's CreateContentReadStreamAsync override
+            null;
+
         private void PrepareContent()
         {
             if (_contentConsumed)

@@ -109,30 +109,38 @@ namespace System.Net.Http.Headers
             get { return TransferEncodingCore; }
         }
 
+        internal static bool? GetTransferEncodingChunked(HttpHeaders parent, HttpGeneralHeaders headers)
+        {
+            // If we've already initialized the transfer encoding header value collection
+            // and it contains the special value, or if we haven't and the headers contain
+            // the parsed special value, return true.  We don't just access TransferEncodingCore,
+            // as doing so will unnecessarily initialize the collection even if it's not needed.
+            if (headers != null && headers._transferEncoding != null)
+            {
+                if (headers._transferEncoding.IsSpecialValueSet)
+                {
+                    return true;
+                }
+            }
+            else if (parent.ContainsParsedValue(HttpKnownHeaderNames.TransferEncoding, HeaderUtilities.TransferEncodingChunked))
+            {
+                return true;
+            }
+            if (headers != null && headers._transferEncodingChunkedSet)
+            {
+                return false;
+            }
+            return null;
+        }
+
         public bool? TransferEncodingChunked
         {
             get
             {
-                // If we've already initialized the transfer encoding header value collection
-                // and it contains the special value, or if we haven't and the headers contain
-                // the parsed special value, return true.  We don't just access TransferEncodingCore,
-                // as doing so will unnecessarily initialize the collection even if it's not needed.
-                if (_transferEncoding != null)
-                {
-                    if (_transferEncoding.IsSpecialValueSet)
-                    {
-                        return true;
-                    }
-                }
-                else if (_parent.ContainsParsedValue(HttpKnownHeaderNames.TransferEncoding, HeaderUtilities.TransferEncodingChunked))
-                {
-                    return true;
-                }
-                if (_transferEncodingChunkedSet)
-                {
-                    return false;
-                }
-                return null;
+                // Separated out into a static to enable access to TransferEncodingChunked
+                // without the caller needing to force the creation of HttpGeneralHeaders
+                // if it wasn't created for other reasons.
+                return GetTransferEncodingChunked(_parent, this);
             }
             set
             {

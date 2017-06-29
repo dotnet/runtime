@@ -136,7 +136,7 @@ namespace System.Net.Http
 
                 _contentConsumed = true;
 
-                Stream originalStream = await _originalContent.ReadAsStreamAsync().ConfigureAwait(false);
+                Stream originalStream = _originalContent.TryReadAsStream() ?? await _originalContent.ReadAsStreamAsync().ConfigureAwait(false);
                 return GetDecompressedStream(originalStream);
             }
 

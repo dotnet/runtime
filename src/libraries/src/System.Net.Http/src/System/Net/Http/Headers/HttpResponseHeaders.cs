@@ -15,27 +15,34 @@ namespace System.Net.Http.Headers
         private static readonly Dictionary<string, HttpHeaderParser> s_parserStore = CreateParserStore();
         private static readonly HashSet<string> s_invalidHeaders = CreateInvalidHeaders();
 
+        private const int AcceptRangesSlot = 0;
+        private const int ProxyAuthenticateSlot = 1;
+        private const int ServerSlot = 2;
+        private const int VarySlot = 3;
+        private const int WwwAuthenticateSlot = 4;
+        private const int NumCollectionsSlots = 5;
+
+        private object[] _specialCollectionsSlots;
         private HttpGeneralHeaders _generalHeaders;
-        private HttpHeaderValueCollection<string> _acceptRanges;
-        private HttpHeaderValueCollection<AuthenticationHeaderValue> _wwwAuthenticate;
-        private HttpHeaderValueCollection<AuthenticationHeaderValue> _proxyAuthenticate;
-        private HttpHeaderValueCollection<ProductInfoHeaderValue> _server;
-        private HttpHeaderValueCollection<string> _vary;
 
         #region Response Headers
 
-        public HttpHeaderValueCollection<string> AcceptRanges
+        private T GetSpecializedCollection<T>(int slot, Func<HttpResponseHeaders, T> creationFunc)
         {
-            get
+            // 5 properties each lazily allocate a collection to store the value(s) for that property.
+            // Rather than having a field for each of these, store them untyped in an array that's lazily
+            // allocated.  Then we only pay for the 45 bytes for those fields when any is actually accessed.
+            object[] collections = _specialCollectionsSlots ?? (_specialCollectionsSlots = new object[NumCollectionsSlots]);
+            object result = collections[slot];
+            if (result == null)
             {
-                if (_acceptRanges == null)
-                {
-                    _acceptRanges = new HttpHeaderValueCollection<string>(HttpKnownHeaderNames.AcceptRanges,
-                        this, HeaderUtilities.TokenValidator);
-                }
-                return _acceptRanges;
+                collections[slot] = result = creationFunc(this);
             }
+            return (T)result;
         }
+
+        public HttpHeaderValueCollection<string> AcceptRanges =>
+            GetSpecializedCollection(AcceptRangesSlot, thisRef => new HttpHeaderValueCollection<string>(HttpKnownHeaderNames.AcceptRanges, thisRef, HeaderUtilities.TokenValidator));
 
         public TimeSpan? Age
         {
@@ -55,18 +62,8 @@ namespace System.Net.Http.Headers
             set { SetOrRemoveParsedValue(HttpKnownHeaderNames.Location, value); }
         }
 
-        public HttpHeaderValueCollection<AuthenticationHeaderValue> ProxyAuthenticate
-        {
-            get
-            {
-                if (_proxyAuthenticate == null)
-                {
-                    _proxyAuthenticate = new HttpHeaderValueCollection<AuthenticationHeaderValue>(
-                        HttpKnownHeaderNames.ProxyAuthenticate, this);
-                }
-                return _proxyAuthenticate;
-            }
-        }
+        public HttpHeaderValueCollection<AuthenticationHeaderValue> ProxyAuthenticate =>
+            GetSpecializedCollection(ProxyAuthenticateSlot, thisRef => new HttpHeaderValueCollection<AuthenticationHeaderValue>(HttpKnownHeaderNames.ProxyAuthenticate, thisRef));
 
         public RetryConditionHeaderValue RetryAfter
         {
@@ -74,43 +71,14 @@ namespace System.Net.Http.Headers
             set { SetOrRemoveParsedValue(HttpKnownHeaderNames.RetryAfter, value); }
         }
 
-        public HttpHeaderValueCollection<ProductInfoHeaderValue> Server
-        {
-            get
-            {
-                if (_server == null)
-                {
-                    _server = new HttpHeaderValueCollection<ProductInfoHeaderValue>(HttpKnownHeaderNames.Server, this);
-                }
-                return _server;
-            }
-        }
+        public HttpHeaderValueCollection<ProductInfoHeaderValue> Server =>
+            GetSpecializedCollection(ServerSlot, thisRef => new HttpHeaderValueCollection<ProductInfoHeaderValue>(HttpKnownHeaderNames.Server, thisRef));
 
-        public HttpHeaderValueCollection<string> Vary
-        {
-            get
-            {
-                if (_vary == null)
-                {
-                    _vary = new HttpHeaderValueCollection<string>(HttpKnownHeaderNames.Vary,
-                        this, HeaderUtilities.TokenValidator);
-                }
-                return _vary;
-            }
-        }
+        public HttpHeaderValueCollection<string> Vary =>
+            GetSpecializedCollection(VarySlot, thisRef => new HttpHeaderValueCollection<string>(HttpKnownHeaderNames.Vary, thisRef, HeaderUtilities.TokenValidator));
 
-        public HttpHeaderValueCollection<AuthenticationHeaderValue> WwwAuthenticate
-        {
-            get
-            {
-                if (_wwwAuthenticate == null)
-                {
-                    _wwwAuthenticate = new HttpHeaderValueCollection<AuthenticationHeaderValue>(
-                        HttpKnownHeaderNames.WWWAuthenticate, this);
-                }
-                return _wwwAuthenticate;
-            }
-        }
+        public HttpHeaderValueCollection<AuthenticationHeaderValue> WwwAuthenticate =>
+            GetSpecializedCollection(WwwAuthenticateSlot, thisRef => new HttpHeaderValueCollection<AuthenticationHeaderValue>(HttpKnownHeaderNames.WWWAuthenticate, thisRef));
 
         #endregion
 
@@ -118,69 +86,67 @@ namespace System.Net.Http.Headers
 
         public CacheControlHeaderValue CacheControl
         {
-            get { return _generalHeaders.CacheControl; }
-            set { _generalHeaders.CacheControl = value; }
+            get { return GeneralHeaders.CacheControl; }
+            set { GeneralHeaders.CacheControl = value; }
         }
 
         public HttpHeaderValueCollection<string> Connection
         {
-            get { return _generalHeaders.Connection; }
+            get { return GeneralHeaders.Connection; }
         }
 
         public bool? ConnectionClose
         {
-            get { return _generalHeaders.ConnectionClose; }
-            set { _generalHeaders.ConnectionClose = value; }
+            get { return GeneralHeaders.ConnectionClose; }
+            set { GeneralHeaders.ConnectionClose = value; }
         }
 
         public DateTimeOffset? Date
         {
-            get { return _generalHeaders.Date; }
-            set { _generalHeaders.Date = value; }
+            get { return GeneralHeaders.Date; }
+            set { GeneralHeaders.Date = value; }
         }
 
         public HttpHeaderValueCollection<NameValueHeaderValue> Pragma
         {
-            get { return _generalHeaders.Pragma; }
+            get { return GeneralHeaders.Pragma; }
         }
 
         public HttpHeaderValueCollection<string> Trailer
         {
-            get { return _generalHeaders.Trailer; }
+            get { return GeneralHeaders.Trailer; }
         }
 
         public HttpHeaderValueCollection<TransferCodingHeaderValue> TransferEncoding
         {
-            get { return _generalHeaders.TransferEncoding; }
+            get { return GeneralHeaders.TransferEncoding; }
         }
 
         public bool? TransferEncodingChunked
         {
-            get { return _generalHeaders.TransferEncodingChunked; }
-            set { _generalHeaders.TransferEncodingChunked = value; }
+            get { return HttpGeneralHeaders.GetTransferEncodingChunked(this, _generalHeaders); } // special-cased to avoid forcing _generalHeaders initialization
+            set { GeneralHeaders.TransferEncodingChunked = value; }
         }
 
         public HttpHeaderValueCollection<ProductHeaderValue> Upgrade
         {
-            get { return _generalHeaders.Upgrade; }
+            get { return GeneralHeaders.Upgrade; }
         }
 
         public HttpHeaderValueCollection<ViaHeaderValue> Via
         {
-            get { return _generalHeaders.Via; }
+            get { return GeneralHeaders.Via; }
         }
 
         public HttpHeaderValueCollection<WarningHeaderValue> Warning
         {
-            get { return _generalHeaders.Warning; }
+            get { return GeneralHeaders.Warning; }
         }
 
         #endregion
 
         internal HttpResponseHeaders()
         {
-            _generalHeaders = new HttpGeneralHeaders(this);
-
             base.SetConfiguration(s_parserStore, s_invalidHeaders);
         }
 
@@ -236,7 +202,12 @@ namespace System.Net.Http.Headers
             Debug.Assert(sourceResponseHeaders != null);
 
             // Copy special values, but do not overwrite
-            _generalHeaders.AddSpecialsFrom(sourceResponseHeaders._generalHeaders);
+            if (sourceResponseHeaders._generalHeaders != null)
+            {
+                GeneralHeaders.AddSpecialsFrom(sourceResponseHeaders._generalHeaders);
+            }
         }
+
+        private HttpGeneralHeaders GeneralHeaders => _generalHeaders ?? (_generalHeaders = new HttpGeneralHeaders(this));
     }
 }
