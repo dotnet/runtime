@@ -29,7 +29,7 @@ void genScaledAdd(emitAttr attr, regNumber targetReg, regNumber baseReg, regNumb
 #endif // _TARGET_ARMARCH_
 
 #if defined(_TARGET_ARM_)
-void genCodeForMulLong(GenTreeMulLong* treeNode);
+void genCodeForMulLong(GenTreeMultiRegOp* treeNode);
 #endif // _TARGET_ARM_
 
 #if !defined(_TARGET_64BIT_)

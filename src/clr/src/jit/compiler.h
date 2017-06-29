@@ -2025,6 +2025,8 @@ public:
 
     GenTree* gtNewBlkOpNode(GenTreePtr dst, GenTreePtr srcOrFillVal, unsigned size, bool isVolatile, bool isCopyBlock);
 
+    GenTree* gtNewPutArgReg(var_types type, GenTreePtr arg);
+
 protected:
     void gtBlockOpInit(GenTreePtr result, GenTreePtr dst, GenTreePtr srcOrFillVal, bool isVolatile);
 
