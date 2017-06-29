@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Collections.Immutable
 {
@@ -79,20 +80,43 @@ namespace System.Collections.Immutable
             /// <inheritdoc />
             public bool Equals(HashBucket other)
             {
-                return this._additionalElements == other._additionalElements
-                    && EqualityComparer<T>.Default.Equals(this._firstValue, other._firstValue);
+                throw new NotSupportedException();
             }
 
             /// <inheritdoc />
             public override bool Equals(object obj)
             {
-                return obj is HashBucket h && this.Equals(h);
+                throw new NotSupportedException();
             }
 
             /// <inheritdoc />
             public override int GetHashCode()
             {
-                return EqualityComparer<T>.Default.GetHashCode(this._firstValue);
+                throw new NotSupportedException();
+            }
+
+            internal bool EqualsByRef(HashBucket other)
+            {
+                return object.ReferenceEquals(_firstValue, other._firstValue)
+                    && object.ReferenceEquals(_additionalElements, other._additionalElements);
+            }
+
+            internal int GetHashCodeByRef()
+            {
+                return Runtime.CompilerServices.RuntimeHelpers.GetHashCode(_firstValue)
+                    + Runtime.CompilerServices.RuntimeHelpers.GetHashCode(_additionalElements);
+            }
+
+            internal bool EqualsByValue(HashBucket other, IEqualityComparer<T> valueComparer)
+            {
+                return valueComparer.Equals(_firstValue, other._firstValue)
+                    && object.ReferenceEquals(_additionalElements, other._additionalElements);
+            }
+
+            internal int GetHashCodeByValue(IEqualityComparer<T> valueComparer)
+            {
+                return valueComparer.GetHashCode(_firstValue)
+                    + Runtime.CompilerServices.RuntimeHelpers.GetHashCode(_additionalElements);
             }
 
             /// <summary>
