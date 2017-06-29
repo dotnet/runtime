@@ -4,9 +4,10 @@
   <PropertyGroup>
     <ProjectGuid>{4B93E684-0630-45F4-8F63-6C7788C9892F}</ProjectGuid>
   </PropertyGroup>
-  <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="BitmapTests.cs" />
     <Compile Include="BrushTests.cs" />

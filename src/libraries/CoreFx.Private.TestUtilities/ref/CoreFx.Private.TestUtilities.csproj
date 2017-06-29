@@ -3,13 +3,15 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{E2E59C98-998F-9965-991D-99411166AF6F}</ProjectGuid>
-    <ShouldWriteSigningRequired>false</ShouldWriteSigningRequired>    
+    <ShouldWriteSigningRequired>false</ShouldWriteSigningRequired>
+    <AllowReferenceFromRuntime>true</AllowReferenceFromRuntime>
+    <RuntimeProjectFile>$(ProjectDir)\external\test-runtime\XUnit.Runtime.depproj</RuntimeProjectFile>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="CoreFx.Private.TestUtilities.cs" />
+    <ReferenceFromRuntime Include="xunit.core" />
   </ItemGroup>
-  
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

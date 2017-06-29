@@ -23,6 +23,7 @@ namespace System.IO.Tests
         public static TheoryData<string> PathsWithInvalidColons = TestData.PathsWithInvalidColons;
         public static TheoryData<string> PathsWithInvalidCharacters = TestData.PathsWithInvalidCharacters;
         public static TheoryData<char> TrailingCharacters = TestData.TrailingCharacters;
+        public static TheoryData ValidPathComponentNames = IOInputs.GetValidPathComponentNames().ToTheoryData();
 
         /// <summary>
         /// In some cases (such as when running without elevated privileges),
