@@ -19,5 +19,6 @@
 #define NGENWORKER_FLAGS_READYTORUN              0x2000
 #define NGENWORKER_FLAGS_NO_METADATA             0x4000
 #define NGENWORKER_FLAGS_SILENT                  0x8000
+#define NGENWORKER_FLAGS_VERBOSE                0x10000
 
 #endif // _NGENCOMMON_H_
