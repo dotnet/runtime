@@ -12,7 +12,8 @@ namespace System.Net.Mail.Tests
     public class LoggingTest : RemoteExecutorTestBase
     {
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework | TargetFrameworkMonikers.UapAot, "NetEventSource is only part of .NET Core. Cannot run on Aot: this test requires internal framework Reflection.")]
+        [ActiveIssue(20470, TargetFrameworkMonikers.UapAot)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetEventSource is only part of .NET Core.")]
         public void EventSource_ExistsWithCorrectId()
         {
             Type esType = typeof(SmtpClient).Assembly.GetType("System.Net.NetEventSource", throwOnError: true, ignoreCase: false);
@@ -24,9 +25,9 @@ namespace System.Net.Mail.Tests
             Assert.NotEmpty(EventSource.GenerateManifest(esType, esType.Assembly.Location));
         }
 
-        [ActiveIssue(20131, TargetFrameworkMonikers.Uap)]
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetEventSource is only part of .NET Core")]
+        [ActiveIssue(20470, TargetFrameworkMonikers.UapAot)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetEventSource is only part of .NET Core.")]
         public void EventSource_EventsRaisedAsExpected()
         {
             RemoteInvoke(() =>
