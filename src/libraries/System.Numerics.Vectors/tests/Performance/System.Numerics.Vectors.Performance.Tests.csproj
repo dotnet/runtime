@@ -6,11 +6,12 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IncludePerformanceTests>true</IncludePerformanceTests>
     <ProjectGuid>{D9906F1A-A41A-43CD-81D2-BA94CF0001C9}</ProjectGuid>
+    <DisableTests Condition="'$(TargetGroup)' == 'uap' AND ('$(ArchGroup)' == 'arm' OR '$(ArchGroup)' == 'arm64')">true</DisableTests>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' " />
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' " />
-  <ItemGroup>
+  <ItemGroup Condition="'$(DisableTests)' != 'true'">
     <Compile Include="Vector2\Distance.cs" />
     <Compile Include="Vector2\GetHashCode.cs" />
     <Compile Include="Vector2\Length.cs" />
@@ -56,7 +57,7 @@
     <Compile Include="Vector2\AddOperator.cs" />
     <Compile Include="VectorTests.cs" />
   </ItemGroup>
-  <ItemGroup>
+  <ItemGroup Condition="'$(DisableTests)' != 'true'">
     <ProjectReference Include="$(CommonPath)\..\perf\PerfRunner\PerfRunner.csproj">
       <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>
       <Name>PerfRunner</Name>
