@@ -53,25 +53,27 @@ namespace System.ServiceProcess
         public void ServiceMainCallback(int argCount, System.IntPtr argPointer) { }
         public void Stop() { }
     }
-    public partial class ServiceController : System.IDisposable
+    public partial class ServiceController : System.ComponentModel.Component
     {
+        public ServiceController() { }
         public ServiceController(string name) { }
         public ServiceController(string name, string machineName) { }
         public bool CanPauseAndContinue { get { throw null; } }
         public bool CanShutdown { get { throw null; } }
         public bool CanStop { get { throw null; } }
         public System.ServiceProcess.ServiceController[] DependentServices { get { throw null; } }
-        public string DisplayName { get { throw null; } }
-        public string MachineName { get { throw null; } }
+        public string DisplayName { get { throw null; } set { } }
+        public string MachineName { get { throw null; } set { } }
         public System.Runtime.InteropServices.SafeHandle ServiceHandle { get { throw null; } }
-        public string ServiceName { get { throw null; } }
+        public string ServiceName { get { throw null; } set { } }
         public System.ServiceProcess.ServiceController[] ServicesDependedOn { get { throw null; } }
         public System.ServiceProcess.ServiceType ServiceType { get { throw null; } }
         public System.ServiceProcess.ServiceStartMode StartType { get { throw null; } }
         public System.ServiceProcess.ServiceControllerStatus Status { get { throw null; } }
+        public void Close() { }
         public void Continue() { }
-        public void Dispose() { }
-        protected virtual void Dispose(bool disposing) { }
+        protected override void Dispose(bool disposing) { }
+        public void ExecuteCommand(int command) { }
         public static System.ServiceProcess.ServiceController[] GetDevices() { throw null; }
         public static System.ServiceProcess.ServiceController[] GetDevices(string machineName) { throw null; }
         public static System.ServiceProcess.ServiceController[] GetServices() { throw null; }

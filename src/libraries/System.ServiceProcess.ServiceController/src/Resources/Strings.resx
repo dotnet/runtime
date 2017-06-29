@@ -190,4 +190,7 @@
   <data name="ServiceRemoved" xml:space="preserve">
     <value>Service {0} was successfully removed from the system.</value>
   </data>
+  <data name="ControlService" xml:space="preserve">
+    <value>Cannot control {0} service on computer '{1}'.</value>
+  </data>
 </root>
