@@ -127,10 +127,7 @@ namespace System.Net.Http
                 }
             }
 
-            protected override Task<Stream> CreateContentReadStreamAsync() =>
-                CreateContentReadStreamValueAsync().AsTask();
-
-            internal override async ValueTask<Stream> CreateContentReadStreamValueAsync()
+            protected override async Task<Stream> CreateContentReadStreamAsync()
             {
                 if (_contentConsumed)
                 {
@@ -139,8 +136,7 @@ namespace System.Net.Http
 
                 _contentConsumed = true;
 
-                ValueTask<Stream> vt = _originalContent.ReadAsStreamValueAsync();
-                Stream originalStream = vt.IsCompletedSuccessfully ? vt.Result : await vt.AsTask().ConfigureAwait(false);
+                Stream originalStream = _originalContent.TryReadAsStream() ?? await _originalContent.ReadAsStreamAsync().ConfigureAwait(false);
                 return GetDecompressedStream(originalStream);
             }
 

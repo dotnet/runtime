@@ -16,10 +16,10 @@ namespace System.Net.Http.Headers
         private static readonly HashSet<string> s_invalidHeaders = CreateInvalidHeaders();
 
         private const int AcceptRangesSlot = 0;
-        private const int WwwAuthenticateSlot = 1;
-        private const int ProxyAuthenticateSlot = 2;
-        private const int ServerSlot = 3;
-        private const int VarySlot = 4;
+        private const int ProxyAuthenticateSlot = 1;
+        private const int ServerSlot = 2;
+        private const int VarySlot = 3;
+        private const int WwwAuthenticateSlot = 4;
         private const int NumCollectionsSlots = 5;
 
         private object[] _specialCollectionsSlots;

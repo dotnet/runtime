@@ -65,9 +65,9 @@ namespace System.Net.Http
         protected override Task<Stream> CreateContentReadStreamAsync() =>
             Task.FromResult<Stream>(CreateMemoryStreamForByteArray());
 
-        internal override ValueTask<Stream> CreateContentReadStreamValueAsync() =>
-            GetType() == typeof(ByteArrayContent) ? new ValueTask<Stream>(CreateMemoryStreamForByteArray()) :
-            base.CreateContentReadStreamValueAsync();
+        internal override Stream TryCreateContentReadStream() =>
+            GetType() == typeof(ByteArrayContent) ? CreateMemoryStreamForByteArray() : // type check ensures we use possible derived type's CreateContentReadStreamAsync override
+            null;
 
         internal MemoryStream CreateMemoryStreamForByteArray() => new MemoryStream(_content, _offset, _count, writable: false);
     }

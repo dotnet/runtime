@@ -93,9 +93,9 @@ namespace System.Net.Http
             return Task.FromResult<Stream>(new ReadOnlyStream(_content));
         }
 
-        internal override ValueTask<Stream> CreateContentReadStreamValueAsync() =>
-            GetType() == typeof(StreamContent) ? new ValueTask<Stream>(new ReadOnlyStream(_content)) :
-            base.CreateContentReadStreamValueAsync();
+        internal override Stream TryCreateContentReadStream() =>
+            GetType() == typeof(StreamContent) ? new ReadOnlyStream(_content) : // type check ensures we use possible derived type's CreateContentReadStreamAsync override
+            null;
 
         private void PrepareContent()
         {
