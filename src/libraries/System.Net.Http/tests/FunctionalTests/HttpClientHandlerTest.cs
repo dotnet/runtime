@@ -116,17 +116,8 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(null, handler.Proxy);
                 Assert.True(handler.SupportsAutomaticDecompression);
                 Assert.True(handler.UseCookies);
-                Assert.True(handler.UseProxy);
-            }
-        }
-
-        [ActiveIssue(21510, TargetFrameworkMonikers.Uap)]
-        [Fact]
-        public void UseDefaultCredentials_Ctor_ExpectedValue()
-        {
-            using (var handler = new HttpClientHandler())
-            {
                 Assert.False(handler.UseDefaultCredentials);
+                Assert.True(handler.UseProxy);
             }
         }
 
@@ -165,6 +156,24 @@ namespace System.Net.Http.Functional.Tests
                 Assert.Equal(SslProtocols.None, handler.SslProtocols);
                 Assert.False(handler.SupportsProxy);
                 Assert.False(handler.SupportsRedirectConfiguration);
+            }
+        }
+
+        [Fact]
+        public void Credentials_SetGet_Roundtrips()
+        {
+            using (var handler = new HttpClientHandler())
+            {
+                var creds = new NetworkCredential("username", "password", "domain");
+
+                handler.Credentials = null;
+                Assert.Null(handler.Credentials);
+
+                handler.Credentials = creds;
+                Assert.Same(creds, handler.Credentials);
+
+                handler.Credentials = CredentialCache.DefaultCredentials;
+                Assert.Same(CredentialCache.DefaultCredentials, handler.Credentials);
             }
         }
 
