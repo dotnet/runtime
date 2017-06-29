@@ -38,6 +38,7 @@ namespace Windows.Foundation.Tests
         [Theory]
         [InlineData(-1)]
         [InlineData(double.NegativeInfinity)]
+        [ActiveIssue(21704, TargetFrameworkMonikers.UapAot)]
         public void Ctor_NegativeWidth_ThrowsArgumentOutOfRangeException(double width)
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("width", () => new Size(width, 1));
@@ -46,6 +47,7 @@ namespace Windows.Foundation.Tests
         [Theory]
         [InlineData(-1)]
         [InlineData(double.NegativeInfinity)]
+        [ActiveIssue(21704, TargetFrameworkMonikers.UapAot)]
         public void Ctor_NegativeHeight_ThrowsArgumentOutOfRangeException(double height)
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("height", () => new Size(1, height));
@@ -65,6 +67,7 @@ namespace Windows.Foundation.Tests
         [Theory]
         [InlineData(-1)]
         [InlineData(double.NegativeInfinity)]
+        [ActiveIssue(21704, TargetFrameworkMonikers.UapAot)]
         public void Width_SetNegative_ThrowsArgumentOutOfRangeException(double width)
         {
             var size = new Size();
@@ -85,6 +88,7 @@ namespace Windows.Foundation.Tests
         [Theory]
         [InlineData(-1)]
         [InlineData(double.NegativeInfinity)]
+        [ActiveIssue(21704, TargetFrameworkMonikers.UapAot)]
         public void Height_SetNegative_ThrowsArgumentOutOfRangeException(double height)
         {
             var size = new Size();
