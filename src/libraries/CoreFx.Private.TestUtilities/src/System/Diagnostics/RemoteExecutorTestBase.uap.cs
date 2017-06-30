@@ -16,13 +16,12 @@ namespace System.Diagnostics
     public abstract partial class RemoteExecutorTestBase : FileCleanupTestBase
     {
         protected static readonly string HostRunnerName = "xunit.runner.uap.exe";
-        protected  static readonly string HostRunner = "xunit.runner.uap";
-        
+        protected static readonly string HostRunner = "xunit.runner.uap";
+
         /// <summary>Invokes the method from this assembly in another process using the specified arguments.</summary>
         /// <param name="method">The method to invoke.</param>
         /// <param name="args">The arguments to pass to the method.</param>
-        /// <param name="start">true if this function should Start the Process; false if that responsibility is left up to the caller.</param>
-        /// <param name="psi">The ProcessStartInfo to use, or null for a default.</param>
+        /// <param name="options"><see cref="System.Diagnostics.RemoteInvokeOptions"/> The options to execute the remote process.</param>
         /// <param name="pasteArguments">Unused in UAP.</param>
         private static RemoteInvokeHandle RemoteInvoke(MethodInfo method, string[] args, RemoteInvokeOptions options, bool pasteArguments = false)
         {
@@ -66,8 +65,8 @@ namespace System.Diagnostics
                 AppServiceResponse response = remoteExecutionService.SendMessageAsync(message).GetAwaiter().GetResult();
 
                 Assert.True(response.Status == AppServiceResponseStatus.Success, $"response.Status = {response.Status}");
-                int res = (int) response.Message["Results"];
-                Assert.True(res == SuccessExitCode, (string) response.Message["Log"] + Environment.NewLine + $"Returned Error code: {res}");
+                int res = (int)response.Message["Results"];
+                Assert.True(res == options.ExpectedExitCode, (string)response.Message["Log"] + Environment.NewLine + $"Returned Error code: {res}");
             }
 
             // RemoteInvokeHandle is not really needed in the UAP scenario but we use it just to have consistent interface as non UAP
