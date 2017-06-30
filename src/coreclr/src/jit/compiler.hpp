@@ -4928,7 +4928,8 @@ void GenTree::VisitOperands(TVisitor visitor)
             {
                 return;
             }
-            if ((call->gtCallLateArgs != nullptr) && (call->gtCallLateArgs->VisitListOperands(visitor)) == VisitResult::Abort)
+            if ((call->gtCallLateArgs != nullptr) &&
+                (call->gtCallLateArgs->VisitListOperands(visitor)) == VisitResult::Abort)
             {
                 return;
             }
