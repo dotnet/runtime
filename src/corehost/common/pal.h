@@ -129,8 +129,8 @@ namespace pal
     pal::string_t to_lower(const pal::string_t& in);
 
     inline size_t strlen(const char_t* str) { return ::wcslen(str); }
-    inline void err_vprintf(const char_t* format, va_list vl) { ::vfwprintf(stderr, format, vl); ::fputws(_X("\r\n"), stderr); }
-    inline void out_vprintf(const char_t* format, va_list vl) { ::vfwprintf(stdout, format, vl); ::fputws(_X("\r\n"), stdout); }
+    inline void err_vprintf(const char_t* format, va_list vl) { ::vfwprintf(stderr, format, vl); ::fputwc(_X('\n'), stderr); }
+    inline void out_vprintf(const char_t* format, va_list vl) { ::vfwprintf(stdout, format, vl); ::fputwc(_X('\n'), stdout); }
 
     bool pal_utf8string(const pal::string_t& str, std::vector<char>* out);
     bool utf8_palstring(const std::string& str, pal::string_t* out);
