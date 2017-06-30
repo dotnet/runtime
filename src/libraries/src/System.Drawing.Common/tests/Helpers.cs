@@ -66,6 +66,8 @@ namespace System.Drawing.Tests
             stringBuilder.Append($"Color.FromArgb({color.A}, {color.R}, {color.G}, {color.B})");
         }
 
+        public static Color EmptyColor => Color.FromArgb(0, 0, 0, 0);
+
         private static Rectangle GetRectangle(RECT rect)
         {
             return new Rectangle(rect.Left, rect.Top, rect.Right - rect.Left, rect.Bottom - rect.Top);
