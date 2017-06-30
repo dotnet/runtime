@@ -15,16 +15,18 @@ namespace System.Net.Http
     {
         private readonly IWebProxy _proxy;
         private readonly HttpMessageHandler _innerHandler;
+        private readonly ICredentials _defaultCredentials;
 
         private readonly ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool> _connectionPoolTable;
         private bool _disposed;
 
-        public HttpProxyConnectionHandler(IWebProxy proxy, HttpMessageHandler innerHandler)
+        public HttpProxyConnectionHandler(IWebProxy proxy, ICredentials defaultCredentials, HttpMessageHandler innerHandler)
         {
             Debug.Assert(proxy != null || EnvironmentProxyConfigured);
             Debug.Assert(innerHandler != null);
 
             _proxy = proxy ?? new PassthroughWebProxy(s_proxyFromEnvironment.Value);
+            _defaultCredentials = defaultCredentials;
             _innerHandler = innerHandler;
             _connectionPoolTable = new ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool>();
         }
@@ -69,8 +71,7 @@ namespace System.Net.Http
             HttpResponseMessage response = await connection.SendAsync(request, cancellationToken).ConfigureAwait(false);
 
             // Handle proxy authentication
-            if (response.StatusCode == HttpStatusCode.ProxyAuthenticationRequired &&
-                _proxy.Credentials != null)
+            if (response.StatusCode == HttpStatusCode.ProxyAuthenticationRequired)
             {
                 foreach (AuthenticationHeaderValue h in response.Headers.ProxyAuthenticate)
                 {
@@ -78,7 +79,10 @@ namespace System.Net.Http
                     const string Basic = "Basic";
                     if (h.Scheme == Basic)
                     {
-                        NetworkCredential credential = _proxy.Credentials.GetCredential(proxyUri, Basic);
+                        NetworkCredential credential =
+                            _proxy.Credentials?.GetCredential(proxyUri, Basic) ??
+                            _defaultCredentials?.GetCredential(proxyUri, Basic);
+
                         if (credential != null)
                         {
                             response.Dispose();
@@ -151,7 +155,7 @@ namespace System.Net.Http
             string proxyString = Environment.GetEnvironmentVariable("http_proxy");
             if (!string.IsNullOrWhiteSpace(proxyString))
             {
-                Uri proxyEnvironment;
+                Uri proxyFromEnvironment;
                 if (Uri.TryCreate(proxyString, UriKind.Absolute, out proxyFromEnvironment) ||
                     Uri.TryCreate(Uri.UriSchemeHttp + Uri.SchemeDelimiter + proxyString, UriKind.Absolute, out proxyFromEnvironment))
                 {

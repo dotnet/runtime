@@ -290,7 +290,7 @@ namespace System.Net.Http
             if ((_useProxy && _proxy != null) ||
                 HttpProxyConnectionHandler.EnvironmentProxyConfigured)
             {
-                handler = new HttpProxyConnectionHandler(_useProxy ? _proxy : null, handler);
+                handler = new HttpProxyConnectionHandler(_useProxy ? _proxy : null, _defaultProxyCredentials, handler);
             }
 
             if (_credentials != null)
