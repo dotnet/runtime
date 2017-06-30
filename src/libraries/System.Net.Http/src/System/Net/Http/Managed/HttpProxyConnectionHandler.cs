@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.IO;
 using System.Net.Http.Headers;
 using System.Threading;
@@ -20,8 +21,11 @@ namespace System.Net.Http
 
         public HttpProxyConnectionHandler(IWebProxy proxy, HttpMessageHandler innerHandler)
         {
-            _proxy = proxy ?? throw new ArgumentNullException(nameof(proxy));
-            _innerHandler = innerHandler ?? throw new ArgumentNullException(nameof(innerHandler));
+            Debug.Assert(proxy != null || EnvironmentProxyConfigured);
+            Debug.Assert(innerHandler != null);
+
+            _proxy = proxy ?? new PassthroughWebProxy(s_proxyFromEnvironment.Value);
+            _innerHandler = innerHandler;
             _connectionPoolTable = new ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool>();
         }
 
@@ -134,6 +138,37 @@ namespace System.Net.Http
             }
 
             base.Dispose(disposing);
+        }
+
+        public static bool EnvironmentProxyConfigured => s_proxyFromEnvironment.Value != null;
+
+        private static readonly Lazy<Uri> s_proxyFromEnvironment = new Lazy<Uri>(() =>
+        {
+            // http_proxy is standard on Unix, used e.g. by libcurl.
+            // TODO: We should support the full array of environment variables here,
+            // including no_proxy, all_proxy, etc.
+
+            string proxyString = Environment.GetEnvironmentVariable("http_proxy");
+            if (!string.IsNullOrWhiteSpace(proxyString))
+            {
+                Uri proxyEnvironment;
+                if (Uri.TryCreate(proxyString, UriKind.Absolute, out proxyFromEnvironment) ||
+                    Uri.TryCreate(Uri.UriSchemeHttp + Uri.SchemeDelimiter + proxyString, UriKind.Absolute, out proxyFromEnvironment))
+                {
+                    return proxyFromEnvironment;
+                }
+            }
+
+            return null;
+        });
+
+        private sealed class PassthroughWebProxy : IWebProxy
+        {
+            private readonly Uri _proxyUri;
+            public PassthroughWebProxy(Uri proxyUri) => _proxyUri = proxyUri;
+            public ICredentials Credentials { get => null; set { } }
+            public Uri GetProxy(Uri destination) => _proxyUri;
+            public bool IsBypassed(Uri host) => false;
         }
     }
 }
