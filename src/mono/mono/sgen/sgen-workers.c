@@ -167,8 +167,6 @@ worker_try_finish (WorkerData *data)
 	data->total_time += (sgen_timestamp () - last_start);
 	binary_protocol_worker_finish_stats (data - &context->workers_data [0] + 1, context->generation, context->forced_stop, data->major_scan_time, data->los_scan_time, data->total_time);
 
-	binary_protocol_worker_finish (sgen_timestamp (), context->forced_stop);
-
 	sgen_gray_object_queue_trim_free_list (&data->private_gray_queue);
 	return;
 

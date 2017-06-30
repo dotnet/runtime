@@ -380,47 +380,47 @@ MATCH_INDEX (ptr == entry->obj ? 0 : ptr == entry->ptr ? 1 : ptr == entry->value
 IS_VTABLE_MATCH (ptr == entry->value_vtable)
 END_PROTOCOL_ENTRY_HEAVY
 
-BEGIN_PROTOCOL_ENTRY2 (binary_protocol_major_card_table_scan_start, TYPE_LONGLONG, timestamp, TYPE_BOOL, mod_union)
+BEGIN_PROTOCOL_ENTRY_HEAVY2 (binary_protocol_major_card_table_scan_start, TYPE_LONGLONG, timestamp, TYPE_BOOL, mod_union)
 DEFAULT_PRINT ()
 IS_ALWAYS_MATCH (TRUE)
 MATCH_INDEX (BINARY_PROTOCOL_MATCH)
 IS_VTABLE_MATCH (FALSE)
-END_PROTOCOL_ENTRY
+END_PROTOCOL_ENTRY_HEAVY
 
-BEGIN_PROTOCOL_ENTRY2 (binary_protocol_major_card_table_scan_end, TYPE_LONGLONG, timestamp, TYPE_BOOL, mod_union)
+BEGIN_PROTOCOL_ENTRY_HEAVY2 (binary_protocol_major_card_table_scan_end, TYPE_LONGLONG, timestamp, TYPE_BOOL, mod_union)
 DEFAULT_PRINT ()
 IS_ALWAYS_MATCH (TRUE)
 MATCH_INDEX (BINARY_PROTOCOL_MATCH)
 IS_VTABLE_MATCH (FALSE)
-END_PROTOCOL_ENTRY
+END_PROTOCOL_ENTRY_HEAVY
 
-BEGIN_PROTOCOL_ENTRY2 (binary_protocol_los_card_table_scan_start, TYPE_LONGLONG, timestamp, TYPE_BOOL, mod_union)
+BEGIN_PROTOCOL_ENTRY_HEAVY2 (binary_protocol_los_card_table_scan_start, TYPE_LONGLONG, timestamp, TYPE_BOOL, mod_union)
 DEFAULT_PRINT ()
 IS_ALWAYS_MATCH (TRUE)
 MATCH_INDEX (BINARY_PROTOCOL_MATCH)
 IS_VTABLE_MATCH (FALSE)
-END_PROTOCOL_ENTRY
+END_PROTOCOL_ENTRY_HEAVY
 
-BEGIN_PROTOCOL_ENTRY2 (binary_protocol_los_card_table_scan_end, TYPE_LONGLONG, timestamp, TYPE_BOOL, mod_union)
+BEGIN_PROTOCOL_ENTRY_HEAVY2 (binary_protocol_los_card_table_scan_end, TYPE_LONGLONG, timestamp, TYPE_BOOL, mod_union)
 DEFAULT_PRINT ()
 IS_ALWAYS_MATCH (TRUE)
 MATCH_INDEX (BINARY_PROTOCOL_MATCH)
 IS_VTABLE_MATCH (FALSE)
-END_PROTOCOL_ENTRY
+END_PROTOCOL_ENTRY_HEAVY
 
-BEGIN_PROTOCOL_ENTRY2 (binary_protocol_finish_gray_stack_start, TYPE_LONGLONG, timestamp, TYPE_INT, generation)
+BEGIN_PROTOCOL_ENTRY_HEAVY2 (binary_protocol_finish_gray_stack_start, TYPE_LONGLONG, timestamp, TYPE_INT, generation)
 DEFAULT_PRINT ()
 IS_ALWAYS_MATCH (TRUE)
 MATCH_INDEX (BINARY_PROTOCOL_MATCH)
 IS_VTABLE_MATCH (FALSE)
-END_PROTOCOL_ENTRY
+END_PROTOCOL_ENTRY_HEAVY
 
-BEGIN_PROTOCOL_ENTRY2 (binary_protocol_finish_gray_stack_end, TYPE_LONGLONG, timestamp, TYPE_INT, generation)
+BEGIN_PROTOCOL_ENTRY_HEAVY2 (binary_protocol_finish_gray_stack_end, TYPE_LONGLONG, timestamp, TYPE_INT, generation)
 DEFAULT_PRINT ()
 IS_ALWAYS_MATCH (TRUE)
 MATCH_INDEX (BINARY_PROTOCOL_MATCH)
 IS_VTABLE_MATCH (FALSE)
-END_PROTOCOL_ENTRY
+END_PROTOCOL_ENTRY_HEAVY
 
 BEGIN_PROTOCOL_ENTRY2 (binary_protocol_worker_finish, TYPE_LONGLONG, timestamp, TYPE_BOOL, forced)
 DEFAULT_PRINT ()
