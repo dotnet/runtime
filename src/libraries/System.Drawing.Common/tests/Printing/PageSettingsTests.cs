@@ -36,6 +36,7 @@ namespace System.Drawing.Printing.Tests
     {
         private static bool AnyInstalledPrinters => PrinterSettings.InstalledPrinters.Count == 0;
 
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(nameof(AnyInstalledPrinters))]
         public void Clone_Success()
         {

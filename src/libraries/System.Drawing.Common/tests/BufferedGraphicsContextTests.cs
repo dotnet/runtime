@@ -8,6 +8,7 @@ namespace System.Drawing.Tests
 {
     public class BufferedGraphicsContextTests
     {
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [Fact]
         public void Ctor_Default()
         {
@@ -17,7 +18,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]   
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]   
         public void Allocate_ValidTargetGraphics_Success()
         {
             using (var context = new BufferedGraphicsContext())
@@ -31,7 +33,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Allocate_LargeRectWithTargetGraphics_Success()
         {
             using (var context = new BufferedGraphicsContext())
@@ -45,7 +48,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Allocate_ValidTargetHdc_Success()
         {
             using (var context = new BufferedGraphicsContext())
@@ -69,7 +73,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Allocate_LargeRectWithTargetHdc_Success()
         {
             using (var context = new BufferedGraphicsContext())
@@ -93,6 +98,7 @@ namespace System.Drawing.Tests
             }
         }
 
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [Fact]
         public void Allocate_InvalidHdc_ThrowsArgumentException()
         {
@@ -102,7 +108,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Allocate_NullGraphicsZeroSize_Success()
         {
             using (var context = new BufferedGraphicsContext())
@@ -112,7 +119,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Allocate_NullGraphicsNonZeroSize_ThrowsArgumentNullException()
         {
             using (var context = new BufferedGraphicsContext())
@@ -122,7 +130,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Allocate_DisposedGraphics_ThrowsArgumentException()
         {
             using (var context = new BufferedGraphicsContext())
@@ -137,7 +146,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Allocate_BusyGraphics_ThrowsInvalidOperationException()
         {
             using (var context = new BufferedGraphicsContext())
@@ -182,6 +192,7 @@ namespace System.Drawing.Tests
             }
         }
 
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [Theory]
         [InlineData(0)]
         [InlineData(-1)]
@@ -193,6 +204,7 @@ namespace System.Drawing.Tests
             }
         }
 
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [Theory]
         [InlineData(0)]
         [InlineData(-1)]
@@ -212,7 +224,8 @@ namespace System.Drawing.Tests
             var context = new BufferedGraphicsContext();
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Dispose_BusyAndValidated_ThrowsInvalidOperationException()
         {
             using (var context = new BufferedGraphicsContext())
@@ -226,7 +239,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Dispose_BusyAndInvalidated_ThrowsInvalidOperationException()
         {
             using (var context = new BufferedGraphicsContext())

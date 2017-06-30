@@ -14,7 +14,7 @@ namespace System.Drawing.Drawing2D.Tests
             yield return new object[] { HatchStyle.SolidDiamond, Color.PapayaWhip };
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(Ctor_HatchStyle_ForeColor_TestData))]
         public void Ctor_HatchStyle_ForeColor(HatchStyle hatchStyle, Color foreColor)
         {
@@ -33,7 +33,7 @@ namespace System.Drawing.Drawing2D.Tests
             yield return new object[] { HatchStyle.SolidDiamond, Color.PapayaWhip, Color.Plum };
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(Ctor_HatchStyle_ForeColor_BackColor_TestData))]
         public void Ctor_HatchStyle_ForeColor_BackColor(HatchStyle hatchStyle, Color foreColor, Color backColor)
         {
@@ -47,7 +47,8 @@ namespace System.Drawing.Drawing2D.Tests
             Assert.Equal(backColor.ToArgb(), brush.BackgroundColor.ToArgb());
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(HatchStyle.Horizontal -1 )]
         [InlineData(HatchStyle.SolidDiamond + 1)]
         public void Ctor_InvalidHatchStyle_ThrowsArgumentException(HatchStyle hatchStyle)
@@ -56,7 +57,7 @@ namespace System.Drawing.Drawing2D.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => new HatchBrush(hatchStyle, Color.Empty, Color.Empty));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Clone_Brush_ReturnsClone()
         {
             var brush = new HatchBrush(HatchStyle.DarkDownwardDiagonal, Color.Magenta, Color.Peru);
@@ -68,7 +69,7 @@ namespace System.Drawing.Drawing2D.Tests
             Assert.Equal(brush.BackgroundColor, clone.BackgroundColor);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Clone_ImmutableColor_ReturnsMutableClone()
         {
             SolidBrush brush = Assert.IsType<SolidBrush>(Brushes.Bisque);
@@ -79,7 +80,7 @@ namespace System.Drawing.Drawing2D.Tests
             Assert.Equal(Color.Bisque, brush.Color);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Clone_Disposed_ThrowsArgumentException()
         {
             var brush = new HatchBrush(HatchStyle.DarkHorizontal, Color.PeachPuff, Color.Purple);
@@ -88,7 +89,7 @@ namespace System.Drawing.Drawing2D.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => brush.Clone());
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void HatchStyle_EmptyAndGetDisposed_ThrowsArgumentException()
         {
             var brush = new HatchBrush(HatchStyle.DarkHorizontal, Color.PeachPuff, Color.Purple);
@@ -97,7 +98,7 @@ namespace System.Drawing.Drawing2D.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => brush.HatchStyle);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void ForegroundColor_EmptyAndGetDisposed_ThrowsArgumentException()
         {
             var brush = new HatchBrush(HatchStyle.DarkHorizontal, Color.PeachPuff, Color.Purple);
@@ -106,7 +107,7 @@ namespace System.Drawing.Drawing2D.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => brush.ForegroundColor);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void BackgroundColor_EmptyAndGetDisposed_ThrowsArgumentException()
         {
             var brush = new HatchBrush(HatchStyle.DarkHorizontal, Color.PeachPuff, Color.Purple);
@@ -115,7 +116,7 @@ namespace System.Drawing.Drawing2D.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => brush.BackgroundColor);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Dispose_MultipleTimes_Success()
         {
             var brush = new HatchBrush(HatchStyle.DarkHorizontal, Color.PeachPuff, Color.Purple);

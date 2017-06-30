@@ -10,7 +10,8 @@ namespace System.Drawing.Tests
 {
     public class FontFamilyTests
     {
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(GenericFontFamilies.Serif - 1, "Courier New")] // Value is outside the enum range.
         [InlineData(GenericFontFamilies.Monospace + 1, "Courier New")] // Value is outside the enum range.
         [InlineData(GenericFontFamilies.Monospace, "Courier New")]
@@ -24,7 +25,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData("Courier New", "Courier New")]
         [InlineData("Microsoft Sans Serif", "Microsoft Sans Serif")]
         [InlineData("Times New Roman", "Times New Roman")]
@@ -37,7 +39,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_Name_FontCollection()
         {
             using (var fontCollection = new PrivateFontCollection())
@@ -51,7 +54,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(null)]
         [InlineData("")]
         [InlineData("NoSuchFont")]
@@ -62,7 +66,7 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => new FontFamily(name, null));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_NoSuchFontNameInCollection_ThrowsArgumentException()
         {
             var fontCollection = new PrivateFontCollection();
@@ -80,7 +84,8 @@ namespace System.Drawing.Tests
             yield return new object[] { FontFamily.GenericSansSerif, null, false };
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(Equals_TestData))]
         public void Equals_Object_ReturnsExpected(FontFamily fontFamily, object other, bool expected)
         {
@@ -95,7 +100,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Families_Get_ReturnsExpected()
         {
 #pragma warning disable 0618 // FontFamily.GetFamilies is deprecated.
@@ -117,7 +122,8 @@ namespace System.Drawing.Tests
 #pragma warning restore 0618
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void GenericMonospace_Get_ReturnsExpected()
         {
             using (FontFamily fontFamily1 = FontFamily.GenericMonospace)
@@ -130,7 +136,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void GenericSansSerif_Get_ReturnsExpected()
         {
             using (FontFamily fontFamily1 = FontFamily.GenericSansSerif)
@@ -143,7 +150,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void GenericSerif_Get_ReturnsExpected()
         {
             using (FontFamily fontFamily1 = FontFamily.GenericSerif)
@@ -156,7 +164,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void GetFamilies_NullGraphics_ThrowsArgumentNullException()
         {
 #pragma warning disable 0618 // FontFamily.GetFamilies is deprecated.
@@ -164,7 +172,7 @@ namespace System.Drawing.Tests
 #pragma warning restore 0618
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void GetHashCode_Invoke_ReturnsNameHashCode()
         {
             using (FontFamily fontFamily = FontFamily.GenericSansSerif)
@@ -184,7 +192,8 @@ namespace System.Drawing.Tests
             yield return new object[] { FontStyle.Strikeout + 1 };
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(FontStyle_TestData))]
         public void FontFamilyProperties_CustomFont_ReturnsExpected(FontStyle style)
         {
@@ -203,7 +212,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void IsStyleAvailable_Disposed_ThrowsArgumentException()
         {
             FontFamily fontFamily = FontFamily.GenericMonospace;
@@ -212,7 +221,7 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => fontFamily.IsStyleAvailable(FontStyle.Italic));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void GetEmHeight_Disposed_ThrowsArgumentException()
         {
             FontFamily fontFamily = FontFamily.GenericMonospace;
@@ -223,7 +232,8 @@ namespace System.Drawing.Tests
 
         private const int FrenchLCID = 1036;
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(-1, "Code New Roman")]
         [InlineData(0, "Code New Roman")]
         [InlineData(int.MaxValue, "Code New Roman")]
@@ -242,7 +252,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void GetName_Disposed_ThrowsArgumentException()
         {
             FontFamily fontFamily = FontFamily.GenericMonospace;
@@ -251,7 +262,7 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => fontFamily.GetName(0));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void GetCellAscent_Disposed_ThrowsArgumentException()
         {
             FontFamily fontFamily = FontFamily.GenericMonospace;
@@ -260,7 +271,8 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => fontFamily.GetCellAscent(FontStyle.Italic));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void GetCellDescent_Disposed_ThrowsArgumentException()
         {
             FontFamily fontFamily = FontFamily.GenericMonospace;
@@ -269,7 +281,7 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => fontFamily.GetCellDescent(FontStyle.Italic));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void GetLineSpacing_Disposed_ThrowsArgumentException()
         {
             FontFamily fontFamily = FontFamily.GenericMonospace;
@@ -278,7 +290,7 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => fontFamily.GetLineSpacing(FontStyle.Italic));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Dispose_MultipleTimes_Nop()
         {
             FontFamily fontFamily = FontFamily.GenericMonospace;

@@ -7,10 +7,34 @@ using System.Text;
 using Xunit;
 using Xunit.Sdk;
 
-namespace System.Drawing.Tests
+namespace System.Drawing
 {
     public static class Helpers
     {
+        public const string GdiplusIsAvailable = nameof(Helpers) + "." + nameof(GetGdiplusIsAvailable);
+
+        public static bool GetGdiplusIsAvailable()
+        {
+            try
+            {
+                GdiplusStartup(IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+            }
+            catch (EntryPointNotFoundException)
+            {
+                return false;
+            }
+            catch (DllNotFoundException)
+            {
+                return false;
+            }
+            catch (Exception) { }
+
+            return true;
+        }
+
+        [DllImport("gdiplus")]
+        private static extern int GdiplusStartup(IntPtr token, IntPtr input, IntPtr output);
+
         public static string GetTestBitmapPath(string fileName) => GetTestPath("bitmaps", fileName);
         public static string GetTestFontPath(string fileName) => GetTestPath("fonts", fileName);
         public static string GetTestColorProfilePath(string fileName) => GetTestPath("colorProfiles", fileName);
