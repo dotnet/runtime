@@ -831,26 +831,56 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
     // Struct can be split into register(s) and stack on ARM
     if (info->isSplit)
     {
-        if (arg->OperGet() != GT_OBJ)
+        assert(arg->OperGet() == GT_OBJ || arg->OperGet() == GT_FIELD_LIST);
+        // TODO: Need to check correctness for FastTailCall
+        if (call->IsFastTailCall())
         {
-            NYI_ARM("Lowering: Oper for struct argument is not GT_OBJ");
+            NYI_ARM("lower: struct argument by fast tail call");
         }
 
         putArg = new (comp, GT_PUTARG_SPLIT)
             GenTreePutArgSplit(arg, info->slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(info->numSlots), info->numRegs,
                                info->isHfaRegArg, call->IsFastTailCall(), call);
 
-        // Set GC Pointer info
+        // If struct argument is morphed to GT_FIELD_LIST node(s),
+        // we can know GC info by type of each GT_FIELD_LIST node.
+        // So we skip setting GC Pointer info.
+        //
         GenTreePutArgSplit* argSplit = putArg->AsPutArgSplit();
-        BYTE*               gcLayout = new (comp, CMK_Codegen) BYTE[info->numSlots + info->numRegs];
-        unsigned            numRefs  = comp->info.compCompHnd->getClassGClayout(arg->gtObj.gtClass, gcLayout);
-        argSplit->setGcPointers(numRefs, gcLayout);
-
-        // Set type of registers
-        for (unsigned index = 0; index < info->numRegs; index++)
+        if (arg->OperGet() == GT_OBJ)
         {
-            var_types regType          = comp->getJitGCType(gcLayout[index]);
-            argSplit->m_regType[index] = regType;
+            BYTE*       gcLayout = nullptr;
+            unsigned    numRefs  = 0;
+            GenTreeObj* argObj   = arg->AsObj();
+
+            if (argObj->IsGCInfoInitialized())
+            {
+                gcLayout = argObj->gtGcPtrs;
+                numRefs  = argObj->GetGcPtrCount();
+            }
+            else
+            {
+                // Set GC Pointer info
+                gcLayout = new (comp, CMK_Codegen) BYTE[info->numSlots + info->numRegs];
+                numRefs  = comp->info.compCompHnd->getClassGClayout(arg->gtObj.gtClass, gcLayout);
+                argSplit->setGcPointers(numRefs, gcLayout);
+            }
+
+            // Set type of registers
+            for (unsigned index = 0; index < info->numRegs; index++)
+            {
+                var_types regType          = comp->getJitGCType(gcLayout[index]);
+                argSplit->m_regType[index] = regType;
+            }
+        }
+        else
+        {
+            GenTreeFieldList* fieldListPtr = arg->AsFieldList();
+            for (unsigned index = 0; index < info->numRegs; fieldListPtr = fieldListPtr->Rest(), index++)
+            {
+                var_types regType          = fieldListPtr->TypeGet();
+                argSplit->m_regType[index] = regType;
+            }
         }
     }
     else
