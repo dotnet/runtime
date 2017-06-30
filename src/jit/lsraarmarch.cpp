@@ -781,6 +781,11 @@ void Lowering::TreeNodeInfoInitPutArgSplit(GenTreePutArgSplit* argNode, TreeNode
     }
     argNode->gtLsraInfo.setDstCandidates(m_lsra, argMask);
 
+    if (putArgChild->OperGet() == GT_FIELD_LIST)
+    {
+        NYI_ARM("LSRA: Oper for split struct argument is GT_FIELD_LIST");
+    }
+
     assert(putArgChild->TypeGet() == TYP_STRUCT);
     assert(putArgChild->OperGet() == GT_OBJ);
     // We could use a ldr/str sequence so we need a internal register
