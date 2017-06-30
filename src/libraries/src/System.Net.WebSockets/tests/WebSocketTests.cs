@@ -69,12 +69,23 @@ namespace System.Net.WebSockets.Tests
             Assert.InRange(buffer.Count, size, int.MaxValue);
         }
 
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]
         [Fact]
-        public static void CreateClientWebSocket_Unsupported()
+        public static void CreateClientWebSocket_InvalidArguments_Throws()
         {
-            Assert.Throws<PlatformNotSupportedException>(() =>
-                WebSocket.CreateClientWebSocket(new MemoryStream(), "", 256, 16, TimeSpan.FromSeconds(30), false, new ArraySegment<byte>(new byte[64 * 1024])));
+            Assert.Throws<ArgumentNullException>(() => WebSocket.CreateClientWebSocket(
+                null, "subProtocol", 16480, 9856, TimeSpan.FromSeconds(30), false, WebSocket.CreateClientBuffer(16480, 9856)));
+
+            Assert.Throws<ArgumentException>(() => WebSocket.CreateClientWebSocket(
+                new MemoryStream(), "    ", 16480, 9856, TimeSpan.FromSeconds(30), false, WebSocket.CreateClientBuffer(16480, 9856)));
+            Assert.Throws<ArgumentException>(() => WebSocket.CreateClientWebSocket(
+                new MemoryStream(), "\xFF", 16480, 9856, TimeSpan.FromSeconds(30), false, WebSocket.CreateClientBuffer(16480, 9856)));
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => WebSocket.CreateClientWebSocket(
+                new MemoryStream(), "subProtocol", 0, 9856, TimeSpan.FromSeconds(30), false, WebSocket.CreateClientBuffer(16480, 9856)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => WebSocket.CreateClientWebSocket(
+                new MemoryStream(), "subProtocol", 16480, 0, TimeSpan.FromSeconds(30), false, WebSocket.CreateClientBuffer(16480, 9856)));
+            Assert.Throws<ArgumentOutOfRangeException>(() => WebSocket.CreateClientWebSocket(
+                new MemoryStream(), "subProtocol", 16480, 9856, TimeSpan.FromSeconds(-2), false, WebSocket.CreateClientBuffer(16480, 9856)));
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)]

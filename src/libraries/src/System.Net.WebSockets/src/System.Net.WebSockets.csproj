@@ -4,6 +4,7 @@
   <PropertyGroup>
     <ProjectGuid>{B0C83201-EC32-4E8D-9DE4-EEF41E052DA1}</ProjectGuid>
     <AssemblyName>System.Net.WebSockets</AssemblyName>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
@@ -18,18 +19,31 @@
     <Compile Include="System\Net\WebSockets\WebSocketMessageType.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketReceiveResult.cs" />
     <Compile Include="System\Net\WebSockets\WebSocketState.cs" />
+    <Compile Include="$(CommonPath)\System\Net\WebSockets\ManagedWebSocket.cs">
+      <Link>Common\System\Net\WebSockets\ManagedWebSocket.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\WebSockets\WebSocketValidate.cs">
+      <Link>Common\System\Net\WebSockets\WebSocketValidate.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
+    <Reference Include="System.Buffers" />
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Net.Primitives" />
+    <Reference Include="System.Numerics.Vectors" />
     <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Security.Cryptography.Algorithms" />
     <Reference Include="System.Security.Principal" />
+    <Reference Include="System.Text.Encoding.Extensions" />
+    <Reference Include="System.Threading" />
+    <Reference Include="System.Threading.Tasks" />
+    <Reference Include="System.Threading.Timer" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

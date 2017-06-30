@@ -193,8 +193,9 @@ namespace System.Net.WebSockets
             // If we were provided with a buffer to use, use it, as long as it's big enough for our needs, and for simplicity
             // as long as we're not supposed to use only a portion of it.  If it doesn't meet our criteria, just create a new one.
             if (receiveBuffer.HasValue &&
-                receiveBuffer.Value.Offset == 0 && receiveBuffer.Value.Count == receiveBuffer.Value.Array.Length &&
-                receiveBuffer.Value.Count >= MaxMessageHeaderLength)
+                receiveBuffer.GetValueOrDefault().Array != null &&
+                receiveBuffer.GetValueOrDefault().Offset == 0 && receiveBuffer.GetValueOrDefault().Count == receiveBuffer.GetValueOrDefault().Array.Length &&
+                receiveBuffer.GetValueOrDefault().Count >= MaxMessageHeaderLength)
             {
                 _receiveBuffer = receiveBuffer.Value.Array;
             }
@@ -1148,7 +1149,7 @@ namespace System.Net.WebSockets
                         // being closed and that was expected, exit gracefully.
                         if (_disposed)
                         {
-                            throw new ObjectDisposedException(nameof(ClientWebSocket));
+                            throw new ObjectDisposedException(nameof(WebSocket));
                         }
                         else if (throwOnPrematureClosure)
                         {
