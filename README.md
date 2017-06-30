@@ -19,6 +19,8 @@ You can get the latest **released** version of the .NET Core SDK by following th
 the [.NET Core Getting Started](http://dotnet.github.io/getting-started/) page.
 If you need the most up to date (daily) version of this .NET Core installer you can get it from the
 [latest Installers of .NET Core and .NET Core SDK](https://github.com/dotnet/cli#installers-and-binaries).
+If you want one of our official release, you get get the download from the 
+[download archive page](https://github.com/dotnet/core/blob/master/release-notes/download-archive.md).  
 
 ## Are you Here for Something Besides the Source Code?  
 
