@@ -49,6 +49,7 @@ namespace System.Runtime.Loader.Tests
     {
         private const string TestAssemblyName = "System.Runtime.Loader.Noop.Assembly";
         private string _assemblyPath;
+        private string _defaultLoadDirectory;
 
         // Since the first non-Null returning callback should stop Resolving event processing,
         // this counter is used to assert the same.
@@ -56,12 +57,18 @@ namespace System.Runtime.Loader.Tests
 
         public DefaultLoadContextTests()
         {
-            _assemblyPath = Path.GetFullPath("System.Runtime.Loader.Noop.Assembly_test.dll");
+            _defaultLoadDirectory = GetDefaultAssemblyLoadDirectory();
+            _assemblyPath = Path.Combine(_defaultLoadDirectory, "System.Runtime.Loader.Noop.Assembly_test.dll");
+        }
+
+        private static string GetDefaultAssemblyLoadDirectory()
+        {
+            return Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
         }
 
         private Assembly ResolveAssembly(AssemblyLoadContext sender, AssemblyName assembly)
         {
-            string resolvedAssemblyPath = Path.GetFullPath(assembly.Name + "_test.dll");
+            string resolvedAssemblyPath = Path.Combine(_defaultLoadDirectory, assembly.Name + "_test.dll");
             _numNonNullResolutions++;
 
             return sender.LoadFromAssemblyPath(resolvedAssemblyPath);
