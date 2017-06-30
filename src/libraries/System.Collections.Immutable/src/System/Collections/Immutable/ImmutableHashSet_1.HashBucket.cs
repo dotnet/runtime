@@ -77,15 +77,21 @@ namespace System.Collections.Immutable
                 return new Enumerator(this);
             }
 
-            /// <inheritdoc />
+            /// <summary>
+            /// Throws an exception to catch any errors in comparing <see cref="HashBucket"/> instances.
+            /// </summary>
             public override bool Equals(object obj)
             {
+                // This should never be called, as hash buckets don't know how to equate themselves.
                 throw new NotSupportedException();
             }
 
-            /// <inheritdoc />
+            /// <summary>
+            /// Throws an exception to catch any errors in comparing <see cref="HashBucket"/> instances.
+            /// </summary>
             public override int GetHashCode()
             {
+                // This should never be called, as hash buckets don't know how to hash themselves.
                 throw new NotSupportedException();
             }
 

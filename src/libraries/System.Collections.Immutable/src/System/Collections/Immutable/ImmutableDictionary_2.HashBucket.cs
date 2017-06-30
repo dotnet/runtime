@@ -15,7 +15,7 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Contains all the key/values in the collection that hash to the same value.
         /// </summary>
-        internal struct HashBucket : IEnumerable<KeyValuePair<TKey, TValue>>, IEquatable<HashBucket>
+        internal struct HashBucket : IEnumerable<KeyValuePair<TKey, TValue>>
         {
             /// <summary>
             /// One of the values in this bucket.
@@ -110,9 +110,18 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Throws an exception to catch any errors in comparing <see cref="HashBucket"/> instances.
             /// </summary>
-            bool IEquatable<HashBucket>.Equals(HashBucket other)
+            public override bool Equals(object obj)
             {
                 // This should never be called, as hash buckets don't know how to equate themselves.
+                throw new NotSupportedException();
+            }
+
+            /// <summary>
+            /// Throws an exception to catch any errors in comparing <see cref="HashBucket"/> instances.
+            /// </summary>
+            public override int GetHashCode()
+            {
+                // This should never be called, as hash buckets don't know how to hash themselves.
                 throw new NotSupportedException();
             }
 
