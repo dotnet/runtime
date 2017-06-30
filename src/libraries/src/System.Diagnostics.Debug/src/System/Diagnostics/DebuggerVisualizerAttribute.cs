@@ -11,36 +11,40 @@ namespace System.Diagnostics
     [AttributeUsage(AttributeTargets.Struct | AttributeTargets.Class | AttributeTargets.Assembly, AllowMultiple = true)]
     public sealed class DebuggerVisualizerAttribute : Attribute
     {
-        private readonly string _visualizerObjectSourceName;
-        private readonly string _visualizerName;
         private Type _target;
 
         public DebuggerVisualizerAttribute(string visualizerTypeName)
         {
-            _visualizerName = visualizerTypeName;
+            VisualizerTypeName = visualizerTypeName;
         }
+
         public DebuggerVisualizerAttribute(string visualizerTypeName, string visualizerObjectSourceTypeName)
         {
-            _visualizerName = visualizerTypeName;
-            _visualizerObjectSourceName = visualizerObjectSourceTypeName;
+            VisualizerTypeName = visualizerTypeName;
+            VisualizerObjectSourceTypeName = visualizerObjectSourceTypeName;
         }
+
         public DebuggerVisualizerAttribute(string visualizerTypeName, Type visualizerObjectSource)
         {
             if (visualizerObjectSource == null)
             {
                 throw new ArgumentNullException(nameof(visualizerObjectSource));
             }
-            _visualizerName = visualizerTypeName;
-            _visualizerObjectSourceName = visualizerObjectSource.AssemblyQualifiedName;
+
+            VisualizerTypeName = visualizerTypeName;
+            VisualizerObjectSourceTypeName = visualizerObjectSource.AssemblyQualifiedName;
         }
+
         public DebuggerVisualizerAttribute(Type visualizer)
         {
             if (visualizer == null)
             {
                 throw new ArgumentNullException(nameof(visualizer));
             }
-            _visualizerName = visualizer.AssemblyQualifiedName;
+
+            VisualizerTypeName = visualizer.AssemblyQualifiedName;
         }
+
         public DebuggerVisualizerAttribute(Type visualizer, Type visualizerObjectSource)
         {
             if (visualizer == null)
@@ -51,33 +55,31 @@ namespace System.Diagnostics
             {
                 throw new ArgumentNullException(nameof(visualizerObjectSource));
             }
-            _visualizerName = visualizer.AssemblyQualifiedName;
-            _visualizerObjectSourceName = visualizerObjectSource.AssemblyQualifiedName;
+
+            VisualizerTypeName = visualizer.AssemblyQualifiedName;
+            VisualizerObjectSourceTypeName = visualizerObjectSource.AssemblyQualifiedName;
         }
+
         public DebuggerVisualizerAttribute(Type visualizer, string visualizerObjectSourceTypeName)
         {
             if (visualizer == null)
             {
                 throw new ArgumentNullException(nameof(visualizer));
             }
-            _visualizerName = visualizer.AssemblyQualifiedName;
-            _visualizerObjectSourceName = visualizerObjectSourceTypeName;
+
+            VisualizerTypeName = visualizer.AssemblyQualifiedName;
+            VisualizerObjectSourceTypeName = visualizerObjectSourceTypeName;
         }
 
-        public string VisualizerObjectSourceTypeName
-        {
-            get { return _visualizerObjectSourceName; }
-        }
-        public string VisualizerTypeName
-        {
-            get { return _visualizerName; }
-        }
+        public string VisualizerObjectSourceTypeName { get; }
+
+        public string VisualizerTypeName { get; }
+
         public string Description { get; set; }
         
         public Type Target
         {
-            get { return _target; }
-
+            get => _target;
             set
             {
                 if (value == null)
