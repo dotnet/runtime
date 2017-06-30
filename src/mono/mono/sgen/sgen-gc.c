@@ -1449,6 +1449,9 @@ job_scan_major_card_table (void *worker_data_untyped, SgenThreadPoolJob *job)
 	major_collector.scan_card_table (CARDTABLE_SCAN_GLOBAL, ctx, job_data->job_index, job_data->job_split_count);
 	SGEN_TV_GETTIME (btv);
 	time_minor_scan_major_blocks += SGEN_TV_ELAPSED (atv, btv);
+
+	if (worker_data_untyped)
+		((WorkerData*)worker_data_untyped)->major_scan_time += SGEN_TV_ELAPSED (atv, btv);
 }
 
 static void
@@ -1463,6 +1466,9 @@ job_scan_los_card_table (void *worker_data_untyped, SgenThreadPoolJob *job)
 	sgen_los_scan_card_table (CARDTABLE_SCAN_GLOBAL, ctx, job_data->job_index, job_data->job_split_count);
 	SGEN_TV_GETTIME (btv);
 	time_minor_scan_los += SGEN_TV_ELAPSED (atv, btv);
+
+	if (worker_data_untyped)
+		((WorkerData*)worker_data_untyped)->los_scan_time += SGEN_TV_ELAPSED (atv, btv);
 }
 
 static void
@@ -1478,6 +1484,9 @@ job_scan_major_mod_union_card_table (void *worker_data_untyped, SgenThreadPoolJo
 	major_collector.scan_card_table (CARDTABLE_SCAN_MOD_UNION, ctx, job_data->job_index, job_data->job_split_count);
 	SGEN_TV_GETTIME (btv);
 	time_major_scan_mod_union_blocks += SGEN_TV_ELAPSED (atv, btv);
+
+	if (worker_data_untyped)
+		((WorkerData*)worker_data_untyped)->major_scan_time += SGEN_TV_ELAPSED (atv, btv);
 }
 
 static void
@@ -1493,28 +1502,43 @@ job_scan_los_mod_union_card_table (void *worker_data_untyped, SgenThreadPoolJob 
 	sgen_los_scan_card_table (CARDTABLE_SCAN_MOD_UNION, ctx, job_data->job_index, job_data->job_split_count);
 	SGEN_TV_GETTIME (btv);
 	time_major_scan_mod_union_los += SGEN_TV_ELAPSED (atv, btv);
+
+	if (worker_data_untyped)
+		((WorkerData*)worker_data_untyped)->los_scan_time += SGEN_TV_ELAPSED (atv, btv);
 }
 
 static void
 job_major_mod_union_preclean (void *worker_data_untyped, SgenThreadPoolJob *job)
 {
+	SGEN_TV_DECLARE (atv);
+	SGEN_TV_DECLARE (btv);
 	ParallelScanJob *job_data = (ParallelScanJob*)job;
 	ScanCopyContext ctx = scan_copy_context_for_scan_job (worker_data_untyped, (ScanJob*)job_data);
 
 	g_assert (concurrent_collection_in_progress);
-
+	SGEN_TV_GETTIME (atv);
 	major_collector.scan_card_table (CARDTABLE_SCAN_MOD_UNION_PRECLEAN, ctx, job_data->job_index, job_data->job_split_count);
+	SGEN_TV_GETTIME (btv);
+
+	g_assert (worker_data_untyped);
+	((WorkerData*)worker_data_untyped)->major_scan_time += SGEN_TV_ELAPSED (atv, btv);
 }
 
 static void
 job_los_mod_union_preclean (void *worker_data_untyped, SgenThreadPoolJob *job)
 {
+	SGEN_TV_DECLARE (atv);
+	SGEN_TV_DECLARE (btv);
 	ParallelScanJob *job_data = (ParallelScanJob*)job;
 	ScanCopyContext ctx = scan_copy_context_for_scan_job (worker_data_untyped, (ScanJob*)job_data);
 
 	g_assert (concurrent_collection_in_progress);
-
+	SGEN_TV_GETTIME (atv);
 	sgen_los_scan_card_table (CARDTABLE_SCAN_MOD_UNION_PRECLEAN, ctx, job_data->job_index, job_data->job_split_count);
+	SGEN_TV_GETTIME (btv);
+
+	g_assert (worker_data_untyped);
+	((WorkerData*)worker_data_untyped)->los_scan_time += SGEN_TV_ELAPSED (atv, btv);
 }
 
 static void
@@ -1662,6 +1686,9 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 	TV_DECLARE (btv);
 	SGEN_TV_DECLARE (last_minor_collection_start_tv);
 	SGEN_TV_DECLARE (last_minor_collection_end_tv);
+	guint64 major_scan_start = time_minor_scan_major_blocks;
+	guint64 los_scan_start = time_minor_scan_los;
+	guint64 finish_gray_start = time_minor_finish_gray_stack;
 
 	if (disable_minor_collections)
 		return TRUE;
@@ -1855,6 +1882,14 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 	needs_major = objects_pinned > 0;
 	current_collection_generation = -1;
 	objects_pinned = 0;
+
+	if (is_parallel)
+		binary_protocol_collection_end_stats (0, 0, time_minor_finish_gray_stack - finish_gray_start);
+	else
+		binary_protocol_collection_end_stats (
+			time_minor_scan_major_blocks - major_scan_start,
+			time_minor_scan_los - los_scan_start,
+			time_minor_finish_gray_stack - finish_gray_start);
 
 	binary_protocol_collection_end (gc_stats.minor_gc_count - 1, GENERATION_NURSERY, 0, 0);
 
@@ -2150,8 +2185,9 @@ major_finish_collection (SgenGrayQueue *gc_thread_gray_queue, const char *reason
 	mword fragment_total;
 	TV_DECLARE (atv);
 	TV_DECLARE (btv);
-
-	TV_GETTIME (btv);
+	guint64 major_scan_start = time_major_scan_mod_union_blocks;
+	guint64 los_scan_start = time_major_scan_mod_union_los;
+	guint64 finish_gray_start = time_major_finish_gray_stack;
 
 	if (concurrent_collection_in_progress) {
 		SgenObjectOperations *object_ops_par = NULL;
@@ -2171,6 +2207,7 @@ major_finish_collection (SgenGrayQueue *gc_thread_gray_queue, const char *reason
 
 	sgen_workers_assert_gray_queue_is_empty (GENERATION_OLD);
 
+	TV_GETTIME (btv);
 	finish_gray_stack (GENERATION_OLD, CONTEXT_FROM_OBJECT_OPERATIONS (object_ops_nopar, gc_thread_gray_queue));
 	TV_GETTIME (atv);
 	time_major_finish_gray_stack += TV_ELAPSED (btv, atv);
@@ -2272,6 +2309,13 @@ major_finish_collection (SgenGrayQueue *gc_thread_gray_queue, const char *reason
 	binary_protocol_flush_buffers (FALSE);
 
 	//consistency_check ();
+	if (major_collector.is_parallel)
+                binary_protocol_collection_end_stats (0, 0, time_major_finish_gray_stack - finish_gray_start);
+        else
+                binary_protocol_collection_end_stats (
+                        time_major_scan_mod_union_blocks - major_scan_start,
+                        time_major_scan_mod_union_los - los_scan_start,
+                        time_major_finish_gray_stack - finish_gray_start);
 
 	binary_protocol_collection_end (gc_stats.major_gc_count - 1, GENERATION_OLD, counts.num_scanned_objects, counts.num_unique_scanned_objects);
 }

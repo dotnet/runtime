@@ -92,6 +92,9 @@ sgen_workers_ensure_awake (WorkerContext *context)
 				break;
 
 			did_set_state = set_state (&context->workers_data [i], old_state, STATE_WORK_ENQUEUED);
+
+			if (did_set_state && old_state == STATE_NOT_WORKING)
+				context->workers_data [i].last_start = sgen_timestamp ();
 		} while (!did_set_state);
 
 		if (!state_is_working_or_enqueued (old_state))
@@ -108,6 +111,7 @@ worker_try_finish (WorkerData *data)
 	State old_state;
 	int i, working = 0;
 	WorkerContext *context = data->context;
+	gint64 last_start = data->last_start;
 
 	++stat_workers_num_finished;
 
@@ -130,6 +134,12 @@ worker_try_finish (WorkerData *data)
 			/* Make sure each worker has a chance of seeing the enqueued jobs */
 			sgen_workers_ensure_awake (context);
 			SGEN_ASSERT (0, data->state == STATE_WORK_ENQUEUED, "Why did we fail to set our own state to ENQUEUED");
+
+			/*
+			 * Log to be able to get the duration of normal concurrent M&S phase.
+			 * Worker indexes are 1 based, since 0 is logically considered gc thread.
+			 */
+			binary_protocol_worker_finish_stats (data - &context->workers_data [0] + 1, context->generation, context->forced_stop, data->major_scan_time, data->los_scan_time, data->total_time + sgen_timestamp () - last_start);
 			goto work_available;
 		}
 	}
@@ -153,6 +163,9 @@ worker_try_finish (WorkerData *data)
 
 	context->workers_finished = TRUE;
 	mono_os_mutex_unlock (&context->finished_lock);
+
+	data->total_time += (sgen_timestamp () - last_start);
+	binary_protocol_worker_finish_stats (data - &context->workers_data [0] + 1, context->generation, context->forced_stop, data->major_scan_time, data->los_scan_time, data->total_time);
 
 	binary_protocol_worker_finish (sgen_timestamp (), context->forced_stop);
 
@@ -454,6 +467,7 @@ void
 sgen_workers_start_all_workers (int generation, SgenObjectOperations *object_ops_nopar, SgenObjectOperations *object_ops_par, SgenWorkersFinishCallback callback)
 {
 	WorkerContext *context = &worker_contexts [generation];
+	int i;
 	SGEN_ASSERT (0, !context->started, "Why are we starting to work without finishing previous cycle");
 
 	context->idle_func_object_ops_par = object_ops_par;
@@ -462,6 +476,13 @@ sgen_workers_start_all_workers (int generation, SgenObjectOperations *object_ops
 	context->finish_callback = callback;
 	context->worker_awakenings = 0;
 	context->started = TRUE;
+
+	for (i = 0; i < context->active_workers_num; i++) {
+		context->workers_data [i].major_scan_time = 0;
+		context->workers_data [i].los_scan_time = 0;
+		context->workers_data [i].total_time = 0;
+		context->workers_data [i].last_start = 0;
+	}
 	mono_memory_write_barrier ();
 
 	/*
