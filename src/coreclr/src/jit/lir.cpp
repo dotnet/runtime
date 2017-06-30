@@ -980,10 +980,10 @@ void LIR::Range::Remove(GenTree* node, bool markOperandsUnused)
 
     if (markOperandsUnused)
     {
-        for (GenTree* operand : node->Operands())
-        {
+        node->VisitOperands([](GenTree* operand) -> GenTree::VisitResult {
             operand->gtLIRFlags |= Flags::IsUnusedValue;
-        }
+            return GenTree::VisitResult::Continue;
+        });
     }
 
     GenTree* prev = node->gtPrev;
@@ -1273,17 +1273,17 @@ LIR::ReadOnlyRange LIR::Range::GetMarkedRange(unsigned  markCount,
             }
 
             // Mark the node's operands
-            for (GenTree* operand : firstNode->Operands())
-            {
+            firstNode->VisitOperands([&markCount](GenTree* operand) -> GenTree::VisitResult {
                 // Do not mark nodes that do not appear in the execution order
                 if (operand->OperGet() == GT_ARGPLACE)
                 {
-                    continue;
+                    return GenTree::VisitResult::Continue;
                 }
 
                 operand->gtLIRFlags |= LIR::Flags::Mark;
                 markCount++;
-            }
+                return GenTree::VisitResult::Continue;
+            });
 
             // Unmark the the node and update `firstNode`
             firstNode->gtLIRFlags &= ~LIR::Flags::Mark;
@@ -1388,11 +1388,11 @@ LIR::ReadOnlyRange LIR::Range::GetRangeOfOperandTrees(GenTree* root, bool* isClo
 
     // Mark the root node's operands
     unsigned markCount = 0;
-    for (GenTree* operand : root->Operands())
-    {
+    root->VisitOperands([&markCount](GenTree* operand) -> GenTree::VisitResult {
         operand->gtLIRFlags |= LIR::Flags::Mark;
         markCount++;
-    }
+        return GenTree::VisitResult::Continue;
+    });
 
     if (markCount == 0)
     {
