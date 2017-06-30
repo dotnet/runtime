@@ -24,7 +24,6 @@ using System.Runtime.Serialization;
 
 namespace System.Security.Principal
 {
-    [Serializable]
     public class WindowsIdentity : ClaimsIdentity, IDisposable, ISerializable, IDeserializationCallback
     {
         private string _name = null;
@@ -1067,14 +1066,12 @@ namespace System.Security.Principal
         Both = 3 // OpenAsSelf = true, then OpenAsSelf = false
     }
 
-    [Serializable]
     internal enum TokenType : int
     {
         TokenPrimary = 1,
         TokenImpersonation
     }
 
-    [Serializable]
     internal enum TokenInformationClass : int
     {
         TokenUser = 1,

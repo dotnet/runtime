@@ -413,41 +413,6 @@ namespace System.Net.Mail
                 _outerResult = outerResult;
             }
 
-            private static void ConnectionCreatedCallback(object request, object state)
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Enter(null, request);
-                ConnectAndHandshakeAsyncResult ConnectAndHandshakeAsyncResult = (ConnectAndHandshakeAsyncResult)request;
-                if (state is Exception)
-                {
-                    ConnectAndHandshakeAsyncResult.InvokeCallback((Exception)state);
-                    return;
-                }
-
-                try
-                {
-                    lock (ConnectAndHandshakeAsyncResult._connection)
-                    {
-                        //if we were cancelled while getting the connection, we should close and return
-                        if (ConnectAndHandshakeAsyncResult._connection._isClosed)
-                        {
-                            ConnectAndHandshakeAsyncResult._connection.ReleaseConnection();
-                            if (NetEventSource.IsEnabled) NetEventSource.Info(null, $"Connect was aborted: {request}");
-                            ConnectAndHandshakeAsyncResult.InvokeCallback(null);
-                            return;
-                        }
-                    }
-
-                    ConnectAndHandshakeAsyncResult.Handshake();
-                }
-                catch (Exception e)
-                {
-                    ConnectAndHandshakeAsyncResult.InvokeCallback(e);
-                }
-
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(null, request);
-            }
-
-
             internal static void End(IAsyncResult result)
             {
                 ConnectAndHandshakeAsyncResult thisPtr = (ConnectAndHandshakeAsyncResult)result;

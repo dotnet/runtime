@@ -18,6 +18,7 @@ namespace Microsoft.XmlSerializer.Generator
     using System.Runtime.Versioning;
     using System.Collections.Generic;
     using System.Xml;
+    using System.Xml.Serialization;
 
     internal class XmlSerializationWriterCodeGen : XmlSerializationCodeGen
     {
@@ -402,7 +403,7 @@ namespace Microsoft.XmlSerializer.Generator
                 if (xmlnsMember >= 0)
                 {
                     MemberMapping member = mapping.Members[xmlnsMember];
-                    string source = "((" + typeof(XmlSerializerNamespaces).FullName + ")p[" + xmlnsMember.ToString(CultureInfo.InvariantCulture) + "])";
+                    string source = "((" + typeof(System.Xml.Serialization.XmlSerializerNamespaces).FullName + ")p[" + xmlnsMember.ToString(CultureInfo.InvariantCulture) + "])";
 
                     Writer.Write("if (pLength > ");
                     Writer.Write(xmlnsMember.ToString(CultureInfo.InvariantCulture));
@@ -2073,12 +2074,21 @@ namespace Microsoft.XmlSerializer.Generator
                     Writer.Write(((DateTime)value).Ticks.ToString(CultureInfo.InvariantCulture));
                     Writer.Write(")");
                 }
+                else if (type == typeof(TimeSpan))
+                {
+                    Writer.Write(" new ");
+                    Writer.Write(type.FullName);
+                    Writer.Write("(");
+                    Writer.Write(((TimeSpan)value).Ticks.ToString(CultureInfo.InvariantCulture));
+                    Writer.Write(")");
+                }
                 else
                 {
                     if (type.IsEnum)
                     {
                         Writer.Write(((int)value).ToString(null, NumberFormatInfo.InvariantInfo));
                     }
+
                     else
                     {
                         throw new InvalidOperationException(SR.Format(SR.XmlUnsupportedDefaultType, type.FullName));

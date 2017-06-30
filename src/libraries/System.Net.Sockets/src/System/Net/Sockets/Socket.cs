@@ -1203,7 +1203,6 @@ namespace System.Net.Sockets
             ValidateBlockingMode();
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"SRC:{LocalEndPoint} DST:{RemoteEndPoint} size:{size}");
 
-            // This can throw ObjectDisposedException.
             int bytesTransferred;
             errorCode = SocketPal.Send(_handle, buffer, offset, size, socketFlags, out bytesTransferred);
 
@@ -1314,7 +1313,6 @@ namespace System.Net.Sockets
             EndPoint endPointSnapshot = remoteEP;
             Internals.SocketAddress socketAddress = SnapshotAndSerialize(ref endPointSnapshot);
 
-            // This can throw ObjectDisposedException.
             int bytesTransferred;
             SocketError errorCode = SocketPal.SendTo(_handle, buffer, offset, size, socketFlags, socketAddress.Buffer, socketAddress.Size, out bytesTransferred);
 
@@ -1686,7 +1684,6 @@ namespace System.Net.Sockets
             Internals.SocketAddress socketAddress = SnapshotAndSerialize(ref endPointSnapshot);
             Internals.SocketAddress socketAddressOriginal = IPEndPointExtensions.Serialize(endPointSnapshot);
 
-            // This can throw ObjectDisposedException.
             int bytesTransferred;
             SocketError errorCode = SocketPal.ReceiveFrom(_handle, buffer, offset, size, socketFlags, socketAddress.Buffer, ref socketAddress.InternalSize, out bytesTransferred);
 
@@ -1770,13 +1767,10 @@ namespace System.Net.Sockets
 
             int realOptionLength = 0;
 
-            //
             // IOControl is used for Windows-specific IOCTL operations.  If we need to add support for IOCTLs specific
             // to other platforms, we will likely need to add a new API, as the control codes may overlap with those 
             // from Windows.  Generally it would be preferable to add new methods/properties to abstract these across
             // platforms, however.
-            //
-            // This can throw ObjectDisposedException.
             SocketError errorCode = SocketPal.WindowsIoctl(_handle, ioControlCode, optionInValue, optionOutValue, out realOptionLength);
 
             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"Interop.Winsock.WSAIoctl returns errorCode:{errorCode}");
@@ -4513,7 +4507,6 @@ namespace System.Net.Sockets
         {
             if (NetEventSource.IsEnabled) NetEventSource.Enter(this, endPointSnapshot);
 
-            // This can throw ObjectDisposedException.
             SocketError errorCode = SocketPal.Connect(_handle, socketAddress.Buffer, socketAddress.Size);
 #if TRACE_VERBOSE
             if (NetEventSource.IsEnabled)

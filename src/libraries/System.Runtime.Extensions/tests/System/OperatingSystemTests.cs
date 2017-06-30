@@ -52,17 +52,6 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void SerializeDeserialize()
-        {
-            var os = new OperatingSystem(PlatformID.WinCE, new Version(5, 6, 7, 8));
-            var os2 = BinaryFormatterHelpers.Clone(os);
-            Assert.Equal(os.Platform, os2.Platform);
-            Assert.Equal(os.ServicePack, os2.ServicePack);
-            Assert.Equal(os.Version, os2.Version);
-            Assert.Equal(os.VersionString, os2.VersionString);
-        }
-
-        [Fact]
         public static void GetObjectData_InvalidArgs_Throws()
         {
             var os = new OperatingSystem(PlatformID.Win32NT, new Version(10, 0));

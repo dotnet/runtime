@@ -7,7 +7,6 @@ namespace System.Diagnostics
     /// <devdoc>
     ///     Specifies the execution state of a thread.
     /// </devdoc>
-    [Serializable]
     public enum ThreadState
     {
         /// <devdoc>

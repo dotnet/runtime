@@ -64,10 +64,9 @@ namespace System.Net.Http.Functional.Tests
                 if (requireAuth && !headers.ContainsKey("Proxy-Authorization"))
                 {
                     // Send back a 407
-                    await SendAsyncApm(
-                        clientSocket,
+                    await clientSocket.SendAsync(
                         new ArraySegment<byte>(Encoding.ASCII.GetBytes("HTTP/1.1 407 Proxy Auth Required\r\nProxy-Authenticate: Basic\r\n\r\n")),
-                        SocketFlags.None).ConfigureAwait(false);  // TODO: Issue #17690
+                        SocketFlags.None).ConfigureAwait(false);
 
                     clientSocket.Shutdown(SocketShutdown.Send);
                     clientSocket.Dispose();

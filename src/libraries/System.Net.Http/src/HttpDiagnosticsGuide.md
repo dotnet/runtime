@@ -91,5 +91,8 @@ Otherwise, `Activity.Current` represent some 'parent' activity (presumably incom
 7. `DiagnosticListener.Write("System.Net.Http.HttpRequestOut.Stop", new {Response, RequestTaskStatus})` - notifies that activity (outgoing request) is stopping
 
 # Non-Activity events (deprecated)
-If there is a subscriber to "HttpHandlerDiagnosticListener", but Activity events are disabled (`DiagnosticListener.IsEnabled("System.Net.Http.HttpRequestOut", request)` returns false), instrumentation attempts to send legacy "System.Net.Http.Request" and "System.Net.Http.Response" events if they are enabled.
-Consumers should consider migrating to Activity events instead of Request/Response events.
+There are two events System.Net.Http.Request and System.Net.Http.Response, currently are also emited for compatibility purposes.  
+They are redundant with the System.Net.Http.HttpRequestOut start and stop events (but do not set Activity.Current and follow activity conventions (start/stop)
+They are deprecated, and consumers are advised only to depend on them to suport.NET Core V1.1 apps (where the new events are not present).
+It is likely that these deprecated events will be remove at some point.  
+Consumers should  migrate to System.Net.Http.HttpRequestOut.Start and System.Net.Http.HttpRequestOut.Stop events instead.

@@ -82,6 +82,9 @@ namespace System.Security.Cryptography
 
                 if (curve.IsNamed)
                 {
+                    if (string.IsNullOrEmpty(curve.Oid.FriendlyName))
+                        throw new PlatformNotSupportedException(string.Format(SR.Cryptography_InvalidCurveOid, curve.Oid.Value));
+
                     // Map curve name to algorithm to support pre-Win10 curves
                     algorithm = ECCng.EcdsaCurveNameToAlgorithm(curve.Oid.FriendlyName);
                     if (IsECNamedCurve(algorithm))

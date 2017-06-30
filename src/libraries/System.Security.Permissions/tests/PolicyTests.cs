@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.Serialization;
 using System.Security.Policy;
 using Xunit;
 
@@ -19,7 +20,7 @@ namespace System.Security.Permissions.Tests
         [Fact]
         public static void PolicyLevelCallMethods()
         {
-            PolicyLevel pl = (PolicyLevel)Activator.CreateInstance(typeof(PolicyLevel), true);
+            PolicyLevel pl = (PolicyLevel)FormatterServices.GetUninitializedObject(typeof(PolicyLevel));
             NamedPermissionSet nps = new NamedPermissionSet("test");
             pl.AddNamedPermissionSet(nps);
             nps = pl.ChangeNamedPermissionSet("test", new PermissionSet(new Permissions.PermissionState()));
@@ -45,7 +46,7 @@ namespace System.Security.Permissions.Tests
             bool equals = ps.Equals(ps2);
             int hash = ps.GetHashCode();
             SecurityElement se = new SecurityElement("");
-            PolicyLevel pl = (PolicyLevel)Activator.CreateInstance(typeof(PolicyLevel), true);
+            PolicyLevel pl = (PolicyLevel)FormatterServices.GetUninitializedObject(typeof(PolicyLevel));
             ps.FromXml(se);
             ps.FromXml(se, pl);
             se = ps.ToXml();

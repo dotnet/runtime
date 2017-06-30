@@ -11,6 +11,7 @@ using System.Net.Security;
 using System.Runtime.Serialization;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -18,7 +19,6 @@ namespace System.Net
 {
     public delegate void HttpContinueDelegate(int StatusCode, WebHeaderCollection httpHeaders);
 
-    [Serializable]
     public class HttpWebRequest : WebRequest, ISerializable
     {
         private const int DefaultContinueTimeout = 350; // Current default value from .NET Desktop.
@@ -45,12 +45,17 @@ namespace System.Net
         private int _beginGetResponseCalled = 0;
         private int _endGetRequestStreamCalled = 0;
         private int _endGetResponseCalled = 0;
-                
+
         private int _maximumAllowedRedirections = HttpHandlerDefaults.DefaultMaxAutomaticRedirections;
         private int _maximumResponseHeadersLen = _defaultMaxResponseHeadersLength;
         private ServicePoint _servicePoint;
         private int _timeout = WebRequest.DefaultTimeoutMilliseconds;
         private HttpContinueDelegate _continueDelegate;
+
+        // stores the user provided Host header as Uri. If the user specified a default port explicitly we'll lose
+        // that information when converting the host string to a Uri. _HostHasPort will store that information.
+        private bool _hostHasPort;
+        private Uri _hostUri;
 
         private RequestStream _requestStream;
         private TaskCompletionSource<Stream> _requestStreamOperation = null;
@@ -102,7 +107,7 @@ namespace System.Net
         {
             throw new PlatformNotSupportedException();
         }
-        
+
         protected override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
             throw new PlatformNotSupportedException();
@@ -143,21 +148,26 @@ namespace System.Net
             set
             {
                 _allowReadStreamBuffering = value;
-            }            
+            }
         }
 
         public int MaximumResponseHeadersLength
         {
-            get
-            {
-                return _maximumResponseHeadersLen;
-            }
+            get => _maximumResponseHeadersLen;
             set
             {
+                if (RequestSubmitted)
+                {
+                    throw new InvalidOperationException(SR.net_reqsubmitted);
+                }
+                if (value < 0 && value != System.Threading.Timeout.Infinite)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), SR.net_toosmall);
+                }
                 _maximumResponseHeadersLen = value;
             }
         }
-                
+
         public int MaximumAutomaticRedirections
         {
             get
@@ -269,11 +279,44 @@ namespace System.Net
         {
             get
             {
-                throw new PlatformNotSupportedException();
+                Uri hostUri = _hostUri ?? Address;
+                return (_hostUri == null || !_hostHasPort) && Address.IsDefaultPort ?
+                    hostUri.Host :
+                    hostUri.Host + ":" + hostUri.Port;
             }
             set
             {
-                throw new PlatformNotSupportedException();
+                if (RequestSubmitted)
+                {
+                    throw new InvalidOperationException(SR.net_writestarted);
+                }
+                if (value == null)
+                {
+                    throw new ArgumentNullException(nameof(value));
+                }
+
+                Uri hostUri;
+                if ((value.IndexOf('/') != -1) || (!TryGetHostUri(value, out hostUri)))
+                {
+                    throw new ArgumentException(SR.net_invalid_host, nameof(value));
+                }
+
+                _hostUri = hostUri;
+
+                // Determine if the user provided string contains a port
+                if (!_hostUri.IsDefaultPort)
+                {
+                    _hostHasPort = true;
+                }
+                else if (value.IndexOf(':') == -1)
+                {
+                    _hostHasPort = false;
+                }
+                else
+                {
+                    int endOfIPv6Address = value.IndexOf(']');
+                    _hostHasPort = endOfIPv6Address == -1 || value.LastIndexOf(':') > endOfIPv6Address;
+                }
             }
         }
 
@@ -304,21 +347,15 @@ namespace System.Net
             {
                 SetSpecialHeaders(HttpKnownHeaderNames.Referer, value);
             }
-        } 
+        }
 
         /// <devdoc>
         ///    <para>Sets the media type header</para>
         /// </devdoc>
         public string MediaType
         {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
-            set
-            {
-                throw new PlatformNotSupportedException();
-            }
+            get;
+            set;
         }
 
         /// <devdoc>
@@ -335,45 +372,46 @@ namespace System.Net
             set
             {
 #if DEBUG
-                using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async)) {
+                using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
+                {
 #endif
-                bool fChunked;
-                //
-                // on blank string, remove current header
-                //
-                if (string.IsNullOrWhiteSpace(value))
-                {
+                    bool fChunked;
                     //
-                    // if the value is blank, then remove the header
+                    // on blank string, remove current header
                     //
-                    _webHeaderCollection.Remove(HttpKnownHeaderNames.TransferEncoding);
-                    return;
-                }
+                    if (string.IsNullOrWhiteSpace(value))
+                    {
+                        //
+                        // if the value is blank, then remove the header
+                        //
+                        _webHeaderCollection.Remove(HttpKnownHeaderNames.TransferEncoding);
+                        return;
+                    }
 
-                //
-                // if not check if the user is trying to set chunked:
-                //
-                string newValue = value.ToLower();
-                fChunked = (newValue.IndexOf(ChunkedHeader) != -1);
+                    //
+                    // if not check if the user is trying to set chunked:
+                    //
+                    string newValue = value.ToLower();
+                    fChunked = (newValue.IndexOf(ChunkedHeader) != -1);
 
-                //
-                // prevent them from adding chunked, or from adding an Encoding without
-                //  turing on chunked, the reason is due to the HTTP Spec which prevents
-                //  additional encoding types from being used without chunked
-                //
-                if (fChunked)
-                {
-                    throw new ArgumentException(SR.net_nochunked, nameof(value));
-                }
-                else if (!SendChunked)
-                {
-                    throw new InvalidOperationException(SR.net_needchunked);
-                }
-                else
-                {
-                    string checkedValue = HttpValidationHelpers.CheckBadHeaderValueChars(value);
-                    _webHeaderCollection[HttpKnownHeaderNames.TransferEncoding] = checkedValue;                    
-                }
+                    //
+                    // prevent them from adding chunked, or from adding an Encoding without
+                    // turning on chunked, the reason is due to the HTTP Spec which prevents
+                    // additional encoding types from being used without chunked
+                    //
+                    if (fChunked)
+                    {
+                        throw new ArgumentException(SR.net_nochunked, nameof(value));
+                    }
+                    else if (!SendChunked)
+                    {
+                        throw new InvalidOperationException(SR.net_needchunked);
+                    }
+                    else
+                    {
+                        string checkedValue = HttpValidationHelpers.CheckBadHeaderValueChars(value);
+                        _webHeaderCollection[HttpKnownHeaderNames.TransferEncoding] = checkedValue;
+                    }
 #if DEBUG
                 }
 #endif
@@ -390,7 +428,7 @@ namespace System.Net
                 return (_booleans & Booleans.UnsafeAuthenticatedConnectionSharing) != 0;
             }
             set
-            {                
+            {
                 if (value)
                 {
                     _booleans |= Booleans.UnsafeAuthenticatedConnectionSharing;
@@ -418,7 +456,7 @@ namespace System.Net
                 _automaticDecompression = value;
             }
         }
-      
+
         public virtual bool AllowWriteStreamBuffering
         {
             get
@@ -436,7 +474,7 @@ namespace System.Net
                     _booleans &= ~Booleans.AllowWriteStreamBuffering;
                 }
             }
-        }  
+        }
 
         /// <devdoc>
         ///    <para>
@@ -495,39 +533,40 @@ namespace System.Net
             set
             {
 #if DEBUG
-                using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async)) {
+                using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
+                {
 #endif
-                bool fKeepAlive;
-                bool fClose;
+                    bool fKeepAlive;
+                    bool fClose;
 
-                //
-                // on blank string, remove current header
-                //
-                if (string.IsNullOrWhiteSpace(value))
-                {
-                    _webHeaderCollection.Remove(HttpKnownHeaderNames.Connection);
-                    return;
-                }
+                    //
+                    // on blank string, remove current header
+                    //
+                    if (string.IsNullOrWhiteSpace(value))
+                    {
+                        _webHeaderCollection.Remove(HttpKnownHeaderNames.Connection);
+                        return;
+                    }
 
-                string newValue = value.ToLower();
+                    string newValue = value.ToLower();
 
-                fKeepAlive = (newValue.IndexOf("keep-alive") != -1);
-                fClose = (newValue.IndexOf("close") != -1);
+                    fKeepAlive = (newValue.IndexOf("keep-alive") != -1);
+                    fClose = (newValue.IndexOf("close") != -1);
 
-                //
-                // Prevent keep-alive and close from being added
-                //
+                    //
+                    // Prevent keep-alive and close from being added
+                    //
 
-                if (fKeepAlive ||
-                    fClose)
-                {
-                    throw new ArgumentException(SR.net_connarg, nameof(value));
-                }
-                else
-                {
-                    string checkedValue = HttpValidationHelpers.CheckBadHeaderValueChars(value);
-                    _webHeaderCollection[HttpKnownHeaderNames.Connection] = checkedValue;                    
-                }
+                    if (fKeepAlive ||
+                        fClose)
+                    {
+                        throw new ArgumentException(SR.net_connarg, nameof(value));
+                    }
+                    else
+                    {
+                        string checkedValue = HttpValidationHelpers.CheckBadHeaderValueChars(value);
+                        _webHeaderCollection[HttpKnownHeaderNames.Connection] = checkedValue;
+                    }
 #if DEBUG
                 }
 #endif
@@ -544,7 +583,7 @@ namespace System.Net
                 string Expect, null clears the Expect except for 100-continue value
             Returns: The value of the Expect on get.
         */
-                
+
         public string Expect
         {
             get
@@ -554,38 +593,39 @@ namespace System.Net
             set
             {
 #if DEBUG
-                using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async)) {
+                using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
+                {
 #endif
-                // only remove everything other than 100-cont
-                bool fContinue100;
+                    // only remove everything other than 100-cont
+                    bool fContinue100;
 
-                //
-                // on blank string, remove current header
-                //
+                    //
+                    // on blank string, remove current header
+                    //
 
-                if (string.IsNullOrWhiteSpace(value))
-                {
-                    _webHeaderCollection.Remove(HttpKnownHeaderNames.Expect);
-                    return;
-                }
+                    if (string.IsNullOrWhiteSpace(value))
+                    {
+                        _webHeaderCollection.Remove(HttpKnownHeaderNames.Expect);
+                        return;
+                    }
 
-                //
-                // Prevent 100-continues from being added
-                //
+                    //
+                    // Prevent 100-continues from being added
+                    //
 
-                string newValue = value.ToLower();
+                    string newValue = value.ToLower();
 
-                fContinue100 = (newValue.IndexOf(ContinueHeader) != -1);
+                    fContinue100 = (newValue.IndexOf(ContinueHeader) != -1);
 
-                if (fContinue100)
-                {
-                    throw new ArgumentException(SR.net_no100, nameof(value));
-                }
-                else
-                {
-                    string checkedValue = HttpValidationHelpers.CheckBadHeaderValueChars(value);
-                    _webHeaderCollection[HttpKnownHeaderNames.Expect] = checkedValue;
-                }
+                    if (fContinue100)
+                    {
+                        throw new ArgumentException(SR.net_no100, nameof(value));
+                    }
+                    else
+                    {
+                        string checkedValue = HttpValidationHelpers.CheckBadHeaderValueChars(value);
+                        _webHeaderCollection[HttpKnownHeaderNames.Expect] = checkedValue;
+                    }
 #if DEBUG
                 }
 #endif
@@ -615,12 +655,12 @@ namespace System.Net
         // NOP
         public static int DefaultMaximumErrorResponseLength
         {
-            get;set;
+            get; set;
         }
 
         public static new RequestCachePolicy DefaultCachePolicy { get; set; } = new RequestCachePolicy(RequestCacheLevel.BypassCache);
 
-      
+
         public DateTime IfModifiedSince
         {
             get
@@ -649,7 +689,7 @@ namespace System.Net
                 SetDateHeaderHelper(HttpKnownHeaderNames.Date, value);
             }
         }
-     
+
         public bool SendChunked
         {
             get
@@ -672,7 +712,7 @@ namespace System.Net
                 }
             }
         }
-     
+
         public HttpContinueDelegate ContinueDelegate
         {
             // Nop since the underlying API do not expose 100 continue.
@@ -755,7 +795,7 @@ namespace System.Net
             }
         }
 
-      
+
         public int ReadWriteTimeout
         {
             get
@@ -982,11 +1022,6 @@ namespace System.Net
         {
             CheckAbort();
 
-            if (RequestSubmitted)
-            {
-                throw new InvalidOperationException(SR.net_reqsubmitted);
-            }
-
             // Match Desktop behavior: prevent someone from getting a request stream
             // if the protocol verb/method doesn't support it. Note that this is not
             // entirely compliant RFC2616 for the aforementioned compatibility reasons.
@@ -995,6 +1030,11 @@ namespace System.Net
                 string.Equals("CONNECT", _originVerb, StringComparison.OrdinalIgnoreCase))
             {
                 throw new ProtocolViolationException(SR.net_nouploadonget);
+            }
+
+            if (RequestSubmitted)
+            {
+                throw new InvalidOperationException(SR.net_reqsubmitted);
             }
 
             _requestStream = new RequestStream();
@@ -1024,10 +1064,10 @@ namespace System.Net
             }
 
             _requestStreamCallback = callback;
-            _requestStreamOperation = GetRequestStreamTask().ToApm(callback, state);
+            _requestStreamOperation = InternalGetRequestStream().ToApm(callback, state);
 
             return _requestStreamOperation.Task;
-        }      
+        }
 
         public override Stream EndGetRequestStream(IAsyncResult asyncResult)
         {
@@ -1056,30 +1096,6 @@ namespace System.Net
             return stream;
         }
 
-        private Task<Stream> GetRequestStreamTask()
-        {
-            CheckAbort();
-
-            if (RequestSubmitted)
-            {
-                throw new InvalidOperationException(SR.net_reqsubmitted);
-            }
-
-            // Match Desktop behavior: prevent someone from getting a request stream
-            // if the protocol verb/method doesn't support it. Note that this is not
-            // entirely compliant RFC2616 for the aforementioned compatibility reasons.
-            if (string.Equals(HttpMethod.Get.Method, _originVerb, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(HttpMethod.Head.Method, _originVerb, StringComparison.OrdinalIgnoreCase) ||
-                string.Equals("CONNECT", _originVerb, StringComparison.OrdinalIgnoreCase))
-            {
-                throw new ProtocolViolationException(SR.net_nouploadonget);
-            }
-
-            _requestStream = new RequestStream();
-
-            return Task.FromResult((Stream)_requestStream);
-        }
-
         private async Task<WebResponse> SendRequest()
         {
             if (RequestSubmitted)
@@ -1089,7 +1105,7 @@ namespace System.Net
 
             var handler = new HttpClientHandler();
             var request = new HttpRequestMessage(new HttpMethod(_originVerb), _requestUri);
-            
+
             using (var client = new HttpClient(handler))
             {
                 if (_requestStream != null)
@@ -1128,19 +1144,24 @@ namespace System.Net
                 {
                     handler.Proxy = _proxy;
                 }
-                                
+
                 handler.ClientCertificates.AddRange(ClientCertificates);
 
                 // Set relevant properties from ServicePointManager
                 handler.SslProtocols = (SslProtocols)ServicePointManager.SecurityProtocol;
                 handler.CheckCertificateRevocationList = ServicePointManager.CheckCertificateRevocationList;
-                RemoteCertificateValidationCallback rcvc = ServerCertificateValidationCallback != null ? 
+                RemoteCertificateValidationCallback rcvc = ServerCertificateValidationCallback != null ?
                                                 ServerCertificateValidationCallback :
-                                                ServicePointManager.ServerCertificateValidationCallback; 
+                                                ServicePointManager.ServerCertificateValidationCallback;
                 if (rcvc != null)
                 {
                     RemoteCertificateValidationCallback localRcvc = rcvc;
                     handler.ServerCertificateCustomValidationCallback = (message, cert, chain, errors) => localRcvc(this, cert, chain, errors);
+                }
+
+                if (_hostUri != null)
+                {
+                    request.Headers.Host = _hostUri.Host;
                 }
 
                 // Copy the HttpWebRequest request headers from the WebHeaderCollection into HttpRequestMessage.Headers and
@@ -1343,7 +1364,7 @@ namespace System.Net
                 throw new InvalidOperationException(SR.net_rangetype);
             }
         }
-    
+
         private bool AddRange(string rangeSpecifier, string from, string to)
         {
 
@@ -1365,8 +1386,8 @@ namespace System.Net
             if (to != null)
             {
                 curRange += "-" + to;
-            }            
-            _webHeaderCollection[HttpKnownHeaderNames.Range] =  curRange;
+            }
+            _webHeaderCollection[HttpKnownHeaderNames.Range] = curRange;
             return true;
         }
 
@@ -1416,15 +1437,16 @@ namespace System.Net
         private DateTime GetDateHeaderHelper(string headerName)
         {
 #if DEBUG
-            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async)) {
-#endif
-            string headerValue = _webHeaderCollection[headerName];
-
-            if (headerValue == null)
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
             {
-                return DateTime.MinValue; // MinValue means header is not present
-            }
-            return StringToDate(headerValue);
+#endif
+                string headerValue = _webHeaderCollection[headerName];
+
+                if (headerValue == null)
+                {
+                    return DateTime.MinValue; // MinValue means header is not present
+                }
+                return StringToDate(headerValue);
 #if DEBUG
             }
 #endif
@@ -1433,12 +1455,13 @@ namespace System.Net
         private void SetDateHeaderHelper(string headerName, DateTime dateTime)
         {
 #if DEBUG
-            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async)) {
+            using (DebugThreadTracking.SetThreadKind(ThreadKinds.User | ThreadKinds.Async))
+            {
 #endif
-            if (dateTime == DateTime.MinValue)
-                SetSpecialHeaders(headerName, null); // remove header
-            else
-                SetSpecialHeaders(headerName, DateToString(dateTime));
+                if (dateTime == DateTime.MinValue)
+                    SetSpecialHeaders(headerName, null); // remove header
+                else
+                    SetSpecialHeaders(headerName, DateToString(dateTime));
 #if DEBUG
             }
 #endif
@@ -1463,6 +1486,12 @@ namespace System.Net
         {
             DateTimeFormatInfo dateFormat = new DateTimeFormatInfo();
             return D.ToUniversalTime().ToString("R", dateFormat);
+        }
+
+        private bool TryGetHostUri(string hostName, out Uri hostUri)
+        {
+            string s = Address.Scheme + "://" + hostName + Address.PathAndQuery;
+            return Uri.TryCreate(s, UriKind.Absolute, out hostUri);
         }
     }
 }

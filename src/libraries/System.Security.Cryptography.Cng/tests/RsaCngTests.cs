@@ -16,6 +16,8 @@ namespace System.Security.Cryptography.Cng.Tests
 {
     public static class RsaCngTests
     {
+        public static bool KeySizeTrustsOSValue => !PlatformDetection.IsFullFramework || PlatformDetection.IsNetfx462OrNewer();
+
         [Fact]
         public static void SignVerifyHashRoundTrip()
         {
@@ -77,7 +79,7 @@ namespace System.Security.Cryptography.Cng.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(KeySizeTrustsOSValue))]
         public static void RSACng_Ctor_UnusualKeysize_384()
         {
             const int ExpectedKeySize = 384;
@@ -108,7 +110,7 @@ namespace System.Security.Cryptography.Cng.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(KeySizeTrustsOSValue))]
         public static void RSACng_Ctor_UnusualKeysize_1032()
         {
             const int ExpectedKeySize = 1032;

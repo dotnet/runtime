@@ -3537,6 +3537,7 @@ namespace System.Data.SqlClient
                 return false;
             }
 
+            col.isColumnSet = (TdsEnums.IsColumnSet == (flags & TdsEnums.IsColumnSet));
 
             byte tdsType;
             if (!stateObj.TryReadByte(out tdsType))
@@ -5875,7 +5876,7 @@ namespace System.Data.SqlClient
 
             {
                 userName = rec.userName;
-                encryptedPassword = TdsParserStaticMethods.EncryptPassword(rec.password);
+                encryptedPassword = TdsParserStaticMethods.ObfuscatePassword(rec.password);
                 encryptedPasswordLengthInBytes = encryptedPassword.Length;  // password in clear text is already encrypted and its length is in byte
             }
 

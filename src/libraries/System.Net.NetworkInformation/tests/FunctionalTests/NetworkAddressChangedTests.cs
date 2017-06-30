@@ -12,7 +12,7 @@ namespace System.Net.NetworkInformation.Tests
     {
         private readonly NetworkAddressChangedEventHandler _addressHandler = delegate { };
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/308
+        [Fact]
         public void NetworkAddressChanged_AddRemove_Success()
         {
             NetworkChange.NetworkAddressChanged += _addressHandler;

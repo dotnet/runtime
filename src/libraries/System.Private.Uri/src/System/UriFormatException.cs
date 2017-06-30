@@ -9,7 +9,6 @@ namespace System
     /// <summary>
     /// An exception class used when an invalid Uniform Resource Identifier is detected.
     /// </summary>
-    [Serializable]
     public class UriFormatException : FormatException, ISerializable
     {
         public UriFormatException() : base()

@@ -22,6 +22,7 @@ namespace System.Xml.Serialization
     using System.Collections.Generic;
     using System.Runtime.Versioning;
     using System.Xml;
+    using System.Xml.Serialization;
 
     /// <include file='doc\XmlSerializer.uex' path='docs/doc[@for="XmlDeserializationEvents"]/*' />
     /// <devdoc>
@@ -269,7 +270,7 @@ namespace System.Xml.Serialization
                     {
                         {
                             XmlSerializerImplementation contract = null;
-                            Assembly assembly = TempAssembly.LoadGeneratedAssembly(type, null, out contract);
+                            Assembly assembly = TempAssembly.LoadGeneratedAssembly(type, defaultNamespace, out contract);
                             if (assembly == null)
                             {
                                 // need to reflect and generate new serialization assembly

@@ -13,7 +13,6 @@ namespace System.IO
      * For example - colored console writers can be synchronized with non-colored
      * writers by locking on Console.On (Issue#2855).
      */
-    [Serializable]
     internal sealed class SyncTextWriter : TextWriter, IDisposable
     {
         internal readonly TextWriter _out;

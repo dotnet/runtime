@@ -61,4 +61,7 @@
   <data name="IsolatedStorage_Init" xml:space="preserve">
     <value>Initialization failed.</value>
   </data>
+  <data name="IsolatedStorage_Scope_Invalid" xml:space="preserve">
+    <value>Invalid scope.</value>
+  </data>
 </root>

@@ -154,7 +154,7 @@
         "scriptType": "inlineScript",
         "scriptName": "",
         "arguments": "-ApiKey $(MyGetApiKey) -ConfigurationGroup $(PB_ConfigurationGroup) -MyGetFeedUrl $(PB_MyGetFeedUrl)",
-        "inlineScript": "param($ApiKey, $ConfigurationGroup, $CustomNuGetPath, $MyGetFeedUrl)\nif ($ConfigurationGroup -ne \"Release\") { exit }\n& $env:CustomNuGetPath push $env:Build_StagingDirectory\\IndexedSymbolPackages\\*.nupkg $ApiKey -Source $MyGetFeedUrl -Timeout 3600",
+        "inlineScript": "param($ApiKey, $ConfigurationGroup, $CustomNuGetPath, $MyGetFeedUrl)\nif ($ConfigurationGroup -ne \"Release\") { exit }\nif ($env:SourceBranch.StartsWith(\"release/\")) { exit }\n& $env:CustomNuGetPath push $env:Build_StagingDirectory\\IndexedSymbolPackages\\*.nupkg $ApiKey -Source $MyGetFeedUrl -Timeout 3600",
         "workingFolder": "",
         "failOnStandardError": "true"
       }

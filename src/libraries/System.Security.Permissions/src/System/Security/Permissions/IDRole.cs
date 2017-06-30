@@ -4,7 +4,6 @@
 
 namespace System.Security.Permissions
 {
-    [Serializable]
     internal sealed class IDRole
     {
         internal bool Authenticated { get; }

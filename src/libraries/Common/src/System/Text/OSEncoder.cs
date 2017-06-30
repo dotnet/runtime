@@ -8,7 +8,6 @@ using System.Diagnostics;
 
 namespace System.Text
 {
-    [Serializable]
     internal sealed class OSEncoder : Encoder
     {
         private char _charLeftOver;

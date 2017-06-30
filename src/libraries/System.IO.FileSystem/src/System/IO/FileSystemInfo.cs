@@ -13,7 +13,6 @@ using System.Runtime.Versioning;
 
 namespace System.IO
 {
-    [Serializable]
     public abstract partial class FileSystemInfo : MarshalByRefObject, ISerializable
     {
         protected String FullPath;          // fully qualified path of the file or directory

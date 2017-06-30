@@ -4,7 +4,6 @@
 
 namespace System.Security.Policy
 {
-    [Serializable]
     public sealed partial class ApplicationDirectoryMembershipCondition : ISecurityEncodable, ISecurityPolicyEncodable, IMembershipCondition
     {
         public ApplicationDirectoryMembershipCondition() { }

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.Serialization;
 using System.Security.Policy;
 using Xunit;
 
@@ -19,7 +20,7 @@ namespace System.Security.Permissions.Tests
             int hash = amc.GetHashCode();
             string str = amc.ToString();
             SecurityElement se = new SecurityElement("");
-            PolicyLevel pl = (PolicyLevel)Activator.CreateInstance(typeof(PolicyLevel), true);
+            PolicyLevel pl = (PolicyLevel)FormatterServices.GetUninitializedObject(typeof(PolicyLevel));
             amc.FromXml(se);
             amc.FromXml(se, pl);
             se = amc.ToXml();
@@ -36,7 +37,7 @@ namespace System.Security.Permissions.Tests
             int hash = admc.GetHashCode();
             string str = admc.ToString();
             SecurityElement se = new SecurityElement("");
-            PolicyLevel pl = (PolicyLevel)Activator.CreateInstance(typeof(PolicyLevel), true);
+            PolicyLevel pl = (PolicyLevel)FormatterServices.GetUninitializedObject(typeof(PolicyLevel));
             admc.FromXml(se);
             admc.FromXml(se, pl);
             se = admc.ToXml();
@@ -53,7 +54,7 @@ namespace System.Security.Permissions.Tests
             int hash = gmc.GetHashCode();
             string str = gmc.ToString();
             SecurityElement se = new SecurityElement("");
-            PolicyLevel pl = (PolicyLevel)Activator.CreateInstance(typeof(PolicyLevel), true);
+            PolicyLevel pl = (PolicyLevel)FormatterServices.GetUninitializedObject(typeof(PolicyLevel));
             gmc.FromXml(se);
             gmc.FromXml(se, pl);
             se = gmc.ToXml();
@@ -70,7 +71,7 @@ namespace System.Security.Permissions.Tests
             int hash = hmc.GetHashCode();
             string str = hmc.ToString();
             SecurityElement se = new SecurityElement("");
-            PolicyLevel pl = (PolicyLevel)Activator.CreateInstance(typeof(PolicyLevel), true);
+            PolicyLevel pl = (PolicyLevel)FormatterServices.GetUninitializedObject(typeof(PolicyLevel));
             hmc.FromXml(se);
             hmc.FromXml(se, pl);
             se = hmc.ToXml();
@@ -87,7 +88,7 @@ namespace System.Security.Permissions.Tests
             int hash = pmc.GetHashCode();
             string str = pmc.ToString();
             SecurityElement se = new SecurityElement("");
-            PolicyLevel pl = (PolicyLevel)Activator.CreateInstance(typeof(PolicyLevel), true);
+            PolicyLevel pl = (PolicyLevel)FormatterServices.GetUninitializedObject(typeof(PolicyLevel));
             pmc.FromXml(se);
             pmc.FromXml(se, pl);
             se = pmc.ToXml();
@@ -104,7 +105,7 @@ namespace System.Security.Permissions.Tests
             int hash = smc.GetHashCode();
             string str = smc.ToString();
             SecurityElement se = new SecurityElement("");
-            PolicyLevel pl = (PolicyLevel)Activator.CreateInstance(typeof(PolicyLevel), true);
+            PolicyLevel pl = (PolicyLevel)FormatterServices.GetUninitializedObject(typeof(PolicyLevel));
             smc.FromXml(se);
             smc.FromXml(se, pl);
             se = smc.ToXml();
@@ -121,7 +122,7 @@ namespace System.Security.Permissions.Tests
             int hash = snmc.GetHashCode();
             string str = snmc.ToString();
             SecurityElement se = new SecurityElement("");
-            PolicyLevel pl = (PolicyLevel)Activator.CreateInstance(typeof(PolicyLevel), true);
+            PolicyLevel pl = (PolicyLevel)FormatterServices.GetUninitializedObject(typeof(PolicyLevel));
             snmc.FromXml(se);
             snmc.FromXml(se, pl);
             se = snmc.ToXml();

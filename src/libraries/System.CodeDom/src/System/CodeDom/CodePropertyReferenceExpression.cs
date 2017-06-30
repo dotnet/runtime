@@ -4,7 +4,6 @@
 
 namespace System.CodeDom
 {
-    [Serializable]
     public class CodePropertyReferenceExpression : CodeExpression
     {
         private string _propertyName;

@@ -18,10 +18,11 @@
   <ItemGroup>
     <ReferenceFromRuntime Include="System.Private.Interop" Condition="'$(TargetGroup)' == 'uapaot'" />
     <ReferenceFromRuntime Include="System.Private.CoreLib" Condition="'$(TargetsWindows)'=='true'" />
+    <Reference Include="System.Resources.ResourceManager" Condition="'$(TargetsWindows)'!='true'" />
     <Reference Include="System.Runtime" Condition="'$(TargetsWindows)'!='true'" />
   </ItemGroup>
   <PropertyGroup Condition="'$(TargetsWindows)'!='true'">
-    <GeneratePlatformNotSupportedAssembly>true</GeneratePlatformNotSupportedAssembly>
+    <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_WindowsRuntime</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

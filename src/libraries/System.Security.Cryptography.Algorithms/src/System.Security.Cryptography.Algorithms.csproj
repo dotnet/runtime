@@ -489,10 +489,10 @@
     <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
     <Reference Include="System.Security.Cryptography.Encoding" />
     <Reference Include="System.Security.Cryptography.Primitives" />
+    <Reference Include="System.Threading" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Reference Include="System.Runtime.Numerics" />
-    <Reference Include="System.Threading" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">
     <Reference Include="mscorlib" />

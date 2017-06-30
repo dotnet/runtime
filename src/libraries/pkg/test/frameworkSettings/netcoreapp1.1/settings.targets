@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Condition="'$(RuntimeIdentifier)' != ''">
+    <IgnoredTypes Include="System.Collections.StructuralComparisons" />
+    <IgnoredTypes Include="System.Threading.WaitHandleExtensions" />
+    <IgnoredTypes Include="System.Console" />
+    <IgnoredTypes Include="System.BitConverter" />
+    <IgnoredTypes Include="System.IO.Path" />
+    <IgnoredTypes Include="System.IServiceProvider" />
+    <IgnoredTypes Include="System.Text.NormalizationForm" />
+    <IgnoredTypes Include="System.Globalization.IdnMapping" />
+    <IgnoredTypes Include="System.IO.FileAccess" />
+    <IgnoredTypes Include="System.IO.UnmanagedMemoryAccessor" />
+    <IgnoredTypes Include="System.IO.UnmanagedMemoryStream" />
+    <IgnoredTypes Include="System.Runtime.CompilerServices.RuntimeOps" />
+    <IgnoredTypes Include="System.Net.Sockets.IPAddressExtensions" />
+    <IgnoredTypes Include="System.Collections.ObjectModel.KeyedCollection`2" />
+    <IgnoredTypes Include="System.Collections.ObjectModel.ReadOnlyDictionary`2" />
+    <IgnoredTypes Include="System.Collections.ObjectModel.ReadOnlyDictionary`2/KeyCollection" />
+    <IgnoredTypes Include="System.Collections.ObjectModel.ReadOnlyDictionary`2/ValueCollection" />
+    <IgnoredTypes Include="System.Security.Principal.IIdentity" />
+    <IgnoredTypes Include="System.Security.Principal.IPrincipal" />
+    <IgnoredTypes Include="System.Security.Principal.TokenImpersonationLevel" />
+    <IgnoredTypes Include="System.Threading.CountdownEvent" />
+    <IgnoredTypes Include="System.Threading.IOCompletionCallback" />
+    <IgnoredTypes Include="System.Threading.NativeOverlapped" />
+    <IgnoredTypes Include="System.DBNull" />
+  </ItemGroup>
+</Project>

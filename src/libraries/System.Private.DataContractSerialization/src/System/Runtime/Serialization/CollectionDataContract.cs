@@ -438,7 +438,12 @@ namespace System.Runtime.Serialization
                             {
                                 throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.GetOnlyCollectionMustHaveAddMethod, GetClrTypeFullName(UnderlyingType))));
                             }
-                            Debug.Assert(AddMethod != null || Kind == CollectionKind.Array, "Add method cannot be null if the collection is being used as a get-only property");
+
+                            if (Kind != CollectionKind.Array && AddMethod == null)
+                            {
+                                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.GetOnlyCollectionMustHaveAddMethod, GetClrTypeFullName(UnderlyingType))));
+                            }
+
                             XmlFormatGetOnlyCollectionReaderDelegate tempDelegate = new XmlFormatReaderGenerator().GenerateGetOnlyCollectionReader(this);
                             Interlocked.MemoryBarrier();
                             _helper.XmlFormatGetOnlyCollectionReaderDelegate = tempDelegate;

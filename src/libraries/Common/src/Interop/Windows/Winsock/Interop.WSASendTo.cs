@@ -13,8 +13,8 @@ internal static partial class Interop
     internal static partial class Winsock
     {
         [DllImport(Interop.Libraries.Ws2_32, SetLastError = true)]
-        internal static unsafe extern SocketError WSASendTo(
-            SafeCloseSocket socketHandle,
+        private static unsafe extern SocketError WSASendTo(
+            IntPtr socketHandle,
             WSABuffer* buffers,
             int bufferCount,
             out int bytesTransferred,
@@ -25,7 +25,7 @@ internal static partial class Interop
             IntPtr completionRoutine);
 
         internal static unsafe SocketError WSASendTo(
-            SafeCloseSocket socketHandle,
+            IntPtr socketHandle,
             ref WSABuffer buffer,
             int bufferCount,
             out int bytesTransferred,
@@ -43,7 +43,7 @@ internal static partial class Interop
         }
 
         internal static unsafe SocketError WSASendTo(
-            SafeCloseSocket socketHandle,
+            IntPtr socketHandle,
             WSABuffer[] buffers,
             int bufferCount,
             [Out] out int bytesTransferred,
@@ -53,7 +53,7 @@ internal static partial class Interop
             NativeOverlapped* overlapped,
             IntPtr completionRoutine)
         {
-            Debug.Assert(buffers != null);
+            Debug.Assert(buffers != null && buffers.Length > 0);
             fixed (WSABuffer* buffersPtr = &buffers[0])
             {
                 return WSASendTo(socketHandle, buffersPtr, bufferCount, out bytesTransferred, socketFlags, socketAddress, socketAddressSize, overlapped, completionRoutine);

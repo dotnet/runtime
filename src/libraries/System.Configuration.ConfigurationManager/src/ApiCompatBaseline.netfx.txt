@@ -1,0 +1,3 @@
+Compat issues with assembly System.Configuration.ConfigurationManager:
+InterfacesShouldHaveSameMembers : Implementation interface member 'System.Configuration.Internal.IInternalConfigHost.GetRestrictedPermissions(System.Configuration.Internal.IInternalConfigRecord, System.Security.PermissionSet, System.Boolean)' is not in the contract.
+Total Issues: 1

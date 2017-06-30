@@ -30,7 +30,8 @@ namespace System.IO.Compression.Tests
         [Fact]
         public void UpdateReadTwice()
         {
-            using (ZipArchive archive = ZipFile.Open(zfile("small.zip"), ZipArchiveMode.Update))
+            using (TempFile testArchive = CreateTempCopyFile(zfile("small.zip"), GetTestFilePath()))
+            using (ZipArchive archive = ZipFile.Open(testArchive.Path, ZipArchiveMode.Update))
             {
                 ZipArchiveEntry entry = archive.Entries[0];
                 string contents1, contents2;

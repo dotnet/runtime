@@ -13,7 +13,6 @@ using System.Runtime.CompilerServices;
 
 namespace System.Data.SqlTypes
 {
-    [Serializable]
     internal enum SqlBytesCharsState
     {
         Null = 0,
@@ -22,7 +21,6 @@ namespace System.Data.SqlTypes
         Stream = 3,
     }
 
-    [Serializable]
     [XmlSchemaProvider("GetXsdType")]
     public sealed class SqlBytes : INullable, IXmlSerializable, ISerializable
     {

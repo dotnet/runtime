@@ -4,7 +4,6 @@
 
 namespace System.Security.Permissions
 {
-    [Serializable]
     public sealed partial class StrongNamePublicKeyBlob
     {
         public StrongNamePublicKeyBlob(byte[] publicKey) { }

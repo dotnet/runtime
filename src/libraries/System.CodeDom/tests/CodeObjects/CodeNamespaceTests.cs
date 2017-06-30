@@ -33,6 +33,7 @@ namespace System.CodeDom.Tests
 		}
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Cannot do internal Reflection on framework types.")]
         public void Ctor_SerializationInfo_StreamingContext()
         {
             ConstructorInfo constructor = typeof(CodeNamespace).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, new Type[] { typeof(SerializationInfo), typeof(StreamingContext) }, null);

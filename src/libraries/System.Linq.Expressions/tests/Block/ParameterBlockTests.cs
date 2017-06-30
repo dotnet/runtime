@@ -75,10 +75,10 @@ namespace System.Linq.Expressions.Tests
             {
                 Expression[] expressions = expressionList.ToArray();
                 expressions[i] = null;
-                Assert.Throws<ArgumentNullException>($"expressions[{i}]", () => Expression.Block(SingleParameter, expressions));
-                Assert.Throws<ArgumentNullException>($"expressions[{i}]", () => Expression.Block(SingleParameter, expressions.Skip(0)));
-                Assert.Throws<ArgumentNullException>($"expressions[{i}]", () => Expression.Block(typeof(int), SingleParameter, expressions));
-                Assert.Throws<ArgumentNullException>($"expressions[{i}]", () => Expression.Block(typeof(int), SingleParameter, expressions.Skip(0)));
+                AssertExtensions.Throws<ArgumentNullException>($"expressions[{i}]", () => Expression.Block(SingleParameter, expressions));
+                AssertExtensions.Throws<ArgumentNullException>($"expressions[{i}]", () => Expression.Block(SingleParameter, expressions.Skip(0)));
+                AssertExtensions.Throws<ArgumentNullException>($"expressions[{i}]", () => Expression.Block(typeof(int), SingleParameter, expressions));
+                AssertExtensions.Throws<ArgumentNullException>($"expressions[{i}]", () => Expression.Block(typeof(int), SingleParameter, expressions.Skip(0)));
             }
         }
 
@@ -91,10 +91,10 @@ namespace System.Linq.Expressions.Tests
             {
                 Expression[] expressions = expressionList.ToArray();
                 expressions[i] = UnreadableExpression;
-                Assert.Throws<ArgumentException>($"expressions[{i}]", () => Expression.Block(SingleParameter, expressions));
-                Assert.Throws<ArgumentException>($"expressions[{i}]", () => Expression.Block(SingleParameter, expressions.Skip(0)));
-                Assert.Throws<ArgumentException>($"expressions[{i}]", () => Expression.Block(typeof(int), SingleParameter, expressions));
-                Assert.Throws<ArgumentException>($"expressions[{i}]", () => Expression.Block(typeof(int), SingleParameter, expressions.Skip(0)));
+                AssertExtensions.Throws<ArgumentException>($"expressions[{i}]", () => Expression.Block(SingleParameter, expressions));
+                AssertExtensions.Throws<ArgumentException>($"expressions[{i}]", () => Expression.Block(SingleParameter, expressions.Skip(0)));
+                AssertExtensions.Throws<ArgumentException>($"expressions[{i}]", () => Expression.Block(typeof(int), SingleParameter, expressions));
+                AssertExtensions.Throws<ArgumentException>($"expressions[{i}]", () => Expression.Block(typeof(int), SingleParameter, expressions.Skip(0)));
             }
         }
 
@@ -117,8 +117,8 @@ namespace System.Linq.Expressions.Tests
         {
             ConstantExpression constant = Expression.Constant(0);
             IEnumerable<Expression> expressions = PadBlock(blockSize - 1, Expression.Constant(0));
-            Assert.Throws<ArgumentException>(null, () => Expression.Block(typeof(string), SingleParameter, expressions));
-            Assert.Throws<ArgumentException>(null, () => Expression.Block(typeof(string), SingleParameter, expressions.ToArray()));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Block(typeof(string), SingleParameter, expressions));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Block(typeof(string), SingleParameter, expressions.ToArray()));
         }
 
         [Theory]
@@ -149,8 +149,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void EmptyBlockWithParametersAndNonVoidTypeNotAllowed()
         {
-            Assert.Throws<ArgumentException>(null, () => Expression.Block(typeof(int), SingleParameter));
-            Assert.Throws<ArgumentException>(null, () => Expression.Block(typeof(int), SingleParameter, Enumerable.Empty<Expression>()));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Block(typeof(int), SingleParameter));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Block(typeof(int), SingleParameter, Enumerable.Empty<Expression>()));
         }
 
         [Theory]

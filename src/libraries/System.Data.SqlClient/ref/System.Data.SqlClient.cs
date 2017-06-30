@@ -273,6 +273,7 @@ namespace System.Data.SqlClient
         public override System.Data.Common.DbCommand CreateCommand() { throw null; }
         public override System.Data.Common.DbConnection CreateConnection() { throw null; }
         public override System.Data.Common.DbConnectionStringBuilder CreateConnectionStringBuilder() { throw null; }
+        public override System.Data.Common.DbDataAdapter CreateDataAdapter() { throw null; }
         public override System.Data.Common.DbParameter CreateParameter() { throw null; }
     }
     public sealed partial class SqlCommand : System.Data.Common.DbCommand, System.ICloneable
@@ -549,6 +550,7 @@ namespace System.Data.SqlClient
         public SqlParameter(string parameterName, System.Data.SqlDbType dbType, int size) { }
         public SqlParameter(string parameterName, System.Data.SqlDbType dbType, int size, string sourceColumn) { }
         public SqlParameter(string parameterName, object value) { }
+        public SqlParameter(string parameterName, System.Data.SqlDbType dbType, int size, System.Data.ParameterDirection direction, byte precision, byte scale, string sourceColumn, System.Data.DataRowVersion sourceVersion, bool sourceColumnNullMapping, object value, string xmlSchemaCollectionDatabase, string xmlSchemaCollectionOwningSchema, string xmlSchemaCollectionName) { }
         object ICloneable.Clone() { throw null; }
         public System.Data.SqlTypes.SqlCompareOptions CompareInfo { get { throw null; } set { } }
         public override System.Data.DbType DbType { get { throw null; } set { } }

@@ -23,7 +23,6 @@ namespace System.Collections.Concurrent
     /// non-blocking.  These behaviors can be overridden via this enumeration.
     /// </summary>
     [Flags]
-    [Serializable]
     public enum EnumerablePartitionerOptions
     {
         /// <summary>

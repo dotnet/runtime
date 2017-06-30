@@ -644,7 +644,6 @@ namespace System.Collections
             return n > 0 ? (((n - 1) / div) + 1) : 0;
         }
 
-        [Serializable]
         private class BitArrayEnumeratorSimple : IEnumerator, ICloneable
         {
             private BitArray bitarray;

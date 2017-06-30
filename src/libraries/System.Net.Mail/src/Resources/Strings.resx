@@ -290,9 +290,6 @@
   <data name="WriteNotSupported" xml:space="preserve">
     <value>Writing is not supported on this stream.</value>
   </data>
-  <data name="net_perm_target" xml:space="preserve">
-    <value>Cannot cast target permission type.</value>
-  </data>
   <data name="MailAddressInvalidFormat" xml:space="preserve">
     <value>The specified string is not in the form required for an e-mail address.</value>
   </data>
@@ -307,18 +304,6 @@
   </data>
   <data name="SmtpEhloResponseInvalid" xml:space="preserve">
     <value>The server returned an invalid response to the EHLO command.</value>
-  </data>
-  <data name="net_not_ipermission" xml:space="preserve">
-    <value>Specified value does not contain 'IPermission' as its tag.</value>
-  </data>
-  <data name="net_no_classname" xml:space="preserve">
-    <value>Specified value does not contain a 'class' attribute.</value>
-  </data>
-  <data name="net_no_typename" xml:space="preserve">
-    <value>The value class attribute is not valid.</value>
-  </data>
-  <data name="net_perm_invalid_val_in_element" xml:space="preserve">
-    <value>The '{0}' element contains one or more invalid values.</value>
   </data>
   <data name="net_io_readfailure" xml:space="preserve">
     <value>Unable to read data from the transport connection: {0}.</value>

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <UsingTask TaskName="FindBestConfigurations" AssemblyFile="$(CoreFxToolsTaskDir)CoreFx.Tools.dll"/>
+  <UsingTask TaskName="FindBestConfigurations" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
   <PropertyGroup>
     <ImportedBuildVerticalTargets>true</ImportedBuildVerticalTargets>
     <_traversalBuildConfigurations>$(BuildConfiguration)</_traversalBuildConfigurations>
@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <!-- Import configuration data model -->
-  <Import Project="$(MSBuildThisFileDirectory)src/Tools/GenerateProps/properties.props" />
+  <Import Project="$(ProjectDir)tools-local/properties.props" />
 
   <!-- Runs during traversal when BuildAllConfigurations is set to expand each project
        to a seperate instance for each of its BuildConfigurations -->

@@ -12,7 +12,7 @@ namespace System.Net.NetworkInformation.Tests
     {
         private readonly NetworkAvailabilityChangedEventHandler _availabilityHandler = delegate { };
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/308
+        [Fact]
         public void NetworkAvailabilityChanged_AddRemove_Success()
         {
             NetworkChange.NetworkAvailabilityChanged += _availabilityHandler;
@@ -25,7 +25,7 @@ namespace System.Net.NetworkInformation.Tests
             NetworkChange.NetworkAvailabilityChanged -= _availabilityHandler;
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/308
+        [Fact]
         public void NetworkAddressChanged_AddAndRemove_NetworkAvailabilityChanged_JustRemove_Success()
         {
             NetworkChange.NetworkAddressChanged += _addressHandler;
@@ -33,7 +33,7 @@ namespace System.Net.NetworkInformation.Tests
             NetworkChange.NetworkAddressChanged -= _addressHandler;
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/308
+        [Theory]
         [InlineData(false, false)]
         [InlineData(false, true)]
         [InlineData(true, false)]

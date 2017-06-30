@@ -44,10 +44,7 @@ namespace System.ComponentModel
     ///     they may not know which controls to choose.
     ///     
     /// </summary>
-    [
-    AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = true),
-    Serializable
-    ]
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = true)]
     public sealed class ToolboxItemFilterAttribute : Attribute
     {
         private string _typeId;

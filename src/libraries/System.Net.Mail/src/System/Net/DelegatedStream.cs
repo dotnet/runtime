@@ -14,9 +14,6 @@ namespace System.Net
         private readonly Stream _stream;
         private readonly NetworkStream _netStream;
 
-        protected DelegatedStream()
-        {
-        }
         protected DelegatedStream(Stream stream)
         {
             if (stream == null)

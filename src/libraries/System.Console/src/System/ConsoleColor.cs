@@ -7,7 +7,6 @@ namespace System
     // This enumeration represents the colors that can be used for 
     // console text foreground and background colors.
 
-    [Serializable]
     public enum ConsoleColor
     {
         Black = 0,

@@ -21,7 +21,6 @@ namespace System.Text
     // encodings.
     // So if you change the wrappers in this class, you must change the wrappers in the other classes
     // as well because they should have the same behavior.
-    [Serializable]
     internal abstract class EncodingNLS : Encoding
     {
         private string _encodingName;
@@ -580,7 +579,6 @@ namespace System.Text
             }
         }
 
-        [Serializable]
         protected sealed class CodePageEncodingSurrogate : ISerializable, IObjectReference
         {
             internal const string CodePageKey = "CodePage";

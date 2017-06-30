@@ -12,7 +12,8 @@ __BUILD_TOOLS_PACKAGE_VERSION=$(cat $__scriptpath/BuildToolsVersion.txt)
 __DOTNET_TOOLS_VERSION=$(cat $__scriptpath/DotnetCLIVersion.txt)
 __BUILD_TOOLS_PATH=$__PACKAGES_DIR/microsoft.dotnet.buildtools/$__BUILD_TOOLS_PACKAGE_VERSION/lib
 __INIT_TOOLS_RESTORE_PROJECT=$__scriptpath/init-tools.msbuild
-__INIT_TOOLS_DONE_MARKER=$__TOOLRUNTIME_DIR/$__BUILD_TOOLS_PACKAGE_VERSION/done
+__INIT_TOOLS_DONE_MARKER_DIR=$__TOOLRUNTIME_DIR/$__BUILD_TOOLS_PACKAGE_VERSION
+__INIT_TOOLS_DONE_MARKER=$__INIT_TOOLS_DONE_MARKER_DIR/done
 
 if [ -z "$__DOTNET_PKG" ]; then
     if [ "$(uname -m | grep "i[3456]86")" = "i686" ]; then
@@ -57,7 +58,7 @@ if [ ! -e $__INIT_TOOLS_DONE_MARKER ]; then
             cp -r $DOTNET_TOOL_DIR/* $__DOTNET_PATH
         else
             echo "Installing dotnet cli..."
-            __DOTNET_LOCATION="https://dotnetcli.blob.core.windows.net/dotnet/Sdk/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.${__DOTNET_TOOLS_VERSION}.tar.gz"
+            __DOTNET_LOCATION="https://dotnetcli.azureedge.net/dotnet/Sdk/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.${__DOTNET_TOOLS_VERSION}.tar.gz"
             # curl has HTTPS CA trust-issues less often than wget, so lets try that first.
             echo "Installing '${__DOTNET_LOCATION}' to '$__DOTNET_PATH/dotnet.tar'" >> $__init_tools_log
             which curl > /dev/null 2> /dev/null
@@ -102,13 +103,14 @@ if [ ! -e $__INIT_TOOLS_DONE_MARKER ]; then
         fi
     fi
 
-    Tools-Override/crossgen.sh $__scriptpath/Tools
-
     echo "Making all .sh files executable under Tools."
     # Executables restored with .NET Core 2.0 do not have executable permission flags. https://github.com/NuGet/Home/issues/4424
     ls $__scriptpath/Tools/*.sh | xargs chmod +x
     ls $__scriptpath/Tools/scripts/docker/*.sh | xargs chmod +x
 
+    Tools/crossgen.sh $__scriptpath/Tools
+
+    mkdir -p $__INIT_TOOLS_DONE_MARKER_DIR
     touch $__INIT_TOOLS_DONE_MARKER
 
     echo "Done initializing tools."

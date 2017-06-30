@@ -251,11 +251,17 @@ namespace System.Net.Http
                 int maxConnections = _associatedHandler.MaxConnectionsPerServer;
                 if (maxConnections < int.MaxValue) // int.MaxValue considered infinite, mapping to libcurl default of 0
                 {
-                    // This should always succeed, as we already verified we can set this option with this value.  Treat 
-                    // any failure then as non-fatal in release; worst case is we employ more connections than desired.
                     CURLMcode code = Interop.Http.MultiSetOptionLong(multiHandle, Interop.Http.CURLMoption.CURLMOPT_MAX_HOST_CONNECTIONS, maxConnections);
-                    Debug.Assert(code == CURLMcode.CURLM_OK, $"Expected OK, got {code}");
-                    EventSourceTrace("Set max connections per server to {0}", maxConnections);
+                    switch (code)
+                    {
+                        case CURLMcode.CURLM_OK:
+                            EventSourceTrace("Set max host connections to {0}", maxConnections);
+                            break;
+                        default:
+                            // Treat failures as non-fatal in release; worst case is we employ more connections than desired.
+                            EventSourceTrace("Setting CURLMOPT_MAX_HOST_CONNECTIONS failed: {0}. Ignoring option.", code);
+                            break;
+                    }
                 }
 
                 return multiHandle;

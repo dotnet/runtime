@@ -10,7 +10,6 @@ namespace System.CodeDom
 namespace System.Runtime.Serialization
 #endif
 {
-    [Serializable]
 #if !FEATURE_SERIALIZATION
     public class CodeTypeReferenceCollection : CollectionBase
 #else

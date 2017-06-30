@@ -145,6 +145,7 @@ public static partial class OverlappedTests
     }
 
     [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)] // ThreadPool.UnsafeQueueNativeOverlapped is not supported on Unix
     public static unsafe void PackPosTest()
     {
 #pragma warning disable 618
@@ -167,7 +168,9 @@ public static partial class OverlappedTests
         }
 #pragma warning restore 618
     }
+
     [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)] // ThreadPool.UnsafeQueueNativeOverlapped is not supported on Unix
     public static unsafe void PackPosTest1()
     {
         Overlapped ov = new Overlapped();

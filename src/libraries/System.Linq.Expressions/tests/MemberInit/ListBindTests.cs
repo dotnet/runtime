@@ -281,14 +281,14 @@ namespace System.Linq.Expressions.Tests
             PropertyInfo property = typeof(ListWrapper<>).GetProperty(nameof(ListWrapper<int>.ListProperty));
             FieldInfo field = typeof(ListWrapper<>).GetField(nameof(ListWrapper<int>.ListField));
             MethodInfo method = property.GetMethod;
-            Assert.Throws<ArgumentException>(null, () => Expression.ListBind(member, Enumerable.Empty<ElementInit>()));
-            Assert.Throws<ArgumentException>(null, () => Expression.ListBind(member));
-            Assert.Throws<ArgumentException>(null, () => Expression.ListBind(property, Enumerable.Empty<ElementInit>()));
-            Assert.Throws<ArgumentException>(null, () => Expression.ListBind(property));
-            Assert.Throws<ArgumentException>(null, () => Expression.ListBind(field, Enumerable.Empty<ElementInit>()));
-            Assert.Throws<ArgumentException>(null, () => Expression.ListBind(field));
-            Assert.Throws<ArgumentException>(null, () => Expression.ListBind(method, Enumerable.Empty<ElementInit>()));
-            Assert.Throws<ArgumentException>(null, () => Expression.ListBind(method));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.ListBind(member, Enumerable.Empty<ElementInit>()));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.ListBind(member));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.ListBind(property, Enumerable.Empty<ElementInit>()));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.ListBind(property));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.ListBind(field, Enumerable.Empty<ElementInit>()));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.ListBind(field));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.ListBind(method, Enumerable.Empty<ElementInit>()));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.ListBind(method));
         }
 
 #if FEATURE_COMPILE

@@ -4,7 +4,6 @@
 
 namespace System.CodeDom
 {
-    [Serializable]
     public enum MemberAttributes
     {
         Abstract = 0x0001,

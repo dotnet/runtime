@@ -508,22 +508,6 @@ namespace System.Security.Claims
             Assert.False(id.HasClaim("claim_type", "Xclaim_value"));
         }
 
-        [Fact]
-        public void CustomClaimIdentity_SerializeDeserialize_Roundtrip()
-        {
-            var id1 = new CustomClaimsIdentity("someAuthType", "someNameType", "someRoleType");
-            ClaimsIdentity id2 = BinaryFormatterHelpers.Clone(id1);
-
-            Assert.Equal(id1.Actor, id2.Actor);
-            Assert.Equal(id1.AuthenticationType, id2.AuthenticationType);
-            Assert.Equal(id1.BootstrapContext, id2.BootstrapContext);
-            Assert.Equal(id1.IsAuthenticated, id2.IsAuthenticated);
-            Assert.Equal(id1.Label, id2.Label);
-            Assert.Equal(id1.Name, id2.Name);
-            Assert.Equal(id1.NameClaimType, id2.NameClaimType);
-            Assert.Equal(id1.RoleClaimType, id2.RoleClaimType);
-        }
-
         [Serializable]
         private sealed class CustomClaimsIdentity : ClaimsIdentity, ISerializable
         {

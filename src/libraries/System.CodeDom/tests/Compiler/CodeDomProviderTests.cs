@@ -129,10 +129,10 @@ namespace System.CodeDom.Compiler.Tests
         public void CreateProvider_NoSuchLanguage_ThrowsConfigurationErrorsException(string language)
         {
             Exception ex1 = Assert.ThrowsAny<Exception>(() => CodeDomProvider.CreateProvider(language));
-            Assert.Equal("ConfigurationErrorsException", ex1.GetType().Name);
+            AssertIsConfigurationErrorsException(ex1);
 
             Exception ex2 = Assert.ThrowsAny<Exception>(() => CodeDomProvider.CreateProvider(language, new Dictionary<string, string>()));
-            Assert.Equal("ConfigurationErrorsException", ex2.GetType().Name);
+            AssertIsConfigurationErrorsException(ex2);
         }
 
         [Theory]
@@ -187,7 +187,7 @@ namespace System.CodeDom.Compiler.Tests
         public void GetLanguageFromExtension_NoSuchExtension_ThrowsConfigurationErrorsException(string extension)
         {
             Exception ex = Assert.ThrowsAny<Exception>(() => CodeDomProvider.GetLanguageFromExtension(extension));
-            Assert.Equal("ConfigurationErrorsException", ex.GetType().Name);
+            AssertIsConfigurationErrorsException(ex);
         }
 
         [Theory]
@@ -241,7 +241,7 @@ namespace System.CodeDom.Compiler.Tests
         public void GetCompilerInfo_NoSuchExtension_ThrowsKeyNotFoundException(string language)
         {
             Exception ex = Assert.ThrowsAny<Exception>(() => CodeDomProvider.GetCompilerInfo(language));
-            Assert.Equal("ConfigurationErrorsException", ex.GetType().Name);
+            AssertIsConfigurationErrorsException(ex);
         }
 
         [Fact]
@@ -416,6 +416,14 @@ namespace System.CodeDom.Compiler.Tests
         public void Parse_NullParser_ThrowsNotImplementedException()
         {
             Assert.Throws<NotImplementedException>(() => new NullProvider().Parse(new StringReader("abc")));
+        }
+
+        private static void AssertIsConfigurationErrorsException(Exception ex)
+        {
+            if (!PlatformDetection.IsNetNative) // Can't do internal Reflection
+            {
+                Assert.Equal("ConfigurationErrorsException", ex.GetType().Name);
+            }
         }
 
         protected class NullProvider : CodeDomProvider

@@ -27,6 +27,15 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
+        public static void Constructor_IsNotOpen()
+        {
+            using (X509Store store = new X509Store(StoreLocation.CurrentUser))
+            {
+                Assert.False(store.IsOpen);
+            }
+        }
+
+        [Fact]
         public static void Constructor_DefaultStoreLocation()
         {
             using (X509Store store = new X509Store(StoreName.My))
@@ -88,6 +97,42 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             Assert.Throws<PlatformNotSupportedException>(() => new X509Chain(IntPtr.Zero));
         }
 
+        [Fact]
+        public static void Constructor_OpenFlags()
+        {
+            using (X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser, OpenFlags.ReadOnly))
+            {
+                Assert.True(store.IsOpen);
+            }
+        }
+
+        [Fact]
+        public static void Constructor_OpenFlags_StoreName()
+        {
+            using (X509Store store = new X509Store("My", StoreLocation.CurrentUser, OpenFlags.ReadOnly))
+            {
+                Assert.True(store.IsOpen);
+            }
+        }
+
+        [Fact]
+        public static void Constructor_OpenFlags_OpenAnyway()
+        {
+            using (X509Store store = new X509Store("My", StoreLocation.CurrentUser, OpenFlags.ReadOnly))
+            {
+                store.Open(OpenFlags.ReadOnly);
+                Assert.True(store.IsOpen);
+            }
+        }
+
+        [Fact]
+        public static void Constructor_OpenFlags_NonExistingStoreName_Throws()
+        {
+            Assert.ThrowsAny<CryptographicException>(() =>
+                new X509Store(new Guid().ToString("D"), StoreLocation.CurrentUser, OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly)
+            );
+        }
+
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)] // StoreHandle not supported via OpenSSL
         [Fact]
         public static void TestDispose()
@@ -127,6 +172,35 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 Assert.ThrowsAny<CryptographicException>(() => store.Open(OpenFlags.OpenExistingOnly));
             }
+        }
+
+        [Fact]
+        public static void Open_IsOpenTrue()
+        {
+            using (X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser))
+            {
+                store.Open(OpenFlags.ReadOnly);
+                Assert.True(store.IsOpen);
+            }
+        }
+
+        [Fact]
+        public static void Dispose_IsOpenFalse()
+        {
+            X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
+            store.Open(OpenFlags.ReadOnly);
+            store.Dispose();
+            Assert.False(store.IsOpen);
+        }
+
+        [Fact]
+        public static void ReOpen_IsOpenTrue()
+        {
+            X509Store store = new X509Store(StoreName.My, StoreLocation.CurrentUser);
+            store.Open(OpenFlags.ReadOnly);
+            store.Close();
+            store.Open(OpenFlags.ReadOnly);
+            Assert.True(store.IsOpen);
         }
 
         [Fact]
@@ -336,11 +410,18 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         [Theory]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
-        [InlineData(StoreLocation.CurrentUser)]
-        [InlineData(StoreLocation.LocalMachine)]
-        public static void EnumerateDisallowedStore(StoreLocation location)
+        [InlineData(StoreLocation.CurrentUser, true)]
+        [InlineData(StoreLocation.LocalMachine, true)]
+        [InlineData(StoreLocation.CurrentUser, false)]
+        [InlineData(StoreLocation.LocalMachine, false)]
+        public static void EnumerateDisallowedStore(StoreLocation location, bool useEnum)
         {
-            using (X509Store store = new X509Store(StoreName.Disallowed, location))
+            X509Store store = useEnum
+                ? new X509Store(StoreName.Disallowed, location)
+                // Non-normative casing, proving that we aren't case-sensitive (Windows isn't)
+                : new X509Store("disallowed", location);
+
+            using (store)
             {
                 store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly);
 
@@ -349,6 +430,28 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     // That's all.  We enumerated it.
                     // There might not even be data in it.
                 }
+            }
+        }
+
+        [Theory]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.OSX)]
+        [InlineData(StoreLocation.CurrentUser, true)]
+        [InlineData(StoreLocation.LocalMachine, true)]
+        [InlineData(StoreLocation.CurrentUser, false)]
+        [InlineData(StoreLocation.LocalMachine, false)]
+        public static void CannotOpenDisallowedStore(StoreLocation location, bool useEnum)
+        {
+            X509Store store = useEnum
+                ? new X509Store(StoreName.Disallowed, location)
+                // Non-normative casing, proving that we aren't case-sensitive (Windows isn't)
+                : new X509Store("disallowed", location);
+
+            using (store)
+            {
+                Assert.Throws<PlatformNotSupportedException>(() => store.Open(OpenFlags.ReadOnly));
+
+                Assert.Throws<PlatformNotSupportedException>(
+                    () => store.Open(OpenFlags.ReadOnly | OpenFlags.OpenExistingOnly));
             }
         }
     }

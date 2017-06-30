@@ -102,23 +102,6 @@ namespace System.ComponentModel.Tests
             }
         }
 
-        public static IEnumerable<object[]> SerializeDeserialize_MemberData()
-        {
-            yield return new object[] { new Win32Exception() };
-            yield return new object[] { new Win32Exception(42) };
-            yield return new object[] { new Win32Exception(-42) };
-            yield return new object[] { new Win32Exception("some message") };
-            yield return new object[] { new Win32Exception(42, "some message") };
-            yield return new object[] { new Win32Exception("some message", new InvalidOperationException()) };
-        }
-
-        [Theory]
-        [MemberData(nameof(SerializeDeserialize_MemberData))]
-        public static void SerializeDeserialize(Win32Exception exception)
-        {
-            BinaryFormatterHelpers.AssertRoundtrips(exception, e => e.NativeErrorCode, e => e.ErrorCode);
-        }
-
         [Fact]
         public static void GetObjectData_InvalidArgs_Throws()
         {

@@ -136,7 +136,6 @@ namespace System.Data.Odbc
 
         // from .\public\sdk\inc\sqlext.h: and .\public\sdk\inc\sql.h
         // must be public because it is serialized by OdbcException
-        [Serializable]
         public enum RETCODE : int
         { // must be int instead of short for Everett OdbcException Serializablity.
             SUCCESS = 0,

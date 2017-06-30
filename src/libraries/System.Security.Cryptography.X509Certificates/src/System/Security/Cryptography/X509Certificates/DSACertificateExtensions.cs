@@ -39,20 +39,21 @@ namespace System.Security.Cryptography.X509Certificates
             if (certificate.HasPrivateKey)
                 throw new InvalidOperationException(SR.Cryptography_Cert_AlreadyHasPrivateKey);
 
-            DSA publicKey = GetDSAPublicKey(certificate);
-
-            if (publicKey == null)
-                throw new ArgumentException(SR.Cryptography_PrivateKey_WrongAlgorithm);
-
-            DSAParameters currentParameters = publicKey.ExportParameters(false);
-            DSAParameters newParameters = privateKey.ExportParameters(false);
-
-            if (!currentParameters.G.ContentsEqual(newParameters.G) ||
-                !currentParameters.P.ContentsEqual(newParameters.P) ||
-                !currentParameters.Q.ContentsEqual(newParameters.Q) ||
-                !currentParameters.Y.ContentsEqual(newParameters.Y))
+            using (DSA publicKey = GetDSAPublicKey(certificate))
             {
-                throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
+                if (publicKey == null)
+                    throw new ArgumentException(SR.Cryptography_PrivateKey_WrongAlgorithm);
+
+                DSAParameters currentParameters = publicKey.ExportParameters(false);
+                DSAParameters newParameters = privateKey.ExportParameters(false);
+
+                if (!currentParameters.G.ContentsEqual(newParameters.G) ||
+                    !currentParameters.P.ContentsEqual(newParameters.P) ||
+                    !currentParameters.Q.ContentsEqual(newParameters.Q) ||
+                    !currentParameters.Y.ContentsEqual(newParameters.Y))
+                {
+                    throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
+                }
             }
 
             ICertificatePal pal = certificate.Pal.CopyWithPrivateKey(privateKey);

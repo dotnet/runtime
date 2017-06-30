@@ -148,7 +148,7 @@
   <data name="net_wrongversion" xml:space="preserve">
     <value>Only HTTP/1.0 and HTTP/1.1 version requests are currently supported.</value>
   </data>
-   <data name="net_WebHeaderInvalidControlChars" xml:space="preserve">
+  <data name="net_WebHeaderInvalidControlChars" xml:space="preserve">
     <value>Specified value has invalid Control characters.</value>
   </data>
   <data name="net_WebHeaderInvalidCRLFChars" xml:space="preserve">
@@ -264,5 +264,8 @@
   </data>
   <data name="net_ftpstatuscode_ActionNotTakenFilenameNotAllowed" xml:space="preserve">
     <value>File name not allowed</value>
+  </data>
+  <data name="net_invalid_host" xml:space="preserve">
+    <value>The specified value is not a valid Host header string.</value>
   </data>
 </root>

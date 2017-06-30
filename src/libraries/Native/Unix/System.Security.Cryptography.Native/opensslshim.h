@@ -246,6 +246,7 @@ int EC_POINT_set_affine_coordinates_GF2m(const EC_GROUP *group, EC_POINT *p,
     PER_FUNCTION_BLOCK(sk_value, true) \
     PER_FUNCTION_BLOCK(SSL_CIPHER_description, true) \
     PER_FUNCTION_BLOCK(SSL_ctrl, true) \
+    PER_FUNCTION_BLOCK(SSL_set_quiet_shutdown, true) \
     PER_FUNCTION_BLOCK(SSL_CTX_check_private_key, true) \
     PER_FUNCTION_BLOCK(SSL_CTX_ctrl, true) \
     PER_FUNCTION_BLOCK(SSL_CTX_free, true) \
@@ -535,6 +536,7 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define sk_value sk_value_ptr
 #define SSL_CIPHER_description SSL_CIPHER_description_ptr
 #define SSL_ctrl SSL_ctrl_ptr
+#define SSL_set_quiet_shutdown SSL_set_quiet_shutdown_ptr
 #define SSL_CTX_check_private_key SSL_CTX_check_private_key_ptr
 #define SSL_CTX_ctrl SSL_CTX_ctrl_ptr
 #define SSL_CTX_free SSL_CTX_free_ptr

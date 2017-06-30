@@ -4,7 +4,6 @@
 
 namespace System.CodeDom
 {
-    [Serializable]
     public class CodeMemberProperty : CodeTypeMember
     {
         private CodeTypeReference _type;

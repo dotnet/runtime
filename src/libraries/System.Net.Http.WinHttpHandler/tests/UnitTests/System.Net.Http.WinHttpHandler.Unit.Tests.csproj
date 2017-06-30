@@ -37,9 +37,6 @@
     <Compile Include="$(CommonPath)\System\StringExtensions.cs">
       <Link>Common\System\StringExtensions.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Diagnostics\ExceptionExtensions.cs">
-      <Link>Common\System\Diagnostics\ExceptionExtensions.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\IO\StreamHelpers.CopyValidation.cs">
       <Link>Common\System\IO\StreamHelpers.CopyValidation.cs</Link>
     </Compile>
@@ -69,6 +66,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Http\WinHttpException.cs">
       <Link>Common\System\Net\Http\WinHttpException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Runtime\ExceptionServices\ExceptionStackTrace.cs">
+      <Link>Common\System\Runtime\ExceptionServices\ExceptionStackTrace.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Threading\Tasks\RendezvousAwaitable.cs">
       <Link>Common\System\Threading\Tasks\RendezvousAwaitable.cs</Link>

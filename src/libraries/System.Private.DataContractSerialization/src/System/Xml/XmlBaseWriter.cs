@@ -28,6 +28,7 @@ namespace System.Xml
         private byte[] _trailBytes;
         private int _trailByteCount;
         private XmlStreamNodeWriter _nodeWriter;
+        private XmlSigningNodeWriter _signingWriter;
         private bool _inList;
         private const string xmlnsNamespace = "http://www.w3.org/2000/xmlns/";
         private const string xmlNamespace = "http://www.w3.org/XML/1998/namespace";
@@ -95,6 +96,10 @@ namespace System.Xml
                 _attributeValue = null;
                 _attributeLocalName = null;
                 _nodeWriter.Close();
+                if (_signingWriter != null)
+                {
+                    _signingWriter.Close();
+                }
             }
         }
 
@@ -1613,22 +1618,43 @@ namespace System.Xml
         {
             get
             {
-                return false;
+                return true;
             }
         }
 
+        protected bool Signing
+        {
+            get
+            {
+                return _writer == _signingWriter;
+            }
+        }
 
         public override void StartCanonicalization(Stream stream, bool includeComments, string[] inclusivePrefixes)
         {
-            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new PlatformNotSupportedException(SR.PlatformNotSupported_Canonicalization));
+            if (IsClosed)
+                ThrowClosed();
+            if (Signing)
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.XmlCanonicalizationStarted)));
+            FlushElement();
+            if (_signingWriter == null)
+                _signingWriter = CreateSigningNodeWriter();
+            _signingWriter.SetOutput(_writer, stream, includeComments, inclusivePrefixes);
+            _writer = _signingWriter;
+            SignScope(_signingWriter.CanonicalWriter);
         }
 
         public override void EndCanonicalization()
         {
-            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new PlatformNotSupportedException(SR.PlatformNotSupported_Canonicalization));
+            if (IsClosed)
+                ThrowClosed();
+            if (!Signing)
+                throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidOperationException(SR.Format(SR.XmlCanonicalizationNotStarted)));
+            _signingWriter.Flush();
+            _writer = _signingWriter.NodeWriter;
         }
 
-
+        protected abstract XmlSigningNodeWriter CreateSigningNodeWriter();
 
         private void FlushBase64()
         {
@@ -1748,6 +1774,10 @@ namespace System.Xml
             }
         }
 
+        protected void SignScope(XmlCanonicalWriter signingWriter)
+        {
+            _nsMgr.Sign(signingWriter);
+        }
 
         private void WriteAttributeText(string value)
         {
@@ -2266,6 +2296,26 @@ namespace System.Xml
                 return null;
             }
 
+            public void Sign(XmlCanonicalWriter signingWriter)
+            {
+                int nsCount = _nsCount;
+                Fx.Assert(nsCount >= 1 && _namespaces[0].Prefix.Length == 0 && _namespaces[0].Uri.Length == 0, "");
+                for (int i = 1; i < nsCount; i++)
+                {
+                    Namespace nameSpace = _namespaces[i];
+
+                    bool found = false;
+                    for (int j = i + 1; j < nsCount && !found; j++)
+                    {
+                        found = (nameSpace.Prefix == _namespaces[j].Prefix);
+                    }
+
+                    if (!found)
+                    {
+                        signingWriter.WriteXmlnsAttribute(nameSpace.Prefix, nameSpace.Uri);
+                    }
+                }
+            }
 
             private class XmlAttribute
             {

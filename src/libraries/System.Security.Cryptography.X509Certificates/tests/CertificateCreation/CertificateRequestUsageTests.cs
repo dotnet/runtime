@@ -373,6 +373,73 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
             }
         }
 
+        [Fact]
+        public static void CheckTimeNested()
+        {
+            HashAlgorithmName hashAlgorithm = HashAlgorithmName.SHA256;
+
+            using (RSA rsa = RSA.Create(TestData.RsaBigExponentParams))
+            {
+                CertificateRequest request = new CertificateRequest("CN=Issuer", rsa, hashAlgorithm, RSASignaturePadding.Pkcs1);
+
+                request.CertificateExtensions.Add(
+                    new X509BasicConstraintsExtension(true, false, 0, true));
+
+                DateTimeOffset now = DateTimeOffset.UtcNow;
+                DateTimeOffset notBefore = now.AddMinutes(-10);
+                DateTimeOffset notAfter = now.AddMinutes(10);
+
+                if (notAfter.Millisecond > 900)
+                {
+                    // We're only going to add 1, but let's be defensive.
+                    notAfter -= TimeSpan.FromMilliseconds(200);
+                }
+
+                using (X509Certificate2 issuer = request.CreateSelfSigned(notBefore, notAfter))
+                {
+                    request = new CertificateRequest("CN=Leaf", rsa, hashAlgorithm, RSASignaturePadding.Pkcs1);
+                    byte[] serial = { 3, 1, 4, 1, 5, 9 };
+
+                    // Boundary case, exact match: Issue+Dispose
+                    request.Create(issuer, notBefore, notAfter, serial).Dispose();
+
+                    DateTimeOffset truncatedNotBefore = new DateTimeOffset(
+                        notBefore.Year,
+                        notBefore.Month,
+                        notBefore.Day,
+                        notBefore.Hour,
+                        notBefore.Minute,
+                        notBefore.Second,
+                        notBefore.Offset);
+
+                    // Boundary case, the notBefore rounded down: Issue+Dispose
+                    request.Create(issuer, truncatedNotBefore, notAfter, serial).Dispose();
+
+                    // Boundary case, the notAfter plus a millisecond, same second rounded down.
+                    request.Create(issuer, notBefore, notAfter.AddMilliseconds(1), serial).Dispose();//);
+
+                    // The notBefore value a whole second earlier:
+                    Assert.Throws<ArgumentException>(
+                        "notBefore",
+                        () => request.Create(issuer, notBefore.AddSeconds(-1), notAfter, serial).Dispose());
+
+                    // The notAfter value bumped past the second mark:
+                    DateTimeOffset tooLate = notAfter.AddMilliseconds(1000 - notAfter.Millisecond);
+                    Assert.Throws<ArgumentException>(
+                        "notAfter",
+                        () =>
+                        {
+                            request.Create(issuer, notBefore, tooLate, serial).Dispose();
+                        });
+
+                    // And ensure that both out of range isn't magically valid again
+                    Assert.Throws<ArgumentException>(
+                        "notBefore",
+                        () => request.Create(issuer, notBefore.AddDays(-1), notAfter.AddDays(1), serial).Dispose());
+                }
+            }
+        }
+
         [Theory]
         [InlineData("Length Exceeds Payload", "0501")]
         [InlineData("Leftover Data", "0101FF00")]

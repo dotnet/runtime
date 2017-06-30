@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Threading.Tests
@@ -18,7 +19,7 @@ namespace System.Threading.Tests
             IntPtr eventHandle = e.SafeWaitHandle.DangerousGetHandle();
             var handles = new IntPtr[] { eventHandle, eventHandle };
             Assert.Equal(WaitHandle.WaitTimeout, tsc.Wait(handles, false, 0));
-            Assert.Throws<DuplicateWaitObjectException>(() => tsc.Wait(handles, true, 0));
+            Assert.Throws<DuplicateWaitObjectException>(() => Task.Run(() => tsc.Wait(handles, true, 0)).GetAwaiter().GetResult()); // ensure Wait runs on MTA thread
 
             var e2 = new ManualResetEvent(false);
             handles = new IntPtr[] { eventHandle, e2.SafeWaitHandle.DangerousGetHandle() };

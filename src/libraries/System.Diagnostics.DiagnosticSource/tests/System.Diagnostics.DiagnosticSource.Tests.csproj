@@ -4,12 +4,6 @@
   <PropertyGroup>
     <ProjectGuid>{A7922FA3-306A-41B9-B8DC-CC4DBE685A85}</ProjectGuid>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetGroup)' == 'net46'">
-    <DefineConstants>$(DefineConstants);NET46</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetGroup)' == 'netfx'">
-    <DefineConstants>$(DefineConstants);NETFX</DefineConstants>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.1-Debug|AnyCPU'" />
@@ -31,7 +25,19 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetGroup)' == 'netfx'">
     <Compile Include="HttpHandlerDiagnosticListenerTests.cs" />
-    <Compile Include="ActivityDateTimeTests.cs" />    
+    <Compile Include="ActivityDateTimeTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\Net\Configuration.cs">
+      <Link>Common\System\Net\Configuration.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\Configuration.Http.cs">
+      <Link>Common\System\Net\Configuration.Http.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\FileCleanupTestBase.cs">
+      <Link>Common\System\IO\FileCleanupTestBase.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorTestBase.cs">
+      <Link>Common\System\Diagnostics\RemoteExecutorTestBase.cs</Link>
+    </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

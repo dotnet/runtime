@@ -291,7 +291,7 @@ namespace System.Net.WebSockets
         {
             Debug.Assert(messageType == WebSocketMessageType.Binary || messageType == WebSocketMessageType.Text,
                 "'messageType' MUST be either 'WebSocketMessageType.Binary' or 'WebSocketMessageType.Text'.");
-            Debug.Assert(buffer != null);
+            Debug.Assert(buffer.Array != null);
 
             string inputParameter = string.Empty;
             if (NetEventSource.IsEnabled)
@@ -848,7 +848,7 @@ namespace System.Net.WebSockets
                     {
                         _closeAsyncStartedReceive = true;
                         ArraySegment<byte> closeMessageBuffer =
-                            new ArraySegment<byte>(new byte[WebSocketBuffer.MinReceiveBufferSize]);
+                            new ArraySegment<byte>(new byte[HttpWebSocket.MinReceiveBufferSize]);
                         EnsureReceiveOperation();
                         Task<WebSocketReceiveResult> receiveAsyncTask = _receiveOperation.Process(closeMessageBuffer,
                             linkedCancellationToken);
@@ -1961,10 +1961,8 @@ namespace System.Net.WebSockets
 
                         if (bufferType == WebSocketProtocolComponent.BufferType.Close)
                         {
-                            payload = HttpWebSocket.EmptyPayload;
-                            string reason;
-                            WebSocketCloseStatus closeStatus;
-                            _webSocket._internalBuffer.ConvertCloseBuffer(action, dataBuffers[0], out closeStatus, out reason);
+                            payload = ArraySegment<byte>.Empty;
+                            _webSocket._internalBuffer.ConvertCloseBuffer(action, dataBuffers[0], out WebSocketCloseStatus closeStatus, out string reason);
 
                             receiveResult = new WebSocketReceiveResult(bytesTransferred,
                                 messageType, true, closeStatus, reason);

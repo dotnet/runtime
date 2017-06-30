@@ -8,9 +8,8 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using System;
-using System.Threading;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 #pragma warning disable 0420
 namespace System.Threading.Tasks
@@ -18,6 +17,7 @@ namespace System.Threading.Tasks
     /// <summary>
     /// Represents an index range
     /// </summary>
+    [StructLayout(LayoutKind.Auto)]
     internal struct IndexRange
     {
         // the From and To values for this range. These do not change.
@@ -26,7 +26,11 @@ namespace System.Threading.Tasks
 
         // The shared index, stored as the offset from nFromInclusive. Using an offset rather than the actual 
         // value saves us from overflows that can happen due to multiple workers racing to increment this.
-        // All updates to this field need to be interlocked.
+        // All updates to this field need to be interlocked.  To avoid split interlockeds across cache-lines
+        // in 32-bit processes, in 32-bit processes when the range fits in a 32-bit value, we prefer to use
+        // a 32-bit field, and just use the first 32-bits of the long.  And to minimize false sharing, each
+        // value is stored in its own heap-allocated object, which is lazily allocated by the thread using
+        // that range, minimizing the chances it'll be near the objects from other threads.
         internal volatile Box<long> _nSharedCurrentIndexOffset;
 
         // to be set to 1 by the worker that finishes this range. It's OK to do a non-interlocked write here.
@@ -37,6 +41,7 @@ namespace System.Threading.Tasks
     /// <summary>
     /// The RangeWorker struct wraps the state needed by a task that services the parallel loop
     /// </summary>
+    [StructLayout(LayoutKind.Auto)]
     internal struct RangeWorker
     {
         // reference to the IndexRange array allocated by the range manager
@@ -54,15 +59,19 @@ namespace System.Threading.Tasks
 
         // the increment value is doubled each time this worker finds work, and is capped at this value
         internal readonly long _nMaxIncrementValue;
+        
+        // whether to use 32-bits or 64-bits of current index in each range
+        internal readonly bool _use32BitCurrentIndex;
 
         internal bool IsInitialized { get { return _indexRanges != null; } }
 
         /// <summary>
         /// Initializes a RangeWorker struct
         /// </summary>
-        internal RangeWorker(IndexRange[] ranges, int nInitialRange, long nStep)
+        internal RangeWorker(IndexRange[] ranges, int nInitialRange, long nStep, bool use32BitCurrentIndex)
         {
             _indexRanges = ranges;
+            _use32BitCurrentIndex = use32BitCurrentIndex;
             _nCurrentIndexRange = nInitialRange;
             _nStep = nStep;
 
@@ -99,9 +108,24 @@ namespace System.Threading.Tasks
                         Interlocked.CompareExchange(ref _indexRanges[_nCurrentIndexRange]._nSharedCurrentIndexOffset, new Box<long>(0), null);
                     }
 
-                    // this access needs to be on the array slot
-                    long nMyOffset = Interlocked.Add(ref _indexRanges[_nCurrentIndexRange]._nSharedCurrentIndexOffset.Value,
-                                                    _nIncrementValue) - _nIncrementValue;
+                    long nMyOffset;
+                    if (IntPtr.Size == 4 && _use32BitCurrentIndex)
+                    {
+                        // In 32-bit processes, we prefer to use 32-bit interlocked operations, to avoid the possibility of doing
+                        // a 64-bit interlocked when the target value crosses a cache line, as that can be super expensive.
+                        // We use the first 32 bits of the Int64 index in such cases.
+                        unsafe
+                        {
+                            fixed (long* indexPtr = &_indexRanges[_nCurrentIndexRange]._nSharedCurrentIndexOffset.Value)
+                            {
+                                nMyOffset = Interlocked.Add(ref *(int*)indexPtr, (int)_nIncrementValue) - _nIncrementValue;
+                            }
+                        }
+                    }
+                    else
+                    {
+                        nMyOffset = Interlocked.Add(ref _indexRanges[_nCurrentIndexRange]._nSharedCurrentIndexOffset.Value, _nIncrementValue) - _nIncrementValue;
+                    }
 
                     if (currentRange._nToExclusive - currentRange._nFromInclusive > nMyOffset)
                     {
@@ -182,6 +206,7 @@ namespace System.Threading.Tasks
     internal class RangeManager
     {
         internal readonly IndexRange[] _indexRanges;
+        internal readonly bool _use32BitCurrentIndex;
 
         internal int _nCurrentIndexRangeToAssign;
         internal long _nStep;
@@ -229,6 +254,7 @@ namespace System.Threading.Tasks
             // Convert to signed so the rest of the logic works.
             // Should be fine so long as uRangeSize < Int64.MaxValue, which we guaranteed by setting #workers >= 2. 
             long nRangeSize = (long)uRangeSize;
+            _use32BitCurrentIndex = IntPtr.Size == 4 && nRangeSize <= int.MaxValue;
 
             // allocate the array of index ranges
             _indexRanges = new IndexRange[nNumRanges];
@@ -269,7 +295,7 @@ namespace System.Threading.Tasks
 
             int nInitialRange = (Interlocked.Increment(ref _nCurrentIndexRangeToAssign) - 1) % _indexRanges.Length;
 
-            return new RangeWorker(_indexRanges, nInitialRange, _nStep);
+            return new RangeWorker(_indexRanges, nInitialRange, _nStep, _use32BitCurrentIndex);
         }
     }
 }

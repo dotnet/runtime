@@ -20,7 +20,7 @@ namespace System.Net.NetworkInformation.Tests
             _log = TestLogging.GetInstance();
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/308
         public void IPInfoTest_AccessAllProperties_NoErrors()
         {
             foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
@@ -102,7 +102,7 @@ namespace System.Net.NetworkInformation.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/308
         public void IPInfoTest_AccessAllIPv4Properties_NoErrors()
         {
             foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
@@ -125,7 +125,7 @@ namespace System.Net.NetworkInformation.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/308
         public void IPInfoTest_AccessAllIPv6Properties_NoErrors()
         {
             foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())
@@ -150,7 +150,7 @@ namespace System.Net.NetworkInformation.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/308
         [Trait("IPv6", "true")]
         public void IPv6ScopeId_AccessAllValues_Success()
         {

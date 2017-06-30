@@ -140,7 +140,7 @@ namespace System.IO.Pipes.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/975
+        [Fact]
         public async Task ReadWithZeroLengthBuffer_Nop()
         {
             using (ServerClientPair pair = CreateServerClientPair())
@@ -208,6 +208,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "There is a bug in netfx around async read on a broken PipeStream. See #2601 and #2899. This bug is fixed in netcore.")]
         public virtual async Task ReadFromPipeWithClosedPartner_ReadNoBytes()
         {
             using (ServerClientPair pair = CreateServerClientPair())

@@ -249,10 +249,10 @@ namespace System.Linq.Expressions.Tests
     {
         private static readonly IEnumerable<object[]> Booleans = new[]
         {
-            new object[] {false},
 #if FEATURE_COMPILE && FEATURE_INTERPRET
-            new object[] {true}
+            new object[] {false},
 #endif
+            new object[] {true},
         };
 
         public IEnumerator<object[]> GetEnumerator() => Booleans.GetEnumerator();

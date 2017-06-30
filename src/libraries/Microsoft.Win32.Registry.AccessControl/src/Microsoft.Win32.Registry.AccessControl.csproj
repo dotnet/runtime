@@ -5,7 +5,7 @@
     <AssemblyName>Microsoft.Win32.Registry.AccessControl</AssemblyName>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'netfx'">None</ResourcesSourceOutputDirectory>
-    <GeneratePlatformNotSupportedAssembly Condition="'$(TargetsWindows)' != 'true'">true</GeneratePlatformNotSupportedAssembly>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_RegistryAccessControl</GeneratePlatformNotSupportedAssemblyMessage>
     <ProjectGuid>{0E23F29E-6BB0-4B94-A5DA-B5E50601E0F2}</ProjectGuid>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
@@ -21,6 +21,9 @@
   <ItemGroup Condition="'$(TargetGroup)' != 'netfx'">
     <Reference Include="Microsoft.Win32.Registry" />
     <Reference Include="System.Security.AccessControl" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsWindows)' != 'true'">
+    <Reference Include="System.Resources.ResourceManager" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="Microsoft\Win32\RegistryAclExtensions.cs" />

@@ -4,7 +4,6 @@
 
 namespace System.CodeDom
 {
-    [Serializable]
     public enum CodeRegionMode
     {
         None = 0,

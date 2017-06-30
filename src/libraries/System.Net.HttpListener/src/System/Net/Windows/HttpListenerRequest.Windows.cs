@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Diagnostics;
 using System.Globalization;
@@ -15,35 +14,26 @@ using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Principal;
 using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace System.Net
 {
     public sealed unsafe partial class HttpListenerRequest
     {
-        private Uri _requestUri;
         private ulong _requestId;
         internal ulong _connectionId;
         private SslStatus _sslStatus;
-        private string _rawUrl;
         private string _cookedUrlHost;
         private string _cookedUrlPath;
         private string _cookedUrlQuery;
         private long _contentLength;
         private Stream _requestStream;
         private string _httpMethod;
-        private bool? _keepAlive;
-        private Version _version;
         private WebHeaderCollection _webHeaders;
         private IPEndPoint _localEndPoint;
         private IPEndPoint _remoteEndPoint;
         private BoundaryType _boundaryType;
-        private ListenerClientCertState _clientCertState;
-        private X509Certificate2 _clientCertificate;
         private int _clientCertificateError;
         private RequestContextBase _memoryBlob;
-        private CookieCollection _cookies;
         private HttpListenerContext _httpContext;
         private bool _isDisposed = false;
         internal const uint CertBoblSize = 1500;
@@ -93,8 +83,6 @@ namespace System.Net
                 _cookedUrlQuery = Marshal.PtrToStringUni((IntPtr)cookedUrl.pQueryString, cookedUrl.QueryStringLength / 2);
             }
             _version = new Version(memoryBlob.RequestBlob->Version.MajorVersion, memoryBlob.RequestBlob->Version.MinorVersion);
-            _clientCertState = ListenerClientCertState.NotInitialized;
-            _keepAlive = null;
             if (NetEventSource.IsEnabled)
             {
                 NetEventSource.Info(this, $"RequestId:{RequestId} ConnectionId:{_connectionId} RawConnectionId:{memoryBlob.RequestBlob->RawConnectionId} UrlContext:{memoryBlob.RequestBlob->UrlContext} RawUrl:{_rawUrl} Version:{_version} Secure:{_sslStatus}");
@@ -116,13 +104,7 @@ namespace System.Net
             }
         }
 
-        internal HttpListenerContext HttpListenerContext
-        {
-            get
-            {
-                return _httpContext;
-            }
-        }
+        internal HttpListenerContext HttpListenerContext => _httpContext;
 
         // Note: RequestBuffer may get moved in memory. If you dereference a pointer from inside the RequestBuffer, 
         // you must use 'OriginalBlobAddress' below to adjust the location of the pointer to match the location of
@@ -161,13 +143,7 @@ namespace System.Net
             _memoryBlob.ReleasePins();
         }
 
-        internal ulong RequestId
-        {
-            get
-            {
-                return _requestId;
-            }
-        }
+        internal ulong RequestId => _requestId;
 
         public Guid RequestTraceIdentifier
         {
@@ -179,21 +155,13 @@ namespace System.Net
             }
         }
 
-        public string[] AcceptTypes
-        {
-            get
-            {
-                return Helpers.ParseMultivalueHeader(GetKnownHeader(HttpRequestHeader.Accept));
-            }
-        }
-
         public long ContentLength64
         {
             get
             {
                 if (_boundaryType == BoundaryType.None)
                 {
-                    string transferEncodingHeader = GetKnownHeader(HttpRequestHeader.TransferEncoding);
+                    string transferEncodingHeader = Headers[HttpKnownHeaderNames.TransferEncoding];
                     if (transferEncodingHeader != null && transferEncodingHeader.Equals("chunked", StringComparison.OrdinalIgnoreCase))
                     {
                         _boundaryType = BoundaryType.Chunked;
@@ -203,7 +171,7 @@ namespace System.Net
                     {
                         _contentLength = 0;
                         _boundaryType = BoundaryType.ContentLength;
-                        string length = GetKnownHeader(HttpRequestHeader.ContentLength);
+                        string length = Headers[HttpKnownHeaderNames.ContentLength];
                         if (length != null)
                         {
                             bool success = long.TryParse(length, NumberStyles.None, CultureInfo.InvariantCulture.NumberFormat, out _contentLength);
@@ -217,14 +185,6 @@ namespace System.Net
                 }
                 if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"_contentLength:{_contentLength} _boundaryType:{_boundaryType}");
                 return _contentLength;
-            }
-        }
-
-        public string ContentType
-        {
-            get
-            {
-                return GetKnownHeader(HttpRequestHeader.ContentType);
             }
         }
 
@@ -277,196 +237,23 @@ namespace System.Net
             }
         }
 
-        public bool IsLocal
-        {
-            get
-            {
-                return LocalEndPoint.Address.Equals(RemoteEndPoint.Address);
-            }
-        }
-
-        public bool IsSecureConnection
-        {
-            get
-            {
-                return _sslStatus != SslStatus.Insecure;
-            }
-        }
-
-        public bool IsWebSocketRequest
-        {
-            get
-            {
-                if (!WebSocketProtocolComponent.IsSupported)
-                {
-                    return false;
-                }
-
-                bool foundConnectionUpgradeHeader = false;
-                if (string.IsNullOrEmpty(this.Headers[HttpKnownHeaderNames.Connection]) || string.IsNullOrEmpty(this.Headers[HttpKnownHeaderNames.Upgrade]))
-                {
-                    return false;
-                }
-
-                foreach (string connection in this.Headers.GetValues(HttpKnownHeaderNames.Connection))
-                {
-                    if (string.Compare(connection, HttpKnownHeaderNames.Upgrade, StringComparison.OrdinalIgnoreCase) == 0)
-                    {
-                        foundConnectionUpgradeHeader = true;
-                        break;
-                    }
-                }
-
-                if (!foundConnectionUpgradeHeader)
-                {
-                    return false;
-                }
-
-                foreach (string upgrade in this.Headers.GetValues(HttpKnownHeaderNames.Upgrade))
-                {
-                    if (string.Equals(upgrade, HttpWebSocket.WebSocketUpgradeToken, StringComparison.OrdinalIgnoreCase))
-                    {
-                        return true;
-                    }
-                }
-
-                return false;
-            }
-        }
-
-        public NameValueCollection QueryString
-        {
-            get
-            {
-                NameValueCollection queryString = new NameValueCollection();
-                Helpers.FillFromString(queryString, Url.Query, true, ContentEncoding);
-                return queryString;
-            }
-        }
-
-        public string RawUrl
-        {
-            get
-            {
-                return _rawUrl;
-            }
-        }
+        public bool IsSecureConnection => _sslStatus != SslStatus.Insecure;
 
         public string ServiceName
         {
-            get { return _serviceName; }
-            internal set { _serviceName = value; }
+            get => _serviceName;
+            internal set => _serviceName = value;
         }
 
-        public Uri Url
+        private int GetClientCertificateErrorCore()
         {
-            get
-            {
-                return RequestUri;
-            }
-        }
-
-        public Uri UrlReferrer
-        {
-            get
-            {
-                string referrer = GetKnownHeader(HttpRequestHeader.Referer);
-                if (referrer == null)
-                {
-                    return null;
-                }
-                Uri urlReferrer;
-                bool success = Uri.TryCreate(referrer, UriKind.RelativeOrAbsolute, out urlReferrer);
-                return success ? urlReferrer : null;
-            }
-        }
-
-        public string UserAgent
-        {
-            get
-            {
-                return GetKnownHeader(HttpRequestHeader.UserAgent);
-            }
-        }
-
-        public string UserHostAddress
-        {
-            get
-            {
-                return LocalEndPoint.ToString();
-            }
-        }
-
-        public string UserHostName
-        {
-            get
-            {
-                return GetKnownHeader(HttpRequestHeader.Host);
-            }
-        }
-
-        public string[] UserLanguages
-        {
-            get
-            {
-                return Helpers.ParseMultivalueHeader(GetKnownHeader(HttpRequestHeader.AcceptLanguage));
-            }
-        }
-
-        public int ClientCertificateError
-        {
-            get
-            {
-                if (_clientCertState == ListenerClientCertState.NotInitialized)
-                    throw new InvalidOperationException(SR.Format(SR.net_listener_mustcall, "GetClientCertificate()/BeginGetClientCertificate()"));
-                else if (_clientCertState == ListenerClientCertState.InProgress)
-                    throw new InvalidOperationException(SR.Format(SR.net_listener_mustcompletecall, "GetClientCertificate()/BeginGetClientCertificate()"));
-
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"ClientCertificateError:{_clientCertificateError}");
-                return _clientCertificateError;
-            }
-        }
-
-        internal X509Certificate2 ClientCertificate
-        {
-            set
-            {
-                _clientCertificate = value;
-            }
-        }
-
-        internal ListenerClientCertState ClientCertState
-        {
-            set
-            {
-                _clientCertState = value;
-            }
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"ClientCertificateError:{_clientCertificateError}");
+            return _clientCertificateError;
         }
 
         internal void SetClientCertificateError(int clientCertificateError)
         {
             _clientCertificateError = clientCertificateError;
-        }
-
-        public X509Certificate2 GetClientCertificate()
-        {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
-            try
-            {
-                ProcessClientCertificate();
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"_clientCertificate:{_clientCertificate}");
-            }
-            finally
-            {
-                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
-            }
-            return _clientCertificate;
-        }
-
-        public IAsyncResult BeginGetClientCertificate(AsyncCallback requestCallback, object state)
-        {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
-            return AsyncProcessClientCertificate(requestCallback, state);
         }
 
         public X509Certificate2 EndGetClientCertificate(IAsyncResult asyncResult)
@@ -490,7 +277,7 @@ namespace System.Net
                 }
                 clientCertAsyncResult.EndCalled = true;
                 clientCertificate = clientCertAsyncResult.InternalWaitForCompletion() as X509Certificate2;
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"_clientCertificate:{_clientCertificate}");
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"_clientCertificate:{ClientCertificate}");
             }
             finally
             {
@@ -499,57 +286,7 @@ namespace System.Net
             return clientCertificate;
         }
 
-        public Task<X509Certificate2> GetClientCertificateAsync()
-        {
-            return Task.Factory.FromAsync(
-                (callback, state) => ((HttpListenerRequest)state).BeginGetClientCertificate(callback, state),
-                iar => ((HttpListenerRequest)iar.AsyncState).EndGetClientCertificate(iar),
-                this);
-        }
-
-        public TransportContext TransportContext
-        {
-            get
-            {
-                return new HttpListenerRequestContext(this);
-            }
-        }
-
-        private CookieCollection ParseCookies(Uri uri, string setCookieHeader)
-        {
-            if (NetEventSource.IsEnabled) NetEventSource.Info(this, "uri:" + uri + " setCookieHeader:" + setCookieHeader);
-            CookieContainer container = new CookieContainer();
-            container.SetCookies(uri, setCookieHeader);
-            return container.GetCookies(uri);
-        }
-
-        public CookieCollection Cookies
-        {
-            get
-            {
-                if (_cookies == null)
-                {
-                    string cookieString = GetKnownHeader(HttpRequestHeader.Cookie);
-                    if (cookieString != null && cookieString.Length > 0)
-                    {
-                        _cookies = ParseCookies(RequestUri, cookieString);
-                    }
-                    if (_cookies == null)
-                    {
-                        _cookies = new CookieCollection();
-                    }
-                }
-                return _cookies;
-            }
-        }
-
-        public Version ProtocolVersion
-        {
-            get
-            {
-                return _version;
-            }
-        }
+        public TransportContext TransportContext => new HttpListenerRequestContext(this);
 
         public bool HasEntityBody
         {
@@ -558,43 +295,6 @@ namespace System.Net
                 // accessing the ContentLength property delay creates m_BoundaryType
                 return (ContentLength64 > 0 && _boundaryType == BoundaryType.ContentLength) ||
                     _boundaryType == BoundaryType.Chunked || _boundaryType == BoundaryType.Multipart;
-            }
-        }
-
-        public bool KeepAlive
-        {
-            get
-            {
-                if (!_keepAlive.HasValue)
-                {
-                    string header = Headers[HttpKnownHeaderNames.ProxyConnection];
-                    if (string.IsNullOrEmpty(header))
-                    {
-                        header = GetKnownHeader(HttpRequestHeader.Connection);
-                    }
-                    if (string.IsNullOrEmpty(header))
-                    {
-                        if (ProtocolVersion >= HttpVersion.Version11)
-                        {
-                            _keepAlive = true;
-                        }
-                        else
-                        {
-                            header = GetKnownHeader(HttpRequestHeader.KeepAlive);
-                            _keepAlive = !string.IsNullOrEmpty(header);
-                        }
-                    }
-                    else
-                    {
-                        header = header.ToLower(CultureInfo.InvariantCulture);
-                        _keepAlive =
-                            header.IndexOf("close", StringComparison.InvariantCultureIgnoreCase) < 0 ||
-                            header.IndexOf("keep-alive", StringComparison.InvariantCultureIgnoreCase) >= 0;
-                    }
-                }
-
-                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "_keepAlive=" + _keepAlive);
-                return _keepAlive.Value;
             }
         }
 
@@ -638,12 +338,8 @@ namespace System.Net
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
 
-        private ListenerClientCertAsyncResult AsyncProcessClientCertificate(AsyncCallback requestCallback, object state)
+        private ListenerClientCertAsyncResult BeginGetClientCertificateCore(AsyncCallback requestCallback, object state)
         {
-            if (_clientCertState == ListenerClientCertState.InProgress)
-                throw new InvalidOperationException(SR.Format(SR.net_listener_callinprogress, "GetClientCertificate()/BeginGetClientCertificate()"));
-            _clientCertState = ListenerClientCertState.InProgress;
-
             ListenerClientCertAsyncResult asyncResult = null;
             //--------------------------------------------------------------------
             //When you configure the HTTP.SYS with a flag value 2
@@ -739,11 +435,8 @@ namespace System.Net
             return asyncResult;
         }
 
-        private void ProcessClientCertificate()
+        private void GetClientCertificateCore()
         {
-            if (_clientCertState == ListenerClientCertState.InProgress)
-                throw new InvalidOperationException(SR.Format(SR.net_listener_callinprogress, "GetClientCertificate()/BeginGetClientCertificate()"));
-            _clientCertState = ListenerClientCertState.InProgress;
             if (NetEventSource.IsEnabled) NetEventSource.Info(this);
             //--------------------------------------------------------------------
             //When you configure the HTTP.SYS with a flag value 2
@@ -821,7 +514,7 @@ namespace System.Net
                                     {
                                         byte[] certEncoded = new byte[pClientCertInfo->CertEncodedSize];
                                         Marshal.Copy((IntPtr)pClientCertInfo->pCertEncoded, certEncoded, 0, certEncoded.Length);
-                                        _clientCertificate = new X509Certificate2(certEncoded);
+                                        ClientCertificate = new X509Certificate2(certEncoded);
                                     }
                                     catch (CryptographicException exception)
                                     {
@@ -844,15 +537,6 @@ namespace System.Net
                     break;
                 }
             }
-            _clientCertState = ListenerClientCertState.Completed;
-        }
-
-        private string RequestScheme
-        {
-            get
-            {
-                return IsSecureConnection ? "https" : "http";
-            }
         }
 
         private Uri RequestUri
@@ -870,11 +554,6 @@ namespace System.Net
             }
         }
 
-        private string GetKnownHeader(HttpRequestHeader header)
-        {
-            return Interop.HttpApi.GetKnownHeader(RequestBuffer, OriginalBlobAddress, (int)header);
-        }
-
         internal ChannelBinding GetChannelBinding()
         {
             return HttpListenerContext.Listener.GetChannelBindingFromTls(_connectionId);
@@ -887,5 +566,7 @@ namespace System.Net
                 throw new ObjectDisposedException(this.GetType().FullName);
             }
         }
+
+        private bool SupportsWebSockets => WebSocketProtocolComponent.IsSupported;
     }
 }

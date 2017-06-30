@@ -130,9 +130,6 @@
   <data name="NotSupported_UnseekableStream" xml:space="preserve">
     <value>Stream does not support seeking.</value>
   </data>
-  <data name="IO_EOF_ReadBeyondEOF" xml:space="preserve">
-    <value>Unable to read beyond the end of the stream.</value>
-  </data>
   <data name="ObjectDisposed_StreamClosed" xml:space="preserve">
     <value>Can not access a closed Stream.</value>
   </data>
@@ -168,5 +165,8 @@
   </data>
   <data name="UnauthorizedAccess_IODenied_Path" xml:space="preserve">
     <value>Access to the port '{0}' is denied.</value>
+  </data>
+  <data name="PlatformNotSupported_IOPorts" xml:space="preserve">
+    <value>System.IO.Ports is currently only supported on Windows.</value>
   </data>
 </root>

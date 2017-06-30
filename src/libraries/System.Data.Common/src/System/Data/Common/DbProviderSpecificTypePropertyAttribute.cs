@@ -4,7 +4,6 @@
 
 namespace System.Data.Common
 {
-    [Serializable]
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
     public sealed class DbProviderSpecificTypePropertyAttribute : System.Attribute
     {

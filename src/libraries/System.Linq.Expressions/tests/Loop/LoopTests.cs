@@ -254,7 +254,7 @@ namespace System.Linq.Expressions.Tests
             LoopExpression loop = Expression.Loop(Expression.Empty(), Expression.Label(), Expression.Label());
             Assert.False(loop.CanReduce);
             Assert.Same(loop, loop.Reduce());
-            Assert.Throws<ArgumentException>(null, () => loop.ReduceAndCheck());
+            AssertExtensions.Throws<ArgumentException>(null, () => loop.ReduceAndCheck());
         }
 
         [Fact]

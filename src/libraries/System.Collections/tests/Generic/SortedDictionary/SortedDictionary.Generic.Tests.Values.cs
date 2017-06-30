@@ -64,6 +64,7 @@ namespace System.Collections.Tests
         protected override bool IsReadOnly { get { return true; } }
         protected override bool Enumerator_Current_UndefinedOperation_Throws { get { return true; } }
         protected override IEnumerable<ModifyEnumerable> ModifyEnumerables { get { return new List<ModifyEnumerable>(); } }
+        protected override bool SupportsSerialization { get { return false; } }
 
         protected override ICollection NonGenericICollectionFactory()
         {

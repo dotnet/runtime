@@ -49,8 +49,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetVolumeLabel.cs">
       <Link>Common\Interop\Windows\Interop.SetVolumeLabel.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetErrorMode.cs">
-      <Link>Common\Interop\Windows\Interop.SetErrorMode.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetThreadErrorMode.cs">
+      <Link>Common\Interop\Windows\Interop.SetThreadErrorMode.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SecurityOptions.cs">
       <Link>Common\Interop\Windows\Interop.SecurityOptions.cs</Link>

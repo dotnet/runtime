@@ -4,7 +4,6 @@
 
 namespace System.IO.Pipes
 {
-    [Serializable]
     [Flags]
     public enum PipeOptions
     {

@@ -129,7 +129,10 @@ namespace System.Linq.Expressions.Tests
 
         private static void AssertBlock(int n, object obj)
         {
-            AssertTypeName("Block" + n, obj);
+            if (!PlatformDetection.IsNetNative)  // .Net Native blocks internal framework reflection.
+            {
+                AssertTypeName("Block" + n, obj);
+            }
         }
 
         private static void AssertTypeName(string expected, object obj)

@@ -8,7 +8,6 @@ using System.Globalization;
 
 namespace System.Numerics
 {
-    [Serializable]
     public struct BigInteger : IFormattable, IComparable, IComparable<BigInteger>, IEquatable<BigInteger>
     {
         private const int knMaskHighBit = int.MinValue;

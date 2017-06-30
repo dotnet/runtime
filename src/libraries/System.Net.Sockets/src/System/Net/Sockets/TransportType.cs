@@ -5,7 +5,7 @@
 namespace System.Net
 {
     // Defines the transport type allowed for the socket.
-    public enum TransportType
+    internal enum TransportType
     {
         // Udp connections are allowed.
         Udp = 1,

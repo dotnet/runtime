@@ -54,11 +54,8 @@ namespace System.Runtime.Loader.Tests
             // Return the reference to the loaded assembly
             ilGenerator.Emit(OpCodes.Ret);
 
-            // Generate the type
-            typeBuilder.CreateTypeInfo().AsType();
-
-            // Return the generated assembly
-            return builder;
+            // Generate the type and return the associated assembly
+            return typeBuilder.CreateTypeInfo().AsType().Assembly;
         }
     }
 }

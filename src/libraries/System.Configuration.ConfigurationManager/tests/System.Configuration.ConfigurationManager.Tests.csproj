@@ -4,11 +4,16 @@
   <PropertyGroup>
     <ProjectGuid>{7669C397-C21C-4C08-83F1-BE6691911E88}</ProjectGuid>
     <TestCategories>InnerLoop;OuterLoop</TestCategories>
+    <!-- XUnit AppDomains BaseDirectory path doesn't contain a trailing slash, which impacts our tests. -->
+    <XUnitNoAppdomain>true</XUnitNoAppdomain>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
   <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
+      <Link>Common\System\PlatformDetection.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\IO\TempDirectory.cs">
       <Link>Common\System\IO\TempDirectory.cs</Link>
     </Compile>
@@ -94,6 +99,7 @@
     <Compile Include="System\Configuration\TestData.cs" />
     <Compile Include="System\Configuration\StringValidatorTests.cs" />
     <Compile Include="System\Configuration\SubclassTypeValidatorAttributeTests.cs" />
+    <Compile Include="System\Configuration\StringValidatorAttributeTests.cs" />
     <Compile Include="System\Configuration\TimeSpanValidatorAttributeTests.cs" />
     <Compile Include="System\Configuration\TypeUtilTests.cs" />
     <Compile Include="System\Configuration\UriSectionTests.cs" />

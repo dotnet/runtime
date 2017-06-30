@@ -24,7 +24,6 @@ namespace System.Data.SqlTypes
         UnmanagedBuffer = 2
     }
 
-    [Serializable]
     public class SqlTypeException : SystemException
     {
         public SqlTypeException() : this(SR.SqlMisc_SqlTypeMessage, null)
@@ -59,7 +58,6 @@ namespace System.Data.SqlTypes
         }
     } // SqlTypeException
 
-    [Serializable]
     public sealed class SqlNullValueException : SqlTypeException
     {
         // Creates a new SqlNullValueException with its message string set to the common string.
@@ -95,7 +93,6 @@ namespace System.Data.SqlTypes
         }
     } // NullValueException
 
-    [Serializable]
     public sealed class SqlTruncateException : SqlTypeException
     {
         // Creates a new SqlTruncateException with its message string set to the empty string.
@@ -131,7 +128,6 @@ namespace System.Data.SqlTypes
         }
     } // SqlTruncateException
 
-    [Serializable]
     public sealed class SqlNotFilledException : SqlTypeException
     {
         // Creates a new SqlNotFilledException with its message string set to the common string.
@@ -156,7 +152,6 @@ namespace System.Data.SqlTypes
         }
     } // SqlNotFilledException
 
-    [Serializable]
     public sealed class SqlAlreadyFilledException : SqlTypeException
     {
         // Creates a new SqlNotFilledException with its message string set to the common string.

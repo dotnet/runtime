@@ -60,7 +60,7 @@ namespace System.Numerics.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [Fact]
         public static void RunDivideOneLargeOneZeroBI()
         {
             byte[] tempByteArray1 = new byte[0];
@@ -80,7 +80,7 @@ namespace System.Numerics.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [Fact]
         public static void RunDivideOneSmallOneZeroBI()
         {
             byte[] tempByteArray1 = new byte[0];

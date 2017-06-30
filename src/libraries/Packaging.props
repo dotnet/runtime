@@ -2,13 +2,14 @@
   <PropertyGroup>
     <PreReleaseLabel>preview2</PreReleaseLabel>
     <PackageDescriptionFile>$(ProjectDir)pkg/descriptions.json</PackageDescriptionFile>
-    <PackageLicenseFile>$(ProjectDir)pkg/dotnet_library_license.txt</PackageLicenseFile>
-    <PackageThirdPartyNoticesFile>$(ProjectDir)pkg/ThirdPartyNotices.txt</PackageThirdPartyNoticesFile>
+    <PackageLicenseFile>$(ProjectDir)LICENSE.TXT</PackageLicenseFile>
+    <PackageThirdPartyNoticesFile>$(ProjectDir)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
     <RuntimeIdGraphDefinitionFile>$(ProjectDir)pkg/Microsoft.NETCore.Platforms/runtime.json</RuntimeIdGraphDefinitionFile>
     <ReleaseNotes>https://go.microsoft.com/fwlink/?LinkID=799421</ReleaseNotes>
     <ProjectUrl>https://dot.net</ProjectUrl>
     <!-- Add a condition for this when we are able to run on .NET Core -->
     <PackagingTaskDir>$(ToolsDir)net46/</PackagingTaskDir>
+    <LicenseUrl>https://github.com/dotnet/corefx/blob/master/LICENSE.TXT</LicenseUrl>
     <!-- defined in buildtools packaging.targets, but we need this before targets are imported -->
     <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(Platform)</PackagePlatform>
     <PackagePlatform Condition="'$(PackagePlatform)' == 'amd64'">x64</PackagePlatform>
@@ -19,7 +20,7 @@
     <XmlDocFileRoot>$(PackagesDir)$(XmlDocPackage.ToLowerInvariant())/$(XmlDocPackageVersion)/xmldocs</XmlDocFileRoot>
     <XmlDocDir>$(BinDir)docs</XmlDocDir>
 
-    <!-- By default the packaging targets will package dekstop facades as ref,
+    <!-- By default the packaging targets will package desktop facades as ref,
          but we don't use this as we now build partial-reference-facades. -->
     <PackageDesktopAsRef>false</PackageDesktopAsRef>
 

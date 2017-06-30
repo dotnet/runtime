@@ -283,45 +283,14 @@ namespace System.Web.Util
                 }
                 else if (b == '%' && i < count - 2)
                 {
-                    if (bytes[pos + 1] == 'u' && i < count - 5)
-                    {
-                        int h1 = HttpEncoderUtility.HexToInt((char)bytes[pos + 2]);
-                        int h2 = HttpEncoderUtility.HexToInt((char)bytes[pos + 3]);
-                        int h3 = HttpEncoderUtility.HexToInt((char)bytes[pos + 4]);
-                        int h4 = HttpEncoderUtility.HexToInt((char)bytes[pos + 5]);
+                    int h1 = HttpEncoderUtility.HexToInt((char)bytes[pos + 1]);
+                    int h2 = HttpEncoderUtility.HexToInt((char)bytes[pos + 2]);
 
-                        if (h1 >= 0 && h2 >= 0 && h3 >= 0 && h4 >= 0)
-                        {
-                            // valid 4 hex chars
-                            char ch = (char)((h1 << 12) | (h2 << 8) | (h3 << 4) | h4);
-                            i += 5;
-
-                            byte[] chBytes = Encoding.UTF8.GetBytes(new[] { ch });
-                            if (chBytes.Length == 1)
-                            {
-                                b = chBytes[0];
-                            }
-                            else
-                            {
-                                for (int j = 0; j < chBytes.Length - 1; j++)
-                                {
-                                    decodedBytes[decodedBytesCount++] = chBytes[j];
-                                }
-                                b = chBytes[chBytes.Length - 1];
-                            }
-                        }
-                    }
-                    else
-                    {
-                        int h1 = HttpEncoderUtility.HexToInt((char)bytes[pos + 1]);
-                        int h2 = HttpEncoderUtility.HexToInt((char)bytes[pos + 2]);
-
-                        if (h1 >= 0 && h2 >= 0)
-                        {
-                            // valid 2 hex chars
-                            b = (byte)((h1 << 4) | h2);
-                            i += 2;
-                        }
+                    if (h1 >= 0 && h2 >= 0)
+                    {   
+                        // valid 2 hex chars
+                        b = (byte)((h1 << 4) | h2);
+                        i += 2;
                     }
                 }
 

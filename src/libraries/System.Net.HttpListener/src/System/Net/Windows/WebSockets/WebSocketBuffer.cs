@@ -25,9 +25,6 @@ namespace System.Net.WebSockets
     internal class WebSocketBuffer : IDisposable
     {
         private const int NativeOverheadBufferSize = 144;
-        internal const int MinSendBufferSize = 16;
-        internal const int MinReceiveBufferSize = 256;
-        internal const int MaxBufferSize = 64 * 1024;
         private static readonly int s_PropertyBufferSize = 3 * sizeof(uint) + IntPtr.Size;
 
         private readonly int _receiveBufferSize;
@@ -52,15 +49,15 @@ namespace System.Net.WebSockets
 
         private WebSocketBuffer(ArraySegment<byte> internalBuffer, int receiveBufferSize, int sendBufferSize)
         {
-            Debug.Assert(internalBuffer != null, "'internalBuffer' MUST NOT be NULL.");
-            Debug.Assert(receiveBufferSize >= MinReceiveBufferSize,
-                "'receiveBufferSize' MUST be at least " + MinReceiveBufferSize.ToString(NumberFormatInfo.InvariantInfo) + ".");
-            Debug.Assert(sendBufferSize >= MinSendBufferSize,
-                "'sendBufferSize' MUST be at least " + MinSendBufferSize.ToString(NumberFormatInfo.InvariantInfo) + ".");
-            Debug.Assert(receiveBufferSize <= MaxBufferSize,
-                "'receiveBufferSize' MUST NOT exceed " + MaxBufferSize.ToString(NumberFormatInfo.InvariantInfo) + ".");
-            Debug.Assert(sendBufferSize <= MaxBufferSize,
-                "'sendBufferSize' MUST NOT exceed  " + MaxBufferSize.ToString(NumberFormatInfo.InvariantInfo) + ".");
+            Debug.Assert(internalBuffer.Array != null, "'internalBuffer.Array' MUST NOT be NULL.");
+            Debug.Assert(receiveBufferSize >= HttpWebSocket.MinReceiveBufferSize,
+                "'receiveBufferSize' MUST be at least " + HttpWebSocket.MinReceiveBufferSize.ToString(NumberFormatInfo.InvariantInfo) + ".");
+            Debug.Assert(sendBufferSize >= HttpWebSocket.MinSendBufferSize,
+                "'sendBufferSize' MUST be at least " + HttpWebSocket.MinSendBufferSize.ToString(NumberFormatInfo.InvariantInfo) + ".");
+            Debug.Assert(receiveBufferSize <= HttpWebSocket.MaxBufferSize,
+                "'receiveBufferSize' MUST NOT exceed " + HttpWebSocket.MaxBufferSize.ToString(NumberFormatInfo.InvariantInfo) + ".");
+            Debug.Assert(sendBufferSize <= HttpWebSocket.MaxBufferSize,
+                "'sendBufferSize' MUST NOT exceed  " + HttpWebSocket.MaxBufferSize.ToString(NumberFormatInfo.InvariantInfo) + ".");
 
             _receiveBufferSize = receiveBufferSize;
             _sendBufferSize = sendBufferSize;
@@ -92,7 +89,7 @@ namespace System.Net.WebSockets
 
         internal static WebSocketBuffer CreateServerBuffer(ArraySegment<byte> internalBuffer, int receiveBufferSize)
         {
-            int sendBufferSize = GetNativeSendBufferSize(MinSendBufferSize, true);
+            int sendBufferSize = GetNativeSendBufferSize(HttpWebSocket.MinSendBufferSize, true);
             Debug.Assert(internalBuffer.Count >= GetInternalBufferSize(receiveBufferSize, sendBufferSize, true),
                 "Array 'internalBuffer' is TOO SMALL. Call Validate before instantiating WebSocketBuffer.");
 
@@ -294,7 +291,7 @@ namespace System.Net.WebSockets
                 _pinnedSendBufferHandle.Free();
             }
 
-            _pinnedSendBuffer = HttpWebSocket.EmptyPayload;
+            _pinnedSendBuffer = ArraySegment<byte>.Empty;
         }
 
         internal void BufferPayload(ArraySegment<byte> payload,
@@ -372,7 +369,7 @@ namespace System.Net.WebSockets
 
             if (bufferData == IntPtr.Zero)
             {
-                return HttpWebSocket.EmptyPayload;
+                return ArraySegment<byte>.Empty;
             }
 
             if (this.IsNativeBuffer(bufferData, bufferLength))
@@ -506,7 +503,7 @@ namespace System.Net.WebSockets
 
         private static int GetNativeSendBufferSize(int sendBufferSize, bool isServerBuffer)
         {
-            return isServerBuffer ? MinSendBufferSize : sendBufferSize;
+            return isServerBuffer ? HttpWebSocket.MinSendBufferSize : sendBufferSize;
         }
 
         internal static void UnwrapWebSocketBuffer(Interop.WebSocket.Buffer buffer,
@@ -643,10 +640,10 @@ namespace System.Net.WebSockets
 
         internal static ArraySegment<byte> CreateInternalBufferArraySegment(int receiveBufferSize, int sendBufferSize, bool isServerBuffer)
         {
-            Debug.Assert(receiveBufferSize >= MinReceiveBufferSize,
-                "'receiveBufferSize' MUST be at least " + MinReceiveBufferSize.ToString(NumberFormatInfo.InvariantInfo) + ".");
-            Debug.Assert(sendBufferSize >= MinSendBufferSize,
-                "'sendBufferSize' MUST be at least " + MinSendBufferSize.ToString(NumberFormatInfo.InvariantInfo) + ".");
+            Debug.Assert(receiveBufferSize >= HttpWebSocket.MinReceiveBufferSize,
+                "'receiveBufferSize' MUST be at least " + HttpWebSocket.MinReceiveBufferSize.ToString(NumberFormatInfo.InvariantInfo) + ".");
+            Debug.Assert(sendBufferSize >= HttpWebSocket.MinSendBufferSize,
+                "'sendBufferSize' MUST be at least " + HttpWebSocket.MinSendBufferSize.ToString(NumberFormatInfo.InvariantInfo) + ".");
 
             int internalBufferSize = GetInternalBufferSize(receiveBufferSize, sendBufferSize, isServerBuffer);
             return new ArraySegment<byte>(new byte[internalBufferSize]);
@@ -654,10 +651,10 @@ namespace System.Net.WebSockets
 
         internal static void Validate(int count, int receiveBufferSize, int sendBufferSize, bool isServerBuffer)
         {
-            Debug.Assert(receiveBufferSize >= MinReceiveBufferSize,
-                "'receiveBufferSize' MUST be at least " + MinReceiveBufferSize.ToString(NumberFormatInfo.InvariantInfo) + ".");
-            Debug.Assert(sendBufferSize >= MinSendBufferSize,
-                "'sendBufferSize' MUST be at least " + MinSendBufferSize.ToString(NumberFormatInfo.InvariantInfo) + ".");
+            Debug.Assert(receiveBufferSize >= HttpWebSocket.MinReceiveBufferSize,
+                "'receiveBufferSize' MUST be at least " + HttpWebSocket.MinReceiveBufferSize.ToString(NumberFormatInfo.InvariantInfo) + ".");
+            Debug.Assert(sendBufferSize >= HttpWebSocket.MinSendBufferSize,
+                "'sendBufferSize' MUST be at least " + HttpWebSocket.MinSendBufferSize.ToString(NumberFormatInfo.InvariantInfo) + ".");
 
             int minBufferSize = GetInternalBufferSize(receiveBufferSize, sendBufferSize, isServerBuffer);
             if (count < minBufferSize)
@@ -669,15 +666,15 @@ namespace System.Net.WebSockets
 
         private static int GetInternalBufferSize(int receiveBufferSize, int sendBufferSize, bool isServerBuffer)
         {
-            Debug.Assert(receiveBufferSize >= MinReceiveBufferSize,
-                "'receiveBufferSize' MUST be at least " + MinReceiveBufferSize.ToString(NumberFormatInfo.InvariantInfo) + ".");
-            Debug.Assert(sendBufferSize >= MinSendBufferSize,
-                "'sendBufferSize' MUST be at least " + MinSendBufferSize.ToString(NumberFormatInfo.InvariantInfo) + ".");
+            Debug.Assert(receiveBufferSize >= HttpWebSocket.MinReceiveBufferSize,
+                "'receiveBufferSize' MUST be at least " + HttpWebSocket.MinReceiveBufferSize.ToString(NumberFormatInfo.InvariantInfo) + ".");
+            Debug.Assert(sendBufferSize >= HttpWebSocket.MinSendBufferSize,
+                "'sendBufferSize' MUST be at least " + HttpWebSocket.MinSendBufferSize.ToString(NumberFormatInfo.InvariantInfo) + ".");
 
-            Debug.Assert(receiveBufferSize <= MaxBufferSize,
-                "'receiveBufferSize' MUST be less than or equal to " + MaxBufferSize.ToString(NumberFormatInfo.InvariantInfo) + ".");
-            Debug.Assert(sendBufferSize <= MaxBufferSize,
-                "'sendBufferSize' MUST be at less than or equal to " + MaxBufferSize.ToString(NumberFormatInfo.InvariantInfo) + ".");
+            Debug.Assert(receiveBufferSize <= HttpWebSocket.MaxBufferSize,
+                "'receiveBufferSize' MUST be less than or equal to " + HttpWebSocket.MaxBufferSize.ToString(NumberFormatInfo.InvariantInfo) + ".");
+            Debug.Assert(sendBufferSize <= HttpWebSocket.MaxBufferSize,
+                "'sendBufferSize' MUST be at less than or equal to " + HttpWebSocket.MaxBufferSize.ToString(NumberFormatInfo.InvariantInfo) + ".");
 
             int nativeSendBufferSize = GetNativeSendBufferSize(sendBufferSize, isServerBuffer);
             return 2 * receiveBufferSize + nativeSendBufferSize + NativeOverheadBufferSize + s_PropertyBufferSize;

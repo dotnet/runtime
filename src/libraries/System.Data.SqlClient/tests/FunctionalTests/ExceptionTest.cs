@@ -76,6 +76,7 @@ namespace System.Data.SqlClient.Tests
             }
         }
 
+        [ActiveIssue(19057)]
         [Theory]
         [InlineData(@"np:\\.\pipe\sqlbad\query")]
         [InlineData(@"np:\\.\pipe\MSSQL$NonExistentInstance\sql\query")]
@@ -97,6 +98,7 @@ namespace System.Data.SqlClient.Tests
             }
         }
 
+        [ActiveIssue(19057)]
         [Fact]
         public void NamedPipeInvalidConnStringTest()
         {

@@ -363,11 +363,11 @@ namespace System.Numerics.Tests
         {
             IComparable comparable = new BigInteger();
             Assert.Equal(1, comparable.CompareTo(null));
-            Assert.Throws<ArgumentException>(paramName, () => comparable.CompareTo(0)); // Obj is not a BigInteger
+            AssertExtensions.Throws<ArgumentException>(paramName, () => comparable.CompareTo(0)); // Obj is not a BigInteger
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp | TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.UapAot)] // Missing Exception.ParamName fixed in .NETCore
         public static void IComparable_Invalid_net46()
         {
             IComparable_Invalid(null);

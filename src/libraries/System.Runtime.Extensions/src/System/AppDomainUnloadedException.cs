@@ -6,7 +6,6 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    [Serializable]
     public class AppDomainUnloadedException : SystemException
     {
         internal const int COR_E_APPDOMAINUNLOADED = unchecked((int)0x80131014); // corresponds to __HResults.COR_E_APPDOMAINUNLOADED in corelib

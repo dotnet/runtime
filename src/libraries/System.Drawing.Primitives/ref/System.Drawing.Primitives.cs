@@ -7,7 +7,6 @@
 
 namespace System.Drawing
 {
-    [System.SerializableAttribute]
     public partial struct Color : System.IEquatable<System.Drawing.Color>
     {
         public static readonly System.Drawing.Color Empty;

@@ -31,7 +31,6 @@ namespace System.Net
             return new EmptyWebProxy();
         }
 
-        [Serializable]
         private sealed class EmptyWebProxy : IWebProxy
         {
             [NonSerialized]

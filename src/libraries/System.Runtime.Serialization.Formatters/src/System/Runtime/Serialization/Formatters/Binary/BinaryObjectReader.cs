@@ -1040,18 +1040,5 @@ namespace System.Runtime.Serialization.Formatters.Binary
         {
             // nop on core
         }
-
-        internal sealed class TopLevelAssemblyTypeResolver
-        {
-            private readonly Assembly _topLevelAssembly;
-
-            public TopLevelAssemblyTypeResolver(Assembly topLevelAssembly)
-            {
-                _topLevelAssembly = topLevelAssembly;
-            }
-
-            public Type ResolveType(Assembly assembly, string simpleTypeName, bool ignoreCase) =>
-                (assembly ?? _topLevelAssembly).GetType(simpleTypeName, false, ignoreCase);
-        }
     }
 }

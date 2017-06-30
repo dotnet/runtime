@@ -13,7 +13,6 @@ namespace System.Security.Cryptography.Xml
     /// hash. ComputeHash can throw different kind of exceptions.
     /// This unique exception helps catch the recursion limit issue.
     /// </summary>
-    [Serializable]
     internal class CryptoSignedXmlRecursionException : XmlException
     {
         public CryptoSignedXmlRecursionException() : base() { }

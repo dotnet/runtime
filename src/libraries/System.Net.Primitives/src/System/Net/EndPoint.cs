@@ -13,7 +13,6 @@ namespace System.Net
     ///       Identifies a network address.
     ///    </para>
     /// </devdoc>
-    [Serializable]
     public abstract class EndPoint
     {
         /// <devdoc>

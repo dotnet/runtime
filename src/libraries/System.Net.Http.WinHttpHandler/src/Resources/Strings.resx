@@ -121,4 +121,7 @@
   <data name="net_http_content_stream_already_read" xml:space="preserve">
     <value>The stream was already consumed. It cannot be read again.</value>
   </data>
+  <data name="PlatformNotSupported_WinHttpHandler" xml:space="preserve">
+    <value>WinHttpHandler is only supported on .NET Framework and .NET Core runtimes on Windows. It is not supported for Windows Store Applications (UWP) or Unix platforms.</value>
+  </data>
 </root>

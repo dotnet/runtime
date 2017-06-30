@@ -2,17 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel;
+
 namespace System
 {
-    [Serializable]
     public enum PlatformID
     {
-        Win32S = 0,
-        Win32Windows = 1,
+        [EditorBrowsable(EditorBrowsableState.Never)] Win32S = 0,
+        [EditorBrowsable(EditorBrowsableState.Never)] Win32Windows = 1,
         Win32NT = 2,
-        WinCE = 3,
+        [EditorBrowsable(EditorBrowsableState.Never)] WinCE = 3,
         Unix = 4,
-        Xbox = 5,
-        MacOSX = 6
+        [EditorBrowsable(EditorBrowsableState.Never)] Xbox = 5,
+        [EditorBrowsable(EditorBrowsableState.Never)] MacOSX = 6
     }
 }

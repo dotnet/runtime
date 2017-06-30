@@ -212,6 +212,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19287")]
         public async Task ValidFlush_DoesntThrow()
         {
             using (ServerClientPair pair = CreateServerClientPair())

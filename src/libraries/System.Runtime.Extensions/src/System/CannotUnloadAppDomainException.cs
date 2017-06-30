@@ -6,7 +6,6 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    [Serializable]
     public class CannotUnloadAppDomainException : SystemException
     {
         internal const int COR_E_CANNOTUNLOADAPPDOMAIN = unchecked((int)0x80131015); // corresponds to __HResults.COR_E_CANNOTUNLOADAPPDOMAIN in corelib

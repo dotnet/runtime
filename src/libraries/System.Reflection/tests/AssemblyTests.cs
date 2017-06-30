@@ -118,6 +118,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "On desktop, XUnit hosts in an appdomain in such a way that GetEntryAssembly() returns null")]
         public void GetEntryAssembly()
         {
             Assert.NotNull(Assembly.GetEntryAssembly());

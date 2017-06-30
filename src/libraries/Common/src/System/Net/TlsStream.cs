@@ -16,11 +16,6 @@ namespace System.Net
         private string _host;
         private X509CertificateCollection _clientCertificates;
 
-        public TlsStream(NetworkStream stream, Socket socket) : base(socket)
-        {
-            _sslStream = new SslStream(stream);
-        }
-
         public TlsStream(NetworkStream stream, Socket socket, string host, X509CertificateCollection clientCertificates) : base(socket)
         {
             _sslStream = new SslStream(stream, false, ServicePointManager.ServerCertificateValidationCallback);

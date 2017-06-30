@@ -267,7 +267,7 @@ namespace System.Data.SqlClient.SNI
                 callback(this, error ? TdsEnums.SNI_ERROR : TdsEnums.SNI_SUCCESS);
             },
             CancellationToken.None,
-            TaskContinuationOptions.DenyChildAttach,
+            TaskContinuationOptions.DenyChildAttach | TaskContinuationOptions.LongRunning,
             TaskScheduler.Default);
         }
 

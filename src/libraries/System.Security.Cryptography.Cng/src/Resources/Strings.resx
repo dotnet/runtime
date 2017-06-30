@@ -181,4 +181,7 @@
   <data name="Cryptography_WeakKey" xml:space="preserve">
     <value>Specified key is a known weak key for this algorithm and cannot be used.</value>
   </data>
+  <data name="PlatformNotSupported_CryptographyCng" xml:space="preserve">
+    <value>Windows Cryptography Next Generation (CNG) is not supported on this platform.</value>
+  </data>
 </root>

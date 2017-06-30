@@ -4,7 +4,6 @@
 
 namespace System.Reflection.Emit
 {
-    [Serializable]
     public enum OpCodeType
     {
         [Obsolete("This API has been deprecated. http://go.microsoft.com/fwlink/?linkid=14202")]

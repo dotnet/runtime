@@ -404,13 +404,6 @@ namespace System.Net.WebHeaderCollectionTests
             }
         }
 
-        [Theory]
-        [MemberData(nameof(SerializeDeserialize_Roundtrip_MemberData))]
-        public void SerializeDeserialize_Roundtrip(WebHeaderCollection c)
-        {
-            Assert.Equal(c, BinaryFormatterHelpers.Clone(c));
-        }
-
         [Fact]
         public void HttpRequestHeader_Add_Remove_Success()
         {

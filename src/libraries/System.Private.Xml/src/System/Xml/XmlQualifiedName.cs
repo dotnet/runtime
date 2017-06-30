@@ -12,7 +12,6 @@ namespace System.Xml
     /// <devdoc>
     ///    <para>[To be supplied.]</para>
     /// </devdoc>
-    [Serializable]
     public class XmlQualifiedName
     {
         private string _name;

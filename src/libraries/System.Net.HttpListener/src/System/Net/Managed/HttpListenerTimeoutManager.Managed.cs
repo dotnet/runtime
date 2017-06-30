@@ -6,77 +6,84 @@ namespace System.Net
 {
     public class HttpListenerTimeoutManager
     {
-        internal HttpListenerTimeoutManager(HttpListener listener) { }
+        private TimeSpan _drainEntityBody = TimeSpan.Zero;
+        private TimeSpan _idleConnection = TimeSpan.Zero;
 
-        public TimeSpan EntityBody
-        {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
-            set
-            {
-                throw new PlatformNotSupportedException();
-            }
-        }
+        internal HttpListenerTimeoutManager(HttpListener listener) { }
 
         public TimeSpan DrainEntityBody
         {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
+            get => _drainEntityBody;
             set
             {
-                throw new PlatformNotSupportedException();
-            }
-        }
-
-        public TimeSpan RequestQueue
-        {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
-            set
-            {
-                throw new PlatformNotSupportedException();
+                // Managed implementation currently doesn't pool connections,
+                // so this is a nop other than roundtripping the value.
+                ValidateTimeout(value);
+                _drainEntityBody = value;
             }
         }
 
         public TimeSpan IdleConnection
         {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
+            get => _idleConnection;
             set
             {
-                throw new PlatformNotSupportedException();
+                // Managed implementation currently doesn't pool connections,
+                // so this is a nop other than roundtripping the value.
+                ValidateTimeout(value);
+                _idleConnection = value;
+            }
+        }
+
+        public TimeSpan EntityBody
+        {
+            get => TimeSpan.Zero;
+            set
+            {
+                ValidateTimeout(value);
+                throw new PlatformNotSupportedException(); // low usage, not currently implemented
             }
         }
 
         public TimeSpan HeaderWait
         {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
+            get => TimeSpan.Zero;
             set
             {
-                throw new PlatformNotSupportedException();
+                ValidateTimeout(value);
+                throw new PlatformNotSupportedException(); // low usage, not currently implemented
             }
         }
 
         public long MinSendBytesPerSecond
         {
-            get
-            {
-                throw new PlatformNotSupportedException();
-            }
+            get => 0;
             set
             {
-                throw new PlatformNotSupportedException();
+                if (value < 0 || value > uint.MaxValue)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value));
+                }
+                throw new PlatformNotSupportedException(); // low usage, not currently implemented
+            }
+        }
+
+        public TimeSpan RequestQueue
+        {
+            get => TimeSpan.Zero;
+            set
+            {
+                ValidateTimeout(value);
+                throw new PlatformNotSupportedException(); // low usage, not currently implemented
+            }
+        }
+
+        private void ValidateTimeout(TimeSpan value)
+        {
+            long timeoutValue = Convert.ToInt64(value.TotalSeconds);
+            if (timeoutValue < 0 || timeoutValue > ushort.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(value));
             }
         }
     }

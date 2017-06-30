@@ -2745,7 +2745,7 @@ namespace System.Linq.Expressions.Tests
         public static void ArrayIndexWrongRank()
         {
             Expression array = Expression.Constant(new[,] { { 1, 2 }, { 2, 1 } });
-            Assert.Throws<ArgumentException>(null, () => Expression.ArrayIndex(array, Expression.Constant(2)));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.ArrayIndex(array, Expression.Constant(2)));
         }
 
         [Fact]
@@ -2770,7 +2770,8 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>("index", () => Expression.ArrayIndex(array, index));
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
+        [ClassData(typeof(CompilationTypes))]
         public static void NonZeroBasedOneDimensionalArrayIndex(bool useInterpreter)
         {
             Array arrayObj = Array.CreateInstance(typeof(int), new[] { 3 }, new[] { -1 });
@@ -2790,7 +2791,8 @@ namespace System.Linq.Expressions.Tests
             Assert.True(testValues());
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
+        [ClassData(typeof(CompilationTypes))]
         public static void NonZeroBasedOneDimensionalArrayIndexMethod(bool useInterpreter)
         {
             Array arrayObj = Array.CreateInstance(typeof(int), new[] { 3 }, new[] { -1 });

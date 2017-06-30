@@ -26,21 +26,6 @@ namespace System.Data.Common
             _fieldNameLookup = fieldNameLookup;
         }
 
-        // copy all runtime data information
-        internal DataRecordInternal(object[] values, PropertyDescriptorCollection descriptors, FieldNameLookup fieldNameLookup)
-        {
-            Debug.Assert(null != values, "invalid attempt to instantiate DataRecordInternal with null value[]");
-            _values = values;
-            _propertyDescriptors = descriptors;
-            _fieldNameLookup = fieldNameLookup;
-        }
-
-        internal void SetSchemaInfo(SchemaInfo[] schemaInfo)
-        {
-            Debug.Assert(null == _schemaInfo, "invalid attempt to override DataRecordInternal schema information");
-            _schemaInfo = schemaInfo;
-        }
-
         public override int FieldCount
         {
             get

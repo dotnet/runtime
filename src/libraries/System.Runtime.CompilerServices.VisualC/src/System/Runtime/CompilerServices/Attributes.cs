@@ -48,25 +48,21 @@ namespace System.Runtime.CompilerServices
     public static partial class IsUdtReturn
     {
     }
-    [Serializable]
     [AttributeUsage(AttributeTargets.Struct)]
     public sealed class HasCopySemanticsAttribute : Attribute
     {
         public HasCopySemanticsAttribute(){}
     }
-    [Serializable]
     [AttributeUsage(AttributeTargets.Enum)]
     public sealed class ScopelessEnumAttribute : Attribute
     {
         public ScopelessEnumAttribute(){}
     }
-    [Serializable]
     [AttributeUsage(AttributeTargets.Struct, Inherited = true)]
     public sealed class NativeCppClassAttribute : Attribute
     {
         public NativeCppClassAttribute(){}
     }
-    [Serializable]
     [AttributeUsage (AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum | AttributeTargets.Interface,AllowMultiple=true, Inherited=false)]
     public sealed class RequiredAttributeAttribute : Attribute
     {

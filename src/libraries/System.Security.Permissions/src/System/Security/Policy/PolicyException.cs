@@ -6,7 +6,6 @@ using System.Runtime.Serialization;
 
 namespace System.Security.Policy
 {
-    [Serializable]
     public partial class PolicyException : System.SystemException
     {
         public PolicyException() { }

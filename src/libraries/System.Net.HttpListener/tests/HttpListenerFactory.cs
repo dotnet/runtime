@@ -15,7 +15,7 @@ namespace System.Net.Tests
         private readonly HttpListener _processPrefixListener;
         private readonly Exception _processPrefixException;
         private readonly string _processPrefix;
-        private const string Hostname = "localhost";
+        public const string Hostname = "localhost";
         private readonly string _path;
         private readonly int _port;
 
@@ -97,7 +97,7 @@ namespace System.Net.Tests
 
         public Socket GetConnectedSocket()
         {
-            // Some platforms or distributions require IPv6 sockets if the OS supports IPv6. Others (e.g. Ubunutu) don't.
+            // Some platforms or distributions require IPv6 sockets if the OS supports IPv6. Others (e.g. Ubuntu) don't.
             try
             {
                 AddressFamily addressFamily = Socket.OSSupportsIPv6 ? AddressFamily.InterNetworkV6 : AddressFamily.InterNetwork;
@@ -113,7 +113,7 @@ namespace System.Net.Tests
             }            
         }
 
-        public byte[] GetContent(string requestType, string query, string text, IEnumerable<string> headers, bool headerOnly)
+        public byte[] GetContent(string httpVersion, string requestType, string query, string text, IEnumerable<string> headers, bool headerOnly)
         {
             Uri listeningUri = new Uri(ListeningUrl);
             string rawUrl = listeningUri.PathAndQuery;
@@ -122,7 +122,7 @@ namespace System.Net.Tests
                 rawUrl += query;
             }
 
-            string content = $"{requestType} {rawUrl} HTTP/1.1\r\nHost: {listeningUri.Host}\r\n";
+            string content = $"{requestType} {rawUrl} HTTP/{httpVersion}\r\nHost: {listeningUri.Host}\r\n";
             if (text != null)
             {
                 content += $"Content-Length: {text.Length}\r\n";
@@ -143,7 +143,7 @@ namespace System.Net.Tests
 
         public byte[] GetContent(string requestType, string text, bool headerOnly)
         {
-            return GetContent(requestType, query: null, text: text, headers: null, headerOnly: headerOnly);
+            return GetContent("1.1", requestType, query: null, text: text, headers: null, headerOnly: headerOnly);
         }
     }
 

@@ -201,7 +201,7 @@ namespace System.Linq.Expressions.Tests
         public void VisitChildrenThrowsAsNotReducible()
         {
             var exp = new IncompleteExpressionOverride();
-            Assert.Throws<ArgumentException>(null, () => exp.VisitChildren());
+            AssertExtensions.Throws<ArgumentException>(null, () => exp.VisitChildren());
         }
 
         [Fact]
@@ -221,42 +221,42 @@ namespace System.Linq.Expressions.Tests
         public void ReduceAndCheckThrowsByDefault()
         {
             var exp = new IncompleteExpressionOverride();
-            Assert.Throws<ArgumentException>(null, () => exp.ReduceAndCheck());
+            AssertExtensions.Throws<ArgumentException>(null, () => exp.ReduceAndCheck());
         }
 
         [Fact]
         public void ReduceExtensionsThrowsByDefault()
         {
             var exp = new IncompleteExpressionOverride();
-            Assert.Throws<ArgumentException>(null, () => exp.ReduceAndCheck());
+            AssertExtensions.Throws<ArgumentException>(null, () => exp.ReduceAndCheck());
         }
 
         [Fact]
         public void IfClaimCanReduceMustReduce()
         {
             var exp = new ClaimedReducibleOverride();
-            Assert.Throws<ArgumentException>(null, () => exp.Reduce());
+            AssertExtensions.Throws<ArgumentException>(null, () => exp.Reduce());
         }
 
         [Fact]
         public void ReduceAndCheckThrowOnReduceToSame()
         {
             var exp = new ReducesToSame();
-            Assert.Throws<ArgumentException>(null, () => exp.ReduceAndCheck());
+            AssertExtensions.Throws<ArgumentException>(null, () => exp.ReduceAndCheck());
         }
 
         [Fact]
         public void ReduceAndCheckThrowOnReduceToNull()
         {
             var exp = new ReducesToNull();
-            Assert.Throws<ArgumentException>(null, () => exp.ReduceAndCheck());
+            AssertExtensions.Throws<ArgumentException>(null, () => exp.ReduceAndCheck());
         }
 
         [Fact]
         public void ReduceAndCheckThrowOnReducedTypeNotAssignable()
         {
             var exp = new ReducesToLongTyped();
-            Assert.Throws<ArgumentException>(null, () => exp.ReduceAndCheck());
+            AssertExtensions.Throws<ArgumentException>(null, () => exp.ReduceAndCheck());
         }
 
 #pragma warning disable 0169, 0414 // Accessed through reflection.
@@ -375,14 +375,14 @@ namespace System.Linq.Expressions.Tests
         public void CompileIrreduciebleExtension(bool useInterpreter)
         {
             Expression<Action> exp = Expression.Lambda<Action>(new IrreducibleWithTypeAndNodeType());
-            Assert.Throws<ArgumentException>(null, () => exp.Compile(useInterpreter));
+            AssertExtensions.Throws<ArgumentException>(null, () => exp.Compile(useInterpreter));
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
         public void CompileIrreduciebleStrangeNodeTypeExtension(bool useInterpreter)
         {
             Expression<Action> exp = Expression.Lambda<Action>(new IrreduceibleWithTypeAndStrangeNodeType());
-            Assert.Throws<ArgumentException>(null, () => exp.Compile(useInterpreter));
+            AssertExtensions.Throws<ArgumentException>(null, () => exp.Compile(useInterpreter));
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]

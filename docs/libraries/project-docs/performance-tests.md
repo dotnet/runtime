@@ -22,7 +22,9 @@ Running the tests
 ### Windows
 Performance test files (if present) are stored within a library's ```tests/Performance``` directory and contain test methods that are all marked with a perf-specific *Benchmark* attribute. The performance tests will only be run if the ```performance``` property is set to ```true```.
 
-To build and run the tests using msbuild for a project, run ```msbuild /t:BuildAndTest /p:Performance=true /p:ConfigurationGroup=Release /p:TargetOS=Windows_NT``` from the tests directory. If the v5.0 assemblies aren't installed on your system, an error will be raised and no tests will be run.
+Before running the performance tests you must run ```build -release``` from the root folder.
+
+To build and run the tests using msbuild for a project, run ```msbuild /t:BuildAndTest /p:Performance=true /p:ConfigurationGroup=Release /p:TargetOS=Windows_NT``` from the Performance directory with Admin privileges. If the v5.0 assemblies aren't installed on your system, an error will be raised and no tests will be run.
 
 Note: Because build.cmd runs tests concurrently, it's not recommended that you execute the perf tests using it.
 
@@ -107,6 +109,8 @@ Test cases should adhere to the following guidelines, within reason:
 * There are two main ways to detect when a test case is being "optimized out":
   * Look at the disassembly of the function (with the Visual Studio disassembler, for example).
   * Observe unusual changes in the duration metric. If your test suddenly takes 1% of its previous time, odds are something has gone wrong.
+* Before using intrinsic data types (int, string, etc) to represent value and reference types in your test, consider if the code under test is optimized for those types versus normal classes and structs.
+  * Also consider interfaces. For example, methods on ```List<T>``` using equality will be much faster on Ts that implement  ```IEquatable<T>```.
 
 Avoid the following performance test test anti-patterns:
 * Tests for multiple methods which all end up calling the same final overload. This just adds noise and extra duplicate data to sift through.

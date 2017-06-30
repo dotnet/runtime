@@ -4,7 +4,6 @@
 
 namespace System.CodeDom
 {
-    [Serializable]
     public class CodeAttachEventStatement : CodeStatement
     {
         private CodeEventReferenceExpression _eventRef;

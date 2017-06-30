@@ -22,9 +22,11 @@ namespace BasicEventSourceTests
             string eventSourceNames = "";
             foreach (var eventSource in EventSource.GetSources())
             {
-                if (eventSource.Name != "System.Threading.Tasks.TplEventSource"
-                   && eventSource.Name != "System.Diagnostics.Eventing.FrameworkEventSource"
-                   && eventSource.Name != "System.Buffers.ArrayPoolEventSource")
+                // Exempt sources built in to the framework that might be used by types involved in the tests
+                if (eventSource.Name != "System.Threading.Tasks.TplEventSource" &&
+                    eventSource.Name != "System.Diagnostics.Eventing.FrameworkEventSource" &&
+                    eventSource.Name != "System.Buffers.ArrayPoolEventSource" &&
+                    eventSource.Name != "System.Threading.SynchronizationEventSource")
                 {
                     eventSourceNames += eventSource.Name + " ";
                 }

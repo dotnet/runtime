@@ -3,12 +3,13 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
 {
-    public class RegexMatchTests
+    public class RegexMatchTests : RemoteExecutorTestBase
     {
         public static IEnumerable<object[]> Match_Basic_TestData()
         {
@@ -692,11 +693,9 @@ namespace System.Text.RegularExpressions.Tests
         [Fact]
         public void Match_SpecialUnicodeCharacters()
         {
-            CultureInfo currentCulture = CultureInfo.CurrentCulture;
-            CultureInfo enUSCulture = new CultureInfo("en-US");
-            try
+            RemoteInvoke(() =>
             {
-                CultureInfo.CurrentCulture = enUSCulture;
+                CultureInfo.CurrentCulture = new CultureInfo("en-US");
                 Match("\u0131", "\u0049", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
                 Match("\u0131", "\u0069", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
 
@@ -705,11 +704,9 @@ namespace System.Text.RegularExpressions.Tests
                 Match("\u0131", "\u0069", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
                 Match("\u0130", "\u0049", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
                 Match("\u0130", "\u0069", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
-            }
-            finally
-            {
-                CultureInfo.CurrentCulture = currentCulture;
-            }
+
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         [Fact]

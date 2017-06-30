@@ -15,7 +15,6 @@ using System.Threading;
 
 namespace System.Text
 {
-    [Serializable]
     internal class InternalEncoderBestFitFallback : EncoderFallback
     {
         // Our variables

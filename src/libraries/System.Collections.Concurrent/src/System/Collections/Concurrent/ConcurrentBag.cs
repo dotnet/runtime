@@ -30,7 +30,6 @@ namespace System.Collections.Concurrent
     /// </remarks>
     [DebuggerTypeProxy(typeof(IProducerConsumerCollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
-    [Serializable]
     public class ConcurrentBag<T> : IProducerConsumerCollection<T>, IReadOnlyCollection<T>
     {
         /// <summary>The per-bag, per-thread work-stealing queues.</summary>
@@ -1050,7 +1049,6 @@ namespace System.Collections.Concurrent
         /// we use a custom enumerator rather than just returning array's. This enumerator provides
         /// the essential elements of both list's and array's enumerators.
         /// </remarks>
-        [Serializable]
         private sealed class Enumerator : IEnumerator<T>
         {
             private readonly T[] _array;

@@ -327,6 +327,8 @@ namespace System
                 revision = FindAndParseNextNumber(release, ref i);
             }
 
+            // For compatibility reasons with Mono, PlatformID.Unix is returned on MacOSX. PlatformID.MacOSX
+            // is hidden from the editor and shouldn't be used.
             return new OperatingSystem(PlatformID.Unix, new Version(major, minor, build, revision));
         });
 

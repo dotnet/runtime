@@ -391,7 +391,6 @@ namespace System.Collections.Generic
         // internal version number of the list to ensure that no modifications are
         // made to the list while an enumeration is in progress.
         [SuppressMessage("Microsoft.Performance", "CA1815:OverrideEqualsAndOperatorEqualsOnValueTypes", Justification = "not an expected scenario")]
-        [Serializable]
         public struct Enumerator : IEnumerator<T>,
             System.Collections.IEnumerator
         {

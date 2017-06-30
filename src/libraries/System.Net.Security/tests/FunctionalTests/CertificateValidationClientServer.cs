@@ -41,6 +41,7 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "https://github.com/dotnet/corefx/issues/19379")]
         public async Task CertificateValidationClientServer_EndToEnd_Ok(bool useClientSelectionCallback)
         {
             IPEndPoint endPoint = new IPEndPoint(IPAddress.IPv6Loopback, 0);

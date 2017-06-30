@@ -22,8 +22,6 @@ namespace System.Data
         private bool _fIsXdr = false;
         internal bool _isDiffgram = false;
 
-        private DataRow _topMostRow = null;
-
         private XmlElement _topMostNode = null;
         private bool _ignoreSchema = false;
 
@@ -555,46 +553,6 @@ namespace System.Data
         private void SetRowValueFromXmlText(DataRow row, DataColumn col, string xmlText)
         {
             row[col] = col.ConvertXmlToObject(xmlText);
-        }
-
-        internal void LoadTopMostRow(ref bool[] foundColumns)
-        {
-            // Attempt to load row from top node we backed up in DataSet.ReadXml()
-            // In most cases it contains the DataSet name and no information
-
-            // Check if DataSet object matches the top node (it won't in most cases)
-
-            object obj = _nodeToSchemaMap.GetSchemaForNode(_topMostNode, FIgnoreNamespace(_topMostNode));
-
-            if (obj is DataTable)
-            {                         // It's a table? Load it.
-                DataTable table = (DataTable)obj;
-
-                _topMostRow = table.CreateEmptyRow();
-
-                foundColumns = new bool[_topMostRow.Table.Columns.Count];
-
-                //
-                // Walk the attributes to find attributes that map to columns.
-                //
-                foreach (XmlAttribute attr in _topMostNode.Attributes)
-                {
-                    object schema = _nodeToSchemaMap.GetColumnSchema(attr, FIgnoreNamespace(attr));
-
-                    if (schema != null && schema is DataColumn)
-                    {
-                        DataColumn c = (DataColumn)schema;
-
-                        if (c.ColumnMapping == MappingType.Attribute)
-                        {
-                            XmlNode n = attr.FirstChild;
-                            SetRowValueFromXmlText(_topMostRow, c, GetInitialTextFromNodes(ref n));
-                            foundColumns[c.Ordinal] = true;
-                        }
-                    }
-                }
-            }
-            _topMostNode = null;
         }
 
         private XmlReader _dataReader = null;

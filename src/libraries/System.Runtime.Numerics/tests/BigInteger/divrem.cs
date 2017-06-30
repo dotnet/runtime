@@ -60,7 +60,7 @@ namespace System.Numerics.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [Fact]
         public static void RunDivRem_OneLargeOne0BI()
         {
             byte[] tempByteArray1 = new byte[0];
@@ -80,7 +80,7 @@ namespace System.Numerics.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [Fact]
         public static void RunDivRem_OneSmallOne0BI()
         {
             byte[] tempByteArray1 = new byte[0];
@@ -115,7 +115,7 @@ namespace System.Numerics.Tests
             VerifyDivRemString(Math.Pow(2, 33) + " 2 bDivRem");
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [Fact]
         public static void RunDivRemTests()
         {
             byte[] tempByteArray1 = new byte[0];

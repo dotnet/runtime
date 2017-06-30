@@ -8,6 +8,36 @@ using Xunit;
 
 namespace System.Net.Tests
 {
+    public class HttpListenerTimeoutManagerTests
+    {
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [InlineData(-1)]
+        [InlineData((long)uint.MaxValue + 1)]
+        public void MinSendBytesPerSecond_NotUInt_ThrowsArgumentOutOfRangeException(long value)
+        {
+            using (var listener = new HttpListener())
+            {
+                Assert.Throws<ArgumentOutOfRangeException>("value", () => listener.TimeoutManager.MinSendBytesPerSecond = value);
+            }
+        }
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [InlineData(-1)]
+        [InlineData((uint)ushort.MaxValue + 1)]
+        public void TimeoutValue_NotUShort_ThrowsArgumentOutOfRangeException(long totalSeconds)
+        {
+            using (var listener = new HttpListener())
+            {
+                TimeSpan timeSpan = TimeSpan.FromSeconds(totalSeconds);
+                Assert.Throws<ArgumentOutOfRangeException>("value", () => listener.TimeoutManager.EntityBody = timeSpan);
+                Assert.Throws<ArgumentOutOfRangeException>("value", () => listener.TimeoutManager.DrainEntityBody = timeSpan);
+                Assert.Throws<ArgumentOutOfRangeException>("value", () => listener.TimeoutManager.RequestQueue = timeSpan);
+                Assert.Throws<ArgumentOutOfRangeException>("value", () => listener.TimeoutManager.IdleConnection = timeSpan);
+                Assert.Throws<ArgumentOutOfRangeException>("value", () => listener.TimeoutManager.HeaderWait = timeSpan);
+            }
+        }
+    }
+
     [PlatformSpecific(TestPlatforms.Windows)]
     public class HttpListenerTimeoutManagerWindowsTests : IDisposable
     {
@@ -337,32 +367,6 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
-        [InlineData(-1)]
-        [InlineData((long)uint.MaxValue + 1)]
-        public void MinSendBytesPerSecond_NotUInt_ThrowsArgumentOutOfRangeException(long value)
-        {
-            using (var listener = new HttpListener())
-            {
-                Assert.Throws<ArgumentOutOfRangeException>("value", () => listener.TimeoutManager.MinSendBytesPerSecond = value);
-            }
-        }
-
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
-        [InlineData(-1)]
-        [InlineData((uint)ushort.MaxValue + 1)]
-        public void TimeoutValue_NotUShort_ThrowsArgumentOutOfRangeException(long totalSeconds)
-        {
-            using (var listener = new HttpListener())
-            {
-                TimeSpan timeSpan = TimeSpan.FromSeconds(totalSeconds);
-                Assert.Throws<ArgumentOutOfRangeException>("value", () => listener.TimeoutManager.EntityBody = timeSpan);
-                Assert.Throws<ArgumentOutOfRangeException>("value", () => listener.TimeoutManager.DrainEntityBody = timeSpan);
-                Assert.Throws<ArgumentOutOfRangeException>("value", () => listener.TimeoutManager.RequestQueue = timeSpan);
-                Assert.Throws<ArgumentOutOfRangeException>("value", () => listener.TimeoutManager.IdleConnection = timeSpan);
-                Assert.Throws<ArgumentOutOfRangeException>("value", () => listener.TimeoutManager.HeaderWait = timeSpan);
-            }
-        }
 
         [Theory]
         [InlineData(1.3, 1)]
@@ -391,11 +395,59 @@ namespace System.Net.Tests
     public class HttpListenerTimeoutManagerUnixTests
     {
         [Fact]
-        public void TimeoutManager_GetUnix_ThrowsPlatformNotSupportedException()
+        public void Properties_DefaultValues()
         {
             using (var listener = new HttpListener())
             {
-                Assert.Throws<PlatformNotSupportedException>(() => listener.TimeoutManager);
+                HttpListenerTimeoutManager m = listener.TimeoutManager;
+                Assert.NotNull(m);
+                Assert.Equal(TimeSpan.Zero, m.DrainEntityBody);
+                Assert.Equal(TimeSpan.Zero, m.EntityBody);
+                Assert.Equal(TimeSpan.Zero, m.HeaderWait);
+                Assert.Equal(TimeSpan.Zero, m.IdleConnection);
+                Assert.Equal(0, m.MinSendBytesPerSecond);
+                Assert.Equal(TimeSpan.Zero, m.RequestQueue);
+            }
+        }
+
+        [Fact]
+        public void UnsupportedProperties_Throw()
+        {
+            using (var listener = new HttpListener())
+            {
+                HttpListenerTimeoutManager m = listener.TimeoutManager;
+                Assert.Throws<PlatformNotSupportedException>(() => m.EntityBody = TimeSpan.Zero);
+                Assert.Throws<PlatformNotSupportedException>(() => m.HeaderWait = TimeSpan.Zero);
+                Assert.Throws<PlatformNotSupportedException>(() => m.MinSendBytesPerSecond = 0);
+                Assert.Throws<PlatformNotSupportedException>(() => m.RequestQueue = TimeSpan.Zero);
+            }
+        }
+
+        [Fact]
+        public void DrainEntityBody_Roundtrips()
+        {
+            using (var listener = new HttpListener())
+            {
+                HttpListenerTimeoutManager m = listener.TimeoutManager;
+                Assert.Equal(TimeSpan.Zero, m.DrainEntityBody);
+
+                TimeSpan value = TimeSpan.FromSeconds(123);
+                m.DrainEntityBody = value;
+                Assert.Equal(value, m.DrainEntityBody);
+            }
+        }
+
+        [Fact]
+        public void IdleConnection_Roundtrips()
+        {
+            using (var listener = new HttpListener())
+            {
+                HttpListenerTimeoutManager m = listener.TimeoutManager;
+                Assert.Equal(TimeSpan.Zero, m.IdleConnection);
+
+                TimeSpan value = TimeSpan.FromSeconds(123);
+                m.IdleConnection = value;
+                Assert.Equal(value, m.IdleConnection);
             }
         }
     }

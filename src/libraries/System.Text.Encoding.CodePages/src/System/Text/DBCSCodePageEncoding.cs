@@ -14,7 +14,6 @@ namespace System.Text
 {
     // DBCSCodePageEncoding
     //
-    [Serializable]
     internal class DBCSCodePageEncoding : BaseCodePageEncoding
     {
         // Pointers to our memory section parts
@@ -1161,7 +1160,6 @@ namespace System.Text
             return new DBCSDecoder(this);
         }
 
-        [Serializable]
         internal class DBCSDecoder : DecoderNLS
         {
             // Need a place for the last left over byte

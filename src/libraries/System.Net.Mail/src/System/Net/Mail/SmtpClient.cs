@@ -136,7 +136,22 @@ namespace System.Net.Mail
                 // machine connecting to public server).
 
                 // SMTP RFC's require ASCII only host names in the HELO/EHLO message.
-                string clientDomainRaw = IPGlobalProperties.GetIPGlobalProperties().HostName;
+
+                // TODO: https://github.com/dotnet/corefx/issues/19605
+                //
+                //   Catching NotSupportedException here because HostName is currently PNSE
+                //   on UapAot. HostName is planned to be restored for .NetCore 2.1
+                //   so once that's done, the try-catch can be removed.
+                string clientDomainRaw;
+                try
+                {
+                    clientDomainRaw = IPGlobalProperties.GetIPGlobalProperties().HostName;
+                }
+                catch (NotSupportedException)
+                {
+                    clientDomainRaw = "LocalHost";
+                }
+
                 IdnMapping mapping = new IdnMapping();
                 try
                 {

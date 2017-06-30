@@ -7,8 +7,9 @@ using Xunit;
 
 namespace System.IO.IsolatedStorage.Tests
 {
-    [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "#18940")]
-    public class HelperTests
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework | TargetFrameworkMonikers.UapAot /* UapAot is #18940 */,
+        "These are unit tests for the CoreFX implementation and don't apply to NetFX.")]
+    public partial class HelperTests
     {
         [Fact]
         public void GetDefaultIdentityAndHash()
@@ -34,41 +35,20 @@ namespace System.IO.IsolatedStorage.Tests
             }
         }
 
-        [Theory
-            InlineData(IsolatedStorageScope.Assembly)
-            InlineData(IsolatedStorageScope.Assembly | IsolatedStorageScope.Roaming)
+        [Theory,
+            InlineData(IsolatedStorageScope.Assembly),
+            InlineData(IsolatedStorageScope.Assembly | IsolatedStorageScope.Roaming),
             InlineData(IsolatedStorageScope.Machine)
             ]
         public void GetDataDirectory(IsolatedStorageScope scope)
         {
+            // Machine scope is behind a policy that isn't enabled by default
+            // https://github.com/dotnet/corefx/issues/19839
+            if (scope == IsolatedStorageScope.Machine && PlatformDetection.IsWinRT)
+                return;
+
             string path = Helper.GetDataDirectory(scope);
             Assert.Equal("IsolatedStorage", Path.GetFileName(path));
-        }
-
-        [Fact]
-        public void GetExistingRandomDirectory()
-        {
-            using (var temp = new TempDirectory())
-            {
-                Assert.Null(Helper.GetExistingRandomDirectory(temp.Path));
-
-                string randomPath = Path.Combine(temp.Path, Path.GetRandomFileName(), Path.GetRandomFileName());
-                Directory.CreateDirectory(randomPath);
-                Assert.Equal(randomPath, Helper.GetExistingRandomDirectory(temp.Path));
-            }
-        }
-
-        [Theory
-            InlineData(IsolatedStorageScope.User)
-            InlineData(IsolatedStorageScope.Machine)
-            ]
-        public void GetRandomDirectory(IsolatedStorageScope scope)
-        {
-            using (var temp = new TempDirectory())
-            {
-                string randomDir = Helper.GetRandomDirectory(temp.Path, scope);
-                Assert.True(Directory.Exists(randomDir));
-            }
         }
     }
 }

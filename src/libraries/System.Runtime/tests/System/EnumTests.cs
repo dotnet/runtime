@@ -141,7 +141,7 @@ namespace System.Tests
             yield return new object[] { typeof(SimpleEnum), "1,Blue", false, typeof(ArgumentException) };
             yield return new object[] { typeof(SimpleEnum), "Blue,1", false, typeof(ArgumentException) };
             yield return new object[] { typeof(SimpleEnum), "Blue, 1", false, typeof(ArgumentException) };
-            yield return new object[] { typeof(SimpleEnum), "2147483649", false, typeof(ArgumentException) };
+            yield return new object[] { typeof(SimpleEnum), "2147483649", false, typeof(OverflowException) };
             yield return new object[] { typeof(SimpleEnum), "2147483648", false, typeof(OverflowException) };
 
 #if netcoreapp

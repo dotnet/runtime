@@ -5,7 +5,7 @@
     <AssemblyName>System.IO.Pipes.AccessControl</AssemblyName>
     <ProjectGuid>{40059634-BB03-4A6F-8657-CCE2D376BC8B}</ProjectGuid>
     <AllowUnsafeBlocks Condition="'$(TargetGroup)'=='netstandard'">true</AllowUnsafeBlocks>
-    <GeneratePlatformNotSupportedAssembly Condition="'$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' != 'true'">true</GeneratePlatformNotSupportedAssembly>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_AccessControl</GeneratePlatformNotSupportedAssemblyMessage>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='netfx'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->

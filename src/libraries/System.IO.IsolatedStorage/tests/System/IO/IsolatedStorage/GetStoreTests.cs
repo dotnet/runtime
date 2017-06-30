@@ -50,6 +50,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18268")]
         public void GetUserStoreForApplication()
         {
             var isf = IsolatedStorageFile.GetUserStoreForApplication();
@@ -64,6 +65,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18265")]
         public void GetUserStoreForAssembly()
         {
             var isf = IsolatedStorageFile.GetUserStoreForAssembly();
@@ -73,6 +75,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18265")]
         public void GetUserStoreForDomain()
         {
             var isf = IsolatedStorageFile.GetUserStoreForDomain();
@@ -92,6 +95,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18268")]
         public void GetStore_NullParamsAllowed()
         {
             VerifyApplicationStore(IsolatedStorageFile.GetStore(IsolatedStorageScope.User | IsolatedStorageScope.Application, (Type)null));
@@ -101,6 +105,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18269")]
         public void GetEnumerator_NoOp()
         {
             IEnumerator e = IsolatedStorageFile.GetEnumerator(IsolatedStorageScope.Assembly);
@@ -111,6 +116,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18269")]
         public void GetEnumerator_ThrowsForCurrent()
         {
             IEnumerator e = IsolatedStorageFile.GetEnumerator(IsolatedStorageScope.Assembly);

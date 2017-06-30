@@ -48,25 +48,12 @@ namespace System.Resources.ResourceWriterTests
         [Fact]
         public static void ExceptionforResWriter03()
         {
-            Assert.Throws<ArgumentNullException>(() =>
-                {
-                    byte[] buffer = new byte[_RefBuffer.Length];
-                    using (var ms2 = new MemoryStream(buffer, true))
-                    {
-                        var rw1 = new ResourceWriter(ms2);
-                        try
-                        {
-                            rw1.AddResource(null, "args");
-                        }
-                        finally
-                        {
-                            Assert.Throws<ArgumentOutOfRangeException>(() =>
-                                {
-                                    rw1.Dispose();
-                                });
-                        }
-                    }
-                });
+            byte[] buffer = new byte[_RefBuffer.Length];
+            using (var ms2 = new MemoryStream(buffer, true))
+            using (var rw1 = new ResourceWriter(ms2))
+            {
+                Assert.Throws<ArgumentNullException>(() => rw1.AddResource(null, "args"));
+            }
         }
 
         [Fact]
@@ -103,27 +90,16 @@ namespace System.Resources.ResourceWriterTests
         }
 
         [Fact]
-        public static void ExceptionforResWriter06()
+        public static void TestEmptyResources()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() =>
-                {
-                    byte[] buffer = new byte[_RefBuffer.Length];
-                    using (var ms2 = new MemoryStream(buffer, true))
-                    {
-                        var rw1 = new ResourceWriter(ms2);
-                        try
-                        {
-                            rw1.Generate();
-                        }
-                        finally
-                        {
-                            Assert.Throws<NotSupportedException>(() =>
-                                {
-                                    rw1.Dispose();
-                                });
-                        }
-                    }
-                });
+            byte[] buffer = new byte[_RefBuffer.Length];
+            using (var ms2 = new MemoryStream(buffer, true))
+            using (var rw1 = new ResourceWriter(ms2))
+            {
+                rw1.Generate();
+                // 180 is the length of the resources header.
+                Assert.Equal(180, ms2.Position);
+            }
         }
 
         [Fact]

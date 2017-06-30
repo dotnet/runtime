@@ -7,7 +7,6 @@ using System.Runtime.Serialization;
 
 namespace System
 {
-    [Serializable]
     public sealed class OperatingSystem : ISerializable, ICloneable
     {
         private readonly Version _version;

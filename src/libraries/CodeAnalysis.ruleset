@@ -19,7 +19,7 @@
     <Rule Id="CA2229" Action="Error" /> <!-- Serializable type doesn't have a serialization constructor -->
     <Rule Id="CA2235" Action="None" /> <!-- Serializable type has non serializable field -->
     <Rule Id="CA2231" Action="None" /> <!-- Overload operator equals when overriding ValueType.Equals -->
-    <Rule Id="CA2237" Action="Error" /> <!-- Add [Serializable] to types that implement ISerializable -->
+    <Rule Id="CA2237" Action="None" /> <!-- Add [Serializable] to types that implement ISerializable -->
 
     <Rule Id="CA2200" Action="None"/> <!-- Rethrowing caught exception changes stack information -->
 

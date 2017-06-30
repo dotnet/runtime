@@ -6,9 +6,6 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
-  <PropertyGroup Condition=" '$(TargetsWindows)' != 'true' ">
-    <DefineConstants>$(DefineConstants);MANAGED_SNI</DefineConstants>
-  </PropertyGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\Collections\DictionaryExtensions.cs">
       <Link>Common\System\Collections\DictionaryExtensions.cs</Link>
@@ -38,6 +35,7 @@
     <Compile Include="SQL\CommandCancelTest\CommandCancelTest.cs" />
     <Compile Include="SQL\ConnectionPoolTest\ConnectionPoolTest.cs" />
     <Compile Include="SQL\ConnectivityTests\ConnectivityTest.cs" />
+    <Compile Include="SQL\DataReaderTest\DataReaderTest.cs" />
     <Compile Include="SQL\ExceptionTest\ExceptionTest.cs" />
     <Compile Include="SQL\DataStreamTest\DataStreamTest.cs" />
     <Compile Include="SQL\DateTimeTest\DateTimeTest.cs" />

@@ -10,6 +10,7 @@ namespace System.Xml.Serialization
 {
     using System;
     using System.ComponentModel;
+    using System.Xml.Serialization;
 
     /// <include file='doc\CodeGenerationOptions.uex' path='docs/doc[@for="CodeGenerationOptions"]/*' />
     /// <devdoc>

@@ -350,7 +350,6 @@ namespace System.Collections.ObjectModel
 
         #region Private Types
 
-        [Serializable]
         private struct BlockReentrancyDisposable : IDisposable
         {
             private readonly ObservableCollection<T> _collection;

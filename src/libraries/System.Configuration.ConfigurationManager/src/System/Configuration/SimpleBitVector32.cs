@@ -8,7 +8,6 @@ namespace System.Configuration
     // reason this is here is because it is used rather intensively by Control and
     // WebControl. As a result, being able to inline this operations results in a
     // measurable performance gain, at the expense of some maintainability.
-    [Serializable]
     internal struct SimpleBitVector32
     {
         internal SimpleBitVector32(int data)

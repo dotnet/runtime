@@ -1056,27 +1056,27 @@ namespace System.Xml.Serialization
                 }
 
                 TypeDesc td = arrayMapping.TypeDesc;
-                if (td.IsEnumerable || td.IsCollection)
+                if (rre != null)
                 {
-                    if (rre != null)
+                    if (td.IsEnumerable || td.IsCollection)
                     {
                         WriteAddCollectionFixup(member.GetSource, member.Source, rre, td, readOnly);
+
+                        // member.Source has been set at this point. 
+                        // Setting the source to no-op to avoid setting the
+                        // source again.
+                        member.Source = NoopAction;
                     }
-                }
-                else
-                {
-                    if (member == null)
+                    else
                     {
-                        throw new InvalidOperationException(SR.Format(SR.XmlInternalError));
-                    }
+                        if (member == null)
+                        {
+                            throw new InvalidOperationException(SR.Format(SR.XmlInternalError));
+                        }
 
-                    member.Source(rre);
+                        member.Source(rre);
+                    }                    
                 }
-
-                // member.Source has been set at this point. 
-                // Setting the source to no-op to avoid setting the
-                // source again.
-                member.Source = NoopAction;
 
                 o = rre;
             }
@@ -1360,10 +1360,20 @@ namespace System.Xml.Serialization
                 {
                     MemberMapping mapping = mappings[i];
                     var member = new Member(mapping);
-                    member.Source = (value) =>
+
+                    TypeDesc td = member.Mapping.TypeDesc;
+                    if (td.IsCollection || td.IsEnumerable)
                     {
-                        SetMemberValue(o, value, member.Mapping.MemberInfo);
-                    };
+                        member.Source = (value) => WriteAddCollectionFixup(o, member, value);
+                    }
+                    else if (!member.Mapping.ReadOnly)
+                    {
+                        member.Source = (value) => SetMemberValue(o, value, member.Mapping.MemberInfo);
+                    }
+                    else
+                    {
+                        member.Source = NoopAction;
+                    }
 
                     members[i] = member;
                 }
@@ -1426,7 +1436,6 @@ namespace System.Xml.Serialization
             return (fixupObject) =>
             {
                 var fixup = (Fixup)fixupObject;
-                object o = fixup.Source;
                 string[] ids = fixup.Ids;
                 foreach (Member member in members)
                 {
@@ -1436,15 +1445,7 @@ namespace System.Xml.Serialization
                         if (ids[fixupIndex] != null)
                         {
                             var memberValue = GetTarget(ids[fixupIndex]);
-                            TypeDesc td = member.Mapping.TypeDesc;
-                            if (td.IsCollection || td.IsEnumerable)
-                            {
-                                WriteAddCollectionFixup(o, member, memberValue);
-                            }
-                            else
-                            {
-                                SetMemberValue(o, memberValue, member.Mapping.Name);
-                            }
+                            member.Source(memberValue);
                         }
                     }
                 }

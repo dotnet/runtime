@@ -158,60 +158,6 @@ namespace System.Net
             Buffer.BlockCopy(buffer, offset, _storedBuffer, _storedOffset, count);
         }
 
-        // adds additional content to the end of the buffer
-        // so the layout of the storedBuffer will be
-        // <existingBuffer><buffer>
-        // after calling append
-        internal void Append(byte[] buffer, int offset, int count)
-        {
-            if (count == 0)
-                return;
-
-            int newBufferPosition;
-            if (_storedOffset == _storedLength)
-            {
-                if (_storedBuffer == null || _storedBuffer.Length < count)
-                {
-                    _storedBuffer = new byte[count];
-                }
-                _storedOffset = 0;
-                _storedLength = count;
-                newBufferPosition = 0;
-            }
-            else
-            {
-                // if there's room to just insert after existing data
-                if (count <= _storedBuffer.Length - _storedLength)
-                {
-                    //no preperation necessary
-                    newBufferPosition = _storedLength;
-                    _storedLength += count;
-                }
-                // if there's room in the buffer but need to shift things over
-                else if (count <= _storedBuffer.Length - _storedLength + _storedOffset)
-                {
-                    Buffer.BlockCopy(_storedBuffer, _storedOffset, _storedBuffer, 0, _storedLength - _storedOffset);
-                    newBufferPosition = _storedLength - _storedOffset;
-                    _storedOffset = 0;
-                    _storedLength = count + newBufferPosition;
-                }
-                else
-                {
-                    // the buffer is too small
-                    // allocate new buffer
-                    byte[] newBuffer = new byte[count + _storedLength - _storedOffset];
-                    // and prepopulate the remaining content of the original buffer
-                    Buffer.BlockCopy(_storedBuffer, _storedOffset, newBuffer, 0, _storedLength - _storedOffset);
-                    newBufferPosition = _storedLength - _storedOffset;
-                    _storedOffset = 0;
-                    _storedLength = count + newBufferPosition;
-                    _storedBuffer = newBuffer;
-                }
-            }
-
-            Buffer.BlockCopy(buffer, offset, _storedBuffer, newBufferPosition, count);
-        }
-
         private class ReadAsyncResult : LazyAsyncResult
         {
             private BufferedReadStream _parent;

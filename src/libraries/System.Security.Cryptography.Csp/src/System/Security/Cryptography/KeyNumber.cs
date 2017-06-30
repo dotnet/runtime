@@ -8,7 +8,6 @@ using System.Security.Cryptography;
 
 namespace System.Security.Cryptography
 {
-    [Serializable]
     public enum KeyNumber
     {
         //These are identifiers for the private keys from the key container
