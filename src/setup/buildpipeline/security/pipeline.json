@@ -1,5 +1,5 @@
 {
-    "Repository": "corefx",
+    "Repository": "core-setup",
     "Definitions": {
         "Path": ".",
         "Type": "VSTS",
