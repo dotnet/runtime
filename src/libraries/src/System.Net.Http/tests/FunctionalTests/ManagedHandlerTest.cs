@@ -22,14 +22,6 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
-    internal static class ManagedHandlerTestHelpers
-    {
-        private const string ManagedHandlerEnvVar = "COMPlus_UseManagedHttpClientHandler";
-        public static void SetEnvVar() => Environment.SetEnvironmentVariable(ManagedHandlerEnvVar, "true");
-        public static void RemoveEnvVar() => Environment.SetEnvironmentVariable(ManagedHandlerEnvVar, null);
-        public static bool IsEnabled => Environment.GetEnvironmentVariable(ManagedHandlerEnvVar) == "true";
-    }
-    
     public sealed class ManagedHandler_HttpClientTest : HttpClientTest, IDisposable
     {
         public ManagedHandler_HttpClientTest() => ManagedHandlerTestHelpers.SetEnvVar();
@@ -80,6 +72,24 @@ namespace System.Net.Http.Functional.Tests
         public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
     }
 
+    public sealed class ManagedHandler_HttpClientHandler_ServerCertificates_Test : HttpClientHandler_ServerCertificates_Test, IDisposable
+    {
+        public ManagedHandler_HttpClientHandler_ServerCertificates_Test() => ManagedHandlerTestHelpers.SetEnvVar();
+        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+    }
+
+    public sealed class ManagedHandler_PostScenarioTest : PostScenarioTest, IDisposable
+    {
+        public ManagedHandler_PostScenarioTest(ITestOutputHelper output) : base(output) => ManagedHandlerTestHelpers.SetEnvVar();
+        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+    }
+
+    public sealed class ManagedHandler_ResponseStreamTest : ResponseStreamTest, IDisposable
+    {
+        public ManagedHandler_ResponseStreamTest(ITestOutputHelper output) : base(output) => ManagedHandlerTestHelpers.SetEnvVar();
+        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+    }
+
     // TODO: Uncomment once tests are fixed
 
     //public sealed class ManagedHandler_HttpClientHandler_SslProtocols_Test : HttpClientHandler_SslProtocols_Test, IDisposable
@@ -109,22 +119,4 @@ namespace System.Net.Http.Functional.Tests
     //        base.Dispose();
     //    }
     //}
-
-    public sealed class ManagedHandler_HttpClientHandler_ServerCertificates_Test : HttpClientHandler_ServerCertificates_Test, IDisposable
-    {
-        public ManagedHandler_HttpClientHandler_ServerCertificates_Test() => ManagedHandlerTestHelpers.SetEnvVar();
-        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
-    }
-
-    public sealed class ManagedHandler_PostScenarioTest : PostScenarioTest, IDisposable
-    {
-        public ManagedHandler_PostScenarioTest(ITestOutputHelper output) : base(output) => ManagedHandlerTestHelpers.SetEnvVar();
-        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
-    }
-
-    public sealed class ManagedHandler_ResponseStreamTest : ResponseStreamTest, IDisposable
-    {
-        public ManagedHandler_ResponseStreamTest(ITestOutputHelper output) : base(output) => ManagedHandlerTestHelpers.SetEnvVar();
-        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
-    }
 }
