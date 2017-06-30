@@ -125,7 +125,7 @@ STDAPI NGenWorker(LPCWSTR pwzFilename, DWORD dwFlags, LPCWSTR pwzPlatformAssembl
         ngo.fEmitFixups = false;
         ngo.fFatHeaders = false;
 
-        ngo.fVerbose = false;
+        ngo.fVerbose = (dwFlags & NGENWORKER_FLAGS_VERBOSE) != 0;
         ngo.uStats = false;
 
         ngo.fNgenLastRetry = false;
