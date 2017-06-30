@@ -28,58 +28,58 @@ namespace System.Net.Http.Functional.Tests
         public static void SetEnvVar() => Environment.SetEnvironmentVariable(ManagedHandlerEnvVar, "true");
         public static void RemoveEnvVar() => Environment.SetEnvironmentVariable(ManagedHandlerEnvVar, null);
     }
+    
+    public sealed class ManagedHandler_HttpClientTest : HttpClientTest, IDisposable
+    {
+        public ManagedHandler_HttpClientTest() => ManagedHandlerTestHelpers.SetEnvVar();
+        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+    }
+
+    public sealed class ManagedHandler_DiagnosticsTest : DiagnosticsTest, IDisposable
+    {
+        public ManagedHandler_DiagnosticsTest() => ManagedHandlerTestHelpers.SetEnvVar();
+        public new void Dispose()
+        {
+            ManagedHandlerTestHelpers.RemoveEnvVar();
+            base.Dispose();
+        }
+    }
+
+    public sealed class ManagedHandler_HttpClientEKUTest : HttpClientEKUTest, IDisposable
+    {
+        public ManagedHandler_HttpClientEKUTest() => ManagedHandlerTestHelpers.SetEnvVar();
+        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+    }
+
+    public sealed class ManagedHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test : HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test, IDisposable
+    {
+        public ManagedHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test() => ManagedHandlerTestHelpers.SetEnvVar();
+        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+    }
+
+    public sealed class ManagedHandler_HttpClientHandler_ClientCertificates_Test : HttpClientHandler_ClientCertificates_Test, IDisposable
+    {
+        public ManagedHandler_HttpClientHandler_ClientCertificates_Test() => ManagedHandlerTestHelpers.SetEnvVar();
+        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+    }
+
+    public sealed class ManagedHandler_HttpClientHandler_DefaultProxyCredentials_Test : HttpClientHandler_DefaultProxyCredentials_Test, IDisposable
+    {
+        public ManagedHandler_HttpClientHandler_DefaultProxyCredentials_Test() => ManagedHandlerTestHelpers.SetEnvVar();
+        public new void Dispose()
+        {
+            ManagedHandlerTestHelpers.RemoveEnvVar();
+            base.Dispose();
+        }
+    }
+
+    public sealed class ManagedHandler_HttpClientHandler_MaxConnectionsPerServer_Test : HttpClientHandler_MaxConnectionsPerServer_Test, IDisposable
+    {
+        public ManagedHandler_HttpClientHandler_MaxConnectionsPerServer_Test() => ManagedHandlerTestHelpers.SetEnvVar();
+        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+    }
 
     // TODO: Uncomment once tests are fixed
-
-    //public sealed class ManagedHandler_HttpClientTest : HttpClientTest, IDisposable
-    //{
-    //    public ManagedHandler_HttpClientTest() => ManagedHandlerTestHelpers.SetEnvVar();
-    //    public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
-    //}
-
-    //public sealed class ManagedHandler_DiagnosticsTest : DiagnosticsTest, IDisposable
-    //{
-    //    public ManagedHandler_DiagnosticsTest() => ManagedHandlerTestHelpers.SetEnvVar();
-    //    public new void Dispose()
-    //    {
-    //        ManagedHandlerTestHelpers.RemoveEnvVar();
-    //        base.Dispose();
-    //    }
-    //}
-
-    //public sealed class ManagedHandler_HttpClientEKUTest : HttpClientEKUTest, IDisposable
-    //{
-    //    public ManagedHandler_HttpClientEKUTest() => ManagedHandlerTestHelpers.SetEnvVar();
-    //    public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
-    //}
-
-    //public sealed class ManagedHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test : HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test, IDisposable
-    //{
-    //    public ManagedHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test() => ManagedHandlerTestHelpers.SetEnvVar();
-    //    public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
-    //}
-
-    //public sealed class ManagedHandler_HttpClientHandler_ClientCertificates_Test : HttpClientHandler_ClientCertificates_Test, IDisposable
-    //{
-    //    public ManagedHandler_HttpClientHandler_ClientCertificates_Test() => ManagedHandlerTestHelpers.SetEnvVar();
-    //    public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
-    //}
-
-    //public sealed class ManagedHandler_HttpClientHandler_DefaultProxyCredentials_Test : HttpClientHandler_DefaultProxyCredentials_Test, IDisposable
-    //{
-    //    public ManagedHandler_HttpClientHandler_DefaultProxyCredentials_Test() => ManagedHandlerTestHelpers.SetEnvVar();
-    //    public new void Dispose()
-    //    {
-    //        ManagedHandlerTestHelpers.RemoveEnvVar();
-    //        base.Dispose();
-    //    }
-    //}
-
-    //public sealed class ManagedHandler_HttpClientHandler_MaxConnectionsPerServer_Test : HttpClientHandler_MaxConnectionsPerServer_Test, IDisposable
-    //{
-    //    public ManagedHandler_HttpClientHandler_MaxConnectionsPerServer_Test() => ManagedHandlerTestHelpers.SetEnvVar();
-    //    public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
-    //}
 
     //public sealed class ManagedHandler_HttpClientHandler_SslProtocols_Test : HttpClientHandler_SslProtocols_Test, IDisposable
     //{
