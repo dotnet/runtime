@@ -8,7 +8,6 @@
             <TypeParameter Name="type" DataContractSerializer="Public"/>
             <TypeEnumerableParameter Name="knownTypes" DataContractSerializer="Public"/>
           </Method>
-          <Property Name="Option" Dynamic="Required" />
         </Type>
         <Type Name="KeyValuePairAdapter`2" Dynamic="Required All" />
         <!-- Reflection-based serialization requires the entries below. -->
