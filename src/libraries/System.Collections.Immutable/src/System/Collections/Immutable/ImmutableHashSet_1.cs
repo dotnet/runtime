@@ -73,57 +73,7 @@ namespace System.Collections.Immutable
             _root = root;
             _count = count;
             _equalityComparer = equalityComparer;
-            _hashBucketEqualityComparer = Get(equalityComparer);
-        }
-
-        internal static IEqualityComparer<HashBucket> Get(IEqualityComparer<T> valueComparer)
-        {
-            if (!typeof(ValueType).IsAssignableFrom(typeof(T)))
-            {
-                return HashBucketByRefEqualityComparer.DefaultInstance;
-            }
-            else if (valueComparer == EqualityComparer<T>.Default)
-            {
-                return HashBucketByValueEqualityComparer.DefaultInstance;
-            }
-            else
-            {
-                return new HashBucketByValueEqualityComparer(valueComparer);
-            }
-        }
-
-        private class HashBucketByRefEqualityComparer : IEqualityComparer<HashBucket>
-        {
-            private static readonly IEqualityComparer<HashBucket> s_defaultInstance = new HashBucketByRefEqualityComparer();
-
-            internal static IEqualityComparer<HashBucket> DefaultInstance => s_defaultInstance;
-
-            private HashBucketByRefEqualityComparer()
-            {
-            }
-
-            public bool Equals(HashBucket x, HashBucket y) => x.EqualsByRef(y);
-
-            public int GetHashCode(HashBucket obj) => throw new NotSupportedException();
-        }
-
-        private class HashBucketByValueEqualityComparer : IEqualityComparer<HashBucket>
-        {
-            private static readonly IEqualityComparer<HashBucket> s_defaultInstance = new HashBucketByValueEqualityComparer(EqualityComparer<T>.Default);
-
-            internal static IEqualityComparer<HashBucket> DefaultInstance => s_defaultInstance;
-
-            private readonly IEqualityComparer<T> _valueComparer;
-
-            internal HashBucketByValueEqualityComparer(IEqualityComparer<T> valueComparer)
-            {
-                Requires.NotNull(valueComparer, nameof(valueComparer));
-                _valueComparer = valueComparer;
-            }
-
-            public bool Equals(HashBucket x, HashBucket y) => x.EqualsByValue(y, _valueComparer);
-
-            public int GetHashCode(HashBucket obj) => throw new NotSupportedException();
+            _hashBucketEqualityComparer = GetHashBucketEqualityComparer(equalityComparer);
         }
 
         /// <summary>
@@ -1055,6 +1005,27 @@ namespace System.Collections.Immutable
             Requires.NotNull(equalityComparer, nameof(equalityComparer));
             Requires.Range(count >= 0, nameof(count));
             return new ImmutableHashSet<T>(root, equalityComparer, count);
+        }
+
+        /// <summary>
+        /// Gets the <see cref="IEqualityComparer{HashBucket}"/> to use.
+        /// </summary>
+        /// <param name="valueComparer">The value comparer for T.</param>
+        /// <returns>The equality comparer to use.</returns>
+        private static IEqualityComparer<HashBucket> GetHashBucketEqualityComparer(IEqualityComparer<T> valueComparer)
+        {
+            if (!typeof(ValueType).IsAssignableFrom(typeof(T)))
+            {
+                return HashBucketByRefEqualityComparer.DefaultInstance;
+            }
+            else if (valueComparer == EqualityComparer<T>.Default)
+            {
+                return HashBucketByValueEqualityComparer.DefaultInstance;
+            }
+            else
+            {
+                return new HashBucketByValueEqualityComparer(valueComparer);
+            }
         }
 
         /// <summary>
