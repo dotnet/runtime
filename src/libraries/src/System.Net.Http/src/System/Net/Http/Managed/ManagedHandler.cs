@@ -287,9 +287,10 @@ namespace System.Net.Http
                 _checkCertificateRevocationList,
                 _sslProtocols);
 
-            if (_useProxy && _proxy != null)
+            if ((_useProxy && _proxy != null) ||
+                HttpProxyConnectionHandler.EnvironmentProxyConfigured)
             {
-                handler = new HttpProxyConnectionHandler(_proxy, handler);
+                handler = new HttpProxyConnectionHandler(_useProxy ? _proxy : null, handler);
             }
 
             if (_credentials != null)
