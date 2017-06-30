@@ -39,7 +39,6 @@ namespace System.Runtime.Loader.Tests
             // Override the assembly that was loaded in DefaultContext.
             string assemblyPath = Path.Combine(Path.GetDirectoryName(typeof(string).Assembly.Location), assemblyName.Name + ".dll");
             Assembly assembly = LoadFromAssemblyPath(assemblyPath);
-            //m_fLoadedFromContext = true;
             LoadedFromContext = true;
             return assembly;
         }
