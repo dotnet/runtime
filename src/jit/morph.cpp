@@ -4769,17 +4769,12 @@ GenTreePtr Compiler::fgMorphMultiregStructArg(GenTreePtr arg, fgArgTabEntryPtr f
     {
         if (fgEntryPtr->isHfaRegArg)
         {
-            // We cannot handle split struct morphed to GT_FIELD_LIST yet
+            // We cannot handle HFA split struct morphed to GT_FIELD_LIST yet
             NYI_ARM("Struct split between float registers and stack");
         }
         else if (fgEntryPtr->numSlots + fgEntryPtr->numRegs > 4)
         {
             return arg;
-        }
-        else
-        {
-            // We cannot handle split struct morphed to GT_FIELD_LIST yet
-            NYI_ARM("Struct split between integer registers and stack");
         }
     }
     else if (!fgEntryPtr->isHfaRegArg && fgEntryPtr->numSlots > 4)
