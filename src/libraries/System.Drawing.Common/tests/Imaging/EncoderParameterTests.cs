@@ -39,7 +39,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(Ctor_Encoder_Byte_TestData))]
         public void Ctor_Encoder_Byte(Encoder encoder, byte value)
         {
@@ -47,7 +47,7 @@ namespace System.Drawing.Imaging.Tests
             CheckEncoderParameter(ep, encoder, EncoderParameterValueType.ValueTypeByte, 1);
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(false, EncoderParameterValueType.ValueTypeByte)]
         [InlineData(true, EncoderParameterValueType.ValueTypeUndefined)]
         public void Ctor_Encoder_ByteValue_Bool(bool undefined, EncoderParameterValueType expected)
@@ -56,7 +56,7 @@ namespace System.Drawing.Imaging.Tests
             CheckEncoderParameter(ep, s_anyEncoder, expected, 1);
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(0)]
         [InlineData(short.MinValue)]
         [InlineData(short.MaxValue)]
@@ -66,7 +66,7 @@ namespace System.Drawing.Imaging.Tests
             CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeShort, 1);
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(0)]
         [InlineData(long.MinValue)]
         [InlineData(long.MaxValue)]
@@ -76,7 +76,7 @@ namespace System.Drawing.Imaging.Tests
             CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeLong, 1);
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(int.MaxValue, int.MaxValue)]
         [InlineData(10, 5)]
         [InlineData(-10, -5)]
@@ -86,7 +86,7 @@ namespace System.Drawing.Imaging.Tests
             CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeRational, 1);
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(0, 0, 0, 0)]
         [InlineData(1, 2, 3, 4)]
         public void Ctor_Encoder_Numerator1_Denominator1_Numerator2_Denominator2(int numerator1, int denominator1, int numerator2, int denominator2)
@@ -95,7 +95,7 @@ namespace System.Drawing.Imaging.Tests
             CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeRationalRange, 1);
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(0, 0)]
         [InlineData(1, 2)]
         public void Ctor_Encoder_RangeBegin_RangeEnd(long rangeBegin, long rangeEnd)
@@ -104,7 +104,7 @@ namespace System.Drawing.Imaging.Tests
             CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeLongRange, 1);
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData("someStringValue")]
         [InlineData("")]
         public void Ctor_Encoder_String(string value)
@@ -113,7 +113,7 @@ namespace System.Drawing.Imaging.Tests
             CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeAscii, value.Length);
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(new byte[] { })]
         [InlineData(new byte[] { 0, 1, 2, 3 })]
         public void Ctor_Encoder_ByteArray(byte[] value)
@@ -122,7 +122,7 @@ namespace System.Drawing.Imaging.Tests
             CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeByte, value.Length);
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(new byte[] { 1, 2 }, false, EncoderParameterValueType.ValueTypeByte)]
         [InlineData(new byte[] { 1, 2 }, true, EncoderParameterValueType.ValueTypeUndefined)]
         public void Ctor_Encoder_ByteArray_Bool(byte[] value, bool undefined, EncoderParameterValueType expected)
@@ -131,7 +131,7 @@ namespace System.Drawing.Imaging.Tests
             CheckEncoderParameter(ep, s_anyEncoder, expected, value.Length);
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(new short[] { })]
         [InlineData(new short[] { 0, 1, 2, 3 })]
         public void Ctor_Encoder_ShortArray(short[] value)
@@ -140,7 +140,7 @@ namespace System.Drawing.Imaging.Tests
             CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeShort, value.Length);
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(new long[] { })]
         [InlineData(new long[] { 0, 1, 2, 3 })]
         public void Ctor_Encoder_LongArray(long[] value)
@@ -149,7 +149,7 @@ namespace System.Drawing.Imaging.Tests
             CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeLong, value.Length);
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(new int[] { 0, 1, 2, 3 }, new int[] { 5, 6, 7, 8 })]
         public void Ctor_Encoder_NumeratorArray_DenominatorArray(int[] numerator, int[] denominator)
         {
@@ -157,7 +157,7 @@ namespace System.Drawing.Imaging.Tests
             CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeRational, numerator.Length);
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(new long[] { 0, 1, 2, 3 }, new long[] { 5, 6, 7, 8 })]
         public void Ctor_Encoder_RangeBeginArray_RangeEndArray(long[] rangeBegin, long[] rangeEnd)
         {
@@ -165,7 +165,7 @@ namespace System.Drawing.Imaging.Tests
             CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeLongRange, rangeBegin.Length);
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(new int[] { 0, 1, 2, 3 }, new int[] { 4, 5, 6, 7 }, new int[] { 8, 9, 10, 11 }, new int[] { 12, 13, 14, 15 })]
         public void Ctor_Encoder_Numerator1Array_Denominator1Array_Numerator2Array_Denominator2Array(int[] numerator1, int[] denominator1, int[] numerator2, int[] denominator2)
         {
@@ -189,7 +189,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(Encoder_NumberOfValues_TestData))]
         public void Ctor_Encoder_NumberOfValues_Type_Value(int numberOfValues, EncoderParameterValueType type, IntPtr value)
         {
@@ -197,7 +197,7 @@ namespace System.Drawing.Imaging.Tests
             CheckEncoderParameter(ep, s_anyEncoder, type, numberOfValues);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Encoder_ReturnsExpecetd()
         {
             Encoder encoder = new Encoder(Guid.NewGuid());
@@ -207,13 +207,13 @@ namespace System.Drawing.Imaging.Tests
             Assert.Equal(encoder.Guid, ep.Encoder.Guid);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_Encoder_NumberOfValues_NotExistingType_ThrowsInvalidOperationException()
         {
             Assert.Throws<InvalidOperationException>(() => new EncoderParameter(s_anyEncoder, 1, (EncoderParameterValueType)999, IntPtr.Zero));
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(new int[] { 1, 2 }, new int[] { 1 }, new int[] { 1 }, new int[] { 1 }, typeof(ArgumentException))]
         [InlineData(new int[] { 1 }, new int[] { 1, 2 }, new int[] { 1 }, new int[] { 1 }, typeof(ArgumentException))]
         [InlineData(null, new int[] { 1 }, new int[] { 1 }, new int[] { 1 }, typeof(NullReferenceException))]
@@ -225,14 +225,14 @@ namespace System.Drawing.Imaging.Tests
             Assert.Throws(expected, () => new EncoderParameter(s_anyEncoder, numerator1, denominator1, numerator2, denominator2));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Encoder_Null_ThrowsNullReferenceException()
         {
             EncoderParameter ep = new EncoderParameter(s_anyEncoder, 0);
             Assert.Throws<NullReferenceException>(() => ep.Encoder = null);
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(new int[] { 0 }, new int[] { 0, 1 }, typeof(ArgumentException))]
         [InlineData(new int[] { 0, 1 }, new int[] { 0 }, typeof(ArgumentException))]
         [InlineData(new int[] { 0, 1 }, null, typeof(NullReferenceException))]
@@ -242,7 +242,7 @@ namespace System.Drawing.Imaging.Tests
             Assert.Throws(expected, () => new EncoderParameter(s_anyEncoder, numerator, denominator));
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(new long[] { 0 }, new long[] { 0, 1 }, typeof(ArgumentException))]
         [InlineData(new long[] { 0, 1 }, new long[] { 0 }, typeof(ArgumentException))]
         [InlineData(new long[] { 0, 1 }, null, typeof(NullReferenceException))]
@@ -252,13 +252,13 @@ namespace System.Drawing.Imaging.Tests
             Assert.Throws(expected, () => new EncoderParameter(s_anyEncoder, rangeBegin, rangeEnd));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_Encoder_NullString_ThrowsNullReferenceException()
         {
             Assert.Throws<NullReferenceException>(() => new EncoderParameter(s_anyEncoder, (string)null));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_Encoder_ByteArray_ThrowsNullReferenceException()
         {
             Assert.Throws<NullReferenceException>(() => new EncoderParameter(s_anyEncoder, (byte[])null));
@@ -284,7 +284,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_NullEncoder_ThrowsNullReferenceException()
         {
             Assert.Throws<NullReferenceException>(() => new EncoderParameter(null, (byte)0));
@@ -302,7 +302,7 @@ namespace System.Drawing.Imaging.Tests
             Assert.Throws<NullReferenceException>(() => new EncoderParameter(null, new long[] { }, new long[] { }));
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(EncoderParameterValueType.ValueTypeShort, (int.MaxValue / 2) + 1, typeof(OverflowException))]
         [InlineData(EncoderParameterValueType.ValueTypeLong, (int.MaxValue / 4) + 1, typeof(OverflowException))]
         [InlineData(EncoderParameterValueType.ValueTypeRational, (int.MaxValue / 8) + 1, typeof(OverflowException))]
@@ -313,7 +313,7 @@ namespace System.Drawing.Imaging.Tests
             Assert.Throws(expected, () => new EncoderParameter(s_anyEncoder, numberOfValues, type, IntPtr.Zero));
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(-1)]
         [InlineData(int.MinValue)]
         public void Ctor_Encoder_NegativeNumberOfValues_Type_Value_OutOfMemoryException(int numberOfValues)
