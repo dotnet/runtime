@@ -3943,12 +3943,13 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
         // if tree nodes are eventually allowed to be multiply-used), then the removal is only
         // correct at the last use.
         LocationInfoList operandDefs;
-        bool removed = operandToLocationInfoMap.TryRemove(operand, &operandDefs);
+        bool             removed = operandToLocationInfoMap.TryRemove(operand, &operandDefs);
         assert(removed);
         assert(!operandDefs.IsEmpty());
 
         LocationInfoListNode* const operandDefsEnd = operandDefs.End();
-        for (LocationInfoListNode* operandDefsIterator = operandDefs.Begin(); operandDefsIterator != operandDefsEnd; operandDefsIterator = operandDefsIterator->Next())
+        for (LocationInfoListNode* operandDefsIterator = operandDefs.Begin(); operandDefsIterator != operandDefsEnd;
+             operandDefsIterator                       = operandDefsIterator->Next())
         {
             LocationInfo& locInfo = *static_cast<LocationInfo*>(operandDefsIterator);
 
@@ -4047,7 +4048,8 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
                     // Explicitly insert a FixedRefPosition and fake the candidates, because otherwise newRefPosition
                     // will complain about the types not matching.
                     regNumber    physicalReg = genRegNumFromMask(fixedAssignment);
-                    RefPosition* pos = newRefPosition(physicalReg, currentLoc, RefTypeFixedReg, nullptr, fixedAssignment);
+                    RefPosition* pos =
+                        newRefPosition(physicalReg, currentLoc, RefTypeFixedReg, nullptr, fixedAssignment);
                 }
                 pos = newRefPosition(i, currentLoc, RefTypeUse, useNode, allRegs(i->registerType),
                                      multiRegIdx DEBUG_ARG(minRegCountForUsePos));
