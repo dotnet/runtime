@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -474,16 +475,14 @@ namespace System.Runtime.InteropServices.WindowsRuntime
             EventHandler key,
             ConditionalWeakTable<EventHandler, EventHandler<object>>.CreateValueCallback callback)
         {
-            EventHandler<object> value;
-
-            // Find the key in the table using a value check rather than an instance check.
-            EventHandler existingKey = table.FindEquivalentKeyUnsafe(key, out value);
-            if (existingKey == null)
+            foreach (KeyValuePair<EventHandler, EventHandler<object>> item in table)
             {
-                value = callback(key);
-                table.Add(key, value);
+                if (Object.Equals(item.Key, key))
+                    return item.Value;
             }
 
+            EventHandler<object> value = callback(key);
+            table.Add(key, value);
             return value;
         }
     }
