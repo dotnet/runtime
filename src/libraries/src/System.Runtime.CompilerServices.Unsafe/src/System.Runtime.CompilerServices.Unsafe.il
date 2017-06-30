@@ -292,6 +292,19 @@
         ret
   } // end of method Unsafe::Add
 
+  .method public hidebysig static void* Add<T>(void* source, int32 elementOffset) cil managed aggressiveinlining
+  {
+        .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 3
+        ldarg.0
+        ldarg.1
+        sizeof !!T
+        conv.i
+        mul
+        add
+        ret
+  } // end of method Unsafe::Add
+
   .method public hidebysig static !!T& Add<T>(!!T& source, native int elementOffset) cil managed aggressiveinlining
   {
         .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
@@ -315,6 +328,19 @@
   } // end of method Unsafe::AddByteOffset
 
   .method public hidebysig static !!T& Subtract<T>(!!T& source, int32 elementOffset) cil managed aggressiveinlining
+  {
+        .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
+        .maxstack 3
+        ldarg.0
+        ldarg.1
+        sizeof !!T
+        conv.i
+        mul
+        sub
+        ret
+  } // end of method Unsafe::Subtract
+
+  .method public hidebysig static void* Subtract<T>(void* source, int32 elementOffset) cil managed aggressiveinlining
   {
         .custom instance void System.Runtime.Versioning.NonVersionableAttribute::.ctor() = ( 01 00 00 00 )
         .maxstack 3
