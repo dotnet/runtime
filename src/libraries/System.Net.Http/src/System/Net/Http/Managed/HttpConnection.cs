@@ -147,9 +147,9 @@ namespace System.Net.Http
                     throw new ArgumentOutOfRangeException(nameof(count));
                 }
 
-                if (_connection == null)
+                if (_connection == null || count == 0)
                 {
-                    // Response body fully consumed
+                    // Response body fully consumed or the caller didn't ask for any data
                     return 0;
                 }
 
@@ -301,9 +301,9 @@ namespace System.Net.Http
                     throw new ArgumentOutOfRangeException(nameof(count));
                 }
 
-                if (_connection == null)
+                if (_connection == null || count == 0)
                 {
-                    // Response body fully consumed
+                    // Response body fully consumed or the caller didn't ask for any data
                     return 0;
                 }
 
@@ -382,9 +382,9 @@ namespace System.Net.Http
                     throw new ArgumentOutOfRangeException(nameof(count));
                 }
 
-                if (_connection == null)
+                if (_connection == null || count == 0)
                 {
-                    // Response body fully consumed
+                    // Response body fully consumed or the caller didn't ask for any data
                     return 0;
                 }
 
