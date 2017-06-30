@@ -1689,6 +1689,11 @@ namespace System.Runtime.Serialization.Json
             return sb.ToString();
         }
 
+        protected override XmlSigningNodeWriter CreateSigningNodeWriter()
+        {
+            throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new NotSupportedException(SR.Format(SR.JsonMethodNotSupported, "CreateSigningNodeWriter")));
+        }
+
         private static class CharType
         {
             public const byte FirstName = 0x01;

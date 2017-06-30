@@ -4,7 +4,6 @@
 
 namespace System.Reflection.Emit
 {
-    [Serializable]
     public enum StackBehaviour
     {
         Pop0 = 0,

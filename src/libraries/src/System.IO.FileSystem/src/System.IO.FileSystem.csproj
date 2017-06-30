@@ -214,8 +214,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.DeleteVolumeMountPoint.cs">
       <Link>Common\Interop\Windows\Interop.DeleteVolumeMountPoint.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetErrorMode.cs">
-      <Link>Common\Interop\Windows\Interop.SetErrorMode.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetThreadErrorMode.cs">
+      <Link>Common\Interop\Windows\Interop.SetThreadErrorMode.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- Windows : UAP - Win32 + WinRT -->
@@ -229,8 +229,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.DeleteVolumeMountPoint.Uap.cs">
       <Link>Common\Interop\Windows\Interop.DeleteVolumeMountPoint.Uap.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetErrorMode.Uap.cs">
-      <Link>Common\Interop\Windows\Interop.SetErrorMode.Uap.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetThreadErrorMode.Uap.cs">
+      <Link>Common\Interop\Windows\Interop.SetThreadErrorMode.Uap.cs</Link>
     </Compile>
     <Compile Include="System\IO\FileSystem.Current.MuxWin32WinRT.cs" />
     <Compile Include="System\IO\FileSystemInfo.WinRT.cs" />

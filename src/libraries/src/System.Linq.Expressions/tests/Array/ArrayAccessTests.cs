@@ -12,7 +12,7 @@ namespace System.Linq.Expressions.Tests
     {
         private static IEnumerable<object[]> Ranks() => Enumerable.Range(1, 5).Select(i => new object[] {i});
 
-        [Theory]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
         [ClassData(typeof(CompilationTypes))]
         public static void ArrayAccess_MultiDimensionalOf1(bool useInterpreter)
         {
@@ -30,7 +30,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(42, get());
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
         [ClassData(typeof(CompilationTypes))]
         public static void ArrayIndex_MultiDimensionalOf1(bool useInterpreter)
         {
@@ -77,7 +77,8 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>("indexes", () => Expression.ArrayAccess(instance, index));
         }
 
-        [Theory, ClassData(typeof(CompilationTypes))]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
+        [ClassData(typeof(CompilationTypes))]
         public static void NonZeroBasedOneDimensionalArrayAccess(bool useInterpreter)
         {
             Array arrayObj = Array.CreateInstance(typeof(int), new[] { 3 }, new[] { -1 });

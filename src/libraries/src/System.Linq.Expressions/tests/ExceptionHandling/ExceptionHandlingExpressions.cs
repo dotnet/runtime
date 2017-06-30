@@ -39,9 +39,10 @@ namespace System.Linq.Expressions.Tests
         {
             return
                 (RuntimeWrappedException)
-                    typeof(RuntimeWrappedException).GetConstructors(BindingFlags.Instance | BindingFlags.NonPublic)
-                        .First(c => c.GetParameters().Length == 1)
-                        .Invoke(new[] {inner});
+                    typeof(RuntimeWrappedException).GetConstructor(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.ExactBinding,
+                                                                   null,
+                                                                   new Type[] { typeof(object) },
+                                                                   null).Invoke(new[] {inner});
         }
 
         [Theory]
@@ -81,7 +82,7 @@ namespace System.Linq.Expressions.Tests
         public void GenericThrowType()
         {
             Type listType = typeof(List<>);
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>(
                 "type", () => Expression.Throw(Expression.Constant(new TestException()), listType));
             AssertExtensions.Throws<ArgumentException>("type", () => Expression.Rethrow(listType));
         }
@@ -91,7 +92,7 @@ namespace System.Linq.Expressions.Tests
         {
             Type listType = typeof(List<>);
             Type listListListType = listType.MakeGenericType(listType.MakeGenericType(listType));
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>(
                 "type", () => Expression.Throw(Expression.Constant(new TestException()), listListListType));
             AssertExtensions.Throws<ArgumentException>("type", () => Expression.Rethrow(listListListType));
         }
@@ -100,7 +101,7 @@ namespace System.Linq.Expressions.Tests
         public void PointerThrowType()
         {
             Type pointer = typeof(int).MakeByRefType();
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>(
                 "type", () => Expression.Throw(Expression.Constant(new TestException()), pointer));
             AssertExtensions.Throws<ArgumentException>("type", () => Expression.Rethrow(pointer));
         }
@@ -109,7 +110,7 @@ namespace System.Linq.Expressions.Tests
         public void ByRefThrowType()
         {
             Type byRefType = typeof(int).MakeByRefType();
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>(
                 "type", () => Expression.Throw(Expression.Constant(new TestException()), byRefType));
             AssertExtensions.Throws<ArgumentException>("type", () => Expression.Rethrow(byRefType));
         }
@@ -366,7 +367,7 @@ namespace System.Linq.Expressions.Tests
             UnaryExpression throwExp = Expression.Throw(Expression.Constant(new TestException()));
             Assert.False(throwExp.CanReduce);
             Assert.Same(throwExp, throwExp.Reduce());
-            Assert.Throws<ArgumentException>(null, () => throwExp.ReduceAndCheck());
+            AssertExtensions.Throws<ArgumentException>(null, () => throwExp.ReduceAndCheck());
         }
 
         [Fact]
@@ -375,7 +376,7 @@ namespace System.Linq.Expressions.Tests
             TryExpression tryExp = Expression.TryFault(Expression.Empty(), Expression.Empty());
             Assert.False(tryExp.CanReduce);
             Assert.Same(tryExp, tryExp.Reduce());
-            Assert.Throws<ArgumentException>(null, () => tryExp.ReduceAndCheck());
+            AssertExtensions.Throws<ArgumentException>(null, () => tryExp.ReduceAndCheck());
         }
 
         [Fact]
@@ -398,7 +399,7 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void MustHaveCatchFinallyOrFault()
         {
-            Assert.Throws<ArgumentException>(null, () => Expression.MakeTry(typeof(int), Expression.Constant(1), null, null, null));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.MakeTry(typeof(int), Expression.Constant(1), null, null, null));
         }
 
         [Fact]
@@ -1008,7 +1009,11 @@ namespace System.Linq.Expressions.Tests
                 )
             );
             Expression<Func<int>> lambda = Expression.Lambda<Func<int>>(tryExp);
+#if FEATURE_COMPILE
             Assert.Throws<InvalidOperationException>(() => lambda.Compile(false));
+#else
+            lambda.Compile(true);
+#endif
         }
 
         [Theory, InlineData(true)]
@@ -1202,19 +1207,19 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public void NonAssignableTryAndCatchTypes()
         {
-            Assert.Throws<ArgumentException>(null, () => Expression.TryCatch(Expression.Constant(new Uri("http://example.net/")), Expression.Catch(typeof(Exception), Expression.Constant("hello"))));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.TryCatch(Expression.Constant(new Uri("http://example.net/")), Expression.Catch(typeof(Exception), Expression.Constant("hello"))));
         }
 
         [Fact]
         public void BodyTypeNotAssignableToTryType()
         {
-            Assert.Throws<ArgumentException>(null, () => Expression.MakeTry(typeof(int), Expression.Constant("hello"), Expression.Empty(), null, null));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.MakeTry(typeof(int), Expression.Constant("hello"), Expression.Empty(), null, null));
         }
 
         [Fact]
         public void CatchTypeNotAssignableToTryType()
         {
-            Assert.Throws<ArgumentException>(null, () => Expression.MakeTry(typeof(int), Expression.Constant(2), null, null, new[] { Expression.Catch(typeof(InvalidCastException), Expression.Constant("")) }));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.MakeTry(typeof(int), Expression.Constant(2), null, null, new[] { Expression.Catch(typeof(InvalidCastException), Expression.Constant("")) }));
         }
 
         [Theory]

@@ -1385,6 +1385,7 @@ namespace System.Net.Sockets
                     Flags = flags,
                     SocketAddress = socketAddress,
                     SocketAddressLen = socketAddressLen,
+                    BytesTransferred = bytesSent
                 };
 
                 bool isStopped;

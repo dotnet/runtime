@@ -53,6 +53,9 @@
     <Compile Include="BigInteger\stackcalculator.cs" />
     <Compile Include="BigInteger\ToByteArray.cs" />
     <Compile Include="ComplexTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
+      <Link>Common\System\AssertExtensions.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\System\PlatformDetection.cs</Link>
     </Compile>

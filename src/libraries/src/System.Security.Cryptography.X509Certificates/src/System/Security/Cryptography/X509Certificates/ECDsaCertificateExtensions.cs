@@ -40,14 +40,15 @@ namespace System.Security.Cryptography.X509Certificates
             if (certificate.HasPrivateKey)
                 throw new InvalidOperationException(SR.Cryptography_Cert_AlreadyHasPrivateKey);
 
-            ECDsa publicKey = GetECDsaPublicKey(certificate);
-
-            if (publicKey == null)
-                throw new ArgumentException(SR.Cryptography_PrivateKey_WrongAlgorithm);
-
-            if (!IsSameKey(publicKey, privateKey))
+            using (ECDsa publicKey = GetECDsaPublicKey(certificate))
             {
-                throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
+                if (publicKey == null)
+                    throw new ArgumentException(SR.Cryptography_PrivateKey_WrongAlgorithm);
+
+                if (!IsSameKey(publicKey, privateKey))
+                {
+                    throw new ArgumentException(SR.Cryptography_PrivateKey_DoesNotMatch, nameof(privateKey));
+                }
             }
 
             ICertificatePal pal = certificate.Pal.CopyWithPrivateKey(privateKey);

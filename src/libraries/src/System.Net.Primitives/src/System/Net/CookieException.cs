@@ -6,7 +6,6 @@ using System.Runtime.Serialization;
 
 namespace System.Net
 {
-    [Serializable]
     public class CookieException : FormatException, ISerializable
     {
         public CookieException() : base()

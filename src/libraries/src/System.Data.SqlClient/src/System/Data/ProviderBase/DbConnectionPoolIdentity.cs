@@ -10,7 +10,6 @@ using System.Security.Principal;
 
 namespace System.Data.ProviderBase
 {
-    [Serializable]
     sealed internal partial class DbConnectionPoolIdentity
     {
         public static readonly DbConnectionPoolIdentity NoIdentity = new DbConnectionPoolIdentity(String.Empty, false, true);

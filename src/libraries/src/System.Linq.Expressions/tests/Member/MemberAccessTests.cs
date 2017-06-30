@@ -281,17 +281,17 @@ namespace System.Linq.Expressions.Tests
         {
             Expression expression = Expression.Constant(new PC());
 
-            Assert.Throws<ArgumentException>(null, () => Expression.Field(expression, typeof(FC), nameof(FC.II)));
-            Assert.Throws<ArgumentException>(null, () => Expression.Field(expression, typeof(FC).GetField(nameof(FC.II))));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Field(expression, typeof(FC), nameof(FC.II)));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Field(expression, typeof(FC).GetField(nameof(FC.II))));
 
-            Assert.Throws<ArgumentException>(null, () => Expression.MakeMemberAccess(expression, typeof(FC).GetField(nameof(FC.II))));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.MakeMemberAccess(expression, typeof(FC).GetField(nameof(FC.II))));
         }
 
         [Fact]
         public static void Field_NoSuchFieldName_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(null, () => Expression.Field(Expression.Constant(new FC()), "NoSuchField"));
-            Assert.Throws<ArgumentException>(null, () => Expression.Field(Expression.Constant(new FC()), typeof(FC), "NoSuchField"));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Field(Expression.Constant(new FC()), "NoSuchField"));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Field(Expression.Constant(new FC()), typeof(FC), "NoSuchField"));
         }
 
         [Theory]

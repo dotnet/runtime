@@ -11,7 +11,7 @@ namespace System.Net.Sockets.Tests
     public class ReceiveMessageFrom
     {
         [OuterLoop] // TODO: Issue #11345
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
+        [Fact]
         public void Success()
         {
             if (Socket.OSSupportsIPv4)
@@ -45,7 +45,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
+        [Fact]
         public void Success_IPv6()
         {
             if (Socket.OSSupportsIPv6)
@@ -79,7 +79,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
+        [Theory]
         [InlineData(false)]
         [InlineData(true)]
         public void Success_APM(bool ipv4)
@@ -130,7 +130,7 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
+        [Theory]
         [InlineData(false, 0)]
         [InlineData(false, 1)]
         [InlineData(false, 2)]

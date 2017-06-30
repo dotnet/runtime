@@ -8,7 +8,6 @@ using System.Globalization;
 
 namespace System.Net
 {
-    [Serializable]
     public class FileWebResponse : WebResponse, ISerializable
     {
         private const int DefaultFileStreamBufferSize = 8192;

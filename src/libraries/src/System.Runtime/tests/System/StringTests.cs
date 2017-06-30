@@ -2233,29 +2233,27 @@ namespace System.Tests
             Assert.Equal(expected, s.ToLower());
         }
 
-        [Fact]
-        public static void ToLower_TurkishI()
+        private static IEnumerable<object[]> ToLower_Culture_TestData()
         {
-            Helpers.PerformActionWithCulture(new CultureInfo("tr-TR"), () =>
-            {
-                Assert.True("H\u0049 World".ToLower().Equals("h\u0131 world", StringComparison.Ordinal));
-                Assert.True("H\u0130 World".ToLower().Equals("h\u0069 world", StringComparison.Ordinal));
-                Assert.True("H\u0131 World".ToLower().Equals("h\u0131 world", StringComparison.Ordinal));
-            });
+            yield return new object[] { "H\u0049 World", "h\u0131 world", new CultureInfo("tr-TR") };
+            yield return new object[] { "H\u0130 World", "h\u0069 world", new CultureInfo("tr-TR") };
+            yield return new object[] { "H\u0131 World", "h\u0131 world", new CultureInfo("tr-TR") };
 
-            Helpers.PerformActionWithCulture(new CultureInfo("en-US"), () =>
-            {
-                Assert.True("H\u0049 World".ToLower().Equals("h\u0069 world", StringComparison.Ordinal));
-                Assert.True("H\u0130 World".ToLower().Equals("h\u0069 world", StringComparison.Ordinal));
-                Assert.True("H\u0131 World".ToLower().Equals("h\u0131 world", StringComparison.Ordinal));
-            });
+            yield return new object[] { "H\u0049 World", "h\u0069 world", new CultureInfo("en-US") };
+            yield return new object[] { "H\u0130 World", "h\u0069 world", new CultureInfo("en-US") };
+            yield return new object[] { "H\u0131 World", "h\u0131 world", new CultureInfo("en-US") };
 
-            Helpers.PerformActionWithCulture(CultureInfo.InvariantCulture, () =>
-            {
-                Assert.True("H\u0049 World".ToLower().Equals("h\u0069 world", StringComparison.Ordinal));
-                Assert.True("H\u0130 World".ToLower().Equals("h\u0130 world", StringComparison.Ordinal));
-                Assert.True("H\u0131 World".ToLower().Equals("h\u0131 world", StringComparison.Ordinal));
-            });
+            yield return new object[] { "H\u0049 World", "h\u0069 world", CultureInfo.InvariantCulture };
+            yield return new object[] { "H\u0130 World", "h\u0130 world", CultureInfo.InvariantCulture };
+            yield return new object[] { "H\u0131 World", "h\u0131 world", CultureInfo.InvariantCulture };
+        }
+
+        [Theory]
+        [MemberData(nameof(ToLower_Culture_TestData))]
+        public static void ToLower_Culture(string actual, string expected, CultureInfo culture)
+        {
+            Helpers.PerformActionWithCulture(culture, () =>
+                Assert.True(actual.ToLower().Equals(expected, StringComparison.Ordinal)));
         }
 
         [Theory]

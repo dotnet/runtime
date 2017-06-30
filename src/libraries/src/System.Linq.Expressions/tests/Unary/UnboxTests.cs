@@ -181,7 +181,7 @@ namespace System.Linq.Expressions.Tests
             Expression unbox = Expression.Unbox(Expression.Constant(0, typeof(object)), typeof(int));
             Assert.False(unbox.CanReduce);
             Assert.Same(unbox, unbox.Reduce());
-            Assert.Throws<ArgumentException>(null, () => unbox.ReduceAndCheck());
+            AssertExtensions.Throws<ArgumentException>(null, () => unbox.ReduceAndCheck());
         }
 
         [Fact]

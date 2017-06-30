@@ -121,12 +121,6 @@ namespace System.CodeDom.Tests
                 Console.WriteLine(code);
                 throw;
             }
-
-            // Serialize and deserialize the CodeObject, and make sure code generated for it
-            // is the same as the original.
-            CodeObject clone = BinaryFormatterHelpers.Clone(c);
-            string cloneCode = GenerateCode(clone, provider);
-            Assert.Equal(code, cloneCode);
         }
 
         private static string GenerateCode(CodeObject c, CodeDomProvider provider)

@@ -11,7 +11,6 @@ using System.Security.Claims;
 
 namespace System.Security.Principal
 {
-    [Serializable]
     public enum WindowsBuiltInRole
     {
         Administrator = 0x220,
@@ -25,7 +24,6 @@ namespace System.Security.Principal
         Replicator = 0x228
     }
 
-    [Serializable]
     public class WindowsPrincipal : ClaimsPrincipal
     {
         private WindowsIdentity _identity = null;

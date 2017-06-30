@@ -5,7 +5,7 @@
     <OutputType>Library</OutputType>
     <ProjectGuid>{404DB891-B5AF-41E6-B89D-29E3F4573C4F}</ProjectGuid>
     <!-- only supported by desktop CLR -->
-    <GeneratePlatformNotSupportedAssembly>true</GeneratePlatformNotSupportedAssembly>
+    <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_ReflectionContext</GeneratePlatformNotSupportedAssemblyMessage>
     <!-- Xamarin frameworks claim to support PCL profiles which include this assembly,
          but do not include this assembly in their framework.
          This causes NuGet to give them the placeholder from the portable-* folder.
@@ -19,6 +19,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard1.1-Release|AnyCPU'" />
   <ItemGroup>
     <Reference Include="System.Reflection" />
+    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

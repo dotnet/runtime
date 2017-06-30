@@ -7,7 +7,7 @@
   <PropertyGroup>
     <AssemblyName>System.Threading.AccessControl</AssemblyName>
     <ProjectGuid>{E3ED83FD-3015-4BD8-A1B8-6294986E6CFA}</ProjectGuid>
-    <GeneratePlatformNotSupportedAssembly Condition="'$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' != 'true'">true</GeneratePlatformNotSupportedAssembly>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_AccessControl</GeneratePlatformNotSupportedAssemblyMessage>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='netfx'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->

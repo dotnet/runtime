@@ -26,6 +26,11 @@
     <Compile Include="ExceptionTests.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
+      <Link>Common\System\PlatformDetection.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
     <EmbeddedResource Include="Resources\EmbeddedImage.png">
       <LogicalName>EmbeddedImage.png</LogicalName>
     </EmbeddedResource>

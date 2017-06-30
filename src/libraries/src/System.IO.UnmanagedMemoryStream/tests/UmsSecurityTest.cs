@@ -38,6 +38,30 @@ public class UmsSecurityTests
         }
     }
 
+    [Fact]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "NetFX allows a negative Position following some PositionPointer overflowing inputs. See dotnet/coreclr#11376.")]
+    public static void OverflowPositionPointer()
+    {
+        unsafe
+        {
+            using (var ums = new UnmanagedMemoryStream((byte*)0x40000000, 0xB8000000))
+            {
+                ums.PositionPointer = (byte*)0xF0000000;
+                Assert.Equal(0xB0000000, ums.Position);
+
+                if (IntPtr.Size == 4)
+                {
+                    ums.PositionPointer = (byte*)ulong.MaxValue;
+                    Assert.Equal(uint.MaxValue - 0x40000000, ums.Position);
+                }
+                else
+                {
+                    Assert.Throws<ArgumentOutOfRangeException>(() => ums.PositionPointer = (byte*)ulong.MaxValue);
+                }
+            }
+        }
+    }
+
     static void VerifyNothingCanBeReadOrWritten(UnmanagedMemoryStream stream, Byte[] data)
     {
         // No Read

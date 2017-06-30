@@ -3,24 +3,20 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Net.Security;
 using System.Net.Sockets;
-using System.Net.Test.Common;
 using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace System.Net.Security.Tests
+namespace System.Net.Test.Common
 {
-    public class HttpsTestServer
+    public class HttpsTestServer : IDisposable
     {
-        private readonly X509Certificate _serverCertificate;
-        private int _port;
-        private readonly SslProtocols _protocols;
-        private TcpListener _listener;
-        private VerboseTestLogging _log;
-
-        private const string ResponseString =
+        public class Options
+        {
+            public const string DefaultResponseString =
 @"HTTP/1.1 200 OK
 Connection: close
 
@@ -34,66 +30,68 @@ Connection: close
 </html>
 ";
 
-        public HttpsTestServer(X509Certificate serverCertificate, SslProtocols acceptedProtocols = SslProtocols.Tls)
-        {
-            _serverCertificate = serverCertificate;
-            _protocols = acceptedProtocols;
-            _log = VerboseTestLogging.GetInstance();
-            AuxRecordDetected = false;
+            public IPAddress Address { get; set; } = IPAddress.Loopback;
+
+            public X509Certificate2 ServerCertificate { get; set; } = 
+                Configuration.Certificates.GetServerCertificate();
+
+            public SslProtocols AllowedProtocols { get; set; } = SslProtocols.None;
+
+            public bool RequireClientAuthentication { get; set; } = false;
+
+            public SslPolicyErrors IgnoreSslPolicyErrors { get; set; } = SslPolicyErrors.None;
+
+            public int ListenBacklog { get; set; } = 1;
         }
 
-        public bool AuxRecordDetected
+        private Options _options;
+        private int _port;
+        private TcpListener _listener;
+        private VerboseTestLogging _log = VerboseTestLogging.GetInstance();
+        
+        public HttpsTestServer(Options options = null)
         {
-            get;
-            private set;
+            if (options != null)
+            {
+                _options = options;
+            }
+            else
+            {
+                _options = new Options();
+            }
         }
 
-        public bool IsAuxRecordDetectionInconclusive
-        {
-            get;
-            private set;
-        }
-
-        public SslProtocols SslProtocol
-        {
-            get;
-            private set;
-        }
-
+        public SslStream Stream { get; private set; }
+        
         public int Port
         {
             get
             {
                 if (_port == 0)
                 {
-                    throw new NotSupportedException("Server is not bound to a port.");
+                    throw new InvalidOperationException("Server is not yet bound to a port.");
                 }
 
                 return _port;
             }
         }
 
-        /// <summary>
-        /// Starts the server.
-        /// </summary>
-        /// <returns>The local port that the server is bound to.</returns>
-        public void StartServer()
+        public void Start()
         {
             if (_listener != null)
             {
                 throw new InvalidOperationException("Cannot restart server.");
             }
 
-            IPAddress address = IPAddress.Loopback;
-            _listener = new TcpListener(address, _port);
+            _listener = new TcpListener(_options.Address, _port);
 
-            _listener.Start(1);
-
-            _log.WriteLine("[Server] waiting for connections ({0}:{1})", address, _port);
-            _port = ((IPEndPoint)_listener.LocalEndpoint).Port;
+            _listener.Start(_options.ListenBacklog);
+            var ipEndpoint = (IPEndPoint)_listener.LocalEndpoint;
+            _port = ipEndpoint.Port;
+            _log.WriteLine("[Server] waiting for connections ({0}:{1})", ipEndpoint.Address, ipEndpoint.Port);
         }
 
-        public async Task RunTest()
+        public async Task AcceptHttpsClientAsync(Func<string, Task<string>> httpConversation = null)
         {
             bool done = false;
 
@@ -101,76 +99,99 @@ Connection: close
             {
                 try
                 {
-                    using (TcpClient requestClient = await _listener.AcceptTcpClientAsync())
+                    using (TcpClient requestClient = await _listener.AcceptTcpClientAsync().ConfigureAwait(false))
                     {
                         _log.WriteLine("[Server] Client connected.");
 
-                        using (var tls = new SslStream(requestClient.GetStream()))
+                        using (Stream = new SslStream(requestClient.GetStream(), true, RemoteCertificateCallback))
                         {
-                            await tls.AuthenticateAsServerAsync(
-                                _serverCertificate,
-                                false,
-                                _protocols,
-                                false);
+                            _log.WriteLine(
+                                "[Server] Authenticating. Protocols = {0}, Certificate = {1}, ClientCertRequired = {2}",
+                                _options.AllowedProtocols,
+                                _options.ServerCertificate.Subject,
+                                _options.RequireClientAuthentication);
 
-                            _log.WriteLine("[Server] Client authenticated.");
+                            await Stream.AuthenticateAsServerAsync(
+                                _options.ServerCertificate,
+                                _options.RequireClientAuthentication,
+                                _options.AllowedProtocols,
+                                false).ConfigureAwait(false);
 
-                            done = await HttpConversation(tls);
+                            _log.WriteLine("[Server] Client authenticated: Protocol: {0}", Stream.SslProtocol);
+
+                            _log.WriteLine("[Server] Starting HTTP conversation.");
+
+                            if (httpConversation == null)
+                            {
+                                httpConversation = DefaultHttpConversation;   
+                            }
+
+                            done = await ProcessHttp(httpConversation).ConfigureAwait(false);
                         }
                     }
                 }
-                catch (IOException)
+                catch (IOException ex)
                 {
                     // Ignore I/O issues as browsers attempt to connect only to detect crypto information.
+                    _log.WriteLine("[Server] Exception: {0}", ex.Message);
                 }
             }
-
-            _listener.Stop();
         }
 
-        private async Task<bool> HttpConversation(SslStream tls)
+        private bool RemoteCertificateCallback(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
-            int totalBytesRead = 0;
-            int chunks = 0;
+            if (!_options.RequireClientAuthentication)
+            {
+                return true;
+            }
 
-            SslProtocol = tls.SslProtocol;
+            _log.WriteLine("[Server] RemoteCertificateCallback (SslPolicyErrors = {0})", sslPolicyErrors.ToString());
+            if ((sslPolicyErrors | _options.IgnoreSslPolicyErrors) == _options.IgnoreSslPolicyErrors)
+            {
+                return true;
+            }
 
-            while (totalBytesRead < 5)
+            return false;
+        }
+
+        private async Task<bool> ProcessHttp(Func<string, Task<string>> httpConversation)
+        {
+            while (true)
             {
                 var requestBuffer = new byte[2048];
-                int bytesRead = await tls.ReadAsync(requestBuffer, 0, requestBuffer.Length);
-                totalBytesRead += bytesRead;
+                int bytesRead = await Stream.ReadAsync(requestBuffer, 0, requestBuffer.Length).ConfigureAwait(false);
 
                 string requestString = Encoding.UTF8.GetString(requestBuffer, 0, bytesRead);
 
-                _log.WriteLine("[Server] Received {0} bytes: <<<{1}>>>", bytesRead, requestString);
+                _log.WriteLine("[Server] Received {0} bytes: <{1}>", bytesRead, requestString);
+
                 if (bytesRead == 0)
                 {
+                    _log.WriteLine("[Server] Received EOF");
                     return false;
                 }
 
-                if (bytesRead == 1 && chunks == 0)
+                string responseString = await httpConversation(requestString).ConfigureAwait(false);
+
+                if (responseString != null)
                 {
-                    AuxRecordDetected = true;
+                    byte[] responseBuffer = Encoding.UTF8.GetBytes(responseString);
+
+                    await Stream.WriteAsync(responseBuffer, 0, responseBuffer.Length).ConfigureAwait(false);
+                    _log.WriteLine("[Server] Replied with {0} bytes.", responseBuffer.Length);
+                    return true;
                 }
-
-                chunks++;
             }
+        }
 
-            _log.WriteLine("[Server] Using cipher {0}", tls.CipherAlgorithm);
+        private Task<string> DefaultHttpConversation(string read)
+        {
+            return Task.FromResult(Options.DefaultResponseString);
+        }
 
-            // Test is inconclusive if any non-CBC cipher is used:
-            if (tls.CipherAlgorithm == CipherAlgorithmType.None ||
-                tls.CipherAlgorithm == CipherAlgorithmType.Null ||
-                tls.CipherAlgorithm == CipherAlgorithmType.Rc4)
-            {
-                IsAuxRecordDetectionInconclusive = true;
-            }
-
-            byte[] responseBuffer = Encoding.UTF8.GetBytes(ResponseString);
-            await tls.WriteAsync(responseBuffer, 0, responseBuffer.Length);
-            _log.WriteLine("[Server] Replied with {0} bytes.", responseBuffer.Length);
-            return true;
+        public void Dispose()
+        {
+            _listener.Stop();
         }
     }
 }

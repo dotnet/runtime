@@ -243,6 +243,17 @@ namespace System.Runtime.Serialization
             }
         }
 
+        private static Type s_typeOfIObjectReference;
+        internal static Type TypeOfIObjectReference
+        {
+            get
+            {
+                if (s_typeOfIObjectReference == null)
+                    s_typeOfIObjectReference = typeof(IObjectReference);
+                return s_typeOfIObjectReference;
+            }
+        }
+
         private static Type s_typeOfXmlFormatClassWriterDelegate;
         internal static Type TypeOfXmlFormatClassWriterDelegate
         {

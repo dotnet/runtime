@@ -5,9 +5,9 @@
     <ProjectGuid>{0D174EA9-9E61-4519-8D31-7BD2331A1982}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
-    <!-- 
-      UnitTests compile production source-code in order to test internal units such as individual methods and classes. 
-      Dependencies are broken via Fakes. Since we are referencing netstandard, the real types can conflict with the ones 
+    <!--
+      UnitTests compile production source-code in order to test internal units such as individual methods and classes.
+      Dependencies are broken via Fakes. Since we are referencing netstandard, the real types can conflict with the ones
       imported. We are disabling the "Type conflicts with the imported type CS0436 warning" for these types of projects.
     -->
     <NoWarn>436</NoWarn>
@@ -19,6 +19,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="SslStreamAllowedProtocolsTest.cs" />
+    <Compile Include="System\Security\Authentication\ExtendedProtection\ExtendedProtectionPolicyTest.cs" />
+    <Compile Include="System\PinnableBufferCacheTest.cs" />
     <Compile Include="TlsAlertsMatchWindowsInterop.cs" />
     <!-- Fakes -->
     <Compile Include="Fakes\FakeSslState.cs" />
@@ -31,6 +33,9 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Production code references -->
+    <Compile Include="..\..\src\System\PinnableBufferCache.cs">
+      <Link>ProductionCode\System\PinnableBufferCache.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\System\Net\Security\SslStream.cs">
       <Link>ProductionCode\System\Net\Security\SslStream.cs</Link>
     </Compile>

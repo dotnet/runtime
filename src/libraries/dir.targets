@@ -8,26 +8,7 @@
            Text="The tools directory [$(ToolsDir)] does not exist. Please run init-tools.cmd in your enlistment to ensure the tools are installed before attempting to build an individual project." />
   </Target>
 
-  <!-- Provide default targets which can be hooked onto or overridden as necessary -->
-  <Target Name="BuildAndTest" DependsOnTargets="Build;Test" />
-  <Target Name="RebuildAndTest" DependsOnTargets="Rebuild;Test" />
-  <Target Name="Test" />
-
- <!-- build vertical requires the FindBestConfiguration task which is currently in CoreFx.Tools.dll --> 
- <Import Project="buildvertical.targets" Condition="Exists('$(CoreFxToolsTaskDir)CoreFx.Tools.dll')" /> 
-
-  <Target Name="UndefineTestTFM" 
-          BeforeTargets="AssignProjectConfiguration">
-    <ItemGroup>
-        <!--
-        Always undefine TestTFM and FilterToTestTFM for all project reference as not needed for compilation and
-        avoid bin clash tool to fail
-        -->
-      <ProjectReference>
-        <UndefineProperties>%(ProjectReference.UndefineProperties);TestTFM;FilterToTestTFM</UndefineProperties>
-      </ProjectReference>
-    </ItemGroup>
-  </Target>
+  <Import Project="buildvertical.targets" />
 
   <!-- Corefx-specific binplacing properties -->
   <PropertyGroup>
@@ -66,7 +47,7 @@
     <BinPlaceConfiguration Condition="'$(IsUAP)' == 'true' AND '$(BuildingUAPAOTVertical)' == 'true'" Include="uapaot-$(_bc_OSGroup)">
       <PackageFileRuntimePath>$(UAPAOTPackageRuntimePath)</PackageFileRuntimePath>
     </BinPlaceConfiguration>
-    <BinPlaceConfiguration Condition="('$(IsNetFxNETStandard)' == 'true' OR '$(IsNetFxNETStandardRef)' == 'true') AND '$(BuildingNETFxVertical)' == 'true'" 
+    <BinPlaceConfiguration Condition="('$(IsNetFxNETStandard)' == 'true' OR '$(IsNetFxNETStandardRef)' == 'true') AND '$(BuildingNETFxVertical)' == 'true'"
                            Include="netfx-$(_bc_OSGroup);net462-$(_bc_OSGroup);net47-$(_bc_OSGroup)">
       <PackageFileRefPath Condition="'$(IsNetFxNETStandardRef)'=='true'">$(NetFxPackageRefPath)</PackageFileRefPath>
       <PackageFileRuntimePath Condition="'$(IsNetFxNETStandard)'=='true'">$(NetFxPackageRuntimePath)</PackageFileRuntimePath>
@@ -110,26 +91,12 @@
   <Import Project="$(MSBuildThisFileDirectory)referenceFromRuntime.targets" />
   <Import Project="$(MSBuildThisFileDirectory)illink.targets" />
 
-  <PropertyGroup>
-    <!-- We don't use any of MSBuild's resolution logic for resolving the framework, so just set these two properties to any folder that exists to skip
-         the GenerateReferenceAssemblyPaths task (not target) and to prevent it from outputting a warning (MSB3644). -->
-    <_TargetFrameworkDirectories>$(MSBuildThisFileDirectory)/Documentation</_TargetFrameworkDirectories>
-    <_FullFrameworkReferenceAssemblyPaths>$(MSBuildThisFileDirectory)/Documentation</_FullFrameworkReferenceAssemblyPaths>
-    <!-- We do not want to target a portable profile.
-         TODO: Make this the default in buildtools so this is not necessary. -->
-    <TargetFrameworkProfile></TargetFrameworkProfile>
-    <!-- We set this property to avoid MSBuild errors regarding not setting TargetFrameworkProfile (see above line) -->
-    <PortableNuGetMode>true</PortableNuGetMode>
-    <!-- tests should not set this.  A value of netstandard* triggers validation which is irrelevant for tests.  Remove once ValidatePackageTargetFramework target is removed -->
-    <PackageTargetFramework Condition="'$(IsTestProject)' == 'true'"></PackageTargetFramework>
-  </PropertyGroup>
-
   <ItemGroup Condition="'$(NuGetTargetMoniker)'=='.NETStandard,Version=v1.7'">
     <!-- Temporarily suppress the message until we get a nuget version that knows about the mapping between netstandard1.7 and uap10.1 -->
     <SuppressPackageTargetFrameworkCompatibility Include="uap10.1" />
   </ItemGroup>
 
-  <Target Name="ProducesPackageId" 
+  <Target Name="ProducesPackageId"
           Returns="@(PackageIds)">
     <ItemGroup>
       <PackageIds Include="$(Id)" />

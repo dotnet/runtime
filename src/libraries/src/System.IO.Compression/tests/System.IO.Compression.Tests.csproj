@@ -27,6 +27,9 @@
     <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
       <Link>Common\System\AssertExtensions.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\PathFeatures.cs">
+      <Link>Common\System\IO\PathFeatures.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\IO\Compression\CRC.cs">
       <Link>Common\System\IO\Compression\CRC.cs</Link>
     </Compile>
@@ -47,6 +50,9 @@
     </Compile>
     <Compile Include="$(CommonTestPath)\System\IO\Compression\ZipTestHelper.cs">
       <Link>Common\System\IO\Compression\ZipTestHelper.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
+      <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">

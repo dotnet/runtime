@@ -680,7 +680,10 @@ namespace System.Security.Cryptography.Xml
                             }
                         }
                     }
+                    // Store doesn't exist, no read permissions, other system error
                     catch (CryptographicException) { }
+                    // Opening LocalMachine stores (other than Root or CertificateAuthority) on Linux
+                    catch (PlatformNotSupportedException) { }
 
                     if (filters != null)
                         collection.AddRange(filters);
@@ -754,7 +757,7 @@ namespace System.Security.Cryptography.Xml
 
         internal static AsymmetricAlgorithm GetAnyPublicKey(X509Certificate2 certificate)
         {
-            return (AsymmetricAlgorithm)certificate.GetRSAPublicKey() ?? certificate.GetDSAPublicKey();
+            return (AsymmetricAlgorithm)certificate.GetRSAPublicKey();
         }
     }
 }

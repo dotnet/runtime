@@ -735,6 +735,13 @@ namespace System.Tests
             yield return new object[] { new Int32Enum[] { (Int32Enum)1, (Int32Enum)2, (Int32Enum)3 }, 1, new Int32Enum[] { (Int32Enum)1, (Int32Enum)2, (Int32Enum)3, (Int32Enum)4, (Int32Enum)5 }, 2, 2, new Int32Enum[] { (Int32Enum)1, (Int32Enum)2, (Int32Enum)2, (Int32Enum)3, (Int32Enum)5 } };
             yield return new object[] { new Int32Enum[] { (Int32Enum)1 }, 0, new int[1], 0, 1, new int[] { 1 } };
 
+            // The full .NET Framework disallows int -> enum conversions
+            // See https://github.com/dotnet/corefx/issues/13816.
+            if (!PlatformDetection.IsFullFramework)
+            {
+                yield return new object[] { new int[1] { 2 }, 0, new Int32Enum[1], 0, 1, new Int32Enum[] { (Int32Enum)2 } };
+            }
+
             // Misc
             yield return new object[] { new int[] { 0x12345678, 0x22334455, 0x778899aa }, 0, new int[3], 0, 3, new int[] { 0x12345678, 0x22334455, 0x778899aa } };
 
@@ -1173,13 +1180,6 @@ namespace System.Tests
 
             // ValueType[] -> InterfaceNotImplementedByValueType[] never works
             yield return new object[] { new StructWithNonGenericInterface1[1], new NonGenericInterface2[1] };
-
-            // Can't get Enum from its underlying type
-            yield return new object[] { new int[1], new Int32Enum[1] };
-
-            // Can't primitive widen Enum
-            yield return new object[] { new Int32Enum[1], new long[1] };
-            yield return new object[] { new Int32Enum[1], new Int64Enum[1] };
         }
 
         [Theory]
@@ -1190,6 +1190,19 @@ namespace System.Tests
             Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(sourceArray, sourceArray.GetLowerBound(0), destinationArray, destinationArray.GetLowerBound(0), 0));
             Assert.Throws<ArrayTypeMismatchException>(() => sourceArray.CopyTo(destinationArray, destinationArray.GetLowerBound(0)));
         }
+
+#if !uapaot //Issue https://github.com/dotnet/corefx/issues/17480
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The full .NET framework has a bug and incorrectly allows copying between void* and object")]
+        public static void Copy_SourceAndDestinationPointers_ThrowsArrayTypeMismatchException()
+        {
+            unsafe
+            {
+                Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new void*[1], new object[1], 0));
+                Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(new object[1], new void*[1], 0));
+            }
+        }
+#endif
 
         public static IEnumerable<object[]> Copy_UnreliableCoversion_CantPerform_TestData()
         {

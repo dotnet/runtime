@@ -13,7 +13,6 @@ namespace System.Runtime.CompilerServices
     /// Builder for read only collections.
     /// </summary>
     /// <typeparam name="T">The type of the collection element.</typeparam>
-    [Serializable]
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1710:IdentifiersShouldHaveCorrectSuffix")]
     public sealed class ReadOnlyCollectionBuilder<T> : IList<T>, IList
     {
@@ -492,7 +491,6 @@ namespace System.Runtime.CompilerServices
             }
         }
 
-        [Serializable]
         private class Enumerator : IEnumerator<T>, IEnumerator
         {
             private readonly ReadOnlyCollectionBuilder<T> _builder;

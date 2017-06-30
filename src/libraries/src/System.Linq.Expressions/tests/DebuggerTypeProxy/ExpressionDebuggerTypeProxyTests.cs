@@ -161,9 +161,12 @@ namespace System.Linq.Expressions.Tests
             Type type = sourceObject.GetType();
             Type viewType = GetDebugViewType(type);
             ConstructorInfo ctor = viewType.GetConstructors().Single();
-            TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => ctor.Invoke(new object[] {null}));
+            TargetInvocationException tie = Assert.Throws<TargetInvocationException>(() => ctor.Invoke(new object[] { null }));
             ArgumentNullException ane = (ArgumentNullException)tie.InnerException;
-            Assert.Equal(ctor.GetParameters()[0].Name, ane.ParamName);
+            if (!PlatformDetection.IsNetNative) // The .NET Native toolchain optimizes away exception ParamNames
+            {
+                Assert.Equal(ctor.GetParameters()[0].Name, ane.ParamName);
+            }
         }
 
         private static IEnumerable<object[]> OnePerType()

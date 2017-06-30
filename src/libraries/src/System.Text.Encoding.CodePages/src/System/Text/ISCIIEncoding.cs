@@ -28,7 +28,6 @@ namespace System.Text
     //      Forms D & KD have things like 0934, which decomposes to 0933 + 093C, so not normal.
     //      Form IDNA has the above problems plus case mapping, so false (like most encodings)
     //
-    [Serializable]
     internal class ISCIIEncoding : EncodingNLS, ISerializable
     {
         // Constants
@@ -717,7 +716,6 @@ namespace System.Text
             return _defaultCodePage + EncoderFallback.GetHashCode() + DecoderFallback.GetHashCode();
         }
 
-        [Serializable]
         internal class ISCIIEncoder : EncoderNLS
         {
             // Need to remember the default code page (for HasState)
@@ -756,7 +754,6 @@ namespace System.Text
             }
         }
 
-        [Serializable]
         internal class ISCIIDecoder : DecoderNLS
         {
             // Need a place to store any our current code page and last ATR flag

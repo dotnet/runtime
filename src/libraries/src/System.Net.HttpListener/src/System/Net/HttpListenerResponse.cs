@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Text;
 
 namespace System.Net
 {
@@ -13,10 +14,7 @@ namespace System.Net
 
         public WebHeaderCollection Headers
         {
-            get
-            {
-                return _webHeaders;
-            }
+            get => _webHeaders;
             set
             {
                 _webHeaders = new WebHeaderCollection();
@@ -27,20 +25,12 @@ namespace System.Net
             }
         }
 
+        public Encoding ContentEncoding { get; set; }
+
         public CookieCollection Cookies
         {
-            get
-            {
-                if (_cookies == null)
-                {
-                    _cookies = new CookieCollection();
-                }
-                return _cookies;
-            }
-            set
-            {
-                _cookies = value;
-            }
+            get => _cookies ?? (_cookies = new CookieCollection());
+            set => _cookies = value;
         }
 
         public void AddHeader(string name, string value)
@@ -91,9 +81,22 @@ namespace System.Net
             }
         }
 
-        void IDisposable.Dispose()
+        void IDisposable.Dispose() => Dispose();
+
+        private void CheckDisposed()
         {
-            Dispose();
+            if (Disposed)
+            {
+                throw new ObjectDisposedException(GetType().FullName);
+            }
+        }
+
+        private void CheckSentHeaders()
+        {
+            if (SentHeaders)
+            {
+                throw new InvalidOperationException(SR.net_rspsubmitted);
+            }
         }
     }
 }

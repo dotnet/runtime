@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Security.Cryptography.Tests;
+using System.Linq;
 using Test.Cryptography;
 using Xunit;
 
@@ -70,14 +70,40 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        private static void VerifyDecryptKeyExchange(AsymmetricKeyExchangeFormatter formatter, AsymmetricKeyExchangeDeformatter deformatter)
+        private static void VerifyDecryptKeyExchange(
+            AsymmetricKeyExchangeFormatter formatter,
+            AsymmetricKeyExchangeDeformatter deformatter)
         {
             byte[] encrypted = formatter.CreateKeyExchange(TestData.HelloBytes);
             byte[] decrypted = deformatter.DecryptKeyExchange(encrypted);
             Assert.Equal(TestData.HelloBytes, decrypted);
 
             encrypted[encrypted.Length - 1] ^= 0xff;
-            Assert.ThrowsAny<CryptographicException>(() => deformatter.DecryptKeyExchange(encrypted));
+
+            try
+            {
+                byte[] invalidMessage = deformatter.DecryptKeyExchange(encrypted);
+
+                // RSAEncryptionPadding.Pkcs1 has loose integrity checking, recognizing ~1/110000
+                // messages as decryptable. So we only have a logic problem in our code if we produce
+                // the original input again. (The odds of a random payload producing "Hello" for a
+                // 2048-bit key are 1 in 49 quintillion (4.869e19)).
+                //
+                // Since we're basing "invalid" off of "valid" the odds will be different than true
+                // random, but it's not obvious if they're better or worse.
+                if (invalidMessage.SequenceEqual(TestData.HelloBytes))
+                {
+                    string msg = $"Decrypt was unexpectedly successful: {encrypted.ByteArrayToHex()}";
+
+                    // Just in case the exception text gets trimmed from test logs, Console.WriteLine it.
+                    Console.WriteLine(msg);
+                    throw new InvalidOperationException(msg);
+                }
+            }
+            catch (CryptographicException)
+            {
+                // Equivalent to Assert.ThrowsAny<CryptographicException>
+            }
         }
     }
 }

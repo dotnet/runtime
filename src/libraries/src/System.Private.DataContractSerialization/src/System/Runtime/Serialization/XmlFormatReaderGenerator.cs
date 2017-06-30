@@ -108,6 +108,13 @@ namespace System.Runtime.Serialization
                     _ilg.Call(_contextArg, XmlFormatGeneratorStatics.AddNewObjectMethod, _objectLocal);
                     InvokeOnDeserializing(classContract);
                     LocalBuilder objectId = null;
+                    if (HasFactoryMethod(classContract))
+                    {
+                        objectId = _ilg.DeclareLocal(Globals.TypeOfString, "objectIdRead");
+                        _ilg.Call(_contextArg, XmlFormatGeneratorStatics.GetObjectIdMethod);
+                        _ilg.Stloc(objectId);
+                    }
+
                     if (classContract.IsISerializable)
                     {
                         ReadISerializable(classContract);
@@ -117,6 +124,7 @@ namespace System.Runtime.Serialization
                         ReadClass(classContract);
                     }
 
+                    bool isFactoryType = InvokeFactoryMethod(classContract, objectId);
                     if (Globals.TypeOfIDeserializationCallback.IsAssignableFrom(classContract.UnderlyingType))
                     {
                         _ilg.Call(_objectLocal, XmlFormatGeneratorStatics.OnDeserializationMethod, null);
@@ -306,6 +314,26 @@ namespace System.Runtime.Serialization
                 }
             }
 
+            private bool HasFactoryMethod(ClassDataContract classContract)
+            {
+                return Globals.TypeOfIObjectReference.IsAssignableFrom(classContract.UnderlyingType);
+            }
+
+            private bool InvokeFactoryMethod(ClassDataContract classContract, LocalBuilder objectId)
+            {
+                if (HasFactoryMethod(classContract))
+                {
+                    _ilg.Load(_contextArg);
+                    _ilg.LoadAddress(_objectLocal);
+                    _ilg.ConvertAddress(_objectLocal.LocalType, Globals.TypeOfIObjectReference);
+                    _ilg.Load(objectId);
+                    _ilg.Call(XmlFormatGeneratorStatics.GetRealObjectMethod);
+                    _ilg.ConvertValue(Globals.TypeOfObject, _ilg.CurrentMethod.ReturnType);
+                    return true;
+                }
+
+                return false;
+            }
 
             private void ReadClass(ClassDataContract classContract)
             {

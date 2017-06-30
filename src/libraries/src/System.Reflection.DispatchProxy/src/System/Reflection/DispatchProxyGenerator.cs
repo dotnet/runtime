@@ -781,7 +781,7 @@ namespace System.Reflection
                 }
                 else if (targetTypeInfo.IsAssignableFrom(sourceTypeInfo))
                 {
-                    if (sourceTypeInfo.IsValueType)
+                    if (sourceTypeInfo.IsValueType || source.IsGenericParameter)
                     {
                         if (isAddress)
                             Ldind(il, source);
@@ -793,8 +793,6 @@ namespace System.Reflection
                     Debug.Assert(sourceTypeInfo.IsAssignableFrom(targetTypeInfo) || targetTypeInfo.IsInterface || sourceTypeInfo.IsInterface);
                     if (target.IsGenericParameter)
                     {
-                        // T GetProperty<T>() where T : class;
-                        Debug.Assert(targetTypeInfo.GenericParameterAttributes == GenericParameterAttributes.ReferenceTypeConstraint);
                         il.Emit(OpCodes.Unbox_Any, target);
                     }
                     else

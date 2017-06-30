@@ -235,6 +235,7 @@ namespace System.IO.Pipes.Tests
         [InlineData(PipeDirection.In)]
         [InlineData(PipeDirection.InOut)]
         [InlineData(PipeDirection.Out)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET framework handles this scenario by throwing ApplicationException instead")]
         [PlatformSpecific(TestPlatforms.Windows)] // accessing SafePipeHandle on Unix fails for a non-connected stream
         public static void Windows_CreateFromAlreadyBoundHandle_Throws_ArgumentException(PipeDirection direction)
         {

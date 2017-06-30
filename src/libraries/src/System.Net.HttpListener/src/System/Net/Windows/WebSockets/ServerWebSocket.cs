@@ -22,9 +22,9 @@ namespace System.Net.WebSockets
             }
 
             HttpWebSocket.ValidateInnerStream(innerStream);
-            HttpWebSocket.ValidateOptions(subProtocol, receiveBufferSize, WebSocketBuffer.MinSendBufferSize, keepAliveInterval);
+            HttpWebSocket.ValidateOptions(subProtocol, receiveBufferSize, HttpWebSocket.MinSendBufferSize, keepAliveInterval);
             WebSocketValidate.ValidateArraySegment(internalBuffer, nameof(internalBuffer));
-            WebSocketBuffer.Validate(internalBuffer.Count, receiveBufferSize, WebSocketBuffer.MinSendBufferSize, true);
+            WebSocketBuffer.Validate(internalBuffer.Count, receiveBufferSize, HttpWebSocket.MinSendBufferSize, true);
 
             return new ServerWebSocket(innerStream,
                 subProtocol,

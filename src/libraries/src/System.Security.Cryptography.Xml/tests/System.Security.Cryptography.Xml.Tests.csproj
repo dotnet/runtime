@@ -18,6 +18,7 @@
     <Compile Include="EncryptedXmlEqualityComparer.cs" />
     <Compile Include="EncryptionMethodTests.cs" />
     <Compile Include="EncryptedXmlTest.cs" />
+    <Compile Include="EncryptedXmlTests.cs" />
     <Compile Include="EncryptionPropertyCollectionTest.cs" />
     <Compile Include="EncryptionPropertyTest.cs" />
     <Compile Include="KeyInfoNameTest.cs" />
@@ -56,6 +57,9 @@
     <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
       <Link>Common\System\AssertExtensions.cs</Link>
     </Compile>
+    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
+      <Link>Common\System\PlatformDetection.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="EncryptedXmlSample3.xml" />
@@ -63,9 +67,10 @@
     <EmbeddedResource Include="EncryptedXmlSample1.xml" />
     <EmbeddedResource Include="XmlLicenseSample.xml" />
   </ItemGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Release|AnyCPU'" />
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
+  </ItemGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

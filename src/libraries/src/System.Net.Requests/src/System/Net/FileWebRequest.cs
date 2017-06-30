@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 
 namespace System.Net
 {
-    [Serializable]
     public class FileWebRequest : WebRequest, ISerializable
     {
         private readonly WebHeaderCollection _headers = new WebHeaderCollection();

@@ -16,7 +16,6 @@ using System.Text; // StringBuilder
 
 namespace System.Data.SqlClient
 {
-    [Serializable]
     public sealed class SqlException : System.Data.Common.DbException
     {
         private const string OriginalClientConnectionIdKey = "OriginalClientConnectionId";

@@ -163,7 +163,7 @@ namespace System.Linq.Expressions.Tests
             // This logically includes cases of methods of open generic types, since the NewExpression cannot be of such a type.
             NewExpression newExp = Expression.New(typeof(List<int>));
             MethodInfo adder = typeof(HashSet<int>).GetMethod(nameof(HashSet<int>.Add));
-            Assert.Throws<ArgumentException>(null, () => Expression.ListInit(newExp, adder, Expression.Constant(0)));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.ListInit(newExp, adder, Expression.Constant(0)));
         }
 
         [Fact]

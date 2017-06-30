@@ -28,6 +28,7 @@ namespace System.Linq.Expressions.Tests
         }
 
         [Theory, ClassData(typeof(CompilationTypes))]
+        [OuterLoop("May fail with SO on Debug JIT")]
         public static void CompileDeepTree_NoStackOverflowFast(bool useInterpreter)
         {
             Expression e = Expression.Constant(0);

@@ -8,7 +8,6 @@ using System.Security.Claims;
 
 namespace System.Security.Principal
 {
-    [Serializable]
     public class GenericIdentity : ClaimsIdentity
     {
         private readonly string m_name;

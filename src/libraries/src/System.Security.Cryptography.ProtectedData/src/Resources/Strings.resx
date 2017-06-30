@@ -61,4 +61,7 @@
   <data name="Cryptography_DpApi_ProfileMayNotBeLoaded" xml:space="preserve">
     <value>The data protection operation was unsuccessful. This may have been caused by not having the user profile loaded for the current thread's user context, which may be the case when the thread is impersonating.</value>
   </data>
+  <data name="PlatformNotSupported_CryptographyProtectedData" xml:space="preserve">
+    <value>Windows Data Protection API (DPAPI) is not supported on this platform.</value>
+  </data>
 </root>

@@ -140,6 +140,7 @@ namespace MonoTests.System.Configuration
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18195")]
         public void DuplicateAdd()
         {
             SysConfig cfg = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);

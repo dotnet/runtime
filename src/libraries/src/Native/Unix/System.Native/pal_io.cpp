@@ -134,9 +134,11 @@ static_assert(PAL_IN_Q_OVERFLOW == IN_Q_OVERFLOW, "");
 static_assert(PAL_IN_IGNORED == IN_IGNORED, "");
 static_assert(PAL_IN_ONLYDIR == IN_ONLYDIR, "");
 static_assert(PAL_IN_DONT_FOLLOW == IN_DONT_FOLLOW, "");
+#if HAVE_IN_EXCL_UNLINK
 static_assert(PAL_IN_EXCL_UNLINK == IN_EXCL_UNLINK, "");
+#endif // HAVE_IN_EXCL_UNLINK
 static_assert(PAL_IN_ISDIR == IN_ISDIR, "");
-#endif
+#endif // HAVE_INOTIFY
 
 static void ConvertFileStatus(const struct stat_& src, FileStatus* dst)
 {
@@ -1220,6 +1222,9 @@ extern "C" int32_t SystemNative_INotifyAddWatch(intptr_t fd, const char* pathNam
     assert(pathName != nullptr);
 
 #if HAVE_INOTIFY
+#if !HAVE_IN_EXCL_UNLINK
+    mask &= ~static_cast<uint32_t>(PAL_IN_EXCL_UNLINK);
+#endif
     return inotify_add_watch(ToFileDescriptor(fd), pathName, mask);
 #else
     (void)fd, (void)pathName, (void)mask;

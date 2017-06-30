@@ -335,26 +335,26 @@ namespace System.Linq.Expressions.Tests
         [MemberData(nameof(Method_DoesntBelongToInstance_TestData))]
         public static void Method_DoesntBelongToInstance_ThrowsArgumentException(Expression instance, MethodInfo method)
         {
-            Assert.Throws<ArgumentException>(null, () => Expression.Call(instance, method));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Call(instance, method));
         }
 
         [Fact]
         public static void InstanceMethod_NullInstance_ThrowsArgumentException()
         {
             MethodInfo method = typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.InstanceMethod));
-            Assert.Throws<ArgumentException>(null, () => Expression.Call(method, s_valid));
-            Assert.Throws<ArgumentException>(null, () => Expression.Call(method, s_valid, s_valid));
-            Assert.Throws<ArgumentException>(null, () => Expression.Call(method, s_valid, s_valid, s_valid));
-            Assert.Throws<ArgumentException>(null, () => Expression.Call(method, s_valid, s_valid, s_valid, s_valid));
-            Assert.Throws<ArgumentException>(null, () => Expression.Call(method, s_valid, s_valid, s_valid, s_valid, s_valid));
-            Assert.Throws<ArgumentException>(null, () => Expression.Call(method, new Expression[0]));
-            Assert.Throws<ArgumentException>(null, () => Expression.Call(method, (IEnumerable<Expression>)new Expression[0]));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Call(method, s_valid));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Call(method, s_valid, s_valid));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Call(method, s_valid, s_valid, s_valid));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Call(method, s_valid, s_valid, s_valid, s_valid));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Call(method, s_valid, s_valid, s_valid, s_valid, s_valid));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Call(method, new Expression[0]));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Call(method, (IEnumerable<Expression>)new Expression[0]));
 
-            Assert.Throws<ArgumentException>(null, () => Expression.Call(null, method, s_valid));
-            Assert.Throws<ArgumentException>(null, () => Expression.Call(null, method, s_valid, s_valid));
-            Assert.Throws<ArgumentException>(null, () => Expression.Call(null, method, s_valid, s_valid, s_valid));
-            Assert.Throws<ArgumentException>(null, () => Expression.Call(null, method, new Expression[0]));
-            Assert.Throws<ArgumentException>(null, () => Expression.Call(null, method, (IEnumerable<Expression>)new Expression[0]));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Call(null, method, s_valid));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Call(null, method, s_valid, s_valid));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Call(null, method, s_valid, s_valid, s_valid));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Call(null, method, new Expression[0]));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Call(null, method, (IEnumerable<Expression>)new Expression[0]));
         }
 
         [Fact]
@@ -362,11 +362,11 @@ namespace System.Linq.Expressions.Tests
         {
             Expression instance = Expression.Constant(new NonGenericClass());
             MethodInfo method = typeof(NonGenericClass).GetMethod(nameof(NonGenericClass.StaticMethod));
-            Assert.Throws<ArgumentException>(null, () => Expression.Call(instance, method, s_valid));
-            Assert.Throws<ArgumentException>(null, () => Expression.Call(instance, method, s_valid, s_valid));
-            Assert.Throws<ArgumentException>(null, () => Expression.Call(instance, method, s_valid, s_valid, s_valid));
-            Assert.Throws<ArgumentException>(null, () => Expression.Call(instance, method, new Expression[0]));
-            Assert.Throws<ArgumentException>(null, () => Expression.Call(instance, method, (IEnumerable<Expression>)new Expression[0]));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Call(instance, method, s_valid));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Call(instance, method, s_valid, s_valid));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Call(instance, method, s_valid, s_valid, s_valid));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Call(instance, method, new Expression[0]));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Call(instance, method, (IEnumerable<Expression>)new Expression[0]));
         }
 
         public static IEnumerable<object[]> InvalidArg_TestData()
@@ -433,7 +433,10 @@ namespace System.Linq.Expressions.Tests
         private static void AssertArgumentException(Action action, Type exceptionType, string paramName)
         {
             ArgumentException ex = (ArgumentException)Assert.Throws(exceptionType, action);
-            Assert.Equal(paramName, ex.ParamName);
+            if (!PlatformDetection.IsNetNative) // The .NET Native toolchain optimizes away exception ParamNames
+            {
+                Assert.Equal(paramName, ex.ParamName);
+            }
         }
 
         [Theory]
@@ -526,8 +529,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void MethodName_TypeArgsDontMatchConstraints_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(null, () => Expression.Call(Expression.Constant(new NonGenericClass()), nameof(NonGenericClass.ConstrainedInstanceMethod), new Type[] { typeof(object) }));
-            Assert.Throws<ArgumentException>(null, () => Expression.Call(typeof(NonGenericClass), nameof(NonGenericClass.ConstrainedStaticMethod), new Type[] { typeof(object) }));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Call(Expression.Constant(new NonGenericClass()), nameof(NonGenericClass.ConstrainedInstanceMethod), new Type[] { typeof(object) }));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Call(typeof(NonGenericClass), nameof(NonGenericClass.ConstrainedStaticMethod), new Type[] { typeof(object) }));
         }
 
         [Fact]
@@ -540,8 +543,8 @@ namespace System.Linq.Expressions.Tests
         [Fact]
         public static void MethodName_TypeArgsHasNullValue_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(null, () => Expression.Call(Expression.Constant(new NonGenericClass()), nameof(NonGenericClass.GenericInstanceMethod), new Type[] { null }));
-            Assert.Throws<ArgumentNullException>(null, () => Expression.Call(typeof(NonGenericClass), nameof(NonGenericClass.GenericStaticMethod), new Type[] { null }));
+            AssertExtensions.Throws<ArgumentNullException>(null, () => Expression.Call(Expression.Constant(new NonGenericClass()), nameof(NonGenericClass.GenericInstanceMethod), new Type[] { null }));
+            AssertExtensions.Throws<ArgumentNullException>(null, () => Expression.Call(typeof(NonGenericClass), nameof(NonGenericClass.GenericStaticMethod), new Type[] { null }));
         }
 
         [Fact]

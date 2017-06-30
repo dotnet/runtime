@@ -501,6 +501,17 @@ namespace System.Runtime.Serialization
             }
         }
 
+        private static MethodInfo s_getRealObjectMethod;
+        internal static MethodInfo GetRealObjectMethod
+        {
+            get
+            {
+                if (s_getRealObjectMethod == null)
+                    s_getRealObjectMethod = typeof(XmlObjectSerializerReadContext).GetMethod("GetRealObject", Globals.ScanAllMembers);
+                return s_getRealObjectMethod;
+            }
+        }
+
         private static MethodInfo s_ensureArraySizeMethod;
         internal static MethodInfo EnsureArraySizeMethod
         {

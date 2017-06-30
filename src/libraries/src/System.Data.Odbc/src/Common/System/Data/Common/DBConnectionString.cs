@@ -10,7 +10,6 @@ using System.Text;
 
 namespace System.Data.Common
 {
-    [Serializable] // MDAC 83147
     internal sealed class DBConnectionString
     {
         // instances of this class are intended to be immutable, i.e readonly

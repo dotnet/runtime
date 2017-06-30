@@ -80,6 +80,7 @@ namespace System.IO.IsolatedStorage
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]  // Filesystem timestamps vary in granularity
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18265")]
         public void GetCreationTime_GetsTime_Windows_OSX()
         {
             using (IsolatedStorageFile isf = IsolatedStorageFile.GetUserStoreForAssembly())

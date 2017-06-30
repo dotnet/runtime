@@ -18,7 +18,7 @@ namespace Microsoft.XmlSerializer.Generator
     using System.Threading;
     using System.Configuration;
     using System.Xml.Serialization.Configuration;
-
+    using System.Xml.Serialization;
 
     internal class XmlSerializationReaderCodeGen : XmlSerializationCodeGen
     {

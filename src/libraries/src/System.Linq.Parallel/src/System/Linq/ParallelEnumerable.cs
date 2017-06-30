@@ -281,32 +281,6 @@ namespace System.Linq
             }
         }
 
-
-        /// <summary>
-        /// Sets the task scheduler to execute the query.
-        /// </summary>
-        /// <typeparam name="TSource">The type of elements of <paramref name="source"/>.</typeparam>
-        /// <param name="source">A ParallelQuery on which to set the task scheduler option.</param>
-        /// <param name="taskScheduler">Task scheduler to execute the query.</param>
-        /// <returns>ParallelQuery representing the same query as source, but with the task scheduler option set.</returns>
-        /// <exception cref="T:System.ArgumentNullException">
-        /// <paramref name="source"/> or <paramref name="taskScheduler"/> is a null reference (Nothing in Visual Basic).
-        /// </exception>
-        /// <exception cref="T:System.InvalidOperationException">
-        /// WithTaskScheduler is used multiple times in the query.
-        /// </exception>
-        internal static ParallelQuery<TSource> WithTaskScheduler<TSource>(this ParallelQuery<TSource> source, TaskScheduler taskScheduler)
-        {
-            if (source == null) throw new ArgumentNullException(nameof(source));
-            if (taskScheduler == null) throw new ArgumentNullException(nameof(taskScheduler));
-
-            QuerySettings settings = QuerySettings.Empty;
-            settings.TaskScheduler = taskScheduler;
-
-            return new QueryExecutionOption<TSource>(
-                QueryOperator<TSource>.AsQueryOperator(source), settings);
-        }
-
         /// <summary>
         /// Sets the degree of parallelism to use in a query. Degree of parallelism is the maximum number of concurrently
         /// executing tasks that will be used to process the query.

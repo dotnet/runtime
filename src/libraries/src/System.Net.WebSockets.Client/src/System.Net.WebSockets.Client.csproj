@@ -51,6 +51,9 @@
     <Compile Include="$(CommonPath)\System\Net\Http\WinHttpException.cs">
       <Link>Common\System\Net\Http\WinHttpException.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Runtime\ExceptionServices\ExceptionStackTrace.cs">
+      <Link>Common\System\Runtime\ExceptionServices\ExceptionStackTrace.cs</Link>
+    </Compile>
     <!-- Interop -->
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Interop\Windows\Interop.Libraries.cs</Link>

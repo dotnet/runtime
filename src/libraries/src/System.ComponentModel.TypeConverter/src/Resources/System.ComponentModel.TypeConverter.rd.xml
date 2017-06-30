@@ -16,5 +16,18 @@
         </Type>
       </Namespace>
     </Assembly>
+    <Assembly Name="System.ComponentModel.Primitives">
+      <Namespace Name="System.ComponentModel">
+        <Type Name="ReadOnlyAttribute">
+          <!-- ReadOnlyAttribute: need to be able to read the field named "Default" as System.ComponentModel.TypeConverter
+               relies on AttributeCollection returning ReadOnlyAttribute.Default if none was placed in the collection.
+               That lookup is done by Reflection.
+            -->
+          <Field Name="Default" Dynamic="Required Public">
+          </Field>
+        </Type>
+      </Namespace>
+    </Assembly>
   </Library> 
 </Directives>
+

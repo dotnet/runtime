@@ -354,7 +354,6 @@ namespace System.Collections.ObjectModel
             }
         }
 
-        [Serializable]
         private struct DictionaryEnumerator : IDictionaryEnumerator
         {
             private readonly IDictionary<TKey, TValue> _dictionary;
@@ -419,7 +418,6 @@ namespace System.Collections.ObjectModel
 
         #endregion IReadOnlyDictionary members
 
-        [Serializable]
         [DebuggerTypeProxy(typeof(CollectionDebugView<>))]
         [DebuggerDisplay("Count = {Count}")]
         public sealed class KeyCollection : ICollection<TKey>, ICollection, IReadOnlyCollection<TKey>
@@ -528,7 +526,6 @@ namespace System.Collections.ObjectModel
             #endregion
         }
 
-        [Serializable]
         [DebuggerTypeProxy(typeof(CollectionDebugView<>))]
         [DebuggerDisplay("Count = {Count}")]
         public sealed class ValueCollection : ICollection<TValue>, ICollection, IReadOnlyCollection<TValue>

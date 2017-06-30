@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel;
 using System.IO;
 using System.IO.Pipes;
 using System.Net.Security;
@@ -141,6 +142,9 @@ namespace System.Data.SqlClient.SNI
                     _pipeStream.Dispose();
                     _pipeStream = null;
                 }
+
+                //Release any references held by _stream.
+                _stream = null;
             }
         }
 
@@ -157,7 +161,8 @@ namespace System.Data.SqlClient.SNI
 
                     if (packet.Length == 0)
                     {
-                        return ReportErrorAndReleasePacket(packet, 0, SNICommon.ConnTerminatedError, string.Empty);
+                        var e = new Win32Exception();
+                        return ReportErrorAndReleasePacket(packet, (uint)e.NativeErrorCode, 0, e.Message);
                     }
                 }
                 catch (ObjectDisposedException ode)

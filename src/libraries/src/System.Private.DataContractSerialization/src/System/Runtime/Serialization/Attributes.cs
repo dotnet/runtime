@@ -24,6 +24,7 @@ namespace System.Runtime.Serialization
                 DictionaryGlobals.RefLocalName,
                 DictionaryGlobals.ClrTypeLocalName,
                 DictionaryGlobals.ClrAssemblyLocalName,
+                DictionaryGlobals.ISerializableFactoryTypeLocalName
             };
 
             s_schemaInstanceLocalNames = new XmlDictionaryString[]

@@ -37,9 +37,13 @@ namespace System.Security.Cryptography.X509Certificates
         {
             if (key == null)
                 throw new ArgumentNullException(nameof(key));
+            if (signaturePadding == null)
+                throw new ArgumentNullException(nameof(signaturePadding));
 
             if (signaturePadding == RSASignaturePadding.Pkcs1)
                 return new RSAPkcs1X509SignatureGenerator(key);
+            if (signaturePadding.Mode == RSASignaturePaddingMode.Pss)
+                return new RSAPssX509SignatureGenerator(key, signaturePadding);
 
             throw new ArgumentException(SR.Cryptography_InvalidPaddingMode);
         }

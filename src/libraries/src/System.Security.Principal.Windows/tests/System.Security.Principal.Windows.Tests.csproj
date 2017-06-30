@@ -10,6 +10,9 @@
     <Compile Include="WindowsIdentityTests.cs" />
     <Compile Include="WindowsPrincipalTests.cs" />
     <Compile Include="WellKnownSidTypeTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
+      <Link>CommonTest\System\PlatformDetection.cs</Link>
+    </Compile>
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
       <Link>Common\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>

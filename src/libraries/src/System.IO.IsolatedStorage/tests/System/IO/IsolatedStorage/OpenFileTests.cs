@@ -69,6 +69,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18265")]
         public void OpenFile_PassesFileShare()
         {
             TestHelper.WipeStores();
@@ -91,6 +92,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18265")]
         public void OpenFile_PassesFileAccess()
         {
             TestHelper.WipeStores();
@@ -113,6 +115,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18265")]
         public void OpenFile_PassesFileMode()
         {
             TestHelper.WipeStores();
@@ -129,6 +132,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [Theory MemberData(nameof(ValidStores))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18265")]
         public void OpenFile_Existence(PresetScopes scope)
         {
             TestHelper.WipeStores();

@@ -113,7 +113,7 @@ namespace System.ComponentModel.Tests
             object lockObject = new object();
             //**DEFAULT CONTEXT & LicenseUsageMode**
             //Get CurrentContext, check default type
-            Assert.Equal("System.ComponentModel.Design.RuntimeLicenseContext", LicenseManager.CurrentContext.GetType().ToString());
+            Assert.False(LicenseManager.CurrentContext is DesigntimeLicenseContext);
             //Read default LicenseUsageMode, check against CurrentContext (LicCont).UsageMode
             Assert.Equal(LicenseManager.CurrentContext.UsageMode, LicenseManager.UsageMode);
 

@@ -4,7 +4,6 @@
 
 namespace System.Reflection.Emit
 {
-    [Serializable]
     public enum PackingSize
     {
         Unspecified = 0,

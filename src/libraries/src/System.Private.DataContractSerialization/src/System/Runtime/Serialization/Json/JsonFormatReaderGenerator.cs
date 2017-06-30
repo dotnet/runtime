@@ -256,8 +256,24 @@ namespace System.Runtime.Serialization.Json
                 }
             }
 
+            bool HasFactoryMethod(ClassDataContract classContract)
+            {
+                return Globals.TypeOfIObjectReference.IsAssignableFrom(classContract.UnderlyingType);
+            }
+
             private bool InvokeFactoryMethod(ClassDataContract classContract)
             {
+                if (HasFactoryMethod(classContract))
+                {
+                    _ilg.Load(_contextArg);
+                    _ilg.LoadAddress(_objectLocal);
+                    _ilg.ConvertAddress(_objectLocal.LocalType, Globals.TypeOfIObjectReference);
+                    _ilg.Load(Globals.NewObjectId);
+                    _ilg.Call(XmlFormatGeneratorStatics.GetRealObjectMethod);
+                    _ilg.ConvertValue(Globals.TypeOfObject, _ilg.CurrentMethod.ReturnType);
+                    return true;
+                }
+
                 return false;
             }
 

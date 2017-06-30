@@ -96,7 +96,7 @@ namespace System.Linq.Expressions.Tests
             ParameterExpression variable = Expression.Variable(typeof(int));
             Assert.False(variable.CanReduce);
             Assert.Same(variable, variable.Reduce());
-            Assert.Throws<ArgumentException>(null, () => variable.ReduceAndCheck());
+            AssertExtensions.Throws<ArgumentException>(null, () => variable.ReduceAndCheck());
         }
 
         [Theory]

@@ -4,7 +4,6 @@
 
 namespace System.Runtime.InteropServices
 {
-    [Serializable]
     public enum ExporterEventKind
     {
         NOTIF_TYPECONVERTED = 0,

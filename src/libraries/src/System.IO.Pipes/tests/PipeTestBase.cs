@@ -28,6 +28,24 @@ namespace System.IO.Pipes.Tests
             }
         }
 
+        protected static void SuppressClientHandleFinalizationIfNetFramework(AnonymousPipeServerStream serverStream)
+        {
+            if (PlatformDetection.IsFullFramework)
+            {
+                // See https://github.com/dotnet/corefx/pull/1871.  When AnonymousPipeServerStream.GetClientHandleAsString()
+                // is called, the assumption is that this string is going to be passed to another process, rather than wrapped
+                // into a SafeHandle in the same process.  If it's wrapped into a SafeHandle in the same process, there are then
+                // two SafeHandles that believe they own the same underlying handle, which leads to use-after-free and recycling
+                // bugs.  AnonymousPipeServerStream incorrectly deals with this in desktop: it marks the SafeHandle as having
+                // been exposed, but that then only prevents the disposal of AnonymousPipeServerStream from calling Dispose
+                // on the SafeHandle... it doesn't prevent the SafeHandle itself from getting finalized, which leads to random
+                // "The handle is invalid" or "Pipe is broken" errors at some later point when the handle is recycled and used
+                // for another instance.  In core, this was addressed in 1871 by calling GC.SuppressFinalize(_clientHandle)
+                // in GetClientHandleAsString.  For desktop, we work around this by suppressing the handle in this explicit call.
+                GC.SuppressFinalize(serverStream.ClientSafePipeHandle);
+            }
+        }
+
         /// <summary>
         /// Represents a Server-Client pair where "readablePipe" refers to whichever
         /// of the two streams is defined with PipeDirection.In and "writeablePipe" is 

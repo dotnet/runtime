@@ -4,7 +4,6 @@
 
 namespace System.CodeDom
 {
-    [Serializable]
     public class CodeExpressionStatement : CodeStatement
     {
         public CodeExpressionStatement() { }

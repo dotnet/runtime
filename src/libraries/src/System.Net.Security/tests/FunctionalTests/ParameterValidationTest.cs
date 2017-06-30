@@ -23,6 +23,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "https://github.com/dotnet/corefx/issues/19379")]
         public async Task SslStreamConstructor_BadEncryptionPolicy_ThrowException()
         {
             using (var _remoteServer = new DummyTcpServer(

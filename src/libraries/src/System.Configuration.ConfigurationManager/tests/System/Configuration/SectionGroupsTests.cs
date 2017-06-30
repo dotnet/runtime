@@ -53,6 +53,7 @@ namespace System.ConfigurationTests
 </configuration>";
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19383")]
         public void SimpleSectionGroup()
         {
             using (var temp = new TempConfig(SimpleSectionGroupConfiguration))

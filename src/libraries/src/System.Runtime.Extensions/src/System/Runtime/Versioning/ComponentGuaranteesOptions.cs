@@ -5,7 +5,6 @@
 namespace System.Runtime.Versioning
 {
     [Flags]
-    [Serializable]
     public enum ComponentGuaranteesOptions
     {
         None = 0,

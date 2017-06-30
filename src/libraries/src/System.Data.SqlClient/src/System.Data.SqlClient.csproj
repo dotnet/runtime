@@ -8,7 +8,7 @@
     <!-- Although we have a NS configuration, we know we use API that's not currently whitelisted: just validate against OneCore -->
     <UWPCompatible>false</UWPCompatible>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx'">true</IsPartialFacadeAssembly>
-    <GeneratePlatformNotSupportedAssembly Condition="'$(OSGroup)' == 'AnyOS'">true</GeneratePlatformNotSupportedAssembly>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(OSGroup)' == 'AnyOS'">SR.PlatformNotSupported_DataSqlClient</GeneratePlatformNotSupportedAssemblyMessage>
     <AssemblyVersion Condition="'$(TargetGroup)' == 'netstandard1.2'">4.0.0.0</AssemblyVersion>
     <AssemblyVersion Condition="'$(TargetGroup)' == 'netstandard1.3'">4.1.0.0</AssemblyVersion>
   </PropertyGroup>
@@ -27,7 +27,7 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
     <Compile Include="System.Data.SqlClient.TypeForwards.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(GeneratePlatformNotSupportedAssembly)' != 'true'">
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(OSGroup)' != 'AnyOS'">
     <Compile Include="Microsoft\SqlServer\Server\ITypedGetters.cs" />
     <Compile Include="Microsoft\SqlServer\Server\ITypedGettersV3.cs" />
     <Compile Include="Microsoft\SqlServer\Server\ITypedSetters.cs" />
@@ -286,7 +286,7 @@
     </Compile>
   </ItemGroup>
   <!-- Common (Windows and Unix) dependencies for MANAGED_SNI build -->
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(GeneratePlatformNotSupportedAssembly)' != 'true'">
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(OSGroup)' != 'AnyOS'">
     <Compile Include="$(CommonPath)\System\Net\ContextFlagsPal.cs">
       <Link>Common\System\Net\ContextFlagsPal.cs</Link>
     </Compile>
@@ -318,7 +318,7 @@
       <Link>Common\System\Net\NegotiationInfoClass.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' != 'true' And '$(IsPartialFacadeAssembly)' != 'true' AND '$(GeneratePlatformNotSupportedAssembly)' != 'true'">
+  <ItemGroup Condition=" '$(TargetsWindows)' != 'true' And '$(IsPartialFacadeAssembly)' != 'true' AND '$(OSGroup)' != 'AnyOS'">
     <Compile Include="System\Data\ProviderBase\DbConnectionPoolIdentity.Unix.cs" />
     <Compile Include="Interop\SNINativeMethodWrapper.Unix.cs" />
     <Compile Include="$(CommonPath)\System\Net\Security\NegotiateStreamPal.Unix.cs">
@@ -371,7 +371,7 @@
     <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Xml.ReaderWriter" />
   </ItemGroup>
-  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(GeneratePlatformNotSupportedAssembly)' != 'true' ">
+  <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true' AND '$(OSGroup)' != 'AnyOS'">
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />

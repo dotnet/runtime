@@ -15,6 +15,7 @@ namespace System.Runtime.Serialization
     using System.Runtime.CompilerServices;
     using System.Linq;
     using Xml.Schema;
+    using System.Collections.Concurrent;
 
 #if USE_REFEMIT || uapaot
     public abstract class DataContract
@@ -64,6 +65,8 @@ namespace System.Runtime.Serialization
             {
                 return null;
             }
+
+            type = GetDataContractAdapterTypeForGeneratedAssembly(type);
             DataContract dataContract = GetGeneratedDataContract(type);
             if (dataContract == null)
             {
@@ -80,11 +83,31 @@ namespace System.Runtime.Serialization
                     }
                 }
             }
+
+            if (dataContract is InvalidDataContract && DataContractSerializer.Option == SerializationOption.ReflectionAsBackup)
+            {
+                return null;
+            }
+
             return dataContract;
 #else
             return null;
 #endif
         }
+
+#if uapaot
+        // This method returns adapter types used to get DataContract from
+        // generated assembly. 
+        private static Type GetDataContractAdapterTypeForGeneratedAssembly(Type type)
+        {
+            if (type == Globals.TypeOfDateTimeOffset)
+            {
+                return Globals.TypeOfDateTimeOffsetAdapter;
+            }
+
+            return type;
+        }
+#endif
 
         internal MethodInfo ParseMethod
         {
@@ -118,6 +141,13 @@ namespace System.Runtime.Serialization
         {
             return DataContractCriticalHelper.GetDataContractSkipValidation(id, typeHandle, type);
         }
+#if uapaot
+        internal static DataContract GetDataContractCreatedAtRuntime(Type type, SerializationMode mode = SerializationMode.SharedContract)
+        {
+            DataContract dataContract = DataContractCriticalHelper.GetDataContractCreatedAtRuntime(type);
+            return dataContract.GetValidContract(mode);
+        }
+#endif
 
         internal static DataContract GetGetOnlyCollectionDataContract(int id, RuntimeTypeHandle typeHandle, Type type, SerializationMode mode)
         {
@@ -374,6 +404,9 @@ namespace System.Runtime.Serialization
         {
             private static Dictionary<TypeHandleRef, IntRef> s_typeToIDCache = new Dictionary<TypeHandleRef, IntRef>(new TypeHandleRefEqualityComparer());
             private static DataContract[] s_dataContractCache = new DataContract[32];
+#if uapaot
+            private static ConcurrentDictionary<Type, DataContract> s_dataContractCacheCreatedAtRuntime = new ConcurrentDictionary<Type, DataContract>();
+#endif
             private static int s_dataContractID;
             private static Dictionary<Type, DataContract> s_typeToBuiltInContract;
             private static Dictionary<XmlQualifiedName, DataContract> s_nameToBuiltInContract;
@@ -424,6 +457,23 @@ namespace System.Runtime.Serialization
                 }
                 return dataContract;
             }
+
+#if uapaot
+            internal static DataContract GetDataContractCreatedAtRuntime(Type type)
+            {
+                if (type == null)
+                {
+                    throw new ArgumentNullException(nameof(type));
+                }
+
+                DataContract dataContract = s_dataContractCacheCreatedAtRuntime.GetOrAdd(type, (t) =>
+                {
+                    return CreateDataContract(t);
+                });
+
+                return dataContract.GetValidContract();
+            }
+#endif
 
             internal static DataContract GetGetOnlyCollectionDataContractSkipValidation(int id, RuntimeTypeHandle typeHandle, Type type)
             {
@@ -528,9 +578,7 @@ namespace System.Runtime.Serialization
                                 type = Type.GetTypeFromHandle(typeHandle);
 
                             type = UnwrapNullableType(type);
-                            var originalType = type;
 
-                            type = GetDataContractAdapterTypeForGeneratedAssembly(type);
                             dataContract = DataContract.GetDataContractFromGeneratedAssembly(type);
                             if (dataContract != null)
                             {
@@ -538,45 +586,56 @@ namespace System.Runtime.Serialization
                                 return dataContract;
                             }
 
-                            type = GetDataContractAdapterType(type);
-                            dataContract = GetBuiltInDataContract(type);
-                            if (dataContract == null)
-                            {
-                                if (type.IsArray)
-                                    dataContract = new CollectionDataContract(type);
-                                else if (type.IsEnum)
-                                    dataContract = new EnumDataContract(type);
-                                else if (Globals.TypeOfIXmlSerializable.IsAssignableFrom(type))
-                                    dataContract = new XmlDataContract(type);
-                                else if (Globals.TypeOfScriptObject_IsAssignableFrom(type))
-                                    dataContract = Globals.CreateScriptObjectClassDataContract();
-                                else
-                                {
-                                    //if (type.ContainsGenericParameters)
-                                    //    ThrowInvalidDataContractException(SR.Format(SR.TypeMustNotBeOpenGeneric, type), type);
+                            dataContract = CreateDataContract(type);
+                        }
+                    }
+                }
 
-                                    if (!CollectionDataContract.TryCreate(type, out dataContract))
-                                    {
-                                        if (!type.IsSerializable && !type.IsDefined(Globals.TypeOfDataContractAttribute, false) && !ClassDataContract.IsNonAttributedTypeValidForSerialization(type) && !ClassDataContract.IsKnownSerializableType(type))
-                                        {
-                                            ThrowInvalidDataContractException(SR.Format(SR.TypeNotSerializable, type), type);
-                                        }
-                                        dataContract = new ClassDataContract(type);
-                                        if (type != originalType)
-                                        {
-                                            var originalDataContract = new ClassDataContract(originalType);
-                                            if (dataContract.StableName != originalDataContract.StableName)
-                                            {
-                                                // for non-DC types, type adapters will not have the same stable name (contract name).
-                                                dataContract.StableName = originalDataContract.StableName;
-                                            }
-                                        }
-                                    }
+                return dataContract;
+            }
+
+            private static DataContract CreateDataContract(Type type)
+            {
+                type = UnwrapNullableType(type);
+                Type originalType = type;
+                type = GetDataContractAdapterType(type);
+
+                DataContract dataContract = GetBuiltInDataContract(type);
+                if (dataContract == null)
+                {
+                    if (type.IsArray)
+                        dataContract = new CollectionDataContract(type);
+                    else if (type.IsEnum)
+                        dataContract = new EnumDataContract(type);
+                    else if (Globals.TypeOfIXmlSerializable.IsAssignableFrom(type))
+                        dataContract = new XmlDataContract(type);
+                    else if (Globals.TypeOfScriptObject_IsAssignableFrom(type))
+                        dataContract = Globals.CreateScriptObjectClassDataContract();
+                    else
+                    {
+                        //if (type.ContainsGenericParameters)
+                        //    ThrowInvalidDataContractException(SR.Format(SR.TypeMustNotBeOpenGeneric, type), type);
+
+                        if (!CollectionDataContract.TryCreate(type, out dataContract))
+                        {
+                            if (!type.IsSerializable && !type.IsDefined(Globals.TypeOfDataContractAttribute, false) && !ClassDataContract.IsNonAttributedTypeValidForSerialization(type) && !ClassDataContract.IsKnownSerializableType(type))
+                            {
+                                ThrowInvalidDataContractException(SR.Format(SR.TypeNotSerializable, type), type);
+                            }
+                            dataContract = new ClassDataContract(type);
+                            if (type != originalType)
+                            {
+                                var originalDataContract = new ClassDataContract(originalType);
+                                if (dataContract.StableName != originalDataContract.StableName)
+                                {
+                                    // for non-DC types, type adapters will not have the same stable name (contract name).
+                                    dataContract.StableName = originalDataContract.StableName;
                                 }
                             }
                         }
                     }
                 }
+
                 return dataContract;
             }
 
@@ -608,18 +667,6 @@ namespace System.Runtime.Serialization
                     }
                 }
                 return dataContract;
-            }
-
-            // This method returns adapter types used to get DataContract from
-            // generated assembly. 
-            private static Type GetDataContractAdapterTypeForGeneratedAssembly(Type type)
-            {
-                if (type == Globals.TypeOfDateTimeOffset)
-                {
-                    return Globals.TypeOfDateTimeOffsetAdapter;
-                }
-
-                return type;
             }
 
             // This method returns adapter types used at runtime to create DataContract.

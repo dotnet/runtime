@@ -492,7 +492,7 @@ namespace System.Collections.Specialized
         }
 
         [Serializable]
-        private class DictionaryNode
+        public class DictionaryNode
         {
             public object key;
             public object value;

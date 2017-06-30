@@ -26,7 +26,7 @@ namespace System.Linq.Expressions.Tests
         {
             for (int i = 1; i <= (includesReturnType ? 17 : 16); ++i)
             {
-                yield return new object[] { Enumerable.Repeat(typeof(List<>), i).ToArray() };
+                yield return new object[] { Enumerable.Repeat(typeof(List<>).MakeGenericType(typeof(List<>).GetGenericArguments()), i).ToArray() };
             }
         }
 

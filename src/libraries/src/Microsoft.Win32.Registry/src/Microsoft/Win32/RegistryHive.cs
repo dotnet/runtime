@@ -9,7 +9,6 @@ namespace Microsoft.Win32
     /**
      * Registry hive values.  Useful only for GetRemoteBaseKey
      */
-    [Serializable]
 #if REGISTRY_ASSEMBLY
     public
 #else

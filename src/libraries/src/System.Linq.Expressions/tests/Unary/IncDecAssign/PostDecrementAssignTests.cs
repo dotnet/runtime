@@ -186,7 +186,7 @@ namespace System.Linq.Expressions.Tests
         {
             Expression variable = Expression.Variable(typeof(int));
             MethodInfo method = typeof(IncDecAssignTests).GetTypeInfo().GetDeclaredMethod("GetString");
-            Assert.Throws<ArgumentException>(null, () => Expression.PostDecrementAssign(variable, method));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.PostDecrementAssign(variable, method));
         }
 
         [Theory]

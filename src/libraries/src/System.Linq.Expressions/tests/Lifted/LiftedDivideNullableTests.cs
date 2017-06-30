@@ -11,7 +11,7 @@ namespace System.Linq.Expressions.Tests
     {
         #region Test methods
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void CheckLiftedDivideNullableByteTest(bool useInterpreter)
         {
@@ -25,7 +25,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void CheckLiftedDivideNullableCharTest(bool useInterpreter)
         {
@@ -78,7 +78,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void CheckLiftedDivideNullableIntTest(bool useInterpreter)
         {
@@ -92,7 +92,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void CheckLiftedDivideNullableLongTest(bool useInterpreter)
         {
@@ -106,7 +106,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void CheckLiftedDivideNullableSByteTest(bool useInterpreter)
         {
@@ -120,7 +120,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void CheckLiftedDivideNullableShortTest(bool useInterpreter)
         {
@@ -134,7 +134,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void CheckLiftedDivideNullableUIntTest(bool useInterpreter)
         {
@@ -148,7 +148,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void CheckLiftedDivideNullableULongTest(bool useInterpreter)
         {
@@ -162,7 +162,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void CheckLiftedDivideNullableUShortTest(bool useInterpreter)
         {
@@ -176,7 +176,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void CheckLiftedDivideNullableNumberTest(bool useInterpreter)
         {

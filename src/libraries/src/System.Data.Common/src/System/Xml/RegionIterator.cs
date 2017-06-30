@@ -27,11 +27,6 @@ namespace System.Xml
             _currentNode = rowElement;
         }
 
-        internal override void Reset()
-        {
-            _currentNode = _rowElement;
-        }
-
         internal override XmlNode CurrentNode => _currentNode;
 
         internal override bool Next()

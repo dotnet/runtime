@@ -569,7 +569,7 @@ namespace System.Xml
 
         private static XmlResolver CreateDefaultResolver()
         {
-            return new XmlSystemPathResolver();
+            return new XmlUrlResolver();
         }
 
         internal XmlReader AddValidation(XmlReader reader)

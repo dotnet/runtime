@@ -24,6 +24,12 @@ namespace System
         {
             T exception = Assert.Throws<T>(action);
 
+            if (netFxParamName == null && IsFullFramework)
+            {
+                // Param name varies between NETFX versions -- skip checking it
+                return;
+            }
+
             string expectedParamName =
                 IsFullFramework ?
                 netFxParamName : netCoreParamName;
@@ -97,6 +103,19 @@ namespace System
             where TSecondExceptionType : Exception
         {
            ThrowsAny(typeof(TFirstExceptionType), typeof(TSecondExceptionType), action);
+        }
+
+        public static void ThrowsIf<T>(bool condition, Action action)
+            where T : Exception
+        {
+            if (condition)
+            {
+                Assert.Throws<T>(action);
+            }
+            else
+            {
+                action();
+            }
         }
     }
 }

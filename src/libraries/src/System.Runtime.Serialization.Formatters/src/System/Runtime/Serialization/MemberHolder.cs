@@ -6,7 +6,6 @@ using System.Reflection;
 
 namespace System.Runtime.Serialization
 {
-    [Serializable]
     internal sealed class MemberHolder
     {
         internal readonly MemberInfo[] _members = null;

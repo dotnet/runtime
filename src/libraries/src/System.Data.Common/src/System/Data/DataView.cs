@@ -163,39 +163,6 @@ namespace System.Data
         }
 
         /// <summary>
-        /// Allow construction of DataView with <see cref="System.Predicate&lt;DataRow&gt;"/> and <see cref="System.Comparison&lt;DataRow&gt;"/>
-        /// </summary>
-        /// <remarks>This is a copy of the other DataView ctor and needs to be kept in sync</remarks>
-        internal DataView(DataTable table, Predicate<DataRow> predicate, System.Comparison<DataRow> comparison, DataViewRowState RowState)
-        {
-            GC.SuppressFinalize(this);
-            DataCommonEventSource.Log.Trace("<ds.DataView.DataView|API> {0}, table={1}, RowState={2}",
-                ObjectID, (table != null) ? table.ObjectID : 0, RowState);
-            if (table == null)
-            {
-                throw ExceptionBuilder.CanNotUse();
-            }
-
-            _dvListener = new DataViewListener(this);
-            _locked = false;
-            _table = table;
-            _dvListener.RegisterMetaDataEvents(_table);
-
-            if ((((int)RowState) & ((int)~(DataViewRowState.CurrentRows | DataViewRowState.OriginalRows))) != 0)
-            {
-                throw ExceptionBuilder.RecordStateRange();
-            }
-            else if ((((int)RowState) & ((int)DataViewRowState.ModifiedOriginal)) != 0 &&
-                     (((int)RowState) & ((int)DataViewRowState.ModifiedCurrent)) != 0)
-            {
-                throw ExceptionBuilder.SetRowStateFilter();
-            }
-
-            _comparison = comparison;
-            SetIndex2("", RowState, ((null != predicate) ? new RowPredicateFilter(predicate) : null), true);
-        }
-
-        /// <summary>
         /// Sets or gets a value indicating whether deletes are allowed.
         /// </summary>
         [DefaultValue(true)]
@@ -467,21 +434,6 @@ namespace System.Data
                 }
             }
         }
-
-        /// <summary>
-        /// Resets the <see cref='System.Data.DataView.Sort'/> property to its default state.
-        /// </summary>
-        private void ResetSort()
-        {
-            // this is dead code, no one is calling it
-            _sort = string.Empty;
-            SetIndex(_sort, _recordStates, _rowFilter);
-        }
-
-        /// <summary>
-        /// Indicates whether the <see cref='System.Data.DataView.Sort'/> property should be persisted.
-        /// </summary>
-        private bool ShouldSerializeSort() => (_sort != null);
 
         object ICollection.SyncRoot => this;
 
@@ -772,12 +724,6 @@ namespace System.Data
             {
                 DataCommonEventSource.Log.ExitScope(logScopeId);
             }
-        }
-
-        /// <summary>This method exists for LinqDataView to keep a level of abstraction away from the RBTree</summary>
-        internal Range FindRecords<TKey, TRow>(Index.ComparisonBySelector<TKey, TRow> comparison, TKey key) where TRow : DataRow
-        {
-            return _index.FindRecords(comparison, key);
         }
 
         /// <summary>Convert a Range into a DataRowView[].</summary>

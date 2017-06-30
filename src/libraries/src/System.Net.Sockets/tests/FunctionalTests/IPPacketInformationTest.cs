@@ -26,7 +26,7 @@ namespace System.Net.Sockets.Tests
             Assert.Equal(default(IPPacketInformation).GetHashCode(), default(IPPacketInformation).GetHashCode());
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
+        [Fact]
         public void Equals_NonDefaultValue_Success()
         {
             IPPacketInformation packetInfo = GetNonDefaultIPPacketInformation();
@@ -43,7 +43,7 @@ namespace System.Net.Sockets.Tests
             int ignored = packetInfo.Interface; // just make sure it doesn't throw, nothing else to verify
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/987
+        [Fact]
         public void GetHashCode_NonDefaultValue_Succes()
         {
             IPPacketInformation packetInfo = GetNonDefaultIPPacketInformation();

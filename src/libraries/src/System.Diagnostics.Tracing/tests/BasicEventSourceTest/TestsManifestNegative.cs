@@ -48,6 +48,7 @@ namespace BasicEventSourceTests
         /// These tests use the NuGet EventSource to validate *both* NuGet and BCL user-defined EventSources
         /// For NuGet EventSources we validate both "runtime" and "validation" behavior
         /// </summary>
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19091")]
         [Fact]
         public void Test_GenerateManifest_InvalidEventSources()
         {

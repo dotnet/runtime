@@ -27,6 +27,9 @@
     <Compile Include="ValidatorModule.cs" />
     <Compile Include="XmlTestSettings.cs" />
     <Compile Include="CXmlTestResolver.cs" />
+    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
+      <Link>Common\System\PlatformDetection.cs</Link>
+    </Compile>
     <SupplementalTestData Include="..\TestFiles\**\*.*">
       <Link>TestFiles\%(RecursiveDir)%(Filename)%(Extension)</Link>
       <DestinationDir>TestFiles\%(RecursiveDir)</DestinationDir>

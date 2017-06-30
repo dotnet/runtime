@@ -66,35 +66,47 @@ internal static partial class Interop
                 throw new CryptographicException();
             }
 
-            IntPtr n, e, d, p, dmp1, q, dmq1, iqmp;
-            if (!GetRsaParameters(key, out n, out e, out d, out p, out dmp1, out q, out dmq1, out iqmp))
+            bool addedRef = false;
+
+            try
             {
-                throw new CryptographicException();
+                key.DangerousAddRef(ref addedRef);
+
+                IntPtr n, e, d, p, dmp1, q, dmq1, iqmp;
+                if (!GetRsaParameters(key, out n, out e, out d, out p, out dmp1, out q, out dmq1, out iqmp))
+                {
+                    throw new CryptographicException();
+                }
+
+                int modulusSize = Crypto.RsaSize(key);
+
+                // RSACryptoServiceProvider expects P, DP, Q, DQ, and InverseQ to all
+                // be padded up to half the modulus size.
+                int halfModulus = modulusSize / 2;
+
+                RSAParameters rsaParameters = new RSAParameters
+                {
+                    Modulus = Crypto.ExtractBignum(n, modulusSize),
+                    Exponent = Crypto.ExtractBignum(e, 0),
+                };
+
+                if (includePrivateParameters)
+                {
+                    rsaParameters.D = Crypto.ExtractBignum(d, modulusSize);
+                    rsaParameters.P = Crypto.ExtractBignum(p, halfModulus);
+                    rsaParameters.DP = Crypto.ExtractBignum(dmp1, halfModulus);
+                    rsaParameters.Q = Crypto.ExtractBignum(q, halfModulus);
+                    rsaParameters.DQ = Crypto.ExtractBignum(dmq1, halfModulus);
+                    rsaParameters.InverseQ = Crypto.ExtractBignum(iqmp, halfModulus);
+                }
+
+                return rsaParameters;
             }
-
-            int modulusSize = Crypto.RsaSize(key);
-
-            // RSACryptoServiceProvider expects P, DP, Q, DQ, and InverseQ to all
-            // be padded up to half the modulus size.
-            int halfModulus = modulusSize / 2;
-
-            RSAParameters rsaParameters = new RSAParameters
+            finally
             {
-                Modulus = Crypto.ExtractBignum(n, modulusSize),
-                Exponent = Crypto.ExtractBignum(e, 0),
-            };
-
-            if (includePrivateParameters)
-            {
-                rsaParameters.D = Crypto.ExtractBignum(d, modulusSize);
-                rsaParameters.P = Crypto.ExtractBignum(p, halfModulus);
-                rsaParameters.DP = Crypto.ExtractBignum(dmp1, halfModulus);
-                rsaParameters.Q = Crypto.ExtractBignum(q, halfModulus);
-                rsaParameters.DQ = Crypto.ExtractBignum(dmq1, halfModulus);
-                rsaParameters.InverseQ = Crypto.ExtractBignum(iqmp, halfModulus);
+                if (addedRef)
+                    key.DangerousRelease();
             }
-
-            return rsaParameters;
         }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetRsaParameters")]

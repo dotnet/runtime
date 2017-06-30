@@ -633,7 +633,12 @@ namespace System.Security.Cryptography.Xml.Tests
                 ed.CipherData = new CipherData();
                 ed.CipherData.CipherReference = new CipherReference("invaliduri");
 
-                Assert.Throws<CryptographicException>(() => exml.DecryptData(ed, aes));
+                // https://github.com/dotnet/corefx/issues/19272
+                Action decrypt = () => exml.DecryptData(ed, aes);
+                if (PlatformDetection.IsFullFramework)
+                    Assert.Throws<ArgumentNullException>(decrypt);
+                else
+                    Assert.Throws<CryptographicException>(decrypt);
             }
         }
 
@@ -673,8 +678,11 @@ namespace System.Security.Cryptography.Xml.Tests
                 cipherDataByReference.InnerText = cipherValue;
                 doc.DocumentElement.AppendChild(cipherDataByReference);
 
-                string decryptedXmlString = Encoding.UTF8.GetString(exml.DecryptData(ed, aes));
-                Assert.Equal(xml, decryptedXmlString);
+                if (PlatformDetection.IsXmlDsigXsltTransformSupported)
+                {
+                    string decryptedXmlString = Encoding.UTF8.GetString(exml.DecryptData(ed, aes));
+                    Assert.Equal(xml, decryptedXmlString);
+                }
             }
         }
 

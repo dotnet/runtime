@@ -4,7 +4,6 @@
 
 namespace System.Diagnostics.SymbolStore
 {
-    [Serializable]
     public enum SymAddressKind
     {
         // ILOffset: addr1 = IL local var or param index.

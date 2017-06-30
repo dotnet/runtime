@@ -8,7 +8,6 @@ using System.Runtime.Serialization;
 namespace System.Net.Sockets
 {
     /// <summary>Provides socket exceptions to the application.</summary>
-    [Serializable]
     public partial class SocketException : Win32Exception
     {
         /// <summary>The SocketError or Int32 specified when constructing the exception.</summary>

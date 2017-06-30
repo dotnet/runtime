@@ -6,6 +6,7 @@ using System;
 using System.ComponentModel;
 using System.Globalization;
 using System.Reflection;
+using System.Xml.Serialization;
 
 
 #if XMLSERIALIZERGENERATOR
@@ -126,7 +127,7 @@ namespace System.Xml.Serialization
             {
                 root = (XmlRootAttribute)XmlAttributes.GetAttr(type, typeof(XmlRootAttribute));
             }
-            return type.FullName + ":" + (root == null ? String.Empty : root.Key) + ":" + (ns == null ? String.Empty : ns);
+            return type.FullName + ":" + (root == null ? String.Empty : root.GetKey()) + ":" + (ns == null ? String.Empty : ns);
         }
 
         internal string Key { get { return _key; } }

@@ -4,12 +4,15 @@
 
 #if SYSTEM_NET_SOCKETS_DLL
 namespace System.Net.Sockets
+{
+    public
 #else
 namespace System.Net.Internals
-#endif
 {
+    internal
+#endif
     // Specifies the type of socket an instance of the System.Net.Sockets.Socket class represents.
-    public enum SocketType
+    enum SocketType
     {
         Stream = 1, // stream socket
         Dgram = 2, // datagram socket

@@ -10,6 +10,7 @@ using Xunit;
 public partial class ThreadPoolBoundHandleTests
 {
     [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
     public unsafe void AllocateNativeOverlapped_NullAsCallback_ThrowsArgumentNullException()
     {
         using(ThreadPoolBoundHandle handle = CreateThreadPoolBoundHandle())
@@ -22,6 +23,7 @@ public partial class ThreadPoolBoundHandleTests
     }
 
     [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
     public unsafe void AllocateNativeOverlapped_PreAllocated_ThrowsArgumentNullException()
     {
         using(ThreadPoolBoundHandle handle = CreateThreadPoolBoundHandle())
@@ -34,6 +36,7 @@ public partial class ThreadPoolBoundHandleTests
     }
 
     [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
     public unsafe void AllocateNativeOverlapped_NullAsContext_DoesNotThrow()
     {
         using(ThreadPoolBoundHandle handle = CreateThreadPoolBoundHandle())
@@ -47,6 +50,7 @@ public partial class ThreadPoolBoundHandleTests
     }
 
     [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
     public unsafe void AllocateNativeOverlapped_NullAsPinData_DoesNotThrow()
     {
         using(ThreadPoolBoundHandle handle = CreateThreadPoolBoundHandle())
@@ -60,6 +64,7 @@ public partial class ThreadPoolBoundHandleTests
     }
 
     [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
     public unsafe void AllocateNativeOverlapped_EmptyArrayAsPinData_DoesNotThrow()
     {
         using(ThreadPoolBoundHandle handle = CreateThreadPoolBoundHandle())
@@ -73,6 +78,7 @@ public partial class ThreadPoolBoundHandleTests
     }
 
     [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
     public unsafe void AllocateNativeOverlapped_NonBlittableTypeAsPinData_Throws()
     {
         using(ThreadPoolBoundHandle handle = CreateThreadPoolBoundHandle())
@@ -82,6 +88,7 @@ public partial class ThreadPoolBoundHandleTests
     }
 
     [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
     public unsafe void AllocateNativeOverlapped_BlittableTypeAsPinData_DoesNotThrow()
     {
         using(ThreadPoolBoundHandle handle = CreateThreadPoolBoundHandle())
@@ -95,6 +102,7 @@ public partial class ThreadPoolBoundHandleTests
     }
 
     [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
     public unsafe void AllocateNativeOverlapped_ObjectArrayAsPinData_DoesNotThrow()
     {
         object[] array = new object[]
@@ -113,6 +121,7 @@ public partial class ThreadPoolBoundHandleTests
     }
 
     [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
     public unsafe void AllocateNativeOverlapped_ObjectArrayWithNonBlittableTypeAsPinData_Throws()
     {
         object[] array = new object[]
@@ -127,6 +136,7 @@ public partial class ThreadPoolBoundHandleTests
     }
 
     [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
     public unsafe void AllocateNativeOverlapped_ReturnedNativeOverlapped_AllFieldsZero()
     {
         using(ThreadPoolBoundHandle handle = CreateThreadPoolBoundHandle())
@@ -144,6 +154,7 @@ public partial class ThreadPoolBoundHandleTests
     }
 
     [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
     public unsafe void AllocateNativeOverlapped_PreAllocated_ReturnedNativeOverlapped_AllFieldsZero()
     {
         using(ThreadPoolBoundHandle handle = CreateThreadPoolBoundHandle())
@@ -164,6 +175,7 @@ public partial class ThreadPoolBoundHandleTests
     }
 
     [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
     public unsafe void AllocateNativeOverlapped_PossibleReusedReturnedNativeOverlapped_OffsetLowAndOffsetHighSetToZero()
     {   // The CLR reuses NativeOverlapped underneath, check to make sure that they reset fields back to zero
 
@@ -187,6 +199,7 @@ public partial class ThreadPoolBoundHandleTests
     }
 
     [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
     public unsafe void AllocateNativeOverlapped_PreAllocated_ReusedReturnedNativeOverlapped_OffsetLowAndOffsetHighSetToZero()
     {   // The CLR reuses NativeOverlapped underneath, check to make sure that they reset fields back to zero
 
@@ -211,6 +224,7 @@ public partial class ThreadPoolBoundHandleTests
     }
 
     [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
     public unsafe void AllocateNativeOverlapped_WhenDisposed_ThrowsObjectDisposedException()
     {
         ThreadPoolBoundHandle handle = CreateThreadPoolBoundHandle();
@@ -223,6 +237,7 @@ public partial class ThreadPoolBoundHandleTests
     }
 
     [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
     public unsafe void AllocateNativeOverlapped_PreAllocated_WhenDisposed_ThrowsObjectDisposedException()
     {
         using(ThreadPoolBoundHandle handle = CreateThreadPoolBoundHandle())
@@ -238,6 +253,7 @@ public partial class ThreadPoolBoundHandleTests
     }
 
     [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
     public unsafe void AllocateNativeOverlapped_PreAllocated_WhenHandleDisposed_ThrowsObjectDisposedException()
     {
         ThreadPoolBoundHandle handle = CreateThreadPoolBoundHandle();
@@ -252,6 +268,7 @@ public partial class ThreadPoolBoundHandleTests
     }
 
     [Fact]
+    [PlatformSpecific(TestPlatforms.Windows)] // ThreadPoolBoundHandle.BindHandle is not supported on Unix
     public unsafe void AllocateNativeOverlapped_PreAllocated_WhenAlreadyAllocated_ThrowsArgumentException()
     {
         using(ThreadPoolBoundHandle handle = CreateThreadPoolBoundHandle())

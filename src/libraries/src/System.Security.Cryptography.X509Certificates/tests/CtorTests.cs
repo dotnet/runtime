@@ -112,49 +112,10 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        public static void TestSerializeDeserialize_DER()
-        {
-            byte[] expectedThumbPrint = new byte[]
-            {
-                0x10, 0x8e, 0x2b, 0xa2, 0x36, 0x32, 0x62, 0x0c,
-                0x42, 0x7c, 0x57, 0x0b, 0x6d, 0x9d, 0xb5, 0x1a,
-                0xc3, 0x13, 0x87, 0xfe,
-            };
-
-            Action<X509Certificate2> assert = (c) =>
-            {
-                IntPtr h = c.Handle;
-                Assert.NotEqual(IntPtr.Zero, h);
-                byte[] actualThumbprint = c.GetCertHash();
-                Assert.Equal(expectedThumbPrint, actualThumbprint);
-            };
-
-            using (X509Certificate2 c = new X509Certificate2(TestData.MsCertificate))
-            {
-                assert(c);
-                using (X509Certificate2 c2 = System.Runtime.Serialization.Formatters.Tests.BinaryFormatterHelpers.Clone(c))
-                {
-                    assert(c2);
-                }
-            }
-        }
-
-        [Fact]
         public static void TestCopyConstructor_NoPal()
         {
             using (var c1 = new X509Certificate2())
             using (var c2 = new X509Certificate2(c1))
-            {
-                VerifyDefaultConstructor(c1);
-                VerifyDefaultConstructor(c2);
-            }
-        }
-
-        [Fact]
-        public static void TestSerializeDeserialize_NoPal()
-        {
-            using (var c1 = new X509Certificate2())
-            using (var c2 = System.Runtime.Serialization.Formatters.Tests.BinaryFormatterHelpers.Clone(c1))
             {
                 VerifyDefaultConstructor(c1);
                 VerifyDefaultConstructor(c2);

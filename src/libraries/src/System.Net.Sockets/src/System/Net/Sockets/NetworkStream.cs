@@ -922,7 +922,8 @@ namespace System.Net.Sockets
             /// <summary>Queues the provided continuation to be executed once the operation has completed.</summary>
             public void OnCompleted(Action continuation)
             {
-                if (_continuation == s_completedSentinel || Interlocked.CompareExchange(ref _continuation, continuation, null) == s_completedSentinel)
+                if (ReferenceEquals(_continuation, s_completedSentinel) ||
+                    ReferenceEquals(Interlocked.CompareExchange(ref _continuation, continuation, null), s_completedSentinel))
                 {
                     Task.Run(continuation);
                 }

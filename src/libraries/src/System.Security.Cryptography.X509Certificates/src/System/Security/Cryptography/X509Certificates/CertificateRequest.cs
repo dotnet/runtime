@@ -388,6 +388,10 @@ namespace System.Security.Cryptography.X509Certificates
                 throw new ArgumentNullException(nameof(issuerCertificate));
             if (!issuerCertificate.HasPrivateKey)
                 throw new ArgumentException(SR.Cryptography_CertReq_IssuerRequiresPrivateKey, nameof(issuerCertificate));
+            if (notAfter < notBefore)
+                throw new ArgumentException(SR.Cryptography_CertReq_DatesReversed);
+            if (serialNumber == null || serialNumber.Length < 1)
+                throw new ArgumentException(SR.Arg_EmptyOrNullArray, nameof(serialNumber));
 
             if (issuerCertificate.PublicKey.Oid.Value != PublicKey.Oid.Value)
             {
@@ -398,6 +402,52 @@ namespace System.Security.Cryptography.X509Certificates
                         PublicKey.Oid.Value),
                     nameof(issuerCertificate));
             }
+
+            DateTime notBeforeLocal = notBefore.LocalDateTime;
+            if (notBeforeLocal < issuerCertificate.NotBefore)
+            {
+                throw new ArgumentException(
+                    SR.Format(
+                        SR.Cryptography_CertReq_NotBeforeNotNested,
+                        notBeforeLocal,
+                        issuerCertificate.NotBefore),
+                    nameof(notBefore));
+            }
+
+            DateTime notAfterLocal = notAfter.LocalDateTime;
+
+            // Round down to the second, since that's the cert accuracy.
+            // This makes one method which uses the same DateTimeOffset for chained notAfters
+            // not need to do the rounding locally.
+            long notAfterLocalTicks = notAfterLocal.Ticks;
+            long fractionalSeconds = notAfterLocalTicks % TimeSpan.TicksPerSecond;
+            notAfterLocalTicks -= fractionalSeconds;
+            notAfterLocal = new DateTime(notAfterLocalTicks, notAfterLocal.Kind);
+
+            if (notAfterLocal > issuerCertificate.NotAfter)
+            {
+                throw new ArgumentException(
+                    SR.Format(
+                        SR.Cryptography_CertReq_NotAfterNotNested,
+                        notAfterLocal,
+                        issuerCertificate.NotAfter),
+                    nameof(notAfter));
+            }
+
+            // Check the Basic Constraints and Key Usage extensions to help identify inappropriate certificates.
+            // Note that this is not a security check. The system library backing X509Chain will use these same criteria
+            // to determine if a chain is valid; and a user can easily call the X509SignatureGenerator overload to
+            // bypass this validation.  We're simply helping them at signing time understand that they've
+            // chosen the wrong cert.
+            var basicConstraints = (X509BasicConstraintsExtension)issuerCertificate.Extensions[Oids.BasicConstraints2];
+            var keyUsage = (X509KeyUsageExtension)issuerCertificate.Extensions[Oids.KeyUsage];
+
+            if (basicConstraints == null)
+                throw new ArgumentException(SR.Cryptography_CertReq_BasicConstraintsRequired, nameof(issuerCertificate));
+            if (!basicConstraints.CertificateAuthority)
+                throw new ArgumentException(SR.Cryptography_CertReq_IssuerBasicConstraintsInvalid, nameof(issuerCertificate));
+            if (keyUsage != null && (keyUsage.KeyUsages & X509KeyUsageFlags.KeyCertSign) == 0)
+                throw new ArgumentException(SR.Cryptography_CertReq_IssuerKeyUsageInvalid, nameof(issuerCertificate));
 
             AsymmetricAlgorithm key = null;
             string keyAlgorithm = issuerCertificate.GetKeyAlgorithm();

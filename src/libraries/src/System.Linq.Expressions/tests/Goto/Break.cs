@@ -135,7 +135,7 @@ namespace System.Linq.Expressions.Tests
         [MemberData(nameof(NonObjectAssignableConstantValueData))]
         public void CannotAssignValueTypesToObject(object value)
         {
-            Assert.Throws<ArgumentException>(null, () => Expression.Break(Expression.Label(typeof(object)), Expression.Constant(value)));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.Break(Expression.Label(typeof(object)), Expression.Constant(value)));
         }
 
         [Theory]

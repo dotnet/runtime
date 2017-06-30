@@ -4,7 +4,6 @@
 
 namespace System.CodeDom
 {
-    [Serializable]
     public class CodeStatement : CodeObject
     {
         private CodeDirectiveCollection _startDirectives = null;

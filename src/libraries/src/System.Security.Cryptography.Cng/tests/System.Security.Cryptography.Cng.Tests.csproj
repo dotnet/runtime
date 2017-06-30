@@ -11,6 +11,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net462-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net462-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net47-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'net47-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="CreateTests.cs" />
     <Compile Include="HandleTests.cs" />
@@ -32,17 +36,8 @@
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherTests.Data.cs">
       <Link>CommonTest\AlgorithmImplementations\AES\AesCipherTests.Data.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherTests.cs">
-      <Link>CommonTest\AlgorithmImplementations\AES\AesCipherTests.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesContractTests.cs">
-      <Link>CommonTest\AlgorithmImplementations\AES\AesContractTests.cs</Link>
-    </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesCornerTests.cs">
       <Link>CommonTest\AlgorithmImplementations\AES\AesCornerTests.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesModeTests.cs">
-      <Link>CommonTest\AlgorithmImplementations\AES\AesModeTests.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\DecryptorReusability.cs">
       <Link>CommonTest\AlgorithmImplementations\AES\DecryptorReusability.cs</Link>
@@ -54,14 +49,8 @@
     <Compile Include="AesProvider.cs" />
     <Compile Include="TripleDESCngTests.cs" />
     <Compile Include="TripleDESCngProvider.cs" />
-    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESCipherTests.cs">
-      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESCipherTests.cs</Link>
-    </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESFactory.cs">
       <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESFactory.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESReusabilityTests.cs">
-      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESReusabilityTests.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
@@ -157,6 +146,23 @@
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\RSA\RSAXml.cs">
       <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\RSAXml.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'net462' OR '$(TargetGroup)' == 'net47' OR '$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesContractTests.cs">
+      <Link>CommonTest\AlgorithmImplementations\AES\AesContractTests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESCipherTests.cs">
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESCipherTests.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesModeTests.cs">
+      <Link>CommonTest\AlgorithmImplementations\AES\AesModeTests.cs</Link>
+    </Compile>
+    <Compile Condition="'$(TargetsWindows)' == 'true'" Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESReusabilityTests.cs">
+      <Link>CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESReusabilityTests.cs</Link>
+    </Compile>
+    <Compile Condition="'$(TargetsWindows)' == 'true'" Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherTests.cs">
+      <Link>CommonTest\AlgorithmImplementations\AES\AesCipherTests.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>

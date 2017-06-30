@@ -39,11 +39,6 @@ namespace System.Data
         {
         }
 
-        internal AggregateNode(DataTable table, FunctionId aggregateType, string columnName, string relationName) :
-            this(table, aggregateType, columnName, false, relationName)
-        {
-        }
-
         internal AggregateNode(DataTable table, FunctionId aggregateType, string columnName, bool local, string relationName) : base(table)
         {
             Debug.Assert(columnName != null, "Invalid parameter column name (null).");

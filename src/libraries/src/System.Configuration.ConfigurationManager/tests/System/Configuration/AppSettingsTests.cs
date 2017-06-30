@@ -61,6 +61,7 @@ namespace System.ConfigurationTests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #19336")]
         public void AddToAppSettings_Save()
         {
             using (var temp = new TempConfig(TestData.EmptyConfig))

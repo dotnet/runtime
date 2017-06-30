@@ -27,7 +27,7 @@ namespace System.ServiceProcess.Tests
                     case KeyIsoSvcName:
                         foundKeyIsoSvc = true;
                         Assert.False(string.IsNullOrEmpty(service.DisplayName), "string.IsNullOrEmpty(KeyIso.DisplayName)");
-                        Assert.True(service.CanStop, "KeyIso.CanStop");
+                        Assert.Equal(PlatformDetection.IsNotWindowsNanoServer, service.CanStop);
                         Assert.False(service.CanPauseAndContinue, "KeyIso.CanPauseAndContinue");
                         Assert.False(service.CanShutdown, "KeyIso.CanShutdown");
                         Assert.Equal(ServiceType.Win32ShareProcess, service.ServiceType);
@@ -41,6 +41,11 @@ namespace System.ServiceProcess.Tests
                         Assert.False(service.CanShutdown, "SamSs.CanShutdown");
                         Assert.Equal(ServiceType.Win32ShareProcess, service.ServiceType);
                         Assert.Equal(ServiceStartMode.Automatic, service.StartType);
+                        break;
+                    case "EVENTLOG":
+                        Assert.False(string.IsNullOrEmpty(service.DisplayName), "string.IsNullOrEmpty(EventLog.DisplayName)");
+                        Assert.True(service.CanStop, "EventLog.CanStop");
+                        Assert.True(service.CanShutdown, "EventLog.CanShutdown");
                         break;
                     default:
                         foundOtherSvc = true;

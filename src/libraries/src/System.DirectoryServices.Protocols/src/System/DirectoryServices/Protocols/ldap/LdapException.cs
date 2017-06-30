@@ -73,7 +73,6 @@ namespace System.DirectoryServices.Protocols
         }
     }
 
-    [Serializable]
     public class LdapException : DirectoryException, ISerializable
     {
         private int _errorCode;
@@ -141,7 +140,6 @@ namespace System.DirectoryServices.Protocols
         }
     }
 
-    [Serializable]
     public class TlsOperationException : DirectoryOperationException
     {
         protected TlsOperationException(SerializationInfo info, StreamingContext context) : base(info, context)

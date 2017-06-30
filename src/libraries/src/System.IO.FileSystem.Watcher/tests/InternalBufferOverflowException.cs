@@ -36,11 +36,5 @@ namespace System.IO.Tests
             Assert.Equal(message, ide.Message);
             Assert.Same(innerException, ide.InnerException);
         }
-
-        [Fact]
-        public static void ExceptionRoundtrips()
-        {
-            BinaryFormatterHelpers.AssertRoundtrips(new InternalBufferOverflowException());
-        }
     }
 }

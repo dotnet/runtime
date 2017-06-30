@@ -20,6 +20,7 @@ Great starting page: http://dotnet.github.io
   * [Install official releases](https://www.microsoft.com/net/core)
   * [Documentation](https://docs.microsoft.com/en-us/dotnet) (Get Started, Tutorials, Porting from .NET Framework, API reference, ...)
     * [Deploying apps](https://docs.microsoft.com/en-us/dotnet/articles/core/preview3/deploying)
+  * [Supported OS versions](https://github.com/dotnet/core/blob/master/roadmap.md#technology-roadmaps)
 * [Roadmap](https://github.com/dotnet/core/blob/master/roadmap.md)
 * [Releases](https://github.com/dotnet/core/tree/master/release-notes)
 * [Bringing more APIs to .NET Core](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/porting.md) (and why some APIs will be left out)
@@ -37,11 +38,11 @@ If you are having issues with the "full" .NET Framework (also called "Desktop"),
 
 ### Issue Guide
 
-This section is **in progress** here: [New contributor Docs - Issues](https://github.com/dotnet/corefx/wiki/Issues) (feel free to make it better - it's easy-to-edit wiki with RW permissions to everyone!)
+This section is **in progress** here: [New contributor Docs - Issues](https://github.com/dotnet/corefx/wiki/New-contributor-Docs#issue-guide) (feel free to make it better - it's easy-to-edit wiki with RW permissions to everyone!)
 
 ### Contributing Guide
 
-This section is **in progress** here: [New contributor Docs - Contributing](https://github.com/dotnet/corefx/wiki/Contributions) (feel free to make it better - it's easy-to-edit wiki with RW permissions to everyone!) 
+This section is **in progress** here: [New contributor Docs - Contributing](https://github.com/dotnet/corefx/wiki/New-contributor-Docs#contributing-guide) (feel free to make it better - it's easy-to-edit wiki with RW permissions to everyone!) 
 
 ### Useful Links
 
@@ -60,14 +61,9 @@ to clarify expected behavior in our community. For more information, see the [.N
 
 ### Reporting security issues and security bugs
 
-Security issues and bugs should be reported privately, via email, to the
-Microsoft Security Response Center (MSRC) <secure@microsoft.com>. You should
-receive a response within 24 hours. If for some reason you do not, please follow
-up via email to ensure we received your original message. Further information,
-including the MSRC PGP key, can be found in the
-[Security TechCenter](https://technet.microsoft.com/en-us/security/ff852094.aspx).
+Security issues and bugs should be reported privately, via email, to the Microsoft Security Response Center (MSRC) <secure@microsoft.com>. You should receive a response within 24 hours. If for some reason you do not, please follow up via email to ensure we received your original message. Further information, including the MSRC PGP key, can be found in the [Security TechCenter](https://technet.microsoft.com/en-us/security/ff852094.aspx).
 
-
+Also see info about related [Microsoft .NET Core and ASP.NET Core Bug Bounty Program](https://technet.microsoft.com/en-us/mt764065.aspx).
 
 ## License
 
@@ -95,6 +91,8 @@ The latest version number of each library can be seen in that gallery.
 
 ### Build & Test Status
 
+Note: See officially supported [OS versions](https://github.com/dotnet/core/blob/master/roadmap.md#technology-roadmaps).
+
 |    | Inner x64 Debug | Inner x64 Release | Outer x64 Debug | Outer x64 Release |
 |:---|----------------:|------------------:|----------------:|------------------:|
 |**CentOS 7.1**|[![x64-debug](https://ci.dot.net/job/dotnet_corefx/job/master/job/centos7.1_debug/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/centos7.1_debug/lastCompletedBuild/testReport)|[![x64-release](https://ci.dot.net/job/dotnet_corefx/job/master/job/centos7.1_release/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/centos7.1_release/lastCompletedBuild/testReport)|[![x64-debug](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_centos7.1_debug/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_centos7.1_debug/lastCompletedBuild/testReport)|[![x64-release](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_centos7.1_release/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_centos7.1_release/lastCompletedBuild/testReport)|
@@ -108,8 +106,8 @@ The latest version number of each library can be seen in that gallery.
 |**Ubuntu 16.10**|[![x64-debug](https://ci.dot.net/job/dotnet_corefx/job/master/job/ubuntu16.10_debug/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/ubuntu16.10_debug/lastCompletedBuild/testReport)|[![x64-release](https://ci.dot.net/job/dotnet_corefx/job/master/job/ubuntu16.10_release/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/ubuntu16.10_release/lastCompletedBuild/testReport)|[![x64-debug](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_ubuntu16.10_debug/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_ubuntu16.10_debug/lastCompletedBuild/testReport)|[![x64-release](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_ubuntu16.10_release/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_ubuntu16.10_release/lastCompletedBuild/testReport)|
 |**PortableLinux**|[![x64-debug](https://ci.dot.net/job/dotnet_corefx/job/master/job/portablelinux_debug/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/portablelinux_debug/lastCompletedBuild/testReport)|[![x64-release](https://ci.dot.net/job/dotnet_corefx/job/master/job/portablelinux_release/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/portablelinux_release/lastCompletedBuild/testReport)|[![x64-debug](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_portablelinux_debug/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_portablelinux_debug/lastCompletedBuild/testReport)|[![x64-release](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_portablelinux_release/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_portablelinux_release/lastCompletedBuild/testReport)|
 |**Windows 7**| | |[![x64-debug](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_win7_debug/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_win7_debug/lastCompletedBuild/testReport)|[![x64-release](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_win7_release/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_win7_release/lastCompletedBuild/testReport)|
-|**Windows 8.1**|(x86) [![x64-debug](https://ci.dot.net/job/dotnet_corefx/job/master/job/windows_nt_debug/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/windows_nt_debug/lastCompletedBuild/testReport)|[![x64-release](https://ci.dot.net/job/dotnet_corefx/job/master/job/windows_nt_release/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/windows_nt_release/lastCompletedBuild/testReport)|[![x64-debug](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_windows_nt_debug/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_windows_nt_debug/lastCompletedBuild/testReport)|[![x64-release](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_windows_nt_release/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_windows_nt_release/lastCompletedBuild/testReport)|
+|**Windows 8.1**|(x86) [![x64-debug](https://ci.dot.net/job/dotnet_corefx/job/master/job/windows_nt_debug/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/windows_nt_debug/lastCompletedBuild/testReport)|[![x64-release](https://ci.dot.net/job/dotnet_corefx/job/master/job/windows_nt_release/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/windows_nt_release/lastCompletedBuild/testReport)|[![x64-debug](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_windows_nt_debug/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_windows_nt_debug/lastCompletedBuild/testReport)|[![x64-release](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_windows_nt_release/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_windows_nt_release/lastCompletedBuild/testReport)|
 |**Windows 10**| | |[![x64-debug](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_win10_debug/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_win10_debug/lastCompletedBuild/testReport)|[![x64-release](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_win10_release/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netcoreapp_win10_release/lastCompletedBuild/testReport)|
 |**Windows Nano Server 2016**| | |[![x64-debug](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_winnano16_debug/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_winnano16_debug/lastCompletedBuild/testReport)|[![x64-release](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_winnano16_release/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_winnano16_release/lastCompletedBuild/testReport)|
 |**Code Coverage (Windows)**| | |[![code coverage](https://ci.dot.net/job/dotnet_corefx/job/master/job/code_coverage_windows/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/code_coverage_windows/Code_Coverage_Report)|
-|**Desktop**|||[![x64-debug](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netfx_windows_nt_debug/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netfx_windows_nt_debug/lastCompletedBuild/testReport)|[![x64-release](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netfx_windows_nt_release/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netfx_windows_nt_release/lastCompletedBuild/testReport)||
+|**Desktop**|(x86) [![x86-debug](https://ci.dot.net/job/dotnet_corefx/job/master/job/netfx_windows_nt_debug_prtest/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/netfx_windows_nt_debug_prtest/lastCompletedBuild/testReport)|[![x64-release](https://ci.dot.net/job/dotnet_corefx/job/master/job/netfx_windows_nt_release_prtest/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/netfx_windows_nt_release_prtest/lastCompletedBuild/testReport)|[![x64-debug](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netfx_windows_nt_debug/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netfx_windows_nt_debug/lastCompletedBuild/testReport)|[![x64-release](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netfx_windows_nt_release/badge/icon)](https://ci.dot.net/job/dotnet_corefx/job/master/job/outerloop_netfx_windows_nt_release/lastCompletedBuild/testReport)||

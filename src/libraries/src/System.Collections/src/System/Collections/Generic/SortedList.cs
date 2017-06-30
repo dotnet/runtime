@@ -770,7 +770,6 @@ namespace System.Collections.Generic
             return (key is TKey);
         }
         
-        [Serializable]
         private struct Enumerator : IEnumerator<KeyValuePair<TKey, TValue>>, IDictionaryEnumerator
         {
             private SortedList<TKey, TValue> _sortedList;
@@ -898,7 +897,6 @@ namespace System.Collections.Generic
             }
         }
 
-        [Serializable]
         private sealed class SortedListKeyEnumerator : IEnumerator<TKey>, IEnumerator
         {
             private SortedList<TKey, TValue> _sortedList;
@@ -969,7 +967,6 @@ namespace System.Collections.Generic
             }
         }
 
-        [Serializable]
         private sealed class SortedListValueEnumerator : IEnumerator<TValue>, IEnumerator
         {
             private SortedList<TKey, TValue> _sortedList;
@@ -1043,7 +1040,7 @@ namespace System.Collections.Generic
         [DebuggerTypeProxy(typeof(DictionaryKeyCollectionDebugView<,>))]
         [DebuggerDisplay("Count = {Count}")]
         [Serializable]
-        private sealed class KeyList : IList<TKey>, ICollection
+        public sealed class KeyList : IList<TKey>, ICollection
         {
             private SortedList<TKey, TValue> _dict;
 
@@ -1162,7 +1159,7 @@ namespace System.Collections.Generic
         [DebuggerTypeProxy(typeof(DictionaryValueCollectionDebugView<,>))]
         [DebuggerDisplay("Count = {Count}")]
         [Serializable]
-        private sealed class ValueList : IList<TValue>, ICollection
+        public sealed class ValueList : IList<TValue>, ICollection
         {
             private SortedList<TKey, TValue> _dict;
 

@@ -1,13 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="14.0" InitialTargets="_CheckForFiles;IncludeFiles" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project ToolsVersion="14.0" InitialTargets="_CheckForFiles;IncludeFiles;SetValidateFramework" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
   <PropertyGroup>
     <IsLineupPackage Condition="'$(PackageTargetRuntime)' == '' AND '$(IncludeLibFiles)' != 'true'">true</IsLineupPackage>
     <PreventImplementationReference Condition="'$(PackageTargetRuntime)' != ''">true</PreventImplementationReference>
-
-    <!-- these packages don't follow the patterns expected by package validation -->
-    <SkipPackageFileCheck>true</SkipPackageFileCheck>
-    <SkipValidatePackage>true</SkipValidatePackage>
 
     <NETStandardVersion Condition="'$(NETStandardVersion)' == ''">2.0</NETStandardVersion>
     <NETStandardPackageRefPath Condition="'$(NETStandardPackageRefPath)' == ''">$(PackagesDir)$(NETStandardPackageId.ToLower())\$(NETStandardPackageVersion)\build\netstandard$(NETStandardVersion)\ref</NETStandardPackageRefPath>
@@ -68,6 +64,10 @@
   </Target>
   
   <Target Name="IncludeFiles">
+    <PropertyGroup>
+      <_projectDirLength>$(ProjectDir.Length)</_projectDirLength>
+    </PropertyGroup>
+
     <ItemGroup>
       <!-- Include refs -->
       <File Include="@(RefFile)">
@@ -81,6 +81,14 @@
 
       <File Include="@(NativeFile)">
         <TargetPath>$(NativeFileTargetPath)</TargetPath>
+      </File>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(IncludeSymbolsInPackage)' != 'true'">
+      <!-- Set targetpath for sources to be under src so that it is excluded from the lib package -->
+      <File Condition="'%(File.IsSourceCodeFile)' == 'true'">
+        <TargetPath>src</TargetPath>
+        <TargetPath Condition="$([System.String]::Copy('%(FullPath)').StartsWith('$(ProjectDir)'))">src/$([System.String]::Copy('%(FullPath)').Substring($(_projectDirLength)).Replace('\', '/'))</TargetPath>
       </File>
     </ItemGroup>
   </Target>
@@ -118,6 +126,25 @@
 
   </Target>
 
+  <Target Name="VerifyDuplicateTypes" 
+          DependsOnTargets="GetClosureFiles" 
+          AfterTargets="Build"
+          Inputs="%(ClosureFile.FileSet)"
+          Outputs="batching-on-FileSet-metadata">
+    <ItemGroup>
+      <_dupTypeFileName Include="@(ClosureFile->'%(FileName)')">
+        <Original>%(Identity)</Original>
+      </_dupTypeFileName>
+      <_dupTypeFileNamesFiltered Include="@(_dupTypeFileName)" Exclude="@(ExcludeFromDuplicateTypes)"/>
+      <_dupTypeFileFiltered Include="@(_dupTypeFileNamesFiltered->'%(Original)')"/>
+    </ItemGroup>
+
+    <Message Importance="High" Text="Verifying no duplicate types in $(Id) %(ClosureFile.FileSet) assemblies" />
+    <VerifyTypes Sources="@(_dupTypeFileFiltered)"
+                 IgnoredTypes="@(IgnoredDuplicateType)" />
+
+  </Target>
+
   <Target Name="VerifyNETStandard" 
           DependsOnTargets="GetClosureFiles" 
           AfterTargets="Build"
@@ -149,6 +176,16 @@
         <IsSymbolFile Condition="'%(Extension)' == '.pdb'">true</IsSymbolFile>
         <IsSymbolFile Condition="'$(SymbolFileExtension)' != '' AND'%(Extension)' == '$(SymbolFileExtension)'">true</IsSymbolFile>
       </File>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="SetValidateFramework">
+    <ItemGroup>
+      <!-- Update validation with locally authored RID list -->
+      <DefaultValidateFramework Remove="$(TargetFramework)"/>
+      <DefaultValidateFramework Include="$(TargetFramework)">
+        <RuntimeIDs>@(BuildRID)</RuntimeIDs>
+      </DefaultValidateFramework>
     </ItemGroup>
   </Target>
 </Project>

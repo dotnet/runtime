@@ -226,6 +226,7 @@ namespace System.Data.Tests.SqlTypes
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "https://github.com/dotnet/corefx/issues/19202")]
         public void GetTypeTest()
         {
             Assert.Equal("System.Data.SqlTypes.SqlDateTime", _test1.GetType().ToString());

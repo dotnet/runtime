@@ -36,7 +36,6 @@ namespace System.Globalization
         }
     }
 
-    [Serializable]
     internal sealed class CultureAwareComparer : StringComparer
     {
         internal const CompareOptions ValidCompareMaskOffFlags =

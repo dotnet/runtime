@@ -4,9 +4,7 @@
 
 namespace System.Runtime.Serialization
 {
-    [Serializable]
     internal delegate void DeserializationEventHandler(object sender);
 
-    [Serializable]
     internal delegate void SerializationEventHandler(StreamingContext context);
 }

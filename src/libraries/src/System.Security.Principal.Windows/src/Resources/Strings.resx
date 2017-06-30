@@ -118,4 +118,7 @@
   <data name="IdentityReference_NotAWindowsDomain" xml:space="preserve">
     <value>The domainSid parameter is not a valid Windows domain SID.</value>
   </data>
+  <data name="PlatformNotSupported_Principal" xml:space="preserve">
+    <value>Windows Principal functionality is not supported on this platform.</value>
+  </data>
 </root>

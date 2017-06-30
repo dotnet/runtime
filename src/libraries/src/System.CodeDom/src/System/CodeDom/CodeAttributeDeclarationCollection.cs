@@ -6,7 +6,6 @@ using System.Collections;
 
 namespace System.CodeDom
 {
-    [Serializable]
     public class CodeAttributeDeclarationCollection : CollectionBase
     {
         public CodeAttributeDeclarationCollection()

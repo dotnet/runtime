@@ -9,7 +9,6 @@ using System.Text.RegularExpressions;
 
 namespace System.Net
 {
-    [Serializable]
     public sealed class WebPermission : CodeAccessPermission, IUnrestrictedPermission
     {
         public WebPermission() { }

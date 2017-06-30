@@ -12,7 +12,6 @@ namespace System.Xml.Schema
     using System.Diagnostics;
 
     /// <include file='doc\XmlSchemaException.uex' path='docs/doc[@for="XmlSchemaException"]/*' />
-    [Serializable]
     public class XmlSchemaValidationException : XmlSchemaException
     {
         private Object _sourceNodeObject;

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Restore;Test" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <TestPackages Condition="'$(TestPackages)' != ''" Include="$(TestPackages)" />
+  </ItemGroup>
+
+  <Target Name="GetProjects">
+    <ItemGroup>
+      <Project Condition="'@(TestPackages)' == ''" Include="projects\**\*.csproj" />
+      <Project Condition="'@(TestPackages)' != ''" Include="projects\%(TestPackages.Identity)\**\*.csproj" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="Restore"
+          Inputs="@(Project)"
+          Outputs="@(Project->'%(RootDir)%(Directory)obj\project.assets.json')"
+          DependsOnTargets="GetProjects">
+    <MSBuild Projects="@(Project)" Targets="Restore" BuildInParallel="true" />
+    <Touch Files="@(Project->'%(RootDir)%(Directory)obj\project.assets.json')" />
+  </Target>
+
+  <Target Name="Test" DependsOnTargets="GetProjects">
+    <MSBuild Projects="@(Project)" Targets="Test" BuildInParallel="true" />
+  </Target>
+</Project>

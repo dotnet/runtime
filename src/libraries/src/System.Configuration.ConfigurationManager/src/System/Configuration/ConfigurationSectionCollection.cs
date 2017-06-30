@@ -8,7 +8,6 @@ using System.Runtime.Serialization;
 
 namespace System.Configuration
 {
-    [Serializable]
     public sealed class ConfigurationSectionCollection : NameObjectCollectionBase
     {
         private readonly ConfigurationSectionGroup _configSectionGroup;

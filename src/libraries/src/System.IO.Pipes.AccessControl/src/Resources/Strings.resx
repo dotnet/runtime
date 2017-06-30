@@ -70,4 +70,7 @@
   <data name="IO_IO_PipeBroken" xml:space="preserve">
     <value>Pipe is broken.</value>
   </data>
+  <data name="PlatformNotSupported_AccessControl" xml:space="preserve">
+    <value>Access Control List (ACL) APIs are part of resource management on Windows and are not supported on this platform.</value>
+  </data>
 </root>

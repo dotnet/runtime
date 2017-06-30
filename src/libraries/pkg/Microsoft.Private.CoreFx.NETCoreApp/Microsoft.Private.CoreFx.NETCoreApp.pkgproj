@@ -27,6 +27,23 @@
     <ExcludeFromClosure Include="System.Drawing" />
     <ExcludeFromClosure Include="System.Net" />
     <ExcludeFromClosure Include="System.Transactions" />
+
+    <!-- Permit the following implementation-only assemblies -->
+    <ValidatePackageSuppression Condition="'$(PackageTargetRuntime)' != ''" Include="PermitInbox">
+      <Value>
+        Microsoft.VisualBasic;
+        Microsoft.Win32.Registry;
+        System.IO.FileSystem.AccessControl;
+        System.Private.DataContractSerialization;
+        System.Private.Uri;
+        System.Private.Xml;
+        System.Private.Xml.Linq;
+        System.Security.AccessControl;
+        System.Security.Cryptography.Cng;
+        System.Security.Cryptography.OpenSsl;
+        System.Security.Principal.Windows;
+      </Value>
+    </ValidatePackageSuppression>
   </ItemGroup>
   
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

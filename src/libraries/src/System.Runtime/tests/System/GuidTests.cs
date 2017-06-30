@@ -161,7 +161,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Netcoreapp, "The coreclr fixed a bug where Guid.TryParse throws a format or overflow exception (https://github.com/dotnet/corefx/issues/6316)")]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework, "The coreclr fixed a bug where Guid.TryParse throws a format or overflow exception (https://github.com/dotnet/corefx/issues/6316)")]
         [MemberData(nameof(GuidStrings_TryParseThrows_TestData))]
         public static void Parse_Invalid_Netfx(string input, Type exceptionType)
         {

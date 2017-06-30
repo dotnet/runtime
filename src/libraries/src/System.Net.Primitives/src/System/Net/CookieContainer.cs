@@ -960,7 +960,7 @@ namespace System.Net
 
             optCookie2 = cookies.IsOtherVersionSeen ?
                           (Cookie.SpecialAttributeLiteral +
-                           Cookie.VersionAttributeName +
+                           CookieFields.VersionAttributeName +
                            Cookie.EqualsLiteral +
                            Cookie.MaxSupportedVersionString) : string.Empty;
 
@@ -981,7 +981,6 @@ namespace System.Net
         }
     }
 
-    [Serializable]
     internal struct PathList
     {
         // Usage of PathList depends on it being shallowly immutable;
@@ -1059,7 +1058,6 @@ namespace System.Net
             }
         }
 
-        [Serializable]
         private sealed class PathListComparer : IComparer<string>
         {
             internal static readonly PathListComparer StaticInstance = new PathListComparer();

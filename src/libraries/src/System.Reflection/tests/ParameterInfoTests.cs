@@ -151,10 +151,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory]
-        [InlineData(typeof(OptionalAttribute))]
-        [InlineData(typeof(MarshalAsAttribute))]
-        [InlineData(typeof(OutAttribute))]
-        [InlineData(typeof(InAttribute))]
+        [MemberData(nameof(s_CustomAttributesTestData))]
         public void CustomAttributesTest(Type attrType)
         {
             ParameterInfo parameterInfo = GetParameterInfo(typeof(ParameterInfoMetadata), "MethodWithOptionalDefaultOutInMarshalParam", 0);
@@ -170,6 +167,20 @@ namespace System.Reflection.Tests
             Assert.NotNull(prov.GetCustomAttributes(true).SingleOrDefault(a => a.GetType().Equals(attrType)));
             Assert.True(prov.IsDefined(attrType, false));
             Assert.True(prov.IsDefined(attrType, true));
+        }
+
+        public static IEnumerable<object[]> s_CustomAttributesTestData
+        {
+            get
+            {
+                yield return new object[] { typeof(OptionalAttribute) };
+                yield return new object[] { typeof(OutAttribute) };
+                yield return new object[] { typeof(InAttribute) };
+                if (!PlatformDetection.IsNetNative) // Native Metadata format does not expose FieldMarshal info: https://github.com/dotnet/corert/issues/3366
+                {
+                    yield return new object[] { typeof(MarshalAsAttribute) };
+                }
+            }
         }
 
         [Theory]

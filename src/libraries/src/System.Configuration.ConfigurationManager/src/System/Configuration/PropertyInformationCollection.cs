@@ -8,7 +8,6 @@ using System.Runtime.Serialization;
 
 namespace System.Configuration
 {
-    [Serializable]
     public sealed class PropertyInformationCollection : NameObjectCollectionBase
     {
         internal PropertyInformationCollection(ConfigurationElement thisElement) : base(StringComparer.Ordinal)

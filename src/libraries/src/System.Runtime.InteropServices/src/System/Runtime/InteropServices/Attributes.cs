@@ -87,7 +87,6 @@ namespace System.Runtime.InteropServices
     }
 
     [Obsolete("The IDispatchImplAttribute is deprecated.", false)]
-    [Serializable]
     public enum IDispatchImplType
     {
         CompatibleImpl = 2,
@@ -150,7 +149,6 @@ namespace System.Runtime.InteropServices
         public string Value { get; }
     }
 
-    [Serializable]
     [Flags]
     public enum TypeLibTypeFlags
     {
@@ -170,7 +168,6 @@ namespace System.Runtime.InteropServices
         FReverseBind    = 0x2000,
     }
 
-    [Serializable]
     [Flags]
     public enum TypeLibFuncFlags
     {
@@ -189,7 +186,6 @@ namespace System.Runtime.InteropServices
         FImmediateBind      = 0x1000,
     }
 
-    [Serializable]
     [Flags]
     public enum TypeLibVarFlags
     {

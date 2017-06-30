@@ -4,13 +4,113 @@
 
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.Globalization;
+using System.Net.WebSockets;
+using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace System.Net
 {
     public sealed unsafe partial class HttpListenerRequest
     {
+        private string[] _acceptTypes;
+        private string[] _userLanguages;
+        private CookieCollection _cookies;
+        private bool? _keepAlive;
+        private string _rawUrl;
+        private Uri _requestUri;
+        private Version _version;
+
+        public string[] AcceptTypes
+        {
+            get
+            {
+                if (_acceptTypes == null)
+                {
+                    _acceptTypes = Helpers.ParseMultivalueHeader(Headers[HttpKnownHeaderNames.Accept]);
+                }
+
+                return _acceptTypes;
+            }
+        }
+
+        public string[] UserLanguages
+        {
+            get
+            {
+                if (_userLanguages == null)
+                {
+                    _userLanguages = Helpers.ParseMultivalueHeader(Headers[HttpKnownHeaderNames.AcceptLanguage]);
+                }
+
+                return _userLanguages;
+            }
+        }
+
+        private static Func<CookieCollection, Cookie, bool, int> s_internalAddMethod = null;
+        private static Func<CookieCollection, Cookie, bool, int> InternalAddMethod
+        {
+            get
+            {
+                if (s_internalAddMethod == null)
+                {
+                    // We need to use CookieCollection.InternalAdd, as this method performs no validation on the Cookies.
+                    // Unfortunately this API is internal so we use reflection to access it. The method is cached for performance reasons.
+                    MethodInfo method = typeof(CookieCollection).GetMethod("InternalAdd", BindingFlags.NonPublic | BindingFlags.Instance);
+                    Debug.Assert(method != null, "We need to use an internal method named InternalAdd that is declared on Cookie.");
+                    s_internalAddMethod = (Func<CookieCollection, Cookie, bool, int>)Delegate.CreateDelegate(typeof(Func<CookieCollection, Cookie, bool, int>), method);
+                }
+
+                return s_internalAddMethod;
+            }
+        }
+
+        private CookieCollection ParseCookies(Uri uri, string setCookieHeader)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this, "uri:" + uri + " setCookieHeader:" + setCookieHeader);
+            CookieCollection cookies = new CookieCollection();
+            CookieParser parser = new CookieParser(setCookieHeader);
+            while (true)
+            {
+                Cookie cookie = parser.GetServer();
+                if (cookie == null)
+                {
+                    // EOF, done.
+                    break;
+                }
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "CookieParser returned cookie: " + cookie.ToString());
+                if (cookie.Name.Length == 0)
+                {
+                    continue;
+                }
+
+                InternalAddMethod(cookies, cookie, true);
+            }
+            return cookies;
+        }
+
+        public CookieCollection Cookies
+        {
+            get
+            {
+                if (_cookies == null)
+                {
+                    string cookieString = Headers[HttpKnownHeaderNames.Cookie];
+                    if (!string.IsNullOrEmpty(cookieString))
+                    {
+                        _cookies = ParseCookies(RequestUri, cookieString);
+                    }
+                    if (_cookies == null)
+                    {
+                        _cookies = new CookieCollection();
+                    }
+                }
+                return _cookies;
+            }
+        }
 
         public Encoding ContentEncoding
         {
@@ -48,6 +148,182 @@ namespace System.Net
                     }
                 }
                 return Encoding.Default;
+            }
+        }
+
+        public string ContentType => Headers[HttpKnownHeaderNames.ContentType];
+
+        public bool IsLocal => LocalEndPoint.Address.Equals(RemoteEndPoint.Address);
+
+        public bool IsWebSocketRequest
+        {
+            get
+            {
+                if (!SupportsWebSockets)
+                {
+                    return false;
+                }
+
+                bool foundConnectionUpgradeHeader = false;
+                if (string.IsNullOrEmpty(Headers[HttpKnownHeaderNames.Connection]) || string.IsNullOrEmpty(Headers[HttpKnownHeaderNames.Upgrade]))
+                {
+                    return false;
+                }
+
+                foreach (string connection in Headers.GetValues(HttpKnownHeaderNames.Connection))
+                {
+                    if (string.Equals(connection, HttpKnownHeaderNames.Upgrade, StringComparison.OrdinalIgnoreCase))
+                    {
+                        foundConnectionUpgradeHeader = true;
+                        break;
+                    }
+                }
+
+                if (!foundConnectionUpgradeHeader)
+                {
+                    return false;
+                }
+
+                foreach (string upgrade in Headers.GetValues(HttpKnownHeaderNames.Upgrade))
+                {
+                    if (string.Equals(upgrade, HttpWebSocket.WebSocketUpgradeToken, StringComparison.OrdinalIgnoreCase))
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
+
+        public bool KeepAlive
+        {
+            get
+            {
+                if (!_keepAlive.HasValue)
+                {
+                    string header = Headers[HttpKnownHeaderNames.ProxyConnection];
+                    if (string.IsNullOrEmpty(header))
+                    {
+                        header = Headers[HttpKnownHeaderNames.Connection];
+                    }
+                    if (string.IsNullOrEmpty(header))
+                    {
+                        if (ProtocolVersion >= HttpVersion.Version11)
+                        {
+                            _keepAlive = true;
+                        }
+                        else
+                        {
+                            header = Headers[HttpKnownHeaderNames.KeepAlive];
+                            _keepAlive = !string.IsNullOrEmpty(header);
+                        }
+                    }
+                    else
+                    {
+                        header = header.ToLower(CultureInfo.InvariantCulture);
+                        _keepAlive =
+                            header.IndexOf("close", StringComparison.InvariantCultureIgnoreCase) < 0 ||
+                            header.IndexOf("keep-alive", StringComparison.InvariantCultureIgnoreCase) >= 0;
+                    }
+                }
+
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, "_keepAlive=" + _keepAlive);
+                return _keepAlive.Value;
+            }
+        }
+
+        public NameValueCollection QueryString
+        {
+            get
+            {
+                NameValueCollection queryString = new NameValueCollection();
+                Helpers.FillFromString(queryString, Url.Query, true, ContentEncoding);
+                return queryString;
+            }
+        }
+
+        public string RawUrl => _rawUrl;
+
+        private string RequestScheme => IsSecureConnection ? UriScheme.Https : UriScheme.Http;
+
+        public string UserAgent => Headers[HttpKnownHeaderNames.UserAgent];
+
+        public string UserHostAddress => LocalEndPoint.ToString();
+
+        public string UserHostName => Headers[HttpKnownHeaderNames.Host];
+
+        public Uri UrlReferrer
+        {
+            get
+            {
+                string referrer = Headers[HttpKnownHeaderNames.Referer];
+                if (referrer == null)
+                {
+                    return null;
+                }
+
+                bool success = Uri.TryCreate(referrer, UriKind.RelativeOrAbsolute, out Uri urlReferrer);
+                return success ? urlReferrer : null;
+            }
+        }
+
+        public Uri Url => RequestUri;
+
+        public Version ProtocolVersion => _version;
+        
+        public X509Certificate2 GetClientCertificate()
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            try
+            {
+                if (ClientCertState == ListenerClientCertState.InProgress)
+                    throw new InvalidOperationException(SR.Format(SR.net_listener_callinprogress, $"{nameof(GetClientCertificate)}()/{nameof(BeginGetClientCertificate)}()"));
+                ClientCertState = ListenerClientCertState.InProgress;
+
+                GetClientCertificateCore();
+
+                ClientCertState = ListenerClientCertState.Completed;
+                if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"_clientCertificate:{ClientCertificate}");
+            }
+            finally
+            {
+                if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
+            }
+            return ClientCertificate;
+        }
+
+        public IAsyncResult BeginGetClientCertificate(AsyncCallback requestCallback, object state)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Info(this);
+            if (ClientCertState == ListenerClientCertState.InProgress)
+                throw new InvalidOperationException(SR.Format(SR.net_listener_callinprogress, $"{nameof(GetClientCertificate)}()/{nameof(BeginGetClientCertificate)}()"));
+            ClientCertState = ListenerClientCertState.InProgress;
+
+            return BeginGetClientCertificateCore(requestCallback, state);
+        }
+
+        public Task<X509Certificate2> GetClientCertificateAsync()
+        {
+            return Task.Factory.FromAsync(
+                (callback, state) => ((HttpListenerRequest)state).BeginGetClientCertificate(callback, state),
+                iar => ((HttpListenerRequest)iar.AsyncState).EndGetClientCertificate(iar),
+                this);
+        }
+
+        internal ListenerClientCertState ClientCertState { get; set; } = ListenerClientCertState.NotInitialized;
+        internal X509Certificate2 ClientCertificate { get; set; }
+
+        public int ClientCertificateError
+        {
+            get
+            {
+                if (ClientCertState == ListenerClientCertState.NotInitialized)
+                    throw new InvalidOperationException(SR.Format(SR.net_listener_mustcall, "GetClientCertificate()/BeginGetClientCertificate()"));
+                else if (ClientCertState == ListenerClientCertState.InProgress)
+                    throw new InvalidOperationException(SR.Format(SR.net_listener_mustcompletecall, "GetClientCertificate()/BeginGetClientCertificate()"));
+
+                return GetClientCertificateErrorCore();
             }
         }
 

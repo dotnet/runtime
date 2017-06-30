@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <!-- Desktop has cycles and dangling refs -->
+    <!-- ShouldVerifyClosure>true</ShouldVerifyClosure -->
+    <ShouldVerifyTypes>true</ShouldVerifyTypes>
+  </PropertyGroup>
+  
+  <ItemGroup>
+    <!-- these are part of the targeting pack but not actual assemblies -->
+    <ExcludeReference Include="System.EnterpriseServices.Thunk;System.EnterpriseServices.Wrapper" />
+    
+    <!-- these are part of the targeting pack but contain many duplicate types -->
+    <ExcludeReference Include="PresentationFramework.Aero;PresentationFramework.Aero2;PresentationFramework.AeroLite;PresentationFramework.Classic;PresentationFramework.Luna;PresentationFramework.Royale" />
+
+    <!-- these duplicate types exist in the targeting pack -->
+    <IgnoredTypes Include="XamlGeneratedNamespace.GeneratedInternalTypeHelper" />
+    <IgnoredTypes Include="System.Deployment.Internal.CodeSigning.RSAPKCS1SHA256SignatureDescription" />
+    <IgnoredTypes Include="System.ServiceModel.Channels.HttpRequestMessageExtensionMethods" />
+  </ItemGroup>
+
+  <!-- this target must run before ResolvePackageDependenciesForBuild so
+       that the SDK targets de-dup the References it adds against those
+       that come from packages -->
+  <Target Name="ReferenceEntireFramework" 
+          BeforeTargets="ResolvePackageDependenciesForBuild" 
+          DependsOnTargets="GetReferenceAssemblyPaths" 
+          Condition="'$(TargetFrameworkDirectory)' != ''">
+    <ItemGroup>
+      <!-- TargetFrameworkDirectory may contain many paths -->
+      <_frameworkDirectoriesToInclude Include="$(TargetFrameworkDirectory)" />
+
+      <_allFrameworkReferences Include="%(_frameworkDirectoriesToInclude.Identity)\*.dll" />
+      <Reference Include="@(_allFrameworkReferences->'%(FileName)')" Exclude="@(ExcludeReference)" />
+    </ItemGroup>
+  </Target>
+</Project>

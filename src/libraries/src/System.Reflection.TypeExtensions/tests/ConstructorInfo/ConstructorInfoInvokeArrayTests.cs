@@ -33,7 +33,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Multidim arrays of rank 1 not supported on UapAot: https://github.com/dotnet/corert/issues/3331")]
         public void Invoke_1DArrayConstructor()
         {
             Type type = Type.GetType("System.Char[*]");
@@ -69,6 +68,10 @@ namespace System.Reflection.Tests
                     case 2:
                         {
                             int[] invalidLowerBounds = new int[] { -20, 0, 20 };
+                            if (!PlatformDetection.IsNonZeroLowerBoundArraySupported)
+                            {
+                                Array.Clear(invalidLowerBounds, 0, invalidLowerBounds.Length);
+                            }
                             int[] invalidLengths = new int[] { -100, -9, -1 };
                             for (int j = 0; j < invalidLengths.Length; j++)
                             {
@@ -76,6 +79,10 @@ namespace System.Reflection.Tests
                             }
 
                             int[] validLowerBounds = new int[] { 0, 1, -1, 2, -3, 5, -10, 99, 100 };
+                            if (!PlatformDetection.IsNonZeroLowerBoundArraySupported)
+                            {
+                                Array.Clear(validLowerBounds, 0, validLowerBounds.Length);
+                            }
                             int[] validLengths = new int[] { 0, 1, 3, 2, 3, 5, 10, 99, 0 };
                             for (int j = 0; j < validLengths.Length; j++)
                             {

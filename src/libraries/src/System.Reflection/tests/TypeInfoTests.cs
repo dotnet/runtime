@@ -1029,7 +1029,6 @@ namespace System.Reflection.Tests
 
         [Theory]
         [InlineData(typeof(string))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Multidim arrays of rank 1 not supported on UapAot: https://github.com/dotnet/corert/issues/3331")]
         public void MakeArrayType_IntRank1(Type type)
         {
             Type arrayType = type.GetType().MakeArrayType(1);

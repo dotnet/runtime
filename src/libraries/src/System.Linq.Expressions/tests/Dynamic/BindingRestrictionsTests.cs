@@ -75,16 +75,16 @@ namespace System.Dynamic.Tests
         [Fact]
         public void ExpressionRestrictionFromNonBooleanExpression()
         {
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>(
                 "expression", () => BindingRestrictions.GetExpressionRestriction(Expression.Empty()));
-            Assert.Throws<ArgumentException>(
+            AssertExtensions.Throws<ArgumentException>(
                 "expression", () => BindingRestrictions.GetExpressionRestriction(Expression.Constant("")));
         }
 
         [Fact]
         public void InstanceRestrictionFromNull()
         {
-            Assert.Throws<ArgumentNullException>(
+            AssertExtensions.Throws<ArgumentNullException>(
                 "expression", () => BindingRestrictions.GetInstanceRestriction(null, new object()));
         }
 

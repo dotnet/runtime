@@ -262,4 +262,79 @@ namespace SerializationTestTypes
             return KTResolver.ResolveName(typeName, typeNamespace, declaredType, null);
         }
     }
+
+    public class VerySimpleResolver : DataContractResolver
+    {
+        public override bool TryResolveType(Type dcType, Type declaredType, DataContractResolver KTResolver, out XmlDictionaryString typeName, out XmlDictionaryString typeNamespace)
+        {
+            if (!KTResolver.TryResolveType(dcType, declaredType, null, out typeName, out typeNamespace))
+            {
+                typeName = new XmlDictionary().Add(dcType.FullName);
+                typeNamespace = new XmlDictionary().Add(dcType.Assembly.FullName);
+            }
+
+            return true;
+        }
+
+        public override Type ResolveName(string typeName, string typeNamespace, Type declaredType, DataContractResolver KTResolver)
+        {
+            Type t = KTResolver.ResolveName(typeName, typeNamespace, declaredType, null);
+            if (t == null)
+            {
+                try
+                {
+                    t = Type.GetType(typeName + "," + typeNamespace);
+                }
+                catch (Exception)
+                {
+                    return null;
+                }
+            }
+
+            return t;
+        }
+    }
+
+    public class ResolverDefaultCollections : DataContractResolver
+    {
+        private readonly static string s_defaultNs = "http://www.default.com";
+        public override bool TryResolveType(Type dcType, Type declaredType, DataContractResolver KTResolver, out XmlDictionaryString typeName, out XmlDictionaryString typeNamespace)
+        {
+            string resolvedNamespace = string.Empty;
+            resolvedNamespace = s_defaultNs;
+            XmlDictionary dictionary = new XmlDictionary();
+            typeName = dictionary.Add(dcType.FullName);            
+            typeNamespace = dictionary.Add(resolvedNamespace);
+            return true;
+        }
+
+        public override Type ResolveName(string typeName, string typeNamespace, Type declaredType, DataContractResolver KTResolver)
+        {
+            if (typeNamespace.Equals(s_defaultNs))
+            {
+                if (typeName.Equals(typeof(Person).FullName))
+                {
+                    return typeof(Person);
+                }
+                if (typeName.Equals(typeof(CharClass).FullName))
+                {
+                    return typeof(CharClass);
+                }
+                if (typeName.Equals("System.String"))
+                {
+                    return typeof(string);
+                }
+                if (typeName.Equals(typeof(Version1).FullName))
+                {
+                    return typeof(Version1);
+                }
+                if (typeName.Equals(typeof(Employee).FullName))
+                {
+                    return typeof(Employee);
+                }
+            }
+
+            return KTResolver.ResolveName(typeName, typeNamespace, declaredType, null);
+        }
+    }
 }

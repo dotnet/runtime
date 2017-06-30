@@ -19,7 +19,14 @@ namespace System.IO.IsolatedStorage
 
             if (IsMachine(scope))
             {
-                dataDirectory = ApplicationData.Current.SharedLocalFolder.Path;
+                // Getting the shared local folder isn't possible if the policy for
+                // "Allow a Windows app to share application data between users".
+                dataDirectory = ApplicationData.Current.SharedLocalFolder?.Path;
+
+                if (dataDirectory == null)
+                {
+                    throw new IsolatedStorageException(SR.IsolatedStorage_Scope_Invalid);
+                }
             }
             if (!IsRoaming(scope))
             {
@@ -59,6 +66,13 @@ namespace System.IO.IsolatedStorage
             hash = IdentityHelper.GetNormalizedUriHash(codeBase);
             hash = "Url" + separator + hash;
             identity = codeBase;
+        }
+
+        internal static string GetRandomDirectory(string rootDirectory, IsolatedStorageScope scope)
+        {
+            // We didn't create random directories for UAP/UWP in the past. As the root locations are
+            // scoped beneath app isolated folders we don't need the extra layer of obfuscation.
+            return rootDirectory;
         }
     }
 }

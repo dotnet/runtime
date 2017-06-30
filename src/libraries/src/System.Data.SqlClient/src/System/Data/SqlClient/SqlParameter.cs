@@ -54,7 +54,7 @@ namespace System.Data.SqlClient
         }
     }
 
-    public sealed partial class SqlParameter : DbParameter, ICloneable
+    public sealed partial class SqlParameter : DbParameter, IDbDataParameter, ICloneable
     {
         private MetaType _metaType;
 
@@ -112,6 +112,37 @@ namespace System.Data.SqlClient
             this.SqlDbType = dbType;
             this.Size = size;
             this.SourceColumn = sourceColumn;
+        }
+
+        public SqlParameter(
+            string parameterName,
+            SqlDbType dbType, 
+            int size,
+            ParameterDirection direction,
+            byte precision,
+            byte scale,
+            string sourceColumn,
+            DataRowVersion sourceVersion,
+            bool sourceColumnNullMapping,
+            object value,
+            string xmlSchemaCollectionDatabase,
+            string xmlSchemaCollectionOwningSchema,
+            string xmlSchemaCollectionName
+        ) : this()
+        {
+            this.ParameterName = parameterName;
+            this.SqlDbType = dbType;
+            this.Size = size;
+            this.Direction = direction;
+            this.Precision = precision;
+            this.Scale = scale;
+            this.SourceColumn = sourceColumn;
+            this.SourceVersion = sourceVersion;
+            this.SourceColumnNullMapping = sourceColumnNullMapping;
+            this.Value = value;
+            this.XmlSchemaCollectionDatabase = xmlSchemaCollectionDatabase;
+            this.XmlSchemaCollectionOwningSchema = xmlSchemaCollectionOwningSchema;
+            this.XmlSchemaCollectionName = xmlSchemaCollectionName;
         }
 
         private SqlParameter(SqlParameter source) : this()

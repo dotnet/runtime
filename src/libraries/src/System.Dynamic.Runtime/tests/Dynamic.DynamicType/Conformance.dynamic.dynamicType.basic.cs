@@ -930,7 +930,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.dynamicType.basic.array
 
     public class Program
     {
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [Fact]
         public static void DynamicCSharpRunTest()
         {
             Assert.Equal(0, MainMethod());

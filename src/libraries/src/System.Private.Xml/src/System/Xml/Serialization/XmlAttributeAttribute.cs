@@ -6,11 +6,7 @@ using System;
 using System.Xml.Schema;
 
 
-#if XMLSERIALIZERGENERATOR
-namespace Microsoft.XmlSerializer.Generator
-#else
 namespace System.Xml.Serialization
-#endif
 {
     /// <devdoc>
     ///    <para>[To be supplied.]</para>

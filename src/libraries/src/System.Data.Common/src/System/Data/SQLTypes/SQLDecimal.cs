@@ -16,7 +16,6 @@ namespace System.Data.SqlTypes
     /// Represents a fixed precision and scale numeric value between -10<superscript term='38'/>
     /// -1 and 10<superscript term='38'/> -1 to be stored in or retrieved from a database.
     /// </summary>
-    [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [XmlSchemaProvider("GetXsdType")]
     public struct SqlDecimal : INullable, IComparable, IXmlSerializable

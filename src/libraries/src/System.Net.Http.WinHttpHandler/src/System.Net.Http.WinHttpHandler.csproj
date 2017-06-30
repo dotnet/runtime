@@ -6,9 +6,10 @@
     <ProjectGuid>{F75E3008-0562-42DF-BE72-C1384F12157E}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AssemblyName>System.Net.Http.WinHttpHandler</AssemblyName>
-    <GeneratePlatformNotSupportedAssembly Condition="'$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' != 'true'">true</GeneratePlatformNotSupportedAssembly>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetGroup)' == 'netstandard' AND '$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_WinHttpHandler</GeneratePlatformNotSupportedAssemblyMessage>
     <!-- Although we have a NS configuration, the actual UWP implementation is a shim over WinRT: so just validate against OneCore -->
     <UWPCompatible>false</UWPCompatible>
+    <IncludeDllSafeSearchPathAttribute>true</IncludeDllSafeSearchPathAttribute>
   </PropertyGroup>
   <!-- Help VS understand available configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Debug|AnyCPU'" />
@@ -59,6 +60,7 @@
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.Handles" />
     <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Security.Cryptography.Encoding" />
     <Reference Include="System.Security.Cryptography.X509Certificates" />
     <Reference Include="System.Text.Encoding" />
     <Reference Include="System.Threading" />

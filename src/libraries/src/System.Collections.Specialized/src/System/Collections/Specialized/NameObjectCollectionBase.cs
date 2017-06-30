@@ -21,7 +21,6 @@ namespace System.Collections.Specialized
     ///    and <see cref='System.Object' qualify='true'/> values that can be accessed either with the hash code of
     ///    the key or with the index.</para>
     /// </devdoc>
-    [Serializable]
     public abstract class NameObjectCollectionBase : ICollection, ISerializable, IDeserializationCallback
     {
         // const names used for serialization
@@ -636,7 +635,6 @@ namespace System.Collections.Specialized
         // Enumerator over keys of NameObjectCollection
         //
 
-        [Serializable]
         internal class NameObjectKeysEnumerator : IEnumerator
         {
             private int _pos;
@@ -697,7 +695,6 @@ namespace System.Collections.Specialized
         /// <devdoc>
         /// <para>Represents a collection of the <see cref='System.String' qualify='true'/> keys of a collection.</para>
         /// </devdoc>
-        [Serializable]
         public class KeysCollection : ICollection
         {
             private NameObjectCollectionBase _coll;

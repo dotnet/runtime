@@ -13,6 +13,7 @@
     <Compile Include="Perf.Environment.cs" />
     <Compile Include="Perf.Path.cs" />
     <Compile Include="Perf.Random.cs" />
+    <Compile Include="Perf.StreamWriter.cs" />
     <Compile Include="$(CommonTestPath)\System\PerfUtils.cs">
       <Link>Common\System\PerfUtils.cs</Link>
     </Compile>

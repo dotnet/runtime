@@ -51,7 +51,7 @@ namespace System.Net.NetworkInformation.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/308
         [PlatformSpecific(TestPlatforms.Linux)]  // Some APIs are not supported on Linux
         public void BasicTest_AccessInstanceProperties_NoExceptions_Linux()
         {
@@ -196,7 +196,7 @@ namespace System.Net.NetworkInformation.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/308
         [PlatformSpecific(TestPlatforms.Linux)]  // Some APIs are not supported on Linux
         public void BasicTest_GetIPInterfaceStatistics_Success_Linux()
         {
@@ -254,6 +254,7 @@ namespace System.Net.NetworkInformation.Tests
         [PlatformSpecific(~TestPlatforms.OSX)]
         [InlineData(false)]
         [InlineData(true)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "https://github.com/dotnet/corefx/issues/19314")]
         public async Task NetworkInterface_LoopbackInterfaceIndex_MatchesReceivedPackets(bool ipv6)
         {
             using (var client = new Socket(SocketType.Dgram, ProtocolType.Udp))

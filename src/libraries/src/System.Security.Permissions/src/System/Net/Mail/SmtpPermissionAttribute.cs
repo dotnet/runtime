@@ -7,7 +7,6 @@ using System.Security.Permissions;
 
 namespace System.Net.Mail
 {
-    [Serializable]
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor | AttributeTargets.Class |
         AttributeTargets.Struct | AttributeTargets.Assembly, AllowMultiple = true, Inherited = false)]
     public sealed class SmtpPermissionAttribute : CodeAccessSecurityAttribute

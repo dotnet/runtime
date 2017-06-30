@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Globalization;
+using System.Linq;
 using Xunit;
 
 namespace System.ComponentModel.Tests
@@ -95,6 +96,15 @@ namespace System.ComponentModel.Tests
 
             Assert.Throws<ArgumentException>(
                 () => new EnumConverter(typeof(Enum)).ConvertTo(TypeConverterTests.s_context, null, SomeFlagsEnum.Option1, typeof(string)));
+        }
+
+        [Fact]
+        public static void GetStandardValues_Succeeds()
+        {
+            var converter = new EnumConverter(typeof(SomeEnum));
+            SomeEnum[] standardValues = converter.GetStandardValues().Cast<SomeEnum>().ToArray();
+            Assert.Equal(Enum.GetNames(typeof(SomeEnum)).Length, standardValues.Length);
+            Assert.All(Enum.GetValues(typeof(SomeEnum)).Cast<SomeEnum>(), value => Assert.Contains(value, standardValues));
         }
 
         private static void VerifyArraysEqual<T>(T[] expected, object actual)

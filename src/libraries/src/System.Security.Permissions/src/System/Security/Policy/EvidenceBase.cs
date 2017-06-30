@@ -4,7 +4,6 @@
 
 namespace System.Security.Policy
 {
-    [Serializable]
     public abstract partial class EvidenceBase
     {
         protected EvidenceBase() { }

@@ -482,6 +482,11 @@ extern "C" void CryptoNative_SslCtxSetQuietShutdown(SSL_CTX* ctx)
     SSL_CTX_set_quiet_shutdown(ctx, 1);
 }
 
+extern "C" void CryptoNative_SslSetQuietShutdown(SSL* ssl, int mode)
+{
+    SSL_set_quiet_shutdown(ssl, mode);
+}
+
 extern "C" X509NameStack* CryptoNative_SslGetClientCAList(SSL* ssl)
 {
     return SSL_get_client_CA_list(ssl);

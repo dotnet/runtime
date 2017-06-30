@@ -9,7 +9,7 @@
     <ProjectGuid>{D77FBA6C-1AA6-45A4-93E2-97A370672C53}</ProjectGuid>
     <AllowUnsafeBlocks Condition="'$(TargetGroup)'=='netcoreapp'">true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)'=='netfx'">true</IsPartialFacadeAssembly>
-    <GeneratePlatformNotSupportedAssembly Condition="'$(TargetsUnix)' == 'true' OR '$(TargetGroup)' == 'netstandard'">true</GeneratePlatformNotSupportedAssembly>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsUnix)' == 'true' OR '$(TargetGroup)' == 'netstandard'">SR.PlatformNotSupported_AccessControl</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />

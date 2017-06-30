@@ -4,7 +4,6 @@
 
 namespace System.Security.Policy
 {
-    [Serializable]
     public sealed partial class NetCodeGroup : CodeGroup
     {
         public static readonly string AbsentOriginScheme;

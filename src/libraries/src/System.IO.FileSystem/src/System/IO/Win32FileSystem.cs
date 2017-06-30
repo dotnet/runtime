@@ -238,7 +238,8 @@ namespace System.IO
                 // there is no disk in drive A:, please insert one.  We don't want that.
                 // SetErrorMode will let us disable this, but we should set the error
                 // mode back, since this may have wide-ranging effects.
-                uint oldMode = Interop.Kernel32.SetErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS);
+                uint oldMode;
+                bool success = Interop.Kernel32.SetThreadErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS, out oldMode);
                 try
                 {
                     bool error = false;
@@ -283,7 +284,8 @@ namespace System.IO
                 }
                 finally
                 {
-                    Interop.Kernel32.SetErrorMode(oldMode);
+                    if (success)
+                        Interop.Kernel32.SetThreadErrorMode(oldMode, out oldMode);
                 }
 
                 // Copy the information to data
@@ -296,14 +298,16 @@ namespace System.IO
                 // SetErrorMode will let us disable this, but we should set the error
                 // mode back, since this may have wide-ranging effects.
                 bool success = false;
-                uint oldMode = Interop.Kernel32.SetErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS);
+                uint oldMode;
+                bool errorModeSuccess = Interop.Kernel32.SetThreadErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS, out oldMode);
                 try
                 {
                     success = Interop.Kernel32.GetFileAttributesEx(path, Interop.Kernel32.GET_FILEEX_INFO_LEVELS.GetFileExInfoStandard, ref data);
                 }
                 finally
                 {
-                    Interop.Kernel32.SetErrorMode(oldMode);
+                    if (errorModeSuccess)
+                        Interop.Kernel32.SetThreadErrorMode(oldMode, out oldMode);
                 }
 
                 if (!success)

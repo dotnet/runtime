@@ -5099,3 +5099,91 @@ public class Group4WithXmlTextAttr
     [XmlText]
     public string Text = "SomeText";
 }
+
+[DataContract]
+public class DelegateClass
+{
+    public DelegateClass() { }
+
+    [DataMember]
+    public object container;
+
+    [DataMember]
+    public static string delegateVariable = "";
+
+    [DataMember]
+    public static object someType;
+
+    public static void TestingTheDelegate(People P)
+    {
+        delegateVariable = "Verifying the Delegate Test";
+        someType = P;
+    }
+}
+
+public delegate void Del(People P);
+
+[DataContract]
+public class People
+{
+    public People(string variation)
+    {
+        Age = 6;
+        Name = "smith";
+    }
+
+    public People()
+    {
+    }
+
+    [DataMember]
+    public int Age;
+
+    [DataMember]
+    public string Name;
+}
+
+public class SoapComplexType
+{
+    public bool BoolValue;
+    public string StringValue;
+}
+
+public class SoapComplexTypeWithArray
+{
+    public int[] IntArray;
+    public string[] StringArray;
+    public List<int> IntList;
+    public List<string> StringList;
+}
+[KnownType("KnownTypes")]
+[DataContract]
+public class EmployeeC
+{
+    public EmployeeC(string name)
+    {
+        Name = name;
+    }
+
+    [DataMember]
+    public string Name;
+
+    static Type[] KnownTypes()
+    {
+        return new Type[] { typeof(Manager), typeof(EmployeeC) };
+    }
+}
+
+[DataContract]
+public class Manager : EmployeeC
+{
+    public Manager(string name) : base(name)
+    {
+    }
+
+    [DataMember]
+    public int age;
+
+    [DataMember]
+    public EmployeeC[] emps;
+}

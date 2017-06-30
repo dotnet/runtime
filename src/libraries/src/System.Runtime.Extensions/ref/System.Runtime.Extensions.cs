@@ -857,13 +857,13 @@ namespace System
     }
     public enum PlatformID
     {
-        Win32S = 0,
-        Win32Windows = 1,
+        [ComponentModel.EditorBrowsable(ComponentModel.EditorBrowsableState.Never)] Win32S = 0,
+        [ComponentModel.EditorBrowsable(ComponentModel.EditorBrowsableState.Never)] Win32Windows = 1,
         Win32NT = 2,
-        WinCE = 3,
+        [ComponentModel.EditorBrowsable(ComponentModel.EditorBrowsableState.Never)] WinCE = 3,
         Unix = 4,
-        Xbox = 5,
-        MacOSX = 6
+        [ComponentModel.EditorBrowsable(ComponentModel.EditorBrowsableState.Never)] Xbox = 5,
+        [ComponentModel.EditorBrowsable(ComponentModel.EditorBrowsableState.Never)] MacOSX = 6
     }
     public partial class Progress<T> : System.IProgress<T>
     {
@@ -893,6 +893,7 @@ namespace System
         public static System.StringComparer InvariantCultureIgnoreCase { get { throw null; } }
         public static System.StringComparer Ordinal { get { throw null; } }
         public static System.StringComparer OrdinalIgnoreCase { get { throw null; } }
+        public static System.StringComparer FromComparison(System.StringComparison comparisonType) { throw null; }
         public abstract int Compare(string x, string y);
         public static System.StringComparer Create(System.Globalization.CultureInfo culture, bool ignoreCase) { throw null; }
         public new bool Equals(object x, object y) { throw null; }

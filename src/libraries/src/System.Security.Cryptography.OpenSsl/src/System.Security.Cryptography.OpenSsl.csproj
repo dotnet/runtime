@@ -8,7 +8,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetGroup)' == 'netstandard'">
-    <GeneratePlatformNotSupportedAssembly>true</GeneratePlatformNotSupportedAssembly>
+    <GeneratePlatformNotSupportedAssemblyMessage>SR.PlatformNotSupported_CryptographyOpenSSL</GeneratePlatformNotSupportedAssemblyMessage>
     <!-- Clear PackageTargetRuntime on Windows to package the PlatformNotSupported assembly 
          without a RID so that it applies in desktop packages.config projects as well -->
     <PackageTargetRuntime>

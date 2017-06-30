@@ -2,12 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-
-//------------------------------------------------------------------------------
-
 using System.Data.Common;
-
 
 namespace System.Data.SqlClient
 {
@@ -19,12 +14,10 @@ namespace System.Data.SqlClient
         {
         }
 
-
         public override DbCommand CreateCommand()
         {
             return new SqlCommand();
         }
-
 
         public override DbConnection CreateConnection()
         {
@@ -36,6 +29,10 @@ namespace System.Data.SqlClient
             return new SqlConnectionStringBuilder();
         }
 
+        public override DbDataAdapter CreateDataAdapter()
+        {
+            return new SqlDataAdapter();
+        }
 
         public override DbParameter CreateParameter()
         {
@@ -43,4 +40,3 @@ namespace System.Data.SqlClient
         }
     }
 }
-

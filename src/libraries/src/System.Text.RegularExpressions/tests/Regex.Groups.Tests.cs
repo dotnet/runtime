@@ -3,12 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
+using System.Linq;
 using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
 {
-    public class RegexGroupTests
+    public class RegexGroupTests : RemoteExecutorTestBase
     {
         private static readonly CultureInfo s_enUSCulture = new CultureInfo("en-US");
         private static readonly CultureInfo s_invariantCulture = new CultureInfo("");
@@ -622,43 +624,53 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(Groups_CustomCulture_TestData))]
         public void Groups(string pattern, string input, RegexOptions options, CultureInfo cultureInfo, string[] expectedGroups)
         {
-            CultureInfo originalCulture = CultureInfo.CurrentCulture;
-            try
+            const string EmptyPlaceholder = "-";
+            const char Seperator = ';';
+
+            string outerPattern = Convert.ToBase64String(Encoding.UTF8.GetBytes(pattern));
+            string outerInput = Convert.ToBase64String(Encoding.UTF8.GetBytes(input));
+            string outerOptions = ((int)options).ToString();
+            string outerCultureInfo = cultureInfo != null ? cultureInfo.ToString() : EmptyPlaceholder;
+            string outerExpectedGroups = expectedGroups != null && expectedGroups.Length > 0 ? "\"" + Convert.ToBase64String(Encoding.UTF8.GetBytes(string.Join(Seperator.ToString(), expectedGroups.Select(s => s == string.Empty ? EmptyPlaceholder : s).ToArray()))) + "\"" : EmptyPlaceholder;
+
+            RemoteInvoke((innerPatternEnc, innerInputEnc, innerOptionsEnc, innerCultureInfoEnc, innerExpectedGroupsEnc) =>
             {
+                string innerPattern = Encoding.UTF8.GetString(Convert.FromBase64String(innerPatternEnc));
+                string innerInput = Encoding.UTF8.GetString(Convert.FromBase64String(innerInputEnc));
+                RegexOptions innerOptions = (RegexOptions)int.Parse(innerOptionsEnc);
+                CultureInfo innerCultureInfo = innerCultureInfoEnc != EmptyPlaceholder ? new CultureInfo(innerCultureInfoEnc) : null;
+                string[] innerExpectedGroups = innerExpectedGroupsEnc != EmptyPlaceholder ? Encoding.UTF8.GetString(Convert.FromBase64String(innerExpectedGroupsEnc.Trim('"'))).Split(Seperator).Select(s => s == EmptyPlaceholder ? string.Empty : s).ToArray() : new string[] { };
+
                 // In invariant culture, the unicode char matches differ from expected values provided.
-                if (originalCulture.Equals(CultureInfo.InvariantCulture))
+                if (CultureInfo.CurrentCulture.Equals(CultureInfo.InvariantCulture))
                 {
-                    CultureInfo.CurrentCulture = s_enUSCulture;
+                    CultureInfo.CurrentCulture = new CultureInfo("en-US");
                 }
-                if (cultureInfo != null)
+                if (innerCultureInfo != null)
                 {
-                    CultureInfo.CurrentCulture = cultureInfo;
+                    CultureInfo.CurrentCulture = innerCultureInfo;
                 }
-                Regex regex = new Regex(pattern, options);
-                Match match = regex.Match(input);
+
+                Regex regex = new Regex(innerPattern, innerOptions);
+                Match match = regex.Match(innerInput);
                 Assert.True(match.Success);
 
-                Assert.Equal(expectedGroups.Length, match.Groups.Count);
-                Assert.True(expectedGroups[0] == match.Value, string.Format("Culture used: {0}", CultureInfo.CurrentCulture));
+                Assert.Equal(innerExpectedGroups.Length, match.Groups.Count);
+                Assert.True(innerExpectedGroups[0] == match.Value, string.Format("Culture used: {0}", CultureInfo.CurrentCulture));
 
                 int[] groupNumbers = regex.GetGroupNumbers();
                 string[] groupNames = regex.GetGroupNames();
-                for (int i = 0; i < expectedGroups.Length; i++)
+                for (int i = 0; i < innerExpectedGroups.Length; i++)
                 {
-                    Assert.Equal(expectedGroups[i], match.Groups[groupNumbers[i]].Value);
+                    Assert.Equal(innerExpectedGroups[i], match.Groups[groupNumbers[i]].Value);
                     Assert.Equal(match.Groups[groupNumbers[i]], match.Groups[groupNames[i]]);
 
                     Assert.Equal(groupNumbers[i], regex.GroupNumberFromName(groupNames[i]));
                     Assert.Equal(groupNames[i], regex.GroupNameFromNumber(groupNumbers[i]));
                 }
-            }
-            finally
-            {
-                if (cultureInfo != null || originalCulture.Equals(CultureInfo.InvariantCulture))
-                {
-                    CultureInfo.CurrentCulture = originalCulture;
-                }
-            }
+
+                return SuccessExitCode;
+            }, outerPattern, outerInput, outerOptions, outerCultureInfo, outerExpectedGroups).Dispose();
         }
     }
 }

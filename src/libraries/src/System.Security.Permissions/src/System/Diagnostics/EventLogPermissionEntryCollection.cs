@@ -6,7 +6,6 @@ using System.Collections;
 
 namespace System.Diagnostics
 {
-    [Serializable]
     public class EventLogPermissionEntryCollection : CollectionBase
     {
         internal EventLogPermissionEntryCollection() { }

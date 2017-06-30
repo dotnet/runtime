@@ -3,15 +3,9 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.Tracing;
-#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
-using Microsoft.Diagnostics.Tracing.Session;
-#endif
 using Xunit;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Threading;
 
 namespace BasicEventSourceTests
 {

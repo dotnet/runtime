@@ -36,7 +36,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void CheckNullableUShortModuloTest(bool useInterpreter)
         {
@@ -50,7 +50,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void CheckNullableShortModuloTest(bool useInterpreter)
         {
@@ -64,7 +64,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void CheckNullableUIntModuloTest(bool useInterpreter)
         {
@@ -78,7 +78,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void CheckNullableIntModuloTest(bool useInterpreter)
         {
@@ -92,7 +92,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void CheckNullableULongModuloTest(bool useInterpreter)
         {
@@ -106,7 +106,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void CheckNullableLongModuloTest(bool useInterpreter)
         {

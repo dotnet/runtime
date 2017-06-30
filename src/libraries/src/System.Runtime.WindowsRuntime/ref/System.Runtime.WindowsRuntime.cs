@@ -49,6 +49,25 @@ namespace System.IO
         public static global::System.Threading.Tasks.Task<global::System.IO.Stream> OpenStreamForWriteAsync(this global::Windows.Storage.IStorageFile windowsRuntimeFile) { throw null; }
         [global::System.CLSCompliantAttribute(false)]
         public static global::System.Threading.Tasks.Task<global::System.IO.Stream> OpenStreamForWriteAsync(this global::Windows.Storage.IStorageFolder rootDirectory, string relativePath, global::Windows.Storage.CreationCollisionOption creationCollisionOption) { throw null; }
+        [global::System.CLSCompliantAttribute(false)]
+        public static global::Microsoft.Win32.SafeHandles.SafeFileHandle CreateSafeFileHandle(
+            this global::Windows.Storage.IStorageFile windowsRuntimeFile,
+            global::System.IO.FileAccess access = global::System.IO.FileAccess.ReadWrite,
+            global::System.IO.FileShare share = global::System.IO.FileShare.Read,
+            global::System.IO.FileOptions options = global::System.IO.FileOptions.None) { throw null; }
+        [global::System.CLSCompliantAttribute(false)]
+        public static global::Microsoft.Win32.SafeHandles.SafeFileHandle CreateSafeFileHandle(
+            this global::Windows.Storage.IStorageFolder rootDirectory,
+            string relativePath,
+            global::System.IO.FileMode mode) { throw null; }
+        [global::System.CLSCompliantAttribute(false)]
+        public static global::Microsoft.Win32.SafeHandles.SafeFileHandle CreateSafeFileHandle(
+            this global::Windows.Storage.IStorageFolder rootDirectory,
+            string relativePath,
+            global::System.IO.FileMode mode,
+            global::System.IO.FileAccess access,
+            global::System.IO.FileShare share = global::System.IO.FileShare.Read,
+            global::System.IO.FileOptions options = global::System.IO.FileOptions.None) { throw null; }
     }
     [global::System.Security.SecurityCriticalAttribute]
     public static partial class WindowsRuntimeStreamExtensions

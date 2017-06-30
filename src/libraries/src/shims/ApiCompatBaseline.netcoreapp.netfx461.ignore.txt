@@ -757,6 +757,7 @@ CannotRemoveBaseTypeOrInterface : Type 'System.Drawing.Printing.PrintingPermissi
 CannotRemoveBaseTypeOrInterface : Type 'System.Net.PeerToPeer.PnrpPermissionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Net.PeerToPeer.Collaboration.PeerCollaborationPermissionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Transactions.DistributedTransactionPermissionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
+CannotRemoveBaseTypeOrInterface : Type 'System.Data.SqlClient.SqlClientPermissionAttribute' does not implement interface 'System.Runtime.InteropServices._Attribute' in the implementation but it does in the contract.
 
 // TypesMustExist isn't a goal for netcore20:
 TypesMustExist : Type 'System._AppDomain' does not exist in the implementation but it does exist in the contract.

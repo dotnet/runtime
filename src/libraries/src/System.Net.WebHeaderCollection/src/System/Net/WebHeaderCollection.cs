@@ -27,7 +27,6 @@ namespace System.Net
         FileWebResponse,
     }
 
-    [Serializable]
     public class WebHeaderCollection : NameValueCollection, ISerializable
     {
         private const int ApproxAveHeaderLineSize = 30;

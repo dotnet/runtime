@@ -136,11 +136,18 @@ namespace Internal.Cryptography.Pal
 
         public static IStorePal FromSystemStore(string storeName, StoreLocation storeLocation, OpenFlags openFlags)
         {
-            if (storeLocation != StoreLocation.LocalMachine)
+            if (storeLocation == StoreLocation.CurrentUser)
             {
+                if (X509Store.DisallowedStoreName.Equals(storeName, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new PlatformNotSupportedException(SR.Cryptography_Unix_X509_NoDisallowedStore);
+                }
+
                 return new DirectoryBasedStoreProvider(storeName, openFlags);
             }
 
+            Debug.Assert(storeLocation == StoreLocation.LocalMachine);
+            
             if ((openFlags & OpenFlags.ReadWrite) == OpenFlags.ReadWrite)
             {
                 throw new PlatformNotSupportedException(SR.Cryptography_Unix_X509_MachineStoresReadOnly);
@@ -160,12 +167,12 @@ namespace Internal.Cryptography.Pal
                 }
             }
 
-            if (StringComparer.Ordinal.Equals("Root", storeName))
+            if (X509Store.RootStoreName.Equals(storeName, StringComparison.OrdinalIgnoreCase))
             {
                 return s_machineRootStore;
             }
 
-            if (StringComparer.Ordinal.Equals("CA", storeName))
+            if (X509Store.IntermediateCAStoreName.Equals(storeName, StringComparison.OrdinalIgnoreCase))
             {
                 return s_machineIntermediateStore;
             }

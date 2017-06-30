@@ -11,6 +11,10 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="XmlSystemPathResolverTests.cs" />
+    <SupplementalTestData Include="..\TestFiles\**\*.*">
+      <Link>TestFiles\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <DestinationDir>TestFiles\%(RecursiveDir)</DestinationDir>
+    </SupplementalTestData>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

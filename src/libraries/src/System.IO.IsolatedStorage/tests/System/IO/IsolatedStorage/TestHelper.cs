@@ -33,7 +33,9 @@ namespace System.IO.IsolatedStorage
             s_roots.Add(Path.Combine(userRoot, hash));
 
             // https://github.com/dotnet/corefx/issues/12628
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            // https://github.com/dotnet/corefx/issues/19839
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
+                && !PlatformDetection.IsWinRT)
             {
                 s_roots.Add(Helper.GetDataDirectory(IsolatedStorageScope.Machine));
             }
@@ -78,7 +80,6 @@ namespace System.IO.IsolatedStorage
                 stream.WriteAllText(content);
             }
         }
-
 
         public static void WriteAllText(this IsolatedStorageFileStream stream, string content)
         {

@@ -16,6 +16,7 @@ namespace System.Net.Http.Functional.Tests
     public class HttpClientHandler_MaxConnectionsPerServer_Test
     {
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "MaxConnectionsPerServer either returns two or int.MaxValue depending if ctor of HttpClientHandlerTest executed first. Disabling cause of random xunit execution order.")]
         public void Default_ExpectedValue()
         {
             using (var handler = new HttpClientHandler())
@@ -62,16 +63,7 @@ namespace System.Net.Http.Functional.Tests
             using (var handler = new HttpClientHandler())
             using (var client = new HttpClient(handler))
             {
-                try
-                {
-                    handler.MaxConnectionsPerServer = 1;
-                }
-                catch (PlatformNotSupportedException)
-                {
-                    // Some older libcurls used in some of our Linux CI systems don't support this
-                    Assert.True(RuntimeInformation.IsOSPlatform(OSPlatform.Linux));
-                }
-
+                handler.MaxConnectionsPerServer = 1;
                 await Task.WhenAll(
                     from i in Enumerable.Range(0, 5)
                     select client.GetAsync(Configuration.Http.RemoteEchoServer));

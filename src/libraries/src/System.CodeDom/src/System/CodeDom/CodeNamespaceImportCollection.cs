@@ -7,7 +7,6 @@ using System.Collections.Generic;
 
 namespace System.CodeDom
 {
-    [Serializable]
     public class CodeNamespaceImportCollection : IList
     {
         private readonly ArrayList _data = new ArrayList(); // not List<CodeNamespaceImport> to provide desktop-consistent semantics for CopyTo

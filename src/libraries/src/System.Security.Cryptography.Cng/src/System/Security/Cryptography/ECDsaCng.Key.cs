@@ -46,6 +46,9 @@ namespace System.Security.Cryptography
 
             if (curve.IsNamed)
             {
+                if (string.IsNullOrEmpty(curve.Oid.FriendlyName))
+                    throw new PlatformNotSupportedException(string.Format(SR.Cryptography_InvalidCurveOid, curve.Oid.Value));
+
                 // Map curve name to algorithm to support pre-Win10 curves
                 CngAlgorithm alg = CngKey.EcdsaCurveNameToAlgorithm(curve.Oid.FriendlyName);
                 if (CngKey.IsECNamedCurve(alg.Algorithm))

@@ -25,7 +25,12 @@ namespace System.Security.Cryptography.X509Certificates
 
         protected override PublicKey BuildPublicKey()
         {
-            RSAParameters parameters = _key.ExportParameters(false);
+            return BuildPublicKey(_key);
+        }
+
+        internal static PublicKey BuildPublicKey(RSA rsa)
+        {
+            RSAParameters parameters = rsa.ExportParameters(false);
 
             byte[] rsaPublicKey = DerEncoder.ConstructSequence(
                 DerEncoder.SegmentedEncodeUnsignedInteger(parameters.Modulus),

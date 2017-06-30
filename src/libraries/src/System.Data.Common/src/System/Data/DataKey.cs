@@ -148,11 +148,7 @@ namespace System.Data
             Debug.Assert(false, "don't put DataKey into a Hashtable");
             return base.GetHashCode();
         }
-
-        public static bool operator ==(DataKey x, DataKey y) => x.Equals((object)y);
-
-        public static bool operator !=(DataKey x, DataKey y) => !x.Equals((object)y);
-
+        
         public override bool Equals(object value)
         {
             Debug.Assert(false, "need to directly call Equals(DataKey)");

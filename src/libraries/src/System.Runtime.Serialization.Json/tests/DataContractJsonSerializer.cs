@@ -1692,6 +1692,7 @@ public static partial class DataContractJsonSerializerTests
     }
 
     [Fact]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #18312")]
     public static void DCJS_ReadOnlyDictionary()
     {
         var dict = new Dictionary<string, int>();

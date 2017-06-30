@@ -335,8 +335,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 // Windows 7, Windows 8, Ubuntu 14, CentOS can fail. Verify known good platforms don't fail.
                 Assert.False(PlatformDetection.IsWindows && PlatformDetection.WindowsVersion >= 10);
-                Assert.False(PlatformDetection.IsUbuntu1604);
-                Assert.False(PlatformDetection.IsUbuntu1610);
+                Assert.False(PlatformDetection.IsUbuntu && !PlatformDetection.IsUbuntu1404);
             }
         }
 
@@ -426,8 +425,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 // Windows 7, Windows 8, Ubuntu 14, CentOS can fail. Verify known good platforms don't fail.
                 Assert.False(PlatformDetection.IsWindows && PlatformDetection.WindowsVersion >= 10);
-                Assert.False(PlatformDetection.IsUbuntu1604);
-                Assert.False(PlatformDetection.IsUbuntu1610);
+                Assert.False(PlatformDetection.IsUbuntu && !PlatformDetection.IsUbuntu1404);
             }
         }
 

@@ -776,14 +776,6 @@ internal static partial class Interop
             return GetKnownHeader(request, 0, headerIndex);
         }
 
-        internal static unsafe string GetKnownHeader(byte[] memoryBlob, IntPtr originalAddress, int headerIndex)
-        {
-            fixed (byte* pMemoryBlob = memoryBlob)
-            {
-                return GetKnownHeader((HTTP_REQUEST*)pMemoryBlob, pMemoryBlob - (byte*)originalAddress, headerIndex);
-            }
-        }
-
         private static unsafe string GetVerb(HTTP_REQUEST* request, long fixup)
         {
             string verb = null;

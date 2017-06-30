@@ -399,7 +399,6 @@ namespace System.Net.Tests
             await Assert.ThrowsAsync<WebException>(() => wc.DownloadStringTaskAsync(System.Net.Test.Common.Configuration.Http.RemoteEchoServer));
         }
 
-        [ActiveIssue(18680)]
         [OuterLoop("Networking test talking to remote server: issue #11345")]
         [Theory]
         [InlineData("http://localhost", true)]
@@ -667,7 +666,7 @@ namespace System.Net.Tests
         }
 
         [OuterLoop("Networking test talking to remote server: issue #11345")]
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotFedoraOrRedHatOrCentos))] // #16201
+        [Theory]
         [MemberData(nameof(EchoServers))]
         public async Task UploadFile_Success(Uri echoServer)
         {

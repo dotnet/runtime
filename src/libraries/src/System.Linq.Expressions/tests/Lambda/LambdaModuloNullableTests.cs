@@ -49,7 +49,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void LambdaModuloNullableIntTest(bool useInterpreter)
         {
@@ -63,7 +63,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void LambdaModuloNullableLongTest(bool useInterpreter)
         {
@@ -77,7 +77,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void LambdaModuloNullableShortTest(bool useInterpreter)
         {
@@ -91,7 +91,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void LambdaModuloNullableUIntTest(bool useInterpreter)
         {
@@ -105,7 +105,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void LambdaModuloNullableULongTest(bool useInterpreter)
         {
@@ -119,7 +119,7 @@ namespace System.Linq.Expressions.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsSubsystemForLinux))] // https://github.com/Microsoft/BashOnWindows/issues/513
+        [Theory]
         [ClassData(typeof(CompilationTypes))]
         public static void LambdaModuloNullableUShortTest(bool useInterpreter)
         {

@@ -305,9 +305,9 @@ namespace System.Net.Http
             
             Debug.Assert(state != null, "OnRequestError: state is null");
 
-            Exception innerException = WinHttpException.CreateExceptionUsingError((int)asyncResult.dwError);
+            Exception innerException = WinHttpException.CreateExceptionUsingError(unchecked((int)asyncResult.dwError));
 
-            switch ((uint)asyncResult.dwResult.ToInt32())
+            switch (unchecked((uint)asyncResult.dwResult.ToInt32()))
             {
                 case Interop.WinHttp.API_SEND_REQUEST:
                     state.LifecycleAwaitable.SetException(innerException);

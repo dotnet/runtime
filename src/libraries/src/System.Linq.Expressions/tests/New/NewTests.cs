@@ -319,13 +319,13 @@ namespace System.Linq.Expressions.Tests
         {
             if (expressions.Length == 0)
             {
-                Assert.Throws<ArgumentException>(null, () => Expression.New(constructor));
+                AssertExtensions.Throws<ArgumentException>(null, () => Expression.New(constructor));
             }
-            Assert.Throws<ArgumentException>(null, () => Expression.New(constructor, expressions));
-            Assert.Throws<ArgumentException>(null, () => Expression.New(constructor, (IEnumerable<Expression>)expressions));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.New(constructor, expressions));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.New(constructor, (IEnumerable<Expression>)expressions));
 
-            Assert.Throws<ArgumentException>(null, () => Expression.New(constructor, expressions, new MemberInfo[expressions.Length]));
-            Assert.Throws<ArgumentException>(null, () => Expression.New(constructor, expressions, (IEnumerable<MemberInfo>)new MemberInfo[expressions.Length]));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.New(constructor, expressions, new MemberInfo[expressions.Length]));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.New(constructor, expressions, (IEnumerable<MemberInfo>)new MemberInfo[expressions.Length]));
         }
 
         [Fact]
@@ -366,8 +366,8 @@ namespace System.Linq.Expressions.Tests
         [MemberData(nameof(ArgumentsAndMembers_DifferentLengths_TestData))]
         public static void ArgumentsAndMembers_DifferentLengths_ThrowsArgumentException(ConstructorInfo constructor, Expression[] arguments, MemberInfo[] members)
         {
-            Assert.Throws<ArgumentException>(null, () => Expression.New(constructor, arguments, members));
-            Assert.Throws<ArgumentException>(null, () => Expression.New(constructor, arguments, (IEnumerable<MemberInfo>)members));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.New(constructor, arguments, members));
+            AssertExtensions.Throws<ArgumentException>(null, () => Expression.New(constructor, arguments, (IEnumerable<MemberInfo>)members));
         }
 
         [Fact]

@@ -117,8 +117,13 @@ namespace System.Net.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
-        public async Task UnknownHeaders_Success()
+        [ActiveIssue(19754)] // Recombine into UnknownHeaders_Success when fixed
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        public Task UnknownHeaders_Success_Large() => UnknownHeaders_Success(1000);
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotOneCoreUAP))]
+        [InlineData(100)]
+        public async Task UnknownHeaders_Success(int numHeaders)
         {
             Task<HttpListenerContext> server = _listener.GetContextAsync();
 
@@ -128,15 +133,22 @@ namespace System.Net.Tests
 
                 HttpRequestMessage requestMessage = new HttpRequestMessage(HttpMethod.Get, _factory.ListeningUrl);
 
-                for (int i = 0; i < 1000; i++)
+                for (int i = 0; i < numHeaders; i++)
                 {
                     requestMessage.Headers.Add($"custom{i}", i.ToString());
                 }
 
                 Task<HttpResponseMessage> clientTask = client.SendAsync(requestMessage);
+
+                if (clientTask == await Task.WhenAny(server, clientTask))
+                {
+                    (await clientTask).EnsureSuccessStatusCode();
+                    Assert.True(false, "Client should not have completed prior to server sending response");
+                }
+
                 HttpListenerContext context = await server;
 
-                for (int i = 0; i < 1000; i++)
+                for (int i = 0; i < numHeaders; i++)
                 {
                     Assert.Equal(i.ToString(), context.Request.Headers[$"custom{i}"]);
                 }
@@ -151,4 +163,3 @@ namespace System.Net.Tests
         }
     }
 }
-    

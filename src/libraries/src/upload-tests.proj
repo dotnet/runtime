@@ -25,6 +25,9 @@
          - Command must produce testResults.xml on successful execution.
          - Command is expressed in terms of an .SH file if on *Nix -->
     <UseScriptRunner>true</UseScriptRunner>
+    <!-- For Windows ARM & ARM64 UAPAOT runs, we'll need a special runner that knows how to do this (TODO: Combine the runners) -->
+    <UseContinuationRunner Condition="'$(ArchGroup)'=='arm' AND '$(TargetGroup)'=='uapaot'">true</UseContinuationRunner>
+    <SecondaryPayloadDir   Condition="'$(ArchGroup)'=='arm' AND '$(TargetGroup)'=='uapaot'">%HELIX_WORKITEM_PAYLOAD%\native</SecondaryPayloadDir>
 
     <!-- Test builds consist of the tests that are platform specific in one root, plus others in AnyOS. -->
     <AnyOSPlatformConfig>AnyOS.AnyCPU.$(ConfigurationGroup)</AnyOSPlatformConfig>

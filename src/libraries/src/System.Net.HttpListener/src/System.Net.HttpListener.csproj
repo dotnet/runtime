@@ -47,6 +47,7 @@
     <Reference Include="System.Threading.Timer" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="System\Net\HttpListenerPrefixCollection.cs" />
     <Compile Include="System\Net\HttpRequestStream.cs" />
     <Compile Include="System\Net\AuthenticationTypes.cs" />
     <Compile Include="System\Net\HttpResponseStream.cs" />
@@ -59,11 +60,27 @@
     <Compile Include="System\Net\HttpListenerContext.cs" />
     <Compile Include="System\Net\HttpListenerException.cs" />
     <Compile Include="System\Net\HttpListenerResponse.cs" />
+    <Compile Include="System\Net\ListenerClientCertState.cs" />
     <Compile Include="System\Net\NetEventSource.HttpListener.cs" />
     <Compile Include="System\Net\WebSockets\HttpListenerWebSocketContext.cs" />
     <Compile Include="System\Net\WebSockets\HttpWebSocket.cs" />
+    <Compile Include="$(CommonPath)\System\StringExtensions.cs">
+      <Link>Common\System\StringExtensions.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\Logging\NetEventSource.Common.cs">
       <Link>Common\System\Net\Logging\NetEventSource.Common.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\CookieComparer.cs">
+      <Link>Common\System\Net\CookieComparer.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\CookieFields.cs">
+      <Link>Common\System\Net\CookieFields.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\CookieParser.cs">
+      <Link>Common\System\Net\CookieParser.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\CaseInsensitiveAscii.cs">
+      <Link>Common\System\Net\CaseInsensitiveAscii.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\HttpStatusDescription.cs">
       <Link>Common\System\Net\HttpStatusDescription.cs</Link>
@@ -71,12 +88,17 @@
     <Compile Include="$(CommonPath)\System\Net\HttpKnownHeaderNames.cs">
       <Link>Common\System\Net\HttpKnownHeaderNames.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\LazyAsyncResult.cs">
+      <Link>Common\System\Net\LazyAsyncResult.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\UriScheme.cs">
+      <Link>Common\System\Net\UriScheme.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\WebSockets\WebSocketValidate.cs">
       <Link>Common\System\Net\WebSockets\WebSocketValidate.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Compile Include="System\Net\Windows\HttpListenerPrefixCollection.Windows.cs" />
     <Compile Include="System\Net\Windows\HttpListener.Windows.cs" />
     <Compile Include="System\Net\Windows\HttpListenerContext.Windows.cs" />
     <Compile Include="System\Net\Windows\HttpListenerRequest.Windows.cs" />
@@ -90,14 +112,10 @@
     <Compile Include="System\Net\Windows\HttpListenerRequestContext.cs" />
     <Compile Include="System\Net\Windows\ListenerClientCertAsyncResult.Windows.cs" />
     <Compile Include="System\Net\Windows\AsyncRequestContext.cs" />
-    <Compile Include="System\Net\Windows\ListenerClientCertState.cs" />
     <Compile Include="System\Net\Windows\EntitySendFormat.cs" />
     <Compile Include="System\Net\Windows\RequestContextBase.cs" />
     <Compile Include="System\Net\Windows\SyncRequestContext.cs" />
     <Compile Include="System\Net\Windows\ListenerAsyncResult.Windows.cs" />
-    <Compile Include="$(CommonPath)\System\Net\CaseInsensitiveAscii.cs">
-      <Link>Common\System\Net\CaseInsensitiveAscii.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Net\DebugSafeHandle.cs">
       <Link>Common\System\Net\DebugSafeHandle.cs</Link>
     </Compile>
@@ -106,12 +124,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\InternalException.cs">
       <Link>Common\System\Net\InternalException.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\LazyAsyncResult.cs">
-      <Link>Common\System\Net\LazyAsyncResult.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\UriScheme.cs">
-      <Link>Common\System\Net\UriScheme.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\WebHeaderEncoding.cs">
       <Link>Common\System\Net\WebHeaderEncoding.cs</Link>
@@ -329,13 +341,13 @@
     <Compile Include="System\Net\Managed\ListenerPrefix.cs" />
     <Compile Include="System\Net\Managed\HttpRequestStream.Managed.cs" />
     <Compile Include="System\Net\Managed\HttpListener.Managed.cs" />
+    <Compile Include="System\Net\Managed\HttpListener.Certificates.cs" />
     <Compile Include="System\Net\Managed\HttpListenerContext.Managed.cs" />
     <Compile Include="System\Net\Managed\HttpListenerRequest.Managed.cs" />
     <Compile Include="System\Net\Managed\HttpListenerResponse.Managed.cs" />
     <Compile Include="System\Net\Managed\HttpListenerTimeoutManager.Managed.cs" />
     <Compile Include="System\Net\Managed\ListenerAsyncResult.Managed.cs" />
     <Compile Include="System\Net\Managed\HttpHeaderStrings.cs" />
-    <Compile Include="System\Net\Managed\HttpListenerPrefixCollection.Managed.cs" />
     <Compile Include="System\Net\Managed\ChunkedInputStream.cs" />
     <Compile Include="System\Net\Managed\ChunkStream.cs" />
     <Compile Include="System\Net\Managed\HttpResponseStream.Managed.cs" />

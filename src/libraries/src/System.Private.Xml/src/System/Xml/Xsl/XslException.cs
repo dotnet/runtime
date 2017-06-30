@@ -11,7 +11,6 @@ using System.Xml.Xsl.Xslt;
 
 namespace System.Xml.Xsl
 {
-    [Serializable]
     internal class XslTransformException : XsltException
     {
         public XslTransformException(Exception inner, string res, params string[] args)
@@ -91,7 +90,6 @@ namespace System.Xml.Xsl
         }
     }
 
-    [Serializable]
     internal class XslLoadException : XslTransformException
     {
         private ISourceLineInfo _lineInfo;

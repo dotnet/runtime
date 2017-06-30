@@ -14,14 +14,7 @@ namespace System.Net.WebSockets
 {
     internal static partial class HttpWebSocket
     {
-        private static readonly ArraySegment<byte> s_EmptyPayload = new ArraySegment<byte>(new byte[] { }, 0, 0);
         private static readonly Random s_keyGenerator = new Random();
-        private static readonly bool s_httpSysSupportsWebSockets = (Environment.OSVersion.Version >= new Version(6, 2));
-
-        internal static ArraySegment<byte> EmptyPayload
-        {
-            get { return s_EmptyPayload; }
-        }
 
         internal static Task<HttpListenerWebSocketContext> AcceptWebSocketAsync(HttpListenerContext context,
             string subProtocol,
@@ -29,9 +22,9 @@ namespace System.Net.WebSockets
             TimeSpan keepAliveInterval,
             ArraySegment<byte> internalBuffer)
         {
-            ValidateOptions(subProtocol, receiveBufferSize, WebSocketBuffer.MinSendBufferSize, keepAliveInterval);
-            ValidateArraySegment(internalBuffer, nameof(internalBuffer));
-            WebSocketBuffer.Validate(internalBuffer.Count, receiveBufferSize, WebSocketBuffer.MinSendBufferSize, true);
+            ValidateOptions(subProtocol, receiveBufferSize, MinSendBufferSize, keepAliveInterval);
+            WebSocketValidate.ValidateArraySegment(internalBuffer, nameof(internalBuffer));
+            WebSocketBuffer.Validate(internalBuffer.Count, receiveBufferSize, MinSendBufferSize, true);
 
             return AcceptWebSocketAsyncCore(context, subProtocol, receiveBufferSize, keepAliveInterval, internalBuffer);
         }
@@ -157,7 +150,7 @@ namespace System.Net.WebSockets
 
             return webSocketContext;
         }
-        
+
         internal static string GetTraceMsgForParameters(int offset, int count, CancellationToken cancellationToken)
         {
             return string.Format(CultureInfo.InvariantCulture,
@@ -182,7 +175,7 @@ namespace System.Net.WebSockets
             // under the caller's synchronization context.
             return task.ConfigureAwait(false);
         }
-        
+
         private static unsafe ulong SendWebSocketHeaders(HttpListenerResponse response)
         {
             return response.SendHeaders(null, null,
@@ -190,48 +183,6 @@ namespace System.Net.WebSockets
                 Interop.HttpApi.HTTP_FLAGS.HTTP_SEND_RESPONSE_FLAG_MORE_DATA |
                 Interop.HttpApi.HTTP_FLAGS.HTTP_SEND_RESPONSE_FLAG_BUFFER_DATA,
                 true);
-        }
-
-        private static void ValidateWebSocketHeaders(HttpListenerContext context)
-        {
-            EnsureHttpSysSupportsWebSockets();
-
-            if (!context.Request.IsWebSocketRequest)
-            {
-                throw new WebSocketException(WebSocketError.NotAWebSocket,
-                    SR.Format(SR.net_WebSockets_AcceptNotAWebSocket,
-                    nameof(ValidateWebSocketHeaders),
-                    HttpKnownHeaderNames.Connection,
-                    HttpKnownHeaderNames.Upgrade,
-                    HttpWebSocket.WebSocketUpgradeToken,
-                    context.Request.Headers[HttpKnownHeaderNames.Upgrade]));
-            }
-
-            string secWebSocketVersion = context.Request.Headers[HttpKnownHeaderNames.SecWebSocketVersion];
-            if (string.IsNullOrEmpty(secWebSocketVersion))
-            {
-                throw new WebSocketException(WebSocketError.HeaderError,
-                    SR.Format(SR.net_WebSockets_AcceptHeaderNotFound,
-                    nameof(ValidateWebSocketHeaders),
-                    HttpKnownHeaderNames.SecWebSocketVersion));
-            }
-
-            if (string.Compare(secWebSocketVersion, WebSocketProtocolComponent.SupportedVersion, StringComparison.OrdinalIgnoreCase) != 0)
-            {
-                throw new WebSocketException(WebSocketError.UnsupportedVersion,
-                    SR.Format(SR.net_WebSockets_AcceptUnsupportedWebSocketVersion,
-                    nameof(ValidateWebSocketHeaders),
-                    secWebSocketVersion,
-                    WebSocketProtocolComponent.SupportedVersion));
-            }
-
-            if (string.IsNullOrWhiteSpace(context.Request.Headers[HttpKnownHeaderNames.SecWebSocketKey]))
-            {
-                throw new WebSocketException(WebSocketError.HeaderError,
-                    SR.Format(SR.net_WebSockets_AcceptHeaderNotFound,
-                    nameof(ValidateWebSocketHeaders),
-                    HttpKnownHeaderNames.SecWebSocketKey));
-            }
         }
 
         internal static void ValidateInnerStream(Stream innerStream)
@@ -252,60 +203,6 @@ namespace System.Net.WebSockets
             }
         }
 
-
-        internal static void ValidateOptions(string subProtocol,
-            int receiveBufferSize,
-            int sendBufferSize,
-            TimeSpan keepAliveInterval)
-        {
-            // We allow the subProtocol to be null. Validate if it is not null.
-            if (subProtocol != null)
-            {
-                WebSocketValidate.ValidateSubprotocol(subProtocol);
-            }
-
-            ValidateBufferSizes(receiveBufferSize, sendBufferSize);
-
-            if (keepAliveInterval < Timeout.InfiniteTimeSpan) // -1
-            {
-                throw new ArgumentOutOfRangeException(nameof(keepAliveInterval), keepAliveInterval,
-                    SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, Timeout.InfiniteTimeSpan.ToString()));
-            }
-        }
-
-        internal static void ValidateBufferSizes(int receiveBufferSize, int sendBufferSize)
-        {
-            if (receiveBufferSize < WebSocketBuffer.MinReceiveBufferSize)
-            {
-                throw new ArgumentOutOfRangeException(nameof(receiveBufferSize), receiveBufferSize,
-                    SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, WebSocketBuffer.MinReceiveBufferSize));
-            }
-
-            if (sendBufferSize < WebSocketBuffer.MinSendBufferSize)
-            {
-                throw new ArgumentOutOfRangeException(nameof(sendBufferSize), sendBufferSize,
-                    SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, WebSocketBuffer.MinSendBufferSize));
-            }
-
-            if (receiveBufferSize > WebSocketBuffer.MaxBufferSize)
-            {
-                throw new ArgumentOutOfRangeException(nameof(receiveBufferSize), receiveBufferSize,
-                    SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooBig,
-                        nameof(receiveBufferSize),
-                        receiveBufferSize,
-                        WebSocketBuffer.MaxBufferSize));
-            }
-
-            if (sendBufferSize > WebSocketBuffer.MaxBufferSize)
-            {
-                throw new ArgumentOutOfRangeException(nameof(sendBufferSize), sendBufferSize,
-                    SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooBig,
-                        nameof(sendBufferSize),
-                        sendBufferSize,
-                        WebSocketBuffer.MaxBufferSize));
-            }
-        }
-
         internal static void ThrowIfConnectionAborted(Stream connection, bool read)
         {
             if ((!read && !connection.CanWrite) ||
@@ -320,36 +217,8 @@ namespace System.Net.WebSockets
             throw new PlatformNotSupportedException(SR.net_WebSockets_UnsupportedPlatform);
         }
 
-        private static void ThrowPlatformNotSupportedException_HTTPSYS()
-        {
-            throw new PlatformNotSupportedException(SR.net_WebSockets_UnsupportedPlatform);
-        }
+        private static string SupportedVersion => WebSocketProtocolComponent.SupportedVersion;
 
-        internal static void ValidateArraySegment<T>(ArraySegment<T> arraySegment, string parameterName)
-        {
-            Debug.Assert(!string.IsNullOrEmpty(parameterName), "'parameterName' MUST NOT be NULL or string.Empty");
-
-            if (arraySegment.Array == null)
-            {
-                throw new ArgumentNullException(parameterName + "." + nameof(arraySegment.Array));
-            }
-
-            if (arraySegment.Offset < 0 || arraySegment.Offset > arraySegment.Array.Length)
-            {
-                throw new ArgumentOutOfRangeException(parameterName + "." + nameof(arraySegment.Offset));
-            }
-            if (arraySegment.Count < 0 || arraySegment.Count > (arraySegment.Array.Length - arraySegment.Offset))
-            {
-                throw new ArgumentOutOfRangeException(parameterName + "." + nameof(arraySegment.Count));
-            }
-        }
-
-        private static void EnsureHttpSysSupportsWebSockets()
-        {
-            if (!s_httpSysSupportsWebSockets)
-            {
-                ThrowPlatformNotSupportedException_HTTPSYS();
-            }
-        }
+        private static bool WebSocketsSupported { get; } = Environment.OSVersion.Version >= new Version(6, 2);
     }
 }

@@ -14,7 +14,7 @@ using System.Xml.Serialization;
 namespace System.Data.SqlTypes
 {
     // Options that are used in comparison
-    [Flags, Serializable]
+    [Flags]
     public enum SqlCompareOptions
     {
         None = 0x00000000,

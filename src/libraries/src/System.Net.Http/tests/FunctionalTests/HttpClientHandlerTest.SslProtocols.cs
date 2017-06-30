@@ -17,7 +17,7 @@ namespace System.Net.Http.Functional.Tests
     using Configuration = System.Net.Test.Common.Configuration;
 
     [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #16805")]
-    public class HttpClientHandler_SslProtocols_Test
+    public partial class HttpClientHandler_SslProtocols_Test
     {
         [Fact]
         public void DefaultProtocols_MatchesExpected()
@@ -243,19 +243,5 @@ namespace System.Net.Http.Functional.Tests
         private static bool SslDefaultsToTls12 => !PlatformDetection.IsWindows7;
         // TLS 1.2 may not be enabled on Win7
         // https://technet.microsoft.com/en-us/library/dn786418.aspx#BKMK_SchannelTR_TLS12
-
-        private static bool BackendSupportsSslConfiguration =>
-            RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ||
-            (CurlSslVersionDescription()?.StartsWith("OpenSSL") ?? false);
-
-        private static bool SSLv3DisabledByDefault =>
-            BackendSupportsSslConfiguration ||
-            Version.Parse(CurlVersionDescription()) >= new Version(7, 39); // libcurl disables SSLv3 by default starting in v7.39
-
-        [DllImport("System.Net.Http.Native", EntryPoint = "HttpNative_GetVersionDescription")]
-        private static extern string CurlVersionDescription();
-
-        [DllImport("System.Net.Http.Native", EntryPoint = "HttpNative_GetSslVersionDescription")]
-        private static extern string CurlSslVersionDescription();
     }
 }
