@@ -2134,6 +2134,40 @@ public:
     // Returns a range that will produce the operands of this node in use order.
     IteratorPair<GenTreeOperandIterator> Operands();
 
+    enum class VisitResult
+    {
+        Abort    = false,
+        Continue = true
+    };
+
+    // Visits each operand of this node. The operand must be either a lambda, function, or functor with the signature
+    // `GenTree::VisitResult VisitorFunction(GenTree* operand)`. Here is a simple example:
+    //
+    //     unsigned operandCount = 0;
+    //     node->VisitOperands([&](GenTree* operand) -> GenTree::VisitResult)
+    //     {
+    //         operandCount++;
+    //         return GenTree::VisitResult::Continue;
+    //     });
+    //
+    // This function is generally more efficient that the operand iterator and should be preferred over that API for
+    // hot code, as it affords better opportunities for inlining and acheives shorter dynamic path lengths when
+    // deciding how operands need to be accessed.
+    //
+    // Note that this function does not respect `GTF_REVERSE_OPS` and `gtEvalSizeFirst`. This is always safe in LIR,
+    // but may be dangerous in HIR if for some reason you need to visit operands in the order in which they will
+    // execute.
+    template <typename TVisitor>
+    void VisitOperands(TVisitor visitor);
+
+private:
+    template <typename TVisitor>
+    VisitResult VisitListOperands(TVisitor visitor);
+
+    template <typename TVisitor>
+    void VisitBinOpOperands(TVisitor visitor);
+
+public:
     bool Precedes(GenTree* other);
 
     // The maximum possible # of children of any node.

@@ -3592,10 +3592,10 @@ void Lowering::AddrModeCleanupHelper(GenTreeAddrMode* addrMode, GenTree* node)
     }
 
     // TODO-LIR: change this to use the LIR mark bit and iterate instead of recursing
-    for (GenTree* operand : node->Operands())
-    {
+    node->VisitOperands([this, addrMode](GenTree* operand) -> GenTree::VisitResult {
         AddrModeCleanupHelper(addrMode, operand);
-    }
+        return GenTree::VisitResult::Continue;
+    });
 
     BlockRange().Remove(node);
 }
