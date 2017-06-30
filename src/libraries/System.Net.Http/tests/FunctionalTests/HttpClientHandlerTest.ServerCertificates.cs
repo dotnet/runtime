@@ -40,8 +40,13 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(BackendSupportsCustomCertificateHandling))]
-        public void UseCallback_HaveNoCredsAndUseAuthenticatedCustomProxyAndPostToSecureServer_ProxyAuthenticationRequiredStatusCode()
+        public async Task UseCallback_HaveNoCredsAndUseAuthenticatedCustomProxyAndPostToSecureServer_ProxyAuthenticationRequiredStatusCode()
         {
+            if (ManagedHandlerTestHelpers.IsEnabled)
+            {
+                return; // TODO: SSL proxy tunneling not yet implemented in ManagedHandler
+            }
+
             int port;
             Task<LoopbackGetRequestHttpProxy.ProxyResult> proxyTask = LoopbackGetRequestHttpProxy.StartAsync(
                 out port,
@@ -57,7 +62,7 @@ namespace System.Net.Http.Functional.Tests
                 Task<HttpResponseMessage> responseTask = client.PostAsync(
                     Configuration.Http.SecureRemoteEchoServer,
                     new StringContent("This is a test"));
-                Task.WaitAll(proxyTask, responseTask);
+                await TestHelper.WhenAllCompletedOrAnyFailed(proxyTask, responseTask);
                 using (responseTask.Result)
                 {
                     Assert.Equal(HttpStatusCode.ProxyAuthenticationRequired, responseTask.Result.StatusCode);

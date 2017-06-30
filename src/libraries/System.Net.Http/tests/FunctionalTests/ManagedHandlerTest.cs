@@ -27,6 +27,7 @@ namespace System.Net.Http.Functional.Tests
         private const string ManagedHandlerEnvVar = "COMPlus_UseManagedHttpClientHandler";
         public static void SetEnvVar() => Environment.SetEnvironmentVariable(ManagedHandlerEnvVar, "true");
         public static void RemoveEnvVar() => Environment.SetEnvironmentVariable(ManagedHandlerEnvVar, null);
+        public static bool IsEnabled => Environment.GetEnvironmentVariable(ManagedHandlerEnvVar) == "true";
     }
     
     public sealed class ManagedHandler_HttpClientTest : HttpClientTest, IDisposable
@@ -109,11 +110,11 @@ namespace System.Net.Http.Functional.Tests
     //    }
     //}
 
-    //public sealed class ManagedHandler_HttpClientHandler_ServerCertificates_Test : HttpClientHandler_ServerCertificates_Test, IDisposable
-    //{
-    //    public ManagedHandler_HttpClientHandler_ServerCertificates_Test() => ManagedHandlerTestHelpers.SetEnvVar();
-    //    public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
-    //}
+    public sealed class ManagedHandler_HttpClientHandler_ServerCertificates_Test : HttpClientHandler_ServerCertificates_Test, IDisposable
+    {
+        public ManagedHandler_HttpClientHandler_ServerCertificates_Test() => ManagedHandlerTestHelpers.SetEnvVar();
+        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+    }
 
     //public sealed class ManagedHandler_PostScenarioTest : PostScenarioTest, IDisposable
     //{
