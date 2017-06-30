@@ -121,9 +121,9 @@ namespace System.Net.Http.Functional.Tests
     //    public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
     //}
 
-    //public sealed class ManagedHandler_ResponseStreamTest : ResponseStreamTest, IDisposable
-    //{
-    //    public ManagedHandler_ResponseStreamTest(ITestOutputHelper output) : base(output) => ManagedHandlerTestHelpers.SetEnvVar();
-    //    public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
-    //}
+    public sealed class ManagedHandler_ResponseStreamTest : ResponseStreamTest, IDisposable
+    {
+        public ManagedHandler_ResponseStreamTest(ITestOutputHelper output) : base(output) => ManagedHandlerTestHelpers.SetEnvVar();
+        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+    }
 }
