@@ -35,6 +35,9 @@ SET_DEFAULT_DEBUG_CHANNEL(NUMA);
 #endif
 
 #include <pthread.h>
+#include <dlfcn.h>
+
+#include "numashim.h"
 
 using namespace CorUnix;
 
@@ -71,6 +74,10 @@ int g_possibleCpuCount = 0;
 int g_groupCount = 0;
 // The highest NUMA node available
 int g_highestNumaNode = 0;
+// Is numa available
+bool g_numaAvailable = false;
+
+void* numaHandle = nullptr;
 
 static const int MaxCpusPerGroup = 8 * sizeof(KAFFINITY);
 static const WORD NO_GROUP = 0xffff;
@@ -140,71 +147,92 @@ BOOL
 NUMASupportInitialize()
 {
 #if HAVE_NUMA_H
-    if (numa_available() != -1)
+    numaHandle = dlopen("libnuma.so", RTLD_LAZY);
+    if (numaHandle == 0)
     {
-        struct bitmask *mask = numa_allocate_cpumask();
-        int numaNodesCount = numa_max_node() + 1;
+        numaHandle = dlopen("libnuma.so.1", RTLD_LAZY);
+    }
+    if (numaHandle != 0)
+    {
+        dlsym(numaHandle, "numa_allocate_cpumask");
+#define PER_FUNCTION_BLOCK(fn) \
+    fn##_ptr = (decltype(fn)*)dlsym(numaHandle, #fn); \
+    if (fn##_ptr == NULL) { fprintf(stderr, "Cannot get symbol " #fn " from libnuma\n"); abort(); }
+FOR_ALL_NUMA_FUNCTIONS
+#undef PER_FUNCTION_BLOCK
 
-        g_possibleCpuCount = numa_num_possible_cpus();
-        g_cpuCount = 0;
-        g_groupCount = 0;
-
-        for (int i = 0; i < numaNodesCount; i++)
+        if (numa_available() != -1)
         {
-            int st = numa_node_to_cpus(i, mask);
-            // The only failure that can happen is that the mask is not large enough
-            // but that cannot happen since the mask was allocated by numa_allocate_cpumask
-            _ASSERTE(st == 0);
-            unsigned int nodeCpuCount = numa_bitmask_weight(mask);
-            g_cpuCount += nodeCpuCount;
-            unsigned int nodeGroupCount = (nodeCpuCount + MaxCpusPerGroup - 1) / MaxCpusPerGroup;
-            g_groupCount += nodeGroupCount;
+            dlclose(numaHandle);
         }
-
-        AllocateLookupArrays();
-
-        WORD currentGroup = 0;
-        int currentGroupCpus = 0;
-
-        for (int i = 0; i < numaNodesCount; i++)
+        else
         {
-            int st = numa_node_to_cpus(i, mask);
-            // The only failure that can happen is that the mask is not large enough
-            // but that cannot happen since the mask was allocated by numa_allocate_cpumask
-            _ASSERTE(st == 0);
-            unsigned int nodeCpuCount = numa_bitmask_weight(mask);
-            unsigned int nodeGroupCount = (nodeCpuCount + MaxCpusPerGroup - 1) / MaxCpusPerGroup;
-            for (int j = 0; j < g_possibleCpuCount; j++)
+            g_numaAvailable = true;
+
+            struct bitmask *mask = numa_allocate_cpumask();
+            int numaNodesCount = numa_max_node() + 1;
+
+            g_possibleCpuCount = numa_num_possible_cpus();
+            g_cpuCount = 0;
+            g_groupCount = 0;
+
+            for (int i = 0; i < numaNodesCount; i++)
             {
-                if (numa_bitmask_isbitset(mask, j))
+                int st = numa_node_to_cpus(i, mask);
+                // The only failure that can happen is that the mask is not large enough
+                // but that cannot happen since the mask was allocated by numa_allocate_cpumask
+                _ASSERTE(st == 0);
+                unsigned int nodeCpuCount = numa_bitmask_weight(mask);
+                g_cpuCount += nodeCpuCount;
+                unsigned int nodeGroupCount = (nodeCpuCount + MaxCpusPerGroup - 1) / MaxCpusPerGroup;
+                g_groupCount += nodeGroupCount;
+            }
+
+            AllocateLookupArrays();
+
+            WORD currentGroup = 0;
+            int currentGroupCpus = 0;
+
+            for (int i = 0; i < numaNodesCount; i++)
+            {
+                int st = numa_node_to_cpus(i, mask);
+                // The only failure that can happen is that the mask is not large enough
+                // but that cannot happen since the mask was allocated by numa_allocate_cpumask
+                _ASSERTE(st == 0);
+                unsigned int nodeCpuCount = numa_bitmask_weight(mask);
+                unsigned int nodeGroupCount = (nodeCpuCount + MaxCpusPerGroup - 1) / MaxCpusPerGroup;
+                for (int j = 0; j < g_possibleCpuCount; j++)
                 {
-                    if (currentGroupCpus == MaxCpusPerGroup)
+                    if (numa_bitmask_isbitset(mask, j))
                     {
-                        g_groupToCpuCount[currentGroup] = MaxCpusPerGroup;
-                        g_groupToCpuMask[currentGroup] = GetFullAffinityMask(MaxCpusPerGroup);
-                        currentGroupCpus = 0;
-                        currentGroup++;
+                        if (currentGroupCpus == MaxCpusPerGroup)
+                        {
+                            g_groupToCpuCount[currentGroup] = MaxCpusPerGroup;
+                            g_groupToCpuMask[currentGroup] = GetFullAffinityMask(MaxCpusPerGroup);
+                            currentGroupCpus = 0;
+                            currentGroup++;
+                        }
+                        g_cpuToAffinity[j].Node = i;
+                        g_cpuToAffinity[j].Group = currentGroup;
+                        g_cpuToAffinity[j].Number = currentGroupCpus;
+                        g_groupAndIndexToCpu[currentGroup * MaxCpusPerGroup + currentGroupCpus] = j;
+                        currentGroupCpus++;
                     }
-                    g_cpuToAffinity[j].Node = i;
-                    g_cpuToAffinity[j].Group = currentGroup;
-                    g_cpuToAffinity[j].Number = currentGroupCpus;
-                    g_groupAndIndexToCpu[currentGroup * MaxCpusPerGroup + currentGroupCpus] = j;
-                    currentGroupCpus++;
+                }
+
+                if (currentGroupCpus != 0)
+                {
+                    g_groupToCpuCount[currentGroup] = currentGroupCpus;
+                    g_groupToCpuMask[currentGroup] = GetFullAffinityMask(currentGroupCpus);
+                    currentGroupCpus = 0;
+                    currentGroup++;
                 }
             }
 
-            if (currentGroupCpus != 0)
-            {
-                g_groupToCpuCount[currentGroup] = currentGroupCpus;
-                g_groupToCpuMask[currentGroup] = GetFullAffinityMask(currentGroupCpus);
-                currentGroupCpus = 0;
-                currentGroup++;
-            }
+            numa_free_cpumask(mask);
+
+            g_highestNumaNode = numa_max_node();
         }
-
-        numa_free_cpumask(mask);
-
-        g_highestNumaNode = numa_max_node();
     }
     else
 #endif // HAVE_NUMA_H
@@ -237,6 +265,12 @@ VOID
 NUMASupportCleanup()
 {
     FreeLookupArrays();
+#if HAVE_NUMA_H
+    if (g_numaAvailable)
+    {
+        dlclose(numaHandle);
+    }
+#endif // HAVE_NUMA_H
 }
 
 /*++
@@ -672,7 +706,7 @@ VirtualAllocExNuma(
         {
             result = VirtualAlloc(lpAddress, dwSize, flAllocationType, flProtect);
 #if HAVE_NUMA_H
-            if (result != NULL)
+            if (result != NULL && g_numaAvailable)
             {
                 int nodeMaskLength = (g_highestNumaNode + 1 + sizeof(unsigned long) - 1) / sizeof(unsigned long);
                 unsigned long *nodeMask = new unsigned long[nodeMaskLength];
@@ -684,6 +718,7 @@ VirtualAllocExNuma(
                 nodeMask[index] = mask;
 
                 int st = mbind(result, dwSize, MPOL_PREFERRED, nodeMask, g_highestNumaNode, 0);
+
                 free(nodeMask);
                 _ASSERTE(st == 0);
                 // If the mbind fails, we still return the allocated memory since the nndPreferred is just a hint
