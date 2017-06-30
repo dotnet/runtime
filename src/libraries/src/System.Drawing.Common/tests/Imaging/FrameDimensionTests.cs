@@ -9,7 +9,7 @@ namespace System.Drawing.Imaging.Tests
 {
     public class FrameDimensionTests
     {
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_Guid()
         {
             Guid guid = Guid.NewGuid();
@@ -50,28 +50,28 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(ImageFormatGuidTestData))]
         public void Guid_ReturnsExpected(Guid expected, FrameDimension frameDimension)
         {
             Assert.Equal(expected, frameDimension.Guid);
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(FrameDimensionEqualsTestData))]
         public void Equals_Object_ReturnsExpected(FrameDimension frameDimension, object obj, bool result)
         {
             Assert.Equal(result, frameDimension.Equals(obj));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void GetHashCode_Success()
         {
             Guid guid = Guid.NewGuid();
             Assert.Equal(guid.GetHashCode(), new FrameDimension(guid).GetHashCode());
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(FrameDimensionToStringTestData))]
         public void ToString_ReturnsExpected(string expected, FrameDimension imageFormat)
         {

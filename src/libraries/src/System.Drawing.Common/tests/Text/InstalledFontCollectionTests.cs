@@ -7,7 +7,7 @@ namespace System.Drawing.Text.Tests
 {
     public class InstalledFontCollectionTests
     {
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_Default()
         {
             using (var fontCollection = new InstalledFontCollection())
@@ -16,7 +16,7 @@ namespace System.Drawing.Text.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Families_GetWhenDisposed_ReturnsNonEmpty()
         {
             var fontCollection = new InstalledFontCollection();
@@ -25,7 +25,7 @@ namespace System.Drawing.Text.Tests
             Assert.NotEmpty(fontCollection.Families);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Dispose_MultipleTimes_Nop()
         {
             var fontCollection = new InstalledFontCollection();
