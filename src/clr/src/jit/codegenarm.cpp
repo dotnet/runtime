@@ -289,9 +289,9 @@ void CodeGen::genReturn(GenTreePtr treeNode)
     }
     else
     {
-        if (varTypeIsStruct(treeNode))
+        if (isStructReturn(treeNode))
         {
-            NYI_ARM("struct return");
+            genStructReturn(treeNode);
         }
         else if (targetType != TYP_VOID)
         {
