@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
+using Xunit.NetCore.Extensions;
 
 namespace System.IO.Tests
 {
@@ -204,6 +205,17 @@ namespace System.IO.Tests
             Assert.False(Directory.Exists(testDir));
         }
 
+        [Fact]
+        [OuterLoop("Needs sudo access")]
+        [PlatformSpecific(TestPlatforms.Linux)]
+        [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
+        public void Unix_NotFoundDirectory_ReadOnlyVolume()
+        {
+            ReadOnly_FileSystemHelper(readOnlyDirectory =>
+            {
+                Assert.Throws<DirectoryNotFoundException>(() => Delete(Path.Combine(readOnlyDirectory, "DoesNotExist")));
+            });
+        }
         #endregion
     }
 
