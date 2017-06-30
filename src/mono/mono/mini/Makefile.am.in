@@ -10,8 +10,13 @@ PLATFORM_PATH_SEPARATOR=:
 endif
 
 # This is needed for automake dependency generation
+if SUPPORT_NULLGC
+libgc_libs=
+libgc_static_libs=
+else
 libgc_libs=$(monodir)/libgc/libmonogc.la
 libgc_static_libs=$(monodir)/libgc/libmonogc-static.la
+endif
 
 boehm_libs=	\
 	$(monodir)/mono/metadata/libmonoruntime.la	\

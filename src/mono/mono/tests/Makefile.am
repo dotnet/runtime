@@ -126,6 +126,7 @@ TESTS_CS_SRC=		\
 	assemblyresolve_event.cs	\
 	assemblyresolve_event3.cs	\
 	assemblyresolve_event4.cs	\
+	assemblyresolve_event5.cs	\
 	checked.cs		\
 	char-isnumber.cs	\
 	field-layout.cs		\
@@ -826,7 +827,8 @@ PROFILE_DISABLED_TESTS += \
 	bug-389886-3.exe	\
 	constant-division.exe	\
 	dynamic-method-resurrection.exe	\
-	assembly_append_ordering.exe
+	assembly_append_ordering.exe \
+	assemblyresolve_event5.exe
 
 # Test which needs System.Web support
 PROFILE_DISABLED_TESTS += \
@@ -1704,6 +1706,7 @@ assemblyresolve_asm.dll$(PLATFORM_AOT_SUFFIX): assemblyresolve_deps/Test.dll$(PL
 	MONO_PATH="assemblyresolve_deps:$(CLASS)" $(top_builddir)/runtime/mono-wrapper $(AOT_BUILD_FLAGS) assemblyresolve_asm.dll
 assemblyresolve_deps/Test.dll$(PLATFORM_AOT_SUFFIX): assemblyresolve_deps/TestBase.dll$(PLATFORM_AOT_SUFFIX)
 
+EXTRA_DIST += assemblyresolve_TestBase.cs assemblyresolve_Test.cs assemblyresolve_asm.cs 
 assemblyresolve_deps:
 	mkdir -p assemblyresolve_deps
 assemblyresolve_deps/TestBase.dll: assemblyresolve_deps $(srcdir)/assemblyresolve_TestBase.cs
@@ -1718,6 +1721,13 @@ assemblyresolve_event3.exe: assemblyresolve_asm.dll assemblyresolve_deps/Test.dl
 
 assemblyresolve_event4.exe$(PLATFORM_AOT_SUFFIX): assemblyresolve_deps/Test.dll$(PLATFORM_AOT_SUFFIX) assemblyresolve_deps/TestBase.dll$(PLATFORM_AOT_SUFFIX)
 assemblyresolve_event4.exe: assemblyresolve_deps/Test.dll assemblyresolve_deps/TestBase.dll
+
+EXTRA_DIST += assemblyresolve_event5_label.cs assemblyresolve_event5_helper.cs
+assemblyresolve_deps/assemblyresolve_event5_label.dll: assemblyresolve_event5_label.cs assemblyresolve_deps 
+	$(MCS) -target:library -out:assemblyresolve_deps/assemblyresolve_event5_label.dll $(srcdir)/assemblyresolve_event5_label.cs
+assemblyresolve_event5_helper.dll: assemblyresolve_event5_helper.cs assemblyresolve_deps/assemblyresolve_event5_label.dll
+	$(MCS) -target:library -out:assemblyresolve_event5_helper.dll -r:assemblyresolve_deps/assemblyresolve_event5_label.dll $(srcdir)/assemblyresolve_event5_helper.cs
+assemblyresolve_event5.exe: assemblyresolve_event5_helper.dll
 
 # We use 'test-support-files' to handle an ordering issue between the 'mono/' and 'runtime/' directories
 bug-80307.exe: $(srcdir)/bug-80307.cs
