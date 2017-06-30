@@ -99,10 +99,39 @@ namespace System.Net.WebSockets
             string subProtocol, int receiveBufferSize, int sendBufferSize,
             TimeSpan keepAliveInterval, bool useZeroMaskingKey, ArraySegment<byte> internalBuffer)
         {
-            // ClientWebSocket on Unix is implemented in managed code and can be constructed (internally)
-            // for an arbitrary stream. We could use that implementation here, building it in to the WebSocket
-            // library as well, or accessing it from the client library via reflection.  For now, we throw.
-            throw new PlatformNotSupportedException();
+            if (innerStream == null)
+            {
+                throw new ArgumentNullException(nameof(innerStream));
+            }
+
+            if (!innerStream.CanRead || !innerStream.CanWrite)
+            {
+                throw new ArgumentException(!innerStream.CanRead ? SR.NotReadableStream : SR.NotWriteableStream, nameof(innerStream));
+            }
+
+            if (subProtocol != null)
+            {
+                WebSocketValidate.ValidateSubprotocol(subProtocol);
+            }
+
+            if (keepAliveInterval != Timeout.InfiniteTimeSpan && keepAliveInterval < TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(nameof(keepAliveInterval), keepAliveInterval,
+                    SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall,
+                    0));
+            }
+
+            if (receiveBufferSize <= 0 || sendBufferSize <= 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    receiveBufferSize <= 0 ? nameof(receiveBufferSize) : nameof(sendBufferSize),
+                    receiveBufferSize <= 0 ? receiveBufferSize : sendBufferSize,
+                    SR.Format(SR.net_WebSockets_ArgumentOutOfRange_TooSmall, 0));
+            }
+
+            return ManagedWebSocket.CreateFromConnectedStream(
+                innerStream, false, subProtocol, keepAliveInterval,
+                receiveBufferSize, internalBuffer);
         }
     }
 }

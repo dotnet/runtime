@@ -91,4 +91,34 @@
   <data name="net_WebSockets_ArgumentOutOfRange_TooSmall" xml:space="preserve">
     <value>The argument must be a value greater than {0}.</value>
   </data>
+  <data name="net_WebSockets_InvalidEmptySubProtocol" xml:space="preserve">
+    <value>Empty string is not a valid subprotocol value. Please use \"null\" to specify no value.</value>
+  </data>
+  <data name="net_WebSockets_InvalidCharInProtocolString" xml:space="preserve">
+    <value>The WebSocket protocol '{0}' is invalid because it contains the invalid character '{1}'.</value>
+  </data>
+  <data name="net_WebSockets_ReasonNotNull" xml:space="preserve">
+    <value>The close status description '{0}' is invalid. When using close status code '{1}' the description must be null.</value>
+  </data>
+  <data name="net_WebSockets_InvalidCloseStatusCode" xml:space="preserve">
+    <value>The close status code '{0}' is reserved for system use only and cannot be specified when calling this method.</value>
+  </data>
+  <data name="net_WebSockets_InvalidCloseStatusDescription" xml:space="preserve">
+    <value>The close status description '{0}' is too long. The UTF8-representation of the status description must not be longer than {1} bytes.</value>
+  </data>
+  <data name="net_WebSockets_UnsupportedPlatform" xml:space="preserve">
+    <value>The WebSocket protocol is not supported on this platform.</value>
+  </data>
+  <data name="net_WebSockets_Argument_InvalidMessageType" xml:space="preserve">
+    <value>The message type '{0}' is not allowed for the '{1}' operation. Valid message types are: '{2}, {3}'. To close the WebSocket, use the '{4}' operation instead. </value>
+  </data>
+  <data name="net_Websockets_AlreadyOneOutstandingOperation" xml:space="preserve">
+    <value>There is already one outstanding '{0}' call for this WebSocket instance. ReceiveAsync and SendAsync can be called simultaneously, but at most one outstanding operation for each of them is allowed at the same time.</value>
+  </data>
+  <data name="NotReadableStream" xml:space="preserve">
+    <value>The base stream is not readable.</value>
+  </data>
+  <data name="NotWriteableStream" xml:space="preserve">
+    <value>The base stream is not writeable.</value>
+  </data>
 </root>

@@ -31,7 +31,7 @@ namespace System.Net.WebSockets
 
         private readonly CancellationTokenSource _abortSource = new CancellationTokenSource();
         private WebSocketState _state = WebSocketState.Connecting;
-        private ManagedWebSocket _webSocket;
+        private WebSocket _webSocket;
 
         public static WebSocketHandle Create() => new WebSocketHandle();
 
@@ -109,8 +109,8 @@ namespace System.Net.WebSockets
                 // Parse the response and store our state for the remainder of the connection
                 string subprotocol = await ParseAndValidateConnectResponseAsync(stream, options, secKeyAndSecWebSocketAccept.Value, cancellationToken).ConfigureAwait(false);
 
-                _webSocket = ManagedWebSocket.CreateFromConnectedStream(
-                    stream, false, subprotocol, options.KeepAliveInterval, options.ReceiveBufferSize, options.Buffer);
+                _webSocket = WebSocket.CreateClientWebSocket(
+                    stream, subprotocol, options.ReceiveBufferSize, options.SendBufferSize, options.KeepAliveInterval, false, options.Buffer.GetValueOrDefault());
 
                 // If a concurrent Abort or Dispose came in before we set _webSocket, make sure to update it appropriately
                 if (_state == WebSocketState.Aborted)

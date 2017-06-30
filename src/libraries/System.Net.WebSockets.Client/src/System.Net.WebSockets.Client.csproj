@@ -92,9 +92,6 @@
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">
     <Compile Include="System\Net\WebSockets\WebSocketHandle.Managed.cs" />
-    <Compile Include="$(CommonPath)\System\Net\WebSockets\ManagedWebSocket.cs">
-      <Link>Common\System\Net\WebSockets\ManagedWebSocket.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\StringExtensions.cs">
       <Link>Common\System\StringExtensions.cs</Link>
     </Compile>

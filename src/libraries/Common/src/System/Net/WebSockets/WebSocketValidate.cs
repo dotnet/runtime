@@ -30,7 +30,7 @@ namespace System.Net.WebSockets
                         // Ordering is important to maintain .NET 4.5 WebSocket implementation exception behavior.
                         if (isDisposed)
                         {
-                            throw new ObjectDisposedException(nameof(ClientWebSocket));
+                            throw new ObjectDisposedException(nameof(WebSocket));
                         }
 
                         return;
