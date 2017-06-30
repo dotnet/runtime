@@ -4754,7 +4754,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_IL_OFFSET:
             return;
 
-        // Standard unary operators
+        // Unary operators with an optional operand
         case GT_NOP:
         case GT_RETURN:
         case GT_RETFILT:
@@ -4764,6 +4764,7 @@ void GenTree::VisitOperands(TVisitor visitor)
             }
             __fallthrough;
 
+        // Standard unary operators
         case GT_STORE_LCL_VAR:
         case GT_STORE_LCL_FLD:
         case GT_NOT:
