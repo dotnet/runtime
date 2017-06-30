@@ -1014,7 +1014,7 @@ namespace System.Collections.Immutable
         /// <returns>The equality comparer to use.</returns>
         private static IEqualityComparer<HashBucket> GetHashBucketEqualityComparer(IEqualityComparer<T> valueComparer)
         {
-            if (!typeof(ValueType).IsAssignableFrom(typeof(T)))
+            if (!typeof(T).IsValueType)
             {
                 return HashBucketByRefEqualityComparer.DefaultInstance;
             }
