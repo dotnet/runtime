@@ -459,6 +459,33 @@ namespace System.Runtime.CompilerServices
         }
 
         [Fact]
+        public static unsafe void VoidPointerAdd()
+        {
+            int[] a = new int[] { 0x123, 0x234, 0x345, 0x456 };
+
+            fixed (void* ptr = a)
+            {
+                void* r1 = Unsafe.Add<int>(ptr, 1);
+                Assert.Equal(0x234, *(int*)r1);
+
+                void* r2 = Unsafe.Add<int>(r1, 2);
+                Assert.Equal(0x456, *(int*)r2);
+
+                void* r3 = Unsafe.Add<int>(r2, -3);
+                Assert.Equal(0x123, *(int*)r3);
+            }
+
+            fixed (void* ptr = &a[1])
+            {
+                void* r0 = Unsafe.Add<int>(ptr, -1);
+                Assert.Equal(0x123, *(int*)r0);
+
+                void* r3 = Unsafe.Add<int>(ptr, 2);
+                Assert.Equal(0x456, *(int*)r3);
+            }
+        }
+
+        [Fact]
         public static void RefAddIntPtr()
         {
             int[] a = new int[] { 0x123, 0x234, 0x345, 0x456 };
@@ -501,6 +528,33 @@ namespace System.Runtime.CompilerServices
 
             ref string r3 = ref Unsafe.Subtract(ref r2, 3);
             Assert.Equal("abc", r3);
+        }
+        
+        [Fact]
+        public static unsafe void VoidPointerSubtract()
+        {
+            int[] a = new int[] { 0x123, 0x234, 0x345, 0x456 };
+
+            fixed (void* ptr = a)
+            {
+                void* r1 = Unsafe.Subtract<int>(ptr, -2);
+                Assert.Equal(0x345, *(int*)r1);
+
+                void* r2 = Unsafe.Subtract<int>(r1, -1);
+                Assert.Equal(0x456, *(int*)r2);
+
+                void* r3 = Unsafe.Subtract<int>(r2, 3);
+                Assert.Equal(0x123, *(int*)r3);
+            }
+
+            fixed (void* ptr = &a[1])
+            {
+                void* r0 = Unsafe.Subtract<int>(ptr, 1);
+                Assert.Equal(0x123, *(int*)r0);
+
+                void* r3 = Unsafe.Subtract<int>(ptr, -2);
+                Assert.Equal(0x456, *(int*)r3);
+            }
         }
 
         [Fact]

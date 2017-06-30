@@ -11,6 +11,7 @@ namespace System.Runtime.CompilerServices
     {
         public static ref T AddByteOffset<T>(ref T source, System.IntPtr byteOffset) { throw null; }
         public static ref T Add<T>(ref T source, int elementOffset) { throw null; }
+        public unsafe static void* Add<T>(void* source, int elementOffset) { throw null; }
         public static ref T Add<T>(ref T source, System.IntPtr elementOffset) { throw null; }
         public static bool AreSame<T>(ref T left, ref T right) { throw null; }
         public unsafe static void* AsPointer<T>(ref T value) { throw null; }
@@ -34,6 +35,7 @@ namespace System.Runtime.CompilerServices
         public static int SizeOf<T>() { throw null; }
         public static ref T SubtractByteOffset<T>(ref T source, System.IntPtr byteOffset) { throw null; }
         public static ref T Subtract<T>(ref T source, int elementOffset) { throw null; }
+        public unsafe static void* Subtract<T>(void* source, int elementOffset) { throw null; }
         public static ref T Subtract<T>(ref T source, System.IntPtr elementOffset) { throw null; }
         public unsafe static void Write<T>(void* destination, T value) { }
         public unsafe static void WriteUnaligned<T>(void* destination, T value) { }
