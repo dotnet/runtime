@@ -18,9 +18,6 @@
       <OutputItemType>content</OutputItemType>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </ProjectReference>
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>Common\System\PlatformDetection.cs</Link>
-    </Compile>
   </ItemGroup>
   <Target Name="RenameTestAssembly" AfterTargets="AfterBuild">
     <Move SourceFiles="$(OutputPath)\System.Runtime.Loader.Noop.Assembly.dll" DestinationFiles="$(OutputPath)\System.Runtime.Loader.Noop.Assembly_test.dll" />
