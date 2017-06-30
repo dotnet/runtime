@@ -1950,6 +1950,9 @@ mono_assembly_metadata_foreach_custom_attr (MonoAssembly *assembly, MonoAssembly
 	 */
 
 	image = assembly->image;
+	/* Dynamic images would need to go through the AssemblyBuilder's
+	 * CustomAttributeBuilder array.  Going through the tables below
+	 * definitely won't work. */
 	g_assert (!image_is_dynamic (image));
 	idx = 1; /* there is only one assembly */
 	idx <<= MONO_CUSTOM_ATTR_BITS;

@@ -124,6 +124,9 @@ void
 mono_error_set_invalid_operation (MonoError *error, const char *msg_format, ...) MONO_ATTR_FORMAT_PRINTF(2,3);
 
 void
+mono_error_set_file_not_found (MonoError *error, const char *msg_format, ...) MONO_ATTR_FORMAT_PRINTF(2,3);
+
+void
 mono_error_set_exception_instance (MonoError *error, MonoException *exc);
 
 void

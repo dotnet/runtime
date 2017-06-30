@@ -1176,6 +1176,13 @@ mono_try_assembly_resolve_handle (MonoDomain *domain, MonoStringHandle fname, Mo
 	params [2] = &isrefonly;
 	MonoReflectionAssemblyHandle result = MONO_HANDLE_NEW (MonoReflectionAssembly, mono_runtime_invoke_checked (method, domain->domain, params, error));
 	ret = !MONO_HANDLE_IS_NULL (result) ? MONO_HANDLE_GETVAL (result, assembly) : NULL;
+
+	if (ret && !refonly && ret->ref_only) {
+		/* .NET Framework throws System.IO.FileNotFoundException in this case */
+		mono_error_set_file_not_found (error, "AssemblyResolveEvent handlers cannot return Assemblies loaded for reflection only");
+		ret = NULL;
+		goto leave;
+	}
 leave:
 	HANDLE_FUNCTION_RETURN_VAL (ret);
 }
