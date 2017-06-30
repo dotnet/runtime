@@ -30,6 +30,14 @@ public partial class ThreadPoolBoundHandleTests : FileCleanupTestBase
     {
         handle = handle ?? HandleFactory.CreateAsyncFileHandleForWrite(GetTestFilePath(null, memberName, lineNumber));
 
-        return ThreadPoolBoundHandle.BindHandle(handle);
+        try
+        {
+            return ThreadPoolBoundHandle.BindHandle(handle);
+        }
+        catch (ArgumentException ex) when (ex.GetType() == typeof(ArgumentException))
+        {
+            // TODO: Remove this try/catch, which is intended to help with debugging https://github.com/dotnet/corefx/issues/18058
+            throw new ArgumentException("Handle value: " + handle.DangerousGetHandle(), ex.ParamName, ex);
+        }
     }
 }
