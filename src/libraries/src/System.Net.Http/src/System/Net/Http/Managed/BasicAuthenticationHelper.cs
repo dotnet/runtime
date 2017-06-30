@@ -12,7 +12,7 @@ namespace System.Net.Http
         {
             if (credential.UserName.IndexOf(':') != -1)
             {
-                // TODO: What's the right way to handle this?
+                // TODO #21452: What's the right way to handle this?
                 throw new NotImplementedException($"Basic auth: can't handle ':' in username \"{credential.UserName}\"");
             }
 
@@ -21,7 +21,7 @@ namespace System.Net.Http
             {
                 if (credential.Domain.IndexOf(':') != -1)
                 {
-                    // TODO: What's the right way to handle this?
+                    // TODO #21452: What's the right way to handle this?
                     throw new NotImplementedException($"Basic auth: can't handle ':' in domain \"{credential.Domain}\"");
                 }
 

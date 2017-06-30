@@ -657,20 +657,7 @@ namespace System.Net.Http
                     requestContent.Headers.ContentLength == null)
                 {
                     // We have content, but neither Transfer-Encoding or Content-Length is set.
-                    // TODO: Tests expect Transfer-Encoding here always.
-                    // This seems wrong to me; if we can compute the content length,
-                    // why not use it instead of falling back to Transfer-Encoding?
-#if false
-                    if (requestContent.TryComputeLength(out contentLength))
-                    {
-                        // We know the content length, so set the header
-                        requestContent.Headers.ContentLength = contentLength;
-                    }
-                    else
-#endif
-                    {
-                        request.Headers.TransferEncodingChunked = true;
-                    }
+                    request.Headers.TransferEncodingChunked = true;
                 }
 
                 // Write request line
@@ -722,7 +709,8 @@ namespace System.Net.Http
                         (HttpContentWriteStream)new ChunkedEncodingWriteStream(this) :
                         (HttpContentWriteStream)new ContentLengthWriteStream(this));
 
-                    // TODO: CopyToAsync doesn't take a CancellationToken, how do we deal with Cancellation here?
+                    // TODO #21452: CopyToAsync doesn't take a CancellationToken, how do we deal with Cancellation here?
+                    // TODO #21452: We need to enable duplex communication, which means not waiting here until all data is sent.
                     await request.Content.CopyToAsync(stream, _transportContext).ConfigureAwait(false);
                     await stream.FinishAsync(cancellationToken).ConfigureAwait(false);
                 }
@@ -858,7 +846,7 @@ namespace System.Net.Http
 
                     // TryAddWithoutValidation will fail if the header name has trailing whitespace.
                     // So, trim it here.
-                    // TODO: Not clear to me from the RFC that this is really correct; RFC seems to indicate this should be an error.
+                    // TODO #21452: Not clear to me from the RFC that this is really correct; RFC seems to indicate this should be an error.
                     // However, tests claim this is important for compat in practice.
                     headerName = headerName.TrimEnd();
 
@@ -881,7 +869,7 @@ namespace System.Net.Http
                     response.Headers.TransferEncodingChunked == true ? new ChunkedEncodingReadStream(this) :
                     (HttpContentReadStream)new ConnectionCloseReadStream(this);
 
-                // TODO: When there's no response body, why is there any content here at all?
+                // TODO #21452: When there's no response body, why is there any content here at all?
                 // i.e. why not just set response.Content = null? This is legal for request bodies (e.g. GET).
                 // However, setting response.Content = null causes a bunch of tests to fail.
 
@@ -1113,7 +1101,7 @@ namespace System.Net.Http
             return _readBuffer[_readOffset++];
         }
 
-        // TODO: Revisit perf characteristics of this approach
+        // TODO #21452: Revisit perf characteristics of this approach
         private ValueTask<byte> ReadByteAsync(CancellationToken cancellationToken)
         {
             if (_readOffset < _readLength)
