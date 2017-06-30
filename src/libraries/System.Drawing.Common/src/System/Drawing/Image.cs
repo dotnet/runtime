@@ -9,8 +9,6 @@ using System.Drawing.Internal;
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
-using System.Security.Permissions;
 
 namespace System.Drawing
 {
@@ -67,20 +65,19 @@ namespace System.Drawing
         /// <summary>
         /// Creates an <see cref='Image'/> from the specified file.
         /// </summary>
-        public static Image FromFile(String filename)
-        {
-            return Image.FromFile(filename, false);
-        }
+        public static Image FromFile(string filename) => FromFile(filename, false);
 
-        public static Image FromFile(String filename,
-                                     bool useEmbeddedColorManagement)
+        public static Image FromFile(string filename, bool useEmbeddedColorManagement)
         {
             if (!File.Exists(filename))
             {
+                // Throw a more specific exception for invalid paths that are null or empty,
+                // contain invalid characters or are too long.
+                filename = Path.GetFullPath(filename);
                 throw new FileNotFoundException(filename);
             }
 
-            // GDI+ will read this file multiple times.  Get the fully qualified path
+            // GDI+ will read this file multiple times. Get the fully qualified path
             // so if our app changes default directory we won't get an error
             filename = Path.GetFullPath(filename);
 

@@ -31,7 +31,6 @@ namespace System.Drawing.Tests
         }
 
         [Fact]
-        [ActiveIssue(21747, TestPlatforms.Windows)]
         public void FromFile_NullFileName_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("path", () => Image.FromFile(null));
@@ -39,7 +38,6 @@ namespace System.Drawing.Tests
         }
 
         [Fact]
-        [ActiveIssue(21747, TestPlatforms.Windows)]
         public void FromFile_EmptyFileName_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentException>("path", null, () => Image.FromFile(string.Empty));
@@ -47,7 +45,6 @@ namespace System.Drawing.Tests
         }
 
         [Fact]
-        [ActiveIssue(21747, TestPlatforms.Windows)]
         public void FromFile_LongFile_ThrowsPathTooLongException()
         {
             string fileName = new string('a', 261);
@@ -57,7 +54,6 @@ namespace System.Drawing.Tests
         }
 
         [Fact]
-        [ActiveIssue(21747, TestPlatforms.Windows)]
         public void FromFile_NoSuchFile_ThrowsFileNotFoundException()
         {
             Assert.Throws<FileNotFoundException>(() => Image.FromFile("NoSuchFile"));
