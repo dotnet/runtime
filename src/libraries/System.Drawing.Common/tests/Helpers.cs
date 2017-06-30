@@ -3,6 +3,7 @@
 
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Text;
 using Xunit;
 using Xunit.Sdk;
 
@@ -17,19 +18,52 @@ namespace System.Drawing.Tests
 
         public static void VerifyBitmap(Bitmap bitmap, Color[][] colors)
         {
-            for (int y = 0; y < colors.Length; y++)
+            try
             {
-                for (int x = 0; x < colors[y].Length; x++)
+                for (int y = 0; y < colors.Length; y++)
                 {
-                    Color expectedColor = Color.FromArgb(colors[y][x].ToArgb());
-                    Color actualColor = bitmap.GetPixel(x, y);
-
-                    if (expectedColor != actualColor)
+                    for (int x = 0; x < colors[y].Length; x++)
                     {
-                        throw new AssertActualExpectedException(expectedColor, actualColor, $"{x},{y}");
+                        Color expectedColor = Color.FromArgb(colors[y][x].ToArgb());
+                        Color actualColor = bitmap.GetPixel(x, y);
+
+                        if (expectedColor != actualColor)
+                        {
+                            throw new AssertActualExpectedException(expectedColor, actualColor, $"{x},{y}");
+                        }
                     }
                 }
             }
+            catch (AssertActualExpectedException ex)
+            {
+                var actualStringBuilder = new StringBuilder();
+                var expectedStringBuilder = new StringBuilder();
+
+                actualStringBuilder.AppendLine();
+                expectedStringBuilder.AppendLine();
+
+                for (int y = 0; y < bitmap.Height; y++)
+                {
+                    for (int x = 0; x < bitmap.Width; x++)
+                    {
+                        PrintColor(actualStringBuilder, bitmap.GetPixel(x, y));
+                        PrintColor(expectedStringBuilder, colors[y][x]);
+                        if (x != bitmap.Width - 1)
+                        {
+                            actualStringBuilder.Append(", ");
+                            expectedStringBuilder.Append(", ");
+                        }
+                    }
+                    actualStringBuilder.AppendLine();
+                    expectedStringBuilder.AppendLine();
+                }
+                throw new AssertActualExpectedException(expectedStringBuilder.ToString(), actualStringBuilder.ToString(), $"Bitmaps were different at {ex.UserMessage}.");
+            }
+        }
+
+        private static void PrintColor(StringBuilder stringBuilder, Color color)
+        {
+            stringBuilder.Append($"Color.FromArgb({color.A}, {color.R}, {color.G}, {color.B})");
         }
 
         private static Rectangle GetRectangle(RECT rect)
