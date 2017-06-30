@@ -146,7 +146,7 @@ namespace System.Runtime.InteropServices.Tests
             finally
             {
                 handle.Free();
-                if (other is GCHandle otherHandle)
+                if (other is GCHandle otherHandle && !expected)
                 {
                     otherHandle.Free();
                 }
