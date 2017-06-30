@@ -2133,7 +2133,7 @@ public:
 
     enum class VisitResult
     {
-        Abort = false,
+        Abort    = false,
         Continue = true
     };
 
