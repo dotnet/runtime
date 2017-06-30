@@ -2148,7 +2148,12 @@ public:
     //     });
     //
     // This function is generally more efficient that the operand iterator and should be preferred over that API for
-    // hot code.
+    // hot code, as it affords better opportunities for inlining and acheives shorter dynamic path lengths when
+    // deciding how operands need to be accessed.
+    //
+    // Note that this function does not respect `GTF_REVERSE_OPS` and `gtEvalSizeFirst`. This is always safe in LIR,
+    // but may be dangerous in HIR if for some reason you need to visit operands in the order in which they will
+    // execute.
     template <typename TVisitor>
     void VisitOperands(TVisitor visitor);
 
