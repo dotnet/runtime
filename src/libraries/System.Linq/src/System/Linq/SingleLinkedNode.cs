@@ -78,7 +78,7 @@ namespace System.Linq
         /// </summary>
         /// <param name="index">The logical index.</param>
         /// <remarks>
-        /// The caller should make sure <paramref name="index"> is less than this node's count.
+        /// The caller should make sure <paramref name="index"/> is less than this node's count.
         /// </remarks>
         public SingleLinkedNode<TSource> GetNode(int index)
         {
