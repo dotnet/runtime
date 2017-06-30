@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.Drawing
@@ -41,30 +42,12 @@ namespace System.Drawing
         {
             get
             {
-                Contract.Ensures(Contract.Result<Icon>() != null);
-
-                if (s_shield == null)
-                {
-                    try
-                    {
-                        // we hard-code size here, to prevent breaking change
-                        // the size of _shield before this change is always 32 * 32  
-                        IntPtr hIcon = IntPtr.Zero;
-                        int result = SafeNativeMethods.LoadIconWithScaleDown(NativeMethods.NullHandleRef, SafeNativeMethods.IDI_SHIELD, 32, 32, ref hIcon);
-
-                        if (result == 0)
-                            s_shield = new Icon(hIcon);
-                    }
-                    catch
-                    {
-                        // we don't want to throw exception here.
-                        // If there is an exception, we will load an icon from file ShieldIcon.ico
-                    }
-                }
                 if (s_shield == null)
                 {
                     s_shield = new Icon(typeof(SystemIcons), "ShieldIcon.ico");
+                    Debug.Assert(s_shield != null, "ShieldIcon.ico must be present as an embedded resource in System.Drawing.Common.");
                 }
+                
                 return s_shield;
             }
         }
