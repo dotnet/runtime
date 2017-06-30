@@ -10,7 +10,7 @@ All .NET Core assemblies are [strong-named](http://msdn.microsoft.com/en-us/libr
 ##  FAQ
 
 ### 1. Microsoft strong-names their assemblies, should I?
-For the most part, the majority of applications and libraries do not need strong-names. Strong-names are left over from previous eras of .NET where [sandboxing](http://en.wikipedia.org/wiki/Sandbox_(computer_security)) needed to differentiate between code that was trusted, versus code that was untrusted. However in recent years, sandboxing via AppDomains, especially to [isolate ASP.NET web applications] (http://support.microsoft.com/kb/2698981), is no longer guaranteed and is not recommended. 
+For the most part, the majority of applications and libraries do not need strong-names. Strong-names are left over from previous eras of .NET where [sandboxing](http://en.wikipedia.org/wiki/Sandbox_(computer_security)) needed to differentiate between code that was trusted, versus code that was untrusted. However in recent years, sandboxing via AppDomains, especially to [isolate ASP.NET web applications](http://support.microsoft.com/kb/2698981), is no longer guaranteed and is not recommended. 
 
 However, strong-names are still required in some rare situations, most of which are called out on this page: [Strong-Named Assemblies](http://msdn.microsoft.com/en-us/library/wd40t7ad.aspx).
 
