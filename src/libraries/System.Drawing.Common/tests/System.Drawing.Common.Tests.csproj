@@ -19,6 +19,7 @@
     <Compile Include="GraphicsTests.cs" />
     <Compile Include="Helpers.cs" />
     <Compile Include="IconTests.cs" />
+    <Compile Include="ImageTests.cs" />
     <Compile Include="PensTests.cs" />
     <Compile Include="Imaging\BitmapDataTests.cs" />
     <Compile Include="Imaging\ColorMapTests.cs" />
@@ -56,6 +57,9 @@
     </Compile>
     <Compile Include="$(CommonTestPath)\System\ThreadCultureChange.cs">
       <Link>Common\System\ThreadCultureChange.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
+      <Link>Common\System\IO\TempFile.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup>
