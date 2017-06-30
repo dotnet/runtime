@@ -3556,6 +3556,16 @@ static int ComputeAvailableSrcCount(GenTree* node)
 }
 #endif // DEBUG
 
+static GenTree* GetFirstOperand(GenTree* node)
+{
+    GenTree* firstOperand = nullptr;
+    node->VisitOperands([&firstOperand](GenTree* operand) -> GenTree::VisitResult {
+        firstOperand = operand;
+        return GenTree::VisitResult::Abort;
+    });
+    return firstOperand;
+}
+
 void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
                                           BasicBlock*               block,
                                           LocationInfoListNodePool& listNodePool,
@@ -3692,12 +3702,11 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
 
         // Contained nodes map to the concatenated lists of their operands.
         LocationInfoList locationInfoList;
-        for (GenTree* op : tree->Operands())
-        {
+        tree->VisitOperands([&](GenTree* op) -> GenTree::VisitResult {
             if (!op->gtLsraInfo.definesAnyRegisters)
             {
                 assert(ComputeOperandDstCount(op) == 0);
-                continue;
+                return GenTree::VisitResult::Continue;
             }
 
             LocationInfoList operandList;
@@ -3705,7 +3714,8 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
             assert(removed);
 
             locationInfoList.Append(operandList);
-        }
+            return GenTree::VisitResult::Continue;
+        });
 
         if (!locationInfoList.IsEmpty())
         {
@@ -3755,7 +3765,7 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
             {
                 // Get the location info for the register defined by the first operand.
                 LocationInfoList operandDefs;
-                bool             found = operandToLocationInfoMap.TryGetValue(*(tree->OperandsBegin()), &operandDefs);
+                bool             found = operandToLocationInfoMap.TryGetValue(GetFirstOperand(tree), &operandDefs);
                 assert(found);
 
                 // Since we only expect to consume one register, we should only have a single register to
@@ -3902,7 +3912,7 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
 
         // Get the register information for the first operand of the node.
         LocationInfoList operandDefs;
-        bool             found = operandToLocationInfoMap.TryGetValue(*(tree->OperandsBegin()), &operandDefs);
+        bool             found = operandToLocationInfoMap.TryGetValue(GetFirstOperand(tree), &operandDefs);
         assert(found);
 
         // Preference the destination to the interval of the first register defined by the first operand.
@@ -3927,176 +3937,153 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
     int internalCount = buildInternalRegisterDefsForNode(tree, currentLoc, internalRefs DEBUG_ARG(minRegCount));
 
     // pop all ref'd tree temps
-    GenTreeOperandIterator iterator = tree->OperandsBegin();
-
-    // `operandDefs` holds the list of `LocationInfo` values for the registers defined by the current
-    // operand. `operandDefsIterator` points to the current `LocationInfo` value in `operandDefs`.
-    LocationInfoList      operandDefs;
-    LocationInfoListNode* operandDefsIterator = operandDefs.End();
-    for (int useIndex = 0; useIndex < consume; useIndex++)
-    {
-        // If we've consumed all of the registers defined by the current operand, advance to the next
-        // operand that defines any registers.
-        if (operandDefsIterator == operandDefs.End())
+    tree->VisitOperands([&](GenTree* operand) -> GenTree::VisitResult {
+        // Skip operands that do not define any registers, whether directly or indirectly.
+        if (!operand->gtLsraInfo.definesAnyRegisters)
         {
-            // Skip operands that do not define any registers, whether directly or indirectly.
-            GenTree* operand;
-            do
-            {
-                assert(iterator != tree->OperandsEnd());
-                operand = *iterator;
-
-                ++iterator;
-            } while (!operand->gtLsraInfo.definesAnyRegisters);
-
-            // If we have already processed a previous operand, return its `LocationInfo` list to the
-            // pool.
-            if (useIndex > 0)
-            {
-                assert(!operandDefs.IsEmpty());
-                listNodePool.ReturnNodes(operandDefs);
-            }
-
-            // Remove the list of registers defined by the current operand from the map. Note that this
-            // is only correct because tree nodes are singly-used: if this property ever changes (e.g.
-            // if tree nodes are eventually allowed to be multiply-used), then the removal is only
-            // correct at the last use.
-            bool removed = operandToLocationInfoMap.TryRemove(operand, &operandDefs);
-            assert(removed);
-
-            // Move the operand def iterator to the `LocationInfo` for the first register defined by the
-            // current operand.
-            operandDefsIterator = operandDefs.Begin();
-            assert(operandDefsIterator != operandDefs.End());
+            return GenTree::VisitResult::Continue;
         }
 
-        LocationInfo& locInfo = *static_cast<LocationInfo*>(operandDefsIterator);
-        operandDefsIterator   = operandDefsIterator->Next();
+        // Remove the list of registers defined by the current operand from the map. Note that this
+        // is only correct because tree nodes are singly-used: if this property ever changes (e.g.
+        // if tree nodes are eventually allowed to be multiply-used), then the removal is only
+        // correct at the last use.
+        LocationInfoList operandDefs;
+        bool             removed = operandToLocationInfoMap.TryRemove(operand, &operandDefs);
+        assert(removed);
+        assert(!operandDefs.IsEmpty());
 
-        JITDUMP("t%u ", locInfo.loc);
+        LocationInfoListNode* const operandDefsEnd = operandDefs.End();
+        for (LocationInfoListNode* operandDefsIterator = operandDefs.Begin(); operandDefsIterator != operandDefsEnd;
+             operandDefsIterator                       = operandDefsIterator->Next())
+        {
+            LocationInfo& locInfo = *static_cast<LocationInfo*>(operandDefsIterator);
 
-        // for interstitial tree temps, a use is always last and end;
-        // this is  set by default in newRefPosition
-        GenTree* useNode = locInfo.treeNode;
-        assert(useNode != nullptr);
-        var_types type        = useNode->TypeGet();
-        regMaskTP candidates  = getUseCandidates(useNode);
-        Interval* i           = locInfo.interval;
-        unsigned  multiRegIdx = locInfo.multiRegIdx;
+            JITDUMP("t%u ", locInfo.loc);
+
+            // for interstitial tree temps, a use is always last and end;
+            // this is  set by default in newRefPosition
+            GenTree* useNode = locInfo.treeNode;
+            assert(useNode != nullptr);
+            var_types type        = useNode->TypeGet();
+            regMaskTP candidates  = getUseCandidates(useNode);
+            Interval* i           = locInfo.interval;
+            unsigned  multiRegIdx = locInfo.multiRegIdx;
 
 #ifdef FEATURE_SIMD
-        // In case of multi-reg call store to a local, there won't be any mismatch of
-        // use candidates with the type of the tree node.
-        if (tree->OperIsLocalStore() && varDefInterval == nullptr && !useNode->IsMultiRegCall())
-        {
-            // This is a non-candidate store.  If this is a SIMD type, the use candidates
-            // may not match the type of the tree node.  If that is the case, change the
-            // type of the tree node to match, so that we do the right kind of store.
-            if ((candidates & allRegs(tree->gtType)) == RBM_NONE)
+            // In case of multi-reg call store to a local, there won't be any mismatch of
+            // use candidates with the type of the tree node.
+            if (tree->OperIsLocalStore() && varDefInterval == nullptr && !useNode->IsMultiRegCall())
             {
-                noway_assert((candidates & allRegs(useNode->gtType)) != RBM_NONE);
-                // Currently, the only case where this should happen is for a TYP_LONG
-                // source and a TYP_SIMD8 target.
-                assert((useNode->gtType == TYP_LONG && tree->gtType == TYP_SIMD8) ||
-                       (useNode->gtType == TYP_SIMD8 && tree->gtType == TYP_LONG));
-                tree->gtType = useNode->gtType;
+                // This is a non-candidate store.  If this is a SIMD type, the use candidates
+                // may not match the type of the tree node.  If that is the case, change the
+                // type of the tree node to match, so that we do the right kind of store.
+                if ((candidates & allRegs(tree->gtType)) == RBM_NONE)
+                {
+                    noway_assert((candidates & allRegs(useNode->gtType)) != RBM_NONE);
+                    // Currently, the only case where this should happen is for a TYP_LONG
+                    // source and a TYP_SIMD8 target.
+                    assert((useNode->gtType == TYP_LONG && tree->gtType == TYP_SIMD8) ||
+                           (useNode->gtType == TYP_SIMD8 && tree->gtType == TYP_LONG));
+                    tree->gtType = useNode->gtType;
+                }
             }
-        }
 #endif // FEATURE_SIMD
 
-        if (useNode->gtLsraInfo.isTgtPref)
-        {
-            prefSrcInterval = i;
-        }
-
-        regMaskTP fixedAssignment = fixedCandidateMask(type, candidates);
-        if (fixedAssignment != RBM_NONE)
-        {
-            candidates = fixedAssignment;
-        }
-
-        const bool regOptionalAtUse = useNode->IsRegOptional();
-        const bool delayRegFree     = (hasDelayFreeSrc && useNode->gtLsraInfo.isDelayFree);
-
-        assert(isCandidateLocalRef(useNode) == i->isLocalVar);
-        if (!i->isLocalVar)
-        {
-            // For non-localVar uses we record nothing,
-            // as nothing needs to be written back to the tree.
-            useNode = nullptr;
-        }
-
-#ifdef DEBUG
-        // If delayRegFree, then Use will interfere with the destination of
-        // the consuming node.  Therefore, we also need add the kill set of
-        // consuming node to minRegCount.
-        //
-        // For example consider the following IR on x86, where v01 and v02
-        // are method args coming in ecx and edx respectively.
-        //   GT_DIV(v01, v02)
-        //
-        // For GT_DIV minRegCount will be 3 without adding kill set
-        // of GT_DIV node.
-        //
-        // Assume further JitStressRegs=2, which would constrain
-        // candidates to callee trashable regs { eax, ecx, edx } on
-        // use positions of v01 and v02.  LSRA allocates ecx for v01.
-        // Use position of v02 cannot be allocated a regs since it
-        // is marked delay-reg free and {eax,edx} are getting killed
-        // before the def of GT_DIV.  For this reason, minRegCount
-        // for Use position of v02 also needs to take into account
-        // of kill set of its consuming node.
-        unsigned minRegCountForUsePos = minRegCount;
-        if (delayRegFree)
-        {
-            regMaskTP killMask = getKillSetForNode(tree);
-            if (killMask != RBM_NONE)
+            if (useNode->gtLsraInfo.isTgtPref)
             {
-                minRegCountForUsePos += genCountBits(killMask);
+                prefSrcInterval = i;
             }
-        }
-#endif // DEBUG
 
-        RefPosition* pos;
-        if ((candidates & allRegs(i->registerType)) == 0)
-        {
-            // This should only occur where we've got a type mismatch due to SIMD
-            // pointer-size types that are passed & returned as longs.
-            i->hasConflictingDefUse = true;
+            regMaskTP fixedAssignment = fixedCandidateMask(type, candidates);
             if (fixedAssignment != RBM_NONE)
             {
-                // Explicitly insert a FixedRefPosition and fake the candidates, because otherwise newRefPosition
-                // will complain about the types not matching.
-                regNumber    physicalReg = genRegNumFromMask(fixedAssignment);
-                RefPosition* pos = newRefPosition(physicalReg, currentLoc, RefTypeFixedReg, nullptr, fixedAssignment);
+                candidates = fixedAssignment;
             }
-            pos = newRefPosition(i, currentLoc, RefTypeUse, useNode, allRegs(i->registerType),
-                                 multiRegIdx DEBUG_ARG(minRegCountForUsePos));
-            pos->registerAssignment = candidates;
-        }
-        else
-        {
-            pos = newRefPosition(i, currentLoc, RefTypeUse, useNode, candidates,
-                                 multiRegIdx DEBUG_ARG(minRegCountForUsePos));
+
+            const bool regOptionalAtUse = useNode->IsRegOptional();
+            const bool delayRegFree     = (hasDelayFreeSrc && useNode->gtLsraInfo.isDelayFree);
+
+            assert(isCandidateLocalRef(useNode) == i->isLocalVar);
+            if (!i->isLocalVar)
+            {
+                // For non-localVar uses we record nothing,
+                // as nothing needs to be written back to the tree.
+                useNode = nullptr;
+            }
+
+#ifdef DEBUG
+            // If delayRegFree, then Use will interfere with the destination of
+            // the consuming node.  Therefore, we also need add the kill set of
+            // consuming node to minRegCount.
+            //
+            // For example consider the following IR on x86, where v01 and v02
+            // are method args coming in ecx and edx respectively.
+            //   GT_DIV(v01, v02)
+            //
+            // For GT_DIV minRegCount will be 3 without adding kill set
+            // of GT_DIV node.
+            //
+            // Assume further JitStressRegs=2, which would constrain
+            // candidates to callee trashable regs { eax, ecx, edx } on
+            // use positions of v01 and v02.  LSRA allocates ecx for v01.
+            // Use position of v02 cannot be allocated a regs since it
+            // is marked delay-reg free and {eax,edx} are getting killed
+            // before the def of GT_DIV.  For this reason, minRegCount
+            // for Use position of v02 also needs to take into account
+            // of kill set of its consuming node.
+            unsigned minRegCountForUsePos = minRegCount;
+            if (delayRegFree)
+            {
+                regMaskTP killMask = getKillSetForNode(tree);
+                if (killMask != RBM_NONE)
+                {
+                    minRegCountForUsePos += genCountBits(killMask);
+                }
+            }
+#endif // DEBUG
+
+            RefPosition* pos;
+            if ((candidates & allRegs(i->registerType)) == 0)
+            {
+                // This should only occur where we've got a type mismatch due to SIMD
+                // pointer-size types that are passed & returned as longs.
+                i->hasConflictingDefUse = true;
+                if (fixedAssignment != RBM_NONE)
+                {
+                    // Explicitly insert a FixedRefPosition and fake the candidates, because otherwise newRefPosition
+                    // will complain about the types not matching.
+                    regNumber    physicalReg = genRegNumFromMask(fixedAssignment);
+                    RefPosition* pos =
+                        newRefPosition(physicalReg, currentLoc, RefTypeFixedReg, nullptr, fixedAssignment);
+                }
+                pos = newRefPosition(i, currentLoc, RefTypeUse, useNode, allRegs(i->registerType),
+                                     multiRegIdx DEBUG_ARG(minRegCountForUsePos));
+                pos->registerAssignment = candidates;
+            }
+            else
+            {
+                pos = newRefPosition(i, currentLoc, RefTypeUse, useNode, candidates,
+                                     multiRegIdx DEBUG_ARG(minRegCountForUsePos));
+            }
+
+            if (delayRegFree)
+            {
+                hasDelayFreeSrc   = true;
+                pos->delayRegFree = true;
+            }
+
+            if (regOptionalAtUse)
+            {
+                pos->setAllocateIfProfitable(true);
+            }
         }
 
-        if (delayRegFree)
-        {
-            hasDelayFreeSrc   = true;
-            pos->delayRegFree = true;
-        }
-
-        if (regOptionalAtUse)
-        {
-            pos->setAllocateIfProfitable(true);
-        }
-    }
-    JITDUMP("\n");
-
-    if (!operandDefs.IsEmpty())
-    {
         listNodePool.ReturnNodes(operandDefs);
-    }
+
+        return GenTree::VisitResult::Continue;
+    });
+    JITDUMP("\n");
 
     buildInternalRegisterUsesForNode(tree, currentLoc, internalRefs, internalCount DEBUG_ARG(minRegCount));
 
