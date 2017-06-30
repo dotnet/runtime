@@ -8,7 +8,7 @@ using Xunit;
 namespace System.IO
 {
     /// <summary>
-    /// Represents a temporary file.  Creating an instance creates a file at the specified path,
+    /// Represents a temporary file. Creating an instance creates a file at the specified path,
     /// and disposing the instance deletes the file.
     /// </summary>
     public sealed class TempFile : IDisposable
@@ -16,33 +16,35 @@ namespace System.IO
         /// <summary>Gets the created file's path.</summary>
         public string Path { get; }
 
-        public TempFile(string path, long length = 0)
+        public TempFile(string path, long length = 0) : this(path, length > -1 ? new byte[length] : null)
+        {
+        }
+
+        public TempFile(string path, byte[] data)
         {
             Path = path;
 
-            if (length > -1)
-                File.WriteAllBytes(path, new byte[length]);
+            if (data != null)
+            {
+                File.WriteAllBytes(path, data);
+            }
         }
 
-        ~TempFile() { DeleteFile(); }
+        ~TempFile() => DeleteFile();
+
+        public static TempFile Create(byte[] bytes, [CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0)
+        {
+            return new TempFile(GetFilePath(memberName, lineNumber), bytes);
+        }
 
         public static TempFile Create(long length = -1, [CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0)
         {
-            string file = string.Format("{0}_{1}_{2}", System.IO.Path.GetRandomFileName(), memberName, lineNumber);
-            string path = System.IO.Path.Combine(System.IO.Path.GetTempPath(), file);
-
-            return new TempFile(path, length);
+            return new TempFile(GetFilePath(memberName, lineNumber), length);
         }
 
-        public void AssertExists()
-        {
-            Assert.True(File.Exists(Path));
-        }
+        public void AssertExists() => Assert.True(File.Exists(Path));
 
-        public string ReadAllText()
-        {
-            return File.ReadAllText(Path);
-        }
+        public string ReadAllText() => File.ReadAllText(Path);
 
         public void Dispose()
         {
@@ -54,6 +56,12 @@ namespace System.IO
         {
             try { File.Delete(Path); }
             catch { /* Ignore exceptions on disposal paths */ }
+        }
+
+        private static string GetFilePath(string memberName, int lineNumber)
+        {
+            string file = $"{IO.Path.GetRandomFileName()}_{memberName}_{lineNumber}";
+            return IO.Path.Combine(IO.Path.GetTempPath(), file);
         }
     }
 }
