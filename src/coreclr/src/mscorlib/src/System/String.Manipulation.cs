@@ -24,8 +24,8 @@ namespace System
             }
             Contract.EndContractBlock();
 
-            fixed (char* pDest = &dest.m_firstChar)
-            fixed (char* pSrc = &src.m_firstChar)
+            fixed (char* pDest = &dest._firstChar)
+            fixed (char* pSrc = &src._firstChar)
             {
                 wstrcpy(pDest + destPos, pSrc, src.Length);
             }
@@ -508,11 +508,11 @@ namespace System
             String result = FastAllocateString(newLength);
             unsafe
             {
-                fixed (char* srcThis = &m_firstChar)
+                fixed (char* srcThis = &_firstChar)
                 {
-                    fixed (char* srcInsert = &value.m_firstChar)
+                    fixed (char* srcInsert = &value._firstChar)
                     {
-                        fixed (char* dst = &result.m_firstChar)
+                        fixed (char* dst = &result._firstChar)
                         {
                             wstrcpy(dst, srcThis, startIndex);
                             wstrcpy(dst + startIndex, srcInsert, insertLength);
@@ -566,7 +566,7 @@ namespace System
         public unsafe static string Join(string separator, params object[] values)
         {
             separator = separator ?? string.Empty;
-            fixed (char* pSeparator = &separator.m_firstChar)
+            fixed (char* pSeparator = &separator._firstChar)
             {
                 // Defer argument validation to the internal function
                 return JoinCore(pSeparator, separator.Length, values);
@@ -576,7 +576,7 @@ namespace System
         public unsafe static string Join<T>(string separator, IEnumerable<T> values)
         {
             separator = separator ?? string.Empty;
-            fixed (char* pSeparator = &separator.m_firstChar)
+            fixed (char* pSeparator = &separator._firstChar)
             {
                 // Defer argument validation to the internal function
                 return JoinCore(pSeparator, separator.Length, values);
@@ -625,7 +625,7 @@ namespace System
         public unsafe static string Join(string separator, string[] value, int startIndex, int count)
         {
             separator = separator ?? string.Empty;
-            fixed (char* pSeparator = &separator.m_firstChar)
+            fixed (char* pSeparator = &separator._firstChar)
             {
                 // Defer argument validation to the internal function
                 return JoinCore(pSeparator, separator.Length, value, startIndex, count);
@@ -801,7 +801,7 @@ namespace System
                 if (i < end - 1)
                 {
                     // Fill in the separator.
-                    fixed (char* pResult = &result.m_firstChar)
+                    fixed (char* pResult = &result._firstChar)
                     {
                         // If we are called from the char-based overload, we will not
                         // want to call MemoryCopy each time we fill in the separator. So
@@ -848,11 +848,11 @@ namespace System
             String result = FastAllocateString(totalWidth);
             unsafe
             {
-                fixed (char* dst = &result.m_firstChar)
+                fixed (char* dst = &result._firstChar)
                 {
                     for (int i = 0; i < count; i++)
                         dst[i] = paddingChar;
-                    fixed (char* src = &m_firstChar)
+                    fixed (char* src = &_firstChar)
                     {
                         wstrcpy(dst + count, src, oldLength);
                     }
@@ -879,9 +879,9 @@ namespace System
             String result = FastAllocateString(totalWidth);
             unsafe
             {
-                fixed (char* dst = &result.m_firstChar)
+                fixed (char* dst = &result._firstChar)
                 {
-                    fixed (char* src = &m_firstChar)
+                    fixed (char* src = &_firstChar)
                     {
                         wstrcpy(dst, src, oldLength);
                     }
@@ -916,9 +916,9 @@ namespace System
             String result = FastAllocateString(newLength);
             unsafe
             {
-                fixed (char* src = &m_firstChar)
+                fixed (char* src = &_firstChar)
                 {
-                    fixed (char* dst = &result.m_firstChar)
+                    fixed (char* dst = &result._firstChar)
                     {
                         wstrcpy(dst, src, startIndex);
                         wstrcpy(dst + startIndex, src + startIndex + count, newLength - startIndex);
@@ -1055,7 +1055,7 @@ namespace System
             {
                 int remainingLength = Length;
 
-                fixed (char* pChars = &m_firstChar)
+                fixed (char* pChars = &_firstChar)
                 {
                     char* pSrc = pChars;
 
@@ -1076,9 +1076,9 @@ namespace System
 
                 String result = FastAllocateString(Length);
 
-                fixed (char* pChars = &m_firstChar)
+                fixed (char* pChars = &_firstChar)
                 {
-                    fixed (char* pResult = &result.m_firstChar)
+                    fixed (char* pResult = &result._firstChar)
                     {
                         int copyLength = Length - remainingLength;
 
@@ -1436,7 +1436,7 @@ namespace System
 
             if (separators == null || separatorsLength == 0)
             {
-                fixed (char* pwzChars = &m_firstChar)
+                fixed (char* pwzChars = &_firstChar)
                 {
                     //If they passed null or an empty string, look for whitespace.
                     for (int i = 0; i < Length && foundCount < sepList.Length; i++)
@@ -1452,7 +1452,7 @@ namespace System
             {
                 int sepListCount = sepList.Length;
                 //If they passed in a string of chars, actually look for those chars.
-                fixed (char* pwzChars = &m_firstChar)
+                fixed (char* pwzChars = &_firstChar)
                 {
                     for (int i = 0; i < Length && foundCount < sepListCount; i++)
                     {
@@ -1485,7 +1485,7 @@ namespace System
             int sepListCount = sepList.Length;
             int currentSepLength = separator.Length;
 
-            fixed (char* pwzChars = &m_firstChar)
+            fixed (char* pwzChars = &_firstChar)
             {
                 for (int i = 0; i < Length && foundCount < sepListCount; i++)
                 {
@@ -1519,7 +1519,7 @@ namespace System
             int sepListCount = sepList.Length;
             int sepCount = separators.Length;
 
-            fixed (char* pwzChars = &m_firstChar)
+            fixed (char* pwzChars = &_firstChar)
             {
                 for (int i = 0; i < Length && foundCount < sepListCount; i++)
                 {
@@ -1602,8 +1602,8 @@ namespace System
 
             String result = FastAllocateString(length);
 
-            fixed (char* dest = &result.m_firstChar)
-            fixed (char* src = &m_firstChar)
+            fixed (char* dest = &result._firstChar)
+            fixed (char* src = &_firstChar)
             {
                 wstrcpy(dest, src + startIndex, length);
             }

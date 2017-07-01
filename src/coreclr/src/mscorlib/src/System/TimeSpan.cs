@@ -378,14 +378,7 @@ namespace System
         }
         public String ToString(String format, IFormatProvider formatProvider)
         {
-            if (LegacyMode)
-            {
-                return TimeSpanFormat.Format(this, null, null);
-            }
-            else
-            {
-                return TimeSpanFormat.Format(this, format, formatProvider);
-            }
+            return TimeSpanFormat.Format(this, format, formatProvider);
         }
         #endregion
 
@@ -481,60 +474,6 @@ namespace System
         public static bool operator >=(TimeSpan t1, TimeSpan t2)
         {
             return t1._ticks >= t2._ticks;
-        }
-
-
-        //
-        // In .NET Framework v1.0 - v3.5 System.TimeSpan did not implement IFormattable
-        //    The composite formatter ignores format specifiers on types that do not implement
-        //    IFormattable, so the following code would 'just work' by using TimeSpan.ToString()
-        //    under the hood:
-        //        String.Format("{0:_someRandomFormatString_}", myTimeSpan);      
-        //    
-        // In .NET Framework v4.0 System.TimeSpan implements IFormattable.  This causes the 
-        //    composite formatter to call TimeSpan.ToString(string format, FormatProvider provider)
-        //    and pass in "_someRandomFormatString_" for the format parameter.  When the format 
-        //    parameter is invalid a FormatException is thrown.
-        //
-        // The 'NetFx40_TimeSpanLegacyFormatMode' per-AppDomain configuration option and the 'TimeSpan_LegacyFormatMode' 
-        // process-wide configuration option allows applications to run with the v1.0 - v3.5 legacy behavior.  When
-        // either switch is specified the format parameter is ignored and the default output is returned.
-        //
-        // There are three ways to use the process-wide configuration option:
-        //
-        // 1) Config file (MyApp.exe.config)
-        //        <?xml version ="1.0"?>
-        //        <configuration>
-        //         <runtime>
-        //          <TimeSpan_LegacyFormatMode enabled="true"/>
-        //         </runtime>
-        //        </configuration>
-        // 2) Environment variable
-        //        set COMPlus_TimeSpan_LegacyFormatMode=1
-        // 3) RegistryKey
-        //        [HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\.NETFramework]
-        //        "TimeSpan_LegacyFormatMode"=dword:00000001
-        //
-        private static bool GetLegacyFormatMode()
-        {
-            return false;
-        }
-
-        private static volatile bool _legacyConfigChecked;
-        private static volatile bool _legacyMode;
-
-        private static bool LegacyMode
-        {
-            get
-            {
-                if (!_legacyConfigChecked)
-                {
-                    // no need to lock - idempotent
-                    _legacyMode = GetLegacyFormatMode();
-                    _legacyConfigChecked = true;
-                }
-                return _legacyMode;
-            }
         }
     }
 }
