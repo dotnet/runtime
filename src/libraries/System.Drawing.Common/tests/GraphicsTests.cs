@@ -343,7 +343,7 @@ namespace System.Drawing.Tests
             yield return new object[] { CompositingMode.SourceOver, Color.FromArgb(220, 185, 185, 185) };
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(CompositingMode_TestData))]
         public void CompositingMode_Set_GetReturnsExpected(CompositingMode mode, Color expectedOverlap)
         {
@@ -373,7 +373,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(CompositingMode.SourceOver - 1)]
         [InlineData(CompositingMode.SourceCopy + 1)]
         public void CompositingMode_SetInvalid_ThrowsInvalidEnumArgumentException(CompositingMode compositingMode)
@@ -385,7 +385,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void CompositingMode_GetSetWhenBusy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -404,7 +404,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void CompositingMode_GetSetWhenDisposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -443,7 +443,7 @@ namespace System.Drawing.Tests
             yield return new object[] { CompositingQuality.HighQuality, gammaCorrectedColors };
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(CompositingQuality_TestData))]
         public void CompositingQuality_Set_GetReturnsExpected(CompositingQuality quality, Color[][] expectedIntersectionColor)
         {
@@ -465,7 +465,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(CompositingQuality.Invalid - 1)]
         [InlineData(CompositingQuality.AssumeLinear + 1)]
         public void CompositingQuality_SetInvalid_ThrowsInvalidEnumArgumentException(CompositingQuality compositingQuality)
@@ -477,7 +477,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void CompositingQuality_GetSetWhenBusy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -496,7 +496,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void CompositingQuality_GetSetWhenDisposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -539,7 +539,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void DpiX_GetWhenBusy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -557,7 +557,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void DpiX_GetWhenDisposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -569,7 +569,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void DpiY_GetWhenBusy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -587,7 +587,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void DpiY_GetWhenDisposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -599,7 +599,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(FlushIntention.Flush)]
         [InlineData(FlushIntention.Sync)]
         [InlineData(FlushIntention.Flush - 1)] // Not in the range of valid values of FlushIntention.
@@ -620,7 +620,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Flush_Busy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -639,7 +639,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Flush_Disposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -652,7 +652,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(InterpolationMode.Bicubic, InterpolationMode.Bicubic)]
         [InlineData(InterpolationMode.Bilinear, InterpolationMode.Bilinear)]
         [InlineData(InterpolationMode.Default, InterpolationMode.Bilinear)]
@@ -671,7 +671,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(InterpolationMode.Invalid - 1)]
         [InlineData(InterpolationMode.HighQualityBicubic + 1)]
         public void InterpolationMode_SetInvalid_ThrowsInvalidEnumArgumentException(InterpolationMode interpolationMode)
@@ -683,7 +683,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void InterpolationMode_SetToInvalid_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -693,7 +693,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void InterpolationMode_GetSetWhenBusy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -712,7 +712,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void InterpolationMode_GetSetWhenDisposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -725,7 +725,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(1)]
         [InlineData(1000000032)]
         [InlineData(float.NaN)]
@@ -739,7 +739,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(-1)]
         [InlineData(0)]
         [InlineData(1000000033)]
@@ -754,7 +754,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void PageScale_GetSetWhenBusy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -773,7 +773,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void PageScale_GetSetWhenDisposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -786,7 +786,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(GraphicsUnit.Display)]
         [InlineData(GraphicsUnit.Document)]
         [InlineData(GraphicsUnit.Inch)]
@@ -803,7 +803,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(GraphicsUnit.World - 1)]
         [InlineData(GraphicsUnit.Millimeter + 1)]
         public void PageUnit_SetInvalid_ThrowsInvalidEnumArgumentException(GraphicsUnit pageUnit)
@@ -815,7 +815,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void PageUnit_SetWorld_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -825,7 +825,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void PageUnit_GetSetWhenBusy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -844,7 +844,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void PageUnit_GetSetWhenDisposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -857,7 +857,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(PixelOffsetMode.Default)]
         [InlineData(PixelOffsetMode.Half)]
         [InlineData(PixelOffsetMode.HighQuality)]
@@ -873,7 +873,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(PixelOffsetMode.Invalid - 1)]
         [InlineData(PixelOffsetMode.Half + 1)]
         public void PixelOffsetMode_SetInvalid_ThrowsInvalidEnumArgumentException(PixelOffsetMode pixelOffsetMode)
@@ -885,7 +885,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void PixelOffsetMode_SetToInvalid_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -895,7 +895,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void PixelOffsetMode_GetSetWhenBusy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -914,7 +914,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void PixelOffsetMode_GetSetWhenDisposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -965,7 +965,7 @@ namespace System.Drawing.Tests
             yield return new object[] { new Point(3, 3), allEmpty };
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(RenderingOrigin_TestData))]
         public void RenderingOrigin_SetToCustom_RendersExpected(Point renderingOrigin, Color[][] expectedRendering)
         {
@@ -984,7 +984,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void RenderingOrigin_GetSetWhenBusy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1003,7 +1003,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void RenderingOrigin_GetSetWhenDisposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1016,7 +1016,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(SmoothingMode.AntiAlias, SmoothingMode.AntiAlias)]
         [InlineData(SmoothingMode.Default, SmoothingMode.None)]
         [InlineData(SmoothingMode.HighQuality, SmoothingMode.AntiAlias)]
@@ -1032,7 +1032,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(SmoothingMode.Invalid - 1)]
         [InlineData(SmoothingMode.AntiAlias + 1)]
         public void SmoothingMode_SetInvalid_ThrowsInvalidEnumArgumentException(SmoothingMode smoothingMode)
@@ -1044,7 +1044,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void SmoothingMode_SetToInvalid_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1054,7 +1054,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void SmoothingMode_GetSetWhenBusy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1073,7 +1073,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void SmoothingMode_GetSetWhenDisposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1086,7 +1086,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(12)]
@@ -1100,7 +1100,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(-1)]
         [InlineData(13)]
         public void TextContrast_SetInvalid_ThrowsArgumentException(int textContrast)
@@ -1112,7 +1112,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void TextContrast_GetSetWhenBusy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1131,7 +1131,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void TextContrast_GetSetWhenDisposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1144,7 +1144,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(TextRenderingHint.AntiAlias)]
         [InlineData(TextRenderingHint.AntiAliasGridFit)]
         [InlineData(TextRenderingHint.ClearTypeGridFit)]
@@ -1161,7 +1161,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(TextRenderingHint.SystemDefault - 1)]
         [InlineData(TextRenderingHint.ClearTypeGridFit + 1)]
         public void TextRenderingHint_SetInvalid_ThrowsInvalidEnumArgumentException(TextRenderingHint textRenderingHint)
@@ -1173,7 +1173,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void TextRenderingHint_GetSetWhenBusy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1192,7 +1192,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void TextRenderingHint_GetSetWhenDisposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1205,7 +1205,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Transform_SetValid_GetReturnsExpected()
         {
             Color empty = Helpers.EmptyColor;
@@ -1233,7 +1233,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Transform_SetNull_ThrowsNullReferenceException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1243,7 +1243,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Transform_SetDisposedMatrix_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1256,7 +1256,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Transform_SetNonInvertibleMatrix_ThrowsArgumentException()
         {
             using (var image = new Bitmap(5, 5))
@@ -1267,7 +1267,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Transform_GetSetWhenBusy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1287,7 +1287,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Transform_GetSetWhenDisposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
