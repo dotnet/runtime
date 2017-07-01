@@ -143,23 +143,21 @@ namespace System.Net.Http
             {
                 using (SafeSharedX509NameStackHandle names = Interop.Ssl.SslGetClientCAList(sslHandle))
                 {
-                    // TODO: When https://github.com/dotnet/corefx/pull/2862 is available for use, 
-                    // size this appropriately based on nameCount.
-                    var clientAuthorityNames = new HashSet<string>();
-
-                    if (!names.IsInvalid)
+                    if (names.IsInvalid)
                     {
-                        int nameCount = Interop.Crypto.GetX509NameStackFieldCount(names);
-                        for (int i = 0; i < nameCount; i++)
-                        {
-                            using (SafeSharedX509NameHandle nameHandle = Interop.Crypto.GetX509NameStackField(names, i))
-                            {
-                                X500DistinguishedName dn = Interop.Crypto.LoadX500Name(nameHandle);
-                                clientAuthorityNames.Add(dn.Name);
-                            }
-                        }
+                        return new HashSet<string>();
                     }
 
+                    int nameCount = Interop.Crypto.GetX509NameStackFieldCount(names);
+                    var clientAuthorityNames = new HashSet<string>(nameCount);
+                    for (int i = 0; i < nameCount; i++)
+                    {
+                        using (SafeSharedX509NameHandle nameHandle = Interop.Crypto.GetX509NameStackField(names, i))
+                        {
+                            X500DistinguishedName dn = Interop.Crypto.LoadX500Name(nameHandle);
+                            clientAuthorityNames.Add(dn.Name);
+                        }
+                    }
                     return clientAuthorityNames;
                 }
             }
