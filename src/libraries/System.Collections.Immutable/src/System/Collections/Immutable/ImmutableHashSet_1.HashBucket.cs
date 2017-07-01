@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace System.Collections.Immutable
 {
@@ -74,6 +75,49 @@ namespace System.Collections.Immutable
             public Enumerator GetEnumerator()
             {
                 return new Enumerator(this);
+            }
+
+            /// <summary>
+            /// Throws an exception to catch any errors in comparing <see cref="HashBucket"/> instances.
+            /// </summary>
+            public override bool Equals(object obj)
+            {
+                // This should never be called, as hash buckets don't know how to equate themselves.
+                throw new NotSupportedException();
+            }
+
+            /// <summary>
+            /// Throws an exception to catch any errors in comparing <see cref="HashBucket"/> instances.
+            /// </summary>
+            public override int GetHashCode()
+            {
+                // This should never be called, as hash buckets don't know how to hash themselves.
+                throw new NotSupportedException();
+            }
+
+            /// <summary>
+            /// Checks whether this <see cref="HashBucket"/> is exactly like another one,
+            /// comparing by reference. For use when type parameter T is an object.
+            /// </summary>
+            /// <param name="other">The other bucket.</param>
+            /// <returns><c>true</c> if the two <see cref="HashBucket"/> structs have precisely the same values.</returns>
+            internal bool EqualsByRef(HashBucket other)
+            {
+                return object.ReferenceEquals(_firstValue, other._firstValue)
+                    && object.ReferenceEquals(_additionalElements, other._additionalElements);
+            }
+
+            /// <summary>
+            /// Checks whether this <see cref="HashBucket"/> is exactly like another one,
+            /// comparing by value. For use when type parameter T is a struct.
+            /// </summary>
+            /// <param name="other">The other bucket.</param>
+            /// <param name="valueComparer">The comparer to use for the first value in the bucket.</param>
+            /// <returns><c>true</c> if the two <see cref="HashBucket"/> structs have precisely the same values.</returns>
+            internal bool EqualsByValue(HashBucket other, IEqualityComparer<T> valueComparer)
+            {
+                return valueComparer.Equals(_firstValue, other._firstValue)
+                    && object.ReferenceEquals(_additionalElements, other._additionalElements);
             }
 
             /// <summary>
