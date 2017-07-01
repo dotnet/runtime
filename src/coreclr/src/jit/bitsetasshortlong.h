@@ -537,8 +537,6 @@ public:
         }
     };
 
-    friend class Iter;
-
     typedef const BitSetShortLongRep& ValArgType;
     typedef BitSetShortLongRep        RetValType;
 };
