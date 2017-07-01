@@ -52,7 +52,7 @@ namespace System
 
         // For empty strings, this will be '\0' since
         // strings are both null-terminated and length prefixed
-        [NonSerialized] private char m_firstChar;
+        [NonSerialized] private char _firstChar;
 
         // The Empty constant holds the empty string value. It is initialized by the EE during startup.
         // It is treated as intrinsic by the JIT as so the static constructor would never run.
@@ -63,7 +63,7 @@ namespace System
         //from native.
         public static readonly String Empty;
 
-        internal char FirstChar { get { return m_firstChar; } }
+        internal char FirstChar { get { return _firstChar; } }
         //
         // This is a helper method for the security team.  They need to uppercase some strings (guaranteed to be less 
         // than 0x80) before security is fully initialized.  Without security initialized, we can't grab resources (the nlp's)
@@ -81,7 +81,7 @@ namespace System
             //
             int length = strIn.Length;
             String strOut = FastAllocateString(length);
-            fixed (char* inBuff = &strIn.m_firstChar, outBuff = &strOut.m_firstChar)
+            fixed (char* inBuff = &strIn._firstChar, outBuff = &strOut._firstChar)
             {
                 for (int i = 0; i < length; i++)
                 {
@@ -131,7 +131,7 @@ namespace System
             // Note: fixed does not like empty arrays
             if (count > 0)
             {
-                fixed (char* src = &m_firstChar)
+                fixed (char* src = &_firstChar)
                 fixed (char* dest = destination)
                     wstrcpy(dest + destinationIndex, src + sourceIndex, count);
             }
@@ -144,7 +144,7 @@ namespace System
             if (length > 0)
             {
                 char[] chars = new char[length];
-                fixed (char* src = &m_firstChar) fixed (char* dest = chars)
+                fixed (char* src = &_firstChar) fixed (char* dest = chars)
                 {
                     wstrcpy(dest, src, length);
                 }
@@ -168,7 +168,7 @@ namespace System
             if (length > 0)
             {
                 char[] chars = new char[length];
-                fixed (char* src = &m_firstChar) fixed (char* dest = chars)
+                fixed (char* src = &_firstChar) fixed (char* dest = chars)
                 {
                     wstrcpy(dest, src + startIndex, length);
                 }
@@ -277,7 +277,7 @@ namespace System
                 return String.Empty;
 
             String s = FastAllocateString(stringLength);
-            fixed (char* pTempChars = &s.m_firstChar)
+            fixed (char* pTempChars = &s._firstChar)
             {
                 int doubleCheck = encoding.GetChars(bytes, byteLength, pTempChars, stringLength, null);
                 Debug.Assert(stringLength == doubleCheck,
@@ -288,19 +288,19 @@ namespace System
         }
 
         // This is only intended to be used by char.ToString.
-        // It is necessary to put the code in this class instead of Char, since m_firstChar is a private member.
-        // Making m_firstChar internal would be dangerous since it would make it much easier to break String's immutability.
+        // It is necessary to put the code in this class instead of Char, since _firstChar is a private member.
+        // Making _firstChar internal would be dangerous since it would make it much easier to break String's immutability.
         internal static string CreateFromChar(char c)
         {
             string result = FastAllocateString(1);
-            result.m_firstChar = c;
+            result._firstChar = c;
             return result;
         }
 
         unsafe internal int GetBytesFromEncoding(byte* pbNativeBuffer, int cbNativeBuffer, Encoding encoding)
         {
             // encoding == Encoding.UTF8
-            fixed (char* pwzChar = &m_firstChar)
+            fixed (char* pwzChar = &_firstChar)
             {
                 return encoding.GetBytes(pwzChar, m_stringLength, pbNativeBuffer, cbNativeBuffer);
             }
@@ -318,7 +318,7 @@ namespace System
             uint flgs = (fBestFit ? 0 : WC_NO_BEST_FIT_CHARS);
             uint DefaultCharUsed = 0;
 
-            fixed (char* pwzChar = &m_firstChar)
+            fixed (char* pwzChar = &_firstChar)
             {
                 nb = Win32Native.WideCharToMultiByte(
                     CP_ACP,
@@ -412,7 +412,7 @@ namespace System
 
                 unsafe
                 {
-                    fixed (char* dest = &result.m_firstChar, source = value)
+                    fixed (char* dest = &result._firstChar, source = value)
                     {
                         wstrcpy(dest, source, value.Length);
                     }
@@ -444,7 +444,7 @@ namespace System
 
                 unsafe
                 {
-                    fixed (char* dest = &result.m_firstChar, source = value)
+                    fixed (char* dest = &result._firstChar, source = value)
                     {
                         wstrcpy(dest, source + startIndex, length);
                     }
@@ -464,7 +464,7 @@ namespace System
                 {
                     unsafe
                     {
-                        fixed (char* dest = &result.m_firstChar)
+                        fixed (char* dest = &result._firstChar)
                         {
                             char* dmem = dest;
                             while (((uint)dmem & 3) != 0 && count > 0)
@@ -615,7 +615,7 @@ namespace System
                     return String.Empty;
 
                 String result = FastAllocateString(count);
-                fixed (char* dest = &result.m_firstChar)
+                fixed (char* dest = &result._firstChar)
                     wstrcpy(dest, ptr, count);
                 return result;
             }
@@ -653,7 +653,7 @@ namespace System
 
             try
             {
-                fixed (char* dest = &result.m_firstChar)
+                fixed (char* dest = &result._firstChar)
                     wstrcpy(dest, pFrom, length);
                 return result;
             }
@@ -704,8 +704,8 @@ namespace System
 
             String result = FastAllocateString(length);
 
-            fixed (char* dest = &result.m_firstChar)
-            fixed (char* src = &str.m_firstChar)
+            fixed (char* dest = &result._firstChar)
+            fixed (char* src = &str._firstChar)
             {
                 wstrcpy(dest, src, length);
             }
@@ -869,7 +869,7 @@ namespace System
         {
             if (len == 0)
                 return;
-            fixed (char* charPtr = &src.m_firstChar)
+            fixed (char* charPtr = &src._firstChar)
             {
                 byte* srcPtr = (byte*)charPtr;
                 byte* dstPtr = (byte*)dest;
@@ -879,7 +879,7 @@ namespace System
 
         internal ref char GetRawStringData()
         {
-            return ref m_firstChar;
+            return ref _firstChar;
         }
     }
 }
