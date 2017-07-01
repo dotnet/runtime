@@ -872,7 +872,7 @@ DEFINE_CLASS(BITCONVERTER,          System,                 BitConverter)
 DEFINE_FIELD(BITCONVERTER,          ISLITTLEENDIAN,         IsLittleEndian)
 // Defined as element type alias
 // DEFINE_CLASS(STRING,                System,                 String)
-DEFINE_FIELD(STRING,                M_FIRST_CHAR,           m_firstChar)
+DEFINE_FIELD(STRING,                M_FIRST_CHAR,           _firstChar)
 DEFINE_FIELD(STRING,                EMPTY,                  Empty)
 DEFINE_METHOD(STRING,               CREATE_STRING,          CreateString,               SM_PtrSByt_Int_Int_Encoding_RetStr)
 DEFINE_METHOD(STRING,               CTOR_CHARPTR,           .ctor,                      IM_PtrChar_RetVoid)

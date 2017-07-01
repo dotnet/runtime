@@ -28,7 +28,7 @@ namespace System.Globalization
     // The calculation of hour/minute/second is moved to Calendar from GregorianCalendar,
     // since most of the calendars (or all?) have the same way of calcuating hour/minute/second.
 
-    public abstract partial class Calendar : ICloneable
+    public abstract class Calendar : ICloneable
     {
         // Number of 100ns (10E-7 second) ticks per time unit
         internal const long TicksPerMillisecond = 10000;
@@ -59,18 +59,7 @@ namespace System.Globalization
 
         private int _currentEraValue = -1;
 
-        [OptionalField(VersionAdded = 2)]
         private bool _isReadOnly = false;
-
-#if CORECLR
-        internal const CalendarId CAL_HEBREW = CalendarId.HEBREW;
-        internal const CalendarId CAL_HIJRI = CalendarId.HIJRI;
-        internal const CalendarId CAL_JAPAN = CalendarId.JAPAN;
-        internal const CalendarId CAL_JULIAN = CalendarId.JULIAN;
-        internal const CalendarId CAL_TAIWAN = CalendarId.TAIWAN;
-        internal const CalendarId CAL_UMALQURA = CalendarId.UMALQURA;
-        internal const CalendarId CAL_PERSIAN = CalendarId.PERSIAN;
-#endif
 
         // The minimum supported DateTime range for the calendar.
 

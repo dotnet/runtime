@@ -46,7 +46,7 @@ namespace System
             if (count < 0 || count > Length - startIndex)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
 
-            fixed (char* pChars = &m_firstChar)
+            fixed (char* pChars = &_firstChar)
             {
                 char* pCh = pChars + startIndex;
 
@@ -225,7 +225,7 @@ namespace System
             if (count < 0 || count - 1 > startIndex)
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_Count);
 
-            fixed (char* pChars = &m_firstChar)
+            fixed (char* pChars = &_firstChar)
             {
                 char* pCh = pChars + startIndex;
 

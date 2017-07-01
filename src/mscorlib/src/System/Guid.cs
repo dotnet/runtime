@@ -701,7 +701,7 @@ namespace System
                 }
                 else
                 {
-                    char upperCaseCh = Char.ToUpper(ch, CultureInfo.InvariantCulture);
+                    char upperCaseCh = Char.ToUpperInvariant(ch);
                     if (upperCaseCh >= 'A' && upperCaseCh <= 'F')
                     {
                         continue;
@@ -982,7 +982,7 @@ namespace System
 
         private static bool IsHexPrefix(String str, int i)
         {
-            if (str.Length > i + 1 && str[i] == '0' && (Char.ToLower(str[i + 1], CultureInfo.InvariantCulture) == 'x'))
+            if (str.Length > i + 1 && str[i] == '0' && (Char.ToLowerInvariant(str[i + 1]) == 'x'))
                 return true;
             else
                 return false;
