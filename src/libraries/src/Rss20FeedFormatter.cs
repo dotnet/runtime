@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 
+
 namespace Microsoft.ServiceModel.Syndication
 {
     using Microsoft.ServiceModel.Syndication.Resources;
@@ -518,6 +519,7 @@ namespace Microsoft.ServiceModel.Syndication
             foreach (SyndicationItem item in items)
             {
                 await this.WriteItemAsync(writer, item, feedBaseUri);
+
             }
         }
 
@@ -605,7 +607,7 @@ namespace Microsoft.ServiceModel.Syndication
                     return "";
             }
         }
-
+        
         private static async Task ReadSkipHoursAsync(XmlReaderWrapper reader, SyndicationFeed result)
         {
             await reader.ReadStartElementAsync();
@@ -671,7 +673,7 @@ namespace Microsoft.ServiceModel.Syndication
                 stringBuilder.Remove(0, i);
             }
         }
-
+       
         public static void ReplaceMultipleWhiteSpaceWithSingleWhiteSpace(StringBuilder builder)
         {
             int index = 0;
@@ -716,7 +718,7 @@ namespace Microsoft.ServiceModel.Syndication
                 return sb.ToString();
             }
         }
-
+        
         private async Task<SyndicationLink> ReadAlternateLinkAsync(XmlReaderWrapper reader, Uri baseUri)
         {
             SyndicationLink link = new SyndicationLink();
@@ -743,14 +745,14 @@ namespace Microsoft.ServiceModel.Syndication
             link.Uri = new Uri(uri, UriKind.RelativeOrAbsolute);
             return link;
         }
-
+        
         async Task<SyndicationCategory> ReadCategoryAsync(XmlReaderWrapper reader, SyndicationFeed feed)
         {
             SyndicationCategory result = CreateCategory(feed);
             await ReadCategoryAsync(reader, result);
             return result;
         }
-
+        
         async Task ReadCategoryAsync(XmlReaderWrapper reader, SyndicationCategory category)
         {
             bool isEmpty = reader.IsEmptyElement;
@@ -787,14 +789,13 @@ namespace Microsoft.ServiceModel.Syndication
                 await reader.ReadEndElementAsync();
             }
         }
-
+        
         async Task<SyndicationCategory> ReadCategoryAsync(XmlReaderWrapper reader, SyndicationItem item)
         {
             SyndicationCategory result = CreateCategory(item);
             await ReadCategoryAsync(reader, result);
             return result;
         }
-
         
 
         async Task<SyndicationLink> ReadMediaEnclosureAsync(XmlReaderWrapper reader, Uri baseUri)
@@ -850,14 +851,14 @@ namespace Microsoft.ServiceModel.Syndication
 
             return link;
         }
-
+        
         async Task<SyndicationPerson> ReadPersonAsync(XmlReaderWrapper reader, SyndicationFeed feed)
         {
             SyndicationPerson result = CreatePerson(feed);
             await ReadPersonAsync(reader, result);
             return result;
         }
-
+        
         async Task ReadPersonAsync(XmlReaderWrapper reader, SyndicationPerson person)
         {
             bool isEmpty = reader.IsEmptyElement;
@@ -890,7 +891,7 @@ namespace Microsoft.ServiceModel.Syndication
                 person.Email = email;
             }
         }
-
+        
         async Task<SyndicationPerson> ReadPersonAsync(XmlReaderWrapper reader, SyndicationItem item)
         {
             SyndicationPerson result = CreatePerson(item);
@@ -1190,9 +1191,7 @@ namespace Microsoft.ServiceModel.Syndication
                 await reader.ReadEndElementAsync(); // channel   
                 await reader.ReadEndElementAsync(); // rss
             }
-        }
-
-        
+        }        
 
         private async Task WriteAlternateLinkAsync(XmlWriterWrapper writer, SyndicationLink link, Uri baseUri)
         {
@@ -1206,7 +1205,7 @@ namespace Microsoft.ServiceModel.Syndication
             await writer.WriteStringAsync(FeedUtils.GetUriString(link.Uri));
             await writer.WriteEndElementAsync();
         }
-
+        
         private async Task WriteCategoryAsync(XmlWriterWrapper writer, SyndicationCategory category)
         {
             if (category == null)
@@ -1222,7 +1221,7 @@ namespace Microsoft.ServiceModel.Syndication
             await writer.WriteStringAsync(category.Name);
             await writer.WriteEndElementAsync();
         }
-
+        
         private async Task WriteFeedAsync(XmlWriterWrapper writer)
         {
             if (this.Feed == null)
@@ -1368,7 +1367,7 @@ namespace Microsoft.ServiceModel.Syndication
 
                 await writer.WriteEndElementAsync();
             }
-
+            
 
             //========================
             if (_serializeExtensionsAsAtom)
@@ -1392,7 +1391,7 @@ namespace Microsoft.ServiceModel.Syndication
             await WriteItemsAsync(writer, this.Feed.Items, this.Feed.BaseUri);
             await writer.WriteEndElementAsync(); // channel
         }
-
+        
         private async Task WriteItemContentsAsync(XmlWriterWrapper writer, SyndicationItem item, Uri feedBaseUri)
         {
             Uri baseUriToWrite = FeedUtils.GetBaseUriToWrite(feedBaseUri, item.BaseUri);
@@ -1567,7 +1566,7 @@ namespace Microsoft.ServiceModel.Syndication
 
             WriteElementExtensions(writer, item, this.Version);
         }
-
+        
         private async Task WriteMediaEnclosureAsync(XmlWriterWrapper writer, SyndicationLink link, Uri baseUri)
         {
             await writer.WriteStartElementAsync(Rss20Constants.EnclosureTag, Rss20Constants.Rss20Namespace);
@@ -1591,7 +1590,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
             await writer.WriteEndElementAsync();
         }
-
+        
         private async Task WritePersonAsync(XmlWriterWrapper writer, string elementTag, SyndicationPerson person)
         {
             await writer.WriteStartElementAsync(elementTag, Rss20Constants.Rss20Namespace);

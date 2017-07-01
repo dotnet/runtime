@@ -52,12 +52,10 @@ namespace Microsoft.ServiceModel.Syndication
             }
 
             _content = content;
-
             if (itemAlternateLink != null)
             {
                 this.Links.Add(SyndicationLink.CreateAlternateLink(itemAlternateLink));
             }
-
             _id = id;
             _lastUpdatedTime = lastUpdatedTime;
         }
@@ -68,7 +66,6 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 throw new ArgumentNullException("source");
             }
-
             _extensions = source._extensions.Clone();
             _authors = FeedUtils.ClonePersons(source._authors);
             _categories = FeedUtils.CloneCategories(source._categories);
@@ -84,7 +81,6 @@ namespace Microsoft.ServiceModel.Syndication
                 _sourceFeed = source._sourceFeed.Clone(false);
                 _sourceFeed.Items = new Collection<SyndicationItem>();
             }
-
             _summary = FeedUtils.CloneTextContent(source._summary);
             _baseUri = source._baseUri;
             _title = FeedUtils.CloneTextContent(source._title);
@@ -206,7 +202,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             return await LoadAsync<SyndicationItem>(reader);
         }
-
+        
         public static async Task<TSyndicationItem> LoadAsync<TSyndicationItem>(XmlReader reader)
             where TSyndicationItem : SyndicationItem, new()
         {

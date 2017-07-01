@@ -45,8 +45,5 @@ namespace Microsoft.ServiceModel.Syndication
         public const string HourTag = "hour";
         public const string DayTag = "day";
         public const string NameTag = "name";
-
-
-
     }
 }

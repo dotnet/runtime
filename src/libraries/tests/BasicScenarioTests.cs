@@ -528,7 +528,7 @@ namespace Microsoft.ServiceModel.Syndication.Tests
                 // *** ASSERT *** \\
                 Assert.True(rss.Result.TextInput.Description == "Search Online");
                 Assert.True(rss.Result.TextInput.title == "Search");
-                Assert.True(rss.Result.TextInput.name == "q");
+                Assert.True(rss.Result.TextInput.name == "input Name");
                 Assert.True(rss.Result.TextInput.link.GetAbsoluteUri().ToString() == "http://www.contoso.no/search?");
             }
             finally
