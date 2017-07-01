@@ -164,7 +164,7 @@ namespace Microsoft.ServiceModel.Syndication
                 return (ReferencedCategoriesDocument)Activator.CreateInstance(_referencedDocumentType);
             }
         }
-
+        
         private async Task ReadDocumentAsync(XmlReaderWrapper reader)
         {
             try

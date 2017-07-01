@@ -31,7 +31,7 @@ namespace Microsoft.ServiceModel.Syndication
         private Uri _imageUrl;
         private TextSyndicationContent _imageTitle;
         private Uri _imageLink;
-
+        
         private IEnumerable<SyndicationItem> _items;
         private string _language;
         private DateTimeOffset _lastUpdatedTime;

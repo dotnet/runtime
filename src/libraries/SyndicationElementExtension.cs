@@ -89,7 +89,6 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 serializer = new XmlSerializer(xmlSerializerExtension.GetType());
             }
-
             _extensionData = xmlSerializerExtension;
             _extensionDataWriter = new ExtensionDataWriter(_extensionData, serializer);
         }

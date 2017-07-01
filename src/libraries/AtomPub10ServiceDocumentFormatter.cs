@@ -182,7 +182,7 @@ namespace Microsoft.ServiceModel.Syndication
                 return (ServiceDocument)Activator.CreateInstance(_documentType);
             }
         }
-
+        
         private static async Task ReadInlineCategoriesAsync(XmlReaderWrapper reader, InlineCategoriesDocument inlineCategories, Uri baseUri, string version, bool preserveElementExtensions, bool preserveAttributeExtensions, int maxExtensionSize)
         {
             inlineCategories.BaseUri = baseUri;
@@ -277,7 +277,7 @@ namespace Microsoft.ServiceModel.Syndication
                 reader.ReadEndElement();
             }
         }
-
+        
         private static async Task ReadReferencedCategoriesAsync(XmlReaderWrapper reader, ReferencedCategoriesDocument referencedCategories, Uri baseUri, Uri link, string version, bool preserveElementExtensions, bool preserveAttributeExtensions, int maxExtensionSize)
         {
             referencedCategories.BaseUri = baseUri;
@@ -355,14 +355,14 @@ namespace Microsoft.ServiceModel.Syndication
                 reader.ReadEndElement();
             }
         }
-
+        
         private static async Task WriteCategories(XmlWriterWrapper writer, CategoriesDocument categories, Uri baseUri, string version)
         {
             await writer.WriteStartElementAsync(App10Constants.Prefix, App10Constants.Categories, App10Constants.Namespace);
             WriteCategoriesInnerXml(writer, categories, baseUri, version);
             await writer.WriteEndElementAsync();
         }
-
+        
         private static async Task WriteInlineCategoriesContentAsync(XmlWriterWrapper writer, InlineCategoriesDocument categories, string version)
         {
             XmlWriterWrapper wrappedWriter = XmlWriterWrapper.CreateFromWriter(writer);
@@ -403,7 +403,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             writer.WriteAttributeString("xml", "lang", Atom10FeedFormatter.XmlNs, lang);
         }
-
+        
         private async Task<ResourceCollectionInfo> ReadCollection(XmlReaderWrapper reader, Workspace workspace)
         {
             ResourceCollectionInfo result = CreateCollection(workspace);
@@ -505,7 +505,7 @@ namespace Microsoft.ServiceModel.Syndication
             reader.ReadEndElement();
             return result;
         }
-
+        
         private async Task ReadDocumentAsync(XmlReaderWrapper reader)
         {
             ServiceDocument result = CreateDocumentInstance();
@@ -599,7 +599,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
             SetDocument(result);
         }
-
+        
         private async Task<Workspace> ReadWorkspace(XmlReaderWrapper reader, ServiceDocument document)
         {
             Workspace result = CreateWorkspace(document);
@@ -679,7 +679,7 @@ namespace Microsoft.ServiceModel.Syndication
             reader.ReadEndElement();
             return result;
         }
-
+        
         private async Task WriteCollectionAsync(XmlWriterWrapper writer, ResourceCollectionInfo collection, Uri baseUri)
         {
             await writer.WriteStartElementAsync(App10Constants.Prefix, App10Constants.Collection, App10Constants.Namespace);
@@ -709,7 +709,7 @@ namespace Microsoft.ServiceModel.Syndication
             WriteElementExtensions(writer, collection, this.Version);
             await writer.WriteEndElementAsync();
         }
-
+        
         private async Task WriteDocumentAsync(XmlWriterWrapper writer)
         {
             // declare the atom10 namespace upfront for compactness
@@ -731,7 +731,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
             WriteElementExtensions(writer, this.Document, this.Version);
         }
-
+        
         private async Task WriteWorkspaceAsync(XmlWriterWrapper writer, Workspace workspace, Uri baseUri)
         {
             await writer.WriteStartElementAsync(App10Constants.Prefix, App10Constants.Workspace, App10Constants.Namespace);

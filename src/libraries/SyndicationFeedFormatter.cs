@@ -369,8 +369,7 @@ namespace Microsoft.ServiceModel.Syndication
             person.WriteElementExtensions(writer, version);
         }
 
-        internal protected virtual void SetFeed(SyndicationFeed feed)
-        {
+        internal protected virtual void SetFeed(SyndicationFeed feed) { 
             _feed = feed ?? throw new ArgumentNullException("feed");
         }
 
