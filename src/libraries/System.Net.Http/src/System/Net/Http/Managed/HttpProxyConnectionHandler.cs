@@ -44,7 +44,7 @@ namespace System.Net.Http
             catch (Exception)
             {
                 // Eat any exception from the IWebProxy and just treat it as no proxy.
-                // TODO: This seems a bit questionable, but it's what the tests expect
+                // TODO #21452: This seems a bit questionable, but it's what the tests expect
             }
 
             return proxyUri == null ?
@@ -62,7 +62,7 @@ namespace System.Net.Http
 
             if (request.RequestUri.Scheme == UriScheme.Https)
             {
-                // TODO: Implement SSL tunneling through proxy
+                // TODO #21452: Implement SSL tunneling through proxy
                 throw new NotImplementedException("no support for SSL tunneling through proxy");
             }
 
@@ -133,7 +133,7 @@ namespace System.Net.Http
                 _disposed = true;
 
                 // Close all open connections
-                // TODO: There's a timing issue here
+                // TODO #21452: There's a timing issue here
                 // Revisit when we improve the connection pooling implementation
                 foreach (HttpConnectionPool connectionPool in _connectionPoolTable.Values)
                 {
@@ -149,7 +149,7 @@ namespace System.Net.Http
         private static readonly Lazy<Uri> s_proxyFromEnvironment = new Lazy<Uri>(() =>
         {
             // http_proxy is standard on Unix, used e.g. by libcurl.
-            // TODO: We should support the full array of environment variables here,
+            // TODO #21452: We should support the full array of environment variables here,
             // including no_proxy, all_proxy, etc.
 
             string proxyString = Environment.GetEnvironmentVariable("http_proxy");

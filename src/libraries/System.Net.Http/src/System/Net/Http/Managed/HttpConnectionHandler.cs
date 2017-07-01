@@ -75,7 +75,7 @@ namespace System.Net.Http
 
             try
             {
-                // TODO: No cancellationToken?
+                // TODO #21452: No cancellationToken?
                 await sslStream.AuthenticateAsClientAsync(host, _clientCertificates, _sslProtocols, _checkCertificateRevocationList).ConfigureAwait(false);
             }
             catch (Exception e)
@@ -83,7 +83,7 @@ namespace System.Net.Http
                 sslStream.Dispose();
                 if (e is AuthenticationException || e is IOException)
                 {
-                    // TODO: Tests expect HttpRequestException here.  Is that correct behavior?
+                    // TODO #21452: Tests expect HttpRequestException here.  Is that correct behavior?
                     throw new HttpRequestException("could not establish SSL connection", e);
                 }
                 throw;
@@ -125,7 +125,7 @@ namespace System.Net.Http
                 _disposed = true;
 
                 // Close all open connections
-                // TODO: There's a timing issue here
+                // TODO #21452: There's a timing issue here
                 // Revisit when we improve the connection pooling implementation
                 foreach (HttpConnectionPool connectionPool in _connectionPoolTable.Values)
                 {

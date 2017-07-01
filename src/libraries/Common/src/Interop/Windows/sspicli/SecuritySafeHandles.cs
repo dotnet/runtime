@@ -1305,6 +1305,18 @@ namespace System.Net.Security
 
             return status;
         }
+
+        public override string ToString()
+        {
+            if (IsInvalid)
+            {
+                return null;
+            }
+
+            var bytes = new byte[_size];
+            Marshal.Copy(handle, bytes, 0, bytes.Length);
+            return BitConverter.ToString(bytes).Replace('-', ' ');
+        }
     }
 
     internal sealed class SafeFreeContextBufferChannelBinding_SECURITY : SafeFreeContextBufferChannelBinding
