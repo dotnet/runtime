@@ -3816,7 +3816,8 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     hasMultiregStructArgs = true;
                 }
 #elif defined(_TARGET_ARM_)
-                if (size > 1)
+                // Build the mkrefany as a GT_FIELD_LIST in this function
+                if (size > 1 && argx->gtOper != GT_MKREFANY)
                 {
                     hasMultiregStructArgs = true;
                 }
