@@ -28,7 +28,6 @@ private:
                            /*BitSetTraits*/ BitSetTraits>;
 
     friend class BitSetUint64ValueRetType<Env, BitSetTraits>;
-    friend class BitSetUint64Iter<Env, BitSetTraits>;
 
     UINT64 m_bits;
 
@@ -282,58 +281,6 @@ BitSetUint64<Env, BitSetTraits>::BitSetUint64(const BitSetUint64ValueRetType<Env
 {
 }
 
-// You *can* clear a bit after it's been iterated.  But you shouldn't otherwise mutate the
-// bitset during bit iteration.
-template <typename Env, typename BitSetTraits>
-class BitSetUint64Iter
-{
-    UINT64   m_bits;
-    unsigned m_bitNum;
-
-public:
-    BitSetUint64Iter(Env env, const BitSetUint64<Env, BitSetTraits>& bs) : m_bits(bs.m_bits), m_bitNum(0)
-    {
-    }
-
-    bool NextElem(unsigned* pElem)
-    {
-        static const unsigned UINT64_SIZE = 64;
-
-        if ((m_bits & 0x1) != 0)
-        {
-            *pElem = m_bitNum;
-            m_bitNum++;
-            m_bits >>= 1;
-            return true;
-        }
-        else
-        {
-            // Skip groups of 4 zeros -- an optimization for sparse bitsets.
-            while (m_bitNum < UINT64_SIZE && (m_bits & 0xf) == 0)
-            {
-                m_bitNum += 4;
-                m_bits >>= 4;
-            }
-            while (m_bitNum < UINT64_SIZE && (m_bits & 0x1) == 0)
-            {
-                m_bitNum += 1;
-                m_bits >>= 1;
-            }
-            if (m_bitNum < UINT64_SIZE)
-            {
-                *pElem = m_bitNum;
-                m_bitNum++;
-                m_bits >>= 1;
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-    }
-};
-
 template <typename Env, typename BitSetTraits>
 class BitSetOps</*BitSetType*/ BitSetUint64<Env, BitSetTraits>,
                 /*Brand*/ BSUInt64Class,
@@ -512,7 +459,56 @@ public:
     }
 #endif
 
-    typedef BitSetUint64Iter<Env, BitSetTraits> Iter;
+    // You *can* clear a bit after it's been iterated.  But you shouldn't otherwise mutate the
+    // bitset during bit iteration.
+    class Iter
+    {
+        UINT64   m_bits;
+        unsigned m_bitNum;
+
+    public:
+        Iter(Env env, const BitSetUint64<Env, BitSetTraits>& bs) : m_bits(bs.m_bits), m_bitNum(0)
+        {
+        }
+
+        bool NextElem(unsigned* pElem)
+        {
+            static const unsigned UINT64_SIZE = 64;
+
+            if ((m_bits & 0x1) != 0)
+            {
+                *pElem = m_bitNum;
+                m_bitNum++;
+                m_bits >>= 1;
+                return true;
+            }
+            else
+            {
+                // Skip groups of 4 zeros -- an optimization for sparse bitsets.
+                while (m_bitNum < UINT64_SIZE && (m_bits & 0xf) == 0)
+                {
+                    m_bitNum += 4;
+                    m_bits >>= 4;
+                }
+                while (m_bitNum < UINT64_SIZE && (m_bits & 0x1) == 0)
+                {
+                    m_bitNum += 1;
+                    m_bits >>= 1;
+                }
+                if (m_bitNum < UINT64_SIZE)
+                {
+                    *pElem = m_bitNum;
+                    m_bitNum++;
+                    m_bits >>= 1;
+                    return true;
+                }
+                else
+                {
+                    return false;
+                }
+            }
+        }
+    };
 
     typedef const BitSetUint64<Env, BitSetTraits>&      ValArgType;
     typedef BitSetUint64ValueRetType<Env, BitSetTraits> RetValType;
