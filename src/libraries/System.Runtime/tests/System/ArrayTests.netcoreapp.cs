@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public static partial class ArrayTests
+    public partial class ArrayTests
     {
         public static IEnumerable<object[]> Fill_Generic_TestData()
         {

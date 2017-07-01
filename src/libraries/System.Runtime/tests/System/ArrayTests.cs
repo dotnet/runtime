@@ -10,7 +10,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public static partial class ArrayTests
+    public partial class ArrayTests
     {
         [Fact]
         public static void IList_GetSetItem()
@@ -631,14 +631,57 @@ namespace System.Tests
             Assert.Throws<IndexOutOfRangeException>(() => Array.Clear(new int[10], 6, 0x7fffffff));
         }
 
-        [Theory]
-        [InlineData(new int[0])]
-        [InlineData(new char[] { '1', '2', '3' })]
-        public static void Clone(Array array)
+        public static IEnumerable<object[]> Clone_TestData()
         {
-            Array clone = (Array)array.Clone();
-            Assert.Equal(clone, array);
-            Assert.NotSame(clone, array);
+            yield return new object[] { new int[0] };
+            yield return new object[] { new char[] { '1', '2', '3' } };
+            yield return new object[] { new int[0, 0] };
+            yield return new object[] { new int[0, 1] };
+            yield return new object[] { new int[1, 1] };
+            yield return new object[] { new int[2, 3, 4, 5] };
+
+            if (PlatformDetection.IsNonZeroLowerBoundArraySupported)
+            {
+                yield return new object[] { Array.CreateInstance(typeof(int), new int[] { 1 }, new int[] { -100 }) };
+                yield return new object[] { Array.CreateInstance(typeof(int), new int[] { 1, 2, 3, 4, 5 }, new int[] { 1, 2, 3, 4, 5 }) };
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(Clone_TestData))]
+        public void Clone_Array_ReturnsExpected(Array array)
+        {
+            Array clone = Assert.IsAssignableFrom<Array>(array.Clone());
+            Assert.NotSame(array, clone);
+            Assert.Equal(array, clone);
+
+            Assert.Equal(array.Rank, clone.Rank);
+            Assert.Equal(array.GetType().GetElementType(), clone.GetType().GetElementType());
+            for (int i = 0; i < clone.Rank; i++)
+            {
+                Assert.Equal(array.GetLength(i), clone.GetLength(i));
+                Assert.Equal(array.GetLowerBound(i), clone.GetLowerBound(i));
+            }
+        }
+
+        [Fact]
+        public void Clone_SingleDimensionalArray_ModifyingOriginalDoesNotAffectClone()
+        {
+            var array = new int[] { 1, 2, 3 };
+            int[] clone = Assert.IsType<int[]>(array.Clone());
+
+            array[0] = 10;
+            Assert.Equal(1, clone[0]);
+        }
+
+        [Fact]
+        public void Clone_MultiDimensionalArray_ModifyingOriginalDoesNotAffectClone()
+        {
+            var array = new int[1, 1];
+            int[,] clone = Assert.IsType<int[,]>(array.Clone());
+
+            array[0, 0] = 10;
+            Assert.Equal(0, clone[0, 0]);
         }
 
         public static IEnumerable<object[]> Copy_Array_Reliable_TestData()
