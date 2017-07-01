@@ -16,6 +16,21 @@ namespace System.Collections.Immutable
     /// </summary>
     internal static partial class ImmutableExtensions
     {
+        internal static bool IsValueType<T>()
+        {
+            if (default(T) != null)
+            {
+                return true;
+            }
+
+            Type t = typeof(T);
+            if (t.IsConstructedGenericType && t.GetGenericTypeDefinition() == typeof(Nullable<>))
+            {
+                return true;
+            }
+
+            return false;
+        }
 
 #if EqualsStructurally
 

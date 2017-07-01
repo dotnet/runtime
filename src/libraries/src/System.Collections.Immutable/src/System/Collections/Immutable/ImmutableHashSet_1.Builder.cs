@@ -44,6 +44,11 @@ namespace System.Collections.Immutable
             private IEqualityComparer<T> _equalityComparer;
 
             /// <summary>
+            /// The equality comparer to use when balancing the tree of hash buckets.
+            /// </summary>
+            private IEqualityComparer<HashBucket> _hashBucketEqualityComparer;
+
+            /// <summary>
             /// The number of elements in this collection.
             /// </summary>
             private int _count;
@@ -69,6 +74,7 @@ namespace System.Collections.Immutable
                 _root = set._root;
                 _count = set._count;
                 _equalityComparer = set._equalityComparer;
+                _hashBucketEqualityComparer = set._hashBucketEqualityComparer;
                 _immutable = set;
             }
 
@@ -113,7 +119,7 @@ namespace System.Collections.Immutable
 
                     if (value != _equalityComparer)
                     {
-                        var result = Union(this, new MutationInput(SortedInt32KeyNode<HashBucket>.EmptyNode, value, 0));
+                        var result = Union(this, new MutationInput(SortedInt32KeyNode<HashBucket>.EmptyNode, value, _hashBucketEqualityComparer, 0));
 
                         _immutable = null;
                         _equalityComparer = value;
@@ -136,7 +142,7 @@ namespace System.Collections.Immutable
             /// </summary>
             private MutationInput Origin
             {
-                get { return new MutationInput(this.Root, _equalityComparer, _count); }
+                get { return new MutationInput(this.Root, _equalityComparer, _hashBucketEqualityComparer, _count); }
             }
 
             /// <summary>
@@ -259,7 +265,7 @@ namespace System.Collections.Immutable
             /// <param name="other">The collection of items to remove from the set.</param>
             public void ExceptWith(IEnumerable<T> other)
             {
-                var result = ImmutableHashSet<T>.Except(other, _equalityComparer, _root);
+                var result = ImmutableHashSet<T>.Except(other, _equalityComparer, _hashBucketEqualityComparer, _root);
                 this.Apply(result);
             }
 

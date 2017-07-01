@@ -33,6 +33,11 @@ namespace System.Collections.Immutable
             private readonly int _count;
 
             /// <summary>
+            /// The equality comparer to use when checking for <see cref="HashBucket"/> equality.
+            /// </summary>
+            private readonly IEqualityComparer<HashBucket> _hashBucketEqualityComparer;
+
+            /// <summary>
             /// Initializes a new instance of the <see cref="ImmutableHashSet{T}.MutationInput"/> struct.
             /// </summary>
             /// <param name="set">The set.</param>
@@ -42,6 +47,7 @@ namespace System.Collections.Immutable
                 _root = set._root;
                 _equalityComparer = set._equalityComparer;
                 _count = set._count;
+                _hashBucketEqualityComparer = set._hashBucketEqualityComparer;
             }
 
             /// <summary>
@@ -49,15 +55,19 @@ namespace System.Collections.Immutable
             /// </summary>
             /// <param name="root">The root.</param>
             /// <param name="equalityComparer">The equality comparer.</param>
+            /// <param name="hashBucketEqualityComparer">The equality comparer to use when checking for <see cref="HashBucket"/> equality.</param>
             /// <param name="count">The count.</param>
-            internal MutationInput(SortedInt32KeyNode<HashBucket> root, IEqualityComparer<T> equalityComparer, int count)
+            internal MutationInput(SortedInt32KeyNode<HashBucket> root, IEqualityComparer<T> equalityComparer, IEqualityComparer<HashBucket> hashBucketEqualityComparer, int count)
             {
                 Requires.NotNull(root, nameof(root));
                 Requires.NotNull(equalityComparer, nameof(equalityComparer));
                 Requires.Range(count >= 0, nameof(count));
+                Requires.NotNull(hashBucketEqualityComparer, nameof(hashBucketEqualityComparer));
+
                 _root = root;
                 _equalityComparer = equalityComparer;
                 _count = count;
+                _hashBucketEqualityComparer = hashBucketEqualityComparer;
             }
 
             /// <summary>
@@ -83,6 +93,11 @@ namespace System.Collections.Immutable
             {
                 get { return _count; }
             }
+
+            /// <summary>
+            /// Gets the equality comparer to use when checking for <see cref="HashBucket"/> equality.
+            /// </summary>
+            internal IEqualityComparer<HashBucket> HashBucketEqualityComparer => _hashBucketEqualityComparer;
         }
     }
 }
