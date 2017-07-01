@@ -18,47 +18,48 @@ namespace System.Drawing.Tests
 
         public static void VerifyBitmap(Bitmap bitmap, Color[][] colors)
         {
-            try
+            for (int y = 0; y < colors.Length; y++)
             {
-                for (int y = 0; y < colors.Length; y++)
+                for (int x = 0; x < colors[y].Length; x++)
                 {
-                    for (int x = 0; x < colors[y].Length; x++)
-                    {
-                        Color expectedColor = Color.FromArgb(colors[y][x].ToArgb());
-                        Color actualColor = bitmap.GetPixel(x, y);
+                    Color expectedColor = Color.FromArgb(colors[y][x].ToArgb());
+                    Color actualColor = bitmap.GetPixel(x, y);
 
-                        if (expectedColor != actualColor)
-                        {
-                            throw new AssertActualExpectedException(expectedColor, actualColor, $"{x},{y}");
-                        }
+                    if (expectedColor != actualColor)
+                    {
+                        throw GetBitmapEqualFailureException(bitmap, colors, x, y);
                     }
                 }
             }
-            catch (AssertActualExpectedException ex)
-            {
-                var actualStringBuilder = new StringBuilder();
-                var expectedStringBuilder = new StringBuilder();
+        }
 
+        private static Exception GetBitmapEqualFailureException(Bitmap bitmap, Color[][] colors, int firstFailureX, int firstFailureY)
+        {
+            // Print out the whole bitmap to provide a view of the whole image, rather than just the difference between
+            // a single pixel.
+            var actualStringBuilder = new StringBuilder();
+            var expectedStringBuilder = new StringBuilder();
+
+            actualStringBuilder.AppendLine();
+            expectedStringBuilder.AppendLine();
+
+            for (int y = 0; y < bitmap.Height; y++)
+            {
+                for (int x = 0; x < bitmap.Width; x++)
+                {
+                    PrintColor(actualStringBuilder, bitmap.GetPixel(x, y));
+                    PrintColor(expectedStringBuilder, colors[y][x]);
+                    if (x != bitmap.Width - 1)
+                    {
+                        actualStringBuilder.Append(", ");
+                        expectedStringBuilder.Append(", ");
+                    }
+                }
                 actualStringBuilder.AppendLine();
                 expectedStringBuilder.AppendLine();
-
-                for (int y = 0; y < bitmap.Height; y++)
-                {
-                    for (int x = 0; x < bitmap.Width; x++)
-                    {
-                        PrintColor(actualStringBuilder, bitmap.GetPixel(x, y));
-                        PrintColor(expectedStringBuilder, colors[y][x]);
-                        if (x != bitmap.Width - 1)
-                        {
-                            actualStringBuilder.Append(", ");
-                            expectedStringBuilder.Append(", ");
-                        }
-                    }
-                    actualStringBuilder.AppendLine();
-                    expectedStringBuilder.AppendLine();
-                }
-                throw new AssertActualExpectedException(expectedStringBuilder.ToString(), actualStringBuilder.ToString(), $"Bitmaps were different at {ex.UserMessage}.");
             }
+
+            return new AssertActualExpectedException(expectedStringBuilder.ToString(), actualStringBuilder.ToString(), $"Bitmaps were different at {firstFailureX}, {firstFailureY}.");
         }
 
         private static void PrintColor(StringBuilder stringBuilder, Color color)
