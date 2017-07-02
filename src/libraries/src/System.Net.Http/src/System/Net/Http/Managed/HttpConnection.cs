@@ -767,15 +767,18 @@ namespace System.Net.Http
                 int status = 100 * (status1 - '0') + 10 * (status2 - '0') + (status3 - '0');
                 response.StatusCode = (HttpStatusCode)status;
 
-                if (await ReadCharAsync(cancellationToken).ConfigureAwait(false) != ' ')
+                // Parse (optional) reason phrase
+                _sb.Clear();
+                char c = await ReadCharAsync(cancellationToken).ConfigureAwait(false);
+                if (c == ' ')
+                {
+                    c = await ReadCharAsync(cancellationToken).ConfigureAwait(false);
+                }
+                else if (c != '\r')
                 {
                     throw new HttpRequestException("Invalid characters in response line");
                 }
 
-                _sb.Clear();
-
-                // Parse reason phrase
-                char c = await ReadCharAsync(cancellationToken).ConfigureAwait(false);
                 while (c != '\r')
                 {
                     _sb.Append(c);
@@ -788,7 +791,7 @@ namespace System.Net.Http
                 }
 
                 string knownReasonPhrase = HttpStatusDescription.Get(response.StatusCode);
-                response.ReasonPhrase = CharArrayHelpers.EqualsOrdinal(knownReasonPhrase, _sb.Chars, 0, _sb.Length) ?
+                response.ReasonPhrase = knownReasonPhrase != null && CharArrayHelpers.EqualsOrdinal(knownReasonPhrase, _sb.Chars, 0, _sb.Length) ?
                     knownReasonPhrase :
                     _sb.ToString();
 

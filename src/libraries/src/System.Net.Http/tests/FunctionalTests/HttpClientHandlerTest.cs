@@ -1165,12 +1165,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(999)]
         public async Task GetAsync_ExpectedStatusCode(int statusCode)
         {
-            if (ManagedHandlerTestHelpers.IsEnabled)
-            {
-                // TODO #21452: The managed handler is failing when the server doesn't send a status description.
-                return;
-            }
-
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
                 using (var client = new HttpClient())
