@@ -608,6 +608,7 @@ namespace System.Net.Security
 
         private void ConsumeBufferedBytes(int byteCount)
         {
+            Debug.Assert(byteCount >= 0);
             Debug.Assert(byteCount <= _internalBufferCount);
 
             _internalOffset += byteCount;
