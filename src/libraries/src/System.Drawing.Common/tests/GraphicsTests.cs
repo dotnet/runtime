@@ -2,6 +2,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
@@ -130,7 +131,7 @@ namespace System.Drawing.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("hdc", () => Graphics.FromHdc(IntPtr.Zero));
         }
-        
+
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void FromHdcInternal_ZeroHdc_ThrowsOutOfMemoryException()
         {
@@ -336,6 +337,178 @@ namespace System.Drawing.Tests
             }
         }
 
+        public static IEnumerable<object[]> CompositingMode_TestData()
+        {
+            yield return new object[] { CompositingMode.SourceCopy, Color.FromArgb(160, 255, 255, 255) };
+            yield return new object[] { CompositingMode.SourceOver, Color.FromArgb(220, 185, 185, 185) };
+        }
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [MemberData(nameof(CompositingMode_TestData))]
+        public void CompositingMode_Set_GetReturnsExpected(CompositingMode mode, Color expectedOverlap)
+        {
+            Color transparentBlack = Color.FromArgb(160, 0, 0, 0);
+            Color transparentWhite = Color.FromArgb(160, 255, 255, 255);
+
+            using (var transparentBlackBrush = new SolidBrush(transparentBlack))
+            using (var transparentWhiteBrush = new SolidBrush(transparentWhite))
+            using (var image = new Bitmap(3, 3))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var targetImage = new Bitmap(3, 3))
+            using (Graphics targetGraphics = Graphics.FromImage(targetImage))
+            {
+                graphics.CompositingMode = mode;
+                Assert.Equal(mode, graphics.CompositingMode);
+
+                graphics.FillRectangle(transparentBlackBrush, new Rectangle(0, 0, 2, 2));
+                graphics.FillRectangle(transparentWhiteBrush, new Rectangle(1, 1, 2, 2));
+
+                targetGraphics.DrawImage(image, Point.Empty);
+                Helpers.VerifyBitmap(targetImage, new Color[][]
+                {
+                    new Color[] { transparentBlack,   transparentBlack, Helpers.EmptyColor },
+                    new Color[] { transparentBlack,   expectedOverlap,  transparentWhite   },
+                    new Color[] { Helpers.EmptyColor, transparentWhite, transparentWhite   }
+                });
+            }
+        }
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [InlineData(CompositingMode.SourceOver - 1)]
+        [InlineData(CompositingMode.SourceCopy + 1)]
+        public void CompositingMode_SetInvalid_ThrowsInvalidEnumArgumentException(CompositingMode compositingMode)
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => graphics.CompositingMode = compositingMode);
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void CompositingMode_GetSetWhenBusy_ThrowsInvalidOperationException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                IntPtr hdc = graphics.GetHdc();
+                try
+                {
+                    Assert.Throws<InvalidOperationException>(() => graphics.CompositingMode);
+                    Assert.Throws<InvalidOperationException>(() => graphics.CompositingMode = CompositingMode.SourceCopy);
+                }
+                finally
+                {
+                    graphics.ReleaseHdc();
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void CompositingMode_GetSetWhenDisposed_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            {
+                Graphics graphics = Graphics.FromImage(image);
+                graphics.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.CompositingMode);
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.CompositingMode = CompositingMode.SourceCopy);
+            }
+        }
+
+        public static IEnumerable<object[]> CompositingQuality_TestData()
+        {
+            Color transparentBlack = Color.FromArgb(160, 0, 0, 0);
+            Color transparentWhite = Color.FromArgb(160, 255, 255, 255);
+            var basicExpectedColors = new Color[][]
+            {
+                new Color[] { transparentBlack,   transparentBlack,                   Helpers.EmptyColor },
+                new Color[] { transparentBlack,   Color.FromArgb(220, 185, 185, 185), transparentWhite   },
+                new Color[] { Helpers.EmptyColor, transparentWhite,                   transparentWhite   }
+            };
+
+            yield return new object[] { CompositingQuality.AssumeLinear, basicExpectedColors };
+            yield return new object[] { CompositingQuality.Default, basicExpectedColors };
+            yield return new object[] { CompositingQuality.HighSpeed, basicExpectedColors };
+            yield return new object[] { CompositingQuality.Invalid, basicExpectedColors };
+
+            var gammaCorrectedColors = new Color[][]
+            {
+                new Color[] { Color.FromArgb(159, 0, 0, 0), Color.FromArgb(159, 0, 0, 0),       Color.FromArgb(0, 0, 0, 0)         },
+                new Color[] { Color.FromArgb(159, 0, 0, 0), Color.FromArgb(219, 222, 222, 222), Color.FromArgb(159, 255, 255, 255) },
+                new Color[] { Color.FromArgb(0, 0, 0, 0),   Color.FromArgb(159, 255, 255, 255), Color.FromArgb(159, 255, 255, 255) }
+            };
+            yield return new object[] { CompositingQuality.GammaCorrected, gammaCorrectedColors };
+            yield return new object[] { CompositingQuality.HighQuality, gammaCorrectedColors };
+        }
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [MemberData(nameof(CompositingQuality_TestData))]
+        public void CompositingQuality_Set_GetReturnsExpected(CompositingQuality quality, Color[][] expectedIntersectionColor)
+        {
+            Color transparentBlack = Color.FromArgb(160, 0, 0, 0);
+            Color transparentWhite = Color.FromArgb(160, 255, 255, 255);
+
+            using (var transparentBlackBrush = new SolidBrush(transparentBlack))
+            using (var transparentWhiteBrush = new SolidBrush(transparentWhite))
+            using (var image = new Bitmap(3, 3))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                graphics.CompositingQuality = quality;
+                Assert.Equal(quality, graphics.CompositingQuality);
+
+                graphics.FillRectangle(transparentBlackBrush, new Rectangle(0, 0, 2, 2));
+                graphics.FillRectangle(transparentWhiteBrush, new Rectangle(1, 1, 2, 2));
+
+                Helpers.VerifyBitmap(image, expectedIntersectionColor);
+            }
+        }
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [InlineData(CompositingQuality.Invalid - 1)]
+        [InlineData(CompositingQuality.AssumeLinear + 1)]
+        public void CompositingQuality_SetInvalid_ThrowsInvalidEnumArgumentException(CompositingQuality compositingQuality)
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => graphics.CompositingQuality = compositingQuality);
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void CompositingQuality_GetSetWhenBusy_ThrowsInvalidOperationException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                IntPtr hdc = graphics.GetHdc();
+                try
+                {
+                    Assert.Throws<InvalidOperationException>(() => graphics.CompositingQuality);
+                    Assert.Throws<InvalidOperationException>(() => graphics.CompositingQuality = CompositingQuality.AssumeLinear);
+                }
+                finally
+                {
+                    graphics.ReleaseHdc();
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void CompositingQuality_GetSetWhenDisposed_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            {
+                Graphics graphics = Graphics.FromImage(image);
+                graphics.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.CompositingQuality);
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.CompositingQuality = CompositingQuality.AssumeLinear);
+            }
+        }
+
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Dispose_MultipleTimesWithoutHdc_Success()
         {
@@ -363,6 +536,768 @@ namespace System.Drawing.Tests
 
                 // The backing image is not disposed.
                 Assert.Equal(10, bitmap.Height);
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DpiX_GetWhenBusy_ThrowsInvalidOperationException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                IntPtr hdc = graphics.GetHdc();
+                try
+                {
+                    Assert.Throws<InvalidOperationException>(() => graphics.DpiX);
+                }
+                finally
+                {
+                    graphics.ReleaseHdc();
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DpiX_GetWhenDisposed_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            {
+                Graphics graphics = Graphics.FromImage(image);
+                graphics.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DpiX);
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DpiY_GetWhenBusy_ThrowsInvalidOperationException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                IntPtr hdc = graphics.GetHdc();
+                try
+                {
+                    Assert.Throws<InvalidOperationException>(() => graphics.DpiX);
+                }
+                finally
+                {
+                    graphics.ReleaseHdc();
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DpiY_GetWhenDisposed_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            {
+                Graphics graphics = Graphics.FromImage(image);
+                graphics.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DpiX);
+            }
+        }
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [InlineData(FlushIntention.Flush)]
+        [InlineData(FlushIntention.Sync)]
+        [InlineData(FlushIntention.Flush - 1)] // Not in the range of valid values of FlushIntention.
+        [InlineData(FlushIntention.Sync - 1)] // Not in the range of valid values of FlushIntention.
+        public void Flush_MultipleTimes_Success(FlushIntention intention)
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                if (intention == FlushIntention.Flush)
+                {
+                    graphics.Flush();
+                    graphics.Flush();
+                }
+
+                graphics.Flush(intention);
+                graphics.Flush(intention);
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void Flush_Busy_ThrowsInvalidOperationException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                IntPtr hdc = graphics.GetHdc();
+                try
+                {
+                    Assert.Throws<InvalidOperationException>(() => graphics.Flush());
+                    Assert.Throws<InvalidOperationException>(() => graphics.Flush(FlushIntention.Sync));
+                }
+                finally
+                {
+                    graphics.ReleaseHdc();
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void Flush_Disposed_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            {
+                Graphics graphics = Graphics.FromImage(image);
+                graphics.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.Flush());
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.Flush(FlushIntention.Flush));
+            }
+        }
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [InlineData(InterpolationMode.Bicubic, InterpolationMode.Bicubic)]
+        [InlineData(InterpolationMode.Bilinear, InterpolationMode.Bilinear)]
+        [InlineData(InterpolationMode.Default, InterpolationMode.Bilinear)]
+        [InlineData(InterpolationMode.High, InterpolationMode.HighQualityBicubic)]
+        [InlineData(InterpolationMode.HighQualityBicubic, InterpolationMode.HighQualityBicubic)]
+        [InlineData(InterpolationMode.HighQualityBilinear, InterpolationMode.HighQualityBilinear)]
+        [InlineData(InterpolationMode.Low, InterpolationMode.Bilinear)]
+        [InlineData(InterpolationMode.NearestNeighbor, InterpolationMode.NearestNeighbor)]
+        public void InterpolationMode_SetValid_GetReturnsExpected(InterpolationMode interpolationMode, InterpolationMode expectedInterpolationMode)
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                graphics.InterpolationMode = interpolationMode;
+                Assert.Equal(expectedInterpolationMode, graphics.InterpolationMode);
+            }
+        }
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [InlineData(InterpolationMode.Invalid - 1)]
+        [InlineData(InterpolationMode.HighQualityBicubic + 1)]
+        public void InterpolationMode_SetInvalid_ThrowsInvalidEnumArgumentException(InterpolationMode interpolationMode)
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => graphics.InterpolationMode = interpolationMode);
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void InterpolationMode_SetToInvalid_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.InterpolationMode = InterpolationMode.Invalid);
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void InterpolationMode_GetSetWhenBusy_ThrowsInvalidOperationException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                IntPtr hdc = graphics.GetHdc();
+                try
+                {
+                    Assert.Throws<InvalidOperationException>(() => graphics.InterpolationMode);
+                    Assert.Throws<InvalidOperationException>(() => graphics.InterpolationMode = InterpolationMode.HighQualityBilinear);
+                }
+                finally
+                {
+                    graphics.ReleaseHdc();
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void InterpolationMode_GetSetWhenDisposed_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            {
+                Graphics graphics = Graphics.FromImage(image);
+                graphics.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.InterpolationMode);
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.InterpolationMode = InterpolationMode.HighQualityBilinear);
+            }
+        }
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [InlineData(1)]
+        [InlineData(1000000032)]
+        [InlineData(float.NaN)]
+        public void PageScale_SetValid_GetReturnsExpected(float pageScale)
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                graphics.PageScale = pageScale;
+                Assert.Equal(pageScale, graphics.PageScale);
+            }
+        }
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [InlineData(-1)]
+        [InlineData(0)]
+        [InlineData(1000000033)]
+        [InlineData(float.NegativeInfinity)]
+        [InlineData(float.PositiveInfinity)]
+        public void PageScale_SetInvalid_ThrowsArgumentException(float pageScale)
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.PageScale = pageScale);
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void PageScale_GetSetWhenBusy_ThrowsInvalidOperationException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                IntPtr hdc = graphics.GetHdc();
+                try
+                {
+                    Assert.Throws<InvalidOperationException>(() => graphics.PageScale);
+                    Assert.Throws<InvalidOperationException>(() => graphics.PageScale = 10);
+                }
+                finally
+                {
+                    graphics.ReleaseHdc();
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void PageScale_GetSetWhenDisposed_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            {
+                Graphics graphics = Graphics.FromImage(image);
+                graphics.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.PageScale);
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.PageScale = 10);
+            }
+        }
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [InlineData(GraphicsUnit.Display)]
+        [InlineData(GraphicsUnit.Document)]
+        [InlineData(GraphicsUnit.Inch)]
+        [InlineData(GraphicsUnit.Millimeter)]
+        [InlineData(GraphicsUnit.Pixel)]
+        [InlineData(GraphicsUnit.Point)]
+        public void PageUnit_SetValid_GetReturnsExpected(GraphicsUnit pageUnit)
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                graphics.PageUnit = pageUnit;
+                Assert.Equal(pageUnit, graphics.PageUnit);
+            }
+        }
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [InlineData(GraphicsUnit.World - 1)]
+        [InlineData(GraphicsUnit.Millimeter + 1)]
+        public void PageUnit_SetInvalid_ThrowsInvalidEnumArgumentException(GraphicsUnit pageUnit)
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => graphics.PageUnit = pageUnit);
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void PageUnit_SetWorld_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.PageUnit = GraphicsUnit.World);
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void PageUnit_GetSetWhenBusy_ThrowsInvalidOperationException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                IntPtr hdc = graphics.GetHdc();
+                try
+                {
+                    Assert.Throws<InvalidOperationException>(() => graphics.PageUnit);
+                    Assert.Throws<InvalidOperationException>(() => graphics.PageUnit = GraphicsUnit.Document);
+                }
+                finally
+                {
+                    graphics.ReleaseHdc();
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void PageUnit_GetSetWhenDisposed_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            {
+                Graphics graphics = Graphics.FromImage(image);
+                graphics.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.PageUnit);
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.PageUnit = GraphicsUnit.Document);
+            }
+        }
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [InlineData(PixelOffsetMode.Default)]
+        [InlineData(PixelOffsetMode.Half)]
+        [InlineData(PixelOffsetMode.HighQuality)]
+        [InlineData(PixelOffsetMode.HighSpeed)]
+        [InlineData(PixelOffsetMode.None)]
+        public void PixelOffsetMode_SetValid_GetReturnsExpected(PixelOffsetMode pixelOffsetMode)
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                graphics.PixelOffsetMode = pixelOffsetMode;
+                Assert.Equal(pixelOffsetMode, graphics.PixelOffsetMode);
+            }
+        }
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [InlineData(PixelOffsetMode.Invalid - 1)]
+        [InlineData(PixelOffsetMode.Half + 1)]
+        public void PixelOffsetMode_SetInvalid_ThrowsInvalidEnumArgumentException(PixelOffsetMode pixelOffsetMode)
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => graphics.PixelOffsetMode = pixelOffsetMode);
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void PixelOffsetMode_SetToInvalid_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.PixelOffsetMode = PixelOffsetMode.Invalid);
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void PixelOffsetMode_GetSetWhenBusy_ThrowsInvalidOperationException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                IntPtr hdc = graphics.GetHdc();
+                try
+                {
+                    Assert.Throws<InvalidOperationException>(() => graphics.PixelOffsetMode);
+                    Assert.Throws<InvalidOperationException>(() => graphics.PixelOffsetMode = PixelOffsetMode.Default);
+                }
+                finally
+                {
+                    graphics.ReleaseHdc();
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void PixelOffsetMode_GetSetWhenDisposed_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            {
+                Graphics graphics = Graphics.FromImage(image);
+                graphics.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.PixelOffsetMode);
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.PixelOffsetMode = PixelOffsetMode.Default);
+            }
+        }
+
+        public static IEnumerable<object[]> RenderingOrigin_TestData()
+        {
+            Color empty = Color.FromArgb(255, 0, 0, 0);
+            Color red = Color.FromArgb(Color.Red.ToArgb());
+
+            yield return new object[]
+            {
+                new Point(0, 0),
+                new Color[][]
+                {
+                    new Color[] { red, red,   red   },
+                    new Color[] { red, empty, empty },
+                    new Color[] { red, empty, empty }
+                }
+            };
+
+            yield return new object[]
+            {
+                new Point(1, 1),
+                new Color[][]
+                {
+                    new Color[] { empty, red, empty },
+                    new Color[] { red,   red, red   },
+                    new Color[] { empty, red, empty }
+                }
+            };
+
+            var allEmpty = new Color[][]
+            {
+                new Color[] { empty, empty, empty },
+                new Color[] { empty, empty, empty },
+                new Color[] { empty, empty, empty }
+            };
+
+            yield return new object[] { new Point(-3, -3), allEmpty };
+            yield return new object[] { new Point(3, 3), allEmpty };
+        }
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [MemberData(nameof(RenderingOrigin_TestData))]
+        public void RenderingOrigin_SetToCustom_RendersExpected(Point renderingOrigin, Color[][] expectedRendering)
+        {
+            Color empty = Color.FromArgb(255, 0, 0, 0);
+            Color red = Color.FromArgb(Color.Red.ToArgb());
+
+            using (var image = new Bitmap(3, 3))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var brush = new HatchBrush(HatchStyle.Cross, red))
+            {
+                graphics.RenderingOrigin = renderingOrigin;
+                Assert.Equal(renderingOrigin, graphics.RenderingOrigin);
+
+                graphics.FillRectangle(brush, new Rectangle(0, 0, 3, 3));
+                Helpers.VerifyBitmap(image, expectedRendering);
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void RenderingOrigin_GetSetWhenBusy_ThrowsInvalidOperationException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                IntPtr hdc = graphics.GetHdc();
+                try
+                {
+                    Assert.Throws<InvalidOperationException>(() => graphics.RenderingOrigin);
+                    Assert.Throws<InvalidOperationException>(() => graphics.RenderingOrigin = Point.Empty);
+                }
+                finally
+                {
+                    graphics.ReleaseHdc();
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void RenderingOrigin_GetSetWhenDisposed_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            {
+                Graphics graphics = Graphics.FromImage(image);
+                graphics.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.RenderingOrigin);
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.RenderingOrigin = Point.Empty);
+            }
+        }
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [InlineData(SmoothingMode.AntiAlias, SmoothingMode.AntiAlias)]
+        [InlineData(SmoothingMode.Default, SmoothingMode.None)]
+        [InlineData(SmoothingMode.HighQuality, SmoothingMode.AntiAlias)]
+        [InlineData(SmoothingMode.HighSpeed, SmoothingMode.None)]
+        [InlineData(SmoothingMode.None, SmoothingMode.None)]
+        public void SmoothingMode_SetValid_GetReturnsExpected(SmoothingMode smoothingMode, SmoothingMode expectedSmoothingMode)
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                graphics.SmoothingMode = smoothingMode;
+                Assert.Equal(expectedSmoothingMode, graphics.SmoothingMode);
+            }
+        }
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [InlineData(SmoothingMode.Invalid - 1)]
+        [InlineData(SmoothingMode.AntiAlias + 1)]
+        public void SmoothingMode_SetInvalid_ThrowsInvalidEnumArgumentException(SmoothingMode smoothingMode)
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => graphics.SmoothingMode = smoothingMode);
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void SmoothingMode_SetToInvalid_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.SmoothingMode = SmoothingMode.Invalid);
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void SmoothingMode_GetSetWhenBusy_ThrowsInvalidOperationException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                IntPtr hdc = graphics.GetHdc();
+                try
+                {
+                    Assert.Throws<InvalidOperationException>(() => graphics.SmoothingMode);
+                    Assert.Throws<InvalidOperationException>(() => graphics.SmoothingMode = SmoothingMode.AntiAlias);
+                }
+                finally
+                {
+                    graphics.ReleaseHdc();
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void SmoothingMode_GetSetWhenDisposed_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            {
+                Graphics graphics = Graphics.FromImage(image);
+                graphics.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.SmoothingMode);
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.SmoothingMode = SmoothingMode.AntiAlias);
+            }
+        }
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(12)]
+        public void TextContrast_SetValid_GetReturnsExpected(int textContrast)
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                graphics.TextContrast = textContrast;
+                Assert.Equal(textContrast, graphics.TextContrast);
+            }
+        }
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [InlineData(-1)]
+        [InlineData(13)]
+        public void TextContrast_SetInvalid_ThrowsArgumentException(int textContrast)
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.TextContrast = textContrast);
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void TextContrast_GetSetWhenBusy_ThrowsInvalidOperationException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                IntPtr hdc = graphics.GetHdc();
+                try
+                {
+                    Assert.Throws<InvalidOperationException>(() => graphics.TextContrast);
+                    Assert.Throws<InvalidOperationException>(() => graphics.TextContrast = 5);
+                }
+                finally
+                {
+                    graphics.ReleaseHdc();
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void TextContrast_GetSetWhenDisposed_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            {
+                Graphics graphics = Graphics.FromImage(image);
+                graphics.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.TextContrast);
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.TextContrast = 5);
+            }
+        }
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [InlineData(TextRenderingHint.AntiAlias)]
+        [InlineData(TextRenderingHint.AntiAliasGridFit)]
+        [InlineData(TextRenderingHint.ClearTypeGridFit)]
+        [InlineData(TextRenderingHint.SingleBitPerPixel)]
+        [InlineData(TextRenderingHint.SingleBitPerPixelGridFit)]
+        [InlineData(TextRenderingHint.SystemDefault)]
+        public void TextRenderingHint_SetValid_GetReturnsExpected(TextRenderingHint textRenderingHint)
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                graphics.TextRenderingHint = textRenderingHint;
+                Assert.Equal(textRenderingHint, graphics.TextRenderingHint);
+            }
+        }
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [InlineData(TextRenderingHint.SystemDefault - 1)]
+        [InlineData(TextRenderingHint.ClearTypeGridFit + 1)]
+        public void TextRenderingHint_SetInvalid_ThrowsInvalidEnumArgumentException(TextRenderingHint textRenderingHint)
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => graphics.TextRenderingHint = textRenderingHint);
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void TextRenderingHint_GetSetWhenBusy_ThrowsInvalidOperationException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                IntPtr hdc = graphics.GetHdc();
+                try
+                {
+                    Assert.Throws<InvalidOperationException>(() => graphics.TextRenderingHint);
+                    Assert.Throws<InvalidOperationException>(() => graphics.TextRenderingHint = TextRenderingHint.SingleBitPerPixelGridFit);
+                }
+                finally
+                {
+                    graphics.ReleaseHdc();
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void TextRenderingHint_GetSetWhenDisposed_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            {
+                Graphics graphics = Graphics.FromImage(image);
+                graphics.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.TextRenderingHint);
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.TextRenderingHint = TextRenderingHint.SingleBitPerPixelGridFit);
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void Transform_SetValid_GetReturnsExpected()
+        {
+            Color empty = Helpers.EmptyColor;
+            Color red = Color.FromArgb(Color.Red.ToArgb());
+
+            using (var image = new Bitmap(5, 5))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var brush = new SolidBrush(red))
+            using (var matrix = new Matrix())
+            {
+                matrix.Scale(1f / 3, 2);
+                matrix.Translate(2, 1);
+                matrix.Rotate(270);
+
+                graphics.Transform = matrix;
+                graphics.FillRectangle(brush, new Rectangle(0, 0, 3, 2));
+                Helpers.VerifyBitmap(image, new Color[][]
+                {
+                    new Color[] { empty, red,   empty, empty, empty },
+                    new Color[] { empty, red,   empty, empty, empty },
+                    new Color[] { empty, empty, empty, empty, empty },
+                    new Color[] { empty, empty, empty, empty, empty },
+                    new Color[] { empty, empty, empty, empty, empty }
+                });
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void Transform_SetNull_ThrowsNullReferenceException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                Assert.Throws<NullReferenceException>(() => graphics.Transform = null);
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void Transform_SetDisposedMatrix_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                var matrix = new Matrix();
+                matrix.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.Transform = matrix);
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void Transform_SetNonInvertibleMatrix_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(5, 5))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var matrix = new Matrix(123, 24, 82, 16, 47, 30))
+            {
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.Transform = matrix);
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void Transform_GetSetWhenBusy_ThrowsInvalidOperationException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var matrix = new Matrix())
+            {
+                IntPtr hdc = graphics.GetHdc();
+                try
+                {
+                    Assert.Throws<InvalidOperationException>(() => graphics.Transform);
+                    Assert.Throws<InvalidOperationException>(() => graphics.Transform = matrix);
+                }
+                finally
+                {
+                    graphics.ReleaseHdc();
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void Transform_GetSetWhenDisposed_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (var matrix = new Matrix())
+            {
+                Graphics graphics = Graphics.FromImage(image);
+                graphics.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.Transform);
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.Transform = matrix);
             }
         }
 
