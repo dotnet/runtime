@@ -50,11 +50,11 @@ namespace System.Net.Http.Functional.Tests
         public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
     }
 
-    public sealed class ManagedHandler_HttpClientHandler_ClientCertificates_Test : HttpClientHandler_ClientCertificates_Test, IDisposable
-    {
-        public ManagedHandler_HttpClientHandler_ClientCertificates_Test() => ManagedHandlerTestHelpers.SetEnvVar();
-        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
-    }
+    //public sealed class ManagedHandler_HttpClientHandler_ClientCertificates_Test : HttpClientHandler_ClientCertificates_Test, IDisposable
+    //{
+    //    public ManagedHandler_HttpClientHandler_ClientCertificates_Test() => ManagedHandlerTestHelpers.SetEnvVar();
+    //    public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+    //}
 
     public sealed class ManagedHandler_HttpClientHandler_DefaultProxyCredentials_Test : HttpClientHandler_DefaultProxyCredentials_Test, IDisposable
     {
@@ -72,11 +72,11 @@ namespace System.Net.Http.Functional.Tests
         public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
     }
 
-    public sealed class ManagedHandler_HttpClientHandler_ServerCertificates_Test : HttpClientHandler_ServerCertificates_Test, IDisposable
-    {
-        public ManagedHandler_HttpClientHandler_ServerCertificates_Test() => ManagedHandlerTestHelpers.SetEnvVar();
-        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
-    }
+    //public sealed class ManagedHandler_HttpClientHandler_ServerCertificates_Test : HttpClientHandler_ServerCertificates_Test, IDisposable
+    //{
+    //    public ManagedHandler_HttpClientHandler_ServerCertificates_Test() => ManagedHandlerTestHelpers.SetEnvVar();
+    //    public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+    //}
 
     public sealed class ManagedHandler_PostScenarioTest : PostScenarioTest, IDisposable
     {
