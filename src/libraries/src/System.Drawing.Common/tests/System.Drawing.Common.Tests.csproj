@@ -20,6 +20,7 @@
     <Compile Include="Helpers.cs" />
     <Compile Include="IconTests.cs" />
     <Compile Include="ImageTests.cs" />
+    <Compile Include="PenTests.cs" />
     <Compile Include="PensTests.cs" />
     <Compile Include="Imaging\BitmapDataTests.cs" />
     <Compile Include="Imaging\ColorMapTests.cs" />
