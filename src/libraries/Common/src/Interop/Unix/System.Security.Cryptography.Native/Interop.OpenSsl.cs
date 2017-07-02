@@ -231,15 +231,21 @@ internal static partial class Interop
             return retVal;
         }
 
-        internal static int Decrypt(SafeSslHandle context, byte[] outBuffer, int count, out Ssl.SslErrorCode errorCode)
+        internal static int Decrypt(SafeSslHandle context, byte[] outBuffer, int offset, int count, out Ssl.SslErrorCode errorCode)
         {
             errorCode = Ssl.SslErrorCode.SSL_ERROR_NONE;
 
-            int retVal = BioWrite(context.InputBio, outBuffer, 0, count);
+            int retVal = BioWrite(context.InputBio, outBuffer, offset, count);
 
             if (retVal == count)
             {
-                retVal = Ssl.SslRead(context, outBuffer, outBuffer.Length);
+                unsafe
+                {
+                    fixed (byte* fixedBuffer = outBuffer)
+                    {
+                        retVal = Ssl.SslRead(context, fixedBuffer + offset, outBuffer.Length);
+                    }
+                }
 
                 if (retVal > 0)
                 {
