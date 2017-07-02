@@ -62,7 +62,7 @@ namespace System
         /// <param name="text">The target string.</param>
         /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="text"/> is null.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<char> AsSpan(this string text)
+        public static ReadOnlySpan<char> AsReadOnlySpan(this string text)
         {
             if (text == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
