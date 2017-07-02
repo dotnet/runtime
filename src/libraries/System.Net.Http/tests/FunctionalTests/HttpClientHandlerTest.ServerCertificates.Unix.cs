@@ -19,6 +19,11 @@ namespace System.Net.Http.Functional.Tests
         {
             get
             {
+                if (ManagedHandlerTestHelpers.IsEnabled)
+                {
+                    return false;
+                }
+
                 if (!RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 {
                     return false;
@@ -51,6 +56,11 @@ namespace System.Net.Http.Functional.Tests
         {
             get
             {
+                if (ManagedHandlerTestHelpers.IsEnabled)
+                {
+                    return true;
+                }
+
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
                 {
                     return false;
