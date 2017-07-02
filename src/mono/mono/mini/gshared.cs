@@ -1972,6 +1972,30 @@ public class Tests
 		gsharedvt_vphi (0);
 		return 0;
 	}
+
+	struct AStruct3<T1, T2, T3> {
+		T1 t1;
+		T2 t2;
+		T3 t3;
+	}
+
+	interface IFaceIsRef {
+		bool is_ref<T> ();
+	}
+
+	class ClassIsRef : IFaceIsRef {
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
+		public bool is_ref<T> () {
+			return RuntimeHelpers.IsReferenceOrContainsReferences<T> ();
+		}
+	}
+
+	public static int test_0_isreference_intrins () {
+		IFaceIsRef iface = new ClassIsRef ();
+		Console.WriteLine ("X: " + iface.is_ref<AStruct3<int, int, int>> ());
+		Console.WriteLine ("X: " + iface.is_ref<AStruct3<string, int, int>> ());
+		return 0;
+	}
 }
 
 // #13191

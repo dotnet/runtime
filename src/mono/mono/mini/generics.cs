@@ -1314,6 +1314,13 @@ class Tests
 		return RuntimeHelpers.IsReferenceOrContainsReferences<T> ();
 	}
 
+	class IsRefClass<T> {
+		[MethodImplAttribute (MethodImplOptions.NoInlining)]
+		public bool is_ref () {
+			return RuntimeHelpers.IsReferenceOrContainsReferences<T> ();
+		}
+	}
+
 	[MethodImplAttribute (MethodImplOptions.NoInlining)]
 	public static bool is_ref_or_contains_refs_gen_ref<T> () {
 		return RuntimeHelpers.IsReferenceOrContainsReferences<GenStruct<T>> ();
@@ -1343,6 +1350,12 @@ class Tests
 		int i;
 	}
 
+	struct AStruct3<T1, T2, T3> {
+		T1 t1;
+		T2 t2;
+		T3 t3;
+	}
+
 	public static int test_0_isreference_intrins () {
 		if (RuntimeHelpers.IsReferenceOrContainsReferences<int> ())
 			return 1;
@@ -1367,6 +1380,14 @@ class Tests
 			return 9;
 		if (is_ref_or_contains_refs_gen_noref<string> ())
 			return 10;
+
+		// Complex type from shared class method
+		var c1 = new IsRefClass<AStruct3<int, int, int>> ();
+		if (c1.is_ref ())
+			return 11;
+		var c2 = new IsRefClass<AStruct3<string, int, int>> ();
+		if (!c2.is_ref ())
+			return 12;
 
 		return 0;
 	}

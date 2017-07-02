@@ -5055,11 +5055,15 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			g_assert (ctx);
 			g_assert (ctx->method_inst);
 			g_assert (ctx->method_inst->type_argc == 1);
-			MonoType *t = mini_get_underlying_type (ctx->method_inst->type_argv [0]);
-			MonoClass *klass = mono_class_from_mono_type (t);
+			MonoType *arg_type = ctx->method_inst->type_argv [0];
+			MonoType *t;
+			MonoClass *klass;
 
 			ins = NULL;
 
+			/* Resolve the argument class as possible so we can handle common cases fast */
+			t = mini_get_underlying_type (arg_type);
+			klass = mono_class_from_mono_type (t);
 			mono_class_init (klass);
 			if (MONO_TYPE_IS_REFERENCE (t))
 				EMIT_NEW_ICONST (cfg, ins, 1);
@@ -5072,10 +5076,12 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 			else {
 				g_assert (cfg->gshared);
 
-				int context_used = mini_class_check_context_used (cfg, klass);
+				/* Have to use the original argument class here */
+				MonoClass *arg_class = mono_class_from_mono_type (arg_type);
+				int context_used = mini_class_check_context_used (cfg, arg_class);
 
 				/* This returns 1 or 2 */
-				MonoInst *info = mini_emit_get_rgctx_klass (cfg, context_used, klass, 	MONO_RGCTX_INFO_CLASS_IS_REF_OR_CONTAINS_REFS);
+				MonoInst *info = mini_emit_get_rgctx_klass (cfg, context_used, arg_class, MONO_RGCTX_INFO_CLASS_IS_REF_OR_CONTAINS_REFS);
 				int dreg = alloc_ireg (cfg);
 				EMIT_NEW_BIALU_IMM (cfg, ins, OP_ISUB_IMM, dreg, info->dreg, 1);
 			}
