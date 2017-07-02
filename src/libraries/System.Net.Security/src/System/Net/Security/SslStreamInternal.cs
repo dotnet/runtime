@@ -536,16 +536,15 @@ namespace System.Net.Security
             return minSize;
         }
 
-        private static async void TaskToAsyncProtocolRequest2(Task<int> task, AsyncProtocolRequest asyncRequest)
+        private static void CompleteFromCompletedTask(Task<int> task, AsyncProtocolRequest asyncRequest)
         {
-            try
-            {
-                asyncRequest.CompleteRequest(await task.ConfigureAwait(false));
-            }
-            catch (Exception e)
-            {
-                asyncRequest.CompleteUserWithError(e);
-            }
+            Debug.Assert(task.IsCompleted);
+            if (task.IsCompletedSuccessfully)
+                asyncRequest.CompleteRequest(task.Result);
+            else if (task.IsFaulted)
+                asyncRequest.CompleteUserWithError(task.Exception.InnerException);
+            else
+                asyncRequest.CompleteUserWithError(new OperationCanceledException());
         }
 
         // Returns true if pending, false if completed
@@ -554,7 +553,18 @@ namespace System.Net.Security
             // Parameters other than asyncCallback are not used
             asyncRequest.SetNextRequest(null, 0, 0, asyncCallback);
 
-            TaskToAsyncProtocolRequest2(task, asyncRequest);
+            if (task.IsCompleted)
+            {
+                CompleteFromCompletedTask(task, asyncRequest);
+            }
+            else
+            {
+                task.ContinueWith((t, s) => CompleteFromCompletedTask(t, (AsyncProtocolRequest)s),
+                    asyncRequest,
+                    CancellationToken.None,
+                    TaskContinuationOptions.ExecuteSynchronously | TaskContinuationOptions.DenyChildAttach,
+                    TaskScheduler.Default);
+            }
 
             if (asyncRequest.MustCompleteSynchronously)
             {
