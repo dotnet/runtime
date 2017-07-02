@@ -540,11 +540,17 @@ namespace System.Net.Security
         {
             Debug.Assert(task.IsCompleted);
             if (task.IsCompletedSuccessfully)
+            {
                 asyncRequest.CompleteRequest(task.Result);
+            }
             else if (task.IsFaulted)
+            {
                 asyncRequest.CompleteUserWithError(task.Exception.InnerException);
+            }
             else
+            {
                 asyncRequest.CompleteUserWithError(new OperationCanceledException());
+            }
         }
 
         // Returns true if pending, false if completed
