@@ -30,7 +30,6 @@ namespace System.Drawing
         private void SetNativeFamily(IntPtr family)
         {
             Debug.Assert(_nativeFamily == IntPtr.Zero, "Setting GDI+ native font family when already initialized.");
-            Debug.Assert(family != IntPtr.Zero, "Setting GDI+ native font family to null.");
 
             _nativeFamily = family;
 #if DEBUG
