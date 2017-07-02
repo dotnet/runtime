@@ -239,14 +239,6 @@ namespace System.Net.Security
             }
         }
 
-        internal bool DataAvailable
-        {
-            get
-            {
-                return IsAuthenticated && (SecureStream.DataAvailable || _queuedReadCount != 0);
-            }
-        }
-
         internal CipherAlgorithmType CipherAlgorithm
         {
             get
@@ -894,7 +886,7 @@ namespace System.Net.Security
                 _Framing = DetectFraming(buffer, readBytes);
             }
 
-            int restBytes = GetRemainingFrameSize(buffer, readBytes);
+            int restBytes = GetRemainingFrameSize(buffer, 0, readBytes);
 
             if (restBytes < 0)
             {
@@ -1676,9 +1668,9 @@ namespace System.Net.Security
 
         //
         // This is called from SslStream class too.
-        internal int GetRemainingFrameSize(byte[] buffer, int dataSize)
+        internal int GetRemainingFrameSize(byte[] buffer, int offset, int dataSize)
         {
-            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, buffer, dataSize);
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this, buffer, offset, dataSize);
 
             int payloadSize = -1;
             switch (_Framing)
@@ -1691,16 +1683,16 @@ namespace System.Net.Security
                     }
                     // Note: Cannot detect version mismatch for <= SSL2
 
-                    if ((buffer[0] & 0x80) != 0)
+                    if ((buffer[offset] & 0x80) != 0)
                     {
                         // Two bytes
-                        payloadSize = (((buffer[0] & 0x7f) << 8) | buffer[1]) + 2;
+                        payloadSize = (((buffer[offset] & 0x7f) << 8) | buffer[offset + 1]) + 2;
                         payloadSize -= dataSize;
                     }
                     else
                     {
                         // Three bytes
-                        payloadSize = (((buffer[0] & 0x3f) << 8) | buffer[1]) + 3;
+                        payloadSize = (((buffer[offset] & 0x3f) << 8) | buffer[offset + 1]) + 3;
                         payloadSize -= dataSize;
                     }
 
@@ -1711,7 +1703,7 @@ namespace System.Net.Security
                         throw new System.IO.IOException(SR.net_ssl_io_frame);
                     }
 
-                    payloadSize = ((buffer[3] << 8) | buffer[4]) + 5;
+                    payloadSize = ((buffer[offset + 3] << 8) | buffer[offset + 4]) + 5;
                     payloadSize -= dataSize;
                     break;
                 default:
