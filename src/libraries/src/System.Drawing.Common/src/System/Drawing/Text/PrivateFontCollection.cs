@@ -57,7 +57,7 @@ namespace System.Drawing.Text
         /// </summary>
         public void AddFontFile(string filename)
         {
-            filename = Path.GetFullPath(filename);
+            Path.GetFullPath(filename);
 
             int status = SafeNativeMethods.Gdip.GdipPrivateAddFontFile(new HandleRef(this, _nativeFontCollection), filename);
             SafeNativeMethods.Gdip.CheckStatus(status);
