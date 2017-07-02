@@ -574,7 +574,7 @@ G_GNUC_UNUSED gboolean
 mono_debug_count (void)
 {
 	static int count = 0, int_val = 0;
-	static gboolean inited;
+	static gboolean inited, has_value = FALSE;
 
 	count ++;
 
@@ -583,11 +583,12 @@ mono_debug_count (void)
 		if (value) {
 			int_val = atoi (value);
 			g_free (value);
+			has_value = TRUE;
 		}
 		inited = TRUE;
 	}
 
-	if (!int_val)
+	if (!has_value)
 		return TRUE;
 
 	if (count == int_val)
