@@ -102,13 +102,11 @@ namespace System.Net.Http.Functional.Tests
         public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
     }
 
-    // TODO #21452:
-    //
-    //public sealed class ManagedHandler_HttpClientMiniStress : HttpClientMiniStress, IDisposable
-    //{
-    //    public ManagedHandler_HttpClientMiniStress() => ManagedHandlerTestHelpers.SetEnvVar();
-    //    public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
-    //}
+    public sealed class ManagedHandler_HttpClientMiniStress : HttpClientMiniStress, IDisposable
+    {
+        public ManagedHandler_HttpClientMiniStress() => ManagedHandlerTestHelpers.SetEnvVar();
+        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+    }
 
     // TODO #21452:
     //
