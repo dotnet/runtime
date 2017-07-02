@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Net.Security;
 using System.Net.Test.Common;
-using System.Runtime.InteropServices;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
@@ -69,11 +68,17 @@ namespace System.Net.Http.Functional.Tests
                 }
             }
         }
-
+        
         [OuterLoop] // TODO: Issue #11345
-        [ConditionalFact(nameof(BackendSupportsCustomCertificateHandling))]
+        [Fact]
         public async Task UseCallback_NotSecureConnection_CallbackNotCalled()
         {
+            if (BackendDoesNotSupportCustomCertificateHandling) // can't use [Conditional*] right now as it's evaluated at the wrong time for the managed handler
+            {
+                Console.WriteLine($"Skipping {nameof(UseCallback_NotSecureConnection_CallbackNotCalled)}()");
+                return;
+            }
+
             var handler = new HttpClientHandler();
             using (var client = new HttpClient(handler))
             {
@@ -105,10 +110,16 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [ConditionalTheory(nameof(BackendSupportsCustomCertificateHandling))]
+        [Theory]
         [MemberData(nameof(UseCallback_ValidCertificate_ExpectedValuesDuringCallback_Urls))]
         public async Task UseCallback_ValidCertificate_ExpectedValuesDuringCallback(Uri url, bool checkRevocation)
         {
+            if (BackendDoesNotSupportCustomCertificateHandling) // can't use [Conditional*] right now as it's evaluated at the wrong time for the managed handler
+            {
+                Console.WriteLine($"Skipping {nameof(UseCallback_ValidCertificate_ExpectedValuesDuringCallback)}({url}, {checkRevocation})");
+                return;
+            }
+
             var handler = new HttpClientHandler();
             using (var client = new HttpClient(handler))
             {
@@ -134,9 +145,15 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [ConditionalFact(nameof(BackendSupportsCustomCertificateHandling))]
+        [Fact]
         public async Task UseCallback_CallbackReturnsFailure_ThrowsException()
         {
+            if (BackendDoesNotSupportCustomCertificateHandling) // can't use [Conditional*] right now as it's evaluated at the wrong time for the managed handler
+            {
+                Console.WriteLine($"Skipping {nameof(UseCallback_CallbackReturnsFailure_ThrowsException)}()");
+                return;
+            }
+
             var handler = new HttpClientHandler();
             using (var client = new HttpClient(handler))
             {
@@ -146,9 +163,15 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [ConditionalFact(nameof(BackendSupportsCustomCertificateHandling))]
+        [Fact]
         public async Task UseCallback_CallbackThrowsException_ExceptionPropagates()
         {
+            if (BackendDoesNotSupportCustomCertificateHandling) // can't use [Conditional*] right now as it's evaluated at the wrong time for the managed handler
+            {
+                Console.WriteLine($"Skipping {nameof(UseCallback_CallbackThrowsException_ExceptionPropagates)}()");
+                return;
+            }
+
             var handler = new HttpClientHandler();
             using (var client = new HttpClient(handler))
             {
@@ -200,9 +223,15 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [ConditionalFact(nameof(BackendSupportsCustomCertificateHandling))]
+        [Fact]
         public async Task NoCallback_RevokedCertificate_RevocationChecking_Fails()
         {
+            if (BackendDoesNotSupportCustomCertificateHandling) // can't use [Conditional*] right now as it's evaluated at the wrong time for the managed handler
+            {
+                Console.WriteLine($"Skipping {nameof(NoCallback_RevokedCertificate_RevocationChecking_Fails)}()");
+                return;
+            }
+
             var handler = new HttpClientHandler() { CheckCertificateRevocationList = true };
             using (var client = new HttpClient(handler))
             {
@@ -219,10 +248,16 @@ namespace System.Net.Http.Functional.Tests
 
         [ActiveIssue(7812, TestPlatforms.Windows)]
         [OuterLoop] // TODO: Issue #11345
-        [ConditionalTheory(nameof(BackendSupportsCustomCertificateHandling))]
+        [Theory]
         [MemberData(nameof(CertificateValidationServersAndExpectedPolicies))]
         public async Task UseCallback_BadCertificate_ExpectedPolicyErrors(string url, SslPolicyErrors expectedErrors)
         {
+            if (BackendDoesNotSupportCustomCertificateHandling) // can't use [Conditional*] right now as it's evaluated at the wrong time for the managed handler
+            {
+                Console.WriteLine($"Skipping {nameof(UseCallback_BadCertificate_ExpectedPolicyErrors)}({url}, {expectedErrors})");
+                return;
+            }
+
             var handler = new HttpClientHandler();
             using (var client = new HttpClient(handler))
             {
@@ -254,9 +289,14 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [ConditionalFact(nameof(BackendDoesNotSupportCustomCertificateHandling))]
+        [Fact]
         public async Task SSLBackendNotSupported_Callback_ThrowsPlatformNotSupportedException()
         {
+            if (BackendSupportsCustomCertificateHandling) // can't use [Conditional*] right now as it's evaluated at the wrong time for the managed handler
+            {
+                return;
+            }
+
             using (var client = new HttpClient(new HttpClientHandler() { ServerCertificateCustomValidationCallback = delegate { return true; } }))
             {
                 await Assert.ThrowsAsync<PlatformNotSupportedException>(() => client.GetAsync(Configuration.Http.SecureRemoteEchoServer));
@@ -264,11 +304,16 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [ConditionalFact(nameof(BackendDoesNotSupportCustomCertificateHandling))]
+        [Fact]
         // For macOS the "custom handling" means that revocation can't be *disabled*. So this test does not apply.
         [PlatformSpecific(~TestPlatforms.OSX)]
         public async Task SSLBackendNotSupported_Revocation_ThrowsPlatformNotSupportedException()
         {
+            if (BackendSupportsCustomCertificateHandling) // can't use [Conditional*] right now as it's evaluated at the wrong time for the managed handler
+            {
+                return;
+            }
+
             using (var client = new HttpClient(new HttpClientHandler() { CheckCertificateRevocationList = true }))
             {
                 await Assert.ThrowsAsync<PlatformNotSupportedException>(() => client.GetAsync(Configuration.Http.SecureRemoteEchoServer));
