@@ -13,7 +13,7 @@ namespace System.SpanTests
         public static void StringAsSpanNullary()
         {
             string s = "Hello";
-            ReadOnlySpan<char> span = s.AsSpan();
+            ReadOnlySpan<char> span = s.AsReadOnlySpan();
             char[] expected = s.ToCharArray();
             span.Validate(expected);
         }
@@ -22,7 +22,7 @@ namespace System.SpanTests
         public static void StringAsSpanEmptyString()
         {
             string s = "";
-            ReadOnlySpan<char> span = s.AsSpan();
+            ReadOnlySpan<char> span = s.AsReadOnlySpan();
             char[] expected = s.ToCharArray();
             span.Validate(expected);
         }
@@ -31,7 +31,7 @@ namespace System.SpanTests
         public static void StringAsSpanNullChecked()
         {
             string s = null;
-            Assert.Throws<ArgumentNullException>(() => s.AsSpan().DontBox());
+            Assert.Throws<ArgumentNullException>(() => s.AsReadOnlySpan().DontBox());
         }
     }
 }
