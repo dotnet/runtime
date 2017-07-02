@@ -102,6 +102,30 @@ namespace System.Net.Http.Functional.Tests
         public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
     }
 
+    // TODO #21452:
+    //
+    //public sealed class ManagedHandler_HttpClientMiniStress : HttpClientMiniStress, IDisposable
+    //{
+    //    public ManagedHandler_HttpClientMiniStress() => ManagedHandlerTestHelpers.SetEnvVar();
+    //    public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+    //}
+
+    // TODO #21452:
+    //
+    //public sealed class ManagedHandler_DefaultCredentialsTest : DefaultCredentialsTest, IDisposable
+    //{
+    //    public ManagedHandler_DefaultCredentialsTest(ITestOutputHelper output) : base(output) => ManagedHandlerTestHelpers.SetEnvVar();
+    //    public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+    //}
+
+    // TODO #21452:
+    //
+    //public sealed class ManagedHandler_HttpClientHandlerTest : HttpClientHandlerTest, IDisposable
+    //{
+    //    public ManagedHandler_HttpClientHandlerTest(ITestOutputHelper output) : base(output) => ManagedHandlerTestHelpers.SetEnvVar();
+    //    public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+    //}
+
     // TODO #21452: Socket's don't support canceling individual operations, so ReadStream on NetworkStream
     // isn't cancelable once the operation has started.  We either need to wrap the operation with one that's
     // "cancelable", meaning that the underlying operation will still be running even though we've returned "canceled",
