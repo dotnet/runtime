@@ -151,6 +151,18 @@ typedef unsigned short AssertionIndex;
 
 static const AssertionIndex NO_ASSERTION_INDEX = 0;
 
+//------------------------------------------------------------------------
+// GetAssertionIndex: return 1-based AssertionIndex from 0-based int index.
+//
+// Arguments:
+//    index - 0-based index
+// Return Value:
+//    1-based AssertionIndex.
+inline AssertionIndex GetAssertionIndex(unsigned index)
+{
+    return (AssertionIndex)(index + 1);
+}
+
 class AssertionInfo
 {
     // true if the assertion holds on the bbNext edge instead of the bbJumpDest edge (for GT_JTRUE nodes)
