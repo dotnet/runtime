@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <ItemGroup>
     <ProjectReference Include="..\ref\System.Data.SqlClient.csproj">
-      <SupportedFramework>net461;netcoreapp2.0;uap10.1;$(AllXamarinFrameworks)</SupportedFramework>
+      <SupportedFramework>net461;netcoreapp2.0;$(UAPvNextTFM);$(AllXamarinFrameworks)</SupportedFramework>
     </ProjectReference>
     <ProjectReference Include="..\src\System.Data.SqlClient.csproj" />
     <HarvestIncludePaths Include="ref/net451;lib/net451;runtimes/win/lib/net451" />

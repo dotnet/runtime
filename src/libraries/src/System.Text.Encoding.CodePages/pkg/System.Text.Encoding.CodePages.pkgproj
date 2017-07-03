@@ -14,7 +14,7 @@
     </HarvestIncludePaths>
   </ItemGroup>
   <ItemGroup>
-    <InboxOnTargetFramework Include="uap10.1">
+    <InboxOnTargetFramework Include="$(UAPvNextTFM)">
       <PackageTargetRuntime>win</PackageTargetRuntime>
     </InboxOnTargetFramework>
     <InboxOnTargetFramework Include="MonoAndroid10" />
