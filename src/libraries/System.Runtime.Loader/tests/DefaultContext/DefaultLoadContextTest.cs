@@ -32,100 +32,63 @@ namespace System.Runtime.Loader.Tests
 
     public class OverrideDefaultLoadContext : AssemblyLoadContext
     {
-        private bool m_fLoadedFromContext = false;
+        public bool LoadedFromContext { get; set; } = false;
 
         protected override Assembly Load(AssemblyName assemblyName)
         {
             // Override the assembly that was loaded in DefaultContext.
             string assemblyPath = Path.Combine(Path.GetDirectoryName(typeof(string).Assembly.Location), assemblyName.Name + ".dll");
             Assembly assembly = LoadFromAssemblyPath(assemblyPath);
-            m_fLoadedFromContext = true;
+            LoadedFromContext = true;
             return assembly;
-        }
-
-        public bool LoadedFromContext
-        {
-            get
-            {
-                return m_fLoadedFromContext;
-            }
-            set
-            {
-                m_fLoadedFromContext = value;
-            }
         }
     }
 
     [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "AssemblyLoadContext not supported on .Net Native")]
     public class DefaultLoadContextTests
     {
-        private static string s_loadFromPath = null;
+        private const string TestAssemblyName = "System.Runtime.Loader.Noop.Assembly";
+        private string _assemblyPath;
+        private string _defaultLoadDirectory;
 
         // Since the first non-Null returning callback should stop Resolving event processing,
         // this counter is used to assert the same.
-        private static int s_NumNonNullResolutions = 0;
+        private int _numNonNullResolutions = 0;
 
-        private static Assembly ResolveAssembly(AssemblyLoadContext sender, AssemblyName assembly)
+        public DefaultLoadContextTests()
         {
-            string assemblyFilename = assembly.Name + ".dll";
-            s_NumNonNullResolutions++;
-
-            return sender.LoadFromAssemblyPath(Path.Combine(s_loadFromPath, assemblyFilename));
+            _defaultLoadDirectory = GetDefaultAssemblyLoadDirectory();
+            _assemblyPath = Path.Combine(_defaultLoadDirectory, "System.Runtime.Loader.Noop.Assembly_test.dll");
         }
 
-        private static Assembly ResolveAssemblyAgain(AssemblyLoadContext sender, AssemblyName assembly)
+        private static string GetDefaultAssemblyLoadDirectory()
         {
-            string assemblyFilename = assembly.Name + ".dll";
-            s_NumNonNullResolutions++;
-
-            return sender.LoadFromAssemblyPath(Path.Combine(s_loadFromPath, assemblyFilename));
+            return Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
         }
 
-        private static Assembly ResolveNullAssembly(AssemblyLoadContext sender, AssemblyName assembly)
+        private Assembly ResolveAssembly(AssemblyLoadContext sender, AssemblyName assembly)
+        {
+            string resolvedAssemblyPath = Path.Combine(_defaultLoadDirectory, assembly.Name + "_test.dll");
+            _numNonNullResolutions++;
+
+            return sender.LoadFromAssemblyPath(resolvedAssemblyPath);
+        }
+
+        private Assembly ResolveAssemblyAgain(AssemblyLoadContext sender, AssemblyName assembly)
+        {
+            return ResolveAssembly(sender, assembly);
+        }
+
+        private Assembly ResolveNullAssembly(AssemblyLoadContext sender, AssemblyName assembly)
         {
             return null;
         }
 
-        private static void Init()
-        {
-            // Delete the assembly from the temp location if it exists.
-            var assemblyFilename = "System.Runtime.Loader.Noop.Assembly.dll";
-            s_NumNonNullResolutions = 0;
-
-            // Form the dynamic path that would not collide if another instance of this test is running.
-            s_loadFromPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-            
-            // Create the folder
-            Directory.CreateDirectory(s_loadFromPath);
-            
-            var targetPath = Path.Combine(s_loadFromPath, assemblyFilename);
-
-            // Rename the file local to the test folder.
-            var sourcePath = Path.Combine(Directory.GetCurrentDirectory(),assemblyFilename);
-            var targetRenamedPath = Path.Combine(Directory.GetCurrentDirectory(), "System.Runtime.Loader.Noop.Assembly_test.dll");
-            if (File.Exists(sourcePath))
-            {
-                if (File.Exists(targetRenamedPath))
-                {
-                    File.Delete(targetRenamedPath);
-                }
-
-                File.Move(sourcePath, targetRenamedPath);
-            }
-
-            // Finally, copy the file to the temp location from where we expect to load it
-            File.Copy(targetRenamedPath, targetPath); 
-        }
-
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20303", TargetFrameworkMonikers.Uap)]
-        public static void LoadInDefaultContext()
+        public void LoadInDefaultContext()
         {
-            Init();
-
             // This will attempt to load an assembly, by path, in the Default Load context via the Resolving event
-            var assemblyNameStr = "System.Runtime.Loader.Noop.Assembly";
-            var assemblyName = new AssemblyName(assemblyNameStr);
+            var assemblyName = new AssemblyName(TestAssemblyName);
 
             // By default, the assembly should not be found in DefaultContext at all
             Assert.Throws(typeof(FileNotFoundException), () => Assembly.Load(assemblyName));
@@ -141,15 +104,15 @@ namespace System.Runtime.Loader.Tests
             Assert.NotNull(slcLoadedAssembly);
 
             // And make sure the simple name matches
-            Assert.Equal(assemblyNameStr, slcLoadedAssembly.GetName().Name);
+            Assert.Equal(TestAssemblyName, slcLoadedAssembly.GetName().Name);
 
             // We should have only invoked non-Null returning handler once
-            Assert.Equal(1, s_NumNonNullResolutions);
+            Assert.Equal(1, _numNonNullResolutions);
 
             slc.Resolving -= ResolveAssembly;
 
             // Reset the non-Null resolution counter
-            s_NumNonNullResolutions = 0;
+            _numNonNullResolutions = 0;
 
             // Now, wireup the Resolving event of default context to locate the assembly via multiple handlers
             AssemblyLoadContext.Default.Resolving += ResolveNullAssembly;
@@ -163,20 +126,20 @@ namespace System.Runtime.Loader.Tests
             Assert.NotNull(assemblyExpectedFromLoad);
 
             // We should have only invoked non-Null returning handler once
-            Assert.Equal(1, s_NumNonNullResolutions);
+            Assert.Equal(1, _numNonNullResolutions);
 
             // And make sure the simple name matches
-            Assert.Equal(assemblyNameStr, assemblyExpectedFromLoad.GetName().Name);
+            Assert.Equal(TestAssemblyName, assemblyExpectedFromLoad.GetName().Name);
 
             // The assembly loaded in DefaultContext should have a different reference from the one in secondary load context
             Assert.NotEqual(slcLoadedAssembly, assemblyExpectedFromLoad);
 
             // Reset the non-Null resolution counter
-            s_NumNonNullResolutions = 0;
+            _numNonNullResolutions = 0;
 
             // Since the assembly is already loaded in TPA Binder, we will get that back without invoking any Resolving event handlers
             var assemblyExpected = AssemblyLoadContext.Default.LoadFromAssemblyName(assemblyName);
-            Assert.Equal(0, s_NumNonNullResolutions);
+            Assert.Equal(0, _numNonNullResolutions);
 
             // We should have successfully loaded the assembly in default context.
             Assert.NotNull(assemblyExpected);
@@ -185,7 +148,7 @@ namespace System.Runtime.Loader.Tests
             Assert.Equal(assemblyExpected, assemblyExpectedFromLoad);
 
             // And make sure the simple name matches
-            Assert.Equal(assemblyExpected.GetName().Name, assemblyNameStr);
+            Assert.Equal(assemblyExpected.GetName().Name, TestAssemblyName);
 
             // Unwire the Resolving event.
             AssemblyLoadContext.Default.Resolving -= ResolveAssemblyAgain;
@@ -194,7 +157,7 @@ namespace System.Runtime.Loader.Tests
 
             // Unwire the Resolving event and attempt to load the assembly again. This time
             // it should be found in the Default Load Context.
-            var assemblyLoaded = Assembly.Load(new AssemblyName(assemblyNameStr));
+            var assemblyLoaded = Assembly.Load(new AssemblyName(TestAssemblyName));
 
             // We should have successfully found the assembly in default context.
             Assert.NotNull(assemblyLoaded);
@@ -217,14 +180,13 @@ namespace System.Runtime.Loader.Tests
                 () => AssemblyLoadContext.Default.LoadFromAssemblyName(new AssemblyName("System.Runtime.Loader.NonExistent.Assembly")));
         }
 
-        public static void DefaultContextFallback()
+        public void DefaultContextFallback()
         {
-            var assemblyNameStr = "System.Runtime.Loader.Noop.Assembly.dll";
             var lcDefault = AssemblyLoadContext.Default;
             
             // Load the assembly in custom load context
             FallbackLoadContext flc = new FallbackLoadContext();
-            var asmTargetAsm = flc.LoadFromAssemblyPath(Path.Combine(s_loadFromPath, assemblyNameStr));
+            var asmTargetAsm = flc.LoadFromAssemblyPath(_assemblyPath);
             var loadedContext = AssemblyLoadContext.GetLoadContext(asmTargetAsm);
 
             // LoadContext of the assembly should be the custom context and not DefaultContext
@@ -249,7 +211,7 @@ namespace System.Runtime.Loader.Tests
             // Now, do the same from an assembly that we explicitly had loaded in DefaultContext
             // in the caller of this method. We should get it from FallbackLoadContext since we
             // explicitly loaded it there as well.
-            assemblyName = "System.Runtime.Loader.Noop.Assembly";
+            assemblyName = TestAssemblyName;
             Assembly asmLoaded2 = (Assembly)method.Invoke(null, new object[] {assemblyName});
             loadedContext = AssemblyLoadContext.GetLoadContext(asmLoaded2);
 
@@ -273,14 +235,13 @@ namespace System.Runtime.Loader.Tests
             Assert.Equal(typeof(FileNotFoundException), ex.GetType());
         }
 
-        public static void DefaultContextOverrideTPA()
+        public void DefaultContextOverrideTPA()
         {
-            var assemblyNameStr = "System.Runtime.Loader.Noop.Assembly.dll";
             var lcDefault = AssemblyLoadContext.Default;
             
             // Load the assembly in custom load context
             OverrideDefaultLoadContext olc = new OverrideDefaultLoadContext();
-            var asmTargetAsm = olc.LoadFromAssemblyPath(Path.Combine(s_loadFromPath, assemblyNameStr));
+            var asmTargetAsm = olc.LoadFromAssemblyPath(_assemblyPath);
             var loadedContext = AssemblyLoadContext.GetLoadContext(asmTargetAsm);
 
             // LoadContext of the assembly should be the custom context and not DefaultContext
@@ -307,7 +268,7 @@ namespace System.Runtime.Loader.Tests
             // Now, do the same for an assembly that we explicitly had loaded in DefaultContext
             // in the caller of this method and ALSO loaded in the current load context. We should get it from our LoadContext,
             // without invoking the Load override, since it is already loaded.
-            assemblyName = "System.Runtime.Loader.Noop.Assembly";
+            assemblyName = TestAssemblyName;
             olc.LoadedFromContext = false;
             Assembly asmLoaded2 = (Assembly)method.Invoke(null, new object[] {assemblyName});
             loadedContext = AssemblyLoadContext.GetLoadContext(asmLoaded2);
