@@ -92,8 +92,8 @@
   <Import Project="$(MSBuildThisFileDirectory)illink.targets" />
 
   <ItemGroup Condition="'$(NuGetTargetMoniker)'=='.NETStandard,Version=v1.7'">
-    <!-- Temporarily suppress the message until we get a nuget version that knows about the mapping between netstandard1.7 and uap10.1 -->
-    <SuppressPackageTargetFrameworkCompatibility Include="uap10.1" />
+    <!-- Temporarily suppress the message until we get a nuget version that knows about the mapping between netstandard1.7 and uapvNext -->
+    <SuppressPackageTargetFrameworkCompatibility Include="$(UAPvNextTFM)" />
   </ItemGroup>
 
   <Target Name="ProducesPackageId"

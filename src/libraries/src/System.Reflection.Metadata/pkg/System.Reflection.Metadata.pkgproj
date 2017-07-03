@@ -14,7 +14,7 @@
       <Version>1.1.37</Version>
     </FilePackageDependency>
     <InboxOnTargetFramework Include="netcoreapp2.0" />
-    <InboxOnTargetFramework Include="uap10.1" />
+    <InboxOnTargetFramework Include="$(UAPvNextTFM)" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

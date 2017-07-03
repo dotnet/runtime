@@ -9,6 +9,13 @@
     <MinorVersion>6</MinorVersion>
   </PropertyGroup>
 
+  <!-- Define vNext UAP Moniker -->
+  <PropertyGroup>
+    <UAPvNextVersion>10.0.15138</UAPvNextVersion>
+    <UAPvNextTFMFull>UAP,Version=v$(UAPvNextVersion)</UAPvNextTFMFull>
+    <UAPvNextTFM>uap$(UAPvNextVersion)</UAPvNextTFM>
+  </PropertyGroup>
+
   <Import Condition="Exists('$(MSBuildProjectDirectory)/Configurations.props')" Project="$(MSBuildProjectDirectory)/Configurations.props" />
 
   <!-- Informs build tools to apply .NET Framework metadata if not a test project -->

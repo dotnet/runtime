@@ -4,7 +4,7 @@
 
   <PropertyGroup>
     <TargetFrameworkName>uap</TargetFrameworkName>
-    <TargetFrameworkVersion>10.1</TargetFrameworkVersion>
+    <TargetFrameworkVersion>$(UAPvNextVersion)</TargetFrameworkVersion>
     <TargetFramework>$(TargetFrameworkName)$(TargetFrameworkVersion)</TargetFramework>
 
     <RefBinDir>$(UAPPackageRefPath)</RefBinDir>
