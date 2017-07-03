@@ -2037,10 +2037,13 @@ major_copy_or_mark_from_roots (SgenGrayQueue *gc_thread_gray_queue, size_t *old_
 	if (mode == COPY_OR_MARK_FROM_ROOTS_FINISH_CONCURRENT) {
 		if (object_ops_par != NULL)
 			sgen_workers_set_num_active_workers (GENERATION_OLD, 0);
-		if (sgen_workers_have_idle_work (GENERATION_OLD)) {
+		if (object_ops_par == NULL && sgen_workers_have_idle_work (GENERATION_OLD)) {
 			/*
 			 * We force the finish of the worker with the new object ops context
-			 * which can also do copying. We need to have finished pinning.
+			 * which can also do copying. We need to have finished pinning. On the
+			 * parallel collector, there is no need to drain the private queues
+			 * here, since we can do it as part of the finishing work, achieving
+			 * better work distribution.
 			 */
 			sgen_workers_start_all_workers (GENERATION_OLD, object_ops_nopar, object_ops_par, NULL);
 
