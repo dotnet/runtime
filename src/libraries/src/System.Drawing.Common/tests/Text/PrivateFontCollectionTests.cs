@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Drawing.Tests;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Security.Permissions;
 using Xunit;
 
 namespace System.Drawing.Text.Tests
@@ -21,7 +22,7 @@ namespace System.Drawing.Text.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void AddFontFile_FontFile_Success()
+        public void AddFontFile_AbsolutePath_Success()
         {
             // GDI+ on Windows 7 incorrectly throws a FileNotFoundException.
             if (PlatformDetection.IsWindows7)
@@ -34,13 +35,73 @@ namespace System.Drawing.Text.Tests
                 fontCollection.AddFontFile(Helpers.GetTestBitmapPath("empty.file"));
                 fontCollection.AddFontFile(Helpers.GetTestFontPath("CodeNewRoman.otf"));
 
-                FontFamily font = Assert.Single(fontCollection.Families);
-                Assert.Equal("Code New Roman", font.Name);
+                FontFamily fontFamily = Assert.Single(fontCollection.Families);
+                Assert.Equal("Code New Roman", fontFamily.Name);
             }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [ActiveIssue(21558, TargetFrameworkMonikers.Netcoreapp)]
+        public void AddFontFile_RelativePath_Success()
+        {
+            // GDI+ on Windows 7 incorrectly throws a FileNotFoundException.
+            if (PlatformDetection.IsWindows7)
+            {
+                return;
+            }
+
+            using (var fontCollection = new PrivateFontCollection())
+            {
+                string relativePath = Path.Combine("fonts", "CodeNewRoman.ttf");
+                fontCollection.AddFontFile(relativePath);
+
+                FontFamily fontFamily = Assert.Single(fontCollection.Families);
+                Assert.Equal("Code New Roman", fontFamily.Name);
+            }
+        }
+        
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void AddFontFile_SamePathMultipleTimes_FamiliesContainsOnlyOneFont()
+        {
+            // GDI+ on Windows 7 incorrectly throws a FileNotFoundException.
+            if (PlatformDetection.IsWindows7)
+            {
+                return;
+            }
+
+            using (var fontCollection = new PrivateFontCollection())
+            {
+                fontCollection.AddFontFile(Helpers.GetTestFontPath("CodeNewRoman.ttf"));
+                fontCollection.AddFontFile(Helpers.GetTestFontPath("CodeNewRoman.ttf"));
+
+                FontFamily fontFamily = Assert.Single(fontCollection.Families);
+                Assert.Equal("Code New Roman", fontFamily.Name);
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void AddFontFile_SameNameMultipleTimes_FamiliesContainsFirstFontOnly()
+        {
+            // GDI+ on Windows 7 incorrectly throws a FileNotFoundException.
+            if (PlatformDetection.IsWindows7)
+            {
+                return;
+            }
+
+            using (var fontCollection = new PrivateFontCollection())
+            {
+                fontCollection.AddFontFile(Helpers.GetTestFontPath("CodeNewRoman.ttf"));
+                fontCollection.AddFontFile(Helpers.GetTestFontPath("CodeNewRoman.otf"));
+
+                // Verify that the first file is used by checking that it contains metadata
+                // associated with CodeNewRoman.ttf.
+                const int FrenchLCID = 1036;
+                FontFamily fontFamily = Assert.Single(fontCollection.Families);
+                Assert.Equal("Code New Roman", fontFamily.Name);
+                Assert.Equal("Bonjour", fontFamily.GetName(FrenchLCID));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void AddFontFile_NullFileName_ThrowsArgumentNullException()
         {
             using (var fontCollection = new PrivateFontCollection())
@@ -50,18 +111,16 @@ namespace System.Drawing.Text.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [ActiveIssue(21558, TargetFrameworkMonikers.Netcoreapp)]
         public void AddFontFile_InvalidPath_ThrowsArgumentException()
         {
             using (var fontCollection = new PrivateFontCollection())
             {
-                AssertExtensions.Throws<ArgumentException>(null, () => fontCollection.AddFontFile(string.Empty));
+                AssertExtensions.Throws<ArgumentException>("path", null, () => fontCollection.AddFontFile(string.Empty));
             }
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [ActiveIssue(21558, TargetFrameworkMonikers.Netcoreapp)]
-        public void AddFontFile_NoSuchFilePath_ThrowsArgumentException()
+        public void AddFontFile_NoSuchFilePath_ThrowsFileNotFoundException()
         {
             using (var fontCollection = new PrivateFontCollection())
             {
@@ -70,7 +129,6 @@ namespace System.Drawing.Text.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [ActiveIssue(21558, TargetFrameworkMonikers.Netcoreapp)]
         public void AddFontFile_LongFilePath_ThrowsPathTooLongException()
         {
             using (var fontCollection = new PrivateFontCollection())
