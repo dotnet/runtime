@@ -555,7 +555,7 @@ namespace Microsoft.ServiceModel.Syndication.Tests
                 Task<SyndicationFeed> atom = SyndicationFeed.LoadAsync(reader);
                 await Task.WhenAll(atom);
                 // *** ASSERT *** \\
-                Assert.True(atom.Result.IconUrl.AbsoluteUri == "https://avatars0.githubusercontent.com/u/9141961");
+                Assert.True(atom.Result.IconImage == "https://avatars0.githubusercontent.com/u/9141961");
             }
             finally
             {
@@ -564,6 +564,40 @@ namespace Microsoft.ServiceModel.Syndication.Tests
             }
         }
 
+        [Fact]
+        public static void SyndicationFeed_Rss_TestCustomParsing()
+        {
+            // *** SETUP *** \\
+            Rss20FeedFormatter rssformatter = new Rss20FeedFormatter();
+            rssformatter.stringParser = (val, name, ns) => {
+                switch (name)
+                {
+                    case Rss20Constants.TimeToLiveTag:
+                    case Rss20Constants.HourTag:
+                        return "5";
+                    case Rss20Constants.LinkTag:
+                    case Rss20Constants.ImageTag:
+                    case Rss20Constants.UrlTag:
+                        return "http://customparsedlink.com";
+                    default:
+                        return "Custom Text";
+                }
+            };
+
+            XmlReader reader = XmlReader.Create(@"TestFeeds\rssSpecExample.xml");
+            
+            // *** EXECUTE *** \\
+            Task<SyndicationFeed> task = SyndicationFeed.LoadAsync(reader, rssformatter);
+            Task.WhenAll(task);
+            SyndicationFeed res = task.Result;
+
+            // *** ASSERT *** \\
+            Assert.True(res.Title.Text == "Custom Text");
+            foreach(int hour in res.SkipHours)
+            {
+                Assert.True(hour == 5);
+            }
+        }
 
     }
 }

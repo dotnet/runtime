@@ -312,7 +312,7 @@ namespace Microsoft.ServiceModel.Syndication
 
 
                     case Atom10Constants.IconTag:
-                        result.IconUrl = new Uri(await reader.ReadElementStringAsync());
+                        result.IconImage = await reader.ReadElementStringAsync();
                         break;
 
 
@@ -1512,7 +1512,7 @@ namespace Microsoft.ServiceModel.Syndication
             await WriteFeedContributorsToAsync(writer, feed.Contributors);
             await WriteElementAsync(writer, Atom10Constants.GeneratorTag, feed.Generator);
             //Adding icon parsing
-            await WriteElementAsync(writer, Atom10Constants.IconTag, feed.IconUrl.AbsoluteUri);
+            await WriteElementAsync(writer, Atom10Constants.IconTag, feed.IconImage);
 
             for (int i = 0; i < feed.Links.Count; ++i)
             {

@@ -45,8 +45,21 @@ namespace Microsoft.ServiceModel.Syndication
         private Collection<string> _skipDays;
         private SyndicationTextInput _textInput;
         //private Uri _iconUrl;
+        private string _iconImage;
 
-        public Uri IconUrl{ get;set; } 
+        public string IconImage
+        {
+            get
+            {
+                return _iconImage;
+            }
+            set
+            {
+                if (value == null)
+                    throw new ArgumentNullException("value");
+                _iconImage = value;
+            }
+        } 
 
         public SyndicationTextInput TextInput
         {
@@ -105,10 +118,10 @@ namespace Microsoft.ServiceModel.Syndication
                     _skipDays = new Collection<string>();
                 return _skipDays;
             }
-        }
- 
+        } 
 
         //======================================
+
         public SyndicationFeed()
             : this((IEnumerable<SyndicationItem>)null)
         {
@@ -338,41 +351,42 @@ namespace Microsoft.ServiceModel.Syndication
             set { _title = value; }
         }
 
+        //// Custom Parsing
+        public static async Task<SyndicationFeed> LoadAsync(XmlReader reader, Rss20FeedFormatter formatter)
+        {
+            return await LoadAsync(reader, formatter, new Atom10FeedFormatter());
+        }
 
-        //public static SyndicationFeed Load(XmlReader reader, Rss20FeedFormatter formatter)
-        //{
-        //    return Load(reader, formatter, new Atom10FeedFormatter());
-        //}
+        public static async Task<SyndicationFeed> LoadAsync(XmlReader reader, Atom10FeedFormatter formatter)
+        {
+            return await LoadAsync(reader, new Rss20FeedFormatter(), formatter);
+        }
 
-        //public static SyndicationFeed Load(XmlReader reader, Atom10FeedFormatter formatter)
-        //{
-        //    return Load(reader, new Rss20FeedFormatter(), formatter);
-        //}
+        public static async Task<SyndicationFeed> LoadAsync(XmlReader reader1, Rss20FeedFormatter Rssformatter, Atom10FeedFormatter Atomformatter)
+        {
+            if (reader1 == null)
+            {
+                throw new ArgumentNullException("reader");
+            }
 
-        //public static SyndicationFeed Load(XmlReader reader1, Rss20FeedFormatter Rssformatter, Atom10FeedFormatter Atomformatter)
-        //{
-        //    if (reader1 == null)
-        //    {
-        //        throw new ArgumentNullException("reader");
-        //    }
+            XmlReaderWrapper reader = XmlReaderWrapper.CreateFromReader(reader1);
 
-        //    XmlReaderWrapper reader = new XmlReaderWrapper(reader1);
+            Atom10FeedFormatter atomSerializer = Atomformatter;
+            if (atomSerializer.CanRead(reader))
+            {
+                await atomSerializer.ReadFromAsync(reader);
+                return atomSerializer.Feed;
+            }
+            Rss20FeedFormatter rssSerializer = Rssformatter;
+            if (rssSerializer.CanRead(reader))
+            {
+                await rssSerializer.ReadFromAsync(reader);
+                return rssSerializer.Feed;
+            }
+            throw new XmlException(String.Format(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI));
+        }
 
-        //    Atom10FeedFormatter atomSerializer = Atomformatter;
-        //    if (atomSerializer.CanRead(reader))
-        //    {
-        //        atomSerializer.ReadFrom(reader);
-        //        return atomSerializer.Feed;
-        //    }
-        //    Rss20FeedFormatter rssSerializer = Rssformatter;
-        //    if (rssSerializer.CanRead(reader))
-        //    {
-        //        rssSerializer.ReadFrom(reader);
-        //        return rssSerializer.Feed;
-        //    }
-        //    throw new XmlException(String.Format(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI));
-        //}
-
+        //=================================
 
         public static SyndicationFeed Load(XmlReader reader)
         {
