@@ -2855,13 +2855,13 @@ GenTreePtr Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, const 
     unsigned        index = 0;
     while (iter.NextElem(&index))
     {
-        index++;
-        if (index > optAssertionCount)
+        AssertionIndex assertionIndex = GetAssertionIndex(index);
+        if (assertionIndex > optAssertionCount)
         {
             break;
         }
         // See if the variable is equal to a constant or another variable.
-        AssertionDsc* curAssertion = optGetAssertion((AssertionIndex)index);
+        AssertionDsc* curAssertion = optGetAssertion(assertionIndex);
         if (curAssertion->assertionKind != OAK_EQUAL || curAssertion->op1.kind != O1K_LCLVAR)
         {
             continue;
@@ -2877,7 +2877,7 @@ GenTreePtr Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, const 
             if (optLocalAssertionProp)
             {
                 // Perform copy assertion prop.
-                GenTreePtr newTree = optCopyAssertionProp(curAssertion, tree, stmt DEBUGARG((AssertionIndex)index));
+                GenTreePtr newTree = optCopyAssertionProp(curAssertion, tree, stmt DEBUGARG(assertionIndex));
                 if (newTree == nullptr)
                 {
                     // Skip and try next assertion.
@@ -2897,7 +2897,7 @@ GenTreePtr Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, const 
             // If local assertion prop just, perform constant prop.
             if (optLocalAssertionProp)
             {
-                return optConstantAssertionProp(curAssertion, tree, stmt DEBUGARG((AssertionIndex)index));
+                return optConstantAssertionProp(curAssertion, tree, stmt DEBUGARG(assertionIndex));
             }
             // If global assertion, perform constant propagation only if the VN's match and the lcl is non-CSE.
             else if (curAssertion->op1.vn == tree->gtVNPair.GetConservative())
@@ -2907,7 +2907,7 @@ GenTreePtr Compiler::optAssertionProp_LclVar(ASSERT_VALARG_TP assertions, const 
                 if (!lclNumIsCSE(tree->AsLclVarCommon()->GetLclNum()))
 #endif
                 {
-                    return optConstantAssertionProp(curAssertion, tree, stmt DEBUGARG((AssertionIndex)index));
+                    return optConstantAssertionProp(curAssertion, tree, stmt DEBUGARG(assertionIndex));
                 }
             }
         }
@@ -2975,12 +2975,12 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
     unsigned        index = 0;
     while (iter.NextElem(&index))
     {
-        index++;
-        if (index > optAssertionCount)
+        AssertionIndex assertionIndex = GetAssertionIndex(index);
+        if (assertionIndex > optAssertionCount)
         {
             break;
         }
-        AssertionDsc* curAssertion = optGetAssertion((AssertionIndex)index);
+        AssertionDsc* curAssertion = optGetAssertion(assertionIndex);
         if ((curAssertion->assertionKind != OAK_EQUAL && curAssertion->assertionKind != OAK_NOT_EQUAL))
         {
             continue;
@@ -2989,7 +2989,7 @@ AssertionIndex Compiler::optGlobalAssertionIsEqualOrNotEqual(ASSERT_VALARG_TP as
         if (curAssertion->op1.vn == op1->gtVNPair.GetConservative() &&
             curAssertion->op2.vn == op2->gtVNPair.GetConservative())
         {
-            return (AssertionIndex)index;
+            return assertionIndex;
         }
     }
     return NO_ASSERTION_INDEX;
@@ -3338,7 +3338,7 @@ GenTreePtr Compiler::optAssertionProp_Cast(ASSERT_VALARG_TP assertions, const Ge
         return nullptr;
     }
 
-    unsigned index = optAssertionIsSubrange(lcl, toType, assertions);
+    AssertionIndex index = optAssertionIsSubrange(lcl, toType, assertions);
     if (index != NO_ASSERTION_INDEX)
     {
         LclVarDsc* varDsc = &lvaTable[lcl->gtLclVarCommon.gtLclNum];
@@ -3536,12 +3536,12 @@ AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTreePtr op, ASSERT_VAL
         unsigned        index = 0;
         while (iter.NextElem(&index))
         {
-            index++;
-            if (index > optAssertionCount)
+            AssertionIndex assertionIndex = GetAssertionIndex(index);
+            if (assertionIndex > optAssertionCount)
             {
                 break;
             }
-            AssertionDsc* curAssertion = optGetAssertion((AssertionIndex)index);
+            AssertionDsc* curAssertion = optGetAssertion(assertionIndex);
             if (curAssertion->assertionKind != OAK_NOT_EQUAL)
             {
                 continue;
@@ -3550,7 +3550,7 @@ AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTreePtr op, ASSERT_VAL
             {
                 continue;
             }
-            return (AssertionIndex)index;
+            return assertionIndex;
         }
     }
     else
@@ -3710,13 +3710,13 @@ GenTreePtr Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, const
     unsigned        index = 0;
     while (iter.NextElem(&index))
     {
-        index++;
-        if (index > optAssertionCount)
+        AssertionIndex assertionIndex = GetAssertionIndex(index);
+        if (assertionIndex > optAssertionCount)
         {
             break;
         }
         // If it is not a nothrow assertion, skip.
-        AssertionDsc* curAssertion = optGetAssertion((AssertionIndex)index);
+        AssertionDsc* curAssertion = optGetAssertion(assertionIndex);
         if (!curAssertion->IsBoundsCheckNoThrow())
         {
             continue;
@@ -3795,8 +3795,8 @@ GenTreePtr Compiler::optAssertionProp_BndsChk(ASSERT_VALARG_TP assertions, const
 #ifdef DEBUG
         if (verbose)
         {
-            printf("\nVN based redundant (%s) bounds check assertion prop for index #%02u in BB%02u:\n", dbgMsg, index,
-                   compCurBB->bbNum);
+            printf("\nVN based redundant (%s) bounds check assertion prop for index #%02u in BB%02u:\n", dbgMsg,
+                   assertionIndex, compCurBB->bbNum);
             gtDispTree(tree, nullptr, nullptr, true);
         }
 #endif
@@ -3963,18 +3963,18 @@ void Compiler::optImpliedAssertions(AssertionIndex assertionIndex, ASSERT_TP& ac
         unsigned        chkIndex = 0;
         while (chkIter.NextElem(&chkIndex))
         {
-            chkIndex++;
-            if (chkIndex > optAssertionCount)
+            AssertionIndex chkAssertionIndex = GetAssertionIndex(chkIndex);
+            if (chkAssertionIndex > optAssertionCount)
             {
                 break;
             }
-            if (chkIndex == assertionIndex)
+            if (chkAssertionIndex == assertionIndex)
             {
                 continue;
             }
 
             // Determine which one is a copy assertion and use the other to check for implied assertions.
-            AssertionDsc* iterAssertion = optGetAssertion((AssertionIndex)chkIndex);
+            AssertionDsc* iterAssertion = optGetAssertion(chkAssertionIndex);
             if (curAssertion->IsCopyAssertion())
             {
                 optImpliedByCopyAssertion(curAssertion, iterAssertion, activeAssertions);
@@ -4012,13 +4012,13 @@ void Compiler::optImpliedByTypeOfAssertions(ASSERT_TP& activeAssertions)
     unsigned        chkIndex = 0;
     while (chkIter.NextElem(&chkIndex))
     {
-        chkIndex++;
-        if (chkIndex > optAssertionCount)
+        AssertionIndex chkAssertionIndex = GetAssertionIndex(chkIndex);
+        if (chkAssertionIndex > optAssertionCount)
         {
             break;
         }
         // chkAssertion must be Type/Subtype is equal assertion
-        AssertionDsc* chkAssertion = optGetAssertion((AssertionIndex)chkIndex);
+        AssertionDsc* chkAssertion = optGetAssertion(chkAssertionIndex);
         if ((chkAssertion->op1.kind != O1K_SUBTYPE && chkAssertion->op1.kind != O1K_EXACT_TYPE) ||
             (chkAssertion->assertionKind != OAK_EQUAL))
         {
@@ -4026,12 +4026,12 @@ void Compiler::optImpliedByTypeOfAssertions(ASSERT_TP& activeAssertions)
         }
 
         // Search the assertion table for a non-null assertion on op1 that matches chkAssertion
-        for (unsigned impIndex = 1; impIndex <= optAssertionCount; impIndex++)
+        for (AssertionIndex impIndex = 1; impIndex <= optAssertionCount; impIndex++)
         {
-            AssertionDsc* impAssertion = optGetAssertion((AssertionIndex)impIndex);
+            AssertionDsc* impAssertion = optGetAssertion(impIndex);
 
             //  The impAssertion must be different from the chkAssertion
-            if (impIndex == chkIndex)
+            if (impIndex == chkAssertionIndex)
             {
                 continue;
             }
@@ -4052,7 +4052,8 @@ void Compiler::optImpliedByTypeOfAssertions(ASSERT_TP& activeAssertions)
                 if (verbose)
                 {
                     printf("\nCompiler::optImpliedByTypeOfAssertions: %s Assertion #%02d, implies assertion #%02d",
-                           (chkAssertion->op1.kind == O1K_SUBTYPE) ? "Subtype" : "Exact-type", chkIndex, impIndex);
+                           (chkAssertion->op1.kind == O1K_SUBTYPE) ? "Subtype" : "Exact-type", chkAssertionIndex,
+                           impIndex);
                 }
 #endif
             }
@@ -4109,13 +4110,13 @@ void Compiler::optImpliedByConstAssertion(AssertionDsc* constAssertion, ASSERT_T
     unsigned        chkIndex = 0;
     while (chkIter.NextElem(&chkIndex))
     {
-        chkIndex++;
-        if (chkIndex > optAssertionCount)
+        AssertionIndex chkAssertionIndex = GetAssertionIndex(chkIndex);
+        if (chkAssertionIndex > optAssertionCount)
         {
             break;
         }
         // The impAssertion must be different from the const assertion.
-        AssertionDsc* impAssertion = optGetAssertion((AssertionIndex)chkIndex);
+        AssertionDsc* impAssertion = optGetAssertion(chkAssertionIndex);
         if (impAssertion == constAssertion)
         {
             continue;
@@ -4148,7 +4149,7 @@ void Compiler::optImpliedByConstAssertion(AssertionDsc* constAssertion, ASSERT_T
 
         if (usable)
         {
-            BitVecOps::AddElemD(apTraits, result, chkIndex - 1);
+            BitVecOps::AddElemD(apTraits, result, chkIndex);
 #ifdef DEBUG
             if (verbose)
             {
