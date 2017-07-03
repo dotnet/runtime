@@ -131,9 +131,6 @@
     <Compile Include="TextInfo\TextInfoToUpper.cs" />
     <Compile Include="UnicodeCategory\UnicodeCategoryTests.cs" />
     <!-- Helpers -->
-    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
-      <Link>Common\System\AssertExtensions.cs</Link>
-    </Compile>
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\System\PlatformDetection.cs</Link>
     </Compile>

@@ -14,9 +14,6 @@
     <Compile Include="WriteWithEncoding.cs" />
     <Compile Include="WriteWithEncodingWithFallback.cs" />
     <Compile Include="WriteWithInvalidSurrogate.cs" />
-    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
-      <Link>Common\System\AssertExtensions.cs</Link>
-    </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

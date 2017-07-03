@@ -15,9 +15,6 @@
   <!-- Default configurations to help VS understand the configurations -->
   <!-- Disable the whole Process tests on UAP with the active issue https://github.com/dotnet/corefx/issues/20948 -->
   <ItemGroup Condition="'$(TargetGroup)' != 'uap'">
-    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
-      <Link>Common\System\AssertExtensions.cs</Link>
-    </Compile>
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\tests\System\PlatformDetection.cs</Link>
     </Compile>

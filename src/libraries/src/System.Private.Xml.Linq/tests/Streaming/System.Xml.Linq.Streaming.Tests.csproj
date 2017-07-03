@@ -12,9 +12,6 @@
   <ItemGroup>
     <Compile Include="StreamExtensions.cs" />
     <Compile Include="StreamingOutput.cs" />
-    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
-      <Link>Common\System\AssertExtensions.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\System\Xml\XmlDiff\XmlDiff.csproj" />

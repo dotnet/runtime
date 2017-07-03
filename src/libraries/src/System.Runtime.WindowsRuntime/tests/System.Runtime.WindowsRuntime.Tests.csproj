@@ -20,9 +20,6 @@
     <Compile Include="Windows\Foundation\RectTests.cs" />
     <Compile Include="Windows\Foundation\SizeTests.cs" />
     <Compile Include="Windows\UI\ColorTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
-      <Link>Common\System\AssertExtensions.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Windows" />

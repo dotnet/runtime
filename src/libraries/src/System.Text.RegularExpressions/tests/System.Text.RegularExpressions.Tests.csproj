@@ -29,9 +29,6 @@
     <Compile Include="Regex.Split.Tests.cs" />
     <Compile Include="Regex.Match.Tests.cs" />
     <Compile Include="Regex.Tests.Common.cs" />
-    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
-      <Link>Common\System\AssertExtensions.cs</Link>
-    </Compile>
     <Compile Include="$(CommonTestPath)\System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs">
       <Link>System\Runtime\Serialization\Formatters\BinaryFormatterHelpers.cs</Link>
     </Compile>

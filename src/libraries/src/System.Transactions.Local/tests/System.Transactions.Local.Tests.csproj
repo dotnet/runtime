@@ -18,9 +18,6 @@
     <Compile Include="HelperFunctions.cs" />
     <Compile Include="TestEnlistments.cs" />
     <Compile Include="TransactionTracingEventListener.cs" />
-    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
-      <Link>Common\System\AssertExtensions.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />

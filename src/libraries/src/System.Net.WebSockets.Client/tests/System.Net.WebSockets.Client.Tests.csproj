@@ -14,9 +14,6 @@
     <TargetingPackExclusions Include="System.Configuration" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
-      <Link>Common\System\AssertExtensions.cs</Link>
-    </Compile>
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\System\PlatformDetection.cs</Link>
     </Compile>
