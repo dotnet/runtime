@@ -10,9 +10,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
-      <Link>Common\System\AssertExtensions.cs</Link>
-    </Compile>
     <Compile Include="DriveInfo.Unix.Tests.cs" Condition="'$(TargetsUnix)' == 'true'" />
     <Compile Include="DriveInfo.Windows.Tests.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">

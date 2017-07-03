@@ -18,9 +18,6 @@
     <Compile Include="ImportAttributeTests.cs" />
     <Compile Include="ExportMetadataAttributeTests.cs" />
     <Compile Include="ExportAttributeTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
-      <Link>Common\System\AssertExtensions.cs</Link>
-    </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

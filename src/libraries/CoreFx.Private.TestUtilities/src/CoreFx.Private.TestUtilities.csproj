@@ -29,6 +29,7 @@
     <Compile Include="$(CommonPath)\System\PasteArguments.cs">
       <Link>Common\System\PasteArguments.cs</Link>
     </Compile>
+    <Compile Include="System\AssertExtensions.cs" />
     <Compile Include="System\TheoryExtensions.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -36,6 +37,7 @@
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Threading.Thread" />
+    <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Diagnostics.Process" />
     <Reference Include="System.ComponentModel.Primitives" />

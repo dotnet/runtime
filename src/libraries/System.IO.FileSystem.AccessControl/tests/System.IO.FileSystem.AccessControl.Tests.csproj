@@ -12,9 +12,6 @@
     <Compile Include="DirectoryObjectSecurityTests.cs" />
     <Compile Include="FileSystemAccessRuleTests.cs" />
     <Compile Include="FileSystemAclExtensionsTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
-      <Link>Common\System\AssertExtensions.cs</Link>
-    </Compile>
     <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
       <Link>Common\System\IO\TempFile.cs</Link>
     </Compile>

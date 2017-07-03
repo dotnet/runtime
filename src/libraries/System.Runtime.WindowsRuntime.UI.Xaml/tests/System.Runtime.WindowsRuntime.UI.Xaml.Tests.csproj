@@ -20,9 +20,6 @@
     <Compile Include="Windows\UI\Xaml\Media\Animation\KeyTimeTests.cs" />
     <Compile Include="Windows\UI\Xaml\Media\Animation\RepeatBehaviorTests.cs" />
     <Compile Include="Windows\UI\Xaml\Media3D\Matrix3DTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
-      <Link>Common\System\AssertExtensions.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Runtime.WindowsRuntime.UI.Xaml.csproj">

@@ -25,6 +25,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'uapaot'">
     <ReferenceFromRuntime Include="System.Private.CoreLib" />
+    <ReferenceFromRuntime Include="CoreFx.Private.TestUtilities" />
     <ReferenceFromRuntime Include="xunit.core" />
     <ReferenceFromRuntime Include="Xunit.NetCore.Extensions" />
     <ReferenceFromRuntime Include="xunit.assert" />
@@ -260,9 +261,6 @@
     <Compile Include="Variables\RuntimeVariablesTests.cs" />
     <Compile Include="Variables\VariableTests.cs" />
     <Compile Include="Visitor\VisitorTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
-      <Link>Common\System\AssertExtensions.cs</Link>
-    </Compile>
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\System\PlatformDetection.cs</Link>
     </Compile>

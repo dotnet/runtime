@@ -52,9 +52,6 @@
       <Link>CommonTest\System\Threading\ThreadPoolHelpers.cs</Link>
     </Compile>
     <Compile Include="Task\TaskDisposeTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
-      <Link>Common\System\AssertExtensions.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="Task\TaskStatusTest.netcoreapp.cs" />

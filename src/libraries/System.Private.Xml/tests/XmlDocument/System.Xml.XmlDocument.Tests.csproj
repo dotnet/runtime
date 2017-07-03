@@ -99,9 +99,6 @@
     <Compile Include="XmlProcessingInstructionTests\DataTests.cs" />
     <Compile Include="XmlProcessingInstructionTests\TargetTests.cs" />
     <Compile Include="XmlTextTests\SplitTextTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
-      <Link>Common\System\AssertExtensions.cs</Link>
-    </Compile>
     <!-- Performance Tests -->
     <Compile Include="Performance\Perf.XmlDocument.cs" />
     <Compile Include="Performance\Perf.XmlNode.cs" />

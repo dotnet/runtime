@@ -8,9 +8,6 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
   <!-- Default configurations to help VS understand the configurations -->
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
-      <Link>Common\System\AssertExtensions.cs</Link>
-    </Compile>
     <Compile Include="BerConverterTests.cs" />
     <Compile Include="LdapSessionOptionsTests.cs" />
     <Compile Include="PermissiveModifyControlTests.cs" />

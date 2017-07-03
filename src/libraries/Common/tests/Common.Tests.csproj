@@ -57,9 +57,6 @@
     <Compile Include="$(CommonPath)\System\Text\ReusableTextReader.cs">
       <Link>Common\System\Text\ReusableTextReader.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\AssertExtensions.cs">
-      <Link>CommonTest\System\AssertExtensions.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Security\IdentityHelper.cs">
       <Link>Common\System\Security\IdentityHelper.cs</Link>
     </Compile>
