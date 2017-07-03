@@ -34,7 +34,7 @@
         <TargetFramework>netcoreapp2.0</TargetFramework>
       </FrameworkLayout>
       <FrameworkLayout Include="$(UAPPackageRefPath)">
-        <TargetFramework>uap10.1</TargetFramework>
+        <TargetFramework>$(UAPvNextTFM)</TargetFramework>
       </FrameworkLayout>
       <FrameworkLayout Include="$(PackagesDir)$(NETStandardPackageId)\$(NETStandardPackageVersion)\build\netstandard2.0\ref">
         <TargetFramework>netstandard2.0</TargetFramework>
