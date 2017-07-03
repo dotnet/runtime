@@ -100,7 +100,6 @@ namespace System.Drawing
             Initialize(familyName, emSize, style, unit, gdiCharSet, IsVerticalName(familyName));
         }
 
-
         /// <summary>
         /// Initializes a new instance of the <see cref='Font'/> class with the specified attributes.
         /// </summary>
@@ -187,27 +186,18 @@ namespace System.Drawing
             _nativeFont = nativeFont;
 
             status = SafeNativeMethods.Gdip.GdipGetFontUnit(new HandleRef(this, nativeFont), out unit);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+            SafeNativeMethods.Gdip.CheckStatus(status);
 
             status = SafeNativeMethods.Gdip.GdipGetFontSize(new HandleRef(this, nativeFont), out size);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+            SafeNativeMethods.Gdip.CheckStatus(status);
 
             status = SafeNativeMethods.Gdip.GdipGetFontStyle(new HandleRef(this, nativeFont), out style);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+            SafeNativeMethods.Gdip.CheckStatus(status);
 
             status = SafeNativeMethods.Gdip.GdipGetFamily(new HandleRef(this, nativeFont), out nativeFamily);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+            SafeNativeMethods.Gdip.CheckStatus(status);
 
             SetFontFamily(new FontFamily(nativeFamily));
-
             Initialize(_fontFamily, size, style, unit, gdiCharSet, gdiVerticalFont);
         }
 
@@ -218,7 +208,7 @@ namespace System.Drawing
         {
             _originalFontName = familyName;
 
-            SetFontFamily(new FontFamily(StripVerticalName(familyName), true /* createDefaultOnFail */ ));
+            SetFontFamily(new FontFamily(StripVerticalName(familyName), createDefaultOnFail: true));
             Initialize(_fontFamily, emSize, style, unit, gdiCharSet, gdiVerticalFont);
         }
 
@@ -229,12 +219,12 @@ namespace System.Drawing
         {
             if (family == null)
             {
-                throw new ArgumentNullException("family");
+                throw new ArgumentNullException(nameof(family));
             }
 
             if (float.IsNaN(emSize) || float.IsInfinity(emSize) || emSize <= 0)
             {
-                throw new ArgumentException(SR.Format(SR.InvalidBoundArgument, "emSize", emSize, 0, "System.Single.MaxValue"), "emSize");
+                throw new ArgumentException(SR.Format(SR.InvalidBoundArgument, nameof(emSize), emSize, 0, "System.Single.MaxValue"), nameof(emSize));
             }
 
             int status;
@@ -258,9 +248,7 @@ namespace System.Drawing
 
             // Get actual size.
             status = SafeNativeMethods.Gdip.GdipGetFontSize(new HandleRef(this, _nativeFont), out _fontSize);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         /// <summary>
@@ -268,36 +256,31 @@ namespace System.Drawing
         /// </summary>
         public static Font FromHfont(IntPtr hfont)
         {
-            SafeNativeMethods.LOGFONT lf = new SafeNativeMethods.LOGFONT();
+            var lf = new SafeNativeMethods.LOGFONT();
             SafeNativeMethods.GetObject(new HandleRef(null, hfont), lf);
-
-            Font result;
+            
             IntPtr screenDC = UnsafeNativeMethods.GetDC(NativeMethods.NullHandleRef);
             try
             {
-                result = Font.FromLogFont(lf, screenDC);
+                return FromLogFont(lf, screenDC);
             }
             finally
             {
                 UnsafeNativeMethods.ReleaseDC(NativeMethods.NullHandleRef, new HandleRef(null, screenDC));
             }
-
-            return result;
         }
 
         public static Font FromLogFont(object lf)
         {
             IntPtr screenDC = UnsafeNativeMethods.GetDC(NativeMethods.NullHandleRef);
-            Font result;
             try
             {
-                result = Font.FromLogFont(lf, screenDC);
+                return FromLogFont(lf, screenDC);
             }
             finally
             {
                 UnsafeNativeMethods.ReleaseDC(NativeMethods.NullHandleRef, new HandleRef(null, screenDC));
             }
-            return result;
         }
 
         public static Font FromLogFont(object lf, IntPtr hdc)
@@ -307,13 +290,19 @@ namespace System.Drawing
 
             // Special case this incredibly common error message to give more information
             if (status == SafeNativeMethods.Gdip.NotTrueTypeFont)
+            {
                 throw new ArgumentException(SR.Format(SR.GdiplusNotTrueTypeFont_NoName));
+            }
             else if (status != SafeNativeMethods.Gdip.Ok)
+            {
                 throw SafeNativeMethods.Gdip.StatusException(status);
+            }
 
             // GDI+ returns font = 0 even though the status is Ok.
             if (font == IntPtr.Zero)
+            {
                 throw new ArgumentException(SR.Format(SR.GdiplusNotTrueTypeFont, lf.ToString()));
+            }
 
 #pragma warning disable 0618
             bool gdiVerticalFont = (Marshal.ReadInt16(lf, LogFontNameOffset) == (short)'@');
@@ -327,48 +316,37 @@ namespace System.Drawing
         public static Font FromHdc(IntPtr hdc)
         {
             IntPtr font = IntPtr.Zero;
-
             int status = SafeNativeMethods.Gdip.GdipCreateFontFromDC(new HandleRef(null, hdc), ref font);
 
             // Special case this incredibly common error message to give more information
             if (status == SafeNativeMethods.Gdip.NotTrueTypeFont)
+            {
                 throw new ArgumentException(SR.Format(SR.GdiplusNotTrueTypeFont_NoName));
+            }
             else if (status != SafeNativeMethods.Gdip.Ok)
+            {
                 throw SafeNativeMethods.Gdip.StatusException(status);
+            }
 
             return new Font(font, 0, false);
         }
-
 
         /// <summary>
         /// Creates an exact copy of this <see cref='Font'/>.
         /// </summary>
         public object Clone()
         {
-            IntPtr cloneFont = IntPtr.Zero;
+            IntPtr clonedFont = IntPtr.Zero;
+            int status = SafeNativeMethods.Gdip.GdipCloneFont(new HandleRef(this, _nativeFont), out clonedFont);
+            SafeNativeMethods.Gdip.CheckStatus(status);
 
-            int status = SafeNativeMethods.Gdip.GdipCloneFont(new HandleRef(this, _nativeFont), out cloneFont);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
-
-            Font newCloneFont = new Font(cloneFont, _gdiCharSet, _gdiVerticalFont);
-
-            return newCloneFont;
+            return new Font(clonedFont, _gdiCharSet, _gdiVerticalFont);
         }
-
 
         /// <summary>
         /// Get native GDI+ object pointer. This property triggers the creation of the GDI+ native object if not initialized yet.
         /// </summary>
-        internal IntPtr NativeFont
-        {
-            get
-            {
-                Debug.Assert(_nativeFont != IntPtr.Zero, "this.nativeFont == IntPtr.Zero.");
-                return _nativeFont;
-            }
-        }
+        internal IntPtr NativeFont => _nativeFont;
 
         /// <summary>
         /// Gets the <see cref='Drawing.FontFamily'/> of this <see cref='Font'/>.
@@ -397,10 +375,7 @@ namespace System.Drawing
         /// <summary>
         /// Cleans up Windows resources for this <see cref='Font'/>.
         /// </summary>
-        ~Font()
-        {
-            Dispose(false);
-        }
+        ~Font() => Dispose(false);
 
         /// <summary>
         /// Cleans up Windows resources for this <see cref='Font'/>.
@@ -425,14 +400,8 @@ namespace System.Drawing
                     Debug.Assert(status == SafeNativeMethods.Gdip.Ok, "GDI+ returned an error status: " + status.ToString(CultureInfo.InvariantCulture));
 #endif
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (!ClientUtils.IsCriticalException(ex))
                 {
-                    if (ClientUtils.IsCriticalException(ex))
-                    {
-                        throw;
-                    }
-
-                    Debug.Fail("Exception thrown during Dispose: " + ex.ToString());
                 }
                 finally
                 {
@@ -441,39 +410,24 @@ namespace System.Drawing
             }
         }
 
-        private static bool IsVerticalName(string familyName)
-        {
-            return familyName != null && familyName.Length > 0 && familyName[0] == '@';
-        }
+        private static bool IsVerticalName(string familyName) => familyName?.Length > 0 && familyName[0] == '@';
 
         /// <summary>
         /// Gets a value indicating whether this <see cref='System.Drawing.Font'/> is bold.
         /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public bool Bold
-        {
-            get
-            {
-                return (Style & FontStyle.Bold) != 0;
-            }
-        }
+        public bool Bold => (Style & FontStyle.Bold) != 0;
 
         /// <summary>
-        ///     Returns the GDI char set for this instance of a font. This will only
-        ///     be valid if this font was created from a classic GDI font definition,
-        ///     like a LOGFONT or HFONT, or it was passed into the constructor.
+        /// Returns the GDI char set for this instance of a font. This will only
+        /// be valid if this font was created from a classic GDI font definition,
+        /// like a LOGFONT or HFONT, or it was passed into the constructor.
         ///
-        ///     This is here for compatability with native Win32 intrinsic controls
-        ///     on non-Unicode platforms.
+        /// This is here for compatability with native Win32 intrinsic controls
+        /// on non-Unicode platforms.
         /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public byte GdiCharSet
-        {
-            get
-            {
-                return _gdiCharSet;
-            }
-        }
+        public byte GdiCharSet => _gdiCharSet;
 
         /// <summary>
         /// Determines if this font was created to represt a GDI vertical font. This will only be valid if this font
@@ -482,67 +436,37 @@ namespace System.Drawing
         /// This is here for compatability with native Win32 intrinsic controls on non-Unicode platforms.
         /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public bool GdiVerticalFont
-        {
-            get
-            {
-                return _gdiVerticalFont;
-            }
-        }
+        public bool GdiVerticalFont => _gdiVerticalFont;
 
         /// <summary>
         /// Gets a value indicating whether this <see cref='Font'/> is Italic.
         /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public bool Italic
-        {
-            get
-            {
-                return (Style & FontStyle.Italic) != 0;
-            }
-        }
+        public bool Italic => (Style & FontStyle.Italic) != 0;
 
         /// <summary>
         /// Gets the face name of this <see cref='Font'/> .
         /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public string Name
-        {
-            get { return FontFamily.Name; }
-        }
+        public string Name => FontFamily.Name;
 
         /// <summary>
         /// This property is required by the framework and not intended to be used directly.
         /// </summary>
         [Browsable(false)]
-        public string OriginalFontName
-        {
-            get { return _originalFontName; }
-        }
+        public string OriginalFontName => _originalFontName;
 
         /// <summary>
         /// Gets a value indicating whether this <see cref='Font'/> is strikeout (has a line through it).
         /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public bool Strikeout
-        {
-            get
-            {
-                return (Style & FontStyle.Strikeout) != 0;
-            }
-        }
+        public bool Strikeout => (Style & FontStyle.Strikeout) != 0;
 
         /// <summary>
         /// Gets a value indicating whether this <see cref='Font'/> is underlined.
         /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-        public bool Underline
-        {
-            get
-            {
-                return (Style & FontStyle.Underline) != 0;
-            }
-        }
+        public bool Underline => (Style & FontStyle.Underline) != 0;
 
         /// <summary>
         /// Returns a value indicating whether the specified object is a <see cref='Font'/> equivalent to this
@@ -554,17 +478,14 @@ namespace System.Drawing
             {
                 return true;
             }
-
-            Font font = obj as Font;
-
-            if (font == null)
+            
+            if (!(obj is Font font))
             {
                 return false;
             }
 
             // Note: If this and/or the passed-in font are disposed, this method can still return true since we check for cached properties
             // here.
-
             // We need to call properties on the passed-in object since it could be a proxy in a remoting scenario and proxies don't
             // have access to private/internal fields.
             return font.FontFamily.Equals(FontFamily) &&
@@ -575,24 +496,23 @@ namespace System.Drawing
                 font.Unit == Unit;
         }
 
-
-
         /// <summary>
         /// Gets the hash code for this <see cref='Font'/>.
         /// </summary>
         public override int GetHashCode()
         {
-            return unchecked((int)((((UInt32)_fontStyle << 13) | ((UInt32)_fontStyle >> 19)) ^
-                         (((UInt32)_fontUnit << 26) | ((UInt32)_fontUnit >> 6)) ^
-                         (((UInt32)_fontSize << 7) | ((UInt32)_fontSize >> 25))));
+            return unchecked((int)((((uint)_fontStyle << 13) | ((uint)_fontStyle >> 19)) ^
+                         (((uint)_fontUnit << 26) | ((uint)_fontUnit >> 6)) ^
+                         (((uint)_fontSize << 7) | ((uint)_fontSize >> 25))));
         }
 
         private static string StripVerticalName(string familyName)
         {
-            if (familyName != null && familyName.Length > 1 && familyName[0] == '@')
+            if (familyName?.Length > 1 && familyName[0] == '@')
             {
                 return familyName.Substring(1);
             }
+
             return familyName;
         }
 
@@ -616,7 +536,6 @@ namespace System.Drawing
             try
             {
                 Graphics graphics = Graphics.FromHdcInternal(screenDC);
-
                 try
                 {
                     ToLogFont(logFont, graphics);
@@ -635,7 +554,9 @@ namespace System.Drawing
         public unsafe void ToLogFont(object logFont, Graphics graphics)
         {
             if (graphics == null)
-                throw new ArgumentNullException("graphics");
+            {
+                throw new ArgumentNullException(nameof(graphics));
+            }
 
             int status = SafeNativeMethods.Gdip.GdipGetLogFontW(new HandleRef(this, NativeFont), new HandleRef(graphics, graphics.NativeGraphics), logFont);
 
@@ -660,8 +581,7 @@ namespace System.Drawing
             }
 #pragma warning restore 0618
 
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         /// <summary>
@@ -669,12 +589,10 @@ namespace System.Drawing
         /// </summary>
         public IntPtr ToHfont()
         {
-            SafeNativeMethods.LOGFONT lf = new SafeNativeMethods.LOGFONT();
-
+            var lf = new SafeNativeMethods.LOGFONT();
             ToLogFont(lf);
 
             IntPtr handle = IntUnsafeNativeMethods.IntCreateFontIndirect(lf);
-
             if (handle == IntPtr.Zero)
             {
                 throw new Win32Exception();
@@ -689,74 +607,53 @@ namespace System.Drawing
         public float GetHeight(Graphics graphics)
         {
             if (graphics == null)
-                throw new ArgumentNullException("graphics");
+            {
+                throw new ArgumentNullException(nameof(graphics));
+            }
 
-            float ht;
+            float height;
+            int status = SafeNativeMethods.Gdip.GdipGetFontHeight(new HandleRef(this, NativeFont), new HandleRef(graphics, graphics.NativeGraphics), out height);
+            SafeNativeMethods.Gdip.CheckStatus(status);
 
-            int status = SafeNativeMethods.Gdip.GdipGetFontHeight(new HandleRef(this, NativeFont), new HandleRef(graphics, graphics.NativeGraphics), out ht);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
-
-            return ht;
+            return height;
         }
 
         public float GetHeight()
         {
             IntPtr screenDC = UnsafeNativeMethods.GetDC(NativeMethods.NullHandleRef);
-            float height = 0.0f;
             try
             {
                 using (Graphics graphics = Graphics.FromHdcInternal(screenDC))
                 {
-                    height = GetHeight(graphics);
+                    return GetHeight(graphics);
                 }
             }
             finally
             {
                 UnsafeNativeMethods.ReleaseDC(NativeMethods.NullHandleRef, new HandleRef(null, screenDC));
             }
-
-            return height;
         }
 
         public float GetHeight(float dpi)
         {
-            float ht;
+            float height;
+            int status = SafeNativeMethods.Gdip.GdipGetFontHeightGivenDPI(new HandleRef(this, NativeFont), dpi, out height);
+            SafeNativeMethods.Gdip.CheckStatus(status);
 
-            int status = SafeNativeMethods.Gdip.GdipGetFontHeightGivenDPI(new HandleRef(this, NativeFont), dpi, out ht);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
-
-            return ht;
+            return height;
         }
 
         /// <summary>
         /// Gets style information for this <see cref='Font'/>.
         /// </summary>
-        [
-        Browsable(false)
-        ]
-        public FontStyle Style
-        {
-            get
-            {
-                return _fontStyle;
-            }
-        }
+        [Browsable(false)]
+        public FontStyle Style => _fontStyle;
 
         // Return value is in Unit (the unit the font was created in)
         /// <summary>
         /// Gets the size of this <see cref='Font'/>.
         /// </summary>
-        public float Size
-        {
-            get
-            {
-                return _fontSize;
-            }
-        }
+        public float Size => _fontSize;
 
         /// <summary>
         /// Gets the size, in points, of this <see cref='Font'/>.
@@ -767,30 +664,25 @@ namespace System.Drawing
             get
             {
                 if (Unit == GraphicsUnit.Point)
-                    return Size;
-                else
                 {
-                    float emHeightInPoints;
+                    return Size;
+                }
 
-                    IntPtr screenDC = UnsafeNativeMethods.GetDC(NativeMethods.NullHandleRef);
-
-                    try
+                IntPtr screenDC = UnsafeNativeMethods.GetDC(NativeMethods.NullHandleRef);
+                try
+                {
+                    using (Graphics graphics = Graphics.FromHdcInternal(screenDC))
                     {
-                        using (Graphics graphics = Graphics.FromHdcInternal(screenDC))
-                        {
-                            float pixelsPerPoint = (float)(graphics.DpiY / 72.0);
-                            float lineSpacingInPixels = GetHeight(graphics);
-                            float emHeightInPixels = lineSpacingInPixels * FontFamily.GetEmHeight(Style) / FontFamily.GetLineSpacing(Style);
+                        float pixelsPerPoint = (float)(graphics.DpiY / 72.0);
+                        float lineSpacingInPixels = GetHeight(graphics);
+                        float emHeightInPixels = lineSpacingInPixels * FontFamily.GetEmHeight(Style) / FontFamily.GetLineSpacing(Style);
 
-                            emHeightInPoints = emHeightInPixels / pixelsPerPoint;
-                        }
+                        return emHeightInPixels / pixelsPerPoint;
                     }
-                    finally
-                    {
-                        UnsafeNativeMethods.ReleaseDC(NativeMethods.NullHandleRef, new HandleRef(null, screenDC));
-                    }
-
-                    return emHeightInPoints;
+                }
+                finally
+                {
+                    UnsafeNativeMethods.ReleaseDC(NativeMethods.NullHandleRef, new HandleRef(null, screenDC));
                 }
             }
         }
@@ -798,60 +690,27 @@ namespace System.Drawing
         /// <summary>
         /// Gets the unit of measure for this <see cref='Font'/>.
         /// </summary>
-        public GraphicsUnit Unit
-        {
-            get
-            {
-                return _fontUnit;
-            }
-        }
+        public GraphicsUnit Unit => _fontUnit;
 
         /// <summary>
         /// Gets the height of this <see cref='Font'/>.
         /// </summary>
-        [
-        Browsable(false)
-        ]
-        public int Height
-        {
-            get
-            {
-                return (int)Math.Ceiling(GetHeight());
-            }
-        }
+        [Browsable(false)]
+        public int Height => (int)Math.Ceiling(GetHeight());
 
         /// <summary>
         /// Returns true if this <see cref='Font'/> is a SystemFont.
         /// </summary>
-        [
-        Browsable(false)
-        ]
-        public bool IsSystemFont
-        {
-            get
-            {
-                return !String.IsNullOrEmpty(_systemFontName);
-            }
-        }
+        [Browsable(false)]
+        public bool IsSystemFont => !string.IsNullOrEmpty(_systemFontName);
 
         /// <summary>
         /// Gets the name of this <see cref='Drawing.SystemFont'/>.
         /// </summary>
-        [
-        Browsable(false)
-        ]
-        public string SystemFontName
-        {
-            get
-            {
-                return _systemFontName;
-            }
-        }
+        [Browsable(false)]
+        public string SystemFontName => _systemFontName;
 
         // This is used by SystemFonts when constructing a system Font objects.
-        internal void SetSystemFontName(string systemFontName)
-        {
-            _systemFontName = systemFontName;
-        }
+        internal void SetSystemFontName(string systemFontName) => _systemFontName = systemFontName;
     }
 }
