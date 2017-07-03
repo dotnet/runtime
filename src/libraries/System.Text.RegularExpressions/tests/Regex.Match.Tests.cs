@@ -691,7 +691,7 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Fact]
-        public void Match_SpecialUnicodeCharacters()
+        public void Match_SpecialUnicodeCharacters_enUS()
         {
             RemoteInvoke(() =>
             {
@@ -699,6 +699,15 @@ namespace System.Text.RegularExpressions.Tests
                 Match("\u0131", "\u0049", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
                 Match("\u0131", "\u0069", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
 
+                return SuccessExitCode;
+            }).Dispose();
+        }
+
+        [Fact]
+        public void Match_SpecialUnicodeCharacters_Invariant()
+        {
+            RemoteInvoke(() =>
+            {
                 CultureInfo.CurrentCulture = CultureInfo.InvariantCulture;
                 Match("\u0131", "\u0049", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);
                 Match("\u0131", "\u0069", RegexOptions.IgnoreCase, 0, 1, false, string.Empty);

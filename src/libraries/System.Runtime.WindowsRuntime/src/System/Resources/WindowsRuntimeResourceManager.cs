@@ -23,6 +23,10 @@ namespace System.Resources
     // of Initialize() and GetString() below.
     internal sealed class WindowsRuntimeResourceManager : WindowsRuntimeResourceManagerBase
     {
+        // Setting invariant culture to Windows Runtime doesn't work because Windows Runtime expects language name in the form of BCP-47 tags while
+        // invariant name is an empty string. We will use the private invariant culture name x-VL instead.
+        private const string c_InvariantCulturePrivateName = "x-VL";
+
         private ResourceMap _resourceMap;
         private ResourceContext _clonedResourceContext;
         private string _clonedResourceContextFallBackList;
@@ -228,7 +232,12 @@ namespace System.Resources
             Debug.Assert(s_globalResourceContext != null);
 
             List<String> languages = new List<string>(s_globalResourceContext.Languages);
-
+            
+            if (languages.Count > 0 && languages[0] == c_InvariantCulturePrivateName)
+            {
+                languages[0] = CultureInfo.InvariantCulture.Name;
+            }
+            
             s_globalResourceContextBestFitCultureInfo = GetBestFitCultureFromLanguageList(languages);
             s_globalResourceContextFallBackList = ReadOnlyListToString(languages);
         }
@@ -448,7 +457,7 @@ namespace System.Resources
             }
 
             List<String> languages = new List<String>(s_globalResourceContext.Languages);
-            languages.Insert(0, ci.Name);
+            languages.Insert(0, ci.Name == CultureInfo.InvariantCulture.Name ? c_InvariantCulturePrivateName : ci.Name);
 
             // remove any duplication in the list
             int i = languages.Count - 1;
