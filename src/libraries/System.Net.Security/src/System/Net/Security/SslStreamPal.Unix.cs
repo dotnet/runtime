@@ -154,7 +154,6 @@ namespace System.Net.Security
                 }
                 else
                 {
-                    Debug.Assert(offset == 0, "Expected offset 0 when decrypting");
                     Debug.Assert(ReferenceEquals(input, output), "Expected input==output when decrypting");
                     resultSize = Interop.OpenSsl.Decrypt(scHandle, input, offset, size, out errorCode);
                 }
