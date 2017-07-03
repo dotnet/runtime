@@ -594,83 +594,163 @@ namespace System.Text.RegularExpressions.Tests
             yield return new object[] { @"(a*)+?$", "b", RegexOptions.None, new string[] { "", "" } };
         }
 
-        [Theory]
-        [MemberData(nameof(Groups_Basic_TestData))]
-        public void Groups(string pattern, string input, RegexOptions options, string[] expectedGroups) => Groups(pattern, input, options, null, expectedGroups);
-
-        public static IEnumerable<object[]> Groups_CustomCulture_TestData()
+        public static IEnumerable<object[]> Groups_CustomCulture_TestData_enUS()
         {
-            // Use special unicode characters
-            yield return new object[] { "CH", "Ch", RegexOptions.IgnoreCase, s_enUSCulture, new string[] { "Ch" } };
-            yield return new object[] { "CH", "Ch", RegexOptions.IgnoreCase, s_czechCulture, new string[] { "Ch" } };
-            yield return new object[] { "cH", "Ch", RegexOptions.IgnoreCase, s_enUSCulture, new string[] { "Ch" } };
-            yield return new object[] { "cH", "Ch", RegexOptions.IgnoreCase, s_czechCulture, new string[] { "Ch" } };
-
-            yield return new object[] { "AA", "Aa", RegexOptions.IgnoreCase, s_enUSCulture, new string[] { "Aa" } };
-            yield return new object[] { "AA", "Aa", RegexOptions.IgnoreCase, s_danishCulture, new string[] { "Aa" } };
-            yield return new object[] { "aA", "Aa", RegexOptions.IgnoreCase, s_enUSCulture, new string[] { "Aa" } };
-            yield return new object[] { "aA", "Aa", RegexOptions.IgnoreCase, s_danishCulture, new string[] { "Aa" } };
-
-            yield return new object[] { "\u0131", "\u0049", RegexOptions.IgnoreCase, s_turkishCulture, new string[] { "\u0049" } };
-            yield return new object[] { "\u0130", "\u0069", RegexOptions.IgnoreCase, s_turkishCulture, new string[] { "\u0069" } };
-            yield return new object[] { "\u0131", "\u0049", RegexOptions.IgnoreCase, s_azeriLatinCulture, new string[] { "\u0049" } };
-            yield return new object[] { "\u0130", "\u0069", RegexOptions.IgnoreCase, s_azeriLatinCulture, new string[] { "\u0069" } };
-
-            yield return new object[] { "\u0130", "\u0049", RegexOptions.IgnoreCase, s_enUSCulture, new string[] { "\u0049" } };
-            yield return new object[] { "\u0130", "\u0069", RegexOptions.IgnoreCase, s_enUSCulture, new string[] { "\u0069" } };
+            yield return new object[] { "CH", "Ch", RegexOptions.IgnoreCase, new string[] { "Ch" } };
+            yield return new object[] { "cH", "Ch", RegexOptions.IgnoreCase, new string[] { "Ch" } };
+            yield return new object[] { "AA", "Aa", RegexOptions.IgnoreCase, new string[] { "Aa" } };
+            yield return new object[] { "aA", "Aa", RegexOptions.IgnoreCase, new string[] { "Aa" } };
+            yield return new object[] { "\u0130", "\u0049", RegexOptions.IgnoreCase, new string[] { "\u0049" } };
+            yield return new object[] { "\u0130", "\u0069", RegexOptions.IgnoreCase, new string[] { "\u0069" } };
         }
 
-        [Theory]
-        [MemberData(nameof(Groups_CustomCulture_TestData))]
-        public void Groups(string pattern, string input, RegexOptions options, CultureInfo cultureInfo, string[] expectedGroups)
+        public static IEnumerable<object[]> Groups_CustomCulture_TestData_Czech()
         {
-            const string EmptyPlaceholder = "-";
-            const char Separator = ';';
+            yield return new object[] { "CH", "Ch", RegexOptions.IgnoreCase, new string[] { "Ch" } };
+            yield return new object[] { "cH", "Ch", RegexOptions.IgnoreCase, new string[] { "Ch" } };
+        }
 
-            string outerPattern = Convert.ToBase64String(Encoding.UTF8.GetBytes(pattern));
-            string outerInput = Convert.ToBase64String(Encoding.UTF8.GetBytes(input));
-            string outerOptions = ((int)options).ToString();
-            string outerCultureInfo = cultureInfo != null ? cultureInfo.ToString() : EmptyPlaceholder;
-            string outerExpectedGroups = expectedGroups != null && expectedGroups.Length > 0 ? Convert.ToBase64String(Encoding.UTF8.GetBytes(string.Join(Separator.ToString(), expectedGroups.Select(s => s == string.Empty ? EmptyPlaceholder : s).ToArray()))) : EmptyPlaceholder;
 
-            RemoteInvoke((innerPatternEnc, innerInputEnc, innerOptionsEnc, innerCultureInfoEnc, innerExpectedGroupsEnc) =>
+        public static IEnumerable<object[]> Groups_CustomCulture_TestData_Danish()
+        {
+            yield return new object[] { "AA", "Aa", RegexOptions.IgnoreCase, new string[] { "Aa" } };
+            yield return new object[] { "aA", "Aa", RegexOptions.IgnoreCase, new string[] { "Aa" } };
+        }
+
+        public static IEnumerable<object[]> Groups_CustomCulture_TestData_Turkish()
+        {
+            yield return new object[] { "\u0131", "\u0049", RegexOptions.IgnoreCase, new string[] { "\u0049" } };
+            yield return new object[] { "\u0130", "\u0069", RegexOptions.IgnoreCase, new string[] { "\u0069" } };
+        }
+
+        public static IEnumerable<object[]> Groups_CustomCulture_TestData_AzeriLatin()
+        {
+            yield return new object[] { "\u0131", "\u0049", RegexOptions.IgnoreCase, new string[] { "\u0049" } };
+            yield return new object[] { "\u0130", "\u0069", RegexOptions.IgnoreCase, new string[] { "\u0069" } };
+        }
+
+        private static CultureInfo GetDefaultCultureForTests()
+        {
+            CultureInfo defaultCulture = CultureInfo.CurrentCulture;
+
+            // In invariant culture, the unicode char matches differ from expected values provided.
+            if (defaultCulture.Equals(CultureInfo.InvariantCulture))
             {
-                string innerPattern = Encoding.UTF8.GetString(Convert.FromBase64String(innerPatternEnc));
-                string innerInput = Encoding.UTF8.GetString(Convert.FromBase64String(innerInputEnc));
-                RegexOptions innerOptions = (RegexOptions)int.Parse(innerOptionsEnc);
-                CultureInfo innerCultureInfo = innerCultureInfoEnc != EmptyPlaceholder ? new CultureInfo(innerCultureInfoEnc) : null;
-                string[] innerExpectedGroups = innerExpectedGroupsEnc != EmptyPlaceholder ? Encoding.UTF8.GetString(Convert.FromBase64String(innerExpectedGroupsEnc)).Split(Separator).Select(s => s == EmptyPlaceholder ? string.Empty : s).ToArray() : new string[] { };
+                defaultCulture = new CultureInfo("en-US");
+            }
+            
+            return defaultCulture;
+        }
 
-                // In invariant culture, the unicode char matches differ from expected values provided.
-                if (CultureInfo.CurrentCulture.Equals(CultureInfo.InvariantCulture))
+        public void Groups(string pattern, string input, RegexOptions options, string[] expectedGroups)
+        {
+            Regex regex = new Regex(pattern, options);
+            Match match = regex.Match(input);
+            Assert.True(match.Success, $"match.Success. pattern=/{pattern}/  input=[[[{input}]]]  culture={CultureInfo.CurrentCulture.Name}");
+
+            Assert.Equal(expectedGroups.Length, match.Groups.Count);
+            Assert.True(expectedGroups[0] == match.Value, string.Format("Culture used: {0}", CultureInfo.CurrentCulture));
+
+            int[] groupNumbers = regex.GetGroupNumbers();
+            string[] groupNames = regex.GetGroupNames();
+            for (int i = 0; i < expectedGroups.Length; i++)
+            {
+                Assert.Equal(expectedGroups[i], match.Groups[groupNumbers[i]].Value);
+                Assert.Equal(match.Groups[groupNumbers[i]], match.Groups[groupNames[i]]);
+
+                Assert.Equal(groupNumbers[i], regex.GroupNumberFromName(groupNames[i]));
+                Assert.Equal(groupNames[i], regex.GroupNameFromNumber(groupNumbers[i]));
+            }
+        }
+
+        private void GroupsTest(object[] testCase)
+        {
+            Groups((string)testCase[0], (string)testCase[1], (RegexOptions)testCase[2], (string[])testCase[3]);
+        }
+
+
+        [Fact]
+        public void GroupsEnUS()
+        {
+            RemoteInvoke(() => {
+                CultureInfo.CurrentCulture = s_enUSCulture;
+                foreach (object[] testCase in Groups_CustomCulture_TestData_enUS())
                 {
-                    CultureInfo.CurrentCulture = new CultureInfo("en-US");
-                }
-                if (innerCultureInfo != null)
-                {
-                    CultureInfo.CurrentCulture = innerCultureInfo;
-                }
-
-                Regex regex = new Regex(innerPattern, innerOptions);
-                Match match = regex.Match(innerInput);
-                Assert.True(match.Success);
-
-                Assert.Equal(innerExpectedGroups.Length, match.Groups.Count);
-                Assert.True(innerExpectedGroups[0] == match.Value, string.Format("Culture used: {0}", CultureInfo.CurrentCulture));
-
-                int[] groupNumbers = regex.GetGroupNumbers();
-                string[] groupNames = regex.GetGroupNames();
-                for (int i = 0; i < innerExpectedGroups.Length; i++)
-                {
-                    Assert.Equal(innerExpectedGroups[i], match.Groups[groupNumbers[i]].Value);
-                    Assert.Equal(match.Groups[groupNumbers[i]], match.Groups[groupNames[i]]);
-
-                    Assert.Equal(groupNumbers[i], regex.GroupNumberFromName(groupNames[i]));
-                    Assert.Equal(groupNames[i], regex.GroupNameFromNumber(groupNumbers[i]));
+                    GroupsTest(testCase);
                 }
 
                 return SuccessExitCode;
-            }, outerPattern, outerInput, outerOptions, outerCultureInfo, outerExpectedGroups).Dispose();
+            }).Dispose();
+        }
+
+        [Fact]
+        public void GroupsCzech()
+        {
+            RemoteInvoke(() => {
+                CultureInfo.CurrentCulture = s_czechCulture;
+                foreach (object[] testCase in Groups_CustomCulture_TestData_Czech())
+                {
+                    GroupsTest(testCase);
+                }
+
+                return SuccessExitCode;
+            }).Dispose();
+        }
+
+        [Fact]
+        public void GroupsDanish()
+        {
+            RemoteInvoke(() => {
+                CultureInfo.CurrentCulture = s_danishCulture;
+                foreach (object[] testCase in Groups_CustomCulture_TestData_Danish())
+                {
+                    GroupsTest(testCase);
+                }
+
+                return SuccessExitCode;
+            }).Dispose();
+        }
+
+        [Fact]
+        public void GroupsTurkish()
+        {
+            RemoteInvoke(() => {
+                CultureInfo.CurrentCulture = s_turkishCulture;
+                foreach (object[] testCase in Groups_CustomCulture_TestData_Turkish())
+                {
+                    GroupsTest(testCase);
+                }
+
+                return SuccessExitCode;
+            }).Dispose();
+        }
+
+        [Fact]
+        public void GroupsAzeriLatin()
+        {
+            RemoteInvoke(() => {
+                CultureInfo.CurrentCulture = s_azeriLatinCulture;
+                foreach (object[] testCase in Groups_CustomCulture_TestData_AzeriLatin())
+                {
+                    GroupsTest(testCase);
+                }
+
+                return SuccessExitCode;
+            }).Dispose();
+        }
+
+        [Fact]
+        public void GroupsBasic()
+        {
+            RemoteInvoke(() => {
+                CultureInfo.CurrentCulture = GetDefaultCultureForTests();
+                foreach (object[] testCase in Groups_Basic_TestData())
+                {
+                    GroupsTest(testCase);
+                }
+
+                return SuccessExitCode;
+            }).Dispose();
         }
     }
 }
