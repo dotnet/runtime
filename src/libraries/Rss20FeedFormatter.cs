@@ -36,19 +36,31 @@ namespace Microsoft.ServiceModel.Syndication
         private bool _serializeExtensionsAsAtom;
 
         //Custom Parsers
-        public Func<string, XmlReader, DateTimeOffset> DateParser { get; set; } // ParseDate
-        public Func<XmlReader, TextSyndicationContent> TitleParser { get; set; }
-        public Func<XmlReader, TextSyndicationContent> DescriptionParser { get; set; }
-        public Func<XmlReader, string> LanguageParser { get; set; }
-        public Func<XmlReader, TextSyndicationContent> CopyrightParser { get; set; }
-        public Func<XmlReader, string> GeneratorParser { get; set; }
-        public Func<XmlReader, Uri, SyndicationLink> OnReadLink { get; set; }
-        public Func<XmlReader, SyndicationFeed, SyndicationPerson> ManagingEditorParser { get; set; }
-        public Func<XmlReader, SyndicationFeed, bool> ImageParser { get; set; }
-        public Func<XmlReader, SyndicationFeed, SyndicationItem> ItemParser { get; set; }
-        public Func<XmlReader, SyndicationFeed, SyndicationCategory> FeedCategoryParser { get; set; }
 
+        //   value, localname , ns , result
+        public Func<string, string, string, string> stringParser;
+        public Func<string, string, string, DateTimeOffset> dateParser;
+        public Func<string, string, string, Uri> uriParser;
+        /*
+         * title
+         * link
+         * description
+         * language
+         * date
+         * 
+         */
 
+        private string StringParserAction(string value, string localName, string ns)
+        {
+            return value;
+        }
+
+        private Uri UriParserAction(string value, string localName, string ns)
+        {
+            return new Uri(value);
+        }
+
+        
 
         private async Task<bool> OnReadImage(XmlReaderWrapper reader, SyndicationFeed result)
         {
@@ -57,78 +69,31 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 if (await reader.IsStartElementAsync(Rss20Constants.UrlTag, Rss20Constants.Rss20Namespace))
                 {
-                    result.ImageUrl = new Uri(await reader.ReadElementStringAsync(), UriKind.RelativeOrAbsolute);
+                    //result.ImageUrl = new Uri(await reader.ReadElementStringAsync(), UriKind.RelativeOrAbsolute);
+                    result.ImageUrl = uriParser(await reader.ReadElementStringAsync(), reader.LocalName, reader.NamespaceURI);
                 }
                 else if(await reader.IsStartElementAsync("link",Rss20Constants.Rss20Namespace))
                 {
-                    result.ImageLink = new Uri(await reader.ReadElementStringAsync(), UriKind.RelativeOrAbsolute);
+                    //result.ImageLink = new Uri(await reader.ReadElementStringAsync(), UriKind.RelativeOrAbsolute);
+                    result.ImageLink = uriParser(await reader.ReadElementStringAsync(), reader.LocalName, reader.NamespaceURI);
                 }
                 else if (await reader.IsStartElementAsync("title", Rss20Constants.Rss20Namespace))
                 {
-                    result.ImageTitle = new TextSyndicationContent(await reader.ReadElementStringAsync());
+                    //result.ImageTitle = new TextSyndicationContent(await reader.ReadElementStringAsync());
+                    result.ImageTitle = new TextSyndicationContent(stringParser(await reader.ReadElementStringAsync(), reader.LocalName, reader.NamespaceURI));
                 }
             }
             await reader.ReadEndElementAsync(); // image
             return true;
         }
-
-        //private SyndicationItem OnReadItem(XmlReaderWrapper reader, SyndicationFeed result)
-        //{
-        //    //return ReadItem(reader,result);
-        //}
-        private TextSyndicationContent OnReadTitle(XmlReader reader)
-        {
-            return new TextSyndicationContent(reader.ReadElementString());
-        }
-
-        private TextSyndicationContent DescriptionParserAction(XmlReader reader)
-        {
-            return new TextSyndicationContent(reader.ReadElementString());
-        }
-
-        private String LanguageParserAction(XmlReader reader)
-        {
-            return reader.ReadElementString();
-        }
-
-        private TextSyndicationContent CopyrightParserAction(XmlReader reader)
-        {
-            return new TextSyndicationContent(reader.ReadElementString());
-        }
-
-        private string GeneratorParserAction(XmlReader reader)
-        {
-            //XmlReaderWrapper readerWrapped = 
-            return reader.ReadElementString();
-        }
-
-        //private SyndicationPerson ManagingEditorParserAction(XmlReaderWrapper reader, SyndicationFeed feed)
-        //{
-        //    //person = new SyndicationPerson();
-        //    SyndicationPerson result = CreatePerson(feed);
-        //    aReadPersonAsync(reader, result);
-        //    return result;
-        //}
-
-        //private SyndicationLink LinkParserAction(XmlReaderWrapper reader, Uri baseUri)
-        //{
-        //    return ReadAlternateLinkAsync(reader, baseUri);
-        //}
+        
 
 
         private void LoadDefaultParsers()
         {
-            DateParser = DateParserAction;
-            TitleParser = OnReadTitle;
-            DescriptionParser = DescriptionParserAction;
-            LanguageParser = LanguageParserAction;
-            CopyrightParser = CopyrightParserAction;
-            GeneratorParser = GeneratorParserAction;
-            //ManagingEditorParser = ManagingEditorParserAction;
-            //OnReadLink = LinkParserAction;
-            //FeedCategoryParser = ReadCategory;
-            //ItemParser = OnReadItem;
-            //ImageParser = OnReadImage;
+            stringParser = StringParserAction;
+            dateParser = DateParserAction;
+            uriParser = UriParserAction;
         }
 
         public Rss20FeedFormatter()
@@ -307,7 +272,8 @@ namespace Microsoft.ServiceModel.Syndication
                             switch (reader.LocalName)
                             {
                                 case Rss20Constants.TitleTag:
-                                    result.Title = new TextSyndicationContent(await reader.ReadElementStringAsync());
+                                    //result.Title = new TextSyndicationContent(await reader.ReadElementStringAsync());
+                                    result.Title = new TextSyndicationContent(stringParser(await reader.ReadElementStringAsync(),reader.LocalName,reader.NamespaceURI));
                                     break;
 
                                 case Rss20Constants.LinkTag:
@@ -316,7 +282,8 @@ namespace Microsoft.ServiceModel.Syndication
                                     break;
 
                                 case Rss20Constants.DescriptionTag:
-                                    result.Summary = new TextSyndicationContent(await reader.ReadElementStringAsync());
+                                    //result.Summary = new TextSyndicationContent(await reader.ReadElementStringAsync());
+                                    result.Summary = new TextSyndicationContent(stringParser(await reader.ReadElementStringAsync(), reader.LocalName, reader.NamespaceURI));
                                     break;
 
                                 case Rss20Constants.AuthorTag:
@@ -341,7 +308,7 @@ namespace Microsoft.ServiceModel.Syndication
                                             isPermalink = false;
                                         }
 
-                                        result.Id = await reader.ReadElementStringAsync();
+                                        result.Id = stringParser(await reader.ReadElementStringAsync(),reader.LocalName,reader.NamespaceURI);//await reader.ReadElementStringAsync();
                                         if (isPermalink)
                                         {
                                             fallbackAlternateLink = result.Id;
@@ -359,7 +326,7 @@ namespace Microsoft.ServiceModel.Syndication
                                             string str = await reader.ReadStringAsync();
                                             if (!string.IsNullOrEmpty(str))
                                             {
-                                                result.PublishDate = DateParser(str, reader);
+                                                result.PublishDate = dateParser(str, reader.LocalName, reader.NamespaceURI);
                                             }
 
                                             await reader.ReadEndElementAsync();
@@ -395,7 +362,7 @@ namespace Microsoft.ServiceModel.Syndication
                                                 }
                                             }
                                         }
-                                        string feedTitle = await reader.ReadElementStringAsync();
+                                        string feedTitle = stringParser(await reader.ReadElementStringAsync(), reader.LocalName, reader.NamespaceURI); //await reader.ReadElementStringAsync();
                                         feed.Title = new TextSyndicationContent(feedTitle);
                                         result.SourceFeed = feed;
 
@@ -608,7 +575,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
         
-        private static async Task ReadSkipHoursAsync(XmlReaderWrapper reader, SyndicationFeed result)
+        private async Task ReadSkipHoursAsync(XmlReaderWrapper reader, SyndicationFeed result)
         {
             await reader.ReadStartElementAsync();
 
@@ -617,7 +584,8 @@ namespace Microsoft.ServiceModel.Syndication
 
                 if(reader.LocalName == Rss20Constants.HourTag)
                 {
-                    int hour = int.Parse(await reader.ReadElementStringAsync());
+                    string val = stringParser(await reader.ReadElementStringAsync(), Rss20Constants.HourTag, Rss20Constants.Rss20Namespace);
+                    int hour = int.Parse(val);
 
                     if (hour < 0 || hour > 24)
                     {
@@ -636,7 +604,7 @@ namespace Microsoft.ServiceModel.Syndication
             await reader.ReadEndElementAsync();
         }
 
-        private static async Task ReadSkipDaysAsync(XmlReaderWrapper reader, SyndicationFeed result)
+        private async Task ReadSkipDaysAsync(XmlReaderWrapper reader, SyndicationFeed result)
         {
             await reader.ReadStartElementAsync();
 
@@ -644,13 +612,12 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 if (reader.LocalName == Rss20Constants.DayTag)
                 {
-                    string day = await reader.ReadElementStringAsync();
+                    string day = stringParser(await reader.ReadElementStringAsync(), reader.LocalName, Rss20Constants.Rss20Namespace);
                     result.SkipDays.Add(day);
                 }
                 else
                 {
                     await reader.SkipAsync();
-
                 }
             }
 
@@ -741,8 +708,8 @@ namespace Microsoft.ServiceModel.Syndication
                     }
                 }
             }
-            string uri = await reader.ReadElementStringAsync();
-            link.Uri = new Uri(uri, UriKind.RelativeOrAbsolute);
+            //string uri = stringParser(await reader.ReadElementStringAsync(), reader.LocalName, reader.NamespaceURI);
+            link.Uri = uriParser(await reader.ReadElementStringAsync(), reader.LocalName, reader.NamespaceURI);//new Uri(uri, UriKind.RelativeOrAbsolute);
             return link;
         }
         
@@ -785,7 +752,7 @@ namespace Microsoft.ServiceModel.Syndication
 
             if (!isEmpty)
             {
-                category.Name = await reader.ReadStringAsync();
+                category.Name = stringParser(await reader.ReadStringAsync(), reader.LocalName, reader.NamespaceURI);//await reader.ReadStringAsync();
                 await reader.ReadEndElementAsync();
             }
         }
@@ -886,7 +853,7 @@ namespace Microsoft.ServiceModel.Syndication
             await reader.ReadStartElementAsync();
             if (!isEmpty)
             {
-                string email = await reader.ReadStringAsync();
+                string email = stringParser(await reader.ReadStringAsync(),reader.LocalName,reader.NamespaceURI);// await reader.ReadStringAsync();
                 await reader.ReadEndElementAsync();
                 person.Email = email;
             }
@@ -915,7 +882,7 @@ namespace Microsoft.ServiceModel.Syndication
             while (await reader.IsStartElementAsync())
             {
                 string name = reader.LocalName;
-                val = await reader.ReadElementStringAsync();
+                val = stringParser(await reader.ReadElementStringAsync(), name, Rss20Constants.Rss20Namespace);
 
                 switch (name)
                 {
@@ -928,7 +895,7 @@ namespace Microsoft.ServiceModel.Syndication
                         break;
 
                     case Rss20Constants.LinkTag:
-                        textInput.link = new SyndicationLink(new Uri(val));
+                        textInput.link = new SyndicationLink(uriParser(val, name, reader.NamespaceURI));
                         break;
 
                     case Rss20Constants.NameTag:
@@ -945,10 +912,6 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 result.TextInput = textInput;
             }
-            //else
-            //{
-            //    result.TextInput = null;
-            //}
 
             await reader.ReadEndElementAsync();
         }
@@ -1028,24 +991,25 @@ namespace Microsoft.ServiceModel.Syndication
                         switch (reader.LocalName)
                         {
                             case Rss20Constants.TitleTag:
-                                result.Title = new TextSyndicationContent(await reader.ReadElementStringAsync());
                                 //result.Title = new TextSyndicationContent(await reader.ReadElementStringAsync());
+                                result.Title = new TextSyndicationContent(stringParser(await reader.ReadElementStringAsync(),reader.LocalName,Rss20Constants.Rss20Namespace));
                                 break;
 
                             case Rss20Constants.LinkTag:
+                                //string link = 
                                 result.Links.Add(await ReadAlternateLinkAsync(reader, result.BaseUri));
                                 break;
 
                             case Rss20Constants.DescriptionTag:
-                                result.Description = new TextSyndicationContent(await reader.ReadElementStringAsync());
+                                result.Description = new TextSyndicationContent(stringParser(await reader.ReadElementStringAsync(), reader.LocalName, Rss20Constants.Rss20Namespace));
                                 break;
 
                             case Rss20Constants.LanguageTag:
-                                result.Language = await reader.ReadElementStringAsync();
+                                result.Language = stringParser(await reader.ReadElementStringAsync(), reader.LocalName, Rss20Constants.Rss20Namespace);
                                 break;
 
                             case Rss20Constants.CopyrightTag:
-                                result.Copyright = new TextSyndicationContent(await reader.ReadElementStringAsync());
+                                result.Copyright = new TextSyndicationContent(stringParser(await reader.ReadElementStringAsync(), reader.LocalName, Rss20Constants.Rss20Namespace));
                                 break;
 
                             case Rss20Constants.ManagingEditorTag:
@@ -1062,7 +1026,7 @@ namespace Microsoft.ServiceModel.Syndication
 
                                         if (!string.IsNullOrEmpty(str))
                                         {
-                                            result.LastUpdatedTime = DateParser(str, reader); // DateFromString(str, reader);
+                                            result.LastUpdatedTime = dateParser(str, reader.LocalName, reader.NamespaceURI); // DateFromString(str, reader);
                                         }
 
                                         await reader.ReadEndElementAsync();
@@ -1076,7 +1040,7 @@ namespace Microsoft.ServiceModel.Syndication
                                 break;
 
                             case Rss20Constants.GeneratorTag:
-                                result.Generator = await reader.ReadElementStringAsync();
+                                result.Generator = stringParser(await reader.ReadElementStringAsync(), reader.LocalName, Rss20Constants.Rss20Namespace);
                                 break;
 
                             case Rss20Constants.ImageTag:
@@ -1104,7 +1068,7 @@ namespace Microsoft.ServiceModel.Syndication
                                 break;
 
                             case Rss20Constants.TimeToLiveTag:
-                                string value = await reader.ReadElementStringAsync();
+                                string value = stringParser(await reader.ReadElementStringAsync(), Rss20Constants.TimeToLiveTag, Rss20Constants.Rss20Namespace);
                                 int timeToLive = int.Parse(value);
                                 result.TimeToLive = timeToLive;
                                 break;
@@ -1597,7 +1561,7 @@ namespace Microsoft.ServiceModel.Syndication
         }
 
         // Custom parsers
-        public DateTimeOffset DateParserAction(string dateTimeString, XmlReader reader)
+        public DateTimeOffset DateParserAction(string dateTimeString, string localName, string ns)
         {
             bool parsed = false;
             //try
@@ -1639,7 +1603,7 @@ namespace Microsoft.ServiceModel.Syndication
                 //    new XmlException(FeedUtils.AddLineInfo(reader,
                 //    SR.ErrorParsingDateTime)));
 
-                throw new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingDateTime));
+                //throw new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingDateTime));
             }
             bool thereAreSeconds = (dateTimeStringBuilder[17] == ':');
             int timeZoneStartIndex;
