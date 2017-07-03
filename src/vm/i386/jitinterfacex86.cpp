@@ -34,7 +34,6 @@
 #define MON_DEBUG 1
 #endif
 
-#ifdef _TARGET_X86_
 class JIT_TrialAlloc
 {
 public:
@@ -65,7 +64,6 @@ private:
     static void EmitCheckRestore(CPUSTUBLINKER *psl);
 #endif
 };
-#endif // _TARGET_X86_
 
 extern "C" LONG g_global_alloc_lock;
 
@@ -925,6 +923,11 @@ HCIMPL2_RAW(Object*, UnframedAllocatePrimitiveArray, CorElementType type, DWORD 
 }
 HCIMPLEND_RAW
 
+HCIMPL1_RAW(PTR_MethodTable, UnframedGetTemplateMethodTable, ArrayTypeDesc *arrayDesc)
+{
+    return arrayDesc->GetTemplateMethodTable();
+}
+HCIMPLEND_RAW
 
 void *JIT_TrialAlloc::GenAllocArray(Flags flags)
 {
@@ -964,6 +967,12 @@ void *JIT_TrialAlloc::GenAllocArray(Flags flags)
 
             // je noLock
             sl.X86EmitCondJump(noLock, X86CondCode::kJZ);
+
+            sl.X86EmitPushReg(kEDX);
+            sl.X86EmitCall(sl.NewExternalCodeLabel((LPVOID)UnframedGetTemplateMethodTable), 0);
+            sl.X86EmitPopReg(kEDX);
+
+            sl.X86EmitMovRegReg(kECX, kEAX);
         }
     }
     else
