@@ -10,7 +10,6 @@ namespace System.IO.Tests
     public class Uma_ReadWriteStructArray : Uma_TestStructs
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20522", TargetFrameworkMonikers.UapAot)]
         public static void UmaReadWriteStructArray_InvalidParameters()
         {
             const int capacity = 100;
