@@ -37,16 +37,16 @@ namespace Microsoft.ServiceModel.Syndication
 
         //Custom Parsers
         public Func<string, XmlReader, DateTimeOffset> DateParser { get; set; } // ParseDate
-        //public Func<XmlReader, TextSyndicationContent> TitleParser { get; set; }
-        //public Func<XmlReader, TextSyndicationContent> DescriptionParser { get; set; }
-        //public Func<XmlReader, string> LanguageParser { get; set; }
-        //public Func<XmlReader, TextSyndicationContent> CopyrightParser { get; set; }
-        //public Func<XmlReader, string> GeneratorParser { get; set; }
-        //public Func<XmlReader, Uri, SyndicationLink> OnReadLink { get; set; }
-        //public Func<XmlReader, SyndicationFeed, SyndicationPerson> ManagingEditorParser { get; set; }
-        //public Func<XmlReader, SyndicationFeed, bool> ImageParser { get; set; }
-        //public Func<XmlReader,SyndicationFeed,SyndicationItem> ItemParser { get; set; }
-        //public Func<XmlReader, SyndicationFeed, SyndicationCategory> FeedCategoryParser { get; set; }
+        public Func<XmlReader, TextSyndicationContent> TitleParser { get; set; }
+        public Func<XmlReader, TextSyndicationContent> DescriptionParser { get; set; }
+        public Func<XmlReader, string> LanguageParser { get; set; }
+        public Func<XmlReader, TextSyndicationContent> CopyrightParser { get; set; }
+        public Func<XmlReader, string> GeneratorParser { get; set; }
+        public Func<XmlReader, Uri, SyndicationLink> OnReadLink { get; set; }
+        public Func<XmlReader, SyndicationFeed, SyndicationPerson> ManagingEditorParser { get; set; }
+        public Func<XmlReader, SyndicationFeed, bool> ImageParser { get; set; }
+        public Func<XmlReader, SyndicationFeed, SyndicationItem> ItemParser { get; set; }
+        public Func<XmlReader, SyndicationFeed, SyndicationCategory> FeedCategoryParser { get; set; }
 
 
 
@@ -106,28 +106,28 @@ namespace Microsoft.ServiceModel.Syndication
         //{
         //    //person = new SyndicationPerson();
         //    SyndicationPerson result = CreatePerson(feed);
-        //    ReadPerson(reader, result);
+        //    aReadPersonAsync(reader, result);
         //    return result;
         //}
 
         //private SyndicationLink LinkParserAction(XmlReaderWrapper reader, Uri baseUri)
         //{
-        //    return ReadAlternateLink(reader, baseUri);
+        //    return ReadAlternateLinkAsync(reader, baseUri);
         //}
 
 
         private void LoadDefaultParsers()
         {
             DateParser = DateParserAction;
-            //TitleParser = OnReadTitle;
-            //DescriptionParser = DescriptionParserAction;
-            //LanguageParser = LanguageParserAction;
-            //CopyrightParser = CopyrightParserAction;
-            //GeneratorParser = GeneratorParserAction;
-            ////ManagingEditorParser = ManagingEditorParserAction;
-            ////OnReadLink = LinkParserAction;
-            ////FeedCategoryParser = ReadCategory;
-            ////ItemParser = OnReadItem;
+            TitleParser = OnReadTitle;
+            DescriptionParser = DescriptionParserAction;
+            LanguageParser = LanguageParserAction;
+            CopyrightParser = CopyrightParserAction;
+            GeneratorParser = GeneratorParserAction;
+            //ManagingEditorParser = ManagingEditorParserAction;
+            //OnReadLink = LinkParserAction;
+            //FeedCategoryParser = ReadCategory;
+            //ItemParser = OnReadItem;
             //ImageParser = OnReadImage;
         }
 
@@ -1029,6 +1029,7 @@ namespace Microsoft.ServiceModel.Syndication
                         {
                             case Rss20Constants.TitleTag:
                                 result.Title = new TextSyndicationContent(await reader.ReadElementStringAsync());
+                                //result.Title = new TextSyndicationContent(await reader.ReadElementStringAsync());
                                 break;
 
                             case Rss20Constants.LinkTag:
@@ -1091,16 +1092,12 @@ namespace Microsoft.ServiceModel.Syndication
                                     {
                                         feedItems.Add(await ReadItemAsync(reader, result));
                                     }
-
-                                    //foreach(var item in items)
-                                    //{
-                                    //    feedItems.Add(item);
-                                    //}
+                                    
 
                                     areAllItemsRead = true;
-                                    //readItemsAtLeastOnce = true;
                                     break;
                                 }
+
                             //Optional tags
                             case Rss20Constants.DocumentationTag:
                                 result.Documentation = await ReadAlternateLinkAsync(reader,result.BaseUri);

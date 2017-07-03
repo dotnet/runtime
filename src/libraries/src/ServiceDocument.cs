@@ -69,16 +69,16 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        public static ServiceDocument Load(XmlReader reader)
+        public static Task<ServiceDocument> Load(XmlReader reader)
         {
-            return Load<ServiceDocument>(reader);
+            return LoadAsync<ServiceDocument>(reader);
         }
 
-        public static TServiceDocument Load<TServiceDocument>(XmlReader reader)
+        public static async Task<TServiceDocument> LoadAsync<TServiceDocument>(XmlReader reader)
             where TServiceDocument : ServiceDocument, new()
         {
             AtomPub10ServiceDocumentFormatter<TServiceDocument> formatter = new AtomPub10ServiceDocumentFormatter<TServiceDocument>();
-            formatter.ReadFromAsync(reader);
+            await formatter.ReadFromAsync(reader);
             return (TServiceDocument)(object)formatter.Document;
         }
 
@@ -87,9 +87,9 @@ namespace Microsoft.ServiceModel.Syndication
             return new AtomPub10ServiceDocumentFormatter(this);
         }
 
-        public void Save(XmlWriter writer)
+        public async Task Save(XmlWriter writer)
         {
-            new AtomPub10ServiceDocumentFormatter(this).WriteTo(writer);
+            await new AtomPub10ServiceDocumentFormatter(this).WriteTo(writer);
         }
 
         protected internal virtual Workspace CreateWorkspace()

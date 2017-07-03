@@ -36,7 +36,7 @@ namespace Microsoft.ServiceModel.Syndication
 
         public abstract Task<bool> CanReadAsync(XmlReader reader);
         public abstract Task ReadFrom(XmlReader reader);
-        public abstract void WriteTo(XmlWriter writer);
+        public abstract Task WriteTo(XmlWriter writer);
 
         protected virtual InlineCategoriesDocument CreateInlineCategoriesDocument()
         {
