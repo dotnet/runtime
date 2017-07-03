@@ -12,22 +12,22 @@ namespace System.Runtime.InteropServices
     {
         public static void Copy(IntPtr source, byte[] destination, int startIndex, int length)
         {
-            InteropExtensions.CopyToManaged(source, destination, startIndex, length);
+            PInvokeMarshal.CopyToManaged(source, destination, startIndex, length);
         }
 
         public static void Copy(byte[] array, int startIndex, IntPtr destination, int length)
         {
-            InteropExtensions.CopyToNative(array, startIndex, destination, length);
+            PInvokeMarshal.CopyToNative(array, startIndex, destination, length);
         }
         
         public static IntPtr AllocHGlobal(int cb)
         {
-            return InteropExtensions.MemAlloc(new UIntPtr((uint)cb));
+            return PInvokeMarshal.AllocHGlobal(cb);
         }
 
         public static void FreeHGlobal(IntPtr hglobal)
         {
-            InteropExtensions.MemFree(hglobal);
+            PInvokeMarshal.FreeHGlobal(hglobal);
         }
     }
 }
