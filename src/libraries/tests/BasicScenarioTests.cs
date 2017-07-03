@@ -156,7 +156,7 @@ namespace Microsoft.ServiceModel.Syndication.Tests
                 // *** SETUP *** \\\
                 XmlReaderSettings readerSettings = new XmlReaderSettings();
                 readerSettings.Async = true;
-                XmlReader xmlr = XmlReader.Create(@"TestFeeds\SimpleAtomFeed.xml",readerSettings);
+                XmlReader xmlr = XmlReader.Create(@"TestFeeds\atom_spec_example.xml", readerSettings);
                 Task<SyndicationFeed> rss = SyndicationFeed.LoadAsync(xmlr);
                 SyndicationFeed sf = rss.Result;
                 Assert.True(sf != null);
@@ -179,7 +179,7 @@ namespace Microsoft.ServiceModel.Syndication.Tests
             finally
             {
                 // *** CLEANUP *** \\
-                File.Delete(path);
+                //File.Delete(path);
             }
         }
 
