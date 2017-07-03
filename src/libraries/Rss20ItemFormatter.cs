@@ -135,7 +135,7 @@ namespace Microsoft.ServiceModel.Syndication
             await ReadItemAsync(XmlReaderWrapper.CreateFromReader(reader));
         }
 
-        public override async Task WriteTo(XmlWriter writer)
+        public override async Task WriteToAsync(XmlWriter writer)
         {
             if (writer == null)
             {

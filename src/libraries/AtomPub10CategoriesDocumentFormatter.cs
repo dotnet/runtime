@@ -99,7 +99,7 @@ namespace Microsoft.ServiceModel.Syndication
             await ReadDocumentAsync(reader);
         }
 
-        void WriteXml(XmlWriter writer)
+        async Task WriteXml(XmlWriter writer)
         {
             if (writer == null)
             {
@@ -109,7 +109,7 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 throw new InvalidOperationException(SR.DocumentFormatterDoesNotHaveDocument);
             }
-            WriteDocument(writer);
+            await WriteDocumentAsync(writer);
         }
 
         public override async Task ReadFrom(XmlReader reader)
@@ -126,7 +126,7 @@ namespace Microsoft.ServiceModel.Syndication
             await ReadDocumentAsync(XmlReaderWrapper.CreateFromReader(reader));
         }
 
-        public override void WriteTo(XmlWriter writer)
+        public override async Task WriteTo(XmlWriter writer)
         {
             if (writer == null)
             {
@@ -137,7 +137,7 @@ namespace Microsoft.ServiceModel.Syndication
                 throw new InvalidOperationException(SR.DocumentFormatterDoesNotHaveDocument);
             }
             writer.WriteStartElement(App10Constants.Prefix, App10Constants.Categories, App10Constants.Namespace);
-            WriteDocument(writer);
+            await WriteDocumentAsync(writer);
             writer.WriteEndElement();
         }
 
@@ -195,11 +195,11 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        private void WriteDocument(XmlWriter writer)
+        private async Task WriteDocumentAsync(XmlWriter writer)
         {
             // declare the atom10 namespace upfront for compactness
             writer.WriteAttributeString(Atom10Constants.Atom10Prefix, Atom10FeedFormatter.XmlNsNs, Atom10Constants.Atom10Namespace);
-            AtomPub10ServiceDocumentFormatter.WriteCategoriesInnerXml(writer, this.Document, null, this.Version);
+            await AtomPub10ServiceDocumentFormatter.WriteCategoriesInnerXml(writer, this.Document, null, this.Version);
         }
     }
 }

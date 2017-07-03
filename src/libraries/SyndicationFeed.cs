@@ -44,7 +44,7 @@ namespace Microsoft.ServiceModel.Syndication
         private Collection<int> _skipHours;
         private Collection<string> _skipDays;
         private SyndicationTextInput _textInput;
-        private Uri _iconUrl;
+        //private Uri _iconUrl;
 
         public Uri IconUrl{ get;set; } 
 
@@ -430,14 +430,14 @@ namespace Microsoft.ServiceModel.Syndication
             return new Rss20FeedFormatter(this, serializeExtensionsAsAtom);
         }
 
-        public void SaveAsAtom10(XmlWriter writer)
+        public async Task SaveAsAtom10(XmlWriter writer)
         {
-            this.GetAtom10Formatter().WriteTo(writer);
+            await this.GetAtom10Formatter().WriteTo(writer);
         }
 
-        public void SaveAsRss20(XmlWriter writer)
+        public async Task SaveAsRss20(XmlWriter writer)
         {
-            this.GetRss20Formatter().WriteTo(writer);
+            await this.GetRss20Formatter().WriteTo(writer);
         }
 
         protected internal virtual SyndicationCategory CreateCategory()

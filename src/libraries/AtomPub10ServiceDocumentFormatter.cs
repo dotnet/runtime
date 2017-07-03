@@ -356,10 +356,10 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
         
-        private static async Task WriteCategories(XmlWriterWrapper writer, CategoriesDocument categories, Uri baseUri, string version)
+        private static async Task WriteCategoriesAsync(XmlWriterWrapper writer, CategoriesDocument categories, Uri baseUri, string version)
         {
             await writer.WriteStartElementAsync(App10Constants.Prefix, App10Constants.Categories, App10Constants.Namespace);
-            WriteCategoriesInnerXml(writer, categories, baseUri, version);
+            await WriteCategoriesInnerXml(writer, categories, baseUri, version);
             await writer.WriteEndElementAsync();
         }
         
@@ -704,7 +704,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
             for (int i = 0; i < collection.Categories.Count; ++i)
             {
-                await WriteCategories(writer, collection.Categories[i], baseUri, this.Version);
+                await WriteCategoriesAsync(writer, collection.Categories[i], baseUri, this.Version);
             }
             WriteElementExtensions(writer, collection, this.Version);
             await writer.WriteEndElementAsync();

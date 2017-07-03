@@ -260,14 +260,14 @@ namespace Microsoft.ServiceModel.Syndication
             return new Rss20ItemFormatter(this, serializeExtensionsAsAtom);
         }
 
-        public void SaveAsAtom10(XmlWriter writer)
+        public async Task SaveAsAtom10(XmlWriter writer)
         {
-            this.GetAtom10Formatter().WriteTo(writer);
+            await this.GetAtom10Formatter().WriteToAsync(writer);
         }
 
-        public void SaveAsRss20(XmlWriter writer)
+        public async Task SaveAsRss20(XmlWriter writer)
         {
-            this.GetRss20Formatter().WriteTo(writer);
+            await this.GetRss20Formatter().WriteToAsync(writer);
         }
 
         protected internal virtual SyndicationCategory CreateCategory()
