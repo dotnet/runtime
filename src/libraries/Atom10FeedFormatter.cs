@@ -1508,9 +1508,11 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 await WriteElementAsync(writer, Atom10Constants.LogoTag, feed.ImageUrl.ToString());
             }
-            WriteFeedAuthorsToAsync(writer, feed.Authors);
-            WriteFeedContributorsToAsync(writer, feed.Contributors);
+            await WriteFeedAuthorsToAsync(writer, feed.Authors);
+            await WriteFeedContributorsToAsync(writer, feed.Contributors);
             await WriteElementAsync(writer, Atom10Constants.GeneratorTag, feed.Generator);
+            //Adding icon parsing
+            await WriteElementAsync(writer, Atom10Constants.IconTag, feed.IconUrl.AbsoluteUri);
 
             for (int i = 0; i < feed.Links.Count; ++i)
             {
