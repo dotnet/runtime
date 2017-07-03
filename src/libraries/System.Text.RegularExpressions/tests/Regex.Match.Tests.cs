@@ -704,7 +704,6 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         [Fact]
-        [ActiveIssue(21835, TargetFrameworkMonikers.Uap)]
         public void Match_SpecialUnicodeCharacters_Invariant()
         {
             RemoteInvoke(() =>
