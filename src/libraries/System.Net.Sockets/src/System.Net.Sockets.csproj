@@ -5,7 +5,6 @@
     <AssemblyName>System.Net.Sockets</AssemblyName>
     <ProjectGuid>{43311AFB-D7C4-4E5A-B1DE-855407F90D1B}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <DefineConstants Condition="'$(TargetGroup)' == 'uap'">$(DefineConstants);uap</DefineConstants>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx'">true</IsPartialFacadeAssembly>
     <OmitResources Condition="'$(TargetGroup)' == 'netfx'">true</OmitResources>
   </PropertyGroup>
@@ -150,6 +149,9 @@
     <Compile Include="$(CommonPath)\System\Net\SafeCloseSocket.Windows.cs">
       <Link>Common\System\Net\SafeCloseSocket.Windows.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Windows.cs">
+      <Link>Common\System\Net\ContextAwareResult.Windows.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\SocketAddressPal.Windows.cs">
       <Link>Common\System\Net\SocketAddressPal.Windows.cs</Link>
     </Compile>
@@ -247,26 +249,11 @@
     <Compile Include="$(CommonPath)\Interop\Windows\Winsock\WSABuffer.cs">
       <Link>Interop\Windows\Winsock\WSABuffer.cs</Link>
     </Compile>
-  </ItemGroup>
-  <!-- Windows : Win32 only -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(TargetGroup)' != 'uap' AND '$(TargetGroup)' != 'netfx'">
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetFileCompletionNotificationModes.cs">
       <Link>Interop\Windows\kernel32\Interop.SetFileCompletionNotificationModes.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Windows.cs">
-      <Link>Common\System\Net\ContextAwareResult.Windows.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\System\Net\CompletionPortHelper.Windows.cs">
       <Link>Common\System\Net\CompletionPortHelper.Windows.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <!-- Windows : Win32 + WinRT -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(TargetGroup)' == 'uap'">
-    <Compile Include="$(CommonPath)\System\Net\ContextAwareResult.Uap.cs">
-      <Link>Common\System\Net\ContextAwareResult.Uap.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\System\Net\CompletionPortHelper.Uap.cs">
-      <Link>Common\System\Net\CompletionPortHelper.Uap.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsUnix)' == 'true' ">

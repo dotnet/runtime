@@ -16,12 +16,13 @@ namespace System.Net.Mail.Tests
 {
     public class SmtpServer
     {
-        private string _mailfrom, _mailto, _subject, _body;
+        private string _mailfrom, _mailto, _subject, _body, _clientdomain;
 
         public string MailFrom => _mailfrom;
         public string MailTo => _mailto;
         public string Subject => _subject;
         public string Body => _body;
+        public string ClientDomain => _clientdomain;
 
         private readonly TcpListener _server;
 
@@ -90,8 +91,10 @@ namespace System.Net.Mail.Tests
             switch (s.Substring(0, 4))
             {
                 case "HELO":
+                    _clientdomain = s.Substring(5).Trim().ToLower();
                     break;
                 case "EHLO":
+                    _clientdomain = s.Substring(5).Trim().ToLower();
                     WriteNS(ns, "250-localhost Hello" + s.Substring(5, s.Length - 5) + "\r\n");
                     WriteNS(ns, "250-AUTH PLAIN\r\n");
                     break;
