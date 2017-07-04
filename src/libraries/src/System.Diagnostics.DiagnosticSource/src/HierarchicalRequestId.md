@@ -5,10 +5,11 @@ This document describes hierarchical Request-Id schema for [HTTP Correlation Pro
 The main requirement for Request-Id is uniqueness, any two requests processed by the cluster must not collide.
 Guids or big random number help to achieve it, but they require other identifiers to query all requests related to the operation.
 
-Hierarchical Request-Id look like `|<root-id>.<local-id1>.<local-id2>.` (e.g. `|9e74f0e5-efc4-41b5-86d1-3524a43bd891.bcec871c_1.`) and holds all information needed to trace whole operation and particular request.
+Hierarchical Request-Id looks like `|<root-id>.<local-id1>.<local-id2>.` (e.g. `|9e74f0e5-efc4-41b5-86d1-3524a43bd891.bcec871c_1.`) and holds all information needed to trace whole operation and particular request.
 Root-id serves as common identifier for all requests involved in operation processing and local-ids represent internal activities (and requests) done within scope of this operation.
 
-[CorrelationVector](https://osgwiki.com/wiki/CorrelationVector) is valid hierarchical Request-Id, except it does not start with "|". Implementation SHOULD allow other schemes for incoming request identifiers.
+Upstream service/client application may be instrumented with other tracing system, so implementation MAY have compatibility layer that parses another set of trace headers. 
+Therefore implementation SHOULD be tolerant to other formats of trace identifiers and do the best effort to keep `root-id` equivalent in particular tracing system.
 
 ### Formatting Hierarchical Request-Id
 If `Request-Id` was not provided from upstream service and implementation decides to trace the request, it MUST generate new `Request-Id` (see [Root Request Id Generation](#root-request-id-generation)) to represent incoming request. 
