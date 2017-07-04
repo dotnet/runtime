@@ -55,5 +55,10 @@ namespace System.Reflection.Metadata
                 return _reader.ModuleTable.GetEncBaseId();
             }
         }
+
+        public CustomAttributeHandleCollection GetCustomAttributes()
+        {
+            return new CustomAttributeHandleCollection(_reader, EntityHandle.ModuleDefinition);
+        }
     }
 }
