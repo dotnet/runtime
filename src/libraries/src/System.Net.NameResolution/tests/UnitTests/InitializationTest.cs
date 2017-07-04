@@ -13,7 +13,6 @@ namespace System.Net.NameResolution.Tests
     public class InitializationTests
     {
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #17990")]
         public void Dns_BeginGetHostAddresses_CallSocketInit_Ok()
         {
             NameResolutionPal.FakesReset();
