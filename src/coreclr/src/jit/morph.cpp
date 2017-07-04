@@ -2122,7 +2122,11 @@ GenTreePtr Compiler::fgMakeTmpArgNode(
                 // values can be pessimizing, so enabling this may require some additional tuning).
                 arg->gtFlags |= GTF_DONT_CSE;
             }
-#endif // _TARGET_ARM64_
+#elif defined(_TARGET_ARM_)
+            // Always create an Obj of the temp to use it as a call argument.
+            arg = gtNewObjNode(lvaGetStruct(tmpVarNum), arg);
+            arg->gtFlags |= GTF_DONT_CSE;
+#endif // _TARGET_ARM_
 #endif // FEATURE_MULTIREG_ARGS
         }
 
@@ -3810,18 +3814,12 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                     }
                 }
 
-#ifdef _TARGET_64BIT_
+#if defined(_TARGET_64BIT_) || defined(_TARGET_ARM_)
                 if (size > 1)
                 {
                     hasMultiregStructArgs = true;
                 }
-#elif defined(_TARGET_ARM_)
-                // Build the mkrefany as a GT_FIELD_LIST in this function
-                if (size > 1 && argx->gtOper != GT_MKREFANY)
-                {
-                    hasMultiregStructArgs = true;
-                }
-#endif // _TARGET_ARM_
+#endif // _TARGET_64BIT || _TARGET_ARM_
             }
 
             // The 'size' value has now must have been set. (the original value of zero is an invalid value)
@@ -4200,7 +4198,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             // 'Lower' the MKREFANY tree and insert it.
             noway_assert(!reMorphing);
 
-#ifndef _TARGET_64BIT_
+#ifdef _TARGET_X86_
 
             // Build the mkrefany as a GT_FIELD_LIST
             GenTreeFieldList* fieldList = new (this, GT_FIELD_LIST)
@@ -4211,7 +4209,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             fp->node            = fieldList;
             args->gtOp.gtOp1    = fieldList;
 
-#else  // _TARGET_64BIT_
+#else  // !_TARGET_X86_
 
             // Get a new temp
             // Here we don't need unsafe value cls check since the addr of temp is used only in mkrefany
@@ -4237,7 +4235,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             // EvalArgsToTemps will cause tmp to actually get loaded as the argument
             call->fgArgInfo->EvalToTmp(argIndex, tmp, asg);
             lvaSetVarAddrExposed(tmp);
-#endif // _TARGET_64BIT_
+#endif // !_TARGET_X86_
         }
 #endif // !LEGACY_BACKEND
 
