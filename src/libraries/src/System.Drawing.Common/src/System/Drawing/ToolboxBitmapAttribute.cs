@@ -186,8 +186,7 @@ namespace System.Drawing
                     if (ext != null && string.Equals(ext, ".ico", StringComparison.OrdinalIgnoreCase))
                     {
                         //ico files support both large and small, so we respect the large flag here.
-
-                        using (FileStream reader = File.Open(imageFile, FileMode.Open))
+                        using (FileStream reader = File.OpenRead(imageFile))
                         {
                             image = GetIconFromStream(reader, large, scaled);
                         }
