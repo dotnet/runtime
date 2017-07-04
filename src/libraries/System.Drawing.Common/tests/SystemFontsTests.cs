@@ -40,7 +40,12 @@ namespace System.Drawing.Tests
                 Assert.Equal(font, fontFromName);
 
                 Assert.Equal(systemFontName, font.SystemFontName);
-                Assert.Equal(windowsFontName, font.Name);
+
+                // Windows 8 updated some system fonts.
+                if (!PlatformDetection.IsWindows7)
+                {
+                    Assert.Equal(windowsFontName, font.Name);
+                }
             }
         }
 
