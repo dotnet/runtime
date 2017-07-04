@@ -20,6 +20,7 @@ namespace System.Net.Security
     {
         // When reading a frame from the wire first read this many bytes for the header.
         internal const int ReadHeaderSize = 5;
+
         private SafeFreeCredentials _credentialsHandle;
         private SafeDeleteContext _securityContext;
         private readonly string _destination;
@@ -48,8 +49,8 @@ namespace System.Net.Security
 
         private bool _refreshCredentialNeeded;
 
-        private readonly Oid _serverAuthOid = new Oid("1.3.6.1.5.5.7.3.1");
-        private readonly Oid _clientAuthOid = new Oid("1.3.6.1.5.5.7.3.2");
+        private readonly Oid _serverAuthOid = new Oid("1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.1");
+        private readonly Oid _clientAuthOid = new Oid("1.3.6.1.5.5.7.3.2", "1.3.6.1.5.5.7.3.2");
 
         internal SecureChannel(string hostname, bool serverMode, SslProtocols sslProtocols, X509Certificate serverCertificate, X509CertificateCollection clientCertificates, bool remoteCertRequired, bool checkCertName,
                                                   bool checkCertRevocationStatus, EncryptionPolicy encryptionPolicy, LocalCertSelectionCallback certSelectionDelegate)
