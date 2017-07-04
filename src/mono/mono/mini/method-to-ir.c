@@ -7829,12 +7829,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_STACK_OVF (1);
 			n = ip [1];
 			CHECK_LOCAL (n);
-			if ((ip [2] == CEE_LDFLD) && ip_in_bb (cfg, cfg->cbb, ip + 2) && header->locals [n]->type == MONO_TYPE_VALUETYPE) {
-				/* Avoid loading a struct just to load one of its fields */
-				EMIT_NEW_LOCLOADA (cfg, ins, n);
-			} else {
-				EMIT_NEW_LOCLOAD (cfg, ins, n);
-			}
+			EMIT_NEW_LOCLOAD (cfg, ins, n);
 			*sp++ = ins;
 			ip += 2;
 			break;
@@ -12289,12 +12284,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_OPSIZE (4);
 				n = read16 (ip + 2);
 				CHECK_LOCAL (n);
-				if ((ip [4] == CEE_LDFLD) && ip_in_bb (cfg, cfg->cbb, ip + 4) && header->locals [n]->type == MONO_TYPE_VALUETYPE) {
-					/* Avoid loading a struct just to load one of its fields */
-					EMIT_NEW_LOCLOADA (cfg, ins, n);
-				} else {
-					EMIT_NEW_LOCLOAD (cfg, ins, n);
-				}
+				EMIT_NEW_LOCLOAD (cfg, ins, n);
 				*sp++ = ins;
 				ip += 4;
 				break;
