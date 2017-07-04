@@ -285,5 +285,46 @@ namespace System.Linq.Expressions.Tests
             NewArrayExpression newArrayExpression = Expression.NewArrayBounds(typeof(string), bound0, bound1);
             AssertExtensions.Throws<ArgumentNullException>("expressions", () => newArrayExpression.Update(null));
         }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void SingleNegativeBoundErrorMessage(bool useInterpreter)
+        {
+            string localizedMessage = null;
+            try
+            {
+                int[] dummy = new int["".Length - 2];
+            }
+            catch (OverflowException oe)
+            {
+                localizedMessage = oe.Message;
+            }
+
+            Expression<Func<int[]>> lambda =
+                Expression.Lambda<Func<int[]>>(Expression.NewArrayBounds(typeof(int), Expression.Constant(-2)));
+            var func = lambda.Compile(useInterpreter);
+            OverflowException ex = Assert.Throws<OverflowException>(() => func());
+            Assert.Equal(localizedMessage, ex.Message);
+        }
+
+        [Theory, ClassData(typeof(CompilationTypes))]
+        public static void MultipleNegativeBoundErrorMessage(bool useInterpreter)
+        {
+            string localizedMessage = null;
+            try
+            {
+                int[,,] dummy = new int[1, 1, "".Length - 2];
+            }
+            catch (OverflowException oe)
+            {
+                localizedMessage = oe.Message;
+            }
+
+            Expression<Func<int[,,]>> lambda = Expression.Lambda<Func<int[,,]>>(
+                Expression.NewArrayBounds(
+                    typeof(int), Expression.Constant(0), Expression.Constant(0), Expression.Constant(-2)));
+            var func = lambda.Compile(useInterpreter);
+            OverflowException ex = Assert.Throws<OverflowException>(() => func());
+            Assert.Equal(localizedMessage, ex.Message);
+        }
     }
 }
