@@ -1,0 +1,59 @@
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// See the LICENSE file in the project root for more information.
+
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
+using Xunit;
+
+namespace System.Drawing.Tests
+{
+    public class SystemFontsTests
+    {
+        public static IEnumerable<object[]> SystemFonts_TestData()
+        {
+            yield return Font(() => SystemFonts.CaptionFont, "CaptionFont", "Segoe UI");
+            yield return Font(() => SystemFonts.IconTitleFont, "IconTitleFont", "Segoe UI");
+            yield return Font(() => SystemFonts.MenuFont, "MenuFont", "Segoe UI");
+            yield return Font(() => SystemFonts.MessageBoxFont, "MessageBoxFont", "Segoe UI");
+            yield return Font(() => SystemFonts.SmallCaptionFont, "SmallCaptionFont", "Segoe UI");
+            yield return Font(() => SystemFonts.StatusFont, "StatusFont", "Segoe UI");
+
+            bool isArabic = (GetSystemDefaultLCID() & 0x3ff) == 0x0001;
+            yield return Font(() => SystemFonts.DefaultFont, "DefaultFont", isArabic ? "Tahoma" : "Microsoft Sans Serif");
+
+            bool isJapanese = (GetSystemDefaultLCID() & 0x3ff) == 0x0011;
+            yield return Font(() => SystemFonts.DialogFont, "DialogFont", isJapanese ? "Microsoft Sans Serif" : "Tahoma");
+        }
+
+        public static object[] Font(Func<Font> fontThunk, string systemFontName, string windowsFontName) => new object[] { fontThunk, systemFontName, windowsFontName };
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [MemberData(nameof(SystemFonts_TestData))]
+        public void SystemFont_Get_ReturnsExpected(Func<Font> fontThunk, string systemFontName, string windowsFontName)
+        {
+            using (Font font = fontThunk())
+            using (Font otherFont = fontThunk())
+            using (Font fontFromName = SystemFonts.GetFontByName(systemFontName))
+            {
+                Assert.NotSame(font, otherFont);
+                Assert.Equal(font, otherFont);
+                Assert.Equal(font, fontFromName);
+
+                Assert.Equal(systemFontName, font.SystemFontName);
+                Assert.Equal(windowsFontName, font.Name);
+            }
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("")]
+        [InlineData("captionfont")]
+        public void GetFontByName_NoSuchName_ReturnsNull(string systemFontName)
+        {
+            Assert.Null(SystemFonts.GetFontByName(systemFontName));
+        }
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        public static extern int GetSystemDefaultLCID();
+    }
+}
