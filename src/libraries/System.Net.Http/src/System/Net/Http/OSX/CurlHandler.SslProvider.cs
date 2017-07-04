@@ -78,7 +78,12 @@ namespace System.Net.Http
                     {
                         EventSourceTrace("Warning: Disabling peer verification per {0}", nameof(HttpClientHandler.DangerousAcceptAnyServerCertificateValidator), easy: easy);
                         easy.SetCurlOption(Interop.Http.CURLoption.CURLOPT_SSL_VERIFYPEER, 0); // don't verify the peer
-                        // Don't set CURLOPT_SSL_VERIFHOST to 0; doing so disables SNI.
+
+                        // Don't set CURLOPT_SSL_VERIFHOST to 0; doing so disables SNI with SecureTransport backend.
+                        if (!CurlSslVersionDescription.Equals(Interop.Http.SecureTransportDescription))
+                        {
+                            easy.SetCurlOption(Interop.Http.CURLoption.CURLOPT_SSL_VERIFYHOST, 0); // don't verify the hostname
+                        }
                     }
                     else
                     {
