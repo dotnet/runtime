@@ -299,7 +299,7 @@ namespace System.Drawing
             }
             set
             {
-                if (!ClientUtils.IsEnumValid(value, unchecked((int)value), (int)CompositingMode.SourceOver, (int)CompositingMode.SourceCopy))
+                if (value < CompositingMode.SourceOver || value > CompositingMode.SourceCopy)
                 {
                     throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(CompositingMode));
                 }
@@ -338,7 +338,7 @@ namespace System.Drawing
             }
             set
             {
-                if (!ClientUtils.IsEnumValid(value, unchecked((int)value), unchecked((int)CompositingQuality.Invalid), unchecked((int)CompositingQuality.AssumeLinear)))
+                if (value < CompositingQuality.Invalid || value > CompositingQuality.AssumeLinear)
                 {
                     throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(CompositingQuality));
                 }
@@ -364,7 +364,7 @@ namespace System.Drawing
             }
             set
             {
-                if (!ClientUtils.IsEnumValid(value, unchecked((int)value), (int)TextRenderingHint.SystemDefault, unchecked((int)TextRenderingHint.ClearTypeGridFit)))
+                if (value < TextRenderingHint.SystemDefault || value > TextRenderingHint.ClearTypeGridFit)
                 {
                     throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(TextRenderingHint));
                 }
@@ -403,7 +403,7 @@ namespace System.Drawing
             }
             set
             {
-                if (!ClientUtils.IsEnumValid(value, unchecked((int)value), unchecked((int)SmoothingMode.Invalid), unchecked((int)SmoothingMode.AntiAlias)))
+                if (value < SmoothingMode.Invalid || value > SmoothingMode.AntiAlias)
                 {
                     throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(SmoothingMode));
                 }
@@ -425,7 +425,7 @@ namespace System.Drawing
             }
             set
             {
-                if (!ClientUtils.IsEnumValid(value, unchecked((int)value), unchecked((int)PixelOffsetMode.Invalid), unchecked((int)PixelOffsetMode.Half)))
+                if (value < PixelOffsetMode.Invalid || value > PixelOffsetMode.Half)
                 {
                     throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(PixelOffsetMode));
                 }
@@ -464,7 +464,7 @@ namespace System.Drawing
             }
             set
             {
-                if (!ClientUtils.IsEnumValid(value, unchecked((int)value), unchecked((int)InterpolationMode.Invalid), unchecked((int)InterpolationMode.HighQualityBicubic)))
+                if (value < InterpolationMode.Invalid || value > InterpolationMode.HighQualityBicubic)
                 {
                     throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(InterpolationMode));
                 }
@@ -508,7 +508,7 @@ namespace System.Drawing
             }
             set
             {
-                if (!ClientUtils.IsEnumValid(value, unchecked((int)value), (int)GraphicsUnit.World, (int)GraphicsUnit.Millimeter))
+                if (value < GraphicsUnit.World || value > GraphicsUnit.Millimeter)
                 {
                     throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(GraphicsUnit));
                 }

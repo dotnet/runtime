@@ -249,10 +249,9 @@ namespace System.Drawing
             }
             set
             {
-                //valid values are 0x0 to 0x2
-                if (!ClientUtils.IsEnumValid(value, unchecked((int)value), (int)StringAlignment.Near, (int)StringAlignment.Far))
+                if (value < StringAlignment.Near || value > StringAlignment.Far)
                 {
-                    throw new InvalidEnumArgumentException("value", unchecked((int)value), typeof(StringAlignment));
+                    throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(StringAlignment));
                 }
 
                 int status = SafeNativeMethods.Gdip.GdipSetStringFormatAlign(new HandleRef(this, nativeFormat), value);
@@ -309,10 +308,9 @@ namespace System.Drawing
             }
             set
             {
-                //valid values are 0x0 to 0x2
-                if (!ClientUtils.IsEnumValid(value, unchecked((int)value), (int)HotkeyPrefix.None, (int)HotkeyPrefix.Hide))
+                if (value < HotkeyPrefix.None || value > HotkeyPrefix.Hide)
                 {
-                    throw new InvalidEnumArgumentException("value", unchecked((int)value), typeof(HotkeyPrefix));
+                    throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(HotkeyPrefix));
                 }
 
                 int status = SafeNativeMethods.Gdip.GdipSetStringFormatHotkeyPrefix(new HandleRef(this, nativeFormat), value);
@@ -377,10 +375,9 @@ namespace System.Drawing
 
             set
             {
-                //valid values are 0x0 to 0x5
-                if (!ClientUtils.IsEnumValid(value, unchecked((int)value), (int)StringTrimming.None, (int)StringTrimming.EllipsisPath))
+                if (value < StringTrimming.None || value > StringTrimming.EllipsisPath)
                 {
-                    throw new InvalidEnumArgumentException("value", unchecked((int)value), typeof(StringTrimming));
+                    throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(StringTrimming));
                 }
 
                 int status = SafeNativeMethods.Gdip.GdipSetStringFormatTrimming(new HandleRef(this, nativeFormat), value);

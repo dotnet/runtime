@@ -16,13 +16,13 @@ namespace System.Drawing.Drawing2D
         public PathGradientBrush(PointF[] points, WrapMode wrapMode)
         {
             if (points == null)
-                throw new ArgumentNullException("points");
-
-            //validate the WrapMode enum
-            //valid values are 0x0 to 0x4
-            if (!ClientUtils.IsEnumValid(wrapMode, unchecked((int)wrapMode), (int)WrapMode.Tile, (int)WrapMode.Clamp))
             {
-                throw new InvalidEnumArgumentException("wrapMode", unchecked((int)wrapMode), typeof(WrapMode));
+                throw new ArgumentNullException(nameof(points));
+            }
+            
+            if (wrapMode < WrapMode.Tile || wrapMode > WrapMode.Clamp)
+            {
+                throw new InvalidEnumArgumentException(nameof(wrapMode), unchecked((int)wrapMode), typeof(WrapMode));
             }
 
             IntPtr pointsBuf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
@@ -56,12 +56,13 @@ namespace System.Drawing.Drawing2D
         public PathGradientBrush(Point[] points, WrapMode wrapMode)
         {
             if (points == null)
-                throw new ArgumentNullException("points");
-
-            //validate the WrapMode enum
-            if (!ClientUtils.IsEnumValid(wrapMode, unchecked((int)wrapMode), (int)WrapMode.Tile, (int)WrapMode.Clamp))
             {
-                throw new InvalidEnumArgumentException("wrapMode", unchecked((int)wrapMode), typeof(WrapMode));
+                throw new ArgumentNullException(nameof(points));
+            }
+
+            if (wrapMode < WrapMode.Tile || wrapMode > WrapMode.Clamp)
+            {
+                throw new InvalidEnumArgumentException(nameof(wrapMode), unchecked((int)wrapMode), typeof(WrapMode));
             }
 
             IntPtr pointsBuf = SafeNativeMethods.Gdip.ConvertPointToMemory(points);
@@ -93,7 +94,9 @@ namespace System.Drawing.Drawing2D
         public PathGradientBrush(GraphicsPath path)
         {
             if (path == null)
-                throw new ArgumentNullException("path");
+            {
+                throw new ArgumentNullException(nameof(path));
+            }
 
             IntPtr nativeBrush;
             int status = SafeNativeMethods.Gdip.GdipCreatePathGradientFromPath(new HandleRef(path, path.nativePath), out nativeBrush);
@@ -584,10 +587,9 @@ namespace System.Drawing.Drawing2D
             }
             set
             {
-                //validate the WrapMode enum
-                if (!ClientUtils.IsEnumValid(value, unchecked((int)value), (int)WrapMode.Tile, (int)WrapMode.Clamp))
+                if (value < WrapMode.Tile || value > WrapMode.Clamp)
                 {
-                    throw new InvalidEnumArgumentException("value", unchecked((int)value), typeof(WrapMode));
+                    throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(WrapMode));
                 }
 
                 int status = SafeNativeMethods.Gdip.GdipSetPathGradientWrapMode(new HandleRef(this, NativeBrush), unchecked((int)value));

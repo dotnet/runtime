@@ -39,10 +39,9 @@ namespace System.Drawing.Printing
             get { return _kind; }
             set
             {
-                //valid values are 0xfffffffc to 0x0
-                if (!ClientUtils.IsEnumValid(value, unchecked((int)value), unchecked((int)PrinterResolutionKind.High), unchecked((int)PrinterResolutionKind.Custom)))
+                if (value < PrinterResolutionKind.High || value > PrinterResolutionKind.Custom)
                 {
-                    throw new InvalidEnumArgumentException("value", unchecked((int)value), typeof(PrinterResolutionKind));
+                    throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(PrinterResolutionKind));
                 }
 
                 _kind = value;

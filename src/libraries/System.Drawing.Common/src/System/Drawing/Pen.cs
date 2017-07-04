@@ -314,10 +314,7 @@ namespace System.Drawing
             }
             set
             {
-                if (!ClientUtils.IsEnumValid_NotSequential(value, unchecked((int)value),
-                                                    (int)DashCap.Flat,
-                                                    (int)DashCap.Round,
-                                                    (int)DashCap.Triangle))
+                if (value != DashCap.Flat && value != DashCap.Round && value != DashCap.Triangle)
                 {
                     throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(DashCap));
                 }
@@ -347,7 +344,7 @@ namespace System.Drawing
             }
             set
             {
-                if (!ClientUtils.IsEnumValid(value, unchecked((int)value), (int)LineJoin.Miter, (int)LineJoin.MiterClipped))
+                if (value < LineJoin.Miter || value > LineJoin.MiterClipped)
                 {
                     throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(LineJoin));
                 }
@@ -450,11 +447,11 @@ namespace System.Drawing
                 int status = SafeNativeMethods.Gdip.GdipGetPenMode(new HandleRef(this, NativePen), out penMode);
                 SafeNativeMethods.Gdip.CheckStatus(status);
 
-                return (PenAlignment)penMode;
+                return penMode;
             }
             set
             {
-                if (!ClientUtils.IsEnumValid(value, unchecked((int)value), (int)PenAlignment.Center, (int)PenAlignment.Right))
+                if (value < PenAlignment.Center || value > PenAlignment.Right)
                 {
                     throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(PenAlignment));
                 }
@@ -718,8 +715,7 @@ namespace System.Drawing
             }
             set
             {
-                //valid values are 0x0 to 0x5
-                if (!ClientUtils.IsEnumValid(value, unchecked((int)value), (int)DashStyle.Solid, (int)DashStyle.Custom))
+                if (value < DashStyle.Solid || value > DashStyle.Custom)
                 {
                     throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(DashStyle));
                 }
