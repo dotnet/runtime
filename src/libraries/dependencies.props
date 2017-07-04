@@ -9,26 +9,26 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>5f21d2d75f711d5765e6e40dbf2695762d987a16</CoreFxCurrentRef>
-    <CoreClrCurrentRef>5f21d2d75f711d5765e6e40dbf2695762d987a16</CoreClrCurrentRef>
+    <CoreFxCurrentRef>46fc63e4f99b3c693efad97f8b1303d7c2463d4d</CoreFxCurrentRef>
+    <CoreClrCurrentRef>46fc63e4f99b3c693efad97f8b1303d7c2463d4d</CoreClrCurrentRef>
     <CoreSetupCurrentRef>5f21d2d75f711d5765e6e40dbf2695762d987a16</CoreSetupCurrentRef>
     <ExternalCurrentRef>5a0606fccb09fce4b47545ae9896139acca547f5</ExternalCurrentRef>
     <ProjectNTfsCurrentRef>3887ba95e9d3f81436bafed1e90c638ba59d1b65</ProjectNTfsCurrentRef>
     <ProjectNTfsTestILCCurrentRef>3887ba95e9d3f81436bafed1e90c638ba59d1b65</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>97059fa979a3c8fb8b9fba127c526f15e48c9dde</SniCurrentRef>
-    <StandardCurrentRef>9c2f0a658d96048b72f64cf7aaa8d8ae641281fe</StandardCurrentRef>
+    <StandardCurrentRef>46fc63e4f99b3c693efad97f8b1303d7c2463d4d</StandardCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
     <PlatformPackageVersion>2.1.0-preview1-25324-02</PlatformPackageVersion>
-    <CoreFxExpectedPrerelease>preview2-25504-01</CoreFxExpectedPrerelease>
-    <CoreClrPackageVersion>2.1.0-preview2-25503-02</CoreClrPackageVersion>
+    <CoreFxExpectedPrerelease>preview2-25504-02</CoreFxExpectedPrerelease>
+    <CoreClrPackageVersion>2.1.0-preview2-25504-01</CoreClrPackageVersion>
     <ExternalExpectedPrerelease>beta-25322-00</ExternalExpectedPrerelease>
     <ProjectNTfsExpectedPrerelease>beta-25504-00</ProjectNTfsExpectedPrerelease>
     <ProjectNTfsTestILCExpectedPrerelease>beta-25504-00</ProjectNTfsTestILCExpectedPrerelease>
     <ProjectNTfsTestILCPackageVersion>1.0.0-beta-25504-00</ProjectNTfsTestILCPackageVersion>
-    <NETStandardPackageVersion>2.1.0-preview1-25503-01</NETStandardPackageVersion>
+    <NETStandardPackageVersion>2.1.0-preview1-25504-01</NETStandardPackageVersion>
     <NETStandardPackageId>NETStandard.Library</NETStandardPackageId>
     <MicrosoftNETCoreAppPackageVersion>2.1.0-preview2-25503-02</MicrosoftNETCoreAppPackageVersion>
     <!-- Use the SNI runtime package -->
