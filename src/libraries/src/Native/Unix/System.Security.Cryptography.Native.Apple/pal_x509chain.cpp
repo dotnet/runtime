@@ -65,7 +65,10 @@ extern "C" int32_t AppleCryptoNative_X509ChainEvaluate(SecTrustRef chain,
     SecTrustResultType trustResult;
     *pOSStatus = SecTrustEvaluate(chain, &trustResult);
 
-    if (*pOSStatus != noErr)
+    // If any error is reported from the function or the trust result value indicates that
+    // otherwise was a failed chain build (vs an untrusted chain, etc) return failure and
+    // we'll throw in the managed layer.  (but if we hit the "or" the message is "No error")
+    if (*pOSStatus != noErr || trustResult == kSecTrustResultInvalid)
     {
         return 0;
     }

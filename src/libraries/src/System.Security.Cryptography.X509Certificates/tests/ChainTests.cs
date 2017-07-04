@@ -165,8 +165,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         }
 
         [Fact]
-        // Crashing on macOS 10.13 Beta
-        [ActiveIssue(21436, TestPlatforms.OSX)]
         public static void TestResetMethod()
         {
             using (var sampleCert = new X509Certificate2(TestData.DssCer))
