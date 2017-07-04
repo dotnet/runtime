@@ -29,7 +29,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(image));
             }
 
-            if (!ClientUtils.IsEnumValid(wrapMode, unchecked((int)wrapMode), (int)WrapMode.Tile, (int)WrapMode.Clamp))
+            if (wrapMode < WrapMode.Tile || wrapMode > WrapMode.Clamp)
             {
                 throw new InvalidEnumArgumentException(nameof(wrapMode), unchecked((int)wrapMode), typeof(WrapMode));
             }
@@ -50,7 +50,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(image));
             }
             
-            if (!ClientUtils.IsEnumValid(wrapMode, unchecked((int)wrapMode), (int)WrapMode.Tile, (int)WrapMode.Clamp))
+            if (wrapMode < WrapMode.Tile || wrapMode > WrapMode.Clamp)
             {
                 throw new InvalidEnumArgumentException(nameof(wrapMode), unchecked((int)wrapMode), typeof(WrapMode));
             }
@@ -75,7 +75,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(image));
             }
 
-            if (!ClientUtils.IsEnumValid(wrapMode, unchecked((int)wrapMode), (int)WrapMode.Tile, (int)WrapMode.Clamp))
+            if (wrapMode < WrapMode.Tile || wrapMode > WrapMode.Clamp)
             {
                 throw new InvalidEnumArgumentException(nameof(wrapMode), unchecked((int)wrapMode), typeof(WrapMode));
             }
@@ -188,7 +188,7 @@ namespace System.Drawing
             }
             set
             {
-                if (!ClientUtils.IsEnumValid(value, unchecked((int)value), (int)WrapMode.Tile, (int)WrapMode.Clamp))
+                if (value < WrapMode.Tile || value > WrapMode.Clamp)
                 {
                     throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(WrapMode));
                 }

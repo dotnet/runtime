@@ -43,8 +43,7 @@ namespace System.Drawing.Drawing2D
 
         public LinearGradientBrush(RectangleF rect, Color color1, Color color2, LinearGradientMode linearGradientMode)
         {
-            // The valid values for LinearGgradientMode are 0 to 3.
-            if (!ClientUtils.IsEnumValid(linearGradientMode, unchecked((int)linearGradientMode), (int)LinearGradientMode.Horizontal, (int)LinearGradientMode.BackwardDiagonal))
+            if (linearGradientMode < LinearGradientMode.Horizontal || linearGradientMode > LinearGradientMode.BackwardDiagonal)
             {
                 throw new InvalidEnumArgumentException(nameof(linearGradientMode), unchecked((int)linearGradientMode), typeof(LinearGradientMode));
             }
@@ -69,8 +68,7 @@ namespace System.Drawing.Drawing2D
 
         public LinearGradientBrush(Rectangle rect, Color color1, Color color2, LinearGradientMode linearGradientMode)
         {
-            // The valid values for LinearGgradientMode are 0 to 3.
-            if (!ClientUtils.IsEnumValid(linearGradientMode, unchecked((int)linearGradientMode), (int)LinearGradientMode.Horizontal, (int)LinearGradientMode.BackwardDiagonal))
+            if (linearGradientMode < LinearGradientMode.Horizontal || linearGradientMode > LinearGradientMode.BackwardDiagonal)
             {
                 throw new InvalidEnumArgumentException(nameof(linearGradientMode), unchecked((int)linearGradientMode), typeof(LinearGradientMode));
             }
@@ -460,8 +458,7 @@ namespace System.Drawing.Drawing2D
             }
             set
             {
-                // Valid values of WrapMode are 0 to 4.
-                if (!ClientUtils.IsEnumValid(value, unchecked((int)value), (int)WrapMode.Tile, (int)WrapMode.Clamp))
+                if (value < WrapMode.Tile || value > WrapMode.Clamp)
                 {
                     throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(WrapMode));
                 }

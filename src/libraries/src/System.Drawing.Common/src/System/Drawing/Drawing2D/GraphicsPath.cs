@@ -171,11 +171,9 @@ namespace System.Drawing.Drawing2D
             }
             set
             {
-                //validate the FillMode enum
-                //valid values are 0x0 to 0x1
-                if (!ClientUtils.IsEnumValid(value, unchecked((int)value), (int)FillMode.Alternate, (int)FillMode.Winding))
+                if (value < FillMode.Alternate || value > FillMode.Winding)
                 {
-                    throw new InvalidEnumArgumentException("value", unchecked((int)value), typeof(FillMode));
+                    throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(FillMode));
                 }
 
                 int status = SafeNativeMethods.Gdip.GdipSetPathFillMode(new HandleRef(this, nativePath), (int)value);

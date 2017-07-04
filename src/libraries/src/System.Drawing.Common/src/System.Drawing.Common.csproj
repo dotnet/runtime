@@ -49,6 +49,7 @@
     <Compile Include="System\Drawing\BufferedGraphics.cs" />
     <Compile Include="System\Drawing\BufferedGraphicsContext.cs" />
     <Compile Include="System\Drawing\BufferedGraphicsManager.cs" />
+    <Compile Include="System\Drawing\ClientUtils.cs" />
     <Compile Include="System\Drawing\ColorTranslator.cs" />
     <Compile Include="System\Drawing\Configuration\SystemDrawingSection.cs" />
     <Compile Include="System\Drawing\ContentAlignment.cs" />
@@ -209,7 +210,6 @@
     <Compile Include="System\Drawing\ToolboxBitmapAttribute.cs" />
     <Compile Include="System\Drawing\Unit.cs" />
     <Compile Include="System\Drawing\UnsafeNativeMethods.cs" />
-    <Compile Include="misc\ClientUtils.cs" />
     <Compile Include="misc\CompModSwitches.cs" />
     <Compile Include="misc\CoreSwitches.cs" />
     <Compile Include="misc\DbgUtil.cs" />

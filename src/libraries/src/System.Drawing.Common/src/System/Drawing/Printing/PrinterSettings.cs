@@ -132,17 +132,19 @@ namespace System.Drawing.Printing
             get
             {
                 if (_duplex != Duplex.Default)
+                {
                     return _duplex;
-                else
-                    return (Duplex)GetModeField(ModeField.Duplex, SafeNativeMethods.DMDUP_SIMPLEX);
+                }
+
+                return (Duplex)GetModeField(ModeField.Duplex, SafeNativeMethods.DMDUP_SIMPLEX);
             }
             set
             {
-                //valid values are 0xffffffff to 0x3
-                if (!ClientUtils.IsEnumValid(value, unchecked((int)value), unchecked((int)Duplex.Default), unchecked((int)Duplex.Horizontal)))
+                if (value < Duplex.Default || value > Duplex.Horizontal)
                 {
-                    throw new InvalidEnumArgumentException("value", unchecked((int)value), typeof(Duplex));
+                    throw new InvalidEnumArgumentException(nameof(value), unchecked((int)value), typeof(Duplex));
                 }
+
                 _duplex = value;
             }
         }
