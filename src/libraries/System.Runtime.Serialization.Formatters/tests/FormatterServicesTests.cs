@@ -127,6 +127,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         }
 
 #pragma warning disable 0169 // The private field 'class member' is never used
+        [System.Runtime.CompilerServices.IsByRefLike]
         private struct StructWithSpanField
         {
             Span<byte> _bytes;
@@ -318,6 +319,18 @@ namespace System.Runtime.Serialization.Formatters.Tests
         {
             AssertExtensions.Throws<ArgumentNullException>("assem", () => FormatterServices.GetTypeFromAssembly(null, "name"));
             Assert.Null(FormatterServices.GetTypeFromAssembly(GetType().Assembly, Guid.NewGuid().ToString("N"))); // non-existing type doesn't throw
+        }
+    }
+}
+
+namespace System.Runtime.CompilerServices
+{
+    // Local definition of IsByRefLikeAttribute while the real one becomes available in corefx
+    [AttributeUsage(AttributeTargets.Struct)]
+    public sealed class IsByRefLikeAttribute : Attribute
+    {
+        public IsByRefLikeAttribute()
+        {
         }
     }
 }
