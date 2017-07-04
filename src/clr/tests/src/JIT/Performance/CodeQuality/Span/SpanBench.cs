@@ -1038,11 +1038,11 @@ namespace Span
 
             for (int i = 0; i < iterationCount; i++)
             {
-                var charSpan = s.AsSpan();
+                var charSpan = s.AsReadOnlySpan();
                 // Under a condition that we know is false but the jit doesn't,
                 // add a read from 'charSpan' to make sure it's not dead, and an assignment
                 // to 's' so the AsBytes call won't get hoisted.
-                if (untrue) { sink.Data = charSpan[0]; s = "block hoisting the call to AsSpan()"; }
+                if (untrue) { sink.Data = charSpan[0]; s = "block hoisting the call to AsReadOnlySpan()"; }
             }
         }
 

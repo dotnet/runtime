@@ -44,7 +44,7 @@
       <Version>4.4.0-beta-24913-02</Version>
     </PackageReference>
     <PackageReference Include="System.Memory">
-      <Version>4.4.0-preview2-25302-03</Version>
+      <Version>4.5.0-preview2-25504-02</Version>
     </PackageReference>
     <PackageReference Include="System.Numerics.Vectors">
       <Version>4.4.0-preview2-25302-03</Version>
