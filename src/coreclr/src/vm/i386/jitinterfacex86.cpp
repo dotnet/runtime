@@ -975,24 +975,6 @@ void *JIT_TrialAlloc::GenAllocArray(Flags flags)
             sl.X86EmitMovRegReg(kECX, kEAX);
         }
     }
-    else
-    {
-#ifdef FEATURE_PREJIT
-        CodeLabel *indir = sl.NewCodeLabel();
-
-        // test cl,1
-        sl.Emit16(0xC1F6);
-        sl.Emit8(0x01);
-
-        // je indir
-        sl.X86EmitCondJump(indir, X86CondCode::kJZ);
-
-        // mov ecx, [ecx-1]
-        sl.X86EmitIndexRegLoad(kECX, kECX, -1);
-
-        sl.EmitLabel(indir);
-#endif
-    }
 
     // Do a conservative check here.  This is to avoid doing overflow checks within this function.  We'll
     // still have to do a size check before running through the body of EmitCore.  The way we do the check
