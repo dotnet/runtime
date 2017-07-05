@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 
 namespace System
 {
+    // MathF emulation on platforms which don't support it natively.
     internal static class MathF
     {
         public const float PI = (float)Math.PI;
