@@ -39,6 +39,7 @@ usage()
     echo "skiptests - skip the tests in the 'tests' subdirectory."
     echo "skipnuget - skip building nuget packages."
     echo "skiprestoreoptdata - skip restoring optimization data used by profile-based optimizations."
+    echo "skipcrossgen - skip native image generation"
     echo "verbose - optional argument to enable verbose build output."
     echo "-skiprestore: skip restoring packages ^(default: packages are restored during build^)."
 	echo "-disableoss: Disable Open Source Signing for System.Private.CoreLib."
@@ -403,6 +404,10 @@ isMSBuildOnNETCoreSupported()
 
 build_CoreLib_ni()
 {
+    if [ $__SkipCrossgen == 1 ]; then
+        echo "Skipping generating native image"
+    fi
+
     if [ $__SkipCoreCLR == 0 -a -e $__BinDir/crossgen ]; then
         echo "Generating native image for System.Private.CoreLib."
         $__BinDir/crossgen /Platform_Assemblies_Paths $__BinDir/IL $__IbcTuning /out $__BinDir/System.Private.CoreLib.dll $__BinDir/IL/System.Private.CoreLib.dll
@@ -605,6 +610,7 @@ __SkipNuget=0
 __SkipCoreCLR=0
 __SkipMSCorLib=0
 __SkipRestoreOptData=0
+__SkipCrossgen=0
 __CrossBuild=0
 __ClangMajorVersion=0
 __ClangMinorVersion=0
@@ -775,6 +781,10 @@ while :; do
 
         skiprestoreoptdata)
             __SkipRestoreOptData=1
+            ;;
+
+        skipcrossgen)
+            __SkipCrossgen=1
             ;;
 
         includetests)
