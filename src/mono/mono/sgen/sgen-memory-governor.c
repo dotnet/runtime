@@ -26,7 +26,7 @@
 #define MIN_MINOR_COLLECTION_ALLOWANCE	((mword)(SGEN_DEFAULT_NURSERY_SIZE * default_allowance_nursery_size_ratio))
 
 static SgenPointerQueue log_entries = SGEN_POINTER_QUEUE_INIT (INTERNAL_MEM_TEMPORARY);
-static MonoCoopMutex log_entries_mutex;
+static mono_mutex_t log_entries_mutex;
 
 mword total_promoted_size = 0;
 mword total_allocated_major = 0;
@@ -176,9 +176,9 @@ sgen_memgov_minor_collection_start (void)
 static void
 sgen_add_log_entry (SgenLogEntry *log_entry)
 {
-	mono_coop_mutex_lock (&log_entries_mutex);
+	mono_os_mutex_lock (&log_entries_mutex);
 	sgen_pointer_queue_add (&log_entries, log_entry);
-	mono_coop_mutex_unlock (&log_entries_mutex);
+	mono_os_mutex_unlock (&log_entries_mutex);
 }
 
 void
@@ -347,13 +347,13 @@ sgen_memgov_collection_end (int generation, gint64 stw_time)
 	if (mono_trace_is_traced (G_LOG_LEVEL_INFO, MONO_TRACE_GC)) {
 		size_t i;
 		SGEN_ASSERT (0, !sgen_is_world_stopped (), "We can't log if the world is stopped");
-		mono_coop_mutex_lock (&log_entries_mutex);
+		mono_os_mutex_lock (&log_entries_mutex);
 		for (i = 0; i < log_entries.next_slot; i++) {
 			sgen_output_log_entry (log_entries.data [i], stw_time, generation);
 			sgen_free_internal (log_entries.data [i], INTERNAL_MEM_LOG_ENTRY);
 		}
 		sgen_pointer_queue_clear (&log_entries);
-		mono_coop_mutex_unlock (&log_entries_mutex);
+		mono_os_mutex_unlock (&log_entries_mutex);
 	}
 }
 
@@ -480,7 +480,7 @@ sgen_memgov_init (size_t max_heap, size_t soft_limit, gboolean debug_allowance, 
 	mono_counters_register ("Memgov alloc", MONO_COUNTER_GC | MONO_COUNTER_WORD | MONO_COUNTER_BYTES | MONO_COUNTER_VARIABLE, (void*)&total_alloc);
 	mono_counters_register ("Memgov max alloc", MONO_COUNTER_GC | MONO_COUNTER_WORD | MONO_COUNTER_BYTES | MONO_COUNTER_MONOTONIC, (void*)&total_alloc_max);
 
-	mono_coop_mutex_init (&log_entries_mutex);
+	mono_os_mutex_init (&log_entries_mutex);
 
 	sgen_register_fixed_internal_mem_type (INTERNAL_MEM_LOG_ENTRY, sizeof (SgenLogEntry));
 
