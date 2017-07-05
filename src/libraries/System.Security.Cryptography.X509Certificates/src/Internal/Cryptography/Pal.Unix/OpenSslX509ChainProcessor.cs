@@ -302,6 +302,7 @@ namespace Internal.Cryptography.Pal
                 case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_CERT_REVOKED:
                     return X509ChainStatusFlags.Revoked;
 
+                case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY:
                 case Interop.Crypto.X509VerifyStatusCode.X509_V_ERR_CERT_SIGNATURE_FAILURE:
                     return X509ChainStatusFlags.NotSignatureValid;
 
