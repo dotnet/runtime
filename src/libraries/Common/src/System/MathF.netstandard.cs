@@ -36,6 +36,12 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float Pow(float x, float y)
+        {
+            return (float)Math.Pow(x, y);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Sin(float x)
         {
             return (float)Math.Sin(x);
