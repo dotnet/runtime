@@ -2642,14 +2642,11 @@ namespace System.Numerics.Tests
             {
                 return double.IsNaN(d2);
             }
-            if (double.IsInfinity(d1))
+            if (double.IsInfinity(d1) || double.IsInfinity(d2))
             {
-                return AreSameInfinity(d1, d2 * 10);
+                return AreSameInfinity(d1, d2);
             }
-            if (double.IsInfinity(d2))
-            {
-                return AreSameInfinity(d1 * 10, d2);
-            }
+
             double diffRatio = (d1 - d2) / d1;
             diffRatio *= Math.Pow(10, precision);
             return Math.Abs(diffRatio) < 1;
@@ -2661,14 +2658,11 @@ namespace System.Numerics.Tests
             {
                 return float.IsNaN(f2);
             }
-            if (float.IsInfinity(f1))
+            if (float.IsInfinity(f1) || float.IsInfinity(f2))
             {
-                return AreSameInfinity(f1, f2 * 10);
+                return AreSameInfinity(f1, f2);
             }
-            if (float.IsInfinity(f2))
-            {
-                return AreSameInfinity(f1 * 10, f2);
-            }
+
             float diffRatio = (f1 - f2) / f1;
             diffRatio *= MathF.Pow(10, precision);
             return Math.Abs(diffRatio) < 1;
