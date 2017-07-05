@@ -7,9 +7,9 @@
     <!-- we don't want any analyzers by ResolveNuGetPackageAssets 
          null-refs when this isn't set and an analyzer is in the packages -->
     <Language>unused</Language>
-    <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
-    <NuGetTargetMonikerShort>uap10.1</NuGetTargetMonikerShort>
-    <PackageTargetFramework>uap10.1</PackageTargetFramework>
+    <NuGetTargetMoniker>$(UAPvNextTFMFull)</NuGetTargetMoniker>
+    <NuGetTargetMonikerShort>$(UAPvNextTFM)</NuGetTargetMonikerShort>
+    <PackageTargetFramework>$(UAPvNextTFM)</PackageTargetFramework>
     <ContainsPackageReferences>false</ContainsPackageReferences>
     <RidSpecificAssets Condition="'$(NuGetRuntimeIdentifier)' != ''">true</RidSpecificAssets>
     <IntermediateOutputPath>$(IntermediateOutputPath)$(NuGetRuntimeIdentifier)</IntermediateOutputPath>
