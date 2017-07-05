@@ -1401,7 +1401,7 @@ namespace System.Numerics.Tests
                 (index, val) =>
                 {
                     T expected = Util.Sqrt(values[index]);
-                    AssertEqual(expected, val, $"SquareRoot( {values[index]} )", precision);
+                    AssertEqual(expected, val, $"SquareRoot( {FullString(values[index])} )", precision);
                 });
         }
 
@@ -1759,6 +1759,22 @@ namespace System.Numerics.Tests
             float diffRatio = (f1 - f2) / f1;
             diffRatio *= MathF.Pow(10, precision);
             return Math.Abs(diffRatio) < 1;
+        }
+
+        private static string FullString<T>(T value)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return ((float)(object)value).ToString("G9");
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return ((double)(object)value).ToString("G17");
+            }
+            else
+            {
+                return value.ToString();
+            }
         }
 
         private static bool AreSameInfinity(double d1, double d2)
