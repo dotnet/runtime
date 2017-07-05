@@ -15,8 +15,8 @@
         "scriptType": "inlineScript",
         "scriptName": "",
         "arguments": "-path $(PB_SourcesDirectory) -rootPath $(Build.SourcesDirectory)",
-        "inlineScript": "param($path, $rootPath)\n\nif (Test-Path $path){\n    Remove-Item -Recurse -Force $path\n\n    if(Test-Path $path){\n        $DeleteFolder = \"$rootPath\\deleteme\"\n        if((Test-Path $DeleteFolder ) -eq 0) {\n            New-Item -ItemType Directory -Force -Path $DeleteFolder\n        }\n        robocopy $DeleteFolder $path /purge\n        Remove-Item -Recurse -Force $path\n    }\n }",
         "workingFolder": "",
+        "inlineScript": "param($path, $rootPath)\n\nif (Test-Path $path){\n    Remove-Item -Recurse -Force $path\n\n    if(Test-Path $path){\n        $DeleteFolder = \"$rootPath\\deleteme\"\n        if((Test-Path $DeleteFolder ) -eq 0) {\n            New-Item -ItemType Directory -Force -Path $DeleteFolder\n        }\n        robocopy $DeleteFolder $path /purge\n        Remove-Item -Recurse -Force $path\n    }\n }",
         "failOnStandardError": "true"
       }
     },
@@ -222,7 +222,7 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Sign MSI, cab, and Appx",
+      "displayName": "Sign MSI and cab files",
       "timeoutInMinutes": 0,
       "task": {
         "id": "c6c4c611-aa2e-4a33-b606-5eaba2196824",
@@ -238,6 +238,33 @@
         "platform": "$(PB_TargetArchitecture)",
         "configuration": "$(BuildConfiguration)",
         "msbuildArguments": "/t:SignMsiAndCab $(PB_CommonMSBuildArgs) $(MsbuildSigningArguments)",
+        "clean": "false",
+        "maximumCpuCount": "false",
+        "restoreNugetPackages": "false",
+        "logProjectEvents": "false",
+        "createLogFile": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Sign Appx files",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "c6c4c611-aa2e-4a33-b606-5eaba2196824",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "solution": "$(PB_SourcesDirectory)\\signing\\sign.proj",
+        "msbuildLocationMethod": "version",
+        "msbuildVersion": "latest",
+        "msbuildArchitecture": "x64",
+        "msbuildLocation": "",
+        "platform": "$(PB_TargetArchitecture)",
+        "configuration": "$(BuildConfiguration)",
+        "msbuildArguments": "/t:SignAppx $(PB_CommonMSBuildArgs) /v:detailed",
         "clean": "false",
         "maximumCpuCount": "false",
         "restoreNugetPackages": "false",
@@ -548,83 +575,88 @@
     }
   ],
   "variables": {
+    "BUILD_FULL_PLATFORM_MANIFEST": {
+      "value": "true"
+    },
     "BuildConfiguration": {
       "value": "Release",
       "allowOverride": true
+    },
+    "CertificateId": {
+      "value": "400"
+    },
+    "CONNECTION_STRING": {
+      "value": "PassedViaPipeBuild"
     },
     "COREHOST_TRACE": {
       "value": "0",
       "allowOverride": true
     },
-    "STORAGE_ACCOUNT": {
-      "value": "dotnetcli"
-    },
-    "STORAGE_CONTAINER": {
-      "value": "dotnet"
-    },
-    "CONNECTION_STRING": {
-      "value": "PassedViaPipeBuild"
-    },
-    "PUBLISH_TO_AZURE_BLOB": {
-      "value": "true"
-    },
-    "NUGET_FEED_URL": {
-      "value": "https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v2/package"
-    },
-    "NUGET_API_KEY": {
-      "value": "PassedViaPipeBuild"
-    },
     "GITHUB_PASSWORD": {
       "value": "PassedViaPipeBuild"
-    },
-    "BUILD_FULL_PLATFORM_MANIFEST": {
-      "value": "true"
-    },
-    "PUBLISH_RID_AGNOSTIC_PACKAGES": {
-      "value": "true"
-    },
-    "CertificateId": {
-      "value": "400"
-    },
-    "PB_DistroRid": {
-      "value": "win-$(PB_TargetArchitecture)",
-      "allowOverride": true
     },
     "MsbuildSigningArguments": {
       "value": "/p:CertificateId=$(CertificateId) /v:detailed"
     },
-    "TeamName": {
-      "value": "DotNetCore"
+    "NUGET_API_KEY": {
+      "value": "PassedViaPipeBuild"
     },
-    "system.debug": {
-      "value": "false"
-    },
-    "PB_PortableBuild": {
-      "value": "true",
-      "allowOverride": true
+    "NUGET_FEED_URL": {
+      "value": "https:%2F%2Fdotnet.myget.org/F/dotnet-core/api/v2/package"
     },
     "NUGET_SYMBOLS_FEED_URL": {
       "value": "https:%2F%2Fdotnet.myget.org/F/dotnet-core/symbols/api/v2/package"
     },
-    "PB_SourcesDirectory": {
-      "value": "$(Build.SourcesDirectory)\\core-setup"
+    "OfficialBuildId": {
+      "value": "$(Build.BuildNumber)"
     },
-    "PB_VsoRepoUrl": {
-      "value": "--branch $(PB_Branch) https://$(PB_VsoAccountName):$(PB_VsoPassword)@devdiv.visualstudio.com/DevDiv/_git/DotNet-Core-Setup-Trusted"
+    "PB_AzureAccessToken": {
+      "value": null,
+      "isSecret": true
     },
     "PB_AzureAccountName": {
       "value": "sourcebuild"
     },
-    "PB_AzureAccessToken": {
+    "PB_Branch": {
+      "value": "master",
+      "allowOverride": true
+    },
+    "PB_BuildFullPlatformManifest": {
+      "value": "false"
+    },
+    "PB_ChecksumAzureAccessToken": {
       "value": null,
       "isSecret": true
     },
     "PB_ChecksumAzureAccountName": {
       "value": "dotnetclichecksums"
     },
-    "PB_ChecksumAzureAccessToken": {
-      "value": null,
-      "isSecret": true
+    "PB_CleanAgent": {
+      "value": "true"
+    },
+    "PB_CommonMSBuildArgs": {
+      "value": "/p:DistroRid=$(PB_DistroRid) /p:ConfigurationGroup=$(BuildConfiguration) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:PortableBuild=$(PB_PortableBuild)"
+    },
+    "PB_DistroRid": {
+      "value": "win-$(PB_TargetArchitecture)",
+      "allowOverride": true
+    },
+    "PB_PortableBuild": {
+      "value": "true",
+      "allowOverride": true
+    },
+    "PB_PublishRidAgnosticPackages": {
+      "value": "false"
+    },
+    "PB_SignType": {
+      "value": "real"
+    },
+    "PB_SourcesDirectory": {
+      "value": "$(Build.SourcesDirectory)\\core-setup"
+    },
+    "PB_TargetArchitecture": {
+      "value": "x64",
+      "allowOverride": true
     },
     "PB_VsoAccountName": {
       "value": "dn-bot"
@@ -633,33 +665,29 @@
       "value": null,
       "isSecret": true
     },
-    "PB_Branch": {
-      "value": "master"
+    "PB_VsoRepoUrl": {
+      "value": "--branch $(PB_Branch) https://$(PB_VsoAccountName):$(PB_VsoPassword)@devdiv.visualstudio.com/DevDiv/_git/DotNet-Core-Setup-Trusted"
+    },
+    "PUBLISH_RID_AGNOSTIC_PACKAGES": {
+      "value": "true"
+    },
+    "PUBLISH_TO_AZURE_BLOB": {
+      "value": "true"
     },
     "SourceVersion": {
       "value": "HEAD"
     },
-    "PB_SignType": {
-      "value": "real"
+    "STORAGE_ACCOUNT": {
+      "value": "dotnetcli"
     },
-    "PB_CommonMSBuildArgs": {
-      "value": "/p:DistroRid=$(PB_DistroRid) /p:ConfigurationGroup=$(BuildConfiguration) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:PortableBuild=$(PB_PortableBuild)"
+    "STORAGE_CONTAINER": {
+      "value": "dotnet"
     },
-    "OfficialBuildId": {
-      "value": "$(Build.BuildNumber)"
-    },
-    "PB_TargetArchitecture": {
-      "value": "x64",
-      "allowOverride": true
-    },
-    "PB_CleanAgent": {
-      "value": "true"
-    },
-    "PB_PublishRidAgnosticPackages": {
+    "system.debug": {
       "value": "false"
     },
-    "PB_BuildFullPlatformManifest": {
-      "value": "false"
+    "TeamName": {
+      "value": "DotNetCore"
     }
   },
   "demands": [
@@ -693,7 +721,9 @@
       "fetchDepth": "0",
       "gitLfsSupport": "false",
       "skipSyncSource": "true",
-      "cleanOptions": "3"
+      "cleanOptions": "3",
+      "checkoutNestedSubmodules": "false",
+      "labelSourcesFormat": "$(build.buildNumber)"
     },
     "id": "c19ea379-feb7-4ca5-8f7f-5f2b5095ea62",
     "type": "TfsGit",
@@ -703,6 +733,7 @@
     "clean": "false",
     "checkoutSubmodules": false
   },
+  "processParameters": {},
   "quality": "definition",
   "queue": {
     "id": 36,
@@ -722,7 +753,7 @@
     "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
     "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "state": "wellFormed",
-    "revision": 418097676,
+    "revision": 418097748,
     "visibility": "private"
   }
 }
