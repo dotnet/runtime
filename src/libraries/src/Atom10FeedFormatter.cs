@@ -37,9 +37,37 @@ namespace Microsoft.ServiceModel.Syndication
         private bool _preserveAttributeExtensions;
         private bool _preserveElementExtensions;
 
+
+
+        //Custom parsing zone
+
+        //   value, localname , ns , result
+        public Func<string, string, string, string> stringParser;
+        public Func<string, string, string, DateTimeOffset> dateParser;
+        public Func<string, UriKind, string, string, Uri> uriParser;
+
+
+        private string StringParserAction(string value, string localName, string ns)
+        {
+            return value;
+        }
+
+        private Uri UriParserAction(string value, UriKind kind, string localName, string ns)
+        {
+            return new Uri(value,kind);
+        }
+
+        private void LoadDefaultParsers()
+        {
+            stringParser = StringParserAction;
+            uriParser = UriParserAction;
+            dateParser = DateFromString;
+        }
+
         public Atom10FeedFormatter()
             : this(typeof(SyndicationFeed))
         {
+            LoadDefaultParsers();
         }
 
         public Atom10FeedFormatter(Type feedTypeToCreate)
@@ -56,6 +84,8 @@ namespace Microsoft.ServiceModel.Syndication
             _maxExtensionSize = int.MaxValue;
             _preserveAttributeExtensions = _preserveElementExtensions = true;
             _feedType = feedTypeToCreate;
+            LoadDefaultParsers();
+
         }
 
         public Atom10FeedFormatter(SyndicationFeed feedToWrite)
@@ -65,6 +95,8 @@ namespace Microsoft.ServiceModel.Syndication
             _maxExtensionSize = int.MaxValue;
             _preserveAttributeExtensions = _preserveElementExtensions = true;
             _feedType = feedToWrite.GetType();
+            LoadDefaultParsers();
+
         }
 
         public bool PreserveAttributeExtensions
@@ -232,10 +264,10 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        internal static async Task<TextSyndicationContent> ReadTextContentFromAsync(XmlReaderWrapper reader, string context, bool preserveAttributeExtensions)
+        internal async Task<TextSyndicationContent> ReadTextContentFromAsync(XmlReaderWrapper reader, string context, bool preserveAttributeExtensions)
         {
             string type = reader.GetAttribute(Atom10Constants.TypeTag);
-            return await ReadTextContentFromHelper(reader, type, context, preserveAttributeExtensions);
+            return await ReadTextContentFromHelperAsync(reader, type, context, preserveAttributeExtensions);
         }
 
         internal static async Task WriteCategoryAsync(XmlWriterWrapper writer, SyndicationCategory category, string version)
@@ -284,16 +316,16 @@ namespace Microsoft.ServiceModel.Syndication
                         result.Contributors.Add(await ReadPersonFromAsync(reader, result));
                         break;
                     case Atom10Constants.GeneratorTag:
-                        result.Generator = await reader.ReadElementStringAsync();
+                        result.Generator = stringParser(await reader.ReadElementStringAsync(),Atom10Constants.GeneratorTag,ns);
                         break;
                     case Atom10Constants.IdTag:
-                        result.Id = await reader.ReadElementStringAsync();
+                        result.Id = stringParser(await reader.ReadElementStringAsync(),Atom10Constants.IdTag,ns);
                         break;
                     case Atom10Constants.LinkTag:
                         result.Links.Add(await ReadLinkFromAsync(reader, result));
                         break;
                     case Atom10Constants.LogoTag:
-                        result.ImageUrl = new Uri(await reader.ReadElementStringAsync(), UriKind.RelativeOrAbsolute);
+                        result.ImageUrl = uriParser(await reader.ReadElementStringAsync(), UriKind.RelativeOrAbsolute, Atom10Constants.LogoTag, ns);  //new Uri(await reader.ReadElementStringAsync(), UriKind.RelativeOrAbsolute);
                         break;
                     case Atom10Constants.RightsTag:
                         result.Copyright = await ReadTextContentFromAsync(reader, "//atom:feed/atom:rights[@type]");
@@ -306,13 +338,13 @@ namespace Microsoft.ServiceModel.Syndication
                         break;
                     case Atom10Constants.UpdatedTag:
                         await reader.ReadStartElementAsync();
-                        result.LastUpdatedTime = DateFromString(await reader.ReadStringAsync(), reader);
+                        result.LastUpdatedTime = dateParser(await reader.ReadStringAsync(), Atom10Constants.UpdatedTag, ns);
                         await reader.ReadEndElementAsync();
                         break;
 
 
                     case Atom10Constants.IconTag:
-                        result.IconImage = await reader.ReadElementStringAsync();
+                        result.IconImage = stringParser(await reader.ReadElementStringAsync(),Atom10Constants.IconTag,ns); 
                         break;
 
 
@@ -401,14 +433,14 @@ namespace Microsoft.ServiceModel.Syndication
                         result.Contributors.Add(await ReadPersonFromAsync(reader, result));
                         break;
                     case Atom10Constants.IdTag:
-                        result.Id = await reader.ReadElementStringAsync();
+                        result.Id = stringParser(await reader.ReadElementStringAsync(),Atom10Constants.IdTag,ns);
                         break;
                     case Atom10Constants.LinkTag:
                         result.Links.Add(await ReadLinkFromAsync(reader, result));
                         break;
                     case Atom10Constants.PublishedTag:
                         await reader.ReadStartElementAsync();
-                        result.PublishDate = DateFromString(await reader.ReadStringAsync(), reader);
+                        result.PublishDate = dateParser(await reader.ReadStringAsync(), Atom10Constants.UpdatedTag, ns);
                         await reader.ReadEndElementAsync();
                         break;
                     case Atom10Constants.RightsTag:
@@ -427,7 +459,7 @@ namespace Microsoft.ServiceModel.Syndication
                         break;
                     case Atom10Constants.UpdatedTag:
                         await reader.ReadStartElementAsync();
-                        result.LastUpdatedTime = DateFromString(await reader.ReadStringAsync(), reader);
+                        result.LastUpdatedTime = dateParser(await reader.ReadStringAsync(), Atom10Constants.UpdatedTag, ns);
                         await reader.ReadEndElementAsync();
                         break;
                     default:
@@ -687,7 +719,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
         
-        private static async Task<TextSyndicationContent> ReadTextContentFromHelper(XmlReaderWrapper reader, string type, string context, bool preserveAttributeExtensions)
+        private async Task<TextSyndicationContent> ReadTextContentFromHelperAsync(XmlReaderWrapper reader, string type, string context, bool preserveAttributeExtensions)
         {
             if (string.IsNullOrEmpty(type))
             {
@@ -737,7 +769,9 @@ namespace Microsoft.ServiceModel.Syndication
                 }
             }
             reader.MoveToElement();
-            string val = (kind == TextSyndicationContentKind.XHtml) ? await reader.ReadInnerXmlAsync() : await reader.ReadElementStringAsync();
+            string localName = reader.LocalName;
+            string nameSpace = reader.NamespaceURI;
+            string val = (kind == TextSyndicationContentKind.XHtml) ? await reader.ReadInnerXmlAsync() : stringParser(await reader.ReadElementStringAsync(),localName,nameSpace); // cant custom parse because its static
             TextSyndicationContent result = new TextSyndicationContent(val, kind);
             if (attrs != null)
             {
@@ -764,7 +798,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
         
-        private DateTimeOffset DateFromString(string dateTimeString, XmlReaderWrapper reader)
+        private DateTimeOffset DateFromString(string dateTimeString, string localName, string ns)
         {
             dateTimeString = dateTimeString.Trim();
             if (dateTimeString.Length < 20)
@@ -772,7 +806,7 @@ namespace Microsoft.ServiceModel.Syndication
                 //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
                 //    new XmlException(FeedUtils.AddLineInfo(reader,
                 //    SR.ErrorParsingDateTime)));
-                throw new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingDateTime));
+                //throw new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingDateTime));
             }
             if (dateTimeString[19] == '.')
             {
@@ -799,7 +833,10 @@ namespace Microsoft.ServiceModel.Syndication
                 return utcTime;
             }
 
-            throw new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingDateTime));
+            //throw new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingDateTime));
+
+            //if imposible to parse, return default date
+            return new DateTimeOffset();
         }
         
         private async Task ReadCategoryAsync(XmlReaderWrapper reader, SyndicationCategory category)
@@ -882,7 +919,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
             else
             {
-                return await ReadTextContentFromHelper(reader, type, "//atom:feed/atom:entry/atom:content[@type]", _preserveAttributeExtensions);
+                return await ReadTextContentFromHelperAsync(reader, type, "//atom:feed/atom:entry/atom:content[@type]", _preserveAttributeExtensions);
             }
         }
 
@@ -1117,6 +1154,7 @@ namespace Microsoft.ServiceModel.Syndication
             string title = null;
             string lengthStr = null;
             string val = null;
+            string ns = null;
             link.BaseUri = baseUri;
             if (reader.HasAttributes)
             {
@@ -1149,6 +1187,7 @@ namespace Microsoft.ServiceModel.Syndication
 
                             case Atom10Constants.HrefTag:
                                 val = await reader.GetValueAsync();
+                                ns = reader.NamespaceURI;
                                 break;
 
                             default:
@@ -1253,7 +1292,7 @@ namespace Microsoft.ServiceModel.Syndication
             link.MediaType = mediaType;
             link.RelationshipType = relationship;
             link.Title = title;
-            link.Uri = (val != null) ? new Uri(val, UriKind.RelativeOrAbsolute) : null;
+            link.Uri = (val != null) ? uriParser(val,UriKind.RelativeOrAbsolute,Atom10Constants.LinkTag,ns) /*new Uri(val, UriKind.RelativeOrAbsolute)*/ : null;
         }
         
         private async Task<SyndicationLink> ReadLinkFromAsync(XmlReaderWrapper reader, SyndicationFeed feed)
@@ -1404,13 +1443,13 @@ namespace Microsoft.ServiceModel.Syndication
                         switch (name)
                         {
                             case Atom10Constants.NameTag:
-                            result.Name = await reader.ReadElementStringAsync();
+                            result.Name = stringParser(await reader.ReadElementStringAsync(),Atom10Constants.NameTag,ns);
                                 break;
                             case Atom10Constants.UriTag:
-                            result.Uri = await reader.ReadElementStringAsync();
+                            result.Uri = stringParser(await reader.ReadElementStringAsync(),Atom10Constants.UriTag,ns);
                                 break;
                             case Atom10Constants.EmailTag:
-                            result.Email = await reader.ReadElementStringAsync();
+                            result.Email = stringParser(await reader.ReadElementStringAsync(),Atom10Constants.EmailTag,ns);
                                 break;
                             default:
                                 notHandled = true;

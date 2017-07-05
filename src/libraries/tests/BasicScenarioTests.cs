@@ -569,7 +569,9 @@ namespace Microsoft.ServiceModel.Syndication.Tests
         {
             // *** SETUP *** \\
             Rss20FeedFormatter rssformatter = new Rss20FeedFormatter();
-            rssformatter.stringParser = (val, name, ns) => {
+
+            rssformatter.stringParser = (val, name, ns) =>
+            {
                 switch (name)
                 {
                     case Rss20Constants.TimeToLiveTag:
@@ -585,9 +587,9 @@ namespace Microsoft.ServiceModel.Syndication.Tests
             };
 
             XmlReader reader = XmlReader.Create(@"TestFeeds\rssSpecExample.xml");
-            
+
             // *** EXECUTE *** \\
-            Task<SyndicationFeed> task = SyndicationFeed.LoadAsync(reader, rssformatter);
+            Task <SyndicationFeed> task = SyndicationFeed.LoadAsync(reader,rssformatter);
             Task.WhenAll(task);
             SyndicationFeed res = task.Result;
 
@@ -599,6 +601,38 @@ namespace Microsoft.ServiceModel.Syndication.Tests
             }
         }
 
+        [Fact]
+        public static void SyndicationFeed_Atom_TestCustomParsing()
+        {
+            // *** SETUP *** \\
+            Atom10FeedFormatter atomformatter = new Atom10FeedFormatter();
+
+            atomformatter.stringParser = (val, name, ns) =>
+            {
+                switch (name)
+                {
+                    case Atom10Constants.IdTag:
+                        return "No id!";
+                    case Atom10Constants.NameTag:
+                        return "new name";
+                    case Atom10Constants.TitleTag:
+                        return "new title";
+                    default:
+                        return "Custom Text";
+                }
+            };
+
+            XmlReader reader = XmlReader.Create(@"TestFeeds\atom_spec_example.xml");
+
+            // *** EXECUTE *** \\
+            Task<SyndicationFeed> task = SyndicationFeed.LoadAsync(reader, atomformatter);
+            Task.WhenAll(task);
+            SyndicationFeed res = task.Result;
+
+            // *** ASSERT *** \\
+            Assert.True(res.Id == "No id!");
+            Assert.True(res.Title.Text == "new title");
+        }
     }
 }
 
