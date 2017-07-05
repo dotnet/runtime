@@ -208,22 +208,6 @@ bool pal::get_global_dotnet_dirs(std::vector<pal::string_t>* dirs)
     return true;
 }
 
-bool pal::get_local_dotnet_dir(pal::string_t* dir)
-{
-    pal::string_t profile;
-    if (!get_file_path_from_env(_X("USERPROFILE"), &profile))
-    {
-        // We should have the path in profile.
-        trace::verbose(_X("Failed to obtain user profile directory,[%s]"), profile.c_str());
-        return false;
-    }
-
-    dir->assign(profile);
-    append_path(dir, _X(".dotnet"));
-    append_path(dir, get_arch());
-    return true;
-}
-
 // To determine the OS version, we are going to use RtlGetVersion API
 // since GetVersion call can be shimmed on Win8.1+.
 typedef NTSTATUS (WINAPI *pFuncRtlGetVersion)(RTL_OSVERSIONINFOW *);
