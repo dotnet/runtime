@@ -13,7 +13,6 @@ namespace System.Tests
     public static class ArrayNetcoreappTests
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corert/issues/3650 - Wrong exception thrown", TargetFrameworkMonikers.UapAot)]
         public static void CreateInstance_Type_Int_Invalid()
         {
             foreach (Type nonRuntimeType in Helpers.NonRuntimeTypes)
@@ -24,7 +23,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corert/issues/3650 - Wrong exception thrown", TargetFrameworkMonikers.UapAot)]
         public static void CreateInstance_Type_Int_Int_Invalid()
         {
             foreach (Type nonRuntimeType in Helpers.NonRuntimeTypes)
@@ -35,7 +33,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corert/issues/3650 - Wrong exception thrown", TargetFrameworkMonikers.UapAot)]
         public static void CreateInstance_Type_Int_Int_Int_Invalid()
         {
             foreach (Type nonRuntimeType in Helpers.NonRuntimeTypes)
