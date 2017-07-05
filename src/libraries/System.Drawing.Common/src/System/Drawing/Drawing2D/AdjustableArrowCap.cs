@@ -16,10 +16,7 @@ namespace System.Drawing.Drawing2D
         {
             IntPtr nativeCap;
             int status = SafeNativeMethods.Gdip.GdipCreateAdjustableArrowCap(height, width, isFilled, out nativeCap);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
-
+            SafeNativeMethods.Gdip.CheckStatus(status);
             SetNativeLineCap(nativeCap);
         }
 
@@ -28,18 +25,13 @@ namespace System.Drawing.Drawing2D
             get
             {
                 int status = SafeNativeMethods.Gdip.GdipGetAdjustableArrowCapHeight(new HandleRef(this, nativeCap), out float height);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
-
+                SafeNativeMethods.Gdip.CheckStatus(status);
                 return height;
             }
             set
             {
                 int status = SafeNativeMethods.Gdip.GdipSetAdjustableArrowCapHeight(new HandleRef(this, nativeCap), value);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
@@ -48,18 +40,13 @@ namespace System.Drawing.Drawing2D
             get
             {
                 int status = SafeNativeMethods.Gdip.GdipGetAdjustableArrowCapWidth(new HandleRef(this, nativeCap), out float width);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
-
+                SafeNativeMethods.Gdip.CheckStatus(status);
                 return width;
             }
             set
             {
                 int status = SafeNativeMethods.Gdip.GdipSetAdjustableArrowCapWidth(new HandleRef(this, nativeCap), value);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
@@ -68,18 +55,13 @@ namespace System.Drawing.Drawing2D
             get
             {
                 int status = SafeNativeMethods.Gdip.GdipGetAdjustableArrowCapMiddleInset(new HandleRef(this, nativeCap), out float middleInset);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
-
+                SafeNativeMethods.Gdip.CheckStatus(status);
                 return middleInset;
             }
             set
             {
                 int status = SafeNativeMethods.Gdip.GdipSetAdjustableArrowCapMiddleInset(new HandleRef(this, nativeCap), value);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
@@ -88,18 +70,13 @@ namespace System.Drawing.Drawing2D
             get
             {
                 int status = SafeNativeMethods.Gdip.GdipGetAdjustableArrowCapFillState(new HandleRef(this, nativeCap), out bool isFilled);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
-
+                SafeNativeMethods.Gdip.CheckStatus(status);
                 return isFilled;
             }
             set
             {
                 int status = SafeNativeMethods.Gdip.GdipSetAdjustableArrowCapFillState(new HandleRef(this, nativeCap), value);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
     }
