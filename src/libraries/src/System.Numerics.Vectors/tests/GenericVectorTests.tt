@@ -12,6 +12,7 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Numerics.Tests
 {
@@ -216,7 +217,7 @@ namespace System.Numerics.Tests
             Assert.Throws<NullReferenceException>(() => vector.CopyTo(null, 0));
             Assert.Throws<ArgumentOutOfRangeException>(() => vector.CopyTo(array, -1));
             Assert.Throws<ArgumentOutOfRangeException>(() => vector.CopyTo(array, array.Length));
-            Assert.Throws<ArgumentException>(() => vector.CopyTo(array, array.Length - 1));
+            AssertExtensions.Throws<ArgumentException>(null, () => vector.CopyTo(array, array.Length - 1));
 
             vector.CopyTo(array);
             for (int g = 0; g < array.Length; g++)
@@ -1383,13 +1384,14 @@ namespace System.Numerics.Tests
 <# 
     foreach (var type in supportedTypes)
     {
+        int precision = type == typeof(float) ? 6 : type == typeof(double) ? 15 : -1;
 #>
         [Fact]
-        public void SquareRoot<#=type.Name#>() { TestSquareRoot<<#=type.Name#>>(); }
+        public void SquareRoot<#=type.Name#>() { TestSquareRoot<<#=type.Name#>>(<#=precision#>); }
 <#
     }
 #>
-        private void TestSquareRoot<T>() where T : struct
+        private void TestSquareRoot<T>(int precision = -1) where T : struct, IEquatable<T>
         {
             T[] values = GenerateRandomValuesForVector<T>();
             Vector<T> vector = new Vector<T>(values);
@@ -1399,7 +1401,7 @@ namespace System.Numerics.Tests
                 (index, val) =>
                 {
                     T expected = Util.Sqrt(values[index]);
-                    Assert.Equal(expected, val);
+                    AssertEqual(expected, val, $"SquareRoot( {FullString(values[index])} )", precision);
                 });
         }
 
@@ -1702,6 +1704,86 @@ namespace System.Numerics.Tests
         #endregion Narrow / Widen
 
         #region Helper Methods
+        private static void AssertEqual<T>(T expected, T actual, string operation, int precision = -1) where T : IEquatable<T>
+        {
+            if (typeof(T) == typeof(float))
+            {
+                if (!IsDiffTolerable((float)(object)expected, (float)(object)actual, precision))
+                {
+                    throw new XunitException($"AssertEqual failed for operation {operation}. Expected: {expected,10:G9}, Actual: {actual,10:G9}.");
+                }
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                if (!IsDiffTolerable((double)(object)expected, (double)(object)actual, precision))
+                {
+                    throw new XunitException($"AssertEqual failed for operation {operation}. Expected: {expected,20:G17}, Actual: {actual,20:G17}.");
+                }
+            }
+            else
+            {
+                if (!expected.Equals(actual))
+                {
+                    throw new XunitException($"AssertEqual failed for operation {operation}. Expected: {expected}, Actual: {actual}.");
+                }
+            }
+        }
+
+        private static bool IsDiffTolerable(double d1, double d2, int precision)
+        {
+            if (double.IsNaN(d1))
+            {
+                return double.IsNaN(d2);
+            }
+            if (double.IsInfinity(d1) || double.IsInfinity(d2))
+            {
+                return AreSameInfinity(d1, d2);
+            }
+
+            double diffRatio = (d1 - d2) / d1;
+            diffRatio *= Math.Pow(10, precision);
+            return Math.Abs(diffRatio) < 1;
+        }
+
+        private static bool IsDiffTolerable(float f1, float f2, int precision)
+        {
+            if (float.IsNaN(f1))
+            {
+                return float.IsNaN(f2);
+            }
+            if (float.IsInfinity(f1) || float.IsInfinity(f2))
+            {
+                return AreSameInfinity(f1, f2);
+            }
+
+            float diffRatio = (f1 - f2) / f1;
+            diffRatio *= MathF.Pow(10, precision);
+            return Math.Abs(diffRatio) < 1;
+        }
+
+        private static string FullString<T>(T value)
+        {
+            if (typeof(T) == typeof(float))
+            {
+                return ((float)(object)value).ToString("G9");
+            }
+            else if (typeof(T) == typeof(double))
+            {
+                return ((double)(object)value).ToString("G17");
+            }
+            else
+            {
+                return value.ToString();
+            }
+        }
+
+        private static bool AreSameInfinity(double d1, double d2)
+        {
+            return
+                double.IsNegativeInfinity(d1) == double.IsNegativeInfinity(d2) &&
+                double.IsPositiveInfinity(d1) == double.IsPositiveInfinity(d2);
+        }
+
         private static void ValidateVector<T>(Vector<T> vector, Action<int, T> indexValidationFunc) where T : struct
         {
             for (int g = 0; g < Vector<T>.Count; g++)
