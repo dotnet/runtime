@@ -236,6 +236,7 @@
 
     <CoreHostOutputDir>$(BaseOutputRootPath)corehost\</CoreHostOutputDir>
     <UWPOutputDir>$(BaseOutputRootPath)uwp\</UWPOutputDir>
+    <CoreRuntimeTaskDir>$(BaseOutputRootPath)Microsoft.Build.Net.CoreRuntimeTask</CoreRuntimeTaskDir>
 
     <PackagesBasePath Condition="'$(PackagesBasePath)'==''">$(BinDir)$(OSPlatformConfig)/</PackagesBasePath>
     <PackagesOutDir Condition="'$(PackagesOutDir)'==''">$(PackagesBasePath)packages/</PackagesOutDir>

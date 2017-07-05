@@ -6,7 +6,7 @@
 
   <!-- Target that builds UWP Host for CoreCLR.
   -->
-  <Target Name="Build" DependsOnTargets="BuildUWPHost" /> 
+  <Target Name="Build" DependsOnTargets="BuildUWPHost;BuildMSBuildTask" />
 
   <Target Name="BuildUWPHost" DependsOnTargets="GetLatestCommitHash">
 
@@ -33,5 +33,9 @@
     
     <Copy SourceFiles="@(CMakeOutput)"
           DestinationFolder="$(UWPOutputDir)"/>
+  </Target>
+
+  <Target Name="BuildMSBuildTask" DependsOnTargets="GetLatestCommitHash">
+    <MSBuild Projects="$(MSBuildThisFileDirectory)Microsoft.Build.Net.CoreRuntimeTask/Microsoft.Build.Net.CoreRuntimeTask.builds" />
   </Target>
 </Project>
