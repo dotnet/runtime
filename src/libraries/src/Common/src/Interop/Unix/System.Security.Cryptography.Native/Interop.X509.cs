@@ -176,6 +176,7 @@ internal static partial class Interop
             X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT = 2,
             X509_V_ERR_UNABLE_TO_GET_CRL = 3,
             X509_V_ERR_UNABLE_TO_DECRYPT_CRL_SIGNATURE = 5,
+            X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY = 6,
             X509_V_ERR_CERT_SIGNATURE_FAILURE = 7,
             X509_V_ERR_CRL_SIGNATURE_FAILURE = 8,
             X509_V_ERR_CERT_NOT_YET_VALID = 9,
