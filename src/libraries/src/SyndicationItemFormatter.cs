@@ -26,7 +26,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (itemToWrite == null)
             {
-                throw new ArgumentNullException("itemToWrite");
+                throw new ArgumentNullException(nameof(itemToWrite));
             }
             _item = itemToWrite;
         }
@@ -59,7 +59,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (item == null)
             {
-                throw new ArgumentNullException("item");
+                throw new ArgumentNullException(nameof(item));
             }
             _item = item;
         }

@@ -44,11 +44,11 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (title == null)
             {
-                throw new ArgumentNullException("title");
+                throw new ArgumentNullException(nameof(title));
             }
             if (link == null)
             {
-                throw new ArgumentNullException("link");
+                throw new ArgumentNullException(nameof(link));
             }
             _title = title;
             _link = link;

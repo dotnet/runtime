@@ -27,7 +27,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw new ArgumentNullException("XmlReaderWrapper");
+                throw new ArgumentNullException(nameof(reader));
             }
             SyndicationFeedFormatter.MoveToStartElement(reader);
             _outerName = reader.LocalName;
@@ -63,7 +63,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (dataContractExtension == null)
             {
-                throw new ArgumentNullException("dataContractExtension");
+                throw new ArgumentNullException(nameof(dataContractExtension));
             }
             if (outerName == string.Empty)
             {
@@ -83,7 +83,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (xmlSerializerExtension == null)
             {
-                throw new ArgumentNullException("xmlSerializerExtension");
+                throw new ArgumentNullException(nameof(xmlSerializerExtension));
             }
             if (serializer == null)
             {
@@ -134,7 +134,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (serializer == null)
             {
-                throw new ArgumentNullException("serializer");
+                throw new ArgumentNullException(nameof(serializer));
             }
             if (_extensionData != null && typeof(TExtension).IsAssignableFrom(_extensionData.GetType()))
             {
@@ -151,7 +151,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (serializer == null)
             {
-                throw new ArgumentNullException("serializer");
+                throw new ArgumentNullException(nameof(serializer));
             }
             if (_extensionData != null && typeof(TExtension).IsAssignableFrom(_extensionData.GetType()))
             {
@@ -193,7 +193,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (writer == null)
             {
-                throw new ArgumentNullException("writer");
+                throw new ArgumentNullException(nameof(writer));
             }
             if (_extensionDataWriter != null)
             {

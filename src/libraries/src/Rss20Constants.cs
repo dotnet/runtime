@@ -34,7 +34,6 @@ namespace Microsoft.ServiceModel.Syndication
         public const string UrlTag = "url";
         public const string Version = "2.0";
         public const string VersionTag = "version";
-        //new constants
         public const string DocumentationTag = "docs";
         public const string TimeToLiveTag = "ttl";
         public const string CloudTag = "cloud";

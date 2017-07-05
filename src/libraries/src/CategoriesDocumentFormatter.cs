@@ -21,7 +21,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (documentToWrite == null)
             {
-                throw new ArgumentNullException("documentToWrite");
+                throw new ArgumentNullException(nameof(documentToWrite));
             }
             _document = documentToWrite;
         }

@@ -30,7 +30,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (length < 0)
             {
-                throw new ArgumentOutOfRangeException("length");
+                throw new ArgumentOutOfRangeException(nameof(length));
             }
             _baseUri = null;
             _uri = uri;
@@ -49,7 +49,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (source == null)
             {
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
             }
             _length = source._length;
             _mediaType = source._mediaType;
@@ -83,7 +83,7 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 if (value < 0)
                 {
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
                 _length = value;
             }

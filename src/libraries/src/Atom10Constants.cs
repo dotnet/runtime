@@ -48,7 +48,6 @@ namespace Microsoft.ServiceModel.Syndication
         public const string XHtmlMediaType = "application/xhtml+xml";
         public const string XHtmlType = "xhtml";
         public const string XmlMediaType = "text/xml";
-        //new constants
         public const string IconTag = "icon";
     }
 }

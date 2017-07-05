@@ -21,7 +21,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (link == null)
             {
-                throw new ArgumentNullException("link");
+                throw new ArgumentNullException(nameof(link));
             }
             _link = link;
         }

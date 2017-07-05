@@ -56,7 +56,7 @@ namespace Microsoft.ServiceModel.Syndication
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 _iconImage = value;
             }
         } 
@@ -72,7 +72,7 @@ namespace Microsoft.ServiceModel.Syndication
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 _textInput = value;
             }
         }
@@ -170,7 +170,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (source == null)
             {
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
             }
             _authors = FeedUtils.ClonePersons(source._authors);
             _categories = FeedUtils.CloneCategories(source._categories);
@@ -315,7 +315,7 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 if (value == null)
                 {
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
                 }
                 _items = value;
             }
@@ -362,28 +362,28 @@ namespace Microsoft.ServiceModel.Syndication
             return await LoadAsync(reader, new Rss20FeedFormatter(), formatter);
         }
 
-        public static async Task<SyndicationFeed> LoadAsync(XmlReader reader1, Rss20FeedFormatter Rssformatter, Atom10FeedFormatter Atomformatter)
+        public static async Task<SyndicationFeed> LoadAsync(XmlReader reader, Rss20FeedFormatter Rssformatter, Atom10FeedFormatter Atomformatter)
         {
-            if (reader1 == null)
+            if (reader == null)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
 
-            XmlReaderWrapper reader = XmlReaderWrapper.CreateFromReader(reader1);
+            XmlReaderWrapper wrappedReader = XmlReaderWrapper.CreateFromReader(reader);
 
             Atom10FeedFormatter atomSerializer = Atomformatter;
-            if (atomSerializer.CanRead(reader))
+            if (atomSerializer.CanRead(wrappedReader))
             {
-                await atomSerializer.ReadFromAsync(reader);
+                await atomSerializer.ReadFromAsync(wrappedReader);
                 return atomSerializer.Feed;
             }
             Rss20FeedFormatter rssSerializer = Rssformatter;
-            if (rssSerializer.CanRead(reader))
+            if (rssSerializer.CanRead(wrappedReader))
             {
-                await rssSerializer.ReadFromAsync(reader);
+                await rssSerializer.ReadFromAsync(wrappedReader);
                 return rssSerializer.Feed;
             }
-            throw new XmlException(String.Format(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI));
+            throw new XmlException(String.Format(SR.UnknownFeedXml, wrappedReader.LocalName, wrappedReader.NamespaceURI));
         }
 
         //=================================

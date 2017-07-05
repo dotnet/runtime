@@ -71,7 +71,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (dataContractExtension == null)
             {
-                throw new ArgumentNullException("dataContractExtension");
+                throw new ArgumentNullException(nameof(dataContractExtension));
             }
             if (dataContractSerializer == null)
             {
@@ -84,7 +84,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (xmlSerializerExtension == null)
             {
-                throw new ArgumentNullException("xmlSerializerExtension");
+                throw new ArgumentNullException(nameof(xmlSerializerExtension));
             }
             if (serializer == null)
             {
@@ -97,7 +97,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw new ArgumentNullException("XmlReaderWrapper");
+                throw new ArgumentNullException(nameof(reader));
             }
             base.Add(new SyndicationElementExtension(reader));
         }
@@ -119,7 +119,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (serializer == null)
             {
-                throw new ArgumentNullException("serializer");
+                throw new ArgumentNullException(nameof(serializer));
             }
             return ReadExtensions<TExtension>(extensionName, extensionNamespace, serializer, null);
         }
@@ -128,7 +128,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (serializer == null)
             {
-                throw new ArgumentNullException("serializer");
+                throw new ArgumentNullException(nameof(serializer));
             }
             return ReadExtensions<TExtension>(extensionName, extensionNamespace, null, serializer);
         }
@@ -169,7 +169,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (item == null)
             {
-                throw new ArgumentNullException("item");
+                throw new ArgumentNullException(nameof(item));
             }
             base.InsertItem(index, item);
             // clear the cached buffer if the operation is happening outside the constructor
@@ -193,7 +193,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (item == null)
             {
-                throw new ArgumentNullException("item");
+                throw new ArgumentNullException(nameof(item));
             }
             base.SetItem(index, item);
             // clear the cached buffer if the operation is happening outside the constructor
