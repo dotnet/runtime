@@ -46,10 +46,11 @@ namespace System.DirectoryServices.AccountManagement.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void Ctor_MachineContext_ThrowsInvalidCastException()
+        public void Ctor_MachineContext_NoException()
         {
             var context = new PrincipalContext(ContextType.Machine);
-            Assert.Throws<InvalidCastException>(() => new ComputerPrincipal(context, "samAccountName", "password", enabled: true));
+            var principal = new ComputerPrincipal(context, "samAccountName", "password", enabled: true);
+            Assert.Equal(ContextType.Machine, principal.ContextType);
         }
 
         [Fact]

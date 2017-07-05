@@ -16,6 +16,7 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
         }
 
         [Fact]
+        [OuterLoop]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Getting information about domain is denied inside App")]
         [ActiveIssue("https://github.com/dotnet/corefx/issues/21553", TargetFrameworkMonikers.UapAot)]
         public void FindByTransportType_ForestNoDomainAssociatedWithoutName_ThrowsActiveDirectoryOperationException()
@@ -47,6 +48,7 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [OuterLoop("Takes too long on domain joined machines")]
         [InlineData(DirectoryContextType.ApplicationPartition)]
         [InlineData(DirectoryContextType.DirectoryServer)]
         [InlineData(DirectoryContextType.Domain)]
@@ -58,6 +60,7 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
         }
 
         [Fact]
+        [OuterLoop]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Getting information about domain is denied inside App")]
         [ActiveIssue("https://github.com/dotnet/corefx/issues/21553", TargetFrameworkMonikers.UapAot)]
         public void FindByTransportType_ConfigurationSetTypeWithName_Throws()
