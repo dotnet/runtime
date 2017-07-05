@@ -17,18 +17,10 @@ namespace System.Net.Test.Common
         public class Options
         {
             public const string DefaultResponseString =
-@"HTTP/1.1 200 OK
-Connection: close
-
-<html>
-<head>
-<title>Test Server</title>
-</head>
-<body>
-<h1>TLS test server</h1>
-</body>
-</html>
-";
+                "HTTP/1.1 200 OK\r\n" +
+                "Connection: close\r\n" +
+                "\r\n" +
+                "<html><head><title>Test Server</title></head><body><h1>TLS test server</h1></body></html>\r\n";
 
             public IPAddress Address { get; set; } = IPAddress.Loopback;
 
@@ -99,11 +91,12 @@ Connection: close
             {
                 try
                 {
-                    using (TcpClient requestClient = await _listener.AcceptTcpClientAsync().ConfigureAwait(false))
+                    using (Socket accepted = await _listener.AcceptSocketAsync().ConfigureAwait(false))
                     {
                         _log.WriteLine("[Server] Client connected.");
 
-                        using (Stream = new SslStream(requestClient.GetStream(), true, RemoteCertificateCallback))
+                        using (NetworkStream ns = new NetworkStream(accepted, ownsSocket: false))
+                        using (Stream = new SslStream(ns, false, RemoteCertificateCallback))
                         {
                             _log.WriteLine(
                                 "[Server] Authenticating. Protocols = {0}, Certificate = {1}, ClientCertRequired = {2}",
@@ -123,11 +116,13 @@ Connection: close
 
                             if (httpConversation == null)
                             {
-                                httpConversation = DefaultHttpConversation;   
+                                httpConversation = DefaultHttpConversation;
                             }
 
                             done = await ProcessHttp(httpConversation).ConfigureAwait(false);
                         }
+
+                        accepted.Shutdown(SocketShutdown.Send);
                     }
                 }
                 catch (IOException ex)

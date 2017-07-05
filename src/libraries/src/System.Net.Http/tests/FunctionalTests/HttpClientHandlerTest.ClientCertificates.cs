@@ -5,7 +5,6 @@
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.Test.Common;
-using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Xunit;
@@ -60,9 +59,14 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [ConditionalFact(nameof(BackendDoesNotSupportCustomCertificateHandling))]
+        [Fact]
         public async Task Automatic_SSLBackendNotSupported_ThrowsPlatformNotSupportedException()
         {
+            if (BackendSupportsCustomCertificateHandling) // can't use [Conditional*] right now as it's evaluated at the wrong time for the managed handler
+            {
+                return;
+            }
+
             using (var client = new HttpClient(new HttpClientHandler() { ClientCertificateOptions = ClientCertificateOption.Automatic }))
             {
                 await Assert.ThrowsAsync<PlatformNotSupportedException>(() => client.GetAsync(Configuration.Http.SecureRemoteEchoServer));
@@ -70,9 +74,14 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [ConditionalFact(nameof(BackendDoesNotSupportCustomCertificateHandling))]
+        [Fact]
         public async Task Manual_SSLBackendNotSupported_ThrowsPlatformNotSupportedException()
         {
+            if (BackendSupportsCustomCertificateHandling) // can't use [Conditional*] right now as it's evaluated at the wrong time for the managed handler
+            {
+                return;
+            }
+
             var handler = new HttpClientHandler();
             handler.ClientCertificates.Add(Configuration.Certificates.GetClientCertificate());
             using (var client = new HttpClient(handler))
@@ -83,13 +92,19 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [ActiveIssue(9543)] // fails sporadically with 'WinHttpException : The server returned an invalid or unrecognized response' or 'TaskCanceledException : A task was canceled'
-        [ConditionalTheory(nameof(BackendSupportsCustomCertificateHandling))]
+        [Theory]
         [InlineData(6, false)]
         [InlineData(3, true)]
         public async Task Manual_CertificateSentMatchesCertificateReceived_Success(
             int numberOfRequests,
             bool reuseClient) // validate behavior with and without connection pooling, which impacts client cert usage
         {
+            if (BackendDoesNotSupportCustomCertificateHandling) // can't use [Conditional*] right now as it's evaluated at the wrong time for the managed handler
+            {
+                Console.WriteLine($"Skipping {nameof(Manual_CertificateSentMatchesCertificateReceived_Success)}()");
+                return;
+            }
+
             var options = new LoopbackServer.Options { UseSsl = true };
 
             Func<X509Certificate2, HttpClient> createClient = (cert) =>

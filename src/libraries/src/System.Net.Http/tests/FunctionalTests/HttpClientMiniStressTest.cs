@@ -96,7 +96,8 @@ namespace System.Net.Http.Functional.Tests
                          select client.GetStringAsync($"http://{ep.Address}:{ep.Port}"))
                          .ToArray();
 
-                    Assert.All(tasks, t => Assert.Equal(TaskStatus.WaitingForActivation, t.Status));
+                    Assert.All(tasks, t => 
+                        Assert.True(t.IsFaulted || t.Status == TaskStatus.WaitingForActivation, $"Unexpected status {t.Status}"));
 
                     server.Dispose();
 

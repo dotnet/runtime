@@ -50,11 +50,11 @@ namespace System.Net.Http.Functional.Tests
         public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
     }
 
-    //public sealed class ManagedHandler_HttpClientHandler_ClientCertificates_Test : HttpClientHandler_ClientCertificates_Test, IDisposable
-    //{
-    //    public ManagedHandler_HttpClientHandler_ClientCertificates_Test() => ManagedHandlerTestHelpers.SetEnvVar();
-    //    public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
-    //}
+    public sealed class ManagedHandler_HttpClientHandler_ClientCertificates_Test : HttpClientHandler_ClientCertificates_Test, IDisposable
+    {
+        public ManagedHandler_HttpClientHandler_ClientCertificates_Test() => ManagedHandlerTestHelpers.SetEnvVar();
+        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+    }
 
     public sealed class ManagedHandler_HttpClientHandler_DefaultProxyCredentials_Test : HttpClientHandler_DefaultProxyCredentials_Test, IDisposable
     {
@@ -72,11 +72,11 @@ namespace System.Net.Http.Functional.Tests
         public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
     }
 
-    //public sealed class ManagedHandler_HttpClientHandler_ServerCertificates_Test : HttpClientHandler_ServerCertificates_Test, IDisposable
-    //{
-    //    public ManagedHandler_HttpClientHandler_ServerCertificates_Test() => ManagedHandlerTestHelpers.SetEnvVar();
-    //    public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
-    //}
+    public sealed class ManagedHandler_HttpClientHandler_ServerCertificates_Test : HttpClientHandler_ServerCertificates_Test, IDisposable
+    {
+        public ManagedHandler_HttpClientHandler_ServerCertificates_Test() => ManagedHandlerTestHelpers.SetEnvVar();
+        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+    }
 
     public sealed class ManagedHandler_PostScenarioTest : PostScenarioTest, IDisposable
     {
@@ -89,27 +89,53 @@ namespace System.Net.Http.Functional.Tests
         public ManagedHandler_ResponseStreamTest(ITestOutputHelper output) : base(output) => ManagedHandlerTestHelpers.SetEnvVar();
         public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
     }
+    
+    public sealed class ManagedHandler_HttpClientHandler_SslProtocols_Test : HttpClientHandler_SslProtocols_Test, IDisposable
+    {
+        public ManagedHandler_HttpClientHandler_SslProtocols_Test() => ManagedHandlerTestHelpers.SetEnvVar();
+        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+    }
 
-    // TODO #21452: Uncomment once tests are fixed
+    public sealed class ManagedHandler_SchSendAuxRecordHttpTest : SchSendAuxRecordHttpTest, IDisposable
+    {
+        public ManagedHandler_SchSendAuxRecordHttpTest(ITestOutputHelper output) : base(output) => ManagedHandlerTestHelpers.SetEnvVar();
+        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+    }
 
-    //public sealed class ManagedHandler_HttpClientHandler_SslProtocols_Test : HttpClientHandler_SslProtocols_Test, IDisposable
+    public sealed class ManagedHandler_HttpClientMiniStress : HttpClientMiniStress, IDisposable
+    {
+        public ManagedHandler_HttpClientMiniStress() => ManagedHandlerTestHelpers.SetEnvVar();
+        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+    }
+
+    // TODO #21452:
+    //
+    //public sealed class ManagedHandler_DefaultCredentialsTest : DefaultCredentialsTest, IDisposable
     //{
-    //    public ManagedHandler_HttpClientHandler_SslProtocols_Test() => ManagedHandlerTestHelpers.SetEnvVar();
+    //    public ManagedHandler_DefaultCredentialsTest(ITestOutputHelper output) : base(output) => ManagedHandlerTestHelpers.SetEnvVar();
     //    public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
     //}
 
-    //public sealed class ManagedHandler_SchSendAuxRecordHttpTest : SchSendAuxRecordHttpTest, IDisposable
-    //{
-    //    public ManagedHandler_SchSendAuxRecordHttpTest(ITestOutputHelper output) : base(output) => ManagedHandlerTestHelpers.SetEnvVar();
-    //    public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
-    //}
+    public sealed class ManagedHandler_HttpClientHandlerTest : HttpClientHandlerTest, IDisposable
+    {
+        public ManagedHandler_HttpClientHandlerTest(ITestOutputHelper output) : base(output) => ManagedHandlerTestHelpers.SetEnvVar();
+        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+    }
 
+    // TODO #21452: Socket's don't support canceling individual operations, so ReadStream on NetworkStream
+    // isn't cancelable once the operation has started.  We either need to wrap the operation with one that's
+    // "cancelable", meaning that the underlying operation will still be running even though we've returned "canceled",
+    // or we need to just recognize that cancellation in such situations can be left up to the caller to do the
+    // same thing if it's really important.
+    //
     //public sealed class ManagedHandler_CancellationTest : CancellationTest, IDisposable
     //{
     //    public ManagedHandler_CancellationTest(ITestOutputHelper output) : base(output) => ManagedHandlerTestHelpers.SetEnvVar();
     //    public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
     //}
 
+    // TODO #21452: The managed handler doesn't currently track how much data was written for the response headers.
+    //
     //public sealed class ManagedHandler_HttpClientHandler_MaxResponseHeadersLength_Test : HttpClientHandler_MaxResponseHeadersLength_Test, IDisposable
     //{
     //    public ManagedHandler_HttpClientHandler_MaxResponseHeadersLength_Test() => ManagedHandlerTestHelpers.SetEnvVar();
