@@ -1728,12 +1728,12 @@ void Interpreter::JitMethodIfAppropriate(InterpreterMethodInfo* interpMethInfo, 
 
         if (InterpretationStubToMethodInfo(stub) == md)
         {
-#ifdef _DEBUG
+#if INTERP_TRACING
             if (s_TraceInterpreterJITTransitionFlag.val(CLRConfig::INTERNAL_TraceInterpreterJITTransition))
             {
                 fprintf(GetLogFile(), "JITting method %s:%s.\n", md->m_pszDebugClassName, md->m_pszDebugMethodName);
             }
-#endif // _DEBUG
+#endif // INTERP_TRACING
             CORJIT_FLAGS jitFlags(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE);
             NewHolder<COR_ILMETHOD_DECODER> pDecoder(NULL);
             // Dynamic methods (e.g., IL stubs) do not have an IL decoder but may
@@ -2242,22 +2242,22 @@ EvalLoop:
 
         case CEE_CALL:
             DoCall(/*virtualCall*/false);
-#ifdef _DEBUG
+#if INTERP_TRACING
             if (s_TraceInterpreterILFlag.val(CLRConfig::INTERNAL_TraceInterpreterIL))
             {
                 fprintf(GetLogFile(), "  Returning to method %s, stub num %d.\n", methName, m_methInfo->m_stubNum);
             }
-#endif // _DEBUG
+#endif // INTERP_TRACING
             continue;
 
         case CEE_CALLVIRT:
             DoCall(/*virtualCall*/true);
-#ifdef _DEBUG
+#if INTERP_TRACING
             if (s_TraceInterpreterILFlag.val(CLRConfig::INTERNAL_TraceInterpreterIL))
             {
                 fprintf(GetLogFile(), "  Returning to method %s, stub num %d.\n", methName, m_methInfo->m_stubNum);
             }
-#endif // _DEBUG
+#endif // INTERP_TRACING
             continue;
 
             // HARD
@@ -2788,12 +2788,12 @@ EvalLoop:
             continue;
         case CEE_NEWOBJ:
             NewObj();
-#ifdef _DEBUG
+#if INTERP_TRACING
             if (s_TraceInterpreterILFlag.val(CLRConfig::INTERNAL_TraceInterpreterIL))
             {
                 fprintf(GetLogFile(), "  Returning to method %s, stub num %d.\n", methName, m_methInfo->m_stubNum);
             }
-#endif // _DEBUG
+#endif // INTERP_TRACING
             continue;
         case CEE_CASTCLASS:
             CastClass();
@@ -4318,13 +4318,13 @@ void Interpreter::StInd()
     *ptr = val;
     m_curStackHt -= 2;
 
-#ifdef _DEBUG
+#if INTERP_TRACING
     if (s_TraceInterpreterILFlag.val(CLRConfig::INTERNAL_TraceInterpreterIL) &&
         IsInLocalArea(ptr))
     {
         PrintLocals();
     }
-#endif // _DEBUG
+#endif // INTERP_TRACING
 }
 
 void Interpreter::StInd_Ref()
@@ -4340,13 +4340,13 @@ void Interpreter::StInd_Ref()
     SetObjectReferenceUnchecked(ptr, val);
     m_curStackHt -= 2;
 
-#ifdef _DEBUG
+#if INTERP_TRACING
     if (s_TraceInterpreterILFlag.val(CLRConfig::INTERNAL_TraceInterpreterIL) &&
         IsInLocalArea(ptr))
     {
         PrintLocals();
     }
-#endif // _DEBUG
+#endif // INTERP_TRACING
 }
 
 
@@ -11896,7 +11896,7 @@ void Interpreter::PrintPostMortemData()
 
     // Otherwise...
 
-#ifdef _DEBUG
+#if INTERP_TRACING
     // Let's print two things: the number of methods that are 0-10, or more, and
     // For each 10% of methods, cumulative % of invocations they represent.  By 1% for last 10%.
 
