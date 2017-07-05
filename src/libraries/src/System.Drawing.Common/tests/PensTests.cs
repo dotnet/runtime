@@ -155,18 +155,18 @@ namespace System.Drawing.Tests
             yield return Pen(() => Pens.YellowGreen, Color.YellowGreen);
         }
 
-        public static object[] Pen(Func<Pen> penThunk, Color expectedColor) => new object[] { penThunk, expectedColor };
+        public static object[] Pen(Func<Pen> getPen, Color expectedColor) => new object[] { getPen, expectedColor };
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(Pens_TestData))]
-        public void Pens_Get_ReturnsExpected(Func<Pen> penThunk, Color expectedColor)
+        public void Pens_Get_ReturnsExpected(Func<Pen> getPen, Color expectedColor)
         {
-            Pen pen = penThunk();
+            Pen pen = getPen();
             Assert.Equal(expectedColor, pen.Color);
             Assert.Equal(PenType.SolidColor, pen.PenType);
             AssertExtensions.Throws<ArgumentException>(null, () => pen.Color = Color.AliceBlue);
 
-            Assert.Same(pen, penThunk());
+            Assert.Same(pen, getPen());
         }
     }
 }
