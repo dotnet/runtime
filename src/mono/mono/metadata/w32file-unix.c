@@ -4636,6 +4636,7 @@ static _wapi_drive_type _wapi_drive_types[] = {
 	{ DRIVE_RAMDISK, "fdesc" },
 	{ DRIVE_REMOTE, "ftp" },
 	{ DRIVE_FIXED, "hfs" },
+	{ DRIVE_FIXED, "apfs" },
 	{ DRIVE_FIXED, "msdos" },
 	{ DRIVE_REMOTE, "nfs" },
 	{ DRIVE_FIXED, "ntfs" },
