@@ -25,14 +25,14 @@ namespace System.Drawing.Tests
             yield return Font(() => SystemFonts.DialogFont, "DialogFont", isJapanese ? "Microsoft Sans Serif" : "Tahoma");
         }
 
-        public static object[] Font(Func<Font> fontThunk, string systemFontName, string windowsFontName) => new object[] { fontThunk, systemFontName, windowsFontName };
+        public static object[] Font(Func<Font> getFont, string systemFontName, string windowsFontName) => new object[] { getFont, systemFontName, windowsFontName };
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(SystemFonts_TestData))]
-        public void SystemFont_Get_ReturnsExpected(Func<Font> fontThunk, string systemFontName, string windowsFontName)
+        public void SystemFont_Get_ReturnsExpected(Func<Font> getFont, string systemFontName, string windowsFontName)
         {
-            using (Font font = fontThunk())
-            using (Font otherFont = fontThunk())
+            using (Font font = getFont())
+            using (Font otherFont = getFont())
             using (Font fontFromName = SystemFonts.GetFontByName(systemFontName))
             {
                 Assert.NotSame(font, otherFont);
