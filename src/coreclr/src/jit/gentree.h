@@ -1752,6 +1752,9 @@ public:
     // Returns true if it is a GT_COPY or GT_RELOAD of a multi-reg call node
     inline bool IsCopyOrReloadOfMultiRegCall() const;
 
+    // Returns true if it is a MultiRegOp
+    inline bool IsMultiReg() const;
+
     bool OperMayThrow();
 
     unsigned GetScaleIndexMul();
@@ -5784,6 +5787,27 @@ inline bool GenTree::IsCopyOrReloadOfMultiRegCall() const
     }
 
     return false;
+}
+
+//-----------------------------------------------------------------------------------
+// IsMultiReg: whether this is a MultiReg node (i.e. GT_MUL_LONG or GT_PUTARG_REG)
+//
+// Arguments:
+//     None
+//
+// Return Value:
+//     Returns true if this GenTree is a MultiReg node
+inline bool GenTree::IsMultiReg() const
+{
+#if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
+#ifdef ARM_SOFTFP
+    return (gtOper == GT_MUL_LONG) || (gtOper == GT_PUTARG_REG);
+#else  // !ARM_SOFTFP
+    return gtOper == GT_MUL_LONG;
+#endif // !ARM_SOFTFP
+#else  // ! _TARGET_ARM_
+    return false;
+#endif // ! _TARGET_ARM_
 }
 
 inline bool GenTree::IsCnsIntOrI() const
