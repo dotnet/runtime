@@ -1710,14 +1710,14 @@ namespace System.Numerics.Tests
             {
                 if (!IsDiffTolerable((float)(object)expected, (float)(object)actual, precision))
                 {
-                    throw new XunitException($"AssertEqual failed for operation {operation}. Expected: {expected}, Actual: {actual}.");
+                    throw new XunitException($"AssertEqual failed for operation {operation}. Expected: {expected,10:G9}, Actual: {actual,10:G9}.");
                 }
             }
             else if (typeof(T) == typeof(double))
             {
                 if (!IsDiffTolerable((double)(object)expected, (double)(object)actual, precision))
                 {
-                    throw new XunitException($"AssertEqual failed for operation {operation}. Expected: {expected}, Actual: {actual}.");
+                    throw new XunitException($"AssertEqual failed for operation {operation}. Expected: {expected,20:G17}, Actual: {actual,20:G17}.");
                 }
             }
             else
@@ -1763,7 +1763,7 @@ namespace System.Numerics.Tests
                 return AreSameInfinity(f1 * 10, f2);
             }
             float diffRatio = (f1 - f2) / f1;
-            diffRatio *= (float)Math.Pow(10, precision);
+            diffRatio *= MathF.Pow(10, precision);
             return Math.Abs(diffRatio) < 1;
         }
 

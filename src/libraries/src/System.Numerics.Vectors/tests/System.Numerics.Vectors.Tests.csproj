@@ -38,6 +38,9 @@
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\System\PlatformDetection.cs</Link>
     </Compile>
+    <Compile Condition="'$(TargetGroup)' == 'netfx'" Include="..\..\Common\src\System\MathF.netstandard.cs">
+      <Link>System\MathF.netstandard.cs</Link>
+    </Compile>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\src\System\Numerics\ConstantHelper.tt">
