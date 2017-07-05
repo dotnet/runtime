@@ -9943,6 +9943,28 @@ void Compiler::gtDispRegVal(GenTree* tree)
         }
     }
 
+#if FEATURE_MULTIREG_RET
+    if (tree->IsCopyOrReload())
+    {
+        for (int i = 1; i < MAX_RET_REG_COUNT; i++)
+        {
+            regNumber reg = (regNumber)tree->AsCopyOrReload()->GetRegNumByIdx(i);
+            if (reg == REG_NA)
+            {
+                break;
+            }
+            printf(",%s", compRegVarName(reg));
+        }
+    }
+#endif
+
+#if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
+    if (tree->IsMultiReg())
+    {
+        printf(",%s", compRegVarName((regNumber)tree->AsMultiRegOp()->gtOtherReg));
+    }
+#endif
+
 #ifdef LEGACY_BACKEND
     if (tree->InReg())
     {
