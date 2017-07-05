@@ -1677,7 +1677,7 @@ namespace System.Net.Http.Functional.Tests
 
                 using (HttpResponseMessage response = await client.SendAsync(request))
                 {
-                    if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && method == "TRACE")
+                    if (method == "TRACE" && (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) || ManagedHandlerTestHelpers.IsEnabled))
                     {
                         // .NET Framework also allows the HttpWebRequest and HttpClient APIs to send a request using 'TRACE' 
                         // verb and a request body. The usual response from a server is "400 Bad Request".
