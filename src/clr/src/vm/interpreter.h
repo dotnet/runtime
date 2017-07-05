@@ -34,11 +34,7 @@ typedef SIZE_T NativePtr;
 #error INTERP_ILCYCLE_PROFILE may only be set if INTERP_ILINSTR_PROFILE is also set.
 #endif
 #endif
-#if defined(_DEBUG)
-#define INTERPLOG(...) if (s_TraceInterpreterVerboseFlag.val(CLRConfig::INTERNAL_TraceInterpreterVerbose)) { fprintf(GetLogFile(), __VA_ARGS__); }
-#else
-#define INTERPLOG(...)
-#endif
+
 #if defined(_DEBUG) || INTERP_ILINSTR_PROFILE
 // I define "INTERP_TRACING", rather than just using _DEBUG, so that I can easily make a build
 // in which tracing is enabled in retail.
@@ -46,6 +42,12 @@ typedef SIZE_T NativePtr;
 #else
 #define INTERP_TRACING 0
 #endif // defined(_DEBUG) || defined(INTERP_ILINSTR_PROFILE)
+
+#if INTERP_TRACING
+#define INTERPLOG(...) if (s_TraceInterpreterVerboseFlag.val(CLRConfig::INTERNAL_TraceInterpreterVerbose)) { fprintf(GetLogFile(), __VA_ARGS__); }
+#else
+#define INTERPLOG(...)
+#endif
 
 #if INTERP_TRACING
 #define InterpTracingArg(x) ,x
