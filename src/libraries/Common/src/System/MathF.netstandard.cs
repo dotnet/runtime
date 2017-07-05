@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 
 namespace System
 {
+    // MathF emulation on platforms which don't support it natively.
     internal static class MathF
     {
         public const float PI = (float)Math.PI;
@@ -32,6 +33,12 @@ namespace System
         public static float IEEERemainder(float x, float y)
         {
             return (float)Math.IEEERemainder(x, y);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float Pow(float x, float y)
+        {
+            return (float)Math.Pow(x, y);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

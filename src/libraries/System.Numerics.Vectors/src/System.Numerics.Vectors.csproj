@@ -46,7 +46,9 @@
   </ItemGroup>
   <!-- Carry a copy of MathF where not available -->
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' == 'true' OR $(TargetGroup.StartsWith('netstandard'))">
-    <Compile Include="System\MathF.cs" />
+    <Compile Include="..\..\Common\src\System\MathF.netstandard.cs">
+      <Link>System\MathF.netstandard.cs</Link>
+    </Compile>
   </ItemGroup>
   <!-- Portable version only -->
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
