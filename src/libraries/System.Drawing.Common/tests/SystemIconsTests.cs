@@ -22,14 +22,14 @@ namespace System.Drawing.Tests
             yield return Icon(() => SystemIcons.WinLogo);
         }
 
-        public static object[] Icon(Func<Icon> iconThunk) => new object[] { iconThunk };
+        public static object[] Icon(Func<Icon> getIcon) => new object[] { getIcon };
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [MemberData(nameof(SystemIcons_TestData))]
-        public void SystemIcons_Get_ReturnsExpected(Func<Icon> iconThunk)
+        public void SystemIcons_Get_ReturnsExpected(Func<Icon> getIcon)
         {
-            Icon icon = iconThunk();
-            Assert.Same(icon, iconThunk());
+            Icon icon = getIcon();
+            Assert.Same(icon, getIcon());
         }
     }
 }
