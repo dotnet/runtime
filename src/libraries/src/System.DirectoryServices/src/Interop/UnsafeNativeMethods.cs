@@ -8,10 +8,6 @@ namespace System.DirectoryServices.Interop
     using System.Runtime.InteropServices;
     using System;
     using System.Security;
-    using System.Security.Permissions;
-    using System.Collections;
-    using System.IO;
-    using System.Text;
 
     [StructLayout(LayoutKind.Explicit)]
     internal struct Variant
@@ -51,6 +47,7 @@ namespace System.DirectoryServices.Interop
             }
         }
 
+        [ComImport, Guid("FD8256D0-FD15-11CE-ABC4-02608C9E7553")]
         public interface IAds
         {
             string Name
@@ -137,6 +134,7 @@ namespace System.DirectoryServices.Interop
                 int lnReserved);
         }
 
+        [ComImport, Guid("001677D0-FD16-11CE-ABC4-02608C9E7553")]
         public interface IAdsContainer
         {
             int Count
@@ -205,6 +203,7 @@ namespace System.DirectoryServices.Interop
                 string newName);
         }
 
+        [ComImport, Guid("B2BD0902-8878-11D1-8C21-00C04FD8D503")]
         public interface IAdsDeleteOps
         {
             [SuppressUnmanagedCodeSecurityAttribute()]
@@ -219,6 +218,7 @@ namespace System.DirectoryServices.Interop
         {
         }
 
+        [ComImport, Guid("9068270B-0939-11D1-8BE1-00C04FD8D503")]
         public interface IADsLargeInteger
         {
             int HighPart
@@ -233,6 +233,7 @@ namespace System.DirectoryServices.Interop
             }
         }
 
+        [ComImport, Guid("79FA9AD0-A97C-11D0-8534-00C04FD8D503")]
         public interface IAdsPropertyValue
         {
             [SuppressUnmanagedCodeSecurityAttribute()]
@@ -340,10 +341,12 @@ namespace System.DirectoryServices.Interop
         //
         // PropertyEntry as a co-class that implements the IAdsPropertyEntry interface
         //
+        [ComImport, Guid("72D3EDC2-A4C4-11D0-8533-00C04FD8D503")]
         public class PropertyEntry
         {
         }
 
+        [ComImport, Guid("05792C8E-941F-11D0-8529-00C04FD8D503")]
         public interface IAdsPropertyEntry
         {
             [SuppressUnmanagedCodeSecurityAttribute()]
@@ -382,6 +385,7 @@ namespace System.DirectoryServices.Interop
             }
         }
 
+        [ComImport, Guid("C6F602B6-8F69-11D0-8528-00C04FD8D503")]
         public interface IAdsPropertyList
         {
             int PropertyCount
@@ -477,6 +481,7 @@ namespace System.DirectoryServices.Interop
             void CloseSearchHandle([In] IntPtr hSearchResult);
         }
 
+        [ComImport, Guid("46F14FDA-232B-11D1-A808-00C04FD8D5A8")]
         public interface IAdsObjectOptions
         {
             object GetOption(int flag);
@@ -486,8 +491,9 @@ namespace System.DirectoryServices.Interop
         }
 
         // for boolean type, the default marshaller does not work, so need to have specific marshaller. For other types, use the
-        // default marshaller which is more efficient        
-
+        // default marshaller which is more efficient. There is no such interface on the type library this is the same as IAdsObjectOptions
+        // with a different signature.
+        [ComImport, Guid("46F14FDA-232B-11D1-A808-00C04FD8D5A8")]
         public interface IAdsObjectOptions2
         {
             [SuppressUnmanagedCodeSecurityAttribute()]
@@ -504,4 +510,3 @@ namespace System.DirectoryServices.Interop
         internal const int SIZE_LIMIT_EXCEEDED = unchecked((int)0x80072023);
     }
 }
-

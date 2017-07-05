@@ -27,6 +27,7 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [OuterLoop("Takes too long on domain joined machines")]
         [InlineData("\0")]
         [InlineData("server:port")]
         [InlineData("[")]
@@ -39,10 +40,10 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Access to path is denied when in App container")]
-        public void GetDomainController_InvalidIPV6_ThrowsInvalidCastException()
+        public void GetDomainController_InvalidIPV6_ThrowsActiveDirectoryObjectNotFoundException()
         {
             var context = new DirectoryContext(DirectoryContextType.DirectoryServer, "[::1]:port");
-            Assert.Throws<InvalidCastException>(() => DomainController.GetDomainController(context));
+            Assert.Throws<ActiveDirectoryObjectNotFoundException>(() => DomainController.GetDomainController(context));
         }
 
         [Fact]
@@ -114,6 +115,7 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
         }
 
         [Fact]
+        [OuterLoop]
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Getting information about domain is denied inside App")]
         [ActiveIssue("https://github.com/dotnet/corefx/issues/21553", TargetFrameworkMonikers.UapAot)]
         public void FindAll_NullName_ThrowsActiveDirectoryOperationException()
