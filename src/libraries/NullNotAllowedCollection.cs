@@ -19,7 +19,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (item == null)
             {
-                throw new ArgumentNullException("item");
+                throw new ArgumentNullException(nameof(item));
             }
             base.InsertItem(index, item);
         }
@@ -28,7 +28,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (item == null)
             {
-                throw new ArgumentNullException("item");
+                throw new ArgumentNullException(nameof(item));
             }
             base.SetItem(index, item);
         }

@@ -35,11 +35,11 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (documentTypeToCreate == null)
             {
-                throw new ArgumentNullException("documentTypeToCreate");
+                throw new ArgumentNullException(nameof(documentTypeToCreate));
             }
             if (!typeof(ServiceDocument).IsAssignableFrom(documentTypeToCreate))
             {
-                throw new ArgumentException(String.Format(SR.InvalidObjectTypePassed, "documentTypeToCreate", "ServiceDocument"));
+                throw new ArgumentException(String.Format(SR.InvalidObjectTypePassed, nameof(documentTypeToCreate), nameof(ServiceDocument)));
             }
             _maxExtensionSize = int.MaxValue;
             _preserveAttributeExtensions = true;
@@ -66,7 +66,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
 
             XmlReaderWrapper readerWrapper = XmlReaderWrapper.CreateFromReader(reader);
@@ -77,7 +77,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
             await ReadDocumentAsync(reader);
         }
@@ -86,7 +86,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (writer == null)
             {
-                throw new ArgumentNullException("writer");
+                throw new ArgumentNullException(nameof(writer));
             }
             if (this.Document == null)
             {
@@ -99,7 +99,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
 
             XmlReaderWrapper wrappedReader = XmlReaderWrapper.CreateFromReader(reader);
@@ -117,7 +117,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (writer == null)
             {
-                throw new ArgumentNullException("writer");
+                throw new ArgumentNullException(nameof(writer));
             }
             if (this.Document == null)
             {

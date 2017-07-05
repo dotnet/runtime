@@ -25,7 +25,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (feedToWrite == null)
             {
-                throw new ArgumentNullException("feedToWrite");
+                throw new ArgumentNullException(nameof(feedToWrite));
             }
             _feed = feedToWrite;
         }
@@ -56,7 +56,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (feed == null)
             {
-                throw new ArgumentNullException("feed");
+                throw new ArgumentNullException(nameof(feed));
             }
             return GetNonNullValue<SyndicationCategory>(feed.CreateCategory(), SR.FeedCreatedNullCategory);
         }
@@ -65,7 +65,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (item == null)
             {
-                throw new ArgumentNullException("item");
+                throw new ArgumentNullException(nameof(item));
             }
             return GetNonNullValue<SyndicationCategory>(item.CreateCategory(), SR.ItemCreatedNullCategory);
         }
@@ -74,7 +74,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (feed == null)
             {
-                throw new ArgumentNullException("feed");
+                throw new ArgumentNullException(nameof(feed));
             }
             return GetNonNullValue<SyndicationItem>(feed.CreateItem(), SR.FeedCreatedNullItem);
         }
@@ -83,7 +83,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (feed == null)
             {
-                throw new ArgumentNullException("feed");
+                throw new ArgumentNullException(nameof(feed));
             }
             return GetNonNullValue<SyndicationLink>(feed.CreateLink(), SR.FeedCreatedNullPerson);
         }
@@ -92,7 +92,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (item == null)
             {
-                throw new ArgumentNullException("item");
+                throw new ArgumentNullException(nameof(item));
             }
             return GetNonNullValue<SyndicationLink>(item.CreateLink(), SR.ItemCreatedNullPerson);
         }
@@ -101,7 +101,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (feed == null)
             {
-                throw new ArgumentNullException("feed");
+                throw new ArgumentNullException(nameof(feed));
             }
             return GetNonNullValue<SyndicationPerson>(feed.CreatePerson(), SR.FeedCreatedNullPerson);
         }
@@ -110,7 +110,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (item == null)
             {
-                throw new ArgumentNullException("item");
+                throw new ArgumentNullException(nameof(item));
             }
             return GetNonNullValue<SyndicationPerson>(item.CreatePerson(), SR.ItemCreatedNullPerson);
         }
@@ -119,7 +119,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (feed == null)
             {
-                throw new ArgumentNullException("feed");
+                throw new ArgumentNullException(nameof(feed));
             }
             feed.LoadElementExtensions(reader, maxExtensionSize);
         }
@@ -128,7 +128,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (item == null)
             {
-                throw new ArgumentNullException("item");
+                throw new ArgumentNullException(nameof(item));
             }
             item.LoadElementExtensions(reader, maxExtensionSize);
         }
@@ -137,7 +137,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (category == null)
             {
-                throw new ArgumentNullException("category");
+                throw new ArgumentNullException(nameof(category));
             }
             category.LoadElementExtensions(reader, maxExtensionSize);
         }
@@ -146,7 +146,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (link == null)
             {
-                throw new ArgumentNullException("link");
+                throw new ArgumentNullException(nameof(link));
             }
             link.LoadElementExtensions(reader, maxExtensionSize);
         }
@@ -155,7 +155,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (person == null)
             {
-                throw new ArgumentNullException("person");
+                throw new ArgumentNullException(nameof(person));
             }
             person.LoadElementExtensions(reader, maxExtensionSize);
         }
@@ -164,7 +164,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (feed == null)
             {
-                throw new ArgumentNullException("feed");
+                throw new ArgumentNullException(nameof(feed));
             }
 
             if (FeedUtils.IsXmlns(name, ns))
@@ -179,7 +179,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (item == null)
             {
-                throw new ArgumentNullException("item");
+                throw new ArgumentNullException(nameof(item));
             }
             if (FeedUtils.IsXmlns(name, ns))
             {
@@ -192,7 +192,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (category == null)
             {
-                throw new ArgumentNullException("category");
+                throw new ArgumentNullException(nameof(category));
             }
             if (FeedUtils.IsXmlns(name, ns))
             {
@@ -205,7 +205,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (link == null)
             {
-                throw new ArgumentNullException("link");
+                throw new ArgumentNullException(nameof(link));
             }
             if (FeedUtils.IsXmlns(name, ns))
             {
@@ -218,7 +218,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (person == null)
             {
-                throw new ArgumentNullException("person");
+                throw new ArgumentNullException(nameof(person));
             }
             if (FeedUtils.IsXmlns(name, ns))
             {
@@ -236,7 +236,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (feed == null)
             {
-                throw new ArgumentNullException("feed");
+                throw new ArgumentNullException(nameof(feed));
             }
 
             return feed.TryParseElement(reader, version);
@@ -246,7 +246,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (item == null)
             {
-                throw new ArgumentNullException("item");
+                throw new ArgumentNullException(nameof(item));
             }
             return item.TryParseElement(reader, version);
         }
@@ -255,7 +255,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (category == null)
             {
-                throw new ArgumentNullException("category");
+                throw new ArgumentNullException(nameof(category));
             }
             return category.TryParseElement(reader, version);
         }
@@ -264,7 +264,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (link == null)
             {
-                throw new ArgumentNullException("link");
+                throw new ArgumentNullException(nameof(link));
             }
             return link.TryParseElement(reader, version);
         }
@@ -273,7 +273,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (person == null)
             {
-                throw new ArgumentNullException("person");
+                throw new ArgumentNullException(nameof(person));
             }
             return person.TryParseElement(reader, version);
         }
@@ -282,7 +282,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (feed == null)
             {
-                throw new ArgumentNullException("feed");
+                throw new ArgumentNullException(nameof(feed));
             }
             feed.WriteAttributeExtensions(writer, version);
         }
@@ -291,7 +291,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (item == null)
             {
-                throw new ArgumentNullException("item");
+                throw new ArgumentNullException(nameof(item));
             }
             item.WriteAttributeExtensions(writer, version);
         }
@@ -300,7 +300,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (category == null)
             {
-                throw new ArgumentNullException("category");
+                throw new ArgumentNullException(nameof(category));
             }
             category.WriteAttributeExtensions(writer, version);
         }
@@ -309,7 +309,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (link == null)
             {
-                throw new ArgumentNullException("link");
+                throw new ArgumentNullException(nameof(link));
             }
             link.WriteAttributeExtensions(writer, version);
         }
@@ -318,7 +318,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (person == null)
             {
-                throw new ArgumentNullException("person");
+                throw new ArgumentNullException(nameof(person));
             }
             person.WriteAttributeExtensions(writer, version);
         }
@@ -327,7 +327,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (feed == null)
             {
-                throw new ArgumentNullException("feed");
+                throw new ArgumentNullException(nameof(feed));
             }
             feed.WriteElementExtensions(writer, version);
         }
@@ -336,7 +336,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (item == null)
             {
-                throw new ArgumentNullException("item");
+                throw new ArgumentNullException(nameof(item));
             }
             item.WriteElementExtensions(writer, version);
         }
@@ -345,7 +345,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (category == null)
             {
-                throw new ArgumentNullException("category");
+                throw new ArgumentNullException(nameof(category));
             }
             category.WriteElementExtensions(writer, version);
         }
@@ -354,7 +354,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (link == null)
             {
-                throw new ArgumentNullException("link");
+                throw new ArgumentNullException(nameof(link));
             }
             link.WriteElementExtensions(writer, version);
         }
@@ -363,27 +363,15 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (person == null)
             {
-                throw new ArgumentNullException("person");
+                throw new ArgumentNullException(nameof(person));
             }
 
             person.WriteElementExtensions(writer, version);
         }
 
         internal protected virtual void SetFeed(SyndicationFeed feed) { 
-            _feed = feed ?? throw new ArgumentNullException("feed");
+            _feed = feed ?? throw new ArgumentNullException(nameof(feed));
         }
-
-        //internal static async Task CloseBufferAsync(XmlBuffer buffer,  extWriter)
-        //{
-        //    if (buffer == null)
-        //    {
-        //        return;
-        //    }
-
-        //    await extWriter.WriteEndElementAsync(); // the method is not implemented
-        //    buffer.CloseSection();
-        //    buffer.Close();
-        //}
 
         internal static void CloseBuffer(XmlBuffer buffer, XmlDictionaryWriter extWriter)
         {
@@ -416,7 +404,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (feed == null)
             {
-                throw new ArgumentNullException("feed");
+                throw new ArgumentNullException(nameof(feed));
             }
 
             CloseBuffer(buffer, writer);
@@ -429,7 +417,7 @@ namespace Microsoft.ServiceModel.Syndication
 
             if (item == null)
             {
-                throw new ArgumentNullException("item");
+                throw new ArgumentNullException(nameof(item));
             }
             CloseBuffer(buffer, writer);
             item.LoadElementExtensions(buffer);
@@ -440,7 +428,7 @@ namespace Microsoft.ServiceModel.Syndication
 
             if (category == null)
             {
-                throw new ArgumentNullException("category");
+                throw new ArgumentNullException(nameof(category));
             }
             CloseBuffer(buffer, writer);
             category.LoadElementExtensions(buffer);
@@ -451,7 +439,7 @@ namespace Microsoft.ServiceModel.Syndication
 
             if (link == null)
             {
-                throw new ArgumentNullException("link");
+                throw new ArgumentNullException(nameof(link));
             }
             CloseBuffer(buffer, writer);
             link.LoadElementExtensions(buffer);
@@ -461,7 +449,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (person == null)
             {
-                throw new ArgumentNullException("person");
+                throw new ArgumentNullException(nameof(person));
             }
             CloseBuffer(buffer, writer);
             person.LoadElementExtensions(buffer);

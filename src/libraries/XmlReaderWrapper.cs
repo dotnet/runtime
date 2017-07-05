@@ -25,7 +25,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
 
             this.reader = reader;
@@ -497,7 +497,7 @@ namespace Microsoft.ServiceModel.Syndication
 
             if (null == reader)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
 
             bool canReadChunk = reader.CanReadValueChunk;

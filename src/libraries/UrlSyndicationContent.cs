@@ -19,7 +19,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (url == null)
             {
-                throw new ArgumentNullException("url");
+                throw new ArgumentNullException(nameof(url));
             }
             _url = url;
             _mediaType = mediaType;
@@ -30,7 +30,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (source == null)
             {
-                throw new ArgumentNullException("source");
+                throw new ArgumentNullException(nameof(source));
             }
             _url = source._url;
             _mediaType = source._mediaType;

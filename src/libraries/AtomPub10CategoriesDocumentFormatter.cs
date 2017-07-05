@@ -33,19 +33,19 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (inlineDocumentType == null)
             {
-                throw new ArgumentNullException("inlineDocumentType");
+                throw new ArgumentNullException(nameof(inlineDocumentType));
             }
             if (!typeof(InlineCategoriesDocument).IsAssignableFrom(inlineDocumentType))
             {
-                throw new ArgumentException(String.Format(SR.InvalidObjectTypePassed, "inlineDocumentType", "InlineCategoriesDocument"));
+                throw new ArgumentException(String.Format(SR.InvalidObjectTypePassed, nameof(inlineDocumentType), nameof(InlineCategoriesDocument)));
             }
             if (referencedDocumentType == null)
             {
-                throw new ArgumentNullException("referencedDocumentType");
+                throw new ArgumentNullException(nameof(referencedDocumentType));
             }
             if (!typeof(ReferencedCategoriesDocument).IsAssignableFrom(referencedDocumentType))
             {
-                throw new ArgumentException(String.Format(SR.InvalidObjectTypePassed, "referencedDocumentType", "ReferencedCategoriesDocument"));
+                throw new ArgumentException(String.Format(SR.InvalidObjectTypePassed, nameof(referencedDocumentType), nameof(ReferencedCategoriesDocument)));
             }
             _maxExtensionSize = int.MaxValue;
             _preserveAttributeExtensions = true;
@@ -82,7 +82,7 @@ namespace Microsoft.ServiceModel.Syndication
         {            
             if (reader == null)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
             XmlReaderWrapper wrappedReader = XmlReaderWrapper.CreateFromReader(reader);
             return await wrappedReader.IsStartElementAsync(App10Constants.Categories, App10Constants.Namespace);
@@ -94,7 +94,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
             await ReadDocumentAsync(reader);
         }
@@ -103,7 +103,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (writer == null)
             {
-                throw new ArgumentNullException("writer");
+                throw new ArgumentNullException(nameof(writer));
             }
             if (this.Document == null)
             {
@@ -116,7 +116,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (reader == null)
             {
-                throw new ArgumentNullException("reader");
+                throw new ArgumentNullException(nameof(reader));
             }
             if (!await CanReadAsync(reader))
             {
@@ -130,7 +130,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (writer == null)
             {
-                throw new ArgumentNullException("writer");
+                throw new ArgumentNullException(nameof(writer));
             }
             if (this.Document == null)
             {
