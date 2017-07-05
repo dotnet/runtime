@@ -17,7 +17,8 @@ namespace System.Net.Http.Functional.Tests
     public partial class HttpClientHandler_SslProtocols_Test
     {
         private static bool BackendSupportsSslConfiguration =>
-            CurlSslVersionDescription()?.StartsWith("OpenSSL") ?? false;
+            ManagedHandlerTestHelpers.IsEnabled ||
+            (CurlSslVersionDescription()?.StartsWith("OpenSSL") ?? false);
 
         private static bool SSLv3DisabledByDefault =>
             BackendSupportsSslConfiguration ||
