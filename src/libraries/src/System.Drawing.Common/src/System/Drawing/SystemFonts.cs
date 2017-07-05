@@ -10,8 +10,6 @@ namespace System.Drawing
 {
     public static class SystemFonts
     {
-        private static readonly object s_systemFontsKey = new object();
-
         public static Font CaptionFont
         {
             get
@@ -21,31 +19,12 @@ namespace System.Drawing
                 var data = new NativeMethods.NONCLIENTMETRICS();
                 bool result = UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETNONCLIENTMETRICS, data.cbSize, data, 0);
 
-                if (result && data.lfCaptionFont != null)
+                if (result)
                 {
-                    try
-                    {
-                        captionFont = Font.FromLogFont(data.lfCaptionFont);
-                    }
-                    catch (Exception ex)
-                    {
-                        if (IsCriticalFontException(ex))
-                        {
-                            throw;
-                        }
-                    }
-
-                    if (captionFont == null)
-                    {
-                        captionFont = DefaultFont;
-                    }
-                    else if (captionFont.Unit != GraphicsUnit.Point)
-                    {
-                        captionFont = FontInPoints(captionFont);
-                    }
+                    captionFont = GetFontFromData(data.lfCaptionFont);
                 }
 
-                captionFont.SetSystemFontName("CaptionFont");
+                captionFont.SetSystemFontName(nameof(CaptionFont));
                 return captionFont;
             }
         }
@@ -59,31 +38,12 @@ namespace System.Drawing
                 var data = new NativeMethods.NONCLIENTMETRICS();
                 bool result = UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETNONCLIENTMETRICS, data.cbSize, data, 0);
 
-                if (result && data.lfSmCaptionFont != null)
+                if (result)
                 {
-                    try
-                    {
-                        smcaptionFont = Font.FromLogFont(data.lfSmCaptionFont);
-                    }
-                    catch (Exception ex)
-                    {
-                        if (IsCriticalFontException(ex))
-                        {
-                            throw;
-                        }
-                    }
-
-                    if (smcaptionFont == null)
-                    {
-                        smcaptionFont = DefaultFont;
-                    }
-                    else if (smcaptionFont.Unit != GraphicsUnit.Point)
-                    {
-                        smcaptionFont = FontInPoints(smcaptionFont);
-                    }
+                    smcaptionFont = GetFontFromData(data.lfSmCaptionFont);
                 }
 
-                smcaptionFont.SetSystemFontName("SmallCaptionFont");
+                smcaptionFont.SetSystemFontName(nameof(SmallCaptionFont));
                 return smcaptionFont;
             }
         }
@@ -97,31 +57,12 @@ namespace System.Drawing
                 var data = new NativeMethods.NONCLIENTMETRICS();
                 bool result = UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETNONCLIENTMETRICS, data.cbSize, data, 0);
 
-                if (result && data.lfMenuFont != null)
+                if (result)
                 {
-                    try
-                    {
-                        menuFont = Font.FromLogFont(data.lfMenuFont);
-                    }
-                    catch (Exception ex)
-                    {
-                        if (IsCriticalFontException(ex))
-                        {
-                            throw;
-                        }
-                    }
-
-                    if (menuFont == null)
-                    {
-                        menuFont = DefaultFont;
-                    }
-                    else if (menuFont.Unit != GraphicsUnit.Point)
-                    {
-                        menuFont = FontInPoints(menuFont);
-                    }
+                    menuFont = GetFontFromData(data.lfMenuFont);
                 }
 
-                menuFont.SetSystemFontName("MenuFont");
+                menuFont.SetSystemFontName(nameof(MenuFont));
                 return menuFont;
             }
         }
@@ -135,31 +76,12 @@ namespace System.Drawing
                 var data = new NativeMethods.NONCLIENTMETRICS();
                 bool result = UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETNONCLIENTMETRICS, data.cbSize, data, 0);
 
-                if (result && data.lfStatusFont != null)
+                if (result)
                 {
-                    try
-                    {
-                        statusFont = Font.FromLogFont(data.lfStatusFont);
-                    }
-                    catch (Exception ex)
-                    {
-                        if (IsCriticalFontException(ex))
-                        {
-                            throw;
-                        }
-                    }
-
-                    if (statusFont == null)
-                    {
-                        statusFont = DefaultFont;
-                    }
-                    else if (statusFont.Unit != GraphicsUnit.Point)
-                    {
-                        statusFont = FontInPoints(statusFont);
-                    }
+                    statusFont = GetFontFromData(data.lfStatusFont);
                 }
 
-                statusFont.SetSystemFontName("StatusFont");
+                statusFont.SetSystemFontName(nameof(StatusFont));
                 return statusFont;
             }
         }
@@ -168,37 +90,18 @@ namespace System.Drawing
         {
             get
             {
-                Font messageboxFont = null;
+                Font messageBoxFont = null;
 
                 var data = new NativeMethods.NONCLIENTMETRICS();
                 bool result = UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETNONCLIENTMETRICS, data.cbSize, data, 0);
 
-                if (result && data.lfMessageFont != null)
+                if (result)
                 {
-                    try
-                    {
-                        messageboxFont = Font.FromLogFont(data.lfMessageFont);
-                    }
-                    catch (Exception ex)
-                    {
-                        if (IsCriticalFontException(ex))
-                        {
-                            throw;
-                        }
-                    }
-
-                    if (messageboxFont == null)
-                    {
-                        messageboxFont = DefaultFont;
-                    }
-                    else if (messageboxFont.Unit != GraphicsUnit.Point)
-                    {
-                        messageboxFont = FontInPoints(messageboxFont);
-                    }
+                    messageBoxFont = GetFontFromData(data.lfMessageFont);
                 }
 
-                messageboxFont.SetSystemFontName("MessageBoxFont");
-                return messageboxFont;
+                messageBoxFont.SetSystemFontName(nameof(MessageBoxFont));
+                return messageBoxFont;
             }
         }
 
@@ -218,37 +121,18 @@ namespace System.Drawing
         {
             get
             {
-                Font icontitleFont = null;
+                Font iconTitleFont = null;
 
                 var itfont = new SafeNativeMethods.LOGFONT();
                 bool result = UnsafeNativeMethods.SystemParametersInfo(NativeMethods.SPI_GETICONTITLELOGFONT, Marshal.SizeOf(itfont), itfont, 0);
 
-                if (result && itfont != null)
+                if (result)
                 {
-                    try
-                    {
-                        icontitleFont = Font.FromLogFont(itfont);
-                    }
-                    catch (Exception ex)
-                    {
-                        if (IsCriticalFontException(ex))
-                        {
-                            throw;
-                        }
-                    }
-
-                    if (icontitleFont == null)
-                    {
-                        icontitleFont = DefaultFont;
-                    }
-                    else if (icontitleFont.Unit != GraphicsUnit.Point)
-                    {
-                        icontitleFont = FontInPoints(icontitleFont);
-                    }
+                    iconTitleFont = GetFontFromData(itfont);
                 }
 
-                icontitleFont.SetSystemFontName("IconTitleFont");
-                return icontitleFont;
+                iconTitleFont.SetSystemFontName(nameof(IconTitleFont));
+                return iconTitleFont;
             }
         }
 
@@ -257,43 +141,27 @@ namespace System.Drawing
             get
             {
                 Font defaultFont = null;
-
-                // Special case DefaultFont for Arabic systems.
+                
+                // For Arabic systems, always return Tahoma 8.
                 bool systemDefaultLCIDIsArabic = (UnsafeNativeMethods.GetSystemDefaultLCID() & 0x3ff) == 0x0001;
-
-
-                // For Arabic systems, regardless of the platform, always return Tahoma 8.
                 if (systemDefaultLCIDIsArabic)
                 {
                     try
                     {
                         defaultFont = new Font("Tahoma", 8);
                     }
-                    catch (Exception ex)
-                    {
-                        if (IsCriticalFontException(ex))
-                        {
-                            throw;
-                        }
-                    }
+                    catch (Exception ex) when (!IsCriticalFontException(ex)) { }
                 }
-
-                // Not Arabic.
-                // First try DEFAULT_GUI, then Tahoma 8, then GenericSansSerif 8.
+    
+                // First try DEFAULT_GUI.
                 if (defaultFont == null)
                 {
                     IntPtr handle = UnsafeNativeMethods.GetStockObject(NativeMethods.DEFAULT_GUI_FONT);
                     try
                     {
-                        Font fontInWorldUnits = Font.FromHfont(handle);
-
-                        try
+                        using (Font fontInWorldUnits = Font.FromHfont(handle))
                         {
                             defaultFont = FontInPoints(fontInWorldUnits);
-                        }
-                        finally
-                        {
-                            fontInWorldUnits.Dispose();
                         }
                     }
                     catch (ArgumentException)
@@ -301,7 +169,7 @@ namespace System.Drawing
                     }
                 }
 
-                // If DEFAULT_GUI didn't work, we try Tahoma.
+                // If DEFAULT_GUI didn't work, try Tahoma.
                 if (defaultFont == null)
                 {
                     try
@@ -313,7 +181,7 @@ namespace System.Drawing
                     }
                 }
 
-                // Last resort, we use the GenericSansSerif - this will always work.
+                // Use GenericSansSerif as a last resort - this will always work.
                 if (defaultFont == null)
                 {
                     defaultFont = new Font(FontFamily.GenericSansSerif, 8);
@@ -324,9 +192,9 @@ namespace System.Drawing
                     defaultFont = FontInPoints(defaultFont);
                 }
 
-                Debug.Assert(defaultFont != null, "defaultFont wasn't set!");
+                Debug.Assert(defaultFont != null, "defaultFont wasn't set.");
 
-                defaultFont.SetSystemFontName("DefaultFont");
+                defaultFont.SetSystemFontName(nameof(DefaultFont));
                 return defaultFont;
             }
         }
@@ -365,7 +233,7 @@ namespace System.Drawing
 
                 // For Japanese cultures, SystemFonts.DefaultFont returns a new Font object every time it is invoked.
                 // So for Japanese we return the DefaultFont with its SystemFontName set to DialogFont.
-                dialogFont.SetSystemFontName("DialogFont");
+                dialogFont.SetSystemFontName(nameof(DialogFont));
                 return dialogFont;
             }
         }
@@ -377,43 +245,60 @@ namespace System.Drawing
 
         public static Font GetFontByName(string systemFontName)
         {
-            if ("CaptionFont".Equals(systemFontName))
+            if (nameof(CaptionFont).Equals(systemFontName))
             {
                 return CaptionFont;
             }
-            else if ("DefaultFont".Equals(systemFontName))
+            else if (nameof(DefaultFont).Equals(systemFontName))
             {
                 return DefaultFont;
             }
-            else if ("DialogFont".Equals(systemFontName))
+            else if (nameof(DialogFont).Equals(systemFontName))
             {
                 return DialogFont;
             }
-            else if ("IconTitleFont".Equals(systemFontName))
+            else if (nameof(IconTitleFont).Equals(systemFontName))
             {
                 return IconTitleFont;
             }
-            else if ("MenuFont".Equals(systemFontName))
+            else if (nameof(MenuFont).Equals(systemFontName))
             {
                 return MenuFont;
             }
-            else if ("MessageBoxFont".Equals(systemFontName))
+            else if (nameof(MessageBoxFont).Equals(systemFontName))
             {
                 return MessageBoxFont;
             }
-            else if ("SmallCaptionFont".Equals(systemFontName))
+            else if (nameof(SmallCaptionFont).Equals(systemFontName))
             {
                 return SmallCaptionFont;
             }
-            else if ("StatusFont".Equals(systemFontName))
+            else if (nameof(StatusFont).Equals(systemFontName))
             {
                 return StatusFont;
             }
-            else
+
+            return null;
+        }
+
+        private static Font GetFontFromData(SafeNativeMethods.LOGFONT logFont)
+        {
+            if (logFont == null)
             {
                 return null;
             }
+
+            Font font = null;
+            try
+            {
+                font = Font.FromLogFont(logFont);
+            }
+            catch (Exception ex) when (!IsCriticalFontException(ex)) { }
+
+            return
+                font == null ? DefaultFont :
+                font.Unit != GraphicsUnit.Point ? FontInPoints(font) :
+                font;
         }
     }
 }
-
