@@ -123,7 +123,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Linked to spurious fail-fast on UapAot: https://github.com/dotnet/corefx/issues/18584")]
         public static void CreateInstance_Type_Int_Int()
         {
             int[,] intArray2 = (int[,])Array.CreateInstance(typeof(int), 1, 2);
@@ -133,7 +132,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Linked to spurious fail-fast on UapAot: https://github.com/dotnet/corefx/issues/18584")]
         public static void CreateInstance_Type_Int_Invalid()
         {
             AssertExtensions.Throws<ArgumentNullException>("elementType", () => Array.CreateInstance(null, 0)); // Element type is null
@@ -146,7 +144,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Linked to spurious fail-fast on UapAot: https://github.com/dotnet/corefx/issues/18584")]
         public static void CreateInstance_Type_Int_Int_Invalid()
         {
             AssertExtensions.Throws<ArgumentNullException>("elementType", () => Array.CreateInstance(null, 0, 1)); // Element type is null
@@ -159,7 +156,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Linked to spurious fail-fast on UapAot: https://github.com/dotnet/corefx/issues/18584")]
         public static void CreateInstance_Type_Int_Int_Int()
         {
             int[,,] intArray3 = (int[,,])Array.CreateInstance(typeof(int), 1, 2, 3);
@@ -169,7 +165,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Linked to spurious fail-fast on UapAot: https://github.com/dotnet/corefx/issues/18584")]
         public static void CreateInstance_Type_Int_Int_Int_Invalid()
         {
             AssertExtensions.Throws<ArgumentNullException>("elementType", () => Array.CreateInstance(null, 0, 1, 2)); // Element type is null
@@ -182,7 +177,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Linked to spurious fail-fast on UapAot: https://github.com/dotnet/corefx/issues/18584")]
         public static void CreateInstance_Type_IntArray()
         {
             string[] stringArray = (string[])Array.CreateInstance(typeof(string), new int[] { 10 });
@@ -212,16 +206,18 @@ namespace System.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Linked to spurious fail-fast on UapAot: https://github.com/dotnet/corefx/issues/18584")]
         public static void CreateInstance_Type_IntArray_IntArray()
         {
             int[] intArray1 = (int[])Array.CreateInstance(typeof(int), new int[] { 5 }, new int[] { 0 });
             Assert.Equal(intArray1, new int[5]);
             VerifyArray(intArray1, 1, new int[] { 5 }, new int[] { 0 }, new int[] { 4 }, false);
 
-            int[,,] intArray2 = (int[,,])Array.CreateInstance(typeof(int), new int[] { 7, 8, 9 }, new int[] { 1, 2, 3 });
-            Assert.Equal(intArray2, new int[7, 8, 9]);
-            VerifyArray(intArray2, 3, new int[] { 7, 8, 9 }, new int[] { 1, 2, 3 }, new int[] { 7, 9, 11 }, false);
+            if (PlatformDetection.IsNonZeroLowerBoundArraySupported)
+            {
+                int[,,] intArray2a = (int[,,])Array.CreateInstance(typeof(int), new int[] { 7, 8, 9 }, new int[] { 1, 2, 3 });
+                Assert.Equal(intArray2a, new int[7, 8, 9]);
+                VerifyArray(intArray2a, 3, new int[] { 7, 8, 9 }, new int[] { 1, 2, 3 }, new int[] { 7, 9, 11 }, false);
+            }
         }
 
         [Theory]

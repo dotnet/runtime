@@ -141,7 +141,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corert/issues/3650 - Wrong exception thrown", TargetFrameworkMonikers.UapAot)]
         public static void CreateInstance_TypeNotRuntimeType_ThrowsArgumentException()
         {
             foreach (Type nonRuntimeType in Helpers.NonRuntimeTypes)
