@@ -96,7 +96,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             _userSelectedMessage = $"Using dotnet SDK dll=[{_userSdkBaseDir}";
             _exeSelectedMessage = $"Using dotnet SDK dll=[{_exeSdkBaseDir}";
         }
-        
+
         [Fact]
         public void SdkLookup_Global_Json_Patch_Rollup()
         {
@@ -190,6 +190,55 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
         }
 
         [Fact]
+        public void SdkLookup_Negative_Version()
+        {
+            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+                .Copy();
+
+            var dotnet = fixture.BuiltDotnet;
+
+            // Add a negative CLI version
+            AddAvailableSdkVersions(_exeSdkBaseDir, "-1.-1.-1");
+
+            // CWD: empty
+            // User: empty
+            // Exe: -1.-1.-1
+            // Expected: no compatible version and a specific error message
+            dotnet.Exec("help")
+                .WorkingDirectory(_currentWorkingDir)
+                .WithUserProfile(_userDir)
+                .Environment(s_DefaultEnvironment)
+                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Fail()
+                .And
+                .HaveStdErrContaining("It was not possible to find any SDK version");
+
+            // Add specified CLI version
+            AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.4");
+
+            // CWD: empty
+            // User: empty
+            // Exe: -1.-1.-1, 9999.0.4
+            // Expected: 9999.0.4 from exe dir
+            dotnet.Exec("help")
+                .WorkingDirectory(_currentWorkingDir)
+                .WithUserProfile(_userDir)
+                .Environment(s_DefaultEnvironment)
+                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
+                .CaptureStdOut()
+                .CaptureStdErr()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.4", _dotnetSdkDllMessageTerminator));
+        }
+
+        [Fact]
         public void SdkLookup_Must_Pick_The_Highest_Semantic_Version()
         {
             var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
@@ -239,7 +288,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .And
                 .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.1", _dotnetSdkDllMessageTerminator));
 
-
             // Add a dummy version in the exe dir
             AddAvailableSdkVersions(_exeSdkBaseDir, "10000.0.0-dummy");
 
@@ -279,9 +327,6 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .Pass()
                 .And
                 .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "10000.0.0", _dotnetSdkDllMessageTerminator));
-
-            // Remove dummy folders from user dir
-            DeleteAvailableSdkVersions(_userSdkBaseDir, "9999.0.2");
         }
 
         // This method adds a list of new sdk version folders in the specified

@@ -796,7 +796,8 @@ bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, const pal
         }
     }
 
-    if (!cli_version.empty())
+    pal::string_t neg_version = _X("|-1.-1.-1|");
+    if ((!cli_version.empty()) && (pal::strcasecmp(cli_version.c_str(), neg_version.c_str()) != 0))
     {
         append_path(&sdk_path, cli_version.c_str());
         cli_sdk->assign(sdk_path);
@@ -810,7 +811,7 @@ bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, const pal
     }
     else
     {
-        trace::error(_X("The specified SDK version [%s] from global.json [%s] not found; install specified SDK version"), global_cli_version.c_str(), global.c_str());
+        trace::error(_X("A compatible SDK version for global.json version: [%s] from [%s] was not found"), global_cli_version.c_str(), global.c_str());
     }
     return false;
 }
