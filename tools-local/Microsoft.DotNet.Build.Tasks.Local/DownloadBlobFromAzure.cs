@@ -53,6 +53,7 @@ namespace Microsoft.DotNet.Build.Tasks
 
             using (HttpClient client = new HttpClient())
             {
+                client.Timeout = TimeSpan.FromMinutes(10);
                 try
                 {
                     Func<HttpRequestMessage> createRequest = () =>
