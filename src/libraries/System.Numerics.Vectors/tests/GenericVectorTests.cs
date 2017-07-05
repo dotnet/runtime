@@ -2670,7 +2670,7 @@ namespace System.Numerics.Tests
                 return AreSameInfinity(f1 * 10, f2);
             }
             float diffRatio = (f1 - f2) / f1;
-            diffRatio *= MathF.Pow(10, precision);
+            diffRatio *= (float)Math.Pow(10, precision);
             return Math.Abs(diffRatio) < 1;
         }
 
