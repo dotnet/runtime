@@ -2052,7 +2052,7 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
             }
             else
 #endif // _TARGET_ARM_
-                if (varTypeIsFloating(returnType))
+                if (varTypeIsFloating(returnType) && !compiler->opts.compUseSoftFP)
             {
                 returnReg = REG_FLOATRET;
             }
@@ -2063,7 +2063,20 @@ void CodeGen::genCallInstruction(GenTreeCall* call)
 
             if (call->gtRegNum != returnReg)
             {
-                inst_RV_RV(ins_Copy(returnType), call->gtRegNum, returnReg, returnType);
+#ifdef _TARGET_ARM_
+                if (compiler->opts.compUseSoftFP && returnType == TYP_DOUBLE)
+                {
+                    inst_RV_RV_RV(INS_vmov_i2d, call->gtRegNum, returnReg, genRegArgNext(returnReg), EA_8BYTE);
+                }
+                else if (compiler->opts.compUseSoftFP && returnType == TYP_FLOAT)
+                {
+                    inst_RV_RV(INS_vmov_i2f, call->gtRegNum, returnReg, returnType);
+                }
+                else
+#endif
+                {
+                    inst_RV_RV(ins_Copy(returnType), call->gtRegNum, returnReg, returnType);
+                }
             }
         }
 
