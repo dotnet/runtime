@@ -1,5 +1,6 @@
 NoIPEndpointsFoundForHost=No IPEndpoints were found for host {0}.
 DnsResolveFailed=No DNS entries exist for host {0}.
+InvalidSkipHours=The hour can't be lower than 0 or greater than 23
 RequiredAttributeMissing=Attribute '{0}' is required on element '{1}'.
 UnsupportedCryptoAlgorithm=Crypto algorithm {0} not supported in this context.
 CustomCryptoAlgorithmIsNotValidHashAlgorithm=The custom crypto algorithm '{0}' obtained using CryptoConfig is not a valid or supported hash algorithm.
