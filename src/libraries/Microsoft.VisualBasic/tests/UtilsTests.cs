@@ -71,8 +71,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Throws<InvalidCastException>(() => Utils.CopyArray(new int[1], new int[1, 1]));
         }
 
-        [Fact]
-        [ActiveIssue(21682, TargetFrameworkMonikers.UapAot)]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
         public void CopyArray_RankGreaterThanTwoAndNonMatchingBounds_ThrowsArrayTypeMismatchException()
         {
             Array array1 = Array.CreateInstance(typeof(int), new int[] { 1, 2, 3 }, new int[] { 2, 3, 4 });
@@ -81,8 +80,7 @@ namespace Microsoft.VisualBasic.CompilerServices.Tests
             Assert.Throws<ArrayTypeMismatchException>(() => Utils.CopyArray(array2, array1));
         }
 
-        [Fact]
-        [ActiveIssue(21682, TargetFrameworkMonikers.UapAot)]
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
         public void CopyArray_NonMatchingBounds_ThrowsArgumentOutOfRangeException()
         {
             Array array1 = Array.CreateInstance(typeof(int), new int[] { 1, 2 }, new int[] { 2, 3 });
