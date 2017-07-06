@@ -1,0 +1,6 @@
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library>
+    <!-- TraceLogging tests need to be able to create this type using reflection. --> 
+    <Type Name="BasicEventSourceTests.UserData" Dynamic="Required All" />
+  </Library>
+</Directives>

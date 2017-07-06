@@ -47,9 +47,14 @@ namespace BasicEventSourceTests
                     Assert.Equal(events.Count, 1);
                     Event _event = events[0];
                     Assert.Equal("EventSourceMessage", _event.EventName);
-                    string message = _event.PayloadString(0, "message");
-                    // expected message: "ERROR: Exception in Command Processing for EventSource BadEventSource_Bad_Type_ByteArray: Unsupported type Byte[] in event source. "
-                    Assert.True(Regex.IsMatch(message, "Unsupported type"));
+
+                    // Check the exception text if not ProjectN.
+                    if (!PlatformDetection.IsNetNative)
+                    {
+                        string message = _event.PayloadString(0, "message");
+                        // expected message: "ERROR: Exception in Command Processing for EventSource BadEventSource_Bad_Type_ByteArray: Unsupported type Byte[] in event source. "
+                        Assert.True(Regex.IsMatch(message, "Unsupported type"));
+                    }
                 }
             }
             finally
@@ -62,6 +67,7 @@ namespace BasicEventSourceTests
         /// Test the 
         /// </summary>
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Depends on inspecting IL at runtime.")]
         public void Test_BadEventSource_MismatchedIds()
         {
 #if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.

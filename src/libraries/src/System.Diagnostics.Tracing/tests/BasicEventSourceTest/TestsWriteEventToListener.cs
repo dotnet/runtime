@@ -22,7 +22,7 @@ namespace BasicEventSourceTests
             TestUtilities.CheckNoEventSourcesRunning("Start");
             using (var log = new EventSourceTest())
             {
-                using (var el = new LoudListener())
+                using (var el = new LoudListener(log))
                 {
                     var sources = EventSource.GetSources();
                     Assert.True(sources.Contains(log));
@@ -167,7 +167,7 @@ namespace BasicEventSourceTests
             TestUtilities.CheckNoEventSourcesRunning("Start");
             using (var log = new EventSourceTest())
             {
-                using (var el = new LoudListener())
+                using (var el = new LoudListener(log))
                 {
                     // coverage for EventSource.SendCommand()
                     var options = new Dictionary<string, string>() { { "arg", "val" } };
@@ -222,7 +222,7 @@ namespace BasicEventSourceTests
             TestUtilities.CheckNoEventSourcesRunning("Start");
             using (var log = new InvalidCallsToWriteEventEventSource())
             {
-                using (var el = new LoudListener())
+                using (var el = new LoudListener(log))
                 {
                     log.WriteTooManyArgs("Hello");
                     Assert.Equal(2, LoudListener.t_lastEvent.EventId);
@@ -243,10 +243,9 @@ namespace BasicEventSourceTests
         {
             TestUtilities.CheckNoEventSourcesRunning("Start");
 
-            using (var el = new LoudListener())
             using (var log = new SimpleEventSource())
+            using (var el = new LoudListener(log))
             {
-                el.EnableEvents(log, EventLevel.Verbose);
                 log.WriteIntToAdmin(10);
             }
             TestUtilities.CheckNoEventSourcesRunning("Stop");
@@ -320,7 +319,7 @@ namespace BasicEventSourceTests
 
             using (var log = new EventSourceTest())
             {
-                using (var el = new LoudListener())
+                using (var el = new LoudListener(log))
                 {
                     // match any kwds == 0
                     el.EnableEvents(log, 0, 0);

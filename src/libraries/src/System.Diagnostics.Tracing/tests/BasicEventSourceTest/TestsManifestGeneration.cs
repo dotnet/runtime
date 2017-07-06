@@ -30,7 +30,7 @@ namespace BasicEventSourceTests
         {
             using (var es = new SdtEventSources.DontPollute.EventSource())
             {
-                using (var el = new LoudListener())
+                using (var el = new LoudListener(es))
                 {
                     int i = 12;
                     es.EventWrite(i);
