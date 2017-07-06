@@ -599,7 +599,7 @@ namespace System.Net.Http
         {
             await WriteBytesAsync(s_hostKeyAndSeparator, cancellationToken).ConfigureAwait(false);
 
-            await WriteStringAsync(uri.Host, cancellationToken).ConfigureAwait(false);
+            await WriteStringAsync(uri.IdnHost, cancellationToken).ConfigureAwait(false);
             if (!uri.IsDefaultPort)
             {
                 await WriteByteAsync((byte)':', cancellationToken).ConfigureAwait(false);
