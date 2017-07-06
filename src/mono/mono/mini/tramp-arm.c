@@ -717,14 +717,13 @@ mono_arch_create_handler_block_trampoline (MonoTrampInfo **info, gboolean aot)
 	/* Obtain jit_tls->handler_block_return_address */
 	if (aot) {
 		code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_R0, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_arm_handler_block_trampoline_helper");
-		ARM_B (code, 0);
 	} else {
 		ARM_LDR_IMM (code, ARMREG_R0, ARMREG_PC, 0);
 		ARM_B (code, 0);
 		*(gpointer*)code = mono_arm_handler_block_trampoline_helper;
 		code += 4;
 	}
-
+	ARM_BLX_REG (code, ARMREG_R0);
 	/* Set it as the return address so the trampoline will return to it */
 	ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_R0);
 
