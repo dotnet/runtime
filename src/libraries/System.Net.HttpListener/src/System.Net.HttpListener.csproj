@@ -4,9 +4,10 @@
   <PropertyGroup>
     <ProjectGuid>{31E8D18B-9E7D-4924-AFD8-5BD8D75C31FB}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <!-- Although we have a NS configuration, the actual UWP implementation will be fully managed, so just validate against OneCore -->
-    <UWPCompatible>false</UWPCompatible>
     <ForceManagedImplementation>false</ForceManagedImplementation>
+  </PropertyGroup>
+  <PropertyGroup>
+    <DefineConstants Condition="'$(TargetGroup)' == 'uap'">$(DefineConstants);uap</DefineConstants>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
@@ -108,7 +109,7 @@
     </Compile>
     <Compile Include="System\Net\Windows\CookieExtensions.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(ForceManagedImplementation)' != 'true'">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(ForceManagedImplementation)' != 'true' AND '$(TargetGroup)' != 'uap'">
     <Compile Include="System\Net\Windows\HttpListener.Windows.cs" />
     <Compile Include="System\Net\Windows\HttpListenerContext.Windows.cs" />
     <Compile Include="System\Net\Windows\HttpListenerRequest.Windows.cs" />
@@ -337,7 +338,7 @@
       <Link>Common\Interop\Windows\sspicli\SSPIWrapper.cs</Link>
     </Compile>
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' OR '$(ForceManagedImplementation)' == 'true'">
+  <ItemGroup Condition="'$(TargetsUnix)' == 'true' OR '$(ForceManagedImplementation)' == 'true' OR ('$(TargetsWindows)' == 'true' AND '$(TargetGroup)' == 'uap')">
     <Compile Include="System\Net\Managed\HttpEndPointListener.cs" />
     <Compile Include="System\Net\Managed\HttpEndPointManager.cs" />
     <Compile Include="System\Net\Managed\HttpConnection.cs" />
