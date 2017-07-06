@@ -127,5 +127,14 @@ namespace System.Drawing.Drawing2D.Tests
                 Assert.Equal(clone.Filled, arrowCap.Filled);
             }
         }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void BaseCap_ReturnsTriangle()
+        {
+            using (AdjustableArrowCap arrowCap = new AdjustableArrowCap(1, 1))
+            {
+                Assert.Equal(LineCap.Triangle, arrowCap.BaseCap);
+            }
+        }
     }
 }
