@@ -2204,6 +2204,1162 @@ namespace System.Drawing.Tests
             }
         }
 
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawLine_NullPen_ThrowsArgumentNullException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawLine(null, Point.Empty, Point.Empty));
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawLine(null, 0, 0, 0, 0));
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawLine(null, PointF.Empty, PointF.Empty));
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawLine(null, 0f, 0f, 0f, 0f));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawLine_DisposedPen_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                var pen = new Pen(Color.Red);
+                pen.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawLine(pen, Point.Empty, Point.Empty));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawLine(pen, 0, 0, 0, 0));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawLine(pen, PointF.Empty, PointF.Empty));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawLine(pen, 0f, 0f, 0f, 0f));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawLine_Busy_ThrowsInvalidOperationException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var pen = new Pen(Color.Red))
+            {
+                IntPtr hdc = graphics.GetHdc();
+                try
+                {
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawLine(pen, Point.Empty, Point.Empty));
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawLine(pen, 0, 0, 0, 0));
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawLine(pen, PointF.Empty, PointF.Empty));
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawLine(pen, 0f, 0f, 0f, 0f));
+                }
+                finally
+                {
+                    graphics.ReleaseHdc();
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawLine_Disposed_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (var pen = new Pen(Color.Red))
+            {
+                Graphics graphics = Graphics.FromImage(image);
+                graphics.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawLine(pen, Point.Empty, Point.Empty));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawLine(pen, 0, 0, 0, 0));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawLine(pen, PointF.Empty, PointF.Empty));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawLine(pen, 0f, 0f, 0f, 0f));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawLines_NullPen_ThrowsArgumentNullException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawLines(null, new Point[2]));
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawLines(null, new PointF[2]));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawLines_DisposedPen_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                var pen = new Pen(Color.Red);
+                pen.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawLines(pen, new Point[2]));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawLines(pen, new PointF[2]));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawLines_NullPoints_ThrowsArgumentNullException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var pen = new Pen(Color.Red))
+            {
+                AssertExtensions.Throws<ArgumentNullException>("points", () => graphics.DrawLines(pen, (Point[])null));
+                AssertExtensions.Throws<ArgumentNullException>("points", () => graphics.DrawLines(pen, (PointF[])null));
+            }
+        }
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [InlineData(0)]
+        [InlineData(1)]
+        public void DrawLines_InvalidPointsLength_ThrowsArgumentException(int length)
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var pen = new Pen(Color.Red))
+            {
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawLines(pen, new Point[length]));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawLines(pen, new PointF[length]));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawLines_Busy_ThrowsInvalidOperationException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var pen = new Pen(Color.Red))
+            {
+                IntPtr hdc = graphics.GetHdc();
+                try
+                {
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawLines(pen, new Point[2]));
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawLines(pen, new PointF[2]));
+                }
+                finally
+                {
+                    graphics.ReleaseHdc();
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawLines_Disposed_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (var pen = new Pen(Color.Red))
+            {
+                Graphics graphics = Graphics.FromImage(image);
+                graphics.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawLines(pen, new Point[2]));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawLines(pen, new PointF[2]));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawArc_NullPen_ThrowsArgumentNullException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawArc(null, new Rectangle(0, 0, 1, 1), 0, 90));
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawArc(null, 0, 0, 1, 1, 0, 90));
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawArc(null, new RectangleF(0, 0, 1, 1), 0, 90));
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawArc(null, 0f, 0f, 1f, 1f, 0, 90));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawArc_DisposedPen_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                var pen = new Pen(Color.Red);
+                pen.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, new Rectangle(0, 0, 1, 1), 0, 90));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, 0, 0, 1, 1, 0, 90));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, new RectangleF(0, 0, 1, 1), 0, 90));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, 0f, 0f, 1f, 1f, 0, 90));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawArc_ZeroWidth_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var pen = new Pen(Color.Red))
+            {
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, new Rectangle(0, 0, 0, 1), 0, 90));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, 0, 0, 0, 1, 0, 90));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, new RectangleF(0, 0, 0, 1), 0, 90));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, 0f, 0f, 0f, 1f, 0, 90));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawArc_ZeroHeight_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var pen = new Pen(Color.Red))
+            {
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, new Rectangle(0, 0, 1, 0), 0, 90));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, 0, 0, 1, 0, 0, 90));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, new RectangleF(0, 0, 1, 0), 0, 90));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, 0f, 0f, 1f, 0f, 0, 90));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawArc_Busy_ThrowsInvalidOperationException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var pen = new Pen(Color.Red))
+            {
+                IntPtr hdc = graphics.GetHdc();
+                try
+                {
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawArc(pen, new Rectangle(0, 0, 1, 1), 0, 90));
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawArc(pen, 0, 0, 1, 1, 0, 90));
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawArc(pen, new RectangleF(0, 0, 1, 1), 0, 90));
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawArc(pen, 0f, 0f, 1f, 1f, 0, 90));
+                }
+                finally
+                {
+                    graphics.ReleaseHdc();
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawArc_Disposed_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (var pen = new Pen(Color.Red))
+            {
+                Graphics graphics = Graphics.FromImage(image);
+                graphics.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, new Rectangle(0, 0, 1, 1), 0, 90));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, 0, 0, 1, 1, 0, 90));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, new RectangleF(0, 0, 1, 1), 0, 90));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, 0f, 0f, 1f, 1f, 0, 90));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawBezier_NullPen_ThrowsArgumentNullException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawBezier(null, 1, 2, 3, 4, 5, 6, 7, 8));
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawBezier(null, Point.Empty, Point.Empty, Point.Empty, Point.Empty));
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawBezier(null, PointF.Empty, PointF.Empty, PointF.Empty, PointF.Empty));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawBezier_DisposedPen_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                var pen = new Pen(Color.Red);
+                pen.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawBezier(pen, 1, 2, 3, 4, 5, 6, 7, 8));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawBezier(pen, Point.Empty, Point.Empty, Point.Empty, Point.Empty));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawBezier(pen, PointF.Empty, PointF.Empty, PointF.Empty, PointF.Empty));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawBezier_Busy_ThrowsInvalidOperationException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var pen = new Pen(Color.Red))
+            {
+                IntPtr hdc = graphics.GetHdc();
+                try
+                {
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawBezier(pen, 1, 2, 3, 4, 5, 6, 7, 8));
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawBezier(pen, Point.Empty, Point.Empty, Point.Empty, Point.Empty));
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawBezier(pen, PointF.Empty, PointF.Empty, PointF.Empty, PointF.Empty));
+                }
+                finally
+                {
+                    graphics.ReleaseHdc();
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawBezier_Disposed_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (var pen = new Pen(Color.Red))
+            {
+                Graphics graphics = Graphics.FromImage(image);
+                graphics.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, new Rectangle(0, 0, 1, 1), 0, 90));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, 0, 0, 1, 1, 0, 90));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, new RectangleF(0, 0, 1, 1), 0, 90));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, 0f, 0f, 1f, 1f, 0, 90));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawBeziers_NullPen_ThrowsArgumentNullException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawBeziers(null, new Point[2]));
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawBeziers(null, new PointF[2]));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawBeziers_DisposedPen_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                var pen = new Pen(Color.Red);
+                pen.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawBeziers(pen, new Point[2]));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawBeziers(pen, new PointF[2]));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawBeziers_NullPoints_ThrowsArgumentNullException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var pen = new Pen(Color.Red))
+            {
+                AssertExtensions.Throws<ArgumentNullException>("points", () => graphics.DrawBeziers(pen, (Point[])null));
+                AssertExtensions.Throws<ArgumentNullException>("points", () => graphics.DrawBeziers(pen, (PointF[])null));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawBeziers_EmptyPoints_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var pen = new Pen(Color.Red))
+            {
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawBeziers(pen, new Point[0]));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawBeziers(pen, new PointF[0]));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawBeziers_Busy_ThrowsInvalidOperationException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var pen = new Pen(Color.Red))
+            {
+                IntPtr hdc = graphics.GetHdc();
+                try
+                {
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawBeziers(pen, new Point[2]));
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawBeziers(pen, new PointF[2]));
+                }
+                finally
+                {
+                    graphics.ReleaseHdc();
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawBeziers_Disposed_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (var pen = new Pen(Color.Red))
+            {
+                Graphics graphics = Graphics.FromImage(image);
+                graphics.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawBeziers(pen, new Point[2]));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawBeziers(pen, new PointF[2]));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawRectangle_NullPen_ThrowsArgumentNullException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawRectangle(null, new Rectangle(0, 0, 1, 1)));
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawRectangle(null, 0, 0, 1, 1));
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawRectangle(null, 0f, 0f, 1f, 1f));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawRectangle_DisposedPen_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                var pen = new Pen(Color.Red);
+                pen.Dispose();
+
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawRectangle(pen, new Rectangle(0, 0, 1, 1)));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawRectangle(pen, 0, 0, 1, 1));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawRectangle(pen, 0f, 0f, 1f, 1f));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawRectangle_Busy_ThrowsInvalidOperationException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var pen = new Pen(Color.Red))
+            {
+                IntPtr hdc = graphics.GetHdc();
+                try
+                {
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawRectangle(pen, new Rectangle(0, 0, 1, 1)));
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawRectangle(pen, 0, 0, 1, 1));
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawRectangle(pen, 0f, 0f, 1f, 1f));
+                }
+                finally
+                {
+                    graphics.ReleaseHdc();
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawRectangle_Disposed_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (var pen = new Pen(Color.Red))
+            {
+                Graphics graphics = Graphics.FromImage(image);
+                graphics.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawRectangle(pen, new Rectangle(0, 0, 1, 1)));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawRectangle(pen, 0, 0, 1, 1));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawRectangle(pen, 0f, 0f, 1f, 1f));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawRectangles_NullPen_ThrowsArgumentNullException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawRectangles(null, new Rectangle[2]));
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawRectangles(null, new RectangleF[2]));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawRectangles_DisposedPen_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                var pen = new Pen(Color.Red);
+                pen.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawRectangles(pen, new Rectangle[2]));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawRectangles(pen, new RectangleF[2]));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawRectangles_NullRectangles_ThrowsArgumentNullException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var pen = new Pen(Color.Red))
+            {
+                AssertExtensions.Throws<ArgumentNullException>("rects", () => graphics.DrawRectangles(pen, (Rectangle[])null));
+                AssertExtensions.Throws<ArgumentNullException>("rects", () => graphics.DrawRectangles(pen, (RectangleF[])null));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawRectangles_EmptyRectangles_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var pen = new Pen(Color.Red))
+            {
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawRectangles(pen, new Rectangle[0]));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawRectangles(pen, new RectangleF[0]));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawRectangles_Busy_ThrowsInvalidOperationException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var pen = new Pen(Color.Red))
+            {
+                IntPtr hdc = graphics.GetHdc();
+                try
+                {
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawRectangles(pen, new Rectangle[2]));
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawRectangles(pen, new RectangleF[2]));
+                }
+                finally
+                {
+                    graphics.ReleaseHdc();
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawRectangles_Disposed_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (var pen = new Pen(Color.Red))
+            {
+                Graphics graphics = Graphics.FromImage(image);
+                graphics.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawRectangles(pen, new Rectangle[2]));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawRectangles(pen, new RectangleF[2]));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawEllipse_NullPen_ThrowsArgumentNullException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawEllipse(null, new Rectangle(0, 0, 1, 1)));
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawEllipse(null, 0, 0, 1, 1));
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawEllipse(null, new RectangleF(0, 0, 1, 1)));
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawEllipse(null, 0f, 0f, 1f, 1f));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawEllipse_DisposedPen_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                var pen = new Pen(Color.Red);
+                pen.Dispose();
+
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawEllipse(pen, new Rectangle(0, 0, 1, 1)));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawEllipse(pen, 0, 0, 1, 1));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawEllipse(pen, new RectangleF(0, 0, 1, 1)));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawEllipse(pen, 0f, 0f, 1f, 1f));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawEllipse_Busy_ThrowsInvalidOperationException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var pen = new Pen(Color.Red))
+            {
+                IntPtr hdc = graphics.GetHdc();
+                try
+                {
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawEllipse(pen, new Rectangle(0, 0, 1, 1)));
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawEllipse(pen, 0, 0, 1, 1));
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawEllipse(pen, new RectangleF(0, 0, 1, 1)));
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawEllipse(pen, 0f, 0f, 1f, 1f));
+                }
+                finally
+                {
+                    graphics.ReleaseHdc();
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawEllipse_Disposed_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (var pen = new Pen(Color.Red))
+            {
+                Graphics graphics = Graphics.FromImage(image);
+                graphics.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawEllipse(pen, new Rectangle(0, 0, 1, 1)));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawEllipse(pen, 0, 0, 1, 1));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawEllipse(pen, new RectangleF(0, 0, 1, 1)));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawEllipse(pen, 0f, 0f, 1f, 1f));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawPie_NullPen_ThrowsArgumentNullException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawPie(null, new Rectangle(0, 0, 1, 1), 0, 90));
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawPie(null, 0, 0, 1, 1, 0, 90));
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawPie(null, new RectangleF(0, 0, 1, 1), 0, 90));
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawPie(null, 0f, 0f, 1f, 1f, 0, 90));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawPie_DisposedPen_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                var pen = new Pen(Color.Red);
+                pen.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPie(pen, new Rectangle(0, 0, 1, 1), 0, 90));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPie(pen, 0, 0, 1, 1, 0, 90));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPie(pen, new RectangleF(0, 0, 1, 1), 0, 90));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPie(pen, 0f, 0f, 1f, 1f, 0, 90));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawPie_ZeroWidth_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var pen = new Pen(Color.Red))
+            {
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPie(pen, new Rectangle(0, 0, 0, 1), 0, 90));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPie(pen, 0, 0, 0, 1, 0, 90));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPie(pen, new RectangleF(0, 0, 0, 1), 0, 90));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPie(pen, 0f, 0f, 0f, 1f, 0, 90));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawPie_ZeroHeight_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var pen = new Pen(Color.Red))
+            {
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, new Rectangle(0, 0, 1, 0), 0, 90));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, 0, 0, 1, 0, 0, 90));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, new RectangleF(0, 0, 1, 0), 0, 90));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawArc(pen, 0f, 0f, 1f, 0f, 0, 90));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawPie_Busy_ThrowsInvalidOperationException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var pen = new Pen(Color.Red))
+            {
+                IntPtr hdc = graphics.GetHdc();
+                try
+                {
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawPie(pen, new Rectangle(0, 0, 1, 1), 0, 90));
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawPie(pen, 0, 0, 1, 1, 0, 90));
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawPie(pen, new RectangleF(0, 0, 1, 1), 0, 90));
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawPie(pen, 0f, 0f, 1f, 1f, 0, 90));
+                }
+                finally
+                {
+                    graphics.ReleaseHdc();
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawPie_Disposed_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (var pen = new Pen(Color.Red))
+            {
+                Graphics graphics = Graphics.FromImage(image);
+                graphics.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPie(pen, new Rectangle(0, 0, 1, 1), 0, 90));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPie(pen, 0, 0, 1, 1, 0, 90));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPie(pen, new RectangleF(0, 0, 1, 1), 0, 90));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPie(pen, 0f, 0f, 1f, 1f, 0, 90));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawPolygon_NullPen_ThrowsArgumentNullException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawPolygon(null, new Point[2]));
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawPolygon(null, new PointF[2]));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawPolygon_DisposedPen_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                var pen = new Pen(Color.Red);
+                pen.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPolygon(pen, new Point[2]));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPolygon(pen, new PointF[2]));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawPolygon_NullPoints_ThrowsArgumentNullException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var pen = new Pen(Color.Red))
+            {
+                AssertExtensions.Throws<ArgumentNullException>("points", () => graphics.DrawPolygon(pen, (Point[])null));
+                AssertExtensions.Throws<ArgumentNullException>("points", () => graphics.DrawPolygon(pen, (PointF[])null));
+            }
+        }
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [InlineData(0)]
+        [InlineData(1)]
+        public void DrawPolygon_InvalidPointsLength_ThrowsArgumentException(int length)
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var pen = new Pen(Color.Red))
+            {
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPolygon(pen, new Point[length]));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPolygon(pen, new PointF[length]));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawPolygon_Busy_ThrowsInvalidOperationException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var pen = new Pen(Color.Red))
+            {
+                IntPtr hdc = graphics.GetHdc();
+                try
+                {
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawPolygon(pen, new Point[2]));
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawPolygon(pen, new PointF[2]));
+                }
+                finally
+                {
+                    graphics.ReleaseHdc();
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawPolygon_Disposed_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (var pen = new Pen(Color.Red))
+            {
+                Graphics graphics = Graphics.FromImage(image);
+                graphics.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPolygon(pen, new Point[2]));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPolygon(pen, new PointF[2]));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawPath_NullPen_ThrowsArgumentNullException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var graphicsPath = new GraphicsPath())
+            {
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawPath(null, graphicsPath));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawPath_DisposedPen_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var graphicsPath = new GraphicsPath())
+            {
+                var pen = new Pen(Color.Red);
+                pen.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPath(pen, graphicsPath));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawPath_NullPath_ThrowsArgumentNullException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var pen = new Pen(Color.Red))
+            {
+                AssertExtensions.Throws<ArgumentNullException>("path", () => graphics.DrawPath(pen, null));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawPath_DisposedPath_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var pen = new Pen(Color.Red))
+            {
+                var graphicsPath = new GraphicsPath();
+                graphicsPath.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPath(pen, graphicsPath));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawPath_Busy_ThrowsInvalidOperationException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var pen = new Pen(Color.Red))
+            using (var graphicsPath = new GraphicsPath())
+            {
+                IntPtr hdc = graphics.GetHdc();
+                try
+                {
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawPath(pen, graphicsPath));
+                }
+                finally
+                {
+                    graphics.ReleaseHdc();
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawPath_Disposed_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (var pen = new Pen(Color.Red))
+            using (var graphicsPath = new GraphicsPath())
+            {
+                Graphics graphics = Graphics.FromImage(image);
+                graphics.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawPath(pen, graphicsPath));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawCurve_NullPen_ThrowsArgumentNullException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawCurve(null, new Point[2]));
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawCurve(null, new PointF[2]));
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawCurve(null, new Point[2], 1));
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawCurve(null, new PointF[2], 1));
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawCurve(null, new PointF[2], 0, 2));
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawCurve(null, new Point[2], 0, 2, 1));
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawCurve(null, new PointF[2], 0, 2, 1));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawCurve_DisposedPen_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                var pen = new Pen(Color.Red);
+                pen.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new Point[2]));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new PointF[2]));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new Point[2], 1));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new PointF[2], 1));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new PointF[2], 0, 2));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new Point[2], 0, 2, 1));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new PointF[2], 0, 2, 1));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawCurve_NullPoints_ThrowsArgumentNullException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var pen = new Pen(Color.Red))
+            {
+                AssertExtensions.Throws<ArgumentNullException>("points", () => graphics.DrawCurve(pen, (Point[])null));
+                AssertExtensions.Throws<ArgumentNullException>("points", () => graphics.DrawCurve(pen, (PointF[])null));
+                AssertExtensions.Throws<ArgumentNullException>("points", () => graphics.DrawCurve(pen, (Point[])null, 1));
+                AssertExtensions.Throws<ArgumentNullException>("points", () => graphics.DrawCurve(pen, (PointF[])null, 1));
+                AssertExtensions.Throws<ArgumentNullException>("points", () => graphics.DrawCurve(pen, (PointF[])null, 0, 2));
+                AssertExtensions.Throws<ArgumentNullException>("points", () => graphics.DrawCurve(pen, (Point[])null, 0, 2, 1));
+                AssertExtensions.Throws<ArgumentNullException>("points", () => graphics.DrawCurve(pen, (PointF[])null, 0, 2, 1));
+            }
+        }
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [InlineData(0)]
+        [InlineData(1)]
+        public void DrawCurve_InvalidPointsLength_ThrowsArgumentException(int length)
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var pen = new Pen(Color.Red))
+            {
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new Point[length]));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new PointF[length]));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new Point[length], 1));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new PointF[length], 1));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new PointF[length], 0, length));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new Point[length], 0, length, 1));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new PointF[length], 0, length, 1));
+            }
+        }
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [InlineData(4, -1, 4)]
+        [InlineData(4, 0, -1)]
+        [InlineData(4, 4, 0)]
+        [InlineData(4, 0, 5)]
+        [InlineData(4, 3, 2)]
+        public void DrawCurve_InvalidOffsetCount_ThrowsArgumentException(int length, int offset, int numberOfSegments)
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var pen = new Pen(Color.Red))
+            {
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new PointF[length], offset, numberOfSegments));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new Point[length], offset, numberOfSegments, 1));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new PointF[length], offset, numberOfSegments, 1));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawCurve_Busy_ThrowsInvalidOperationException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var pen = new Pen(Color.Red))
+            {
+                IntPtr hdc = graphics.GetHdc();
+                try
+                {
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawCurve(pen, new Point[2]));
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawCurve(pen, new PointF[2]));
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawCurve(pen, new Point[2], 1));
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawCurve(pen, new PointF[2], 1));
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawCurve(pen, new PointF[2], 0, 2));
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawCurve(pen, new Point[2], 0, 2, 1));
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawCurve(pen, new PointF[2], 0, 2, 1));
+                }
+                finally
+                {
+                    graphics.ReleaseHdc();
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawCurve_Disposed_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (var pen = new Pen(Color.Red))
+            {
+                Graphics graphics = Graphics.FromImage(image);
+                graphics.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new Point[2]));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new PointF[2]));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new Point[2], 1));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new PointF[2], 1));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new PointF[2], 0, 2));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new Point[2], 0, 2, 1));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawCurve(pen, new PointF[2], 0, 2, 1));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawClosedCurve_NullPen_ThrowsArgumentNullException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawClosedCurve(null, new Point[3]));
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawClosedCurve(null, new Point[3], 1, FillMode.Winding));
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawClosedCurve(null, new PointF[3]));
+                AssertExtensions.Throws<ArgumentNullException>("pen", () => graphics.DrawClosedCurve(null, new PointF[3], 1, FillMode.Winding));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawClosedCurve_DisposedPen_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            {
+                var pen = new Pen(Color.Red);
+                pen.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawClosedCurve(pen, new Point[3]));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawClosedCurve(pen, new Point[3], 1, FillMode.Winding));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawClosedCurve(pen, new PointF[3]));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawClosedCurve(pen, new PointF[3], 1, FillMode.Winding));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawClosedCurve_NullPoints_ThrowsArgumentNullException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var pen = new Pen(Color.Red))
+            {
+                AssertExtensions.Throws<ArgumentNullException>("points", () => graphics.DrawClosedCurve(pen, (Point[])null));
+                AssertExtensions.Throws<ArgumentNullException>("points", () => graphics.DrawClosedCurve(pen, (Point[])null, 1, FillMode.Winding));
+                AssertExtensions.Throws<ArgumentNullException>("points", () => graphics.DrawClosedCurve(pen, (PointF[])null));
+                AssertExtensions.Throws<ArgumentNullException>("points", () => graphics.DrawClosedCurve(pen, (PointF[])null, 1, FillMode.Winding));
+            }
+        }
+
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        public void DrawClosedCurve_InvalidPointsLength_ThrowsArgumentException(int length)
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var pen = new Pen(Color.Red))
+            {
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawClosedCurve(pen, new Point[length]));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawClosedCurve(pen, new Point[length], 1, FillMode.Winding));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawClosedCurve(pen, new PointF[length]));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawClosedCurve(pen, new PointF[length], 1, FillMode.Winding));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawClosedCurve_Busy_ThrowsInvalidOperationException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var pen = new Pen(Color.Red))
+            {
+                IntPtr hdc = graphics.GetHdc();
+                try
+                {
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawClosedCurve(pen, new Point[3]));
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawClosedCurve(pen, new Point[3], 1, FillMode.Winding));
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawClosedCurve(pen, new PointF[3]));
+                    Assert.Throws<InvalidOperationException>(() => graphics.DrawClosedCurve(pen, new PointF[3], 1, FillMode.Winding));
+                }
+                finally
+                {
+                    graphics.ReleaseHdc();
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void DrawClosedCurve_Disposed_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (var pen = new Pen(Color.Red))
+            {
+                Graphics graphics = Graphics.FromImage(image);
+                graphics.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawClosedCurve(pen, new Point[3]));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawClosedCurve(pen, new Point[3], 1, FillMode.Alternate));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawClosedCurve(pen, new PointF[3]));
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.DrawClosedCurve(pen, new PointF[3], 1, FillMode.Alternate));
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void Clear_Color_Success()
+        {
+            Color color = Color.FromArgb(Color.Plum.ToArgb());
+
+            using (var image = new Bitmap(2, 2))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var brush = new SolidBrush(color))
+            {
+                graphics.FillRectangle(brush, new Rectangle(0, 0, 2, 2));
+
+                graphics.Clear(color);
+                Helpers.VerifyBitmap(image, new Color[][]
+                {
+                    new Color[] { color, color },
+                    new Color[] { color, color }
+                });
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void Clear_Busy_ThrowsInvalidOperationException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (Graphics graphics = Graphics.FromImage(image))
+            using (var pen = new Pen(Color.Red))
+            {
+                IntPtr hdc = graphics.GetHdc();
+                try
+                {
+                    Assert.Throws<InvalidOperationException>(() => graphics.Clear(Color.Red));
+                }
+                finally
+                {
+                    graphics.ReleaseHdc();
+                }
+            }
+        }
+
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void Clear_Disposed_ThrowsArgumentException()
+        {
+            using (var image = new Bitmap(10, 10))
+            using (var pen = new Pen(Color.Red))
+            {
+                Graphics graphics = Graphics.FromImage(image);
+                graphics.Dispose();
+
+                AssertExtensions.Throws<ArgumentException>(null, () => graphics.Clear(Color.Red));
+            }
+        }
+
         private static void VerifyGraphics(Graphics graphics, RectangleF expectedVisibleClipBounds)
         {
             Assert.NotNull(graphics.Clip);
