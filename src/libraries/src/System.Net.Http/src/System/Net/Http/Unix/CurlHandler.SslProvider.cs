@@ -266,7 +266,7 @@ namespace System.Net.Http
                 catch (Exception exc)
                 {
                     EventSourceTrace("Unexpected exception: {0}", exc, easy: easy);
-                    easy.FailRequest(exc);
+                    easy.FailRequest(CreateHttpRequestException(new CurlException((int)CURLcode.CURLE_ABORTED_BY_CALLBACK, exc)));
                     return FailureResult;
                 }
                 finally
