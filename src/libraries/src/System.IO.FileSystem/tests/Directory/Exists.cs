@@ -254,7 +254,23 @@ namespace System.IO.Tests
             MemberData(nameof(SimpleWhiteSpace))]
         [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
         [PlatformSpecific(TestPlatforms.Windows)] // In Windows, trailing whitespace in a path is trimmed appropriately
-        public void TrailingWhitespaceExistence(string component)
+        public void TrailingWhitespaceExistence_SimpleWhiteSpace(string component)
+        {
+            // This test relies on \\?\ support
+
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
+
+            string path = GetTestFilePath(memberName: "Extended") + component;
+            testDir = Directory.CreateDirectory(IOInputs.ExtendedPrefix + path);
+            Assert.False(Exists(path), path);
+            Assert.True(Exists(testDir.FullName));
+        }
+
+        [ConditionalTheory(nameof(UsingNewNormalization)),
+            MemberData(nameof(WhiteSpace))]
+        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
+        [PlatformSpecific(TestPlatforms.Windows)] // In Windows, trailing whitespace in a path is trimmed appropriately
+        public void TrailingWhitespaceExistence_WhiteSpace(string component)
         {
             // This test relies on \\?\ support
 
@@ -264,10 +280,6 @@ namespace System.IO.Tests
             Assert.True(Exists(path), path); // string concat in case Path.Combine() trims whitespace before Exists gets to it
             Assert.False(Exists(IOInputs.ExtendedPrefix + path), path);
 
-            path = GetTestFilePath(memberName: "Extended") + component;
-            testDir = Directory.CreateDirectory(IOInputs.ExtendedPrefix + path);
-            Assert.False(Exists(path), path);
-            Assert.True(Exists(testDir.FullName));
         }
 
         [Theory,
