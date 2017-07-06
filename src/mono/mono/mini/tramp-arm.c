@@ -724,7 +724,6 @@ mono_arch_create_handler_block_trampoline (MonoTrampInfo **info, gboolean aot)
 		*(gpointer*)code = mono_arm_handler_block_trampoline_helper;
 		code += 4;
 	}
-	code = emit_bx (code, ARMREG_R0);
 
 	/* Set it as the return address so the trampoline will return to it */
 	ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_R0);
