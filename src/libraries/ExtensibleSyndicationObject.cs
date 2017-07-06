@@ -8,6 +8,7 @@ namespace Microsoft.ServiceModel.Syndication
     using System.Collections.ObjectModel;
     using System.Collections.Generic;
     using System.Xml;
+    using System.Threading.Tasks;
 
     // NOTE: This class implements Clone so if you add any members, please update the copy ctor
     internal struct ExtensibleSyndicationObject : IExtensibleSyndicationObject
@@ -101,24 +102,26 @@ namespace Microsoft.ServiceModel.Syndication
             _elementExtensions = new SyndicationElementExtensionCollection(buffer);
         }
 
-        internal void WriteAttributeExtensions(XmlWriter writer)
+        internal async Task WriteAttributeExtensionsAsync(XmlWriter writer)
         {
             if (writer == null)
             {
                 throw new ArgumentNullException(nameof(writer));
             }
 
+            XmlWriterWrapper wrappedWriter = XmlWriterWrapper.CreateFromWriter(writer);
+
             if (_attributeExtensions != null)
             {
                 foreach (XmlQualifiedName qname in _attributeExtensions.Keys)
                 {
                     string value = _attributeExtensions[qname];
-                    writer.WriteAttributeString(qname.Name, qname.Namespace, value);
+                    await wrappedWriter.WriteAttributeStringAsync(qname.Name, qname.Namespace, value);
                 }
             }
         }
 
-        internal void WriteElementExtensions(XmlWriter writer)
+        internal async Task WriteElementExtensionsAsync(XmlWriter writer)
         {
             if (writer == null)
             {
@@ -127,7 +130,7 @@ namespace Microsoft.ServiceModel.Syndication
 
             if (_elementExtensions != null)
             {
-                _elementExtensions.WriteTo(writer);
+                await _elementExtensions.WriteToAsync(XmlWriterWrapper.CreateFromWriter(writer));
             }
         }
 

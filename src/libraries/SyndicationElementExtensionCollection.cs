@@ -9,6 +9,7 @@ namespace Microsoft.ServiceModel.Syndication
     using System.Collections.ObjectModel;
     using System.Runtime.CompilerServices;
     using System.Runtime.Serialization;
+    using System.Threading.Tasks;
     using System.Xml;
     using System.Xml.Serialization;
 
@@ -133,16 +134,16 @@ namespace Microsoft.ServiceModel.Syndication
             return ReadExtensions<TExtension>(extensionName, extensionNamespace, null, serializer);
         }
 
-        internal void WriteTo(XmlWriter writer)
+        internal async Task WriteToAsync(XmlWriterWrapper writer)
         {
             if (_buffer != null)
             {
                 using (XmlDictionaryReader reader = _buffer.GetReader(0))
                 {
-                    reader.ReadStartElement();
+                    await reader.ReadStartElementAsync();
                     while (reader.IsStartElement())
                     {
-                        writer.WriteNode(reader, false);
+                        await writer.WriteNodeAsync(reader, false);
                     }
                 }
             }

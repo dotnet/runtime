@@ -11,6 +11,7 @@ namespace Microsoft.ServiceModel.Syndication
     using System.Globalization;
     using System.Runtime.CompilerServices;
     using System.ServiceModel.Channels;
+    using System.Threading;
     using System.Threading.Tasks;
     using System.Xml;
     using System.Xml.Serialization;
@@ -37,37 +38,25 @@ namespace Microsoft.ServiceModel.Syndication
         private bool _preserveAttributeExtensions;
         private bool _preserveElementExtensions;
 
-
-
-        //Custom parsing zone
-
+        //Custom parsing
         //   value, localname , ns , result
-        public Func<string, string, string, string> stringParser;
-        public Func<string, string, string, DateTimeOffset> dateParser;
-        public Func<string, UriKind, string, string, Uri> uriParser;
-
-
-        private string StringParserAction(string value, string localName, string ns)
+        public Func<string, string, string, string> stringParser = DefaultStringParser;
+        public Func<string, string, string, DateTimeOffset> dateParser = DefaultDateFromString;
+        public Func<string, UriKind, string, string, Uri> uriParser = DefaultUriParser;
+            
+        private static string DefaultStringParser(string value, string localName, string ns)
         {
             return value;
         }
 
-        private Uri UriParserAction(string value, UriKind kind, string localName, string ns)
+        private static Uri DefaultUriParser(string value, UriKind kind, string localName, string ns)
         {
             return new Uri(value,kind);
         }
-
-        private void LoadDefaultParsers()
-        {
-            stringParser = StringParserAction;
-            uriParser = UriParserAction;
-            dateParser = DateFromString;
-        }
-
+       
         public Atom10FeedFormatter()
             : this(typeof(SyndicationFeed))
         {
-            LoadDefaultParsers();
         }
 
         public Atom10FeedFormatter(Type feedTypeToCreate)
@@ -84,8 +73,6 @@ namespace Microsoft.ServiceModel.Syndication
             _maxExtensionSize = int.MaxValue;
             _preserveAttributeExtensions = _preserveElementExtensions = true;
             _feedType = feedTypeToCreate;
-            LoadDefaultParsers();
-
         }
 
         public Atom10FeedFormatter(SyndicationFeed feedToWrite)
@@ -95,8 +82,6 @@ namespace Microsoft.ServiceModel.Syndication
             _maxExtensionSize = int.MaxValue;
             _preserveAttributeExtensions = _preserveElementExtensions = true;
             _feedType = feedToWrite.GetType();
-            LoadDefaultParsers();
-
         }
 
         public bool PreserveAttributeExtensions
@@ -134,7 +119,7 @@ namespace Microsoft.ServiceModel.Syndication
             return reader.IsStartElement(Atom10Constants.FeedTag, Atom10Constants.Atom10Namespace);
         }
         
-        public override async Task ReadFromAsync(XmlReader reader)
+        public override async Task ReadFromAsync(XmlReader reader, CancellationToken ct)
         {
             if (!CanRead(reader))
             {
@@ -145,7 +130,7 @@ namespace Microsoft.ServiceModel.Syndication
             await ReadFeedFromAsync(XmlReaderWrapper.CreateFromReader(reader), this.Feed, false);
         }
 
-        public override async Task WriteToAsync(XmlWriter writer)
+        public override async Task WriteToAsync(XmlWriter writer, CancellationToken ct)
         {
             if (writer == null)
             {
@@ -268,7 +253,7 @@ namespace Microsoft.ServiceModel.Syndication
         internal static async Task WriteCategoryAsync(XmlWriterWrapper writer, SyndicationCategory category, string version)
         {
             await writer.WriteStartElementAsync(Atom10Constants.CategoryTag, Atom10Constants.Atom10Namespace);
-            WriteAttributeExtensions(writer, category, version);
+            await WriteAttributeExtensionsAsync(writer, category, version);
             string categoryName = category.Name ?? string.Empty;
             if (!category.AttributeExtensions.ContainsKey(s_atom10Term))
             {
@@ -285,7 +270,7 @@ namespace Microsoft.ServiceModel.Syndication
                 await writer.WriteAttributeStringAsync(Atom10Constants.SchemeTag, category.Scheme);
             }
 
-            WriteElementExtensions(writer, category, version);
+            await WriteElementExtensionsAsync(writer, category, version);
             await writer.WriteEndElementAsync();
         }
 
@@ -422,12 +407,13 @@ namespace Microsoft.ServiceModel.Syndication
             return false;
         }
 
-        internal void WriteContentTo(XmlWriter writer, string elementName, SyndicationContent content)
+        internal Task WriteContentToAsync(XmlWriter writer, string elementName, SyndicationContent content)
         {
             if (content != null)
             {
-                content.WriteTo(writer, elementName, Atom10Constants.Atom10Namespace);
+                return content.WriteToAsync(writer, elementName, Atom10Constants.Atom10Namespace);
             }
+            return Task.CompletedTask;
         }
 
         internal async Task WriteElementAsync(XmlWriterWrapper writer, string elementName, string value)
@@ -520,7 +506,7 @@ namespace Microsoft.ServiceModel.Syndication
                 await writer.WriteAttributeStringAsync("xml", "base", XmlNs, FeedUtils.GetUriString(baseUriToWrite));
             }
 
-            link.WriteAttributeExtensions(writer, SyndicationVersions.Atom10);
+            await link.WriteAttributeExtensions(writer, SyndicationVersions.Atom10);
             if (!string.IsNullOrEmpty(link.RelationshipType) && !link.AttributeExtensions.ContainsKey(s_atom10Relative))
             {
                 await writer.WriteAttributeStringAsync(Atom10Constants.RelativeTag, link.RelationshipType);
@@ -546,7 +532,7 @@ namespace Microsoft.ServiceModel.Syndication
                 await writer.WriteAttributeStringAsync(Atom10Constants.HrefTag, FeedUtils.GetUriString(link.Uri));
             }
 
-            link.WriteElementExtensions(writer, SyndicationVersions.Atom10);
+            await link.WriteElementExtensionsAsync(writer, SyndicationVersions.Atom10);
             await writer.WriteEndElementAsync();
         }
 
@@ -697,7 +683,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
         
-        private DateTimeOffset DateFromString(string dateTimeString, string localName, string ns)
+        private static DateTimeOffset DefaultDateFromString(string dateTimeString, string localName, string ns)
         {
             dateTimeString = dateTimeString.Trim();
             if (dateTimeString.Length < 20)
@@ -797,11 +783,11 @@ namespace Microsoft.ServiceModel.Syndication
                         {
                             if (_preserveAttributeExtensions)
                             {
-                                result.AttributeExtensions.Add(new XmlQualifiedName(reader.LocalName, reader.NamespaceURI), reader.Value);
+                                result.AttributeExtensions.Add(new XmlQualifiedName(reader.LocalName, reader.NamespaceURI), await reader.GetValueAsync());
                             }
                             else
                             {
-                                result.AttributeExtensions.Add(new XmlQualifiedName(reader.LocalName, reader.NamespaceURI), await reader.GetValueAsync());
+                                //result.AttributeExtensions.Add(new XmlQualifiedName(reader.LocalName, reader.NamespaceURI), await reader.GetValueAsync());
                             }
                         }
                     }
@@ -878,7 +864,7 @@ namespace Microsoft.ServiceModel.Syndication
                 {
                     while (await reader.IsStartElementAsync())
                     {
-                        if (await TryParseFeedElementFromAsync(reader, result))  
+                        if (await TryParseFeedElementFromAsync(reader, result))
                         {
                             // nothing, we parsed something, great
                         }
@@ -890,20 +876,18 @@ namespace Microsoft.ServiceModel.Syndication
                                 //Log we have disjoint items
                             }
 
-
                             while (await reader.IsStartElementAsync(Atom10Constants.EntryTag, Atom10Constants.Atom10Namespace))
                             {
                                 feedItems.Add(await ReadItemAsync(reader, result));
                             }
 
-
-                            areAllItemsRead = true;
+                            //areAllItemsRead = true;
                             readItemsAtLeastOnce = true;
                             // if the derived class is reading the items lazily, then stop reading from the stream
-                            if (!areAllItemsRead)
-                            {
-                                break;
-                            }
+                            //if (!areAllItemsRead)
+                            //{
+                            //    break;
+                            //}
                         }
                         else
                         {
@@ -929,7 +913,15 @@ namespace Microsoft.ServiceModel.Syndication
                     }
                     //Add all read items to the feed
                     result.Items = feedItems;
-                    LoadElementExtensions(buffer, extWriter, result);  
+                    LoadElementExtensions(buffer, extWriter, result);
+                }
+                catch (FormatException e)
+                {
+                    throw new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingFeed), e);
+                }
+                catch (ArgumentException e)
+                {
+                    throw new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingFeed), e);
                 }
                 finally
                 {
@@ -1062,24 +1054,19 @@ namespace Microsoft.ServiceModel.Syndication
                             case Atom10Constants.TypeTag:
                                 mediaType = await reader.GetValueAsync();
                                 break;
-
                             case Atom10Constants.RelativeTag:
                                 relationship = await reader.GetValueAsync();
                                 break;
-
                             case Atom10Constants.TitleTag:
                                 title = await reader.GetValueAsync();
                                 break;
-
                             case Atom10Constants.LengthTag:
                                 lengthStr = await reader.GetValueAsync();
                                 break;
-
                             case Atom10Constants.HrefTag:
                                 val = await reader.GetValueAsync();
                                 ns = reader.NamespaceURI;
                                 break;
-
                             default:
                                 notHandled = true;
                                 break;
@@ -1224,13 +1211,13 @@ namespace Microsoft.ServiceModel.Syndication
                         switch (name)
                         {
                             case Atom10Constants.NameTag:
-                            result.Name = stringParser(await reader.ReadElementStringAsync(),Atom10Constants.NameTag,ns);
+                                result.Name = stringParser(await reader.ReadElementStringAsync(),Atom10Constants.NameTag,ns);
                                 break;
                             case Atom10Constants.UriTag:
-                            result.Uri = stringParser(await reader.ReadElementStringAsync(),Atom10Constants.UriTag,ns);
+                                result.Uri = stringParser(await reader.ReadElementStringAsync(),Atom10Constants.UriTag,ns);
                                 break;
                             case Atom10Constants.EmailTag:
-                            result.Email = stringParser(await reader.ReadElementStringAsync(),Atom10Constants.EmailTag,ns);
+                                result.Email = stringParser(await reader.ReadElementStringAsync(),Atom10Constants.EmailTag,ns);
                                 break;
                             default:
                                 notHandled = true;
@@ -1314,15 +1301,15 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 title = title ?? new TextSyndicationContent(string.Empty);
             }
-            WriteContentTo(writer, Atom10Constants.TitleTag, title);
-            WriteContentTo(writer, Atom10Constants.SubtitleTag, feed.Description);
+            await WriteContentToAsync(writer, Atom10Constants.TitleTag, title);
+            await WriteContentToAsync(writer, Atom10Constants.SubtitleTag, feed.Description);
             string id = feed.Id;
             if (isElementRequired)
             {
                 id = id ?? s_idGenerator.Next();
             }
             await WriteElementAsync(writer, Atom10Constants.IdTag, id);
-            WriteContentTo(writer, Atom10Constants.RightsTag, feed.Copyright);
+            await WriteContentToAsync(writer, Atom10Constants.RightsTag, feed.Copyright);
             await WriteFeedLastUpdatedTimeToAsync(writer, feed.LastUpdatedTime, isElementRequired);
             await WriteCategoriesToAsync(writer, feed.Categories);
             if (feed.ImageUrl != null)
@@ -1339,7 +1326,7 @@ namespace Microsoft.ServiceModel.Syndication
                 await WriteLinkAsync(writer, feed.Links[i], feed.BaseUri);
             }
 
-            WriteElementExtensions(writer, feed, this.Version);
+            await WriteElementExtensionsAsync(writer, feed, this.Version);
 
             if (!isSourceFeed)
             {
@@ -1354,14 +1341,14 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 await dictWriter.WriteAttributeStringAsync("xml", "base", XmlNs, FeedUtils.GetUriString(baseUriToWrite));
             }
-            WriteAttributeExtensions(dictWriter, item, this.Version);
+            await WriteAttributeExtensionsAsync(dictWriter, item, this.Version);
 
             string id = item.Id ?? s_idGenerator.Next();
             await WriteElementAsync(dictWriter, Atom10Constants.IdTag, id);
 
             TextSyndicationContent title = item.Title ?? new TextSyndicationContent(string.Empty);
-            WriteContentTo(dictWriter, Atom10Constants.TitleTag, title);
-            WriteContentTo(dictWriter, Atom10Constants.SummaryTag, item.Summary);
+            await WriteContentToAsync(dictWriter, Atom10Constants.TitleTag, title);
+            await WriteContentToAsync(dictWriter, Atom10Constants.SummaryTag, item.Summary);
             if (item.PublishDate != DateTimeOffset.MinValue)
             {
                 await dictWriter.WriteElementStringAsync(Atom10Constants.PublishedTag,
@@ -1376,15 +1363,15 @@ namespace Microsoft.ServiceModel.Syndication
                 await WriteLinkAsync(dictWriter, item.Links[i], item.BaseUri);
             }
             await WriteCategoriesToAsync(dictWriter, item.Categories);
-            WriteContentTo(dictWriter, Atom10Constants.ContentTag, item.Content);
-            WriteContentTo(dictWriter, Atom10Constants.RightsTag, item.Copyright);
+            await WriteContentToAsync(dictWriter, Atom10Constants.ContentTag, item.Content);
+            await WriteContentToAsync(dictWriter, Atom10Constants.RightsTag, item.Copyright);
             if (item.SourceFeed != null)
             {
                 await dictWriter.WriteStartElementAsync(Atom10Constants.SourceFeedTag, Atom10Constants.Atom10Namespace);
                 await WriteFeedToAsync(dictWriter, item.SourceFeed, true); //  isSourceFeed 
                 await dictWriter.WriteEndElementAsync();
             }
-            WriteElementExtensions(dictWriter, item, this.Version);
+            await WriteElementExtensionsAsync(dictWriter, item, this.Version);
         }
         
         private async Task WritePersonToAsync(XmlWriterWrapper writer, SyndicationPerson p, string elementName)
@@ -1400,7 +1387,7 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 await writer.WriteElementStringAsync(Atom10Constants.EmailTag, Atom10Constants.Atom10Namespace, p.Email);
             }
-            WriteElementExtensions(writer, p, this.Version);
+            await WriteElementExtensionsAsync(writer, p, this.Version);
             await writer.WriteEndElementAsync();
         }
     }

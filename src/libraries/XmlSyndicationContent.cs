@@ -7,6 +7,7 @@ namespace Microsoft.ServiceModel.Syndication
     using System;
     using System.Runtime.CompilerServices;
     using System.Runtime.Serialization;
+    using System.Threading.Tasks;
     using System.Xml;
     using System.Xml.Serialization;
 
@@ -106,9 +107,9 @@ namespace Microsoft.ServiceModel.Syndication
             return new XmlSyndicationContent(this);
         }
 
-        public XmlDictionaryReader GetReaderAtContent()
+        public async Task<XmlDictionaryReader> GetReaderAtContent()
         {
-            EnsureContentBuffer();
+            await EnsureContentBufferAsync();
             return _contentBuffer.GetReader(0);
         }
 
@@ -187,14 +188,14 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        private void EnsureContentBuffer()
+        private async Task EnsureContentBufferAsync()
         {
             if (_contentBuffer == null)
             {
                 XmlBuffer tmp = new XmlBuffer(int.MaxValue);
                 using (XmlDictionaryWriter writer = tmp.OpenSection(XmlDictionaryReaderQuotas.Max))
                 {
-                    this.WriteTo(writer, Atom10Constants.ContentTag, Atom10Constants.Atom10Namespace);
+                    await this.WriteToAsync(writer, Atom10Constants.ContentTag, Atom10Constants.Atom10Namespace);
                 }
                 tmp.CloseSection();
                 tmp.Close();

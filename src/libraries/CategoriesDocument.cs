@@ -96,14 +96,14 @@ namespace Microsoft.ServiceModel.Syndication
             return false;
         }
 
-        protected internal virtual void WriteAttributeExtensions(XmlWriter writer, string version)
+        protected internal virtual Task WriteAttributeExtensionsAsync(XmlWriter writer, string version)
         {
-            _extensions.WriteAttributeExtensions(writer);
+            return _extensions.WriteAttributeExtensionsAsync(writer);
         }
 
-        protected internal virtual void WriteElementExtensions(XmlWriter writer, string version)
+        protected internal virtual Task WriteElementExtensionsAsync(XmlWriter writer, string version)
         {
-            _extensions.WriteElementExtensions(writer);
+            return _extensions.WriteElementExtensionsAsync(writer);
         }
 
         internal void LoadElementExtensions(XmlReaderWrapper readerOverUnparsedExtensions, int maxExtensionSize)

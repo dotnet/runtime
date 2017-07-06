@@ -180,12 +180,12 @@ namespace Microsoft.ServiceModel.Syndication
 
         protected static void WriteAttributeExtensions(XmlWriter writer, SyndicationItem item, string version)
         {
-            SyndicationFeedFormatter.WriteAttributeExtensions(writer, item, version);
+            SyndicationFeedFormatter.WriteAttributeExtensionsAsync(writer, item, version);
         }
 
         protected static void WriteAttributeExtensions(XmlWriter writer, SyndicationCategory category, string version)
         {
-            SyndicationFeedFormatter.WriteAttributeExtensions(writer, category, version);
+            SyndicationFeedFormatter.WriteAttributeExtensionsAsync(writer, category, version);
         }
 
         protected static void WriteAttributeExtensions(XmlWriter writer, SyndicationLink link, string version)
@@ -200,14 +200,14 @@ namespace Microsoft.ServiceModel.Syndication
 
         protected static void WriteElementExtensions(XmlWriter writer, SyndicationItem item, string version)
         {
-            SyndicationFeedFormatter.WriteElementExtensions(writer, item, version);
+            SyndicationFeedFormatter.WriteElementExtensionsAsync(writer, item, version);
         }
 
         protected abstract SyndicationItem CreateItemInstance();
 
         protected void WriteElementExtensions(XmlWriter writer, SyndicationCategory category, string version)
         {
-            SyndicationFeedFormatter.WriteElementExtensions(writer, category, version);
+            SyndicationFeedFormatter.WriteElementExtensionsAsync(writer, category, version);
         }
 
         protected void WriteElementExtensions(XmlWriter writer, SyndicationLink link, string version)
@@ -217,7 +217,7 @@ namespace Microsoft.ServiceModel.Syndication
 
         protected void WriteElementExtensions(XmlWriter writer, SyndicationPerson person, string version)
         {
-            SyndicationFeedFormatter.WriteElementExtensions(writer, person, version);
+            SyndicationFeedFormatter.WriteElementExtensionsAsync(writer, person, version);
         }
     }
 }

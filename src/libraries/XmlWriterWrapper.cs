@@ -19,6 +19,7 @@ namespace Microsoft.ServiceModel.Syndication
         private Func<XmlWriterWrapper, string, string, string, Task> writeAttributeStringFunc3;
         private Func<XmlWriterWrapper, string, string, string, string, Task> writeAttributeStringFunc4;
 
+        private Func<XmlWriterWrapper, XmlReader, bool, Task> WriteNodeFunc;
 
 
         private void InitAsync()
@@ -32,6 +33,8 @@ namespace Microsoft.ServiceModel.Syndication
             this.writeAttributeStringFunc2 = new Func<XmlWriterWrapper, string, string, Task>((thisPtr,localname,value) => { return thisPtr.writer.WriteAttributeStringAsync("", localname, "", value); });
             this.writeAttributeStringFunc3 = new Func<XmlWriterWrapper, string, string, string, Task>( (thisPtr,localName, ns, value) => { return thisPtr.writer.WriteAttributeStringAsync("", localName, ns, value); });
             this.writeAttributeStringFunc4 = new Func<XmlWriterWrapper, string, string, string, string, Task>((thisPtr, prefix, localName, ns, value) => { return thisPtr.writer.WriteAttributeStringAsync(prefix, localName, ns, value); });
+
+            this.WriteNodeFunc = new Func<XmlWriterWrapper, XmlReader, bool, Task>((thisPtr,reader,defattr) => { return thisPtr.writer.WriteNodeAsync(reader, defattr);  });
         }
 
         private void Init()
@@ -45,6 +48,8 @@ namespace Microsoft.ServiceModel.Syndication
             this.writeAttributeStringFunc2 = new Func<XmlWriterWrapper, string, string, Task>((thisPtr, localname, value) => {  thisPtr.writer.WriteAttributeString("", localname, "", value); return Task.CompletedTask; });
             this.writeAttributeStringFunc3 = new Func<XmlWriterWrapper, string, string, string, Task>((thisPtr, localName, ns, value) => { thisPtr.writer.WriteAttributeString(localName,ns,value); return Task.CompletedTask; });
             this.writeAttributeStringFunc4 = new Func<XmlWriterWrapper, string, string, string, string, Task>((thisPtr, prefix, localName, ns, value) => { thisPtr.writer.WriteAttributeString(prefix, localName, ns, value); return Task.CompletedTask; });
+
+            this.WriteNodeFunc = new Func<XmlWriterWrapper, XmlReader, bool, Task>((thisPtr,reader,defattr) => { thisPtr.writer.WriteNode(reader, defattr); return Task.CompletedTask; });
         }
 
         public static XmlWriterWrapper CreateFromWriter(XmlWriter writer)
@@ -74,6 +79,12 @@ namespace Microsoft.ServiceModel.Syndication
 
 
         // wrapper methods
+
+        public override Task WriteNodeAsync(XmlReader reader, bool defattr)
+        {
+            return WriteNodeFunc(this,reader,defattr);
+        }
+
         public override Task WriteStringAsync(string text)
         {
             return writeStringFunc(this,text);
@@ -246,5 +257,81 @@ namespace Microsoft.ServiceModel.Syndication
         {
             this.writer.WriteWhitespace(ws);
         }
+    }
+
+    internal static class XmlWritterExtensions
+    {
+        //public static async Task WriteNodeAsync(this XmlWriter writer, XmlReader reader, bool defattr)
+        //{
+        //    if (null == reader)
+        //    {
+        //        throw new ArgumentNullException("reader");
+        //    }
+
+        //    bool canReadChunk = reader.CanReadValueChunk;
+        //    int d = reader.NodeType == XmlNodeType.None ? -1 : reader.Depth;
+        //    do
+        //    {
+        //        switch (reader.NodeType)
+        //        {
+        //            case XmlNodeType.Element:
+        //                writer.WriteStartElementAsync(reader.Prefix, reader.LocalName, reader.NamespaceURI);
+        //                writer.WriteAttributesAsync(reader, defattr);
+        //                if (reader.IsEmptyElement)
+        //                {
+        //                    writer.WriteEndElementAsync();
+        //                    break;
+        //                }
+        //                break;
+        //            case XmlNodeType.Text:
+        //                if (canReadChunk)
+        //                {
+        //                    if (writer.writeNodeBuffer == null)
+        //                    {
+        //                        writeNodeBuffer = new char[WriteNodeBufferSize];
+        //                    }
+        //                    int read;
+        //                    while ((read = reader.ReadValueChunk(writeNodeBuffer, 0, WriteNodeBufferSize)) > 0)
+        //                    {
+        //                        this.WriteChars(writeNodeBuffer, 0, read);
+        //                    }
+        //                }
+        //                else
+        //                {
+
+        //                    WriteString(reader.Value);
+
+        //                }
+        //                break;
+        //            case XmlNodeType.Whitespace:
+        //            case XmlNodeType.SignificantWhitespace:
+
+        //                WriteWhitespace(reader.Value);
+
+        //                break;
+        //            case XmlNodeType.CDATA:
+        //                WriteCData(reader.Value);
+        //                break;
+        //            case XmlNodeType.EntityReference:
+        //                WriteEntityRef(reader.Name);
+        //                break;
+        //            case XmlNodeType.XmlDeclaration:
+        //            case XmlNodeType.ProcessingInstruction:
+        //                WriteProcessingInstruction(reader.Name, reader.Value);
+        //                break;
+        //            case XmlNodeType.DocumentType:
+        //                WriteDocType(reader.Name, reader.GetAttribute("PUBLIC"), reader.GetAttribute("SYSTEM"), reader.Value);
+        //                break;
+
+        //            case XmlNodeType.Comment:
+        //                WriteComment(reader.Value);
+        //                break;
+        //            case XmlNodeType.EndElement:
+        //                WriteFullEndElement();
+        //                break;
+        //        }
+        //    } while (reader.Read() && (d < reader.Depth || (d == reader.Depth && reader.NodeType == XmlNodeType.EndElement)));
+        //}
+
     }
 }
