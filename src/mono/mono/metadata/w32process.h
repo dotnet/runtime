@@ -76,6 +76,9 @@ mono_w32process_init (void);
 void
 mono_w32process_cleanup (void);
 
+void
+mono_w32process_signal_finished (void);
+
 #ifndef HOST_WIN32
 
 void

@@ -32,6 +32,7 @@
 #include <mono/metadata/marshal.h> /* for mono_delegate_free_ftnptr () */
 #include <mono/metadata/attach.h>
 #include <mono/metadata/console-io.h>
+#include <mono/metadata/w32process.h>
 #include <mono/utils/mono-os-semaphore.h>
 #include <mono/utils/mono-memory-model.h>
 #include <mono/utils/mono-counters.h>
@@ -707,6 +708,7 @@ static volatile gboolean finished;
  *
  *   Notify the finalizer thread that finalizers etc.
  * are available to be processed.
+ * This is async signal safe.
  */
 void
 mono_gc_finalize_notify (void)
@@ -885,6 +887,8 @@ finalizer_thread (gpointer unused)
 		mono_threads_join_threads ();
 
 		reference_queue_proccess_all ();
+
+		mono_w32process_signal_finished ();
 
 		hazard_free_queue_pump ();
 

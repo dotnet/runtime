@@ -130,9 +130,7 @@ typedef struct {
 /*
  * Process describes processes we create.
  * It contains a semaphore that can be waited on in order to wait
- * for process termination. It's accessed in our SIGCHLD handler,
- * when status is updated (and pid cleared, to not clash with
- * subsequent processes that may get executed).
+ * for process termination.
  */
 typedef struct _Process {
 	pid_t pid; /* the pid of the process. This value is only valid until the process has exited. */
@@ -143,7 +141,6 @@ typedef struct _Process {
 	 * the process has exited, so that the information there isn't lost.
 	 */
 	gpointer handle;
-	gboolean freeable;
 	gboolean signalled;
 	struct _Process *next;
 } Process;
@@ -530,18 +527,6 @@ static mono_lazy_init_t process_sig_chld_once = MONO_LAZY_INIT_STATUS_NOT_INITIA
 
 static gchar *cli_launcher;
 
-/* The signal-safe logic to use processes goes like this:
- * - The list must be safe to traverse for the signal handler at all times.
- *   It's safe to: prepend an entry (which is a single store to 'processes'),
- *   unlink an entry (assuming the unlinked entry isn't freed and doesn't
- *   change its 'next' pointer so that it can still be traversed).
- * When cleaning up we first unlink an entry, then we verify that
- * the read lock isn't locked. Then we can free the entry, since
- * we know that nobody is using the old version of the list (including
- * the unlinked entry).
- * We also need to lock when adding and cleaning up so that those two
- * operations don't mess with eachother. (This lock is not used in the
- * signal handler) */
 static Process *processes;
 static mono_mutex_t processes_mutex;
 
@@ -723,8 +708,6 @@ processes_cleanup (void)
 	static gint32 cleaning_up;
 	Process *process;
 	Process *prev = NULL;
-	GSList *finished = NULL;
-	GSList *l;
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s", __func__);
 
@@ -732,6 +715,9 @@ processes_cleanup (void)
 	if (InterlockedCompareExchange (&cleaning_up, 1, 0) != 0)
 		return;
 
+	/*
+	 * This needs to be done outside the lock but atomically, hence the CAS above.
+	 */
 	for (process = processes; process; process = process->next) {
 		if (process->signalled && process->handle) {
 			/* This process has exited and we need to remove the artifical ref
@@ -741,44 +727,26 @@ processes_cleanup (void)
 		}
 	}
 
-	/*
-	 * Remove processes which exited from the processes list.
-	 * We need to synchronize with the sigchld handler here, which runs
-	 * asynchronously. The handler requires that the processes list
-	 * remain valid.
-	 */
 	mono_os_mutex_lock (&processes_mutex);
 
-	for (process = processes; process; process = process->next) {
-		if (process->handle_count == 0 && process->freeable) {
+	for (process = processes; process;) {
+		Process *next = process->next;
+		if (process->handle_count == 0 && process->signalled) {
 			/*
 			 * Unlink the entry.
-			 * This code can run parallel with the sigchld handler, but the
-			 * modifications it makes are safe.
 			 */
 			if (process == processes)
 				processes = process->next;
 			else
 				prev->next = process->next;
-			finished = g_slist_prepend (finished, process);
+
+			mono_os_sem_destroy (&process->exit_sem);
+			g_free (process);
 		} else {
 			prev = process;
 		}
+		process = next;
 	}
-
-	mono_memory_barrier ();
-
-	for (l = finished; l; l = l->next) {
-		/*
-		 * All the entries in the finished list are unlinked from processes, and
-		 * they have the 'finished' flag set, which means the sigchld handler is done
-		 * accessing them.
-		 */
-		process = (Process *)l->data;
-		mono_os_sem_destroy (&process->exit_sem);
-		g_free (process);
-	}
-	g_slist_free (finished);
 
 	mono_os_mutex_unlock (&processes_mutex);
 
@@ -1360,6 +1328,39 @@ switch_dir_separators (char *path)
 
 MONO_SIGNAL_HANDLER_FUNC (static, mono_sigchld_signal_handler, (int _dummy, siginfo_t *info, void *context))
 {
+	/*
+	 * Don't want to do any complicated processing here so just wake up the finalizer thread which will call
+	 * mono_w32process_signal_finished ().
+	 */
+	int old_errno = errno;
+
+	mono_gc_finalize_notify ();
+
+	errno = old_errno;
+}
+
+static void
+process_add_sigchld_handler (void)
+{
+	struct sigaction sa;
+
+	sa.sa_sigaction = mono_sigchld_signal_handler;
+	sigemptyset (&sa.sa_mask);
+	sa.sa_flags = SA_NOCLDSTOP | SA_SIGINFO | SA_RESTART;
+	g_assert (sigaction (SIGCHLD, &sa, NULL) != -1);
+	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "Added SIGCHLD handler");
+}
+
+#endif
+
+/*
+ * mono_w32process_signal_finished:
+ *
+ *   Signal the exit semaphore for processes which have finished.
+ */
+void
+mono_w32process_signal_finished (void)
+{
 	int status;
 	int pid;
 	Process *process;
@@ -1372,9 +1373,8 @@ MONO_SIGNAL_HANDLER_FUNC (static, mono_sigchld_signal_handler, (int _dummy, sigi
 		if (pid <= 0)
 			break;
 
-		/*
-		 * This can run concurrently with the code in the rest of this module.
-		 */
+		mono_os_mutex_lock (&processes_mutex);
+
 		for (process = processes; process; process = process->next) {
 			if (process->pid != pid)
 				continue;
@@ -1384,27 +1384,12 @@ MONO_SIGNAL_HANDLER_FUNC (static, mono_sigchld_signal_handler, (int _dummy, sigi
 			process->signalled = TRUE;
 			process->status = status;
 			mono_os_sem_post (&process->exit_sem);
-			mono_memory_barrier ();
-			/* Mark this as freeable, the pointer becomes invalid afterwards */
-			process->freeable = TRUE;
 			break;
 		}
+
+		mono_os_mutex_unlock (&processes_mutex);
 	} while (1);
 }
-
-static void
-process_add_sigchld_handler (void)
-{
-	struct sigaction sa;
-
-	sa.sa_sigaction = mono_sigchld_signal_handler;
-	sigemptyset (&sa.sa_mask);
-	sa.sa_flags = SA_NOCLDSTOP | SA_SIGINFO;
-	g_assert (sigaction (SIGCHLD, &sa, NULL) != -1);
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "Added SIGCHLD handler");
-}
-
-#endif
 
 static gboolean
 is_readable_or_executable (const char *prog)

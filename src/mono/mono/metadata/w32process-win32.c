@@ -48,6 +48,11 @@ mono_w32process_cleanup (void)
 {
 }
 
+void
+mono_w32process_signal_finished (void)
+{
+}
+
 #if G_HAVE_API_SUPPORT(HAVE_CLASSIC_WINAPI_SUPPORT)
 HANDLE
 ves_icall_System_Diagnostics_Process_GetProcess_internal (guint32 pid)
