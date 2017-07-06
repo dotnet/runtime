@@ -180,7 +180,7 @@ echo %__MsgPrefix%Using Default CORE_ROOT as %CORE_ROOT%
 echo %__MsgPrefix%Copying Built binaries from %__BinDir% to %CORE_ROOT%
 if exist "%CORE_ROOT%" rd /s /q "%CORE_ROOT%"
 md "%CORE_ROOT%"
-xcopy /s "%__BinDir%" "%CORE_ROOT%"
+xcopy "%__BinDir%" "%CORE_ROOT%"
 
 :SkipCoreRootSetup
 

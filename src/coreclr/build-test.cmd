@@ -294,7 +294,7 @@ if exist "%CORE_ROOT%" rd /s /q "%CORE_ROOT%"
 if exist "%CORE_ROOT_STAGE%" rd /s /q "%CORE_ROOT_STAGE%"
 md "%CORE_ROOT%"
 md "%CORE_ROOT_STAGE%"
-xcopy /s "%__BinDir%" "%CORE_ROOT_STAGE%"
+xcopy "%__BinDir%" "%CORE_ROOT_STAGE%"
 
 
 if defined __BuildAgainstPackagesArg ( 
