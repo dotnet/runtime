@@ -132,8 +132,6 @@ parse_arg (const char *arg, ProfilerConfig *config)
 		if (config->cov_filter_files == NULL)
 			config->cov_filter_files = g_ptr_array_new ();
 		g_ptr_array_add (config->cov_filter_files, g_strdup (val));
-	} else if (match_option (arg, "onlycoverage", NULL)) {
-		config->only_coverage = TRUE;
 	} else {
 		int i;
 
