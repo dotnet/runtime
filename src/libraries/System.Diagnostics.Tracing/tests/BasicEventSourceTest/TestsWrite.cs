@@ -40,7 +40,6 @@ namespace BasicEventSourceTests
         /// </summary>
         [Fact]
         [ActiveIssue("dotnet/corefx #19455", TargetFrameworkMonikers.NetFramework)]
-        [ActiveIssue(20744, TargetFrameworkMonikers.UapAot)]
         public void Test_Write_T_EventListener()
         {
             using (var listener = new EventListenerListener())
@@ -55,7 +54,6 @@ namespace BasicEventSourceTests
         /// </summary>
         [Fact]
         [ActiveIssue("dotnet/corefx #19455", TargetFrameworkMonikers.NetFramework)]
-        [ActiveIssue(20744, TargetFrameworkMonikers.UapAot)]
         public void Test_Write_T_EventListener_UseEvents()
         {
             Test_Write_T(new EventListenerListener(true));
@@ -412,7 +410,6 @@ namespace BasicEventSourceTests
         /// </summary>
         [Fact]
         [ActiveIssue("dotnet/corefx #18806", TargetFrameworkMonikers.NetFramework)]
-        [ActiveIssue(20744, TargetFrameworkMonikers.UapAot)]
         public void Test_Write_T_In_Manifest_Serialization()
         {
             using (var eventListener = new EventListenerListener())

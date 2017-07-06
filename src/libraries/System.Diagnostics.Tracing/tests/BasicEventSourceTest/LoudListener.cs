@@ -13,9 +13,8 @@ namespace BasicEventSourceTests
         [ThreadStatic]
         public static EventWrittenEventArgs t_lastEvent;
 
-        protected override void OnEventSourceCreated(EventSource eventSource)
+        public LoudListener(EventSource eventSource)
         {
-            base.OnEventSourceCreated(eventSource);
             EnableEvents(eventSource, EventLevel.LogAlways, (EventKeywords)0xffffffff);
         }
 
