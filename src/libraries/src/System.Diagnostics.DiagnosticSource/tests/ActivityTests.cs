@@ -320,10 +320,11 @@ namespace System.Diagnostics.Tests
             // DateTime.UtcNow is not precise on some platforms, but Activity stop time is precise
             // in this test we set start time, but not stop time and check duration.
             //
-            // Let's check that duration is 1sec - maximum DateTime.UtcNow error or bigger.
+            // Let's check that duration is 1sec - 2 * maximum DateTime.UtcNow error or bigger.
+            // As both start and stop timestamps may have error.
             // There is another test (ActivityDateTimeTests.StartStopReturnsPreciseDuration) 
             // that checks duration precision on netfx.
-            Assert.InRange(activity.Duration.TotalMilliseconds, 1000 - MaxClockErrorMSec, double.MaxValue);
+            Assert.InRange(activity.Duration.TotalMilliseconds, 1000 - 2 * MaxClockErrorMSec, double.MaxValue);
         }
 
         /// <summary>
