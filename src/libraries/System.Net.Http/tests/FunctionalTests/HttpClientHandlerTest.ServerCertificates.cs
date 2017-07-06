@@ -162,6 +162,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ActiveIssue(21904)]
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task UseCallback_CallbackThrowsException_ExceptionPropagates()

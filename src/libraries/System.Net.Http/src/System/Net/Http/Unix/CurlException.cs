@@ -13,6 +13,11 @@ namespace System.Net.Http
             HResult = error;
         }
 
+        internal CurlException(int error, Exception innerException) : base(GetCurlErrorString(error, isMulti:false), innerException)
+        {
+            HResult = error;
+        }
+
         internal CurlException(int error, bool isMulti) : this(error, GetCurlErrorString(error, isMulti))
         {
         }
