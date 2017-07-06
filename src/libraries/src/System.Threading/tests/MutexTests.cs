@@ -222,7 +222,6 @@ namespace System.Threading.Tests
 
         [Theory]
         [MemberData(nameof(CrossProcess_NamedMutex_ProtectedFileAccessAtomic_MemberData))]
-        [ActiveIssue(21276, TargetFrameworkMonikers.Uap)]
         public void CrossProcess_NamedMutex_ProtectedFileAccessAtomic(string prefix)
         {
             ThreadTestHelpers.RunTestInBackgroundThread(() =>
