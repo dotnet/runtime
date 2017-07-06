@@ -24,6 +24,12 @@ namespace System.IO.Tests
         public static TheoryData<string> PathsWithInvalidCharacters = TestData.PathsWithInvalidCharacters;
         public static TheoryData<char> TrailingCharacters = TestData.TrailingCharacters;
         public static TheoryData ValidPathComponentNames = IOInputs.GetValidPathComponentNames().ToTheoryData();
+        public static TheoryData SimpleWhiteSpace = IOInputs.GetSimpleWhiteSpace().ToTheoryData();
+        public static TheoryData WhiteSpace = IOInputs.GetWhiteSpace().ToTheoryData();
+        public static TheoryData UncPathsWithoutShareName = IOInputs.GetUncPathsWithoutShareName().ToTheoryData();
+        public static TheoryData PathsWithReservedDeviceNames = IOInputs.GetPathsWithReservedDeviceNames().ToTheoryData();
+        public static TheoryData PathsWithAlternativeDataStreams = IOInputs.GetPathsWithAlternativeDataStreams().ToTheoryData();
+        public static TheoryData PathsWithComponentLongerThanMaxComponent = IOInputs.GetPathsWithComponentLongerThanMaxComponent().ToTheoryData();
 
         /// <summary>
         /// In some cases (such as when running without elevated privileges),

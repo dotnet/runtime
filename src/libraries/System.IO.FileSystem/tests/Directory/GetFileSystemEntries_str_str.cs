@@ -801,33 +801,32 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [Theory,
+            MemberData(nameof(WindowsInvalidUnixValid))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Unix-valid chars in file search patterns
-        public void UnixSearchPatternFileValidChar()
+        public void UnixSearchPatternFileValidChar(string valid)
         {
             if (TestFiles)
             {
                 DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-                foreach (string valid in WindowsInvalidUnixValid)
-                    File.Create(Path.Combine(testDir.FullName, valid)).Dispose();
+                File.Create(Path.Combine(testDir.FullName, valid)).Dispose();
 
-                foreach (string valid in WindowsInvalidUnixValid)
-                    Assert.Contains(Path.Combine(testDir.FullName, valid), GetEntries(testDir.FullName, valid));
+                Assert.Contains(Path.Combine(testDir.FullName, valid), GetEntries(testDir.FullName, valid));
             }
         }
 
-        [Fact]
+        [Theory,
+            MemberData(nameof(WindowsInvalidUnixValid))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Unix-valid chars in directory search patterns
-        public void UnixSearchPatternDirectoryValidChar()
+        public void UnixSearchPatternDirectoryValidChar(string valid)
         {
             if (TestDirectories)
             {
                 DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-                foreach (string valid in WindowsInvalidUnixValid)
-                    testDir.CreateSubdirectory(valid);
 
-                foreach (string valid in WindowsInvalidUnixValid)
-                    Assert.Contains(Path.Combine(testDir.FullName, valid), GetEntries(testDir.FullName, valid));
+                testDir.CreateSubdirectory(valid);
+
+                Assert.Contains(Path.Combine(testDir.FullName, valid), GetEntries(testDir.FullName, valid));
             }
         }
 
