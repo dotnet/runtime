@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using Xunit;
 
@@ -10,6 +9,12 @@ namespace System.Tests
 {
     public partial class VersionTests
     {
+        [Fact]
+        public void Ctor_Default()
+        {
+            VerifyVersion(new Version(), 0, 0, -1, -1);
+        }
+
         [Theory]
         [MemberData(nameof(Parse_Valid_TestData))]
         public static void Ctor_String(string input, Version expected)
@@ -19,9 +24,9 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Parse_Invalid_TestData))]
-        public static void Ctor_String_Invalid(string input, Type exceptionType)
+        public static void CtorInvalidVerionString_ThrowsException(string input, Type exceptionType)
         {
-            Assert.Throws(exceptionType, () => new Version(input)); // Input is invalid
+            Assert.Throws(exceptionType, () => new Version(input));
         }
 
         [Theory]
@@ -33,13 +38,6 @@ namespace System.Tests
             VerifyVersion(new Version(major, minor), major, minor, -1, -1);
         }
 
-        [Fact]
-        public static void Ctor_Int_Int_Invalid()
-        {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("major", () => new Version(-1, 0)); // Major < 0
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("minor", () => new Version(0, -1)); // Minor < 0
-        }
-
         [Theory]
         [InlineData(0, 0, 0)]
         [InlineData(2, 3, 4)]
@@ -47,14 +45,6 @@ namespace System.Tests
         public static void Ctor_Int_Int_Int(int major, int minor, int build)
         {
             VerifyVersion(new Version(major, minor, build), major, minor, build, -1);
-        }
-
-        [Fact]
-        public static void Ctor_Int_Int_Int_Invalid()
-        {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("major", () => new Version(-1, 0, 0)); // Major < 0
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("minor", () => new Version(0, -1, 0)); // Minor < 0
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("build", () => new Version(0, 0, -1)); // Build < 0
         }
 
         [Theory]
@@ -74,12 +64,32 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void Ctor_Int_Int_Int_Int_Invalid()
+        public void Ctor_NegativeMajor_ThrowsArgumentOutOfRangeException()
         {
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("major", () => new Version(-1, 0, 0, 0)); // Major < 0
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("minor", () => new Version(0, -1, 0, 0)); // Minor < 0
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("build", () => new Version(0, 0, -1, 0)); // Build < 0
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("revision", () => new Version(0, 0, 0, -1)); // Revision < 0
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("major", () => new Version(-1, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("major", () => new Version(-1, 0, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("major", () => new Version(-1, 0, 0, 0));
+        }
+
+        [Fact]
+        public void Ctor_NegativeMinor_ThrowsArgumentOutOfRangeException()
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("minor", () => new Version(0, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("minor", () => new Version(0, -1, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("minor", () => new Version(0, -1, 0, 0));
+        }
+
+        [Fact]
+        public void Ctor_NegativeBuild_ThrowsArgumentOutOfRangeException()
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("build", () => new Version(0, 0, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("build", () => new Version(0, 0, -1, 0));
+        }
+
+        [Fact]
+        public void Ctor_NegativeRevision_ThrowsArgumentOutOfRangeException()
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("revision", () => new Version(0, 0, 0, -1));
         }
 
         public static IEnumerable<object[]> CompareTo_TestData()
@@ -102,14 +112,15 @@ namespace System.Tests
             yield return new object[] { new Version(1, 2, 3, 4), new Version(1, 2, 3, 4), 0 };
             yield return new object[] { new Version(1, 2, 3, 4), new Version(1, 2, 3, 5), -1 };
             yield return new object[] { new Version(1, 2, 3, 4), new Version(1, 2, 3, 3), 1 };
+
+            yield return new object[] { new Version(1, 2, 3, 4), null, 1 };
         }
 
         [Theory]
         [MemberData(nameof(CompareTo_TestData))]
-        public static void CompareTo(Version version1, Version version2, int expectedSign)
+        public void CompareTo_Other_ReturnsExpected(Version version1, object other, int expectedSign)
         {
-            Assert.Equal(expectedSign, Math.Sign(version1.CompareTo(version2)));
-            if (version1 != null && version2 != null)
+            if (version1 != null && other is Version version2)
             {
                 if (expectedSign >= 0)
                 {
@@ -134,22 +145,29 @@ namespace System.Tests
             }
 
             IComparable comparable = version1;
-            Assert.Equal(expectedSign, Math.Sign(comparable.CompareTo(version2)));
+            Assert.Equal(expectedSign, Math.Sign(comparable.CompareTo(other)));
+            Assert.Equal(expectedSign, Math.Sign(version1.CompareTo(other)));
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData("1.1")]
+        public void CompareTo_ObjectNotAVersion_ThrowsArgumentException(object other)
+        {
+            var version = new Version(1, 1);
+            AssertExtensions.Throws<ArgumentException>(null, () => version.CompareTo(other));
+            AssertExtensions.Throws<ArgumentException>(null, () => ((IComparable)version).CompareTo(other));
         }
 
         [Fact]
-        public static void CompareTo_Invalid()
+        public void Comparisons_NullArgument_ThrowsArgumentNullException()
         {
-            IComparable comparable = new Version(1, 1);
-            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo(1)); // Obj is not a version
-            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo("1.1")); // Obj is not a version
-
             Version nullVersion = null;
-            Version testVersion = new Version(1, 2);
-            AssertExtensions.Throws<ArgumentNullException>("v1", () => testVersion >= nullVersion); // V2 is null
-            AssertExtensions.Throws<ArgumentNullException>("v1", () => testVersion > nullVersion); // V2 is null
-            AssertExtensions.Throws<ArgumentNullException>("v1", () => nullVersion < testVersion); // V1 is null
-            AssertExtensions.Throws<ArgumentNullException>("v1", () => nullVersion <= testVersion); // V1 is null
+            Version nonNullVersion = new Version(1, 2);
+            AssertExtensions.Throws<ArgumentNullException>("v1", () => nonNullVersion >= nullVersion);
+            AssertExtensions.Throws<ArgumentNullException>("v1", () => nonNullVersion > nullVersion);
+            AssertExtensions.Throws<ArgumentNullException>("v1", () => nullVersion < nonNullVersion);
+            AssertExtensions.Throws<ArgumentNullException>("v1", () => nullVersion <= nonNullVersion);
         }
 
         private static IEnumerable<object[]> Equals_TestData()
@@ -176,7 +194,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        public static void Equals(Version version1, object obj, bool expected)
+        public static void Equals_Other_ReturnsExpected(Version version1, object obj, bool expected)
         {
             Version version2 = obj as Version;
 
@@ -204,12 +222,11 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Parse_Valid_TestData))]
-        public static void Parse(string input, Version expected)
+        public static void Parse_ValidInput_ReturnsExpected(string input, Version expected)
         {
             Assert.Equal(expected, Version.Parse(input));
 
-            Version version;
-            Assert.True(Version.TryParse(input, out version));
+            Assert.True(Version.TryParse(input, out Version version));
             Assert.Equal(expected, version);
         }
 
@@ -246,12 +263,11 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(Parse_Invalid_TestData))]
-        public static void Parse_Invalid(string input, Type exceptionType)
+        public static void Parse_InvalidInput_ThrowsException(string input, Type exceptionType)
         {
             Assert.Throws(exceptionType, () => Version.Parse(input));
 
-            Version version;
-            Assert.False(Version.TryParse(input, out version));
+            Assert.False(Version.TryParse(input, out Version version));
             Assert.Null(version);
         }
 
@@ -264,7 +280,7 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(ToString_TestData))]
-        public static void ToString(Version version, string[] expected)
+        public static void ToString_Invoke_ReturnsExpected(Version version, string[] expected)
         {
             for (int i = 0; i < expected.Length; i++)
             {
@@ -286,6 +302,13 @@ namespace System.Tests
             Assert.Equal(revision, version.Revision);
             Assert.Equal((short)(revision >> 16), version.MajorRevision);
             Assert.Equal(unchecked((short)(revision & 0xFFFF)), version.MinorRevision);
+
+            Version clone = Assert.IsType<Version>(version.Clone());
+            Assert.NotSame(version, clone);
+            Assert.Equal(version.Major, clone.Major);
+            Assert.Equal(version.Minor, clone.Minor);
+            Assert.Equal(version.Build, clone.Build);
+            Assert.Equal(version.Revision, clone.Revision);
         }
     }
 }

@@ -2,14 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Globalization;
 using Xunit;
 
 namespace System.Tests
 {
-    public static class UInt16Tests
+    public class UInt16Tests
     {
         [Fact]
         public static void Ctor_Empty()
@@ -45,22 +44,22 @@ namespace System.Tests
         [InlineData((ushort)234, (ushort)456, -1)]
         [InlineData((ushort)234, ushort.MaxValue, -1)]
         [InlineData((ushort)234, null, 1)]
-        public static void CompareTo(ushort i, object value, int expected)
+        public void CompareTo_Other_ReturnsExpected(ushort i, object value, int expected)
         {
-            if (value is ushort)
+            if (value is ushort ushortValue)
             {
-                Assert.Equal(expected, Math.Sign(i.CompareTo((ushort)value)));
+                Assert.Equal(expected, Math.Sign(i.CompareTo(ushortValue)));
             }
-            IComparable comparable = i;
-            Assert.Equal(expected, Math.Sign(comparable.CompareTo(value)));
+
+            Assert.Equal(expected, Math.Sign(i.CompareTo(value)));
         }
 
-        [Fact]
-        public static void CompareTo_ObjectNotUShort_ThrowsArgumentException()
+        [Theory]
+        [InlineData("a")]
+        [InlineData(234)]
+        public void CompareTo_ObjectNotUshort_ThrowsArgumentException(object value)
         {
-            IComparable comparable = (ushort)234;
-            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo("a")); // Obj is not a ushort
-            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo(234)); // Obj is not a ushort
+            AssertExtensions.Throws<ArgumentException>(null, () => ((ushort)123).CompareTo(value));
         }
 
         [Theory]
@@ -79,6 +78,12 @@ namespace System.Tests
                 Assert.Equal(i1, i1.GetHashCode());
             }
             Assert.Equal(expected, i1.Equals(obj));
+        }
+
+        [Fact]
+        public void GetTypeCode_Invoke_ReturnsUInt16()
+        {
+            Assert.Equal(TypeCode.UInt16, ((ushort)1).GetTypeCode());
         }
 
         public static IEnumerable<object[]> ToString_TestData()

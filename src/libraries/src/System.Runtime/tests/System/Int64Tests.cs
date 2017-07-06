@@ -2,14 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Globalization;
 using Xunit;
 
 namespace System.Tests
 {
-    public static class Int64Tests
+    public class Int64Tests
     {
         [Fact]
         public static void Ctor_Empty()
@@ -49,22 +48,22 @@ namespace System.Tests
         [InlineData((long)-234, (long)234, -1)]
         [InlineData((long)-234, (long)-432, 1)]
         [InlineData((long)234, null, 1)]
-        public static void CompareTo(long i, object value, long expected)
+        public void CompareTo_Other_ReturnsExpected(long i, object value, int expected)
         {
-            if (value is long)
+            if (value is long longValue)
             {
-                Assert.Equal(expected, Math.Sign(i.CompareTo((long)value)));
+                Assert.Equal(expected, Math.Sign(i.CompareTo(longValue)));
             }
-            IComparable comparable = i;
-            Assert.Equal(expected, Math.Sign(comparable.CompareTo(value)));
+
+            Assert.Equal(expected, Math.Sign(i.CompareTo(value)));
         }
 
-        [Fact]
-        public static void CompareTo_ObjectNotLong_ThrowsArgumentException()
+        [Theory]
+        [InlineData("a")]
+        [InlineData(234)]
+        public void CompareTo_ObjectNotLong_ThrowsArgumentException(object value)
         {
-            IComparable comparable = (long)234;
-            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo("a")); // Obj is not a long
-            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo(234)); // Obj is not a long
+            AssertExtensions.Throws<ArgumentException>(null, () => ((long)123).CompareTo(value));
         }
 
         [Theory]
@@ -86,6 +85,12 @@ namespace System.Tests
                 Assert.Equal(expected, i1.GetHashCode().Equals(i2.GetHashCode()));
             }
             Assert.Equal(expected, i1.Equals(obj));
+        }
+
+        [Fact]
+        public void GetTypeCode_Invoke_ReturnsInt64()
+        {
+            Assert.Equal(TypeCode.Int64, ((long)1).GetTypeCode());
         }
 
         public static IEnumerable<object[]> ToString_TestData()

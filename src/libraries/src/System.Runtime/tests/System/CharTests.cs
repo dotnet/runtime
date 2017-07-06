@@ -9,28 +9,29 @@ using Xunit;
 
 namespace System.Tests
 {
-    public static class CharTests
+    public class CharTests
     {
         [Theory]
         [InlineData('h', 'h', 0)]
         [InlineData('h', 'a', 1)]
         [InlineData('h', 'z', -1)]
         [InlineData('h', null, 1)]
-        public static void CompareTo(char c, object value, int expected)
+        public void CompareTo_Other_ReturnsExpected(char c, object value, int expected)
         {
-            if (value is char)
+            if (value is char charValue)
             {
-                Assert.Equal(expected, Math.Sign(c.CompareTo((char)value)));
+                Assert.Equal(expected, Math.Sign(c.CompareTo(charValue)));
             }
-            IComparable comparable = c;
-            Assert.Equal(expected, Math.Sign(comparable.CompareTo(value)));
+
+            Assert.Equal(expected, Math.Sign(c.CompareTo(value)));
         }
 
-        [Fact]
-        public static void CompareTo_ObjectNotChar_ThrowsArgumentException()
+        [Theory]
+        [InlineData("a")]
+        [InlineData(234)]
+        public void CompareTo_ObjectNotDouble_ThrowsArgumentException(object value)
         {
-            IComparable comparable = 'h';
-            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo("H")); // Value not a char
+            AssertExtensions.Throws<ArgumentException>(null, () => ((char)123).CompareTo(value));
         }
 
         public static IEnumerable<object[]> ConvertFromUtf32_TestData()
@@ -191,6 +192,12 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentNullException>("s", () => char.GetNumericValue(null, 0)); // String is null
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => char.GetNumericValue("abc", -1)); // Index < 0
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => char.GetNumericValue("abc", 3)); // Index >= string.Length
+        }
+
+        [Fact]
+        public void GetTypeCode_Invoke_ReturnsBoolean()
+        {
+            Assert.Equal(TypeCode.Char, 'a'.GetTypeCode());
         }
 
         [Fact]

@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public static partial class EnumTests
+    public partial class EnumTests
     {
         [Theory]
         [MemberData(nameof(Parse_TestData))]

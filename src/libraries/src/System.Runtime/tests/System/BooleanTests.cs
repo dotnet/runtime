@@ -2,21 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using Xunit;
 
 namespace System.Tests
 {
-    public static class BooleanTests
+    public class BooleanTests
     {
         [Fact]
-        public static void TrueString()
+        public void TrueString_Get_ReturnsTrue()
         {
             Assert.Equal("True", bool.TrueString);
         }
 
         [Fact]
-        public static void FalseString()
+        public void FalseString_Get_ReturnsFalse()
         {
             Assert.Equal("False", bool.FalseString);
         }
@@ -36,10 +35,9 @@ namespace System.Tests
         [InlineData("False  ", false)]
         [InlineData("False\0", false)]
         [InlineData("  False \0\0\0  ", false)]
-        public static void Parse(string value, bool expected)
+        public void Parse_ValidValue_ReturnsExpected(string value, bool expected)
         {
-            bool result;
-            Assert.True(bool.TryParse(value, out result));
+            Assert.True(bool.TryParse(value, out bool result));
             Assert.Equal(expected, result);
 
             Assert.Equal(expected, bool.Parse(value));
@@ -59,20 +57,20 @@ namespace System.Tests
         [InlineData("T", typeof(FormatException))]
         [InlineData("0", typeof(FormatException))]
         [InlineData("1", typeof(FormatException))]
-        public static void Parse_Invalid(string value, Type exceptionType)
+        public void Parse_InvalidValue_ThrowsException(string value, Type exceptionType)
         {
             Assert.Throws(exceptionType, () => bool.Parse(value));
 
-            bool result;
-            Assert.False(bool.TryParse(value, out result));
+            Assert.False(bool.TryParse(value, out bool result));
             Assert.False(result);
         }
 
-        [Fact]
-        public static void ToStringTest()
+        [Theory]
+        [InlineData(true, "True")]
+        [InlineData(false, "False")]
+        public void ToString_Invoke_ReturnsExpected(bool value, string expected)
         {
-            Assert.Equal(bool.TrueString, true.ToString());
-            Assert.Equal(bool.FalseString, false.ToString());
+            Assert.Equal(expected, value.ToString());
         }
 
         [Theory]
@@ -82,15 +80,14 @@ namespace System.Tests
         [InlineData(false, false, 0)]
         [InlineData(false, true, -1)]
         [InlineData(false, null, 1)]
-        public static void CompareTo(bool b, object obj, int expected)
+        public void CompareTo_Other_ReturnsExpected(bool b, object obj, int expected)
         {
-            if (obj is bool)
+            if (obj is bool boolValue)
             {
-                Assert.Equal(expected, Math.Sign(b.CompareTo((bool)obj)));
+                Assert.Equal(expected, Math.Sign(b.CompareTo(boolValue)));
             }
 
-            IComparable comparable = b;
-            Assert.Equal(expected, Math.Sign(comparable.CompareTo(obj)));
+            Assert.Equal(expected, Math.Sign(b.CompareTo(obj)));
         }
 
         [Theory]
@@ -98,7 +95,7 @@ namespace System.Tests
         [InlineData(true, "true")]
         [InlineData(false, 0)]
         [InlineData(false, "false")]
-        private static void CompareTo_ObjectNotBool_ThrowsArgumentException(IComparable b, object obj)
+        private void CompareTo_ObjectNotBool_ThrowsArgumentException(bool b, object obj)
         {
             AssertExtensions.Throws<ArgumentException>(null, () => b.CompareTo(obj));
         }
@@ -114,21 +111,29 @@ namespace System.Tests
         [InlineData(false, "0", false)]
         [InlineData(false, "False", false)]
         [InlineData(false, null, false)]
-        public static void Equals(bool b1, object obj, bool expected)
+        public void Equals_Other_ReturnsExpected(bool b1, object obj, bool expected)
         {
-            if (obj is bool)
+            if (obj is bool boolValue)
             {
-                Assert.Equal(expected, b1.Equals((bool)obj));
+                Assert.Equal(expected, b1.Equals(boolValue));
                 Assert.Equal(expected, b1.GetHashCode().Equals(obj.GetHashCode()));
             }
+
             Assert.Equal(expected, b1.Equals(obj));
         }
 
-        [Fact]
-        public static void GetHashCodeTest()
+        [Theory]
+        [InlineData(true, 1)]
+        [InlineData(false, 0)]
+        public void GetHashCode_Invoke_ReturnsExpected(bool value, int expected)
         {
-            Assert.Equal(1, true.GetHashCode());
-            Assert.Equal(0, false.GetHashCode());
+            Assert.Equal(expected, value.GetHashCode());
+        }
+
+        [Fact]
+        public void GetTypeCode_Invoke_ReturnsBoolean()
+        {
+            Assert.Equal(TypeCode.Boolean, true.GetTypeCode());
         }
     }
 }

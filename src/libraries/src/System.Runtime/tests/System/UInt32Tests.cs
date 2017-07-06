@@ -2,14 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Globalization;
 using Xunit;
 
 namespace System.Tests
 {
-    public static class UInt32Tests
+    public class UInt32Tests
     {
         [Fact]
         public static void Ctor_Empty()
@@ -45,22 +44,22 @@ namespace System.Tests
         [InlineData((uint)234, (uint)456, -1)]
         [InlineData((uint)234, uint.MaxValue, -1)]
         [InlineData((uint)234, null, 1)]
-        public static void CompareTo(uint i, object value, int expected)
+        public void CompareTo_Other_ReturnsExpected(uint i, object value, int expected)
         {
-            if (value is uint)
+            if (value is uint uintValue)
             {
-                Assert.Equal(expected, Math.Sign(i.CompareTo((uint)value)));
+                Assert.Equal(expected, Math.Sign(i.CompareTo(uintValue)));
             }
-            IComparable comparable = i;
-            Assert.Equal(expected, Math.Sign(comparable.CompareTo(value)));
+
+            Assert.Equal(expected, Math.Sign(i.CompareTo(value)));
         }
 
-        [Fact]
-        public static void CompareTo_ObjectNotUInt_ThrowsArgumentException()
+        [Theory]
+        [InlineData("a")]
+        [InlineData(234)]
+        public void CompareTo_ObjectNotUint_ThrowsArgumentException(object value)
         {
-            IComparable comparable = (uint)234;
-            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo("a")); // Obj is not a uint
-            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo(234)); // Obj is not a uint
+            AssertExtensions.Throws<ArgumentException>(null, () => ((uint)123).CompareTo(value));
         }
 
         [Theory]
@@ -80,6 +79,12 @@ namespace System.Tests
                 Assert.Equal((int)i1, i1.GetHashCode());
             }
             Assert.Equal(expected, i1.Equals(obj));
+        }
+
+        [Fact]
+        public void GetTypeCode_Invoke_ReturnsUInt32()
+        {
+            Assert.Equal(TypeCode.UInt32, ((uint)1).GetTypeCode());
         }
 
         public static IEnumerable<object[]> ToString_TestData()

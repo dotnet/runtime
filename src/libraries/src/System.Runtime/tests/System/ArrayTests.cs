@@ -4,6 +4,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Reflection;
 using Xunit;
@@ -102,6 +103,21 @@ namespace System.Tests
             Assert.Equal(array.GetValue(0, 0, 0, 0), 1);
             Assert.Equal(array.GetValue(0, 0, 0, 1), 2);
             Assert.Equal(array.GetValue(0, 0, 0, 2), 3);
+        }
+
+        [Fact]
+        public void AsReadOnly_ValidArray_ReturnsExpected()
+        {
+            var array = new string[] { "a", "b" };
+            ReadOnlyCollection<string> readOnlyCollection = Array.AsReadOnly(array);
+            Assert.Equal(array, readOnlyCollection);
+            Assert.Equal(new ReadOnlyCollection<string>(array), readOnlyCollection);
+        }
+
+        [Fact]
+        public void AsReadOnly_NullArray_ThrowsArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("array", () => Array.AsReadOnly<int>(null));
         }
 
         public static IEnumerable<object[]> BinarySearch_SZArray_TestData()
@@ -684,6 +700,40 @@ namespace System.Tests
             Assert.Equal(0, clone[0, 0]);
         }
 
+        [Fact]
+        public void ConvertAll()
+        {
+            int[] result = Array.ConvertAll(new int[] { }, new Converter<int, int>(i => { throw new InvalidOperationException(); }));
+            Assert.Equal(new int[] { }, result);
+
+            string[] result2 = Array.ConvertAll(new int[] { 1 }, new Converter<int, string>(i => (i + 1).ToString()));
+            Assert.Equal(new string[] { "2" }, result2);
+
+            result2 = Array.ConvertAll(new int[] { 1, 2 }, new Converter<int, string>(i => (i + 1).ToString()));
+            Assert.Equal(new string[] { "2", "3" }, result2);
+
+            result2 = Array.ConvertAll(new int[] { 1 }, new Converter<int, string>(i => null));
+            Assert.Equal(new string[] { null }, result2);
+        }
+
+        [Fact]
+        public void ConvertAll_NullArray_ThrowsArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("array", () => Array.ConvertAll<short, short>(null, i => i));
+        }
+
+        [Fact]
+        public void ConvertAll_NullConverter_ThrowsArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("converter", () => Array.ConvertAll<string, string>(new string[] { }, null));
+        }
+        
+        [Fact]
+        public void ConvertAll_ConverterActionThrows_RethrowsException()
+        {
+            Assert.Throws<DivideByZeroException>(() => Array.ConvertAll<string, string>(new string[1], element => { throw new DivideByZeroException(); }));
+        }
+
         public static IEnumerable<object[]> Copy_Array_Reliable_TestData()
         {
             if (s_NonZeroLowerBoundsAvailable)
@@ -979,10 +1029,16 @@ namespace System.Tests
             if (sourceIndex == 0 && length == sourceArray.Length)
             {
                 // CopyTo(Array, int)
-                Array sourceClone = (Array)sourceArray.Clone();
-                Array destinationArrayClone = sourceArray == destinationArray ? sourceClone : (Array)destinationArray.Clone();
-                sourceClone.CopyTo(destinationArrayClone, destinationIndex);
-                Assert.Equal(expected, destinationArrayClone);
+                Array sourceClone1 = (Array)sourceArray.Clone();
+                Array destinationArrayClone1 = sourceArray == destinationArray ? sourceClone1 : (Array)destinationArray.Clone();
+                sourceClone1.CopyTo(destinationArrayClone1, destinationIndex);
+                Assert.Equal(expected, destinationArrayClone1);
+
+                // CopyTo(Array, long)
+                Array sourceClone2 = (Array)sourceArray.Clone();
+                Array destinationArrayClone2 = sourceArray == destinationArray ? sourceClone2 : (Array)destinationArray.Clone();
+                sourceClone2.CopyTo(destinationArrayClone2, (long)destinationIndex);
+                Assert.Equal(expected, destinationArrayClone2);
             }
         }
 
@@ -999,12 +1055,24 @@ namespace System.Tests
                 Array destinationArrayClone1 = overlaps ? sourceArrayClone1 : (Array)destinationArray.Clone();
                 Array.Copy(sourceArrayClone1, destinationArrayClone1, length);
                 Assert.Equal(expected, destinationArrayClone1);
+
+                // Use Copy(Array, Array, long)
+                Array sourceArrayClone2 = (Array)sourceArray.Clone();
+                Array destinationArrayClone2 = overlaps ? sourceArrayClone1 : (Array)destinationArray.Clone();
+                Array.Copy(sourceArrayClone2, destinationArrayClone2, (long)length);
+                Assert.Equal(expected, destinationArrayClone2);
             }
             // Use Copy(Array, int, Array, int, int)
-            Array sourceArrayClone2 = (Array)sourceArray.Clone();
-            Array destinationArrayClone2 = overlaps ? sourceArrayClone2 : (Array)destinationArray.Clone();
-            Array.Copy(sourceArrayClone2, sourceIndex, destinationArrayClone2, destinationIndex, length);
-            Assert.Equal(expected, destinationArrayClone2);
+            Array sourceArrayClone3 = (Array)sourceArray.Clone();
+            Array destinationArrayClone3 = overlaps ? sourceArrayClone3 : (Array)destinationArray.Clone();
+            Array.Copy(sourceArrayClone3, sourceIndex, destinationArrayClone3, destinationIndex, length);
+            Assert.Equal(expected, destinationArrayClone3);
+
+            // Use Copy(Array, long, Array, long, long)
+            Array sourceArrayClone4 = (Array)sourceArray.Clone();
+            Array destinationArrayClone4 = overlaps ? sourceArrayClone4 : (Array)destinationArray.Clone();
+            Array.Copy(sourceArrayClone4, (long)sourceIndex, destinationArrayClone4, destinationIndex, length);
+            Assert.Equal(expected, destinationArrayClone4);
         }
 
         [Theory]
@@ -1022,8 +1090,11 @@ namespace System.Tests
         public static void Copy_NullSourceArray_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("sourceArray", () => Array.Copy(null, new string[10], 0));
+            AssertExtensions.Throws<ArgumentNullException>("sourceArray", () => Array.Copy(null, new string[10], (long)0));
 
             AssertExtensions.Throws<ArgumentNullException>("sourceArray", "source", () => Array.Copy(null, 0, new string[10], 0, 0));
+            AssertExtensions.Throws<ArgumentNullException>("sourceArray", "source", () => Array.Copy(null, (long)0, new string[10], 0, 0));
+
             AssertExtensions.Throws<ArgumentNullException>("sourceArray", "source", () => Array.ConstrainedCopy(null, 0, new string[10], 0, 0));
         }
 
@@ -1031,18 +1102,26 @@ namespace System.Tests
         public static void Copy_NullDestinationArray_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("destinationArray", () => Array.Copy(new string[10], null, 0));
+            AssertExtensions.Throws<ArgumentNullException>("destinationArray", () => Array.Copy(new string[10], null, (long)0));
 
             AssertExtensions.Throws<ArgumentNullException>("destinationArray", "dest", () => Array.Copy(new string[10], 0, null, 0, 0));
+            AssertExtensions.Throws<ArgumentNullException>("destinationArray", "dest", () => Array.Copy(new string[10], (long)0, null, 0, 0));
+
             AssertExtensions.Throws<ArgumentNullException>("destinationArray", "dest", () => Array.ConstrainedCopy(new string[10], 0, null, 0, 0));
 
             AssertExtensions.Throws<ArgumentNullException>("destinationArray", "dest", () => new string[10].CopyTo(null, 0));
+            AssertExtensions.Throws<ArgumentNullException>("destinationArray", "dest", () => new string[10].CopyTo(null, (long)0));
         }
 
         [Fact]
         public static void Copy_SourceAndDestinationArrayHaveDifferentRanks_ThrowsRankException()
         {
             Assert.Throws<RankException>(() => Array.Copy(new string[10, 10], new string[10], 0));
+            Assert.Throws<RankException>(() => Array.Copy(new string[10, 10], new string[10], (long)0));
+
             Assert.Throws<RankException>(() => Array.Copy(new string[10, 10], 0, new string[10], 0, 0));
+            Assert.Throws<RankException>(() => Array.Copy(new string[10, 10], (long)0, new string[10], 0, 0));
+
             Assert.Throws<RankException>(() => Array.ConstrainedCopy(new string[10, 10], 0, new string[10], 0, 0));
         }
 
@@ -1230,8 +1309,13 @@ namespace System.Tests
         public static void Copy_SourceAndDestinationNeverConvertible_ThrowsArrayTypeMismatchException(Array sourceArray, Array destinationArray)
         {
             Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(sourceArray, destinationArray, 0));
+            Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(sourceArray, destinationArray, (long)0));
+
             Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(sourceArray, sourceArray.GetLowerBound(0), destinationArray, destinationArray.GetLowerBound(0), 0));
+            Assert.Throws<ArrayTypeMismatchException>(() => Array.Copy(sourceArray, (long)sourceArray.GetLowerBound(0), destinationArray, destinationArray.GetLowerBound(0), 0));
+
             Assert.Throws<ArrayTypeMismatchException>(() => sourceArray.CopyTo(destinationArray, destinationArray.GetLowerBound(0)));
+            Assert.Throws<ArrayTypeMismatchException>(() => sourceArray.CopyTo(destinationArray, (long)destinationArray.GetLowerBound(0)));
         }
 
         [Fact]
@@ -1274,9 +1358,13 @@ namespace System.Tests
         {
             int length = Math.Min(sourceArray.Length, destinationArray.Length);
             Assert.Throws<InvalidCastException>(() => Array.Copy(sourceArray, destinationArray, length));
+            Assert.Throws<InvalidCastException>(() => Array.Copy(sourceArray, destinationArray, (long)length));
+
             Assert.Throws<InvalidCastException>(() => Array.Copy(sourceArray, sourceArray.GetLowerBound(0), destinationArray, destinationArray.GetLowerBound(0), length));
+            Assert.Throws<InvalidCastException>(() => Array.Copy(sourceArray, (long)sourceArray.GetLowerBound(0), destinationArray, destinationArray.GetLowerBound(0), length));
 
             Assert.Throws<InvalidCastException>(() => sourceArray.CopyTo(destinationArray, destinationArray.GetLowerBound(0)));
+            Assert.Throws<InvalidCastException>(() => sourceArray.CopyTo(destinationArray, (long)destinationArray.GetLowerBound(0)));
 
             // No exception is thrown if length == 0, as conversion error checking occurs during, not before copying
             Array.Copy(sourceArray, sourceArray.GetLowerBound(0), destinationArray, destinationArray.GetLowerBound(0), 0);
@@ -1303,8 +1391,21 @@ namespace System.Tests
         public static void Copy_NegativeLength_ThrowsArgumentOutOfRangeException()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => Array.Copy(new string[10], new string[10], -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => Array.Copy(new string[10], new string[10], (long)-1));
+
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => Array.Copy(new string[10], 0, new string[10], 0, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => Array.Copy(new string[10], 0, new string[10], 0, (long)-1));
+
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => Array.ConstrainedCopy(new string[10], 0, new string[10], 0, -1));
+        }
+
+        [Theory]
+        [InlineData((long)int.MinValue - 1)]
+        [InlineData((long)int.MaxValue + 1)]
+        public void Copy_LongLengthNotValidInt_ThrowsArgumentOutOfRangeException(long length)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => Array.Copy(new string[10], new string[10], length));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => Array.Copy(new string[10], 0, new string[10], 0, length));
         }
 
         [Theory]
@@ -1316,8 +1417,12 @@ namespace System.Tests
             if (sourceIndex == 0 && destinationIndex == 0)
             {
                 AssertExtensions.Throws<ArgumentException>("sourceArray", "", () => Array.Copy(new string[sourceCount], new string[destinationCount], count));
+                AssertExtensions.Throws<ArgumentException>("sourceArray", "", () => Array.Copy(new string[sourceCount], new string[destinationCount], (long)count));
             }
+
             AssertExtensions.Throws<ArgumentException>("sourceArray", "", () => Array.Copy(new string[sourceCount], sourceIndex, new string[destinationCount], destinationIndex, count));
+            AssertExtensions.Throws<ArgumentException>("sourceArray", "", () => Array.Copy(new string[sourceCount], (long)sourceIndex, new string[destinationCount], destinationIndex, count));
+
             AssertExtensions.Throws<ArgumentException>("sourceArray", "", () => Array.ConstrainedCopy(new string[sourceCount], sourceIndex, new string[destinationCount], destinationIndex, count));
         }
 
@@ -1330,8 +1435,12 @@ namespace System.Tests
             if (sourceIndex == 0 && destinationIndex == 0)
             {
                 AssertExtensions.Throws<ArgumentException>("destinationArray", "", () => Array.Copy(new string[sourceCount], new string[destinationCount], count));
+                AssertExtensions.Throws<ArgumentException>("destinationArray", "", () => Array.Copy(new string[sourceCount], new string[destinationCount], (long)count));
             }
+
             AssertExtensions.Throws<ArgumentException>("destinationArray", "", () => Array.Copy(new string[sourceCount], sourceIndex, new string[destinationCount], destinationIndex, count));
+            AssertExtensions.Throws<ArgumentException>("destinationArray", "", () => Array.Copy(new string[sourceCount], (long)sourceIndex, new string[destinationCount], destinationIndex, count));
+
             AssertExtensions.Throws<ArgumentException>("destinationArray", "", () => Array.ConstrainedCopy(new string[sourceCount], sourceIndex, new string[destinationCount], destinationIndex, count));
         }
 
@@ -1339,34 +1448,58 @@ namespace System.Tests
         public static void Copy_StartIndexNegative_ThrowsArgumentOutOfRangeException()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("sourceIndex", "srcIndex", () => Array.Copy(new string[10], -1, new string[10], 0, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("sourceIndex", "srcIndex", () => Array.Copy(new string[10], (long)-1, new string[10], 0, 0));
+
             AssertExtensions.Throws<ArgumentOutOfRangeException>("sourceIndex", "srcIndex", () => Array.ConstrainedCopy(new string[10], -1, new string[10], 0, 0));
+        }
+
+        [Theory]
+        [InlineData((long)int.MinValue - 1)]
+        [InlineData((long)int.MaxValue + 1)]
+        public void Copy_LongSourceIndexNotValidInt_ThrowsArgumentException(long sourceIndex)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("sourceIndex", () => Array.Copy(new string[10], sourceIndex, new string[10], 0, 0));
         }
 
         [Fact]
         public static void Copy_DestinationIndexNegative_ThrowsArgumentOutOfRangeException()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("destinationIndex", "dstIndex", () => Array.Copy(new string[10], 0, new string[10], -1, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("destinationIndex", "dstIndex", () => Array.Copy(new string[10], 0, new string[10], (long)-1, 0));
+
             AssertExtensions.Throws<ArgumentOutOfRangeException>("destinationIndex", "dstIndex", () => Array.ConstrainedCopy(new string[10], 0, new string[10], -1, 0));
+
             AssertExtensions.Throws<ArgumentOutOfRangeException>("destinationIndex", "dstIndex", () => new string[10].CopyTo(new string[10], -1));
+        }
+
+        [Theory]
+        [InlineData((long)int.MinValue - 1)]
+        [InlineData((long)int.MaxValue + 1)]
+        public void Copy_LongDestinationIndexNotValidInt_ThrowsArgumentOutOfRangeException(long destinationIndex)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("destinationIndex", () => Array.Copy(new string[10], 0, new string[10], destinationIndex, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => new string[10].CopyTo(new string[10], destinationIndex));
         }
 
         [Fact]
         public static void CopyTo_SourceMultiDimensional_ThrowsRankException()
         {
             Assert.Throws<RankException>(() => new int[3, 3].CopyTo(new int[3], 0));
+            Assert.Throws<RankException>(() => new int[3, 3].CopyTo(new int[3], (long)0));
         }
 
         [Fact]
         public static void CopyTo_DestinationMultiDimensional_ThrowsArgumentException()
         {
             AssertExtensions.Throws<ArgumentException>(null, () => new int[3].CopyTo(new int[10, 10], 0));
+            AssertExtensions.Throws<ArgumentException>(null, () => new int[3].CopyTo(new int[10, 10], (long)0));
         }
 
         [Fact]
-        public static void CopyTo_IndexInvalid_ThrowsArgumentException()
+        public static void CopyTo_IndexGreaterThanDestinationArrayLength_ThrowsArgumentException()
         {
-            // Index > destination.Length
             AssertExtensions.Throws<ArgumentException>("destinationArray", "", () => new int[3].CopyTo(new int[10], 10));
+            AssertExtensions.Throws<ArgumentException>("destinationArray", "", () => new int[3].CopyTo(new int[10], (long)10));
         }
 
         public static unsafe IEnumerable<object[]> CreateInstance_TestData()
@@ -1418,9 +1551,13 @@ namespace System.Tests
         }
         
         [Theory]
+        [InlineData(typeof(int), new int[] { 1 }, new int[] { 0 }, default(int))]
         [InlineData(typeof(int), new int[] { 1, 2 }, new int[] { 0, 0 }, default(int))]
         [InlineData(typeof(int), new int[] { 1, 2, 3 }, new int[] { 0, 0, 0 }, default(int))]
         [InlineData(typeof(int), new int[] { 1, 2, 3, 4 }, new int[] { 0, 0, 0, 0 }, default(int))]
+        [InlineData(typeof(int), new int[] { 1, 2, 3, 4 }, new int[] { -2, 3, -4, -5 }, default(int))]
+        [InlineData(typeof(int), new int[] { 7 }, new int[] { 1 }, default(int))]
+        [InlineData(typeof(int), new int[] { 7, 8 }, new int[] { 1, 2 }, default(int))]
         [InlineData(typeof(int), new int[] { 7, 8, 9 }, new int[] { 1, 2, 3 }, default(int))]
         public static void CreateInstance(Type elementType, int[] lengths, int[] lowerBounds, object repeatedValue)
         {
@@ -1435,20 +1572,41 @@ namespace System.Tests
                     Array array1 = Array.CreateInstance(elementType, lengths[0]);
                     VerifyArray(array1, elementType, lengths, lowerBounds, repeatedValue);
                 }
+                else if (lengths.Length == 2)
+                {
+                    // Use CreateInstance(Type, int, int)
+                    Array array2 = Array.CreateInstance(elementType, lengths[0], lengths[1]);
+                    VerifyArray(array2, elementType, lengths, lowerBounds, repeatedValue);
+                }
+                else if (lengths.Length == 3)
+                {
+                    // Use CreateInstance(Type, int, int, int)
+                    Array array3 = Array.CreateInstance(elementType, lengths[0], lengths[1], lengths[2]);
+                    VerifyArray(array3, elementType, lengths, lowerBounds, repeatedValue);
+                }
+
                 // Use CreateInstance(Type, int[])
-                Array array2 = Array.CreateInstance(elementType, lengths);
-                VerifyArray(array2, elementType, lengths, lowerBounds, repeatedValue);
+                Array array4 = Array.CreateInstance(elementType, lengths);
+                VerifyArray(array4, elementType, lengths, lowerBounds, repeatedValue);
+
+                // Use CreateInstance(Type, long[])
+                Array array5 = Array.CreateInstance(elementType, lengths.Select(length => (long)length).ToArray());
+                VerifyArray(array5, elementType, lengths, lowerBounds, repeatedValue);
+
             }
             // Use CreateInstance(Type, int[], int[])
-            Array array3 = Array.CreateInstance(elementType, lengths, lowerBounds);
-            VerifyArray(array3, elementType, lengths, lowerBounds, repeatedValue);
+            Array array6 = Array.CreateInstance(elementType, lengths, lowerBounds);
+            VerifyArray(array6, elementType, lengths, lowerBounds, repeatedValue);
         }
 
         [Fact]
         public static void CreateInstance_NullElementType_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("elementType", () => Array.CreateInstance(null, 0));
+            AssertExtensions.Throws<ArgumentNullException>("elementType", () => Array.CreateInstance(null, 0, 0));
+            AssertExtensions.Throws<ArgumentNullException>("elementType", () => Array.CreateInstance(null, 0, 0, 0));
             AssertExtensions.Throws<ArgumentNullException>("elementType", () => Array.CreateInstance(null, new int[1]));
+            AssertExtensions.Throws<ArgumentNullException>("elementType", () => Array.CreateInstance(null, new long[1]));
             AssertExtensions.Throws<ArgumentNullException>("elementType", () => Array.CreateInstance(null, new int[1], new int[1]));
         }
 
@@ -1463,50 +1621,80 @@ namespace System.Tests
 
         [Theory]
         [MemberData(nameof(CreateInstance_NotSupportedType_TestData))]
-        public static void CreateInstance_NotSupportedType_ThrowsNotSupportedException(Type elementType)
+        public void CreateInstance_NotSupportedType_ThrowsNotSupportedException(Type elementType)
         {
             Assert.Throws<NotSupportedException>(() => Array.CreateInstance(elementType, 0));
+            Assert.Throws<NotSupportedException>(() => Array.CreateInstance(elementType, 0, 0));
+            Assert.Throws<NotSupportedException>(() => Array.CreateInstance(elementType, 0, 0, 0));
             Assert.Throws<NotSupportedException>(() => Array.CreateInstance(elementType, new int[1]));
+            Assert.Throws<NotSupportedException>(() => Array.CreateInstance(elementType, new long[1]));
             Assert.Throws<NotSupportedException>(() => Array.CreateInstance(elementType, new int[1], new int[1]));
         }
 
         [Fact]
-        public static void CreateInstance_NegativeLength_ThrowsArgumentOutOfRangeException()
+        public void CreateInstance_NegativeLength_ThrowsArgumentOutOfRangeException()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>("length", () => Array.CreateInstance(typeof(int), -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length1", () => Array.CreateInstance(typeof(int), -1, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length1", () => Array.CreateInstance(typeof(int), -1, 0, 0));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("lengths[0]", () => Array.CreateInstance(typeof(int), new int[] { -1 }));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("lengths[0]", () => Array.CreateInstance(typeof(int), new long[] { -1 }));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("lengths[0]", () => Array.CreateInstance(typeof(int), new int[] { -1 }, new int[1]));
         }
 
         [Fact]
-        public static void CreateInstance_LengthsNull_ThrowsArgumentNullException()
+        public void CreateInstance_NegativeLength2_ThrowsArgumentOutOfRangeException()
         {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length2", () => Array.CreateInstance(typeof(int), 0, -1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length2", () => Array.CreateInstance(typeof(int), 0, -1, 0));
+        }
+
+        [Fact]
+        public void CreateInstance_NegativeLength3_ThrowsArgumentOutOfRangeException()
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("length3", () => Array.CreateInstance(typeof(int), 0, 0, -1));
+        }
+
+        [Fact]
+        public void CreateInstance_LengthsNull_ThrowsArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("lengths", () => Array.CreateInstance(typeof(int), (int[])null));
+            AssertExtensions.Throws<ArgumentNullException>("lengths", () => Array.CreateInstance(typeof(int), (long[])null));
             AssertExtensions.Throws<ArgumentNullException>("lengths", () => Array.CreateInstance(typeof(int), null, new int[1]));
         }
 
         [Fact]
-        public static void CreateInstance_LengthsEmpty_ThrowsArgumentException()
+        public void CreateInstance_LengthsEmpty_ThrowsArgumentException()
         {
             AssertExtensions.Throws<ArgumentException>(null, () => Array.CreateInstance(typeof(int), new int[0]));
+            AssertExtensions.Throws<ArgumentException>(null, () => Array.CreateInstance(typeof(int), new long[0]));
             AssertExtensions.Throws<ArgumentException>(null, () => Array.CreateInstance(typeof(int), new int[0], new int[1]));
         }
 
         [Fact]
-        public static void CreateInstance_LowerBoundNull_ThrowsArgumentNullException()
+        public void CreateInstance_LowerBoundNull_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("lowerBounds", () => Array.CreateInstance(typeof(int), new int[] { 1 }, null));
         }
 
         [Theory]
+        [InlineData((long)int.MaxValue + 1)]
+        [InlineData((long)int.MinValue - 1)]
+        public void CreateInstance_InvalidLengthInLongLength_ThrowsArgumentOutOfRangeException(long length)
+        {
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("len", () => Array.CreateInstance(typeof(int), new long[] { length }));
+        }
+
+        [Theory]
         [InlineData(0)]
         [InlineData(2)]
-        public static void CreateInstance_LengthsAndLowerBoundsHaveDifferentLengths_ThrowsArgumentException(int length)
+        public void CreateInstance_LengthsAndLowerBoundsHaveDifferentLengths_ThrowsArgumentException(int length)
         {
             AssertExtensions.Throws<ArgumentException>(null, () => Array.CreateInstance(typeof(int), new int[1], new int[length]));
         }
         
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
-        public static void CreateInstance_Type_LengthsPlusLowerBoundOverflows_ThrowsArgumentOutOfRangeException()
+        public void CreateInstance_Type_LengthsPlusLowerBoundOverflows_ThrowsArgumentOutOfRangeException()
         {
             AssertExtensions.Throws<ArgumentOutOfRangeException>(null, () => Array.CreateInstance(typeof(int), new int[] { int.MaxValue }, new int[] { 2 }));
         }
@@ -1653,6 +1841,35 @@ namespace System.Tests
 
             // Start index + count > array.Length
             AssertExtensions.Throws<ArgumentOutOfRangeException>("startIndex", () => Array.FindLastIndex(new int[3], 3, 1, i => i == 43));
+        }
+
+        [Theory]
+        [InlineData(new int[0])]
+        [InlineData(new int[] { 1, 2, 3 })]
+        public void ForEach_Array_EvaluatesActionForEachElement(int[] array)
+        {
+            var elements = new List<int>();
+            Array.ForEach((int[])array.Clone(), element => elements.Add(element));
+            Assert.Equal(array, elements);
+            Assert.Equal(array, array);
+        }
+
+        [Fact]
+        public void ForEach_NullArray_ThrowsArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("array", () => Array.ForEach<int>(null, element => { }));
+        }
+
+        [Fact]
+        public void ForEach_NullAction_ThrowsArgumentNullException()
+        {
+            AssertExtensions.Throws<ArgumentNullException>("action", () => Array.ForEach(new int[1], null));
+        }
+
+        [Fact]
+        public void ForEach_ActionThrows_RethrowsException()
+        {
+            Assert.Throws<DivideByZeroException>(() => Array.ForEach(new int[1], element => { throw new DivideByZeroException(); }));
         }
 
         public static IEnumerable<object[]> GetEnumerator_TestData()
@@ -3427,8 +3644,9 @@ namespace System.Tests
             for (int dimension = 0; dimension < array.Rank; dimension++)
             {
                 Assert.Equal(lengths[dimension], array.GetLength(dimension));
-                Assert.Equal(lowerBounds[dimension], array.GetLowerBound(dimension));
+                Assert.Equal(lengths[dimension], array.GetLongLength(dimension));
 
+                Assert.Equal(lowerBounds[dimension], array.GetLowerBound(dimension));
                 Assert.Equal(lowerBounds[dimension] + lengths[dimension] - 1, array.GetUpperBound(dimension));
             }
             
@@ -3445,6 +3663,12 @@ namespace System.Tests
             {
                 VerifyArrayAsIList(array);
             }
+
+            Assert.Same(array, array.SyncRoot);
+
+            Assert.False(array.IsSynchronized);
+            Assert.True(array.IsFixedSize);
+            Assert.False(array.IsReadOnly);
         }
 
         private static void VerifyArrayAsIList(Array array)

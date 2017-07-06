@@ -2,14 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Globalization;
 using Xunit;
 
 namespace System.Tests
 {
-    public static class SByteTests
+    public class SByteTests
     {
         [Fact]
         public static void Ctor_Empty()
@@ -45,23 +44,22 @@ namespace System.Tests
         [InlineData((sbyte)114, (sbyte)123, -1)]
         [InlineData((sbyte)114, sbyte.MaxValue, -1)]
         [InlineData((sbyte)114, null, 1)]
-        public static void CompareTo(sbyte i, object value, int expected)
+        public void CompareTo_Other_ReturnsExpected(sbyte i, object value, int expected)
         {
-            if (value is sbyte)
+            if (value is sbyte sbyteValue)
             {
-                Assert.Equal(expected, Math.Sign(i.CompareTo((sbyte)value)));
+                Assert.Equal(expected, Math.Sign(i.CompareTo(sbyteValue)));
             }
 
-            IComparable comparable = i;
-            Assert.Equal(expected, Math.Sign(comparable.CompareTo(value)));
+            Assert.Equal(expected, Math.Sign(i.CompareTo(value)));
         }
 
-        [Fact]
-        public static void CompareTo_ObjectNotSByte_ThrowsArgumentException()
+        [Theory]
+        [InlineData("a")]
+        [InlineData(234)]
+        public void CompareTo_ObjectNotSByte_ThrowsArgumentException(object value)
         {
-            IComparable comparable = (sbyte)114;
-            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo("a")); // Obj is not a sbyte
-            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo(234)); // Obj is not a sbyte
+            AssertExtensions.Throws<ArgumentException>(null, () => ((sbyte)123).CompareTo(value));
         }
 
         [Theory]
@@ -83,6 +81,12 @@ namespace System.Tests
                 Assert.Equal(expected, i1.GetHashCode().Equals(i2.GetHashCode()));
             }
             Assert.Equal(expected, i1.Equals(obj));
+        }
+
+        [Fact]
+        public void GetTypeCode_Invoke_ReturnsSByte()
+        {
+            Assert.Equal(TypeCode.SByte, ((sbyte)1).GetTypeCode());
         }
 
         public static IEnumerable<object[]> ToString_TestData()
