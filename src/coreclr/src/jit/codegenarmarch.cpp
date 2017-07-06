@@ -954,6 +954,13 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
     {
         srcVarNum = varNode->gtLclNum;
         assert(srcVarNum < compiler->lvaCount);
+
+        // handle promote situation
+        LclVarDsc* varDsc = compiler->lvaTable + srcVarNum;
+        if (varDsc->lvPromoted)
+        {
+            NYI_ARM("CodeGen::genPutArgSplit - promoted struct");
+        }
     }
     else // addrNode is used
     {
