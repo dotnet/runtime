@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -55,6 +54,12 @@ namespace System.Tests
         public static void IsInfinity(float f, bool expected)
         {
             Assert.Equal(expected, float.IsInfinity(f));
+        }
+
+        [Fact]
+        public void GetTypeCode_Invoke_ReturnsSingle()
+        {
+            Assert.Equal(TypeCode.Single, 0.0f.GetTypeCode());
         }
 
         [Fact]
@@ -117,11 +122,10 @@ namespace System.Tests
         [InlineData(float.NaN, float.NaN, 0)]
         [InlineData(float.NaN, (float)0, -1)]
         [InlineData((float)234, null, 1)]
-        public static void CompareTo(float f1, object value, int expected)
+        public void CompareTo_Other_ReturnsExpected(float f1, object value, int expected)
         {
-            if (value is float)
+            if (value is float f2)
             {
-                float f2 = (float)value;
                 Assert.Equal(expected, Math.Sign(f1.CompareTo(f2)));
                 if (float.IsNaN(f1) || float.IsNaN(f2))
                 {
@@ -154,16 +158,16 @@ namespace System.Tests
                     }
                 }
             }
-            IComparable comparable = f1;
-            Assert.Equal(expected, Math.Sign(comparable.CompareTo(value)));
+
+            Assert.Equal(expected, Math.Sign(f1.CompareTo(value)));
         }
 
-        [Fact]
-        public static void CompareTo_ObjectNotFloat_ThrowsArgumentException()
+        [Theory]
+        [InlineData("a")]
+        [InlineData((double)234)]
+        public void CompareTo_ObjectNotFloat_ThrowsArgumentException(object value)
         {
-            IComparable comparable = (float)234;
-            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo((double)234)); // Obj is not a float
-            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo("234")); // Obj is not a float
+            AssertExtensions.Throws<ArgumentException>(null, () => ((float)123).CompareTo(value));
         }
 
         [Theory]
@@ -175,9 +179,8 @@ namespace System.Tests
         [InlineData((float)789, "789", false)]
         public static void Equals(float f1, object value, bool expected)
         {
-            if (value is float)
+            if (value is float f2)
             {
-                float f2 = (float)value;
                 Assert.Equal(expected, f1.Equals(f2));
 
                 if (float.IsNaN(f1) && float.IsNaN(f2))
@@ -231,7 +234,7 @@ namespace System.Tests
             };
             yield return new object[] { (float)-2468, "N", customNegativeSignGroupSeparatorNegativePattern, "(2*468.00)" };
 
-            var invariantFormat = NumberFormatInfo.InvariantInfo;
+            NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
             yield return new object[] { float.Epsilon, "G", invariantFormat, "1.401298E-45" };
             yield return new object[] { float.NaN, "G", invariantFormat, "NaN" };
             yield return new object[] { float.PositiveInfinity, "G", invariantFormat, "Infinity" };

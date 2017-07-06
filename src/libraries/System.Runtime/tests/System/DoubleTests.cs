@@ -116,11 +116,10 @@ namespace System.Tests
         [InlineData(double.NaN, double.NaN, 0)]
         [InlineData(double.NaN, (double)0, -1)]
         [InlineData((double)234, null, 1)]
-        public static void CompareTo(double d1, object value, int expected)
+        public void CompareTo_Other_ReturnsExpected(double d1, object value, int expected)
         {
-            if (value is double)
+            if (value is double d2)
             {
-                double d2 = (double)value;
                 Assert.Equal(expected, Math.Sign(d1.CompareTo(d2)));
                 if (double.IsNaN(d1) || double.IsNaN(d2))
                 {
@@ -153,16 +152,16 @@ namespace System.Tests
                     }
                 }
             }
-            IComparable comparable = d1;
-            Assert.Equal(expected, Math.Sign(comparable.CompareTo(value)));
+
+            Assert.Equal(expected, Math.Sign(d1.CompareTo(value)));
         }
 
-        [Fact]
-        public static void CompareTo_ObjectNotDouble_ThrowsArgumentException()
+        [Theory]
+        [InlineData("a")]
+        [InlineData((float)234)]
+        public void CompareTo_ObjectNotDouble_ThrowsArgumentException(object value)
         {
-            IComparable comparable = (double)234;
-            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo((float)234)); // Obj is not a double
-            AssertExtensions.Throws<ArgumentException>(null, () => comparable.CompareTo("234")); // Obj is not a double
+            AssertExtensions.Throws<ArgumentException>(null, () => ((double)123).CompareTo(value));
         }
 
         [Theory]
@@ -174,9 +173,8 @@ namespace System.Tests
         [InlineData((double)789, "789", false)]
         public static void Equals(double d1, object value, bool expected)
         {
-            if (value is double)
+            if (value is double d2)
             {
-                double d2 = (double)value;
                 Assert.Equal(expected, d1.Equals(d2));
 
                 if (double.IsNaN(d1) && double.IsNaN(d2))
@@ -192,6 +190,12 @@ namespace System.Tests
                 Assert.Equal(expected, d1.GetHashCode().Equals(d2.GetHashCode()));
             }
             Assert.Equal(expected, d1.Equals(value));
+        }
+
+        [Fact]
+        public void GetTypeCode_Invoke_ReturnsDouble()
+        {
+            Assert.Equal(TypeCode.Double, 0.0.GetTypeCode());
         }
 
         public static IEnumerable<object[]> ToString_TestData()
@@ -230,7 +234,7 @@ namespace System.Tests
             };
             yield return new object[] { (double)-2468, "N", customNegativeSignGroupSeparatorNegativePattern, "(2*468.00)" };
 
-            var invariantFormat = NumberFormatInfo.InvariantInfo;
+            NumberFormatInfo invariantFormat = NumberFormatInfo.InvariantInfo;
             yield return new object[] { double.Epsilon, "G", invariantFormat, "4.94065645841247E-324" };
             yield return new object[] { double.NaN, "G", invariantFormat, "NaN" };
             yield return new object[] { double.PositiveInfinity, "G", invariantFormat, "Infinity" };
@@ -289,7 +293,7 @@ namespace System.Tests
             // Defaults: AllowLeadingWhite | AllowTrailingWhite | AllowLeadingSign | AllowDecimalPoint | AllowExponent | AllowThousands
             NumberStyles defaultStyle = NumberStyles.Float;
 
-            var emptyFormat = NumberFormatInfo.CurrentInfo;
+            NumberFormatInfo emptyFormat = NumberFormatInfo.CurrentInfo;
 
             var dollarSignCommaSeparatorFormat = new NumberFormatInfo()
             {

@@ -5,12 +5,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Reflection.Emit;
 using Xunit;
 
 namespace System.Tests
 {
-    public static partial class EnumTests
+    public partial class EnumTests
     {
         public static IEnumerable<object[]> Parse_TestData()
         {
@@ -365,6 +364,21 @@ namespace System.Tests
             //      - signed ints sign-extended to 64-bits
             // Then comparison is done on all 64 bits.
             Assert.Equal(expected, Enum.GetName(enumType, value));
+        }
+
+        [Theory]
+        [InlineData(SimpleEnum.Blue, TypeCode.Int32)]
+        [InlineData(ByteEnum.Max, TypeCode.Byte)]
+        [InlineData(SByteEnum.Min, TypeCode.SByte)]
+        [InlineData(UInt16Enum.Max, TypeCode.UInt16)]
+        [InlineData(Int16Enum.Min, TypeCode.Int16)]
+        [InlineData(UInt32Enum.Max, TypeCode.UInt32)]
+        [InlineData(Int32Enum.Min, TypeCode.Int32)]
+        [InlineData(UInt64Enum.Max, TypeCode.UInt64)]
+        [InlineData(Int64Enum.Min, TypeCode.Int64)]
+        public static void GetTypeCode_Enum_ReturnsExpected(Enum e, TypeCode expected)
+        {
+            Assert.Equal(expected, e.GetTypeCode());
         }
 
         public static IEnumerable<object[]> IsDefined_TestData()
@@ -1439,25 +1453,30 @@ namespace System.Tests
             yield return new object[] { AttributeTargets.Class | AttributeTargets.Delegate, "G", "Class, Delegate" };
         }
 
+#pragma warning disable 618 // ToString with IFormatProvider is marked as Obsolete.
         [Theory]
         [MemberData(nameof(ToString_Format_TestData))]
         public static void ToString_Format(Enum e, string format, string expected)
         {
             if (format.ToUpperInvariant() == "G")
             {
-                string nullString = null;
-
                 Assert.Equal(expected, e.ToString());
-                Assert.Equal(expected, e.ToString(""));
-                Assert.Equal(expected, e.ToString(nullString));
+                Assert.Equal(expected, e.ToString(string.Empty));
+                Assert.Equal(expected, e.ToString((string)null));
+
+                Assert.Equal(expected, e.ToString((IFormatProvider)null));
             }
-            // Format string is non-case-sensitive
+
+            // Format string is case-insensitive.
             Assert.Equal(expected, e.ToString(format));
             Assert.Equal(expected, e.ToString(format.ToUpperInvariant()));
             Assert.Equal(expected, e.ToString(format.ToLowerInvariant()));
 
+            Assert.Equal(expected, e.ToString(format, (IFormatProvider)null));
+
             Format(e.GetType(), e, format, expected);
         }
+#pragma warning restore 618
 
         [Fact]
         public static void ToString_Format_MultipleMatches()
