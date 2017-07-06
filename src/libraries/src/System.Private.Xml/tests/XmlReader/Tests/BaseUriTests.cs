@@ -32,7 +32,7 @@ namespace System.Xml.Tests
             File.WriteAllText(tempPath, DummyXml);
             using (XmlReader reader = factory(tempPath))
             {
-                Assert.True(new Uri(reader.BaseURI).IsAbsoluteUri);
+                Assert.True(new Uri(reader.BaseURI, UriKind.RelativeOrAbsolute).IsAbsoluteUri);
             }
         }
     }
