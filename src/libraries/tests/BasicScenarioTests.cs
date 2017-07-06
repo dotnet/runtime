@@ -33,7 +33,7 @@ namespace Microsoft.ServiceModel.Syndication.Tests
                 Rss20FeedFormatter rssf = new Rss20FeedFormatter(sf);
 
                 // *** EXECUTE *** \\
-                rssf.WriteTo(xmlw).GetAwaiter().GetResult();
+                rssf.WriteToAsync(xmlw).GetAwaiter().GetResult();
                 xmlw.Close();
 
                 // *** VALIDATE *** \\
@@ -62,7 +62,7 @@ namespace Microsoft.ServiceModel.Syndication.Tests
                 //Write the same feed that was read.
                 XmlWriter xmlw = XmlWriter.Create(path);
                 Rss20FeedFormatter atomFeed = new Rss20FeedFormatter(sf);
-                atomFeed.WriteTo(xmlw).GetAwaiter().GetResult();
+                atomFeed.WriteToAsync(xmlw).GetAwaiter().GetResult();
                 xmlw.Close();
 
                 // *** VALIDATE *** \\
@@ -101,7 +101,7 @@ namespace Microsoft.ServiceModel.Syndication.Tests
                 settingsWriter.Async = true;
                 XmlWriter xmlw = XmlWriter.Create(path,settingsWriter);
                 Rss20FeedFormatter atomFeed = new Rss20FeedFormatter(sf);
-                Task write = atomFeed.WriteTo(xmlw);
+                Task write = atomFeed.WriteToAsync(xmlw);
 
                 Task.WhenAll(write);
 
@@ -133,7 +133,7 @@ namespace Microsoft.ServiceModel.Syndication.Tests
                 //Write the same feed that was read.
                 XmlWriter xmlw = XmlWriter.Create(path);
                 Atom10FeedFormatter atomFeed = new Atom10FeedFormatter(sf);
-                atomFeed.WriteTo(xmlw).GetAwaiter().GetResult();
+                atomFeed.WriteToAsync(xmlw).GetAwaiter().GetResult();
                 xmlw.Close();
 
                 // *** VALIDATE *** \\
@@ -168,7 +168,7 @@ namespace Microsoft.ServiceModel.Syndication.Tests
 
                 XmlWriter xmlw = XmlWriter.Create(path,writerSettings);
                 Atom10FeedFormatter atomFeed = new Atom10FeedFormatter(sf);
-                Task write = atomFeed.WriteTo(xmlw);
+                Task write = atomFeed.WriteToAsync(xmlw);
 
                 Task.WhenAll(write);
                 xmlw.Close();
@@ -228,12 +228,12 @@ namespace Microsoft.ServiceModel.Syndication.Tests
 
 
                 // *** EXECUTE *** \\
-                Task rss = rssff.WriteTo(xmlwRss);
+                Task rss = rssff.WriteToAsync(xmlwRss);
                 Task.WaitAll(rss);
 
                 xmlwRss.Close();
 
-                atomf.WriteTo(xmlwAtom).GetAwaiter().GetResult(); ;
+                atomf.WriteToAsync(xmlwAtom).GetAwaiter().GetResult(); ;
                 xmlwAtom.Close();
 
                 // *** ASSERT *** \\
@@ -285,7 +285,7 @@ namespace Microsoft.ServiceModel.Syndication.Tests
             try
             {
                 // *** EXECUTE *** \\
-                rssff.WriteTo(writer).GetAwaiter().GetResult(); ;
+                rssff.WriteToAsync(writer).GetAwaiter().GetResult(); ;
                 writer.Close();
 
                 // *** ASSERT *** \\
@@ -570,7 +570,7 @@ namespace Microsoft.ServiceModel.Syndication.Tests
             // *** SETUP *** \\
             Rss20FeedFormatter rssformatter = new Rss20FeedFormatter();
 
-            rssformatter.stringParser = (val, name, ns) =>
+            rssformatter.StringParser = (val, name, ns) =>
             {
                 switch (name)
                 {

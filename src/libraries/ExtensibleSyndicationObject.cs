@@ -86,6 +86,7 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(readerOverUnparsedExtensions));
             }
+
             if (maxExtensionSize < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(maxExtensionSize));
@@ -106,6 +107,7 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(writer));
             }
+
             if (_attributeExtensions != null)
             {
                 foreach (XmlQualifiedName qname in _attributeExtensions.Keys)
@@ -122,6 +124,7 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(writer));
             }
+
             if (_elementExtensions != null)
             {
                 _elementExtensions.WriteTo(writer);

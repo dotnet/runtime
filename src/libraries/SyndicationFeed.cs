@@ -446,12 +446,12 @@ namespace Microsoft.ServiceModel.Syndication
 
         public async Task SaveAsAtom10(XmlWriter writer)
         {
-            await this.GetAtom10Formatter().WriteTo(writer);
+            await this.GetAtom10Formatter().WriteToAsync(writer);
         }
 
         public async Task SaveAsRss20(XmlWriter writer)
         {
-            await this.GetRss20Formatter().WriteTo(writer);
+            await this.GetRss20Formatter().WriteToAsync(writer);
         }
 
         protected internal virtual SyndicationCategory CreateCategory()

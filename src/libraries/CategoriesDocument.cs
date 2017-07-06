@@ -11,7 +11,6 @@ namespace Microsoft.ServiceModel.Syndication
     using System.Threading.Tasks;
     using System.Xml;
 
-    [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     public abstract class CategoriesDocument : IExtensibleSyndicationObject
     {
         private Uri _baseUri;
@@ -70,10 +69,10 @@ namespace Microsoft.ServiceModel.Syndication
             return new ReferencedCategoriesDocument(linkToCategoriesDocument);
         }
 
-        public static async Task<CategoriesDocument> Load(XmlReader reader)
+        public static async Task<CategoriesDocument> LoadAsync(XmlReader reader)
         {
             AtomPub10CategoriesDocumentFormatter formatter = new AtomPub10CategoriesDocumentFormatter();
-            await formatter.ReadFrom(reader);
+            await formatter.ReadFromAsync(reader);
             return formatter.Document;
         }
 
