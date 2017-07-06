@@ -619,20 +619,23 @@ enum gc_join_flavor
 };
 
 #define first_thread_arrived 2
-struct join_structure
+struct DECLSPEC_ALIGN(HS_CACHE_LINE_SIZE) join_structure
 {
+    // Shared non volatile keep on separate line to prevent eviction
+    int n_threads;
+
+    // Keep polling/wait structures on separate line write once per join
+    DECLSPEC_ALIGN(HS_CACHE_LINE_SIZE)
     GCEvent joined_event[3]; // the last event in the array is only used for first_thread_arrived.
+    Volatile<int> lock_color;
+    VOLATILE(BOOL) wait_done;
+    VOLATILE(BOOL) joined_p;
+
+    // Keep volatile counted locks on separate cache line write many per join
+    DECLSPEC_ALIGN(HS_CACHE_LINE_SIZE)
     VOLATILE(int32_t) join_lock;
     VOLATILE(int32_t) r_join_lock;
-    VOLATILE(int32_t) join_restart;
-    VOLATILE(int32_t) r_join_restart; // only used by get_here_first and friends.
-    int n_threads;
-    VOLATILE(BOOL) joined_p;
-    // avoid lock_color and join_lock being on same cache line
-    // make sure to modify this if adding/removing variables to layout
-    char cache_line_separator[HS_CACHE_LINE_SIZE - (3*sizeof(int) + sizeof(int) + sizeof(BOOL))];
-    VOLATILE(int) lock_color;
-    VOLATILE(BOOL) wait_done;
+
 };
 
 enum join_type 
@@ -704,9 +707,7 @@ public:
             }
         }
         join_struct.join_lock = join_struct.n_threads;
-        join_struct.join_restart = join_struct.n_threads - 1;
         join_struct.r_join_lock = join_struct.n_threads;
-        join_struct.r_join_restart = join_struct.n_threads - 1;
         join_struct.wait_done = FALSE;
         flavor = f;
 
@@ -740,7 +741,7 @@ public:
 #endif //JOIN_STATS
 
         assert (!join_struct.joined_p);
-        int color = join_struct.lock_color;
+        int color = join_struct.lock_color.LoadWithoutBarrier();
 
         if (Interlocked::Decrement(&join_struct.join_lock) != 0)
         {
@@ -750,13 +751,13 @@ public:
             fire_event (gch->heap_number, time_start, type_join, join_id);
 
             //busy wait around the color
-            if (color == join_struct.lock_color)
+            if (color == join_struct.lock_color.LoadWithoutBarrier())
             {
 respin:
                 int spin_count = 4096 * (gc_heap::n_heaps - 1);
                 for (int j = 0; j < spin_count; j++)
                 {
-                    if (color != join_struct.lock_color)
+                    if (color != join_struct.lock_color.LoadWithoutBarrier())
                     {
                         break;
                     }
@@ -764,7 +765,7 @@ respin:
                 }
 
                 // we've spun, and if color still hasn't changed, fall into hard wait
-                if (color == join_struct.lock_color)
+                if (color == join_struct.lock_color.LoadWithoutBarrier())
                 {
                     dprintf (JOIN_LOG, ("join%d(%d): Join() hard wait on reset event %d, join_lock is now %d", 
                         flavor, join_id, color, (int32_t)(join_struct.join_lock)));
@@ -782,7 +783,7 @@ respin:
                 }
 
                 // avoid race due to the thread about to reset the event (occasionally) being preempted before ResetEvent()
-                if (color == join_struct.lock_color)
+                if (color == join_struct.lock_color.LoadWithoutBarrier())
                 {
                     goto respin;
                 }
@@ -792,14 +793,6 @@ respin:
             }
 
             fire_event (gch->heap_number, time_end, type_join, join_id);
-
-            // last thread out should reset event
-            if (Interlocked::Decrement(&join_struct.join_restart) == 0)
-            {
-                // the joined event must be set at this point, because the restarting must have done this
-                join_struct.join_restart = join_struct.n_threads - 1;
-//                printf("Reset joined_event %d\n", color);
-            }
 
 #ifdef JOIN_STATS
             // parallel execution starts here
@@ -967,7 +960,7 @@ respin:
         join_struct.join_lock = join_struct.n_threads;
         dprintf (JOIN_LOG, ("join%d(%d): Restarting from join: join_lock is %d", flavor, id, (int32_t)(join_struct.join_lock)));
 //        printf("restart from join #%d at cycle %u from start of gc\n", join_id, GetCycleCount32() - gc_start);
-        int color = join_struct.lock_color;
+        int color = join_struct.lock_color.LoadWithoutBarrier();
         join_struct.lock_color = !color;
         join_struct.joined_event[color].Set();
 
@@ -1002,7 +995,6 @@ respin:
         if (join_struct.n_threads != 1)
         {
             join_struct.r_join_lock = join_struct.n_threads;
-            join_struct.r_join_restart = join_struct.n_threads - 1;
             join_struct.wait_done = FALSE;
             join_struct.joined_event[first_thread_arrived].Reset();
         }
