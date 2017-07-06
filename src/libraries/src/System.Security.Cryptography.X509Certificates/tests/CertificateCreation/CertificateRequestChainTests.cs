@@ -179,6 +179,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
                     chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
                     chain.ChainPolicy.ExtraStore.Add(rootCert);
+                    chain.ChainPolicy.VerificationTime = start.ToLocalTime().DateTime;
 
                     if (useIntermed)
                     {
@@ -426,6 +427,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                     chain.ChainPolicy.ExtraStore.Add(intermed1CertWithKey);
                     chain.ChainPolicy.ExtraStore.Add(intermed2CertWithKey);
                     chain.ChainPolicy.ExtraStore.Add(rootCertWithKey);
+                    chain.ChainPolicy.VerificationTime = now.ToLocalTime().DateTime;
 
                     RunChain(chain, leafCert, true, "Initial chain build");
 
@@ -511,6 +513,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
                         chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
                         chain.ChainPolicy.ExtraStore.Add(intermedCertWithKey);
                         chain.ChainPolicy.ExtraStore.Add(rootCertWithKey);
+                        chain.ChainPolicy.VerificationTime = notBefore.ToLocalTime().DateTime;
 
                         RunChain(chain, leafCert, true, "Chain build");
                     }
