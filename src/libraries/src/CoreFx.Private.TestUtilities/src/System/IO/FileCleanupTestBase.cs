@@ -63,7 +63,10 @@ namespace System.IO
             catch { } // avoid exceptions escaping Dispose
         }
 
-        /// <summary>Gets the test directory into which all files and directories created by tests should be stored.</summary>
+        /// <summary>
+        /// Gets the test directory into which all files and directories created by tests should be stored.
+        /// This directory is isolated per test class.
+        /// </summary>
         protected string TestDirectory { get; }
 
         /// <summary>Gets a test file full path that is associated with the call site.</summary>
