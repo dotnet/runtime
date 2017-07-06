@@ -4,6 +4,7 @@
 
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Contracts;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
@@ -612,16 +613,19 @@ namespace System.Drawing
                 case CopyPixelOperation.NoMirrorBitmap:
                     break;
                 default:
-                    throw new InvalidEnumArgumentException("value", unchecked((int)copyPixelOperation), typeof(CopyPixelOperation));
+                    throw new InvalidEnumArgumentException(nameof(copyPixelOperation), unchecked((int)copyPixelOperation), typeof(CopyPixelOperation));
             }
 
             int destWidth = blockRegionSize.Width;
             int destHeight = blockRegionSize.Height;
 
             using (DeviceContext dc = DeviceContext.FromHwnd(IntPtr.Zero))
-            {  // screen DC
+            {
+                // The DC of the screen.
                 HandleRef screenDC = new HandleRef(null, dc.Hdc);
-                HandleRef targetDC = new HandleRef(null, GetHdc());      // this DC
+
+                // The DC of the current graphics object.
+                HandleRef targetDC = new HandleRef(null, GetHdc());
 
                 try
                 {
@@ -647,20 +651,13 @@ namespace System.Drawing
         public void ResetTransform()
         {
             int status = SafeNativeMethods.Gdip.GdipResetWorldTransform(new HandleRef(this, NativeGraphics));
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-            {
-                throw SafeNativeMethods.Gdip.StatusException(status);
-            }
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         /// <summary>
         /// Multiplies the <see cref='Matrix'/> that represents the world transform and <paramref name="matrix"/>.
         /// </summary>
-        public void MultiplyTransform(Matrix matrix)
-        {
-            MultiplyTransform(matrix, MatrixOrder.Prepend);
-        }
+        public void MultiplyTransform(Matrix matrix) => MultiplyTransform(matrix, MatrixOrder.Prepend);
 
         /// <summary>
         /// Multiplies the <see cref='Matrix'/> that represents the world transform and <paramref name="matrix"/>.
@@ -669,86 +666,55 @@ namespace System.Drawing
         {
             if (matrix == null)
             {
-                throw new ArgumentNullException("matrix");
+                throw new ArgumentNullException(nameof(matrix));
             }
 
             int status = SafeNativeMethods.Gdip.GdipMultiplyWorldTransform(new HandleRef(this, NativeGraphics),
                                                             new HandleRef(matrix, matrix.nativeMatrix),
                                                             order);
-            if (status != SafeNativeMethods.Gdip.Ok)
-            {
-                throw SafeNativeMethods.Gdip.StatusException(status);
-            }
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
-        public void TranslateTransform(float dx, float dy)
-        {
-            TranslateTransform(dx, dy, MatrixOrder.Prepend);
-        }
+        public void TranslateTransform(float dx, float dy) => TranslateTransform(dx, dy, MatrixOrder.Prepend);
 
         public void TranslateTransform(float dx, float dy, MatrixOrder order)
         {
             int status = SafeNativeMethods.Gdip.GdipTranslateWorldTransform(new HandleRef(this, NativeGraphics), dx, dy, order);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-            {
-                throw SafeNativeMethods.Gdip.StatusException(status);
-            }
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
-        public void ScaleTransform(float sx, float sy)
-        {
-            ScaleTransform(sx, sy, MatrixOrder.Prepend);
-        }
+        public void ScaleTransform(float sx, float sy) => ScaleTransform(sx, sy, MatrixOrder.Prepend);
 
         public void ScaleTransform(float sx, float sy, MatrixOrder order)
         {
             int status = SafeNativeMethods.Gdip.GdipScaleWorldTransform(new HandleRef(this, NativeGraphics), sx, sy, order);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-            {
-                throw SafeNativeMethods.Gdip.StatusException(status);
-            }
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
-        public void RotateTransform(float angle)
-        {
-            RotateTransform(angle, MatrixOrder.Prepend);
-        }
+        public void RotateTransform(float angle) => RotateTransform(angle, MatrixOrder.Prepend);
 
         public void RotateTransform(float angle, MatrixOrder order)
         {
             int status = SafeNativeMethods.Gdip.GdipRotateWorldTransform(new HandleRef(this, NativeGraphics), angle, order);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-            {
-                throw SafeNativeMethods.Gdip.StatusException(status);
-            }
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
-        public void TransformPoints(CoordinateSpace destSpace,
-                                     CoordinateSpace srcSpace,
-                                     PointF[] pts)
+        public void TransformPoints(CoordinateSpace destSpace, CoordinateSpace srcSpace, PointF[] pts)
         {
             if (pts == null)
             {
-                throw new ArgumentNullException("pts");
+                throw new ArgumentNullException(nameof(pts));
             }
 
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(pts);
-            int status = SafeNativeMethods.Gdip.GdipTransformPoints(new HandleRef(this, NativeGraphics), unchecked((int)destSpace),
-                                                     unchecked((int)srcSpace), buf, pts.Length);
-
             try
             {
-                if (status != SafeNativeMethods.Gdip.Ok)
-                {
-                    throw SafeNativeMethods.Gdip.StatusException(status);
-                }
+                int status = SafeNativeMethods.Gdip.GdipTransformPoints(new HandleRef(this, NativeGraphics), unchecked((int)destSpace),
+                                                         unchecked((int)srcSpace), buf, pts.Length);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 // must do an in-place copy because we only have a reference
                 PointF[] newPts = SafeNativeMethods.Gdip.ConvertGPPOINTFArrayF(buf, pts.Length);
-
                 for (int i = 0; i < pts.Length; i++)
                 {
                     pts[i] = newPts[i];
@@ -760,29 +726,22 @@ namespace System.Drawing
             }
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
-        public void TransformPoints(CoordinateSpace destSpace,
-                                    CoordinateSpace srcSpace,
-                                    Point[] pts)
+        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
+        public void TransformPoints(CoordinateSpace destSpace, CoordinateSpace srcSpace, Point[] pts)
         {
             if (pts == null)
             {
-                throw new ArgumentNullException("pts");
+                throw new ArgumentNullException(nameof(pts));
             }
 
             IntPtr buf = SafeNativeMethods.Gdip.ConvertPointToMemory(pts);
-            int status = SafeNativeMethods.Gdip.GdipTransformPointsI(new HandleRef(this, NativeGraphics), unchecked((int)destSpace),
-                                                      unchecked((int)srcSpace), buf, pts.Length);
-
             try
             {
-                if (status != SafeNativeMethods.Gdip.Ok)
-                {
-                    throw SafeNativeMethods.Gdip.StatusException(status);
-                }
+                int status = SafeNativeMethods.Gdip.GdipTransformPointsI(new HandleRef(this, NativeGraphics), unchecked((int)destSpace),
+                                                          unchecked((int)srcSpace), buf, pts.Length);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 Point[] newPts = SafeNativeMethods.Gdip.ConvertGPPOINTArray(buf, pts.Length);
-
                 for (int i = 0; i < pts.Length; i++)
                 {
                     pts[i] = newPts[i];
@@ -797,13 +756,8 @@ namespace System.Drawing
         public Color GetNearestColor(Color color)
         {
             int nearest = color.ToArgb();
-
             int status = SafeNativeMethods.Gdip.GdipGetNearestColor(new HandleRef(this, NativeGraphics), ref nearest);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-            {
-                throw SafeNativeMethods.Gdip.StatusException(status);
-            }
+            SafeNativeMethods.Gdip.CheckStatus(status);
 
             return Color.FromArgb(nearest);
         }
