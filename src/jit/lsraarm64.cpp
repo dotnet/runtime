@@ -89,7 +89,6 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         case GT_STORE_LCL_VAR:
             info->srcCount = 1;
             info->dstCount = 0;
-            LowerStoreLoc(tree->AsLclVarCommon());
             TreeNodeInfoInitStoreLoc(tree->AsLclVarCommon());
             break;
 

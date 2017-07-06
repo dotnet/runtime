@@ -85,6 +85,10 @@ class CSE_DataFlow; // defined in OptCSE.cpp
 struct IndentStack;
 #endif
 
+#ifndef LEGACY_BACKEND
+class Lowering; // defined in lower.h
+#endif
+
 // The following are defined in this file, Compiler.h
 
 class Compiler;
@@ -6240,6 +6244,7 @@ public:
 
 private:
 #ifndef LEGACY_BACKEND
+    Lowering*            m_pLowering;   // Lowering; needed to Lower IR that's added or modified after Lowering.
     LinearScanInterface* m_pLinearScan; // Linear Scan allocator
 #else                                   // LEGACY_BACKEND
     unsigned  raAvoidArgRegMask;       // Mask of incoming argument registers that we may need to avoid

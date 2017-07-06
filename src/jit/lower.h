@@ -47,6 +47,15 @@ public:
 
     static void getCastDescription(GenTreePtr treeNode, CastInfo* castInfo);
 
+    // LowerRange handles new code that is introduced by or after Lowering.
+    void LowerRange(LIR::Range&& range)
+    {
+        for (GenTree* newNode : range)
+        {
+            LowerNode(newNode);
+        }
+    }
+
 private:
 #ifdef DEBUG
     static void CheckCallArg(GenTree* arg);
@@ -57,6 +66,7 @@ private:
 
     void LowerBlock(BasicBlock* block);
     GenTree* LowerNode(GenTree* node);
+
     void CheckVSQuirkStackPaddingNeeded(GenTreeCall* call);
 
     // ------------------------------
