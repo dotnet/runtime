@@ -878,7 +878,7 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
             GenTreeFieldList* fieldListPtr = arg->AsFieldList();
             for (unsigned index = 0; index < info->numRegs; fieldListPtr = fieldListPtr->Rest(), index++)
             {
-                var_types regType          = fieldListPtr->TypeGet();
+                var_types regType          = fieldListPtr->gtGetOp1()->TypeGet();
                 argSplit->m_regType[index] = regType;
             }
         }
