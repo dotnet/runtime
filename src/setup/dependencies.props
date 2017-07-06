@@ -12,7 +12,8 @@
     <CoreFxCurrentRef>893c05a4163f89f9ef0bdc69b2f1debda10a05c4</CoreFxCurrentRef>
     <CoreClrCurrentRef>893c05a4163f89f9ef0bdc69b2f1debda10a05c4</CoreClrCurrentRef>
     <StandardCurrentRef>893c05a4163f89f9ef0bdc69b2f1debda10a05c4</StandardCurrentRef>
-    <WCFCurrentRef>893c05a4163f89f9ef0bdc69b2f1debda10a05c4</WCFCurrentRef>
+    <!-- Disable WCF Update until we have a package with UAP support available
+    <WCFCurrentRef>a96e149ce150f6a15546032ca3966bf238c373fb</WCFCurrentRef> -->
   </PropertyGroup>
   
   <PropertyGroup>
@@ -23,7 +24,7 @@
     <MicrosoftNetNativeCompilerPackageVersion>2.0.0-preview-25429-00</MicrosoftNetNativeCompilerPackageVersion>
     <NETStandardVersion>2.1.0-preview1-25506-01</NETStandardVersion>
     <DiaSymReaderNativeVersion>1.4.1</DiaSymReaderNativeVersion>
-    <WcfVersion>4.5.0-preview1-25426-02</WcfVersion>
+    <WcfVersion>4.5.0-preview1-25413-01</WcfVersion>
   </PropertyGroup>
   
   <!-- Package dependency verification/auto-upgrade configuration. -->
@@ -75,10 +76,11 @@
       <ElementName>NETStandardVersion</ElementName>
       <PackageId>NETStandard.Library</PackageId>
     </XmlUpdateStep>
+    <!-- Disable WCF Update until we have a package with UAP support available
     <XmlUpdateStep Include="WCF">
       <Path>$(MSBuildThisFileFullPath)</Path>
       <ElementName>WcfVersion</ElementName>
       <PackageId>System.ServiceModel.Duplex</PackageId>
-    </XmlUpdateStep>
+    </XmlUpdateStep> -->
   </ItemGroup>
 </Project>
