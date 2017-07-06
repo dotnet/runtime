@@ -503,7 +503,7 @@ namespace System.IO
                 {
                     throw new ArgumentNullException("path");
                 }
-                if (string.IsNullOrWhiteSpace(userPath))
+                if (string.IsNullOrEmpty(userPath))
                 {
                     throw new ArgumentException(SR.Argument_EmptyPath, "path");
                 }
