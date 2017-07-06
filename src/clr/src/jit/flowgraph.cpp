@@ -24947,7 +24947,7 @@ private:
         {
             GenTreePtr fptrAddressCopy = compiler->gtCloneExpr(fptrAddress);
             GenTreePtr fatPointerMask  = new (compiler, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, FAT_POINTER_MASK);
-            return compiler->gtNewOperNode(GT_XOR, pointerType, fptrAddressCopy, fatPointerMask);
+            return compiler->gtNewOperNode(GT_SUB, pointerType, fptrAddressCopy, fatPointerMask);
         }
 
         //------------------------------------------------------------------------
