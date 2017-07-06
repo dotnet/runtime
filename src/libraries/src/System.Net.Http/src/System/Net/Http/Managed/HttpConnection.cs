@@ -42,6 +42,8 @@ namespace System.Net.Http
         private int _readOffset;
         private int _readLength;
 
+        private bool _connectionClose;      // Connection: close was seen on last response
+
         private bool _disposed;
 
         private sealed class HttpConnectionContent : HttpContent
@@ -555,6 +557,9 @@ namespace System.Net.Http
             _readLength = 0;
             _readOffset = 0;
 
+            _connectionClose = false;
+            _disposed = false;
+
             _pool.AddConnection(this);
         }
 
@@ -873,6 +878,11 @@ namespace System.Net.Http
                     _sb.Clear();
 
                     c = await ReadCharAsync(cancellationToken).ConfigureAwait(false);
+                }
+
+                if (response.Headers.ConnectionClose ?? false)
+                {
+                    _connectionClose = true;
                 }
 
                 // Instantiate responseStream
@@ -1288,6 +1298,13 @@ namespace System.Net.Http
         {
             // Make sure there's nothing in the write buffer that should have been flushed
             Debug.Assert(_writeOffset == 0);
+
+            if (_connectionClose)
+            {
+                // Server told us it's closing the connection, so don't put this back in the pool.
+                Dispose();
+                return;
+            }
 
             try
             {
