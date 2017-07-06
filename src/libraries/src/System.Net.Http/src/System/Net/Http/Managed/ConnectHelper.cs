@@ -11,48 +11,31 @@ namespace System.Net.Http
     {
         public static async ValueTask<NetworkStream> ConnectAsync(string host, int port)
         {
-            TcpClient client;
+            var socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
             try
             {
-                // You would think TcpClient.Connect would just do this, but apparently not.
-                // It works for IPv4 addresses but seems to barf on IPv6.
-                // I need to explicitly invoke the constructor with AddressFamily = IPv6.
-                // TODO #21452: Does this mean that connecting by name will only work with IPv4
-                // (since that's the default)?  If so, need to rework this logic
-                // to resolve the IPAddress ourselves.  Yuck.
                 // TODO #21452: No cancellationToken on ConnectAsync?
-                IPAddress ipAddress;
-                if (IPAddress.TryParse(host, out ipAddress))
-                {
-                    client = new TcpClient(ipAddress.AddressFamily);
-                    await client.ConnectAsync(ipAddress, port).ConfigureAwait(false);
-                }
-                else
-                {
-                    client = new TcpClient();
-                    await client.ConnectAsync(host, port).ConfigureAwait(false);
-                }
+                await (IPAddress.TryParse(host, out IPAddress address) ?
+                    socket.ConnectAsync(address, port) :
+                    socket.ConnectAsync(host, port)).ConfigureAwait(false);
             }
             catch (SocketException se)
             {
-                throw new HttpRequestException("could not connect", se);
+                socket.Dispose();
+                throw new HttpRequestException(se.Message, se);
             }
 
-            client.NoDelay = true;
-
-            NetworkStream networkStream = client.GetStream();
-
-            // TODO #21452: Timeouts?
-            // Default timeout should be something less than infinity (the Socket default)
-            // Timeouts probably need to be configurable
-            // However, timeouts are also a huge pain when debugging, so consider that too.
+            return new NetworkStream(socket, ownsSocket: true)
+            {
 #if false
-            // Set default read/write timeouts of 5 seconds.
-            networkStream.ReadTimeout = 5000;
-            networkStream.WriteTimeout = 5000;
+                // TODO #21452: Timeouts?
+                // Default timeout should be something less than infinity (the Socket default)
+                // Timeouts probably need to be configurable
+                // However, timeouts are also a huge pain when debugging, so consider that too.
+                ReadTimeout = 5000,
+                WriteTimeout = 5000
 #endif
-
-            return networkStream;
+            };
         }
     }
 }

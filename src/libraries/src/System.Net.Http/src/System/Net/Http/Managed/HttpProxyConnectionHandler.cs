@@ -116,7 +116,7 @@ namespace System.Net.Http
                 }
             }
 
-            Stream stream = await ConnectHelper.ConnectAsync(proxyUri.Host, proxyUri.Port).ConfigureAwait(false);
+            Stream stream = await ConnectHelper.ConnectAsync(proxyUri.IdnHost, proxyUri.Port).ConfigureAwait(false);
 
             if (pool == null)
             {
