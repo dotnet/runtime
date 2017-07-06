@@ -366,13 +366,16 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\ASCIIEncoding.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Decoder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Encoder.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Encoding.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\EncodingInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\EncodingNLS.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\EncodingProvider.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\Latin1Encoding.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\Normalization.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\StringBuilder.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\UnicodeEncoding.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\UTF32Encoding.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Text\UTF7Encoding.cs" />   
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\UTF8Encoding.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ThreadAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\AbandonedMutexException.cs" />
