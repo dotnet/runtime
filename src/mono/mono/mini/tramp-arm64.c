@@ -539,14 +539,16 @@ mono_arch_create_handler_block_trampoline (MonoTrampInfo **info, gboolean aot)
 	/*
 	 * We are in a method frame after the call emitted by OP_CALL_HANDLER.
 	 */
+	/* Call a helper to obtain jit_tls->handler_block_return_address */
 	if (aot)
 		code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP0, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_arm_handler_block_trampoline_helper");
 	else
 		code = mono_arm_emit_imm64 (code, ARMREG_IP0, (guint64)mono_arm_handler_block_trampoline_helper);
+	arm_blrx (code, ARMREG_IP0);
 	/* Set it as the return address so the trampoline will return to it */
 	arm_movx (code, ARMREG_LR, ARMREG_IP0);
 
-	/* Call the trampoline */
+	/* Call the C trampoline function */
 	if (aot) {
 		char *name = g_strdup_printf ("trampoline_func_%d", MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD);
 		code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_IP0, MONO_PATCH_INFO_JIT_ICALL_ADDR, name);
