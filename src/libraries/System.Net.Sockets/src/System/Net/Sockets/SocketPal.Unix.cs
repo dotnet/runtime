@@ -16,6 +16,7 @@ namespace System.Net.Sockets
     {
         public const bool SupportsMultipleConnectAttempts = false;
         private static readonly bool SupportsDualModeIPv4PacketInfo = GetPlatformSupportsDualModeIPv4PacketInfo();
+        private static readonly byte[] s_peekBuffer = new byte[1];
 
         private static bool GetPlatformSupportsDualModeIPv4PacketInfo()
         {
@@ -620,23 +621,13 @@ namespace System.Net.Sockets
                 {
                     // Special case a receive of 0 bytes into a single buffer.  A common pattern is to ReceiveAsync 0 bytes in order
                     // to be asynchronously notified when data is available, without needing to dedicate a buffer.  Some platforms (e.g. macOS),
-                    // however, special-case a receive of 0 to always succeed immediately even if data isn't available.  As such, we treat 0
-                    // specially, checking whether any bytes are available rather than doing an actual receive.
-                    receivedFlags = SocketFlags.None;
-                    received = -1;
-
-                    int available = 0;
-                    errno = Interop.Sys.GetBytesAvailable(socket, &available);
-                    if (errno == Interop.Error.SUCCESS)
+                    // however complete a 0-byte read successfully when data isn't available, as the request can logically be satisfied
+                    // synchronously. As such, we treat 0 specially, and perform a 1-byte peek.
+                    received = Receive(socket, flags | SocketFlags.Peek, s_peekBuffer, 0, s_peekBuffer.Length, socketAddress, ref socketAddressLen, out receivedFlags, out errno);
+                    if (received > 0)
                     {
-                        if (available > 0)
-                        {
-                            bytesReceived = 0;
-                            errorCode = SocketError.Success;
-                            return true;
-                        }
-
-                        errno = Interop.Error.EAGAIN; // simulate a receive with no data available
+                        // Peeked for 1-byte, but the actual request was for 0.
+                        received = 0;
                     }
                 }
                 else
