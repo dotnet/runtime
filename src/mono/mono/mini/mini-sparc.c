@@ -2407,10 +2407,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 	cpos = bb->max_offset;
 
-	if (cfg->prof_options & MONO_PROFILE_COVERAGE) {
-		NOT_IMPLEMENTED;
-	}
-
 	MONO_BB_FOR_EACH_INS (bb, ins) {
 		guint8* code_start;
 

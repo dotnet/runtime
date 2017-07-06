@@ -173,8 +173,8 @@ debug_enter (MonoInvocation *frame, int *tracing)
 		g_print  ("%s)\n", args);
 		g_free (args);
 	}
-	if (mono_profiler_events & MONO_PROFILE_ENTER_LEAVE)
-		mono_profiler_method_enter (frame->runtime_method->method);
+	if (mono_profiler_should_instrument_method (frame->runtime_method->method, TRUE))
+		MONO_PROFILER_RAISE (method_enter, (frame->runtime_method->method));
 }
 
 
@@ -191,8 +191,8 @@ debug_enter (MonoInvocation *frame, int *tracing)
 		debug_indent_level--;	\
 		if (tracing == 3) global_tracing = 0; \
 	}	\
-	if (mono_profiler_events & MONO_PROFILE_ENTER_LEAVE)	\
-		mono_profiler_method_leave (frame->runtime_method->method);
+	if (mono_profiler_should_instrument_method (frame->runtime_method->method, FALSE)) \
+		MONO_PROFILER_RAISE (method_enter, (frame->runtime_method->method));
 
 #else
 

@@ -1218,6 +1218,7 @@ mono_patch_info_hash (gconstpointer data)
 	case MONO_PATCH_INFO_GC_SAFE_POINT_FLAG:
 	case MONO_PATCH_INFO_AOT_MODULE:
 	case MONO_PATCH_INFO_JIT_THREAD_ATTACH:
+	case MONO_PATCH_INFO_PROFILER_ALLOCATION_COUNT:
 		return (ji->type << 8);
 	case MONO_PATCH_INFO_CASTCLASS_CACHE:
 		return (ji->type << 8) | (ji->data.index);
@@ -1646,6 +1647,10 @@ mono_resolve_patch_target (MonoMethod *method, MonoDomain *domain, guint8 *code,
 		MonoJitICallInfo *mi = mono_find_jit_icall_by_name ("mono_jit_thread_attach");
 		g_assert (mi);
 		target = mi->func;
+		break;
+	}
+	case MONO_PATCH_INFO_PROFILER_ALLOCATION_COUNT: {
+		target = (gpointer) &mono_profiler_state.gc_allocation_count;
 		break;
 	}
 	default:
@@ -3938,8 +3943,10 @@ mini_init (const char *filename, const char *runtime_version)
 
 	if (mini_profiler_enabled ()) {
 		mono_profiler_load (mini_profiler_get_options ());
-		mono_profiler_thread_name (MONO_NATIVE_THREAD_ID_TO_UINT (mono_native_thread_id_get ()), "Main");
+		MONO_PROFILER_RAISE (thread_name, (MONO_NATIVE_THREAD_ID_TO_UINT (mono_native_thread_id_get ()), "Main"));
 	}
+
+	mono_profiler_started ();
 
 	if (debug_options.collect_pagefault_stats)
 		mono_aot_set_make_unreadable (TRUE);
@@ -4018,10 +4025,10 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_thread_attach (domain);
 #endif
 
-	if (mono_profiler_get_events () & MONO_PROFILE_STATISTICAL)
+	if (mono_profiler_sampling_enabled ())
 		mono_runtime_setup_stat_profiler ();
 
-	mono_profiler_runtime_initialized ();
+	MONO_PROFILER_RAISE (runtime_initialized, ());
 
 	MONO_VES_INIT_END ();
 
@@ -4052,8 +4059,8 @@ register_icalls (void)
 	 * the wrapper would call the icall which would call the wrapper and
 	 * so on.
 	 */
-	register_icall (mono_profiler_method_enter, "mono_profiler_method_enter", "void ptr", TRUE);
-	register_icall (mono_profiler_method_leave, "mono_profiler_method_leave", "void ptr", TRUE);
+	register_icall (mono_profiler_raise_method_enter, "mono_profiler_raise_method_enter", "void ptr", TRUE);
+	register_icall (mono_profiler_raise_method_leave, "mono_profiler_raise_method_leave", "void ptr", TRUE);
 
 	register_icall (mono_trace_enter_method, "mono_trace_enter_method", NULL, TRUE);
 	register_icall (mono_trace_leave_method, "mono_trace_leave_method", NULL, TRUE);
@@ -4349,8 +4356,10 @@ print_jit_stats (void)
 void
 mini_cleanup (MonoDomain *domain)
 {
-	if (mono_profiler_get_events () & MONO_PROFILE_STATISTICAL)
+	if (mono_profiler_sampling_enabled ())
 		mono_runtime_shutdown_stat_profiler ();
+
+	MONO_PROFILER_RAISE (runtime_shutdown_begin, ());
 
 #ifndef DISABLE_COM
 	cominterop_release_all_rcws ();
@@ -4373,7 +4382,9 @@ mini_cleanup (MonoDomain *domain)
 
 	mono_threadpool_cleanup ();
 
-	mono_profiler_shutdown ();
+	MONO_PROFILER_RAISE (runtime_shutdown_end, ());
+
+	mono_profiler_cleanup ();
 
 	free_jit_tls_data ((MonoJitTlsData *)mono_tls_get_jit_tls ());
 

@@ -174,8 +174,10 @@ void mono_gc_wbarrier_set_root (gpointer ptr, MonoObject *value);
 typedef enum {
 	// Regular fast path allocator.
 	MANAGED_ALLOCATOR_REGULAR,
-	// Managed allocator that just calls into the runtime. Used when allocation profiling w/ AOT.
+	// Managed allocator that just calls into the runtime.
 	MANAGED_ALLOCATOR_SLOW_PATH,
+	// Managed allocator that works like the regular one but also calls into the profiler.
+	MANAGED_ALLOCATOR_PROFILER,
 } ManagedAllocatorVariant;
 
 int mono_gc_get_aligned_size_for_allocator (int size);

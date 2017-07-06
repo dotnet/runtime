@@ -1901,11 +1901,10 @@ mono_get_method_constrained_checked (MonoImage *image, guint32 token, MonoClass 
 void
 mono_free_method  (MonoMethod *method)
 {
-	if (mono_profiler_get_events () & MONO_PROFILE_METHOD_EVENTS)
-		mono_profiler_method_free (method);
+	MONO_PROFILER_RAISE (method_free, (method));
 	
 	/* FIXME: This hack will go away when the profiler will support freeing methods */
-	if (mono_profiler_get_events () != MONO_PROFILE_NONE)
+	if (G_UNLIKELY (mono_profiler_installed ()))
 		return;
 	
 	if (method->signature) {

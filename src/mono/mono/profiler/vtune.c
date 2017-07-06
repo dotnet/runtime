@@ -76,64 +76,63 @@ codeanalyst_shutdown (MonoProfiler *prof)
 }
 
 static void
-method_jit_result (MonoProfiler *prof, MonoMethod *method, MonoJitInfo* jinfo, int result) {
-	if (result == MONO_PROFILE_OK) {
-		int i;
-		MonoDebugSourceLocation *sourceLoc;
-		MonoDebugMethodJitInfo *dmji;
-		MonoClass *klass = mono_method_get_class (method);
-		char *signature = mono_signature_get_desc (mono_method_signature (method), TRUE);
-		char *name = g_strdup_printf ("%s(%s)", mono_method_get_name (method), signature);
-		char *classname = g_strdup_printf ("%s%s%s", mono_class_get_namespace (klass), mono_class_get_namespace (klass)[0] != 0 ? "::" : "", mono_class_get_name (klass));
-		gpointer code_start = mono_jit_info_get_code_start (jinfo);
-		int code_size = mono_jit_info_get_code_size (jinfo);
-		
-		iJIT_Method_Load vtuneMethod;
-		memset(&vtuneMethod, 0, sizeof(vtuneMethod));
-		vtuneMethod.method_id = iJIT_GetNewMethodID();
-		vtuneMethod.method_name = name;
-		vtuneMethod.method_load_address = code_start;
-		vtuneMethod.method_size = code_size;
-		vtuneMethod.class_file_name = classname;
+method_jit_done (MonoProfiler *prof, MonoMethod *method, MonoJitInfo* jinfo)
+{
+	int i;
+	MonoDebugSourceLocation *sourceLoc;
+	MonoDebugMethodJitInfo *dmji;
+	MonoClass *klass = mono_method_get_class (method);
+	char *signature = mono_signature_get_desc (mono_method_signature (method), TRUE);
+	char *name = g_strdup_printf ("%s(%s)", mono_method_get_name (method), signature);
+	char *classname = g_strdup_printf ("%s%s%s", mono_class_get_namespace (klass), mono_class_get_namespace (klass)[0] != 0 ? "::" : "", mono_class_get_name (klass));
+	gpointer code_start = mono_jit_info_get_code_start (jinfo);
+	int code_size = mono_jit_info_get_code_size (jinfo);
 
-		dmji = mono_debug_find_method (method, mono_domain_get());
+	iJIT_Method_Load vtuneMethod;
+	memset(&vtuneMethod, 0, sizeof(vtuneMethod));
+	vtuneMethod.method_id = iJIT_GetNewMethodID();
+	vtuneMethod.method_name = name;
+	vtuneMethod.method_load_address = code_start;
+	vtuneMethod.method_size = code_size;
+	vtuneMethod.class_file_name = classname;
 
-		if (dmji != NULL)
+	dmji = mono_debug_find_method (method, mono_domain_get());
+
+	if (dmji != NULL)
+	{
+		vtuneMethod.line_number_size = dmji->num_line_numbers;
+		vtuneMethod.line_number_table = (vtuneMethod.line_number_size != 0) ?
+			(LineNumberInfo*)malloc(sizeof(LineNumberInfo) * vtuneMethod.line_number_size) : NULL;
+
+		for (i = 0; i < dmji->num_line_numbers; ++i)
 		{
-			vtuneMethod.line_number_size = dmji->num_line_numbers;
-			vtuneMethod.line_number_table = (vtuneMethod.line_number_size != 0) ?
-				(LineNumberInfo*)malloc(sizeof(LineNumberInfo) * vtuneMethod.line_number_size) : NULL;
-
-			for (i = 0; i < dmji->num_line_numbers; ++i)
+			sourceLoc = mono_debug_lookup_source_location (method, dmji->line_numbers[i].native_offset, mono_domain_get());
+			if (sourceLoc == NULL)
 			{
-				sourceLoc = mono_debug_lookup_source_location (method, dmji->line_numbers[i].native_offset, mono_domain_get());
-				if (sourceLoc == NULL)
-				{
-					g_free (vtuneMethod.line_number_table);
-					vtuneMethod.line_number_table = NULL;
-					vtuneMethod.line_number_size = 0;
-					break;
-				}
-				if (i == 0)
-					vtuneMethod.source_file_name = strdup(sourceLoc->source_file);
-				vtuneMethod.line_number_table[i].Offset = dmji->line_numbers[i].native_offset;
-				vtuneMethod.line_number_table[i].LineNumber = sourceLoc->row;
-				mono_debug_free_source_location (sourceLoc);
+				g_free (vtuneMethod.line_number_table);
+				vtuneMethod.line_number_table = NULL;
+				vtuneMethod.line_number_size = 0;
+				break;
 			}
-			mono_debug_free_method_jit_info (dmji);
+			if (i == 0)
+				vtuneMethod.source_file_name = strdup(sourceLoc->source_file);
+			vtuneMethod.line_number_table[i].Offset = dmji->line_numbers[i].native_offset;
+			vtuneMethod.line_number_table[i].LineNumber = sourceLoc->row;
+			mono_debug_free_source_location (sourceLoc);
 		}
-
-		iJIT_NotifyEvent(iJVM_EVENT_TYPE_METHOD_LOAD_FINISHED, &vtuneMethod);
-
-		if (vtuneMethod.source_file_name != NULL)
-			g_free (vtuneMethod.source_file_name);
-		if (vtuneMethod.line_number_table != NULL)
-			g_free (vtuneMethod.line_number_table);
-	
-		g_free (signature);
-		g_free (name);
-		g_free (classname);
+		mono_debug_free_method_jit_info (dmji);
 	}
+
+	iJIT_NotifyEvent(iJVM_EVENT_TYPE_METHOD_LOAD_FINISHED, &vtuneMethod);
+
+	if (vtuneMethod.source_file_name != NULL)
+		g_free (vtuneMethod.source_file_name);
+	if (vtuneMethod.line_number_table != NULL)
+		g_free (vtuneMethod.line_number_table);
+
+	g_free (signature);
+	g_free (name);
+	g_free (classname);
 }
 
 static void
@@ -162,14 +161,14 @@ code_buffer_new (MonoProfiler *prof, void *buffer, int size, MonoProfilerCodeBuf
 
 /* the entry point */
 void
-mono_profiler_startup (const char *desc)
+mono_profiler_init (const char *desc)
 {
 	iJIT_IsProfilingActiveFlags flags = iJIT_IsProfilingActive();
 	if (flags == iJIT_SAMPLING_ON)
 	{
-		mono_profiler_install (NULL, codeanalyst_shutdown);
-		mono_profiler_install_jit_end (method_jit_result);
-		mono_profiler_install_code_buffer_new (code_buffer_new);
-		mono_profiler_set_events (MONO_PROFILE_JIT_COMPILATION);
+		MonoProfilerHandle handle = mono_profiler_install (NULL);
+		mono_profiler_set_runtime_shutdown_end_callback (handle, codeanalyst_shutdown);
+		mono_profiler_set_jit_done_callback (handle, method_jit_done);
+		mono_profiler_set_jit_code_buffer_callback (handle, code_buffer_new);
 	}
 }

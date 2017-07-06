@@ -4012,7 +4012,7 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 		context->current_env = old_env;
 	}
 
-	mono_profiler_method_jit (method); /* sort of... */
+	MONO_PROFILER_RAISE (jit_begin, (method));
 
 	if (mono_method_signature (method)->is_inflated)
 		generic_context = mono_method_get_context (method);
@@ -4027,7 +4027,7 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 		mono_os_mutex_lock(&calc_section);
 		if (runtime_method->transformed) {
 			mono_os_mutex_unlock(&calc_section);
-			mono_profiler_method_end_jit (method, runtime_method->jinfo, MONO_PROFILE_OK);
+			MONO_PROFILER_RAISE (jit_done, (method, runtime_method->jinfo));
 			return NULL;
 		}
 
@@ -4061,7 +4061,7 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 			runtime_method->alloca_size = runtime_method->stack_size;
 			runtime_method->transformed = TRUE;
 			mono_os_mutex_unlock(&calc_section);
-			mono_profiler_method_end_jit (method, NULL, MONO_PROFILE_OK);
+			MONO_PROFILER_RAISE (jit_done, (method, NULL));
 			return NULL;
 		}
 		method = nm;
@@ -4078,7 +4078,7 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 				runtime_method->transformed = TRUE;
 			}
 			mono_os_mutex_unlock(&calc_section);
-			mono_profiler_method_end_jit (method, NULL, MONO_PROFILE_OK);
+			MONO_PROFILER_RAISE (jit_done, (method, NULL));
 			return NULL;
 		} else if (!strcmp (method->name, "UnsafeStore")) {
 			g_error ("TODO");
@@ -4202,7 +4202,7 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 	if (runtime_method->transformed) {
 		mono_os_mutex_unlock(&calc_section);
 		g_free (is_bb_start);
-		mono_profiler_method_end_jit (method, runtime_method->jinfo, MONO_PROFILE_OK);
+		MONO_PROFILER_RAISE (jit_done, (method, runtime_method->jinfo));
 		return NULL;
 	}
 
@@ -4262,7 +4262,7 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 	g_free (is_bb_start);
 
 	// FIXME: Add a different callback ?
-	mono_profiler_method_end_jit (method, runtime_method->jinfo, MONO_PROFILE_OK);
+	MONO_PROFILER_RAISE (jit_done, (method, runtime_method->jinfo));
 	runtime_method->transformed = TRUE;
 	mono_os_mutex_unlock(&calc_section);
 

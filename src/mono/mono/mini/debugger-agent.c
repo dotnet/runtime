@@ -745,11 +745,11 @@ static void runtime_initialized (MonoProfiler *prof);
 
 static void runtime_shutdown (MonoProfiler *prof);
 
-static void thread_startup (MonoProfiler *prof, uintptr_t tid);
+static void thread_startup (MonoProfiler *prof, uint64_t tid);
 
-static void thread_end (MonoProfiler *prof, uintptr_t tid);
+static void thread_end (MonoProfiler *prof, uint64_t tid);
 
-static void appdomain_load (MonoProfiler *prof, MonoDomain *domain, int result);
+static void appdomain_load (MonoProfiler *prof, MonoDomain *domain);
 
 static void appdomain_start_unload (MonoProfiler *prof, MonoDomain *domain);
 
@@ -761,7 +761,7 @@ static void emit_thread_start (gpointer key, gpointer value, gpointer user_data)
 
 static void invalidate_each_thread (gpointer key, gpointer value, gpointer user_data);
 
-static void assembly_load (MonoProfiler *prof, MonoAssembly *assembly, int result);
+static void assembly_load (MonoProfiler *prof, MonoAssembly *assembly);
 
 static void assembly_unload (MonoProfiler *prof, MonoAssembly *assembly);
 
@@ -769,7 +769,11 @@ static void emit_assembly_load (gpointer assembly, gpointer user_data);
 
 static void emit_type_load (gpointer key, gpointer type, gpointer user_data);
 
-static void jit_end (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo, int result);
+static void jit_done (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo);
+
+static void jit_failed (MonoProfiler *prof, MonoMethod *method);
+
+static void jit_end (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo);
 
 static void add_pending_breakpoints (MonoMethod *method, MonoJitInfo *jinfo);
 
@@ -995,13 +999,18 @@ mono_debugger_agent_init (void)
 	mono_coop_mutex_init (&debugger_thread_exited_mutex);
 	mono_coop_cond_init (&debugger_thread_exited_cond);
 
-	mono_profiler_install ((MonoProfiler*)&debugger_profiler, runtime_shutdown);
-	mono_profiler_set_events ((MonoProfileFlags)(MONO_PROFILE_APPDOMAIN_EVENTS | MONO_PROFILE_THREADS | MONO_PROFILE_ASSEMBLY_EVENTS | MONO_PROFILE_JIT_COMPILATION | MONO_PROFILE_METHOD_EVENTS));
-	mono_profiler_install_runtime_initialized (runtime_initialized);
-	mono_profiler_install_appdomain (NULL, appdomain_load, appdomain_start_unload, appdomain_unload);
-	mono_profiler_install_thread (thread_startup, thread_end);
-	mono_profiler_install_assembly (NULL, assembly_load, assembly_unload, NULL);
-	mono_profiler_install_jit_end (jit_end);
+	MonoProfilerHandle prof = mono_profiler_install ((MonoProfiler*)&debugger_profiler);
+	mono_profiler_set_runtime_shutdown_end_callback (prof, runtime_shutdown);
+	mono_profiler_set_runtime_initialized_callback (prof, runtime_initialized);
+	mono_profiler_set_domain_loaded_callback (prof, appdomain_load);
+	mono_profiler_set_domain_unloading_callback (prof, appdomain_start_unload);
+	mono_profiler_set_domain_unloaded_callback (prof, appdomain_unload);
+	mono_profiler_set_thread_started_callback (prof, thread_startup);
+	mono_profiler_set_thread_stopped_callback (prof, thread_end);
+	mono_profiler_set_assembly_loaded_callback (prof, assembly_load);
+	mono_profiler_set_assembly_unloading_callback (prof, assembly_unload);
+	mono_profiler_set_jit_done_callback (prof, jit_done);
+	mono_profiler_set_jit_failed_callback (prof, jit_failed);
 
 	mono_native_tls_alloc (&debugger_tls_id, NULL);
 
@@ -3861,7 +3870,7 @@ runtime_shutdown (MonoProfiler *prof)
 }
 
 static void
-thread_startup (MonoProfiler *prof, uintptr_t tid)
+thread_startup (MonoProfiler *prof, uint64_t tid)
 {
 	MonoInternalThread *thread = mono_thread_internal_current ();
 	MonoInternalThread *old_thread;
@@ -3922,7 +3931,7 @@ thread_startup (MonoProfiler *prof, uintptr_t tid)
 }
 
 static void
-thread_end (MonoProfiler *prof, uintptr_t tid)
+thread_end (MonoProfiler *prof, uint64_t tid)
 {
 	MonoInternalThread *thread;
 	DebuggerTlsData *tls = NULL;
@@ -3960,7 +3969,7 @@ thread_end (MonoProfiler *prof, uintptr_t tid)
 }
 
 static void
-appdomain_load (MonoProfiler *prof, MonoDomain *domain, int result)
+appdomain_load (MonoProfiler *prof, MonoDomain *domain)
 {
 	mono_loader_lock ();
 	g_hash_table_insert (domains, domain, domain);
@@ -4022,7 +4031,7 @@ invalidate_each_thread (gpointer key, gpointer value, gpointer user_data)
 }
 
 static void
-assembly_load (MonoProfiler *prof, MonoAssembly *assembly, int result)
+assembly_load (MonoProfiler *prof, MonoAssembly *assembly)
 {
 	/* Sent later in jit_end () */
 	dbg_lock ();
@@ -4110,7 +4119,19 @@ send_assemblies_for_domain (MonoDomain *domain, void *user_data)
 }
 
 static void
-jit_end (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo, int result)
+jit_done (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo)
+{
+	jit_end (prof, method, jinfo);
+}
+
+static void
+jit_failed (MonoProfiler *prof, MonoMethod *method)
+{
+	jit_end (prof, method, NULL);
+}
+
+static void
+jit_end (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo)
 {
 	/*
 	 * We emit type load events when the first method of the type is JITted,
@@ -4138,7 +4159,7 @@ jit_end (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo, int result)
 
 	send_type_load (method->klass);
 
-	if (!result && jinfo)
+	if (jinfo)
 		add_pending_breakpoints (method, jinfo);
 }
 

@@ -97,9 +97,9 @@ parse_arg (const char *arg, ProfilerConfig *config)
 	} else if (match_option (arg, "debug-coverage", NULL)) {
 		config->debug_coverage = TRUE;
 	} else if (match_option (arg, "sampling-real", NULL)) {
-		config->sampling_mode = MONO_PROFILER_STAT_MODE_REAL;
+		config->sampling_mode = MONO_PROFILER_SAMPLE_MODE_REAL;
 	} else if (match_option (arg, "sampling-process", NULL)) {
-		config->sampling_mode = MONO_PROFILER_STAT_MODE_PROCESS;
+		config->sampling_mode = MONO_PROFILER_SAMPLE_MODE_PROCESS;
 	} else if (match_option (arg, "heapshot", &val)) {
 		config->enable_mask |= PROFLOG_HEAPSHOT_ALIAS;
 		set_hsmode (config, val);
@@ -158,6 +158,7 @@ load_args_from_env_or_default (ProfilerConfig *config)
 	//XXX change this to header constants
 
 	config->max_allocated_sample_hits = mono_cpu_count () * 1000;
+	config->sampling_mode = MONO_PROFILER_SAMPLE_MODE_PROCESS;
 	config->sample_freq = 100;
 	config->max_call_depth = 100;
 	config->num_frames = MAX_FRAMES;

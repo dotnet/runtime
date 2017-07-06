@@ -46,12 +46,7 @@ static mono_mutex_t mutex;
 static gboolean verbose;
 
 static void
-prof_jit_enter (MonoProfiler *prof, MonoMethod *method)
-{
-}
-
-static void
-prof_jit_leave (MonoProfiler *prof, MonoMethod *method, int result)
+prof_jit_leave (MonoProfiler *prof, MonoMethod *method, MonoJitInfo *jinfo)
 {
 	MonoImage *image = mono_class_get_image (mono_method_get_class (method));
 
@@ -117,14 +112,14 @@ match_option (const char* p, const char *opt, char **rval)
 }
 
 void
-mono_profiler_startup (const char *desc);
+mono_profiler_init (const char *desc);
 
 /**
- * mono_profiler_startup:
+ * mono_profiler_init:
  * the entry point
  */
 void
-mono_profiler_startup (const char *desc)
+mono_profiler_init (const char *desc)
 {
 	MonoProfiler *prof;
 	const char *p;
@@ -172,11 +167,9 @@ mono_profiler_startup (const char *desc)
 
 	mono_os_mutex_init (&mutex);
 
-	mono_profiler_install (prof, prof_shutdown);
-
-	mono_profiler_install_jit_compile (prof_jit_enter, prof_jit_leave);
-
-	mono_profiler_set_events (MONO_PROFILE_JIT_COMPILATION);
+	MonoProfilerHandle handle = mono_profiler_install (prof);
+	mono_profiler_set_runtime_shutdown_end_callback (handle, prof_shutdown);
+	mono_profiler_set_jit_done_callback (handle, prof_jit_leave);
 }
 
 static void

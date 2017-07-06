@@ -398,7 +398,7 @@ mono_domain_create (void)
 	domain->friendly_name = NULL;
 	domain->search_path = NULL;
 
-	mono_profiler_appdomain_event (domain, MONO_PROFILE_START_LOAD);
+	MONO_PROFILER_RAISE (domain_loading, (domain));
 
 	domain->mp = mono_mempool_new ();
 	domain->code_mp = mono_code_manager_new ();
@@ -439,7 +439,7 @@ mono_domain_create (void)
 	if (create_domain_hook)
 		create_domain_hook (domain);
 
-	mono_profiler_appdomain_loaded (domain, MONO_PROFILE_OK);
+	MONO_PROFILER_RAISE (domain_loaded, (domain));
 	
 	return domain;
 }
@@ -762,7 +762,7 @@ mono_init_internal (const char *filename, const char *exe_filename, const char *
 
 	domain->friendly_name = g_path_get_basename (filename);
 
-	mono_profiler_appdomain_name (domain, domain->friendly_name);
+	MONO_PROFILER_RAISE (domain_name, (domain, domain->friendly_name));
 
 	return domain;
 }
@@ -1033,7 +1033,7 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	if (mono_dont_free_domains)
 		return;
 
-	mono_profiler_appdomain_event (domain, MONO_PROFILE_START_UNLOAD);
+	MONO_PROFILER_RAISE (domain_unloading, (domain));
 
 	mono_debug_domain_unload (domain);
 
@@ -1120,7 +1120,7 @@ mono_domain_free (MonoDomain *domain, gboolean force)
 	 * Send this after the assemblies have been unloaded and the domain is still in a 
 	 * usable state.
 	 */
-	mono_profiler_appdomain_event (domain, MONO_PROFILE_END_UNLOAD);
+	MONO_PROFILER_RAISE (domain_unloaded, (domain));
 
 	if (free_domain_hook)
 		free_domain_hook (domain);

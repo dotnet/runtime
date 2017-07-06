@@ -198,7 +198,7 @@ sgen_client_update_copied_object (char *destination, GCVTable gc_vtable, void *o
 		SGEN_LOG (9, "Array instance %p: size: %lu, rank: %d, length: %lu", array, (unsigned long)objsize, vt->rank, (unsigned long)mono_array_length (array));
 	}
 
-	if (G_UNLIKELY (mono_profiler_events & MONO_PROFILE_GC_MOVES))
+	if (MONO_PROFILER_ENABLED (gc_moves))
 		mono_sgen_register_moved_object (obj, destination);
 }
 
@@ -293,7 +293,7 @@ sgen_client_binary_protocol_collection_begin (int minor_gc_count, int generation
 {
 	MONO_GC_BEGIN (generation);
 
-	mono_profiler_gc_event (MONO_GC_EVENT_START, generation);
+	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_START, generation));
 
 #ifndef DISABLE_PERFCOUNTERS
 	if (generation == GENERATION_NURSERY)
@@ -308,7 +308,7 @@ sgen_client_binary_protocol_collection_end (int minor_gc_count, int generation, 
 {
 	MONO_GC_END (generation);
 
-	mono_profiler_gc_event (MONO_GC_EVENT_END, generation);
+	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_END, generation));
 }
 
 static void G_GNUC_UNUSED
@@ -383,25 +383,25 @@ sgen_client_binary_protocol_block_set_state (gpointer addr, size_t size, int old
 static void G_GNUC_UNUSED
 sgen_client_binary_protocol_mark_start (int generation)
 {
-	mono_profiler_gc_event (MONO_GC_EVENT_MARK_START, generation);
+	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_MARK_START, generation));
 }
 
 static void G_GNUC_UNUSED
 sgen_client_binary_protocol_mark_end (int generation)
 {
-	mono_profiler_gc_event (MONO_GC_EVENT_MARK_END, generation);
+	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_MARK_END, generation));
 }
 
 static void G_GNUC_UNUSED
 sgen_client_binary_protocol_reclaim_start (int generation)
 {
-	mono_profiler_gc_event (MONO_GC_EVENT_RECLAIM_START, generation);
+	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_RECLAIM_START, generation));
 }
 
 static void G_GNUC_UNUSED
 sgen_client_binary_protocol_reclaim_end (int generation)
 {
-	mono_profiler_gc_event (MONO_GC_EVENT_RECLAIM_END, generation);
+	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_RECLAIM_END, generation));
 }
 
 static void

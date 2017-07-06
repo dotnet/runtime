@@ -1682,7 +1682,6 @@ typedef struct {
 	guint            epilog_end;
 	regmask_t        used_int_regs;
 	guint32          opt;
-	guint32          prof_options;
 	guint32          flags;
 	guint32          comp_done;
 	guint32          verbose_level;
@@ -1761,7 +1760,7 @@ typedef struct {
 	gpointer         debug_info;
 	guint32          lmf_offset;
     guint16          *intvars;
-	MonoProfileCoverageInfo *coverage_info;
+	MonoProfilerCoverageInfo *coverage_info;
 	GHashTable       *token_info_hash;
 	MonoCompileArch  arch;
 	guint32          inline_depth;
