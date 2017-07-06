@@ -98,7 +98,7 @@ namespace System.Text.Tests
             yield return new object[] { new byte[] { 84, 0, 101, 0, 115, 0, 116, 0, 84, 0, 101, 0, 115, 0, 116, 0, 117, 221 }, 0, 18, "TestTest\uFFFD" };
             yield return new object[] { new byte[] { 84, 0, 101, 0, 115, 0, 116, 0, 84, 0, 101, 0, 115, 0, 116, 0, 3, 216 }, 0, 17, "TestTest\uFFFD" };
 
-            yield return new object[] { new byte[] { 0, 0, 84, 0, 101, 0, 10, 0, 115, 0, 116, 0, 0, 0, 9, 0, 0, 0, 84, 0, 15, 0, 101, 0, 115, 0, 116, 0, 0, 0, 0 }, 0, 31, "\0Te\nst\0\t\0T\u000Fest\0\uFFFD" };
+            yield return new object[] { new byte[] { 84, 0, 0, 0, 84, 0, 101, 0, 10, 0, 115, 0, 116, 0, 0, 0, 9, 0, 0, 0, 84, 0, 15, 0, 101, 0, 115, 0, 116, 0, 0, 0, 0 }, 0, 33, "T\0Te\nst\0\t\0T\u000Fest\0\uFFFD" };
             
             yield return new object[] { new byte[] { 3, 216, 84 }, 0, 3, "\uFFFD\uFFFD" };
 
@@ -130,7 +130,6 @@ namespace System.Text.Tests
 
         [Theory]
         [MemberData(nameof(Decode_InvalidBytes_TestData))]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/20715", TargetFrameworkMonikers.UapAot)]
         public void Decode_InvalidBytes(byte[] littleEndianBytes, int index, int count, string expected)
         {
             byte[] bigEndianBytes = GetBigEndianBytes(littleEndianBytes, index, count);
