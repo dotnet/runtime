@@ -13,7 +13,6 @@ namespace Microsoft.ServiceModel.Syndication
         private Func<XmlReaderWrapper, Task<string>> readStringFunc;
         private Func<XmlReaderWrapper, Task> readEndElementFunc;
         private Func<XmlReaderWrapper, Task<XmlNodeType>> moveToContentFunc;
-        private Func<XmlReaderWrapper, Task> readStartElementFunc;
         private Func<XmlReaderWrapper, string, string, Task> readStartElementFunc2;
         private Func<XmlReaderWrapper, Task<bool>> isStartElementFunc;
         private Func<XmlReaderWrapper, string, string, Task<bool>> isStartElementFunc2;
@@ -54,7 +53,6 @@ namespace Microsoft.ServiceModel.Syndication
             this.readStringFunc = new Func<XmlReaderWrapper, Task<string>>((thisPtr) => { return ReadStringAsync(thisPtr.reader); });
             this.readEndElementFunc = new Func<XmlReaderWrapper, Task>( (thisPtr) => {  return ReadEndElementAsync(thisPtr.reader); });
             this.moveToContentFunc = new Func<XmlReaderWrapper, Task<XmlNodeType>>((thisPtr) => { return thisPtr.reader.MoveToContentAsync(); });
-            this.readStartElementFunc = new Func<XmlReaderWrapper, Task>((thisPtr) => { return ReadStartElementAsync(thisPtr.reader); });
             this.readStartElementFunc2 = new Func<XmlReaderWrapper, string, string, Task>((thisPtr, localname, ns) => { return ReadStartElementAsync(thisPtr.reader, localname, ns); });
             this.isStartElementFunc = new Func<XmlReaderWrapper, Task<bool>>((thisPtr) => { return IsStartElementAsync(thisPtr.reader); });
             this.isStartElementFunc2 = new Func<XmlReaderWrapper, string, string, Task<bool>>((thisPtr, localname, ns) => { return IsStartElementAsync(thisPtr.reader, localname, ns); });
@@ -70,7 +68,6 @@ namespace Microsoft.ServiceModel.Syndication
             this.readStringFunc = new Func<XmlReaderWrapper, Task<string>>((thisPtr) => { return Task.FromResult<string>(this.reader.ReadString()); });
             this.readEndElementFunc = new Func<XmlReaderWrapper, Task>((thisPtr) => { this.reader.ReadEndElement(); return Task.CompletedTask; });
             this.moveToContentFunc = new Func<XmlReaderWrapper, Task<XmlNodeType>>((thisPtr) => { return Task.FromResult<XmlNodeType>(this.reader.MoveToContent()); });
-            this.readStartElementFunc = new Func<XmlReaderWrapper, Task>((thisPtr) => { this.reader.ReadStartElement(); return Task.CompletedTask; });
             this.readStartElementFunc2 = new Func<XmlReaderWrapper, string, string, Task>((thisPtr, localname, ns) => { this.reader.ReadStartElement(localname, ns); return Task.CompletedTask; });
             this.isStartElementFunc = new Func<XmlReaderWrapper, Task<bool>>((thisPtr) => { return Task.FromResult<bool>(this.reader.IsStartElement()); });
             this.isStartElementFunc2 = new Func<XmlReaderWrapper, string, string, Task<bool>>((thisPtr, localname, ns) => { return Task.FromResult<bool>(this.reader.IsStartElement(localname, ns)); });
@@ -258,11 +255,6 @@ namespace Microsoft.ServiceModel.Syndication
         public override Task<XmlNodeType> MoveToContentAsync()
         {
             return this.moveToContentFunc(this);
-        }
-
-        public Task ReadStartElementAsync()
-        {
-            return this.readStartElementFunc(this);
         }
 
         public Task ReadStartElementAsync(string localname, string ns)
@@ -566,7 +558,18 @@ namespace Microsoft.ServiceModel.Syndication
                 }
             } while (await reader.ReadAsync() && (d < reader.Depth || (d == reader.Depth && reader.NodeType == XmlNodeType.EndElement)));
         }
+    }
 
-        
+    internal static class XmlReaderExtensions
+    {
+        public static async Task ReadStartElementAsync(this XmlReader reader)
+        {
+            if (await reader.MoveToContentAsync() != XmlNodeType.Element)
+            {
+                throw new InvalidOperationException(reader.NodeType.ToString() + " is an invalid XmlNodeType");
+            }
+
+            await reader.ReadAsync();
+        }
     }
 }
