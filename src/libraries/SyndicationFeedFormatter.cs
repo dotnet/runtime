@@ -385,7 +385,30 @@ namespace Microsoft.ServiceModel.Syndication
             buffer.Close();
         }
 
-        
+        internal static async Task<Tuple<XmlBuffer,XmlDictionaryWriter>> CreateBufferIfRequiredAndWriteNodeAsync(XmlBuffer buffer, XmlDictionaryWriter extWriter, XmlReader reader, int maxExtensionSize)
+        {
+            if (buffer == null)
+            {
+                buffer = new XmlBuffer(maxExtensionSize);
+                extWriter = buffer.OpenSection(XmlDictionaryReaderQuotas.Max);
+                extWriter.WriteStartElement(Rss20Constants.ExtensionWrapperTag);
+            }
+
+            XmlDictionaryReader dictionaryReader = reader as XmlDictionaryReader;
+            if (dictionaryReader != null)
+            {
+                // Reimplementing WriteNode for XmlDictionaryWriter asynchronously depends on multiple internal methods
+                // so isn't feasible to reimplement here. As the primary scenario will be usage with an XmlReader which
+                // isn't an XmlDictionaryReader, deferring to the synchronous implementation is a reasonable fallback.
+                extWriter.WriteNode(reader, false);
+            }
+            else
+            {
+                await extWriter.WriteNodeAsync(reader, false);
+            }
+
+            return Tuple.Create(buffer, extWriter);
+        }
 
         internal static SyndicationFeed CreateFeedInstance(Type feedType)
         {
