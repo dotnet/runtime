@@ -10,6 +10,7 @@ namespace Microsoft.ServiceModel.Syndication
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Runtime.CompilerServices;
+    using System.Threading;
     using System.Threading.Tasks;
     using System.Xml;
 
@@ -352,17 +353,17 @@ namespace Microsoft.ServiceModel.Syndication
         }
 
         //// Custom Parsing
-        public static async Task<SyndicationFeed> LoadAsync(XmlReader reader, Rss20FeedFormatter formatter)
+        public static async Task<SyndicationFeed> LoadAsync(XmlReader reader, Rss20FeedFormatter formatter, CancellationToken ct)
         {
-            return await LoadAsync(reader, formatter, new Atom10FeedFormatter());
+            return await LoadAsync(reader, formatter, new Atom10FeedFormatter(), ct);
         }
 
-        public static async Task<SyndicationFeed> LoadAsync(XmlReader reader, Atom10FeedFormatter formatter)
+        public static async Task<SyndicationFeed> LoadAsync(XmlReader reader, Atom10FeedFormatter formatter, CancellationToken ct)
         {
-            return await LoadAsync(reader, new Rss20FeedFormatter(), formatter);
+            return await LoadAsync(reader, new Rss20FeedFormatter(), formatter, ct);
         }
 
-        public static async Task<SyndicationFeed> LoadAsync(XmlReader reader, Rss20FeedFormatter Rssformatter, Atom10FeedFormatter Atomformatter)
+        public static async Task<SyndicationFeed> LoadAsync(XmlReader reader, Rss20FeedFormatter Rssformatter, Atom10FeedFormatter Atomformatter, CancellationToken ct)
         {
             if (reader == null)
             {
@@ -374,13 +375,13 @@ namespace Microsoft.ServiceModel.Syndication
             Atom10FeedFormatter atomSerializer = Atomformatter;
             if (atomSerializer.CanRead(wrappedReader))
             {
-                await atomSerializer.ReadFromAsync(wrappedReader);
+                await atomSerializer.ReadFromAsync(wrappedReader, new CancellationToken());
                 return atomSerializer.Feed;
             }
             Rss20FeedFormatter rssSerializer = Rssformatter;
             if (rssSerializer.CanRead(wrappedReader))
             {
-                await rssSerializer.ReadFromAsync(wrappedReader);
+                await rssSerializer.ReadFromAsync(wrappedReader, new CancellationToken());
                 return rssSerializer.Feed;
             }
             throw new XmlException(String.Format(SR.UnknownFeedXml, wrappedReader.LocalName, wrappedReader.NamespaceURI));
@@ -396,28 +397,29 @@ namespace Microsoft.ServiceModel.Syndication
         public static TSyndicationFeed Load<TSyndicationFeed>(XmlReader reader)
             where TSyndicationFeed : SyndicationFeed, new()
         {
-            return LoadAsync<TSyndicationFeed>(reader).GetAwaiter().GetResult();
+            CancellationToken ct = new CancellationToken();
+            return LoadAsync<TSyndicationFeed>(reader,ct).GetAwaiter().GetResult();
         }
 
-        public static async Task<SyndicationFeed> LoadAsync(XmlReader reader)
+        public static async Task<SyndicationFeed> LoadAsync(XmlReader reader, CancellationToken ct)
         {
-            return await LoadAsync<SyndicationFeed>(reader);
+            return await LoadAsync<SyndicationFeed>(reader, ct);
         }
 
-        public static async Task<TSyndicationFeed> LoadAsync<TSyndicationFeed>(XmlReader reader)
+        public static async Task<TSyndicationFeed> LoadAsync<TSyndicationFeed>(XmlReader reader, CancellationToken ct)
             where TSyndicationFeed : SyndicationFeed, new()
         {
             Atom10FeedFormatter<TSyndicationFeed> atomSerializer = new Atom10FeedFormatter<TSyndicationFeed>();
             if (atomSerializer.CanRead(reader))
             {
-                await atomSerializer.ReadFromAsync(reader);
+                await atomSerializer.ReadFromAsync(reader, ct);
                 return atomSerializer.Feed as TSyndicationFeed;
             }
 
             Rss20FeedFormatter<TSyndicationFeed> rssSerializer = new Rss20FeedFormatter<TSyndicationFeed>();
             if (rssSerializer.CanRead(reader))
             {
-                await rssSerializer.ReadFromAsync(reader);
+                await rssSerializer.ReadFromAsync(reader, ct);
                 return rssSerializer.Feed as TSyndicationFeed;
             }
 
@@ -444,14 +446,14 @@ namespace Microsoft.ServiceModel.Syndication
             return new Rss20FeedFormatter(this, serializeExtensionsAsAtom);
         }
 
-        public async Task SaveAsAtom10(XmlWriter writer)
+        public async Task SaveAsAtom10Async(XmlWriter writer, CancellationToken ct)
         {
-            await this.GetAtom10Formatter().WriteToAsync(writer);
+            await this.GetAtom10Formatter().WriteToAsync(writer, ct);
         }
 
-        public async Task SaveAsRss20(XmlWriter writer)
+        public async Task SaveAsRss20Async(XmlWriter writer, CancellationToken ct)
         {
-            await this.GetRss20Formatter().WriteToAsync(writer);
+            await this.GetRss20Formatter().WriteToAsync(writer, ct);
         }
 
         protected internal virtual SyndicationCategory CreateCategory()
@@ -484,14 +486,14 @@ namespace Microsoft.ServiceModel.Syndication
             return false;
         }
 
-        protected internal virtual void WriteAttributeExtensions(XmlWriter writer, string version)
+        protected internal virtual Task WriteAttributeExtensionsAsync(XmlWriter writer, string version)
         {
-            _extensions.WriteAttributeExtensions(writer);
+            return _extensions.WriteAttributeExtensionsAsync(writer);
         }
 
-        protected internal virtual void WriteElementExtensions(XmlWriter writer, string version)
+        protected internal virtual Task WriteElementExtensionsAsync(XmlWriter writer, string version)
         {
-            _extensions.WriteElementExtensions(writer);
+            return _extensions.WriteElementExtensionsAsync(writer);
         }
 
         internal void LoadElementExtensions(XmlReader readerOverUnparsedExtensions, int maxExtensionSize)

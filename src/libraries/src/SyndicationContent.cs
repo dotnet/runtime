@@ -9,6 +9,7 @@ namespace Microsoft.ServiceModel.Syndication
     using System.Collections.Generic;
     using System.Runtime.CompilerServices;
     using System.Runtime.Serialization;
+    using System.Threading.Tasks;
     using System.Xml;
     using System.Xml.Serialization;
 
@@ -85,7 +86,7 @@ namespace Microsoft.ServiceModel.Syndication
 
         public abstract SyndicationContent Clone();
 
-        public void WriteTo(XmlWriter writer, string outerElementName, string outerElementNamespace)
+        public async Task WriteToAsync(XmlWriter writer, string outerElementName, string outerElementNamespace)
         {
             if (writer == null)
             {
@@ -95,8 +96,11 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 throw new ArgumentException(SR.OuterElementNameNotSpecified);
             }
-            writer.WriteStartElement(outerElementName, outerElementNamespace);
-            writer.WriteAttributeString(Atom10Constants.TypeTag, string.Empty, this.Type);
+
+            XmlWriterWrapper wrappedWriter = XmlWriterWrapper.CreateFromWriter(writer);
+
+            await wrappedWriter.WriteStartElementAsync(outerElementName, outerElementNamespace);
+            await wrappedWriter.WriteAttributeStringAsync(Atom10Constants.TypeTag, string.Empty, this.Type);
             if (_attributeExtensions != null)
             {
                 foreach (XmlQualifiedName key in _attributeExtensions.Keys)
@@ -108,12 +112,12 @@ namespace Microsoft.ServiceModel.Syndication
                     string attrValue;
                     if (_attributeExtensions.TryGetValue(key, out attrValue))
                     {
-                        writer.WriteAttributeString(key.Name, key.Namespace, attrValue);
+                        await wrappedWriter.WriteAttributeStringAsync(key.Name, key.Namespace, attrValue);
                     }
                 }
             }
             WriteContentsTo(writer);
-            writer.WriteEndElement();
+            await wrappedWriter.WriteEndElementAsync();
         }
 
         internal void CopyAttributeExtensions(SyndicationContent source)

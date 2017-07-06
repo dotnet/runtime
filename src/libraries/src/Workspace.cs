@@ -8,6 +8,7 @@ namespace Microsoft.ServiceModel.Syndication
     using System.Collections.Generic;
     using System.Collections.ObjectModel;
     using System.Runtime.CompilerServices;
+    using System.Threading.Tasks;
     using System.Xml;
 
     [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
@@ -95,14 +96,14 @@ namespace Microsoft.ServiceModel.Syndication
             return false;
         }
 
-        protected internal virtual void WriteAttributeExtensions(XmlWriter writer, string version)
+        protected internal virtual Task WriteAttributeExtensions(XmlWriter writer, string version)
         {
-            _extensions.WriteAttributeExtensions(writer);
+            return _extensions.WriteAttributeExtensionsAsync(writer);
         }
 
-        protected internal virtual void WriteElementExtensions(XmlWriter writer, string version)
+        protected internal virtual Task WriteElementExtensionsAsync(XmlWriter writer, string version)
         {
-            _extensions.WriteElementExtensions(writer);
+            return _extensions.WriteElementExtensionsAsync(writer);
         }
 
         internal void LoadElementExtensions(XmlReaderWrapper readerOverUnparsedExtensions, int maxExtensionSize)

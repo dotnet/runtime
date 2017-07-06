@@ -9,6 +9,7 @@ namespace Microsoft.ServiceModel.Syndication
     using Microsoft.ServiceModel.Syndication.Resources;
     using System;
     using System.Globalization;
+    using System.Threading;
     using System.Threading.Tasks;
     using System.Xml;
 
@@ -43,14 +44,14 @@ namespace Microsoft.ServiceModel.Syndication
 
         public abstract bool CanRead(XmlReader reader);
 
-        public abstract Task ReadFromAsync(XmlReader reader);
+        public abstract Task ReadFromAsync(XmlReader reader, CancellationToken ct);
 
         public override string ToString()
         {
             return String.Format(CultureInfo.CurrentCulture, "{0}, SyndicationVersion={1}", this.GetType(), this.Version);
         }
 
-        public abstract Task WriteToAsync(XmlWriter writer);
+        public abstract Task WriteToAsync(XmlWriter writer, CancellationToken ct);
 
         internal static protected SyndicationCategory CreateCategory(SyndicationFeed feed)
         {
@@ -284,25 +285,25 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(feed));
             }
-            feed.WriteAttributeExtensions(writer, version);
+            feed.WriteAttributeExtensionsAsync(writer, version);
         }
 
-        internal static protected void WriteAttributeExtensions(XmlWriter writer, SyndicationItem item, string version)
+        internal static protected Task WriteAttributeExtensionsAsync(XmlWriter writer, SyndicationItem item, string version)
         {
             if (item == null)
             {
                 throw new ArgumentNullException(nameof(item));
             }
-            item.WriteAttributeExtensions(writer, version);
+            return item.WriteAttributeExtensionsAsync(writer, version);
         }
 
-        internal static protected void WriteAttributeExtensions(XmlWriter writer, SyndicationCategory category, string version)
+        internal static protected Task WriteAttributeExtensionsAsync(XmlWriter writer, SyndicationCategory category, string version)
         {
             if (category == null)
             {
                 throw new ArgumentNullException(nameof(category));
             }
-            category.WriteAttributeExtensions(writer, version);
+            return category.WriteAttributeExtensionsAsync(writer, version);
         }
 
         internal static protected void WriteAttributeExtensions(XmlWriter writer, SyndicationLink link, string version)
@@ -320,34 +321,34 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(person));
             }
-            person.WriteAttributeExtensions(writer, version);
+            person.WriteAttributeExtensionsAsync(writer, version);
         }
 
-        internal static protected void WriteElementExtensions(XmlWriter writer, SyndicationFeed feed, string version)
+        internal static protected Task WriteElementExtensionsAsync(XmlWriter writer, SyndicationFeed feed, string version)
         {
             if (feed == null)
             {
                 throw new ArgumentNullException(nameof(feed));
             }
-            feed.WriteElementExtensions(writer, version);
+            return feed.WriteElementExtensionsAsync(writer, version);
         }
 
-        internal static protected void WriteElementExtensions(XmlWriter writer, SyndicationItem item, string version)
+        internal static protected Task WriteElementExtensionsAsync(XmlWriter writer, SyndicationItem item, string version)
         {
             if (item == null)
             {
                 throw new ArgumentNullException(nameof(item));
             }
-            item.WriteElementExtensions(writer, version);
+            return item.WriteElementExtensionsAsync(writer, version);
         }
 
-        internal static protected void WriteElementExtensions(XmlWriter writer, SyndicationCategory category, string version)
+        internal static protected Task WriteElementExtensionsAsync(XmlWriter writer, SyndicationCategory category, string version)
         {
             if (category == null)
             {
                 throw new ArgumentNullException(nameof(category));
             }
-            category.WriteElementExtensions(writer, version);
+            return category.WriteElementExtensionsAsync(writer, version);
         }
 
         internal static protected void WriteElementExtensions(XmlWriter writer, SyndicationLink link, string version)
@@ -356,17 +357,17 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(link));
             }
-            link.WriteElementExtensions(writer, version);
+            link.WriteElementExtensionsAsync(writer, version);
         }
 
-        internal static protected void WriteElementExtensions(XmlWriter writer, SyndicationPerson person, string version)
+        internal static protected Task WriteElementExtensionsAsync(XmlWriter writer, SyndicationPerson person, string version)
         {
             if (person == null)
             {
                 throw new ArgumentNullException(nameof(person));
             }
 
-            person.WriteElementExtensions(writer, version);
+            return person.WriteElementExtensionsAsync(writer, version);
         }
 
         internal protected virtual void SetFeed(SyndicationFeed feed) { 

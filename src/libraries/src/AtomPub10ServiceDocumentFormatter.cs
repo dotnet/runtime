@@ -241,9 +241,9 @@ namespace Microsoft.ServiceModel.Syndication
                 XmlDictionaryWriter extWriter = null;
                 try
                 {
-                    while (reader.IsStartElement())
+                    while (await reader.IsStartElementAsync())
                     {
-                        if (reader.IsStartElement(Atom10Constants.CategoryTag, Atom10Constants.Atom10Namespace))
+                        if (await reader.IsStartElementAsync(Atom10Constants.CategoryTag, Atom10Constants.Atom10Namespace))
                         {
                             SyndicationCategory category = CreateCategory(inlineCategories);
                             await Atom10FeedFormatter.ReadCategoryAsync(reader, category, version, preserveAttributeExtensions, preserveElementExtensions, _maxExtensionSize);
@@ -379,14 +379,14 @@ namespace Microsoft.ServiceModel.Syndication
                 await writer.WriteAttributeStringAsync(App10Constants.Fixed, "yes");
             }
 
-            WriteAttributeExtensions(writer, categories, version);
+            await WriteAttributeExtensionsAsync(writer, categories, version);
 
             for (int i = 0; i < categories.Categories.Count; ++i)
             {
                 await Atom10FeedFormatter.WriteCategoryAsync(wrappedWriter, categories.Categories[i], version);
             }
 
-            WriteElementExtensions(writer, categories, version);
+            await WriteElementExtensionsAsync(writer, categories, version);
         }
 
         private static void WriteReferencedCategoriesContent(XmlWriter writer, ReferencedCategoriesDocument categories, string version)
@@ -396,8 +396,8 @@ namespace Microsoft.ServiceModel.Syndication
                 writer.WriteAttributeString(App10Constants.Href, FeedUtils.GetUriString(categories.Link));
             }
 
-            WriteAttributeExtensions(writer, categories, version);
-            WriteElementExtensions(writer, categories, version);
+            WriteAttributeExtensionsAsync(writer, categories, version);
+            WriteElementExtensionsAsync(writer, categories, version);
         }
 
         private static void WriteXmlBase(XmlWriter writer, Uri baseUri)
@@ -453,13 +453,13 @@ namespace Microsoft.ServiceModel.Syndication
             reader.ReadStartElement();
             try
             {
-                while (reader.IsStartElement())
+                while (await reader.IsStartElementAsync())
                 {
-                    if (reader.IsStartElement(Atom10Constants.TitleTag, Atom10Constants.Atom10Namespace))
+                    if (await reader.IsStartElementAsync(Atom10Constants.TitleTag, Atom10Constants.Atom10Namespace))
                     {
                         result.Title = await new Atom10FeedFormatter().ReadTextContentFromAsync(reader, "//app:service/app:workspace/app:collection/atom:title[@type]", _preserveAttributeExtensions);
                     }
-                    else if (reader.IsStartElement(App10Constants.Categories, App10Constants.Namespace))
+                    else if (await reader.IsStartElementAsync(App10Constants.Categories, App10Constants.Namespace))
                     {
                         result.Categories.Add(await ReadCategories(reader,
                             result.BaseUri,
@@ -477,7 +477,7 @@ namespace Microsoft.ServiceModel.Syndication
                             _preserveAttributeExtensions,
                             _maxExtensionSize));
                     }
-                    else if (reader.IsStartElement(App10Constants.Accept, App10Constants.Namespace))
+                    else if (await reader.IsStartElementAsync(App10Constants.Accept, App10Constants.Namespace))
                     {
                         result.Accepts.Add(reader.ReadElementString());
                     }
@@ -562,9 +562,9 @@ namespace Microsoft.ServiceModel.Syndication
                 {
                     try
                     {
-                        while (reader.IsStartElement())
+                        while (await reader.IsStartElementAsync())
                         {
-                            if (reader.IsStartElement(App10Constants.Workspace, App10Constants.Namespace))
+                            if (await reader.IsStartElementAsync(App10Constants.Workspace, App10Constants.Namespace))
                             {
                                 result.Workspaces.Add(ReadWorkspace(reader, result).Result);
                             }
@@ -646,13 +646,13 @@ namespace Microsoft.ServiceModel.Syndication
             await reader.ReadStartElementAsync();
             try
             {
-                while (reader.IsStartElement())
+                while (await reader.IsStartElementAsync())
                 {
-                    if (reader.IsStartElement(Atom10Constants.TitleTag, Atom10Constants.Atom10Namespace))
+                    if (await reader.IsStartElementAsync(Atom10Constants.TitleTag, Atom10Constants.Atom10Namespace))
                     {
                         result.Title = await new Atom10FeedFormatter().ReadTextContentFromAsync(reader, "//app:service/app:workspace/atom:title[@type]", _preserveAttributeExtensions);
                     }
-                    else if (reader.IsStartElement(App10Constants.Collection, App10Constants.Namespace))
+                    else if (await reader.IsStartElementAsync(App10Constants.Collection, App10Constants.Namespace))
                     {
                         result.Collections.Add(ReadCollection(reader, result).Result);
                     }
@@ -703,7 +703,7 @@ namespace Microsoft.ServiceModel.Syndication
             WriteAttributeExtensions(writer, collection, this.Version);
             if (collection.Title != null)
             {
-                collection.Title.WriteTo(writer, Atom10Constants.TitleTag, Atom10Constants.Atom10Namespace);
+                await collection.Title.WriteToAsync(writer, Atom10Constants.TitleTag, Atom10Constants.Atom10Namespace);
             }
 
             for (int i = 0; i < collection.Accepts.Count; ++i)
@@ -716,7 +716,7 @@ namespace Microsoft.ServiceModel.Syndication
                 await WriteCategoriesAsync(writer, collection.Categories[i], baseUri, this.Version);
             }
 
-            WriteElementExtensions(writer, collection, this.Version);
+            await WriteElementExtensionsAsync(writer, collection, this.Version);
             await writer.WriteEndElementAsync();
         }
         
@@ -742,7 +742,7 @@ namespace Microsoft.ServiceModel.Syndication
                 await WriteWorkspaceAsync(writer, this.Document.Workspaces[i], baseUri);
             }
 
-            WriteElementExtensions(writer, this.Document, this.Version);
+            await WriteElementExtensionsAsync(writer, this.Document, this.Version);
         }
         
         private async Task WriteWorkspaceAsync(XmlWriterWrapper writer, Workspace workspace, Uri baseUri)
@@ -758,7 +758,7 @@ namespace Microsoft.ServiceModel.Syndication
             WriteAttributeExtensions(writer, workspace, this.Version);
             if (workspace.Title != null)
             {
-                workspace.Title.WriteTo(writer, Atom10Constants.TitleTag, Atom10Constants.Atom10Namespace);
+                await workspace.Title.WriteToAsync(writer, Atom10Constants.TitleTag, Atom10Constants.Atom10Namespace);
             }
 
             for (int i = 0; i < workspace.Collections.Count; ++i)
@@ -766,7 +766,7 @@ namespace Microsoft.ServiceModel.Syndication
                 await WriteCollectionAsync(writer, workspace.Collections[i], baseUri);
             }
 
-            WriteElementExtensions(writer, workspace, this.Version);
+            await WriteElementExtensionsAsync(writer, workspace, this.Version);
             await writer.WriteEndElementAsync();
         }
     }

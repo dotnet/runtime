@@ -267,54 +267,54 @@ namespace Microsoft.ServiceModel.Syndication
             collection.WriteAttributeExtensions(writer, version);
         }
 
-        protected static void WriteAttributeExtensions(XmlWriter writer, CategoriesDocument categories, string version)
+        protected static Task WriteAttributeExtensionsAsync(XmlWriter writer, CategoriesDocument categories, string version)
         {
             if (categories == null)
             {
                 throw new ArgumentNullException(nameof(categories));
             }
 
-            categories.WriteAttributeExtensions(writer, version);
+            return categories.WriteAttributeExtensionsAsync(writer, version);
         }
 
-        protected static void WriteElementExtensions(XmlWriter writer, ServiceDocument document, string version)
+        protected static Task WriteElementExtensionsAsync(XmlWriter writer, ServiceDocument document, string version)
         {
             if (document == null)
             {
                 throw new ArgumentNullException(nameof(document));
             }
 
-            document.WriteElementExtensions(writer, version);
+            return document.WriteElementExtensionsAsync(writer, version);
         }
 
-        protected static void WriteElementExtensions(XmlWriter writer, Workspace workspace, string version)
+        protected static Task WriteElementExtensionsAsync(XmlWriter writer, Workspace workspace, string version)
         {
             if (workspace == null)
             {
                 throw new ArgumentNullException(nameof(workspace));
             }
 
-            workspace.WriteElementExtensions(writer, version);
+            return workspace.WriteElementExtensionsAsync(writer, version);
         }
 
-        protected static void WriteElementExtensions(XmlWriter writer, ResourceCollectionInfo collection, string version)
+        protected static Task WriteElementExtensionsAsync(XmlWriter writer, ResourceCollectionInfo collection, string version)
         {
             if (collection == null)
             {
                 throw new ArgumentNullException(nameof(collection));
             }
 
-            collection.WriteElementExtensions(writer, version);
+            return collection.WriteElementExtensionsAsync(writer, version);
         }
 
-        protected static void WriteElementExtensions(XmlWriter writer, CategoriesDocument categories, string version)
+        protected static Task WriteElementExtensionsAsync(XmlWriter writer, CategoriesDocument categories, string version)
         {
             if (categories == null)
             {
                 throw new ArgumentNullException(nameof(categories));
             }
 
-            categories.WriteElementExtensions(writer, version);
+            return categories.WriteElementExtensionsAsync(writer, version);
         }
 
         protected virtual ServiceDocument CreateDocumentInstance()

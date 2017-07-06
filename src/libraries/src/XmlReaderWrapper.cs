@@ -569,7 +569,7 @@ namespace Microsoft.ServiceModel.Syndication
                 throw new InvalidOperationException(reader.NodeType.ToString() + " is an invalid XmlNodeType");
             }
 
-            await reader.ReadAsync();
+            reader.Read();
         }
     }
 }
