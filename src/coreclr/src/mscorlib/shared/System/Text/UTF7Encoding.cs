@@ -33,18 +33,17 @@ namespace System.Text
         internal static readonly UTF7Encoding s_default = new UTF7Encoding();
 
         // The set of base 64 characters.
-        private byte[] base64Bytes;
+        private byte[] _base64Bytes;
         // The decoded bits for every base64 values. This array has a size of 128 elements.
         // The index is the code point value of the base 64 characters.  The value is -1 if
         // the code point is not a valid base 64 character.  Otherwise, the value is a value
         // from 0 ~ 63.
-        private sbyte[] base64Values;
+        private sbyte[] _base64Values;
         // The array to decide if a Unicode code point below 0x80 can be directly encoded in UTF7.
         // This array has a size of 128.
-        private bool[] directEncode;
+        private bool[] _directEncode;
 
-        [OptionalField(VersionAdded = 2)]
-        private bool m_allowOptionals;
+        private bool _allowOptionals;
 
         private const int UTF7_CODEPAGE = 65000;
 
@@ -58,7 +57,7 @@ namespace System.Text
             : base(UTF7_CODEPAGE) //Set the data item.
         {
             // Allowing optionals?
-            m_allowOptionals = allowOptionals;
+            _allowOptionals = allowOptionals;
 
             // Make our tables
             MakeTables();
@@ -67,24 +66,24 @@ namespace System.Text
         private void MakeTables()
         {
             // Build our tables
-            base64Bytes = new byte[64];
-            for (int i = 0; i < 64; i++) base64Bytes[i] = (byte)base64Chars[i];
-            base64Values = new sbyte[128];
-            for (int i = 0; i < 128; i++) base64Values[i] = -1;
-            for (int i = 0; i < 64; i++) base64Values[base64Bytes[i]] = (sbyte)i;
-            directEncode = new bool[128];
+            _base64Bytes = new byte[64];
+            for (int i = 0; i < 64; i++) _base64Bytes[i] = (byte)base64Chars[i];
+            _base64Values = new sbyte[128];
+            for (int i = 0; i < 128; i++) _base64Values[i] = -1;
+            for (int i = 0; i < 64; i++) _base64Values[_base64Bytes[i]] = (sbyte)i;
+            _directEncode = new bool[128];
             int count = directChars.Length;
             for (int i = 0; i < count; i++)
             {
-                directEncode[directChars[i]] = true;
+                _directEncode[directChars[i]] = true;
             }
 
-            if (m_allowOptionals)
+            if (_allowOptionals)
             {
                 count = optionalChars.Length;
                 for (int i = 0; i < count; i++)
                 {
-                    directEncode[optionalChars[i]] = true;
+                    _directEncode[optionalChars[i]] = true;
                 }
             }
         }
@@ -99,36 +98,12 @@ namespace System.Text
             this.decoderFallback = new DecoderUTF7Fallback();
         }
 
-
-        [OnDeserializing]
-        private void OnDeserializing(StreamingContext ctx)
-        {
-            // make sure the optional fields initialized correctly.
-            base.OnDeserializing();
-        }
-
-        [OnDeserialized]
-        private void OnDeserialized(StreamingContext ctx)
-        {
-            base.OnDeserialized();
-
-            if (m_deserializedFromEverett)
-            {
-                // If 1st optional char is encoded we're allowing optionals
-                m_allowOptionals = directEncode[optionalChars[0]];
-            }
-
-            MakeTables();
-        }
-
-
-
         public override bool Equals(Object value)
         {
             UTF7Encoding that = value as UTF7Encoding;
             if (that != null)
             {
-                return (m_allowOptionals == that.m_allowOptionals) &&
+                return (_allowOptionals == that._allowOptionals) &&
                        (EncoderFallback.Equals(that.EncoderFallback)) &&
                        (DecoderFallback.Equals(that.DecoderFallback));
             }
@@ -482,7 +457,7 @@ namespace System.Text
                 {
                     bitCount -= 6;
                     // If we fail we'll never really have enough room
-                    if (!buffer.AddByte(base64Bytes[(bits >> bitCount) & 0x3F]))
+                    if (!buffer.AddByte(_base64Bytes[(bits >> bitCount) & 0x3F]))
                         ThrowBytesOverflow(encoder, buffer.Count == 0);
                 }
             }
@@ -491,14 +466,14 @@ namespace System.Text
             {
                 char currentChar = buffer.GetNextChar();
 
-                if (currentChar < 0x80 && directEncode[currentChar])
+                if (currentChar < 0x80 && _directEncode[currentChar])
                 {
                     if (bitCount >= 0)
                     {
                         if (bitCount > 0)
                         {
                             // Try to add the next byte
-                            if (!buffer.AddByte(base64Bytes[bits << 6 - bitCount & 0x3F]))
+                            if (!buffer.AddByte(_base64Bytes[bits << 6 - bitCount & 0x3F]))
                                 break;                                          // Stop here, didn't throw
 
                             bitCount = 0;
@@ -540,7 +515,7 @@ namespace System.Text
                     while (bitCount >= 6)
                     {
                         bitCount -= 6;
-                        if (!buffer.AddByte(base64Bytes[(bits >> bitCount) & 0x3F]))
+                        if (!buffer.AddByte(_base64Bytes[(bits >> bitCount) & 0x3F]))
                         {
                             bitCount += 6;                              // We didn't use these bits
                             currentChar = buffer.GetNextChar();              // We're processing this char still, but AddByte
@@ -561,7 +536,7 @@ namespace System.Text
                 // Do we have bits we have to stick in?
                 if (bitCount > 0)
                 {
-                    if (buffer.AddByte(base64Bytes[(bits << (6 - bitCount)) & 0x3F]))
+                    if (buffer.AddByte(_base64Bytes[(bits << (6 - bitCount)) & 0x3F]))
                     {
                         // Emitted spare bits, 0 bits left
                         bitCount = 0;
@@ -654,7 +629,7 @@ namespace System.Text
                     // Modified base 64 encoding.
                     //
                     sbyte v;
-                    if (currentByte < 0x80 && ((v = base64Values[currentByte]) >= 0))
+                    if (currentByte < 0x80 && ((v = _base64Values[currentByte]) >= 0))
                     {
                         firstByte = false;
                         bits = (bits << 6) | ((byte)v);
@@ -675,7 +650,7 @@ namespace System.Text
                         if (currentByte != '-')
                         {
                             // >= 0x80 (because of 1st if statemtn)
-                            // We need this check since the base64Values[b] check below need b <= 0x7f.
+                            // We need this check since the _base64Values[b] check below need b <= 0x7f.
                             // This is not a valid base 64 byte.  Terminate the shifted-sequence and
                             // emit this byte.
 
