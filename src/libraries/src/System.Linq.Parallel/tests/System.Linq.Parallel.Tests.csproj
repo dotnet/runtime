@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <!-- [ActiveIssue(https://github.com/dotnet/corefx/issues/21804)] // when building this tests in ret mode they crash and not produce testResults.xml -->
-    <ILCBuildType Condition="'$(ArchGroup)' == 'x86' OR ('$(ConfigurationGroup)' == 'Release' AND '$(ArchGroup)' == 'arm')">chk</ILCBuildType>
+    <ILCBuildType Condition="'$(ArchGroup)' == 'x86' OR '$(ArchGroup)' == 'arm'">chk</ILCBuildType>
     <ProjectGuid>{A7074928-82C3-4739-88FE-9B528977950C}</ProjectGuid>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
