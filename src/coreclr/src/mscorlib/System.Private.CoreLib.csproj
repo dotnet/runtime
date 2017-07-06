@@ -597,9 +597,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Text\EncoderExceptionFallback.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\EncoderFallback.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Text\EncoderReplacementFallback.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\Encoding.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\Latin1Encoding.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\UTF7Encoding.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\UnsafeNativeMethods.cs" />
