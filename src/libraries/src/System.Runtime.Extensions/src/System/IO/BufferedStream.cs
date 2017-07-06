@@ -690,10 +690,11 @@ namespace System.IO
 
             EnsureBufferAllocated();
             _readLen = _stream.Read(_buffer, 0, _bufferSize);
+            _readPos = 0;
+
             if (_readLen == 0)
                 return -1;
 
-            _readPos = 0;
             return _buffer[_readPos++];
         }
 
