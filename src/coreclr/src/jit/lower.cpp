@@ -305,17 +305,21 @@ GenTree* Lowering::LowerNode(GenTree* node)
             __fallthrough;
 
         case GT_STORE_LCL_FLD:
-            // TODO-1stClassStructs: Once we remove the requirement that all struct stores
-            // are block stores (GT_STORE_BLK or GT_STORE_OBJ), here is where we would put the local
-            // store under a block store if codegen will require it.
-            if (node->OperIsStore() && (node->TypeGet() == TYP_STRUCT) && (node->gtGetOp1()->OperGet() != GT_PHI))
+            if (node->OperIsStore())
             {
+                // TODO-1stClassStructs: Once we remove the requirement that all struct stores
+                // are block stores (GT_STORE_BLK or GT_STORE_OBJ), here is where we would put the local
+                // store under a block store if codegen will require it.
+                if ((node->TypeGet() == TYP_STRUCT) && (node->gtGetOp1()->OperGet() != GT_PHI))
+                {
 #if FEATURE_MULTIREG_RET
-                GenTree* src = node->gtGetOp1();
-                assert((src->OperGet() == GT_CALL) && src->AsCall()->HasMultiRegRetVal());
+                    GenTree* src = node->gtGetOp1();
+                    assert((src->OperGet() == GT_CALL) && src->AsCall()->HasMultiRegRetVal());
 #else  // !FEATURE_MULTIREG_RET
-                assert(!"Unexpected struct local store in Lowering");
+                    assert(!"Unexpected struct local store in Lowering");
 #endif // !FEATURE_MULTIREG_RET
+                }
+                LowerStoreLoc(node->AsLclVarCommon());
             }
             break;
 
