@@ -12,7 +12,6 @@ namespace System.Tests
         [Theory]
         [InlineData(1000)]
         [InlineData(100000)]
-        [ActiveIssue("https://github.com/dotnet/corert/issues/3648 - GC.GetAllocatedBytesForCurrentThread not yet ported to CoreRT", TargetFrameworkMonikers.UapAot)]
         public static void GetAllocatedBytesForCurrentThread(int size)
         {
             long start = GC.GetAllocatedBytesForCurrentThread();
