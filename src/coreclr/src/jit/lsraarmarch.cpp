@@ -170,6 +170,31 @@ void Lowering::TreeNodeInfoInitIndir(GenTreePtr indirTree)
     bool       modifiedSources = false;
     bool       makeContained   = true;
 
+#ifdef _TARGET_ARM_
+    // Unaligned loads/stores for floating point values must first be loaded into integer register(s)
+    if (indirTree->gtFlags & GTF_IND_UNALIGNED)
+    {
+        var_types type = TYP_UNDEF;
+        if (indirTree->OperGet() == GT_STOREIND)
+        {
+            type = indirTree->AsStoreInd()->Data()->TypeGet();
+        }
+        else if (indirTree->OperGet() == GT_IND)
+        {
+            type = indirTree->TypeGet();
+        }
+
+        if (type == TYP_FLOAT)
+        {
+            info->internalIntCount = 1;
+        }
+        else if (type == TYP_DOUBLE)
+        {
+            info->internalIntCount = 2;
+        }
+    }
+#endif
+
     if ((addr->OperGet() == GT_LEA) && IsSafeToContainMem(indirTree, addr))
     {
         GenTreeAddrMode* lea = addr->AsAddrMode();
@@ -317,12 +342,12 @@ void Lowering::TreeNodeInfoInitIndir(GenTreePtr indirTree)
     if ((index != nullptr) && (cns != 0))
     {
         // ARM does not support both Index and offset so we need an internal register
-        info->internalIntCount = 1;
+        info->internalIntCount++;
     }
     else if (!emitter::emitIns_valid_imm_for_ldst_offset(cns, emitTypeSize(indirTree)))
     {
         // This offset can't be contained in the ldr/str instruction, so we need an internal register
-        info->internalIntCount = 1;
+        info->internalIntCount++;
     }
 }
 
