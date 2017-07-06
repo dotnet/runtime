@@ -529,7 +529,7 @@ void TrackSO(BOOL tolerance)
 
 /*********************************************************************************/
 /* fetch a buffer that can be used to write a stress message, it is thread safe */
-void ThreadStressLog::LogMsg ( DWORD_PTR facility, int cArgs, const char* format, va_list Args)
+void ThreadStressLog::LogMsg(unsigned facility, int cArgs, const char* format, va_list Args)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_FORBID_FAULT;
