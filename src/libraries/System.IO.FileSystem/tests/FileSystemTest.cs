@@ -66,7 +66,7 @@ namespace System.IO.Tests
 
             using (Process process = Process.Start(startInfo))
             {
-                Assert.True(process.WaitForExit(3000));
+                Assert.True(process.WaitForExit(30000));
                 return process.ExitCode;
             }
         }
