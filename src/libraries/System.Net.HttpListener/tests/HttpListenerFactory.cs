@@ -17,7 +17,7 @@ namespace System.Net.Tests
         private const int MaxStartAttempts = 500;
         private static int s_minPort;
         private static int s_maxPort;
-        private static readonly Random _random = new Random();
+        private static readonly Random s_random = new Random();
 
         static HttpListenerFactory()
         {
@@ -45,9 +45,9 @@ namespace System.Net.Tests
             for (int attempt = 0; attempt < MaxStartAttempts; attempt++)
             {
                 int port;
-                lock (_random)
+                lock (s_random)
                 {
-                    port = _random.Next(s_minPort, s_maxPort + 1);
+                    port = s_random.Next(s_minPort, s_maxPort + 1);
                 }
                 string prefix = $"http://{hostname}:{port}/{pathComponent}";
 
