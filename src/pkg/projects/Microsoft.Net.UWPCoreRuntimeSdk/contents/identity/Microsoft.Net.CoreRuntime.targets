@@ -214,7 +214,7 @@ Copyright (C) Microsoft Corporation. All rights reserved.
   <!-- We will always inject the CLR from the framework SDK, so remove it if it was contributed through NuGet -->
   <Target Name="FilterCoreRuntimePayloadFromNuGet" AfterTargets="ResolveReferences" DependsOnTargets="ResolveNuGetPackageAssets" Condition="'$(ResolveNuGetPackages)' == 'true' AND '$(_TargetsCoreRuntime)' == 'true'">
     <PropertyGroup>
-      <_CoreRuntimePackageId Condition="'%(ReferenceCopyLocalPaths.FileName)%(ReferenceCopyLocalPaths.Extension)' == 'mscorlib.dll' OR '%(ReferenceCopyLocalPaths.FileName)%(ReferenceCopyLocalPaths.Extension)' == 'mscorlib.ni.dll'">%(ReferenceCopyLocalPaths.NuGetPackageId)</_CoreRuntimePackageId>
+      <_CoreRuntimePackageId Condition="'%(ReferenceCopyLocalPaths.FileName)%(ReferenceCopyLocalPaths.Extension)' == 'System.Private.CoreLib.dll' OR '%(ReferenceCopyLocalPaths.FileName)%(ReferenceCopyLocalPaths.Extension)' == 'System.Private.CoreLib.ni.dll'">%(ReferenceCopyLocalPaths.NuGetPackageId)</_CoreRuntimePackageId>
     </PropertyGroup>
     <ItemGroup>
       <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'$(UseAppLocalCoreCLR)' != 'true' AND '%(ReferenceCopyLocalPaths.NuGetPackageId)' == '$(_CoreRuntimePackageId)' AND '$(_CoreRuntimePackageId)' != ''"/>
