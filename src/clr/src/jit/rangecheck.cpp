@@ -323,7 +323,8 @@ void RangeCheck::Widen(BasicBlock* block, GenTreePtr stmt, GenTreePtr tree, Sear
 
 bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreePtr op1, GenTreePtr op2, genTreeOps oper, SearchPath* path)
 {
-    JITDUMP("[RangeCheck::IsBinOpMonotonicallyIncreasing] %p, %p\n", dspPtr(op1), dspPtr(op2));
+    JITDUMP("[RangeCheck::IsBinOpMonotonicallyIncreasing] [%06d], [%06d]\n", Compiler::dspTreeID(op1),
+            Compiler::dspTreeID(op2));
     // Check if we have a var + const.
     if (op2->OperGet() == GT_LCL_VAR)
     {
@@ -350,7 +351,7 @@ bool RangeCheck::IsBinOpMonotonicallyIncreasing(GenTreePtr op1, GenTreePtr op2, 
 
 bool RangeCheck::IsMonotonicallyIncreasing(GenTreePtr expr, SearchPath* path)
 {
-    JITDUMP("[RangeCheck::IsMonotonicallyIncreasing] %p\n", dspPtr(expr));
+    JITDUMP("[RangeCheck::IsMonotonicallyIncreasing] [%06d]\n", Compiler::dspTreeID(expr));
     if (path->Lookup(expr))
     {
         return true;
@@ -470,8 +471,8 @@ void RangeCheck::SetDef(UINT64 hash, Location* loc)
     Location* loc2;
     if (m_pDefTable->Lookup(hash, &loc2))
     {
-        JITDUMP("Already have BB%02d, %08X, %08X for hash => %0I64X", loc2->block->bbNum, dspPtr(loc2->stmt),
-                dspPtr(loc2->tree), hash);
+        JITDUMP("Already have BB%02d, [%06d], [%06d] for hash => %0I64X", loc2->block->bbNum,
+                Compiler::dspTreeID(loc2->stmt), Compiler::dspTreeID(loc2->tree), hash);
         assert(false);
     }
 #endif
@@ -735,7 +736,7 @@ void RangeCheck::MergeEdgeAssertions(GenTreePtr tree, ASSERT_VALARG_TP assertion
 void RangeCheck::MergeAssertion(
     BasicBlock* block, GenTreePtr stmt, GenTreePtr op, SearchPath* path, Range* pRange DEBUGARG(int indent))
 {
-    JITDUMP("Merging assertions from pred edges of BB%02d for op(%p) $%03x\n", block->bbNum, dspPtr(op),
+    JITDUMP("Merging assertions from pred edges of BB%02d for op [%06d] $%03x\n", block->bbNum, Compiler::dspTreeID(op),
             op->gtVNPair.GetConservative());
     ASSERT_TP assertions = BitVecOps::UninitVal();
 
@@ -865,8 +866,9 @@ Range RangeCheck::ComputeRangeForLocalDef(
             Range range = GetRange(loc->block, loc->stmt, asg->gtGetOp2(), path, monotonic DEBUGARG(indent));
             if (!BitVecOps::MayBeUninit(block->bbAssertionIn))
             {
-                JITDUMP("Merge assertions from BB%02d:%s for assignment about %p\n", block->bbNum,
-                        BitVecOps::ToString(m_pCompiler->apTraits, block->bbAssertionIn), dspPtr(asg->gtGetOp1()));
+                JITDUMP("Merge assertions from BB%02d:%s for assignment about [%06d]\n", block->bbNum,
+                        BitVecOps::ToString(m_pCompiler->apTraits, block->bbAssertionIn),
+                        Compiler::dspTreeID(asg->gtGetOp1()));
                 MergeEdgeAssertions(asg->gtGetOp1(), block->bbAssertionIn, &range);
                 JITDUMP("done merging\n");
             }
@@ -1078,7 +1080,7 @@ bool RangeCheck::DoesOverflow(BasicBlock* block, GenTreePtr stmt, GenTreePtr exp
 
 bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTreePtr stmt, GenTreePtr expr, SearchPath* path)
 {
-    JITDUMP("Does overflow %p?\n", dspPtr(expr));
+    JITDUMP("Does overflow [%06d]?\n", Compiler::dspTreeID(expr));
     path->Set(expr, block);
 
     bool overflows = true;
@@ -1211,7 +1213,7 @@ Range RangeCheck::ComputeRange(
             }
             if (path->Lookup(args->Current()))
             {
-                JITDUMP("PhiArg %p is already being computed\n", dspPtr(args->Current()));
+                JITDUMP("PhiArg [%06d] is already being computed\n", Compiler::dspTreeID(args->Current()));
                 cur->range = Range(Limit(Limit::keDependent));
                 MergeAssertion(block, stmt, args->Current(), path, &cur->range DEBUGARG(indent + 1));
                 continue;
@@ -1274,7 +1276,7 @@ Range RangeCheck::GetRange(
     if (m_pCompiler->verbose)
     {
         Indent(indent);
-        JITDUMP("   %s Range (%08X) => %s\n", (pRange == nullptr) ? "Computed" : "Cached", dspPtr(expr),
+        JITDUMP("   %s Range [%06d] => %s\n", (pRange == nullptr) ? "Computed" : "Cached", Compiler::dspTreeID(expr),
                 range.ToString(m_pCompiler->getAllocatorDebugOnly()));
         Indent(indent);
         JITDUMP("}\n", expr);
