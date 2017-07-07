@@ -93,8 +93,8 @@ namespace Microsoft.Test.ModuleCore
 
         public override string ToString()
         {
-            var expected = "Expected: " + Expected + " (" + Expected.GetType() + ")\n";
-            var actual = "Actual  : " + Actual + " (" + Actual.GetType() + ")\n";
+            var expected = "Expected: " + Expected + " (" + Expected?.GetType() + ")\n";
+            var actual = "Actual  : " + Actual + " (" + Actual?.GetType() + ")\n";
 
             return expected + actual + "\n" + base.ToString();
         }
