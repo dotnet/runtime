@@ -20,7 +20,7 @@ namespace System.Threading
 {
     public sealed class ThreadAbortException : SystemException
     {
-        private ThreadAbortException()
+        internal ThreadAbortException()
         {
             HResult = __HResults.COR_E_THREADABORTED;
         }
