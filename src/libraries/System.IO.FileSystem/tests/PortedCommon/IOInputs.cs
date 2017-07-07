@@ -27,7 +27,6 @@ internal static class IOInputs
     // Windows specific, this is the maximum length that can be passed using extended syntax. Does not include the trailing \0.
     public static readonly int MaxExtendedPath = short.MaxValue - 1;
 
-
     public const int MaxComponent = 255;
 
     public const string ExtendedPrefix = @"\\?\";
@@ -149,13 +148,13 @@ internal static class IOInputs
 
         string component = new string('s', MaxComponent + 1);
 
-        yield return String.Format(@"C:\{0}", component);
-        yield return String.Format(@"C:\{0}\Filename.txt", component);
-        yield return String.Format(@"C:\{0}\Filename.txt\", component);
-        yield return String.Format(@"\\{0}\Share", component);
-        yield return String.Format(@"\\LOCALHOST\{0}", component);
-        yield return String.Format(@"\\LOCALHOST\{0}\FileName.txt", component);
-        yield return String.Format(@"\\LOCALHOST\Share\{0}", component);
+        yield return string.Format(@"C:\{0}", component);
+        yield return string.Format(@"C:\{0}\Filename.txt", component);
+        yield return string.Format(@"C:\{0}\Filename.txt\", component);
+        yield return string.Format(@"\\{0}\Share", component);
+        yield return string.Format(@"\\LOCALHOST\{0}", component);
+        yield return string.Format(@"\\LOCALHOST\{0}\FileName.txt", component);
+        yield return string.Format(@"\\LOCALHOST\Share\{0}", component);
     }
 
     public static IEnumerable<string> GetPathsLongerThanMaxDirectory(string rootPath)

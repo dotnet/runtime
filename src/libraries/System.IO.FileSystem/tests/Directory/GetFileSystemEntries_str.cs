@@ -11,7 +11,7 @@ namespace System.IO.Tests
     {
         #region Utilities
 
-        public static string[] WindowsInvalidUnixValid = new string[] { "         ", " ", "\n", ">", "<", "\t" };
+        public static TheoryData WindowsInvalidUnixValid = new TheoryData<string> { "         ", " ", "\n", ">", "<", "\t" };
         protected virtual bool TestFiles { get { return true; } }       // True if the virtual GetEntries mmethod returns files
         protected virtual bool TestDirectories { get { return true; } } // True if the virtual GetEntries mmethod returns Directories
 
@@ -200,43 +200,45 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [Theory,
+            MemberData(nameof(WindowsInvalidUnixValid))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Windows-only Invalid chars in path
-        public void WindowsInvalidCharsPath()
+        public void WindowsInvalidCharsPath(string invalid)
         {
-            Assert.All(WindowsInvalidUnixValid, invalid =>
-                Assert.Throws<ArgumentException>(() => GetEntries(invalid)));
+            
+            Assert.Throws<ArgumentException>(() => GetEntries(invalid));
         }
 
-        [Fact]
+        [Theory,
+            MemberData(nameof(WindowsInvalidUnixValid))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Unix-only valid chars in file path
-        public void UnixValidCharsFilePath()
+        public void UnixValidCharsFilePath(string valid)
         {
             if (TestFiles)
             {
                 DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-                foreach (string valid in WindowsInvalidUnixValid)
-                    File.Create(Path.Combine(testDir.FullName, valid)).Dispose();
+
+                File.Create(Path.Combine(testDir.FullName, valid)).Dispose();
 
                 string[] results = GetEntries(testDir.FullName);
-                Assert.All(WindowsInvalidUnixValid, valid =>
-                    Assert.Contains(Path.Combine(testDir.FullName, valid), results));
+                Assert.Contains(Path.Combine(testDir.FullName, valid), results);
             }
         }
 
-        [Fact]
+        [Theory,
+            MemberData(nameof(WindowsInvalidUnixValid))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Windows-only invalid chars in directory path
-        public void UnixValidCharsDirectoryPath()
+        public void UnixValidCharsDirectoryPath(string valid)
         {
             if (TestDirectories)
             {
                 DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-                foreach (string valid in WindowsInvalidUnixValid)
-                    testDir.CreateSubdirectory(valid);
+                
+                testDir.CreateSubdirectory(valid);
 
                 string[] results = GetEntries(testDir.FullName);
-                Assert.All(WindowsInvalidUnixValid, valid => 
-                    Assert.Contains(Path.Combine(testDir.FullName, valid), results));
+                 
+                Assert.Contains(Path.Combine(testDir.FullName, valid), results);
             }
         }
 

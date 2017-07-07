@@ -269,28 +269,26 @@ namespace System.IO.Tests
             Assert.True(File.Exists(testFileShouldntMove));
         }
 
-        [Fact]
+        [Theory,
+            MemberData(nameof(WhiteSpace))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Whitespace in path throws ArgumentException
-        public void WindowsWhitespacePath()
+        public void WindowsWhitespacePath(string whitespace)
         {
             FileInfo testFile = new FileInfo(GetTestFilePath());
-            Assert.All(IOInputs.GetWhiteSpace(), (whitespace) =>
-            {
-                Assert.Throws<ArgumentException>(() => Move(testFile.FullName, whitespace));
-            });
+            Assert.Throws<ArgumentException>(() => Move(testFile.FullName, whitespace));
         }
 
-        [Fact]
+        [Theory,
+            MemberData(nameof(WhiteSpace))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Whitespace in path allowed
-        public void UnixWhitespacePath()
+        public void UnixWhitespacePath(string whitespace)
         {
             FileInfo testFileSource = new FileInfo(GetTestFilePath());
             testFileSource.Create().Dispose();
-            Assert.All(IOInputs.GetWhiteSpace(), (whitespace) =>
-            {
-                Move(testFileSource.FullName, Path.Combine(TestDirectory, whitespace));
-                Move(Path.Combine(TestDirectory, whitespace), testFileSource.FullName);
-            });
+
+            Move(testFileSource.FullName, Path.Combine(TestDirectory, whitespace));
+            Move(Path.Combine(TestDirectory, whitespace), testFileSource.FullName);
+
         }
 
         #endregion
