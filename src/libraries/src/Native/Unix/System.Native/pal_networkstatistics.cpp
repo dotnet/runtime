@@ -20,6 +20,7 @@
 #include <errno.h>
 #include <memory>
 #include <net/route.h>
+#include <net/if.h>
 
 #include <sys/types.h>
 #if HAVE_SYS_SYSCTL_H
