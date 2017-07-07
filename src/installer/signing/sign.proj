@@ -21,16 +21,8 @@
     </PropertyGroup>
   </Target>
 
-  <Target Name="SignBinaries" DependsOnTargets="GetSignBinaryFiles;GetSignAppxFiles">
+  <Target Name="SignBinaries" DependsOnTargets="GetSignBinaryFiles">
     <CallTarget Targets="SignFiles" />
-  </Target>
-
-  <Target Name="GetSignAppxFiles">
-    <ItemGroup>
-      <FilesToSign Include="$(UWPOutputDir)*.appx">
-        <Authenticode>Appx</Authenticode>
-      </FilesToSign>
-    </ItemGroup>
   </Target>
 
   <Target Name="GetSignBinaryFiles">
@@ -67,6 +59,18 @@
       </FilesToSign>
       <FilesToSign Include="$(UWPOutputDir)*.exe">
         <Authenticode>$(CertificateId)</Authenticode>
+      </FilesToSign>
+    </ItemGroup>
+  </Target>
+
+  <Target Name="SignAppxFiles" DependsOnTargets="GetSignAppxFiles">
+    <CallTarget Targets="SignFiles" />
+  </Target>
+  
+  <Target Name="GetSignAppxFiles">
+    <ItemGroup>
+      <FilesToSign Include="$(UWPOutputDir)*.appx">
+        <Authenticode>Appx</Authenticode>
       </FilesToSign>
     </ItemGroup>
   </Target>
