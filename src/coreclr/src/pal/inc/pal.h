@@ -4990,6 +4990,14 @@ GetLogicalProcessorInformationEx(
 );
 
 PALIMPORT
+DWORD_PTR
+PALAPI
+SetThreadAffinityMask(
+  IN HANDLE hThread,
+  IN DWORD_PTR dwThreadAffinityMask
+);
+
+PALIMPORT
 BOOL
 PALAPI
 SetThreadGroupAffinity(
