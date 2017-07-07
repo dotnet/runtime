@@ -350,6 +350,33 @@ namespace System.Linq.Tests
             Assert.Equal(range, lazyEnumerable.ToArray());
         }
 
+        // Consider that two very similar enums is not unheard of, if e.g. two assemblies map the
+        // same external source of numbers (codes, response codes, colour codes, etc.) to values.
+        private enum Enum0
+        {
+            First,
+            Second,
+            Third
+        }
+
+        private enum Enum1
+        {
+            First,
+            Second,
+            Third
+        }
+
+        [Fact, SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "The full .NET framework disallows copying assignable value types. See corefx#13816")]
+        public void ToArray_Cast()
+        {
+            Enum0[] source = { Enum0.First, Enum0.Second, Enum0.Third };
+            var cast = source.Cast<Enum1>();
+            Assert.IsType<Enum0[]>(cast);
+            var castArray = cast.ToArray();
+            Assert.IsType<Enum1[]>(castArray);
+            Assert.Equal(new[] { Enum1.First, Enum1.Second, Enum1.Third }, castArray);
+        }
+
         public static IEnumerable<object[]> JustBelowPowersOfTwoLengths()
         {
             return SmallPowersOfTwo.Select(p => new object[] { p - 1 });
