@@ -657,6 +657,26 @@ namespace Microsoft.ServiceModel.Syndication.Tests
             Assert.True(res.Id == "No id!");
             Assert.True(res.Title.Text == "new title");
         }
+
+        [Fact]
+        public static void SyndicationFeed_Rss_TestWrongSkipDays()
+        {
+            // *** SETUP *** \\
+            Rss20FeedFormatter rssformatter = new Rss20FeedFormatter();
+
+            XmlReader reader = XmlReader.Create(@"TestFeeds\rssSpecExampleWrongSkipDays.xml");
+            CancellationToken ct = new CancellationToken();
+
+            // *** EXECUTE *** \\
+            Task<SyndicationFeed> task = SyndicationFeed.LoadAsync(reader,ct);
+            Task.WhenAll(task);
+            SyndicationFeed res = task.Result;
+
+            // *** ASSERT *** \\
+            Assert.True(res.SkipDays.Count == 2);
+            Assert.True(res.SkipDays[0] == "Saturday");
+            Assert.True(res.SkipDays[1] == "Sunday");
+        }
     }
 }
 

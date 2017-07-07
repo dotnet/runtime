@@ -25,6 +25,7 @@ namespace Microsoft.ServiceModel.Syndication
         private static readonly XmlQualifiedName s_rss20Length = new XmlQualifiedName(Rss20Constants.LengthTag, string.Empty);
         private static readonly XmlQualifiedName s_rss20Type = new XmlQualifiedName(Rss20Constants.TypeTag, string.Empty);
         private static readonly XmlQualifiedName s_rss20Url = new XmlQualifiedName(Rss20Constants.UrlTag, string.Empty);
+        private static List<string> acceptedDays = new List<string> { "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday" };
         private const string Rfc822OutputLocalDateTimeFormat = "ddd, dd MMM yyyy HH:mm:ss zzz";
         private const string Rfc822OutputUtcDateTimeFormat = "ddd, dd MMM yyyy HH:mm:ss Z";
 
@@ -275,7 +276,7 @@ namespace Microsoft.ServiceModel.Syndication
                                     {
                                         bool isPermalink = true;
                                         string permalinkString = reader.GetAttribute(Rss20Constants.IsPermaLinkTag, Rss20Constants.Rss20Namespace);
-                                        if (permalinkString != null && permalinkString.ToUpperInvariant() == "FALSE")
+                                        if (permalinkString != null && permalinkString.Equals("false",StringComparison.OrdinalIgnoreCase))
                                         {
                                             isPermalink = false;
                                         }
@@ -583,6 +584,17 @@ namespace Microsoft.ServiceModel.Syndication
             await reader.ReadEndElementAsync();
         }
 
+
+        private bool checkDay(string day)
+        {
+            if (acceptedDays.Contains(day.ToLower()))
+            {
+                return true;
+            }
+
+            return false;
+        }
+
         private async Task ReadSkipDaysAsync(XmlReaderWrapper reader, SyndicationFeed result)
         {
             await reader.ReadStartElementAsync();
@@ -592,7 +604,12 @@ namespace Microsoft.ServiceModel.Syndication
                 if (reader.LocalName == Rss20Constants.DayTag)
                 {
                     string day = StringParser(await reader.ReadElementStringAsync(), reader.LocalName, Rss20Constants.Rss20Namespace);
-                    result.SkipDays.Add(day);
+
+                    //Check if the day is actually an accepted day.
+                    if (checkDay(day))
+                    {
+                        result.SkipDays.Add(day);
+                    }
                 }
                 else
                 {
