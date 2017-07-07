@@ -1,0 +1,7 @@
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library>
+    <!-- Needed because of objects in [Theory] data which causes xunit to reflect on its ToString() -->
+    <Type Name="System.DBNull" Dynamic="Required Public" />
+  </Library>
+</Directives>
+
