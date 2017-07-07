@@ -27,48 +27,6 @@ extern "C" const SSL_METHOD* CryptoNative_SslV2_3Method()
     return method;
 }
 
-extern "C" const SSL_METHOD* CryptoNative_SslV3Method()
-{
-    const SSL_METHOD* method = nullptr;
-#ifndef OPENSSL_NO_SSL3_METHOD
-    if (API_EXISTS(SSLv3_method))
-    {
-        method = SSLv3_method();
-        assert(method != nullptr);
-    }
-#endif
-    return method;
-}
-
-extern "C" const SSL_METHOD* CryptoNative_TlsV1Method()
-{
-    const SSL_METHOD* method = TLSv1_method();
-    assert(method != nullptr);
-    return method;
-}
-
-extern "C" const SSL_METHOD* CryptoNative_TlsV1_1Method()
-{
-#if HAVE_TLS_V1_1
-    const SSL_METHOD* method = TLSv1_1_method();
-    assert(method != nullptr);
-    return method;
-#else
-    return nullptr;
-#endif
-}
-
-extern "C" const SSL_METHOD* CryptoNative_TlsV1_2Method()
-{
-#if HAVE_TLS_V1_2
-    const SSL_METHOD* method = TLSv1_2_method();
-    assert(method != nullptr);
-    return method;
-#else
-    return nullptr;
-#endif
-}
-
 extern "C" SSL_CTX* CryptoNative_SslCtxCreate(SSL_METHOD* method)
 {
     SSL_CTX* ctx = SSL_CTX_new(method);
@@ -85,7 +43,12 @@ extern "C" SSL_CTX* CryptoNative_SslCtxCreate(SSL_METHOD* method)
 
 extern "C" void CryptoNative_SetProtocolOptions(SSL_CTX* ctx, SslProtocols protocols)
 {
-    // protocols may be 0 (default). Less secure protocols should be excluded in this case.    
+    // protocols may be 0, meaning system default, in which case let OpenSSL do what OpenSSL wants.
+    if (protocols == 0)
+    {
+        return;
+    }
+
     long protocolOptions = 0;
 
     if ((protocols & PAL_SSL_SSL2) != PAL_SSL_SSL2)
@@ -94,10 +57,13 @@ extern "C" void CryptoNative_SetProtocolOptions(SSL_CTX* ctx, SslProtocols proto
     }
 #ifndef OPENSSL_NO_SSL3
     if ((protocols & PAL_SSL_SSL3) != PAL_SSL_SSL3)
+#endif
     {
+        // If OPENSSL_NO_SSL3 is defined, then ensure we always include
+        // SSL_OP_NO_SSLv3 in case we end up running against a binary
+        // which had SSLv3 enabled (we don't want to use SSLv3 in that case).
         protocolOptions |= SSL_OP_NO_SSLv3;
     }
-#endif
     if ((protocols & PAL_SSL_TLS) != PAL_SSL_TLS)
     {
         protocolOptions |= SSL_OP_NO_TLSv1;

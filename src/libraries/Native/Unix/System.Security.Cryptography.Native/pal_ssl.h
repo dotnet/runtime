@@ -130,34 +130,6 @@ Returns the requested SSL_METHOD.
 extern "C" const SSL_METHOD* CryptoNative_SslV2_3Method();
 
 /*
-Shims the SSLv3_method method.
-
-Returns the requested SSL_METHOD.
-*/
-extern "C" const SSL_METHOD* CryptoNative_SslV3Method();
-
-/*
-Shims the TLSv1_method method.
-
-Returns the requested SSL_METHOD.
-*/
-extern "C" const SSL_METHOD* CryptoNative_TlsV1Method();
-
-/*
-Shims the TLSv1_1_method method.
-
-Returns the requested SSL_METHOD.
-*/
-extern "C" const SSL_METHOD* CryptoNative_TlsV1_1Method();
-
-/*
-Shims the TLSv1_2_method method.
-
-Returns the requested SSL_METHOD.
-*/
-extern "C" const SSL_METHOD* CryptoNative_TlsV1_2Method();
-
-/*
 Shims the SSL_CTX_new method.
 
 Returns the new SSL_CTX instance.
