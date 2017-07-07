@@ -659,7 +659,6 @@ bool GCToOSInterface::CreateThread(GCThreadFunction function, void* param, GCThr
 
     SetThreadPriority(gc_thread, /* THREAD_PRIORITY_ABOVE_NORMAL );*/ THREAD_PRIORITY_HIGHEST );
 
-#ifndef FEATURE_PAL
     if (affinity->Group != GCThreadAffinity::None)
     {
         _ASSERTE(affinity->Processor != GCThreadAffinity::None);
@@ -676,7 +675,6 @@ bool GCToOSInterface::CreateThread(GCThreadFunction function, void* param, GCThr
     {
         SetThreadAffinityMask(gc_thread, (DWORD_PTR)1 << affinity->Processor);
     }
-#endif // !FEATURE_PAL
 
     ResumeThread(gc_thread);
     CloseHandle(gc_thread);
