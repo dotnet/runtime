@@ -316,15 +316,6 @@ JIT/Methodical/tailcall/_il_dbgpointer_i/_il_dbgpointer_i.sh
 JIT/Methodical/tailcall/_il_relpointer/_il_relpointer.sh
 JIT/Methodical/tailcall/_il_relpointer_i/_il_relpointer_i.sh
 JIT/Methodical/tailcall_v4/smallFrame/smallFrame.sh
-JIT/Methodical/varargs/callconv/gc_ctor_il_d/gc_ctor_il_d.sh
-JIT/Methodical/varargs/callconv/gc_ctor_il_r/gc_ctor_il_r.sh
-JIT/Methodical/varargs/callconv/val_ctor_il_d/val_ctor_il_d.sh
-JIT/Methodical/varargs/callconv/val_ctor_il_r/val_ctor_il_r.sh
-JIT/Methodical/varargs/misc/Dev10_615402/Dev10_615402.sh
-JIT/Methodical/varargs/seh/fault_il_d/fault_il_d.sh
-JIT/Methodical/varargs/seh/fault_il_r/fault_il_r.sh
-JIT/Methodical/varargs/seh/filter_il_d/filter_il_d.sh
-JIT/Methodical/varargs/seh/filter_il_r/filter_il_r.sh
 JIT/opt/Inline/tests/security/security.sh
 JIT/opt/Inline/tests/xmodb/xmodb.sh
 JIT/opt/Tailcall/TailcallVerifyWithPrefix/TailcallVerifyWithPrefix.sh
