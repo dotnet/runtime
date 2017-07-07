@@ -9,7 +9,6 @@
   <Target Name="Build" DependsOnTargets="BuildUWPHost;BuildMSBuildTask" />
 
   <Target Name="BuildUWPHost" DependsOnTargets="GetLatestCommitHash">
-
     <!-- Generate Version files -->
     <ItemGroup>
       <HostFiles Include="uwphost;uwpshim;copywin32resources" />
