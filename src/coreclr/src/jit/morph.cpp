@@ -12563,6 +12563,7 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
 
                 noway_assert(tree->OperKind() & GTK_RELOP);
 
+#ifdef LEGACY_BACKEND
                 /* Check if the result of the comparison is used for a jump.
                  * If not then only the int (i.e. 32 bit) case is handled in
                  * the code generator through the (x86) "set" instructions.
@@ -12590,8 +12591,10 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
 
                     return tree;
                 }
+#endif // LEGACY_BACKEND
                 break;
 
+#ifdef LEGACY_BACKEND
             case GT_QMARK:
 
                 /* If op1 is a comma throw node then we won't be keeping op2 */
@@ -12712,6 +12715,7 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
 #endif // !_TARGET_ARM_
 
                 break; // end case GT_QMARK
+#endif                 // LEGACY_BACKEND
 
             case GT_MUL:
 

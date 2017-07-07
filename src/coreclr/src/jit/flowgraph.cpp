@@ -3538,6 +3538,7 @@ void Compiler::fgInitBlockVarSets()
         block->InitVarSets(this);
     }
 
+#ifdef LEGACY_BACKEND
     // QMarks are much like blocks, and need their VarSets initialized.
     assert(!compIsForInlining());
     for (unsigned i = 0; i < compQMarks->Size(); i++)
@@ -3551,6 +3552,7 @@ void Compiler::fgInitBlockVarSets()
             VarSetOps::AssignAllowUninitRhs(this, qmark->gtQmark.gtElseLiveSet, VarSetOps::UninitVal());
         }
     }
+#endif // LEGACY_BACKEND
     fgBBVarSetsInited = true;
 }
 
