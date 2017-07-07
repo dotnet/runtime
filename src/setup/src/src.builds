@@ -11,7 +11,7 @@
     <Project Include="$(MSBuildThisFileDirectory)corehost/build.proj" />
     <Project Include="$(MSBuildThisFileDirectory)uwp/build.proj" Condition="'$(_BuildUwpDependencies)' == 'true'"/>
     <Project Include="$(MSBuildThisFileDirectory)managed/dir.proj" />
-    <Project Include="$(MSBuildThisFileDirectory)pkg/appx/**/*.builds" Condition="'$(_BuildUwpDependencies)' == 'true'" />
+    <Project Include="$(MSBuildThisFileDirectory)pkg/appx/**/*.builds" Condition="'$(_BuildUwpDependencies)' == 'true' and '$(BuildAppx)' != 'false'" />
     <Project Include="$(MSBuildThisFileDirectory)pkg/**/src/*.builds" />
   </ItemGroup>
 
