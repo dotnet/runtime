@@ -576,6 +576,14 @@ function set_up_core_dump_generation {
 }
 
 function print_info_from_core_file {
+
+    #### temporary
+    if [ "$ARCH" == "arm64" ]; then
+        echo "Not inspecting core dumps on arm64 at the moment."
+        return
+    fi
+    ####
+
     local core_file_name=$1
     local executable_name=$2
 
