@@ -15,25 +15,15 @@ namespace System.Net.Tests
     public class HttpListenerFactory : IDisposable
     {
         const int MaxStartAttempts = 50;
-        const string ProcPortRangeFileName = "/proc/sys/net/ipv4/ip_local_port_range";
         private static int _minPort;
         private static int _maxPort;
         private static readonly Random _random = new Random();
 
         static HttpListenerFactory()
         {
-            // Chose a port from the dynamic port range. The IANA recommended range is 49152-65535.
-            _minPort = 49152;
-            _maxPort = 65535;
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && File.Exists(ProcPortRangeFileName))
-            {
-                string[] limits = File.ReadAllText(ProcPortRangeFileName).Split(new[] { '\t', '\n' }, 2, StringSplitOptions.RemoveEmptyEntries);
-                if (limits.Length == 2)
-                {
-                    int.TryParse(limits[0], out _minPort);
-                    int.TryParse(limits[1], out _maxPort);
-                }
-            }
+            // Chose ports from the user port range (Windows: 1024-49151; Linux 1024-32767)
+            _minPort = 1024;
+            _maxPort = 32767;
         }
 
         private readonly HttpListener _processPrefixListener;
