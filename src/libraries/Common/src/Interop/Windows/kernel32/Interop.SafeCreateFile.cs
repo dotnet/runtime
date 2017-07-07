@@ -10,8 +10,6 @@ internal partial class Interop
 {
     internal partial class Kernel32
     {
-        internal static readonly IntPtr INVALID_HANDLE_VALUE = new IntPtr(-1);  // WinBase.h
-
         /// <summary>
         /// Does not allow access to non-file devices. This disallows DOS devices like "con:", "com1:",
         /// "lpt1:", etc.  Use this to avoid security problems, like allowing a web client asking a server
