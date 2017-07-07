@@ -14,16 +14,16 @@ namespace System.Net.Tests
     // Utilities for generating URL prefixes for HttpListener
     public class HttpListenerFactory : IDisposable
     {
-        const int MaxStartAttempts = 50;
-        private static int _minPort;
-        private static int _maxPort;
+        private const int MaxStartAttempts = 500;
+        private static int s_minPort;
+        private static int s_maxPort;
         private static readonly Random _random = new Random();
 
         static HttpListenerFactory()
         {
             // Chose ports from the user port range (Windows: 1024-49151; Linux 1024-32767)
-            _minPort = 1024;
-            _maxPort = 32767;
+            s_minPort = 1024;
+            s_maxPort = 32767;
         }
 
         private readonly HttpListener _processPrefixListener;
@@ -47,7 +47,7 @@ namespace System.Net.Tests
                 int port;
                 lock (_random)
                 {
-                    port = _random.Next(_minPort, _maxPort + 1);
+                    port = _random.Next(s_minPort, s_maxPort + 1);
                 }
                 string prefix = $"http://{hostname}:{port}/{pathComponent}";
 
