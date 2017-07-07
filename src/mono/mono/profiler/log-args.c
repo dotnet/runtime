@@ -104,8 +104,9 @@ parse_arg (const char *arg, ProfilerConfig *config)
 		config->enable_mask |= PROFLOG_HEAPSHOT_ALIAS;
 		set_hsmode (config, val);
 	} else if (match_option (arg, "sample", &val)) {
-		config->enable_mask |= PROFLOG_PERF_SAMPLING_ALIAS;
 		set_sample_freq (config, val);
+		if (config->sample_freq)
+			config->enable_mask |= PROFLOG_PERF_SAMPLING_ALIAS;
 	} else if (match_option (arg, "zip", NULL)) {
 		config->use_zip = TRUE;
 	} else if (match_option (arg, "output", &val)) {
