@@ -7,14 +7,19 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices.WindowsRuntime;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
+using Windows.Foundation.Metadata;
 using Windows.Networking.Sockets;
 using Windows.Storage.Streams;
 using Windows.Web;
 
+using RTCertificate = Windows.Security.Cryptography.Certificates.Certificate;
+using RTCertificateQuery = Windows.Security.Cryptography.Certificates.CertificateQuery;
+using RTCertificateStores = Windows.Security.Cryptography.Certificates.CertificateStores;
 using RTWeb​Socket​Error = Windows.Networking.Sockets.Web​Socket​Error;
 
 namespace System.Net.WebSockets
@@ -23,7 +28,12 @@ namespace System.Net.WebSockets
     {
         #region Constants
         private const string HeaderNameCookie = "Cookie";
+        private const string ClientAuthenticationOID = "1.3.6.1.5.5.7.3.2";
         #endregion
+
+        private static readonly Lazy<bool> s_MessageWebSocketClientCertificateSupported =
+            new Lazy<bool>(InitMessageWebSocketClientCertificateSupported);
+        private static bool MessageWebSocketClientCertificateSupported => s_MessageWebSocketClientCertificateSupported.Value;
 
         private WebSocketCloseStatus? _closeStatus = null;
         private string _closeStatusDescription = null;
@@ -103,6 +113,30 @@ namespace System.Net.WebSockets
             foreach (var subProtocol in options.RequestedSubProtocols)
             {
                 websocketControl.SupportedProtocols.Add(subProtocol);
+            }
+
+            if (options.ClientCertificates.Count > 0)
+            {
+                if (!MessageWebSocketClientCertificateSupported)
+                {
+                    throw new PlatformNotSupportedException(string.Format(
+                        CultureInfo.InvariantCulture,
+                        SR.net_WebSockets_UWPClientCertSupportRequiresWindows10GreaterThan1703));
+                }
+
+                // options.ClientCertificates is of type X509CertificateCollection. Upgrade it to a X509Certificate2Collection,
+                // which exposes the Find(...) functionality that is leveraged by GetEligibleClientCertificate(...).
+                var certsAsX509Certificate2Collection = new X509Certificate2Collection();
+                certsAsX509Certificate2Collection.AddRange(options.ClientCertificates);
+
+                X509Certificate2 dotNetClientCert = GetEligibleClientCertificate(certsAsX509Certificate2Collection);
+                if (dotNetClientCert != null)
+                {
+                    RTCertificate winRtClientCert = ConvertDotNetClientCertToWinRtClientCert(dotNetClientCert);
+                    Debug.Assert(winRtClientCert != null);
+
+                    websocketControl.ClientCertificate = winRtClientCert;
+                }
             }
 
             try
@@ -515,5 +549,93 @@ namespace System.Net.WebSockets
             }
         }
         #endregion
+
+        #region Helpers
+        private static bool InitMessageWebSocketClientCertificateSupported()
+        {
+            return ApiInformation.IsPropertyPresent(
+                "Windows.Networking.Sockets.MessageWebSocketControl",
+                "ClientCertificate");
+        }
+
+        // TODO: Issue #14542. Merge with similar WinHttpCertificateHelper.cs code and move to Common/src//System/Net.
+        private static X509Certificate2 GetEligibleClientCertificate(X509Certificate2Collection candidateCerts)
+        {
+            // Build a new collection with certs that have a private key. We need to do this manually because there is
+            // no X509FindType to match this criteria.
+            // Find(...) returns a collection of clones instead of a filtered collection, so do this before calling
+            // Find(...) to minimize the number of unnecessary allocations and finalizations.
+            var eligibleCerts = new X509Certificate2Collection();
+            foreach (X509Certificate2 cert in candidateCerts)
+            {
+                if (cert.HasPrivateKey)
+                {
+                    eligibleCerts.Add(cert);
+                }
+            }
+
+            // Don't call Find(...) if we don't need to.
+            if (eligibleCerts.Count == 0)
+            {
+                return null;
+            }
+            else if (eligibleCerts.Count == 1)
+            {
+                return eligibleCerts[0];
+            }
+
+            // Reduce the set of certificates to match the proper 'Client Authentication' criteria.
+            // Client EKU is probably more rare than the DigitalSignature KU. Filter by ClientAuthOid first to reduce
+            // the candidate space as quickly as possible.
+            eligibleCerts = eligibleCerts.Find(X509FindType.FindByApplicationPolicy, ClientAuthenticationOID, false);
+            eligibleCerts = eligibleCerts.Find(X509FindType.FindByKeyUsage, X509KeyUsageFlags.DigitalSignature, false);
+
+            if (eligibleCerts.Count > 0)
+            {
+                return eligibleCerts[0];
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        // There are currently only two ways to convert a .NET X509Certificate2 object into a WinRT Certificate without
+        // losing its private keys, each with its own limitations:
+        //
+        // (1) Using the X509Certificate2.Export method with PKCS12/PFX to obtain a byte[] representation (including private
+        //     keys) that can then be passed into the IBuffer-based WinRT Certificate constructor. Unfortunately, the
+        //     X509Certificate2.Export operation will only succeed if the app-provided X509Certificate2 object was created
+        //     with the non-default X509KeyStorageFlags.Exportable flag.
+        //
+        // (2) Going through the certificate store. That is, retrieving the certificate represented by the X509Certificate2
+        //     object as a WinRT Certificate via WinRT CertificateStores APIs. Of course, this requires the certificate to
+        //     have been added to a certificate store in the first place.
+        //
+        // Furthermore, WinRT WebSockets only support certificates that have been added to the personal certificate store
+        // (i.e., "MY" store) due to other WinRT-specific private key limitations. With that in mind, approach (2) is the
+        // most appropriate for our needs, as it guarantees that WinRT WebSockets will be able to handle the resulting
+        // WinRT Certificate during ConnectAsync.
+        private static RTCertificate ConvertDotNetClientCertToWinRtClientCert(X509Certificate2 dotNetCertificate)
+        {
+            var query = new RTCertificateQuery
+            {
+                Thumbprint = dotNetCertificate.GetCertHash(),
+                IncludeDuplicates = false,
+                StoreName = "MY"
+            };
+
+            IReadOnlyList<RTCertificate> certificates = RTCertificateStores.FindAllAsync(query).AsTask().GetAwaiter().GetResult();
+            if (certificates.Count > 0)
+            {
+                return certificates[0];
+            }
+
+            throw new PlatformNotSupportedException(string.Format(
+                        CultureInfo.InvariantCulture,
+                        SR.net_WebSockets_UWPClientCertSupportRequiresCertInPersonalCertificateStore));
+        }
+        #endregion Helpers
+
     }
 }

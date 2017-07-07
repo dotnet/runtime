@@ -25,6 +25,11 @@ namespace System.Net.WebSockets.Client.Tests
         public static bool CanTestClientCertificates =>
             CanTestCertificates && BackendSupportsCustomCertificateHandling;
 
+        // Windows 10 Insider Preview Build 16215 introduced the necessary APIs for the UAP version of
+        // ClientWebSocket.ConnectAsync to carry out mutual TLS authentication.
+        public static bool ClientCertificatesSupported =>
+            !PlatformDetection.IsUap || PlatformDetection.IsWindows10InsiderPreviewBuild16215OrGreater;
+
         public ClientWebSocketOptionsTests(ITestOutputHelper output) : base(output) { }
 
         [ConditionalFact(nameof(WebSocketsSupported))]
@@ -72,9 +77,8 @@ namespace System.Net.WebSockets.Client.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [ActiveIssue(21393, TargetFrameworkMonikers.Uap)]
         [ActiveIssue(5120, TargetFrameworkMonikers.Netcoreapp)]
-        [ConditionalFact(nameof(WebSocketsSupported), nameof(CanTestClientCertificates))]
+        [ConditionalFact(nameof(WebSocketsSupported), nameof(CanTestClientCertificates), nameof(ClientCertificatesSupported))]
         public async Task ClientCertificates_ValidCertificate_ServerReceivesCertificateAndConnectAsyncSucceeds()
         {
             var options = new LoopbackServer.Options { UseSsl = true, WebSocketEndpoint = true };
