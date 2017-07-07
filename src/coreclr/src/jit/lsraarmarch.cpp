@@ -791,10 +791,7 @@ void Lowering::TreeNodeInfoInitPutArgSplit(GenTreePutArgSplit* argNode, TreeNode
 
     GenTreePtr putArgChild = argNode->gtOp.gtOp1;
 
-    // Initialize 'argNode' as not contained, as this is both the default case
-    //  and how MakeSrcContained expects to find things setup.
-    //
-    argNode->gtLsraInfo.srcCount = 1;
+    // Registers for split argument corresponds to source
     argNode->gtLsraInfo.dstCount = argInfo->numRegs;
     info.srcCount += argInfo->numRegs;
 
@@ -808,23 +805,33 @@ void Lowering::TreeNodeInfoInitPutArgSplit(GenTreePutArgSplit* argNode, TreeNode
 
     if (putArgChild->OperGet() == GT_FIELD_LIST)
     {
-        NYI_ARM("LSRA: Oper for split struct argument is GT_FIELD_LIST");
-    }
-
-    assert(putArgChild->TypeGet() == TYP_STRUCT);
-    assert(putArgChild->OperGet() == GT_OBJ);
-    // We could use a ldr/str sequence so we need a internal register
-    argNode->gtLsraInfo.internalIntCount = 1;
-
-    GenTreePtr objChild = putArgChild->gtOp.gtOp1;
-    if (objChild->OperGet() == GT_LCL_VAR_ADDR)
-    {
-        // We will generate all of the code for the GT_PUTARG_SPLIT, the GT_OBJ and the GT_LCL_VAR_ADDR
-        // as one contained operation
+        // Generated code:
+        // 1. Consume all of the items in the GT_FIELD_LIST (source)
+        // 2. Store to target slot and move to target registers (destination) from source
         //
-        MakeSrcContained(putArgChild, objChild);
+        argNode->gtLsraInfo.srcCount = argInfo->numRegs + argInfo->numSlots;
+
+        putArgChild->SetContained();
     }
-    MakeSrcContained(argNode, putArgChild);
+    else
+    {
+        assert(putArgChild->TypeGet() == TYP_STRUCT);
+        assert(putArgChild->OperGet() == GT_OBJ);
+
+        argNode->gtLsraInfo.srcCount = 1;
+        // We could use a ldr/str sequence so we need a internal register
+        argNode->gtLsraInfo.internalIntCount = 1;
+
+        GenTreePtr objChild = putArgChild->gtOp.gtOp1;
+        if (objChild->OperGet() == GT_LCL_VAR_ADDR)
+        {
+            // We will generate all of the code for the GT_PUTARG_SPLIT, the GT_OBJ and the GT_LCL_VAR_ADDR
+            // as one contained operation
+            //
+            MakeSrcContained(putArgChild, objChild);
+        }
+        MakeSrcContained(argNode, putArgChild);
+    }
 }
 #endif // _TARGET_ARM_
 
