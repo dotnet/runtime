@@ -15,8 +15,8 @@
         "scriptType": "inlineScript",
         "scriptName": "",
         "arguments": "-path $(PB_SourcesDirectory) -rootPath $(Build.SourcesDirectory)",
-        "workingFolder": "",
         "inlineScript": "param($path, $rootPath)\n\nif (Test-Path $path){\n    Remove-Item -Recurse -Force $path\n\n    if(Test-Path $path){\n        $DeleteFolder = \"$rootPath\\deleteme\"\n        if((Test-Path $DeleteFolder ) -eq 0) {\n            New-Item -ItemType Directory -Force -Path $DeleteFolder\n        }\n        robocopy $DeleteFolder $path /purge\n        Remove-Item -Recurse -Force $path\n    }\n }",
+        "workingFolder": "",
         "failOnStandardError": "true"
       }
     },
@@ -238,33 +238,6 @@
         "platform": "$(PB_TargetArchitecture)",
         "configuration": "$(BuildConfiguration)",
         "msbuildArguments": "/t:SignMsiAndCab $(PB_CommonMSBuildArgs) $(MsbuildSigningArguments)",
-        "clean": "false",
-        "maximumCpuCount": "false",
-        "restoreNugetPackages": "false",
-        "logProjectEvents": "false",
-        "createLogFile": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Sign Appx files",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "c6c4c611-aa2e-4a33-b606-5eaba2196824",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "solution": "$(PB_SourcesDirectory)\\signing\\sign.proj",
-        "msbuildLocationMethod": "version",
-        "msbuildVersion": "latest",
-        "msbuildArchitecture": "x64",
-        "msbuildLocation": "",
-        "platform": "$(PB_TargetArchitecture)",
-        "configuration": "$(BuildConfiguration)",
-        "msbuildArguments": "/t:SignAppx $(PB_CommonMSBuildArgs) /v:detailed",
         "clean": "false",
         "maximumCpuCount": "false",
         "restoreNugetPackages": "false",
@@ -721,9 +694,7 @@
       "fetchDepth": "0",
       "gitLfsSupport": "false",
       "skipSyncSource": "true",
-      "cleanOptions": "3",
-      "checkoutNestedSubmodules": "false",
-      "labelSourcesFormat": "$(build.buildNumber)"
+      "cleanOptions": "3"
     },
     "id": "c19ea379-feb7-4ca5-8f7f-5f2b5095ea62",
     "type": "TfsGit",
@@ -753,7 +724,7 @@
     "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
     "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "state": "wellFormed",
-    "revision": 418097748,
+    "revision": 418097764,
     "visibility": "private"
   }
 }
