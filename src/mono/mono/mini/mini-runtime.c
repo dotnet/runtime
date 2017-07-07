@@ -3941,10 +3941,8 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_install_get_class_from_name (mono_aot_get_class_from_name);
 	mono_install_jit_info_find_in_aot (mono_aot_find_jit_info);
 
-	if (mini_profiler_enabled ()) {
+	if (mini_profiler_enabled ())
 		mono_profiler_load (mini_profiler_get_options ());
-		MONO_PROFILER_RAISE (thread_name, (MONO_NATIVE_THREAD_ID_TO_UINT (mono_native_thread_id_get ()), "Main"));
-	}
 
 	mono_profiler_started ();
 
@@ -4023,6 +4021,7 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_runtime_init_checked (domain, mono_thread_start_cb, mono_thread_attach_cb, &error);
 	mono_error_assert_ok (&error);
 	mono_thread_attach (domain);
+	MONO_PROFILER_RAISE (thread_name, (MONO_NATIVE_THREAD_ID_TO_UINT (mono_native_thread_id_get ()), "Main"));
 #endif
 
 	if (mono_profiler_sampling_enabled ())
