@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Threading;
 using System.Threading.Tasks;
@@ -39,6 +40,9 @@ namespace System.Net.Http
             _filterMaxVersionSet = 0;
         }
 
+        internal string RequestMessageLookupKey { get; set; }
+        internal string SavedExceptionDispatchInfoLookupKey { get; set; }
+
         protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancel)
         {
             if (request == null)
@@ -47,9 +51,27 @@ namespace System.Net.Http
             }
             cancel.ThrowIfCancellationRequested();
 
-
             RTHttpRequestMessage rtRequest = await ConvertRequestAsync(request).ConfigureAwait(false);
-            RTHttpResponseMessage rtResponse = await _next.SendRequestAsync(rtRequest).AsTask(cancel).ConfigureAwait(false);
+
+            RTHttpResponseMessage rtResponse;
+            try
+            {
+                rtResponse = await _next.SendRequestAsync(rtRequest).AsTask(cancel).ConfigureAwait(false);
+            }
+            catch (TaskCanceledException)
+            {
+                throw;
+            }
+            catch (Exception)
+            {
+                object info;
+                if (rtRequest.Properties.TryGetValue(SavedExceptionDispatchInfoLookupKey, out info))
+                {
+                    ((ExceptionDispatchInfo)info).Throw();
+                }
+
+                throw;
+            }
 
             // Update in case of redirects
             request.RequestUri = rtRequest.RequestUri;
@@ -63,6 +85,9 @@ namespace System.Net.Http
         private async Task<RTHttpRequestMessage> ConvertRequestAsync(HttpRequestMessage request)
         {
             RTHttpRequestMessage rtRequest = new RTHttpRequestMessage(new RTHttpMethod(request.Method.Method), request.RequestUri);
+
+            // Add a reference from the WinRT object back to the .NET object.
+            rtRequest.Properties.Add(RequestMessageLookupKey, request);
 
             // We can only control the Version on the first request message since the WinRT API
             // has this property designed as a filter/handler property. In addition the overall design

@@ -298,4 +298,7 @@
   <data name="net_http_libcurl_revocation_notsupported" xml:space="preserve">
     <value>The handler does not support changing revocation settings with this combination of libcurl ({0}) and its SSL backend ("{1}").</value>
   </data>
+  <data name="net_http_feature_requires_Windows10Version1607" xml:space="preserve">
+    <value>Using this feature requires Windows 10 Version 1607.</value>
+  </data>
 </root>

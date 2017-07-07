@@ -8,9 +8,12 @@ using System.Globalization;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Security;
+using System.Runtime.ExceptionServices;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Security.Authentication;
+using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,22 +23,32 @@ using RTHttpBaseProtocolFilter = Windows.Web.Http.Filters.HttpBaseProtocolFilter
 using RTHttpCacheReadBehavior = Windows.Web.Http.Filters.HttpCacheReadBehavior;
 using RTHttpCacheWriteBehavior = Windows.Web.Http.Filters.HttpCacheWriteBehavior;
 using RTHttpCookieUsageBehavior = Windows.Web.Http.Filters.HttpCookieUsageBehavior;
+using RTHttpRequestMessage = Windows.Web.Http.HttpRequestMessage;
 using RTPasswordCredential = Windows.Security.Credentials.PasswordCredential;
 using RTCertificate = Windows.Security.Cryptography.Certificates.Certificate;
 using RTCertificateQuery = Windows.Security.Cryptography.Certificates.CertificateQuery;
 using RTCertificateStores = Windows.Security.Cryptography.Certificates.CertificateStores;
+using RTChainValidationResult = Windows.Security.Cryptography.Certificates.ChainValidationResult;
+using RTHttpServerCustomValidationRequestedEventArgs = Windows.Web.Http.Filters.HttpServerCustomValidationRequestedEventArgs;
+using RTIBuffer = Windows.Storage.Streams.IBuffer;
 
 namespace System.Net.Http
 {
     public partial class HttpClientHandler : HttpMessageHandler
     {
+        private const string RequestMessageLookupKey = "System.Net.Http.HttpRequestMessage";
+        private const string SavedExceptionDispatchInfoLookupKey = "System.Runtime.ExceptionServices.ExceptionDispatchInfo";
         private const string ClientAuthenticationOID = "1.3.6.1.5.5.7.3.2";
+        private static Oid s_serverAuthOid = new Oid("1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.1");
         private static readonly Lazy<bool> s_RTCookieUsageBehaviorSupported =
             new Lazy<bool>(InitRTCookieUsageBehaviorSupported);
         private static bool RTCookieUsageBehaviorSupported => s_RTCookieUsageBehaviorSupported.Value;
         private static readonly Lazy<bool> s_RTNoCacheSupported =
             new Lazy<bool>(InitRTNoCacheSupported);
         private static bool RTNoCacheSupported => s_RTNoCacheSupported.Value;
+        private static readonly Lazy<bool> s_RTServerCustomValidationRequestedSupported =
+            new Lazy<bool>(InitRTServerCustomValidationRequestedSupported);
+        private static bool RTServerCustomValidationRequestedSupported => s_RTServerCustomValidationRequestedSupported.Value;
 
         #region Fields
 
@@ -55,6 +68,7 @@ namespace System.Net.Http
         private IWebProxy _proxy;
         private X509Certificate2Collection _clientCertificates;
         private IDictionary<String, Object> _properties; // Only create dictionary when required.
+        private Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> _serverCertificateCustomValidationCallback;
 
         #endregion Fields
 
@@ -291,18 +305,23 @@ namespace System.Net.Http
 
         public Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> ServerCertificateCustomValidationCallback
         {
-            // TODO: Not yet implemented. Issue #7623.
-            get{ return null; }
+            get
+            {
+                return _serverCertificateCustomValidationCallback;
+            }
             set
             {
                 CheckDisposedOrStarted();
                 if (value != null)
                 {
-                    /* 
-                    throw new PlatformNotSupportedException(String.Format(CultureInfo.InvariantCulture,
-                        SR.net_http_value_not_supported, value, nameof(ServerCertificateCustomValidationCallback)));
-                   */
+                    if (!RTServerCustomValidationRequestedSupported)
+                    {
+                        throw new PlatformNotSupportedException(string.Format(CultureInfo.InvariantCulture,
+                            SR.net_http_feature_requires_Windows10Version1607));
+                    }
                 }
+
+                _serverCertificateCustomValidationCallback = value;
             }
         }
 
@@ -349,6 +368,8 @@ namespace System.Net.Http
         {
             _rtFilter = new RTHttpBaseProtocolFilter();
             _handlerToFilter = new HttpHandlerToFilter(_rtFilter);
+            _handlerToFilter.RequestMessageLookupKey = RequestMessageLookupKey;
+            _handlerToFilter.SavedExceptionDispatchInfoLookupKey = SavedExceptionDispatchInfoLookupKey;
             _diagnosticsPipeline = new DiagnosticsHandler(_handlerToFilter);
 
             _clientCertificateOptions = ClientCertificateOption.Manual;
@@ -573,7 +594,7 @@ namespace System.Net.Http
             }
             catch (Exception ex)
             {
-                // Convert back to the expected exception type
+                // Convert back to the expected exception type.
                 throw new HttpRequestException(SR.net_http_client_execution_error, ex);
             }
 
@@ -645,10 +666,37 @@ namespace System.Net.Http
         {
             if (!_operationStarted)
             {
-                // Since this is the first operation, we set the proxy and server credentials on the
-                // WinRT filter based on the .NET handler's property settings.
+                // Since this is the first operation, we set all the necessary WinRT filter properties.
                 SetFilterProxyCredential();
                 SetFilterServerCredential();
+                if (_serverCertificateCustomValidationCallback != null)
+                {
+                    Debug.Assert(RTServerCustomValidationRequestedSupported);
+
+                    // The WinRT layer uses a different model for the certificate callback. The callback is
+                    // considered "extra" validation. We need to explicitly ignore errors so that the callback
+                    // will get called.
+                    //
+                    // In addition, the WinRT layer restricts some errors so that they cannot be ignored, such 
+                    // as "Revoked". This will result in behavior differences between UWP and other platforms.
+                    // The following errors cannot be ignored right now in the WinRT layer:
+                    //
+                    //     ChainValidationResult.BasicConstraintsError
+                    //     ChainValidationResult.InvalidCertificateAuthorityPolicy
+                    //     ChainValidationResult.InvalidSignature
+                    //     ChainValidationResult.OtherErrors
+                    //     ChainValidationResult.Revoked
+                    //     ChainValidationResult.UnknownCriticalExtension
+                    _rtFilter.IgnorableServerCertificateErrors.Add(RTChainValidationResult.Expired);
+                    _rtFilter.IgnorableServerCertificateErrors.Add(RTChainValidationResult.IncompleteChain);
+                    _rtFilter.IgnorableServerCertificateErrors.Add(RTChainValidationResult.InvalidName);
+                    _rtFilter.IgnorableServerCertificateErrors.Add(RTChainValidationResult.RevocationFailure);
+                    _rtFilter.IgnorableServerCertificateErrors.Add(RTChainValidationResult.RevocationInformationMissing);
+                    _rtFilter.IgnorableServerCertificateErrors.Add(RTChainValidationResult.Untrusted);
+                    _rtFilter.IgnorableServerCertificateErrors.Add(RTChainValidationResult.WrongUsage);
+                    _rtFilter.ServerCustomValidationRequested += RTServerCertificateCallback;
+                }
+
                 _operationStarted = true;
             }
         }
@@ -682,6 +730,96 @@ namespace System.Net.Http
             return RTApiInformation.IsEnumNamedValuePresent(
                 "Windows.Web.Http.Filters.HttpCacheReadBehavior",
                 "NoCache");
+        }
+
+        private static bool InitRTServerCustomValidationRequestedSupported()
+        {
+            return RTApiInformation.IsEventPresent(
+                "Windows.Web.Http.Filters.HttpBaseProtocolFilter",
+                "ServerCustomValidationRequested");
+        }
+
+        private void RTServerCertificateCallback(RTHttpBaseProtocolFilter sender, RTHttpServerCustomValidationRequestedEventArgs args)
+        {
+            bool success = RTServerCertificateCallbackHelper(
+                args.RequestMessage,
+                args.ServerCertificate,
+                args.ServerIntermediateCertificates,
+                args.ServerCertificateErrors);
+
+            if (!success)
+            {
+                args.Reject();
+            }
+        }
+
+        private bool RTServerCertificateCallbackHelper(
+            RTHttpRequestMessage requestMessage,
+            RTCertificate cert,
+            IReadOnlyList<RTCertificate> intermediateCerts,
+            IReadOnlyList<RTChainValidationResult> certErrors)
+        {
+            // Convert WinRT certificate to .NET certificate.
+            X509Certificate2 serverCert = ConvertPublicKeyCertificate(cert);
+
+            // Create .NET X509Chain from the WinRT information. We need to rebuild the chain since WinRT only
+            // gives us an array of intermediate certificates and not a X509Chain object.
+            var serverChain = new X509Chain();
+            SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
+            foreach (RTCertificate intermediateCert in intermediateCerts)
+            {
+                serverChain.ChainPolicy.ExtraStore.Add(ConvertPublicKeyCertificate(cert));
+            }
+            serverChain.ChainPolicy.RevocationMode = X509RevocationMode.Online; // WinRT always checks revocation.
+            serverChain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
+            // Authenticate the remote party: (e.g. when operating in client mode, authenticate the server).
+            serverChain.ChainPolicy.ApplicationPolicy.Add(s_serverAuthOid);
+            if (!serverChain.Build(serverCert))
+            {
+                sslPolicyErrors |= SslPolicyErrors.RemoteCertificateChainErrors;
+            }
+
+            // Determine name-mismatch error from the existing WinRT information since .NET X509Chain.Build does not
+            // return that in the X509Chain.ChainStatus fields.
+            foreach (RTChainValidationResult result in certErrors)
+            {
+                if (result == RTChainValidationResult.InvalidName)
+                {
+                    sslPolicyErrors |= SslPolicyErrors.RemoteCertificateNameMismatch;
+                    break;
+                }
+            }
+
+            // Get the .NET HttpRequestMessage we saved in the property bag of the WinRT HttpRequestMessage.
+            HttpRequestMessage request = (HttpRequestMessage)requestMessage.Properties[RequestMessageLookupKey];
+
+            // Call the .NET callback.
+            bool success = false;
+            try
+            {
+                success = _serverCertificateCustomValidationCallback(request, serverCert, serverChain, sslPolicyErrors);
+            }
+            catch (Exception ex)
+            {
+                // Save the exception info. We will return it later via the SendAsync response processing.
+                requestMessage.Properties.Add(
+                    SavedExceptionDispatchInfoLookupKey,
+                    ExceptionDispatchInfo.Capture(ex));
+            }
+            finally
+            {
+                serverChain.Dispose();
+                serverCert.Dispose();
+            }
+
+            return success;
+        }
+
+        private X509Certificate2 ConvertPublicKeyCertificate(RTCertificate cert)
+        {
+            // Convert Windows X509v2 cert to .NET X509v2 cert.
+            RTIBuffer blob = cert.GetCertificateBlob();
+            return new X509Certificate2(blob.ToArray());
         }
 
         #endregion Helpers
