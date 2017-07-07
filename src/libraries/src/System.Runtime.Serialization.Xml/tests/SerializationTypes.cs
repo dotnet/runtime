@@ -1159,6 +1159,8 @@ namespace SerializationTypes
         public string Name4 { get; set; }
 
         public string @Name5 { get; set; }
+
+        public virtual string Name6 { get; set; }
     }
 
     public class DerivedTypeWithDifferentOverrides : BaseType
@@ -1172,6 +1174,23 @@ namespace SerializationTypes
         new internal string Name4 { get; set; }
 
         new public string Name5 { get; set; }
+
+        public override string Name6 { get; set; }
+    }
+
+    public class DerivedTypeWithDifferentOverrides2 : DerivedTypeWithDifferentOverrides
+    {
+        public override string Name1 { get; set; }
+
+        new public string Name2 { get; set; }
+
+        new public string Name3 { get; set; }
+
+        new internal string Name4 { get; set; }
+
+        new internal string Name5 { get; set; }
+
+        new internal string Name6 { get; set; }
     }
 
     public class __TypeNameWithSpecialCharacters漢ñ

@@ -4380,7 +4380,6 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.StrictEqual(deserializedValue.IsFirstRun, value.IsFirstRun);
     }
 
-#if !ReflectionOnly
     [Fact]
     [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #21724")]
     public static void DerivedTypeWithDifferentOverrides()
@@ -4393,7 +4392,31 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Null(actual.Name4);
         Assert.StrictEqual(value.Name5, actual.Name5);
     }
-#endif
+
+    [Fact]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "dotnet/corefx #21724")]
+    public static void DerivedTypeWithDifferentOverrides2()
+    {
+        DerivedTypeWithDifferentOverrides2 value = new DerivedTypeWithDifferentOverrides2() { Name1 = "Name1", Name2 = "Name2", Name3 = "Name3", Name4 = "Name4", Name5 = "Name5", Name6 = "Name6" };
+        ((DerivedTypeWithDifferentOverrides)value).Name5 = "MidLevelName5";
+        ((DerivedTypeWithDifferentOverrides)value).Name4 = "MidLevelName4";
+        ((SerializationTypes.BaseType)value).Name4 = "BaseLevelName4";
+        ((DerivedTypeWithDifferentOverrides)value).Name6 = "MidLevelName6";
+        ((SerializationTypes.BaseType)value).Name6 = "BaseLevelName6";
+        DerivedTypeWithDifferentOverrides2 actual = SerializeAndDeserialize<DerivedTypeWithDifferentOverrides2>(value, @"<?xml version=""1.0""?><DerivedTypeWithDifferentOverrides2 xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema""><Name1>Name1</Name1><Name2>Name2</Name2><Name3>Name3</Name3><Name4>BaseLevelName4</Name4><Name5>MidLevelName5</Name5><Name6>BaseLevelName6</Name6></DerivedTypeWithDifferentOverrides2>");
+        Assert.StrictEqual(value.Name1, actual.Name1);
+        Assert.StrictEqual(value.Name2, actual.Name2);
+        Assert.StrictEqual(value.Name3, actual.Name3);
+        Assert.Null(actual.Name4);
+        Assert.Null(((DerivedTypeWithDifferentOverrides)actual).Name4);
+        Assert.StrictEqual(((SerializationTypes.BaseType)value).Name4, ((SerializationTypes.BaseType)actual).Name4);
+        Assert.Null(actual.Name5);
+        Assert.StrictEqual(((DerivedTypeWithDifferentOverrides)value).Name5, ((DerivedTypeWithDifferentOverrides)actual).Name5);
+        Assert.Null(((SerializationTypes.BaseType)actual).Name5);
+        Assert.Null(actual.Name6);
+        Assert.StrictEqual(((DerivedTypeWithDifferentOverrides)actual).Name6, ((SerializationTypes.BaseType)actual).Name6);
+        Assert.StrictEqual(((SerializationTypes.BaseType)actual).Name6, ((SerializationTypes.BaseType)actual).Name6);
+    }
 
     private static readonly string s_defaultNs = "http://tempuri.org/";
     private static T RoundTripWithXmlMembersMapping<T>(object requestBodyValue, string memberName, string baseline, bool skipStringCompare = false, string wrapperName = null)
