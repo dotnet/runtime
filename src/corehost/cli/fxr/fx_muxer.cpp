@@ -796,7 +796,7 @@ bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, const pal
         }
     }
 
-    pal::string_t neg_version = _X("|-1.-1.-1|");
+    pal::string_t neg_version = _X("-1.-1.-1");
     if ((!cli_version.empty()) && (pal::strcasecmp(cli_version.c_str(), neg_version.c_str()) != 0))
     {
         append_path(&sdk_path, cli_version.c_str());
