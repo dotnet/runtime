@@ -221,7 +221,7 @@ namespace System.Net.Http.Headers
 
         public bool? ConnectionClose
         {
-            get { return GeneralHeaders.ConnectionClose; }
+            get { return HttpGeneralHeaders.GetConnectionClose(this, _generalHeaders); } // special-cased to avoid forcing _generalHeaders initialization
             set { GeneralHeaders.ConnectionClose = value; }
         }
 
