@@ -123,7 +123,7 @@ namespace System.Net.Http
                 pool = _connectionPoolTable.GetOrAdd(key, _ => new HttpConnectionPool());
             }
 
-            return new HttpConnection(pool, key, stream, null, true);
+            return new HttpConnection(pool, key, null, stream, null, true);
         }
 
         protected override void Dispose(bool disposing)
