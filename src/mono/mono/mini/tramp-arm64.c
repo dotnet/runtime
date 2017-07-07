@@ -546,7 +546,7 @@ mono_arch_create_handler_block_trampoline (MonoTrampInfo **info, gboolean aot)
 		code = mono_arm_emit_imm64 (code, ARMREG_IP0, (guint64)mono_arm_handler_block_trampoline_helper);
 	arm_blrx (code, ARMREG_IP0);
 	/* Set it as the return address so the trampoline will return to it */
-	arm_movx (code, ARMREG_LR, ARMREG_IP0);
+	arm_movx (code, ARMREG_LR, ARMREG_R0);
 
 	/* Call the C trampoline function */
 	if (aot) {
