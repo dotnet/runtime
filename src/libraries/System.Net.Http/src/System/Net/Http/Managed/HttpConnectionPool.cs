@@ -21,9 +21,16 @@ namespace System.Net.Http
 
         public HttpConnection GetConnection()
         {
-            HttpConnection connection;
-            if (_idleConnections.TryTake(out connection))
+            while (_idleConnections.TryTake(out HttpConnection connection))
             {
+                if (connection.ReadAheadCompleted)
+                {
+                    // We got a connection, but it was either already closed by the server or the
+                    // server sent unexpected data.  Either way, we can't use the connection.
+                    connection.Dispose();
+                    continue;
+                }
+
                 if (!_activeConnections.TryAdd(connection))
                 {
                     throw new InvalidOperationException();

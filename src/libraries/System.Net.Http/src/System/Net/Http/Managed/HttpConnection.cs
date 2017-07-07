@@ -37,6 +37,7 @@ namespace System.Net.Http
         private readonly byte[] _writeBuffer;
         private int _writeOffset;
 
+        private Task<int> _readAheadTask;
         private readonly byte[] _readBuffer;
         private int _readOffset;
         private int _readLength;
@@ -572,6 +573,15 @@ namespace System.Net.Http
             }
         }
 
+        public bool ReadAheadCompleted
+        {
+            get
+            {
+                Debug.Assert(_readAheadTask != null, $"{nameof(_readAheadTask)} should have been initialized");
+                return _readAheadTask.IsCompleted;
+            }
+        }
+
         private async Task WriteHeadersAsync(HttpHeaders headers, CancellationToken cancellationToken)
         {
             foreach (KeyValuePair<string, IEnumerable<string>> header in headers)
@@ -1075,7 +1085,22 @@ namespace System.Net.Http
             Debug.Assert(_readOffset == _readLength);
 
             _readOffset = 0;
-            Task<int> t = _stream.ReadAsync(_readBuffer, 0, BufferSize, cancellationToken);
+            Task<int> t;
+            if (_readAheadTask != null)
+            {
+                // When the connection is put back into the pool, a pre-emptive read is performed
+                // into the read buffer.  That read should not complete prior to us using the
+                // connection again, as that would mean the connection was either closed or had
+                // erroneous data sent on it by the server in response to no request from us.
+                // We need to consume that read prior to issuing another read request.
+                t = _readAheadTask;
+                _readAheadTask = null;
+            }
+            else
+            {
+                t = _stream.ReadAsync(_readBuffer, 0, BufferSize, cancellationToken);
+            }
+
             if (t.IsCompleted)
             {
                 _readLength = t.GetAwaiter().GetResult();
@@ -1185,6 +1210,7 @@ namespace System.Net.Http
 
             // Large read size, and no buffered data.
             // Do an unbuffered read directly against the underlying stream.
+            Debug.Assert(_readAheadTask == null, "Read ahead task should have been consumed as part of the headers.");
             count = await _stream.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
             return count;
         }
@@ -1262,6 +1288,25 @@ namespace System.Net.Http
         {
             // Make sure there's nothing in the write buffer that should have been flushed
             Debug.Assert(_writeOffset == 0);
+
+            try
+            {
+                // When putting a connection back into the pool, we initiate a pre-emptive
+                // read on the stream.  When the connection is subsequently taken out of the
+                // pool, this can be used in place of the first read on the stream that would
+                // otherwise be done.  But by doing it now, we can check the status of the read
+                // at any point to understand if the connection has been closed or if errant data
+                // has been sent on the connection by the server, either of which would mean we
+                // should close the connection and not use it for subsequent requests.
+                Debug.Assert(_readAheadTask == null, $"Expected a previous initial read to already be consumed");
+                _readAheadTask = _stream.ReadAsync(_readBuffer, 0, _readBuffer.Length);
+            }
+            catch
+            {
+                // If reading throws, eat the error but don't pool the connection.
+                Dispose();
+                return;
+            }
 
             _pool.PutConnection(this);
         }
