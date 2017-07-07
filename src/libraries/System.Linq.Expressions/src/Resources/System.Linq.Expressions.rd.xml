@@ -155,7 +155,7 @@
         </Type>
       </Namespace>
       <Namespace Name="System.Collections.Generic">
-        <Type Name="IEnumerable&lt;&gt;" Dynamic="Required">
+        <Type Name="IEnumerable&lt;&gt;">
            <Method Name="GetEnumerator" Dynamic="Required"/>
         </Type>
         <Type Name="IEnumerator&lt;&gt;">
