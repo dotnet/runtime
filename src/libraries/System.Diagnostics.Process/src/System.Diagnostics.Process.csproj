@@ -47,6 +47,9 @@
     <Compile Include="System\Collections\Specialized\StringDictionaryWrapper.cs" />
   </ItemGroup>
   <ItemGroup Condition=" '$(TargetsWindows)' == 'true' and '$(TargetGroup)' != 'uap'">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.EnumProcessModules.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.EnumProcessModules.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.EnumWindows.cs">
       <Link>Common\Interop\Windows\user32\Interop.EnumWindows.cs</Link>
     </Compile>
@@ -115,9 +118,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.OpenProcess.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.OpenProcess.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.EnumProcessModules.cs">
-      <Link>Common\Interop\Windows\kernel32\Interop.EnumProcessModules.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.EnumProcesses.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.EnumProcesses.cs</Link>
     </Compile>
@@ -141,6 +141,9 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetProcessAffinityMask.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.GetProcessAffinityMask.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetProcessId.cs">
+      <Link>Common\Interop\Windows\kernel32\Interop.GetProcessId.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetThreadPriorityBoost.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.GetThreadPriorityBoost.cs</Link>
@@ -174,9 +177,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetPriorityClass.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.SetPriorityClass.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.NtQueryInformationProcess.cs">
-      <Link>Common\Interop\Windows\NtDll\Interop.NtQueryInformationProcess.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.NtQuerySystemInformation.cs">
       <Link>Common\Interop\Windows\NtDll\Interop.NtQuerySystemInformation.cs</Link>
@@ -400,6 +400,7 @@
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Condition="'$(TargetGroup)' != 'uap'" Include="Microsoft.Win32.Registry" />
+    <Reference Condition="'$(TargetGroup)' == 'uap'" Include="System.Buffers" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Collections.Specialized" />
