@@ -506,16 +506,6 @@ if %__BuildTests% EQU 1 (
         REM buildtest.cmd has already emitted an error message and mentioned the build log file to examine.
         exit /b 1
     )
-) else (
-    echo %__MsgPrefix%Skipping test build. Proceeding to building runtime layout for %__BuildOS%.%__BuildArch%.%__BuildType%
-
-    echo "%__ProjectDir%\tests\runtest.cmd %__BuildArch% %__BuildType% %__UnprocessedBuildArgs% GenerateLayoutOnly"
-    @call %__ProjectDir%\tests\runtest.cmd %__BuildArch% %__BuildType% %__UnprocessedBuildArgs% GenerateLayoutOnly
-
-    if not !errorlevel! == 0 (
-        REM runtest.cmd has already emitted an error message and mentioned the build log file to examine.
-        exit /b 1
-    )    
 ) 
 
 REM =========================================================================================
