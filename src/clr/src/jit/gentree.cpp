@@ -5907,14 +5907,18 @@ GenTreePtr Compiler::gtNewQmarkNode(var_types type, GenTreePtr cond, GenTreePtr 
 
 GenTreeQmark::GenTreeQmark(var_types type, GenTreePtr cond, GenTreePtr colonOp, Compiler* comp)
     : GenTreeOp(GT_QMARK, type, cond, colonOp)
+#ifdef LEGACY_BACKEND
     , gtThenLiveSet(VarSetOps::UninitVal())
     , gtElseLiveSet(VarSetOps::UninitVal())
+#endif
 {
     // These must follow a specific form.
     assert(cond != nullptr && cond->TypeGet() == TYP_INT);
     assert(colonOp != nullptr && colonOp->OperGet() == GT_COLON);
 
+#ifdef LEGACY_BACKEND
     comp->impInlineRoot()->compQMarks->Push(this);
+#endif
 }
 
 GenTreeIntCon* Compiler::gtNewIconNode(ssize_t value, var_types type)
@@ -7423,8 +7427,10 @@ GenTreePtr Compiler::gtCloneExpr(
 
             case GT_QMARK:
                 copy = new (this, GT_QMARK) GenTreeQmark(tree->TypeGet(), tree->gtOp.gtOp1, tree->gtOp.gtOp2, this);
+#ifdef LEGACY_BACKEND
                 VarSetOps::AssignAllowUninitRhs(this, copy->gtQmark.gtThenLiveSet, tree->gtQmark.gtThenLiveSet);
                 VarSetOps::AssignAllowUninitRhs(this, copy->gtQmark.gtElseLiveSet, tree->gtQmark.gtElseLiveSet);
+#endif
                 break;
 
             case GT_OBJ:
