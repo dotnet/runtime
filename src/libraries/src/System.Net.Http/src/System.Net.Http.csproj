@@ -372,7 +372,9 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'uap'">
     <Reference Include="Windows" />
     <Reference Include="mscorlib" />
+    <Reference Include="System.Runtime.InteropServices.WindowsRuntime" />
     <Reference Include="System.Runtime.WindowsRuntime" />
+    <Reference Include="System.Security.Cryptography.X509Certificates" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Compile Include="$(CommonPath)\System\NotImplemented.cs">
       <Link>Common\System\NotImplemented.cs</Link>
@@ -389,11 +391,11 @@
     <Compile Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs">
       <Link>Common\System\Threading\Tasks\TaskToApm.cs</Link>
     </Compile>
-    <Compile Include="netcore50\System\Net\cookie.cs" />
-    <Compile Include="netcore50\System\Net\cookieexception.cs" />
-    <Compile Include="netcore50\System\Net\CookieHelper.cs" />
-    <Compile Include="netcore50\System\Net\HttpHandlerToFilter.cs" />
-    <Compile Include="netcore50\System\Net\HttpClientHandler.cs" />
+    <Compile Include="uap\System\Net\cookie.cs" />
+    <Compile Include="uap\System\Net\cookieexception.cs" />
+    <Compile Include="uap\System\Net\CookieHelper.cs" />
+    <Compile Include="uap\System\Net\HttpHandlerToFilter.cs" />
+    <Compile Include="uap\System\Net\HttpClientHandler.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' OR '$(TargetGroup)' == 'uap'">
     <Reference Include="Microsoft.Win32.Primitives" />

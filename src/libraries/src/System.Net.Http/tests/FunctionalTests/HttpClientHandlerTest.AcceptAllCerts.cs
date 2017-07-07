@@ -15,6 +15,9 @@ namespace System.Net.Http.Functional.Tests
 
     public class HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test
     {
+        // TODO: https://github.com/dotnet/corefx/issues/7812
+        private static bool ClientSupportsDHECipherSuites => (!PlatformDetection.IsWindows || PlatformDetection.IsWindows10Version1607OrGreater);
+
         [Fact]
         public void SingletonReturnsTrue()
         {
@@ -57,9 +60,8 @@ namespace System.Net.Http.Functional.Tests
             new object[] { Configuration.Http.WrongHostNameCertRemoteServer },
         };
 
-        [ActiveIssue(7812, TestPlatforms.Windows)]
         [OuterLoop] // TODO: Issue #11345
-        [Theory]
+        [ConditionalTheory(nameof(ClientSupportsDHECipherSuites))]
         [MemberData(nameof(InvalidCertificateServers))]
         public async Task InvalidCertificateServers_CertificateValidationDisabled_Succeeds(string url)
         {
