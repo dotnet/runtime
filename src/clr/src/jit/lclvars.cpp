@@ -6533,9 +6533,15 @@ void Compiler::lvaDumpRegLocation(unsigned lclNum)
 #ifdef _TARGET_ARM_
     else if (varDsc->TypeGet() == TYP_DOUBLE)
     {
+#ifdef LEGACY_BACKEND
+        // The assigned registers are `lvRegNum:lvOtherReg`
         printf("%3s:%-3s    ", getRegName(varDsc->lvRegNum), getRegName(varDsc->lvOtherReg));
-    }
+#else
+        // The assigned registers are `lvRegNum:RegNext(lvRegNum)`
+        printf("%3s:%-3s    ", getRegName(varDsc->lvRegNum), getRegName(REG_NEXT(varDsc->lvRegNum)));
 #endif
+    }
+#endif // !_TARGET_ARM_
     else
     {
         printf("%3s        ", getRegName(varDsc->lvRegNum));
