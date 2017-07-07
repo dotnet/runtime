@@ -31,6 +31,7 @@ namespace System.Net.Http
         private readonly Stream _stream;
         private readonly TransportContext _transportContext;
         private readonly bool _usingProxy;
+        private readonly byte[] _idnHostAsciiBytes;
 
         private ValueStringBuilder _sb; // mutable struct, do not make this readonly
 
@@ -535,8 +536,9 @@ namespace System.Net.Http
         }
 
         public HttpConnection(
-            HttpConnectionPool pool, 
-            HttpConnectionKey key, 
+            HttpConnectionPool pool,
+            HttpConnectionKey key,
+            string requestIdnHost,
             Stream stream, 
             TransportContext transportContext, 
             bool usingProxy)
@@ -546,6 +548,10 @@ namespace System.Net.Http
             _stream = stream;
             _transportContext = transportContext;
             _usingProxy = usingProxy;
+            if (requestIdnHost != null)
+            {
+                _idnHostAsciiBytes = Encoding.ASCII.GetBytes(requestIdnHost);
+            }
 
             const int DefaultCapacity = 16;
             _sb = new ValueStringBuilder(DefaultCapacity);
@@ -614,7 +620,10 @@ namespace System.Net.Http
         {
             await WriteBytesAsync(s_hostKeyAndSeparator, cancellationToken).ConfigureAwait(false);
 
-            await WriteStringAsync(uri.IdnHost, cancellationToken).ConfigureAwait(false);
+            await (_idnHostAsciiBytes != null ?
+                WriteBytesAsync(_idnHostAsciiBytes, cancellationToken) :
+                WriteAsciiStringAsync(uri.IdnHost, cancellationToken)).ConfigureAwait(false);
+
             if (!uri.IsDefaultPort)
             {
                 await WriteByteAsync((byte)':', cancellationToken).ConfigureAwait(false);

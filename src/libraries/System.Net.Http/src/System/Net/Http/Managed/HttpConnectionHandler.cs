@@ -113,7 +113,7 @@ namespace System.Net.Http
                 pool = _connectionPoolTable.GetOrAdd(key, _ => new HttpConnectionPool());
             }
 
-            var connection = new HttpConnection(pool, key, stream, transportContext, false);
+            var connection = new HttpConnection(pool, key, uri.IdnHost, stream, transportContext, false);
 
             return connection;
         }
