@@ -8,6 +8,7 @@ namespace System.IO.Tests
 {
     public class DirectoryInfo_CreateSubDirectory : FileSystemTest
     {
+        public static TheoryData ControlWhiteSpace = IOInputs.GetControlWhiteSpace().ToTheoryData(); 
         #region UniversalTests
 
         [Fact]
@@ -89,36 +90,31 @@ namespace System.IO.Tests
             Assert.Throws<ArgumentException>(() => new DirectoryInfo(TestDirectory + "/path").CreateSubdirectory("../../path2"));
         }
 
-        [Fact]
-        public void ValidPathWithTrailingSlash()
+        [Theory,
+            MemberData(nameof(ValidPathComponentNames))]
+        public void ValidPathWithTrailingSlash(string component)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
 
-            var components = IOInputs.GetValidPathComponentNames();
-            Assert.All(components, (component) =>
-            {
-                string path = IOServices.AddTrailingSlashIfNeeded(component);
-                DirectoryInfo result = new DirectoryInfo(testDir.FullName).CreateSubdirectory(path);
+            string path = IOServices.AddTrailingSlashIfNeeded(component);
+            DirectoryInfo result = new DirectoryInfo(testDir.FullName).CreateSubdirectory(path);
 
-                Assert.Equal(Path.Combine(testDir.FullName, path), result.FullName);
-                Assert.True(Directory.Exists(result.FullName));
-            });
+            Assert.Equal(Path.Combine(testDir.FullName, path), result.FullName);
+            Assert.True(Directory.Exists(result.FullName));
         }
 
-        [Fact]
-        public void ValidPathWithoutTrailingSlash()
+        [Theory,
+            MemberData(nameof(ValidPathComponentNames))]
+        public void ValidPathWithoutTrailingSlash(string component)
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
 
-            var components = IOInputs.GetValidPathComponentNames();
-            Assert.All(components, (component) =>
-            {
-                string path = component;
-                DirectoryInfo result = new DirectoryInfo(testDir.FullName).CreateSubdirectory(path);
+            string path = component;
+            DirectoryInfo result = new DirectoryInfo(testDir.FullName).CreateSubdirectory(path);
 
-                Assert.Equal(Path.Combine(testDir.FullName, path), result.FullName);
-                Assert.True(Directory.Exists(result.FullName));
-            });
+            Assert.Equal(Path.Combine(testDir.FullName, path), result.FullName);
+            Assert.True(Directory.Exists(result.FullName));
+
         }
 
         [Fact]
@@ -143,65 +139,54 @@ namespace System.IO.Tests
 
         #region PlatformSpecific
 
-        [Fact]
+        [Theory,
+            MemberData(nameof(ControlWhiteSpace))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Control whitespace in path throws ArgumentException
-        public void WindowsControlWhiteSpace()
+        public void WindowsControlWhiteSpace(string component)
         {
             // CreateSubdirectory will throw when passed a path with control whitespace e.g. "\t"
-            var components = IOInputs.GetControlWhiteSpace();
-            Assert.All(components, (component) =>
-            {
-                string path = IOServices.RemoveTrailingSlash(GetTestFileName());
-                Assert.Throws<ArgumentException>(() => new DirectoryInfo(TestDirectory).CreateSubdirectory(component));
-            });
+            string path = IOServices.RemoveTrailingSlash(GetTestFileName());
+            Assert.Throws<ArgumentException>(() => new DirectoryInfo(TestDirectory).CreateSubdirectory(component));
         }
 
-        [Fact]
+        [Theory,
+            MemberData(nameof(SimpleWhiteSpace))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Simple whitespace is trimmed in path
-        public void WindowsSimpleWhiteSpace()
+        public void WindowsSimpleWhiteSpace(string component)
         {
             // CreateSubdirectory trims all simple whitespace, returning us the parent directory
             // that called CreateSubdirectory
-            var components = IOInputs.GetSimpleWhiteSpace();
+            string path = IOServices.RemoveTrailingSlash(GetTestFileName());
+            DirectoryInfo result = new DirectoryInfo(TestDirectory).CreateSubdirectory(component);
 
-            Assert.All(components, (component) =>
-            {
-                string path = IOServices.RemoveTrailingSlash(GetTestFileName());
-                DirectoryInfo result = new DirectoryInfo(TestDirectory).CreateSubdirectory(component);
+            Assert.True(Directory.Exists(result.FullName));
+            Assert.Equal(TestDirectory, IOServices.RemoveTrailingSlash(result.FullName));
 
-                Assert.True(Directory.Exists(result.FullName));
-                Assert.Equal(TestDirectory, IOServices.RemoveTrailingSlash(result.FullName));
-            });
         }
 
-        [Fact]
+        [Theory,
+            MemberData(nameof(WhiteSpace))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Whitespace as path allowed
-        public void UnixWhiteSpaceAsPath_Allowed()
+        public void UnixWhiteSpaceAsPath_Allowed(string path)
         {
-            var paths = IOInputs.GetWhiteSpace();
-            Assert.All(paths, (path) =>
-            {
-                new DirectoryInfo(TestDirectory).CreateSubdirectory(path);
-                Assert.True(Directory.Exists(Path.Combine(TestDirectory, path)));
-            });
+            new DirectoryInfo(TestDirectory).CreateSubdirectory(path);
+            Assert.True(Directory.Exists(Path.Combine(TestDirectory, path)));
+
         }
 
-        [Fact]
+        [Theory,
+            MemberData(nameof(WhiteSpace))]
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Trailing whitespace in path treated as significant
-        public void UnixNonSignificantTrailingWhiteSpace()
+        public void UnixNonSignificantTrailingWhiteSpace(string component)
         {
             // Unix treats trailing/prename whitespace as significant and a part of the name.
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            var components = IOInputs.GetWhiteSpace();
 
-            Assert.All(components, (component) =>
-            {
-                string path = IOServices.RemoveTrailingSlash(testDir.Name) + component;
-                DirectoryInfo result = new DirectoryInfo(TestDirectory).CreateSubdirectory(path);
+            string path = IOServices.RemoveTrailingSlash(testDir.Name) + component;
+            DirectoryInfo result = new DirectoryInfo(TestDirectory).CreateSubdirectory(path);
 
-                Assert.True(Directory.Exists(result.FullName));
-                Assert.NotEqual(testDir.FullName, IOServices.RemoveTrailingSlash(result.FullName));
-            });
+            Assert.True(Directory.Exists(result.FullName));
+            Assert.NotEqual(testDir.FullName, IOServices.RemoveTrailingSlash(result.FullName));
         }
 
         [ConditionalFact(nameof(UsingNewNormalization))]
