@@ -202,8 +202,8 @@ namespace System.Text
             // Remember code page
             _codePage = codePage;
 
-            encoderFallback = encoderFallback ?? new InternalEncoderBestFitFallback(this);
-            decoderFallback = decoderFallback ?? new InternalDecoderBestFitFallback(this);
+            this.encoderFallback = encoderFallback ?? new InternalEncoderBestFitFallback(this);
+            this.decoderFallback = decoderFallback ?? new InternalDecoderBestFitFallback(this);
         }
 
         // Default fallback that we'll use.
