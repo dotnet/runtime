@@ -10905,9 +10905,7 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
 
         if (fgGlobalMorph)
         {
-#if !FEATURE_STACK_FP_X87
             tree = fgMorphForRegisterFP(tree);
-#endif
         }
 
         genTreeOps oper = tree->OperGet();
