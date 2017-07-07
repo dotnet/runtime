@@ -792,6 +792,7 @@ namespace Microsoft.ServiceModel.Syndication
                         }
                     }
                 }
+
                 await reader.ReadStartElementAsync();
                 if (!isEmpty)
                 {
