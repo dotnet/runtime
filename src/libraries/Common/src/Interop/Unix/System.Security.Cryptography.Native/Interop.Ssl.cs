@@ -20,18 +20,6 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslV2_3Method")]
         internal static extern IntPtr SslV2_3Method();
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslV3Method")]
-        internal static extern IntPtr SslV3Method();
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_TlsV1Method")]
-        internal static extern IntPtr TlsV1Method();
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_TlsV1_1Method")]
-        internal static extern IntPtr TlsV1_1Method();
-
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_TlsV1_2Method")]
-        internal static extern IntPtr TlsV1_2Method();
-
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslCreate")]
         internal static extern SafeSslHandle SslCreate(SafeSslContextHandle ctx);
 
@@ -157,10 +145,6 @@ internal static partial class Interop
 
         internal static class SslMethods
         {
-            internal static readonly IntPtr TLSv1_method = TlsV1Method();
-            internal static readonly IntPtr TLSv1_1_method = TlsV1_1Method();
-            internal static readonly IntPtr TLSv1_2_method = TlsV1_2Method();
-            internal static readonly IntPtr SSLv3_method = SslV3Method();
             internal static readonly IntPtr SSLv23_method = SslV2_3Method();
         }
 
