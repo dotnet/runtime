@@ -209,14 +209,14 @@ namespace System.Net.Http.Headers
 
             // Try convert first value to int64
             long from = 0;
-            if ((fromLength > 0) && !HeaderUtilities.TryParseInt64(input.Substring(fromStartIndex, fromLength), out from))
+            if ((fromLength > 0) && !HeaderUtilities.TryParseInt64(input, fromStartIndex, fromLength, out from))
             {
                 return 0;
             }
 
             // Try convert second value to int64
             long to = 0;
-            if ((toLength > 0) && !HeaderUtilities.TryParseInt64(input.Substring(toStartIndex, toLength), out to))
+            if ((toLength > 0) && !HeaderUtilities.TryParseInt64(input, toStartIndex, toLength, out to))
             {
                 return 0;
             }

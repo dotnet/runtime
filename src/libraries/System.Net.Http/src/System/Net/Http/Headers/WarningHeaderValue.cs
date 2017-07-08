@@ -245,7 +245,7 @@ namespace System.Net.Http.Headers
                 return false;
             }
 
-            if (!HeaderUtilities.TryParseInt32(input.Substring(current, codeLength), out code))
+            if (!HeaderUtilities.TryParseInt32(input, current, codeLength, out code))
             {
                 Debug.Assert(false, "Unable to parse value even though it was parsed as <=3 digits string. Input: '" +
                     input + "', Current: " + current + ", CodeLength: " + codeLength);

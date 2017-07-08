@@ -42,7 +42,7 @@ namespace System.Net.Http.Headers
             }
 
             long result = 0;
-            if (!HeaderUtilities.TryParseInt64(value.Substring(startIndex, numberLength), out result))
+            if (!HeaderUtilities.TryParseInt64(value, startIndex, numberLength, out result))
             {
                 return 0;
             }
