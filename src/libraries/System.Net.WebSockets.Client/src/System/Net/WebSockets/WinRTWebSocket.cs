@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices.WindowsRuntime;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
@@ -34,6 +35,9 @@ namespace System.Net.WebSockets
         private static readonly Lazy<bool> s_MessageWebSocketClientCertificateSupported =
             new Lazy<bool>(InitMessageWebSocketClientCertificateSupported);
         private static bool MessageWebSocketClientCertificateSupported => s_MessageWebSocketClientCertificateSupported.Value;
+        private static readonly Lazy<bool> s_MessageWebSocketReceiveModeSupported =
+            new Lazy<bool>(InitMessageWebSocketReceiveModeSupported);
+        private static bool MessageWebSocketReceiveModeSupported => s_MessageWebSocketReceiveModeSupported.Value;
 
         private WebSocketCloseStatus? _closeStatus = null;
         private string _closeStatusDescription = null;
@@ -137,6 +141,16 @@ namespace System.Net.WebSockets
 
                     websocketControl.ClientCertificate = winRtClientCert;
                 }
+            }
+
+            // Try to opt into PartialMessage receive mode so that we can hand partial data back to the app as it arrives.
+            // If the MessageWebSocketControl.ReceiveMode API surface is not available, the MessageWebSocket.MessageReceived
+            // event will only get triggered when an entire WebSocket message has been received. This results in large memory
+            // footprint and prevents "streaming" scenarios (e.g., WCF) from working properly.
+            if (MessageWebSocketReceiveModeSupported)
+            {
+                // Always enable partial message receive mode if the WinRT API supports it.
+                _messageWebSocket.Control.ReceiveMode = MessageWebSocketReceiveMode.PartialMessage;
             }
 
             try
@@ -374,7 +388,7 @@ namespace System.Net.WebSockets
                         dataBuffer.CopyTo(0, buffer.Array, buffer.Offset, (int) readCount);
                         if (dataAvailable == readCount)
                         {
-                            endOfMessage = true;
+                            endOfMessage = !IsPartialMessageEvent(args);
                         }
 
                         WebSocketReceiveResult recvResult = new WebSocketReceiveResult((int) readCount, messageType,
@@ -634,6 +648,25 @@ namespace System.Net.WebSockets
             throw new PlatformNotSupportedException(string.Format(
                         CultureInfo.InvariantCulture,
                         SR.net_WebSockets_UWPClientCertSupportRequiresCertInPersonalCertificateStore));
+        }
+
+        private static bool InitMessageWebSocketReceiveModeSupported()
+        {
+            return ApiInformation.IsPropertyPresent(
+                "Windows.Networking.Sockets.MessageWebSocketControl",
+                "ReceiveMode");
+        }
+
+        private bool IsPartialMessageEvent(MessageWebSocketMessageReceivedEventArgs eventArgs)
+        {
+            if (MessageWebSocketReceiveModeSupported)
+            {
+                return !eventArgs.IsMessageComplete;
+            }
+
+            // When MessageWebSocketMessageReceivedEventArgs.IsMessageComplete is not available, WinRT's behavior
+            // is always to wait for the entire WebSocket message to arrive before raising a MessageReceived event.
+            return false;
         }
         #endregion Helpers
 
