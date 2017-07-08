@@ -210,15 +210,15 @@ namespace System.Threading
         public static bool SpinUntil(Func<bool> condition, TimeSpan timeout)
         {
             // Validate the timeout
-            Int64 totalMilliseconds = (Int64)timeout.TotalMilliseconds;
-            if (totalMilliseconds < -1 || totalMilliseconds > Int32.MaxValue)
+            long totalMilliseconds = (long)timeout.TotalMilliseconds;
+            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
             {
                 throw new System.ArgumentOutOfRangeException(
                     nameof(timeout), timeout, SR.SpinWait_SpinUntil_TimeoutWrong);
             }
 
             // Call wait with the timeout milliseconds
-            return SpinUntil(condition, (int)timeout.TotalMilliseconds);
+            return SpinUntil(condition, (int)totalMilliseconds);
         }
 
         /// <summary>
