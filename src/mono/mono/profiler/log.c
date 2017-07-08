@@ -4384,7 +4384,6 @@ handle_dumper_queue_entry (MonoProfiler *prof)
 		);
 
 		emit_event_time (logbuffer, TYPE_SAMPLE | TYPE_SAMPLE_HIT, sample->time);
-		emit_byte (logbuffer, SAMPLE_CYCLES);
 		emit_ptr (logbuffer, (void *) sample->tid);
 		emit_value (logbuffer, 1);
 
