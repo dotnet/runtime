@@ -16,7 +16,12 @@ namespace System.Diagnostics.Tracing
     /// 
     /// To get the value of a property quickly, use a delegate produced by <see cref="PropertyValue.GetPropertyGetter(PropertyInfo)"/>.
     /// </summary>
-    internal unsafe struct PropertyValue
+#if ES_BUILD_PN
+    public
+#else
+    internal
+#endif
+    unsafe struct PropertyValue
     {
         /// <summary>
         /// Union of well-known value types, to avoid boxing those types.
@@ -198,7 +203,12 @@ namespace System.Diagnostics.Tracing
             return helper.GetPropertyGetter(property);
         }
 
-        private abstract class TypeHelper
+#if ES_BUILD_PN
+        public
+#else
+        private
+#endif
+        abstract class TypeHelper
         {
             public abstract Func<PropertyValue, PropertyValue> GetPropertyGetter(PropertyInfo property);
 
@@ -208,7 +218,12 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-        private sealed class ReferenceTypeHelper<TContainer> : TypeHelper where TContainer : class
+#if ES_BUILD_PN
+        public
+#else
+        private
+#endif
+        sealed class ReferenceTypeHelper<TContainer> : TypeHelper where TContainer : class
         {
             public override Func<PropertyValue, PropertyValue> GetPropertyGetter(PropertyInfo property)
             {
