@@ -80,7 +80,11 @@ namespace System.Net.Http.Functional.Tests
     public sealed class ManagedHandler_HttpClientHandler_ServerCertificates_Test : HttpClientHandler_ServerCertificates_Test, IDisposable
     {
         public ManagedHandler_HttpClientHandler_ServerCertificates_Test() => ManagedHandlerTestHelpers.SetEnvVar();
-        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+        public new void Dispose()
+        {
+            ManagedHandlerTestHelpers.RemoveEnvVar();
+            base.Dispose();
+        }
     }
 
     public sealed class ManagedHandler_PostScenarioTest : PostScenarioTest, IDisposable
