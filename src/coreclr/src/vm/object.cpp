@@ -2978,8 +2978,9 @@ void __fastcall ZeroMemoryInGCHeap(void* mem, size_t size)
         *memBytes++ = 0;
 
     // now write pointer sized pieces
+    // volatile ensures that this doesn't get optimized back into a memset call (see #12207)
     size_t nPtrs = (endBytes - memBytes) / sizeof(PTR_PTR_VOID);
-    PTR_PTR_VOID memPtr = (PTR_PTR_VOID) memBytes;
+    volatile PTR_PTR_VOID memPtr = (PTR_PTR_VOID) memBytes;
     for (size_t i = 0; i < nPtrs; i++)
         *memPtr++ = 0;
 
