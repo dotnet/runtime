@@ -1557,61 +1557,23 @@ namespace Microsoft.ServiceModel.Syndication
             await writer.WriteEndElementAsync();
         }
 
-        // Custom parsers
-        public static DateTimeOffset DefaultDateParser(string dateTimeString, string localName, string ns)
+        private static bool OriginalDateParser(string dateTimeString, out DateTimeOffset dto)
         {
-            bool parsed = false;
-            //try
-            DateTimeOffset dto;
-            parsed = DateTimeOffset.TryParse(dateTimeString, out dto);
-
-            if (parsed)
-                return dto;
-
-
             StringBuilder dateTimeStringBuilder = new StringBuilder(dateTimeString.Trim());
             if (dateTimeStringBuilder.Length < 18)
             {
-                //If we thrown an exception here, the program will stop
-
-                //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
-                //    new XmlException(FeedUtils.AddLineInfo(reader,
-                //    SR.ErrorParsingDateTime)));                    
+                return false;
             }
-            if (dateTimeStringBuilder[3] == ',')
-            {
-                // There is a leading (e.g.) "Tue, ", strip it off
-                dateTimeStringBuilder.Remove(0, 4);
-                // There's supposed to be a space here but some implementations dont have one
-                Rss20FeedFormatter.RemoveExtraWhiteSpaceAtStart(dateTimeStringBuilder);
-            }
-            Rss20FeedFormatter.ReplaceMultipleWhiteSpaceWithSingleWhiteSpace(dateTimeStringBuilder);
-            if (char.IsDigit(dateTimeStringBuilder[1]))
-            {
-                // two-digit day, we are good
-            }
-            else
-            {
-                dateTimeStringBuilder.Insert(0, '0');
-            }
+            
             if (dateTimeStringBuilder.Length < 19)
             {
-                //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
-                //    new XmlException(FeedUtils.AddLineInfo(reader,
-                //    SR.ErrorParsingDateTime)));
+                return false;
+            }
 
-                //throw new XmlException(FeedUtils.AddLineInfo(reader, SR.ErrorParsingDateTime));
-            }
-            bool thereAreSeconds = (dateTimeStringBuilder[17] == ':');
             int timeZoneStartIndex;
-            if (thereAreSeconds)
-            {
-                timeZoneStartIndex = 21;
-            }
-            else
-            {
-                timeZoneStartIndex = 18;
-            }
+            for (timeZoneStartIndex = dateTimeStringBuilder.Length-1; dateTimeStringBuilder[timeZoneStartIndex] != ' '; timeZoneStartIndex--);
+            timeZoneStartIndex++;
+
             string timeZoneSuffix = dateTimeStringBuilder.ToString().Substring(timeZoneStartIndex);
             dateTimeStringBuilder.Remove(timeZoneStartIndex, dateTimeStringBuilder.Length - timeZoneStartIndex);
             bool isUtc;
@@ -1619,27 +1581,44 @@ namespace Microsoft.ServiceModel.Syndication
             string wellFormattedString = dateTimeStringBuilder.ToString();
 
             DateTimeOffset theTime;
-            string parseFormat;
-            if (thereAreSeconds)
+            string[] parseFormat = 
             {
-                parseFormat = "dd MMM yyyy HH:mm:ss zzz";
-            }
-            else
-            {
-                parseFormat = "dd MMM yyyy HH:mm zzz";
-            }
+                "ddd, dd MMMM yyyy HH:mm:ss zzz",
+                "dd MMMM yyyy HH:mm:ss zzz",
+                "ddd, dd MMM yyyy HH:mm:ss zzz",
+                "dd MMM yyyy HH:mm:ss zzz",
+                
+                "ddd, dd MMMM yyyy HH:mm zzz",
+                "dd MMMM yyyy HH:mm zzz",
+                "ddd, dd MMM yyyy HH:mm zzz",
+                "dd MMM yyyy HH:mm zzz"
+            };
+
             if (DateTimeOffset.TryParseExact(wellFormattedString, parseFormat,
                 CultureInfo.InvariantCulture.DateTimeFormat,
                 (isUtc ? DateTimeStyles.AdjustToUniversal : DateTimeStyles.None), out theTime))
             {
-                return theTime;
+                dto = theTime;
+                return true;
             }
-            //throw new FormatException("There was an error with the format of the date");
-            //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(
-            //    new XmlException(FeedUtils.AddLineInfo(reader,
-            //    SR.ErrorParsingDateTime)));
+
+            return false;
+        }
+
+        // Custom parsers
+        public static DateTimeOffset DefaultDateParser(string dateTimeString, string localName, string ns)
+        {
+            bool parsed = false;
+            DateTimeOffset dto;
+            parsed = DateTimeOffset.TryParse(dateTimeString, out dto);
+            if (parsed)
+                return dto;
 
 
+            //original parser here
+            parsed = OriginalDateParser(dateTimeString,out dto);
+            if (parsed)
+                return dto;
 
             //Impossible to parse - using a default date;
             return new DateTimeOffset();

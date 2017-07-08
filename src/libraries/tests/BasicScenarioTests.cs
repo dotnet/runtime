@@ -677,6 +677,25 @@ namespace Microsoft.ServiceModel.Syndication.Tests
             Assert.True(res.SkipDays[0] == "Saturday");
             Assert.True(res.SkipDays[1] == "Sunday");
         }
+
+        [Fact]
+        public static void SyndicationFeed_Rss_WrongDateFormat()
+        {
+            // *** SETUP *** \\
+            Rss20FeedFormatter rssformatter = new Rss20FeedFormatter();
+
+            XmlReader reader = XmlReader.Create(@"TestFeeds\rssSpecExampleWrongDateFormat.xml");
+            CancellationToken ct = new CancellationToken();
+
+            // *** EXECUTE *** \\
+            Task<SyndicationFeed> task = SyndicationFeed.LoadAsync(reader, ct);
+            Task.WhenAll(task);
+            SyndicationFeed res = task.Result;
+
+            // *** ASSERT *** \\
+            Assert.True(!res.LastUpdatedTime.Equals(new DateTimeOffset()));
+        }
+
     }
 }
 
