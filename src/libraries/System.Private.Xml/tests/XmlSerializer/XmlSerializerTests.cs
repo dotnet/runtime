@@ -3279,7 +3279,6 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.Equal(value.value, ((DerivedClass)actual).value);
     }
 
-#if !uapaot
     [Fact]
     public static void Xml_DefaultValueAttributeSetToNaNTest()
     {
@@ -3295,7 +3294,6 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.NotNull(actual);
         Assert.Equal(value, actual);
     }
-#endif
 
     [Fact]
     public static void Xml_NullRefInXmlSerializerCtorTest()
