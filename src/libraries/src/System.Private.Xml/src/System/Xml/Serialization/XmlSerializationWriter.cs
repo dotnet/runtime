@@ -1402,8 +1402,8 @@ namespace System.Xml.Serialization
                     string ns = (string)entry.Value;
                     if (_namespaces != null)
                     {
-                        string oldNs = _namespaces.Namespaces[prefix] as string;
-                        if (oldNs != null && oldNs != ns)
+                        string oldNs;
+                        if (_namespaces.Namespaces.TryGetValue(prefix, out oldNs) && oldNs != null && oldNs != ns)
                         {
                             throw new InvalidOperationException(SR.Format(SR.XmlDuplicateNs, prefix, ns));
                         }
