@@ -11,7 +11,7 @@ namespace System.Net.Http
 {
     internal static class WinHttpCertificateHelper
     {
-		private const string ClientAuthenticationOID = "1.3.6.1.5.5.7.3.2";
+        private const string ClientAuthenticationOID = "1.3.6.1.5.5.7.3.2";
         private static readonly Oid s_serverAuthOid = new Oid("1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.1");
         
         // TODO: Issue #2165. Merge with similar code used in System.Net.Security move to Common/src//System/Net.

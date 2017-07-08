@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net.Security;
 using System.Net.Test.Common;
 using System.Security.Authentication.ExtendedProtection;
@@ -15,7 +16,7 @@ namespace System.Net.Http.Functional.Tests
     using Configuration = System.Net.Test.Common.Configuration;
 
     [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework throws PNSE for ServerCertificateCustomValidationCallback")]
-    public partial class HttpClientHandler_ServerCertificates_Test
+    public partial class HttpClientHandler_ServerCertificates_Test : RemoteExecutorTestBase
     {
         // TODO: https://github.com/dotnet/corefx/issues/7812
         private static bool ClientSupportsDHECipherSuites => (!PlatformDetection.IsWindows || PlatformDetection.IsWindows10Version1607OrGreater);
@@ -61,7 +62,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(20010, TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP won't send requests through a custom proxy")]
         [OuterLoop] // TODO: Issue #11345
         [ConditionalFact(nameof(BackendSupportsCustomCertificateHandling))]
         public async Task UseCallback_HaveNoCredsAndUseAuthenticatedCustomProxyAndPostToSecureServer_ProxyAuthenticationRequiredStatusCode()
@@ -280,11 +281,7 @@ namespace System.Net.Http.Functional.Tests
             new object[] { Configuration.Http.WrongHostNameCertRemoteServer , SslPolicyErrors.RemoteCertificateNameMismatch},
         };
 
-        [ActiveIssue(21945, TargetFrameworkMonikers.Uap)]
-        [OuterLoop] // TODO: Issue #11345
-        [ConditionalTheory(nameof(BackendSupportsCustomCertificateHandlingAndClientSupportsDHECipherSuites))]
-        [MemberData(nameof(CertificateValidationServersAndExpectedPolicies))]
-        public async Task UseCallback_BadCertificate_ExpectedPolicyErrors(string url, SslPolicyErrors expectedErrors)
+        public async Task UseCallback_BadCertificate_ExpectedPolicyErrors_Helper(string url, SslPolicyErrors expectedErrors)
         {
             if (BackendDoesNotSupportCustomCertificateHandling) // can't use [Conditional*] right now as it's evaluated at the wrong time for the managed handler
             {
@@ -323,6 +320,31 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
+        [ConditionalTheory(nameof(BackendSupportsCustomCertificateHandlingAndClientSupportsDHECipherSuites))]
+        [MemberData(nameof(CertificateValidationServersAndExpectedPolicies))]
+        public async Task UseCallback_BadCertificate_ExpectedPolicyErrors(string url, SslPolicyErrors expectedErrors)
+        {
+            if (PlatformDetection.IsUap)
+            {
+                // UAP HTTP stack caches connections per-process. This causes interference when these tests run in
+                // the same process as the other tests. Each test needs to be isolated to its own process.
+                // See dicussion: https://github.com/dotnet/corefx/issues/21945
+                RemoteInvoke((remoteUrl, remoteExpectedErrors) =>
+                {
+                    UseCallback_BadCertificate_ExpectedPolicyErrors_Helper(
+                        remoteUrl,
+                        (SslPolicyErrors)Enum.Parse(typeof(SslPolicyErrors), remoteExpectedErrors)).Wait();
+
+                    return SuccessExitCode;
+                }, url, expectedErrors.ToString()).Dispose();
+            }
+            else
+            {
+                await UseCallback_BadCertificate_ExpectedPolicyErrors_Helper(url, expectedErrors);
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task SSLBackendNotSupported_Callback_ThrowsPlatformNotSupportedException()
         {
@@ -354,7 +376,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        //[SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "UAP doesn't expose channel binding information")]
         [OuterLoop] // TODO: Issue #11345
         [PlatformSpecific(TestPlatforms.Windows)] // CopyToAsync(Stream, TransportContext) isn't used on unix
         [Fact]
