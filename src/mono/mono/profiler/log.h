@@ -2,6 +2,7 @@
 #define __MONO_PROFLOG_H__
 
 #include <glib.h>
+#define MONO_PROFILER_UNSTABLE_GC_ROOTS
 #include <mono/metadata/profiler.h>
 
 #define BUF_ID 0x4D504C01
