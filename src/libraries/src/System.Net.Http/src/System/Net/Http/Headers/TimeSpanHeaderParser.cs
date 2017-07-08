@@ -36,7 +36,7 @@ namespace System.Net.Http.Headers
             }
 
             int result = 0;
-            if (!HeaderUtilities.TryParseInt32(value.Substring(startIndex, numberLength), out result))
+            if (!HeaderUtilities.TryParseInt32(value, startIndex, numberLength, out result))
             {
                 return 0;
             }

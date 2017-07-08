@@ -363,13 +363,13 @@ namespace System.Net.Http.Headers
             parsedValue = null;
 
             long from = 0;
-            if ((fromLength > 0) && !HeaderUtilities.TryParseInt64(input.Substring(fromStartIndex, fromLength), out from))
+            if ((fromLength > 0) && !HeaderUtilities.TryParseInt64(input, fromStartIndex, fromLength, out from))
             {
                 return false;
             }
 
             long to = 0;
-            if ((toLength > 0) && !HeaderUtilities.TryParseInt64(input.Substring(toStartIndex, toLength), out to))
+            if ((toLength > 0) && !HeaderUtilities.TryParseInt64(input, toStartIndex, toLength, out to))
             {
                 return false;
             }
@@ -381,8 +381,7 @@ namespace System.Net.Http.Headers
             }
 
             long length = 0;
-            if ((lengthLength > 0) && !HeaderUtilities.TryParseInt64(input.Substring(lengthStartIndex, lengthLength),
-                out length))
+            if ((lengthLength > 0) && !HeaderUtilities.TryParseInt64(input, lengthStartIndex, lengthLength, out length))
             {
                 return false;
             }

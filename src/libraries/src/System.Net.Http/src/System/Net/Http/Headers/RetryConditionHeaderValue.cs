@@ -148,7 +148,7 @@ namespace System.Net.Http.Headers
                     return 0;
                 }
 
-                if (!HeaderUtilities.TryParseInt32(input.Substring(deltaStartIndex, deltaLength), out deltaSeconds))
+                if (!HeaderUtilities.TryParseInt32(input, deltaStartIndex, deltaLength, out deltaSeconds))
                 {
                     return 0; // int.TryParse() may return 'false' if the value has 10 digits and is > Int32.MaxValue.
                 }

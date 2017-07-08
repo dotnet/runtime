@@ -249,14 +249,69 @@ namespace System.Net.Http.Headers
             return null;
         }
 
-        internal static bool TryParseInt32(string value, out int result)
+        internal static bool TryParseInt32(string value, out int result) =>
+            TryParseInt32(value, 0, value.Length, out result);
+
+        internal static bool TryParseInt32(string value, int offset, int length, out int result) // TODO #21281: Replace with int.TryParse(Span<char>) once it's available
         {
-            return int.TryParse(value, NumberStyles.None, NumberFormatInfo.InvariantInfo, out result);
+            if (offset < 0 || length < 0 || offset > value.Length - length)
+            {
+                result = 0;
+                return false;
+            }
+
+            int tmpResult = 0;
+            int pos = offset, endPos = offset + length;
+            while (pos < endPos)
+            {
+                char c = value[pos++];
+                int digit = c - '0';
+                if ((uint)digit > 9 || // invalid digit
+                    tmpResult > int.MaxValue / 10 || // will overflow when shifting digits
+                    (tmpResult == int.MaxValue / 10 && digit > 7)) // will overflow when adding in digit
+                {
+                    goto ReturnFalse; // Remove goto once https://github.com/dotnet/coreclr/issues/9692 is addressed
+                }
+                tmpResult = (tmpResult * 10) + digit;
+            }
+
+            result = tmpResult;
+            return true;
+
+            ReturnFalse:
+            result = 0;
+            return false;
         }
 
-        internal static bool TryParseInt64(string value, out long result)
+        internal static bool TryParseInt64(string value, int offset, int length, out long result) // TODO #21281: Replace with int.TryParse(Span<char>) once it's available
         {
-            return long.TryParse(value, NumberStyles.None, NumberFormatInfo.InvariantInfo, out result);
+            if (offset < 0 || length < 0 || offset > value.Length - length)
+            {
+                result = 0;
+                return false;
+            }
+
+            long tmpResult = 0;
+            int pos = offset, endPos = offset + length;
+            while (pos < endPos)
+            {
+                char c = value[pos++];
+                int digit = c - '0';
+                if ((uint)digit > 9 || // invalid digit
+                    tmpResult > long.MaxValue / 10 || // will overflow when shifting digits
+                    (tmpResult == long.MaxValue / 10 && digit > 7)) // will overflow when adding in digit
+                {
+                    goto ReturnFalse; // Remove goto once https://github.com/dotnet/coreclr/issues/9692 is addressed
+                }
+                tmpResult = (tmpResult * 10) + digit;
+            }
+
+            result = tmpResult;
+            return true;
+
+            ReturnFalse:
+            result = 0;
+            return false;
         }
 
         internal static string DumpHeaders(params HttpHeaders[] headers)
