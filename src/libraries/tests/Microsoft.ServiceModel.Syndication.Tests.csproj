@@ -39,6 +39,9 @@
     <None Update="TestFeeds\RssFeedWithCustomImageName.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="TestFeeds\rssSpecExampleWrongDateFormat.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="TestFeeds\rssSpecExampleWrongSkipDays.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
