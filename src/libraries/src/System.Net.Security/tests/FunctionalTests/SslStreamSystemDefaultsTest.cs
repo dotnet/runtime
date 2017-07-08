@@ -13,167 +13,158 @@ namespace System.Net.Security.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public class SslStreamSystemDefaultTest
+    public abstract class SslStreamSystemDefaultTest
     {
-        [Fact]
-        public async Task SslStream_DefaultTlsConfigurationSync_Ok()
+        protected readonly SslStream _clientStream;
+        protected readonly SslStream _serverStream;
+
+        public SslStreamSystemDefaultTest()
         {
-            using (var test = new SyncTest())
+            var network = new VirtualNetwork();
+            var clientNet = new VirtualNetworkStream(network, isServer:false);
+            var serverNet = new VirtualNetworkStream(network, isServer: true);
+
+            _clientStream = new SslStream(clientNet, false, ClientCertCallback);
+            _serverStream = new SslStream(serverNet, false, ServerCertCallback);
+        }
+
+        protected abstract Task AuthenticateClientAsync(string targetHost, X509CertificateCollection clientCertificates, bool checkCertificateRevocation, SslProtocols? protocols = null);
+        protected abstract Task AuthenticateServerAsync(X509Certificate serverCertificate, bool clientCertificateRequired, bool checkCertificateRevocation, SslProtocols? protocols = null);
+
+        [ActiveIssue(7812, TestPlatforms.Windows)]
+        [Theory]
+        [InlineData(null, null)]
+        [InlineData(SslProtocols.None, null)]
+        [InlineData(null, SslProtocols.None)]
+        [InlineData(SslProtocols.None, SslProtocols.None)]
+        [InlineData(null, SslProtocols.Tls11)]
+        [InlineData(SslProtocols.Tls11, null)]
+        [InlineData(null, SslProtocols.Tls12)]
+        [InlineData(SslProtocols.Tls12, null)]
+        [InlineData(SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12, null)]
+        [InlineData(null, SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12)]
+        public async Task ClientAndServer_OneOrBothUseDefault_Ok(SslProtocols? clientProtocols, SslProtocols? serverProtocols)
+        {
+            X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate();
+            string serverHost = serverCertificate.GetNameInfo(X509NameType.SimpleName, false);
+            var clientCertificates = new X509CertificateCollection();
+            clientCertificates.Add(Configuration.Certificates.GetClientCertificate());
+
+            var tasks = new Task[2];
+            tasks[0] = AuthenticateClientAsync(serverHost, clientCertificates, checkCertificateRevocation: false, protocols: clientProtocols);
+            tasks[1] = AuthenticateServerAsync(serverCertificate, clientCertificateRequired: true, checkCertificateRevocation: false, protocols: serverProtocols);
+            await await Task.WhenAny(tasks);
+            await Task.WhenAll(tasks);
+
+            if (PlatformDetection.IsWindows && PlatformDetection.WindowsVersion >= 10)
             {
-                await test.RunTest();
+                Assert.True(_clientStream.HashAlgorithm == HashAlgorithmType.Sha256 ||
+                            _clientStream.HashAlgorithm == HashAlgorithmType.Sha384 ||
+                            _clientStream.HashAlgorithm == HashAlgorithmType.Sha512);
             }
         }
 
-        [Fact]
-        public async Task SslStream_DefaultTlsConfigurationApm_Ok()
+        private bool ClientCertCallback(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
-            using (var test = new ApmTest())
+            switch (sslPolicyErrors)
             {
-                await test.RunTest();
+                case SslPolicyErrors.None:
+                case SslPolicyErrors.RemoteCertificateChainErrors:
+                case SslPolicyErrors.RemoteCertificateNameMismatch:
+                    return true;
+                case SslPolicyErrors.RemoteCertificateNotAvailable:
+                default:
+                    return false;
             }
         }
 
-        [Fact]
-        public async Task SslStream_DefaultTlsConfigurationAsync_Ok()
+        private bool ServerCertCallback(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
-            using (var test = new AsyncTest())
+            switch (sslPolicyErrors)
             {
-                await test.RunTest();
+                case SslPolicyErrors.None:
+                case SslPolicyErrors.RemoteCertificateChainErrors:
+                case SslPolicyErrors.RemoteCertificateNameMismatch:
+                    return true;
+                case SslPolicyErrors.RemoteCertificateNotAvailable:
+                    // https://technet.microsoft.com/en-us/library/hh831771.aspx#BKMK_Changes2012R2
+                    // Starting with Windows 8, the "Management of trusted issuers for client authentication" has changed:
+                    // The behavior to send the Trusted Issuers List by default is off.
+                    //
+                    // In Windows 7 the Trusted Issuers List is sent within the Server Hello TLS record. This list is built
+                    // by the server using certificates from the Trusted Root Authorities certificate store.
+                    // The client side will use the Trusted Issuers List, if not empty, to filter proposed certificates.
+                    return PlatformDetection.IsWindows7 && !Capability.IsTrustedRootCertificateInstalled();
+                default:
+                    return false;
             }
         }
 
-        public abstract class TestBase : IDisposable
+        public void Dispose()
         {
-            protected SslStream _clientStream;
-            protected SslStream _serverStream;
+            _clientStream?.Dispose();
+            _serverStream?.Dispose();
+        }
+    }
 
-            public TestBase()
+    public sealed class SyncSslStreamSystemDefaultTest : SslStreamSystemDefaultTest
+    {
+        protected override Task AuthenticateClientAsync(string targetHost, X509CertificateCollection clientCertificates, bool checkCertificateRevocation, SslProtocols? protocols) =>
+            Task.Run(() =>
             {
-                var network = new VirtualNetwork();
-                var clientNet = new VirtualNetworkStream(network, false);
-                var serverNet = new VirtualNetworkStream(network, true);
-
-                _clientStream = new SslStream(clientNet, false, ClientCertCallback);
-                _serverStream = new SslStream(serverNet, false, ServerCertCallback);
-            }
-
-            public async Task RunTest()
-            {
-                X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate();
-                string serverHost = serverCertificate.GetNameInfo(X509NameType.SimpleName, false);
-                X509CertificateCollection clientCertificates = new X509CertificateCollection();
-                clientCertificates.Add(Configuration.Certificates.GetClientCertificate());
-
-                var tasks = new Task[2];
-                tasks[0] = AuthenticateClient(serverHost, clientCertificates, checkCertificateRevocation: false);
-                tasks[1] = AuthenticateServer(serverCertificate, clientCertificateRequired: true, checkCertificateRevocation: false);
-                await Task.WhenAll(tasks);
-
-                if (PlatformDetection.IsWindows && PlatformDetection.WindowsVersion >= 10)
+                if (protocols.HasValue)
                 {
-                    Assert.True(_clientStream.HashAlgorithm == HashAlgorithmType.Sha256 ||
-                                _clientStream.HashAlgorithm == HashAlgorithmType.Sha384 ||
-                                _clientStream.HashAlgorithm == HashAlgorithmType.Sha512);
+                    _clientStream.AuthenticateAsClient(targetHost, clientCertificates, protocols.Value, checkCertificateRevocation);
                 }
-            }
-
-            private bool ClientCertCallback(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
-            {
-                switch (sslPolicyErrors)
+                else
                 {
-                    case SslPolicyErrors.None:
-                    case SslPolicyErrors.RemoteCertificateChainErrors:
-                    case SslPolicyErrors.RemoteCertificateNameMismatch:
-                        return true;
-                    case SslPolicyErrors.RemoteCertificateNotAvailable:
-                    default:
-                        return false;
+                    _clientStream.AuthenticateAsClient(targetHost, clientCertificates, checkCertificateRevocation);
                 }
-            }
+            });
 
-            private bool ServerCertCallback(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
+        protected override Task AuthenticateServerAsync(X509Certificate serverCertificate, bool clientCertificateRequired, bool checkCertificateRevocation, SslProtocols? protocols) =>
+            Task.Run(() =>
             {
-                switch (sslPolicyErrors)
+                if (protocols.HasValue)
                 {
-                    case SslPolicyErrors.None:
-                    case SslPolicyErrors.RemoteCertificateChainErrors:
-                    case SslPolicyErrors.RemoteCertificateNameMismatch:
-                        return true;
-                    case SslPolicyErrors.RemoteCertificateNotAvailable:
-                        // https://technet.microsoft.com/en-us/library/hh831771.aspx#BKMK_Changes2012R2
-                        // Starting with Windows 8, the "Management of trusted issuers for client authentication" has changed:
-                        // The behavior to send the Trusted Issuers List by default is off.
-                        //
-                        // In Windows 7 the Trusted Issuers List is sent within the Server Hello TLS record. This list is built
-                        // by the server using certificates from the Trusted Root Authorities certificate store.
-                        // The client side will use the Trusted Issuers List, if not empty, to filter proposed certificates.
-                        return PlatformDetection.IsWindows7 && !Capability.IsTrustedRootCertificateInstalled();
-                    default:
-                        return false;
+                    _serverStream.AuthenticateAsServer(serverCertificate, clientCertificateRequired, protocols.Value, checkCertificateRevocation);
                 }
-            }
-
-            protected abstract Task AuthenticateClient(string targetHost, X509CertificateCollection clientCertificates, bool checkCertificateRevocation);
-
-            protected abstract Task AuthenticateServer(X509Certificate serverCertificate, bool clientCertificateRequired, bool checkCertificateRevocation);
-
-            public void Dispose()
-            {
-                if (_clientStream != null)
+                else
                 {
-                    _clientStream.Dispose();
+                    _serverStream.AuthenticateAsServer(serverCertificate, clientCertificateRequired, checkCertificateRevocation);
                 }
+            });
+    }
 
-                if (_serverStream != null)
-                {
-                    _serverStream.Dispose();
-                }
-            }
-        }
-        
-        public class SyncTest : TestBase
-        {
-            protected override Task AuthenticateClient(string targetHost, X509CertificateCollection clientCertificates, bool checkCertificateRevocation)
-            {
-                return Task.Run( () => { _clientStream.AuthenticateAsClient(targetHost, clientCertificates, checkCertificateRevocation); });
-            }
+    public sealed class ApmSslStreamSystemDefaultTest : SslStreamSystemDefaultTest
+    {
+        protected override Task AuthenticateClientAsync(string targetHost, X509CertificateCollection clientCertificates, bool checkCertificateRevocation, SslProtocols? protocols) =>
+            Task.Factory.FromAsync(
+                (callback, state) => protocols.HasValue ?
+                    _clientStream.BeginAuthenticateAsClient(targetHost, clientCertificates, protocols.Value, checkCertificateRevocation, callback, state) :
+                    _clientStream.BeginAuthenticateAsClient(targetHost, clientCertificates, checkCertificateRevocation, callback, state),
+                _clientStream.EndAuthenticateAsClient,
+                state: null);
 
-            protected override Task AuthenticateServer(X509Certificate serverCertificate, bool clientCertificateRequired, bool checkCertificateRevocation)
-            {
-                return Task.Run( () => { _serverStream.AuthenticateAsServer(serverCertificate, clientCertificateRequired, checkCertificateRevocation); });
-            }
-        }
+        protected override Task AuthenticateServerAsync(X509Certificate serverCertificate, bool clientCertificateRequired, bool checkCertificateRevocation, SslProtocols? protocols) =>
+            Task.Factory.FromAsync(
+                (callback, state) => protocols.HasValue ?
+                    _serverStream.BeginAuthenticateAsServer(serverCertificate, clientCertificateRequired, protocols.Value, checkCertificateRevocation, callback, state) :
+                    _serverStream.BeginAuthenticateAsServer(serverCertificate, clientCertificateRequired, checkCertificateRevocation, callback, state),
+                _serverStream.EndAuthenticateAsServer,
+                state: null);
+    }
 
-        public class ApmTest : TestBase
-        {
-            protected override Task AuthenticateClient(string targetHost, X509CertificateCollection clientCertificates, bool checkCertificateRevocation)
-            {
-                return Task.Factory.FromAsync(
-                    (callback, state) => _clientStream.BeginAuthenticateAsClient(targetHost, clientCertificates, checkCertificateRevocation, callback, state), 
-                    _clientStream.EndAuthenticateAsClient, 
-                    state:null);
-            }
+    public sealed class AsyncSslStreamSystemDefaultTest : SslStreamSystemDefaultTest
+    {
+        protected override Task AuthenticateClientAsync(string targetHost, X509CertificateCollection clientCertificates, bool checkCertificateRevocation, SslProtocols? protocols) =>
+            protocols.HasValue ?
+            _clientStream.AuthenticateAsClientAsync(targetHost, clientCertificates, protocols.Value, checkCertificateRevocation) :
+            _clientStream.AuthenticateAsClientAsync(targetHost, clientCertificates, checkCertificateRevocation);
 
-            protected override Task AuthenticateServer(X509Certificate serverCertificate, bool clientCertificateRequired, bool checkCertificateRevocation)
-            {
-                return Task.Factory.FromAsync(
-                    (callback, state) => _serverStream.BeginAuthenticateAsServer(serverCertificate, clientCertificateRequired, checkCertificateRevocation, callback, state),
-                    _serverStream.EndAuthenticateAsServer,
-                    state:null);
-            }
-        }
-
-        public class AsyncTest : TestBase
-        {
-            protected override Task AuthenticateClient(string targetHost, X509CertificateCollection clientCertificates, bool checkCertificateRevocation)
-            {
-                return _clientStream.AuthenticateAsClientAsync(targetHost, clientCertificates, checkCertificateRevocation);
-            }
-
-            protected override Task AuthenticateServer(X509Certificate serverCertificate, bool clientCertificateRequired, bool checkCertificateRevocation)
-            {
-                return _serverStream.AuthenticateAsServerAsync(serverCertificate, clientCertificateRequired, checkCertificateRevocation);
-            }
-        }
+        protected override Task AuthenticateServerAsync(X509Certificate serverCertificate, bool clientCertificateRequired, bool checkCertificateRevocation, SslProtocols? protocols) =>
+            protocols.HasValue ?
+            _serverStream.AuthenticateAsServerAsync(serverCertificate, clientCertificateRequired, protocols.Value, checkCertificateRevocation) :
+            _serverStream.AuthenticateAsServerAsync(serverCertificate, clientCertificateRequired, checkCertificateRevocation);
     }
 }
