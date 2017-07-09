@@ -391,6 +391,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\DeferredDisposableLifetime.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\EventResetMode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ExecutionContext.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LazyInitializer.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LazyThreadSafetyMode.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\LockRecursionException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ManualResetEvent.cs" />
