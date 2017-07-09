@@ -352,7 +352,6 @@
     <Compile Include="$(BclSourcesRoot)\System\SharedStatics.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Single.cs" />
     <Compile Include="$(BclSourcesRoot)\System\StubHelpers.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\TimeSpan.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TimeZoneInfo.AdjustmentRule.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TimeZoneInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TimeZoneInfo.StringSerializer.cs" />
@@ -457,8 +456,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Globalization\BidiCategory.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\Calendar.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\CalendarData.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CharUnicodeInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CharUnicodeInfoData.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CompareInfo.cs" />
@@ -466,11 +463,8 @@
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureData.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\CultureInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\GlobalizationMode.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\GregorianCalendar.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\GregorianCalendarHelper.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\IdnMapping.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\RegionInfo.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\TextElementEnumerator.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\TextInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\TimeSpanFormat.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\TimeSpanParse.cs" />
@@ -496,7 +490,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Threading\Volatile.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\WaitHandle.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\SpinLock.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Threading\SpinWait.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\LazyInitializer.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadLocal.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Threading\SemaphoreSlim.cs" />

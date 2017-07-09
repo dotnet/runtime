@@ -62,12 +62,6 @@ namespace System.Globalization
     internal static class TimeSpanParse
     {
         // ---- SECTION:  members for internal support ---------*
-        internal static void ValidateStyles(TimeSpanStyles style, String parameterName)
-        {
-            if (style != TimeSpanStyles.None && style != TimeSpanStyles.AssumeNegative)
-                throw new ArgumentException(SR.Argument_InvalidTimeSpanStyles, parameterName);
-        }
-
         internal const int unlimitedDigits = -1;
         internal const int maxFractionDigits = 7;
 
