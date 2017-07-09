@@ -4,15 +4,11 @@
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
-//
-//
 // a set of lightweight static helpers for lazy initialization.
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
 
 namespace System.Threading
 {
@@ -52,7 +48,28 @@ namespace System.Threading
         /// </para>
         /// </remarks>
         public static T EnsureInitialized<T>(ref T target) where T : class =>
-            Volatile.Read<T>(ref target) ?? EnsureInitializedCore<T>(ref target, LazyHelpers<T>.s_activatorFactorySelector);
+            Volatile.Read(ref target) ?? EnsureInitializedCore(ref target);
+
+        /// <summary>
+        /// Initializes a target reference type with the type's default constructor (slow path)
+        /// </summary>
+        /// <typeparam name="T">The reference type of the reference to be initialized.</typeparam>
+        /// <param name="target">The variable that need to be initialized</param>
+        /// <returns>The initialized variable</returns>
+        private static T EnsureInitializedCore<T>(ref T target) where T : class
+        {
+            try
+            {
+                Interlocked.CompareExchange(ref target, Activator.CreateInstance<T>(), null);
+            }
+            catch (MissingMethodException)
+            {
+                throw new MissingMemberException(SR.Lazy_CreateValue_NoParameterlessCtorForT);
+            }
+
+            Debug.Assert(target != null);
+            return target;
+        }
 
         /// <summary>
         /// Initializes a target reference type using the specified function if it has not already been
@@ -83,7 +100,7 @@ namespace System.Threading
         /// </para>
         /// </remarks>
         public static T EnsureInitialized<T>(ref T target, Func<T> valueFactory) where T : class =>
-            Volatile.Read<T>(ref target) ?? EnsureInitializedCore<T>(ref target, valueFactory);
+            Volatile.Read(ref target) ?? EnsureInitializedCore(ref target, valueFactory);
 
         /// <summary>
         /// Initialize the target using the given delegate (slow path).
@@ -125,7 +142,41 @@ namespace System.Threading
                 return target;
             }
 
-            return EnsureInitializedCore<T>(ref target, ref initialized, ref syncLock, LazyHelpers<T>.s_activatorFactorySelector);
+            return EnsureInitializedCore(ref target, ref initialized, ref syncLock);
+        }
+
+        /// <summary>
+        /// Ensure the target is initialized and return the value (slow path). This overload permits nulls
+        /// and also works for value type targets. Uses the type's default constructor to create the value.
+        /// </summary>
+        /// <typeparam name="T">The type of target.</typeparam>
+        /// <param name="target">A reference to the target to be initialized.</param>
+        /// <param name="initialized">A reference to a location tracking whether the target has been initialized.</param>
+        /// <param name="syncLock">A reference to a location containing a mutual exclusive lock. If <paramref name="syncLock"/> is null, 
+        /// a new object will be instantiated.</param>
+        /// </param>
+        /// <returns>The initialized object.</returns>
+        private static T EnsureInitializedCore<T>(ref T target, ref bool initialized, ref object syncLock)
+        {
+            // Lazily initialize the lock if necessary and,  then double check if initialization is still required.
+            lock (EnsureLockInitialized(ref syncLock))
+            {
+                if (!Volatile.Read(ref initialized))
+                {
+                    try
+                    {
+                        target = Activator.CreateInstance<T>();
+                    }
+                    catch (MissingMethodException)
+                    {
+                        throw new MissingMemberException(SR.Lazy_CreateValue_NoParameterlessCtorForT);
+                    }
+
+                    Volatile.Write(ref initialized, true);
+                }
+            }
+
+            return target;
         }
 
         /// <summary>
@@ -150,31 +201,8 @@ namespace System.Threading
                 return target;
             }
 
-            return EnsureInitializedCore<T>(ref target, ref initialized, ref syncLock, valueFactory);
+            return EnsureInitializedCore(ref target, ref initialized, ref syncLock, valueFactory);
         }
-
-        /// <summary>
-        /// Ensure the lock object is intialized.
-        /// </summary>
-        /// <param name="syncLock">A reference to a location containing a mutual exclusive lock. If <paramref name="syncLock"/> is null,
-        /// a new object will be instantiated.</param>
-        /// <returns>Initialized lock object.</returns>
-        private static object EnsureLockInitialized(ref object syncLock) =>
-            syncLock ??
-            Interlocked.CompareExchange(ref syncLock, new object(), null) ??
-            syncLock;
-
-        /// <summary>
-        /// Initializes a target reference type with a specified function if it has not already been initialized.
-        /// </summary>
-        /// <typeparam name="T">The type of the reference to be initialized. Has to be reference type.</typeparam>
-        /// <param name="target">A reference of type <typeparamref name="T"/> to initialize if it has not already been initialized.</param>
-        /// <param name="syncLock">A reference to an object used as the mutually exclusive lock for initializing
-        /// <paramref name="target"/>. If <paramref name="syncLock"/> is null, a new object will be instantiated.</param>
-        /// <param name="valueFactory">The <see cref="T:System.Func{T}"/> invoked to initialize the reference.</param>
-        /// <returns>The initialized value of type <typeparamref name="T"/>.</returns>
-        public static T EnsureInitialized<T>(ref T target, ref object syncLock, Func<T> valueFactory) where T : class =>
-            Volatile.Read(ref target) ?? EnsureInitializedCore<T>(ref target, ref syncLock, valueFactory);
 
         /// <summary>
         /// Ensure the target is initialized and return the value (slow path). This overload permits nulls
@@ -191,7 +219,7 @@ namespace System.Threading
         /// <returns>The initialized object.</returns>
         private static T EnsureInitializedCore<T>(ref T target, ref bool initialized, ref object syncLock, Func<T> valueFactory)
         {
-            // Lazily initialize the lock if necessary and then double check if initialization is still required.
+            // Lazily initialize the lock if necessary and,  then double check if initialization is still required.
             lock (EnsureLockInitialized(ref syncLock))
             {
                 if (!Volatile.Read(ref initialized))
@@ -203,6 +231,18 @@ namespace System.Threading
 
             return target;
         }
+
+        /// <summary>
+        /// Initializes a target reference type with a specified function if it has not already been initialized.
+        /// </summary>
+        /// <typeparam name="T">The type of the reference to be initialized. Has to be reference type.</typeparam>
+        /// <param name="target">A reference of type <typeparamref name="T"/> to initialize if it has not already been initialized.</param>
+        /// <param name="syncLock">A reference to an object used as the mutually exclusive lock for initializing
+        /// <paramref name="target"/>. If <paramref name="syncLock"/> is null, a new object will be instantiated.</param>
+        /// <param name="valueFactory">The <see cref="T:System.Func{T}"/> invoked to initialize the reference.</param>
+        /// <returns>The initialized value of type <typeparamref name="T"/>.</returns>
+        public static T EnsureInitialized<T>(ref T target, ref object syncLock, Func<T> valueFactory) where T : class =>
+            Volatile.Read(ref target) ?? EnsureInitializedCore(ref target, ref syncLock, valueFactory);
 
         /// <summary>
         /// Ensure the target is initialized and return the value (slow path). This overload works only for reference type targets.
@@ -218,7 +258,7 @@ namespace System.Threading
         /// <returns>The initialized object.</returns>
         private static T EnsureInitializedCore<T>(ref T target, ref object syncLock, Func<T> valueFactory) where T : class
         {
-            // Lazily initialize the lock if necessary and then double check if initialization is still required.
+            // Lazily initialize the lock if necessary and,  then double check if initialization is still required.
             lock (EnsureLockInitialized(ref syncLock))
             {
                 if (Volatile.Read(ref target) == null)
@@ -233,23 +273,16 @@ namespace System.Threading
 
             return target;
         }
-    }
 
-    // Caches the activation selector function to avoid delegate allocations.
-    internal static class LazyHelpers<T>
-    {
-        internal static Func<T> s_activatorFactorySelector = new Func<T>(ActivatorFactorySelector);
-
-        private static T ActivatorFactorySelector()
-        {
-            try
-            {
-                return (T)Activator.CreateInstance(typeof(T));
-            }
-            catch (MissingMethodException)
-            {
-                throw new MissingMemberException(SR.Lazy_CreateValue_NoParameterlessCtorForT);
-            }
-        }
+        /// <summary>
+        /// Ensure the lock object is initialized.
+        /// </summary>
+        /// <param name="syncLock">A reference to a location containing a mutual exclusive lock. If <paramref name="syncLock"/> is null,
+        /// a new object will be instantiated.</param>
+        /// <returns>Initialized lock object.</returns>
+        private static object EnsureLockInitialized(ref object syncLock) =>
+            syncLock ??
+            Interlocked.CompareExchange(ref syncLock, new object(), null) ??
+            syncLock;
     }
 }

@@ -3396,7 +3396,6 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
     };
 
     static const BinderClassID genericReflectionInvocationTypes[] = {
-        CLASS__LAZY_HELPERS,
         CLASS__LAZY
     };
 
