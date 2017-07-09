@@ -965,7 +965,6 @@ DEFINE_METHOD(ASSEMBLYLOADCONTEXT,  RESOLVEUSINGEVENT,          ResolveUsingReso
 DEFINE_CLASS(LAZY,              System,     Lazy`1)
 
 DEFINE_CLASS(LAZY_INITIALIZER,  Threading,  LazyInitializer)
-DEFINE_CLASS(LAZY_HELPERS,      Threading,  LazyHelpers`1)
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(UNKNOWN_WRAPPER,       Interop,                UnknownWrapper)
