@@ -154,11 +154,10 @@ namespace System.Net.Http.Functional.Tests
         [MemberData(nameof(NotSupportedSSLVersionServers))]
         public async Task GetAsync_UnsupportedSSLVersion_Throws(string name, string url)
         {
-            if (ManagedHandlerTestHelpers.IsEnabled &&
-                PlatformDetection.IsWindows &&
-                !PlatformDetection.IsWindows10Version1607OrGreater)
+            if (ManagedHandlerTestHelpers.IsEnabled && !PlatformDetection.IsWindows10Version1607OrGreater)
             {
-                // https://github.com/dotnet/corefx/issues/21925#issuecomment-313408314
+                // On Windows, https://github.com/dotnet/corefx/issues/21925#issuecomment-313408314
+                // On Linux, an older version of OpenSSL may permit negotiating SSLv3.
                 return;
             }
 
