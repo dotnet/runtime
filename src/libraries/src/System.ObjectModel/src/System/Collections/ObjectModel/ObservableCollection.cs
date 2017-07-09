@@ -18,7 +18,7 @@ namespace System.Collections.ObjectModel
     [Serializable]
     [DebuggerTypeProxy(typeof(CollectionDebugView<>))]
     [DebuggerDisplay("Count = {Count}")]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("WindowsBase, Version=3.0.0.0, Culture=Neutral, PublicKeyToken=31bf3856ad364e35")]
+    [System.Runtime.CompilerServices.TypeForwardedFrom("WindowsBase, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     public class ObservableCollection<T> : Collection<T>, INotifyCollectionChanged, INotifyPropertyChanged
     {
         //------------------------------------------------------
@@ -393,7 +393,7 @@ namespace System.Collections.ObjectModel
 
         // this class helps prevent reentrant calls
         [Serializable]
-        [System.Runtime.CompilerServices.TypeForwardedFrom("WindowsBase, Version=3.0.0.0, Culture=Neutral, PublicKeyToken=31bf3856ad364e35")]
+        [System.Runtime.CompilerServices.TypeForwardedFrom("WindowsBase, Version=3.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
         private sealed class SimpleMonitor : IDisposable
         {
             internal int _busyCount; // Only used during (de)serialization to maintain compatibility with desktop. Do not rename (binary serialization)
