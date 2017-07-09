@@ -4,18 +4,12 @@
 
 // =+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+
 //
-//
-//
 // Central spin logic used across the entire code-base.
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using System;
-using System.Runtime.ConstrainedExecution;
-using System.Threading;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
-using System.Diagnostics.CodeAnalysis;
+using Internal.Runtime.Augments;
 
 namespace System.Threading
 {
@@ -51,7 +45,7 @@ namespace System.Threading
     /// <remarks>
     /// <para>
     /// <see cref="SpinWait"/> encapsulates common spinning logic. On single-processor machines, yields are
-    /// always used instead of busy waits, and on computers with Intel processors employing Hyper-Threading
+    /// always used instead of busy waits, and on computers with Intel(R) processors employing Hyper-Threading
     /// technology, it helps to prevent hardware thread starvation. SpinWait encapsulates a good mixture of
     /// spinning and true yielding.
     /// </para>
@@ -80,14 +74,14 @@ namespace System.Threading
         internal const int SLEEP_1_EVERY_HOW_MANY_TIMES = 20; // After how many yields should we Sleep(1)?
 
         // The number of times we've spun already.
-        private int m_count;
+        private int _count;
 
         /// <summary>
         /// Gets the number of times <see cref="SpinOnce"/> has been called on this instance.
         /// </summary>
         public int Count
         {
-            get { return m_count; }
+            get { return _count; }
         }
 
         /// <summary>
@@ -102,7 +96,7 @@ namespace System.Threading
         /// </remarks>
         public bool NextSpinWillYield
         {
-            get { return m_count > YIELD_THRESHOLD || PlatformHelper.IsSingleProcessor; }
+            get { return _count > YIELD_THRESHOLD || PlatformHelper.IsSingleProcessor; }
         }
 
         /// <summary>
@@ -130,19 +124,20 @@ namespace System.Threading
                 // remove the thread from the scheduler's queue for 10+ms, if the system is
                 // configured to use the (default) coarse-grained system timer.
                 //
-                int yieldsSoFar = (m_count >= YIELD_THRESHOLD ? m_count - YIELD_THRESHOLD : m_count);
+
+                int yieldsSoFar = (_count >= YIELD_THRESHOLD ? _count - YIELD_THRESHOLD : _count);
 
                 if ((yieldsSoFar % SLEEP_1_EVERY_HOW_MANY_TIMES) == (SLEEP_1_EVERY_HOW_MANY_TIMES - 1))
                 {
-                    Thread.Sleep(1);
+                    RuntimeThread.Sleep(1);
                 }
                 else if ((yieldsSoFar % SLEEP_0_EVERY_HOW_MANY_TIMES) == (SLEEP_0_EVERY_HOW_MANY_TIMES - 1))
                 {
-                    Thread.Sleep(0);
+                    RuntimeThread.Sleep(0);
                 }
                 else
                 {
-                    Thread.Yield();
+                    RuntimeThread.Yield();
                 }
             }
             else
@@ -158,11 +153,11 @@ namespace System.Threading
                 // number of spins we are willing to tolerate to reduce delay to the caller,
                 // since we expect most callers will eventually block anyway.
                 //
-                Thread.SpinWait(4 << m_count);
+                RuntimeThread.SpinWait(4 << _count);
             }
 
             // Finally, increment our spin counter.
-            m_count = (m_count == int.MaxValue ? YIELD_THRESHOLD : m_count + 1);
+            _count = (_count == int.MaxValue ? YIELD_THRESHOLD : _count + 1);
         }
 
         /// <summary>
@@ -175,7 +170,7 @@ namespace System.Threading
         /// </remarks>
         public void Reset()
         {
-            m_count = 0;
+            _count = 0;
         }
 
         #region Static Methods
@@ -268,9 +263,7 @@ namespace System.Threading
             return true;
         }
         #endregion
-
     }
-
 
     /// <summary>
     /// A helper class to get the number of processors, it updates the numbers of processors every sampling interval.
@@ -284,7 +277,6 @@ namespace System.Threading
         /// <summary>
         /// Gets the number of available processors
         /// </summary>
-        [SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "Reviewed for thread safety")]
         internal static int ProcessorCount
         {
             get

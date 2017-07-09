@@ -88,7 +88,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\FlagsAttribute.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\FormatException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\FormattableString.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\Calendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarAlgorithmType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarData.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendarWeekRule.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\CalendricalCalculationsHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\ChineseLunisolarCalendar.cs" />
@@ -102,6 +104,8 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\DaylightTime.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\DigitShapes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\EastAsianLunisolarCalendar.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\GregorianCalendar.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\GregorianCalendarHelper.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\GregorianCalendarTypes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\HebrewCalendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\HebrewNumber.cs" />
@@ -120,6 +124,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\StringInfo.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TaiwanCalendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TaiwanLunisolarCalendar.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TextElementEnumerator.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\ThaiBuddhistCalendar.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\TimeSpanStyles.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Globalization\UmAlQuraCalendar.cs" />
@@ -377,6 +382,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\UTF32Encoding.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\UTF7Encoding.cs" />   
     <Compile Include="$(MSBuildThisFileDirectory)System\Text\UTF8Encoding.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\TimeSpan.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\ThreadAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\AbandonedMutexException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ApartmentState.cs" />
@@ -392,6 +398,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\ReaderWriterLockSlim.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\SemaphoreFullException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\SendOrPostCallback.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Threading\SpinWait.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\SynchronizationLockException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\TaskCanceledException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Threading\Tasks\TaskExtensions.cs" />
