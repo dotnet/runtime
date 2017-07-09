@@ -21793,9 +21793,10 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
                 }
 #endif // DEBUG
 
-                CORINFO_CALL_INFO x = {};
-                x.hMethod           = call->gtCallMethHnd;
-                comp->impDevirtualizeCall(call, tree, &x, nullptr);
+                CORINFO_METHOD_HANDLE  method      = call->gtCallMethHnd;
+                unsigned               methodFlags = 0;
+                CORINFO_CONTEXT_HANDLE context     = nullptr;
+                comp->impDevirtualizeCall(call, tree, &method, &methodFlags, &context, nullptr);
             }
         }
     }
