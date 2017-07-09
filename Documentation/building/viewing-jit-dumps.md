@@ -8,7 +8,7 @@ To make sense of the results, it is recommended you also read the [Reading a Jit
 
 The first thing we want to do is setup the .NET Core app we want to dump. Here are the steps to do this, if you don't have one ready:
 
-* Perform a debug build of the CoreCLR repo.
+* Perform a debug build of the CoreCLR repo. You don't need to build tests, so you can pass `skiptests` to the build command to make it faster.
 * Install the [.NET CLI 2.0 preview](https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/dogfooding.md), which we'll use to compile/publish our app.
 * `cd` to where you want your app to be placed, and run `dotnet new console`.
 * Modify your `csproj` file so that it contains a RID (runtime ID) corresponding to the OS you're using in the `<RuntimeIdentifier>` tag. For example, for Windows 10 x64 machine, the project file is:
