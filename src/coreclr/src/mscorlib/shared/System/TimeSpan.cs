@@ -6,7 +6,6 @@ using System.Text;
 using System;
 using System.Runtime;
 using System.Runtime.CompilerServices;
-using System.Runtime.Versioning;
 using System.Diagnostics.Contracts;
 using System.Globalization;
 
@@ -30,8 +29,7 @@ namespace System
     // an appropriate custom ILMarshaler to keep WInRT interop scenarios enabled.
     //
     [Serializable]
-    public struct TimeSpan : IComparable
-        , IComparable<TimeSpan>, IEquatable<TimeSpan>, IFormattable
+    public struct TimeSpan : IComparable, IComparable<TimeSpan>, IEquatable<TimeSpan>, IFormattable
     {
         public const long TicksPerMillisecond = 10000;
         private const double MillisecondsPerTick = 1.0 / TicksPerMillisecond;
@@ -69,10 +67,6 @@ namespace System
         // internal so that DateTime doesn't have to call an extra get
         // method for some arithmetic operations.
         internal long _ticks; // Do not rename (binary serialization)
-
-        //public TimeSpan() {
-        //    _ticks = 0;
-        //}
 
         public TimeSpan(long ticks)
         {
@@ -315,6 +309,11 @@ namespace System
 
         // See System.Globalization.TimeSpanParse and System.Globalization.TimeSpanFormat 
         #region ParseAndFormat
+        private static void ValidateStyles(TimeSpanStyles style, String parameterName)
+        {
+            if (style != TimeSpanStyles.None && style != TimeSpanStyles.AssumeNegative)
+                throw new ArgumentException(SR.Argument_InvalidTimeSpanStyles, parameterName);
+        }
         public static TimeSpan Parse(String s)
         {
             /* Constructs a TimeSpan from a string.  Leading and trailing white space characters are allowed. */
@@ -334,12 +333,12 @@ namespace System
         }
         public static TimeSpan ParseExact(String input, String format, IFormatProvider formatProvider, TimeSpanStyles styles)
         {
-            TimeSpanParse.ValidateStyles(styles, nameof(styles));
+            ValidateStyles(styles, nameof(styles));
             return TimeSpanParse.ParseExact(input, format, formatProvider, styles);
         }
         public static TimeSpan ParseExact(String input, String[] formats, IFormatProvider formatProvider, TimeSpanStyles styles)
         {
-            TimeSpanParse.ValidateStyles(styles, nameof(styles));
+            ValidateStyles(styles, nameof(styles));
             return TimeSpanParse.ParseExactMultiple(input, formats, formatProvider, styles);
         }
         public static Boolean TryParse(String s, out TimeSpan result)
@@ -360,12 +359,12 @@ namespace System
         }
         public static Boolean TryParseExact(String input, String format, IFormatProvider formatProvider, TimeSpanStyles styles, out TimeSpan result)
         {
-            TimeSpanParse.ValidateStyles(styles, nameof(styles));
+            ValidateStyles(styles, nameof(styles));
             return TimeSpanParse.TryParseExact(input, format, formatProvider, styles, out result);
         }
         public static Boolean TryParseExact(String input, String[] formats, IFormatProvider formatProvider, TimeSpanStyles styles, out TimeSpan result)
         {
-            TimeSpanParse.ValidateStyles(styles, nameof(styles));
+            ValidateStyles(styles, nameof(styles));
             return TimeSpanParse.TryParseExactMultiple(input, formats, formatProvider, styles, out result);
         }
         public override String ToString()
@@ -442,7 +441,7 @@ namespace System
 
         // Using floating-point arithmetic directly means that infinities can be returned, which is reasonable
         // if we consider TimeSpan.FromHours(1) / TimeSpan.Zero asks how many zero-second intervals there are in
-        // an hour for which ∞ is the mathematic correct answer. Having TimeSpan.Zero / TimeSpan.Zero return NaN
+        // an hour for which infinity is the mathematic correct answer. Having TimeSpan.Zero / TimeSpan.Zero return NaN
         // is perhaps less useful, but no less useful than an exception.
         public static double operator /(TimeSpan t1, TimeSpan t2) => t1.Ticks / (double)t2.Ticks;
 
