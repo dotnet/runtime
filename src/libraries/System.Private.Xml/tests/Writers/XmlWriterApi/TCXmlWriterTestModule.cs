@@ -97,6 +97,7 @@ namespace System.Xml.Tests
 
         [Fact]
         [OuterLoop]
+        [ActiveIssue(22042, TargetFrameworkMonikers.UapNotUapAot)]
         public static void TCFullEndElement()
         {
             RunTest(() => new TCFullEndElement() { Attribute = new TestCase() { Name = "WriteFullEndElement" } });
