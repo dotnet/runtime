@@ -14,6 +14,9 @@
 #if !defined(_TARGET_64BIT_)
 #include "decomposelongs.h"
 #endif
+#ifndef LEGACY_BACKEND
+#include "lower.h" // for LowerRange()
+#endif
 
 /*****************************************************************************
  *
@@ -1023,9 +1026,12 @@ void Compiler::fgExtendDbgLifetimes()
                     LIR::Range initRange = LIR::EmptyRange();
                     initRange.InsertBefore(nullptr, zero, store);
 
-#if !defined(_TARGET_64BIT_) && !defined(LEGACY_BACKEND)
+#ifndef LEGACY_BACKEND
+#if !defined(_TARGET_64BIT_)
                     DecomposeLongs::DecomposeRange(this, blockWeight, initRange);
-#endif // !defined(_TARGET_64BIT_) && !defined(LEGACY_BACKEND)
+#endif // !defined(_TARGET_64BIT_)
+                    m_pLowering->LowerRange(std::move(initRange));
+#endif // !LEGACY_BACKEND
 
                     // Naively inserting the initializer at the end of the block may add code after the block's
                     // terminator, in which case the inserted code will never be executed (and the IR for the
