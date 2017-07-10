@@ -39,7 +39,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //    - Setting the appropriate candidates for a store of a multi-reg call return value.
 //    - Requesting an internal register for SIMD12 stores.
 //    - Handling of contained immediates.
-//    - Widening operations of unsigneds. (TODO: Move to 1st phase of Lowering)
 
 void Lowering::TreeNodeInfoInitStoreLoc(GenTreeLclVarCommon* storeLoc)
 {
@@ -92,10 +91,6 @@ void Lowering::TreeNodeInfoInitStoreLoc(GenTreeLclVarCommon* storeLoc)
     {
         MakeSrcContained(storeLoc, op1);
     }
-
-    // TODO: This should be moved to Lowering, but it widens the types, which changes the behavior
-    // of the above condition.
-    LowerStoreLoc(storeLoc);
 }
 
 //------------------------------------------------------------------------

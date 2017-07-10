@@ -246,7 +246,6 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
                 info->srcCount = 1;
             }
             info->dstCount = 0;
-            LowerStoreLoc(tree->AsLclVarCommon());
             TreeNodeInfoInitStoreLoc(tree->AsLclVarCommon());
             break;
 
