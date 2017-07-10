@@ -13,9 +13,10 @@ namespace System.Net.Tests
     // Utilities for generating URL prefixes for HttpListener
     public class HttpListenerFactory : IDisposable
     {
-        const int MinPort = 1025;
-        private static readonly object s_createListenerLock = new object();
-        private static int s_nextPort = MinPort;
+        const int StartPort = 1025;
+        const int MaxStartAttempts = IPEndPoint.MaxPort - StartPort + 1;
+        private static readonly object s_nextPortLock = new object();
+        private static int s_nextPort = StartPort;
 
         private readonly HttpListener _processPrefixListener;
         private readonly Exception _processPrefixException;
@@ -33,54 +34,45 @@ namespace System.Net.Tests
             _path = path ?? Guid.NewGuid().ToString("N");
             string pathComponent = string.IsNullOrEmpty(_path) ? _path : $"{_path}/";
 
-            lock (s_createListenerLock)
+            for (int attempt = 0; attempt < MaxStartAttempts; attempt++)
             {
-                foreach (int port in Enumerable.Range(s_nextPort, IPEndPoint.MaxPort - s_nextPort + 1).Concat(Enumerable.Range(MinPort, s_nextPort - MinPort)))
+                int port = GetNextPort();
+                string prefix = $"http://{hostname}:{port}/{pathComponent}";
+
+                var listener = new HttpListener();
+                try
                 {
-                    string prefix = $"http://{hostname}:{port}/{pathComponent}";
+                    listener.Prefixes.Add(prefix);
+                    listener.Start();
 
-                    var listener = new HttpListener();
-                    try
+                    _processPrefixListener = listener;
+                    _processPrefix = prefix;
+                    _port = port;
+                    break;
+                }
+                catch (Exception e)
+                {
+                    // can't use this prefix
+                    listener.Close();
+
+                    // Remember the exception for later
+                    _processPrefixException = e;
+
+                    if (e is HttpListenerException listenerException)
                     {
-                        listener.Prefixes.Add(prefix);
-                        listener.Start();
-
-                        _processPrefixListener = listener;
-                        _processPrefix = prefix;
-                        _port = port;
-                        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows) && Helpers.IsManagedImplementation)
+                        // If we can't access the host (e.g. if it is '+' or '*' and the current user is the administrator)
+                        // then throw.
+                        const int ERROR_ACCESS_DENIED = 5;
+                        if (listenerException.ErrorCode == ERROR_ACCESS_DENIED && (hostname == "*" || hostname == "+"))
                         {
-                            // Try to avoid reusing the same port from test to test if we're using
-                            // the WinHttp ClientWebSocket against the managed HttpListener.
-                            // https://github.com/dotnet/corefx/issues/20439
-                            s_nextPort = port + 1;
+                            throw new InvalidOperationException($"Access denied for host {hostname}");
                         }
-                        break;
                     }
-                    catch (Exception e)
+                    else if (!(e is SocketException))
                     {
-                        // can't use this prefix
-                        listener.Close();
-
-                        // Remember the exception for later
-                        _processPrefixException = e;
-
-                        if (e is HttpListenerException listenerException)
-                        {
-                            // If we can't access the host (e.g. if it is '+' or '*' and the current user is the administrator)
-                            // then throw.
-                            const int ERROR_ACCESS_DENIED = 5;
-                            if (listenerException.ErrorCode == ERROR_ACCESS_DENIED && (hostname == "*" || hostname == "+"))
-                            {
-                                throw new InvalidOperationException($"Access denied for host {hostname}");
-                            }
-                        }
-                        else if (!(e is SocketException))
-                        {
-                            // If this is not an HttpListenerException or SocketException, something very wrong has happened, and there's no point
-                            // in trying again.
-                            break;
-                        }
+                        // If this is not an HttpListenerException or SocketException, something very wrong has happened, and there's no point
+                        // in trying again.
+                        break;
                     }
                 }
             }
@@ -202,6 +194,19 @@ namespace System.Net.Tests
         public byte[] GetContent(string requestType, string text, bool headerOnly)
         {
             return GetContent("1.1", requestType, query: null, text: text, headers: null, headerOnly: headerOnly);
+        }
+
+        private static int GetNextPort()
+        {
+            lock (s_nextPortLock)
+            {
+                int port = s_nextPort++;
+                if (s_nextPort > IPEndPoint.MaxPort)
+                {
+                    s_nextPort = StartPort;
+                }
+                return port;
+            }
         }
     }
 
