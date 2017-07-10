@@ -36,11 +36,6 @@ namespace System.ComponentModel
         internal abstract object FromString(string value, NumberFormatInfo formatInfo);
 
         /// <summary>
-        /// Convert the given value to a string using the given CultureInfo
-        /// </summary>
-        internal abstract object FromString(string value, CultureInfo culture);
-
-        /// <summary>
         /// Create an error based on the failed text and the exception thrown.
         /// </summary>
         internal virtual Exception FromStringError(string failedText, Exception innerException)

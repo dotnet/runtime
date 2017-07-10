@@ -26,15 +26,6 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Convert the given value to a string using the given CultureInfo
-        /// </summary>
-        internal override object FromString(string value, CultureInfo culture)
-        {
-            return Int16.Parse(value, culture);
-        }
-
-
-        /// <summary>
         /// Convert the given value to a string using the given formatInfo
         /// </summary>
         internal override object FromString(string value, NumberFormatInfo formatInfo)

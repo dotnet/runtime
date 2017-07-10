@@ -91,15 +91,6 @@ namespace System.ComponentModel
             return Decimal.Parse(value, NumberStyles.Float, formatInfo);
         }
 
-
-        /// <summary>
-        /// Convert the given value to a string using the given CultureInfo
-        /// </summary>
-        internal override object FromString(string value, CultureInfo culture)
-        {
-            return Decimal.Parse(value, culture);
-        }
-
         /// <summary>
         /// Convert the given value from a string using the given formatInfo
         /// </summary>
