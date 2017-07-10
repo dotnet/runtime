@@ -385,6 +385,12 @@
     <Compile Include="$(CommonPath)\System\Net\HttpStatusDescription.cs">
       <Link>Common\System\Net\HttpStatusDescription.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Security\CertificateHelper.cs">
+      <Link>Common\System\Net\Security\CertificateHelper.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Security\CertificateHelper.Uap.cs">
+      <Link>Common\System\Net\Security\CertificateHelper.Uap.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\StringExtensions.cs">
       <Link>Common\System\StringExtensions.cs</Link>
     </Compile>

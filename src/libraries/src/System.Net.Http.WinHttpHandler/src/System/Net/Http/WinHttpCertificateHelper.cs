@@ -11,7 +11,6 @@ namespace System.Net.Http
 {
     internal static class WinHttpCertificateHelper
     {
-        private const string ClientAuthenticationOID = "1.3.6.1.5.5.7.3.2";
         private static readonly Oid s_serverAuthOid = new Oid("1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.1");
         
         // TODO: Issue #2165. Merge with similar code used in System.Net.Security move to Common/src//System/Net.
@@ -81,51 +80,7 @@ namespace System.Net.Http
             }
         }
 
-        public static X509Certificate2 GetEligibleClientCertificate()
-        {
-            // Get initial list of client certificates from the MY store.
-            X509Certificate2Collection candidateCerts;
-            using (var myStore = new X509Store(StoreName.My, StoreLocation.CurrentUser))
-            {
-                myStore.Open(OpenFlags.OpenExistingOnly | OpenFlags.ReadOnly);
-                candidateCerts = myStore.Certificates;
-            }
-            
-            return GetEligibleClientCertificate(candidateCerts);
-        }
-        
         // TODO: Issue #3891. Get the Trusted Issuers List from WinHTTP and use that to help narrow down
         // the list of eligible client certificates.
-        public static X509Certificate2 GetEligibleClientCertificate(X509Certificate2Collection candidateCerts)
-        {
-            if (candidateCerts.Count == 0)
-            {
-                return null;
-            }
-
-            // Reduce the set of certificates to match the proper 'Client Authentication' criteria.
-            candidateCerts = candidateCerts.Find(X509FindType.FindByKeyUsage, X509KeyUsageFlags.DigitalSignature, false);
-            candidateCerts = candidateCerts.Find(X509FindType.FindByApplicationPolicy, ClientAuthenticationOID, false);
-
-            // Build a new collection with certs that have a private key. Need to do this
-            // manually because there is no X509FindType to match this criteria.
-            var eligibleCerts = new X509Certificate2Collection();
-            foreach (X509Certificate2 cert in candidateCerts)
-            {
-                if (cert.HasPrivateKey)
-                {
-                    eligibleCerts.Add(cert);
-                }
-            }
-            
-            if (eligibleCerts.Count > 0)
-            {
-                return eligibleCerts[0];
-            }
-            else
-            {
-                return null;
-            }
-        }
     }
 }

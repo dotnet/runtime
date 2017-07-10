@@ -87,6 +87,12 @@
   </ItemGroup>
   <!-- Windows : Win32 + WinRT -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(TargetGroup)' == 'uap'">
+    <Compile Include="$(CommonPath)\System\Net\Security\CertificateHelper.cs">
+      <Link>Common\System\Net\Security\CertificateHelper.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Security\CertificateHelper.Uap.cs">
+      <Link>Common\System\Net\Security\CertificateHelper.Uap.cs</Link>
+    </Compile>  
     <Compile Include="System\Net\WebSockets\WebSocketHandle.WinRT.cs" />
     <Compile Include="System\Net\WebSockets\WinRTWebSocket.cs" />
   </ItemGroup>

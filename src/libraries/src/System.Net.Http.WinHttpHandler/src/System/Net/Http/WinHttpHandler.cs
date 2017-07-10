@@ -1125,11 +1125,11 @@ namespace System.Net.Http
             X509Certificate2 clientCertificate = null;
             if (_clientCertificateOption == ClientCertificateOption.Manual)
             {
-                clientCertificate = WinHttpCertificateHelper.GetEligibleClientCertificate(ClientCertificates);
+                clientCertificate = CertificateHelper.GetEligibleClientCertificate(ClientCertificates);
             }
             else
             {
-                clientCertificate = WinHttpCertificateHelper.GetEligibleClientCertificate();
+                clientCertificate = CertificateHelper.GetEligibleClientCertificate();
             }
 
             if (clientCertificate != null)

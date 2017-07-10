@@ -8,14 +8,27 @@ using System.Net.Test.Common;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "dotnet/corefx #20010")]
     public class HttpClientHandler_ClientCertificates_Test
     {
+        public static bool CanTestCertificates =>
+            Capability.IsTrustedRootCertificateInstalled() &&
+            (BackendSupportsCustomCertificateHandling || Capability.AreHostsFileNamesInstalled());
+
+        public static bool CanTestClientCertificates =>
+            CanTestCertificates && BackendSupportsCustomCertificateHandling;
+
+        public HttpClientHandler_ClientCertificates_Test(ITestOutputHelper output)
+        {
+            _output = output;
+        }
+
+        private readonly ITestOutputHelper _output;
         [Fact]
         public void ClientCertificateOptions_Default()
         {
@@ -91,6 +104,33 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
+        [Fact]
+        public async Task Manual_SendClientCertificateToRemoteServer_SentMatchesReceived()
+        {
+            if (!CanTestClientCertificates) // can't use [Conditional*] right now as it's evaluated at the wrong time for the managed handler
+            {
+                _output.WriteLine($"Skipping {nameof(Manual_CertificateSentMatchesCertificateReceived_Success)}()");
+                return;
+            }
+
+            var handler = new HttpClientHandler();
+            var cert = Configuration.Certificates.GetClientCertificate();
+            handler.ClientCertificates.Add(cert);
+            using (var client = new HttpClient(handler))
+            {
+                HttpResponseMessage response = await client.GetAsync(Configuration.Http.EchoClientCertificateRemoteServer);
+                _output.WriteLine($"{(int)response.StatusCode} {response.ReasonPhrase}");
+                string body = await response.Content.ReadAsStringAsync();
+                _output.WriteLine(body);
+
+                byte[] bytes = Convert.FromBase64String(body);
+                var receivedCert = new X509Certificate2(bytes);
+                Assert.Equal(cert, receivedCert);
+            }
+        }
+
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "dotnet/corefx #20010")]
+        [OuterLoop] // TODO: Issue #11345
         [ActiveIssue(9543)] // fails sporadically with 'WinHttpException : The server returned an invalid or unrecognized response' or 'TaskCanceledException : A task was canceled'
         [Theory]
         [InlineData(6, false)]
@@ -101,7 +141,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (BackendDoesNotSupportCustomCertificateHandling) // can't use [Conditional*] right now as it's evaluated at the wrong time for the managed handler
             {
-                Console.WriteLine($"Skipping {nameof(Manual_CertificateSentMatchesCertificateReceived_Success)}()");
+                _output.WriteLine($"Skipping {nameof(Manual_CertificateSentMatchesCertificateReceived_Success)}()");
                 return;
             }
 

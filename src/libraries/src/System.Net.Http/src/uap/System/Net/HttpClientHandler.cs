@@ -291,9 +291,16 @@ namespace System.Net.Http
 
         public X509CertificateCollection ClientCertificates
         {
-            // TODO: Not yet implemented. Issue #7623.
             get
             {
+                if (_clientCertificateOptions != ClientCertificateOption.Manual)
+                {
+                    throw new InvalidOperationException(SR.Format(
+                        SR.net_http_invalid_enable_first,
+                        nameof(ClientCertificateOptions),
+                        nameof(ClientCertificateOption.Manual)));
+                }
+
                 if (_clientCertificates == null)
                 {
                     _clientCertificates = new X509Certificate2Collection();
@@ -477,6 +484,18 @@ namespace System.Net.Http
         {
             if (ClientCertificateOptions == ClientCertificateOption.Manual)
             {
+                if (_clientCertificates != null && _clientCertificates.Count > 0)
+                {
+                    RTCertificate cert = await CertificateHelper.ConvertDotNetClientCertToWinRtClientCertAsync(_clientCertificates[0]);
+                    if (cert == null)
+                    {
+                        throw new PlatformNotSupportedException(string.Format(CultureInfo.InvariantCulture,
+                            SR.net_http_feature_UWPClientCertSupportRequiresCertInPersonalCertificateStore));
+                    }
+
+                    _rtFilter.ClientCertificate = cert;
+                }
+
                 return;
             }
 
@@ -760,7 +779,7 @@ namespace System.Net.Http
             IReadOnlyList<RTChainValidationResult> certErrors)
         {
             // Convert WinRT certificate to .NET certificate.
-            X509Certificate2 serverCert = ConvertPublicKeyCertificate(cert);
+            X509Certificate2 serverCert = CertificateHelper.ConvertPublicKeyCertificate(cert);
 
             // Create .NET X509Chain from the WinRT information. We need to rebuild the chain since WinRT only
             // gives us an array of intermediate certificates and not a X509Chain object.
@@ -768,7 +787,7 @@ namespace System.Net.Http
             SslPolicyErrors sslPolicyErrors = SslPolicyErrors.None;
             foreach (RTCertificate intermediateCert in intermediateCerts)
             {
-                serverChain.ChainPolicy.ExtraStore.Add(ConvertPublicKeyCertificate(cert));
+                serverChain.ChainPolicy.ExtraStore.Add(CertificateHelper.ConvertPublicKeyCertificate(cert));
             }
             serverChain.ChainPolicy.RevocationMode = X509RevocationMode.Online; // WinRT always checks revocation.
             serverChain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
@@ -813,13 +832,6 @@ namespace System.Net.Http
             }
 
             return success;
-        }
-
-        private X509Certificate2 ConvertPublicKeyCertificate(RTCertificate cert)
-        {
-            // Convert Windows X509v2 cert to .NET X509v2 cert.
-            RTIBuffer blob = cert.GetCertificateBlob();
-            return new X509Certificate2(blob.ToArray());
         }
 
         #endregion Helpers
