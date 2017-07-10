@@ -117,7 +117,7 @@ could update these locations in place, but that is not recommended since they ar
 
 ## Update CoreCLR using runtime nuget package
 
-# WARNING: TODO: This section has been broken when Microsoft.Netcore.App included the CorCLR binaries.  We need to update this. 
+### WARNING: TODO: This section has been broken when Microsoft.Netcore.App included the CoreCLR binaries.  We need to update this. 
 
 Updating CoreCLR from raw binary output is easier for quick one-off testing but using the nuget package is better
 for referencing your CoreCLR build in your actual application because of it does not require manual copying of files
