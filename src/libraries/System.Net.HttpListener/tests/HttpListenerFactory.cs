@@ -7,17 +7,16 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.IO;
 
 namespace System.Net.Tests
 {
     // Utilities for generating URL prefixes for HttpListener
     public class HttpListenerFactory : IDisposable
     {
-        const int StartPort = 1024;
+        const int StartPort = 1025;
         const int MaxStartAttempts = IPEndPoint.MaxPort - StartPort + 1;
-        private static int s_port = StartPort;
-        private static readonly object s_portLock = new object();
+        private static readonly object s_nextPortLock = new object();
+        private static int s_nextPort = StartPort;
 
         private readonly HttpListener _processPrefixListener;
         private readonly Exception _processPrefixException;
@@ -199,12 +198,12 @@ namespace System.Net.Tests
 
         private static int GetNextPort()
         {
-            lock (s_portLock)
+            lock (s_nextPortLock)
             {
-                int port = s_port++;
-                if (s_port > IPEndPoint.MaxPort)
+                int port = s_nextPort++;
+                if (s_nextPort > IPEndPoint.MaxPort)
                 {
-                    s_port = StartPort;
+                    s_nextPort = StartPort;
                 }
                 return port;
             }
