@@ -2869,6 +2869,7 @@ class Tests
 		}
 	}
 
+	[Category ("!BITCODE")]
 	public static int test_1_basic_filter_catch () {
 		try {
 			MyException e = new MyException ("");
@@ -2880,6 +2881,7 @@ class Tests
 		return 0;
 	}
 
+	[Category ("!BITCODE")]
 	public static int test_1234_complicated_filter_catch () {
 		string res = "init";
 		try {
@@ -2921,6 +2923,7 @@ class Tests
     [MethodImpl( MethodImplOptions.NoInlining )]
     private static bool ExceptionFilter( byte x, FooStruct item ) => true;
 
+	[Category ("!BITCODE")]
 	public static int test_0_filter_caller_area () {
         try {
             throw new Exception();

@@ -1992,8 +1992,10 @@ public class Tests
 
 	public static int test_0_isreference_intrins () {
 		IFaceIsRef iface = new ClassIsRef ();
-		Console.WriteLine ("X: " + iface.is_ref<AStruct3<int, int, int>> ());
-		Console.WriteLine ("X: " + iface.is_ref<AStruct3<string, int, int>> ());
+		if (iface.is_ref<AStruct3<int, int, int>> ())
+			return 1;
+		if (!iface.is_ref<AStruct3<string, int, int>> ())
+			return 2;
 		return 0;
 	}
 }
