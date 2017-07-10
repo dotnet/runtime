@@ -8,15 +8,16 @@ using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.IO;
-using System.Threading;
 
 namespace System.Net.Tests
 {
     // Utilities for generating URL prefixes for HttpListener
     public class HttpListenerFactory : IDisposable
     {
-        const int MaxStartAttempts = 100;
-        private static int s_port = 10000;
+        const int StartPort = 1024;
+        const int MaxStartAttempts = IPEndPoint.MaxPort - StartPort + 1;
+        private static int s_port = StartPort;
+        private static readonly object s_portLock = new object();
 
         private readonly HttpListener _processPrefixListener;
         private readonly Exception _processPrefixException;
@@ -36,7 +37,7 @@ namespace System.Net.Tests
 
             for (int attempt = 0; attempt < MaxStartAttempts; attempt++)
             {
-                int port = Interlocked.Increment(ref s_port);
+                int port = GetNextPort();
                 string prefix = $"http://{hostname}:{port}/{pathComponent}";
 
                 var listener = new HttpListener();
@@ -194,6 +195,19 @@ namespace System.Net.Tests
         public byte[] GetContent(string requestType, string text, bool headerOnly)
         {
             return GetContent("1.1", requestType, query: null, text: text, headers: null, headerOnly: headerOnly);
+        }
+
+        private static int GetNextPort()
+        {
+            lock (s_portLock)
+            {
+                int port = s_port++;
+                if (s_port > IPEndPoint.MaxPort)
+                {
+                    s_port = StartPort;
+                }
+                return port;
+            }
         }
     }
 
