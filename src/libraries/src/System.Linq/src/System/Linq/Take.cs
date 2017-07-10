@@ -21,14 +21,12 @@ namespace System.Linq
                 return EmptyPartition<TSource>.Instance;
             }
 
-            IPartition<TSource> partition = source as IPartition<TSource>;
-            if (partition != null)
+            if (source is IPartition<TSource> partition)
             {
                 return partition.Take(count);
             }
 
-            IList<TSource> sourceList = source as IList<TSource>;
-            if (sourceList != null)
+            if (source is IList<TSource> sourceList)
             {
                 return new ListPartition<TSource>(sourceList, 0, count - 1);
             }

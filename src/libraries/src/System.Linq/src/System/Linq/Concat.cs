@@ -21,10 +21,9 @@ namespace System.Linq
                 throw Error.ArgumentNull(nameof(second));
             }
 
-            var firstConcat = first as ConcatIterator<TSource>;
-            return firstConcat != null ?
-                firstConcat.Concat(second) :
-                new Concat2Iterator<TSource>(first, second);
+            return first is ConcatIterator<TSource> firstConcat
+                ? firstConcat.Concat(second)
+                : new Concat2Iterator<TSource>(first, second);
         }
 
         /// <summary>
@@ -61,9 +60,9 @@ namespace System.Linq
 
             internal override ConcatIterator<TSource> Concat(IEnumerable<TSource> next)
             {
-                bool hasOnlyCollections = _first is ICollection<TSource> &&
-                                          _second is ICollection<TSource> &&
-                                          next is ICollection<TSource>;
+                bool hasOnlyCollections = next is ICollection<TSource> &&
+                                          _first is ICollection<TSource> &&
+                                          _second is ICollection<TSource>;
                 return new ConcatNIterator<TSource>(this, next, 2, hasOnlyCollections);
             }
 

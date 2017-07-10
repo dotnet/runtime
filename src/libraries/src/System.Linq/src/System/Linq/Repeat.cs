@@ -69,10 +69,8 @@ namespace System.Linq
                 return false;
             }
 
-            public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector)
-            {
-                return new SelectIPartitionIterator<TResult, TResult2>(this, selector);
-            }
+            public override IEnumerable<TResult2> Select<TResult2>(Func<TResult, TResult2> selector) =>
+                new SelectIPartitionIterator<TResult, TResult2>(this, selector);
 
             public TResult[] ToArray()
             {
@@ -96,10 +94,7 @@ namespace System.Linq
                 return list;
             }
 
-            public int GetCount(bool onlyIfCheap)
-            {
-                return _count;
-            }
+            public int GetCount(bool onlyIfCheap) => _count;
 
             public IPartition<TResult> Skip(int count)
             {

@@ -98,7 +98,7 @@ namespace System.Linq
         /// Returns an <see cref="T:TSource[]"/> that contains the items of this node's singly-linked list in reverse.
         /// </summary>
         /// <param name="count">The number of items in this node.</param>
-        public TSource[] ToArray(int count)
+        private TSource[] ToArray(int count)
         {
             Debug.Assert(count == GetCount());
 

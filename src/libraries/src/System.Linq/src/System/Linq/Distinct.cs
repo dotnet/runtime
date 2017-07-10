@@ -9,10 +9,7 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        public static IEnumerable<TSource> Distinct<TSource>(this IEnumerable<TSource> source)
-        {
-            return Distinct(source, null);
-        }
+        public static IEnumerable<TSource> Distinct<TSource>(this IEnumerable<TSource> source) => Distinct(source, null);
 
         public static IEnumerable<TSource> Distinct<TSource>(this IEnumerable<TSource> source, IEqualityComparer<TSource> comparer)
         {
@@ -42,10 +39,7 @@ namespace System.Linq
                 _comparer = comparer;
             }
 
-            public override Iterator<TSource> Clone()
-            {
-                return new DistinctIterator<TSource>(_source, _comparer);
-            }
+            public override Iterator<TSource> Clone() => new DistinctIterator<TSource>(_source, _comparer);
 
             public override bool MoveNext()
             {
@@ -102,20 +96,11 @@ namespace System.Linq
                 return set;
             }
 
-            public TSource[] ToArray()
-            {
-                return FillSet().ToArray();
-            }
+            public TSource[] ToArray() => FillSet().ToArray();
 
-            public List<TSource> ToList()
-            {
-                return FillSet().ToList();
-            }
+            public List<TSource> ToList() => FillSet().ToList();
 
-            public int GetCount(bool onlyIfCheap)
-            {
-                return onlyIfCheap ? -1 : FillSet().Count;
-            }
+            public int GetCount(bool onlyIfCheap) => onlyIfCheap ? -1 : FillSet().Count;
         }
     }
 }

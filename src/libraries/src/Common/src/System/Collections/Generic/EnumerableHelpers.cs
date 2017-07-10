@@ -26,8 +26,7 @@ namespace System.Collections.Generic
             Debug.Assert(count >= 0);
             Debug.Assert(array?.Length - arrayIndex >= count);
 
-            var collection = source as ICollection<T>;
-            if (collection != null)
+            if (source is ICollection<T> collection)
             {
                 Debug.Assert(collection.Count == count);
                 collection.CopyTo(array, arrayIndex);
@@ -68,8 +67,7 @@ namespace System.Collections.Generic
         {
             Debug.Assert(source != null);
 
-            var collection = source as ICollection<T>;
-            if (collection != null)
+            if (source is ICollection<T> collection)
             {
                 int count = collection.Count;
                 if (count == 0)
@@ -96,8 +94,7 @@ namespace System.Collections.Generic
         /// </returns>
         internal static T[] ToArray<T>(IEnumerable<T> source, out int length)
         {
-            ICollection<T> ic = source as ICollection<T>;
-            if (ic != null)
+            if (source is ICollection<T> ic)
             {
                 int count = ic.Count;
                 if (count != 0)

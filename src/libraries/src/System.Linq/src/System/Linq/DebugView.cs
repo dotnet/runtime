@@ -24,12 +24,7 @@ namespace System.Linq
     {
         public SystemCore_EnumerableDebugView(IEnumerable<T> enumerable)
         {
-            if (enumerable == null)
-            {
-                throw new ArgumentNullException(nameof(enumerable));
-            }
-
-            _enumerable = enumerable;
+            _enumerable = enumerable ?? throw Error.ArgumentNull(nameof(enumerable));
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]
@@ -53,25 +48,14 @@ namespace System.Linq
 
     internal sealed class SystemCore_EnumerableDebugViewEmptyException : Exception
     {
-        public string Empty
-        {
-            get
-            {
-                return SR.EmptyEnumerable;
-            }
-        }
+        public string Empty => SR.EmptyEnumerable;
     }
 
     internal sealed class SystemCore_EnumerableDebugView
     {
         public SystemCore_EnumerableDebugView(IEnumerable enumerable)
         {
-            if (enumerable == null)
-            {
-                throw new ArgumentNullException(nameof(enumerable));
-            }
-
-            _enumerable = enumerable;
+            _enumerable = enumerable ?? throw Error.ArgumentNull(nameof(enumerable));
         }
 
         [DebuggerBrowsable(DebuggerBrowsableState.RootHidden)]

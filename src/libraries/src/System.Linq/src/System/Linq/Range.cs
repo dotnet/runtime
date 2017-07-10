@@ -40,10 +40,7 @@ namespace System.Linq
                 _end = unchecked(start + count);
             }
 
-            public override Iterator<int> Clone()
-            {
-                return new RangeIterator(_start, _end - _start);
-            }
+            public override Iterator<int> Clone() => new RangeIterator(_start, _end - _start);
 
             public override bool MoveNext()
             {
@@ -101,10 +98,7 @@ namespace System.Linq
                 return list;
             }
 
-            public int GetCount(bool onlyIfCheap)
-            {
-                return unchecked(_end - _start);
-            }
+            public int GetCount(bool onlyIfCheap) => unchecked(_end - _start);
 
             public IPartition<int> Skip(int count)
             {

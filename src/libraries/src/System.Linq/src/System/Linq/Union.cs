@@ -24,8 +24,7 @@ namespace System.Linq
                 throw Error.ArgumentNull(nameof(second));
             }
 
-            UnionIterator<TSource> union = first as UnionIterator<TSource>;
-            return union != null && AreEqualityComparersEqual(comparer, union._comparer) ? union.Union(second) : new UnionIterator2<TSource>(first, second, comparer);
+            return first is UnionIterator<TSource> union && AreEqualityComparersEqual(comparer, union._comparer) ? union.Union(second) : new UnionIterator2<TSource>(first, second, comparer);
         }
 
         /// <summary>
@@ -38,12 +37,12 @@ namespace System.Linq
             private IEnumerator<TSource> _enumerator;
             private Set<TSource> _set;
 
-            public UnionIterator(IEqualityComparer<TSource> comparer)
+            protected UnionIterator(IEqualityComparer<TSource> comparer)
             {
                 _comparer = comparer;
             }
 
-            public override sealed void Dispose()
+            public sealed override void Dispose()
             {
                 if (_enumerator != null)
                 {
@@ -59,17 +58,14 @@ namespace System.Linq
 
             internal abstract UnionIterator<TSource> Union(IEnumerable<TSource> next);
 
-            protected void SetEnumerator(IEnumerator<TSource> enumerator)
+            private void SetEnumerator(IEnumerator<TSource> enumerator)
             {
-                if (_enumerator != null)
-                {
-                    _enumerator.Dispose();
-                }
+                _enumerator?.Dispose();
 
                 _enumerator = enumerator;
             }
 
-            protected void StoreFirst()
+            private void StoreFirst()
             {
                 Set<TSource> set = new Set<TSource>(_comparer);
                 TSource element = _enumerator.Current;
@@ -78,7 +74,7 @@ namespace System.Linq
                 _set = set;
             }
 
-            protected bool GetNext()
+            private bool GetNext()
             {
                 Set<TSource> set = _set;
                 Debug.Assert(set != null);
@@ -151,20 +147,11 @@ namespace System.Linq
                 }
             }
 
-            public TSource[] ToArray()
-            {
-                return FillSet().ToArray();
-            }
+            public TSource[] ToArray() => FillSet().ToArray();
 
-            public List<TSource> ToList()
-            {
-                return FillSet().ToList();
-            }
+            public List<TSource> ToList() => FillSet().ToList();
 
-            public int GetCount(bool onlyIfCheap)
-            {
-                return onlyIfCheap ? -1 : FillSet().Count;
-            }
+            public int GetCount(bool onlyIfCheap) => onlyIfCheap ? -1 : FillSet().Count;
         }
         
         /// <summary>

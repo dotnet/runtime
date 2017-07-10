@@ -214,16 +214,12 @@ namespace System.Linq
         /// </summary>
         /// <param name="value">The value to hash.</param>
         /// <returns>The lower 31 bits of the value's hash code.</returns>
-        private int InternalGetHashCode(TElement value)
-        {
-            // Handle comparer implementations that throw when passed null
-            return (value == null) ? 0 : _comparer.GetHashCode(value) & 0x7FFFFFFF;
-        }
+        private int InternalGetHashCode(TElement value) => value == null ? 0 : _comparer.GetHashCode(value) & 0x7FFFFFFF;
 
         /// <summary>
         /// An entry in the hash set.
         /// </summary>
-        internal struct Slot
+        private struct Slot
         {
             /// <summary>
             /// The hash code of the item.

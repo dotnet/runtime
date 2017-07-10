@@ -108,10 +108,7 @@ namespace System.Linq
         [ExcludeFromCodeCoverage] // Shouldn't be called, and as undefined can return or throw anything anyway.
         object IEnumerator.Current => default(TElement);
 
-        void IEnumerator.Reset()
-        {
-            throw Error.NotSupported();
-        }
+        void IEnumerator.Reset() => throw Error.NotSupported();
 
         void IDisposable.Dispose()
         {
@@ -160,15 +157,9 @@ namespace System.Linq
             _maxIndexInclusive = maxIdxInclusive;
         }
 
-        public IEnumerator<TElement> GetEnumerator()
-        {
-            return _source.GetEnumerator(_minIndexInclusive, _maxIndexInclusive);
-        }
+        public IEnumerator<TElement> GetEnumerator() => _source.GetEnumerator(_minIndexInclusive, _maxIndexInclusive);
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         public IPartition<TElement> Skip(int count)
         {
@@ -198,30 +189,16 @@ namespace System.Linq
             return default(TElement);
         }
 
-        public TElement TryGetFirst(out bool found)
-        {
-            return _source.TryGetElementAt(_minIndexInclusive, out found);
-        }
+        public TElement TryGetFirst(out bool found) => _source.TryGetElementAt(_minIndexInclusive, out found);
 
-        public TElement TryGetLast(out bool found)
-        {
-            return _source.TryGetLast(_minIndexInclusive, _maxIndexInclusive, out found);
-        }
+        public TElement TryGetLast(out bool found) =>
+            _source.TryGetLast(_minIndexInclusive, _maxIndexInclusive, out found);
 
-        public TElement[] ToArray()
-        {
-            return _source.ToArray(_minIndexInclusive, _maxIndexInclusive);
-        }
+        public TElement[] ToArray() => _source.ToArray(_minIndexInclusive, _maxIndexInclusive);
 
-        public List<TElement> ToList()
-        {
-            return _source.ToList(_minIndexInclusive, _maxIndexInclusive);
-        }
+        public List<TElement> ToList() => _source.ToList(_minIndexInclusive, _maxIndexInclusive);
 
-        public int GetCount(bool onlyIfCheap)
-        {
-            return _source.GetCount(_minIndexInclusive, _maxIndexInclusive, onlyIfCheap);
-        }
+        public int GetCount(bool onlyIfCheap) => _source.GetCount(_minIndexInclusive, _maxIndexInclusive, onlyIfCheap);
     }
 
     public static partial class Enumerable
@@ -246,10 +223,8 @@ namespace System.Linq
                 _maxIndexInclusive = maxIndexInclusive;
             }
 
-            public override Iterator<TSource> Clone()
-            {
-                return new ListPartition<TSource>(_source, _minIndexInclusive, _maxIndexInclusive);
-            }
+            public override Iterator<TSource> Clone() =>
+                new ListPartition<TSource>(_source, _minIndexInclusive, _maxIndexInclusive);
 
             public override bool MoveNext()
             {
@@ -268,10 +243,8 @@ namespace System.Linq
                 return false;
             }
 
-            public override IEnumerable<TResult> Select<TResult>(Func<TSource, TResult> selector)
-            {
-                return new SelectListPartitionIterator<TSource, TResult>(_source, selector, _minIndexInclusive, _maxIndexInclusive);
-            }
+            public override IEnumerable<TResult> Select<TResult>(Func<TSource, TResult> selector) =>
+                new SelectListPartitionIterator<TSource, TResult>(_source, selector, _minIndexInclusive, _maxIndexInclusive);
 
             public IPartition<TSource> Skip(int count)
             {
@@ -371,10 +344,7 @@ namespace System.Linq
                 return list;
             }
 
-            public int GetCount(bool onlyIfCheap)
-            {
-                return Count;
-            }
+            public int GetCount(bool onlyIfCheap) => Count;
         }
 
         /// <summary>
@@ -412,10 +382,8 @@ namespace System.Linq
 
             private int Limit => unchecked((_maxIndexInclusive + 1) - _minIndexInclusive); // This is that upper bound.
 
-            public override Iterator<TSource> Clone()
-            {
-                return new EnumerablePartition<TSource>(_source, _minIndexInclusive, _maxIndexInclusive);
-            }
+            public override Iterator<TSource> Clone() =>
+                new EnumerablePartition<TSource>(_source, _minIndexInclusive, _maxIndexInclusive);
 
             public override void Dispose()
             {
@@ -507,10 +475,8 @@ namespace System.Linq
                 return false;
             }
 
-            public override IEnumerable<TResult> Select<TResult>(Func<TSource, TResult> selector)
-            {
-                return new SelectIPartitionIterator<TSource, TResult>(this, selector);
-            }
+            public override IEnumerable<TResult> Select<TResult>(Func<TSource, TResult> selector) =>
+                new SelectIPartitionIterator<TSource, TResult>(this, selector);
 
             public IPartition<TSource> Skip(int count)
             {

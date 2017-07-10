@@ -16,13 +16,9 @@ namespace System.Linq
                 throw Error.ArgumentNull(nameof(source));
             }
 
-            AppendPrependIterator<TSource> appendable = source as AppendPrependIterator<TSource>;
-            if (appendable != null)
-            {
-                return appendable.Append(element);
-            }
-
-            return new AppendPrepend1Iterator<TSource>(source, element, appending: true);
+            return source is AppendPrependIterator<TSource> appendable
+                ? appendable.Append(element)
+                : new AppendPrepend1Iterator<TSource>(source, element, appending: true);
         }
 
         public static IEnumerable<TSource> Prepend<TSource>(this IEnumerable<TSource> source, TSource element)
@@ -32,13 +28,9 @@ namespace System.Linq
                 throw Error.ArgumentNull(nameof(source));
             }
 
-            AppendPrependIterator<TSource> appendable = source as AppendPrependIterator<TSource>;
-            if (appendable != null)
-            {
-                return appendable.Prepend(element);
-            }
-
-            return new AppendPrepend1Iterator<TSource>(source, element, appending: false);
+            return source is AppendPrependIterator<TSource> appendable
+                ? appendable.Prepend(element)
+                : new AppendPrepend1Iterator<TSource>(source, element, appending: false);
         }
 
         /// <summary>
@@ -245,8 +237,7 @@ namespace System.Linq
 
             public override int GetCount(bool onlyIfCheap)
             {
-                IIListProvider<TSource> listProv = _source as IIListProvider<TSource>;
-                if (listProv != null)
+                if (_source is IIListProvider<TSource> listProv)
                 {
                     int count = listProv.GetCount(onlyIfCheap);
                     return count == -1 ? -1 : count + 1;
@@ -389,8 +380,7 @@ namespace System.Linq
                     ++index;
                 }
 
-                ICollection<TSource> sourceCollection = _source as ICollection<TSource>;
-                if (sourceCollection != null)
+                if (_source is ICollection<TSource> sourceCollection)
                 {
                     sourceCollection.CopyTo(array, index);
                 }
@@ -437,8 +427,7 @@ namespace System.Linq
 
             public override int GetCount(bool onlyIfCheap)
             {
-                IIListProvider<TSource> listProv = _source as IIListProvider<TSource>;
-                if (listProv != null)
+                if (_source is IIListProvider<TSource> listProv)
                 {
                     int count = listProv.GetCount(onlyIfCheap);
                     return count == -1 ? -1 : count + _appendCount + _prependCount;

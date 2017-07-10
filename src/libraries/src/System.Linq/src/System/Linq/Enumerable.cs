@@ -8,14 +8,8 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        public static IEnumerable<TSource> AsEnumerable<TSource>(this IEnumerable<TSource> source)
-        {
-            return source;
-        }
+        public static IEnumerable<TSource> AsEnumerable<TSource>(this IEnumerable<TSource> source) => source;
 
-        public static IEnumerable<TResult> Empty<TResult>()
-        {
-            return Array.Empty<TResult>();
-        }
+        public static IEnumerable<TResult> Empty<TResult>() => Array.Empty<TResult>();
     }
 }
