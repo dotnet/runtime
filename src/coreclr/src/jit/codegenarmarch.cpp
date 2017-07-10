@@ -655,8 +655,16 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 LclVarDsc* varDsc = &compiler->lvaTable[varNumInp];
 
                 assert(varDsc->lvType == TYP_STRUCT);
-                assert(varDsc->lvOnFrame);   // This struct also must live in the stack frame
-                assert(!varDsc->lvRegister); // And it can't live in a register (SIMD)
+#ifdef _TARGET_ARM_
+                if (varDsc->lvPromoted)
+                {
+                    NYI_ARM("CodeGen::genPutArgStk - promoted struct");
+                }
+                else
+#endif // _TARGET_ARM_
+                    // This struct also must live in the stack frame
+                    // And it can't live in a register (SIMD)
+                    assert(varDsc->lvOnFrame && !varDsc->lvRegister);
 
                 structSize = varDsc->lvSize(); // This yields the roundUp size, but that is fine
                                                // as that is how much stack is allocated for this LclVar
