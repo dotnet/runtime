@@ -896,6 +896,16 @@ lookup_unmanaged_binary (uintptr_t addr)
 	return NULL;
 }
 
+// For backwards compatibility.
+enum {
+	SAMPLE_CYCLES = 1,
+	SAMPLE_INSTRUCTIONS,
+	SAMPLE_CACHE_MISSES,
+	SAMPLE_CACHE_REFS,
+	SAMPLE_BRANCHES,
+	SAMPLE_BRANCH_MISSES,
+};
+
 static const char*
 sample_type_name (int type)
 {
@@ -2895,7 +2905,10 @@ decode_buffer (ProfContext *ctx)
 					uint64_t tdiff = decode_uleb128 (p + 1, &p);
 					LOG_TIME (time_base, tdiff);
 					time_base += tdiff;
-					sample_type = *p++;
+					if (ctx->data_version < 14)
+						sample_type = *p++;
+					else
+						sample_type = SAMPLE_CYCLES;
 					tstamp = time_base;
 				} else {
 					sample_type = decode_uleb128 (p + 1, &p);
