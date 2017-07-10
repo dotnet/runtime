@@ -555,6 +555,16 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         {
             genConsumeReg(source);
             emit->emitIns_S_R(storeIns, storeAttr, source->gtRegNum, varNumOut, argOffsetOut);
+            if (compiler->opts.compUseSoftFP && targetType == TYP_LONG)
+            {
+                // This case currently only occurs for double types that are passed as TYP_LONG;
+                // actual long types would have been decomposed by now.
+                assert(source->IsCopyOrReload());
+                regNumber otherReg = (regNumber)source->AsCopyOrReload()->GetRegNumByIdx(1);
+                assert(otherReg != REG_NA);
+                argOffsetOut += EA_4BYTE;
+                emit->emitIns_S_R(storeIns, storeAttr, otherReg, varNumOut, argOffsetOut);
+            }
         }
         argOffsetOut += EA_SIZE_IN_BYTES(storeAttr);
         assert(argOffsetOut <= argOffsetMax); // We can't write beyound the outgoing area area

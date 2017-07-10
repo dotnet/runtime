@@ -763,8 +763,21 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode, fgArgTabEntr
     else
     {
 #ifdef _TARGET_ARM_
+
+#ifdef ARM_SOFTFP
+        // The `double` types have been transformed to `long` on armel.
+        const bool isDouble = (info->numSlots == 2) && (putArgChild->TypeGet() == TYP_LONG);
+        if (isDouble)
+        {
+            argNode->gtLsraInfo.srcCount = 2;
+        }
+#else  // !ARM_SOFTFP
+        const bool isDouble = (info->numSlots == 2) && (putArgChild->TypeGet() == TYP_DOUBLE);
+#endif // !ARM_SOFTFP
+
         // We must not have a multi-reg struct; double uses 2 slots and isn't a multi-reg struct
-        assert((info->numSlots == 1) || ((info->numSlots == 2) && (putArgChild->TypeGet() == TYP_DOUBLE)));
+        assert((info->numSlots == 1) || isDouble);
+
 #else  // !_TARGET_ARM_
         // We must not have a multi-reg struct
         assert(info->numSlots == 1);
