@@ -409,19 +409,25 @@ namespace System.Net.Sockets
             // WSAMsg also contains a single WSABuffer describing a control buffer.
             PinSocketAddressBuffer();
 
-            // Create a WSAMessageBuffer if none exists yet, and ensure the buffer is pinned.
-            Debug.Assert(
-                !_wsaMessageBufferGCHandle.IsAllocated ||
-                (_wsaMessageBufferGCHandle.Target == _wsaMessageBuffer && _wsaMessageBuffer != null));
-            Debug.Assert((_ptrWSAMessageBuffer != IntPtr.Zero) == _wsaMessageBufferGCHandle.IsAllocated);
+            // Create a WSAMessageBuffer if none exists yet.
             if (_wsaMessageBuffer == null)
             {
+                Debug.Assert(!_wsaMessageBufferGCHandle.IsAllocated);
+                Debug.Assert(_ptrWSAMessageBuffer == IntPtr.Zero);
                 _wsaMessageBuffer = new byte[sizeof(Interop.Winsock.WSAMsg)];
             }
+
+            // And ensure the WSAMessageBuffer is appropriately pinned.
             if (_ptrWSAMessageBuffer == IntPtr.Zero)
             {
+                Debug.Assert(!_wsaMessageBufferGCHandle.IsAllocated);
                 _wsaMessageBufferGCHandle = GCHandle.Alloc(_wsaMessageBuffer, GCHandleType.Pinned);
                 _ptrWSAMessageBuffer = Marshal.UnsafeAddrOfPinnedArrayElement(_wsaMessageBuffer, 0);
+            }
+            else
+            {
+                Debug.Assert(_wsaMessageBufferGCHandle.IsAllocated);
+                Debug.Assert(_ptrWSAMessageBuffer == Marshal.UnsafeAddrOfPinnedArrayElement(_wsaMessageBuffer, 0));
             }
 
             // Create and pin an appropriately sized control buffer if none already
