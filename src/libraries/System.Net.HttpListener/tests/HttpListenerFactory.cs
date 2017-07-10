@@ -8,30 +8,21 @@ using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.IO;
+using System.Threading;
 
 namespace System.Net.Tests
 {
     // Utilities for generating URL prefixes for HttpListener
     public class HttpListenerFactory : IDisposable
     {
-        private const int MaxStartAttempts = 500;
-        private static int s_minPort;
-        private static int s_maxPort;
-        private static readonly Random s_random = new Random();
-
-        static HttpListenerFactory()
-        {
-            // Chose ports from the user port range (Windows: 1024-49151; Linux 1024-32767)
-            s_minPort = 1024;
-            s_maxPort = 32767;
-        }
+        const int MaxStartAttempts = 50;
+        private static int s_port = 1024;
 
         private readonly HttpListener _processPrefixListener;
         private readonly Exception _processPrefixException;
         private readonly string _processPrefix;
         private readonly string _hostname;
         private readonly string _path;
-        private readonly int _port;
 
         internal HttpListenerFactory(string hostname = "localhost", string path = null)
         {
@@ -44,11 +35,7 @@ namespace System.Net.Tests
 
             for (int attempt = 0; attempt < MaxStartAttempts; attempt++)
             {
-                int port;
-                lock (s_random)
-                {
-                    port = s_random.Next(s_minPort, s_maxPort + 1);
-                }
+                int port = Interlocked.Increment(ref s_port);
                 string prefix = $"http://{hostname}:{port}/{pathComponent}";
 
                 var listener = new HttpListener();
