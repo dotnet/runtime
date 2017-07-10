@@ -215,6 +215,14 @@
         </ExcludeList>
     </ItemGroup>
 
+    <!-- The following are ARM32 failures -->
+
+    <ItemGroup Condition="'$(XunitTestBinBase)' != '' and '$(BuildArch)' == 'arm'">
+        <ExcludeList Include="$(XunitTestBinBase)\JIT\Methodical\tailcall_v4\hijacking\hijacking.cmd">
+            <Issue>6217</Issue>
+        </ExcludeList>
+    </ItemGroup>
+
     <!-- Tests that need to be triaged for vararg usage as that is not supported -->
     <ItemGroup Condition="'$(XunitTestBinBase)' != ''">
         <ExcludeList Include="$(XunitTestBinBase)\JIT\Directed\PREFIX\unaligned\1\arglist\arglist.cmd">
