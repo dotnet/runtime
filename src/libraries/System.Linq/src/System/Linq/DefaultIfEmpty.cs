@@ -10,10 +10,8 @@ namespace System.Linq
 {
     public static partial class Enumerable
     {
-        public static IEnumerable<TSource> DefaultIfEmpty<TSource>(this IEnumerable<TSource> source)
-        {
-            return DefaultIfEmpty(source, default(TSource));
-        }
+        public static IEnumerable<TSource> DefaultIfEmpty<TSource>(this IEnumerable<TSource> source) =>
+            DefaultIfEmpty(source, default(TSource));
 
         public static IEnumerable<TSource> DefaultIfEmpty<TSource>(this IEnumerable<TSource> source, TSource defaultValue)
         {
@@ -38,10 +36,7 @@ namespace System.Linq
                 _default = defaultValue;
             }
 
-            public override Iterator<TSource> Clone()
-            {
-                return new DefaultIfEmptyIterator<TSource>(_source, _default);
-            }
+            public override Iterator<TSource> Clone() => new DefaultIfEmptyIterator<TSource>(_source, _default);
 
             public override bool MoveNext()
             {
@@ -112,8 +107,7 @@ namespace System.Linq
                 }
                 else
                 {
-                    IIListProvider<TSource> listProv = _source as IIListProvider<TSource>;
-                    count = listProv == null ? -1 : listProv.GetCount(onlyIfCheap: true);
+                    count = _source is IIListProvider<TSource> listProv ? listProv.GetCount(onlyIfCheap: true) : -1;
                 }
 
                 return count == 0 ? 1 : count;

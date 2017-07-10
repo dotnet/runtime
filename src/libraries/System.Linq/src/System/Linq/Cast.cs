@@ -37,15 +37,14 @@ namespace System.Linq
             {
                 return typedSource;
             }
-
+            
             if (source == null)
             {
                 throw Error.ArgumentNull(nameof(source));
             }
-
+            
             return CastIterator<TResult>(source);
         }
-
         private static IEnumerable<TResult> CastIterator<TResult>(IEnumerable source)
         {
             foreach (object obj in source)

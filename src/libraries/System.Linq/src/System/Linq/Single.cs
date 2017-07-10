@@ -15,13 +15,14 @@ namespace System.Linq
                 throw Error.ArgumentNull(nameof(source));
             }
 
-            IList<TSource> list = source as IList<TSource>;
-            if (list != null)
+            if (source is IList<TSource> list)
             {
                 switch (list.Count)
                 {
-                    case 0: throw Error.NoElements();
-                    case 1: return list[0];
+                    case 0:
+                        throw Error.NoElements();
+                    case 1:
+                        return list[0];
                 }
             }
             else
@@ -86,13 +87,14 @@ namespace System.Linq
                 throw Error.ArgumentNull(nameof(source));
             }
 
-            IList<TSource> list = source as IList<TSource>;
-            if (list != null)
+            if (source is IList<TSource> list)
             {
                 switch (list.Count)
                 {
-                    case 0: return default(TSource);
-                    case 1: return list[0];
+                    case 0:
+                        return default(TSource);
+                    case 1:
+                        return list[0];
                 }
             }
             else

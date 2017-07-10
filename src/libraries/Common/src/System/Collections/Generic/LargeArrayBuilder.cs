@@ -266,8 +266,7 @@ namespace System.Collections.Generic
         /// </summary>
         public T[] ToArray()
         {
-            T[] array;
-            if (TryMove(out array))
+            if (TryMove(out T[] array))
             {
                 // No resizing to do.
                 return array;

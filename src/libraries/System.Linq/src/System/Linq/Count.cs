@@ -16,20 +16,17 @@ namespace System.Linq
                 throw Error.ArgumentNull(nameof(source));
             }
 
-            ICollection<TSource> collectionoft = source as ICollection<TSource>;
-            if (collectionoft != null)
+            if (source is ICollection<TSource> collectionoft)
             {
                 return collectionoft.Count;
             }
 
-            IIListProvider<TSource> listProv = source as IIListProvider<TSource>;
-            if (listProv != null)
+            if (source is IIListProvider<TSource> listProv)
             {
                 return listProv.GetCount(onlyIfCheap: false);
             }
 
-            ICollection collection = source as ICollection;
-            if (collection != null)
+            if (source is ICollection collection)
             {
                 return collection.Count;
             }

@@ -23,18 +23,15 @@ namespace System.Collections.Generic
         {
             Debug.Assert(source != null);
 
-            var collection = source as ICollection<T>;
-            if (collection != null)
+            if (source is ICollection<T> collection)
             {
                 count = collection.Count;
                 return true;
             }
 
-            var provider = source as IIListProvider<T>;
-            if (provider != null)
+            if (source is IIListProvider<T> provider)
             {
-                count = provider.GetCount(onlyIfCheap: true);
-                return count >= 0;
+                return (count = provider.GetCount(onlyIfCheap: true)) >= 0;
             }
 
             count = -1;

@@ -27,17 +27,12 @@ namespace System.Linq
 
                 count = 0;
             }
-            else
+            else if (source is IPartition<TSource> partition)
             {
-                IPartition<TSource> partition = source as IPartition<TSource>;
-                if (partition != null)
-                {
-                    return partition.Skip(count);
-                }
+                return partition.Skip(count);
             }
 
-            IList<TSource> sourceList = source as IList<TSource>;
-            if (sourceList != null)
+            if (source is IList<TSource> sourceList)
             {
                 return new ListPartition<TSource>(sourceList, count, int.MaxValue);
             }
