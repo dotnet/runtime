@@ -1565,11 +1565,6 @@ namespace Microsoft.ServiceModel.Syndication
                 return false;
             }
             
-            if (dateTimeStringBuilder.Length < 19)
-            {
-                return false;
-            }
-
             int timeZoneStartIndex;
             for (timeZoneStartIndex = dateTimeStringBuilder.Length-1; dateTimeStringBuilder[timeZoneStartIndex] != ' '; timeZoneStartIndex--);
             timeZoneStartIndex++;
