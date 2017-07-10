@@ -16,7 +16,7 @@ namespace System.Net.Tests
     public class HttpListenerFactory : IDisposable
     {
         const int MaxStartAttempts = 50;
-        private static int s_port = 1024;
+        private static int s_port = 2048;
 
         private readonly HttpListener _processPrefixListener;
         private readonly Exception _processPrefixException;
