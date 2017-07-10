@@ -422,11 +422,8 @@ void Compiler::fgPerBlockLocalVarLiveness()
 
     BasicBlock* block;
 
-#if CAN_DISABLE_DFA
-
-    /* If we're not optimizing at all, things are simple */
-
-    if (opts.MinOpts())
+    // If we don't require accurate local var lifetimes, things are simple.
+    if (!backendRequiresLocalVarLifetimes())
     {
         unsigned   lclNum;
         LclVarDsc* varDsc;
@@ -451,7 +448,6 @@ void Compiler::fgPerBlockLocalVarLiveness()
             VarSetOps::Assign(this, block->bbVarUse, liveAll);
             VarSetOps::Assign(this, block->bbVarDef, liveAll);
             VarSetOps::Assign(this, block->bbLiveIn, liveAll);
-            VarSetOps::Assign(this, block->bbLiveOut, liveAll);
             block->bbMemoryUse     = fullMemoryKindSet;
             block->bbMemoryDef     = fullMemoryKindSet;
             block->bbMemoryLiveIn  = fullMemoryKindSet;
@@ -465,6 +461,7 @@ void Compiler::fgPerBlockLocalVarLiveness()
                     VarSetOps::AssignNoCopy(this, block->bbLiveOut, VarSetOps::MakeEmpty(this));
                     break;
                 default:
+                    VarSetOps::Assign(this, block->bbLiveOut, liveAll);
                     break;
             }
         }
@@ -475,8 +472,6 @@ void Compiler::fgPerBlockLocalVarLiveness()
 
         return;
     }
-
-#endif // CAN_DISABLE_DFA
 
     // Avoid allocations in the long case.
     VarSetOps::AssignNoCopy(this, fgCurUseSet, VarSetOps::MakeEmpty(this));
@@ -1323,6 +1318,11 @@ public:
 
 void Compiler::fgLiveVarAnalysis(bool updateInternalOnly)
 {
+    if (!backendRequiresLocalVarLifetimes())
+    {
+        return;
+    }
+
     LiveVarAnalysis::Run(this, updateInternalOnly);
 
 #ifdef DEBUG
@@ -2770,6 +2770,13 @@ void Compiler::fgInterBlockLocalVarLiveness()
     if (opts.compDbgCode && (info.compVarScopesCount > 0))
     {
         fgExtendDbgLifetimes();
+    }
+
+    // Nothing more to be done if the backend does not require accurate local var lifetimes.
+    if (!backendRequiresLocalVarLifetimes())
+    {
+        fgLocalVarLivenessDone = true;
+        return;
     }
 
     /*-------------------------------------------------------------------------
