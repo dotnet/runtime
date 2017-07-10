@@ -95,8 +95,6 @@ you wish to update the DLLs. For example typically when you update CoreCLR you e
 * coreclr.dll - Most modifications (with the exception of the JIT compiler and tools) that are C++ code update
   this DLL.
 * System.Private.CoreLib.dll - If you modified C# it will end up here.
-* System.Private.CoreLib.ni.dll - the native image (code) for System.Private.Corelib.   If you modify C# code
-you will want to update both of these together in the target installation.
 
 Thus after making a change and building, you can simply copy the updated binary from the `bin\Product\<OS>.<arch>.<flavor>`
 directory to your publication directory (e.g. `helloWorld\bin\Debug\netcoreapp2.0\win7-x64\publish`) to quickly
