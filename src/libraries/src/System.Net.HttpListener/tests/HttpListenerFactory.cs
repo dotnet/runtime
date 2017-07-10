@@ -15,8 +15,8 @@ namespace System.Net.Tests
     // Utilities for generating URL prefixes for HttpListener
     public class HttpListenerFactory : IDisposable
     {
-        const int MaxStartAttempts = int.MaxValue;
-        private static int s_port = 1024;
+        const int MaxStartAttempts = 100;
+        private static int s_port = 10000;
 
         private readonly HttpListener _processPrefixListener;
         private readonly Exception _processPrefixException;
@@ -90,10 +90,6 @@ namespace System.Net.Tests
                 {
                     throw new Exception("Could not reserve a port for HttpListener", _processPrefixException);
                 }
-                if (_port != 0)
-                {
-                    throw new Exception($"Reserved port {_port}", _processPrefixException);
-                }
 
                 return _port;
             }
@@ -106,10 +102,6 @@ namespace System.Net.Tests
                 if (_processPrefix == null)
                 {
                     throw new Exception("Could not reserve a port for HttpListener", _processPrefixException);
-                }
-                if (_port != 0)
-                {
-                    throw new Exception($"Reserved port {_port}", _processPrefixException);
                 }
 
                 return _processPrefix;
