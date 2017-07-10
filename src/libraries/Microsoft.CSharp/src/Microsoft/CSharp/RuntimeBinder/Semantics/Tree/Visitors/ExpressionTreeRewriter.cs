@@ -12,14 +12,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public static Expr Rewrite(Expr expr, ExprFactory expressionFactory, SymbolLoader symbolLoader)
         {
             ExpressionTreeRewriter rewriter = new ExpressionTreeRewriter(expressionFactory, symbolLoader);
-            rewriter.alwaysRewrite = true;
             return rewriter.Visit(expr);
         }
 
         private ExprFactory expressionFactory;
         private SymbolLoader symbolLoader;
         private ExprBoundLambda currentAnonMeth;
-        private bool alwaysRewrite;
 
         private ExprFactory GetExprFactory() { return expressionFactory; }
 
@@ -29,7 +27,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             this.expressionFactory = expressionFactory;
             this.symbolLoader = symbolLoader;
-            this.alwaysRewrite = false;
         }
 
         protected override Expr Dispatch(Expr expr)
@@ -49,7 +46,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         protected override Expr VisitASSIGNMENT(ExprAssignment assignment)
         {
             Debug.Assert(assignment != null);
-            Debug.Assert(alwaysRewrite || currentAnonMeth != null);
 
             // For assignments, we either have a member assignment or an indexed assignment.
             //Debug.Assert(assignment.GetLHS().isPROP() || assignment.GetLHS().isFIELD() || assignment.GetLHS().isARRAYINDEX() || assignment.GetLHS().isLOCAL());
@@ -138,13 +134,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         protected override Expr VisitCONSTANT(ExprConstant expr)
         {
             Debug.Assert(expr != null);
-            Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             return GenerateConstant(expr);
         }
         protected override Expr VisitLOCAL(ExprLocal local)
         {
             Debug.Assert(local != null);
-            Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             Debug.Assert(!local.Local.isThis);
             // this is true for all parameters of an expression lambda
             if (local.Local.wrap != null)
@@ -172,13 +166,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         protected override Expr VisitUSERDEFINEDCONVERSION(ExprUserDefinedConversion expr)
         {
             Debug.Assert(expr != null);
-            Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             return GenerateUserDefinedConversion(expr, expr.Argument);
         }
         protected override Expr VisitCAST(ExprCast pExpr)
         {
             Debug.Assert(pExpr != null);
-            Debug.Assert(alwaysRewrite || currentAnonMeth != null);
 
             Expr pArgument = pExpr.Argument;
 
@@ -211,7 +203,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         protected override Expr VisitCONCAT(ExprConcat expr)
         {
             Debug.Assert(expr != null);
-            Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             PREDEFMETH pdm;
             if (expr.FirstArgument.Type.isPredefType(PredefinedType.PT_STRING) && expr.SecondArgument.Type.isPredefType(PredefinedType.PT_STRING))
             {
@@ -230,7 +221,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         protected override Expr VisitBINOP(ExprBinOp expr)
         {
             Debug.Assert(expr != null);
-            Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             if (expr.UserDefinedCallMethod != null)
             {
                 return GenerateUserDefinedBinaryOperator(expr);
@@ -243,7 +233,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         protected override Expr VisitUNARYOP(ExprUnaryOp pExpr)
         {
             Debug.Assert(pExpr != null);
-            Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             if (pExpr.UserDefinedCallMethod != null)
             {
                 return GenerateUserDefinedUnaryOperator(pExpr);
@@ -256,7 +245,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         protected override Expr VisitARRAYINDEX(ExprArrayIndex pExpr)
         {
             Debug.Assert(pExpr != null);
-            Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             Expr arr = Visit(pExpr.Array);
             Expr args = GenerateIndexList(pExpr.Index);
             if (args is ExprList)
@@ -270,8 +258,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         protected override Expr VisitCALL(ExprCall expr)
         {
             Debug.Assert(expr != null);
-            Debug.Assert(alwaysRewrite || currentAnonMeth != null);
-
             switch (expr.NullableCallLiftKind)
             {
                 default:
@@ -335,7 +321,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         protected override Expr VisitPROP(ExprProperty expr)
         {
             Debug.Assert(expr != null);
-            Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             Expr pObject;
             if (expr.PropWithTypeSlot.Prop().isStatic || expr.MemberGroup.OptionalObject== null)
             {
@@ -358,7 +343,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         protected override Expr VisitARRINIT(ExprArrayInit expr)
         {
             Debug.Assert(expr != null);
-            Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             // POSSIBLE ERROR: Multi-d should be an error?
             Expr pTypeOf = CreateTypeOf(expr.Type.AsArrayType().GetElementType());
             Expr args = GenerateArgsList(expr.OptionalArguments);
@@ -368,7 +352,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         protected override Expr VisitZEROINIT(ExprZeroInit expr)
         {
             Debug.Assert(expr != null);
-            Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             Debug.Assert(expr.OptionalArgument == null);
 
             if (expr.IsConstructor)
@@ -382,7 +365,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         protected override Expr VisitTYPEOF(ExprTypeOf expr)
         {
             Debug.Assert(expr != null);
-            Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             return GenerateConstant(expr);
         }
 
@@ -402,7 +384,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private Expr GenerateBuiltInBinaryOperator(ExprBinOp expr)
         {
             Debug.Assert(expr != null);
-            Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             PREDEFMETH pdm;
 
             switch (expr.Kind)
@@ -511,7 +492,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private Expr GenerateBuiltInUnaryOperator(ExprUnaryOp expr)
         {
             Debug.Assert(expr != null);
-            Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             PREDEFMETH pdm;
             switch (expr.Kind)
             {
@@ -552,7 +532,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private Expr GenerateUserDefinedBinaryOperator(ExprBinOp expr)
         {
             Debug.Assert(expr != null);
-            Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             PREDEFMETH pdm;
 
             switch (expr.Kind)
@@ -632,7 +611,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private Expr GenerateUserDefinedUnaryOperator(ExprUnaryOp expr)
         {
             Debug.Assert(expr != null);
-            Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             PREDEFMETH pdm;
             Expr arg = expr.Child;
             ExprCall call = (ExprCall)expr.OptionalUserDefinedCall;
@@ -683,7 +661,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private Expr GenerateUserDefinedComparisonOperator(ExprBinOp expr)
         {
             Debug.Assert(expr != null);
-            Debug.Assert(alwaysRewrite || currentAnonMeth != null);
             PREDEFMETH pdm;
 
             switch (expr.Kind)
