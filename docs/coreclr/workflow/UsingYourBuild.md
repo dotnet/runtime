@@ -105,8 +105,7 @@ You can build just the .NET Library part of the build by doing (debug, for relea
 ```bat
     .\build skiptests skipnative
 ```
-Which builds System.Private.CoreLib.dll AND System.Private.CoreLib.ni.dll (you will always want both) if you modify
-C# code. If you wish to only compile the coreclr.dll you can do
+Which builds System.Private.CoreLib.dll if you modify C# code. If you wish to only compile the coreclr.dll you can do
  ```bat
     .\build skiptests skipmscorlib
 ```
