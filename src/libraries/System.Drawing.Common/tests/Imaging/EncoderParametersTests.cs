@@ -14,8 +14,7 @@ namespace System.Drawing.Imaging.Tests
         {
             EncoderParameters ep = new EncoderParameters();
             Assert.NotNull(ep.Param);
-            Assert.Equal(1, ep.Param.Length);
-            Assert.True(ep.Param.IsFixedSize);
+            Assert.Equal(new EncoderParameter[1], ep.Param);
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -24,8 +23,7 @@ namespace System.Drawing.Imaging.Tests
         {
             EncoderParameters ep = new EncoderParameters(count);
             Assert.NotNull(ep.Param);
-            Assert.Equal(count, ep.Param.Length);
-            Assert.True(ep.Param.IsFixedSize);
+            Assert.Equal(new EncoderParameter[count], ep.Param);
         }
 
         public static IEnumerable<object[]> Param_TestData

@@ -9,7 +9,7 @@ namespace System.Drawing.Imaging.Tests
 {
     public class EncoderParameterTests
     {
-        private static Encoder AnyEncoder = Encoder.ChrominanceTable;
+        private static readonly Encoder s_anyEncoder = Encoder.ChrominanceTable;
 
         private void CheckEncoderParameter(EncoderParameter encoderParameter, Encoder expectedEncoder, EncoderParameterValueType expectedType, int expectedNumberOfValues)
         {
@@ -52,8 +52,8 @@ namespace System.Drawing.Imaging.Tests
         [InlineData(true, EncoderParameterValueType.ValueTypeUndefined)]
         public void Ctor_Encoder_ByteValue_Bool(bool undefined, EncoderParameterValueType expected)
         {
-            EncoderParameter ep = new EncoderParameter(AnyEncoder, 0, undefined);
-            CheckEncoderParameter(ep, AnyEncoder, expected, 1);
+            EncoderParameter ep = new EncoderParameter(s_anyEncoder, 0, undefined);
+            CheckEncoderParameter(ep, s_anyEncoder, expected, 1);
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -62,8 +62,8 @@ namespace System.Drawing.Imaging.Tests
         [InlineData(short.MaxValue)]
         public void Ctor_Encoder_Short(short value)
         {
-            EncoderParameter ep = new EncoderParameter(AnyEncoder, value);
-            CheckEncoderParameter(ep, AnyEncoder, EncoderParameterValueType.ValueTypeShort, 1);
+            EncoderParameter ep = new EncoderParameter(s_anyEncoder, value);
+            CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeShort, 1);
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -72,8 +72,8 @@ namespace System.Drawing.Imaging.Tests
         [InlineData(long.MaxValue)]
         public void Ctor_Encoder_Long(long value)
         {
-            EncoderParameter ep = new EncoderParameter(AnyEncoder, value);
-            CheckEncoderParameter(ep, AnyEncoder, EncoderParameterValueType.ValueTypeLong, 1);
+            EncoderParameter ep = new EncoderParameter(s_anyEncoder, value);
+            CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeLong, 1);
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -82,8 +82,8 @@ namespace System.Drawing.Imaging.Tests
         [InlineData(-10, -5)]
         public void Ctor_Encoder_Numerator_Denominator(int numerator, int denominator)
         {
-            EncoderParameter ep = new EncoderParameter(AnyEncoder, numerator, denominator);
-            CheckEncoderParameter(ep, AnyEncoder, EncoderParameterValueType.ValueTypeRational, 1);
+            EncoderParameter ep = new EncoderParameter(s_anyEncoder, numerator, denominator);
+            CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeRational, 1);
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -91,8 +91,8 @@ namespace System.Drawing.Imaging.Tests
         [InlineData(1, 2, 3, 4)]
         public void Ctor_Encoder_Numerator1_Denominator1_Numerator2_Denominator2(int numerator1, int denominator1, int numerator2, int denominator2)
         {
-            EncoderParameter ep = new EncoderParameter(AnyEncoder, numerator1, denominator1, numerator2, denominator2);
-            CheckEncoderParameter(ep, AnyEncoder, EncoderParameterValueType.ValueTypeRationalRange, 1);
+            EncoderParameter ep = new EncoderParameter(s_anyEncoder, numerator1, denominator1, numerator2, denominator2);
+            CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeRationalRange, 1);
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -100,8 +100,8 @@ namespace System.Drawing.Imaging.Tests
         [InlineData(1, 2)]
         public void Ctor_Encoder_RangeBegin_RangeEnd(long rangeBegin, long rangeEnd)
         {
-            EncoderParameter ep = new EncoderParameter(AnyEncoder, rangeBegin, rangeEnd);
-            CheckEncoderParameter(ep, AnyEncoder, EncoderParameterValueType.ValueTypeLongRange, 1);
+            EncoderParameter ep = new EncoderParameter(s_anyEncoder, rangeBegin, rangeEnd);
+            CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeLongRange, 1);
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -109,8 +109,8 @@ namespace System.Drawing.Imaging.Tests
         [InlineData("")]
         public void Ctor_Encoder_String(string value)
         {
-            EncoderParameter ep = new EncoderParameter(AnyEncoder, value);
-            CheckEncoderParameter(ep, AnyEncoder, EncoderParameterValueType.ValueTypeAscii, value.Length);
+            EncoderParameter ep = new EncoderParameter(s_anyEncoder, value);
+            CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeAscii, value.Length);
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -118,8 +118,8 @@ namespace System.Drawing.Imaging.Tests
         [InlineData(new byte[] { 0, 1, 2, 3 })]
         public void Ctor_Encoder_ByteArray(byte[] value)
         {
-            EncoderParameter ep = new EncoderParameter(AnyEncoder, value);
-            CheckEncoderParameter(ep, AnyEncoder, EncoderParameterValueType.ValueTypeByte, value.Length);
+            EncoderParameter ep = new EncoderParameter(s_anyEncoder, value);
+            CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeByte, value.Length);
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -127,8 +127,8 @@ namespace System.Drawing.Imaging.Tests
         [InlineData(new byte[] { 1, 2 }, true, EncoderParameterValueType.ValueTypeUndefined)]
         public void Ctor_Encoder_ByteArray_Bool(byte[] value, bool undefined, EncoderParameterValueType expected)
         {
-            EncoderParameter ep = new EncoderParameter(AnyEncoder, value, undefined);
-            CheckEncoderParameter(ep, AnyEncoder, expected, value.Length);
+            EncoderParameter ep = new EncoderParameter(s_anyEncoder, value, undefined);
+            CheckEncoderParameter(ep, s_anyEncoder, expected, value.Length);
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -136,8 +136,8 @@ namespace System.Drawing.Imaging.Tests
         [InlineData(new short[] { 0, 1, 2, 3 })]
         public void Ctor_Encoder_ShortArray(short[] value)
         {
-            EncoderParameter ep = new EncoderParameter(AnyEncoder, value);
-            CheckEncoderParameter(ep, AnyEncoder, EncoderParameterValueType.ValueTypeShort, value.Length);
+            EncoderParameter ep = new EncoderParameter(s_anyEncoder, value);
+            CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeShort, value.Length);
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -145,32 +145,32 @@ namespace System.Drawing.Imaging.Tests
         [InlineData(new long[] { 0, 1, 2, 3 })]
         public void Ctor_Encoder_LongArray(long[] value)
         {
-            EncoderParameter ep = new EncoderParameter(AnyEncoder, value);
-            CheckEncoderParameter(ep, AnyEncoder, EncoderParameterValueType.ValueTypeLong, value.Length);
+            EncoderParameter ep = new EncoderParameter(s_anyEncoder, value);
+            CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeLong, value.Length);
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(new int[] { 0, 1, 2, 3 }, new int[] { 5, 6, 7, 8 })]
         public void Ctor_Encoder_NumeratorArray_DenominatorArray(int[] numerator, int[] denominator)
         {
-            EncoderParameter ep = new EncoderParameter(AnyEncoder, numerator, denominator);
-            CheckEncoderParameter(ep, AnyEncoder, EncoderParameterValueType.ValueTypeRational, numerator.Length);
+            EncoderParameter ep = new EncoderParameter(s_anyEncoder, numerator, denominator);
+            CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeRational, numerator.Length);
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(new long[] { 0, 1, 2, 3 }, new long[] { 5, 6, 7, 8 })]
         public void Ctor_Encoder_RangeBeginArray_RangeEndArray(long[] rangeBegin, long[] rangeEnd)
         {
-            EncoderParameter ep = new EncoderParameter(AnyEncoder, rangeBegin, rangeEnd);
-            CheckEncoderParameter(ep, AnyEncoder, EncoderParameterValueType.ValueTypeLongRange, rangeBegin.Length);
+            EncoderParameter ep = new EncoderParameter(s_anyEncoder, rangeBegin, rangeEnd);
+            CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeLongRange, rangeBegin.Length);
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [InlineData(new int[] { 0, 1, 2, 3 }, new int[] { 4, 5, 6, 7 }, new int[] { 8, 9, 10, 11 }, new int[] { 12, 13, 14, 15 })]
         public void Ctor_Encoder_Numerator1Array_Denominator1Array_Numerator2Array_Denominator2Array(int[] numerator1, int[] denominator1, int[] numerator2, int[] denominator2)
         {
-            EncoderParameter ep = new EncoderParameter(AnyEncoder, numerator1, denominator1, numerator2, denominator2);
-            CheckEncoderParameter(ep, AnyEncoder, EncoderParameterValueType.ValueTypeRationalRange, numerator1.Length);
+            EncoderParameter ep = new EncoderParameter(s_anyEncoder, numerator1, denominator1, numerator2, denominator2);
+            CheckEncoderParameter(ep, s_anyEncoder, EncoderParameterValueType.ValueTypeRationalRange, numerator1.Length);
         }
 
         public static IEnumerable<object[]> Encoder_NumberOfValues_TestData
@@ -193,15 +193,15 @@ namespace System.Drawing.Imaging.Tests
         [MemberData(nameof(Encoder_NumberOfValues_TestData))]
         public void Ctor_Encoder_NumberOfValues_Type_Value(int numberOfValues, EncoderParameterValueType type, IntPtr value)
         {
-            EncoderParameter ep = new EncoderParameter(AnyEncoder, numberOfValues, type, value);
-            CheckEncoderParameter(ep, AnyEncoder, type, numberOfValues);
+            EncoderParameter ep = new EncoderParameter(s_anyEncoder, numberOfValues, type, value);
+            CheckEncoderParameter(ep, s_anyEncoder, type, numberOfValues);
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Encoder_ReturnsExpecetd()
         {
             Encoder encoder = new Encoder(Guid.NewGuid());
-            EncoderParameter ep = new EncoderParameter(AnyEncoder, 0);
+            EncoderParameter ep = new EncoderParameter(s_anyEncoder, 0);
             ep.Encoder = encoder;
 
             Assert.Equal(encoder.Guid, ep.Encoder.Guid);
@@ -210,7 +210,7 @@ namespace System.Drawing.Imaging.Tests
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Ctor_Encoder_NumberOfValues_NotExistingType_ThrowsInvalidOperationException()
         {
-            Assert.Throws<InvalidOperationException>(() => new EncoderParameter(AnyEncoder, 1, (EncoderParameterValueType)999, IntPtr.Zero));
+            Assert.Throws<InvalidOperationException>(() => new EncoderParameter(s_anyEncoder, 1, (EncoderParameterValueType)999, IntPtr.Zero));
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -222,13 +222,13 @@ namespace System.Drawing.Imaging.Tests
         [InlineData(new int[] { 1 }, new int[] { 1 }, new int[] { 1 }, null, typeof(NullReferenceException))]
         public void Ctor_Encoder_Numerator1Array_Denominator1Array_Numerator2Array_Denominator2Array_InvalidParameters_ThrowsExpected(int[] numerator1, int[] denominator1, int[] numerator2, int[] denominator2, Type expected)
         {
-            Assert.Throws(expected, () => new EncoderParameter(AnyEncoder, numerator1, denominator1, numerator2, denominator2));
+            Assert.Throws(expected, () => new EncoderParameter(s_anyEncoder, numerator1, denominator1, numerator2, denominator2));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Encoder_Null_ThrowsNullReferenceException()
         {
-            EncoderParameter ep = new EncoderParameter(AnyEncoder, 0);
+            EncoderParameter ep = new EncoderParameter(s_anyEncoder, 0);
             Assert.Throws<NullReferenceException>(() => ep.Encoder = null);
         }
 
@@ -239,7 +239,7 @@ namespace System.Drawing.Imaging.Tests
         [InlineData(null, new int[] { 0, 1 }, typeof(NullReferenceException))]
         public void Ctor_Numerator_Denominator_IvalidValues_ThrowsExpected(int[] numerator, int[] denominator, Type expected)
         {
-            Assert.Throws(expected, () => new EncoderParameter(AnyEncoder, numerator, denominator));
+            Assert.Throws(expected, () => new EncoderParameter(s_anyEncoder, numerator, denominator));
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -249,19 +249,19 @@ namespace System.Drawing.Imaging.Tests
         [InlineData(null, new long[] { 0, 1 }, typeof(NullReferenceException))]
         public void Ctor_RangeBegin_RangeEnd_InvalidValues_ThrowsExpected(long[] rangeBegin, long[] rangeEnd, Type expected)
         {
-            Assert.Throws(expected, () => new EncoderParameter(AnyEncoder, rangeBegin, rangeEnd));
+            Assert.Throws(expected, () => new EncoderParameter(s_anyEncoder, rangeBegin, rangeEnd));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Ctor_Encoder_NullString_ThrowsNullReferenceException()
         {
-            Assert.Throws<NullReferenceException>(() => new EncoderParameter(AnyEncoder, (string)null));
+            Assert.Throws<NullReferenceException>(() => new EncoderParameter(s_anyEncoder, (string)null));
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Ctor_Encoder_ByteArray_ThrowsNullReferenceException()
         {
-            Assert.Throws<NullReferenceException>(() => new EncoderParameter(AnyEncoder, (byte[])null));
+            Assert.Throws<NullReferenceException>(() => new EncoderParameter(s_anyEncoder, (byte[])null));
         }
 
         public static IEnumerable<object[]> EncoderParameterCtor_NullEncoder_TestData
@@ -284,11 +284,22 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [MemberData(nameof(EncoderParameterCtor_NullEncoder_TestData))]
-        public void Ctor_NullEncoder_ThrowsNullReferenceException(Action encoderCtor)
+        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        public void Ctor_NullEncoder_ThrowsNullReferenceException()
         {
-            Assert.Throws<NullReferenceException>(encoderCtor);
+            Assert.Throws<NullReferenceException>(() => new EncoderParameter(null, (byte)0));
+            Assert.Throws<NullReferenceException>(() => new EncoderParameter(null, (byte)0, false));
+            Assert.Throws<NullReferenceException>(() => new EncoderParameter(null, (short)0));
+            Assert.Throws<NullReferenceException>(() => new EncoderParameter(null, numerator: 0, denominator: 0));
+            Assert.Throws<NullReferenceException>(() => new EncoderParameter(null, rangebegin: 0, rangeend: 0));
+            Assert.Throws<NullReferenceException>(() => new EncoderParameter(null, 0, 0, 0, 0));
+            Assert.Throws<NullReferenceException>(() => new EncoderParameter(null, "anyString"));
+            Assert.Throws<NullReferenceException>(() => new EncoderParameter(null, new byte[] { }));
+            Assert.Throws<NullReferenceException>(() => new EncoderParameter(null, new byte[] { }, false));
+            Assert.Throws<NullReferenceException>(() => new EncoderParameter(null, new short[] { }));
+            Assert.Throws<NullReferenceException>(() => new EncoderParameter(null, new long[] { }));
+            Assert.Throws<NullReferenceException>(() => new EncoderParameter(null, new int[] { }, new int[] { }));
+            Assert.Throws<NullReferenceException>(() => new EncoderParameter(null, new long[] { }, new long[] { }));
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -302,8 +313,7 @@ namespace System.Drawing.Imaging.Tests
         [InlineData(EncoderParameterValueType.ValueTypeRationalRange, (int.MaxValue / 16) + 1, typeof(OverflowException))]
         public void Ctor_Encoder_TooBigNumberOfValues_Type_Value_AccessViolationException(EncoderParameterValueType type, int numberOfValues, Type expected)
         {
-            IntPtr anyValue = IntPtr.Zero;
-            Assert.Throws(expected, () => new EncoderParameter(AnyEncoder, numberOfValues, type, anyValue));
+            Assert.Throws(expected, () => new EncoderParameter(s_anyEncoder, numberOfValues, type, IntPtr.Zero));
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
@@ -313,7 +323,7 @@ namespace System.Drawing.Imaging.Tests
         {
             IntPtr anyValue = IntPtr.Zero;
             EncoderParameterValueType anyTypw = EncoderParameterValueType.ValueTypeAscii;
-            Assert.Throws<OutOfMemoryException>(() => new EncoderParameter(AnyEncoder, numberOfValues, anyTypw, anyValue));
+            Assert.Throws<OutOfMemoryException>(() => new EncoderParameter(s_anyEncoder, numberOfValues, anyTypw, anyValue));
         }
     }
 }
