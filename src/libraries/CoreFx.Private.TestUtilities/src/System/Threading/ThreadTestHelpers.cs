@@ -4,8 +4,9 @@
 
 using Xunit;
 
-namespace System.Threading.Tests
+namespace System.Threading
 {
+    // NOTE: This project has a ref assembly, any changes to public members of this class will require changes to the ref as well
     public static class ThreadTestHelpers
     {
         public const int ExpectedTimeoutMilliseconds = 50;

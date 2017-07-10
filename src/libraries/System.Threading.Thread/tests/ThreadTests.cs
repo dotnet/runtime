@@ -8,7 +8,6 @@ using System.Globalization;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
-using System.Threading.Tests;
 using Xunit;
 
 namespace System.Threading.Threads.Tests
