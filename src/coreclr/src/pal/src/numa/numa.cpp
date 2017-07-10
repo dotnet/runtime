@@ -557,20 +557,20 @@ SetThreadGroupAffinity(
 
     int st = pthread_setaffinity_np(thread, sizeof(cpu_set_t), &cpuSet);
 
-    if (st == -1)
+    if (st != 0)
     {
-        switch (errno)
+        switch (st)
         {
-            case EINVAL:
-                // There is no processor in the mask that is allowed to execute the process
-                SetLastError(ERROR_INVALID_PARAMETER);
-                break;
-            case EPERM:
-                SetLastError(ERROR_ACCESS_DENIED);
-                break;
-            default:
-                SetLastError(ERROR_GEN_FAILURE);
-                break;
+        case EINVAL:
+            // There is no processor in the mask that is allowed to execute the process
+            SetLastError(ERROR_INVALID_PARAMETER);
+            break;
+        case ESRCH:
+            SetLastError(ERROR_INVALID_HANDLE);
+            break;
+        default:
+            SetLastError(ERROR_GEN_FAILURE);
+            break;
         }
     }
 
