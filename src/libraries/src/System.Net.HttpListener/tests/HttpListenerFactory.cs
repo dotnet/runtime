@@ -23,6 +23,7 @@ namespace System.Net.Tests
         private readonly string _processPrefix;
         private readonly string _hostname;
         private readonly string _path;
+        private readonly int _port;
 
         internal HttpListenerFactory(string hostname = "localhost", string path = null)
         {
