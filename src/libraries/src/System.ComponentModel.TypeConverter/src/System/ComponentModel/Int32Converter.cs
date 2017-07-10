@@ -33,17 +33,6 @@ namespace System.ComponentModel
             return Int32.Parse(value, NumberStyles.Integer, formatInfo);
         }
 
-
-        /// <summary>
-        /// Convert the given value to a string using the given CultureInfo
-        /// </summary>
-        internal override object FromString(string value, CultureInfo culture)
-        {
-            return Int32.Parse(value, culture);
-        }
-
-
-
         /// <summary>
         /// Convert the given value from a string using the given formatInfo
         /// </summary>

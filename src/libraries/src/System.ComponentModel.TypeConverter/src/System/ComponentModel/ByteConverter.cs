@@ -34,15 +34,6 @@ namespace System.ComponentModel
             return Byte.Parse(value, NumberStyles.Integer, formatInfo);
         }
 
-
-        /// <summary>
-        /// Convert the given string to a Byte using the given CultureInfo
-        /// </summary>
-        internal override object FromString(string value, CultureInfo culture)
-        {
-            return Byte.Parse(value, culture);
-        }
-
         /// <summary>
         /// Convert the given value to a string using the given formatInfo
         /// </summary>
