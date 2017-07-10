@@ -2,8 +2,6 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <!-- [ActiveIssue(https://github.com/dotnet/corefx/issues/21986)] causes a read access violation when built in ret. -->
-    <ILCBuildType Condition="'$(ArchGroup)' == 'x86'">chk</ILCBuildType>
     <ProjectGuid>{C560E194-5B14-4112-ABC6-3208491E53E6}</ProjectGuid>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
