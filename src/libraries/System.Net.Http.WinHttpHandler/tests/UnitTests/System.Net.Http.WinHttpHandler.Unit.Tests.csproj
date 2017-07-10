@@ -3,6 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{A2ECDEDB-12B7-402C-9230-152B7601179F}</ProjectGuid>
+    <NoWarn>$(NoWarn);0436</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
   </PropertyGroup>
@@ -65,6 +66,12 @@
     </Compile>
     <Compile Include="$(CommonPath)\System\Net\Http\WinHttpException.cs">
       <Link>Common\System\Net\Http\WinHttpException.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Security\CertificateHelper.cs">
+      <Link>Common\System\Net\Security\CertificateHelper.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Security\CertificateHelper.Windows.cs">
+      <Link>Common\System\Net\Security\CertificateHelper.Windows.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Runtime\ExceptionServices\ExceptionStackTrace.cs">
       <Link>Common\System\Runtime\ExceptionServices\ExceptionStackTrace.cs</Link>

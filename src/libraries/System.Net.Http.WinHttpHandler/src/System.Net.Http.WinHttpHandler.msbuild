@@ -22,6 +22,8 @@
     <CompileItem Include="$(CommonPath)\System\Net\Http\HttpHandlerDefaults.cs" />
     <CompileItem Include="$(CommonPath)\System\Net\Http\NoWriteNoSeekStreamContent.cs" />
     <CompileItem Include="$(CommonPath)\System\Net\Http\WinHttpException.cs" />
+    <CompileItem Include="$(CommonPath)\System\Net\Security\CertificateHelper.cs" />
+    <CompileItem Include="$(CommonPath)\System\Net\Security\CertificateHelper.Windows.cs" />
     <CompileItem Include="$(CommonPath)\System\Runtime\ExceptionServices\ExceptionStackTrace.cs" />
     <CompileItem Include="$(CommonPath)\System\Threading\Tasks\RendezvousAwaitable.cs" />
     <CompileItem Include="$(CommonPath)\System\Threading\Tasks\TaskToApm.cs" />

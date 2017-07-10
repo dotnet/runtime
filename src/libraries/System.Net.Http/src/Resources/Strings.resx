@@ -301,4 +301,7 @@
   <data name="net_http_feature_requires_Windows10Version1607" xml:space="preserve">
     <value>Using this feature requires Windows 10 Version 1607.</value>
   </data>
+  <data name="net_http_feature_UWPClientCertSupportRequiresCertInPersonalCertificateStore" xml:space="preserve">
+    <value>Client certificate was not found in the personal (\"MY\") certificate store. In UWP, client certificates are only supported if they have been added to that certificate store.</value>
+  </data>
 </root>

@@ -6,7 +6,7 @@ using System.Diagnostics;
 using System.Net.Http.WinHttpHandlerUnitTests;
 using System.Security.Cryptography.X509Certificates;
 
-namespace System.Net.Http
+namespace System.Security.Cryptography.X509Certificates
 {
     public class X509Store : IDisposable
     {
