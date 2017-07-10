@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Threading.Tasks;
-using System.Threading.Tests;
 using Xunit;
 
 namespace System.Threading.ThreadPools.Tests

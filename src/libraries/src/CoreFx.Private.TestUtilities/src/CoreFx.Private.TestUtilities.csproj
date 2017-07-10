@@ -21,6 +21,7 @@
   <ItemGroup>
     <Compile Include="System\IO\FileCleanupTestBase.cs" />
     <Compile Include="System\Diagnostics\RemoteExecutorTestBase.cs" />
+    <Compile Include="System\Threading\ThreadTestHelpers.cs" />
     <Compile Condition="'$(TargetGroup)' == 'netcoreapp'" Include="System\Diagnostics\RemoteExecutorTestBase.netcore.cs" />
     <Compile Condition="'$(TargetGroup)' == 'netfx'" Include="System\Diagnostics\RemoteExecutorTestBase.netfx.cs" />
     <Compile Condition="'$(TargetGroup)' != 'uap'" Include="System\Diagnostics\RemoteExecutorTestBase.Process.cs" />
@@ -36,6 +37,7 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Linq" />
+    <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Runtime.Extensions" />
