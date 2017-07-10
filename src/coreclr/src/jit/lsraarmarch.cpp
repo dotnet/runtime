@@ -824,6 +824,18 @@ void Lowering::TreeNodeInfoInitPutArgSplit(GenTreePutArgSplit* argNode, TreeNode
         //
         argNode->gtLsraInfo.srcCount = argInfo->numRegs + argInfo->numSlots;
 
+        // To avoid redundant moves, have the argument operand computed in the
+        // register in which the argument is passed to the call.
+        GenTreeFieldList* fieldListPtr = putArgChild->AsFieldList();
+        for (unsigned idx = 0; fieldListPtr != nullptr; fieldListPtr = fieldListPtr->Rest(), idx++)
+        {
+            if (idx < argInfo->numRegs)
+            {
+                GenTreePtr node = fieldListPtr->gtGetOp1();
+                node->gtLsraInfo.setSrcCandidates(m_lsra, genRegMask((regNumber)((unsigned)argReg + idx)));
+            }
+        }
+
         putArgChild->SetContained();
     }
     else
