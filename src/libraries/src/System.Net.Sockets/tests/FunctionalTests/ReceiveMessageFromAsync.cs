@@ -10,96 +10,52 @@ namespace System.Net.Sockets.Tests
 {
     public class ReceiveMessageFromAsync
     {
-        public void OnCompleted(object sender, SocketAsyncEventArgs args)
-        {
-            EventWaitHandle handle = (EventWaitHandle)args.UserToken;
-            handle.Set();
-        }
-
         [OuterLoop] // TODO: Issue #11345
-        [Fact]
-        public void Success_IPv4()
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public void ReceiveSentMessages_SocketAsyncEventArgs_Success(bool ipv4, bool changeReceiveBufferEachCall)
         {
-            ManualResetEvent completed = new ManualResetEvent(false);
+            const int DataLength = 1024;
+            AddressFamily family = ipv4 ? AddressFamily.InterNetwork : AddressFamily.InterNetworkV6;
+            IPAddress loopback = ipv4 ? IPAddress.Loopback : IPAddress.IPv6Loopback;
 
-            if (Socket.OSSupportsIPv4)
+            var completed = new ManualResetEventSlim(false);
+            using (var sender = new Socket(family, SocketType.Dgram, ProtocolType.Udp))
+            using (var receiver = new Socket(family, SocketType.Dgram, ProtocolType.Udp))
             {
-                using (Socket receiver = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp))
+                sender.Bind(new IPEndPoint(loopback, 0));
+                receiver.SetSocketOption(ipv4 ? SocketOptionLevel.IP : SocketOptionLevel.IPv6, SocketOptionName.PacketInformation, true);
+                int port = receiver.BindToAnonymousPort(loopback);
+
+                var args = new SocketAsyncEventArgs() { RemoteEndPoint = new IPEndPoint(ipv4 ? IPAddress.Any : IPAddress.IPv6Any, 0) };
+                args.Completed += (s,e) => completed.Set();
+                args.SetBuffer(new byte[DataLength], 0, DataLength);
+
+                for (int iters = 0; iters < 5; iters++)
                 {
-                    int port = receiver.BindToAnonymousPort(IPAddress.Loopback);
-                    receiver.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.PacketInformation, true);
-
-                    Socket sender = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-                    sender.Bind(new IPEndPoint(IPAddress.Loopback, 0));
-
                     for (int i = 0; i < TestSettings.UDPRedundancy; i++)
                     {
-                        sender.SendTo(new byte[1024], new IPEndPoint(IPAddress.Loopback, port));
+                        sender.SendTo(new byte[DataLength], new IPEndPoint(loopback, port));
                     }
 
-                    SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-                    args.RemoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
-                    args.SetBuffer(new byte[1024], 0, 1024);
-                    args.Completed += OnCompleted;
-                    args.UserToken = completed;
-
-                    bool pending = receiver.ReceiveMessageFromAsync(args);
-                    if (!pending)
+                    if (changeReceiveBufferEachCall)
                     {
-                        OnCompleted(null, args);
+                        args.SetBuffer(new byte[DataLength], 0, DataLength);
                     }
 
-                    Assert.True(completed.WaitOne(TestSettings.PassingTestTimeout), "Timeout while waiting for connection");
+                    if (!receiver.ReceiveMessageFromAsync(args))
+                    {
+                        completed.Set();
+                    }
+                    Assert.True(completed.Wait(TestSettings.PassingTestTimeout), "Timeout while waiting for connection");
+                    completed.Reset();
 
-                    Assert.Equal(1024, args.BytesTransferred);
+                    Assert.Equal(DataLength, args.BytesTransferred);
                     Assert.Equal(sender.LocalEndPoint, args.RemoteEndPoint);
                     Assert.Equal(((IPEndPoint)sender.LocalEndPoint).Address, args.ReceiveMessageFromPacketInfo.Address);
-
-                    sender.Dispose();
-                }
-            }
-        }
-
-        [OuterLoop] // TODO: Issue #11345
-        [Fact]
-        public void Success_IPv6()
-        {
-            ManualResetEvent completed = new ManualResetEvent(false);
-
-            if (Socket.OSSupportsIPv6)
-            {
-                using (Socket receiver = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp))
-                {
-                    int port = receiver.BindToAnonymousPort(IPAddress.IPv6Loopback);
-                    receiver.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.PacketInformation, true);
-
-                    Socket sender = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
-                    sender.Bind(new IPEndPoint(IPAddress.IPv6Loopback, 0));
-
-                    for (int i = 0; i < TestSettings.UDPRedundancy; i++)
-                    {
-                        sender.SendTo(new byte[1024], new IPEndPoint(IPAddress.IPv6Loopback, port));
-                    }
-
-                    SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-                    args.RemoteEndPoint = new IPEndPoint(IPAddress.IPv6Any, 0);
-                    args.SetBuffer(new byte[1024], 0, 1024);
-                    args.Completed += OnCompleted;
-                    args.UserToken = completed;
-
-                    bool pending = receiver.ReceiveMessageFromAsync(args);
-                    if (!pending)
-                    {
-                        OnCompleted(null, args);
-                    }
-
-                    Assert.True(completed.WaitOne(TestSettings.PassingTestTimeout), "Timeout while waiting for connection");
-
-                    Assert.Equal(1024, args.BytesTransferred);
-                    Assert.Equal(sender.LocalEndPoint, args.RemoteEndPoint);
-                    Assert.Equal(((IPEndPoint)sender.LocalEndPoint).Address, args.ReceiveMessageFromPacketInfo.Address);
-
-                    sender.Dispose();
                 }
             }
         }
@@ -108,30 +64,33 @@ namespace System.Net.Sockets.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        public async Task Task_Success(bool ipv4)
+        public async Task ReceiveSentMessages_Tasks_Success(bool ipv4)
         {
+            const int DataLength = 1024;
             AddressFamily family = ipv4 ? AddressFamily.InterNetwork : AddressFamily.InterNetworkV6;
             IPAddress loopback = ipv4 ? IPAddress.Loopback : IPAddress.IPv6Loopback;
 
-            using (Socket receiver = new Socket(family, SocketType.Dgram, ProtocolType.Udp))
-            using (Socket sender = new Socket(family, SocketType.Dgram, ProtocolType.Udp))
+            using (var receiver = new Socket(family, SocketType.Dgram, ProtocolType.Udp))
+            using (var sender = new Socket(family, SocketType.Dgram, ProtocolType.Udp))
             {
-                int port = receiver.BindToAnonymousPort(loopback);
-                receiver.SetSocketOption(ipv4 ? SocketOptionLevel.IP : SocketOptionLevel.IPv6, SocketOptionName.PacketInformation, true);
-
                 sender.Bind(new IPEndPoint(loopback, 0));
+                receiver.SetSocketOption(ipv4 ? SocketOptionLevel.IP : SocketOptionLevel.IPv6, SocketOptionName.PacketInformation, true);
+                int port = receiver.BindToAnonymousPort(loopback);
 
-                for (int i = 0; i < TestSettings.UDPRedundancy; i++)
+                for (int iters = 0; iters < 5; iters++)
                 {
-                    sender.SendTo(new byte[1024], new IPEndPoint(loopback, port));
-                }
+                    for (int i = 0; i < TestSettings.UDPRedundancy; i++)
+                    {
+                        sender.SendTo(new byte[DataLength], new IPEndPoint(loopback, port));
+                    }
 
-                SocketReceiveMessageFromResult result = await receiver.ReceiveMessageFromAsync(
-                    new ArraySegment<byte>(new byte[1024], 0, 1024), SocketFlags.None,
-                    new IPEndPoint(ipv4 ? IPAddress.Any : IPAddress.IPv6Any, 0));
-                Assert.Equal(1024, result.ReceivedBytes);
-                Assert.Equal(sender.LocalEndPoint, result.RemoteEndPoint);
-                Assert.Equal(((IPEndPoint)sender.LocalEndPoint).Address, result.PacketInformation.Address);
+                    SocketReceiveMessageFromResult result = await receiver.ReceiveMessageFromAsync(
+                        new ArraySegment<byte>(new byte[DataLength], 0, DataLength), SocketFlags.None,
+                        new IPEndPoint(ipv4 ? IPAddress.Any : IPAddress.IPv6Any, 0));
+                    Assert.Equal(DataLength, result.ReceivedBytes);
+                    Assert.Equal(sender.LocalEndPoint, result.RemoteEndPoint);
+                    Assert.Equal(((IPEndPoint)sender.LocalEndPoint).Address, result.PacketInformation.Address);
+                }
             }
         }
     }
