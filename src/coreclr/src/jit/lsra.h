@@ -1171,6 +1171,11 @@ private:
     // True if there are any register candidate lclVars available for allocation.
     bool enregisterLocalVars;
 
+    virtual bool willEnregisterLocalVars() const
+    {
+        return enregisterLocalVars;
+    }
+
     // Ordered list of RefPositions
     RefPositionList refPositions;
 
