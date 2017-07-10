@@ -910,6 +910,7 @@ class LinearScanInterface
 public:
     virtual void doLinearScan()                                = 0;
     virtual void recordVarLocationsAtStartOfBB(BasicBlock* bb) = 0;
+    virtual bool willEnregisterLocalVars() const               = 0;
 };
 
 LinearScanInterface* getLinearScanAllocator(Compiler* comp);
@@ -3725,6 +3726,15 @@ public:
     GenTreeCall* fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfoHelpFunc helper);
 
     GenTreeCall* fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls);
+
+    inline bool backendRequiresLocalVarLifetimes()
+    {
+#if defined(LEGACY_BACKEND)
+        return true;
+#else
+        return !opts.MinOpts() || m_pLinearScan->willEnregisterLocalVars();
+#endif
+    }
 
     void fgLocalVarLiveness();
 

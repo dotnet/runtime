@@ -5519,16 +5519,13 @@ void CodeGen::genCheckUseBlockInit()
             continue;
         }
 
-#if CAN_DISABLE_DFA
         /* If we don't know lifetimes of variables, must be conservative */
-
-        if (compiler->opts.MinOpts())
+        if (!compiler->backendRequiresLocalVarLifetimes())
         {
             varDsc->lvMustInit = true;
             noway_assert(!varDsc->lvRegister);
         }
         else
-#endif // CAN_DISABLE_DFA
         {
             if (!varDsc->lvTracked)
             {
