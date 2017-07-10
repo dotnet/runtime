@@ -303,13 +303,10 @@ namespace System.Drawing.Imaging.Tests
         }
 
         [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [InlineData(EncoderParameterValueType.ValueTypeByte, int.MaxValue, typeof(AccessViolationException))]
-        [InlineData(EncoderParameterValueType.ValueTypeAscii, int.MaxValue, typeof(AccessViolationException))]
         [InlineData(EncoderParameterValueType.ValueTypeShort, (int.MaxValue / 2) + 1, typeof(OverflowException))]
         [InlineData(EncoderParameterValueType.ValueTypeLong, (int.MaxValue / 4) + 1, typeof(OverflowException))]
         [InlineData(EncoderParameterValueType.ValueTypeRational, (int.MaxValue / 8) + 1, typeof(OverflowException))]
         [InlineData(EncoderParameterValueType.ValueTypeLongRange, (int.MaxValue / 8) + 1, typeof(OverflowException))]
-        [InlineData(EncoderParameterValueType.ValueTypeUndefined, int.MaxValue, typeof(AccessViolationException))]
         [InlineData(EncoderParameterValueType.ValueTypeRationalRange, (int.MaxValue / 16) + 1, typeof(OverflowException))]
         public void Ctor_Encoder_TooBigNumberOfValues_Type_Value_AccessViolationException(EncoderParameterValueType type, int numberOfValues, Type expected)
         {
