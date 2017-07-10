@@ -51,7 +51,7 @@ def get_optdata_dir(tool, arch):
     """Returns an absolute path to the directory that should contain optdata given a tool,arch"""
     package_name = 'optimization.%s-%s.%s.CoreCLR' % (get_buildos(), arch, tool)
     package_version = get_optdata_version(tool)
-    return path.join(REPO_ROOT, 'packages', package_name, package_version, 'data')
+    return path.join(REPO_ROOT, 'packages', package_name.lower(), package_version.lower(), 'data')
 
 def check_for_unstaged_changes(file_path):
     """Returns whether a file in git has untracked changes."""
