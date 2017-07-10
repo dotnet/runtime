@@ -141,24 +141,27 @@ check_prereqs()
 
 restore_optdata()
 {
-    # if msbuild is not supported, then set __SkipRestoreOptData to 1
-    if [ $__isMSBuildOnNETCoreSupported == 0 ]; then __SkipRestoreOptData=1; fi
     # we only need optdata on a Release build
     if [[ "$__BuildType" != "Release" ]]; then __SkipRestoreOptData=1; fi
 
-    if [ $__SkipRestoreOptData == 0 ]; then
+    if [[ ( $__SkipRestoreOptData == 0 ) && ( $__isMSBuildOnNETCoreSupported == 1 ) ]]; then
         echo "Restoring the OptimizationData package"
         "$__ProjectRoot/run.sh" sync -optdata
         if [ $? != 0 ]; then
             echo "Failed to restore the optimization data package."
             exit 1
         fi
+    fi
 
+    if [ $__isMSBuildOnNETCoreSupported == 1 ]; then
         # Parse the optdata package versions out of msbuild so that we can pass them on to CMake
         local DotNetCli="$__ProjectRoot/Tools/dotnetcli/dotnet"
         if [ ! -f $DotNetCli ]; then
-            echo "Assertion failed: dotnet CLI not found at '$DotNetCli'"
-            exit 1
+            "$__ProjectRoot/init-tools.sh"
+            if [ $? != 0 ]; then
+                echo "Failed to restore buildtools."
+                exit 1
+            fi
         fi
         local OptDataProjectFilePath="$__ProjectRoot/src/.nuget/optdata/optdata.csproj"
         __PgoOptDataVersion=$($DotNetCli msbuild $OptDataProjectFilePath /t:DumpPgoDataPackageVersion /nologo | sed 's/^\s*//')
