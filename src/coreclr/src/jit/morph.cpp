@@ -4921,7 +4921,7 @@ GenTreePtr Compiler::fgMorphMultiregStructArg(GenTreePtr arg, fgArgTabEntryPtr f
 #ifdef DEBUG
         if (verbose)
         {
-            JITDUMP("Multireg struct argument V%02u : ");
+            JITDUMP("Multireg struct argument V%02u : ", varNum);
             fgEntryPtr->Dump();
         }
 #endif // DEBUG
