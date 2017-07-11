@@ -7099,9 +7099,14 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		} else {
 			/* FIXME: maybe save the jit tls in the prolog */
 		}
-		if (cfg->used_int_regs & (1 << AMD64_RBP)) {
+		if (cfg->used_int_regs & (1 << AMD64_RBP))
 			amd64_mov_reg_membase (code, AMD64_RBP, cfg->frame_reg, lmf_offset + MONO_STRUCT_OFFSET (MonoLMF, rbp), 8);
-		}
+		if (cfg->arch.omit_fp)
+			/*
+			 * emit_setup_lmf () marks RBP as saved, we have to mark it as same value here before clearing up the stack
+			 * since its stack slot will become invalid.
+			 */
+			mono_emit_unwind_op_same_value (cfg, code, AMD64_RBP);
 	}
 
 	/* Restore callee saved regs */
@@ -7109,9 +7114,9 @@ mono_arch_emit_epilog (MonoCompile *cfg)
 		if (AMD64_IS_CALLEE_SAVED_REG (i) && (cfg->arch.saved_iregs & (1 << i))) {
 			/* Restore only used_int_regs, not arch.saved_iregs */
 #if defined(MONO_SUPPORT_TASKLETS)
-			int restore_reg=1;
+			int restore_reg = 1;
 #else
-			int restore_reg=(cfg->used_int_regs & (1 << i));
+			int restore_reg = (cfg->used_int_regs & (1 << i));
 #endif
 			if (restore_reg) {
 				amd64_mov_reg_membase (code, i, cfg->frame_reg, save_area_offset, 8);
