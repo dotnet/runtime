@@ -16,18 +16,9 @@ simpleNode('OSX10.12','latest') {
     def logFolder = getLogFolder()
 
     stage ('Initialize tools') {
-        try {
-            // Workaround nuget issue https://github.com/NuGet/Home/issues/5085 were we need to set HOME
-            // Init tools
-            sh 'HOME=\$WORKSPACE/tempHome ./init-tools.sh'
-        }
-        catch (err) {
-            // On errors for build tools initializations, it's useful to echo the contents of the file
-            // for easy diagnosis.  This could also be copied to the log directory
-            sh 'cat init-tools.log'
-            // Ensure the build result is still propagated.
-            throw err
-        }
+        // Workaround nuget issue https://github.com/NuGet/Home/issues/5085 were we need to set HOME
+        // Init tools
+        sh 'HOME=\$WORKSPACE/tempHome ./init-tools.sh'
     }
     stage ('Generate version assets') {
         // Generate the version assets.  Do we need to even do this for non-official builds?
