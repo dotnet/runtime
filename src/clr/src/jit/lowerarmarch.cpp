@@ -455,6 +455,217 @@ void Lowering::LowerRotate(GenTreePtr tree)
     }
 }
 
+//------------------------------------------------------------------------
+// Containment analysis
+//------------------------------------------------------------------------
+
+//------------------------------------------------------------------------
+// ContainCheckIndir: Determine whether operands of an indir should be contained.
+//
+// Arguments:
+//    node       - The indirection node of interest
+//
+// Notes:
+//    This is called for both store and load indirections.
+//
+// Return Value:
+//    None.
+//
+void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
+{
+#ifdef _TARGET_ARM64_
+    if (indirNode->OperIs(GT_STOREIND))
+    {
+        GenTree* src = indirNode->gtOp.gtOp2;
+        if (!varTypeIsFloating(src->TypeGet()) && src->IsIntegralConst(0))
+        {
+            // an integer zero for 'src' can be contained.
+            MakeSrcContained(indirNode, src);
+        }
+    }
+#endif // _TARGET_ARM64_
+
+    // If this is the rhs of a block copy it will be handled when we handle the store.
+    if (indirNode->TypeGet() == TYP_STRUCT)
+    {
+        return;
+    }
+
+    GenTree* addr          = indirNode->Addr();
+    bool     makeContained = true;
+    if ((addr->OperGet() == GT_LEA) && IsSafeToContainMem(indirNode, addr))
+    {
+        GenTreeAddrMode* lea   = addr->AsAddrMode();
+        GenTree*         base  = lea->Base();
+        GenTree*         index = lea->Index();
+        unsigned         cns   = lea->gtOffset;
+
+#ifdef _TARGET_ARM_
+        // ARM floating-point load/store doesn't support a form similar to integer
+        // ldr Rdst, [Rbase + Roffset] with offset in a register. The only supported
+        // form is vldr Rdst, [Rbase + imm] with a more limited constraint on the imm.
+        if (lea->HasIndex() || !emitter::emitIns_valid_imm_for_vldst_offset(cns))
+        {
+            if (indirNode->OperGet() == GT_STOREIND)
+            {
+                if (varTypeIsFloating(indirNode->AsStoreInd()->Data()))
+                {
+                    makeContained = false;
+                }
+            }
+            else if (indirNode->OperGet() == GT_IND)
+            {
+                if (varTypeIsFloating(indirNode))
+                {
+                    makeContained = false;
+                }
+            }
+        }
+#endif
+        if (makeContained)
+        {
+            MakeSrcContained(indirNode, addr);
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// ContainCheckBinary: Determine whether a binary op's operands should be contained.
+//
+// Arguments:
+//    node - the node we care about
+//
+void Lowering::ContainCheckBinary(GenTreeOp* node)
+{
+    // Check and make op2 contained (if it is a containable immediate)
+    CheckImmedAndMakeContained(node, node->gtOp2);
+}
+
+//------------------------------------------------------------------------
+// ContainCheckMul: Determine whether a mul op's operands should be contained.
+//
+// Arguments:
+//    node - the node we care about
+//
+void Lowering::ContainCheckMul(GenTreeOp* node)
+{
+    ContainCheckBinary(node);
+}
+
+//------------------------------------------------------------------------
+// ContainCheckShiftRotate: Determine whether a mul op's operands should be contained.
+//
+// Arguments:
+//    node - the node we care about
+//
+void Lowering::ContainCheckShiftRotate(GenTreeOp* node)
+{
+    GenTreePtr shiftBy = node->gtOp2;
+
+#ifdef _TARGET_ARM_
+    GenTreePtr source = node->gtOp1;
+    if (node->OperIs(GT_LSH_HI, GT_RSH_LO))
+    {
+        assert(source->OperGet() == GT_LONG);
+        MakeSrcContained(node, source);
+    }
+#else  // !_TARGET_ARM_
+    assert(node->OperIsShiftOrRotate());
+#endif // !_TARGET_ARM_
+
+    if (shiftBy->IsCnsIntOrI())
+    {
+        MakeSrcContained(node, shiftBy);
+    }
+}
+
+//------------------------------------------------------------------------
+// ContainCheckStoreLoc: determine whether the source of a STORE_LCL* should be contained.
+//
+// Arguments:
+//    node - pointer to the node
+//
+void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc)
+{
+    assert(storeLoc->OperIsLocalStore());
+    GenTree* op1 = storeLoc->gtGetOp1();
+
+#ifdef FEATURE_SIMD
+    if (varTypeIsSIMD(storeLoc))
+    {
+        if (op1->IsCnsIntOrI())
+        {
+            // For an InitBlk we want op1 to be contained; otherwise we want it to
+            // be evaluated into an xmm register.
+            MakeSrcContained(storeLoc, op1);
+        }
+        return;
+    }
+#endif // FEATURE_SIMD
+
+    // If the source is a containable immediate, make it contained, unless it is
+    // an int-size or larger store of zero to memory, because we can generate smaller code
+    // by zeroing a register and then storing it.
+    if (IsContainableImmed(storeLoc, op1) && (!op1->IsIntegralConst(0) || varTypeIsSmall(storeLoc)))
+    {
+        MakeSrcContained(storeLoc, op1);
+    }
+#ifdef _TARGET_ARM_
+    else if (op1->OperGet() == GT_LONG)
+    {
+        MakeSrcContained(storeLoc, op1);
+    }
+#endif // _TARGET_ARM_
+}
+
+//------------------------------------------------------------------------
+// ContainCheckCast: determine whether the source of a CAST node should be contained.
+//
+// Arguments:
+//    node - pointer to the node
+//
+void Lowering::ContainCheckCast(GenTreeCast* node)
+{
+#ifdef _TARGET_ARM_
+    GenTreePtr castOp     = node->CastOp();
+    var_types  castToType = node->CastToType();
+    var_types  srcType    = castOp->TypeGet();
+
+    if (varTypeIsLong(castOp))
+    {
+        assert(castOp->OperGet() == GT_LONG);
+        MakeSrcContained(node, castOp);
+    }
+#endif // _TARGET_ARM_
+}
+
+//------------------------------------------------------------------------
+// ContainCheckCompare: determine whether the sources of a compare node should be contained.
+//
+// Arguments:
+//    node - pointer to the node
+//
+void Lowering::ContainCheckCompare(GenTreeOp* cmp)
+{
+    ContainCheckBinary(cmp);
+}
+
+//------------------------------------------------------------------------
+// ContainCheckBoundsChk: determine whether any source of a bounds check node should be contained.
+//
+// Arguments:
+//    node - pointer to the node
+//
+void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
+{
+    assert(node->OperIsBoundsCheck());
+    GenTreePtr other;
+    if (!CheckImmedAndMakeContained(node, node->gtIndex))
+    {
+        CheckImmedAndMakeContained(node, node->gtArrLen);
+    }
+}
+
 #endif // _TARGET_ARMARCH_
 
 #endif // !LEGACY_BACKEND
