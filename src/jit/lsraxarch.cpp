@@ -41,8 +41,11 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //
 void Lowering::TreeNodeInfoInitStoreLoc(GenTreeLclVarCommon* storeLoc)
 {
+    ContainCheckStoreLoc(storeLoc);
+
     TreeNodeInfo* info = &(storeLoc->gtLsraInfo);
-    GenTree*      op1  = storeLoc->gtGetOp1();
+    info->dstCount     = 0;
+    GenTree* op1       = storeLoc->gtGetOp1();
 
 #ifdef _TARGET_X86_
     if (op1->OperGet() == GT_LONG)
@@ -151,12 +154,6 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
 
         case GT_STORE_LCL_FLD:
         case GT_STORE_LCL_VAR:
-            ContainCheckStoreLoc(tree->AsLclVarCommon());
-            // TODO-XArch-CQ: This should be moved to Lowering, but it widens the types, which changes the behavior
-            // of the containment analysis.
-            LowerStoreLoc(tree->AsLclVarCommon());
-            info->srcCount = GetOperandSourceCount(tree->gtOp.gtOp1);
-            info->dstCount = 0;
             TreeNodeInfoInitStoreLoc(tree->AsLclVarCommon());
             break;
 
@@ -572,8 +569,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
 #endif // FEATURE_SIMD
             ContainCheckBoundsChk(tree->AsBoundsChk());
             // Consumes arrLen & index - has no result
-            info->srcCount = 0;
-            info->srcCount += GetOperandSourceCount(tree->AsBoundsChk()->gtIndex);
+            info->srcCount = GetOperandSourceCount(tree->AsBoundsChk()->gtIndex);
             info->srcCount += GetOperandSourceCount(tree->AsBoundsChk()->gtArrLen);
             info->dstCount = 0;
             break;
@@ -2712,9 +2708,8 @@ void Lowering::TreeNodeInfoInitIndir(GenTreeIndir* indirTree)
     unsigned   mul, cns;
     bool       rev;
 
-    bool isStore   = (indirTree->gtOper == GT_STOREIND);
     info->srcCount = GetIndirSourceCount(indirTree);
-    if (isStore)
+    if (indirTree->gtOper == GT_STOREIND)
     {
         GenTree* source = indirTree->gtOp.gtOp2;
         if (indirTree->AsStoreInd()->IsRMWMemoryOp())
@@ -2736,16 +2731,13 @@ void Lowering::TreeNodeInfoInitIndir(GenTreeIndir* indirTree)
             info->srcCount += GetOperandSourceCount(source);
         }
 #ifdef _TARGET_X86_
-        if (varTypeIsByte(indirTree))
+        if (varTypeIsByte(indirTree) && !source->isContained())
         {
             // If storeInd is of TYP_BYTE, set source to byteable registers.
-            if (!source->isContained())
-            {
-                regMaskTP regMask = source->gtLsraInfo.getSrcCandidates(m_lsra);
-                regMask &= ~RBM_NON_BYTE_REGS;
-                assert(regMask != RBM_NONE);
-                source->gtLsraInfo.setSrcCandidates(m_lsra, regMask);
-            }
+            regMaskTP regMask = source->gtLsraInfo.getSrcCandidates(m_lsra);
+            regMask &= ~RBM_NON_BYTE_REGS;
+            assert(regMask != RBM_NONE);
+            source->gtLsraInfo.setSrcCandidates(m_lsra, regMask);
         }
 #endif
     }
@@ -3217,47 +3209,6 @@ bool Lowering::ExcludeNonByteableRegisters(GenTree* tree)
 #endif // _TARGET_X86_
 
 //------------------------------------------------------------------------
-// GetIndirSourceCount: Get the source registers for an indirection that might be contained.
-//
-// Arguments:
-//    node      - The node of interest
-//
-// Return Value:
-//    The number of source registers used by the *parent* of this node.
-//
-int Lowering::GetIndirSourceCount(GenTreeIndir* indirTree)
-{
-    int      srcCount = 0;
-    GenTree* addr     = indirTree->gtGetOp1();
-    GenTree* base     = addr;
-    GenTree* index    = nullptr;
-
-    if (addr->isContained())
-    {
-        if (addr->gtOper == GT_LEA)
-        {
-            base  = addr->AsAddrMode()->Base();
-            index = addr->AsAddrMode()->Index();
-        }
-        if ((base != nullptr) && !base->isContained())
-        {
-            srcCount++;
-        }
-        if (index != nullptr)
-        {
-            // We never have a contained index.
-            assert(!index->isContained());
-            srcCount++;
-        }
-    }
-    else
-    {
-        srcCount++;
-    }
-    return srcCount;
-}
-
-//------------------------------------------------------------------------
 // GetOperandSourceCount: Get the source registers for an operand that might be contained.
 //
 // Arguments:
@@ -3268,30 +3219,27 @@ int Lowering::GetIndirSourceCount(GenTreeIndir* indirTree)
 //
 int Lowering::GetOperandSourceCount(GenTree* node)
 {
-    int srcCount = 0;
-    if (node->isContained())
+    if (!node->isContained())
     {
+        return 1;
+    }
+
 #if !defined(_TARGET_64BIT_)
-        // TODO-X86-CQ: Allow contained GT_LONG nodes, e.g. for a long assignment:
-        //   GT_STORE_LCL_VAR(GT_LONG(LCL_VAR,LCL_VAR))
-        if (node->gtOper == GT_LONG)
-        {
-            srcCount = 2;
-        }
-        else
-#endif // !defined(_TARGET_64BIT_)
-            if (node->OperIsIndir())
-        {
-            srcCount += GetIndirSourceCount(node->AsIndir());
-            // TODO: If indir is contained, don't even set its srcCount in the first place.
-            node->gtLsraInfo.srcCount = 0;
-        }
-    }
-    else
+    if (node->OperIs(GT_LONG))
     {
-        srcCount++;
+        return 2;
     }
-    return srcCount;
+#endif // !defined(_TARGET_64BIT_)
+    if (node->OperIsIndir())
+    {
+        const unsigned srcCount = GetIndirSourceCount(node->AsIndir());
+        // TODO-Cleanup: Once we are doing containment analysis during Lowering, this
+        // can be removed, or changed to an assert.
+        node->gtLsraInfo.srcCount = 0;
+        return srcCount;
+    }
+
+    return 0;
 }
 
 #endif // _TARGET_XARCH_
