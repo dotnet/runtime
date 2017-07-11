@@ -2449,9 +2449,9 @@ void Compiler::lvaUpdateClass(unsigned varNum, CORINFO_CLASS_HANDLE clsHnd, bool
     // Are we updating the type?
     if (varDsc->lvClassHnd != clsHnd)
     {
-        JITDUMP("\nlvaUpdateClass: Updating class for V%02i from (%p) %s to (%p) %s %s\n", varNum, varDsc->lvClassHnd,
-                info.compCompHnd->getClassName(varDsc->lvClassHnd), clsHnd, info.compCompHnd->getClassName(clsHnd),
-                isExact ? " [exact]" : "");
+        JITDUMP("\nlvaUpdateClass: Updating class for V%02i from (%p) %s to (%p) %s %s\n", varNum,
+                dspPtr(varDsc->lvClassHnd), info.compCompHnd->getClassName(varDsc->lvClassHnd), dspPtr(clsHnd),
+                info.compCompHnd->getClassName(clsHnd), isExact ? " [exact]" : "");
 
         varDsc->lvClassHnd     = clsHnd;
         varDsc->lvClassIsExact = isExact;
