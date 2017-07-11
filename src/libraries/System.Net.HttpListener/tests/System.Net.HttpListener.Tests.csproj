@@ -31,5 +31,8 @@
     </Compile>
     <Compile Include="HttpListenerTimeoutManagerTests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\System.Net.HttpListener.Tests.rd.xml" />
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
