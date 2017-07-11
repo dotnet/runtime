@@ -26,6 +26,8 @@
     <Compile Include="Imaging\BitmapDataTests.cs" />
     <Compile Include="Imaging\ColorMapTests.cs" />
     <Compile Include="Imaging\ColorMatrixTests.cs" />
+    <Compile Include="Imaging\EncoderParametersTests.cs" />
+    <Compile Include="Imaging\EncoderParameterTests.cs" />
     <Compile Include="Imaging\EncoderTests.cs" />
     <Compile Include="Imaging\FrameDimensionTests.cs" />
     <Compile Include="Imaging\ImageCodecInfoTests.cs" />
