@@ -58,7 +58,11 @@ namespace System.Net.Http.Functional.Tests
     public sealed class ManagedHandler_HttpClientHandler_ClientCertificates_Test : HttpClientHandler_ClientCertificates_Test, IDisposable
     {
         public ManagedHandler_HttpClientHandler_ClientCertificates_Test(ITestOutputHelper output) : base(output) => ManagedHandlerTestHelpers.SetEnvVar();
-        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+        public new void Dispose()
+        {
+            ManagedHandlerTestHelpers.RemoveEnvVar();
+            base.Dispose();
+        }
     }
 
     public sealed class ManagedHandler_HttpClientHandler_DefaultProxyCredentials_Test : HttpClientHandler_DefaultProxyCredentials_Test, IDisposable
