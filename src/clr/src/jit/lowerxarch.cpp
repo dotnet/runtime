@@ -1387,11 +1387,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* node)
 //
 void Lowering::ContainCheckBinary(GenTreeOp* node)
 {
-    assert(node->OperIsBinary());
-    if (varTypeIsFloating(node))
-    {
-        return;
-    }
+    assert(node->OperIsBinary() && !varTypeIsFloating(node));
 
     // We're not marking a constant hanging on the left of an add
     // as containable so we assign it to a register having CQ impact.
