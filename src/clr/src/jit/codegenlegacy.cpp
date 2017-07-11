@@ -52,7 +52,8 @@ void CodeGen::genDyingVars(VARSET_VALARG_TP beforeSet, VARSET_VALARG_TP afterSet
 
     /* iterate through the dead variables */
 
-    VARSET_ITER_INIT(compiler, iter, deadSet, varIndex);
+    VarSetOps::Iter iter(compiler, deadSet);
+    unsigned        varIndex = 0;
     while (iter.NextElem(&varIndex))
     {
         varNum = compiler->lvaTrackedToVarNum[varIndex];
@@ -5631,7 +5632,8 @@ void CodeGen::genCodeForQmark(GenTreePtr tree, regMaskTP destReg, regMaskTP best
 
             VARSET_TP regVarLiveNow(VarSetOps::Intersection(compiler, compiler->raRegVarsMask, rsLiveNow));
 
-            VARSET_ITER_INIT(compiler, iter, regVarLiveNow, varIndex);
+            VarSetOps::Iter iter(compiler, regVarLiveNow);
+            unsigned        varIndex = 0;
             while (iter.NextElem(&varIndex))
             {
                 // Find the variable in compiler->lvaTable
@@ -12579,7 +12581,8 @@ void CodeGen::genCodeForBBlist()
         // We should never enregister variables in any of the specialUseMask registers
         noway_assert((specialUseMask & regSet.rsMaskVars) == 0);
 
-        VARSET_ITER_INIT(compiler, iter, liveSet, varIndex);
+        VarSetOps::Iter iter(compiler, liveSet);
+        unsigned        varIndex = 0;
         while (iter.NextElem(&varIndex))
         {
             varNum = compiler->lvaTrackedToVarNum[varIndex];
@@ -15237,7 +15240,8 @@ unsigned CodeGen::genRegCountForLiveIntEnregVars(GenTreePtr tree)
 {
     unsigned regCount = 0;
 
-    VARSET_ITER_INIT(compiler, iter, compiler->compCurLife, varNum);
+    VarSetOps::Iter iter(compiler, compiler->compCurLife);
+    unsigned        varNum = 0;
     while (iter.NextElem(&varNum))
     {
         unsigned   lclNum = compiler->lvaTrackedToVarNum[varNum];

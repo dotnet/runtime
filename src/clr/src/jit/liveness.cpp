@@ -983,7 +983,8 @@ void Compiler::fgExtendDbgLifetimes()
         /* Add statements initializing the vars, if there are any to initialize */
         unsigned blockWeight = block->getBBWeight(this);
 
-        VARSET_ITER_INIT(this, iter, initVars, varIndex);
+        VarSetOps::Iter iter(this, initVars);
+        unsigned        varIndex = 0;
         while (iter.NextElem(&varIndex))
         {
             /* Create initialization tree */
@@ -1364,7 +1365,8 @@ bool Compiler::fgMarkIntf(VARSET_VALARG_TP varSet1, VARSET_VALARG_TP varSet2)
     VarSetOps::Assign(this, fgMarkIntfUnionVS, varSet1);
     VarSetOps::UnionD(this, fgMarkIntfUnionVS, varSet2);
 
-    VARSET_ITER_INIT(this, iter, fgMarkIntfUnionVS, refIndex);
+    VarSetOps::Iter iter(this, fgMarkIntfUnionVS);
+    unsigned        refIndex = 0;
     while (iter.NextElem(&refIndex))
     {
         // if varSet1 has this bit set then it interferes with varSet2
@@ -1417,7 +1419,8 @@ bool Compiler::fgMarkIntf(VARSET_VALARG_TP varSet)
 
     bool addedIntf = false; // This is set to true if we add any new interferences
 
-    VARSET_ITER_INIT(this, iter, varSet, refIndex);
+    VarSetOps::Iter iter(this, varSet);
+    unsigned        refIndex = 0;
     while (iter.NextElem(&refIndex))
     {
         // Calculate the set of new interference to add
