@@ -272,6 +272,8 @@ private:
     bool IsBinOpInRMWStoreInd(GenTreePtr tree);
     bool IsRMWMemOpRootedAtStoreInd(GenTreePtr storeIndTree, GenTreePtr* indirCandidate, GenTreePtr* indirOpSource);
 #endif
+
+    void WidenSIMD12IfNecessary(GenTreeLclVarCommon* node);
     void LowerStoreLoc(GenTreeLclVarCommon* tree);
     GenTree* LowerArrElem(GenTree* node);
     void LowerRotate(GenTree* tree);
