@@ -35,7 +35,7 @@ namespace System.Net.Tests
         }
 
         [ConditionalTheory(nameof(IsNotWindows7))]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
+        [ActiveIssue(22053, TargetFrameworkMonikers.Uap)]
         [InlineData(WebSocketMessageType.Text, false)]
         [InlineData(WebSocketMessageType.Binary, false)]
         [InlineData(WebSocketMessageType.Text, true)]
