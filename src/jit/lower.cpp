@@ -256,71 +256,30 @@ GenTree* Lowering::LowerNode(GenTree* node)
             }
 #endif
             break;
+#endif // FEATURE_SIMD
 
         case GT_LCL_VAR:
+            WidenSIMD12IfNecessary(node->AsLclVarCommon());
+            break;
+
         case GT_STORE_LCL_VAR:
-            if (node->TypeGet() == TYP_SIMD12)
-            {
-                // Assumption 1:
-                // RyuJit backend depends on the assumption that on 64-Bit targets Vector3 size is rounded off
-                // to TARGET_POINTER_SIZE and hence Vector3 locals on stack can be treated as TYP_SIMD16 for
-                // reading and writing purposes.
-                //
-                // Assumption 2:
-                // RyuJit backend is making another implicit assumption that Vector3 type args when passed in
-                // registers or on stack, the upper most 4-bytes will be zero.
-                //
-                // For P/Invoke return and Reverse P/Invoke argument passing, native compiler doesn't guarantee
-                // that upper 4-bytes of a Vector3 type struct is zero initialized and hence assumption 2 is
-                // invalid.
-                //
-                // RyuJIT x64 Windows: arguments are treated as passed by ref and hence read/written just 12
-                // bytes. In case of Vector3 returns, Caller allocates a zero initialized Vector3 local and
-                // passes it retBuf arg and Callee method writes only 12 bytes to retBuf. For this reason,
-                // there is no need to clear upper 4-bytes of Vector3 type args.
-                //
-                // RyuJIT x64 Unix: arguments are treated as passed by value and read/writen as if TYP_SIMD16.
-                // Vector3 return values are returned two return registers and Caller assembles them into a
-                // single xmm reg. Hence RyuJIT explicitly generates code to clears upper 4-bytes of Vector3
-                // type args in prolog and Vector3 type return value of a call
-                //
-                // RyuJIT x86 Windows: all non-param Vector3 local vars are allocated as 16 bytes. Vector3 arguments
-                // are pushed as 12 bytes. For return values, a 16-byte local is allocated and the address passed
-                // as a return buffer pointer. The callee doesn't write the high 4 bytes, and we don't need to clear
-                // it either.
-
-                unsigned   varNum = node->AsLclVarCommon()->GetLclNum();
-                LclVarDsc* varDsc = &comp->lvaTable[varNum];
-
-                if (comp->lvaMapSimd12ToSimd16(varDsc))
-                {
-                    JITDUMP("Mapping TYP_SIMD12 lclvar node to TYP_SIMD16:\n");
-                    DISPNODE(node);
-                    JITDUMP("============");
-
-                    node->gtType = TYP_SIMD16;
-                }
-            }
-#endif // FEATURE_SIMD
+            WidenSIMD12IfNecessary(node->AsLclVarCommon());
             __fallthrough;
 
         case GT_STORE_LCL_FLD:
-            if (node->OperIsStore())
+            // TODO-1stClassStructs: Once we remove the requirement that all struct stores
+            // are block stores (GT_STORE_BLK or GT_STORE_OBJ), here is where we would put the local
+            // store under a block store if codegen will require it.
+            if ((node->TypeGet() == TYP_STRUCT) && (node->gtGetOp1()->OperGet() != GT_PHI))
             {
-                // TODO-1stClassStructs: Once we remove the requirement that all struct stores
-                // are block stores (GT_STORE_BLK or GT_STORE_OBJ), here is where we would put the local
-                // store under a block store if codegen will require it.
-                if ((node->TypeGet() == TYP_STRUCT) && (node->gtGetOp1()->OperGet() != GT_PHI))
-                {
 #if FEATURE_MULTIREG_RET
-                    GenTree* src = node->gtGetOp1();
-                    assert((src->OperGet() == GT_CALL) && src->AsCall()->HasMultiRegRetVal());
+                GenTree* src = node->gtGetOp1();
+                assert((src->OperGet() == GT_CALL) && src->AsCall()->HasMultiRegRetVal());
 #else  // !FEATURE_MULTIREG_RET
-                    assert(!"Unexpected struct local store in Lowering");
+                assert(!"Unexpected struct local store in Lowering");
 #endif // !FEATURE_MULTIREG_RET
-                }
-                LowerStoreLoc(node->AsLclVarCommon());
             }
+            LowerStoreLoc(node->AsLclVarCommon());
             break;
 
         default:
@@ -4365,6 +4324,54 @@ void Lowering::LowerStoreInd(GenTree* node)
     // Mark all GT_STOREIND nodes to indicate that it is not known
     // whether it represents a RMW memory op.
     node->AsStoreInd()->SetRMWStatusDefault();
+}
+
+void Lowering::WidenSIMD12IfNecessary(GenTreeLclVarCommon* node)
+{
+#ifdef FEATURE_SIMD
+    if (node->TypeGet() == TYP_SIMD12)
+    {
+        // Assumption 1:
+        // RyuJit backend depends on the assumption that on 64-Bit targets Vector3 size is rounded off
+        // to TARGET_POINTER_SIZE and hence Vector3 locals on stack can be treated as TYP_SIMD16 for
+        // reading and writing purposes.
+        //
+        // Assumption 2:
+        // RyuJit backend is making another implicit assumption that Vector3 type args when passed in
+        // registers or on stack, the upper most 4-bytes will be zero.
+        //
+        // For P/Invoke return and Reverse P/Invoke argument passing, native compiler doesn't guarantee
+        // that upper 4-bytes of a Vector3 type struct is zero initialized and hence assumption 2 is
+        // invalid.
+        //
+        // RyuJIT x64 Windows: arguments are treated as passed by ref and hence read/written just 12
+        // bytes. In case of Vector3 returns, Caller allocates a zero initialized Vector3 local and
+        // passes it retBuf arg and Callee method writes only 12 bytes to retBuf. For this reason,
+        // there is no need to clear upper 4-bytes of Vector3 type args.
+        //
+        // RyuJIT x64 Unix: arguments are treated as passed by value and read/writen as if TYP_SIMD16.
+        // Vector3 return values are returned two return registers and Caller assembles them into a
+        // single xmm reg. Hence RyuJIT explicitly generates code to clears upper 4-bytes of Vector3
+        // type args in prolog and Vector3 type return value of a call
+        //
+        // RyuJIT x86 Windows: all non-param Vector3 local vars are allocated as 16 bytes. Vector3 arguments
+        // are pushed as 12 bytes. For return values, a 16-byte local is allocated and the address passed
+        // as a return buffer pointer. The callee doesn't write the high 4 bytes, and we don't need to clear
+        // it either.
+
+        unsigned   varNum = node->AsLclVarCommon()->GetLclNum();
+        LclVarDsc* varDsc = &comp->lvaTable[varNum];
+
+        if (comp->lvaMapSimd12ToSimd16(varDsc))
+        {
+            JITDUMP("Mapping TYP_SIMD12 lclvar node to TYP_SIMD16:\n");
+            DISPNODE(node);
+            JITDUMP("============");
+
+            node->gtType = TYP_SIMD16;
+        }
+    }
+#endif // FEATURE_SIMD
 }
 
 //------------------------------------------------------------------------
