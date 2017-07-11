@@ -1,0 +1,7 @@
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library>
+    <!-- Needed because test code calls IsSerializable on these types  -->
+    <Type Name="System.Collections.Generic.SortedList`2" Browse="Required Public" />
+    <Type Name="System.Collections.Generic.SortedDictionary`2" Browse="Required Public" />
+  </Library>
+</Directives>
