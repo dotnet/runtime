@@ -40,38 +40,84 @@ namespace System
 
         internal static float NegativeZero = BitConverter.Int32BitsToSingle(unchecked((int)0x80000000));
 
+        /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
         [Pure]
         [System.Runtime.Versioning.NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsFinite(float f)
+        {
+            var bits = BitConverter.SingleToInt32Bits(f);
+            return (bits & 0x7FFFFFFF) < 0x7F800000;
+        }
+
+        /// <summary>Determines whether the specified value is infinite.</summary>
+        [Pure]
+        [System.Runtime.Versioning.NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe static bool IsInfinity(float f)
         {
-            return (*(int*)(&f) & 0x7FFFFFFF) == 0x7F800000;
+            var bits = BitConverter.SingleToInt32Bits(f);
+            return (bits & 0x7FFFFFFF) == 0x7F800000;
         }
 
+        /// <summary>Determines whether the specified value is NaN.</summary>
         [Pure]
         [System.Runtime.Versioning.NonVersionable]
-        public unsafe static bool IsPositiveInfinity(float f)
-        {
-            return *(int*)(&f) == 0x7F800000;
-        }
-
-        [Pure]
-        [System.Runtime.Versioning.NonVersionable]
-        public unsafe static bool IsNegativeInfinity(float f)
-        {
-            return *(int*)(&f) == unchecked((int)0xFF800000);
-        }
-
-        [Pure]
-        [System.Runtime.Versioning.NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe static bool IsNaN(float f)
         {
-            return (*(int*)(&f) & 0x7FFFFFFF) > 0x7F800000;
+            var bits = BitConverter.SingleToInt32Bits(f);
+            return (bits & 0x7FFFFFFF) > 0x7F800000;
         }
 
+        /// <summary>Determines whether the specified value is negative.</summary>
         [Pure]
-        internal unsafe static bool IsNegative(float f)
+        [System.Runtime.Versioning.NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe static bool IsNegative(float f)
         {
-            return (*(uint*)(&f) & 0x80000000) == 0x80000000;
+            var bits = unchecked((uint)BitConverter.SingleToInt32Bits(f));
+            return (bits & 0x80000000) == 0x80000000;
+        }
+
+        /// <summary>Determines whether the specified value is negative infinity.</summary>
+        [Pure]
+        [System.Runtime.Versioning.NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe static bool IsNegativeInfinity(float f)
+        {
+            return (f == float.NegativeInfinity);
+        }
+
+        /// <summary>Determines whether the specified value is normal.</summary>
+        [Pure]
+        [System.Runtime.Versioning.NonVersionable]
+        // This is probably not worth inlining, it has branches and should be rarely called
+        public unsafe static bool IsNormal(float f)
+        {
+            var bits = BitConverter.SingleToInt32Bits(f);
+            bits &= 0x7FFFFFFF;
+            return (bits < 0x7F800000) && (bits != 0) && ((bits & 0x7F800000) != 0);
+        }
+
+        /// <summary>Determines whether the specified value is positive infinity.</summary>
+        [Pure]
+        [System.Runtime.Versioning.NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe static bool IsPositiveInfinity(float f)
+        {
+            return (f == float.PositiveInfinity);
+        }
+
+        /// <summary>Determines whether the specified value is subnormal.</summary>
+        [Pure]
+        [System.Runtime.Versioning.NonVersionable]
+        // This is probably not worth inlining, it has branches and should be rarely called
+        public unsafe static bool IsSubnormal(float f)
+        {
+            var bits = BitConverter.SingleToInt32Bits(f);
+            bits &= 0x7FFFFFFF;
+            return (bits < 0x7F800000) && (bits != 0) && ((bits & 0x7F800000) == 0);
         }
 
         // Compares this object to another object, returning an integer that

@@ -298,21 +298,25 @@ namespace System
             return value[startIndex] != 0;
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe long DoubleToInt64Bits(double value)
         {
             return *((long*)&value);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe double Int64BitsToDouble(long value)
         {
             return *((double*)&value);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe int SingleToInt32Bits(float value)
         {
             return *((int*)&value);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static unsafe float Int32BitsToSingle(int value)
         {
             return *((float*)&value);

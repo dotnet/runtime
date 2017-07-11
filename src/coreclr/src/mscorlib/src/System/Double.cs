@@ -44,56 +44,85 @@ namespace System
 
         internal static double NegativeZero = BitConverter.Int64BitsToDouble(unchecked((long)0x8000000000000000));
 
+        /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
         [Pure]
         [System.Runtime.Versioning.NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe static bool IsFinite(double d)
+        {
+            var bits = BitConverter.DoubleToInt64Bits(d);
+            return (bits & 0x7FFFFFFFFFFFFFFF) < 0x7FF0000000000000;
+        }
+
+        /// <summary>Determines whether the specified value is infinite.</summary>
+        [Pure]
+        [System.Runtime.Versioning.NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe static bool IsInfinity(double d)
         {
-            return (*(long*)(&d) & 0x7FFFFFFFFFFFFFFF) == 0x7FF0000000000000;
+            var bits = BitConverter.DoubleToInt64Bits(d);
+            return (bits & 0x7FFFFFFFFFFFFFFF) == 0x7FF0000000000000;
         }
 
+        /// <summary>Determines whether the specified value is NaN.</summary>
         [Pure]
         [System.Runtime.Versioning.NonVersionable]
-        public static bool IsPositiveInfinity(double d)
-        {
-            //Jit will generate inlineable code with this
-            if (d == double.PositiveInfinity)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        [Pure]
-        [System.Runtime.Versioning.NonVersionable]
-        public static bool IsNegativeInfinity(double d)
-        {
-            //Jit will generate inlineable code with this
-            if (d == double.NegativeInfinity)
-            {
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
-
-        [Pure]
-        internal unsafe static bool IsNegative(double d)
-        {
-            return (*(UInt64*)(&d) & 0x8000000000000000) == 0x8000000000000000;
-        }
-
-        [Pure]
-        [System.Runtime.Versioning.NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe static bool IsNaN(double d)
         {
-            return (*(UInt64*)(&d) & 0x7FFFFFFFFFFFFFFFL) > 0x7FF0000000000000L;
+            var bits = BitConverter.DoubleToInt64Bits(d);
+            return (bits & 0x7FFFFFFFFFFFFFFF) > 0x7FF0000000000000;
         }
 
+        /// <summary>Determines whether the specified value is negative.</summary>
+        [Pure]
+        [System.Runtime.Versioning.NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public unsafe static bool IsNegative(double d)
+        {
+            var bits = unchecked((ulong)BitConverter.DoubleToInt64Bits(d));
+            return (bits & 0x8000000000000000) == 0x8000000000000000;
+        }
+
+        /// <summary>Determines whether the specified value is negative infinity.</summary>
+        [Pure]
+        [System.Runtime.Versioning.NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsNegativeInfinity(double d)
+        {
+            return (d == double.NegativeInfinity);
+        }
+
+        /// <summary>Determines whether the specified value is normal.</summary>
+        [Pure]
+        [System.Runtime.Versioning.NonVersionable]
+        // This is probably not worth inlining, it has branches and should be rarely called
+        public unsafe static bool IsNormal(double d)
+        {
+            var bits = BitConverter.DoubleToInt64Bits(d);
+            bits &= 0x7FFFFFFFFFFFFFFF;
+            return (bits < 0x7FF0000000000000) && (bits != 0) && ((bits & 0x7FF0000000000000) != 0);
+        }
+
+        /// <summary>Determines whether the specified value is positive infinity.</summary>
+        [Pure]
+        [System.Runtime.Versioning.NonVersionable]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool IsPositiveInfinity(double d)
+        {
+            return (d == double.PositiveInfinity);
+        }
+
+        /// <summary>Determines whether the specified value is subnormal.</summary>
+        [Pure]
+        [System.Runtime.Versioning.NonVersionable]
+        // This is probably not worth inlining, it has branches and should be rarely called
+        public unsafe static bool IsSubnormal(double d)
+        {
+            var bits = BitConverter.DoubleToInt64Bits(d);
+            bits &= 0x7FFFFFFFFFFFFFFF;
+            return (bits < 0x7FF0000000000000) && (bits != 0) && ((bits & 0x7FF0000000000000) == 0);
+        }
 
         // Compares this object to another object, returning an instance of System.Relation.
         // Null is considered less than any instance.
