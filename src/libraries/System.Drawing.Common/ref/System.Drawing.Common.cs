@@ -3157,15 +3157,5 @@ namespace System.Drawing.Design
     public delegate void ToolboxComponentsCreatingEventHandler(object sender, System.Drawing.Design.ToolboxComponentsCreatingEventArgs e);
 
 }
-namespace System.Drawing.Configuration
-{
-    public sealed partial class SystemDrawingSection : System.Configuration.ConfigurationSection
-    {
-        public SystemDrawingSection() { }
-        [System.Configuration.ConfigurationPropertyAttribute("bitmapSuffix")]
-        public string BitmapSuffix { get { throw null; } set { } }
-        protected override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
-    }
-}
 
 */

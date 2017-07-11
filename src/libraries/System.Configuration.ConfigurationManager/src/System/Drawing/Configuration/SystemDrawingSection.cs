@@ -19,7 +19,7 @@ namespace System.Drawing.Configuration
             set => this[s_bitmapSuffix] = value;
         }
 
-        protected override ConfigurationPropertyCollection Properties => s_properties;
+        protected internal override ConfigurationPropertyCollection Properties => s_properties;
 
         private static readonly ConfigurationPropertyCollection s_properties = new ConfigurationPropertyCollection();
 

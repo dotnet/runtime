@@ -1596,6 +1596,16 @@ namespace System.Configuration.Provider
         public ProviderException(string message, System.Exception innerException) { }
     }
 }
+namespace System.Drawing.Configuration
+{
+    public sealed partial class SystemDrawingSection : System.Configuration.ConfigurationSection
+    {
+        public SystemDrawingSection() { }
+        [System.Configuration.ConfigurationPropertyAttribute("bitmapSuffix")]
+        public string BitmapSuffix { get { throw null; } set { } }
+        protected override System.Configuration.ConfigurationPropertyCollection Properties { get { throw null; } }
+    }
+}
 
 #pragma warning restore CS0618
 
