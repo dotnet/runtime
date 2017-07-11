@@ -679,7 +679,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             // node, and use an internal register for the address.
 
             info->dstCount = 1;
-            assert((tree->gtFlags & (GTF_VAR_DEF | GTF_VAR_USEASG | GTF_VAR_USEDEF)) == 0);
+            assert((tree->gtFlags & (GTF_VAR_DEF | GTF_VAR_USEASG)) == 0);
             info->internalIntCount = 1;
             break;
     } // end switch (tree->OperGet())
