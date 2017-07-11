@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.Test.Common;
@@ -14,7 +15,7 @@ namespace System.Net.Http.Functional.Tests
 {
     using Configuration = System.Net.Test.Common.Configuration;
 
-    public class HttpClientHandler_ClientCertificates_Test
+    public class HttpClientHandler_ClientCertificates_Test : RemoteExecutorTestBase
     {
         public static bool CanTestCertificates =>
             Capability.IsTrustedRootCertificateInstalled() &&
@@ -105,28 +106,102 @@ namespace System.Net.Http.Functional.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Fact]
-        public async Task Manual_SendClientCertificateToRemoteServer_SentMatchesReceived()
+        public void Manual_SendClientCertificateWithClientAuthEKUToRemoteServer_OK()
         {
             if (!CanTestClientCertificates) // can't use [Conditional*] right now as it's evaluated at the wrong time for the managed handler
             {
-                _output.WriteLine($"Skipping {nameof(Manual_CertificateSentMatchesCertificateReceived_Success)}()");
+                _output.WriteLine($"Skipping {nameof(Manual_SendClientCertificateWithClientAuthEKUToRemoteServer_OK)}()");
                 return;
             }
 
-            var handler = new HttpClientHandler();
-            var cert = Configuration.Certificates.GetClientCertificate();
-            handler.ClientCertificates.Add(cert);
-            using (var client = new HttpClient(handler))
+            // UAP HTTP stack caches connections per-process. This causes interference when these tests run in
+            // the same process as the other tests. Each test needs to be isolated to its own process.
+            // See dicussion: https://github.com/dotnet/corefx/issues/21945
+            RemoteInvoke(async () =>
             {
-                HttpResponseMessage response = await client.GetAsync(Configuration.Http.EchoClientCertificateRemoteServer);
-                _output.WriteLine($"{(int)response.StatusCode} {response.ReasonPhrase}");
-                string body = await response.Content.ReadAsStringAsync();
-                _output.WriteLine(body);
+                var cert = Configuration.Certificates.GetClientCertificate();
+                var handler = new HttpClientHandler();
+                handler.ClientCertificates.Add(cert);
+                using (var client = new HttpClient(handler))
+                {
+                    HttpResponseMessage response = await client.GetAsync(Configuration.Http.EchoClientCertificateRemoteServer);
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-                byte[] bytes = Convert.FromBase64String(body);
-                var receivedCert = new X509Certificate2(bytes);
-                Assert.Equal(cert, receivedCert);
+                    string body = await response.Content.ReadAsStringAsync();
+                    byte[] bytes = Convert.FromBase64String(body);
+                    var receivedCert = new X509Certificate2(bytes);
+                    Assert.Equal(cert, receivedCert);
+
+                    return SuccessExitCode;
+                }
+            }).Dispose();
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Fact]
+        public void Manual_SendClientCertificateWithServerAuthEKUToRemoteServer_Forbidden()
+        {
+            if (ManagedHandlerTestHelpers.IsEnabled)
+            {
+                // TODO #21452: The managed handler is currently sending out client certificates when it shouldn't.
+                return;
             }
+
+            if (!CanTestClientCertificates) // can't use [Conditional*] right now as it's evaluated at the wrong time for the managed handler
+            {
+                _output.WriteLine($"Skipping {nameof(Manual_SendClientCertificateWithServerAuthEKUToRemoteServer_Forbidden)}()");
+                return;
+            }
+
+            // UAP HTTP stack caches connections per-process. This causes interference when these tests run in
+            // the same process as the other tests. Each test needs to be isolated to its own process.
+            // See dicussion: https://github.com/dotnet/corefx/issues/21945
+            RemoteInvoke(async () =>
+            {
+                var cert = Configuration.Certificates.GetServerCertificate();
+                var handler = new HttpClientHandler();
+                handler.ClientCertificates.Add(cert);
+                using (var client = new HttpClient(handler))
+                {
+                    HttpResponseMessage response = await client.GetAsync(Configuration.Http.EchoClientCertificateRemoteServer);
+                    Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+
+                    return SuccessExitCode;
+                }
+            }).Dispose();
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Fact]
+        public void Manual_SendClientCertificateWithNoEKUToRemoteServer_OK()
+        {
+            if (!CanTestClientCertificates) // can't use [Conditional*] right now as it's evaluated at the wrong time for the managed handler
+            {
+                _output.WriteLine($"Skipping {nameof(Manual_SendClientCertificateWithNoEKUToRemoteServer_OK)}()");
+                return;
+            }
+
+            // UAP HTTP stack caches connections per-process. This causes interference when these tests run in
+            // the same process as the other tests. Each test needs to be isolated to its own process.
+            // See dicussion: https://github.com/dotnet/corefx/issues/21945
+            RemoteInvoke(async () =>
+            {
+                var cert = Configuration.Certificates.GetNoEKUCertificate();
+                var handler = new HttpClientHandler();
+                handler.ClientCertificates.Add(cert);
+                using (var client = new HttpClient(handler))
+                {
+                    HttpResponseMessage response = await client.GetAsync(Configuration.Http.EchoClientCertificateRemoteServer);
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+                    string body = await response.Content.ReadAsStringAsync();
+                    byte[] bytes = Convert.FromBase64String(body);
+                    var receivedCert = new X509Certificate2(bytes);
+                    Assert.Equal(cert, receivedCert);
+
+                    return SuccessExitCode;
+                }
+            }).Dispose();
         }
 
         [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "dotnet/corefx #20010")]

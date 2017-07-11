@@ -391,6 +391,9 @@
     <Compile Include="$(CommonPath)\System\Net\Security\CertificateHelper.Uap.cs">
       <Link>Common\System\Net\Security\CertificateHelper.Uap.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\Security\CertificateHelper.Windows.cs">
+      <Link>Common\System\Net\Security\CertificateHelper.Windows.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\StringExtensions.cs">
       <Link>Common\System\StringExtensions.cs</Link>
     </Compile>

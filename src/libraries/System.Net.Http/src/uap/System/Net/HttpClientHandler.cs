@@ -26,11 +26,8 @@ using RTHttpCookieUsageBehavior = Windows.Web.Http.Filters.HttpCookieUsageBehavi
 using RTHttpRequestMessage = Windows.Web.Http.HttpRequestMessage;
 using RTPasswordCredential = Windows.Security.Credentials.PasswordCredential;
 using RTCertificate = Windows.Security.Cryptography.Certificates.Certificate;
-using RTCertificateQuery = Windows.Security.Cryptography.Certificates.CertificateQuery;
-using RTCertificateStores = Windows.Security.Cryptography.Certificates.CertificateStores;
 using RTChainValidationResult = Windows.Security.Cryptography.Certificates.ChainValidationResult;
 using RTHttpServerCustomValidationRequestedEventArgs = Windows.Web.Http.Filters.HttpServerCustomValidationRequestedEventArgs;
-using RTIBuffer = Windows.Storage.Streams.IBuffer;
 
 namespace System.Net.Http
 {
@@ -486,28 +483,38 @@ namespace System.Net.Http
             {
                 if (_clientCertificates != null && _clientCertificates.Count > 0)
                 {
-                    RTCertificate cert = await CertificateHelper.ConvertDotNetClientCertToWinRtClientCertAsync(_clientCertificates[0]);
-                    if (cert == null)
+                    X509Certificate2 clientCert = CertificateHelper.GetEligibleClientCertificate(_clientCertificates);
+                    if (clientCert == null)
+                    {
+                        return;
+                    }
+
+                    RTCertificate rtClientCert = await CertificateHelper.ConvertDotNetClientCertToWinRtClientCertAsync(clientCert);
+                    if (rtClientCert == null)
                     {
                         throw new PlatformNotSupportedException(string.Format(CultureInfo.InvariantCulture,
                             SR.net_http_feature_UWPClientCertSupportRequiresCertInPersonalCertificateStore));
                     }
 
-                    _rtFilter.ClientCertificate = cert;
+                    _rtFilter.ClientCertificate = rtClientCert;
                 }
 
                 return;
             }
-
-            // Get the certs that can be used for Client Authentication.
-            var query = new RTCertificateQuery();
-            var ekus = query.EnhancedKeyUsages;
-            ekus.Add(ClientAuthenticationOID);
-            var clientCertificates = await RTCertificateStores.FindAllAsync(query).AsTask().ConfigureAwait(false);
-
-            if (clientCertificates.Count > 0)
+            else
             {
-                _rtFilter.ClientCertificate = clientCertificates[0];
+                X509Certificate2 clientCert = CertificateHelper.GetEligibleClientCertificate();
+                if (clientCert == null)
+                {
+                    return;
+                }
+
+                // Unlike in the .Manual case above, the conversion to WinRT Certificate should always work;
+                // so we just use an Assert. All the possible client certs were enumerated from that store and
+                // filtered down to a single client cert.
+                RTCertificate rtClientCert = await CertificateHelper.ConvertDotNetClientCertToWinRtClientCertAsync(clientCert);
+                Debug.Assert(rtClientCert != null);
+                _rtFilter.ClientCertificate = rtClientCert;
             }
         }
 
