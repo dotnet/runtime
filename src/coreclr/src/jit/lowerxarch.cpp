@@ -1180,6 +1180,915 @@ GenTree* Lowering::PreferredRegOptionalOperand(GenTree* tree)
     return preferredOp;
 }
 
+//------------------------------------------------------------------------
+// Containment analysis
+//------------------------------------------------------------------------
+
+//------------------------------------------------------------------------
+// LowerRMWMemOp: Determine if this is a valid RMW mem op, and if so lower it accordingly
+//
+// Arguments:
+//    node       - The indirect store node (GT_STORE_IND) of interest
+//
+// Return Value:
+//    Returns true if 'node' is a valid RMW mem op; false otherwise.
+//
+bool Lowering::LowerRMWMemOp(GenTreeIndir* storeInd)
+{
+    assert(storeInd->OperGet() == GT_STOREIND);
+
+    // SSE2 doesn't support RMW on float values
+    assert(!varTypeIsFloating(storeInd));
+
+    // Terminology:
+    // indirDst = memory write of an addr mode  (i.e. storeind destination)
+    // indirSrc = value being written to memory (i.e. storeind source which could a binary/unary op)
+    // indirCandidate = memory read i.e. a gtInd of an addr mode
+    // indirOpSource = source operand used in binary/unary op (i.e. source operand of indirSrc node)
+
+    GenTreePtr indirCandidate = nullptr;
+    GenTreePtr indirOpSource  = nullptr;
+
+    if (!IsRMWMemOpRootedAtStoreInd(storeInd, &indirCandidate, &indirOpSource))
+    {
+        JITDUMP("Lower of StoreInd didn't mark the node as self contained for reason: %d\n",
+                storeInd->AsStoreInd()->GetRMWStatus());
+        DISPTREERANGE(BlockRange(), storeInd);
+        return false;
+    }
+
+    GenTreePtr indirDst = storeInd->gtGetOp1();
+    GenTreePtr indirSrc = storeInd->gtGetOp2();
+    genTreeOps oper     = indirSrc->OperGet();
+
+    // At this point we have successfully detected a RMW memory op of one of the following forms
+    //         storeInd(indirDst, indirSrc(indirCandidate, indirOpSource)) OR
+    //         storeInd(indirDst, indirSrc(indirOpSource, indirCandidate) in case of commutative operations OR
+    //         storeInd(indirDst, indirSrc(indirCandidate) in case of unary operations
+    //
+    // Here indirSrc = one of the supported binary or unary operation for RMW of memory
+    //      indirCandidate = a GT_IND node
+    //      indirCandidateChild = operand of GT_IND indirCandidate
+    //
+    // The logic below does the following
+    //      Make indirOpSource contained.
+    //      Make indirSrc contained.
+    //      Make indirCandidate contained.
+    //      Make indirCandidateChild contained.
+    //      Make indirDst contained except when it is a GT_LCL_VAR or GT_CNS_INT that doesn't fit within addr
+    //      base.
+    //
+
+    if (GenTree::OperIsBinary(oper))
+    {
+        // On Xarch RMW operations require the source to be an immediate or in a register.
+        // Therefore, if we have previously marked the indirOpSource as contained while lowering
+        // the binary node, we need to reset that now.
+        if (IsContainableMemoryOp(indirOpSource, true))
+        {
+            indirOpSource->ClearContained();
+        }
+        JITDUMP("Lower succesfully detected an assignment of the form: *addrMode BinOp= source\n");
+    }
+    else
+    {
+        assert(GenTree::OperIsUnary(oper));
+        JITDUMP("Lower succesfully detected an assignment of the form: *addrMode = UnaryOp(*addrMode)\n");
+    }
+    DISPTREERANGE(BlockRange(), storeInd);
+
+    indirSrc->SetContained();
+    indirCandidate->SetContained();
+
+    GenTreePtr indirCandidateChild = indirCandidate->gtGetOp1();
+    indirCandidateChild->SetContained();
+
+    if (indirCandidateChild->OperGet() == GT_LEA)
+    {
+        GenTreeAddrMode* addrMode = indirCandidateChild->AsAddrMode();
+
+        if (addrMode->HasBase())
+        {
+            assert(addrMode->Base()->OperIsLeaf());
+            addrMode->Base()->SetContained();
+        }
+
+        if (addrMode->HasIndex())
+        {
+            assert(addrMode->Index()->OperIsLeaf());
+            addrMode->Index()->SetContained();
+        }
+
+        indirDst->SetContained();
+    }
+    else
+    {
+        assert(indirCandidateChild->OperGet() == GT_LCL_VAR || indirCandidateChild->OperGet() == GT_LCL_VAR_ADDR ||
+               indirCandidateChild->OperGet() == GT_CLS_VAR_ADDR || indirCandidateChild->OperGet() == GT_CNS_INT);
+
+        // If it is a GT_LCL_VAR, it still needs the reg to hold the address.
+        // We would still need a reg for GT_CNS_INT if it doesn't fit within addressing mode base.
+        // For GT_CLS_VAR_ADDR, we don't need a reg to hold the address, because field address value is known at jit
+        // time. Also, we don't need a reg for GT_CLS_VAR_ADDR.
+        if (indirCandidateChild->OperGet() == GT_LCL_VAR_ADDR || indirCandidateChild->OperGet() == GT_CLS_VAR_ADDR)
+        {
+            indirDst->SetContained();
+        }
+        else if (indirCandidateChild->IsCnsIntOrI() && indirCandidateChild->AsIntConCommon()->FitsInAddrBase(comp))
+        {
+            indirDst->SetContained();
+        }
+    }
+    return true;
+}
+
+//------------------------------------------------------------------------
+// ContainCheckIndir: Determine whether operands of an indir should be contained.
+//
+// Arguments:
+//    node       - The indirection node of interest
+//
+// Notes:
+//    This is called for both store and load indirections. In the former case, it is assumed that
+//    LowerStoreIndir() has already been called to check for RMW opportunities.
+//
+// Return Value:
+//    None.
+//
+void Lowering::ContainCheckIndir(GenTreeIndir* node)
+{
+    GenTreePtr addr = node->Addr();
+
+    // If this is the rhs of a block copy it will be handled when we handle the store.
+    if (node->TypeGet() == TYP_STRUCT)
+    {
+        return;
+    }
+
+#ifdef FEATURE_SIMD
+    // If indirTree is of TYP_SIMD12, don't mark addr as contained
+    // so that it always get computed to a register.  This would
+    // mean codegen side logic doesn't need to handle all possible
+    // addr expressions that could be contained.
+    //
+    // TODO-XArch-CQ: handle other addr mode expressions that could be marked
+    // as contained.
+    if (node->TypeGet() == TYP_SIMD12)
+    {
+        return;
+    }
+#endif // FEATURE_SIMD
+
+    if ((node->gtFlags & GTF_IND_REQ_ADDR_IN_REG) != 0)
+    {
+        // The address of an indirection that requires its address in a reg.
+        // Skip any further processing that might otherwise make it contained.
+    }
+    else if ((addr->OperGet() == GT_CLS_VAR_ADDR) || (addr->OperGet() == GT_LCL_VAR_ADDR))
+    {
+        // These nodes go into an addr mode:
+        // - GT_CLS_VAR_ADDR turns into a constant.
+        // - GT_LCL_VAR_ADDR is a stack addr mode.
+
+        // make this contained, it turns into a constant that goes into an addr mode
+        MakeSrcContained(node, addr);
+    }
+    else if (addr->IsCnsIntOrI() && addr->AsIntConCommon()->FitsInAddrBase(comp))
+    {
+        // Amd64:
+        // We can mark any pc-relative 32-bit addr as containable, except for a direct VSD call address.
+        // (i.e. those VSD calls for which stub addr is known during JIT compilation time).  In this case,
+        // VM requires us to pass stub addr in VirtualStubParam.reg - see LowerVirtualStubCall().  For
+        // that reason we cannot mark such an addr as contained.  Note that this is not an issue for
+        // indirect VSD calls since morphArgs() is explicitly materializing hidden param as a non-standard
+        // argument.
+        //
+        // Workaround:
+        // Note that LowerVirtualStubCall() sets addr->gtRegNum to VirtualStubParam.reg and Lowering::doPhase()
+        // sets destination candidates on such nodes and resets addr->gtRegNum to REG_NA before calling
+        // TreeNodeInfoInit(). Ideally we should set a flag on addr nodes that shouldn't be marked as contained
+        // (in LowerVirtualStubCall()), but we don't have any GTF_* flags left for that purpose.  As a workaround
+        // an explicit check is made here.
+        //
+        // On x86, direct VSD is done via a relative branch, and in fact it MUST be contained.
+        MakeSrcContained(node, addr);
+    }
+    else if ((addr->OperGet() == GT_LEA) && IsSafeToContainMem(node, addr))
+    {
+        MakeSrcContained(node, addr);
+    }
+}
+
+//------------------------------------------------------------------------
+// ContainCheckBinary: Determine whether a binary op's operands should be contained.
+//
+// Arguments:
+//    node - the node we care about
+//
+void Lowering::ContainCheckBinary(GenTreeOp* node)
+{
+    assert(node->OperIsBinary() && !varTypeIsFloating(node));
+
+    // We're not marking a constant hanging on the left of an add
+    // as containable so we assign it to a register having CQ impact.
+    // TODO-XArch-CQ: Detect this case and support both generating a single instruction
+    // for GT_ADD(Constant, SomeTree)
+
+    GenTree* op1 = node->gtOp1;
+    GenTree* op2 = node->gtOp2;
+
+    // We can directly encode the second operand if it is either a containable constant or a memory-op.
+    // In case of memory-op, we can encode it directly provided its type matches with 'tree' type.
+    // This is because during codegen, type of 'tree' is used to determine emit Type size. If the types
+    // do not match, they get normalized (i.e. sign/zero extended) on load into a register.
+    bool       directlyEncodable = false;
+    bool       binOpInRMW        = false;
+    GenTreePtr operand           = nullptr;
+
+    if (IsContainableImmed(node, op2))
+    {
+        directlyEncodable = true;
+        operand           = op2;
+    }
+    else
+    {
+        binOpInRMW = IsBinOpInRMWStoreInd(node);
+        if (!binOpInRMW)
+        {
+            const unsigned operatorSize = genTypeSize(node->TypeGet());
+            if (IsContainableMemoryOp(op2, true) && (genTypeSize(op2->TypeGet()) == operatorSize))
+            {
+                directlyEncodable = true;
+                operand           = op2;
+            }
+            else if (node->OperIsCommutative())
+            {
+                if (IsContainableImmed(node, op1) ||
+                    (IsContainableMemoryOp(op1, true) && (genTypeSize(op1->TypeGet()) == operatorSize) &&
+                     IsSafeToContainMem(node, op1)))
+                {
+                    // If it is safe, we can reverse the order of operands of commutative operations for efficient
+                    // codegen
+                    directlyEncodable = true;
+                    operand           = op1;
+                }
+            }
+        }
+    }
+
+    if (directlyEncodable)
+    {
+        assert(operand != nullptr);
+        MakeSrcContained(node, operand);
+    }
+    else if (!binOpInRMW)
+    {
+        // If this binary op neither has contained operands, nor is a
+        // Read-Modify-Write (RMW) operation, we can mark its operands
+        // as reg optional.
+        SetRegOptionalForBinOp(node);
+    }
+}
+
+//------------------------------------------------------------------------
+// ContainCheckMul: determine whether the sources of a MUL node should be contained.
+//
+// Arguments:
+//    node - pointer to the node
+//
+void Lowering::ContainCheckMul(GenTreeOp* node)
+{
+#if defined(_TARGET_X86_)
+    assert(node->OperIs(GT_MUL, GT_MULHI, GT_MUL_LONG));
+#else
+    assert(node->OperIs(GT_MUL, GT_MULHI));
+#endif
+    GenTree* op1 = node->gtOp.gtOp1;
+    GenTree* op2 = node->gtOp.gtOp2;
+
+    // Case of float/double mul.
+    if (varTypeIsFloating(node->TypeGet()))
+    {
+        assert(node->OperGet() == GT_MUL);
+
+        if (IsContainableMemoryOp(op2, true) || op2->IsCnsNonZeroFltOrDbl())
+        {
+            MakeSrcContained(node, op2);
+        }
+        else if (op1->IsCnsNonZeroFltOrDbl() || (IsContainableMemoryOp(op1, true) && IsSafeToContainMem(node, op1)))
+        {
+            // Since  GT_MUL is commutative, we will try to re-order operands if it is safe to
+            // generate more efficient code sequence for the case of GT_MUL(op1=memOp, op2=non-memOp)
+            MakeSrcContained(node, op1);
+        }
+        else
+        {
+            // If there are no containable operands, we can make an operand reg optional.
+            SetRegOptionalForBinOp(node);
+        }
+        return;
+    }
+
+    bool       isUnsignedMultiply    = ((node->gtFlags & GTF_UNSIGNED) != 0);
+    bool       requiresOverflowCheck = node->gtOverflowEx();
+    bool       useLeaEncoding        = false;
+    GenTreePtr memOp                 = nullptr;
+
+    bool                 hasImpliedFirstOperand = false;
+    GenTreeIntConCommon* imm                    = nullptr;
+    GenTreePtr           other                  = nullptr;
+
+    // Multiply should never be using small types
+    assert(!varTypeIsSmall(node->TypeGet()));
+
+    // We do use the widening multiply to implement
+    // the overflow checking for unsigned multiply
+    //
+    if (isUnsignedMultiply && requiresOverflowCheck)
+    {
+        hasImpliedFirstOperand = true;
+    }
+    else if (node->OperGet() == GT_MULHI)
+    {
+        hasImpliedFirstOperand = true;
+    }
+#if defined(_TARGET_X86_)
+    else if (node->OperGet() == GT_MUL_LONG)
+    {
+        hasImpliedFirstOperand = true;
+    }
+#endif
+    else if (IsContainableImmed(node, op2) || IsContainableImmed(node, op1))
+    {
+        if (IsContainableImmed(node, op2))
+        {
+            imm   = op2->AsIntConCommon();
+            other = op1;
+        }
+        else
+        {
+            imm   = op1->AsIntConCommon();
+            other = op2;
+        }
+
+        // CQ: We want to rewrite this into a LEA
+        ssize_t immVal = imm->AsIntConCommon()->IconValue();
+        if (!requiresOverflowCheck && (immVal == 3 || immVal == 5 || immVal == 9))
+        {
+            useLeaEncoding = true;
+        }
+
+        MakeSrcContained(node, imm); // The imm is always contained
+        if (IsContainableMemoryOp(other, true))
+        {
+            memOp = other; // memOp may be contained below
+        }
+    }
+
+    // We allow one operand to be a contained memory operand.
+    // The memory op type must match with the 'node' type.
+    // This is because during codegen we use 'node' type to derive EmitTypeSize.
+    // E.g op1 type = byte, op2 type = byte but GT_MUL node type is int.
+    //
+    if (memOp == nullptr)
+    {
+        if (IsContainableMemoryOp(op2, true) && (op2->TypeGet() == node->TypeGet()) && IsSafeToContainMem(node, op2))
+        {
+            memOp = op2;
+        }
+        else if (IsContainableMemoryOp(op1, true) && (op1->TypeGet() == node->TypeGet()) &&
+                 IsSafeToContainMem(node, op1))
+        {
+            memOp = op1;
+        }
+    }
+    else
+    {
+        if ((memOp->TypeGet() != node->TypeGet()) || !IsSafeToContainMem(node, memOp))
+        {
+            memOp = nullptr;
+        }
+    }
+    // To generate an LEA we need to force memOp into a register
+    // so don't allow memOp to be 'contained'
+    //
+    if (!useLeaEncoding)
+    {
+        if (memOp != nullptr)
+        {
+            MakeSrcContained(node, memOp);
+        }
+        else if (imm != nullptr)
+        {
+            // Has a contained immediate operand.
+            // Only 'other' operand can be marked as reg optional.
+            assert(other != nullptr);
+            SetRegOptional(other);
+        }
+        else if (hasImpliedFirstOperand)
+        {
+            // Only op2 can be marke as reg optional.
+            SetRegOptional(op2);
+        }
+        else
+        {
+            // If there are no containable operands, we can make either of op1 or op2
+            // as reg optional.
+            SetRegOptionalForBinOp(node);
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// ContainCheckShiftRotate: determine whether the sources of a shift/rotate node should be contained.
+//
+// Arguments:
+//    node - pointer to the node
+//
+void Lowering::ContainCheckShiftRotate(GenTreeOp* node)
+{
+#ifdef _TARGET_X86_
+    GenTreePtr source = node->gtOp1;
+    if (node->OperIs(GT_LSH_HI, GT_RSH_LO))
+    {
+        assert(source->OperGet() == GT_LONG);
+        MakeSrcContained(node, source);
+    }
+    else
+#endif // !_TARGET_X86_
+    {
+        assert(node->OperIsShiftOrRotate());
+    }
+
+    GenTree* shiftBy = node->gtOp2;
+    if (IsContainableImmed(node, shiftBy) && (shiftBy->gtIntConCommon.IconValue() <= 255) &&
+        (shiftBy->gtIntConCommon.IconValue() >= 0))
+    {
+        MakeSrcContained(node, shiftBy);
+    }
+}
+
+//------------------------------------------------------------------------
+// ContainCheckStoreLoc: determine whether the source of a STORE_LCL* should be contained.
+//
+// Arguments:
+//    node - pointer to the node
+//
+void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc)
+{
+    assert(storeLoc->OperIsLocalStore());
+    GenTree* op1 = storeLoc->gtGetOp1();
+
+#ifdef FEATURE_SIMD
+    if (varTypeIsSIMD(storeLoc))
+    {
+        if (op1->IsCnsIntOrI())
+        {
+            // For an InitBlk we want op1 to be contained; otherwise we want it to
+            // be evaluated into an xmm register.
+            MakeSrcContained(storeLoc, op1);
+        }
+        return;
+    }
+#endif // FEATURE_SIMD
+
+    // If the source is a containable immediate, make it contained, unless it is
+    // an int-size or larger store of zero to memory, because we can generate smaller code
+    // by zeroing a register and then storing it.
+    if (IsContainableImmed(storeLoc, op1) && (!op1->IsIntegralConst(0) || varTypeIsSmall(storeLoc)))
+    {
+        MakeSrcContained(storeLoc, op1);
+    }
+#ifdef _TARGET_X86_
+    else if (op1->OperGet() == GT_LONG)
+    {
+        MakeSrcContained(storeLoc, op1);
+    }
+#endif // _TARGET_X86_
+}
+
+//------------------------------------------------------------------------
+// ContainCheckCast: determine whether the source of a CAST node should be contained.
+//
+// Arguments:
+//    node - pointer to the node
+//
+void Lowering::ContainCheckCast(GenTreeCast* node)
+{
+    GenTreePtr castOp     = node->CastOp();
+    var_types  castToType = node->CastToType();
+    var_types  srcType    = castOp->TypeGet();
+
+    // force the srcType to unsigned if GT_UNSIGNED flag is set
+    if (node->gtFlags & GTF_UNSIGNED)
+    {
+        srcType = genUnsignedType(srcType);
+    }
+
+    if (!node->gtOverflow() && (varTypeIsFloating(castToType) || varTypeIsFloating(srcType)))
+    {
+#ifdef DEBUG
+        // If converting to float/double, the operand must be 4 or 8 byte in size.
+        if (varTypeIsFloating(castToType))
+        {
+            unsigned opSize = genTypeSize(srcType);
+            assert(opSize == 4 || opSize == 8);
+        }
+#endif // DEBUG
+
+        // U8 -> R8 conversion requires that the operand be in a register.
+        if (srcType != TYP_ULONG)
+        {
+            if (IsContainableMemoryOp(castOp, true) || castOp->IsCnsNonZeroFltOrDbl())
+            {
+                MakeSrcContained(node, castOp);
+            }
+            else
+            {
+                // Mark castOp as reg optional to indicate codegen
+                // can still generate code if it is on stack.
+                SetRegOptional(castOp);
+            }
+        }
+    }
+#if !defined(_TARGET_64BIT_)
+    if (varTypeIsLong(srcType))
+    {
+        noway_assert(castOp->OperGet() == GT_LONG);
+        castOp->SetContained();
+    }
+#endif // !defined(_TARGET_64BIT_)
+}
+
+//------------------------------------------------------------------------
+// ContainCheckCompare: determine whether the sources of a compare node should be contained.
+//
+// Arguments:
+//    node - pointer to the node
+//
+void Lowering::ContainCheckCompare(GenTreeOp* cmp)
+{
+    assert(cmp->OperIsCompare() || cmp->OperIs(GT_CMP));
+
+    GenTreePtr op1     = cmp->gtOp.gtOp1;
+    GenTreePtr op2     = cmp->gtOp.gtOp2;
+    var_types  op1Type = op1->TypeGet();
+    var_types  op2Type = op2->TypeGet();
+
+    // If either of op1 or op2 is floating point values, then we need to use
+    // ucomiss or ucomisd to compare, both of which support the following form:
+    //     ucomis[s|d] xmm, xmm/mem
+    // That is only the second operand can be a memory op.
+    //
+    // Second operand is a memory Op:  Note that depending on comparison operator,
+    // the operands of ucomis[s|d] need to be reversed.  Therefore, either op1 or
+    // op2 can be a memory op depending on the comparison operator.
+    if (varTypeIsFloating(op1Type))
+    {
+        // The type of the operands has to be the same and no implicit conversions at this stage.
+        assert(op1Type == op2Type);
+
+        bool reverseOps;
+        if ((cmp->gtFlags & GTF_RELOP_NAN_UN) != 0)
+        {
+            // Unordered comparison case
+            reverseOps = cmp->OperIs(GT_GT, GT_GE);
+        }
+        else
+        {
+            reverseOps = cmp->OperIs(GT_LT, GT_LE);
+        }
+
+        GenTreePtr otherOp;
+        if (reverseOps)
+        {
+            otherOp = op1;
+        }
+        else
+        {
+            otherOp = op2;
+        }
+
+        assert(otherOp != nullptr);
+        if (otherOp->IsCnsNonZeroFltOrDbl())
+        {
+            MakeSrcContained(cmp, otherOp);
+        }
+        else if (IsContainableMemoryOp(otherOp, true) && ((otherOp == op2) || IsSafeToContainMem(cmp, otherOp)))
+        {
+            MakeSrcContained(cmp, otherOp);
+        }
+        else
+        {
+            // SSE2 allows only otherOp to be a memory-op. Since otherOp is not
+            // contained, we can mark it reg-optional.
+            SetRegOptional(otherOp);
+        }
+
+        return;
+    }
+
+    // TODO-XArch-CQ: factor out cmp optimization in 'genCondSetFlags' to be used here
+    // or in other backend.
+
+    if (CheckImmedAndMakeContained(cmp, op2))
+    {
+        // If the types are the same, or if the constant is of the correct size,
+        // we can treat the MemoryOp as contained.
+        if (op1Type == op2Type)
+        {
+            if (IsContainableMemoryOp(op1, true))
+            {
+                MakeSrcContained(cmp, op1);
+            }
+            // If op1 codegen sets ZF and SF flags and ==/!= against
+            // zero, we don't need to generate test instruction,
+            // provided we don't have another GenTree node between op1
+            // and cmp that could potentially modify flags.
+            //
+            // TODO-CQ: right now the below peep is inexpensive and
+            // gets the benefit in most of cases because in majority
+            // of cases op1, op2 and cmp would be in that order in
+            // execution.  In general we should be able to check that all
+            // the nodes that come after op1 in execution order do not
+            // modify the flags so that it is safe to avoid generating a
+            // test instruction.  Such a check requires that on each
+            // GenTree node we need to set the info whether its codegen
+            // will modify flags.
+            //
+            // TODO-CQ: We can optimize compare against zero in the
+            // following cases by generating the branch as indicated
+            // against each case.
+            //  1) unsigned compare
+            //        < 0  - always FALSE
+            //       <= 0  - ZF=1 and jne
+            //        > 0  - ZF=0 and je
+            //       >= 0  - always TRUE
+            //
+            // 2) signed compare
+            //        < 0  - SF=1 and js
+            //       >= 0  - SF=0 and jns
+            else if (cmp->OperIs(GT_EQ, GT_NE) && op1->gtSetZSFlags() && op2->IsIntegralConst(0) &&
+                     (op1->gtNext == op2) && (op2->gtNext == cmp))
+            {
+                // Require codegen of op1 to set the flags.
+                assert(!op1->gtSetFlags());
+                op1->gtFlags |= GTF_SET_FLAGS;
+            }
+            else
+            {
+                SetRegOptional(op1);
+            }
+        }
+    }
+    else if (op1Type == op2Type)
+    {
+        // Note that TEST does not have a r,rm encoding like CMP has but we can still
+        // contain the second operand because the emitter maps both r,rm and rm,r to
+        // the same instruction code. This avoids the need to special case TEST here.
+        if (IsContainableMemoryOp(op2, true))
+        {
+            MakeSrcContained(cmp, op2);
+        }
+        else if (IsContainableMemoryOp(op1, true) && IsSafeToContainMem(cmp, op1))
+        {
+            MakeSrcContained(cmp, op1);
+        }
+        else if (op1->IsCnsIntOrI())
+        {
+            // TODO-CQ: We should be able to support swapping op1 and op2 to generate cmp reg, imm,
+            // but there is currently an assert in CodeGen::genCompareInt().
+            // https://github.com/dotnet/coreclr/issues/7270
+            SetRegOptional(op2);
+        }
+        else
+        {
+            // One of op1 or op2 could be marked as reg optional
+            // to indicate that codegen can still generate code
+            // if one of them is on stack.
+            SetRegOptional(PreferredRegOptionalOperand(cmp));
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// ContainCheckFloatBinary: determine whether the sources of a floating point binary node should be contained.
+//
+// Arguments:
+//    node - pointer to the node
+//
+void Lowering::ContainCheckFloatBinary(GenTreeOp* node)
+{
+    assert(node->OperIsBinary() && varTypeIsFloating(node));
+
+    // overflow operations aren't supported on float/double types.
+    assert(!node->gtOverflow());
+
+    GenTree* op1 = node->gtGetOp1();
+    GenTree* op2 = node->gtGetOp2();
+
+    // No implicit conversions at this stage as the expectation is that
+    // everything is made explicit by adding casts.
+    assert(op1->TypeGet() == op2->TypeGet());
+
+    if (IsContainableMemoryOp(op2, true) || op2->IsCnsNonZeroFltOrDbl())
+    {
+        MakeSrcContained(node, op2);
+    }
+    else if (node->OperIsCommutative() &&
+             (op1->IsCnsNonZeroFltOrDbl() || (IsContainableMemoryOp(op1, true) && IsSafeToContainMem(node, op1))))
+    {
+        // Though we have GT_ADD(op1=memOp, op2=non-memOp, we try to reorder the operands
+        // as long as it is safe so that the following efficient code sequence is generated:
+        //      addss/sd targetReg, memOp    (if op1Reg == targetReg) OR
+        //      movaps targetReg, op2Reg; addss/sd targetReg, [memOp]
+        //
+        // Instead of
+        //      movss op1Reg, [memOp]; addss/sd targetReg, Op2Reg  (if op1Reg == targetReg) OR
+        //      movss op1Reg, [memOp]; movaps targetReg, op1Reg, addss/sd targetReg, Op2Reg
+        MakeSrcContained(node, op1);
+    }
+    else
+    {
+        // If there are no containable operands, we can make an operand reg optional.
+        SetRegOptionalForBinOp(node);
+    }
+}
+
+//------------------------------------------------------------------------
+// ContainCheckIntrinsic: determine whether the source of an INTRINSIC node should be contained.
+//
+// Arguments:
+//    node - pointer to the node
+//
+void Lowering::ContainCheckIntrinsic(GenTreeOp* node)
+{
+    assert(node->OperIs(GT_INTRINSIC));
+    if (node->gtIntrinsic.gtIntrinsicId == CORINFO_INTRINSIC_Sqrt)
+    {
+        GenTree* op1 = node->gtGetOp1();
+        if (IsContainableMemoryOp(op1, true) || op1->IsCnsNonZeroFltOrDbl())
+        {
+            MakeSrcContained(node, op1);
+        }
+        else
+        {
+            // Mark the operand as reg optional since codegen can still
+            // generate code if op1 is on stack.
+            SetRegOptional(op1);
+        }
+    }
+}
+
+//------------------------------------------------------------------------
+// ContainCheckBoundsChk: determine whether any source of a bounds check node should be contained.
+//
+// Arguments:
+//    node - pointer to the node
+//
+void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
+{
+    assert(node->OperIsBoundsCheck());
+    GenTreePtr other;
+    if (CheckImmedAndMakeContained(node, node->gtIndex))
+    {
+        other = node->gtArrLen;
+    }
+    else if (CheckImmedAndMakeContained(node, node->gtArrLen))
+    {
+        other = node->gtIndex;
+    }
+    else if (IsContainableMemoryOp(node->gtIndex, true))
+    {
+        other = node->gtIndex;
+    }
+    else
+    {
+        other = node->gtArrLen;
+    }
+
+    if (node->gtIndex->TypeGet() == node->gtArrLen->TypeGet())
+    {
+        if (IsContainableMemoryOp(other, true))
+        {
+            MakeSrcContained(node, other);
+        }
+        else
+        {
+            // We can mark 'other' as reg optional, since it is not contained.
+            SetRegOptional(other);
+        }
+    }
+}
+
+#ifdef FEATURE_SIMD
+//----------------------------------------------------------------------------------------------
+// ContainCheckSIMD: Perform containment analysis for a SIMD intrinsic node.
+//
+//  Arguments:
+//     simdNode - The SIMD intrinsic node.
+//
+void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
+{
+    switch (simdNode->gtSIMDIntrinsicID)
+    {
+        GenTree* op1;
+        GenTree* op2;
+
+        case SIMDIntrinsicInit:
+        {
+            op1 = simdNode->gtOp.gtOp1;
+#ifndef _TARGET_64BIT_
+            if (op1->OperGet() == GT_LONG)
+            {
+                MakeSrcContained(simdNode, op1);
+                GenTree* op1lo = op1->gtGetOp1();
+                GenTree* op1hi = op1->gtGetOp2();
+
+                if ((op1lo->IsIntegralConst(0) && op1hi->IsIntegralConst(0)) ||
+                    (op1lo->IsIntegralConst(-1) && op1hi->IsIntegralConst(-1)))
+                {
+                    MakeSrcContained(op1, op1lo);
+                    MakeSrcContained(op1, op1hi);
+                }
+            }
+            else
+#endif // !_TARGET_64BIT_
+                if (op1->IsFPZero() || op1->IsIntegralConst(0) ||
+                    (varTypeIsIntegral(simdNode->gtSIMDBaseType) && op1->IsIntegralConst(-1)))
+            {
+                MakeSrcContained(simdNode, op1);
+            }
+            else if ((comp->getSIMDInstructionSet() == InstructionSet_AVX) &&
+                     ((simdNode->gtSIMDSize == 16) || (simdNode->gtSIMDSize == 32)))
+            {
+                // Either op1 is a float or dbl constant or an addr
+                if (op1->IsCnsFltOrDbl() || op1->OperIsLocalAddr())
+                {
+                    MakeSrcContained(simdNode, op1);
+                }
+            }
+        }
+        break;
+
+        case SIMDIntrinsicInitArray:
+            // We have an array and an index, which may be contained.
+            CheckImmedAndMakeContained(simdNode, simdNode->gtGetOp2());
+            break;
+
+        case SIMDIntrinsicOpEquality:
+        case SIMDIntrinsicOpInEquality:
+            // On SSE4/AVX, we can generate optimal code for (in)equality
+            // against zero using ptest. We can safely do this optimization
+            // for integral vectors but not for floating-point for the reason
+            // that we have +0.0 and -0.0 and +0.0 == -0.0
+            op2 = simdNode->gtGetOp2();
+            if ((comp->getSIMDInstructionSet() >= InstructionSet_SSE3_4) && op2->IsIntegralConstVector(0))
+            {
+                MakeSrcContained(simdNode, op2);
+            }
+            break;
+
+        case SIMDIntrinsicGetItem:
+        {
+            // This implements get_Item method. The sources are:
+            //  - the source SIMD struct
+            //  - index (which element to get)
+            // The result is baseType of SIMD struct.
+            op1 = simdNode->gtOp.gtOp1;
+            op2 = simdNode->gtOp.gtOp2;
+
+            if (op1->OperGet() == GT_IND)
+            {
+                assert((op1->gtFlags & GTF_IND_REQ_ADDR_IN_REG) != 0);
+                op1->AsIndir()->Addr()->ClearContained();
+            }
+            // If the index is a constant, mark it as contained.
+            CheckImmedAndMakeContained(simdNode, op2);
+
+            if (IsContainableMemoryOp(op1, true))
+            {
+                MakeSrcContained(simdNode, op1);
+                if (op1->OperGet() == GT_IND)
+                {
+                    op1->AsIndir()->Addr()->ClearContained();
+                }
+            }
+        }
+        break;
+
+        case SIMDIntrinsicShuffleSSE2:
+            // Second operand is an integer constant and marked as contained.
+            assert(simdNode->gtOp.gtOp2->IsCnsIntOrI());
+            MakeSrcContained(simdNode, simdNode->gtOp.gtOp2);
+            break;
+
+        default:
+            break;
+    }
+}
+#endif // FEATURE_SIMD
+
 #endif // _TARGET_XARCH_
 
 #endif // !LEGACY_BACKEND

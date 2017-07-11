@@ -44,13 +44,7 @@ void Lowering::MakeSrcContained(GenTreePtr parentNode, GenTreePtr childNode)
     assert(!parentNode->OperIsLeaf());
     assert(childNode->canBeContained());
     childNode->SetContained();
-
-    int srcCount = childNode->gtLsraInfo.srcCount;
-    assert(srcCount >= 0);
     m_lsra->clearOperandCounts(childNode);
-
-    assert(parentNode->gtLsraInfo.srcCount > 0);
-    parentNode->gtLsraInfo.srcCount += srcCount - 1;
 }
 
 //------------------------------------------------------------------------
@@ -5084,6 +5078,221 @@ void Lowering::getCastDescription(GenTreePtr treeNode, CastInfo* castInfo)
         castInfo->typeMask = typeMask;
     }
 }
+
+//------------------------------------------------------------------------
+// GetIndirSourceCount: Get the source registers for an indirection that might be contained.
+//
+// Arguments:
+//    node      - The node of interest
+//
+// Return Value:
+//    The number of source registers used by the *parent* of this node.
+//
+int Lowering::GetIndirSourceCount(GenTreeIndir* indirTree)
+{
+    GenTree* const addr = indirTree->gtOp1;
+    if (!addr->isContained())
+    {
+        return 1;
+    }
+    if (!addr->OperIs(GT_LEA))
+    {
+        return 0;
+    }
+
+    GenTreeAddrMode* const addrMode = addr->AsAddrMode();
+
+    unsigned srcCount = 0;
+    if ((addrMode->Base() != nullptr) && !addrMode->Base()->isContained())
+    {
+        srcCount++;
+    }
+    if (addrMode->Index() != nullptr)
+    {
+        // We never have a contained index.
+        assert(!addrMode->Index()->isContained());
+        srcCount++;
+    }
+    return srcCount;
+}
+
+//------------------------------------------------------------------------
+// ContainCheckDivOrMod: determine which operands of a div/mod should be contained.
+//
+// Arguments:
+//    node - pointer to the GT_UDIV/GT_UMOD node
+//
+void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
+{
+    assert(node->OperIs(GT_DIV, GT_MOD, GT_UDIV, GT_UMOD));
+
+#ifdef _TARGET_XARCH_
+    GenTree* dividend = node->gtGetOp1();
+    GenTree* divisor  = node->gtGetOp2();
+
+    if (varTypeIsFloating(node->TypeGet()))
+    {
+        // No implicit conversions at this stage as the expectation is that
+        // everything is made explicit by adding casts.
+        assert(dividend->TypeGet() == divisor->TypeGet());
+
+        if (IsContainableMemoryOp(divisor, true) || divisor->IsCnsNonZeroFltOrDbl())
+        {
+            MakeSrcContained(node, divisor);
+        }
+        else
+        {
+            // If there are no containable operands, we can make an operand reg optional.
+            // SSE2 allows only divisor to be a memory-op.
+            SetRegOptional(divisor);
+        }
+        return;
+    }
+    bool divisorCanBeRegOptional = true;
+#ifdef _TARGET_X86_
+    if (dividend->OperGet() == GT_LONG)
+    {
+        divisorCanBeRegOptional = false;
+        MakeSrcContained(node, dividend);
+    }
+#endif
+
+    // divisor can be an r/m, but the memory indirection must be of the same size as the divide
+    if (IsContainableMemoryOp(divisor, true) && (divisor->TypeGet() == node->TypeGet()))
+    {
+        MakeSrcContained(node, divisor);
+    }
+    else if (divisorCanBeRegOptional)
+    {
+        // If there are no containable operands, we can make an operand reg optional.
+        // Div instruction allows only divisor to be a memory op.
+        SetRegOptional(divisor);
+    }
+#endif // _TARGET_XARCH_
+}
+
+//------------------------------------------------------------------------
+// ContainCheckReturnTrap: determine whether the source of a RETURNTRAP should be contained.
+//
+// Arguments:
+//    node - pointer to the GT_RETURNTRAP node
+//
+void Lowering::ContainCheckReturnTrap(GenTreeOp* node)
+{
+    assert(node->OperIs(GT_RETURNTRAP));
+    // This just turns into a compare of its child with an int + a conditional call
+    if (node->gtOp1->isIndir())
+    {
+        MakeSrcContained(node, node->gtOp1);
+    }
+}
+
+//------------------------------------------------------------------------
+// ContainCheckArrOffset: determine whether the source of an ARR_OFFSET should be contained.
+//
+// Arguments:
+//    node - pointer to the GT_ARR_OFFSET node
+//
+void Lowering::ContainCheckArrOffset(GenTreeArrOffs* node)
+{
+    assert(node->OperIs(GT_ARR_OFFSET));
+    // we don't want to generate code for this
+    if (node->gtOffset->IsIntegralConst(0))
+    {
+        MakeSrcContained(node, node->gtArrOffs.gtOffset);
+    }
+}
+
+//------------------------------------------------------------------------
+// ContainCheckLclHeap: determine whether the source of a GT_LCLHEAP node should be contained.
+//
+// Arguments:
+//    node - pointer to the node
+//
+void Lowering::ContainCheckLclHeap(GenTreeOp* node)
+{
+    assert(node->OperIs(GT_LCLHEAP));
+    GenTreePtr size = node->gtOp.gtOp1;
+    if (size->IsCnsIntOrI())
+    {
+        MakeSrcContained(node, size);
+    }
+}
+
+//------------------------------------------------------------------------
+// ContainCheckRet: determine whether the source of a node should be contained.
+//
+// Arguments:
+//    node - pointer to the node
+//
+void Lowering::ContainCheckRet(GenTreeOp* ret)
+{
+    assert(ret->OperIs(GT_RETURN));
+
+#if !defined(_TARGET_64BIT_)
+    if (ret->TypeGet() == TYP_LONG)
+    {
+        GenTree* op1 = ret->gtGetOp1();
+        noway_assert(op1->OperGet() == GT_LONG);
+        MakeSrcContained(ret, op1);
+    }
+#endif // !defined(_TARGET_64BIT_)
+#if FEATURE_MULTIREG_RET
+    if (varTypeIsStruct(ret))
+    {
+        GenTree* op1 = ret->gtGetOp1();
+        // op1 must be either a lclvar or a multi-reg returning call
+        if (op1->OperGet() == GT_LCL_VAR)
+        {
+            GenTreeLclVarCommon* lclVarCommon = op1->AsLclVarCommon();
+            LclVarDsc*           varDsc       = &(comp->lvaTable[lclVarCommon->gtLclNum]);
+            assert(varDsc->lvIsMultiRegRet);
+
+            // Mark var as contained if not enregistrable.
+            if (!varTypeIsEnregisterableStruct(op1))
+            {
+                MakeSrcContained(ret, op1);
+            }
+        }
+    }
+#endif // FEATURE_MULTIREG_RET
+}
+
+#ifdef FEATURE_SIMD
+//------------------------------------------------------------------------
+// ContainCheckJTrue: determine whether the source of a JTRUE should be contained.
+//
+// Arguments:
+//    node - pointer to the node
+//
+void Lowering::ContainCheckJTrue(GenTreeOp* node)
+{
+    assert(node->OperIs(GT_JTRUE));
+
+    // Say we have the following IR
+    //   simdCompareResult = GT_SIMD((In)Equality, v1, v2)
+    //   integerCompareResult = GT_EQ/NE(simdCompareResult, true/false)
+    //   GT_JTRUE(integerCompareResult)
+    //
+    // In this case we don't need to generate code for GT_EQ_/NE, since SIMD (In)Equality
+    // intrinsic will set or clear the Zero flag.
+    GenTree*   cmp     = node->gtGetOp1();
+    genTreeOps cmpOper = cmp->OperGet();
+    if (cmpOper == GT_EQ || cmpOper == GT_NE)
+    {
+        GenTree* cmpOp1 = cmp->gtGetOp1();
+        GenTree* cmpOp2 = cmp->gtGetOp2();
+
+        if (cmpOp1->IsSIMDEqualityOrInequality() && (cmpOp2->IsIntegralConst(0) || cmpOp2->IsIntegralConst(1)))
+        {
+            // We always generate code for a SIMD equality comparison, though it produces no value.
+            // Neither the GT_JTRUE nor the immediate need to be evaluated.
+            m_lsra->clearOperandCounts(cmp);
+            MakeSrcContained(cmp, cmpOp2);
+        }
+    }
+}
+#endif // FEATURE_SIMD
 
 #ifdef DEBUG
 void Lowering::DumpNodeInfoMap()
