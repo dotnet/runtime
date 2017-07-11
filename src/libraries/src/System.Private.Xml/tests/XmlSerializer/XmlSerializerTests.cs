@@ -1219,6 +1219,25 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     }
 
     [Fact]
+    public static void XML_TypeWithMemberWithXmlNamespaceDeclarationsAttribute_WithInitialValue()
+    {
+        var ns = new XmlQualifiedName("ns", "http://tempuri.org");
+        var original = new TypeWithMemberWithXmlNamespaceDeclarationsAttribute() { header = "foo", body = "bar", xmlns = new XmlSerializerNamespaces(new[] { ns }) };
+
+        var actual = SerializeAndDeserialize<TypeWithMemberWithXmlNamespaceDeclarationsAttribute>(original,
+            @"<?xml version=""1.0""?>
+<Envelope xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns=""http://www.w3.org/2003/05/soap-envelope"" xmlns:ns=""http://tempuri.org"">
+  <header>foo</header>
+  <body>bar</body>
+</Envelope>");
+
+        Assert.StrictEqual(original.header, actual.header);
+        Assert.StrictEqual(original.body, actual.body);
+        Assert.NotNull(actual.xmlns);
+        Assert.Contains(ns, actual.xmlns.ToArray());
+    }
+
+    [Fact]
     public static void XML_TypeWithXmlTextAttributeOnArray()
     {
         var original = new TypeWithXmlTextAttributeOnArray() { Text = new string[] { "val1", "val2" } };
