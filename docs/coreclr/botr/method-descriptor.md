@@ -289,7 +289,7 @@ Temporary entry points implemented using StubPrecode or FixupPrecode can be patc
 
 Compact entry points cannot be patched to point to the actual code. Jitted code cannot call them directly. They are trading off speed for size. Calls to these entry points are indirected via slots in a table (FuncPtrStubs) that are patched to point to the actual entry point eventually. A request for a multicallable entry point allocates a StubPrecode or FixupPrecode on demand in this case.
 
-The raw speed difference is the cost of an indirect call for a compact entry point vs. the cost of one direct call and one direct jump on the given platform. The the later used to be faster  by a few percent in large server scenario since it can be predicted by the hardware better (2005). It is not always the case on current (2015) hardware.
+The raw speed difference is the cost of an indirect call for a compact entry point vs. the cost of one direct call and one direct jump on the given platform. The later used to be faster by a few percent in large server scenario since it can be predicted by the hardware better (2005). It is not always the case on current (2015) hardware.
 
 The compact entry points have been historically implemented on x86 only. Their additional complexity, space vs. speed trade-off and hardware advancements made them unjustified on other platforms.
 
