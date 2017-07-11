@@ -292,7 +292,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue(21680, TargetFrameworkMonikers.UapAot)]
         public void SetData_SameKeyMultipleTimes_ReplacesOldValue()
         {
             RemoteInvoke(() => {
