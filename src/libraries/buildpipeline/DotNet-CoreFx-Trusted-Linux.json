@@ -4,7 +4,25 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Delete files from $(Build.SourcesDirectory)",
+      "displayName": "Change permissions to agent folder for cleanup steps",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "sudo",
+        "arguments": "chmod 777 -R .",
+        "workingFolder": "$(Agent.WorkFolder)",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": false,
+      "displayName": "Delete files from $(PB_GitDirectory)",
       "timeoutInMinutes": 0,
       "task": {
         "id": "b7e8b412-0437-4065-9371-edc5881de25b",
@@ -12,8 +30,8 @@
         "definitionType": "task"
       },
       "inputs": {
-        "SourceFolder": "$(Build.SourcesDirectory)",
-        "Contents": "**\n.gitignore"
+        "SourceFolder": "$(PB_GitDirectory)",
+        "Contents": "**\n.gitignore\n.editorconfig\n.gitattributes\n.gitmirrorall\n.git/**\n.git"
       }
     },
     {
@@ -29,7 +47,7 @@
       },
       "inputs": {
         "filename": "git",
-        "arguments": "clone $(PB_VsoCorefxGitUrl) corefx",
+        "arguments": "clone $(PB_VsoCorefxGitUrl) $(PB_GitDirectory)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -48,14 +66,14 @@
       "inputs": {
         "filename": "git",
         "arguments": "checkout $(SourceVersion)",
-        "workingFolder": "$(Build.SourcesDirectory)/corefx",
+        "workingFolder": "$(PB_GitDirectory)",
         "failOnStandardError": "false"
       }
     },
     {
       "enabled": true,
       "continueOnError": false,
-      "alwaysRun": true,
+      "alwaysRun": false,
       "displayName": "Initialize tools",
       "timeoutInMinutes": 0,
       "task": {
@@ -64,9 +82,9 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(Build.SourcesDirectory)/corefx/init-tools.sh",
+        "filename": "$(PB_GitDirectory)/init-tools.sh",
         "arguments": "",
-        "workingFolder": "",
+        "workingFolder": "$(PB_GitDirectory)",
         "failOnStandardError": "false"
       }
     },
@@ -92,60 +110,6 @@
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Start detached docker container",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "docker",
-        "arguments": "run -d -w $(PB_GitDirectory) --name $(PB_DockerContainerName) $(PB_DockerImageName) sleep 7200",
-        "workingFolder": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Clone repository",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "docker",
-        "arguments": "exec $(PB_DockerContainerName) git clone $(PB_VsoCorefxGitUrl) $(PB_GitDirectory)",
-        "workingFolder": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
-      "displayName": "Check out the specified commit",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "docker",
-        "arguments": "exec $(PB_DockerContainerName) git checkout $(SourceVersion)",
-        "workingFolder": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": false,
-      "alwaysRun": false,
       "displayName": "Generate version assets",
       "timeoutInMinutes": 0,
       "task": {
@@ -155,7 +119,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "exec $(PB_DockerContainerName) $(PB_GitDirectory)/build-managed.sh -OfficialBuildId=$(OfficialBuildId) -- /t:GenerateVersionSourceFile /p:GenerateVersionSourceFile=true",
+        "arguments": "run $(PB_DockerCommonRunArgs) $(PB_DockerVolumeName)/build-managed.sh -OfficialBuildId=$(OfficialBuildId) -- /t:GenerateVersionSourceFile /p:GenerateVersionSourceFile=true",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -173,7 +137,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "exec $(PB_DockerContainerName) $(PB_GitDirectory)/sync.sh $(PB_SyncArguments)",
+        "arguments": "run $(PB_DockerCommonRunArgs) $(PB_DockerVolumeName)/sync.sh $(PB_SyncArguments)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -191,7 +155,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "exec $(PB_DockerContainerName) $(PB_GitDirectory)/build.sh -OfficialBuildId=$(OfficialBuildId) $(PB_BuildArguments)",
+        "arguments": "run $(PB_DockerCommonRunArgs) $(PB_DockerVolumeName)/build.sh -OfficialBuildId=$(OfficialBuildId) $(PB_BuildArguments)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -209,13 +173,13 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "exec $(PB_DockerContainerName) $(PB_GitDirectory)/build-tests.sh $(PB_BuildTestsArguments)",
+        "arguments": "run $(PB_DockerCommonRunArgs) $(PB_DockerVolumeName)/build-tests.sh $(PB_BuildTestsArguments)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
     },
     {
-      "enabled": true,
+      "enabled": false,
       "continueOnError": false,
       "alwaysRun": false,
       "displayName": "Create Helix Test Jobs",
@@ -227,7 +191,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "exec $(PB_DockerContainerName) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/src/upload-tests.proj $(PB_CreateHelixArguments) /p:\"CloudDropAccountName=$(PB_CloudDropAccountName)\" /p:\"CloudResultsAccountName=$(PB_CloudResultsAccountName)\" /p:\"CloudDropAccessToken=$(CloudDropAccessToken)\" /p:\"CloudResultsAccessToken=$(OutputCloudResultsAccessToken)\" /p:\"HelixApiAccessKey=$(HelixApiAccessKey)\" /p:HelixApiEndpoint=$(PB_HelixApiEndPoint) /p:\"Branch=$(SourceBranch)\" /p:TargetQueues=$(PB_TargetQueue) /p:\"OfficialBuildId=$(OfficialBuildId)\"",
+        "arguments": "run --rm $(PB_DockerCommonRunArgs) $(PB_DockerVolumeName)/Tools/msbuild.sh $(PB_DockerVolumeName)/src/upload-tests.proj $(PB_CreateHelixArguments) /p:\"CloudDropAccountName=$(PB_CloudDropAccountName)\" /p:\"CloudResultsAccountName=$(PB_CloudResultsAccountName)\" /p:\"CloudDropAccessToken=$(CloudDropAccessToken)\" /p:\"CloudResultsAccessToken=$(PB_CloudResultsAccessToken)\" /p:\"HelixApiAccessKey=$(HelixApiAccessKey)\" /p:HelixApiEndpoint=$(PB_HelixApiEndPoint) /p:\"Branch=$(SourceBranch)\" /p:TargetQueues=$(PB_TargetQueue) /p:\"OfficialBuildId=$(OfficialBuildId)\"",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -245,7 +209,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "exec $(PB_DockerContainerName) $(PB_GitDirectory)/publish-packages.sh -AzureAccount=$(PB_CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(PB_Label) -verbose -- /p:OverwriteOnPublish=false",
+        "arguments": "run $(PB_DockerCommonRunArgs) $(PB_DockerVolumeName)/publish-packages.sh -AzureAccount=$(PB_CloudDropAccountName) -AzureToken=$(CloudDropAccessToken) -Container=$(PB_Label) -verbose -- /p:OverwriteOnPublish=false",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -253,59 +217,7 @@
     {
       "enabled": true,
       "continueOnError": true,
-      "alwaysRun": true,
-      "displayName": "Remove old docker build logs",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "b7e8b412-0437-4065-9371-edc5881de25b",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "SourceFolder": "$(PB_DockerCopyDest)",
-        "Contents": "*"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": true,
-      "alwaysRun": true,
-      "displayName": "Expose docker repo for publishing",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "docker",
-        "arguments": "cp $(PB_DockerContainerName):$(PB_GitDirectory) $(PB_DockerCopyDest)",
-        "workingFolder": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": true,
-      "alwaysRun": true,
-      "displayName": "Remove container",
-      "timeoutInMinutes": 0,
-      "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
-        "versionSpec": "1.*",
-        "definitionType": "task"
-      },
-      "inputs": {
-        "filename": "docker",
-        "arguments": "rm -f $(PB_DockerContainerName)",
-        "workingFolder": "",
-        "failOnStandardError": "false"
-      }
-    },
-    {
-      "enabled": true,
-      "continueOnError": true,
-      "alwaysRun": true,
+      "alwaysRun": false,
       "displayName": "Copy Publish Artifact: BuildLogs",
       "timeoutInMinutes": 0,
       "task": {
@@ -314,7 +226,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "CopyRoot": "$(PB_DockerCopyDest)/corefx",
+        "CopyRoot": "$(PB_GitDirectory)",
         "Contents": "*.log",
         "ArtifactName": "BuildLogs",
         "ArtifactType": "Container",
@@ -324,7 +236,7 @@
     {
       "enabled": true,
       "continueOnError": true,
-      "alwaysRun": true,
+      "alwaysRun": false,
       "displayName": "Cleanup Docker",
       "timeoutInMinutes": 0,
       "task": {
@@ -333,7 +245,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(Build.SourcesDirectory)/corefx/Tools/scripts/docker/cleanup-docker.sh",
+        "filename": "$(PB_GitDirectory)/Tools/scripts/docker/cleanup-docker.sh",
         "arguments": "",
         "workingFolder": "",
         "failOnStandardError": "false"
@@ -342,7 +254,7 @@
     {
       "enabled": true,
       "continueOnError": true,
-      "alwaysRun": true,
+      "alwaysRun": false,
       "displayName": "Cleanup VSTS Agent",
       "timeoutInMinutes": 0,
       "task": {
@@ -351,14 +263,33 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(Build.SourcesDirectory)/corefx/Tools/msbuild.sh",
+        "filename": "$(PB_GitDirectory)/Tools/msbuild.sh",
         "arguments": "cleanupagent.proj /p:AgentDirectory=$(Agent.HomeDirectory) /p:DoClean=$(PB_CleanAgent)",
-        "workingFolder": "$(Build.SourcesDirectory)/corefx/Tools/scripts/vstsagent/",
+        "workingFolder": "$(PB_GitDirectory)/Tools/scripts/vstsagent/",
         "failOnStandardError": "false"
       }
     }
   ],
   "options": [
+    {
+      "enabled": false,
+      "definition": {
+        "id": "5d58cc01-7c75-450c-be18-a388ddb129ec"
+      },
+      "inputs": {
+        "branchFilters": "[\"+refs/heads/*\"]",
+        "additionalFields": "{}"
+      }
+    },
+    {
+      "enabled": false,
+      "definition": {
+        "id": "5bc3cfb7-6b54-4a4b-b5d2-a3905949f8a6"
+      },
+      "inputs": {
+        "additionalFields": "{}"
+      }
+    },
     {
       "enabled": false,
       "definition": {
@@ -393,29 +324,6 @@
     }
   ],
   "variables": {
-    "system.debug": {
-      "value": "false",
-      "allowOverride": true
-    },
-    "PB_GitDirectory": {
-      "value": "/root/corefx"
-    },
-    "PB_DockerContainerName": {
-      "value": "corefx-$(Build.BuildId)"
-    },
-    "PB_DockerImageName": {
-      "value": "$(PB_DockerRepository):$(PB_DockerTag)"
-    },
-    "PB_DockerRepository": {
-      "value": "microsoft/dotnet-buildtools-prereqs"
-    },
-    "PB_DockerTag": {
-      "value": "debian82_prereqs_2",
-      "allowOverride": true
-    },
-    "PB_CloudDropAccountName": {
-      "value": "dotnetbuildoutput"
-    },
     "CloudDropAccessToken": {
       "value": null,
       "isSecret": true
@@ -424,49 +332,87 @@
       "value": "$(Build.BuildNumber)",
       "allowOverride": true
     },
-    "PB_Label": {
-      "value": "$(Build.BuildNumber)",
+    "PB_BuildArguments": {
+      "value": "-buildArch=x64 -Release -stripSymbols",
       "allowOverride": true
     },
-    "SourceVersion": {
-      "value": "HEAD",
+    "PB_BuildTestsArguments": {
+      "value": "-buildArch=x64 -Release -SkipTests -Outerloop -- /p:ArchiveTests=true /p:EnableDumpling=true",
       "allowOverride": true
+    },
+    "PB_CleanAgent": {
+      "value": "true"
+    },
+    "PB_CloudDropAccountName": {
+      "value": "dotnetbuildoutput"
+    },
+    "PB_CloudResultsAccessToken": {
+      "value": null,
+      "isSecret": true
+    },
+    "PB_CloudResultsAccountName": {
+      "value": "dotnetjobresult"
+    },
+    "PB_CreateHelixArguments": {
+      "value": "\"/p:ArchGroup=x64 /p:ConfigurationGroup=Release /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Linux",
+      "allowOverride": true
+    },
+    "PB_DockerCommonRunArgs": {
+      "value": "--rm --name $(PB_DockerContainerName) -v \"$(PB_GitDirectory):$(PB_DockerVolumeName)\" -w=\"$(PB_DockerVolumeName)\" $(PB_DockerImageName)"
+    },
+    "PB_DockerContainerName": {
+      "value": "corefx-$(Build.BuildId)"
     },
     "PB_DockerCopyDest": {
       "value": "$(Build.BinariesDirectory)/docker_repo"
     },
-    "PB_VsoAccountName": {
-      "value": "dn-bot"
+    "PB_DockerImageName": {
+      "value": "$(PB_DockerRepository):$(PB_DockerTag)"
     },
-    "VsoPassword": {
-      "value": null,
-      "isSecret": true
+    "PB_DockerRepository": {
+      "value": "microsoft/dotnet-buildtools-prereqs"
     },
-    "PB_VsoRepositoryName": {
-      "value": "DotNet-CoreFX-Trusted",
+    "PB_DockerTag": {
+      "value": "rhel7_prereqs_2",
       "allowOverride": true
     },
-    "PB_VsoCorefxGitUrl": {
-      "value": "https://github.com/dotnet/corefx"
+    "PB_DockerVolumeName": {
+      "value": "/root/corefx-$(Build.BuildId)"
     },
-    "PB_BuildArguments": {
-      "value": "-buildArch=x64 -Release",
+    "PB_GitDirectory": {
+      "value": "$(Build.SourcesDirectory)/corefx"
+    },
+    "PB_Label": {
+      "value": "$(Build.BuildNumber)",
       "allowOverride": true
     },
     "PB_SyncArguments": {
       "value": "-p -- /p:ArchGroup=x64",
       "allowOverride": true
     },
-    "PB_BuildTestsArguments": {
-      "value": "-BuildArch=x64 -Release -SkipTests",
+    "PB_TargetQueue": {
+      "value": "Centos.73.Amd64+RedHat.72.Amd64+RedHat.73.Amd64+Debian.87.Amd64+Debian.90.Amd64+Ubuntu.1404.Amd64+Ubuntu.1604.Amd64+Ubuntu.1610.Amd64+Ubuntu.1704.Amd64+suse.422.amd64+SLES.12.Amd64+fedora.25.amd64+Fedora.26.Amd64"
+    },
+    "PB_VsoAccountName": {
+      "value": "dn-bot"
+    },
+    "PB_VsoCorefxGitUrl": {
+      "value": "https://$(PB_VsoAccountName):$(VsoPassword)@devdiv.visualstudio.com/DevDiv/_git/$(PB_VsoRepositoryName)/"
+    },
+    "PB_VsoRepositoryName": {
+      "value": "DotNet-CoreFX-Trusted"
+    },
+    "SourceVersion": {
+      "value": "HEAD",
       "allowOverride": true
     },
-    "PB_CreateHelixArguments": {
-      "value": "/t:CloudBuild /p:ArchGroup=x64 /p:ConfigurationGroup=Debug /p:\"EnableCloudTest=true /p:\"TestProduct=corefx  /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Linux\" /p:FilterToOSGroup=Linux",
+    "system.debug": {
+      "value": "false",
       "allowOverride": true
     },
-    "PB_CleanAgent": {
-      "value": "true"
+    "VsoPassword": {
+      "value": null,
+      "isSecret": true
     }
   },
   "demands": [
@@ -487,9 +433,10 @@
       "deleteTestResults": true
     }
   ],
-  "buildNumberFormat": "$(date:yyyyMMdd)$(rev:-rr)-$(PB_DockerTag)",
+  "buildNumberFormat": "$(date:yyyyMMdd)$(rev:-9r)",
   "jobAuthorizationScope": "projectCollection",
   "jobTimeoutInMinutes": 60,
+  "jobCancelTimeoutInMinutes": 5,
   "repository": {
     "properties": {
       "labelSources": "0",
@@ -497,7 +444,9 @@
       "fetchDepth": "0",
       "gitLfsSupport": "false",
       "skipSyncSource": "true",
-      "cleanOptions": "0"
+      "cleanOptions": "0",
+      "checkoutNestedSubmodules": "false",
+      "labelSourcesFormat": "$(build.buildNumber)"
     },
     "id": "58fa2458-e392-4373-ba2b-dd3ef0c2d7ce",
     "type": "TfsGit",
@@ -507,25 +456,27 @@
     "clean": "false",
     "checkoutSubmodules": false
   },
+  "processParameters": {},
   "quality": "definition",
   "queue": {
+    "id": 36,
+    "name": "DotNet-Build",
     "pool": {
       "id": 39,
       "name": "DotNet-Build"
-    },
-    "id": 36,
-    "name": "DotNet-Build"
+    }
   },
-  "path": "\\",
-  "type": "build",
   "id": 5008,
   "name": "DotNet-CoreFx-Trusted-Linux",
+  "path": "\\",
+  "type": "build",
   "project": {
     "id": "0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "name": "DevDiv",
     "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
     "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "state": "wellFormed",
-    "revision": 418097459
+    "revision": 418097767,
+    "visibility": "private"
   }
 }
