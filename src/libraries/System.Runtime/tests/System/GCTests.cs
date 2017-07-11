@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.CompilerServices;
 using System.Diagnostics;
 using System.Threading;
 using System.Runtime;
@@ -423,6 +424,18 @@ namespace System.Tests
     {
         private const int TimeoutMilliseconds = 10 * 30 * 1000; //if full GC is triggered it may take a while
 
+        /// <summary>
+        /// NoGC regions will be automatically exited if more than the requested budget
+        /// is allocated while still in the region. In order to avoid this, the budget is set
+        /// to be higher than what the test should be allocating. When running on CoreCLR/DesktopCLR,
+        /// these tests generally do not allocate because they are implemented as fcalls into the runtime
+        /// itself, but the CoreRT runtime is written in mostly managed code and tends to allocate more.
+        ///
+        /// This budget should be high enough to avoid exiting no-gc regions when doing normal unit
+        /// tests, regardless of the runtime.
+        /// </summary>
+        private const int NoGCRequestedBudget = 8192;
+
         [Fact]
         [OuterLoop]
         public static void GetGeneration_WeakReference()
@@ -437,7 +450,7 @@ namespace System.Tests
                         Version myobj = new Version();
                         var wkref = new WeakReference(myobj);
 
-                        Assert.True(GC.TryStartNoGCRegion(1024));
+                        Assert.True(GC.TryStartNoGCRegion(NoGCRequestedBudget));
                         Assert.True(GC.GetGeneration(wkref) >= 0);
                         Assert.Equal(GC.GetGeneration(wkref), GC.GetGeneration(myobj));
                         GC.EndNoGCRegion();
@@ -508,6 +521,35 @@ namespace System.Tests
                 }, options).Dispose();
         }
 
+        [MethodImpl(MethodImplOptions.NoOptimization)]
+        private static void AllocateALot()
+        {
+            for (int i = 0; i < 10000; i++)
+            {
+                var array = new long[NoGCRequestedBudget];
+                GC.KeepAlive(array);
+            }
+        }
+
+        [Fact]
+        [OuterLoop]
+        public static void TryStartNoGCRegion_ExitThroughAllocation()
+        {
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.TimeOut = TimeoutMilliseconds;
+            RemoteInvoke(() =>
+                {
+                    Assert.True(GC.TryStartNoGCRegion(1024));
+
+                    AllocateALot();
+
+                    // at this point, the GC should have booted us out of the no GC region
+                    // since we allocated too much.
+                    Assert.Throws<InvalidOperationException>(() => GC.EndNoGCRegion());
+                    return SuccessExitCode;
+                }, options).Dispose();
+        }
+
         [Fact]
         [OuterLoop]
         public static void TryStartNoGCRegion_StartWhileInNoGCRegion()
@@ -516,8 +558,8 @@ namespace System.Tests
             options.TimeOut = TimeoutMilliseconds;
             RemoteInvoke(() =>
             {
-                Assert.True(GC.TryStartNoGCRegion(1024));
-                Assert.Throws<InvalidOperationException>(() => GC.TryStartNoGCRegion(1024));
+                Assert.True(GC.TryStartNoGCRegion(NoGCRequestedBudget));
+                Assert.Throws<InvalidOperationException>(() => GC.TryStartNoGCRegion(NoGCRequestedBudget));
 
                 Assert.Throws<InvalidOperationException>(() => GC.EndNoGCRegion());
 
@@ -533,8 +575,8 @@ namespace System.Tests
             options.TimeOut = TimeoutMilliseconds;
             RemoteInvoke(() =>
             {
-                Assert.True(GC.TryStartNoGCRegion(1024, true));
-                Assert.Throws<InvalidOperationException>(() => GC.TryStartNoGCRegion(1024, true));
+                Assert.True(GC.TryStartNoGCRegion(NoGCRequestedBudget, true));
+                Assert.Throws<InvalidOperationException>(() => GC.TryStartNoGCRegion(NoGCRequestedBudget, true));
 
                 Assert.Throws<InvalidOperationException>(() => GC.EndNoGCRegion());
 
@@ -550,8 +592,8 @@ namespace System.Tests
             options.TimeOut = TimeoutMilliseconds;
             RemoteInvoke(() =>
             {
-                Assert.True(GC.TryStartNoGCRegion(1024, 1024));
-                Assert.Throws<InvalidOperationException>(() => GC.TryStartNoGCRegion(1024, 1024));
+                Assert.True(GC.TryStartNoGCRegion(NoGCRequestedBudget, NoGCRequestedBudget));
+                Assert.Throws<InvalidOperationException>(() => GC.TryStartNoGCRegion(NoGCRequestedBudget, NoGCRequestedBudget));
 
                 Assert.Throws<InvalidOperationException>(() => GC.EndNoGCRegion());
 
@@ -567,8 +609,8 @@ namespace System.Tests
             options.TimeOut = TimeoutMilliseconds;
             RemoteInvoke(() =>
             {
-                Assert.True(GC.TryStartNoGCRegion(1024, 1024, true));
-                Assert.Throws<InvalidOperationException>(() => GC.TryStartNoGCRegion(1024, 1024, true));
+                Assert.True(GC.TryStartNoGCRegion(NoGCRequestedBudget, NoGCRequestedBudget, true));
+                Assert.Throws<InvalidOperationException>(() => GC.TryStartNoGCRegion(NoGCRequestedBudget, NoGCRequestedBudget, true));
 
                 Assert.Throws<InvalidOperationException>(() => GC.EndNoGCRegion());
 
@@ -584,7 +626,7 @@ namespace System.Tests
             options.TimeOut = TimeoutMilliseconds;
             RemoteInvoke(() =>
             {
-                Assert.True(GC.TryStartNoGCRegion(1024, true));
+                Assert.True(GC.TryStartNoGCRegion(NoGCRequestedBudget, true));
                 Assert.Equal(GCSettings.LatencyMode, GCLatencyMode.NoGCRegion);
                 Assert.Throws<InvalidOperationException>(() => GCSettings.LatencyMode = GCLatencyMode.LowLatency);
 
@@ -603,7 +645,7 @@ namespace System.Tests
             RemoteInvoke(() =>
                 {
 
-                    Assert.True(GC.TryStartNoGCRegion(1024));
+                    Assert.True(GC.TryStartNoGCRegion(NoGCRequestedBudget));
                     Assert.Equal(GCSettings.LatencyMode, GCLatencyMode.NoGCRegion);
                     GC.EndNoGCRegion();
 
@@ -620,7 +662,7 @@ namespace System.Tests
             options.TimeOut = TimeoutMilliseconds;
             RemoteInvoke(() =>
             {
-                Assert.True(GC.TryStartNoGCRegion(1024, true));
+                Assert.True(GC.TryStartNoGCRegion(NoGCRequestedBudget, true));
                 Assert.Equal(GCSettings.LatencyMode, GCLatencyMode.NoGCRegion);
                 GC.EndNoGCRegion();
 
@@ -637,7 +679,7 @@ namespace System.Tests
             options.TimeOut = TimeoutMilliseconds;
             RemoteInvoke(() =>
             {
-                Assert.True(GC.TryStartNoGCRegion(1024, 1024));
+                Assert.True(GC.TryStartNoGCRegion(NoGCRequestedBudget, NoGCRequestedBudget));
                 Assert.Equal(GCSettings.LatencyMode, GCLatencyMode.NoGCRegion);
                 GC.EndNoGCRegion();
 
@@ -654,7 +696,7 @@ namespace System.Tests
             options.TimeOut = TimeoutMilliseconds;
             RemoteInvoke(() =>
             {
-                Assert.True(GC.TryStartNoGCRegion(1024, 1024, true));
+                Assert.True(GC.TryStartNoGCRegion(NoGCRequestedBudget, NoGCRequestedBudget, true));
                 Assert.Equal(GCSettings.LatencyMode, GCLatencyMode.NoGCRegion);
                 GC.EndNoGCRegion();
 
