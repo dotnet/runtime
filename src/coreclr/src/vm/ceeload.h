@@ -1723,7 +1723,6 @@ private:
 
     PTR_ProfilingBlobTable  m_pProfilingBlobTable;   // While performing IBC instrumenting this hashtable is populated with the External defs
     CorProfileData *        m_pProfileData;          // While ngen-ing with IBC optimizations this contains a link to the IBC data for the assembly
-    SString *               m_pIBCErrorNameString;   // Used when reporting IBC type loading errors
 
     // Profile information
     BOOL                            m_nativeImageProfiling;
@@ -2940,8 +2939,6 @@ public:
 
     mdTypeDef     LookupIbcTypeToken(  Module *   pExternalModule, mdToken ibcToken, SString* optionalFullNameOut = NULL);
     mdMethodDef   LookupIbcMethodToken(TypeHandle enclosingType,   mdToken ibcToken, SString* optionalFullNameOut = NULL);
-
-    SString *     IBCErrorNameString();
 
     void          IBCTypeLoadFailed(  CORBBTPROF_BLOB_PARAM_SIG_ENTRY *pBlobSigEntry, 
                                       SString& exceptionMessage, SString* typeNameError);
