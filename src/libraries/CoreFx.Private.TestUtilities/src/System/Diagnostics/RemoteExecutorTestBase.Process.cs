@@ -5,7 +5,6 @@
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -66,50 +65,6 @@ namespace System.Diagnostics
             return new RemoteInvokeHandle(options.Start ?
                 Process.Start(psi) :
                 new Process() { StartInfo = psi }, options);
-        }
-
-        /// <summary>A cleanup handle to the Process created for the remote invocation.</summary>
-        public sealed class RemoteInvokeHandle : IDisposable
-        {
-            public RemoteInvokeHandle(Process process, RemoteInvokeOptions options)
-            {
-                Process = process;
-                Options = options;
-            }
-
-            public Process Process { get; private set; }
-            public RemoteInvokeOptions Options { get; private set; }
-
-            public void Dispose()
-            {
-                if (Process != null)
-                {
-                    // A bit unorthodox to do throwing operations in a Dispose, but by doing it here we avoid
-                    // needing to do this in every derived test and keep each test much simpler.
-                    try
-                    {
-                        Assert.True(Process.WaitForExit(Options.TimeOut),
-                            $"Timed out after {Options.TimeOut}ms waiting for remote process {Process.Id}");
-
-                        if (Options.CheckExitCode)
-                        {
-                            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                                Assert.Equal(Options.ExpectedExitCode, Process.ExitCode);
-                            else
-                                Assert.Equal(unchecked((sbyte)Options.ExpectedExitCode), unchecked((sbyte)Process.ExitCode));
-                        }
-                    }
-                    finally
-                    {
-                        // Cleanup
-                        try { Process.Kill(); }
-                        catch { } // ignore all cleanup errors
-
-                        Process.Dispose();
-                        Process = null;
-                    }
-                }
-            }
         }
     }
 }
