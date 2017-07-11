@@ -7434,27 +7434,6 @@ mdMethodDef Module::LookupIbcMethodToken(TypeHandle enclosingType, mdToken ibcTo
     return mdResult;
 }
 
-SString *  Module::IBCErrorNameString()
-{
-    CONTRACT(SString *)
-    {
-        INSTANCE_CHECK;
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-        INJECT_FAULT(COMPlusThrowOM());
-        POSTCONDITION(CheckPointer(RETVAL));
-    }
-    CONTRACT_END;
-
-    if (m_pIBCErrorNameString == NULL)
-    {
-        m_pIBCErrorNameString = new SString();
-    }
-
-    RETURN m_pIBCErrorNameString;
-}
-
 void Module::IBCTypeLoadFailed(CORBBTPROF_BLOB_PARAM_SIG_ENTRY *pBlobSigEntry, 
                                SString& exceptionMessage, SString* typeNameError)
 {
@@ -7572,8 +7551,6 @@ TypeHandle Module::LoadIBCTypeHelper(CORBBTPROF_BLOB_PARAM_SIG_ENTRY *pBlobSigEn
 
     EX_TRY
     {
-        IBCErrorNameString()->Clear();
-
         // This is what ZapSig::FindTypeHandleFromSignature does...
         // 
         SigTypeContext typeContext;  // empty type context
@@ -7595,7 +7572,7 @@ TypeHandle Module::LoadIBCTypeHelper(CORBBTPROF_BLOB_PARAM_SIG_ENTRY *pBlobSigEn
 
         StackSString exceptionMessage;
         GET_EXCEPTION()->GetMessage(exceptionMessage);
-        IBCTypeLoadFailed(pBlobSigEntry, exceptionMessage, IBCErrorNameString());
+        IBCTypeLoadFailed(pBlobSigEntry, exceptionMessage, nullptr);
         loadedType = TypeHandle();
     }
     EX_END_CATCH(SwallowAllExceptions)
@@ -7634,8 +7611,6 @@ MethodDesc* Module::LoadIBCMethodHelper(CORBBTPROF_BLOB_PARAM_SIG_ENTRY * pBlobS
     //  
     EX_TRY
     {
-        IBCErrorNameString()->Clear();
-
         // This is what ZapSig::FindTypeHandleFromSignature does...
         //
         SigTypeContext typeContext;   // empty type context
@@ -7658,7 +7633,7 @@ MethodDesc* Module::LoadIBCMethodHelper(CORBBTPROF_BLOB_PARAM_SIG_ENTRY * pBlobS
 
         StackSString exceptionMessage;
         GET_EXCEPTION()->GetMessage(exceptionMessage);
-        IBCTypeLoadFailed(pBlobSigEntry, exceptionMessage, IBCErrorNameString());
+        IBCTypeLoadFailed(pBlobSigEntry, exceptionMessage, nullptr);
         enclosingType = TypeHandle();
     }
     EX_END_CATCH(SwallowAllExceptions)
@@ -7722,10 +7697,6 @@ MethodDesc* Module::LoadIBCMethodHelper(CORBBTPROF_BLOB_PARAM_SIG_ENTRY * pBlobS
 
                 if (IsNilToken(methodToken))
                 {
-                    SString * fullTypeName = IBCErrorNameString();
-                    fullTypeName->Clear();
-                    this->LookupIbcMethodToken(enclosingType, ibcToken, fullTypeName);
-
                     THROW_BAD_FORMAT(BFA_MISSING_IBC_EXTERNAL_METHOD, this);
                 }
             }
@@ -7792,7 +7763,7 @@ MethodDesc* Module::LoadIBCMethodHelper(CORBBTPROF_BLOB_PARAM_SIG_ENTRY * pBlobS
 
         StackSString exceptionMessage;
         GET_EXCEPTION()->GetMessage(exceptionMessage);
-        IBCMethodLoadFailed(pBlobSigEntry, exceptionMessage, IBCErrorNameString());
+        IBCMethodLoadFailed(pBlobSigEntry, exceptionMessage, nullptr);
         pMethod = NULL;
     }
     EX_END_CATCH(SwallowAllExceptions)
@@ -9699,7 +9670,6 @@ void Module::Fixup(DataImage *image)
 
     image->ZeroField(this, offsetof(Module, m_pProfilingBlobTable), sizeof(m_pProfilingBlobTable));
     image->ZeroField(this, offsetof(Module, m_pProfileData), sizeof(m_pProfileData));
-    image->ZeroPointerField(this, offsetof(Module, m_pIBCErrorNameString));
 
     image->ZeroPointerField(this, offsetof(Module, m_pNgenStats));
 
