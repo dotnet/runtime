@@ -118,13 +118,16 @@ namespace System.Data.SqlTypes
             }
         }
 
+#if uapaot
+        private static Func<Stream, XmlReaderSettings, XmlParserContext, XmlReader> CreateSqlReaderDelegate() => System.Xml.XmlReader.CreateSqlReader;
+#else
         private static Func<Stream, XmlReaderSettings, XmlParserContext, XmlReader> CreateSqlReaderDelegate()
         {
             Debug.Assert(CreateSqlReaderMethodInfo != null, "MethodInfo reference for XmlReader.CreateSqlReader should not be null.");
 
             return (Func<Stream, XmlReaderSettings, XmlParserContext, XmlReader>)CreateSqlReaderMethodInfo.CreateDelegate(typeof(Func<Stream, XmlReaderSettings, XmlParserContext, XmlReader>));
         }
-
+#endif
         private static MethodInfo CreateSqlReaderMethodInfo
         {
             get
