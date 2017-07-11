@@ -3,13 +3,17 @@
 // See the LICENSE file in the project root for more information.
 
 
-using System.Threading;
 using System.Data.SqlClient;
+using System.Diagnostics;
+using System.Globalization;
+using System.Runtime.InteropServices;
+using System.Text;
 
 namespace System.Data
 {
     internal static partial class LocalDBAPI
     {
+        private static IntPtr LoadProcAddress() => SafeNativeMethods.GetProcAddress(UserInstanceDLLHandle, "LocalDBFormatMessage");
 
         private static IntPtr UserInstanceDLLHandle
         {

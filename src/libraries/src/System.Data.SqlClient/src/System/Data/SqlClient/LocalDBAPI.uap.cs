@@ -3,11 +3,17 @@
 // See the LICENSE file in the project root for more information.
 
 
+using System.Threading;
+using System.Data.SqlClient;
+using System.Data.SqlClient.SNI;
+using System.Runtime.InteropServices;
+
 namespace System.Data
 {
     internal static partial class LocalDBAPI
     {
-        internal static string GetLocalDBMessage(int hrCode) => 
-            throw new PlatformNotSupportedException(SR.LocalDBNotSupported); // LocalDB is not available for Unix and hence it cannot be supported.
+
+        private static IntPtr LoadProcAddress() => LocalDB.GetProcAddress("LocalDBFormatMessage");
+       
     }
 }

@@ -42,6 +42,9 @@ namespace System.Data.SqlClient.SNI
         internal static string GetLocalDBConnectionString(string localDbInstance) =>
             Instance.LoadUserInstanceDll() ? Instance.GetConnectionString(localDbInstance) : null;
 
+        internal static IntPtr GetProcAddress(string functionName) =>
+            Instance.LoadUserInstanceDll() ? Interop.Kernel32.GetProcAddress(LocalDB.Instance._sqlUserInstanceLibraryHandle, functionName) : IntPtr.Zero;
+
         private string GetConnectionString(string localDbInstance)
         {
             StringBuilder localDBConnectionString = new StringBuilder(MAX_LOCAL_DB_CONNECTION_STRING_SIZE + 1);
