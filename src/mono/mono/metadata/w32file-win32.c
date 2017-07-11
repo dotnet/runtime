@@ -299,20 +299,20 @@ gboolean
 mono_w32file_get_disk_free_space (const gunichar2 *path_name, guint64 *free_bytes_avail, guint64 *total_number_of_bytes, guint64 *total_number_of_free_bytes)
 {
 	gboolean result;
-	ULARGE_INTEGER *wapi_free_bytes_avail;
-	ULARGE_INTEGER *wapi_total_number_of_bytes;
-	ULARGE_INTEGER *wapi_total_number_of_free_bytes;
+	ULARGE_INTEGER wapi_free_bytes_avail;
+	ULARGE_INTEGER wapi_total_number_of_bytes;
+	ULARGE_INTEGER wapi_total_number_of_free_bytes;
 
 	MONO_ENTER_GC_SAFE;
-	result = GetDiskFreeSpaceEx (path_name, wapi_free_bytes_avail, wapi_total_number_of_bytes, wapi_total_number_of_free_bytes);
+	result = GetDiskFreeSpaceEx (path_name, &wapi_free_bytes_avail, &wapi_total_number_of_bytes, &wapi_total_number_of_free_bytes);
 	MONO_EXIT_GC_SAFE;
 	if (result) {
 		if (free_bytes_avail)
-			*free_bytes_avail = wapi_free_bytes_avail->QuadPart;
+			*free_bytes_avail = wapi_free_bytes_avail.QuadPart;
 		if (total_number_of_bytes)
-			*total_number_of_bytes = wapi_total_number_of_bytes->QuadPart;
+			*total_number_of_bytes = wapi_total_number_of_bytes.QuadPart;
 		if (total_number_of_free_bytes)
-			*total_number_of_free_bytes = wapi_total_number_of_free_bytes->QuadPart;
+			*total_number_of_free_bytes = wapi_total_number_of_free_bytes.QuadPart;
 	}
 
 	return result;
