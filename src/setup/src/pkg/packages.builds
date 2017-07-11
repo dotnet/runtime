@@ -9,7 +9,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)\projects\*\Microsoft.NETCore.UniversalWindowsPlatform.builds" Condition="'$(OSEnvironment)' != 'Windows_NT' or '$(Platform)' == 'arm64'" />
+    <!-- Always exclude UWP packages from the release/2.0.0 branch as we aren't planning to ship them --> 
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)\projects\*\Microsoft.NETCore.UniversalWindowsPlatform.builds" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)\projects\*\Microsoft.Net.UWPCoreRuntimeSdk.builds" />
     <Project Include="$(MSBuildThisFileDirectory)\projects\*\*.builds" Exclude="@(ProjectExclusions)">
       <AdditionalProperties>$(AdditionalProperties)</AdditionalProperties>
     </Project>
