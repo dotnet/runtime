@@ -15,8 +15,8 @@
         "scriptType": "inlineScript",
         "scriptName": "",
         "arguments": "-path $(build.SourcesDirectory)\\corefx",
-        "inlineScript": "param($path)\n\nif (Test-Path $path){\n    Stop-Process -processname msbuild -ErrorAction Ignore -Verbose\n    Stop-Process -processname dotnet -ErrorAction Ignore -Verbose\n    Stop-Process -processname vbcscompiler -ErrorAction Ignore -Verbose\n    # this will print out an error each time a file can't be deleted.\n    Remove-Item -Recurse -Force $path\n }\n",
         "workingFolder": "",
+        "inlineScript": "param($path)\n\nif (Test-Path $path){\n    Stop-Process -processname msbuild -ErrorAction Ignore -Verbose\n    Stop-Process -processname dotnet -ErrorAction Ignore -Verbose\n    Stop-Process -processname vbcscompiler -ErrorAction Ignore -Verbose\n    # this will print out an error each time a file can't be deleted.\n    Remove-Item -Recurse -Force $path\n }",
         "failOnStandardError": "true"
       }
     },
@@ -177,6 +177,10 @@
       },
       "inputs": {
         "solution": "$(Build.SourcesDirectory)\\corefx\\src\\upload-tests.proj",
+        "msbuildLocationMethod": "version",
+        "msbuildVersion": "14.0",
+        "msbuildArchitecture": "x64",
+        "msbuildLocation": "",
         "platform": "",
         "configuration": "",
         "msbuildArguments": "$(PB_CreateHelixArguments) /p:\"Branch=$(SourceBranch)\" /p:\"CloudDropConnectionString=DefaultEndpointsProtocol=https;AccountName=$(PB_CloudDropAccountName);AccountKey=$(CloudDropAccessToken);EndpointSuffix=core.windows.net\" /p:\"CloudResultsConnectionString=DefaultEndpointsProtocol=https;AccountName=$(PB_CloudResultsAccountName);AccountKey=$(OutputCloudResultsAccessToken);EndpointSuffix=core.windows.net\" /p:\"HelixApiAccessKey=$(HelixApiAccessKey)\" /p:\"HelixApiEndpoint=$(PB_HelixApiEndPoint)\" /p:\"OfficialBuildId=$(OfficialBuildId)\"",
@@ -184,11 +188,7 @@
         "maximumCpuCount": "false",
         "restoreNugetPackages": "false",
         "logProjectEvents": "false",
-        "createLogFile": "false",
-        "msbuildLocationMethod": "version",
-        "msbuildVersion": "14.0",
-        "msbuildArchitecture": "x64",
-        "msbuildLocation": ""
+        "createLogFile": "false"
       }
     },
     {
@@ -212,7 +212,7 @@
     {
       "enabled": true,
       "continueOnError": false,
-      "alwaysRun": true,
+      "alwaysRun": false,
       "displayName": "Copy Publish Artifact: BuildLogs",
       "timeoutInMinutes": 0,
       "task": {
@@ -254,7 +254,7 @@
     {
       "enabled": true,
       "continueOnError": false,
-      "alwaysRun": true,
+      "alwaysRun": false,
       "displayName": "Execute cleanup tasks",
       "timeoutInMinutes": 0,
       "task": {
@@ -285,7 +285,7 @@
     {
       "enabled": true,
       "continueOnError": true,
-      "alwaysRun": true,
+      "alwaysRun": false,
       "displayName": "Build solution corefx\\Tools\\scripts\\vstsagent\\cleanupagent.proj",
       "timeoutInMinutes": 0,
       "task": {
@@ -295,6 +295,10 @@
       },
       "inputs": {
         "solution": "corefx\\Tools\\scripts\\vstsagent\\cleanupagent.proj",
+        "msbuildLocationMethod": "version",
+        "msbuildVersion": "14.0",
+        "msbuildArchitecture": "x86",
+        "msbuildLocation": "",
         "platform": "",
         "configuration": "",
         "msbuildArguments": "/p:AgentDirectory=$(Agent.HomeDirectory) /p:DoClean=$(PB_CleanAgent)",
@@ -302,15 +306,21 @@
         "maximumCpuCount": "false",
         "restoreNugetPackages": "false",
         "logProjectEvents": "false",
-        "createLogFile": "false",
-        "msbuildLocationMethod": "version",
-        "msbuildVersion": "14.0",
-        "msbuildArchitecture": "x86",
-        "msbuildLocation": ""
+        "createLogFile": "false"
       }
     }
   ],
   "options": [
+    {
+      "enabled": false,
+      "definition": {
+        "id": "5d58cc01-7c75-450c-be18-a388ddb129ec"
+      },
+      "inputs": {
+        "branchFilters": "[\"+refs/heads/*\"]",
+        "additionalFields": "{}"
+      }
+    },
     {
       "enabled": false,
       "definition": {
@@ -354,69 +364,12 @@
     }
   ],
   "variables": {
-    "system.debug": {
-      "value": "false",
-      "allowOverride": true
-    },
-    "PB_ConfigurationGroup": {
-      "value": "Debug",
-      "allowOverride": true
-    },
-    "PB_Platform": {
-      "value": "x64",
-      "allowOverride": true
-    },
-    "PB_CloudDropAccountName": {
-      "value": "dotnetbuildoutput"
-    },
     "CloudDropAccessToken": {
       "value": null,
       "isSecret": true
     },
     "OfficialBuildId": {
       "value": "$(Build.BuildNumber)",
-      "allowOverride": true
-    },
-    "PB_Label": {
-      "value": "$(Build.BuildNumber)",
-      "allowOverride": true
-    },
-    "SourceVersion": {
-      "value": "HEAD",
-      "allowOverride": true
-    },
-    "PB_VsoAccountName": {
-      "value": "dn-bot"
-    },
-    "VsoPassword": {
-      "value": null,
-      "isSecret": true
-    },
-    "PB_VsoRepositoryName": {
-      "value": "DotNet-CoreFX-Trusted",
-      "allowOverride": true
-    },
-    "PB_VsoCorefxGitUrl": {
-      "value": "https://github.com/dotnet/corefx"
-    },
-    "PB_SourceBranch": {
-      "value": "master",
-      "allowOverride": true
-    },
-    "PB_Git": {
-      "value": "$(ProgramFiles)\\Git\\cmd\\git.exe"
-    },
-    "TeamName": {
-      "value": "DotNetCore"
-    },
-    "PB_RuntimeOS": {
-      "value": "win10"
-    },
-    "PB_CleanAgent": {
-      "value": "true"
-    },
-    "PB_SyncArguments": {
-      "value": "-p -- /p:ArchGroup=x64  /p:RuntimeOS=win10",
       "allowOverride": true
     },
     "PB_BuildArguments": {
@@ -427,16 +380,31 @@
       "value": "-buildArch=x64 -Release -SkipTests -- /p:RuntimeOS=win10",
       "allowOverride": true
     },
+    "PB_CleanAgent": {
+      "value": "true"
+    },
+    "PB_CloudDropAccountName": {
+      "value": "dotnetbuildoutput"
+    },
+    "PB_ConfigurationGroup": {
+      "value": "Debug",
+      "allowOverride": true
+    },
     "PB_CreateHelixArguments": {
       "value": "/t:CloudBuild /p:ArchGroup=x64 /p:ConfigurationGroup=Release /p:\"EnableCloudTest=true\" /p:\"BuildMoniker=none\" /p:\"TargetQueue=Windows.10.Amd64\" /p:\"TestProduct=corefx\" /p:\"TimeoutInSeconds=1200\" /p:\"TargetOS=Windows_NT\" /p:FilterToOSGroup=Windows_NT",
       "allowOverride": true
     },
-    "PB_OptionalToolSource": {
-      "value": null,
-      "allowOverride": true,
-      "isSecret": true
+    "PB_Git": {
+      "value": "$(ProgramFiles)\\Git\\cmd\\git.exe"
     },
-    "PB_OptionalToolSourceUser": {
+    "PB_Label": {
+      "value": "$(Build.BuildNumber)",
+      "allowOverride": true
+    },
+    "PB_OptionalToolingSyncArguments": {
+      "value": "/p:OptionalToolSource=$(PB_OptionalToolSource) /p:OptionalToolSourceUser=$(PB_OptionalToolSourceUser);OptionalToolSourcePassword=$(PB_OptionalToolSourcePAT)"
+    },
+    "PB_OptionalToolSource": {
       "value": null,
       "allowOverride": true,
       "isSecret": true
@@ -446,12 +414,56 @@
       "allowOverride": true,
       "isSecret": true
     },
-    "PB_OptionalToolingSyncArguments": {
-      "value": "/p:OptionalToolSource=$(PB_OptionalToolSource) /p:OptionalToolSourceUser=$(PB_OptionalToolSourceUser);OptionalToolSourcePassword=$(PB_OptionalToolSourcePAT)"
+    "PB_OptionalToolSourceUser": {
+      "value": null,
+      "allowOverride": true,
+      "isSecret": true
     },
     "PB_PipelineBuildMSBuildArguments": {
       "value": "",
       "allowOverride": true
+    },
+    "PB_Platform": {
+      "value": "x64",
+      "allowOverride": true
+    },
+    "PB_RuntimeOS": {
+      "value": "win10"
+    },
+    "PB_SourceBranch": {
+      "value": "master",
+      "allowOverride": true
+    },
+    "PB_SyncArguments": {
+      "value": "-p -- /p:ArchGroup=x64  /p:RuntimeOS=win10",
+      "allowOverride": true
+    },
+    "PB_VsoAccountName": {
+      "value": "dn-bot"
+    },
+    "PB_VsoCorefxGitUrl": {
+      "value": "https://$(PB_VsoAccountName):$(VsoPassword)@devdiv.visualstudio.com/DevDiv/_git/$(PB_VsoRepositoryName)/"
+    },
+    "PB_VsoRepositoryName": {
+      "value": "DotNet-CoreFX-Trusted"
+    },
+    "SourceVersion": {
+      "value": "HEAD",
+      "allowOverride": true
+    },
+    "system.debug": {
+      "value": "false",
+      "allowOverride": true
+    },
+    "TeamName": {
+      "value": "DotNetCore"
+    },
+    "VsoPassword": {
+      "value": null,
+      "isSecret": true
+    },
+    "PB_SignType": {
+      "value": "real"
     }
   },
   "demands": [
@@ -475,6 +487,7 @@
   "buildNumberFormat": "$(date:yyyyMMdd)$(rev:-rr)",
   "jobAuthorizationScope": "projectCollection",
   "jobTimeoutInMinutes": 180,
+  "jobCancelTimeoutInMinutes": 5,
   "repository": {
     "properties": {
       "labelSources": "0",
@@ -482,7 +495,9 @@
       "fetchDepth": "0",
       "gitLfsSupport": "false",
       "skipSyncSource": "true",
-      "cleanOptions": "3"
+      "cleanOptions": "3",
+      "checkoutNestedSubmodules": "false",
+      "labelSourcesFormat": "$(build.buildNumber)"
     },
     "id": "0a2b2664-c1be-429c-9b40-8a24dee27a4a",
     "type": "TfsGit",
@@ -492,25 +507,27 @@
     "clean": "false",
     "checkoutSubmodules": false
   },
+  "processParameters": {},
   "quality": "definition",
   "queue": {
+    "id": 36,
+    "name": "DotNet-Build",
     "pool": {
       "id": 39,
       "name": "DotNet-Build"
-    },
-    "id": 36,
-    "name": "DotNet-Build"
+    }
   },
-  "path": "\\",
-  "type": "build",
   "id": 893,
   "name": "DotNet-CoreFx-Trusted-Windows",
+  "path": "\\",
+  "type": "build",
   "project": {
     "id": "0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "name": "DevDiv",
     "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
     "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
     "state": "wellFormed",
-    "revision": 418097607
+    "revision": 418097767,
+    "visibility": "private"
   }
 }
