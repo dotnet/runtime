@@ -8301,7 +8301,8 @@ void dumpConvertedVarSet(Compiler* comp, VARSET_VALARG_TP vars)
     pVarNumSet            = (BYTE*)_alloca(varNumSetBytes);
     memset(pVarNumSet, 0, varNumSetBytes); // empty the set
 
-    VARSET_ITER_INIT(comp, iter, vars, varIndex);
+    VarSetOps::Iter iter(comp, vars);
+    unsigned        varIndex = 0;
     while (iter.NextElem(&varIndex))
     {
         unsigned varNum = comp->lvaTrackedToVarNum[varIndex];

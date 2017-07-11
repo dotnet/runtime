@@ -985,7 +985,8 @@ bool Compiler::rpRecordRegIntf(regMaskTP regMask, VARSET_VALARG_TP life DEBUGARG
 #ifdef DEBUG
                     if (verbose)
                     {
-                        VARSET_ITER_INIT(this, newIntfIter, newIntf, varNum);
+                        VarSetOps::Iter newIntfIter(this, newIntf);
+                        unsigned        varNum = 0;
                         while (newIntfIter.NextElem(&varNum))
                         {
                             unsigned   lclNum = lvaTrackedToVarNum[varNum];
@@ -1335,8 +1336,9 @@ RET:
         // While we still have any lastUse or inPlaceUse bits
         VARSET_TP useUnion(VarSetOps::Union(this, lastUse, inPlaceUse));
 
-        VARSET_TP varAsSet(VarSetOps::MakeEmpty(this));
-        VARSET_ITER_INIT(this, iter, useUnion, varNum);
+        VARSET_TP       varAsSet(VarSetOps::MakeEmpty(this));
+        VarSetOps::Iter iter(this, useUnion);
+        unsigned        varNum = 0;
         while (iter.NextElem(&varNum))
         {
             // We'll need this for one of the calls...
@@ -5654,7 +5656,8 @@ regMaskTP Compiler::rpPredictAssignRegVars(regMaskTP regAvail)
                 // psc is abbeviation for possibleSameColor
                 VARSET_TP pscVarSet(VarSetOps::Diff(this, unprocessedVars, lvaVarIntf[varIndex]));
 
-                VARSET_ITER_INIT(this, pscIndexIter, pscVarSet, pscIndex);
+                VarSetOps::Iter pscIndexIter(this, pscVarSet);
+                unsigned        pscIndex = 0;
                 while (pscIndexIter.NextElem(&pscIndex))
                 {
                     LclVarDsc* pscVar = lvaTable + lvaTrackedToVarNum[pscIndex];
@@ -5736,8 +5739,9 @@ regMaskTP Compiler::rpPredictAssignRegVars(regMaskTP regAvail)
 #ifdef _TARGET_ARM_
             if (isDouble)
             {
-                regNumber secondHalf = REG_NEXT(regNum);
-                VARSET_ITER_INIT(this, iter, lvaVarIntf[varIndex], intfIndex);
+                regNumber       secondHalf = REG_NEXT(regNum);
+                VarSetOps::Iter iter(this, lvaVarIntf[varIndex]);
+                unsigned        intfIndex = 0;
                 while (iter.NextElem(&intfIndex))
                 {
                     VarSetOps::AddElemD(this, raLclRegIntf[secondHalf], intfIndex);

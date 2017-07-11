@@ -182,12 +182,4 @@ const unsigned lclMAX_ALLSET_TRACKED = UInt64Bits;
 typedef AllVarSetOps::ValArgType ALLVARSET_VALARG_TP;
 typedef AllVarSetOps::RetValType ALLVARSET_VALRET_TP;
 
-// The iterator pattern.
-
-// Use this to initialize an iterator "iterName" to iterate over a VARSET_TP "vs".
-// "varIndex" will be an unsigned variable to which we assign the elements of "vs".
-#define VARSET_ITER_INIT(comp, iterName, vs, varIndex)                                                                 \
-    unsigned        varIndex = 0;                                                                                      \
-    VarSetOps::Iter iterName(comp, vs)
-
 #endif // _VARSET_INCLUDED_
