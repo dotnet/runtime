@@ -22,7 +22,6 @@ namespace BasicEventSourceTests
         /// 
         /// </summary>
         [Fact]
-        [ActiveIssue(20744,TargetFrameworkMonikers.UapAot)]
         public void Test_Write_Fuzzy()
         {
             using (var logger = new EventSource("EventSourceName"))
