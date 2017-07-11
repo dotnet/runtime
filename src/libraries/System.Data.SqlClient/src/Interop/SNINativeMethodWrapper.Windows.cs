@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Data.SqlClient
 {
-    internal static class SNINativeMethodWrapper
+    internal static partial class SNINativeMethodWrapper
     {
         private const string SNI = "sni.dll";
 
@@ -178,18 +178,6 @@ namespace System.Data.SqlClient
             internal uint lineNumber;
         }
 
-        internal enum SniSpecialErrors : uint
-        {
-            LocalDBErrorCode = 50,
-
-            // multi-subnet-failover specific error codes
-            MultiSubnetFailoverWithMoreThan64IPs = 47,
-            MultiSubnetFailoverWithInstanceSpecified = 48,
-            MultiSubnetFailoverWithNonTcpProtocol = 49,
-
-            // max error code value
-            MaxErrorValue = 50157
-        }
         #endregion
 
         #region DLL Imports
