@@ -624,11 +624,6 @@ namespace System.Threading.Tasks
 
             try
             {
-                if (AppContextSwitches.ThrowExceptionIfDisposedCancellationTokenSource)
-                {
-                    cancellationToken.ThrowIfSourceDisposed();
-                }
-
                 // If an unstarted task has a valid CancellationToken that gets signalled while the task is still not queued
                 // we need to proactively cancel it, because it may never execute to transition itself. 
                 // The only way to accomplish this is to register a callback on the CT.
@@ -5238,11 +5233,6 @@ namespace System.Threading.Tasks
             if (function == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.function);
             Contract.EndContractBlock();
 
-            if (AppContextSwitches.ThrowExceptionIfDisposedCancellationTokenSource)
-            {
-                cancellationToken.ThrowIfSourceDisposed();
-            }
-
             // Short-circuit if we are given a pre-canceled token
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled(cancellationToken);
@@ -5288,11 +5278,6 @@ namespace System.Threading.Tasks
             // Check arguments
             if (function == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.function);
             Contract.EndContractBlock();
-
-            if (AppContextSwitches.ThrowExceptionIfDisposedCancellationTokenSource)
-            {
-                cancellationToken.ThrowIfSourceDisposed();
-            }
 
             // Short-circuit if we are given a pre-canceled token
             if (cancellationToken.IsCancellationRequested)
