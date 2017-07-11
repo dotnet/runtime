@@ -993,9 +993,6 @@ void Rationalizer::DoPhase()
         // This needs to be done before the transition to LIR because it relies on the use
         // of fgMorphArgs, which is designed to operate on HIR. Once this is done for a
         // particular statement, link that statement's nodes into the current basic block.
-        //
-        // This visit also clears the GTF_VAR_USEDEF bit on locals, which is not necessary
-        // in the backend.
         fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
         {
             GenTree* const node = *use;
@@ -1003,10 +1000,6 @@ void Rationalizer::DoPhase()
                 Compiler::IsIntrinsicImplementedByUserCall(node->gtIntrinsic.gtIntrinsicId))
             {
                 m_rationalizer.RewriteIntrinsicAsUserCall(use, this->m_ancestors);
-            }
-            else if (node->OperIsLocal())
-            {
-                node->gtFlags &= ~GTF_VAR_USEDEF;
             }
 
             return Compiler::WALK_CONTINUE;

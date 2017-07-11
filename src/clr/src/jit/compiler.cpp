@@ -9198,10 +9198,6 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[VAR_USEASG]");
                 }
-                if (tree->gtFlags & GTF_VAR_USEDEF)
-                {
-                    chars += printf("[VAR_USEDEF]");
-                }
                 if (tree->gtFlags & GTF_VAR_CAST)
                 {
                     chars += printf("[VAR_CAST]");
