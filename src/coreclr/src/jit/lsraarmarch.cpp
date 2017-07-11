@@ -50,10 +50,7 @@ void Lowering::TreeNodeInfoInitStoreLoc(GenTreeLclVarCommon* storeLoc)
     if (varTypeIsLong(op1))
     {
         info->srcCount = 2;
-        if (op1->OperGet() == GT_LONG)
-        {
-            assert(op1->isContained());
-        }
+        assert(!op1->OperIs(GT_LONG) || op1->isContained());
     }
     else
 #endif // _TARGET_ARM_
@@ -929,47 +926,6 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
 }
 
 //------------------------------------------------------------------------
-// GetIndirSourceCount: Get the source registers for an indirection that might be contained.
-//
-// Arguments:
-//    node      - The node of interest
-//
-// Return Value:
-//    The number of source registers used by the *parent* of this node.
-//
-int Lowering::GetIndirSourceCount(GenTreeIndir* indirTree)
-{
-    int      srcCount = 0;
-    GenTree* addr     = indirTree->gtGetOp1();
-    GenTree* base     = addr;
-    GenTree* index    = nullptr;
-
-    if (addr->isContained())
-    {
-        if (addr->gtOper == GT_LEA)
-        {
-            base  = addr->AsAddrMode()->Base();
-            index = addr->AsAddrMode()->Index();
-        }
-        if ((base != nullptr) && !base->isContained())
-        {
-            srcCount++;
-        }
-        if (index != nullptr)
-        {
-            // We never have a contained index.
-            assert(!index->isContained());
-            srcCount++;
-        }
-    }
-    else
-    {
-        srcCount++;
-    }
-    return srcCount;
-}
-
-//------------------------------------------------------------------------
 // GetOperandSourceCount: Get the source registers for an operand that might be contained.
 //
 // Arguments:
@@ -980,21 +936,19 @@ int Lowering::GetIndirSourceCount(GenTreeIndir* indirTree)
 //
 int Lowering::GetOperandSourceCount(GenTree* node)
 {
-    int srcCount = 0;
-    if (node->isContained())
+    if (!node->isContained())
     {
+        return 1;
+    }
+
 #if !defined(_TARGET_64BIT_)
-        if (node->gtOper == GT_LONG)
-        {
-            srcCount = 2;
-        }
-#endif // !defined(_TARGET_64BIT_)
-    }
-    else
+    if (node->OperIs(GT_LONG))
     {
-        srcCount++;
+        return 2;
     }
-    return srcCount;
+#endif // !defined(_TARGET_64BIT_)
+
+    return 0;
 }
 
 #endif // _TARGET_ARMARCH_
