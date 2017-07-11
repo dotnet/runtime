@@ -93,20 +93,3 @@ namespace System.IO
         protected string GetTestFilePath(System.Nullable<int> index=default(System.Nullable<int>), [System.Runtime.CompilerServices.CallerMemberNameAttribute]string memberName=null, [System.Runtime.CompilerServices.CallerLineNumberAttribute]int lineNumber=0) { throw null; }
     }
 }
-namespace System.Threading
-{
-    public static class ThreadTestHelpers
-    {
-        public const int ExpectedTimeoutMilliseconds = 50;
-        public const int UnexpectedTimeoutMilliseconds = 1000 * 30;
-        public static Thread CreateGuardedThread(out Action waitForThread, Action start) { throw null; }
-        public static Thread CreateGuardedThread(out Action checkForThreadErrors, out Action waitForThread, Action start) { throw null; }
-        public static Thread CreateGuardedThread(out Action waitForThread, Action<object> start) { throw null; }
-        public static void RunTestInBackgroundThread(Action test) { throw null; }
-        public static void WaitForCondition(Func<bool> condition) { throw null; }
-        public static void WaitForConditionWithoutBlocking(Func<bool> condition) { throw null; }
-        public static void WaitForConditionWithCustomDelay(Func<bool> condition, Action delay) { throw null; }
-        public static void CheckedWait(this WaitHandle wh) { throw null; }
-        public static void CheckedWait(this ManualResetEventSlim e) { throw null; }
-    }
-}

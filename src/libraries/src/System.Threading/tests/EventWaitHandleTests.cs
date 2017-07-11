@@ -176,6 +176,7 @@ namespace System.Threading.Tests
         [Theory]
         [InlineData(EventResetMode.ManualReset)]
         [InlineData(EventResetMode.AutoReset)]
+        [ActiveIssue(21275, TargetFrameworkMonikers.Uap)]
         public void PingPong(EventResetMode mode)
         {
             // Create names for the two events
