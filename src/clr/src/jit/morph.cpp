@@ -7586,6 +7586,39 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
         fgInsertStmtBefore(block, paramAssignmentInsertionPoint, arg0AssignmentStmt);
     }
 
+    // If compInitMem is set, we may need to zero-initialize some locals. Normally it's done in the prolog
+    // but this loop can't include the prolog. Since we don't have liveness information, we insert zero-initialization
+    // for all non-parameter non-temp locals. Liveness phase will remove unnecessary initializations.
+    if (info.compInitMem)
+    {
+        unsigned   varNum;
+        LclVarDsc* varDsc;
+        for (varNum = 0, varDsc = lvaTable; varNum < info.compLocalsCount; varNum++, varDsc++)
+        {
+            if (!varDsc->lvIsParam)
+            {
+                assert(!varDsc->lvIsTemp);
+                var_types  lclType = varDsc->TypeGet();
+                GenTreePtr lcl     = gtNewLclvNode(varNum, lclType);
+                GenTreePtr init    = nullptr;
+                if (lclType == TYP_STRUCT)
+                {
+                    const bool isVolatile  = false;
+                    const bool isCopyBlock = false;
+                    init = gtNewBlkOpNode(lcl, gtNewIconNode(0), varDsc->lvSize(), isVolatile, isCopyBlock);
+                    init = fgMorphInitBlock(init);
+                }
+                else
+                {
+                    GenTreePtr zero = gtNewZeroConNode(genActualType(lclType));
+                    init            = gtNewAssignNode(lcl, zero);
+                }
+                GenTreePtr initStmt = gtNewStmt(init, callILOffset);
+                fgInsertStmtBefore(block, last, initStmt);
+            }
+        }
+    }
+
     // Remove the call
     fgRemoveStmt(block, last);
 
