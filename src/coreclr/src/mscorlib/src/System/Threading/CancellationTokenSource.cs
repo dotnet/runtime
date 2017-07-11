@@ -620,11 +620,6 @@ namespace System.Threading
         internal CancellationTokenRegistration InternalRegister(
             Action<object> callback, object stateForCallback, SynchronizationContext targetSyncContext, ExecutionContext executionContext)
         {
-            if (AppContextSwitches.ThrowExceptionIfDisposedCancellationTokenSource)
-            {
-                ThrowIfDisposed();
-            }
-
             // the CancellationToken has already checked that the token is cancelable before calling this method.
             Debug.Assert(CanBeCanceled, "Cannot register for uncancelable token src");
 
@@ -646,7 +641,7 @@ namespace System.Threading
                 // comes in after this line, we simply run the minor risk of having m_registeredCallbacksLists reinitialized
                 // (after it was cleared to null during Dispose).
 
-                if (m_disposed && !AppContextSwitches.ThrowExceptionIfDisposedCancellationTokenSource)
+                if (m_disposed)
                     return new CancellationTokenRegistration();
 
                 int myIndex = Thread.CurrentThread.ManagedThreadId % s_nLists;
