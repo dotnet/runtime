@@ -105,6 +105,7 @@
     <Compile Include="System\Configuration\UriSectionTests.cs" />
     <Compile Include="System\Configuration\UrlPathTests.cs" />
     <Compile Include="System\Configuration\ValidatiorUtilsTests.cs" />
+    <Compile Include="System\Drawing\Configuration\SystemDrawingSectionTests.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

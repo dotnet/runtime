@@ -51,7 +51,6 @@
     <Compile Include="System\Drawing\BufferedGraphicsManager.cs" />
     <Compile Include="System\Drawing\ClientUtils.cs" />
     <Compile Include="System\Drawing\ColorTranslator.cs" />
-    <Compile Include="System\Drawing\Configuration\SystemDrawingSection.cs" />
     <Compile Include="System\Drawing\ContentAlignment.cs" />
     <Compile Include="System\Drawing\CopyPixelOperation.cs" />
     <Compile Include="System\Drawing\DashCap.cs" />
