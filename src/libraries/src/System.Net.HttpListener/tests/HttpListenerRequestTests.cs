@@ -89,7 +89,6 @@ namespace System.Net.Tests
         }
 
         [Theory]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [MemberData(nameof(ContentEncoding_TestData))]
         public async Task ContentEncoding_GetProperty_ReturnsExpected(string header, Encoding expected)
         {
