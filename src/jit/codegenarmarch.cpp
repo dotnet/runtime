@@ -1019,6 +1019,11 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             // Generate code to load the address that we need into a register
             genConsumeAddress(addrNode);
             addrReg = addrNode->gtRegNum;
+
+            // If addrReg equal to baseReg, we use the last target register as alternative baseReg.
+            // Because the candidate mask for the internal baseReg does not include any of the target register,
+            // we can ensure that baseReg, addrReg, and the last target register are not all same.
+            assert(baseReg != addrReg);
         }
 
         // If we have an HFA we can't have any GC pointers,
@@ -1062,7 +1067,8 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             nextIndex += 1;
         }
 
-        // Set registers
+        // We set up the registers in order, so that we assign the last target register `baseReg` is no longer in use,
+        // in case we had to reuse the last target register for it.
         structOffset = 0;
         for (unsigned idx = 0; idx < treeNode->gtNumRegs; idx++)
         {
@@ -1077,7 +1083,12 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             else
             {
                 // check for case of destroying the addrRegister while we still need it
-                assert(targetReg != addrReg);
+                if (targetReg == addrReg && idx != treeNode->gtNumRegs - 1)
+                {
+                    assert(targetReg != baseReg);
+                    emit->emitIns_R_R(INS_mov, emitTypeSize(type), baseReg, addrReg);
+                    addrReg = baseReg;
+                }
 
                 // Load from our address expression source
                 emit->emitIns_R_R_I(INS_ldr, emitTypeSize(type), targetReg, addrReg, structOffset);
