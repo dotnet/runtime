@@ -282,6 +282,7 @@ void ZapDebugDirectory::SaveOriginalDebugDirectoryEntry(ZapWriter *pZapWriter)
 
 void ZapDebugDirectory::SaveNGenDebugDirectoryEntry(ZapWriter *pZapWriter)
 {
+#if !defined(NO_NGENPDB)
     _ASSERTE(pZapWriter);
 
     IMAGE_DEBUG_DIRECTORY debugDirectory = {0};
@@ -292,6 +293,10 @@ void ZapDebugDirectory::SaveNGenDebugDirectoryEntry(ZapWriter *pZapWriter)
     debugDirectory.Type = IMAGE_DEBUG_TYPE_CODEVIEW;
     debugDirectory.SizeOfData = m_pNGenPdbDebugData->GetSize();
     debugDirectory.AddressOfRawData = m_pNGenPdbDebugData->GetRVA();
+    // Make sure the "is portable pdb" indicator (MinorVersion == 0x504d) is clear
+    // for the NGen debug directory entry since this debug directory is copied
+    // from an existing entry which could be a portable pdb.
+    debugDirectory.MinorVersion = 0;
     {
         ZapPhysicalSection *pPhysicalSection = ZapImage::GetImage(pZapWriter)->m_pTextSection;
         DWORD dwOffset = m_pNGenPdbDebugData->GetRVA() - pPhysicalSection->GetRVA();
@@ -299,6 +304,7 @@ void ZapDebugDirectory::SaveNGenDebugDirectoryEntry(ZapWriter *pZapWriter)
         debugDirectory.PointerToRawData = pPhysicalSection->GetFilePos() + dwOffset;
     }
     pZapWriter->Write(&debugDirectory, sizeof(debugDirectory));
+#endif // NO_NGENPDB
 }
 
 void ZapDebugDirectory::Save(ZapWriter * pZapWriter)
