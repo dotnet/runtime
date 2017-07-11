@@ -125,13 +125,10 @@ namespace System.Net.Tests
             }
         }
 
-        [ActiveIssue(19754)] // Recombine into UnknownHeaders_Success when fixed
         [Theory]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public Task UnknownHeaders_Success_Large() => UnknownHeaders_Success(1000);
 
         [Theory]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         [InlineData(100)]
         public async Task UnknownHeaders_Success(int numHeaders)
         {
