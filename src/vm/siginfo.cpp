@@ -1466,10 +1466,6 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                
                 if (IsNilToken(typeToken))
                 {
-                    SString * fullTypeName = pOrigModule->IBCErrorNameString();
-                    fullTypeName->Clear();
-                    pOrigModule->LookupIbcTypeToken(pModule, ibcToken, fullTypeName);
-
                     THROW_BAD_FORMAT(BFA_MISSING_IBC_EXTERNAL_TYPE, pOrigModule);
                 }
             }
@@ -1772,10 +1768,6 @@ TypeHandle SigPointer::GetGenericInstType(Module *        pModule,
 
             if (IsNilToken(typeToken))
             {
-                SString * fullTypeName = pOrigModule->IBCErrorNameString();
-                fullTypeName->Clear();
-                pOrigModule->LookupIbcTypeToken(pModule, ibcToken, fullTypeName);
-
                 THROW_BAD_FORMAT(BFA_MISSING_IBC_EXTERNAL_TYPE, pOrigModule);
             }
         }
