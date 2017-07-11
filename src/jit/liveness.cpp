@@ -41,7 +41,7 @@ void Compiler::fgMarkUseDef(GenTreeLclVarCommon* tree)
     }
 
     const bool isDef = (tree->gtFlags & GTF_VAR_DEF) != 0;
-    const bool isUse = !isDef || ((tree->gtFlags & (GTF_VAR_USEASG | GTF_VAR_USEDEF)) != 0);
+    const bool isUse = !isDef || ((tree->gtFlags & GTF_VAR_USEASG) != 0);
 
     if (varDsc->lvTracked)
     {
