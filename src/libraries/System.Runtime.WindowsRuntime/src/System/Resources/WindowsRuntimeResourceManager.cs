@@ -231,7 +231,20 @@ namespace System.Resources
             Debug.Assert(s_globalResourceContextFallBackList != null);
             Debug.Assert(s_globalResourceContext != null);
 
-            List<String> languages = new List<string>(s_globalResourceContext.Languages);
+            IReadOnlyList<string> langs;
+
+            try
+            {
+                langs = s_globalResourceContext.Languages;
+            }
+            catch (ArgumentException)
+            {
+                // Sometimes Windows Runtime fails and we get Argument Exception which can fail fast the whole app
+                // to avoid that we ignore the exception.
+                return;
+            }
+
+            List<String> languages = new List<string>(langs);
             
             if (languages.Count > 0 && languages[0] == c_InvariantCulturePrivateName)
             {
