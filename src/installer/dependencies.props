@@ -12,9 +12,9 @@
     <CoreFxCurrentRef>c3e732d2cf3f4b4d5e3b1ef53a1e4cab8fc73545</CoreFxCurrentRef>
     <CoreClrCurrentRef>c3e732d2cf3f4b4d5e3b1ef53a1e4cab8fc73545</CoreClrCurrentRef>
     <StandardCurrentRef>c3e732d2cf3f4b4d5e3b1ef53a1e4cab8fc73545</StandardCurrentRef>
-    <WCFCurrentRef>c3e732d2cf3f4b4d5e3b1ef53a1e4cab8fc73545</WCFCurrentRef>
+    <WCFCurrentRef>c1ea043aefee0ebcc56c298358953eaf26ff985a</WCFCurrentRef>
   </PropertyGroup>
-  
+
   <PropertyGroup>
     <CoreFxVersion>4.4.0-preview3-25511-01</CoreFxVersion>
     <PlatformPackageVersion>2.0.0-preview3-25511-01</PlatformPackageVersion>
@@ -22,9 +22,9 @@
     <MicrosoftNETCoreRuntimeJitPackageVersion>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</MicrosoftNETCoreRuntimeJitPackageVersion>
     <NETStandardVersion>2.0.0-preview3-25507-01</NETStandardVersion>
     <DiaSymReaderNativeVersion>1.4.1</DiaSymReaderNativeVersion>
-    <WcfVersion>4.4.0-preview3-25510-01</WcfVersion>
+    <WcfVersion>4.4.0-preview3-25503-01</WcfVersion>
   </PropertyGroup>
-  
+
   <!-- Package dependency verification/auto-upgrade configuration. -->
   <PropertyGroup>
     <BaseDotNetBuildInfo>build-info/dotnet/</BaseDotNetBuildInfo>
@@ -45,15 +45,18 @@
       <BuildInfoPath>$(BaseDotNetBuildInfo)standard/$(DependencyBranch)</BuildInfoPath>
       <CurrentRef>$(StandardCurrentRef)</CurrentRef>
     </RemoteDependencyBuildInfo>
+    <!--
+      Disable updating wcf as it isn't needed in the release/2.0.0 branch
     <RemoteDependencyBuildInfo Include="WCF">
       <BuildInfoPath>$(BaseDotNetBuildInfo)wcf/$(DependencyBranch)</BuildInfoPath>
       <CurrentRef>$(WCFCurrentRef)</CurrentRef>
     </RemoteDependencyBuildInfo>
+    -->
 
     <DependencyBuildInfo Include="@(RemoteDependencyBuildInfo)">
       <RawVersionsBaseUrl>https://raw.githubusercontent.com/dotnet/versions</RawVersionsBaseUrl>
     </DependencyBuildInfo>
-    
+
     <XmlUpdateStep Include="CoreFx">
       <Path>$(MSBuildThisFileFullPath)</Path>
       <ElementName>CoreFxVersion</ElementName>
@@ -74,10 +77,13 @@
       <ElementName>NETStandardVersion</ElementName>
       <PackageId>NETStandard.Library</PackageId>
     </XmlUpdateStep>
+    <!--
+      Disable updating wcf as it isn't needed in the release/2.0.0 branch
     <XmlUpdateStep Include="WCF">
       <Path>$(MSBuildThisFileFullPath)</Path>
       <ElementName>WcfVersion</ElementName>
       <PackageId>System.ServiceModel.Duplex</PackageId>
     </XmlUpdateStep>
+    -->
   </ItemGroup>
 </Project>
