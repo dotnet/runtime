@@ -34,5 +34,8 @@
   <ItemGroup>
     <EmbeddedResource Include="Resources\System.Net.HttpListener.Tests.rd.xml" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetsOSX)'=='true'">
+    <TestCommandLines Include="ulimit -n 70000" />
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
