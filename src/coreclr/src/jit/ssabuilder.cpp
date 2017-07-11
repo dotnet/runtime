@@ -191,7 +191,7 @@ int SsaBuilder::TopologicalSort(BasicBlock** postOrder, int count)
     Compiler* comp = m_pCompiler;
 
     BitVecTraits traits(comp->fgBBNumMax + 1, comp);
-    BitVec       BITVEC_INIT_NOCOPY(visited, BitVecOps::MakeEmpty(&traits));
+    BitVec       visited(BitVecOps::MakeEmpty(&traits));
 
     // Display basic blocks.
     DBEXEC(VERBOSE, comp->fgDispBasicBlocks());
@@ -295,7 +295,7 @@ void SsaBuilder::ComputeImmediateDom(BasicBlock** postOrder, int count)
 
     // Add entry point to processed as its IDom is NULL.
     BitVecTraits traits(m_pCompiler->fgBBNumMax + 1, m_pCompiler);
-    BitVec       BITVEC_INIT_NOCOPY(processed, BitVecOps::MakeEmpty(&traits));
+    BitVec       processed(BitVecOps::MakeEmpty(&traits));
 
     BitVecOps::AddElemD(&traits, processed, m_pCompiler->fgFirstBB->bbNum);
     assert(postOrder[count - 1] == m_pCompiler->fgFirstBB);
@@ -760,7 +760,8 @@ void SsaBuilder::InsertPhiFunctions(BasicBlock** postOrder, int count)
         }
 
         // For each local var number "lclNum" that "block" assigns to...
-        VARSET_ITER_INIT(m_pCompiler, defVars, block->bbVarDef, varIndex);
+        VarSetOps::Iter defVars(m_pCompiler, block->bbVarDef);
+        unsigned        varIndex = 0;
         while (defVars.NextElem(&varIndex))
         {
             unsigned lclNum = m_pCompiler->lvaTrackedToVarNum[varIndex];

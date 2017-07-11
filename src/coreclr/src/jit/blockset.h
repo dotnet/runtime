@@ -58,12 +58,4 @@ typedef BitSetShortLongRep BlockSet;
 typedef BlockSetOps::ValArgType BlockSet_ValArg_T;
 typedef BlockSetOps::RetValType BlockSet_ValRet_T;
 
-// The iterator pattern.
-
-// Use this to initialize an iterator "_iterName" to iterate over a BlockSet "_blockSet".
-// "_blockNum" will be an unsigned variable to which we assign the elements of "_blockSet".
-#define BLOCKSET_ITER_INIT(_comp, _iterName, _blockSet, _blockNum)                                                     \
-    unsigned          _blockNum = 0;                                                                                   \
-    BlockSetOps::Iter _iterName(_comp, _blockSet)
-
 #endif // _BLOCKSET_INCLUDED_
