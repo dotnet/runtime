@@ -60,7 +60,7 @@
 #include <mono/metadata/gc-internals.h>
 #include <mono/metadata/debug-internals.h>
 #include <mono/metadata/mono-debug.h>
-#include <mono/metadata/profiler.h>
+#include <mono/metadata/profiler-private.h>
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/environment.h>
 #include <mono/metadata/mono-mlist.h>

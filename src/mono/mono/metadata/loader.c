@@ -35,7 +35,6 @@
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/debug-helpers.h>
 #include <mono/metadata/reflection.h>
-#include <mono/metadata/profiler.h>
 #include <mono/metadata/profiler-private.h>
 #include <mono/metadata/exception.h>
 #include <mono/metadata/marshal.h>

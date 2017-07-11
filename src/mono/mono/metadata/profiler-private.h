@@ -7,6 +7,7 @@
 #ifndef __MONO_PROFILER_PRIVATE_H__
 #define __MONO_PROFILER_PRIVATE_H__
 
+#define MONO_PROFILER_UNSTABLE_GC_ROOTS
 #include <mono/metadata/profiler.h>
 #include <mono/utils/mono-lazy-init.h>
 #include <mono/utils/mono-os-mutex.h>

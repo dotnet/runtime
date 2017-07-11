@@ -196,6 +196,7 @@ typedef MonoProfilerCallInstrumentationFlags (*MonoProfilerCallInstrumentationFi
  */
 MONO_API void mono_profiler_set_call_instrumentation_filter_callback (MonoProfilerHandle handle, MonoProfilerCallInstrumentationFilterCallback cb);
 
+#ifdef MONO_PROFILER_UNSTABLE_GC_ROOTS
 typedef enum {
 	/* Upper 2 bytes. */
 	MONO_PROFILER_GC_ROOT_PINNING = 1 << 8,
@@ -211,6 +212,7 @@ typedef enum {
 
 	MONO_PROFILER_GC_ROOT_TYPEMASK = 0xff,
 } MonoProfilerGCRootType;
+#endif
 
 typedef enum {
 	/* data = MonoMethod *method */

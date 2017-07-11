@@ -70,11 +70,22 @@ MONO_PROFILER_EVENT_2(gc_moves, GCMoves, MonoObject *const *, objects, uint64_t,
 MONO_PROFILER_EVENT_1(gc_resize, GCResize, uintptr_t, size)
 MONO_PROFILER_EVENT_3(gc_handle_created, GCHandleCreated, uint32_t, handle, MonoGCHandleType, type, MonoObject *, object)
 MONO_PROFILER_EVENT_2(gc_handle_deleted, GCHandleDeleted, uint32_t, handle, MonoGCHandleType, type)
-MONO_PROFILER_EVENT_4(gc_roots, GCRoots, MonoObject *const *, roots, const MonoProfilerGCRootType *, types, const uintptr_t *, extra, uint64_t, count)
 MONO_PROFILER_EVENT_0(gc_finalizing, GCFinalizing)
 MONO_PROFILER_EVENT_0(gc_finalized, GCFinalized)
 MONO_PROFILER_EVENT_1(gc_finalizing_object, GCFinalizingObject, MonoObject *, object)
 MONO_PROFILER_EVENT_1(gc_finalized_object, GCFinalizedObject, MonoObject *, object)
+
+/*
+ * This callback provides very low quality data and doesn't really match how
+ * roots are actually handled in the runtime. It will be replaced with a more
+ * sensible callback in the future. **This will be a breaking change.**
+ *
+ * In the meantime, you must define MONO_PROFILER_UNSTABLE_GC_ROOTS to be able
+ * to use this interface.
+ */
+#ifdef MONO_PROFILER_UNSTABLE_GC_ROOTS
+MONO_PROFILER_EVENT_4(gc_roots, GCRoots, MonoObject *const *, roots, const MonoProfilerGCRootType *, types, const uintptr_t *, extra, uint64_t, count)
+#endif
 
 MONO_PROFILER_EVENT_1(monitor_contention, MonitorContention, MonoObject *, object)
 MONO_PROFILER_EVENT_1(monitor_failed, MonitorFailed, MonoObject *, object)
