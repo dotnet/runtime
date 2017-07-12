@@ -196,6 +196,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestEnvironmentOfChildProcess()
         {
             const string ItemSeparator = "CAFF9451396B4EEF8A5155A15BDC2080"; // random string that shouldn't be in any env vars; used instead of newline to separate env var strings
@@ -322,6 +323,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory, InlineData(true), InlineData(false)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestCreateNoWindowProperty(bool value)
         {
             Process testProcess = CreateProcessLong();
@@ -342,6 +344,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestWorkingDirectoryProperty()
         {
             CreateDefaultProcess();
@@ -502,6 +505,7 @@ namespace System.Diagnostics.Tests
 
         [PlatformSpecific(TestPlatforms.Windows)]  // Test case is specific to Windows
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void Verbs_GetWithExeExtension_ReturnsExpected()
         {
             var psi = new ProcessStartInfo { FileName = $"{Process.GetCurrentProcess().ProcessName}.exe" };
@@ -672,7 +676,8 @@ namespace System.Diagnostics.Tests
 
         [PlatformSpecific(TestPlatforms.AnyUnix)]  // Test case is specific to Unix
         [Fact]
-        public void TestEnvironmentVariablesPropertyUnix(){
+        public void TestEnvironmentVariablesPropertyUnix()
+        {
             ProcessStartInfo psi = new ProcessStartInfo();
 
             // Creating a detached ProcessStartInfo will pre-populate the environment

@@ -59,6 +59,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestThreadCollectionBehavior()
         {
             CreateDefaultProcess();

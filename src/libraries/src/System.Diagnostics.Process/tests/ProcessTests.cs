@@ -59,6 +59,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         [PlatformSpecific(TestPlatforms.Windows)]  // Expected behavior varies on Windows and Unix
         public void TestBasePriorityOnWindows()
         {
@@ -88,6 +89,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         [InlineData(true)]
         [InlineData(false)]
         [InlineData(null)]
@@ -120,6 +122,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestExitCode()
         {
             {
@@ -137,6 +140,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestExitTime()
         {
             // ExitTime resolution on some platforms is less accurate than our DateTime.UtcNow resolution, so
@@ -164,6 +168,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestId()
         {
             CreateDefaultProcess();
@@ -180,6 +185,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestHasExited()
         {
             {
@@ -221,6 +227,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestMachineName()
         {
             CreateDefaultProcess();
@@ -237,6 +244,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestMainModuleOnNonOSX()
         {
             Process p = Process.GetCurrentProcess();
@@ -247,6 +255,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestMaxWorkingSet()
         {
             CreateDefaultProcess();
@@ -301,6 +310,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestMinWorkingSet()
         {
             CreateDefaultProcess();
@@ -372,6 +382,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestNonpagedSystemMemorySize64()
         {
             CreateDefaultProcess();
@@ -387,6 +398,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestPagedMemorySize64()
         {
             CreateDefaultProcess();
@@ -402,6 +414,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestPagedSystemMemorySize64()
         {
             CreateDefaultProcess();
@@ -417,6 +430,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestPeakPagedMemorySize64()
         {
             CreateDefaultProcess();
@@ -432,6 +446,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestPeakVirtualMemorySize64()
         {
             CreateDefaultProcess();
@@ -447,6 +462,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestPeakWorkingSet64()
         {
             CreateDefaultProcess();
@@ -462,6 +478,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestPrivateMemorySize64()
         {
             CreateDefaultProcess();
@@ -477,6 +494,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestVirtualMemorySize64()
         {
             CreateDefaultProcess();
@@ -492,6 +510,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestWorkingSet64()
         {
             CreateDefaultProcess();
@@ -514,6 +533,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestProcessorTime()
         {
             CreateDefaultProcess();
@@ -557,6 +577,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestProcessStartTime()
         {
             TimeSpan allowedWindow = TimeSpan.FromSeconds(3);
@@ -580,6 +601,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         [PlatformSpecific(~TestPlatforms.OSX)] // getting/setting affinity not supported on OSX
         public void TestProcessorAffinity()
         {
@@ -599,6 +621,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestPriorityBoostEnabled()
         {
             CreateDefaultProcess();
@@ -628,6 +651,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact, PlatformSpecific(TestPlatforms.Windows)]  // Expected behavior varies on Windows and Unix
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestPriorityClassWindows()
         {
             CreateDefaultProcess();
@@ -664,6 +688,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestProcessName()
         {
             CreateDefaultProcess();
@@ -681,6 +706,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestSafeHandle()
         {
             CreateDefaultProcess();
@@ -696,6 +722,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestSessionId()
         {
             CreateDefaultProcess();
@@ -734,6 +761,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestGetProcessById()
         {
             CreateDefaultProcess();
@@ -744,6 +772,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestGetProcesses()
         {
             Process currentProcess = Process.GetCurrentProcess();
@@ -775,6 +804,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void GetProcessesByName_ProcessName_ReturnsExpected()
         {
             // Get the current process using its name
@@ -800,6 +830,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         [MemberData(nameof(MachineName_TestData))]
         public void GetProcessesByName_ProcessNameMachineName_ReturnsExpected(string machineName)
         {
@@ -826,6 +857,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void GetProcessesByName_NoSuchProcess_ReturnsEmpty()
         {
             string processName = Guid.NewGuid().ToString("N");
@@ -833,6 +865,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void GetProcessesByName_NullMachineName_ThrowsArgumentNullException()
         {
             Process currentProcess = Process.GetCurrentProcess();
@@ -840,6 +873,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void GetProcessesByName_EmptyMachineName_ThrowsArgumentException()
         {
             Process currentProcess = Process.GetCurrentProcess();
@@ -849,6 +883,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Behavior differs on Windows and Unix
         [ActiveIssue("https://github.com/dotnet/corefx/issues/18212", TargetFrameworkMonikers.UapAot)]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestProcessOnRemoteMachineWindows()
         {
             Process currentProccess = Process.GetCurrentProcess();
@@ -876,6 +911,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void StartInfo_GetFileName_ReturnsExpected()
         {
             Process process = CreateProcessLong();
@@ -890,6 +926,7 @@ namespace System.Diagnostics.Tests
         }
         
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void StartInfo_SetOnRunningProcess_ThrowsInvalidOperationException()
         {
             Process process = CreateProcessLong();
@@ -946,6 +983,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         [InlineData(@"""abc"" d e", @"abc,d,e")]
         [InlineData(@"""abc""      d e", @"abc,d,e")]
         [InlineData("\"abc\"\t\td\te", @"abc,d,e")]
@@ -1086,6 +1124,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.Windows)]  // Expected process HandleCounts differs on OSX
         public void TestHandleCount()
         {
@@ -1108,6 +1147,7 @@ namespace System.Diagnostics.Tests
         [Fact]
         [PlatformSpecific(TestPlatforms.Linux | TestPlatforms.Windows)]  // Expected process HandleCounts differs on OSX
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Handle count change is not reliable, but seems less robust on NETFX")]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void HandleCountChanges()
         {
             RemoteInvoke(() =>
@@ -1138,6 +1178,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         [PlatformSpecific(TestPlatforms.Windows)] // MainWindowHandle is not supported on Unix.
         public void MainWindowHandle_NoWindow_ReturnsEmptyHandle()
         {
@@ -1157,6 +1198,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void MainWindowTitle_NoWindow_ReturnsEmpty()
         {
             CreateDefaultProcess();
@@ -1175,6 +1217,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void CloseMainWindow_NoWindow_ReturnsFalse()
         {
             CreateDefaultProcess();
@@ -1183,7 +1226,8 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows)] // CloseMainWindow is a no-op and always returns false on Unix. 
+        [PlatformSpecific(TestPlatforms.Windows)] // CloseMainWindow is a no-op and always returns false on Unix.
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void CloseMainWindow_NotStarted_ThrowsInvalidOperationException()
         {
             var process = new Process();
@@ -1210,6 +1254,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestNonpagedSystemMemorySize()
         {
             CreateDefaultProcess();
@@ -1229,6 +1274,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestPagedMemorySize()
         {
             CreateDefaultProcess();
@@ -1248,6 +1294,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestPagedSystemMemorySize()
         {
             CreateDefaultProcess();
@@ -1267,6 +1314,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestPeakPagedMemorySize()
         {
             CreateDefaultProcess();
@@ -1286,6 +1334,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestPeakVirtualMemorySize()
         {
             CreateDefaultProcess();
@@ -1305,6 +1354,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestPeakWorkingSet()
         {
             CreateDefaultProcess();
@@ -1324,6 +1374,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestPrivateMemorySize()
         {
             CreateDefaultProcess();
@@ -1343,6 +1394,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestVirtualMemorySize()
         {
             CreateDefaultProcess();
@@ -1362,6 +1414,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestWorkingSet()
         {
             CreateDefaultProcess();
@@ -1400,6 +1453,7 @@ namespace System.Diagnostics.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Starting process with authentication not supported on Unix
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void Process_StartWithInvalidUserNamePassword()
         {
             SecureString password = AsSecureString("Value");
@@ -1409,6 +1463,7 @@ namespace System.Diagnostics.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Starting process with authentication not supported on Unix
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void Process_StartTest()
         {
             string currentProcessName = GetCurrentProcessName();
@@ -1429,6 +1484,7 @@ namespace System.Diagnostics.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Starting process with authentication not supported on Unix
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void Process_StartWithArgumentsTest()
         {
             string currentProcessName = GetCurrentProcessName();
