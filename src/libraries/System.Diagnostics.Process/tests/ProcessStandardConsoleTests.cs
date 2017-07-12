@@ -14,6 +14,7 @@ namespace System.Diagnostics.Tests
         private const int s_ConsoleEncoding = 437;
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
         public void TestChangesInConsoleEncoding()
         {
             Action<int> run = expectedCodePage =>
