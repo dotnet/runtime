@@ -1,26 +1,10 @@
 #include <config.h>
 #include <mono/utils/mono-logger-internals.h>
+#include <mono/utils/mono-proclib.h>
 #include "log.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
-#endif
-
-#ifdef HAVE_SCHED_GETAFFINITY
-#include <sched.h>
-
-#  ifndef GLIBC_HAS_CPU_COUNT
-static int
-CPU_COUNT(cpu_set_t *set)
-{
-	int i, count = 0;
-
-	for (int i = 0; i < CPU_SETSIZE; i++)
-		if (CPU_ISSET(i, set))
-			count++;
-	return count;
-}
-#  endif
 #endif
 
 typedef struct {
@@ -60,8 +44,6 @@ static NameAndMask event_list[] = {
 static void usage (void);
 static void set_hsmode (ProfilerConfig *config, const char* val);
 static void set_sample_freq (ProfilerConfig *config, const char *val);
-static int mono_cpu_count (void);
-
 
 static gboolean
 match_option (const char *arg, const char *opt_name, const char **rval)
@@ -300,89 +282,4 @@ usage (void)
 	mono_profiler_printf ("\treport               create a report instead of writing the raw data to a file");
 	mono_profiler_printf ("\tzip                  compress the output data");
 	mono_profiler_printf ("\tport=PORTNUM         use PORTNUM for the listening command server");
-}
-
-static int
-mono_cpu_count (void)
-{
-#ifdef PLATFORM_ANDROID
-	/* Android tries really hard to save power by powering off CPUs on SMP phones which
-	 * means the normal way to query cpu count returns a wrong value with userspace API.
-	 * Instead we use /sys entries to query the actual hardware CPU count.
-	 */
-	int count = 0;
-	char buffer[8] = {'\0'};
-	int present = open ("/sys/devices/system/cpu/present", O_RDONLY);
-	/* Format of the /sys entry is a cpulist of indexes which in the case
-	 * of present is always of the form "0-(n-1)" when there is more than
-	 * 1 core, n being the number of CPU cores in the system. Otherwise
-	 * the value is simply 0
-	 */
-	if (present != -1 && read (present, (char*)buffer, sizeof (buffer)) > 3)
-		count = strtol (((char*)buffer) + 2, NULL, 10);
-	if (present != -1)
-		close (present);
-	if (count > 0)
-		return count + 1;
-#endif
-
-#if defined(HOST_ARM) || defined (HOST_ARM64)
-
-	/* ARM platforms tries really hard to save power by powering off CPUs on SMP phones which
-	 * means the normal way to query cpu count returns a wrong value with userspace API. */
-
-#ifdef _SC_NPROCESSORS_CONF
-	{
-		int count = sysconf (_SC_NPROCESSORS_CONF);
-		if (count > 0)
-			return count;
-	}
-#endif
-
-#else
-
-#ifdef HAVE_SCHED_GETAFFINITY
-	{
-		cpu_set_t set;
-		if (sched_getaffinity (getpid (), sizeof (set), &set) == 0)
-			return CPU_COUNT (&set);
-	}
-#endif
-#ifdef _SC_NPROCESSORS_ONLN
-	{
-		int count = sysconf (_SC_NPROCESSORS_ONLN);
-		if (count > 0)
-			return count;
-	}
-#endif
-
-#endif /* defined(HOST_ARM) || defined (HOST_ARM64) */
-
-#ifdef USE_SYSCTL
-	{
-		int count;
-		int mib [2];
-		size_t len = sizeof (int);
-		mib [0] = CTL_HW;
-		mib [1] = HW_NCPU;
-		if (sysctl (mib, 2, &count, &len, NULL, 0) == 0)
-			return count;
-	}
-#endif
-#ifdef HOST_WIN32
-	{
-		SYSTEM_INFO info;
-		GetSystemInfo (&info);
-		return info.dwNumberOfProcessors;
-	}
-#endif
-
-	static gboolean warned;
-
-	if (!warned) {
-		g_warning ("Don't know how to determine CPU count on this platform; assuming 1");
-		warned = TRUE;
-	}
-
-	return 1;
 }
