@@ -36,7 +36,6 @@ namespace System.Net.Sockets
         // Internal SocketAddress buffer
         private GCHandle _socketAddressGCHandle;
         private Internals.SocketAddress _pinnedSocketAddress;
-        private IntPtr _ptrSocketAddressBufferSize;
 
         // SendPacketsElements property variables.
         private SendPacketsElement[] _sendPacketsElementsInternal;
@@ -366,7 +365,7 @@ namespace System.Net.Sockets
                         out bytesTransferred,
                         ref flags,
                         PtrSocketAddressBuffer,
-                        _ptrSocketAddressBufferSize,
+                        PtrSocketAddressBufferSize,
                         overlapped,
                         IntPtr.Zero);
                 }
@@ -379,7 +378,7 @@ namespace System.Net.Sockets
                         out bytesTransferred,
                         ref flags,
                         PtrSocketAddressBuffer,
-                        _ptrSocketAddressBufferSize,
+                        PtrSocketAddressBufferSize,
                         overlapped,
                         IntPtr.Zero);
                 }
@@ -902,7 +901,6 @@ namespace System.Net.Sockets
             // Pin down the new one.
             _socketAddressGCHandle = GCHandle.Alloc(_socketAddress.Buffer, GCHandleType.Pinned);
             _socketAddress.CopyAddressSizeIntoBuffer();
-            _ptrSocketAddressBufferSize = Marshal.UnsafeAddrOfPinnedArrayElement(_socketAddress.Buffer, _socketAddress.GetAddressSizeOffset());
             _pinnedSocketAddress = _socketAddress;
         }
 
@@ -921,6 +919,8 @@ namespace System.Net.Sockets
                 }
             }
         }
+
+        private IntPtr PtrSocketAddressBufferSize => PtrSocketAddressBuffer + _socketAddress.GetAddressSizeOffset();
 
         // Cleans up any existing Overlapped object and related state variables.
         private void FreeOverlapped()
@@ -1269,7 +1269,7 @@ namespace System.Net.Sockets
 
         private unsafe int GetSocketAddressSize()
         {
-            return *(int*)_ptrSocketAddressBufferSize;
+            return *(int*)PtrSocketAddressBufferSize;
         }
 
         private unsafe void FinishOperationReceiveMessageFrom()
