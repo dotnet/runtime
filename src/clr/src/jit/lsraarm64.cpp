@@ -92,11 +92,6 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             TreeNodeInfoInitStoreLoc(tree->AsLclVarCommon());
             break;
 
-        case GT_PHYSREGDST:
-            info->srcCount = 1;
-            info->dstCount = 0;
-            break;
-
         case GT_LIST:
         case GT_FIELD_LIST:
         case GT_ARGPLACE:

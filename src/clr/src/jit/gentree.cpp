@@ -5390,7 +5390,6 @@ bool GenTree::TryGetUse(GenTree* def, GenTree*** use)
         case GT_JTRUE:
         case GT_SWITCH:
         case GT_NULLCHECK:
-        case GT_PHYSREGDST:
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
         case GT_RETURNTRAP:
@@ -5932,17 +5931,6 @@ GenTree* Compiler::gtNewPhysRegNode(regNumber reg, var_types type)
 {
     assert(genIsValidIntReg(reg) || (reg == REG_SPBASE));
     GenTree* result = new (this, GT_PHYSREG) GenTreePhysReg(reg, type);
-    return result;
-}
-
-// Return a new node representing a store of a value to a physical register
-// modifies: child's gtRegNum
-GenTree* Compiler::gtNewPhysRegNode(regNumber reg, GenTree* src)
-{
-    assert(genIsValidIntReg(reg));
-    GenTree* result  = new (this, GT_PHYSREGDST) GenTreeOp(GT_PHYSREGDST, TYP_I_IMPL, src, nullptr);
-    result->gtRegNum = reg;
-    src->gtRegNum    = reg;
     return result;
 }
 
@@ -8658,7 +8646,6 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_JTRUE:
         case GT_SWITCH:
         case GT_NULLCHECK:
-        case GT_PHYSREGDST:
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
 #if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
