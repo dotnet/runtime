@@ -4371,7 +4371,6 @@ handle_dumper_queue_entry (MonoProfiler *prof)
 
 		ENTER_LOG (&sample_hits_ctr, logbuffer,
 			EVENT_SIZE /* event */ +
-			BYTE_SIZE /* type */ +
 			LEB128_SIZE /* tid */ +
 			LEB128_SIZE /* count */ +
 			1 * (
