@@ -68,7 +68,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
             if (!typeof(SyndicationFeed).IsAssignableFrom(feedTypeToCreate))
             {
-                throw new ArgumentException(String.Format(SR.InvalidObjectTypePassed, nameof(feedTypeToCreate), nameof(SyndicationFeed)));
+                throw new ArgumentException(string.Format(SR.InvalidObjectTypePassed, nameof(feedTypeToCreate), nameof(SyndicationFeed)));
             }
             _maxExtensionSize = int.MaxValue;
             _preserveAttributeExtensions = _preserveElementExtensions = true;
@@ -123,7 +123,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (!CanRead(reader))
             {
-                throw new XmlException(String.Format(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI));
+                throw new XmlException(string.Format(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI));
             }
 
             SetFeed(CreateFeedInstance());
@@ -329,7 +329,7 @@ namespace Microsoft.ServiceModel.Syndication
                         await reader.ReadEndElementAsync();
                         break;
                     case Atom10Constants.IconTag:
-                        result.IconImage = stringParser(await reader.ReadElementStringAsync(),Atom10Constants.IconTag,ns); 
+                        result.IconImage = uriParser(await reader.ReadElementStringAsync(), UriKind.RelativeOrAbsolute, Atom10Constants.IconTag, ns);
                         break;
                     default:
                         return false;
@@ -506,7 +506,7 @@ namespace Microsoft.ServiceModel.Syndication
                 await writer.WriteAttributeStringAsync("xml", "base", XmlNs, FeedUtils.GetUriString(baseUriToWrite));
             }
 
-            await link.WriteAttributeExtensions(writer, SyndicationVersions.Atom10);
+            await link.WriteAttributeExtensionsAsync(writer, SyndicationVersions.Atom10);
             if (!string.IsNullOrEmpty(link.RelationshipType) && !link.AttributeExtensions.ContainsKey(s_atom10Relative))
             {
                 await writer.WriteAttributeStringAsync(Atom10Constants.RelativeTag, link.RelationshipType);
@@ -624,7 +624,7 @@ namespace Microsoft.ServiceModel.Syndication
                     kind = TextSyndicationContentKind.XHtml;
                     break;
 
-                    throw new XmlException(String.Format(SR.Atom10SpecRequiresTextConstruct, context, type));
+                    throw new XmlException(string.Format(SR.Atom10SpecRequiresTextConstruct, context, type));
             }
 
             Dictionary<XmlQualifiedName, string> attrs = null;
@@ -856,8 +856,6 @@ namespace Microsoft.ServiceModel.Syndication
 
             XmlBuffer buffer = null;
             XmlDictionaryWriter extWriter = null;
-            bool areAllItemsRead = true;
-            bool readItemsAtLeastOnce = false;
             
             if (!elementIsEmpty)
             {
@@ -871,24 +869,10 @@ namespace Microsoft.ServiceModel.Syndication
                         }
                         else if (await reader.IsStartElementAsync(Atom10Constants.EntryTag, Atom10Constants.Atom10Namespace) && !isSourceFeed)
                         {
-                            if (readItemsAtLeastOnce)
-                            {
-                                //throw new InvalidOperationException(String.Format(SR.FeedHasNonContiguousItems, this.GetType().ToString()));
-                                //Log we have disjoint items
-                            }
-
                             while (await reader.IsStartElementAsync(Atom10Constants.EntryTag, Atom10Constants.Atom10Namespace))
                             {
                                 feedItems.Add(await ReadItemAsync(reader, result));
                             }
-
-                            //areAllItemsRead = true;
-                            readItemsAtLeastOnce = true;
-                            // if the derived class is reading the items lazily, then stop reading from the stream
-                            //if (!areAllItemsRead)
-                            //{
-                            //    break;
-                            //}
                         }
                         else
                         {
@@ -932,7 +916,7 @@ namespace Microsoft.ServiceModel.Syndication
                     }
                 }
             }
-            if (!isSourceFeed && areAllItemsRead)
+            if (!isSourceFeed)
             {
                 await reader.ReadEndElementAsync(); // feed
             }
@@ -1320,7 +1304,11 @@ namespace Microsoft.ServiceModel.Syndication
             await WriteFeedAuthorsToAsync(writer, feed.Authors);
             await WriteFeedContributorsToAsync(writer, feed.Contributors);
             await WriteElementAsync(writer, Atom10Constants.GeneratorTag, feed.Generator);
-            await WriteElementAsync(writer, Atom10Constants.IconTag, feed.IconImage);
+
+            if(feed.IconImage != null)
+            {
+                await WriteElementAsync(writer, Atom10Constants.IconTag, feed.IconImage.AbsoluteUri);
+            }
 
             for (int i = 0; i < feed.Links.Count; ++i)
             {
@@ -1378,7 +1366,7 @@ namespace Microsoft.ServiceModel.Syndication
         private async Task WritePersonToAsync(XmlWriterWrapper writer, SyndicationPerson p, string elementName)
         {
             await writer.WriteStartElementAsync(elementName, Atom10Constants.Atom10Namespace);
-            WriteAttributeExtensions(writer, p, this.Version);
+            WriteAttributeExtensionsAsync(writer, p, this.Version);
             await WriteElementAsync(writer, Atom10Constants.NameTag, p.Name);
             if (!string.IsNullOrEmpty(p.Uri))
             {

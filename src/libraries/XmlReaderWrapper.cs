@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.ServiceModel.Syndication.Resources;
+using System;
 using System.Threading.Tasks;
 using System.Xml;
 
@@ -42,7 +43,6 @@ namespace Microsoft.ServiceModel.Syndication
         public static XmlReaderWrapper CreateFromReader(XmlReader reader)
         {
             XmlReaderWrapper wrappedReader = reader as XmlReaderWrapper;
-
             return wrappedReader != null ? wrappedReader : new XmlReaderWrapper(reader);
         }
 
@@ -281,10 +281,12 @@ namespace Microsoft.ServiceModel.Syndication
         {
             return this.readFunc(this);
         }
+
         public override Task<string> ReadInnerXmlAsync()
         {
             return readInnerXmlFunc(this);
         }
+
         private static async Task ReadStartElementAsync(XmlReader reader)
         {
             if (await reader.MoveToContentAsync() != XmlNodeType.Element)
@@ -398,8 +400,7 @@ namespace Microsoft.ServiceModel.Syndication
 
             if (await reader.MoveToContentAsync() != XmlNodeType.Element)
             {
-                //throw new XmlException(Res.Xml_InvalidNodeType, this.NodeType.ToString(), this as IXmlLineInfo);
-                throw new XmlException();
+                throw new XmlException(SR.XmlNodeIsNotAnElement);
             }
 
             if (!reader.IsEmptyElement)
@@ -408,8 +409,7 @@ namespace Microsoft.ServiceModel.Syndication
                 result = await ReadStringAsync(reader);
                 if (reader.NodeType != XmlNodeType.EndElement)
                 {
-                    //throw new XmlException(Res.Xml_UnexpectedNodeInSimpleContent, new string[] { this.NodeType.ToString(), "ReadElementString" }, this as IXmlLineInfo);
-                    throw new XmlException();
+                    throw new XmlException("InvalidNodeType");
                 }
                 await reader.ReadAsync();
             }

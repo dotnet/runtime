@@ -9,10 +9,12 @@ namespace Microsoft.ServiceModel.Syndication
     using Microsoft.ServiceModel.Syndication.Resources;
     using System;
     using System.Globalization;
+    using System.Runtime.Serialization;
     using System.Threading;
     using System.Threading.Tasks;
     using System.Xml;
 
+    [DataContract]
     public abstract class SyndicationFeedFormatter
     {
         private SyndicationFeed _feed;
@@ -39,8 +41,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        public abstract string Version
-        { get; }
+        public abstract string Version { get; }
 
         public abstract bool CanRead(XmlReader reader);
 
@@ -48,7 +49,7 @@ namespace Microsoft.ServiceModel.Syndication
 
         public override string ToString()
         {
-            return String.Format(CultureInfo.CurrentCulture, "{0}, SyndicationVersion={1}", this.GetType(), this.Version);
+            return string.Format(CultureInfo.CurrentCulture, "{0}, SyndicationVersion={1}", this.GetType(), this.Version);
         }
 
         public abstract Task WriteToAsync(XmlWriter writer, CancellationToken ct);
@@ -279,13 +280,13 @@ namespace Microsoft.ServiceModel.Syndication
             return person.TryParseElement(reader, version);
         }
 
-        internal static protected void WriteAttributeExtensions(XmlWriter writer, SyndicationFeed feed, string version)
+        internal static protected async Task WriteAttributeExtensions(XmlWriter writer, SyndicationFeed feed, string version)
         {
             if (feed == null)
             {
                 throw new ArgumentNullException(nameof(feed));
             }
-            feed.WriteAttributeExtensionsAsync(writer, version);
+            await feed.WriteAttributeExtensionsAsync(writer, version);
         }
 
         internal static protected Task WriteAttributeExtensionsAsync(XmlWriter writer, SyndicationItem item, string version)
@@ -306,22 +307,22 @@ namespace Microsoft.ServiceModel.Syndication
             return category.WriteAttributeExtensionsAsync(writer, version);
         }
 
-        internal static protected void WriteAttributeExtensions(XmlWriter writer, SyndicationLink link, string version)
+        internal static protected Task WriteAttributeExtensions(XmlWriter writer, SyndicationLink link, string version)
         {
             if (link == null)
             {
                 throw new ArgumentNullException(nameof(link));
             }
-            link.WriteAttributeExtensions(writer, version);
+            return link.WriteAttributeExtensionsAsync(writer, version);
         }
 
-        internal static protected void WriteAttributeExtensions(XmlWriter writer, SyndicationPerson person, string version)
+        internal static protected Task WriteAttributeExtensionsAsync(XmlWriter writer, SyndicationPerson person, string version)
         {
             if (person == null)
             {
                 throw new ArgumentNullException(nameof(person));
             }
-            person.WriteAttributeExtensionsAsync(writer, version);
+            return person.WriteAttributeExtensionsAsync(writer, version);
         }
 
         internal static protected Task WriteElementExtensionsAsync(XmlWriter writer, SyndicationFeed feed, string version)
@@ -351,13 +352,13 @@ namespace Microsoft.ServiceModel.Syndication
             return category.WriteElementExtensionsAsync(writer, version);
         }
 
-        internal static protected void WriteElementExtensions(XmlWriter writer, SyndicationLink link, string version)
+        internal static protected Task WriteElementExtensionsAsync(XmlWriter writer, SyndicationLink link, string version)
         {
             if (link == null)
             {
                 throw new ArgumentNullException(nameof(link));
             }
-            link.WriteElementExtensionsAsync(writer, version);
+            return link.WriteElementExtensionsAsync(writer, version);
         }
 
         internal static protected Task WriteElementExtensionsAsync(XmlWriter writer, SyndicationPerson person, string version)
@@ -422,7 +423,6 @@ namespace Microsoft.ServiceModel.Syndication
                 return (SyndicationFeed)Activator.CreateInstance(feedType);
             }
         }
-        
 
         internal static void LoadElementExtensions(XmlBuffer buffer, XmlDictionaryWriter writer, SyndicationFeed feed)
         {
@@ -434,7 +434,6 @@ namespace Microsoft.ServiceModel.Syndication
             CloseBuffer(buffer, writer);
             feed.LoadElementExtensions(buffer);
         }
-
 
         internal static void LoadElementExtensions(XmlBuffer buffer, XmlDictionaryWriter writer, SyndicationItem item)
         {
@@ -449,22 +448,22 @@ namespace Microsoft.ServiceModel.Syndication
 
         internal static void LoadElementExtensions(XmlBuffer buffer, XmlDictionaryWriter writer, SyndicationCategory category)
         {
-
             if (category == null)
             {
                 throw new ArgumentNullException(nameof(category));
             }
+
             CloseBuffer(buffer, writer);
             category.LoadElementExtensions(buffer);
         }
 
         internal static void LoadElementExtensions(XmlBuffer buffer, XmlDictionaryWriter writer, SyndicationLink link)
         {
-
             if (link == null)
             {
                 throw new ArgumentNullException(nameof(link));
             }
+
             CloseBuffer(buffer, writer);
             link.LoadElementExtensions(buffer);
         }
@@ -475,6 +474,7 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(nameof(person));
             }
+
             CloseBuffer(buffer, writer);
             person.LoadElementExtensions(buffer);
         }
@@ -507,11 +507,11 @@ namespace Microsoft.ServiceModel.Syndication
         {
             private static void ThrowXmlException(XmlDictionaryReader reader, string res, string arg1)
             {
-                string s = String.Format(res, arg1);
+                string s = string.Format(res, arg1);
                 IXmlLineInfo lineInfo = reader as IXmlLineInfo;
                 if (lineInfo != null && lineInfo.HasLineInfo())
                 {
-                    s += " " + String.Format(SR.XmlLineInfo, lineInfo.LineNumber, lineInfo.LinePosition);
+                    s += " " + string.Format(SR.XmlLineInfo, lineInfo.LineNumber, lineInfo.LinePosition);
                 }
 
                 throw new XmlException(s);
@@ -532,19 +532,19 @@ namespace Microsoft.ServiceModel.Syndication
                 switch (reader.NodeType)
                 {
                     case XmlNodeType.Element:
-                        return String.Format(SR.XmlFoundElement, GetName(reader.Prefix, reader.LocalName), reader.NamespaceURI);
+                        return string.Format(SR.XmlFoundElement, GetName(reader.Prefix, reader.LocalName), reader.NamespaceURI);
                     case XmlNodeType.EndElement:
-                        return String.Format(SR.XmlFoundEndElement, GetName(reader.Prefix, reader.LocalName), reader.NamespaceURI);
+                        return string.Format(SR.XmlFoundEndElement, GetName(reader.Prefix, reader.LocalName), reader.NamespaceURI);
                     case XmlNodeType.Text:
                     case XmlNodeType.Whitespace:
                     case XmlNodeType.SignificantWhitespace:
-                        return String.Format(SR.XmlFoundText, reader.Value);
+                        return string.Format(SR.XmlFoundText, reader.Value);
                     case XmlNodeType.Comment:
-                        return String.Format(SR.XmlFoundComment, reader.Value);
+                        return string.Format(SR.XmlFoundComment, reader.Value);
                     case XmlNodeType.CDATA:
-                        return String.Format(SR.XmlFoundCData, reader.Value);
+                        return string.Format(SR.XmlFoundCData, reader.Value);
                 }
-                return String.Format(SR.XmlFoundNodeType, reader.NodeType);
+                return string.Format(SR.XmlFoundNodeType, reader.NodeType);
             }
 
             static public void ThrowStartElementExpected(XmlDictionaryReader reader)

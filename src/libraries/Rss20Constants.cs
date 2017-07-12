@@ -4,7 +4,7 @@
 
 namespace Microsoft.ServiceModel.Syndication
 {
-    public static class Rss20Constants
+    internal static class Rss20Constants
     {
         public const string AuthorTag = "author";
         public const string CategoryTag = "category";
@@ -36,8 +36,6 @@ namespace Microsoft.ServiceModel.Syndication
         public const string VersionTag = "version";
         public const string DocumentationTag = "docs";
         public const string TimeToLiveTag = "ttl";
-        public const string CloudTag = "cloud";
-        public const string RatingTag = "rating";
         public const string TextInputTag = "textInput";
         public const string SkipHoursTag = "skipHours";
         public const string SkipDaysTag = "skipDays";

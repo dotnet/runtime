@@ -37,7 +37,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
             if (!typeof(SyndicationItem).IsAssignableFrom(itemTypeToCreate))
             {
-                throw new ArgumentException(String.Format(SR.InvalidObjectTypePassed, nameof(itemTypeToCreate), nameof(SyndicationItem)));
+                throw new ArgumentException(string.Format(SR.InvalidObjectTypePassed, nameof(itemTypeToCreate), nameof(SyndicationItem)));
             }
             _feedSerializer = new Rss20FeedFormatter();
             _feedSerializer.PreserveAttributeExtensions = _preserveAttributeExtensions = true;
@@ -125,14 +125,14 @@ namespace Microsoft.ServiceModel.Syndication
             await WriteItem(writer);
         }
 
-        public override async Task ReadFromAsync(XmlReader reader)
+        public override Task ReadFromAsync(XmlReader reader)
         {
             if (!CanRead(reader))
             {
-                throw new XmlException(String.Format(SR.UnknownItemXml, reader.LocalName, reader.NamespaceURI));
+                throw new XmlException(string.Format(SR.UnknownItemXml, reader.LocalName, reader.NamespaceURI));
             }
 
-            await ReadItemAsync(XmlReaderWrapper.CreateFromReader(reader));
+            return ReadItemAsync(XmlReaderWrapper.CreateFromReader(reader));
         }
 
         public override async Task WriteToAsync(XmlWriter writer)
@@ -154,20 +154,20 @@ namespace Microsoft.ServiceModel.Syndication
             return SyndicationItemFormatter.CreateItemInstance(_itemType);
         }
         
-        private async Task ReadItemAsync(XmlReaderWrapper reader)
+        private Task ReadItemAsync(XmlReaderWrapper reader)
         {
             SetItem(CreateItemInstance());
-            await _feedSerializer.ReadItemFromAsync(XmlReaderWrapper.CreateFromReader(XmlDictionaryReader.CreateDictionaryReader(reader)), this.Item);
+            return _feedSerializer.ReadItemFromAsync(XmlReaderWrapper.CreateFromReader(XmlDictionaryReader.CreateDictionaryReader(reader)), this.Item);
         }
 
-        private async Task WriteItem(XmlWriter writer)
+        private Task WriteItem(XmlWriter writer)
         {
             if (this.Item == null)
             {
                 throw new InvalidOperationException(SR.ItemFormatterDoesNotHaveItem);
             }
             XmlDictionaryWriter w = XmlDictionaryWriter.CreateDictionaryWriter(writer);
-            await _feedSerializer.WriteItemContentsAsync(w, this.Item);
+            return _feedSerializer.WriteItemContentsAsync(w, this.Item);
         }
     }
 

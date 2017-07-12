@@ -12,7 +12,6 @@ namespace Microsoft.ServiceModel.Syndication
     using System.Xml;
 
     // NOTE: This class implements Clone so if you add any members, please update the copy ctor
-    [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     public class SyndicationPerson : IExtensibleSyndicationObject
     {
         private string _email;

@@ -31,7 +31,7 @@ namespace System.ServiceModel.Channels
             //throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException("scheme"));
 
             if (scheme.Length == 0)
-                throw new ArgumentException(String.Format(SR.UriGeneratorSchemeMustNotBeEmpty, "scheme"));
+                throw new ArgumentException(string.Format(SR.UriGeneratorSchemeMustNotBeEmpty, "scheme"));
 
             _prefix = string.Concat(scheme, ":", Guid.NewGuid().ToString(), delimiter, "id=");
         }

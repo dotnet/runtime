@@ -10,7 +10,6 @@ namespace Microsoft.ServiceModel.Syndication
     using System.Threading.Tasks;
     using System.Xml;
 
-    [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     [DataContract]
     public abstract class ServiceDocumentFormatter
     {
@@ -38,7 +37,7 @@ namespace Microsoft.ServiceModel.Syndication
 
         public abstract Task<bool> CanReadAsync(XmlReader reader);
         public abstract Task ReadFromAsync(XmlReader reader);
-        public abstract Task WriteTo(XmlWriter writer);
+        public abstract Task WriteToAsync(XmlWriter writer);
 
         internal static void LoadElementExtensions(XmlBuffer buffer, XmlDictionaryWriter writer, CategoriesDocument categories)
         {
@@ -244,7 +243,7 @@ namespace Microsoft.ServiceModel.Syndication
                 throw new ArgumentNullException(nameof(document));
             }
 
-            document.WriteAttributeExtensions(writer, version);
+            document.WriteAttributeExtensionsAsync(writer, version);
         }
 
         protected static void WriteAttributeExtensions(XmlWriter writer, Workspace workspace, string version)
@@ -257,14 +256,14 @@ namespace Microsoft.ServiceModel.Syndication
             workspace.WriteAttributeExtensions(writer, version);
         }
 
-        protected static void WriteAttributeExtensions(XmlWriter writer, ResourceCollectionInfo collection, string version)
+        protected static Task WriteAttributeExtensionsAsync(XmlWriter writer, ResourceCollectionInfo collection, string version)
         {
             if (collection == null)
             {
                 throw new ArgumentNullException(nameof(collection));
             }
 
-            collection.WriteAttributeExtensions(writer, version);
+            return collection.WriteAttributeExtensionsAsync(writer, version);
         }
 
         protected static Task WriteAttributeExtensionsAsync(XmlWriter writer, CategoriesDocument categories, string version)

@@ -117,6 +117,12 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="XmlNodeIsNotAnElement" xml:space="preserve">
+    <value>The XmlReader is not currently in a node of type Element.</value>
+  </data>
+  <data name="InvalidSkipHours" xml:space="preserve">
+    <value>The hour can't be lower than 0 or greater than 23.</value>
+  </data>
   <data name="NoIPEndpointsFoundForHost" xml:space="preserve">
     <value>No IPEndpoints were found for host {0}.</value>
   </data>
@@ -1303,7 +1309,7 @@
     <value>The {0} object has been disposed.</value>
   </data>
   <data name="InvalidReaderPositionOnCreateMessage" xml:space="preserve">
-    <value>The XmlReaderWrapper used for the body of the message must be positioned on an element.</value>
+    <value>The XmlReader used for the body of the message must be positioned on an element.</value>
   </data>
   <data name="DuplicateMessageProperty" xml:space="preserve">
     <value>A property with the name '{0}' already exists.</value>
@@ -1666,7 +1672,7 @@
     <value>Could not compile the XPath expression '{0}' with the given XsltContext.</value>
   </data>
   <data name="FilterReaderNotStartElem" xml:space="preserve">
-    <value>XmlReaderWrapper not positioned at a start element.</value>
+    <value>XmlReader not positioned at a start element.</value>
   </data>
   <data name="SeekableMessageNavInvalidPosition" xml:space="preserve">
     <value>The position is not valid for this navigator.</value>
