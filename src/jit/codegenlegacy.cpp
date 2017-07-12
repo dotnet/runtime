@@ -9619,6 +9619,8 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
 
             // What order should the Dest, Val/Src, and Size be calculated
 
+            regMaskTP regsToLock = RBM_ARG_0 | RBM_ARG_1 | RBM_ARG_2;
+
             compiler->fgOrderBlockOps(tree, RBM_ARG_0, RBM_ARG_1, RBM_ARG_2, opsPtr, regsPtr); // OUT arguments
 
             genComputeReg(opsPtr[0], regsPtr[0], RegSet::EXACT_REG, RegSet::KEEP_REG);
@@ -9626,6 +9628,11 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
             if (opsPtr[2] != nullptr)
             {
                 genComputeReg(opsPtr[2], regsPtr[2], RegSet::EXACT_REG, RegSet::KEEP_REG);
+            }
+            else
+            {
+                regSet.rsLockReg(RBM_ARG_2);
+                regsToLock &= ~RBM_ARG_2;
             }
             genRecoverReg(opsPtr[0], regsPtr[0], RegSet::KEEP_REG);
             genRecoverReg(opsPtr[1], regsPtr[1], RegSet::KEEP_REG);
@@ -9646,7 +9653,7 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
                              (sizeNode->gtRegNum == REG_ARG_2));
             }
 
-            regSet.rsLockUsedReg(RBM_ARG_0 | RBM_ARG_1 | RBM_ARG_2);
+            regSet.rsLockUsedReg(regsToLock);
 
             genEmitHelperCall(isCopyBlk ? CORINFO_HELP_MEMCPY
                                         /* GT_INITBLK */
@@ -9655,12 +9662,16 @@ void CodeGen::genCodeForBlkOp(GenTreePtr tree, regMaskTP destReg)
 
             regTracker.rsTrackRegMaskTrash(RBM_CALLEE_TRASH);
 
-            regSet.rsUnlockUsedReg(RBM_ARG_0 | RBM_ARG_1 | RBM_ARG_2);
+            regSet.rsUnlockUsedReg(regsToLock);
             genReleaseReg(opsPtr[0]);
             genReleaseReg(opsPtr[1]);
             if (opsPtr[2] != nullptr)
             {
                 genReleaseReg(opsPtr[2]);
+            }
+            else
+            {
+                regSet.rsUnlockReg(RBM_ARG_2);
             }
         }
 
