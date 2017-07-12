@@ -3178,15 +3178,6 @@ RegisterType LinearScan::getDefType(GenTree* tree)
     return tree->TypeGet();
 }
 
-regMaskTP fixedCandidateMask(var_types type, regMaskTP candidates)
-{
-    if (genMaxOneBit(candidates))
-    {
-        return candidates;
-    }
-    return RBM_NONE;
-}
-
 //------------------------------------------------------------------------
 // LocationInfoListNode: used to store a single `LocationInfo` value for a
 //                       node during `buildIntervals`.
@@ -3638,10 +3629,9 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
 
         LclVarDsc* varDsc = &compiler->lvaTable[tree->gtLclVarCommon.gtLclNum];
         assert(varDsc->lvTracked);
-        unsigned  varIndex        = varDsc->lvVarIndex;
-        Interval* interval        = getIntervalForLocalVar(varIndex);
-        regMaskTP candidates      = getUseCandidates(tree);
-        regMaskTP fixedAssignment = fixedCandidateMask(tree->TypeGet(), candidates);
+        unsigned  varIndex   = varDsc->lvVarIndex;
+        Interval* interval   = getIntervalForLocalVar(varIndex);
+        regMaskTP candidates = getUseCandidates(tree);
 
         // We have only approximate last-use information at this point.  This is because the
         // execution order doesn't actually reflect the true order in which the localVars
@@ -3676,12 +3666,6 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
         else
         {
             JITDUMP("    Not added to map\n");
-            regMaskTP candidates = getUseCandidates(tree);
-
-            if (fixedAssignment != RBM_NONE)
-            {
-                candidates = fixedAssignment;
-            }
             RefPosition* pos   = newRefPosition(interval, currentLoc, RefTypeUse, tree, candidates);
             pos->isLocalDefUse = true;
             pos->setAllocateIfProfitable(tree->IsRegOptional());
@@ -3994,12 +3978,6 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
             if (useNode->gtLsraInfo.isTgtPref)
             {
                 prefSrcInterval = i;
-            }
-
-            regMaskTP fixedAssignment = fixedCandidateMask(type, candidates);
-            if (fixedAssignment != RBM_NONE)
-            {
-                candidates = fixedAssignment;
             }
 
             const bool regOptionalAtUse = useNode->IsRegOptional();
