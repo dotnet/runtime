@@ -14,14 +14,14 @@
     <MajorVersion>2</MajorVersion>
     <MinorVersion>0</MinorVersion>
     <PatchVersion>0</PatchVersion>
-    <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">false</StabilizePackageVersion>
-    <PreReleaseLabel>preview3</PreReleaseLabel>
+    <StabilizePackageVersion Condition="'$(StabilizePackageVersion)' == ''">true</StabilizePackageVersion>
+    <PreReleaseLabel>servicing</PreReleaseLabel>
     <ReleaseSuffix>$(PreReleaseLabel)</ReleaseSuffix>
-    <ReleaseBrandSuffix>Preview 3</ReleaseBrandSuffix>
+    <ReleaseBrandSuffix></ReleaseBrandSuffix>
     <Channel>release/2.0.0</Channel>
     <BranchName>release/2.0.0</BranchName>
   </PropertyGroup>
-  
+
   <PropertyGroup>
     <SharedFrameworkName>Microsoft.NETCore.App</SharedFrameworkName>
   </PropertyGroup>
@@ -63,7 +63,7 @@
   <!-- Import Build tools common props file where repo-independent properties are found -->
   <Import Condition="Exists('$(ToolsDir)Build.Common.props')" Project="$(ToolsDir)Build.Common.props" />
 
-  <!-- Versioning --> 
+  <!-- Versioning -->
   <PropertyGroup>
     <!-- Dev builds get a minor version, by default, of '0'.  Our tests restore packages with
          a -* version, and include myget sources, so any package published the same day to myget
@@ -87,11 +87,11 @@
     <!--
       By default, we are always building the nuget packages for HostPolicy, HostFXR and
       Dotnet/AppHost. Thus, the "UseShipped*" properties (below) are always set to false.
-      
+
       However, there are scenarios when some of these components will not change (e.g. during
       servicing, we may only change HostPolicy but not HostFXR and Dotnet/AppHost). In such cases,
       set the appropriate "UseShipped*" property below to true so that we will use the last shipped
-      version of the package. 
+      version of the package.
     -->
 
     <!-- The host/apphost package versions are only updated whenever there is a change in the components -->
@@ -102,20 +102,20 @@
     <UseShippedAppHostPackage>false</UseShippedAppHostPackage>
     <AppHostVersion Condition="'$(UseShippedAppHostPackage)' != 'true'">$(ProductVersion)</AppHostVersion>
     <AppHostVersion Condition="'$(UseShippedAppHostPackage)' == 'true'">2.0.0</AppHostVersion>
-    
-    <!-- 
-        The FXR Resolver package version is only updated whenever there is a change in it. 
+
+    <!--
+        The FXR Resolver package version is only updated whenever there is a change in it.
         If there is ever a need to use a shipped version of the package, then set the property
-        below to true. 
+        below to true.
     -->
     <UseShippedHostResolverPackage>false</UseShippedHostResolverPackage>
     <HostResolverVersion Condition="'$(UseShippedHostResolverPackage)' != 'true'">$(ProductVersion)</HostResolverVersion>
     <HostResolverVersion Condition="'$(UseShippedHostResolverPackage)' == 'true'">2.0.0</HostResolverVersion>
 
-    <!-- 
+    <!--
          Host Policy package version is only updated whenever there is a change in it.
          If there is ever a need to use a shipped version of the package, then set the property
-         below to true. 
+         below to true.
     -->
     <UseShippedHostPolicyPackage>false</UseShippedHostPolicyPackage>
     <HostPolicyVersion Condition="'$(UseShippedHostPolicyPackage)' != 'true'">$(ProductVersion)</HostPolicyVersion>
@@ -157,7 +157,7 @@
     <TargetArchitecture  Condition="'$(TargetArchitecture)' == ''">x64</TargetArchitecture>
     <Platform Condition="'$(Platform)'==''">$(TargetArchitecture)</Platform>
   </PropertyGroup>
-  <!-- 
+  <!--
   Projects that have no OS-specific implementations just use Debug and Release for $(Configuration).
   Projects that do have OS-specific implementations use OS_Debug and OS_Release, for all OS's we support even
   if the code is the same between some OS's (so if you have some project that just calls POSIX APIs, we still have
@@ -172,13 +172,13 @@
   <PropertyGroup>
     <OSGroup Condition="'$(OSGroup)' == ''">$(OsEnvironment)</OSGroup>
   </PropertyGroup>
-  
+
   <PropertyGroup Condition="'$(Configuration)'==''">
     <ConfigurationGroup Condition="'$(ConfigurationGroup)'==''">Debug</ConfigurationGroup>
     <Configuration>$(ConfigurationGroup)</Configuration>
     <Configuration>$(OSGroup)_$(Configuration)</Configuration>
   </PropertyGroup>
-  
+
   <!--
   If Configuration is set then someone explicitly passed it in or we building from VS. In either case
   default $(ConfigurationGroup) or $(OSGroup) from the Configuration if they aren't
@@ -230,7 +230,7 @@
   <PropertyGroup>
     <Framework>netcoreapp2.0</Framework>
   </PropertyGroup>
-  
+
   <PropertyGroup Condition="'$(TargetRid)' == '' and '$(OSGroup)' == 'Windows_NT'">
     <TargetRid Condition="'$(TargetArchitecture)' == 'x86'">win7-x86</TargetRid>
     <TargetRid Condition="'$(TargetArchitecture)' == 'x64'">win7-x64</TargetRid>
@@ -381,7 +381,7 @@
     <InstallerExtension Condition="'$(TargetsDebian)' == 'true' or '$(TargetsUbuntu)' == 'true'">.deb</InstallerExtension>
     <InstallerExtension Condition="'$(TargetsRhel)' == 'true' or '$(TargetsCentos)' == 'true'">.rpm</InstallerExtension>
     <CombinedInstallerExtension Condition="'$(OSGroup)' == 'Windows_NT'">.exe</CombinedInstallerExtension>
-    <CombinedInstallerExtension Condition="'$(OSGroup)' != 'Windows_NT'">$(InstallerExtension)</CombinedInstallerExtension>    
+    <CombinedInstallerExtension Condition="'$(OSGroup)' != 'Windows_NT'">$(InstallerExtension)</CombinedInstallerExtension>
   </PropertyGroup>
 
   <!-- Use actual publishable (non-dummy) package name produced by the build system for this RID -->
@@ -426,7 +426,7 @@
     <PortableNuGetMode>true</PortableNuGetMode>
   </PropertyGroup>
 
-  <!-- Use Roslyn Compilers to build --> 
-  <Import Project="$(RoslynPropsFile)" Condition="'$(OsEnvironment)'!='Windows_NT' and Exists('$(RoslynPropsFile)') and '$(UseRoslynCompilers)'!='false'" /> 
-  <Import Project="$(RoslynPropsFile)" Condition="'$(OsEnvironment)'=='Windows_NT' and Exists('$(RoslynPropsFile)')" /> 
+  <!-- Use Roslyn Compilers to build -->
+  <Import Project="$(RoslynPropsFile)" Condition="'$(OsEnvironment)'!='Windows_NT' and Exists('$(RoslynPropsFile)') and '$(UseRoslynCompilers)'!='false'" />
+  <Import Project="$(RoslynPropsFile)" Condition="'$(OsEnvironment)'=='Windows_NT' and Exists('$(RoslynPropsFile)')" />
 </Project>
