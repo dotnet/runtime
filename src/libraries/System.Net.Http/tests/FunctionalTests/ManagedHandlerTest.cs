@@ -131,7 +131,11 @@ namespace System.Net.Http.Functional.Tests
     public sealed class ManagedHandler_HttpClientHandlerTest : HttpClientHandlerTest, IDisposable
     {
         public ManagedHandler_HttpClientHandlerTest(ITestOutputHelper output) : base(output) => ManagedHandlerTestHelpers.SetEnvVar();
-        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+        public new void Dispose()
+        {
+            ManagedHandlerTestHelpers.RemoveEnvVar();
+            base.Dispose();
+        }
     }
 
     // TODO #21452: Socket's don't support canceling individual operations, so ReadStream on NetworkStream
