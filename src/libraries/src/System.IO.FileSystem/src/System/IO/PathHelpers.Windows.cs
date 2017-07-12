@@ -36,11 +36,6 @@ namespace System.IO
                     throw new ArgumentException(SR.Arg_InvalidSearchPattern, nameof(searchPattern));
                 }
             }
-
-            if (searchPattern.Length >= PathInternal.MaxComponentLength)
-            {
-                throw new PathTooLongException(SR.IO_PathTooLong);
-            }
         }
 
         // this is a lightweight version of GetDirectoryName that doesn't renormalize
