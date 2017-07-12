@@ -459,13 +459,6 @@ namespace System.Threading
                 ThrowOperationCanceledException();
         }
 
-        // Throw an ODE if this CancellationToken's source is disposed.
-        internal void ThrowIfSourceDisposed()
-        {
-            if ((m_source != null) && m_source.IsDisposed)
-                ThrowObjectDisposedException();
-        }
-
         // Throws an OCE; separated out to enable better inlining of ThrowIfCancellationRequested
         private void ThrowOperationCanceledException()
         {
