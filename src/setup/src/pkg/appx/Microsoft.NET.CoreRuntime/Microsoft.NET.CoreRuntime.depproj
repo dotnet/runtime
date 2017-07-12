@@ -5,21 +5,23 @@
   <PropertyGroup>
     <RestorePackages>true</RestorePackages>
     <PrereleaseResolveNuGetPackages>true</PrereleaseResolveNuGetPackages>
-  </PropertyGroup>  
+    <RestoreOutputPath>$(IntermediateOutputPath)</RestoreOutputPath>
+    <AdditionalRestoreArgs>/p:HasRuntimePackages=false /p:IntermediateOutputPath=$(IntermediateOutputPath)</AdditionalRestoreArgs>
+  </PropertyGroup>
 
   <PropertyGroup>
     <HasRuntimePackages>false</HasRuntimePackages>
     <NuGetTargetMoniker>$(UAPvNextTFMFull)</NuGetTargetMoniker>
     <NugetTargetMonikerShort>$(UAPvNextTFM)</NugetTargetMonikerShort>
     <NuGetRuntimeIdentifier Condition="'$(NuGetRuntimeIdentifier)' == ''">win10-$(Platform)</NuGetRuntimeIdentifier>
-    
+
     <AppxManifestTemplate>$(MSBuildProjectDirectory)\AppxManifest.xml.template</AppxManifestTemplate>
     <AppxManifest>$(IntermediateOutputPath)AppxManifest.xml</AppxManifest>
 
     <AppxName>Microsoft.NET.CoreRuntime</AppxName>
     <AppxIdentityName>Microsoft.NET.CoreRuntime.$(MajorVersion).$(MinorVersion)</AppxIdentityName>
     <AppxDisplayName>Microsoft.NET.CoreRuntime.$(MajorVersion).$(MinorVersion)</AppxDisplayName>
-    
+
     <BuildVersionAppX>$([System.Int32]::Parse($(BuildNumberMajor)))</BuildVersionAppX>
     <RevisionVersionAppX>$([System.Int32]::Parse($(BuildNumberMinor)))</RevisionVersionAppX>
 
@@ -33,17 +35,15 @@
     <!-- Indicate that this project contains package references that need to be restored -->
     <ContainsPackageReferences>true</ContainsPackageReferences>
     <RidSpecificAssets>true</RidSpecificAssets>
-
   </PropertyGroup>
 
   <ItemGroup>
-
-    <!-- Add a reference to the package containing the RID fallback graph -->    
+    <!-- Add a reference to the package containing the RID fallback graph -->
     <PackageReference Include="Microsoft.NETCore.Platforms">
       <Version>$(PlatformPackageVersion)</Version>
     </PackageReference>
 
-    <!-- Add a reference to the CoreCLR package from which to restore the artifacts -->    
+    <!-- Add a reference to the CoreCLR package from which to restore the artifacts -->
     <PackageReference Include="Microsoft.NETCore.Runtime.CoreCLR">
       <Version>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</Version>
     </PackageReference>
@@ -51,7 +51,6 @@
     <!-- Binaries that we want to include in the AppX FW package -->
     <AppxFileList Include="clretwrc.dll;coreclr.dll;mscordaccore.dll;mscordbi.dll;mscorrc.debug.dll"/>
     <AppxFileList Include="mscorrc.dll;System.Private.CoreLib.dll;clrjit.dll" />
-
   </ItemGroup>
 
   <!-- Compute the set of the files to be included in the Framework AppX package -->
@@ -63,7 +62,7 @@
       <ReferenceCopyLocalPaths Include="$(UWPOutputDir)\uwphost.dll" />
       <ReferenceCopyLocalPaths Include="$(AppxManifest)" />
     </ItemGroup>
- </Target>
+  </Target>
 
   <Target Name="GenerateAppxManifestFromTemplate"
           BeforeTargets="IncludeAllFiles"
@@ -79,11 +78,10 @@
 
   <Target Name="MakeAppx"
           AfterTargets="Build">
-    <MakeDir Directories="$(PackageOutputPath)"/>  
+    <MakeDir Directories="$(PackageOutputPath)"/>
     <Delete Files="$(AppxOutputPackageName)" />
     <Exec Command='CALL "$(VS140COMNTOOLS)vsdevcmd.bat" &amp; makeappx pack /d "$(AppxOutputPath)" /p "$(AppxOutputPackageName)" /o' />
   </Target>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
-
 </Project>
