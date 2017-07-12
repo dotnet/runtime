@@ -290,7 +290,6 @@ GTNODE(CLS_VAR_ADDR     , GenTreeClsVar      ,0,GTK_LEAF)               // stati
 GTNODE(ARGPLACE         , GenTreeArgPlace    ,0,GTK_LEAF)               // placeholder for a register arg
 GTNODE(NULLCHECK        , GenTreeOp          ,0,GTK_UNOP|GTK_NOVALUE)   // null checks the source
 GTNODE(PHYSREG          , GenTreePhysReg     ,0,GTK_LEAF)               // read from a physical register
-GTNODE(PHYSREGDST       , GenTreeOp          ,0,GTK_UNOP|GTK_NOVALUE)   // write to a physical register
 GTNODE(EMITNOP          , GenTree            ,0,GTK_LEAF|GTK_NOVALUE)   // emitter-placed nop
 GTNODE(PINVOKE_PROLOG   , GenTree            ,0,GTK_LEAF|GTK_NOVALUE)   // pinvoke prolog seq
 GTNODE(PINVOKE_EPILOG   , GenTree            ,0,GTK_LEAF|GTK_NOVALUE)   // pinvoke epilog seq
