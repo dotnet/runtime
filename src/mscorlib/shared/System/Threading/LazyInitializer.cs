@@ -158,7 +158,7 @@ namespace System.Threading
         /// <returns>The initialized object.</returns>
         private static T EnsureInitializedCore<T>(ref T target, ref bool initialized, ref object syncLock)
         {
-            // Lazily initialize the lock if necessary and,  then double check if initialization is still required.
+            // Lazily initialize the lock if necessary and then double check if initialization is still required.
             lock (EnsureLockInitialized(ref syncLock))
             {
                 if (!Volatile.Read(ref initialized))
@@ -219,7 +219,7 @@ namespace System.Threading
         /// <returns>The initialized object.</returns>
         private static T EnsureInitializedCore<T>(ref T target, ref bool initialized, ref object syncLock, Func<T> valueFactory)
         {
-            // Lazily initialize the lock if necessary and,  then double check if initialization is still required.
+            // Lazily initialize the lock if necessary and then double check if initialization is still required.
             lock (EnsureLockInitialized(ref syncLock))
             {
                 if (!Volatile.Read(ref initialized))
@@ -258,7 +258,7 @@ namespace System.Threading
         /// <returns>The initialized object.</returns>
         private static T EnsureInitializedCore<T>(ref T target, ref object syncLock, Func<T> valueFactory) where T : class
         {
-            // Lazily initialize the lock if necessary and,  then double check if initialization is still required.
+            // Lazily initialize the lock if necessary and then double check if initialization is still required.
             lock (EnsureLockInitialized(ref syncLock))
             {
                 if (Volatile.Read(ref target) == null)
