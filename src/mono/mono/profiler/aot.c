@@ -1,5 +1,5 @@
 /*
- * mono-profiler-aot.c: Ahead of Time Compiler Profiler for Mono.
+ * aot.c: Ahead of Time Compiler Profiler for Mono.
  *
  *
  * Copyright 2008-2009 Novell, Inc (http://www.novell.com)

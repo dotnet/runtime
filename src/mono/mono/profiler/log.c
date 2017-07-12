@@ -1,5 +1,5 @@
 /*
- * mono-profiler-log.c: mono log profiler
+ * log.c: mono log profiler
  *
  * Authors:
  *   Paolo Molaro (lupus@ximian.com)
