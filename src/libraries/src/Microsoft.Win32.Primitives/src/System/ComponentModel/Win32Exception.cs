@@ -7,80 +7,57 @@ using System.Runtime.Serialization;
 
 namespace System.ComponentModel
 {
-    /// <devdoc>
-    ///    <para>The exception that is thrown for a Win32 error code.</para>
-    /// </devdoc>
+    /// <summary>
+    /// The exception that is thrown for a Win32 error code.
+    /// </summary>
     public partial class Win32Exception : ExternalException, ISerializable
     {
-        /// <devdoc>
-        ///    <para>Represents the Win32 error code associated with this exception. This 
-        ///       field is read-only.</para>
-        /// </devdoc>
-        private readonly int nativeErrorCode;
-
         private const int E_FAIL = unchecked((int)0x80004005);
 
-        /// <devdoc>
-        /// <para>Initializes a new instance of the <see cref='System.ComponentModel.Win32Exception'/> class with the last Win32 error 
-        ///    that occurred.</para>
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the <see cref='System.ComponentModel.Win32Exception'/> class with the last Win32 error 
+        /// that occurred.
+        /// </summary>
         public Win32Exception() : this(Marshal.GetLastWin32Error())
         {
         }
-        /// <devdoc>
-        /// <para>Initializes a new instance of the <see cref='System.ComponentModel.Win32Exception'/> class with the specified error.</para>
-        /// </devdoc>
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref='System.ComponentModel.Win32Exception'/> class with the specified error.
+        /// </summary>
         public Win32Exception(int error) : this(error, GetErrorMessage(error))
         {
         }
-        /// <devdoc>
-        /// <para>Initializes a new instance of the <see cref='System.ComponentModel.Win32Exception'/> class with the specified error and the 
-        ///    specified detailed description.</para>
-        /// </devdoc>
-        public Win32Exception(int error, string message)
-        : base(message)
+        /// <summary>
+        /// Initializes a new instance of the <see cref='System.ComponentModel.Win32Exception'/> class with the specified error and the 
+        /// specified detailed description.
+        /// </summary>
+        public Win32Exception(int error, string message) : base(message)
         {
-            nativeErrorCode = error;
+            NativeErrorCode = error;
         }
 
-        /// <devdoc>
-        ///     Initializes a new instance of the Exception class with a specified error message.
-        ///     FxCop CA1032: Multiple constructors are required to correctly implement a custom exception.
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the Exception class with a specified error message.
+        /// </summary>
         public Win32Exception(string message) : this(Marshal.GetLastWin32Error(), message)
         {
         }
 
-        /// <devdoc>
-        ///     Initializes a new instance of the Exception class with a specified error message and a 
-        ///     reference to the inner exception that is the cause of this exception.
-        ///     FxCop CA1032: Multiple constructors are required to correctly implement a custom exception.
-        /// </devdoc>
+        /// <summary>
+        /// Initializes a new instance of the Exception class with a specified error message and a 
+        /// reference to the inner exception that is the cause of this exception.
+        /// </summary>
         public Win32Exception(string message, Exception innerException) : base(message, innerException)
         {
-            nativeErrorCode = Marshal.GetLastWin32Error();
+            NativeErrorCode = Marshal.GetLastWin32Error();
         }
 
-        protected Win32Exception(SerializationInfo info, StreamingContext context) : base(info, context)
-        {
-            throw new PlatformNotSupportedException();
-        }
+        protected Win32Exception(SerializationInfo info, StreamingContext context) : base(info, context) { }
 
-        public override void GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            base.GetObjectData(info, context);
-        }
-
-        /// <devdoc>
-        ///    <para>Represents the Win32 error code associated with this exception. This 
-        ///       field is read-only.</para>
-        /// </devdoc>
-        public int NativeErrorCode
-        {
-            get
-            {
-                return nativeErrorCode;
-            }
-        }
+        /// <summary>
+        /// Represents the Win32 error code associated with this exception. This field is read-only.
+        /// </summary>
+        public int NativeErrorCode { get; }
     }
 }
