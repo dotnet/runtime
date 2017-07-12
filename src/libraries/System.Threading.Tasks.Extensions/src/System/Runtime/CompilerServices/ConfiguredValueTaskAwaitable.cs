@@ -29,10 +29,8 @@ namespace System.Runtime.CompilerServices
         }
 
         /// <summary>Returns an awaiter for this <see cref="ConfiguredValueTaskAwaitable{TResult}"/> instance.</summary>
-        public ConfiguredValueTaskAwaiter GetAwaiter()
-        {
-            return new ConfiguredValueTaskAwaiter(_value, _continueOnCapturedContext);
-        }
+        public ConfiguredValueTaskAwaiter GetAwaiter() =>
+            new ConfiguredValueTaskAwaiter(_value, _continueOnCapturedContext);
 
         /// <summary>Provides an awaiter for a <see cref="ConfiguredValueTaskAwaitable{TResult}"/>.</summary>
         [StructLayout(LayoutKind.Auto)]
@@ -53,27 +51,21 @@ namespace System.Runtime.CompilerServices
             }
 
             /// <summary>Gets whether the <see cref="ConfiguredValueTaskAwaitable{TResult}"/> has completed.</summary>
-            public bool IsCompleted { get { return _value.IsCompleted; } }
+            public bool IsCompleted => _value.IsCompleted;
 
             /// <summary>Gets the result of the ValueTask.</summary>
-            public TResult GetResult()
-            {
-                return _value._task == null ? 
+            public TResult GetResult() =>
+                _value._task == null ? 
                     _value._result : 
                     _value._task.GetAwaiter().GetResult();
-            }
 
             /// <summary>Schedules the continuation action for the <see cref="ConfiguredValueTaskAwaitable{TResult}"/>.</summary>
-            public void OnCompleted(Action continuation)
-            {
+            public void OnCompleted(Action continuation) =>
                 _value.AsTask().ConfigureAwait(_continueOnCapturedContext).GetAwaiter().OnCompleted(continuation);
-            }
 
             /// <summary>Schedules the continuation action for the <see cref="ConfiguredValueTaskAwaitable{TResult}"/>.</summary>
-            public void UnsafeOnCompleted(Action continuation)
-            {
+            public void UnsafeOnCompleted(Action continuation) =>
                 _value.AsTask().ConfigureAwait(_continueOnCapturedContext).GetAwaiter().UnsafeOnCompleted(continuation);
-            }
         }
     }
 }
