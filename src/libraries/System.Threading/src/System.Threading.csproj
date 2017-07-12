@@ -7,10 +7,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetGroup)' == 'uapaot'">
-    <!-- Remove this define after enabling CdsSyncEtwBCLProvider (https://github.com/dotnet/corefx/issues/16881) -->
-    <DefineConstants>$(DefineConstants);uapaot</DefineConstants>
-  </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
@@ -22,7 +18,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uapaot-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="System\Threading\Barrier.cs" />
-    <Compile Include="System\Threading\CDSsyncETWBCLProvider.cs" Condition="'$(TargetGroup)'!='uapaot'" />
+    <Compile Include="System\Threading\CDSsyncETWBCLProvider.cs" />
     <Compile Include="System\Threading\CountdownEvent.cs" />
     <Compile Include="System\Threading\HostExecutionContext.cs" />
     <Compile Include="System\Threading\HostExecutionContextManager.cs" />

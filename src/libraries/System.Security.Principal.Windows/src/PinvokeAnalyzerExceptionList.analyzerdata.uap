@@ -6,6 +6,7 @@ advapi32.dll!LsaLookupSids
 advapi32.dll!LsaNtStatusToWinError
 advapi32.dll!LsaOpenPolicy
 advapi32.dll!OpenProcessToken
+kernel32.dll!CheckTokenMembershipEx
 ntdll.dll!RtlNtStatusToDosError
 sspicli.dll!LsaConnectUntrusted
 sspicli.dll!LsaDeregisterLogonProcess

@@ -13,10 +13,7 @@ namespace System.Runtime.CompilerServices
     {
         /// <summary>Initializes the <see cref="AsyncMethodBuilderAttribute"/>.</summary>
         /// <param name="builderType">The <see cref="Type"/> of the associated builder.</param>
-        public AsyncMethodBuilderAttribute(Type builderType)
-        {
-            BuilderType = builderType;
-        }
+        public AsyncMethodBuilderAttribute(Type builderType) => BuilderType = builderType;
 
         /// <summary>Gets the <see cref="Type"/> of the associated builder.</summary>
         public Type BuilderType { get; }

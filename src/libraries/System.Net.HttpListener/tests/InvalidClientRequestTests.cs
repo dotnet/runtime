@@ -92,7 +92,6 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(17462, TargetFrameworkMonikers.Uap)]
         public async Task GetContext_InvalidRequest_DoesNotGetContext()
         {
             // These tests take upwards of 20s if this uses [Theory].

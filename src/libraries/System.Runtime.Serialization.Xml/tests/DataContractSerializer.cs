@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -1436,7 +1436,6 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    [ActiveIssue("dotnet/corefx #19585", TargetFrameworkMonikers.UapAot)]
     public static void DCS_ExceptionObject()
     {
         var value = new Exception("Test Exception");
@@ -1450,7 +1449,6 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    [ActiveIssue("dotnet/corefx #19585", TargetFrameworkMonikers.UapAot)]
     public static void DCS_MyArgumentExceptionObject()
     {
         var value = new MyArgumentException("Test Exception", "paramName");
@@ -1465,7 +1463,6 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    [ActiveIssue("dotnet/corefx #19585", TargetFrameworkMonikers.UapAot)]
     public static void DCS_ExceptionMessageWithSpecialChars()
     {
         var value = new Exception("Test Exception<>&'\"");
@@ -1479,7 +1476,6 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    [ActiveIssue("dotnet/corefx #19585", TargetFrameworkMonikers.UapAot)]
     public static void DCS_InnerExceptionMessageWithSpecialChars()
     {
         var value = new Exception("", new Exception("Test Exception<>&'\""));
@@ -3171,6 +3167,60 @@ public static partial class DataContractSerializerTests
         Assert.NotNull(deserializedDesktopObject);
         ComparisonHelper.CompareRecursively(value, deserializedDesktopObject);
     }
+
+    [Fact]
+    public static void DCS_InvalidDataContract_Write_Invalid_Types_Throws()
+    {
+        // Attempting to serialize any invalid type should create an InvalidDataContract that throws 
+        foreach (NetNativeTestData td in NetNativeTestData.InvalidTypes) 
+        {
+            object o = td.Instantiate();
+            DataContractSerializer dcs = new DataContractSerializer(o.GetType());
+            MemoryStream ms = new MemoryStream();
+            Assert.Throws<InvalidDataContractException>(() =>
+            {
+                dcs.WriteObject(ms, o);
+            });
+        }
+    }
+
+    [Fact]
+    public static void DCS_InvalidDataContract_Read_Invalid_Types_Throws()
+    {
+        // Attempting to deserialize any invalid type should create an InvalidDataContract that throws
+        foreach (NetNativeTestData td in NetNativeTestData.InvalidTypes)
+        {
+            DataContractSerializer dcs = new DataContractSerializer(td.Type);
+            MemoryStream ms = new MemoryStream();
+            new DataContractSerializer(typeof(string)).WriteObject(ms, "test");
+            ms.Seek(0L, SeekOrigin.Begin);
+            if (td.Type.Equals(typeof(Invalid_Class_KnownType_Invalid_Type)))
+            {
+                Assert.Throws<SerializationException>(() =>
+                {
+                    dcs.ReadObject(ms);
+                });
+            }
+            else
+            {
+                Assert.Throws<InvalidDataContractException>(() =>
+                {
+                    dcs.ReadObject(ms);
+                });
+            }
+        }
+    }
+
+    [Fact]
+    public static void DCS_ValidateExceptionOnUnspecifiedRootSerializationType()
+    {
+        var value = new UnspecifiedRootSerializationType();
+        string baseline = @"<UnspecifiedRootSerializationType xmlns=""http://schemas.datacontract.org/2004/07/SerializationTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><MyIntProperty>0</MyIntProperty><MyStringProperty i:nil=""true""/></UnspecifiedRootSerializationType>";
+        var actual = SerializeAndDeserialize(value, baseline);
+        
+        Assert.Equal(value.MyIntProperty, actual.MyIntProperty);
+        Assert.Equal(value.MyStringProperty, actual.MyStringProperty);
+    } 
 
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractSerializerSettings settings = null, Func<DataContractSerializer> serializerFactory = null, bool skipStringCompare = false)
     {
