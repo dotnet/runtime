@@ -94,8 +94,6 @@ parse_arg (const char *arg, ProfilerConfig *config)
 		config->do_report = TRUE;
 	} else if (match_option (arg, "debug", NULL)) {
 		config->do_debug = TRUE;
-	} else if (match_option (arg, "debug-coverage", NULL)) {
-		config->debug_coverage = TRUE;
 	} else if (match_option (arg, "sampling-real", NULL)) {
 		config->sampling_mode = MONO_PROFILER_SAMPLE_MODE_REAL;
 	} else if (match_option (arg, "sampling-process", NULL)) {

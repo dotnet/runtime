@@ -79,10 +79,8 @@ static int max_call_depth = 0;
 static int command_port = 0;
 static int heapshot_requested = 0;
 static int do_mono_sample = 0;
-static int do_debug = 0;
 static int do_coverage = 0;
 static gboolean no_counters = FALSE;
-static gboolean debug_coverage = FALSE;
 static int max_allocated_sample_hits;
 
 #define ENABLED(EVT) (config.effective_mask & (EVT))
@@ -2701,8 +2699,6 @@ elf_dl_callback (struct dl_phdr_info *info, size_t size, void *data)
 		return 0;
 	for (i = 0; dyn [i].d_tag != DT_NULL; ++i) {
 		if (dyn [i].d_tag == DT_SYMTAB) {
-			if (symtab && do_debug)
-				printf ("multiple symtabs: %d\n", i);
 			symtab = (ElfW(Sym) *)(a + dyn [i].d_un.d_ptr);
 		} else if (dyn [i].d_tag == DT_HASH) {
 			hash_table = (ElfW(Word) *)(a + dyn [i].d_un.d_ptr);
@@ -3211,7 +3207,6 @@ counters_and_perfcounters_sample (MonoProfiler *prof)
 	perfcounters_sample (prof, now);
 }
 
-#define COVERAGE_DEBUG(x) if (debug_coverage) {x}
 static mono_mutex_t coverage_mutex;
 static MonoConcurrentHashTable *coverage_methods = NULL;
 static MonoConcurrentHashTable *coverage_assemblies = NULL;
@@ -3519,7 +3514,6 @@ dump_coverage (MonoProfiler *prof)
 	if (!coverage_initialized)
 		return;
 
-	COVERAGE_DEBUG(fprintf (stderr, "Coverage: Started dump\n");)
 	method_id = 0;
 
 	mono_os_mutex_lock (&coverage_mutex);
@@ -3527,8 +3521,6 @@ dump_coverage (MonoProfiler *prof)
 	mono_conc_hashtable_foreach (coverage_classes, build_class_buffer, NULL);
 	mono_conc_hashtable_foreach (coverage_methods, build_method_buffer, prof);
 	mono_os_mutex_unlock (&coverage_mutex);
-
-	COVERAGE_DEBUG(fprintf (stderr, "Coverage: Finished dump\n");)
 }
 
 static MonoLockFreeQueueNode *
@@ -3557,20 +3549,14 @@ coverage_filter (MonoProfiler *prof, MonoMethod *method)
 
 	g_assert (coverage_initialized && "Why are we being asked for coverage filter info when we're not doing coverage?");
 
-	COVERAGE_DEBUG(fprintf (stderr, "Coverage filter for %s\n", mono_method_get_name (method));)
-
 	flags = mono_method_get_flags (method, &iflags);
 	if ((iflags & 0x1000 /*METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL*/) ||
-	    (flags & 0x2000 /*METHOD_ATTRIBUTE_PINVOKE_IMPL*/)) {
-		COVERAGE_DEBUG(fprintf (stderr, "   Internal call or pinvoke - ignoring\n");)
+	    (flags & 0x2000 /*METHOD_ATTRIBUTE_PINVOKE_IMPL*/))
 		return FALSE;
-	}
 
 	// Don't need to do anything else if we're already tracking this method
-	if (mono_conc_hashtable_lookup (coverage_methods, method)) {
-		COVERAGE_DEBUG(fprintf (stderr, "   Already tracking\n");)
+	if (mono_conc_hashtable_lookup (coverage_methods, method))
 		return TRUE;
-	}
 
 	klass = mono_method_get_class (method);
 	image = mono_class_get_image (klass);
@@ -3581,16 +3567,13 @@ coverage_filter (MonoProfiler *prof, MonoMethod *method)
 
 	if (prof->coverage_filters) {
 		/* Check already filtered classes first */
-		if (mono_conc_hashtable_lookup (filtered_classes, klass)) {
-			COVERAGE_DEBUG(fprintf (stderr, "   Already filtered\n");)
+		if (mono_conc_hashtable_lookup (filtered_classes, klass))
 			return FALSE;
-		}
 
 		classname = mono_type_get_name (mono_class_get_type (klass));
 
 		fqn = g_strdup_printf ("[%s]%s", mono_image_get_name (image), classname);
 
-		COVERAGE_DEBUG(fprintf (stderr, "   Looking for %s in filter\n", fqn);)
 		// Check positive filters first
 		has_positive = FALSE;
 		found = FALSE;
@@ -3600,21 +3583,14 @@ coverage_filter (MonoProfiler *prof, MonoMethod *method)
 			if (filter [0] == '+') {
 				filter = &filter [1];
 
-				COVERAGE_DEBUG(fprintf (stderr, "   Checking against +%s ...", filter);)
-
-				if (strstr (fqn, filter) != NULL) {
-					COVERAGE_DEBUG(fprintf (stderr, "matched\n");)
+				if (strstr (fqn, filter) != NULL)
 					found = TRUE;
-				} else
-					COVERAGE_DEBUG(fprintf (stderr, "no match\n");)
 
 				has_positive = TRUE;
 			}
 		}
 
 		if (has_positive && !found) {
-			COVERAGE_DEBUG(fprintf (stderr, "   Positive match was not found\n");)
-
 			mono_os_mutex_lock (&coverage_mutex);
 			mono_conc_hashtable_insert (filtered_classes, klass, klass);
 			mono_os_mutex_unlock (&coverage_mutex);
@@ -3632,11 +3608,8 @@ coverage_filter (MonoProfiler *prof, MonoMethod *method)
 
 			// Skip '-'
 			filter = &filter [1];
-			COVERAGE_DEBUG(fprintf (stderr, "   Checking against -%s ...", filter);)
 
 			if (strstr (fqn, filter) != NULL) {
-				COVERAGE_DEBUG(fprintf (stderr, "matched\n");)
-
 				mono_os_mutex_lock (&coverage_mutex);
 				mono_conc_hashtable_insert (filtered_classes, klass, klass);
 				mono_os_mutex_unlock (&coverage_mutex);
@@ -3644,16 +3617,13 @@ coverage_filter (MonoProfiler *prof, MonoMethod *method)
 				g_free (classname);
 
 				return FALSE;
-			} else
-				COVERAGE_DEBUG(fprintf (stderr, "no match\n");)
-
+			}
 		}
 
 		g_free (fqn);
 		g_free (classname);
 	}
 
-	COVERAGE_DEBUG(fprintf (stderr, "   Handling coverage for %s\n", mono_method_get_name (method));)
 	header = mono_method_get_header_checked (method, &error);
 	mono_error_cleanup (&error);
 
@@ -3811,8 +3781,6 @@ static void
 coverage_init (MonoProfiler *prof)
 {
 	g_assert (!coverage_initialized && "Why are we initializing coverage twice?");
-
-	COVERAGE_DEBUG(fprintf (stderr, "Coverage initialized\n");)
 
 	mono_os_mutex_init (&coverage_mutex);
 	coverage_methods = mono_conc_hashtable_new (NULL, NULL);
@@ -4649,7 +4617,6 @@ mono_profiler_init (const char *desc)
 	nocalls = !(config.effective_mask & PROFLOG_CALL_EVENTS);
 	no_counters = !(config.effective_mask & PROFLOG_COUNTER_EVENTS);
 	do_report = config.do_report;
-	do_debug = config.do_debug;
 	do_heap_shot = (config.effective_mask & PROFLOG_HEAPSHOT_FEATURE);
 	hs_mode_ondemand = config.hs_mode_ondemand;
 	hs_mode_ms = config.hs_mode_ms;
@@ -4662,7 +4629,6 @@ mono_profiler_init (const char *desc)
 	max_allocated_sample_hits = config.max_allocated_sample_hits;
 	max_call_depth = config.max_call_depth;
 	do_coverage = (config.effective_mask & PROFLOG_CODE_COV_FEATURE);
-	debug_coverage = config.debug_coverage;
 
 	if (config.cov_filter_files) {
 		filters = g_ptr_array_new ();

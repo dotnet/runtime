@@ -222,9 +222,6 @@ typedef struct {
 	//Enable profiler internal debugging
 	gboolean do_debug;
 
-	//Enable code coverage specific debugging
-	gboolean debug_coverage;
-
 	//Where to compress the output file
 	gboolean use_zip;
 
