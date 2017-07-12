@@ -10,7 +10,10 @@
   <ItemGroup>
     <Project Include="$(MSBuildThisFileDirectory)corehost/build.proj" />
     <Project Include="$(MSBuildThisFileDirectory)managed/dir.proj" />
-    <Project Include="$(MSBuildThisFileDirectory)pkg/**/src/*.builds" />
+
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)pkg/**/Microsoft.Net.UWPCoreRuntimeSdk/src/*.builds"/>
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)pkg/**/Microsoft.NETCore.UniversalWindowsPlatform/src/*.builds"/>
+    <Project Include="$(MSBuildThisFileDirectory)pkg/**/src/*.builds" Exclude="@(ProjectExclusions)" />
   </ItemGroup>
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
