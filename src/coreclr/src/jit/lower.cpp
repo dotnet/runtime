@@ -257,7 +257,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 
         case GT_STORE_LCL_VAR:
-#if defined(_TARGET_AMD64_)
+#if defined(_TARGET_AMD64_) && defined(FEATURE_SIMD)
         {
             GenTreeLclVarCommon* const store = node->AsLclVarCommon();
             if ((store->TypeGet() == TYP_SIMD8) != (store->gtOp1->TypeGet() == TYP_SIMD8))
@@ -2479,7 +2479,7 @@ void Lowering::LowerRet(GenTree* ret)
     DISPNODE(ret);
     JITDUMP("============");
 
-#ifdef _TARGET_AMD64_
+#if defined(_TARGET_AMD64_) && defined(FEATURE_SIMD)
     GenTreeUnOp* const unOp = ret->AsUnOp();
     if ((unOp->TypeGet() == TYP_LONG) && (unOp->gtOp1->TypeGet() == TYP_SIMD8))
     {
