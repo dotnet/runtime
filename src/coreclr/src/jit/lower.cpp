@@ -257,6 +257,19 @@ GenTree* Lowering::LowerNode(GenTree* node)
             break;
 
         case GT_STORE_LCL_VAR:
+#if defined(_TARGET_AMD64_)
+        {
+            GenTreeLclVarCommon* const store = node->AsLclVarCommon();
+            if ((store->TypeGet() == TYP_SIMD8) != (store->gtOp1->TypeGet() == TYP_SIMD8))
+            {
+                GenTreeUnOp* bitcast =
+                    new (comp, GT_BITCAST) GenTreeOp(GT_BITCAST, store->TypeGet(), store->gtOp1, nullptr);
+                store->gtOp1 = bitcast;
+                BlockRange().InsertBefore(store, bitcast);
+                break;
+            }
+        }
+#endif // _TARGET_AMD64_
             WidenSIMD12IfNecessary(node->AsLclVarCommon());
             __fallthrough;
 
@@ -845,14 +858,6 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
     {
         if (!isOnStack)
         {
-#ifdef FEATURE_SIMD
-            // TYP_SIMD8 is passed in an integer register.  We need the putArg node to be of the int type.
-            if (type == TYP_SIMD8 && genIsValidIntReg(info->regNum))
-            {
-                type = TYP_LONG;
-            }
-#endif // FEATURE_SIMD
-
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
             if (info->isStruct)
             {
@@ -1135,7 +1140,8 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
         type = TYP_INT;
     }
 
-#if defined(FEATURE_SIMD) && defined(_TARGET_X86_)
+#if defined(FEATURE_SIMD)
+#if defined(_TARGET_X86_)
     // Non-param TYP_SIMD12 local var nodes are massaged in Lower to TYP_SIMD16 to match their
     // allocated size (see lvSize()). However, when passing the variables as arguments, and
     // storing the variables to the outgoing argument area on the stack, we must use their
@@ -1158,7 +1164,18 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
             }
         }
     }
-#endif // defined(FEATURE_SIMD) && defined(_TARGET_X86_)
+#elif defined(_TARGET_AMD64_)
+    // TYP_SIMD8 parameters that are passed as longs
+    if (type == TYP_SIMD8 && genIsValidIntReg(info->regNum))
+    {
+        GenTreeUnOp* bitcast = new (comp, GT_BITCAST) GenTreeOp(GT_BITCAST, TYP_LONG, arg, nullptr);
+        BlockRange().InsertAfter(arg, bitcast);
+
+        info->node = *ppArg = arg = bitcast;
+        type                      = TYP_LONG;
+    }
+#endif // defined(_TARGET_X86_)
+#endif // defined(FEATURE_SIMD)
 
     GenTreePtr putArg;
 
@@ -2461,6 +2478,16 @@ void Lowering::LowerRet(GenTree* ret)
     JITDUMP("lowering GT_RETURN\n");
     DISPNODE(ret);
     JITDUMP("============");
+
+#ifdef _TARGET_AMD64_
+    GenTreeUnOp* const unOp = ret->AsUnOp();
+    if ((unOp->TypeGet() == TYP_LONG) && (unOp->gtOp1->TypeGet() == TYP_SIMD8))
+    {
+        GenTreeUnOp* bitcast = new (comp, GT_BITCAST) GenTreeOp(GT_BITCAST, TYP_LONG, unOp->gtOp1, nullptr);
+        unOp->gtOp1          = bitcast;
+        BlockRange().InsertBefore(unOp, bitcast);
+    }
+#endif // _TARGET_AMD64_
 
     // Method doing PInvokes has exactly one return block unless it has tail calls.
     if (comp->info.compCallUnmanaged && (comp->compCurBB == comp->genReturnBB))
