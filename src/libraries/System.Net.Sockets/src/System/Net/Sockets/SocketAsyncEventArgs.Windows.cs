@@ -457,7 +457,8 @@ namespace System.Net.Sockets
                 _ptrControlBuffer = Marshal.UnsafeAddrOfPinnedArrayElement(_controlBuffer, 0);
             }
 
-            // If single buffer we need a pinned 1 element WSABuffer.
+            // If single buffer we need a single element WSABuffer.
+            WSABuffer[] wsaRecvMsgWSABufferArray;
             if (_buffer != null)
             {
                 if (_wsaRecvMsgWSABufferArray == null)
@@ -466,14 +467,24 @@ namespace System.Net.Sockets
                 }
                 _wsaRecvMsgWSABufferArray[0].Pointer = _ptrSingleBuffer;
                 _wsaRecvMsgWSABufferArray[0].Length = _count;
-                _wsaRecvMsgWSABufferArrayGCHandle = GCHandle.Alloc(_wsaRecvMsgWSABufferArray, GCHandleType.Pinned);
-                _ptrWSARecvMsgWSABufferArray = Marshal.UnsafeAddrOfPinnedArrayElement(_wsaRecvMsgWSABufferArray, 0);
+                wsaRecvMsgWSABufferArray = _wsaRecvMsgWSABufferArray;
             }
             else
             {
-                // Just pin the multi-buffer WSABuffer.
-                _wsaRecvMsgWSABufferArrayGCHandle = GCHandle.Alloc(_wsaBufferArray, GCHandleType.Pinned);
-                _ptrWSARecvMsgWSABufferArray = Marshal.UnsafeAddrOfPinnedArrayElement(_wsaBufferArray, 0);
+                // Use the multi-buffer WSABuffer.
+                wsaRecvMsgWSABufferArray = _wsaBufferArray;
+            }
+
+            // Ensure the array is pinned.
+            if (!_wsaRecvMsgWSABufferArrayGCHandle.IsAllocated)
+            {
+                _wsaRecvMsgWSABufferArrayGCHandle = GCHandle.Alloc(wsaRecvMsgWSABufferArray, GCHandleType.Pinned);
+                _ptrWSARecvMsgWSABufferArray = Marshal.UnsafeAddrOfPinnedArrayElement(wsaRecvMsgWSABufferArray, 0);
+            }
+            else
+            {
+                Debug.Assert(_wsaRecvMsgWSABufferArrayGCHandle.Target == wsaRecvMsgWSABufferArray);
+                Debug.Assert(_ptrWSARecvMsgWSABufferArray == Marshal.UnsafeAddrOfPinnedArrayElement(wsaRecvMsgWSABufferArray, 0));
             }
 
             // Fill in WSAMessageBuffer.
