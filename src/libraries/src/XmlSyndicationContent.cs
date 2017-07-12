@@ -5,6 +5,7 @@
 namespace Microsoft.ServiceModel.Syndication
 {
     using System;
+    using System.Diagnostics;
     using System.Runtime.CompilerServices;
     using System.Runtime.Serialization;
     using System.Threading.Tasks;
@@ -130,6 +131,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
             else
             {
+                Debug.Assert(_contentBuffer != null, "contentBuffer cannot be null");
                 using (XmlDictionaryReader reader = _contentBuffer.GetReader(0))
                 {
                     // skip past the content element
@@ -151,6 +153,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
             else
             {
+                Debug.Assert(_contentBuffer != null, "contentBuffer cannot be null");
                 using (XmlDictionaryReader reader = _contentBuffer.GetReader(0))
                 {
                     // skip past the content element
@@ -169,7 +172,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
             if (_extension != null)
             {
-                _extension.WriteTo(writer);
+                _extension.WriteToAsync(writer);
             }
             else if (_contentBuffer != null)
             {

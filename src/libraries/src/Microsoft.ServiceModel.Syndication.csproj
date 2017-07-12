@@ -19,4 +19,10 @@
   <ItemGroup>
     <Folder Include="System\ServiceModel\Diagnostics\" />
   </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Update="Resources\SR.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>SR.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
 </Project>

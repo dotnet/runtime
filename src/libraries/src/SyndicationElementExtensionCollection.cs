@@ -7,6 +7,7 @@ namespace Microsoft.ServiceModel.Syndication
     using Microsoft.ServiceModel.Syndication.Resources;
     using System;
     using System.Collections.ObjectModel;
+    using System.Diagnostics;
     using System.Runtime.CompilerServices;
     using System.Runtime.Serialization;
     using System.Threading.Tasks;
@@ -103,9 +104,9 @@ namespace Microsoft.ServiceModel.Syndication
             base.Add(new SyndicationElementExtension(reader));
         }
 
-        public XmlReader GetReaderAtElementExtensions()
+        public async Task<XmlReader> GetReaderAtElementExtensions()
         {
-            XmlBuffer extensionsBuffer = GetOrCreateBufferOverExtensions();
+            XmlBuffer extensionsBuffer = await GetOrCreateBufferOverExtensions();
             XmlReader reader = extensionsBuffer.GetReader(0);
             reader.ReadStartElement();
             return reader;
@@ -151,7 +152,7 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 for (int i = 0; i < this.Items.Count; ++i)
                 {
-                    this.Items[i].WriteTo(writer);
+                    this.Items[i].WriteToAsync(writer);
                 }
             }
         }
@@ -204,7 +205,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        private XmlBuffer GetOrCreateBufferOverExtensions()
+        private async Task<XmlBuffer> GetOrCreateBufferOverExtensions()
         {
             if (_buffer != null)
             {
@@ -216,7 +217,7 @@ namespace Microsoft.ServiceModel.Syndication
                 writer.WriteStartElement(Rss20Constants.ExtensionWrapperTag);
                 for (int i = 0; i < this.Count; ++i)
                 {
-                    this[i].WriteTo(writer);
+                    await this[i].WriteToAsync(writer);
                 }
                 writer.WriteEndElement();
             }
@@ -247,11 +248,13 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 throw new ArgumentNullException(SR.ExtensionNameNotSpecified);
             }
+            Debug.Assert((dcSerializer == null) != (xmlSerializer == null), "exactly one serializer should be supplied");
             // normalize the null and empty namespace
             if (extensionNamespace == null)
             {
                 extensionNamespace = string.Empty;
             }
+
             Collection<TExtension> results = new Collection<TExtension>();
             for (int i = 0; i < this.Count; ++i)
             {
@@ -259,6 +262,7 @@ namespace Microsoft.ServiceModel.Syndication
                 {
                     continue;
                 }
+
                 if (dcSerializer != null)
                 {
                     results.Add(this[i].GetObject<TExtension>(dcSerializer));

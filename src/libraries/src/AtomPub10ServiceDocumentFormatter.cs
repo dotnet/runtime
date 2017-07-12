@@ -39,7 +39,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
             if (!typeof(ServiceDocument).IsAssignableFrom(documentTypeToCreate))
             {
-                throw new ArgumentException(String.Format(SR.InvalidObjectTypePassed, nameof(documentTypeToCreate), nameof(ServiceDocument)));
+                throw new ArgumentException(string.Format(SR.InvalidObjectTypePassed, nameof(documentTypeToCreate), nameof(ServiceDocument)));
             }
             _maxExtensionSize = int.MaxValue;
             _preserveAttributeExtensions = true;
@@ -110,13 +110,13 @@ namespace Microsoft.ServiceModel.Syndication
 
             if (!await CanReadAsync(reader))
             {
-                throw new XmlException(String.Format(SR.UnknownDocumentXml, reader.LocalName, reader.NamespaceURI));
+                throw new XmlException(string.Format(SR.UnknownDocumentXml, reader.LocalName, reader.NamespaceURI));
             }
 
             await ReadDocumentAsync(wrappedReader);
         }
 
-        public override async Task WriteTo(XmlWriter writer)
+        public override async Task WriteToAsync(XmlWriter writer)
         {
             if (writer == null)
             {
@@ -700,7 +700,7 @@ namespace Microsoft.ServiceModel.Syndication
                 await writer.WriteAttributeStringAsync(App10Constants.Href, FeedUtils.GetUriString(collection.Link));
             }
 
-            WriteAttributeExtensions(writer, collection, this.Version);
+            WriteAttributeExtensionsAsync(writer, collection, this.Version);
             if (collection.Title != null)
             {
                 await collection.Title.WriteToAsync(writer, Atom10Constants.TitleTag, Atom10Constants.Atom10Namespace);

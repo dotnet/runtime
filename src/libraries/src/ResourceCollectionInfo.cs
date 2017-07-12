@@ -11,7 +11,6 @@ namespace Microsoft.ServiceModel.Syndication
     using System.Threading.Tasks;
     using System.Xml;
 
-    [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     public class ResourceCollectionInfo : IExtensibleSyndicationObject
     {
         private static IEnumerable<string> s_singleEmptyAccept;
@@ -149,7 +148,7 @@ namespace Microsoft.ServiceModel.Syndication
             return false;
         }
 
-        protected internal virtual Task WriteAttributeExtensions(XmlWriter writer, string version)
+        protected internal virtual Task WriteAttributeExtensionsAsync(XmlWriter writer, string version)
         {
             return _extensions.WriteAttributeExtensionsAsync(writer);
         }

@@ -198,9 +198,9 @@ namespace Microsoft.ServiceModel.Syndication
             set { _title = value; }
         }
 
-        public static async Task<SyndicationItem> LoadAsync(XmlReader reader)
+        public static Task<SyndicationItem> LoadAsync(XmlReader reader)
         {
-            return await LoadAsync<SyndicationItem>(reader);
+            return LoadAsync<SyndicationItem>(reader);
         }
         
         public static async Task<TSyndicationItem> LoadAsync<TSyndicationItem>(XmlReader reader)
@@ -211,13 +211,6 @@ namespace Microsoft.ServiceModel.Syndication
                 throw new ArgumentNullException(nameof(reader));
             }
 
-            //Atom10ItemFormatter<TSyndicationItem> atomSerializer = new Atom10ItemFormatter<TSyndicationItem>();
-            //if (atomSerializer.CanRead(reader))
-            //{
-            //    atomSerializer.ReadFrom(reader);
-            //    return atomSerializer.Item as TSyndicationItem;
-            //}
-
             Rss20ItemFormatter<TSyndicationItem> rssSerializer = new Rss20ItemFormatter<TSyndicationItem>();
 
             if (rssSerializer.CanRead(reader))
@@ -226,7 +219,7 @@ namespace Microsoft.ServiceModel.Syndication
                 return rssSerializer.Item as TSyndicationItem;
             }
 
-            throw new XmlException(String.Format(SR.UnknownItemXml, reader.LocalName, reader.NamespaceURI));
+            throw new XmlException(string.Format(SR.UnknownItemXml, reader.LocalName, reader.NamespaceURI));
         }
 
 
@@ -260,14 +253,14 @@ namespace Microsoft.ServiceModel.Syndication
             return new Rss20ItemFormatter(this, serializeExtensionsAsAtom);
         }
 
-        public async Task SaveAsAtom10(XmlWriter writer)
+        public Task SaveAsAtom10(XmlWriter writer)
         {
-            await this.GetAtom10Formatter().WriteToAsync(writer);
+            return GetAtom10Formatter().WriteToAsync(writer);
         }
 
-        public async Task SaveAsRss20(XmlWriter writer)
+        public Task SaveAsRss20(XmlWriter writer)
         {
-            await this.GetRss20Formatter().WriteToAsync(writer);
+            return GetRss20Formatter().WriteToAsync(writer);
         }
 
         protected internal virtual SyndicationCategory CreateCategory()

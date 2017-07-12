@@ -6,6 +6,7 @@ namespace Microsoft.ServiceModel.Syndication
 {
     using Microsoft.ServiceModel.Syndication.Resources;
     using System;
+    using System.Diagnostics;
     using System.IO;
     using System.Runtime.CompilerServices;
     using System.Runtime.Serialization;
@@ -189,7 +190,7 @@ namespace Microsoft.ServiceModel.Syndication
             return GetReaderAsync().GetAwaiter().GetResult();
         }
 
-        public void WriteTo(XmlWriter writer)
+        public async Task WriteToAsync(XmlWriter writer)
         {
             if (writer == null)
             {
@@ -197,18 +198,19 @@ namespace Microsoft.ServiceModel.Syndication
             }
             if (_extensionDataWriter != null)
             {
-                _extensionDataWriter.WriteTo(writer);
+                _extensionDataWriter.WriteToAsync(writer);
             }
             else
             {
+                XmlWriterWrapper wrappedWriter = XmlWriterWrapper.CreateFromWriter(writer);
                 using (XmlReader reader = GetReader())
                 {
-                    writer.WriteNode(reader, false);
+                    await wrappedWriter.WriteNodeAsync(reader, false);
                 }
             }
         }
 
-        private void EnsureBuffer()
+        private async Task EnsureBuffer()
         {
             if (_buffer == null)
             {
@@ -216,7 +218,7 @@ namespace Microsoft.ServiceModel.Syndication
                 using (XmlDictionaryWriter writer = _buffer.OpenSection(XmlDictionaryReaderQuotas.Max))
                 {
                     writer.WriteStartElement(Rss20Constants.ExtensionWrapperTag);
-                    this.WriteTo(writer);
+                    await this.WriteToAsync(writer);
                     writer.WriteEndElement();
                 }
                 _buffer.CloseSection();
@@ -227,6 +229,7 @@ namespace Microsoft.ServiceModel.Syndication
 
         private void EnsureOuterNameAndNs()
         {
+            Debug.Assert(_extensionDataWriter != null, "outer name is null only for datacontract and xmlserializer cases");
             _extensionDataWriter.ComputeOuterNameAndNs(out _outerName, out _outerNamespace);
         }
 
@@ -241,6 +244,8 @@ namespace Microsoft.ServiceModel.Syndication
 
             public ExtensionDataWriter(object extensionData, XmlObjectSerializer dataContractSerializer, string outerName, string outerNamespace)
             {
+                Debug.Assert(extensionData != null && dataContractSerializer != null, "null check");
+
                 _dataContractSerializer = dataContractSerializer;
                 _extensionData = extensionData;
                 _outerName = outerName;
@@ -249,27 +254,31 @@ namespace Microsoft.ServiceModel.Syndication
 
             public ExtensionDataWriter(object extensionData, XmlSerializer serializer)
             {
+                Debug.Assert(extensionData != null && serializer != null, "null check");
                 _xmlSerializer = serializer;
                 _extensionData = extensionData;
             }
 
-            public void WriteTo(XmlWriter writer)
+            public void WriteToAsync(XmlWriter writer)
             {
                 if (_xmlSerializer != null)
                 {
+                    Debug.Assert((_dataContractSerializer == null && _outerName == null && _outerNamespace == null), "Xml serializer cannot have outer name, ns");
                     _xmlSerializer.Serialize(writer, _extensionData);
                 }
                 else
                 {
+                    Debug.Assert(_xmlSerializer == null, "Xml serializer cannot be configured");
+                    XmlWriterWrapper wrappedWriter = XmlWriterWrapper.CreateFromWriter(writer);
                     if (_outerName != null)
                     {
-                        writer.WriteStartElement(_outerName, _outerNamespace);
+                        wrappedWriter.WriteStartElementAsync(_outerName, _outerNamespace);
                         _dataContractSerializer.WriteObjectContent(writer, _extensionData);
-                        writer.WriteEndElement();
+                        wrappedWriter.WriteEndElementAsync();
                     }
                     else
                     {
-                        _dataContractSerializer.WriteObject(writer, _extensionData);
+                        _dataContractSerializer.WriteObject(wrappedWriter, _extensionData);
                     }
                 }
             }
@@ -278,11 +287,13 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 if (_outerName != null)
                 {
+                    Debug.Assert(_xmlSerializer == null, "outer name is not null for data contract extension only");
                     name = _outerName;
                     ns = _outerNamespace;
                 }
                 else if (_dataContractSerializer != null)
                 {
+                    Debug.Assert(_xmlSerializer == null, "only one of xmlserializer or datacontract serializer can be present");
                     XsdDataContractExporter dcExporter = new XsdDataContractExporter();
                     XmlQualifiedName qName = dcExporter.GetRootElementName(_extensionData.GetType());
                     if (qName != null)
@@ -298,6 +309,7 @@ namespace Microsoft.ServiceModel.Syndication
                 }
                 else
                 {
+                    Debug.Assert(_dataContractSerializer == null, "only one of xmlserializer or datacontract serializer can be present");
                     XmlReflectionImporter importer = new XmlReflectionImporter();
                     XmlTypeMapping typeMapping = importer.ImportTypeMapping(_extensionData.GetType());
                     if (typeMapping != null && !string.IsNullOrEmpty(typeMapping.ElementName))
@@ -319,7 +331,7 @@ namespace Microsoft.ServiceModel.Syndication
                 {
                     using (XmlWriter writer = XmlWriter.Create(stream))
                     {
-                        this.WriteTo(writer);
+                        this.WriteToAsync(writer);
                     }
 
                     stream.Seek(0, SeekOrigin.Begin);

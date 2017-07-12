@@ -16,7 +16,6 @@ namespace Microsoft.ServiceModel.Syndication
 
 
     // NOTE: This class implements Clone so if you add any members, please update the copy ctor
-    [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
     public class SyndicationFeed : IExtensibleSyndicationObject
     {
         private Collection<SyndicationPerson> _authors;
@@ -39,16 +38,15 @@ namespace Microsoft.ServiceModel.Syndication
         private Collection<SyndicationLink> _links;
         private TextSyndicationContent _title;
 
-        //new fields for new optional RSS tags
+        // optional RSS tags
         private SyndicationLink _documentation;
         private int _timeToLive;
         private Collection<int> _skipHours;
         private Collection<string> _skipDays;
         private SyndicationTextInput _textInput;
-        //private Uri _iconUrl;
-        private string _iconImage;
+        private Uri _iconImage;
 
-        public string IconImage
+        public Uri IconImage
         {
             get
             {
@@ -66,8 +64,6 @@ namespace Microsoft.ServiceModel.Syndication
         {
             get
             {
-                //if (_textInput == null)
-                //    _textInput = new SyndicationTextInput();
                 return _textInput;
             }
             set
@@ -290,7 +286,6 @@ namespace Microsoft.ServiceModel.Syndication
             set { _imageUrl = value; }
         }
 
-
         public TextSyndicationContent ImageTitle {
             get { return _imageTitle; }
             set { _imageTitle = value; }
@@ -300,7 +295,6 @@ namespace Microsoft.ServiceModel.Syndication
             get { return _imageLink; }
             set { _imageLink = value; }
         }
-
 
         public IEnumerable<SyndicationItem> Items
         {
@@ -384,7 +378,7 @@ namespace Microsoft.ServiceModel.Syndication
                 await rssSerializer.ReadFromAsync(wrappedReader, new CancellationToken());
                 return rssSerializer.Feed;
             }
-            throw new XmlException(String.Format(SR.UnknownFeedXml, wrappedReader.LocalName, wrappedReader.NamespaceURI));
+            throw new XmlException(string.Format(SR.UnknownFeedXml, wrappedReader.LocalName, wrappedReader.NamespaceURI));
         }
 
         //=================================
@@ -423,7 +417,7 @@ namespace Microsoft.ServiceModel.Syndication
                 return rssSerializer.Feed as TSyndicationFeed;
             }
 
-            throw new XmlException(String.Format(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI));
+            throw new XmlException(string.Format(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI));
         }
 
         public virtual SyndicationFeed Clone(bool cloneItems)
@@ -446,14 +440,14 @@ namespace Microsoft.ServiceModel.Syndication
             return new Rss20FeedFormatter(this, serializeExtensionsAsAtom);
         }
 
-        public async Task SaveAsAtom10Async(XmlWriter writer, CancellationToken ct)
+        public Task SaveAsAtom10Async(XmlWriter writer, CancellationToken ct)
         {
-            await this.GetAtom10Formatter().WriteToAsync(writer, ct);
+            return GetAtom10Formatter().WriteToAsync(writer, ct);
         }
 
-        public async Task SaveAsRss20Async(XmlWriter writer, CancellationToken ct)
+        public Task SaveAsRss20Async(XmlWriter writer, CancellationToken ct)
         {
-            await this.GetRss20Formatter().WriteToAsync(writer, ct);
+            return GetRss20Formatter().WriteToAsync(writer, ct);
         }
 
         protected internal virtual SyndicationCategory CreateCategory()

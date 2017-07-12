@@ -41,7 +41,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
             if (!typeof(SyndicationItem).IsAssignableFrom(itemTypeToCreate))
             {
-                throw new ArgumentException(String.Format(SR.InvalidObjectTypePassed, nameof(itemTypeToCreate), nameof(SyndicationItem)));
+                throw new ArgumentException(string.Format(SR.InvalidObjectTypePassed, nameof(itemTypeToCreate), nameof(SyndicationItem)));
             }
             _feedSerializer = new Atom10FeedFormatter();
             _feedSerializer.PreserveAttributeExtensions = _preserveAttributeExtensions = true;
@@ -105,7 +105,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (!CanRead(reader))
             {
-                throw new XmlException(String.Format(SR.UnknownItemXml, reader.LocalName, reader.NamespaceURI));
+                throw new XmlException(string.Format(SR.UnknownItemXml, reader.LocalName, reader.NamespaceURI));
             }
 
             return ReadItemAsync(reader);

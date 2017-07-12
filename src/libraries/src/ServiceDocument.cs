@@ -10,8 +10,7 @@ namespace Microsoft.ServiceModel.Syndication
     using System.Runtime.CompilerServices;
     using System.Threading.Tasks;
     using System.Xml;
-
-    [TypeForwardedFrom("System.ServiceModel.Web, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35")]
+    
     public class ServiceDocument : IExtensibleSyndicationObject
     {
         private Uri _baseUri;
@@ -69,11 +68,6 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        public static Task<ServiceDocument> Load(XmlReader reader)
-        {
-            return LoadAsync<ServiceDocument>(reader);
-        }
-
         public static async Task<TServiceDocument> LoadAsync<TServiceDocument>(XmlReader reader)
             where TServiceDocument : ServiceDocument, new()
         {
@@ -87,9 +81,9 @@ namespace Microsoft.ServiceModel.Syndication
             return new AtomPub10ServiceDocumentFormatter(this);
         }
 
-        public async Task Save(XmlWriter writer)
+        public Task Save(XmlWriter writer)
         {
-            await new AtomPub10ServiceDocumentFormatter(this).WriteTo(writer);
+            return new AtomPub10ServiceDocumentFormatter(this).WriteToAsync(writer);
         }
 
         protected internal virtual Workspace CreateWorkspace()
@@ -107,7 +101,7 @@ namespace Microsoft.ServiceModel.Syndication
             return false;
         }
 
-        protected internal virtual Task WriteAttributeExtensions(XmlWriter writer, string version)
+        protected internal virtual Task WriteAttributeExtensionsAsync(XmlWriter writer, string version)
         {
             return _extensions.WriteAttributeExtensionsAsync(writer);
         }

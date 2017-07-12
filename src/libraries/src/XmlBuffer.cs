@@ -2,29 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-/*
- *  Some parts of the code have been disabled for testing purposes.
- *  
- */
-
-#define BINARY
-
 namespace Microsoft.ServiceModel
 {
     using Microsoft.ServiceModel.Syndication.Resources;
     using System;
     using System.Collections.Generic;
-    using System.IO; // added to use buffered stream
+    using System.IO;
     using System.Xml;
-
 
     internal class XmlBuffer
     {
         private List<Section> _sections;
         private byte[] _buffer;
         private int _offset;
-        private BufferedStream _stream; //BufferedStream - Original: BufferedOutputStream
+        private BufferedStream _stream;
         private BufferState _bufferState;
         private XmlDictionaryWriter _writer;
         private XmlDictionaryReaderQuotas _quotas;
@@ -69,12 +60,9 @@ namespace Microsoft.ServiceModel
         {
             if (maxBufferSize < 0)
                 throw new ArgumentOutOfRangeException(nameof(maxBufferSize), maxBufferSize, SR.ValueMustBeNonNegative);
-
-
-            int initialBufferSize = Math.Min(512, maxBufferSize);
-
+            
+            int initialBufferSize = Math.Min(512, maxBufferSize); 
             _stream = new BufferedStream(new MemoryStream(), initialBufferSize);
-
             _sections = new List<Section>(1);
         }
 
@@ -121,10 +109,6 @@ namespace Microsoft.ServiceModel
             if (_bufferState != BufferState.Created)
                 throw CreateInvalidStateException();
             _bufferState = BufferState.Reading;
-
-            //buffer = stream.ToArray(out bufferSize); NOT SUPPORTED
-
-            //Implementation to do the same that the line above
             _buffer = new byte[_stream.Length];
             _stream.Position = 0;
             _stream.Read(_buffer, 0, _buffer.Length);

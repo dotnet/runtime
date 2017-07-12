@@ -493,6 +493,15 @@ namespace Microsoft.ServiceModel.Syndication.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to .
+        /// </summary>
+        internal static string asd {
+            get {
+                return ResourceManager.GetString("asd", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to The {0}:{1} assertion is not supported..
         /// </summary>
         internal static string AssertionNotSupported {
@@ -4382,7 +4391,7 @@ namespace Microsoft.ServiceModel.Syndication.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to XmlReaderWrapper not positioned at a start element..
+        ///   Looks up a localized string similar to XmlReader not positioned at a start element..
         /// </summary>
         internal static string FilterReaderNotStartElem {
             get {
@@ -6363,7 +6372,7 @@ namespace Microsoft.ServiceModel.Syndication.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The XmlReaderWrapper used for the body of the message must be positioned on an element..
+        ///   Looks up a localized string similar to The XmlReader used for the body of the message must be positioned on an element..
         /// </summary>
         internal static string InvalidReaderPositionOnCreateMessage {
             get {
@@ -6485,6 +6494,15 @@ namespace Microsoft.ServiceModel.Syndication.Resources {
         internal static string InvalidSequenceRange {
             get {
                 return ResourceManager.GetString("InvalidSequenceRange", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The hour can&apos;t be lower than 0 or greater than 23..
+        /// </summary>
+        internal static string InvalidSkipHours {
+            get {
+                return ResourceManager.GetString("InvalidSkipHours", resourceCulture);
             }
         }
         
@@ -23334,6 +23352,15 @@ namespace Microsoft.ServiceModel.Syndication.Resources {
         internal static string XmlLineInfo {
             get {
                 return ResourceManager.GetString("XmlLineInfo", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The XmlReader is not currently in a node of type Element..
+        /// </summary>
+        internal static string XmlNodeIsNotAnElement {
+            get {
+                return ResourceManager.GetString("XmlNodeIsNotAnElement", resourceCulture);
             }
         }
         

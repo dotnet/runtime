@@ -577,7 +577,7 @@ namespace Microsoft.ServiceModel.Syndication.Tests
                 Task<SyndicationFeed> atom = SyndicationFeed.LoadAsync(reader, ct);
                 await Task.WhenAll(atom);
                 // *** ASSERT *** \\
-                Assert.True(atom.Result.IconImage == "https://avatars0.githubusercontent.com/u/9141961");
+                Assert.True(atom.Result.IconImage.AbsoluteUri == "https://avatars0.githubusercontent.com/u/9141961");
             }
             finally
             {
@@ -596,12 +596,12 @@ namespace Microsoft.ServiceModel.Syndication.Tests
             {
                 switch (name)
                 {
-                    case Rss20Constants.TimeToLiveTag:
-                    case Rss20Constants.HourTag:
+                    case "ttl":
+                    case "hour":
                         return "5";
-                    case Rss20Constants.LinkTag:
-                    case Rss20Constants.ImageTag:
-                    case Rss20Constants.UrlTag:
+                    case "link":
+                    case "image":
+                    case "url":
                         return "http://customparsedlink.com";
                     default:
                         return "Custom Text";

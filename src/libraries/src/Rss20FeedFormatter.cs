@@ -88,7 +88,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
             if (!typeof(SyndicationFeed).IsAssignableFrom(feedTypeToCreate))
             {
-                throw new ArgumentException(String.Format(SR.InvalidObjectTypePassed, nameof(feedTypeToCreate), nameof(SyndicationFeed)));
+                throw new ArgumentException(string.Format(SR.InvalidObjectTypePassed, nameof(feedTypeToCreate), nameof(SyndicationFeed)));
             }
             _serializeExtensionsAsAtom = true;
             _maxExtensionSize = int.MaxValue;
@@ -160,7 +160,7 @@ namespace Microsoft.ServiceModel.Syndication
         {
             if (!CanRead(reader))
             {
-                throw new XmlException(String.Format(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI));
+                throw new XmlException(string.Format(SR.UnknownFeedXml, reader.LocalName, reader.NamespaceURI));
             }
 
             SetFeed(CreateFeedInstance());
@@ -920,7 +920,7 @@ namespace Microsoft.ServiceModel.Syndication
             string version = reader.GetAttribute(Rss20Constants.VersionTag, Rss20Constants.Rss20Namespace);
             if (version != Rss20Constants.Version)
             {
-                throw new NotSupportedException(FeedUtils.AddLineInfo(reader, (String.Format(SR.UnsupportedRssVersion, version))));
+                throw new NotSupportedException(FeedUtils.AddLineInfo(reader, (string.Format(SR.UnsupportedRssVersion, version))));
             }
 
             if (reader.AttributeCount > 1)
@@ -1066,12 +1066,6 @@ namespace Microsoft.ServiceModel.Syndication
                                 result.TimeToLive = timeToLive;
                                 break;
 
-                            //case Rss20Constants.CloudTag:
-                            //    break;
-
-                            //case Rss20Constants.RatingTag:
-                            //    break;
-
                             case Rss20Constants.TextInputTag:
                                 await readTextInputTag(reader, result);
                                 break;
@@ -1163,7 +1157,7 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 await writer.WriteAttributeStringAsync("xml", "base", Atom10FeedFormatter.XmlNs, FeedUtils.GetUriString(baseUriToWrite));
             }
-            await link.WriteAttributeExtensions(writer, SyndicationVersions.Rss20);
+            await link.WriteAttributeExtensionsAsync(writer, SyndicationVersions.Rss20);
             await writer.WriteStringAsync(FeedUtils.GetUriString(link.Uri));
             await writer.WriteEndElementAsync();
         }
@@ -1533,7 +1527,7 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 await writer.WriteAttributeStringAsync("xml", "base", Atom10FeedFormatter.XmlNs, FeedUtils.GetUriString(baseUriToWrite));
             }
-            await link.WriteAttributeExtensions(writer, SyndicationVersions.Rss20);
+            await link.WriteAttributeExtensionsAsync(writer, SyndicationVersions.Rss20);
             if (!link.AttributeExtensions.ContainsKey(s_rss20Url))
             {
                 await writer.WriteAttributeStringAsync(Rss20Constants.UrlTag, Rss20Constants.Rss20Namespace, FeedUtils.GetUriString(link.Uri));
@@ -1552,7 +1546,7 @@ namespace Microsoft.ServiceModel.Syndication
         private async Task WritePersonAsync(XmlWriterWrapper writer, string elementTag, SyndicationPerson person)
         {
             await writer.WriteStartElementAsync(elementTag, Rss20Constants.Rss20Namespace);
-            WriteAttributeExtensions(writer, person, this.Version);
+            WriteAttributeExtensionsAsync(writer, person, this.Version);
             await writer.WriteStringAsync(person.Email);
             await writer.WriteEndElementAsync();
         }
