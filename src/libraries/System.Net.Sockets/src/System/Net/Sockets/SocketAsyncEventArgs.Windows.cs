@@ -29,7 +29,6 @@ namespace System.Net.Sockets
         private GCHandle _controlBufferGCHandle;
         private WSABuffer[] _wsaRecvMsgWSABufferArray;
         private GCHandle _wsaRecvMsgWSABufferArrayGCHandle;
-        private IntPtr _ptrWSARecvMsgWSABufferArray;
 
         // Internal buffer for AcceptEx when Buffer not supplied.
         private IntPtr _ptrAcceptBuffer;
@@ -442,13 +441,10 @@ namespace System.Net.Sockets
                 }
                 _controlBuffer = new byte[sizeof(Interop.Winsock.ControlDataIPv6)];
             }
-            if (_controlBuffer != null && !_controlBufferGCHandle.IsAllocated)
-            {
-                _controlBufferGCHandle = GCHandle.Alloc(_controlBuffer, GCHandleType.Pinned);
-            }
 
             // If single buffer we need a single element WSABuffer.
             WSABuffer[] wsaRecvMsgWSABufferArray;
+            uint wsaRecvMsgWSABufferCount;
             if (_buffer != null)
             {
                 if (_wsaRecvMsgWSABufferArray == null)
@@ -458,23 +454,20 @@ namespace System.Net.Sockets
                 _wsaRecvMsgWSABufferArray[0].Pointer = _ptrSingleBuffer;
                 _wsaRecvMsgWSABufferArray[0].Length = _count;
                 wsaRecvMsgWSABufferArray = _wsaRecvMsgWSABufferArray;
+                wsaRecvMsgWSABufferCount = 1;
             }
             else
             {
                 // Use the multi-buffer WSABuffer.
                 wsaRecvMsgWSABufferArray = _wsaBufferArray;
+                wsaRecvMsgWSABufferCount = (uint)_bufferListInternal.Count;
             }
 
             // Ensure the array is pinned.
+            Debug.Assert(!_wsaRecvMsgWSABufferArrayGCHandle.IsAllocated || _wsaRecvMsgWSABufferArrayGCHandle.Target == wsaRecvMsgWSABufferArray);
             if (!_wsaRecvMsgWSABufferArrayGCHandle.IsAllocated)
             {
                 _wsaRecvMsgWSABufferArrayGCHandle = GCHandle.Alloc(wsaRecvMsgWSABufferArray, GCHandleType.Pinned);
-                _ptrWSARecvMsgWSABufferArray = Marshal.UnsafeAddrOfPinnedArrayElement(wsaRecvMsgWSABufferArray, 0);
-            }
-            else
-            {
-                Debug.Assert(_wsaRecvMsgWSABufferArrayGCHandle.Target == wsaRecvMsgWSABufferArray);
-                Debug.Assert(_ptrWSARecvMsgWSABufferArray == Marshal.UnsafeAddrOfPinnedArrayElement(wsaRecvMsgWSABufferArray, 0));
             }
 
             // Fill in WSAMessageBuffer.
@@ -483,18 +476,24 @@ namespace System.Net.Sockets
                 Interop.Winsock.WSAMsg* pMessage = (Interop.Winsock.WSAMsg*)PtrWSAMessageBuffer;
                 pMessage->socketAddress = _ptrSocketAddressBuffer;
                 pMessage->addressLength = (uint)_socketAddress.Size;
-                pMessage->buffers = _ptrWSARecvMsgWSABufferArray;
-                pMessage->count = _buffer != null ? 1 : (uint)_bufferListInternal.Count;
+                fixed (void* ptrWSARecvMsgWSABufferArray = &wsaRecvMsgWSABufferArray[0])
+                {
+                    pMessage->buffers = (IntPtr)ptrWSARecvMsgWSABufferArray;
+                }
+                pMessage->count = wsaRecvMsgWSABufferCount;
 
                 if (_controlBuffer != null)
                 {
                     Debug.Assert(_controlBuffer.Length > 0);
-                    Debug.Assert(_controlBufferGCHandle.IsAllocated);
-                    Debug.Assert(_controlBufferGCHandle.Target == _controlBuffer);
+                    Debug.Assert(!_controlBufferGCHandle.IsAllocated || _controlBufferGCHandle.Target == _controlBuffer);
+                    if (!_controlBufferGCHandle.IsAllocated)
+                    {
+                        _controlBufferGCHandle = GCHandle.Alloc(_controlBuffer, GCHandleType.Pinned);
+                    }
 
                     fixed (void* ptrControlBuffer = &_controlBuffer[0])
                     {
-                        pMessage->controlBuffer.Pointer = ptrControlBuffer;
+                        pMessage->controlBuffer.Pointer = (IntPtr)ptrControlBuffer;
                     }
                     pMessage->controlBuffer.Length = _controlBuffer.Length;
                 }
@@ -951,7 +950,6 @@ namespace System.Net.Sockets
             if (_wsaRecvMsgWSABufferArrayGCHandle.IsAllocated)
             {
                 _wsaRecvMsgWSABufferArrayGCHandle.Free();
-                _ptrWSARecvMsgWSABufferArray = IntPtr.Zero;
             }
 
             if (_controlBufferGCHandle.IsAllocated)
