@@ -146,9 +146,9 @@ enum {
 };
 
 typedef enum {
-	SYNC_POINT_PERIODIC,
-	SYNC_POINT_WORLD_STOP,
-	SYNC_POINT_WORLD_START
+	SYNC_POINT_PERIODIC = 0,
+	SYNC_POINT_WORLD_STOP = 1,
+	SYNC_POINT_WORLD_START = 2,
 } MonoProfilerSyncPointType;
 
 typedef enum {
@@ -158,8 +158,8 @@ typedef enum {
 } MonoProfilerMonitorEvent;
 
 enum {
-	MONO_PROFILER_GC_HANDLE_CREATED,
-	MONO_PROFILER_GC_HANDLE_DESTROYED,
+	MONO_PROFILER_GC_HANDLE_CREATED = 0,
+	MONO_PROFILER_GC_HANDLE_DESTROYED = 1,
 };
 
 // If you alter MAX_FRAMES, you may need to alter SAMPLE_BLOCK_SIZE too.
