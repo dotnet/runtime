@@ -23,6 +23,7 @@
 #include <mono/utils/lock-free-queue.h>
 #include <mono/utils/mono-conc-hashtable.h>
 #include <mono/utils/mono-counters.h>
+#include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-linked-list-set.h>
 #include <mono/utils/mono-membar.h>
 #include <mono/utils/mono-mmap.h>
@@ -1635,7 +1636,6 @@ walk_stack (MonoMethod *method, int32_t native_offset, int32_t il_offset, mono_b
 		frame->il_offsets [frame->count] = il_offset;
 		frame->native_offsets [frame->count] = native_offset;
 		frame->methods [frame->count++] = method;
-		//printf ("In %d %s at %d (native: %d)\n", frame->count, mono_method_get_name (method), il_offset, native_offset);
 	}
 	return frame->count == num_frames;
 }
@@ -1655,9 +1655,6 @@ collect_bt (FrameData *data)
 static void
 emit_bt (MonoProfiler *prof, LogBuffer *logbuffer, FrameData *data)
 {
-	if (data->count > num_frames)
-		printf ("bad num frames: %d\n", data->count);
-
 	emit_value (logbuffer, data->count);
 
 	while (data->count)
@@ -2472,8 +2469,7 @@ add_code_page (uintptr_t *hash, uintptr_t hsize, uintptr_t page)
 		if (++i == hsize)
 			i = 0;
 	} while (i != start_pos);
-	/* should not happen */
-	printf ("failed code page store\n");
+	g_assert_not_reached ();
 	return 0;
 }
 
@@ -2571,7 +2567,6 @@ dump_elf_symbols (MonoProfiler *prof, ElfW(Sym) *symbols, int num_symbols, const
 		sym =  strtab + symbols [i].st_name;
 		if (!symbols [i].st_name || !symbols [i].st_size || (symbols [i].st_info & 0xf) != STT_FUNC)
 			continue;
-		//printf ("symbol %s at %d\n", sym, symbols [i].st_value);
 		dump_usym (sym, (uintptr_t)load_addr + symbols [i].st_value, symbols [i].st_size);
 	}
 }
@@ -2616,11 +2611,9 @@ read_elf_symbols (MonoProfiler *prof, const char *filename, void *load_addr)
 	shstrtabh = (void*)((char*)sheader + (header->e_shentsize * header->e_shstrndx));
 	strtab = (const char*)data + shstrtabh->sh_offset;
 	for (i = 0; i < header->e_shnum; ++i) {
-		//printf ("section header: %d\n", sheader->sh_type);
 		if (sheader->sh_type == SHT_SYMTAB) {
 			symtabh = sheader;
 			strtabh = (void*)((char*)data + header->e_shoff + sheader->sh_link * header->e_shentsize);
-			/*printf ("symtab section header: %d, .strstr: %d\n", i, sheader->sh_link);*/
 			break;
 		}
 		sheader = (void*)((char*)sheader + header->e_shentsize);
@@ -2674,10 +2667,8 @@ elf_dl_callback (struct dl_phdr_info *info, size_t size, void *data)
 	obj->name = pstrdup (filename);
 	obj->next = prof->binary_objects;
 	prof->binary_objects = obj;
-	//printf ("loaded file: %s at %p, segments: %d\n", filename, (void*)info->dlpi_addr, info->dlpi_phnum);
 	a = NULL;
 	for (i = 0; i < info->dlpi_phnum; ++i) {
-		//printf ("segment type %d file offset: %d, size: %d\n", info->dlpi_phdr[i].p_type, info->dlpi_phdr[i].p_offset, info->dlpi_phdr[i].p_memsz);
 		if (info->dlpi_phdr[i].p_type == PT_LOAD && !header) {
 			header = (ElfW(Ehdr)*)(info->dlpi_addr + info->dlpi_phdr[i].p_vaddr);
 			if (header->e_ident [EI_MAG0] != ELFMAG0 ||
@@ -2776,7 +2767,6 @@ dump_unmanaged_coderefs (MonoProfiler *prof)
 			if (!sym)
 				continue;
 			dump_usym (prof, sym, addr, 0); /* let's not guess the size */
-			//printf ("found symbol at %p: %s\n", (void*)addr, sym);
 		}
 	}
 }
@@ -3741,9 +3731,8 @@ init_suppressed_assemblies (void)
 
 	/* Don't need to free @content as it is referred to by the lines stored in @suppressed_assemblies */
 	content = get_file_content (sa_file);
-	if (content == NULL) {
-		g_error ("mono-profiler-log.suppression is greater than 128kb - aborting\n");
-	}
+	if (content == NULL)
+		g_error ("mono-profiler-log.suppression is greater than 128kb - aborting.");
 
 	while ((line = get_next_line (content, &content))) {
 		line = g_strchomp (g_strchug (line));
@@ -3757,19 +3746,20 @@ init_suppressed_assemblies (void)
 static void
 parse_cov_filter_file (GPtrArray *filters, const char *file)
 {
-	FILE *filter_file;
-	char *line, *content;
+	FILE *filter_file = fopen (file, "r");
 
-	filter_file = fopen (file, "r");
 	if (filter_file == NULL) {
-		fprintf (stderr, "Unable to open %s\n", file);
+		mono_profiler_printf_err ("Could not open coverage filter file '%s'.", file);
 		return;
 	}
 
 	/* Don't need to free content as it is referred to by the lines stored in @filters */
-	content = get_file_content (filter_file);
+	char *content = get_file_content (filter_file);
+
 	if (content == NULL)
-		fprintf (stderr, "WARNING: %s is greater than 128kb - ignoring\n", file);
+		mono_profiler_printf_err ("Coverage filter file '%s' is larger than 128kb - ignoring.", file);
+
+	char *line;
 
 	while ((line = get_next_line (content, &content)))
 		g_ptr_array_add (filters, g_strchug (g_strchomp (line)));
@@ -3828,7 +3818,7 @@ log_shutdown (MonoProfiler *prof)
 	char c = 1;
 
 	if (write (prof->pipes [1], &c, 1) != 1) {
-		fprintf (stderr, "Could not write to pipe: %s\n", strerror (errno));
+		mono_profiler_printf_err ("Could not write to log profiler pipe: %s", strerror (errno));
 		exit (1);
 	}
 
@@ -4002,7 +3992,7 @@ add_to_fd_set (fd_set *set, int fd, int *max_fd)
 	 * error and exiting.
 	 */
 	if (fd >= FD_SETSIZE) {
-		fprintf (stderr, "File descriptor is out of bounds for fd_set: %d\n", fd);
+		mono_profiler_printf_err ("File descriptor is out of bounds for fd_set: %d", fd);
 		exit (1);
 	}
 
@@ -4043,7 +4033,7 @@ helper_thread (void *arg)
 			if (errno == EINTR)
 				continue;
 
-			fprintf (stderr, "Error in mono-profiler-log server: %s", strerror (errno));
+			mono_profiler_printf_err ("Could not poll in log profiler helper thread: %s", strerror (errno));
 			exit (1);
 		}
 
@@ -4121,14 +4111,14 @@ static void
 start_helper_thread (MonoProfiler* prof)
 {
 	if (pipe (prof->pipes) == -1) {
-		fprintf (stderr, "Cannot create pipe: %s\n", strerror (errno));
+		mono_profiler_printf_err ("Could not create log profiler pipe: %s", strerror (errno));
 		exit (1);
 	}
 
 	prof->server_socket = socket (PF_INET, SOCK_STREAM, 0);
 
 	if (prof->server_socket == -1) {
-		fprintf (stderr, "Cannot create server socket: %s\n", strerror (errno));
+		mono_profiler_printf_err ("Could not create log profiler server socket: %s", strerror (errno));
 		exit (1);
 	}
 
@@ -4140,13 +4130,13 @@ start_helper_thread (MonoProfiler* prof)
 	server_address.sin_port = htons (prof->command_port);
 
 	if (bind (prof->server_socket, (struct sockaddr *) &server_address, sizeof (server_address)) == -1) {
-		fprintf (stderr, "Cannot bind server socket on port %d: %s\n", prof->command_port, strerror (errno));
+		mono_profiler_printf_err ("Could not bind log profiler server socket on port %d: %s", prof->command_port, strerror (errno));
 		close (prof->server_socket);
 		exit (1);
 	}
 
 	if (listen (prof->server_socket, 1) == -1) {
-		fprintf (stderr, "Cannot listen on server socket: %s\n", strerror (errno));
+		mono_profiler_printf_err ("Could not listen on log profiler server socket: %s", strerror (errno));
 		close (prof->server_socket);
 		exit (1);
 	}
@@ -4154,7 +4144,7 @@ start_helper_thread (MonoProfiler* prof)
 	socklen_t slen = sizeof (server_address);
 
 	if (getsockname (prof->server_socket, (struct sockaddr *) &server_address, &slen)) {
-		fprintf (stderr, "Could not get assigned port: %s\n", strerror (errno));
+		mono_profiler_printf_err ("Could not retrieve assigned port for log profiler server socket: %s", strerror (errno));
 		close (prof->server_socket);
 		exit (1);
 	}
@@ -4162,7 +4152,7 @@ start_helper_thread (MonoProfiler* prof)
 	prof->command_port = ntohs (server_address.sin_port);
 
 	if (!mono_native_thread_create (&prof->helper_thread, helper_thread, prof)) {
-		fprintf (stderr, "Could not start helper thread\n");
+		mono_profiler_printf_err ("Could not start log profiler helper thread");
 		close (prof->server_socket);
 		exit (1);
 	}
@@ -4301,7 +4291,7 @@ start_writer_thread (MonoProfiler* prof)
 	InterlockedWrite (&prof->run_writer_thread, 1);
 
 	if (!mono_native_thread_create (&prof->writer_thread, writer_thread, prof)) {
-		fprintf (stderr, "Could not start writer thread\n");
+		mono_profiler_printf_err ("Could not start log profiler writer thread");
 		exit (1);
 	}
 }
@@ -4414,7 +4404,7 @@ start_dumper_thread (MonoProfiler* prof)
 	InterlockedWrite (&prof->run_dumper_thread, 1);
 
 	if (!mono_native_thread_create (&prof->dumper_thread, dumper_thread, prof)) {
-		fprintf (stderr, "Could not start dumper thread\n");
+		mono_profiler_printf_err ("Could not start log profiler dumper thread");
 		exit (1);
 	}
 }
@@ -4533,7 +4523,7 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 		log_profiler->file = fopen (nf, "wb");
 
 	if (!log_profiler->file) {
-		fprintf (stderr, "Cannot create profiler output: %s\n", nf);
+		mono_profiler_printf_err ("Could not create log profiler output file '%s'.", nf);
 		exit (1);
 	}
 
@@ -4702,7 +4692,7 @@ mono_profiler_init (const char *desc)
 		mono_profiler_enable_sampling (handle);
 
 		if (!mono_profiler_set_sample_mode (handle, config.sampling_mode, config.sample_freq))
-			g_warning ("Another profiler controls sampling parameters; the log profiler will not be able to modify them");
+			mono_profiler_printf_err ("Another profiler controls sampling parameters; the log profiler will not be able to modify them.");
 
 		mono_profiler_set_sample_hit_callback (handle, mono_sample_hit);
 	}

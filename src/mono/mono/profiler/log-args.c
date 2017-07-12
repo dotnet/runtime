@@ -1,5 +1,5 @@
 #include <config.h>
-
+#include <mono/utils/mono-logger-internals.h>
 #include "log.h"
 
 #ifdef HAVE_UNISTD_H
@@ -143,9 +143,9 @@ parse_arg (const char *arg, ProfilerConfig *config)
 				break;
 			}
 		}
-		if (i == G_N_ELEMENTS (event_list)) {
-			printf ("Could not parse argument %s\n", arg);
-		}
+
+		if (i == G_N_ELEMENTS (event_list))
+			mono_profiler_printf_err ("Could not parse argument: %s", arg);
 	}
 }
 
@@ -293,32 +293,37 @@ set_sample_freq (ProfilerConfig *config, const char *val)
 static void
 usage (void)
 {
-	printf ("Log profiler version %d.%d (format: %d)\n", LOG_VERSION_MAJOR, LOG_VERSION_MINOR, LOG_DATA_VERSION);
-	printf ("Usage: mono --profile=log[:OPTION1[,OPTION2...]] program.exe\n");
-	printf ("Options:\n");
-	printf ("\thelp                 show this usage info\n");
-	printf ("\t[no]'event'          enable/disable a profiling event. Valid values: domain, assembly, module, class, jit, exception, gcalloc, gc, thread, monitor, gcmove, gcroot, context, finalization, counter, gchandle\n");
-	printf ("\t[no]typesystem       enable/disable typesystem related events such as class and assembly loading\n");
-	printf ("\t[no]alloc            enable/disable recording allocation info\n");
-	printf ("\t[no]calls            enable/disable recording enter/leave method events\n");
-	printf ("\t[no]legacy           enable/disable pre mono 5.4 default profiler events\n");
-	printf ("\tsample[=frequency]   enable/disable statistical sampling of threads (frequency in Hz, 100 by default)\n");
-	printf ("\theapshot[=MODE]      record heap shot info (by default at each major collection)\n");
-	printf ("\t                     MODE: every XXms milliseconds, every YYgc collections, ondemand\n");
-	printf ("\t[no]coverage         enable collection of code coverage data\n");
-	printf ("\tcovfilter=ASSEMBLY   add an assembly to the code coverage filters\n");
-	printf ("\t                     add a + to include the assembly or a - to exclude it\n");
-	printf ("\t                     covfilter=-mscorlib\n");
-	printf ("\tcovfilter-file=FILE  use FILE to generate the list of assemblies to be filtered\n");
-	printf ("\tmaxframes=NUM        collect up to NUM stack frames\n");
-	printf ("\tcalldepth=NUM        ignore method events for call chain depth bigger than NUM\n");
-	printf ("\toutput=FILENAME      write the data to file FILENAME (The file is always overwriten)\n");
-	printf ("\toutput=+FILENAME     write the data to file FILENAME.pid (The file is always overwriten)\n");
-	printf ("\toutput=|PROGRAM      write the data to the stdin of PROGRAM\n");
-	printf ("\t                     %%t is subtituted with date and time, %%p with the pid\n");
-	printf ("\treport               create a report instead of writing the raw data to a file\n");
-	printf ("\tzip                  compress the output data\n");
-	printf ("\tport=PORTNUM         use PORTNUM for the listening command server\n");
+	mono_profiler_printf ("Mono log profiler version %d.%d (format: %d)", LOG_VERSION_MAJOR, LOG_VERSION_MINOR, LOG_DATA_VERSION);
+	mono_profiler_printf ("Usage: mono --profile=log[:OPTION1[,OPTION2...]] program.exe\n");
+	mono_profiler_printf ("Options:");
+	mono_profiler_printf ("\thelp                 show this usage info");
+	mono_profiler_printf ("\t[no]'EVENT'          enable/disable an individual profiling event");
+	mono_profiler_printf ("\t                     valid EVENT values:");
+
+	for (int i = 0; i < G_N_ELEMENTS (event_list); i++)
+		mono_profiler_printf ("\t                         %s", event_list [i].event_name);
+
+	mono_profiler_printf ("\t[no]typesystem       enable/disable type system related events such as class and assembly loading");
+	mono_profiler_printf ("\t[no]alloc            enable/disable recording allocation info");
+	mono_profiler_printf ("\t[no]calls            enable/disable recording enter/leave method events (very heavy)");
+	mono_profiler_printf ("\t[no]legacy           enable/disable pre mono 5.4 default profiler events");
+	mono_profiler_printf ("\tsample[=FREQ]        enable/disable statistical sampling of threads (FREQ in Hz, 100 by default)");
+	mono_profiler_printf ("\theapshot[=MODE]      record heapshot info (by default at each major collection)");
+	mono_profiler_printf ("\t                     MODE: every XXms milliseconds, every YYgc collections, ondemand");
+	mono_profiler_printf ("\t[no]coverage         enable/disable collection of code coverage data");
+	mono_profiler_printf ("\tcovfilter=ASSEMBLY   add ASSEMBLY to the code coverage filters");
+	mono_profiler_printf ("\t                     prefix a + to include the assembly or a - to exclude it");
+	mono_profiler_printf ("\t                     e.g. covfilter=-mscorlib");
+	mono_profiler_printf ("\tcovfilter-file=FILE  use FILE to generate the list of assemblies to be filtered");
+	mono_profiler_printf ("\tmaxframes=NUM        collect up to NUM stack frames");
+	mono_profiler_printf ("\tcalldepth=NUM        ignore method events for call chain depth bigger than NUM");
+	mono_profiler_printf ("\toutput=FILENAME      write the data to file FILENAME (the file is always overwritten)");
+	mono_profiler_printf ("\toutput=+FILENAME     write the data to file FILENAME.pid (the file is always overwritten)");
+	mono_profiler_printf ("\toutput=|PROGRAM      write the data to the stdin of PROGRAM");
+	mono_profiler_printf ("\t                     %%t is substituted with date and time, %%p with the pid");
+	mono_profiler_printf ("\treport               create a report instead of writing the raw data to a file");
+	mono_profiler_printf ("\tzip                  compress the output data");
+	mono_profiler_printf ("\tport=PORTNUM         use PORTNUM for the listening command server");
 }
 
 static int
