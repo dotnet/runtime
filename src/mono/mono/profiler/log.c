@@ -55,93 +55,6 @@
 #include <zlib.h>
 #endif
 
-#define BUFFER_SIZE (4096 * 16)
-
-/* Worst-case size in bytes of a 64-bit value encoded with LEB128. */
-#define LEB128_SIZE 10
-
-/* Size of a value encoded as a single byte. */
-#undef BYTE_SIZE // mach/i386/vm_param.h on OS X defines this to 8, but it isn't used for anything.
-#define BYTE_SIZE 1
-
-/* Size in bytes of the event prefix (ID + time). */
-#define EVENT_SIZE (BYTE_SIZE + LEB128_SIZE)
-
-static volatile gint32 runtime_inited;
-static volatile gint32 in_shutdown;
-
-static ProfilerConfig config;
-static int nocalls = 0;
-static int notraces = 0;
-static int use_zip = 0;
-static int do_report = 0;
-static int do_heap_shot = 0;
-static int max_call_depth = 0;
-static int command_port = 0;
-static int heapshot_requested = 0;
-static int do_mono_sample = 0;
-static int do_coverage = 0;
-static gboolean no_counters = FALSE;
-static int max_allocated_sample_hits;
-
-#define ENABLED(EVT) (config.effective_mask & (EVT))
-
-// Statistics for internal profiler data structures.
-static gint32 sample_allocations_ctr,
-              buffer_allocations_ctr;
-
-// Statistics for profiler events.
-static gint32 sync_points_ctr,
-              heap_objects_ctr,
-              heap_starts_ctr,
-              heap_ends_ctr,
-              heap_roots_ctr,
-              gc_events_ctr,
-              gc_resizes_ctr,
-              gc_allocs_ctr,
-              gc_moves_ctr,
-              gc_handle_creations_ctr,
-              gc_handle_deletions_ctr,
-              finalize_begins_ctr,
-              finalize_ends_ctr,
-              finalize_object_begins_ctr,
-              finalize_object_ends_ctr,
-              image_loads_ctr,
-              image_unloads_ctr,
-              assembly_loads_ctr,
-              assembly_unloads_ctr,
-              class_loads_ctr,
-              class_unloads_ctr,
-              method_entries_ctr,
-              method_exits_ctr,
-              method_exception_exits_ctr,
-              method_jits_ctr,
-              code_buffers_ctr,
-              exception_throws_ctr,
-              exception_clauses_ctr,
-              monitor_events_ctr,
-              thread_starts_ctr,
-              thread_ends_ctr,
-              thread_names_ctr,
-              domain_loads_ctr,
-              domain_unloads_ctr,
-              domain_names_ctr,
-              context_loads_ctr,
-              context_unloads_ctr,
-              sample_ubins_ctr,
-              sample_usyms_ctr,
-              sample_hits_ctr,
-              counter_descriptors_ctr,
-              counter_samples_ctr,
-              perfcounter_descriptors_ctr,
-              perfcounter_samples_ctr,
-              coverage_methods_ctr,
-              coverage_statements_ctr,
-              coverage_classes_ctr,
-              coverage_assemblies_ctr;
-
-static MonoLinkedListSet profiler_thread_list;
-
 /*
  * file format:
  * [header] [buffer]*
@@ -427,6 +340,60 @@ static MonoLinkedListSet profiler_thread_list;
  *	[type: byte] MonoProfilerSyncPointType enum value
  */
 
+// Statistics for internal profiler data structures.
+static gint32 sample_allocations_ctr,
+              buffer_allocations_ctr;
+
+// Statistics for profiler events.
+static gint32 sync_points_ctr,
+              heap_objects_ctr,
+              heap_starts_ctr,
+              heap_ends_ctr,
+              heap_roots_ctr,
+              gc_events_ctr,
+              gc_resizes_ctr,
+              gc_allocs_ctr,
+              gc_moves_ctr,
+              gc_handle_creations_ctr,
+              gc_handle_deletions_ctr,
+              finalize_begins_ctr,
+              finalize_ends_ctr,
+              finalize_object_begins_ctr,
+              finalize_object_ends_ctr,
+              image_loads_ctr,
+              image_unloads_ctr,
+              assembly_loads_ctr,
+              assembly_unloads_ctr,
+              class_loads_ctr,
+              class_unloads_ctr,
+              method_entries_ctr,
+              method_exits_ctr,
+              method_exception_exits_ctr,
+              method_jits_ctr,
+              code_buffers_ctr,
+              exception_throws_ctr,
+              exception_clauses_ctr,
+              monitor_events_ctr,
+              thread_starts_ctr,
+              thread_ends_ctr,
+              thread_names_ctr,
+              domain_loads_ctr,
+              domain_unloads_ctr,
+              domain_names_ctr,
+              context_loads_ctr,
+              context_unloads_ctr,
+              sample_ubins_ctr,
+              sample_usyms_ctr,
+              sample_hits_ctr,
+              counter_descriptors_ctr,
+              counter_samples_ctr,
+              perfcounter_descriptors_ctr,
+              perfcounter_samples_ctr,
+              coverage_methods_ctr,
+              coverage_statements_ctr,
+              coverage_classes_ctr,
+              coverage_assemblies_ctr;
+
 // Pending data to be written to the log, for a single thread.
 // Threads periodically flush their own LogBuffers by calling safe_send
 typedef struct _LogBuffer LogBuffer;
@@ -527,65 +494,7 @@ process_id (void)
 #endif
 }
 
-#ifdef __APPLE__
-static mach_timebase_info_data_t timebase_info;
-#elif defined (HOST_WIN32)
-static LARGE_INTEGER pcounter_freq;
-#endif
-
-#define TICKS_PER_SEC 1000000000LL
-
-static uint64_t
-current_time (void)
-{
-#ifdef __APPLE__
-	uint64_t time = mach_absolute_time ();
-
-	time *= timebase_info.numer;
-	time /= timebase_info.denom;
-
-	return time;
-#elif defined (HOST_WIN32)
-	LARGE_INTEGER value;
-
-	QueryPerformanceCounter (&value);
-
-	return value.QuadPart * TICKS_PER_SEC / pcounter_freq.QuadPart;
-#elif defined (CLOCK_MONOTONIC)
-	struct timespec tspec;
-
-	clock_gettime (CLOCK_MONOTONIC, &tspec);
-
-	return ((uint64_t) tspec.tv_sec * TICKS_PER_SEC + tspec.tv_nsec);
-#else
-	struct timeval tv;
-
-	gettimeofday (&tv, NULL);
-
-	return ((uint64_t) tv.tv_sec * TICKS_PER_SEC + tv.tv_usec * 1000);
-#endif
-}
-
-static int timer_overhead;
-
-static void
-init_time (void)
-{
-#ifdef __APPLE__
-	mach_timebase_info (&timebase_info);
-#elif defined (HOST_WIN32)
-	QueryPerformanceFrequency (&pcounter_freq);
-#endif
-
-	uint64_t time_start = current_time ();
-
-	for (int i = 0; i < 256; ++i)
-		current_time ();
-
-	uint64_t time_end = current_time ();
-
-	timer_overhead = (time_end - time_start) / 256;
-}
+#define ENABLED(EVT) (log_config.effective_mask & (EVT))
 
 /*
  * These macros should be used when writing an event to a log buffer. They
@@ -632,38 +541,112 @@ struct _BinaryObject {
 	char *name;
 };
 
+typedef struct MonoCounterAgent {
+	MonoCounter *counter;
+	// MonoCounterAgent specific data :
+	void *value;
+	size_t value_size;
+	short index;
+	short emitted;
+	struct MonoCounterAgent *next;
+} MonoCounterAgent;
+
+typedef struct _PerfCounterAgent PerfCounterAgent;
+struct _PerfCounterAgent {
+	PerfCounterAgent *next;
+	int index;
+	char *category_name;
+	char *name;
+	int type;
+	gint64 value;
+	guint8 emitted;
+	guint8 updated;
+	guint8 deleted;
+};
+
 struct _MonoProfiler {
 	MonoProfilerHandle handle;
+
 	FILE* file;
 #if defined (HAVE_SYS_ZLIB)
 	gzFile gzfile;
 #endif
+
 	char *args;
 	uint64_t startup_time;
+	int timer_overhead;
+
+#ifdef __APPLE__
+	mach_timebase_info_data_t timebase_info;
+#elif defined (HOST_WIN32)
+	LARGE_INTEGER pcounter_freq;
+#endif
+
 	int pipe_output;
 	int command_port;
 	int server_socket;
 	int pipes [2];
+
+	MonoLinkedListSet profiler_thread_list;
+	volatile gint32 buffer_lock_state;
+	volatile gint32 buffer_lock_exclusive_intent;
+
+	volatile gint32 runtime_inited;
+	volatile gint32 in_shutdown;
+
 	MonoNativeThreadId helper_thread;
+
 	MonoNativeThreadId writer_thread;
-	MonoNativeThreadId dumper_thread;
 	volatile gint32 run_writer_thread;
-	MonoLockFreeAllocSizeClass writer_entry_size_class;
-	MonoLockFreeAllocator writer_entry_allocator;
 	MonoLockFreeQueue writer_queue;
 	MonoSemType writer_queue_sem;
+
+	MonoLockFreeAllocSizeClass writer_entry_size_class;
+	MonoLockFreeAllocator writer_entry_allocator;
+
 	MonoConcurrentHashTable *method_table;
 	mono_mutex_t method_table_mutex;
+
+	MonoNativeThreadId dumper_thread;
 	volatile gint32 run_dumper_thread;
 	MonoLockFreeQueue dumper_queue;
 	MonoSemType dumper_queue_sem;
+
 	MonoLockFreeAllocSizeClass sample_size_class;
 	MonoLockFreeAllocator sample_allocator;
 	MonoLockFreeQueue sample_reuse_queue;
+
 	BinaryObject *binary_objects;
+
+	gboolean heapshot_requested;
+	guint64 gc_count;
+	guint64 last_hs_time;
+	gboolean do_heap_walk;
+	gboolean ignore_heap_events;
+
+	mono_mutex_t counters_mutex;
+	MonoCounterAgent *counters;
+	PerfCounterAgent *perfcounters;
+	guint32 counters_index;
+
+	mono_mutex_t coverage_mutex;
+	GPtrArray *coverage_data;
+
 	GPtrArray *coverage_filters;
+	MonoConcurrentHashTable *coverage_filtered_classes;
+	MonoConcurrentHashTable *coverage_suppressed_assemblies;
+
+	MonoConcurrentHashTable *coverage_methods;
+	MonoConcurrentHashTable *coverage_assemblies;
+	MonoConcurrentHashTable *coverage_classes;
+
+	MonoConcurrentHashTable *coverage_image_to_methods;
+
+	guint32 coverage_previous_offset;
+	guint32 coverage_method_id;
 };
 
+static ProfilerConfig log_config;
 static struct _MonoProfiler log_profiler;
 
 typedef struct {
@@ -680,6 +663,58 @@ typedef struct {
 	uint64_t time;
 } MethodInfo;
 
+#define TICKS_PER_SEC 1000000000LL
+
+static uint64_t
+current_time (void)
+{
+#ifdef __APPLE__
+	uint64_t time = mach_absolute_time ();
+
+	time *= log_profiler.timebase_info.numer;
+	time /= log_profiler.timebase_info.denom;
+
+	return time;
+#elif defined (HOST_WIN32)
+	LARGE_INTEGER value;
+
+	QueryPerformanceCounter (&value);
+
+	return value.QuadPart * TICKS_PER_SEC / log_profiler.pcounter_freq.QuadPart;
+#elif defined (CLOCK_MONOTONIC)
+	struct timespec tspec;
+
+	clock_gettime (CLOCK_MONOTONIC, &tspec);
+
+	return ((uint64_t) tspec.tv_sec * TICKS_PER_SEC + tspec.tv_nsec);
+#else
+	struct timeval tv;
+
+	gettimeofday (&tv, NULL);
+
+	return ((uint64_t) tv.tv_sec * TICKS_PER_SEC + tv.tv_usec * 1000);
+#endif
+}
+
+static void
+init_time (void)
+{
+#ifdef __APPLE__
+	mach_timebase_info (&log_profiler.timebase_info);
+#elif defined (HOST_WIN32)
+	QueryPerformanceFrequency (&log_profiler.pcounter_freq);
+#endif
+
+	uint64_t time_start = current_time ();
+
+	for (int i = 0; i < 256; ++i)
+		current_time ();
+
+	uint64_t time_end = current_time ();
+
+	log_profiler.timer_overhead = (time_end - time_start) / 256;
+}
+
 static char*
 pstrdup (const char *s)
 {
@@ -688,6 +723,18 @@ pstrdup (const char *s)
 	memcpy (p, s, len);
 	return p;
 }
+
+#define BUFFER_SIZE (4096 * 16)
+
+/* Worst-case size in bytes of a 64-bit value encoded with LEB128. */
+#define LEB128_SIZE 10
+
+/* Size of a value encoded as a single byte. */
+#undef BYTE_SIZE // mach/i386/vm_param.h on OS X defines this to 8, but it isn't used for anything.
+#define BYTE_SIZE 1
+
+/* Size in bytes of the event prefix (ID + time). */
+#define EVENT_SIZE (BYTE_SIZE + LEB128_SIZE)
 
 static void *
 alloc_buffer (int size)
@@ -775,7 +822,7 @@ init_thread (gboolean add_to_lls)
 	 */
 	if (add_to_lls) {
 		MonoThreadHazardPointers *hp = mono_hazard_pointer_get ();
-		g_assert (mono_lls_insert (&profiler_thread_list, hp, &thread->node) && "Why can't we insert the thread in the LLS?");
+		g_assert (mono_lls_insert (&log_profiler.profiler_thread_list, hp, &thread->node) && "Why can't we insert the thread in the LLS?");
 		clear_hazard_pointers (hp);
 	}
 
@@ -847,8 +894,6 @@ ensure_logbuf_unsafe (MonoProfilerThread *thread, int bytes)
  *
  * The lock does not support recursion.
  */
-static volatile gint32 buffer_lock_state;
-static volatile gint32 buffer_lock_exclusive_intent;
 
 static void
 buffer_lock (void)
@@ -863,7 +908,7 @@ buffer_lock (void)
 	 * the exclusive lock in the gc_event () callback when the world
 	 * is about to stop.
 	 */
-	if (InterlockedRead (&buffer_lock_state) != get_thread ()->small_id << 16) {
+	if (InterlockedRead (&log_profiler.buffer_lock_state) != get_thread ()->small_id << 16) {
 		MONO_ENTER_GC_SAFE;
 
 		gint32 old, new_;
@@ -871,10 +916,10 @@ buffer_lock (void)
 		do {
 		restart:
 			// Hold off if a thread wants to take the exclusive lock.
-			while (InterlockedRead (&buffer_lock_exclusive_intent))
+			while (InterlockedRead (&log_profiler.buffer_lock_exclusive_intent))
 				mono_thread_info_yield ();
 
-			old = InterlockedRead (&buffer_lock_state);
+			old = InterlockedRead (&log_profiler.buffer_lock_state);
 
 			// Is a thread holding the exclusive lock?
 			if (old >> 16) {
@@ -883,7 +928,7 @@ buffer_lock (void)
 			}
 
 			new_ = old + 1;
-		} while (InterlockedCompareExchange (&buffer_lock_state, new_, old) != old);
+		} while (InterlockedCompareExchange (&log_profiler.buffer_lock_state, new_, old) != old);
 
 		MONO_EXIT_GC_SAFE;
 	}
@@ -896,7 +941,7 @@ buffer_unlock (void)
 {
 	mono_memory_barrier ();
 
-	gint32 state = InterlockedRead (&buffer_lock_state);
+	gint32 state = InterlockedRead (&log_profiler.buffer_lock_state);
 
 	// See the comment in buffer_lock ().
 	if (state == PROF_TLS_GET ()->small_id << 16)
@@ -905,7 +950,7 @@ buffer_unlock (void)
 	g_assert (state && "Why are we decrementing a zero reader count?");
 	g_assert (!(state >> 16) && "Why is the exclusive lock held?");
 
-	InterlockedDecrement (&buffer_lock_state);
+	InterlockedDecrement (&log_profiler.buffer_lock_state);
 }
 
 static void
@@ -913,13 +958,13 @@ buffer_lock_excl (void)
 {
 	gint32 new_ = get_thread ()->small_id << 16;
 
-	g_assert (InterlockedRead (&buffer_lock_state) != new_ && "Why are we taking the exclusive lock twice?");
+	g_assert (InterlockedRead (&log_profiler.buffer_lock_state) != new_ && "Why are we taking the exclusive lock twice?");
 
-	InterlockedIncrement (&buffer_lock_exclusive_intent);
+	InterlockedIncrement (&log_profiler.buffer_lock_exclusive_intent);
 
 	MONO_ENTER_GC_SAFE;
 
-	while (InterlockedCompareExchange (&buffer_lock_state, new_, 0))
+	while (InterlockedCompareExchange (&log_profiler.buffer_lock_state, new_, 0))
 		mono_thread_info_yield ();
 
 	MONO_EXIT_GC_SAFE;
@@ -932,15 +977,15 @@ buffer_unlock_excl (void)
 {
 	mono_memory_barrier ();
 
-	gint32 state = InterlockedRead (&buffer_lock_state);
+	gint32 state = InterlockedRead (&log_profiler.buffer_lock_state);
 	gint32 excl = state >> 16;
 
 	g_assert (excl && "Why is the exclusive lock not held?");
 	g_assert (excl == PROF_TLS_GET ()->small_id && "Why does another thread hold the exclusive lock?");
 	g_assert (!(state & 0xFFFF) && "Why are there readers when the exclusive lock is held?");
 
-	InterlockedWrite (&buffer_lock_state, 0);
-	InterlockedDecrement (&buffer_lock_exclusive_intent);
+	InterlockedWrite (&log_profiler.buffer_lock_state, 0);
+	InterlockedDecrement (&log_profiler.buffer_lock_exclusive_intent);
 }
 
 static void
@@ -1214,7 +1259,7 @@ dump_header (void)
 	*p++ = LOG_DATA_VERSION;
 	*p++ = sizeof (void *);
 	p = write_int64 (p, ((uint64_t) time (NULL)) * 1000);
-	p = write_int32 (p, timer_overhead);
+	p = write_int32 (p, log_profiler.timer_overhead);
 	p = write_int32 (p, 0); /* flags */
 	p = write_int32 (p, process_id ());
 	p = write_int16 (p, log_profiler.command_port);
@@ -1291,7 +1336,7 @@ remove_thread (MonoProfilerThread *thread)
 {
 	MonoThreadHazardPointers *hp = mono_hazard_pointer_get ();
 
-	if (mono_lls_remove (&profiler_thread_list, hp, &thread->node))
+	if (mono_lls_remove (&log_profiler.profiler_thread_list, hp, &thread->node))
 		mono_thread_hazardous_try_free (thread, free_thread);
 
 	clear_hazard_pointers (hp);
@@ -1360,9 +1405,9 @@ send_log_unsafe (gboolean if_needed)
 static void
 sync_point_flush (void)
 {
-	g_assert (InterlockedRead (&buffer_lock_state) == PROF_TLS_GET ()->small_id << 16 && "Why don't we hold the exclusive lock?");
+	g_assert (InterlockedRead (&log_profiler.buffer_lock_state) == PROF_TLS_GET ()->small_id << 16 && "Why don't we hold the exclusive lock?");
 
-	MONO_LLS_FOREACH_SAFE (&profiler_thread_list, MonoProfilerThread, thread) {
+	MONO_LLS_FOREACH_SAFE (&log_profiler.profiler_thread_list, MonoProfilerThread, thread) {
 		g_assert (thread->attached && "Why is a thread in the LLS not attached?");
 
 		send_buffer (thread);
@@ -1374,7 +1419,7 @@ sync_point_flush (void)
 static void
 sync_point_mark (MonoProfilerSyncPointType type)
 {
-	g_assert (InterlockedRead (&buffer_lock_state) == PROF_TLS_GET ()->small_id << 16 && "Why don't we hold the exclusive lock?");
+	g_assert (InterlockedRead (&log_profiler.buffer_lock_state) == PROF_TLS_GET ()->small_id << 16 && "Why don't we hold the exclusive lock?");
 
 	ENTER_LOG (&sync_points_ctr, logbuffer,
 		EVENT_SIZE /* event */ +
@@ -1435,18 +1480,10 @@ gc_reference (MonoObject *obj, MonoClass *klass, uintptr_t size, uintptr_t num, 
 	return 0;
 }
 
-static unsigned int hs_mode_ms = 0;
-static unsigned int hs_mode_gc = 0;
-static unsigned int hs_mode_ondemand = 0;
-static unsigned int gc_count = 0;
-static uint64_t last_hs_time = 0;
-static gboolean do_heap_walk = FALSE;
-static gboolean ignore_heap_events;
-
 static void
 gc_roots (MonoProfiler *prof, MonoObject *const *objects, const MonoProfilerGCRootType *root_types, const uintptr_t *extra_info, uint64_t num)
 {
-	if (ignore_heap_events)
+	if (log_profiler.ignore_heap_events)
 		return;
 
 	ENTER_LOG (&heap_roots_ctr, logbuffer,
@@ -1477,7 +1514,7 @@ gc_roots (MonoProfiler *prof, MonoObject *const *objects, const MonoProfilerGCRo
 static void
 trigger_on_demand_heapshot (void)
 {
-	if (heapshot_requested)
+	if (log_profiler.heapshot_requested)
 		mono_gc_collect (mono_gc_max_generation ());
 }
 
@@ -1489,19 +1526,19 @@ gc_event (MonoProfiler *profiler, MonoProfilerGCEvent ev, uint32_t generation)
 	if (ev == MONO_GC_EVENT_START) {
 		uint64_t now = current_time ();
 
-		if (hs_mode_ms && (now - last_hs_time) / 1000 * 1000 >= hs_mode_ms)
-			do_heap_walk = TRUE;
-		else if (hs_mode_gc && !(gc_count % hs_mode_gc))
-			do_heap_walk = TRUE;
-		else if (hs_mode_ondemand)
-			do_heap_walk = heapshot_requested;
-		else if (!hs_mode_ms && !hs_mode_gc && generation == mono_gc_max_generation ())
-			do_heap_walk = TRUE;
+		if (log_config.hs_mode_ms && (now - log_profiler.last_hs_time) / 1000 * 1000 >= log_config.hs_mode_ms)
+			log_profiler.do_heap_walk = TRUE;
+		else if (log_config.hs_mode_gc && !(log_profiler.gc_count % log_config.hs_mode_gc))
+			log_profiler.do_heap_walk = TRUE;
+		else if (log_config.hs_mode_ondemand)
+			log_profiler.do_heap_walk = log_profiler.heapshot_requested;
+		else if (!log_config.hs_mode_ms && !log_config.hs_mode_gc && generation == mono_gc_max_generation ())
+			log_profiler.do_heap_walk = TRUE;
 
 		//If using heapshot, ignore events for collections we don't care
 		if (ENABLED (PROFLOG_HEAPSHOT_FEATURE)) {
 			// Ignore events generated during the collection itself (IE GC ROOTS)
-			ignore_heap_events = !do_heap_walk;
+			log_profiler.ignore_heap_events = !log_profiler.do_heap_walk;
 		}
 	}
 
@@ -1523,7 +1560,7 @@ gc_event (MonoProfiler *profiler, MonoProfilerGCEvent ev, uint32_t generation)
 	switch (ev) {
 	case MONO_GC_EVENT_START:
 		if (generation == mono_gc_max_generation ())
-			gc_count++;
+			log_profiler.gc_count++;
 
 		break;
 	case MONO_GC_EVENT_PRE_STOP_WORLD_LOCKED:
@@ -1548,7 +1585,7 @@ gc_event (MonoProfiler *profiler, MonoProfilerGCEvent ev, uint32_t generation)
 		 * All heap events are surrounded by a HEAP_START and a HEAP_ENV event.
 		 * Right now, that's the case for GC Moves, GC Roots or heapshots.
 		 */
-		if (ENABLED (PROFLOG_GC_MOVES_EVENTS | PROFLOG_GC_ROOT_EVENTS) || do_heap_walk) {
+		if (ENABLED (PROFLOG_GC_MOVES_EVENTS | PROFLOG_GC_ROOT_EVENTS) || log_profiler.do_heap_walk) {
 			ENTER_LOG (&heap_starts_ctr, logbuffer,
 				EVENT_SIZE /* event */
 			);
@@ -1560,11 +1597,11 @@ gc_event (MonoProfiler *profiler, MonoProfilerGCEvent ev, uint32_t generation)
 
 		break;
 	case MONO_GC_EVENT_PRE_START_WORLD:
-		if (do_heap_shot && do_heap_walk)
+		if (ENABLED (PROFLOG_HEAPSHOT_FEATURE) && log_profiler.do_heap_walk)
 			mono_gc_walk_heap (0, gc_reference, NULL);
 
 		/* Matching HEAP_END to the HEAP_START from above */
-		if (ENABLED (PROFLOG_GC_MOVES_EVENTS | PROFLOG_GC_ROOT_EVENTS) || do_heap_walk) {
+		if (ENABLED (PROFLOG_GC_MOVES_EVENTS | PROFLOG_GC_ROOT_EVENTS) || log_profiler.do_heap_walk) {
 			ENTER_LOG (&heap_ends_ctr, logbuffer,
 				EVENT_SIZE /* event */
 			);
@@ -1574,10 +1611,10 @@ gc_event (MonoProfiler *profiler, MonoProfilerGCEvent ev, uint32_t generation)
 			EXIT_LOG_EXPLICIT (DO_SEND);
 		}
 
-		if (do_heap_shot && do_heap_walk) {
-			do_heap_walk = FALSE;
-			heapshot_requested = 0;
-			last_hs_time = current_time ();
+		if (ENABLED (PROFLOG_HEAPSHOT_FEATURE) && log_profiler.do_heap_walk) {
+			log_profiler.do_heap_walk = FALSE;
+			log_profiler.heapshot_requested = FALSE;
+			log_profiler.last_hs_time = current_time ();
 		}
 
 		/*
@@ -1622,18 +1659,16 @@ typedef struct {
 	int32_t native_offsets [MAX_FRAMES];
 } FrameData;
 
-static int num_frames = MAX_FRAMES;
-
 static mono_bool
 walk_stack (MonoMethod *method, int32_t native_offset, int32_t il_offset, mono_bool managed, void* data)
 {
 	FrameData *frame = (FrameData *)data;
-	if (method && frame->count < num_frames) {
+	if (method && frame->count < log_config.num_frames) {
 		frame->il_offsets [frame->count] = il_offset;
 		frame->native_offsets [frame->count] = native_offset;
 		frame->methods [frame->count++] = method;
 	}
-	return frame->count == num_frames;
+	return frame->count == log_config.num_frames;
 }
 
 /*
@@ -1660,7 +1695,7 @@ emit_bt (LogBuffer *logbuffer, FrameData *data)
 static void
 gc_alloc (MonoProfiler *prof, MonoObject *obj)
 {
-	int do_bt = (nocalls && InterlockedRead (&runtime_inited) && !notraces) ? TYPE_ALLOC_BT : 0;
+	int do_bt = (!ENABLED (PROFLOG_CALL_EVENTS) && InterlockedRead (&log_profiler.runtime_inited) && !log_config.notraces) ? TYPE_ALLOC_BT : 0;
 	FrameData data;
 	uintptr_t len = mono_object_get_size (obj);
 	/* account for object alignment in the heap */
@@ -1717,7 +1752,7 @@ gc_moves (MonoProfiler *prof, MonoObject *const *objects, uint64_t num)
 static void
 gc_handle (MonoProfiler *prof, int op, MonoGCHandleType type, uint32_t handle, MonoObject *obj)
 {
-	int do_bt = nocalls && InterlockedRead (&runtime_inited) && !notraces;
+	int do_bt = !ENABLED (PROFLOG_CALL_EVENTS) && InterlockedRead (&log_profiler.runtime_inited) && !log_config.notraces;
 	FrameData data;
 
 	if (do_bt)
@@ -1965,7 +2000,7 @@ class_loaded (MonoProfiler *prof, MonoClass *klass)
 {
 	char *name;
 
-	if (InterlockedRead (&runtime_inited))
+	if (InterlockedRead (&log_profiler.runtime_inited))
 		name = mono_type_get_name (mono_class_get_type (klass));
 	else
 		name = type_name (klass);
@@ -1990,7 +2025,7 @@ class_loaded (MonoProfiler *prof, MonoClass *klass)
 
 	EXIT_LOG;
 
-	if (runtime_inited)
+	if (InterlockedRead (&log_profiler.runtime_inited))
 		mono_free (name);
 	else
 		g_free (name);
@@ -1999,7 +2034,7 @@ class_loaded (MonoProfiler *prof, MonoClass *klass)
 static void
 method_enter (MonoProfiler *prof, MonoMethod *method)
 {
-	if (get_thread ()->call_depth++ <= max_call_depth) {
+	if (get_thread ()->call_depth++ <= log_config.max_call_depth) {
 		ENTER_LOG (&method_entries_ctr, logbuffer,
 			EVENT_SIZE /* event */ +
 			LEB128_SIZE /* method */
@@ -2015,7 +2050,7 @@ method_enter (MonoProfiler *prof, MonoMethod *method)
 static void
 method_leave (MonoProfiler *prof, MonoMethod *method)
 {
-	if (--get_thread ()->call_depth <= max_call_depth) {
+	if (--get_thread ()->call_depth <= log_config.max_call_depth) {
 		ENTER_LOG (&method_exits_ctr, logbuffer,
 			EVENT_SIZE /* event */ +
 			LEB128_SIZE /* method */
@@ -2031,7 +2066,7 @@ method_leave (MonoProfiler *prof, MonoMethod *method)
 static void
 method_exc_leave (MonoProfiler *prof, MonoMethod *method, MonoObject *exc)
 {
-	if (!nocalls && --get_thread ()->call_depth <= max_call_depth) {
+	if (--get_thread ()->call_depth <= log_config.max_call_depth) {
 		ENTER_LOG (&method_exception_exits_ctr, logbuffer,
 			EVENT_SIZE /* event */ +
 			LEB128_SIZE /* method */
@@ -2100,7 +2135,7 @@ code_buffer_new (MonoProfiler *prof, const mono_byte *buffer, uint64_t size, Mon
 static void
 throw_exc (MonoProfiler *prof, MonoObject *object)
 {
-	int do_bt = (nocalls && InterlockedRead (&runtime_inited) && !notraces) ? TYPE_THROW_BT : 0;
+	int do_bt = (!ENABLED (PROFLOG_CALL_EVENTS) && InterlockedRead (&log_profiler.runtime_inited) && !log_config.notraces) ? TYPE_THROW_BT : 0;
 	FrameData data;
 
 	if (do_bt)
@@ -2148,7 +2183,7 @@ clause_exc (MonoProfiler *prof, MonoMethod *method, uint32_t clause_num, MonoExc
 static void
 monitor_event (MonoProfiler *profiler, MonoObject *object, MonoProfilerMonitorEvent ev)
 {
-	int do_bt = (nocalls && InterlockedRead (&runtime_inited) && !notraces) ? TYPE_MONITOR_BT : 0;
+	int do_bt = (!ENABLED (PROFLOG_CALL_EVENTS) && InterlockedRead (&log_profiler.runtime_inited) && !log_config.notraces) ? TYPE_MONITOR_BT : 0;
 	FrameData data;
 
 	if (do_bt)
@@ -2370,7 +2405,7 @@ async_walk_stack (MonoMethod *method, MonoDomain *domain, void *base_address, in
 {
 	SampleHit *sample = (SampleHit *) data;
 
-	if (sample->count < num_frames) {
+	if (sample->count < log_config.num_frames) {
 		int i = sample->count;
 
 		sample->frames [i].method = method;
@@ -2381,7 +2416,7 @@ async_walk_stack (MonoMethod *method, MonoDomain *domain, void *base_address, in
 		sample->count++;
 	}
 
-	return sample->count == num_frames;
+	return sample->count == log_config.num_frames;
 }
 
 #define SAMPLE_SLOT_SIZE(FRAMES) (sizeof (SampleHit) + sizeof (AsyncFrameInfo) * (FRAMES - MONO_ZERO_LEN_ARRAY))
@@ -2408,7 +2443,7 @@ mono_sample_hit (MonoProfiler *profiler, const mono_byte *ip, const void *contex
 	 * invoking runtime functions, which is not async-signal-safe.
 	 */
 
-	if (InterlockedRead (&in_shutdown))
+	if (InterlockedRead (&log_profiler.in_shutdown))
 		return;
 
 	SampleHit *sample = (SampleHit *) mono_lock_free_queue_dequeue (&profiler->sample_reuse_queue);
@@ -2418,7 +2453,7 @@ mono_sample_hit (MonoProfiler *profiler, const mono_byte *ip, const void *contex
 		 * If we're out of reusable sample events and we're not allowed to
 		 * allocate more, we have no choice but to drop the event.
 		 */
-		if (InterlockedRead (&sample_allocations_ctr) >= max_allocated_sample_hits)
+		if (InterlockedRead (&sample_allocations_ctr) >= log_config.max_allocated_sample_hits)
 			return;
 
 		sample = mono_lock_free_alloc (&profiler->sample_allocator);
@@ -2764,31 +2799,17 @@ dump_unmanaged_coderefs (void)
 	}
 }
 
-typedef struct MonoCounterAgent {
-	MonoCounter *counter;
-	// MonoCounterAgent specific data :
-	void *value;
-	size_t value_size;
-	short index;
-	short emitted;
-	struct MonoCounterAgent *next;
-} MonoCounterAgent;
-
-static MonoCounterAgent* counters;
-static int counters_index = 1;
-static mono_mutex_t counters_mutex;
-
 static void
 counters_add_agent (MonoCounter *counter)
 {
-	if (InterlockedRead (&in_shutdown))
+	if (InterlockedRead (&log_profiler.in_shutdown))
 		return;
 
 	MonoCounterAgent *agent, *item;
 
-	mono_os_mutex_lock (&counters_mutex);
+	mono_os_mutex_lock (&log_profiler.counters_mutex);
 
-	for (agent = counters; agent; agent = agent->next) {
+	for (agent = log_profiler.counters; agent; agent = agent->next) {
 		if (agent->counter == counter) {
 			agent->value_size = 0;
 			if (agent->value) {
@@ -2803,21 +2824,21 @@ counters_add_agent (MonoCounter *counter)
 	agent->counter = counter;
 	agent->value = NULL;
 	agent->value_size = 0;
-	agent->index = counters_index++;
+	agent->index = log_profiler.counters_index++;
 	agent->emitted = 0;
 	agent->next = NULL;
 
-	if (!counters) {
-		counters = agent;
+	if (!log_profiler.counters) {
+		log_profiler.counters = agent;
 	} else {
-		item = counters;
+		item = log_profiler.counters;
 		while (item->next)
 			item = item->next;
 		item->next = agent;
 	}
 
 done:
-	mono_os_mutex_unlock (&counters_mutex);
+	mono_os_mutex_unlock (&log_profiler.counters_mutex);
 }
 
 static mono_bool
@@ -2830,7 +2851,9 @@ counters_init_foreach_callback (MonoCounter *counter, gpointer data)
 static void
 counters_init (void)
 {
-	mono_os_mutex_init (&counters_mutex);
+	mono_os_mutex_init (&log_profiler.counters_mutex);
+
+	log_profiler.counters_index = 1;
 
 	mono_counters_on_register (&counters_add_agent);
 	mono_counters_foreach (counters_init_foreach_callback, NULL);
@@ -2846,9 +2869,9 @@ counters_emit (void)
 		LEB128_SIZE /* len */
 	;
 
-	mono_os_mutex_lock (&counters_mutex);
+	mono_os_mutex_lock (&log_profiler.counters_mutex);
 
-	for (agent = counters; agent; agent = agent->next) {
+	for (agent = log_profiler.counters; agent; agent = agent->next) {
 		if (agent->emitted)
 			continue;
 
@@ -2872,7 +2895,7 @@ counters_emit (void)
 	emit_event (logbuffer, TYPE_SAMPLE_COUNTERS_DESC | TYPE_SAMPLE);
 	emit_value (logbuffer, len);
 
-	for (agent = counters; agent; agent = agent->next) {
+	for (agent = log_profiler.counters; agent; agent = agent->next) {
 		const char *name;
 
 		if (agent->emitted)
@@ -2892,7 +2915,7 @@ counters_emit (void)
 	EXIT_LOG_EXPLICIT (DO_SEND);
 
 done:
-	mono_os_mutex_unlock (&counters_mutex);
+	mono_os_mutex_unlock (&log_profiler.counters_mutex);
 }
 
 static void
@@ -2910,13 +2933,13 @@ counters_sample (uint64_t timestamp)
 	buffer_size = 8;
 	buffer = g_calloc (1, buffer_size);
 
-	mono_os_mutex_lock (&counters_mutex);
+	mono_os_mutex_lock (&log_profiler.counters_mutex);
 
 	size =
 		EVENT_SIZE /* event */
 	;
 
-	for (agent = counters; agent; agent = agent->next) {
+	for (agent = log_profiler.counters; agent; agent = agent->next) {
 		size +=
 			LEB128_SIZE /* index */ +
 			BYTE_SIZE /* type */ +
@@ -2932,7 +2955,7 @@ counters_sample (uint64_t timestamp)
 
 	emit_event_time (logbuffer, TYPE_SAMPLE_COUNTERS | TYPE_SAMPLE, timestamp);
 
-	for (agent = counters; agent; agent = agent->next) {
+	for (agent = log_profiler.counters; agent; agent = agent->next) {
 		size_t size;
 
 		counter = agent->counter;
@@ -3014,23 +3037,8 @@ counters_sample (uint64_t timestamp)
 
 	EXIT_LOG_EXPLICIT (DO_SEND);
 
-	mono_os_mutex_unlock (&counters_mutex);
+	mono_os_mutex_unlock (&log_profiler.counters_mutex);
 }
-
-typedef struct _PerfCounterAgent PerfCounterAgent;
-struct _PerfCounterAgent {
-	PerfCounterAgent *next;
-	int index;
-	char *category_name;
-	char *name;
-	int type;
-	gint64 value;
-	guint8 emitted;
-	guint8 updated;
-	guint8 deleted;
-};
-
-static PerfCounterAgent *perfcounters = NULL;
 
 static void
 perfcounters_emit (void)
@@ -3042,7 +3050,7 @@ perfcounters_emit (void)
 		LEB128_SIZE /* len */
 	;
 
-	for (pcagent = perfcounters; pcagent; pcagent = pcagent->next) {
+	for (pcagent = log_profiler.perfcounters; pcagent; pcagent = pcagent->next) {
 		if (pcagent->emitted)
 			continue;
 
@@ -3067,7 +3075,7 @@ perfcounters_emit (void)
 	emit_event (logbuffer, TYPE_SAMPLE_COUNTERS_DESC | TYPE_SAMPLE);
 	emit_value (logbuffer, len);
 
-	for (pcagent = perfcounters; pcagent; pcagent = pcagent->next) {
+	for (pcagent = log_profiler.perfcounters; pcagent; pcagent = pcagent->next) {
 		if (pcagent->emitted)
 			continue;
 
@@ -3090,7 +3098,7 @@ perfcounters_foreach (char *category_name, char *name, unsigned char type, gint6
 {
 	PerfCounterAgent *pcagent;
 
-	for (pcagent = perfcounters; pcagent; pcagent = pcagent->next) {
+	for (pcagent = log_profiler.perfcounters; pcagent; pcagent = pcagent->next) {
 		if (strcmp (pcagent->category_name, category_name) != 0 || strcmp (pcagent->name, name) != 0)
 			continue;
 		if (pcagent->value == value)
@@ -3103,8 +3111,8 @@ perfcounters_foreach (char *category_name, char *name, unsigned char type, gint6
 	}
 
 	pcagent = g_new0 (PerfCounterAgent, 1);
-	pcagent->next = perfcounters;
-	pcagent->index = counters_index++;
+	pcagent->next = log_profiler.perfcounters;
+	pcagent->index = log_profiler.counters_index++;
 	pcagent->category_name = g_strdup (category_name);
 	pcagent->name = g_strdup (name);
 	pcagent->type = (int) type;
@@ -3113,7 +3121,7 @@ perfcounters_foreach (char *category_name, char *name, unsigned char type, gint6
 	pcagent->updated = 1;
 	pcagent->deleted = 0;
 
-	perfcounters = pcagent;
+	log_profiler.perfcounters = pcagent;
 
 	return TRUE;
 }
@@ -3125,13 +3133,13 @@ perfcounters_sample (uint64_t timestamp)
 	int len = 0;
 	int size;
 
-	mono_os_mutex_lock (&counters_mutex);
+	mono_os_mutex_lock (&log_profiler.counters_mutex);
 
 	/* mark all perfcounters as deleted, foreach will unmark them as necessary */
-	for (pcagent = perfcounters; pcagent; pcagent = pcagent->next)
+	for (pcagent = log_profiler.perfcounters; pcagent; pcagent = pcagent->next)
 		pcagent->deleted = 1;
 
-	mono_perfcounter_foreach (perfcounters_foreach, perfcounters);
+	mono_perfcounter_foreach (perfcounters_foreach, NULL);
 
 	perfcounters_emit ();
 
@@ -3139,7 +3147,7 @@ perfcounters_sample (uint64_t timestamp)
 		EVENT_SIZE /* event */
 	;
 
-	for (pcagent = perfcounters; pcagent; pcagent = pcagent->next) {
+	for (pcagent = log_profiler.perfcounters; pcagent; pcagent = pcagent->next) {
 		if (pcagent->deleted || !pcagent->updated)
 			continue;
 
@@ -3163,7 +3171,7 @@ perfcounters_sample (uint64_t timestamp)
 
 	emit_event_time (logbuffer, TYPE_SAMPLE_COUNTERS | TYPE_SAMPLE, timestamp);
 
-	for (pcagent = perfcounters; pcagent; pcagent = pcagent->next) {
+	for (pcagent = log_profiler.perfcounters; pcagent; pcagent = pcagent->next) {
 		if (pcagent->deleted || !pcagent->updated)
 			continue;
 		emit_uvalue (logbuffer, pcagent->index);
@@ -3178,7 +3186,7 @@ perfcounters_sample (uint64_t timestamp)
 	EXIT_LOG_EXPLICIT (DO_SEND);
 
 done:
-	mono_os_mutex_unlock (&counters_mutex);
+	mono_os_mutex_unlock (&log_profiler.counters_mutex);
 }
 
 static void
@@ -3189,19 +3197,6 @@ counters_and_perfcounters_sample (void)
 	counters_sample (now);
 	perfcounters_sample (now);
 }
-
-static mono_mutex_t coverage_mutex;
-static MonoConcurrentHashTable *coverage_methods = NULL;
-static MonoConcurrentHashTable *coverage_assemblies = NULL;
-static MonoConcurrentHashTable *coverage_classes = NULL;
-
-static MonoConcurrentHashTable *filtered_classes = NULL;
-static MonoConcurrentHashTable *image_to_methods = NULL;
-static MonoConcurrentHashTable *suppressed_assemblies = NULL;
-static gboolean coverage_initialized = FALSE;
-
-static GPtrArray *coverage_data = NULL;
-static int previous_offset = 0;
 
 typedef struct {
 	MonoLockFreeQueueNode node;
@@ -3227,10 +3222,10 @@ free_coverage_entry (gpointer data, gpointer userdata)
 static void
 obtain_coverage_for_method (MonoProfiler *prof, const MonoProfilerCoverageData *entry)
 {
-	int offset = entry->il_offset - previous_offset;
+	int offset = entry->il_offset - log_profiler.coverage_previous_offset;
 	CoverageEntry *e = g_new (CoverageEntry, 1);
 
-	previous_offset = entry->il_offset;
+	log_profiler.coverage_previous_offset = entry->il_offset;
 
 	e->offset = offset;
 	e->counter = entry->counter;
@@ -3238,7 +3233,7 @@ obtain_coverage_for_method (MonoProfiler *prof, const MonoProfilerCoverageData *
 	e->line = entry->line;
 	e->column = entry->column;
 
-	g_ptr_array_add (coverage_data, e);
+	g_ptr_array_add (log_profiler.coverage_data, e);
 }
 
 static char *
@@ -3288,7 +3283,6 @@ parse_generic_type_names(char *name)
 	return ret;
 }
 
-static int method_id;
 static void
 build_method_buffer (gpointer key, gpointer value, gpointer userdata)
 {
@@ -3299,8 +3293,8 @@ build_method_buffer (gpointer key, gpointer value, gpointer userdata)
 	const char *image_name, *method_name, *sig, *first_filename;
 	guint i;
 
-	previous_offset = 0;
-	coverage_data = g_ptr_array_new ();
+	log_profiler.coverage_previous_offset = 0;
+	log_profiler.coverage_data = g_ptr_array_new ();
 
 	mono_profiler_get_coverage_data (log_profiler.handle, method, obtain_coverage_for_method);
 
@@ -3312,8 +3306,8 @@ build_method_buffer (gpointer key, gpointer value, gpointer userdata)
 	class_name = parse_generic_type_names (mono_type_get_name (mono_class_get_type (klass)));
 	method_name = mono_method_get_name (method);
 
-	if (coverage_data->len != 0) {
-		CoverageEntry *entry = (CoverageEntry *)coverage_data->pdata[0];
+	if (log_profiler.coverage_data->len != 0) {
+		CoverageEntry *entry = (CoverageEntry *)log_profiler.coverage_data->pdata[0];
 		first_filename = entry->filename ? entry->filename : "";
 	} else
 		first_filename = "";
@@ -3342,13 +3336,13 @@ build_method_buffer (gpointer key, gpointer value, gpointer userdata)
 	emit_string (logbuffer, first_filename, strlen (first_filename) + 1);
 
 	emit_uvalue (logbuffer, mono_method_get_token (method));
-	emit_uvalue (logbuffer, method_id);
-	emit_value (logbuffer, coverage_data->len);
+	emit_uvalue (logbuffer, log_profiler.coverage_method_id);
+	emit_value (logbuffer, log_profiler.coverage_data->len);
 
 	EXIT_LOG_EXPLICIT (DO_SEND);
 
-	for (i = 0; i < coverage_data->len; i++) {
-		CoverageEntry *entry = (CoverageEntry *)coverage_data->pdata[i];
+	for (i = 0; i < log_profiler.coverage_data->len; i++) {
+		CoverageEntry *entry = (CoverageEntry *)log_profiler.coverage_data->pdata[i];
 
 		ENTER_LOG (&coverage_statements_ctr, logbuffer,
 			EVENT_SIZE /* event */ +
@@ -3360,7 +3354,7 @@ build_method_buffer (gpointer key, gpointer value, gpointer userdata)
 		);
 
 		emit_event (logbuffer, TYPE_COVERAGE_STATEMENT | TYPE_COVERAGE);
-		emit_uvalue (logbuffer, method_id);
+		emit_uvalue (logbuffer, log_profiler.coverage_method_id);
 		emit_uvalue (logbuffer, entry->offset);
 		emit_uvalue (logbuffer, entry->counter);
 		emit_uvalue (logbuffer, entry->line);
@@ -3369,13 +3363,12 @@ build_method_buffer (gpointer key, gpointer value, gpointer userdata)
 		EXIT_LOG_EXPLICIT (DO_SEND);
 	}
 
-	method_id++;
+	log_profiler.coverage_method_id++;
 
 	g_free (class_name);
 
-	g_ptr_array_foreach (coverage_data, free_coverage_entry, NULL);
-	g_ptr_array_free (coverage_data, TRUE);
-	coverage_data = NULL;
+	g_ptr_array_foreach (log_profiler.coverage_data, free_coverage_entry, NULL);
+	g_ptr_array_free (log_profiler.coverage_data, TRUE);
 }
 
 /* This empties the queue */
@@ -3438,7 +3431,7 @@ build_class_buffer (gpointer key, gpointer value, gpointer userdata)
 static void
 get_coverage_for_image (MonoImage *image, int *number_of_methods, guint *fully_covered, int *partially_covered)
 {
-	MonoLockFreeQueue *image_methods = (MonoLockFreeQueue *)mono_conc_hashtable_lookup (image_to_methods, image);
+	MonoLockFreeQueue *image_methods = (MonoLockFreeQueue *)mono_conc_hashtable_lookup (log_profiler.coverage_image_to_methods, image);
 
 	*number_of_methods = mono_image_get_table_rows (image, MONO_TABLE_METHOD);
 	if (image_methods)
@@ -3493,16 +3486,11 @@ build_assembly_buffer (gpointer key, gpointer value, gpointer userdata)
 static void
 dump_coverage (void)
 {
-	if (!coverage_initialized)
-		return;
-
-	method_id = 0;
-
-	mono_os_mutex_lock (&coverage_mutex);
-	mono_conc_hashtable_foreach (coverage_assemblies, build_assembly_buffer, NULL);
-	mono_conc_hashtable_foreach (coverage_classes, build_class_buffer, NULL);
-	mono_conc_hashtable_foreach (coverage_methods, build_method_buffer, NULL);
-	mono_os_mutex_unlock (&coverage_mutex);
+	mono_os_mutex_lock (&log_profiler.coverage_mutex);
+	mono_conc_hashtable_foreach (log_profiler.coverage_assemblies, build_assembly_buffer, NULL);
+	mono_conc_hashtable_foreach (log_profiler.coverage_classes, build_class_buffer, NULL);
+	mono_conc_hashtable_foreach (log_profiler.coverage_methods, build_method_buffer, NULL);
+	mono_os_mutex_unlock (&log_profiler.coverage_mutex);
 }
 
 static MonoLockFreeQueueNode *
@@ -3529,27 +3517,25 @@ coverage_filter (MonoProfiler *prof, MonoMethod *method)
 	MonoLockFreeQueue *image_methods, *class_methods;
 	MonoLockFreeQueueNode *node;
 
-	g_assert (coverage_initialized && "Why are we being asked for coverage filter info when we're not doing coverage?");
-
 	flags = mono_method_get_flags (method, &iflags);
 	if ((iflags & 0x1000 /*METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL*/) ||
 	    (flags & 0x2000 /*METHOD_ATTRIBUTE_PINVOKE_IMPL*/))
 		return FALSE;
 
 	// Don't need to do anything else if we're already tracking this method
-	if (mono_conc_hashtable_lookup (coverage_methods, method))
+	if (mono_conc_hashtable_lookup (log_profiler.coverage_methods, method))
 		return TRUE;
 
 	klass = mono_method_get_class (method);
 	image = mono_class_get_image (klass);
 
 	// Don't handle coverage for the core assemblies
-	if (mono_conc_hashtable_lookup (suppressed_assemblies, (gpointer) mono_image_get_name (image)) != NULL)
+	if (mono_conc_hashtable_lookup (log_profiler.coverage_suppressed_assemblies, (gpointer) mono_image_get_name (image)) != NULL)
 		return FALSE;
 
 	if (prof->coverage_filters) {
 		/* Check already filtered classes first */
-		if (mono_conc_hashtable_lookup (filtered_classes, klass))
+		if (mono_conc_hashtable_lookup (log_profiler.coverage_filtered_classes, klass))
 			return FALSE;
 
 		classname = mono_type_get_name (mono_class_get_type (klass));
@@ -3573,9 +3559,9 @@ coverage_filter (MonoProfiler *prof, MonoMethod *method)
 		}
 
 		if (has_positive && !found) {
-			mono_os_mutex_lock (&coverage_mutex);
-			mono_conc_hashtable_insert (filtered_classes, klass, klass);
-			mono_os_mutex_unlock (&coverage_mutex);
+			mono_os_mutex_lock (&log_profiler.coverage_mutex);
+			mono_conc_hashtable_insert (log_profiler.coverage_filtered_classes, klass, klass);
+			mono_os_mutex_unlock (&log_profiler.coverage_mutex);
 			g_free (fqn);
 			g_free (classname);
 
@@ -3592,9 +3578,9 @@ coverage_filter (MonoProfiler *prof, MonoMethod *method)
 			filter = &filter [1];
 
 			if (strstr (fqn, filter) != NULL) {
-				mono_os_mutex_lock (&coverage_mutex);
-				mono_conc_hashtable_insert (filtered_classes, klass, klass);
-				mono_os_mutex_unlock (&coverage_mutex);
+				mono_os_mutex_lock (&log_profiler.coverage_mutex);
+				mono_conc_hashtable_insert (log_profiler.coverage_filtered_classes, klass, klass);
+				mono_os_mutex_unlock (&log_profiler.coverage_mutex);
 				g_free (fqn);
 				g_free (classname);
 
@@ -3618,32 +3604,32 @@ coverage_filter (MonoProfiler *prof, MonoMethod *method)
 	// generated causing a crash. See https://bugzilla.xamarin.com/show_bug.cgi?id=39325
 	mono_assembly_addref (assembly);
 
-	mono_os_mutex_lock (&coverage_mutex);
-	mono_conc_hashtable_insert (coverage_methods, method, method);
-	mono_conc_hashtable_insert (coverage_assemblies, assembly, assembly);
-	mono_os_mutex_unlock (&coverage_mutex);
+	mono_os_mutex_lock (&log_profiler.coverage_mutex);
+	mono_conc_hashtable_insert (log_profiler.coverage_methods, method, method);
+	mono_conc_hashtable_insert (log_profiler.coverage_assemblies, assembly, assembly);
+	mono_os_mutex_unlock (&log_profiler.coverage_mutex);
 
-	image_methods = (MonoLockFreeQueue *)mono_conc_hashtable_lookup (image_to_methods, image);
+	image_methods = (MonoLockFreeQueue *)mono_conc_hashtable_lookup (log_profiler.coverage_image_to_methods, image);
 
 	if (image_methods == NULL) {
 		image_methods = (MonoLockFreeQueue *) g_malloc (sizeof (MonoLockFreeQueue));
 		mono_lock_free_queue_init (image_methods);
-		mono_os_mutex_lock (&coverage_mutex);
-		mono_conc_hashtable_insert (image_to_methods, image, image_methods);
-		mono_os_mutex_unlock (&coverage_mutex);
+		mono_os_mutex_lock (&log_profiler.coverage_mutex);
+		mono_conc_hashtable_insert (log_profiler.coverage_image_to_methods, image, image_methods);
+		mono_os_mutex_unlock (&log_profiler.coverage_mutex);
 	}
 
 	node = create_method_node (method);
 	mono_lock_free_queue_enqueue (image_methods, node);
 
-	class_methods = (MonoLockFreeQueue *)mono_conc_hashtable_lookup (coverage_classes, klass);
+	class_methods = (MonoLockFreeQueue *)mono_conc_hashtable_lookup (log_profiler.coverage_classes, klass);
 
 	if (class_methods == NULL) {
 		class_methods = (MonoLockFreeQueue *) g_malloc (sizeof (MonoLockFreeQueue));
 		mono_lock_free_queue_init (class_methods);
-		mono_os_mutex_lock (&coverage_mutex);
-		mono_conc_hashtable_insert (coverage_classes, klass, class_methods);
-		mono_os_mutex_unlock (&coverage_mutex);
+		mono_os_mutex_lock (&log_profiler.coverage_mutex);
+		mono_conc_hashtable_insert (log_profiler.coverage_classes, klass, class_methods);
+		mono_os_mutex_unlock (&log_profiler.coverage_mutex);
 	}
 
 	node = create_method_node (method);
@@ -3716,7 +3702,7 @@ init_suppressed_assemblies (void)
 	char *line;
 	FILE *sa_file;
 
-	suppressed_assemblies = mono_conc_hashtable_new (g_str_hash, g_str_equal);
+	log_profiler.coverage_suppressed_assemblies = mono_conc_hashtable_new (g_str_hash, g_str_equal);
 	sa_file = fopen (SUPPRESSION_DIR "/mono-profiler-log.suppression", "r");
 	if (sa_file == NULL)
 		return;
@@ -3729,7 +3715,7 @@ init_suppressed_assemblies (void)
 	while ((line = get_next_line (content, &content))) {
 		line = g_strchomp (g_strchug (line));
 		/* No locking needed as we're doing initialization */
-		mono_conc_hashtable_insert (suppressed_assemblies, line, line);
+		mono_conc_hashtable_insert (log_profiler.coverage_suppressed_assemblies, line, line);
 	}
 
 	fclose (sa_file);
@@ -3762,17 +3748,13 @@ parse_cov_filter_file (GPtrArray *filters, const char *file)
 static void
 coverage_init (void)
 {
-	g_assert (!coverage_initialized && "Why are we initializing coverage twice?");
-
-	mono_os_mutex_init (&coverage_mutex);
-	coverage_methods = mono_conc_hashtable_new (NULL, NULL);
-	coverage_assemblies = mono_conc_hashtable_new (NULL, NULL);
-	coverage_classes = mono_conc_hashtable_new (NULL, NULL);
-	filtered_classes = mono_conc_hashtable_new (NULL, NULL);
-	image_to_methods = mono_conc_hashtable_new (NULL, NULL);
+	mono_os_mutex_init (&log_profiler.coverage_mutex);
+	log_profiler.coverage_methods = mono_conc_hashtable_new (NULL, NULL);
+	log_profiler.coverage_assemblies = mono_conc_hashtable_new (NULL, NULL);
+	log_profiler.coverage_classes = mono_conc_hashtable_new (NULL, NULL);
+	log_profiler.coverage_filtered_classes = mono_conc_hashtable_new (NULL, NULL);
+	log_profiler.coverage_image_to_methods = mono_conc_hashtable_new (NULL, NULL);
 	init_suppressed_assemblies ();
-
-	coverage_initialized = TRUE;
 }
 
 static void
@@ -3800,12 +3782,13 @@ cleanup_reusable_samples (void)
 static void
 log_shutdown (MonoProfiler *prof)
 {
-	InterlockedWrite (&in_shutdown, 1);
+	InterlockedWrite (&log_profiler.in_shutdown, 1);
 
-	if (!no_counters)
+	if (ENABLED (PROFLOG_COUNTER_EVENTS))
 		counters_and_perfcounters_sample ();
 
-	dump_coverage ();
+	if (ENABLED (PROFLOG_CODE_COV_FEATURE))
+		dump_coverage ();
 
 	char c = 1;
 
@@ -3816,18 +3799,18 @@ log_shutdown (MonoProfiler *prof)
 
 	mono_native_thread_join (prof->helper_thread);
 
-	mono_os_mutex_destroy (&counters_mutex);
+	mono_os_mutex_destroy (&log_profiler.counters_mutex);
 
 	MonoCounterAgent *mc_next;
 
-	for (MonoCounterAgent *cur = counters; cur; cur = mc_next) {
+	for (MonoCounterAgent *cur = log_profiler.counters; cur; cur = mc_next) {
 		mc_next = cur->next;
 		g_free (cur);
 	}
 
 	PerfCounterAgent *pc_next;
 
-	for (PerfCounterAgent *cur = perfcounters; cur; cur = pc_next) {
+	for (PerfCounterAgent *cur = log_profiler.perfcounters; cur; cur = pc_next) {
 		pc_next = cur->next;
 		g_free (cur);
 	}
@@ -3837,8 +3820,8 @@ log_shutdown (MonoProfiler *prof)
 	 * not immediately removed upon calling mono_lls_remove (), by
 	 * iterating until the head is NULL.
 	 */
-	while (profiler_thread_list.head) {
-		MONO_LLS_FOREACH_SAFE (&profiler_thread_list, MonoProfilerThread, thread) {
+	while (log_profiler.profiler_thread_list.head) {
+		MONO_LLS_FOREACH_SAFE (&log_profiler.profiler_thread_list, MonoProfilerThread, thread) {
 			g_assert (thread->attached && "Why is a thread in the LLS not attached?");
 
 			remove_thread (thread);
@@ -3877,7 +3860,7 @@ log_shutdown (MonoProfiler *prof)
 	 */
 	mono_thread_hazardous_try_free_all ();
 
-	gint32 state = InterlockedRead (&buffer_lock_state);
+	gint32 state = InterlockedRead (&log_profiler.buffer_lock_state);
 
 	g_assert (!(state & 0xFFFF) && "Why is the reader count still non-zero?");
 	g_assert (!(state >> 16) && "Why is the exclusive lock still held?");
@@ -3894,19 +3877,19 @@ log_shutdown (MonoProfiler *prof)
 	mono_conc_hashtable_destroy (prof->method_table);
 	mono_os_mutex_destroy (&prof->method_table_mutex);
 
-	if (coverage_initialized) {
-		mono_os_mutex_lock (&coverage_mutex);
-		mono_conc_hashtable_foreach (coverage_assemblies, unref_coverage_assemblies, prof);
-		mono_os_mutex_unlock (&coverage_mutex);
+	if (ENABLED (PROFLOG_CODE_COV_FEATURE)) {
+		mono_os_mutex_lock (&log_profiler.coverage_mutex);
+		mono_conc_hashtable_foreach (log_profiler.coverage_assemblies, unref_coverage_assemblies, NULL);
+		mono_os_mutex_unlock (&log_profiler.coverage_mutex);
 
-		mono_conc_hashtable_destroy (coverage_methods);
-		mono_conc_hashtable_destroy (coverage_assemblies);
-		mono_conc_hashtable_destroy (coverage_classes);
-		mono_conc_hashtable_destroy (filtered_classes);
+		mono_conc_hashtable_destroy (log_profiler.coverage_methods);
+		mono_conc_hashtable_destroy (log_profiler.coverage_assemblies);
+		mono_conc_hashtable_destroy (log_profiler.coverage_classes);
+		mono_conc_hashtable_destroy (log_profiler.coverage_filtered_classes);
 
-		mono_conc_hashtable_destroy (image_to_methods);
-		mono_conc_hashtable_destroy (suppressed_assemblies);
-		mono_os_mutex_destroy (&coverage_mutex);
+		mono_conc_hashtable_destroy (log_profiler.coverage_image_to_methods);
+		mono_conc_hashtable_destroy (log_profiler.coverage_suppressed_assemblies);
+		mono_os_mutex_destroy (&log_profiler.coverage_mutex);
 	}
 
 	PROF_TLS_FREE ();
@@ -4026,7 +4009,7 @@ helper_thread (void *arg)
 			exit (1);
 		}
 
-		if (!no_counters)
+		if (ENABLED (PROFLOG_COUNTER_EVENTS))
 			counters_and_perfcounters_sample ();
 
 		buffer_lock_excl ();
@@ -4064,9 +4047,9 @@ helper_thread (void *arg)
 
 			buf [len] = 0;
 
-			if (!strcmp (buf, "heapshot\n") && hs_mode_ondemand) {
+			if (!strcmp (buf, "heapshot\n") && log_config.hs_mode_ondemand) {
 				// Rely on the finalization callback triggering a GC.
-				heapshot_requested = 1;
+				log_profiler.heapshot_requested = TRUE;
 				mono_gc_finalize_notify ();
 			}
 		}
@@ -4403,7 +4386,7 @@ register_counter (const char *name, gint32 *counter)
 static void
 runtime_initialized (MonoProfiler *profiler)
 {
-	InterlockedWrite (&runtime_inited, 1);
+	InterlockedWrite (&log_profiler.runtime_inited, 1);
 
 	register_counter ("Sample events allocated", &sample_allocations_ctr);
 	register_counter ("Log buffers allocated", &buffer_allocations_ctr);
@@ -4475,21 +4458,21 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 	char *nf;
 
 	log_profiler.args = pstrdup (args);
-	log_profiler.command_port = command_port;
+	log_profiler.command_port = log_config.command_port;
 
 	//If filename begin with +, append the pid at the end
 	if (filename && *filename == '+')
 		filename = g_strdup_printf ("%s.%d", filename + 1, getpid ());
 
 	if (!filename) {
-		if (do_report)
+		if (log_config.do_report)
 			filename = "|mprof-report -";
 		else
 			filename = "output.mlpd";
 		nf = (char*)filename;
 	} else {
 		nf = new_filename (filename);
-		if (do_report) {
+		if (log_config.do_report) {
 			int s = strlen (nf) + 32;
 			char *p = (char *) g_malloc (s);
 			snprintf (p, s, "|mprof-report '--out=%s' -", nf);
@@ -4512,7 +4495,7 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 	}
 
 #if defined (HAVE_SYS_ZLIB)
-	if (use_zip)
+	if (log_config.use_zip)
 		log_profiler.gzfile = gzdopen (fileno (log_profiler.file), "wb");
 #endif
 
@@ -4523,7 +4506,7 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 	g_assert (SAMPLE_SLOT_SIZE (MAX_FRAMES) * 2 < LOCK_FREE_ALLOC_SB_USABLE_SIZE (SAMPLE_BLOCK_SIZE));
 
 	// FIXME: We should free this stuff too.
-	mono_lock_free_allocator_init_size_class (&log_profiler.sample_size_class, SAMPLE_SLOT_SIZE (num_frames), SAMPLE_BLOCK_SIZE);
+	mono_lock_free_allocator_init_size_class (&log_profiler.sample_size_class, SAMPLE_SLOT_SIZE (log_config.num_frames), SAMPLE_BLOCK_SIZE);
 	mono_lock_free_allocator_init_allocator (&log_profiler.sample_allocator, &log_profiler.sample_size_class, MONO_MEM_ACCOUNT_PROFILER);
 
 	mono_lock_free_queue_init (&log_profiler.sample_reuse_queue);
@@ -4543,7 +4526,7 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 	mono_os_mutex_init (&log_profiler.method_table_mutex);
 	log_profiler.method_table = mono_conc_hashtable_new (NULL, NULL);
 
-	if (do_coverage)
+	if (ENABLED (PROFLOG_CODE_COV_FEATURE))
 		coverage_init ();
 
 	log_profiler.coverage_filters = filters;
@@ -4576,30 +4559,13 @@ mono_profiler_init (const char *desc)
 {
 	GPtrArray *filters = NULL;
 
-	proflog_parse_args (&config, desc [3] == ':' ? desc + 4 : "");
+	proflog_parse_args (&log_config, desc [3] == ':' ? desc + 4 : "");
 
-	//XXX maybe later cleanup to use config directly
-	nocalls = !(config.effective_mask & PROFLOG_CALL_EVENTS);
-	no_counters = !(config.effective_mask & PROFLOG_COUNTER_EVENTS);
-	do_report = config.do_report;
-	do_heap_shot = (config.effective_mask & PROFLOG_HEAPSHOT_FEATURE);
-	hs_mode_ondemand = config.hs_mode_ondemand;
-	hs_mode_ms = config.hs_mode_ms;
-	hs_mode_gc = config.hs_mode_gc;
-	do_mono_sample = (config.effective_mask & PROFLOG_SAMPLING_FEATURE);
-	use_zip = config.use_zip;
-	command_port = config.command_port;
-	num_frames = config.num_frames;
-	notraces = config.notraces;
-	max_allocated_sample_hits = config.max_allocated_sample_hits;
-	max_call_depth = config.max_call_depth;
-	do_coverage = (config.effective_mask & PROFLOG_CODE_COV_FEATURE);
-
-	if (config.cov_filter_files) {
+	if (log_config.cov_filter_files) {
 		filters = g_ptr_array_new ();
 		int i;
-		for (i = 0; i < config.cov_filter_files->len; ++i) {
-			const char *name = config.cov_filter_files->pdata [i];
+		for (i = 0; i < log_config.cov_filter_files->len; ++i) {
+			const char *name = log_config.cov_filter_files->pdata [i];
 			parse_cov_filter_file (filters, name);
 		}
 	}
@@ -4608,9 +4574,9 @@ mono_profiler_init (const char *desc)
 
 	PROF_TLS_INIT ();
 
-	create_profiler (desc, config.output_filename, filters);
+	create_profiler (desc, log_config.output_filename, filters);
 
-	mono_lls_init (&profiler_thread_list, NULL);
+	mono_lls_init (&log_profiler.profiler_thread_list, NULL);
 
 	MonoProfilerHandle handle = log_profiler.handle = mono_profiler_install (&log_profiler);
 
@@ -4626,36 +4592,36 @@ mono_profiler_init (const char *desc)
 	//It's questionable whether we actually want this to be mandatory, maybe put it behind the actual event?
 	mono_profiler_set_thread_name_callback (handle, thread_name);
 
-	if (config.effective_mask & PROFLOG_DOMAIN_EVENTS) {
+	if (log_config.effective_mask & PROFLOG_DOMAIN_EVENTS) {
 		mono_profiler_set_domain_loaded_callback (handle, domain_loaded);
 		mono_profiler_set_domain_unloading_callback (handle, domain_unloaded);
 		mono_profiler_set_domain_name_callback (handle, domain_name);
 	}
 
-	if (config.effective_mask & PROFLOG_ASSEMBLY_EVENTS) {
+	if (log_config.effective_mask & PROFLOG_ASSEMBLY_EVENTS) {
 		mono_profiler_set_assembly_loaded_callback (handle, assembly_loaded);
 		mono_profiler_set_assembly_unloading_callback (handle, assembly_unloaded);
 	}
 
-	if (config.effective_mask & PROFLOG_MODULE_EVENTS) {
+	if (log_config.effective_mask & PROFLOG_MODULE_EVENTS) {
 		mono_profiler_set_image_loaded_callback (handle, image_loaded);
 		mono_profiler_set_image_unloading_callback (handle, image_unloaded);
 	}
 
-	if (config.effective_mask & PROFLOG_CLASS_EVENTS)
+	if (log_config.effective_mask & PROFLOG_CLASS_EVENTS)
 		mono_profiler_set_class_loaded_callback (handle, class_loaded);
 
-	if (config.effective_mask & PROFLOG_JIT_COMPILATION_EVENTS) {
+	if (log_config.effective_mask & PROFLOG_JIT_COMPILATION_EVENTS) {
 		mono_profiler_set_jit_done_callback (handle, method_jitted);
 		mono_profiler_set_jit_code_buffer_callback (handle, code_buffer_new);
 	}
 
-	if (config.effective_mask & PROFLOG_EXCEPTION_EVENTS) {
+	if (log_config.effective_mask & PROFLOG_EXCEPTION_EVENTS) {
 		mono_profiler_set_exception_throw_callback (handle, throw_exc);
 		mono_profiler_set_exception_clause_callback (handle, clause_exc);
 	}
 
-	if (config.effective_mask & PROFLOG_ALLOCATION_EVENTS) {
+	if (log_config.effective_mask & PROFLOG_ALLOCATION_EVENTS) {
 		mono_profiler_enable_allocations ();
 		mono_profiler_set_gc_allocation_callback (handle, gc_alloc);
 	}
@@ -4663,55 +4629,55 @@ mono_profiler_init (const char *desc)
 	//PROFLOG_GC_EVENTS is mandatory
 	//PROFLOG_THREAD_EVENTS is mandatory
 
-	if (config.effective_mask & PROFLOG_CALL_EVENTS) {
+	if (log_config.effective_mask & PROFLOG_CALL_EVENTS) {
 		mono_profiler_set_call_instrumentation_filter_callback (handle, method_filter);
 		mono_profiler_set_method_enter_callback (handle, method_enter);
 		mono_profiler_set_method_leave_callback (handle, method_leave);
 		mono_profiler_set_method_exception_leave_callback (handle, method_exc_leave);
 	}
 
-	if (config.effective_mask & PROFLOG_INS_COVERAGE_EVENTS)
+	if (log_config.effective_mask & PROFLOG_INS_COVERAGE_EVENTS)
 		mono_profiler_set_coverage_filter_callback (handle, coverage_filter);
 
-	if (config.effective_mask & PROFLOG_SAMPLING_EVENTS) {
+	if (log_config.effective_mask & PROFLOG_SAMPLING_EVENTS) {
 		mono_profiler_enable_sampling (handle);
 
-		if (!mono_profiler_set_sample_mode (handle, config.sampling_mode, config.sample_freq))
+		if (!mono_profiler_set_sample_mode (handle, log_config.sampling_mode, log_config.sample_freq))
 			mono_profiler_printf_err ("Another profiler controls sampling parameters; the log profiler will not be able to modify them.");
 
 		mono_profiler_set_sample_hit_callback (handle, mono_sample_hit);
 	}
 
-	if (config.effective_mask & PROFLOG_MONITOR_EVENTS) {
+	if (log_config.effective_mask & PROFLOG_MONITOR_EVENTS) {
 		mono_profiler_set_monitor_contention_callback (handle, monitor_contention);
 		mono_profiler_set_monitor_acquired_callback (handle, monitor_acquired);
 		mono_profiler_set_monitor_failed_callback (handle, monitor_failed);
 	}
 
-	if (config.effective_mask & PROFLOG_GC_MOVES_EVENTS)
+	if (log_config.effective_mask & PROFLOG_GC_MOVES_EVENTS)
 		mono_profiler_set_gc_moves_callback (handle, gc_moves);
 
-	if (config.effective_mask & PROFLOG_GC_ROOT_EVENTS)
+	if (log_config.effective_mask & PROFLOG_GC_ROOT_EVENTS)
 		mono_profiler_set_gc_roots_callback (handle, gc_roots);
 
-	if (config.effective_mask & PROFLOG_CONTEXT_EVENTS) {
+	if (log_config.effective_mask & PROFLOG_CONTEXT_EVENTS) {
 		mono_profiler_set_context_loaded_callback (handle, context_loaded);
 		mono_profiler_set_context_unloaded_callback (handle, context_unloaded);
 	}
 
-	if (config.effective_mask & PROFLOG_FINALIZATION_EVENTS) {
+	if (log_config.effective_mask & PROFLOG_FINALIZATION_EVENTS) {
 		mono_profiler_set_gc_finalizing_callback (handle, finalize_begin);
 		mono_profiler_set_gc_finalized_callback (handle, finalize_end);
 		mono_profiler_set_gc_finalizing_object_callback (handle, finalize_object_begin);
 		mono_profiler_set_gc_finalized_object_callback (handle, finalize_object_end);
-	} else if (ENABLED (PROFLOG_HEAPSHOT_FEATURE) && config.hs_mode_ondemand) {
+	} else if (ENABLED (PROFLOG_HEAPSHOT_FEATURE) && log_config.hs_mode_ondemand) {
 		//On Demand heapshot uses the finalizer thread to force a collection and thus a heapshot
 		mono_profiler_set_gc_finalized_callback (handle, finalize_end);
 	}
 
 	//PROFLOG_COUNTER_EVENTS is a pseudo event controled by the no_counters global var
 
-	if (config.effective_mask & PROFLOG_GC_HANDLE_EVENTS) {
+	if (log_config.effective_mask & PROFLOG_GC_HANDLE_EVENTS) {
 		mono_profiler_set_gc_handle_created_callback (handle, gc_handle_created);
 		mono_profiler_set_gc_handle_deleted_callback (handle, gc_handle_deleted);
 	}
