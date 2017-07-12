@@ -3629,9 +3629,9 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
 
         LclVarDsc* varDsc = &compiler->lvaTable[tree->gtLclVarCommon.gtLclNum];
         assert(varDsc->lvTracked);
-        unsigned  varIndex        = varDsc->lvVarIndex;
-        Interval* interval        = getIntervalForLocalVar(varIndex);
-        regMaskTP candidates      = getUseCandidates(tree);
+        unsigned  varIndex   = varDsc->lvVarIndex;
+        Interval* interval   = getIntervalForLocalVar(varIndex);
+        regMaskTP candidates = getUseCandidates(tree);
 
         // We have only approximate last-use information at this point.  This is because the
         // execution order doesn't actually reflect the true order in which the localVars
