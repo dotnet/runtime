@@ -17,6 +17,17 @@ namespace System.Diagnostics
     internal static partial class ProcessManager
     {
         public static IntPtr GetMainWindowHandle(int processId) => IntPtr.Zero;
+
+        /// <summary>Gets process infos for each process on the specified machine.</summary>
+        /// <param name="machineName">The target machine.</param>
+        /// <returns>An array of process infos, one per found process.</returns>
+        public static ProcessInfo[] GetProcessInfos(string machineName)
+        {
+            if (!IsRemoteMachine(machineName))
+                throw new PlatformNotSupportedException(SR.GetProcessInfoNotSupported); // NtDll.NtQuerySystemInformation is not available in Uap
+
+            return NtProcessManager.GetProcessInfos(machineName, isRemoteMachine: true);
+        }
     }
 
     internal static partial class NtProcessManager
