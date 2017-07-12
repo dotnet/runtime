@@ -12,7 +12,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests.CertificateCreatio
         [Fact]
         public static void RsaPkcsSignatureGeneratorCtor_Exceptions()
         {
-            Assert.Throws<ArgumentNullException>(
+            AssertExtensions.Throws<ArgumentNullException>(
                 "key",
                 () => X509SignatureGenerator.CreateForRSA(null, RSASignaturePadding.Pkcs1));
         }
