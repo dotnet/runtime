@@ -3699,9 +3699,11 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
     }
 #endif // DEBUG
 
-    const bool isContainedNode = !info.isLocalDefUse && consume == 0 && produce == 0 && tree->canBeContained();
-    if (isContainedNode)
+    if (tree->isContained())
     {
+        assert(!info.isLocalDefUse);
+        assert(consume == 0);
+        assert(produce == 0);
         assert(info.internalIntCount == 0);
         assert(info.internalFloatCount == 0);
 
