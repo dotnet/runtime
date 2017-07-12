@@ -661,12 +661,10 @@ namespace System.Threading
                 {
                     if (SetCurrentTotal(currentTotal, 0, total, !sense))
                     {
-#if !uapaot
                         if (CdsSyncEtwBCLProvider.Log.IsEnabled())
                         {
                             CdsSyncEtwBCLProvider.Log.Barrier_PhaseFinished(sense, CurrentPhaseNumber);
                         }
-#endif
                         FinishPhase(sense);
                         return true;
                     }
