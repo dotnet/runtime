@@ -1899,9 +1899,6 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             genCodeForPhysReg(treeNode->AsPhysReg());
             break;
 
-        case GT_PHYSREGDST:
-            break;
-
         case GT_NULLCHECK:
             genCodeForNullCheck(treeNode->AsOp());
             break;

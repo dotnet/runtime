@@ -4784,7 +4784,6 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_JTRUE:
         case GT_SWITCH:
         case GT_NULLCHECK:
-        case GT_PHYSREGDST:
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
 #if defined(_TARGET_ARM_) && !defined(LEGACY_BACKEND)
