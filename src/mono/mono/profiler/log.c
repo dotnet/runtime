@@ -546,22 +546,21 @@ typedef struct MonoCounterAgent {
 	// MonoCounterAgent specific data :
 	void *value;
 	size_t value_size;
-	short index;
-	short emitted;
+	guint32 index;
+	gboolean emitted;
 	struct MonoCounterAgent *next;
 } MonoCounterAgent;
 
 typedef struct _PerfCounterAgent PerfCounterAgent;
 struct _PerfCounterAgent {
 	PerfCounterAgent *next;
-	int index;
+	guint32 index;
 	char *category_name;
 	char *name;
-	int type;
 	gint64 value;
-	guint8 emitted;
-	guint8 updated;
-	guint8 deleted;
+	gboolean emitted;
+	gboolean updated;
+	gboolean deleted;
 };
 
 struct _MonoProfiler {
@@ -2825,7 +2824,7 @@ counters_add_agent (MonoCounter *counter)
 	agent->value = NULL;
 	agent->value_size = 0;
 	agent->index = log_profiler.counters_index++;
-	agent->emitted = 0;
+	agent->emitted = FALSE;
 	agent->next = NULL;
 
 	if (!log_profiler.counters) {
@@ -2909,7 +2908,7 @@ counters_emit (void)
 		emit_byte (logbuffer, mono_counter_get_variance (agent->counter));
 		emit_value (logbuffer, agent->index);
 
-		agent->emitted = 1;
+		agent->emitted = TRUE;
 	}
 
 	EXIT_LOG_EXPLICIT (DO_SEND);
@@ -3087,7 +3086,7 @@ perfcounters_emit (void)
 		emit_byte (logbuffer, MONO_COUNTER_VARIABLE);
 		emit_value (logbuffer, pcagent->index);
 
-		pcagent->emitted = 1;
+		pcagent->emitted = TRUE;
 	}
 
 	EXIT_LOG_EXPLICIT (DO_SEND);
@@ -3105,8 +3104,8 @@ perfcounters_foreach (char *category_name, char *name, unsigned char type, gint6
 			return TRUE;
 
 		pcagent->value = value;
-		pcagent->updated = 1;
-		pcagent->deleted = 0;
+		pcagent->updated = TRUE;
+		pcagent->deleted = FALSE;
 		return TRUE;
 	}
 
@@ -3115,11 +3114,10 @@ perfcounters_foreach (char *category_name, char *name, unsigned char type, gint6
 	pcagent->index = log_profiler.counters_index++;
 	pcagent->category_name = g_strdup (category_name);
 	pcagent->name = g_strdup (name);
-	pcagent->type = (int) type;
 	pcagent->value = value;
-	pcagent->emitted = 0;
-	pcagent->updated = 1;
-	pcagent->deleted = 0;
+	pcagent->emitted = FALSE;
+	pcagent->updated = TRUE;
+	pcagent->deleted = FALSE;
 
 	log_profiler.perfcounters = pcagent;
 
@@ -3137,7 +3135,7 @@ perfcounters_sample (uint64_t timestamp)
 
 	/* mark all perfcounters as deleted, foreach will unmark them as necessary */
 	for (pcagent = log_profiler.perfcounters; pcagent; pcagent = pcagent->next)
-		pcagent->deleted = 1;
+		pcagent->deleted = TRUE;
 
 	mono_perfcounter_foreach (perfcounters_foreach, NULL);
 
@@ -3178,7 +3176,7 @@ perfcounters_sample (uint64_t timestamp)
 		emit_byte (logbuffer, MONO_COUNTER_LONG);
 		emit_svalue (logbuffer, pcagent->value);
 
-		pcagent->updated = 0;
+		pcagent->updated = FALSE;
 	}
 
 	emit_value (logbuffer, 0);
