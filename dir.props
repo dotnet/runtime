@@ -23,7 +23,7 @@
 
   <!-- Profile-based optimization data package versions -->
   <PropertyGroup>
-    <PgoDataPackageVersion>99.99.99-master-20170630-0138</PgoDataPackageVersion>
+    <PgoDataPackageVersion>99.99.99-master-20170712-0121</PgoDataPackageVersion>
     <!--<IbcDataPackageVersion></IbcDataPackageVersion>-->
   </PropertyGroup>
 
