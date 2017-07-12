@@ -26,26 +26,26 @@ RyuJIT provides the just in time compilation service for the .NET runtime. The r
 
 # Internal Representation (IR)
 
+## `Compiler` object
+
+The `Compiler` object is the primary data structure of the JIT. While it is not part of the JIT's IR per se, it serves as the root from which the data structures that implement the IR are accessible. For example, the `Compiler` object points to the head of the function's `BasicBlock` list with the `fgFirstBB` field, as well as having additional pointers to the end of the list, and other distinguished locations. `ICorJit`Compiler`::CompileMethod()` is invoked for each method, and creates a new `Compiler` object. Thus, the JIT need not worry about thread synchronization while accessing `Compiler` state. The EE has the necessary synchronization to ensure there is a single JIT’d copy of a method when two or more threads try to trigger JIT compilation of the same method.
+
 ## Overview of the IR
 
-RyuJIT represents a function as a doubly-linked list of `BasicBlock` values. Each `BasicBlock` has explicit edges to its successors that define the function's non-exceptional control flow. Exceptional control flow is implicit, with protected regions and handlers described in a table of `EHblkDsc` values. At the beginning of a compilation, each `BasicBlock` contains nodes in a high-level, statement- and tree-oriented form (HIR); this form persists throughout the JIT's front end. During the first phase of the back end--the rationalization phase--the HIR for each block is lowered to a linearly-ordered, node-oriented form (LIR). The fundamental distinction between HIR and LIR is in ordering semantics, though there are also some restrictions on the types of nodes that may appear in an LIR block.
+RyuJIT represents a function as a doubly-linked list of `BasicBlock` values. Each `BasicBlock` has explicit edges to its successors that define the function's non-exceptional control flow. Exceptional control flow is implicit, with protected regions and handlers described in a table of `EHblkDsc` values. At the beginning of a compilation, each `BasicBlock` contains nodes in a high-level, statement- and tree-oriented form (HIR); this form persists throughout the JIT's front end. During the first phase of the back end--the rationalization phase--the HIR for each block is lowered to a linearly-ordered, node-oriented form (LIR). The fundamental distinction between HIR and LIR is in ordering semantics, though there are also some restrictions on the types of nodes that may appear in an HIR or LIR block.
 
-Both HIR and LIR blocks are composed of `GenTree` nodes that define the operations performed by the block. A `GenTree` node may consume some number of operands and may produce a singly-defined, at-most-singly-used value as a result (an SDSU or "tree" temp). Defs of SDSU temps are represented by `GenTree` nodes themselves, and uses are represented by edges from the using node to the defining node. Furthermore, SDSU temps defined in one block may not be used in a different block. In cases where a value must be multiply-defined, multiply-used, or defined in one block and used in another, the IR provides another class of temporary: the local var. Local vars are defined by assignment nodes in HIR or store nodes in LIR, and are used by local var nodes in both forms.
+Both HIR and LIR blocks are composed of `GenTree` nodes that define the operations performed by the block. A `GenTree` node may consume some number of operands and may produce a singly-defined, at-most-singly-used value as a result. These values are referred to interchangably as *SDSU* temps or *tree* temps. Defs of SDSU temps are represented by `GenTree` nodes themselves, and uses are represented by edges from the using node to the defining node. Furthermore, SDSU temps defined in one block may not be used in a different block. In cases where a value must be multiply-defined, multiply-used, or defined in one block and used in another, the IR provides another class of temporary: the local var. Local vars are defined by assignment nodes in HIR or store nodes in LIR, and are used by local var nodes in both forms.
 
-An HIR block is composed of a doubly-linked list of statements, each of which references a single expression tree (`gtStmtExpr`). The `GenTree` nodes in this tree execute in "tree order", which is defined as the order produced by a depth-first, left-to-right traversal of the tree, with two notable exceptions:
+An HIR block is composed of a doubly-linked list of statement nodes (`GenTreeStmt`), each of which references a single expression tree (`gtStmtExpr`). The `GenTree` nodes in this tree execute in "tree order", which is defined as the order produced by a depth-first, left-to-right traversal of the tree, with two notable exceptions:
 - Binary nodes marked with the `GTF_REVERSE_OPS` flag execute their right operand tree (`gtOp2`) before their left operand tree (`gtOp1`)
 - Dynamically-sized block copy nodes where `gtEvalSizeFirst` is `true` execute the `gtDynamicSize` tree before executing their other operand trees
-In addition to tree order, HIR also requires that no SDSU temp is defined in one statement and used in another. In situations where the requirements of tree and statement order prove onerous (e.g. when code must execute at a particular point in a function), HIR provides `GT_COMMA` nodes as an escape valve: these nodes consume and discard the results of their left-hand side (indeed, they do not require that the LHS actually produces a value) while producing a copy of the vaule produced by their right-hand side. This allows the compiler to insert code in the middle of a statement without requiring that the statement be split in two.
+In addition to tree order, HIR also requires that no SDSU temp is defined in one statement and used in another. In situations where the requirements of tree and statement order prove onerous (e.g. when code must execute at a particular point in a function), HIR provides `GT_COMMA` nodes as an escape valve: these nodes consume and discard the results of their left-hand side while producing a copy of the vaule produced by their right-hand side. This allows the compiler to insert code in the middle of a statement without requiring that the statement be split apart.
 
 An LIR block is composed of a doubly-linked list of `GenTree` nodes, each of which describes a single operation in the method. These nodes execute in the order given by the list; there is no relationship between the order in which a node's operands appear and the order in which the operators that produced those operands execute. The only exception to this rule occurs after the register allocator, which may introduce `GT_COPY` and `GT_RELOAD` nodes that execute in "spill order". Spill order is defined as the order in which the register allocator visits a node's operands. For correctness, the code generator must generate code for spills, reloads, and `GT_COPY`/`GT_RELOAD` nodes in this order.
 
 In addition to HIR and LIR `BasicBlock`s, a separate representation--`insGroup` and `instrDesc`--is used during the actual instruction encoding.
 
 ![RyuJIT IR Overview](../images/ryujit-ir-overview.png)
-
-## `Compiler` object
-
-The `Compiler` object is the primary data structure of the JIT. The `Compiler` object points to the head of the function's `BasicBlock` list with the `fgFirstBB` field, as well as having additional pointers to the end of the list, and other distinguished locations. `ICorJit`Compiler`::CompileMethod()` is invoked for each method, and creates a new `Compiler` object. Thus, the JIT need not worry about thread synchronization while accessing `Compiler` state. The EE has the necessary synchronization to ensure there is a single JIT’d copy of a method when two or more threads try to trigger JIT compilation of the same method.
 
 ## GenTree Nodes
 
@@ -102,9 +102,8 @@ In order to limit throughput impact, the JIT limits the number of lclVars for wh
 The liveness analysis determines the set of defs, as well as the uses that are upward exposed, for each block. It then propagates the liveness information. The result of the analysis is captured in the following:
 
 * The live-in and live-out sets are captured in the `bbLiveIn` and `bbLiveOut` fields of the `BasicBlock`.
-* The `GTF_VAR_DEF` flag is set on a lclVar `GenTree` node that is a definition.
+* The `GTF_VAR_DEF` flag is set on a lclVar node (all of which are of type `GenTreeLclVarCommon`) that is a definition.
 * The `GTF_VAR_USEASG` flag is set (in addition to the `GTF_VAR_DEF` flag) for the target of an update (e.g. +=).
-* The `GTF_VAR_USEDEF` is set on the target of an assignment of a binary operator with the same lclVar as an operand.
 
 ## SSA
 
@@ -240,7 +239,7 @@ As the JIT has evolved, changes have been made to improve the ability to reason 
 * Elimination of “comma” nodes (`GT_COMMA`). These nodes are introduced for convenience during importation, during which a single tree is constructed at a time, and not incorporated into the statement list until it is completed. When it is necessary, for example, to store a partially-constructed tree into a temporary variable, a `GT_COMMA` node is used to link it into the tree. However, in later phases, these comma nodes are an impediment to analysis, and thus are eliminated.
   * In some cases, it is not possible to fully extract the tree into a separate statement, due to execution order dependencies. In these cases, an “embedded” statement is created. While these are conceptually very similar to the `GT_COMMA` nodes, they do not masquerade as expressions.
 * Elimination of “QMark” (`GT_QMARK`/`GT_COLON`) nodes is actually done at the end of morphing, long before the current rationalization phase. The presence of these nodes made analyses (especially dataflow) overly complex.
-* Elimiation of statements. Without statements, the execution order of a basic block's contents is fully defined by the `gtNext`/`gtPrev` links between `GenTree` nodes.
+* Elimination of statements. Without statements, the execution order of a basic block's contents is fully defined by the `gtNext`/`gtPrev` links between `GenTree` nodes.
 
 For our earlier example (Example of Post-Import IR), here is what the simplified dump looks like just prior to Rationalization (the $ annotations are value numbers).  Note that some common subexpressions have been computed into new temporary lclVars, and that computation has been inserted as a `GT_COMMA` (comma) node in the IR:
 
@@ -418,7 +417,7 @@ The process of code generation is relatively straightforward, as Lowering has do
   * If the node is “contained” (i.e. its operation is subsumed by a parent node), do nothing.
   * Otherwise, “consume” all the register operands of the node.
     * This updates the liveness information (i.e. marking a lclVar as dead if this is the last use), and performs any needed copies.
-    * This must be done in "spill order" so that any spill/restore code inserted by the register allocator to resovle register conflicts is generated in the correct order. "
+    * This must be done in "spill order" so that any spill/restore code inserted by the register allocator to resolve register conflicts is generated in the correct order. "
   * Track the live variables in registers, as well as the live stack variables that contain GC refs.
   * Produce the `instrDesc(s)` for the operation, with the current live GC references.
   * Update the scope information (debug info) at block boundaries.
@@ -444,7 +443,7 @@ There are several properties of the IR that are valid only during (or after) spe
 * Rationalization
   * All `GT_ASG` trees are transformed into `GT_STORE` variants (e.g. `GT_STORE_LCL_VAR`).
   * All `GT_ADDR` nodes are eliminated (e.g. with `GT_LCL_VAR_ADDR`).
-  * All `GT_COMMA` and `GT_STMT` nodes are removed and their consituent nodes linked into execution order.
+  * All `GT_COMMA` and `GT_STMT` nodes are removed and their constituent nodes linked into execution order.
 * Lowering
   * `GenTree` nodes are split or transformed as needed to expose all of their register requirements and any necessary `flowgraph` changes (e.g., for switch statements).
 
