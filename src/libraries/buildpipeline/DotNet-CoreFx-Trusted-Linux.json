@@ -217,7 +217,7 @@
     {
       "enabled": true,
       "continueOnError": true,
-      "alwaysRun": false,
+      "alwaysRun": true,
       "displayName": "Copy Publish Artifact: BuildLogs",
       "timeoutInMinutes": 0,
       "task": {
@@ -236,7 +236,7 @@
     {
       "enabled": true,
       "continueOnError": true,
-      "alwaysRun": false,
+      "alwaysRun": true,
       "displayName": "Cleanup Docker",
       "timeoutInMinutes": 0,
       "task": {
@@ -254,7 +254,7 @@
     {
       "enabled": true,
       "continueOnError": true,
-      "alwaysRun": false,
+      "alwaysRun": true,
       "displayName": "Cleanup VSTS Agent",
       "timeoutInMinutes": 0,
       "task": {
@@ -433,7 +433,7 @@
       "deleteTestResults": true
     }
   ],
-  "buildNumberFormat": "$(date:yyyyMMdd)$(rev:-9r)",
+  "buildNumberFormat": "$(date:yyyyMMdd)$(rev:-rr)",
   "jobAuthorizationScope": "projectCollection",
   "jobTimeoutInMinutes": 60,
   "jobCancelTimeoutInMinutes": 5,
@@ -444,9 +444,7 @@
       "fetchDepth": "0",
       "gitLfsSupport": "false",
       "skipSyncSource": "true",
-      "cleanOptions": "0",
-      "checkoutNestedSubmodules": "false",
-      "labelSourcesFormat": "$(build.buildNumber)"
+      "cleanOptions": "0"
     },
     "id": "58fa2458-e392-4373-ba2b-dd3ef0c2d7ce",
     "type": "TfsGit",
