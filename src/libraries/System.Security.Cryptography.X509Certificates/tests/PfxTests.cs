@@ -15,12 +15,8 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             get
             {
-#if uap
-                yield break;
-#else
                 yield return new object[] { TestData.ECDsabrainpoolP160r1_Pfx };
                 yield return new object[] { TestData.ECDsabrainpoolP160r1_Explicit_Pfx };
-#endif
             }
         }
 
@@ -38,8 +34,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal(expectedThumbprint, thumbPrint);
             }
         }
-
-#if netcoreapp
+        
         [Theory]
         [MemberData(nameof(StorageFlags))]
         public static void TestConstructor_SecureString(X509KeyStorageFlags keyStorageFlags)
@@ -55,7 +50,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Equal(expectedThumbprint, thumbPrint);
             }
         }
-#endif
 
         [Theory]
         [MemberData(nameof(StorageFlags))]
@@ -119,8 +113,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 }
             }
         }
-
-#if netcoreapp
+        
         [Fact]
         public static void TestPrivateKeyProperty()
         {
@@ -140,7 +133,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.Throws<PlatformNotSupportedException>(() => c.PrivateKey = alg);
             }
         }
-#endif
 
         private static void VerifyPrivateKey(RSA rsa)
         {
@@ -179,8 +171,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 }
             }
         }
-
-#if netcoreapp
+        
         [Fact]
         public static void ECDsaPrivateKeyProperty_WindowsPfx()
         {
@@ -225,7 +216,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 Assert.False(dsa.VerifyData(data, sig, HashAlgorithmName.SHA1), "Key verifies tampered data signature");
             }
         }
-#endif
 
         private static void Verify_ECDsaPrivateKey_WindowsPfx(ECDsa ecdsa)
         {
@@ -289,8 +279,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 }
             }
         }
-
-#if netcoreapp
+        
         [Fact]
         public static void ReadDSAPrivateKey()
         {
@@ -360,7 +349,6 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 }
             }
         }
-#endif
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes
