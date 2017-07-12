@@ -133,7 +133,6 @@ enum {
 	TYPE_COVERAGE_CLASS = 3 << 4,
 	/* extended type for TYPE_META */
 	TYPE_SYNC_POINT = 0 << 4,
-	TYPE_END
 };
 
 enum {
