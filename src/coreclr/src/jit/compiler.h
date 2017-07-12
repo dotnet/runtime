@@ -1988,8 +1988,6 @@ public:
 
     GenTree* gtNewPhysRegNode(regNumber reg, var_types type);
 
-    GenTree* gtNewPhysRegNode(regNumber reg, GenTree* src);
-
     GenTreePtr gtNewJmpTableNode();
     GenTreePtr gtNewIconHandleNode(
         size_t value, unsigned flags, FieldSeqNode* fields = nullptr, unsigned handle1 = 0, void* handle2 = nullptr);
@@ -9612,7 +9610,6 @@ public:
             case GT_JTRUE:
             case GT_SWITCH:
             case GT_NULLCHECK:
-            case GT_PHYSREGDST:
             case GT_PUTARG_REG:
             case GT_PUTARG_STK:
             case GT_RETURNTRAP:
