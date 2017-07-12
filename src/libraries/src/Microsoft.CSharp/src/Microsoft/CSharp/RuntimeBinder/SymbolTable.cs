@@ -1133,7 +1133,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             agg.SetTypeManager(_typeManager);
             agg.SetFirstUDConversion(null);
             SetInterfacesOnAggregate(agg, type);
-            agg.SetHasPubNoArgCtor(Enumerable.Any(type.GetConstructors(), c => c.GetParameters().Length == 0));
+            agg.SetHasPubNoArgCtor(type.GetConstructor(Type.EmptyTypes) != null);
 
             // If we have a delegate, get its invoke and constructor methods as well.
             if (agg.IsDelegate())
@@ -1513,9 +1513,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             // Check if we have constructors or not.
             if (methodName == NameManager.GetPredefinedName(PredefinedName.PN_CTOR))
             {
-                var ctors = Enumerable.Where(t.GetConstructors(), m => m.Name == methodName.Text);
-
-                foreach (ConstructorInfo c in ctors)
+                foreach (ConstructorInfo c in t.GetConstructors())
                 {
                     AddMethodToSymbolTable(
                         c,
