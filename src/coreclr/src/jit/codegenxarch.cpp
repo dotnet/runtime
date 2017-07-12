@@ -1708,6 +1708,41 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             genCodeForCast(treeNode->AsOp());
             break;
 
+        case GT_BITCAST:
+        {
+            GenTree* const op1 = treeNode->AsOp()->gtOp1;
+            genConsumeReg(op1);
+
+            const bool srcFltReg = varTypeIsFloating(op1) || varTypeIsSIMD(op1);
+            const bool dstFltReg = varTypeIsFloating(treeNode) || varTypeIsSIMD(treeNode);
+            if (srcFltReg != dstFltReg)
+            {
+                instruction ins;
+                regNumber   fltReg;
+                regNumber   intReg;
+                if (dstFltReg)
+                {
+                    ins    = ins_CopyIntToFloat(op1->TypeGet(), treeNode->TypeGet());
+                    fltReg = treeNode->gtRegNum;
+                    intReg = op1->gtRegNum;
+                }
+                else
+                {
+                    ins    = ins_CopyFloatToInt(op1->TypeGet(), treeNode->TypeGet());
+                    intReg = treeNode->gtRegNum;
+                    fltReg = op1->gtRegNum;
+                }
+                inst_RV_RV(ins, fltReg, intReg, treeNode->TypeGet());
+            }
+            else if (treeNode->gtRegNum != op1->gtRegNum)
+            {
+                inst_RV_RV(ins_Copy(treeNode->TypeGet()), treeNode->gtRegNum, op1->gtRegNum, treeNode->TypeGet());
+            }
+
+            genProduceReg(treeNode);
+            break;
+        }
+
         case GT_LCL_FLD_ADDR:
         case GT_LCL_VAR_ADDR:
             genCodeForLclAddr(treeNode);

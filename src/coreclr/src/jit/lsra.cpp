@@ -2242,6 +2242,7 @@ void LinearScan::identifyCandidates()
                     varDsc->lvLRACandidate = 0;
                 }
                 break;
+
             // TODO-1stClassStructs: Move TYP_SIMD8 up with the other SIMD types, after handling the param issue
             // (passing & returning as TYP_LONG).
             case TYP_SIMD8:
@@ -3749,10 +3750,13 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
     assert(!tree->OperIsAssignment());
     if (tree->OperIsLocalStore())
     {
-        if (isCandidateLocalRef(tree))
+        GenTreeLclVarCommon* const store = tree->AsLclVarCommon();
+        assert((consume > 1) || (regType(store->gtOp1->TypeGet()) == regType(store->TypeGet())));
+
+        LclVarDsc* varDsc = &compiler->lvaTable[store->gtLclNum];
+        if (isCandidateVar(varDsc))
         {
             // We always push the tracked lclVar intervals
-            LclVarDsc* varDsc = &compiler->lvaTable[tree->gtLclVarCommon.gtLclNum];
             assert(varDsc->lvTracked);
             unsigned varIndex = varDsc->lvVarIndex;
             varDefInterval    = getIntervalForLocalVar(varIndex);
@@ -3794,24 +3798,37 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
                     // Preference the source to dest, if src is not a local var.
                     srcInterval->assignRelatedInterval(varDefInterval);
                 }
-
-                // We can have a case where the source of the store has a different register type,
-                // e.g. when the store is of a return value temp, and op1 is a Vector2
-                // (TYP_SIMD8).  We will need to set the
-                // src candidates accordingly on op1 so that LSRA will generate a copy.
-                // We could do this during Lowering, but at that point we don't know whether
-                // this lclVar will be a register candidate, and if not, we would prefer to leave
-                // the type alone.
-                if (regType(tree->gtGetOp1()->TypeGet()) != regType(tree->TypeGet()))
-                {
-                    tree->gtGetOp1()->gtLsraInfo.setSrcCandidates(this, allRegs(tree->TypeGet()));
-                }
             }
 
             if ((tree->gtFlags & GTF_VAR_DEATH) == 0)
             {
                 VarSetOps::AddElemD(compiler, currentLiveVars, varIndex);
             }
+        }
+        else if (store->gtOp1->OperIs(GT_BITCAST))
+        {
+            store->gtType = store->gtOp1->gtType = store->gtOp1->AsUnOp()->gtOp1->TypeGet();
+
+            // Get the location info for the register defined by the first operand.
+            LocationInfoList operandDefs;
+            bool             found = operandToLocationInfoMap.TryGetValue(GetFirstOperand(store), &operandDefs);
+            assert(found);
+
+            // Since we only expect to consume one register, we should only have a single register to consume.
+            assert(operandDefs.Begin()->Next() == operandDefs.End());
+
+            LocationInfo& operandInfo = *static_cast<LocationInfo*>(operandDefs.Begin());
+
+            Interval* srcInterval     = operandInfo.interval;
+            srcInterval->registerType = regType(store->TypeGet());
+
+            RefPosition* srcDefPosition = srcInterval->firstRefPosition;
+            assert(srcDefPosition != nullptr);
+            assert(srcDefPosition->refType == RefTypeDef);
+            assert(srcDefPosition->treeNode == store->gtOp1);
+
+            srcDefPosition->registerAssignment = allRegs(store->TypeGet());
+            store->gtOp1->gtLsraInfo.setSrcCandidates(this, allRegs(store->TypeGet()));
         }
     }
     else if (noAdd && produce == 0)
@@ -3974,26 +3991,6 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
             Interval* i           = locInfo.interval;
             unsigned  multiRegIdx = locInfo.multiRegIdx;
 
-#ifdef FEATURE_SIMD
-            // In case of multi-reg call store to a local, there won't be any mismatch of
-            // use candidates with the type of the tree node.
-            if (tree->OperIsLocalStore() && varDefInterval == nullptr && !useNode->IsMultiRegCall())
-            {
-                // This is a non-candidate store.  If this is a SIMD type, the use candidates
-                // may not match the type of the tree node.  If that is the case, change the
-                // type of the tree node to match, so that we do the right kind of store.
-                if ((candidates & allRegs(tree->gtType)) == RBM_NONE)
-                {
-                    noway_assert((candidates & allRegs(useNode->gtType)) != RBM_NONE);
-                    // Currently, the only case where this should happen is for a TYP_LONG
-                    // source and a TYP_SIMD8 target.
-                    assert((useNode->gtType == TYP_LONG && tree->gtType == TYP_SIMD8) ||
-                           (useNode->gtType == TYP_SIMD8 && tree->gtType == TYP_LONG));
-                    tree->gtType = useNode->gtType;
-                }
-            }
-#endif // FEATURE_SIMD
-
             if (useNode->gtLsraInfo.isTgtPref)
             {
                 prefSrcInterval = i;
@@ -4047,29 +4044,9 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
             }
 #endif // DEBUG
 
-            RefPosition* pos;
-            if ((candidates & allRegs(i->registerType)) == 0)
-            {
-                // This should only occur where we've got a type mismatch due to SIMD
-                // pointer-size types that are passed & returned as longs.
-                i->hasConflictingDefUse = true;
-                if (fixedAssignment != RBM_NONE)
-                {
-                    // Explicitly insert a FixedRefPosition and fake the candidates, because otherwise newRefPosition
-                    // will complain about the types not matching.
-                    regNumber    physicalReg = genRegNumFromMask(fixedAssignment);
-                    RefPosition* pos =
-                        newRefPosition(physicalReg, currentLoc, RefTypeFixedReg, nullptr, fixedAssignment);
-                }
-                pos = newRefPosition(i, currentLoc, RefTypeUse, useNode, allRegs(i->registerType),
-                                     multiRegIdx DEBUG_ARG(minRegCountForUsePos));
-                pos->registerAssignment = candidates;
-            }
-            else
-            {
-                pos = newRefPosition(i, currentLoc, RefTypeUse, useNode, candidates,
-                                     multiRegIdx DEBUG_ARG(minRegCountForUsePos));
-            }
+            assert((candidates & allRegs(i->registerType)) != 0);
+            RefPosition* pos = newRefPosition(i, currentLoc, RefTypeUse, useNode, candidates,
+                                              multiRegIdx DEBUG_ARG(minRegCountForUsePos));
 
             if (delayRegFree)
             {
@@ -5277,16 +5254,8 @@ RegisterType LinearScan::getRegisterType(Interval* currentInterval, RefPosition*
     assert(refPosition->getInterval() == currentInterval);
     RegisterType regType    = currentInterval->registerType;
     regMaskTP    candidates = refPosition->registerAssignment;
-#if defined(FEATURE_SIMD) && defined(_TARGET_AMD64_)
-    if ((candidates & allRegs(regType)) == RBM_NONE)
-    {
-        assert((regType == TYP_SIMD8) && (refPosition->refType == RefTypeUse) &&
-               ((candidates & allRegs(TYP_INT)) != RBM_NONE));
-        regType = TYP_INT;
-    }
-#else  // !(defined(FEATURE_SIMD) && defined(_TARGET_AMD64_))
+
     assert((candidates & allRegs(regType)) != RBM_NONE);
-#endif // !(defined(FEATURE_SIMD) && defined(_TARGET_AMD64_))
     return regType;
 }
 
@@ -8463,20 +8432,6 @@ void LinearScan::insertCopyOrReload(BasicBlock* block, GenTreePtr tree, unsigned
         // Create the new node, with "tree" as its only child.
         var_types treeType = tree->TypeGet();
 
-#ifdef FEATURE_SIMD
-        // Check to see whether we need to move to a different register set.
-        // This currently only happens in the case of SIMD vector types that are small enough (pointer size)
-        // that they must be passed & returned in integer registers.
-        // 'treeType' is the type of the register we are moving FROM,
-        // and refPosition->registerAssignment is the mask for the register we are moving TO.
-        // If they don't match, we need to reverse the type for the "move" node.
-
-        if ((allRegs(treeType) & refPosition->registerAssignment) == 0)
-        {
-            treeType = (useFloatReg(treeType)) ? TYP_I_IMPL : TYP_SIMD8;
-        }
-#endif // FEATURE_SIMD
-
         GenTreeCopyOrReload* newNode = new (compiler, oper) GenTreeCopyOrReload(oper, treeType, tree);
         assert(refPosition->registerAssignment != RBM_NONE);
         newNode->SetRegNumByIdx(refPosition->assignedReg(), multiRegIdx);
@@ -10125,7 +10080,7 @@ void LinearScan::resolveEdge(BasicBlock*      fromBlock,
             tempRegFlt = getTempRegForResolution(fromBlock, toBlock, TYP_FLOAT);
         }
 #else
-        tempRegFlt = getTempRegForResolution(fromBlock, toBlock, TYP_FLOAT);
+        tempRegFlt                   = getTempRegForResolution(fromBlock, toBlock, TYP_FLOAT);
 #endif
     }
 
