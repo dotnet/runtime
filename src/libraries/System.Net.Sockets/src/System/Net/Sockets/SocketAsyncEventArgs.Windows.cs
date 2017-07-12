@@ -27,7 +27,6 @@ namespace System.Net.Sockets
         private GCHandle _wsaMessageBufferGCHandle;
         private byte[] _controlBuffer;
         private GCHandle _controlBufferGCHandle;
-        private IntPtr _ptrControlBuffer;
         private WSABuffer[] _wsaRecvMsgWSABufferArray;
         private GCHandle _wsaRecvMsgWSABufferArrayGCHandle;
         private IntPtr _ptrWSARecvMsgWSABufferArray;
@@ -443,10 +442,9 @@ namespace System.Net.Sockets
                 }
                 _controlBuffer = new byte[sizeof(Interop.Winsock.ControlDataIPv6)];
             }
-            if (!_controlBufferGCHandle.IsAllocated)
+            if (_controlBuffer != null && !_controlBufferGCHandle.IsAllocated)
             {
                 _controlBufferGCHandle = GCHandle.Alloc(_controlBuffer, GCHandleType.Pinned);
-                _ptrControlBuffer = Marshal.UnsafeAddrOfPinnedArrayElement(_controlBuffer, 0);
             }
 
             // If single buffer we need a single element WSABuffer.
@@ -490,7 +488,14 @@ namespace System.Net.Sockets
 
                 if (_controlBuffer != null)
                 {
-                    pMessage->controlBuffer.Pointer = _ptrControlBuffer;
+                    Debug.Assert(_controlBuffer.Length > 0);
+                    Debug.Assert(_controlBufferGCHandle.IsAllocated);
+                    Debug.Assert(_controlBufferGCHandle.Target == _controlBuffer);
+
+                    fixed (void* ptrControlBuffer = &_controlBuffer[0])
+                    {
+                        pMessage->controlBuffer.Pointer = ptrControlBuffer;
+                    }
                     pMessage->controlBuffer.Length = _controlBuffer.Length;
                 }
                 pMessage->flags = _socketFlags;
@@ -505,7 +510,10 @@ namespace System.Net.Sockets
                 Debug.Assert(_wsaMessageBuffer.Length == sizeof(Interop.Winsock.WSAMsg));
                 Debug.Assert(_wsaMessageBufferGCHandle.IsAllocated);
                 Debug.Assert(_wsaMessageBufferGCHandle.Target == _wsaMessageBuffer);
-                fixed (void* ptr = &_wsaMessageBuffer[0]) return (IntPtr)ptr;
+                fixed (void* ptrWSAMessageBuffer = &_wsaMessageBuffer[0])
+                {
+                    return (IntPtr)ptrWSAMessageBuffer;
+                }
             }
         }
 
@@ -949,7 +957,6 @@ namespace System.Net.Sockets
             if (_controlBufferGCHandle.IsAllocated)
             {
                 _controlBufferGCHandle.Free();
-                _ptrControlBuffer = IntPtr.Zero;
             }
         }
 
