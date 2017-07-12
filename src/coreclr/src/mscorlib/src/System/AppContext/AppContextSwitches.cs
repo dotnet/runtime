@@ -19,16 +19,6 @@ namespace System
             }
         }
 
-        private static int _throwExceptionIfDisposedCancellationTokenSource;
-        public static bool ThrowExceptionIfDisposedCancellationTokenSource
-        {
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            get
-            {
-                return GetCachedSwitchValue(AppContextDefaultValues.SwitchThrowExceptionIfDisposedCancellationTokenSource, ref _throwExceptionIfDisposedCancellationTokenSource);
-            }
-        }
-
         private static int _preserveEventListnerObjectIdentity;
         public static bool PreserveEventListnerObjectIdentity
         {
