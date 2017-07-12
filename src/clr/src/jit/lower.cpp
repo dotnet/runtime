@@ -1219,6 +1219,11 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
 
             GenTreePtr intArg = new (comp, GT_COPY) GenTreeCopyOrReload(GT_COPY, intType, arg);
 
+            if (comp->opts.compUseSoftFP)
+            {
+                intArg->gtFlags |= GTF_VAR_DEATH;
+            }
+
             info->node = intArg;
             ReplaceArgWithPutArgOrCopy(ppArg, intArg);
 
