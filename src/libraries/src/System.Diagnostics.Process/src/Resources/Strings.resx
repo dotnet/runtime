@@ -303,4 +303,7 @@
   <data name="UseShellExecuteNotSupported" xml:space="preserve">
     <value>UseShellExecute is not supported on this platform.</value>
   </data>
+  <data name="GetProcessInfoNotSupported" xml:space="preserve">
+    <value>Retrieving information about local processes is not supported on this platform.</value>
+  </data>
 </root>

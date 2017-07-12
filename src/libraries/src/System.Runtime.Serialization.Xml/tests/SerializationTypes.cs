@@ -17,6 +17,7 @@ using System.IO;
 using System.Text;
 using System.Reflection;
 using System.Threading.Tasks;
+using System.Runtime.Serialization.Json;
 
 namespace SerializationTypes
 {
@@ -5371,4 +5372,108 @@ public class SampleICollectionTExplicitWithoutDC : ICollection<DC>
     {
         return _internalList.GetEnumerator();
     }
+}
+
+public class NetNativeTestData
+{
+    public static NetNativeTestData[] InvalidTypes = new NetNativeTestData[] {
+            new NetNativeTestData(typeof(Invalid_Class_No_Parameterless_Ctor),
+                () => new Invalid_Class_No_Parameterless_Ctor("test"),
+                "Type 'Invalid_Class_No_Parameterless_Ctor' cannot be serialized. Consider marking it with the DataContractAttribute attribute, and marking all of its members you want serialized with the DataMemberAttribute attribute.  If the type is a collection, consider marking it with the CollectionDataContractAttribute.  See the Microsoft .NET Framework documentation for other supported types."),
+            new NetNativeTestData(typeof(Invalid_Class_Derived_With_DataContract),
+                () => new Invalid_Class_Derived_With_DataContract(),
+                "Type 'Invalid_Class_Derived_With_DataContract' cannot inherit from a type that is not marked with DataContractAttribute or SerializableAttribute.  Consider marking the base type 'Invalid_Class_Base_Without_DataContract' with DataContractAttribute or SerializableAttribute, or removing them from the derived type." ),
+            new NetNativeTestData(typeof(Invalid_Class_KnownType_Invalid_Type),
+                () => new Invalid_Class_KnownType_Invalid_Type(),
+                "Type 'Invalid_Class_No_Parameterless_Ctor' cannot be serialized. Consider marking it with the DataContractAttribute attribute, and marking all of its members you want serialized with the DataMemberAttribute attribute.  If the type is a collection, consider marking it with the CollectionDataContractAttribute.  See the Microsoft .NET Framework documentation for other supported types." ),
+        };
+
+    // This list exists solely to expose all the root objects being serialized.
+    // Without this ILC removes our test data types
+    // All new test data types *must* be added to one of these lists to appear to the ILC.
+    // Test data now added here will result in "serializer not found" exception at runtime.
+    public static DataContractSerializer[] Serializers = new DataContractSerializer[]
+    {
+            new DataContractSerializer(typeof(Invalid_Class_No_Parameterless_Ctor)),
+            new DataContractSerializer(typeof(List<Invalid_Class_No_Parameterless_Ctor>)),
+            new DataContractSerializer(typeof(Invalid_Class_Derived_With_DataContract)),
+            new DataContractSerializer(typeof(Invalid_Class_KnownType_Invalid_Type))
+    };
+
+    public NetNativeTestData(Type type, Func<object> instantiate, string errorMessage)
+    {
+        Type = type;
+        ErrorMessage = errorMessage;
+        Instantiate = instantiate;
+    }
+
+    public Type Type { get; set; }
+
+    public String ErrorMessage { get; set; }
+
+    public Func<object> Instantiate
+    {
+        get; set;
+    }
+}
+public abstract class Invalid_Class_Base_Without_DataContract
+{
+
+}
+
+// Invalid because it is a derived [DataContract] class whose base class is not 
+[DataContract]
+public class Invalid_Class_Derived_With_DataContract : Invalid_Class_Base_Without_DataContract
+{
+
+}
+
+// Invalid because its [KnownType] is an invalid type
+[KnownType(typeof(Invalid_Class_No_Parameterless_Ctor))]
+public class Invalid_Class_KnownType_Invalid_Type
+{
+    public Invalid_Class_KnownType_Invalid_Type()
+    {
+
+    }
+}
+
+public class Invalid_Class_No_Parameterless_Ctor
+{
+    public Invalid_Class_No_Parameterless_Ctor(string id)
+    {
+        ID = id;
+    }
+
+    public string ID { get; set; }
+}
+
+public class NativeJsonTestData
+{
+    public static NativeJsonTestData[] Json_InvalidTypes = new NativeJsonTestData[] {
+                new NativeJsonTestData(typeof(Invalid_Class_No_Parameterless_Ctor),
+                    () => new Invalid_Class_No_Parameterless_Ctor("test")),
+                new NativeJsonTestData(typeof(Invalid_Class_Derived_With_DataContract),
+                    () => new Invalid_Class_Derived_With_DataContract()),
+            };
+
+    // This list exists solely to expose all the root objects being serialized.
+    // Without this ILC removes our test data types
+    // All new test data types *must* be added to one of these lists to appear to the ILC.
+    // Test data now added here will result in "serializer not found" exception at runtime.
+    public static DataContractJsonSerializer[] JsonSerializers = new DataContractJsonSerializer[]
+    {
+                new DataContractJsonSerializer(typeof(Invalid_Class_No_Parameterless_Ctor)),
+                new DataContractJsonSerializer(typeof(List<Invalid_Class_No_Parameterless_Ctor>)),
+                new DataContractJsonSerializer(typeof(Invalid_Class_Derived_With_DataContract)),
+    };
+
+    public NativeJsonTestData(Type type, Func<object> instantiate)
+    {
+        Type = type;
+        Instantiate = instantiate;
+    }
+
+    public Type Type { get; set; }
+    public Func<object> Instantiate { get; set; }
 }

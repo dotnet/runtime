@@ -71,94 +71,70 @@ namespace System.Threading.Tasks
         /// <param name="task">The task.</param>
         public ValueTask(Task<TResult> task)
         {
-            if (task == null)
-            {
-                throw new ArgumentNullException(nameof(task));
-            }
-
-            _task = task;
+            _task = task ?? throw new ArgumentNullException(nameof(task));
             _result = default(TResult);
         }
 
         /// <summary>Returns the hash code for this instance.</summary>
-        public override int GetHashCode()
-        {
-            return
-                _task != null ? _task.GetHashCode() :
-                _result != null ? _result.GetHashCode() :
-                0;
-        }
+        public override int GetHashCode() =>
+            _task != null ? _task.GetHashCode() :
+            _result != null ? _result.GetHashCode() :
+            0;
 
         /// <summary>Returns a value indicating whether this value is equal to a specified <see cref="object"/>.</summary>
-        public override bool Equals(object obj)
-        {
-            return 
-                obj is ValueTask<TResult> && 
-                Equals((ValueTask<TResult>)obj);
-        }
+        public override bool Equals(object obj) =>
+            obj is ValueTask<TResult> && 
+            Equals((ValueTask<TResult>)obj);
 
         /// <summary>Returns a value indicating whether this value is equal to a specified <see cref="ValueTask{TResult}"/> value.</summary>
-        public bool Equals(ValueTask<TResult> other)
-        {
-            return _task != null || other._task != null ? 
+        public bool Equals(ValueTask<TResult> other) =>
+            _task != null || other._task != null ? 
                 _task == other._task :
                 EqualityComparer<TResult>.Default.Equals(_result, other._result);
-        }
 
         /// <summary>Returns a value indicating whether two <see cref="ValueTask{TResult}"/> values are equal.</summary>
-        public static bool operator==(ValueTask<TResult> left, ValueTask<TResult> right)
-        {
-            return left.Equals(right);
-        }
+        public static bool operator==(ValueTask<TResult> left, ValueTask<TResult> right) =>
+            left.Equals(right);
 
         /// <summary>Returns a value indicating whether two <see cref="ValueTask{TResult}"/> values are not equal.</summary>
-        public static bool operator!=(ValueTask<TResult> left, ValueTask<TResult> right)
-        {
-            return !left.Equals(right);
-        }
+        public static bool operator!=(ValueTask<TResult> left, ValueTask<TResult> right) =>
+            !left.Equals(right);
 
         /// <summary>
         /// Gets a <see cref="Task{TResult}"/> object to represent this ValueTask.  It will
         /// either return the wrapped task object if one exists, or it'll manufacture a new
         /// task object to represent the result.
         /// </summary>
-        public Task<TResult> AsTask()
-        {
+        public Task<TResult> AsTask() =>
             // Return the task if we were constructed from one, otherwise manufacture one.  We don't
             // cache the generated task into _task as it would end up changing both equality comparison
             // and the hash code we generate in GetHashCode.
-            return _task ?? Task.FromResult(_result);
-        }
+            _task ?? Task.FromResult(_result);
 
         /// <summary>Gets whether the <see cref="ValueTask{TResult}"/> represents a completed operation.</summary>
-        public bool IsCompleted { get { return _task == null || _task.IsCompleted; } }
+        public bool IsCompleted => _task == null || _task.IsCompleted;
 
         /// <summary>Gets whether the <see cref="ValueTask{TResult}"/> represents a successfully completed operation.</summary>
-        public bool IsCompletedSuccessfully { get { return _task == null || _task.Status == TaskStatus.RanToCompletion; } }
+        public bool IsCompletedSuccessfully => _task == null || _task.Status == TaskStatus.RanToCompletion;
 
         /// <summary>Gets whether the <see cref="ValueTask{TResult}"/> represents a failed operation.</summary>
-        public bool IsFaulted { get { return _task != null && _task.IsFaulted; } }
+        public bool IsFaulted => _task != null && _task.IsFaulted;
 
         /// <summary>Gets whether the <see cref="ValueTask{TResult}"/> represents a canceled operation.</summary>
-        public bool IsCanceled { get { return _task != null && _task.IsCanceled; } }
+        public bool IsCanceled => _task != null && _task.IsCanceled;
 
         /// <summary>Gets the result.</summary>
-        public TResult Result { get { return _task == null ? _result : _task.GetAwaiter().GetResult(); } }
+        public TResult Result => _task == null ? _result : _task.GetAwaiter().GetResult();
 
         /// <summary>Gets an awaiter for this value.</summary>
-        public ValueTaskAwaiter<TResult> GetAwaiter()
-        {
-            return new ValueTaskAwaiter<TResult>(this);
-        }
+        public ValueTaskAwaiter<TResult> GetAwaiter() => new ValueTaskAwaiter<TResult>(this);
 
         /// <summary>Configures an awaiter for this value.</summary>
         /// <param name="continueOnCapturedContext">
         /// true to attempt to marshal the continuation back to the captured context; otherwise, false.
         /// </param>
-        public ConfiguredValueTaskAwaitable<TResult> ConfigureAwait(bool continueOnCapturedContext)
-        {
-            return new ConfiguredValueTaskAwaitable<TResult>(this, continueOnCapturedContext: continueOnCapturedContext);
-        }
+        public ConfiguredValueTaskAwaitable<TResult> ConfigureAwait(bool continueOnCapturedContext) =>
+            new ConfiguredValueTaskAwaitable<TResult>(this, continueOnCapturedContext: continueOnCapturedContext);
 
         /// <summary>Gets a string-representation of this <see cref="ValueTask{TResult}"/>.</summary>
         public override string ToString()

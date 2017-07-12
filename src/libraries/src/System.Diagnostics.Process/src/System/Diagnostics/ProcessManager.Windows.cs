@@ -61,16 +61,6 @@ namespace System.Diagnostics
             return null;
         }
 
-        /// <summary>Gets process infos for each process on the specified machine.</summary>
-        /// <param name="machineName">The target machine.</param>
-        /// <returns>An array of process infos, one per found process.</returns>
-        public static ProcessInfo[] GetProcessInfos(string machineName)
-        {
-            return IsRemoteMachine(machineName) ?
-                NtProcessManager.GetProcessInfos(machineName, true) :
-                NtProcessInfoHelper.GetProcessInfos(); // Do not use performance counter for local machine
-        }
-
         /// <summary>Gets the IDs of all processes on the specified machine.</summary>
         /// <param name="machineName">The machine to examine.</param>
         /// <returns>An array of process IDs from the specified machine.</returns>
@@ -647,7 +637,7 @@ namespace System.Diagnostics
     }
 
 
-    internal static class NtProcessInfoHelper
+    internal static partial class NtProcessInfoHelper
     {
         private static int GetNewBufferSize(int existingBufferSize, int requiredSize)
         {
@@ -679,79 +669,12 @@ namespace System.Diagnostics
             }
         }
 
-        public static ProcessInfo[] GetProcessInfos()
-        {
-            int requiredSize = 0;
-            int status;
-
-            ProcessInfo[] processInfos;
-            GCHandle bufferHandle = new GCHandle();
-
-            // Start with the default buffer size.
-            int bufferSize = DefaultCachedBufferSize;
-
-            // Get the cached buffer.
-            long[] buffer = Interlocked.Exchange(ref CachedBuffer, null);
-
-            try
-            {
-                do
-                {
-                    if (buffer == null)
-                    {
-                        // Allocate buffer of longs since some platforms require the buffer to be 64-bit aligned.
-                        buffer = new long[(bufferSize + 7) / 8];
-                    }
-                    else
-                    {
-                        // If we have cached buffer, set the size properly.
-                        bufferSize = buffer.Length * sizeof(long);
-                    }
-
-                    bufferHandle = GCHandle.Alloc(buffer, GCHandleType.Pinned);
-
-                    status = Interop.NtDll.NtQuerySystemInformation(
-                        Interop.NtDll.NtQuerySystemProcessInformation,
-                        bufferHandle.AddrOfPinnedObject(),
-                        bufferSize,
-                        out requiredSize);
-
-                    if (unchecked((uint)status) == Interop.NtDll.STATUS_INFO_LENGTH_MISMATCH)
-                    {
-                        if (bufferHandle.IsAllocated) bufferHandle.Free();
-                        buffer = null;
-                        bufferSize = GetNewBufferSize(bufferSize, requiredSize);
-                    }
-                } while (unchecked((uint)status) == Interop.NtDll.STATUS_INFO_LENGTH_MISMATCH);
-
-                if (status < 0)
-                { // see definition of NT_SUCCESS(Status) in SDK
-                    throw new InvalidOperationException(SR.CouldntGetProcessInfos, new Win32Exception(status));
-                }
-
-                // Parse the data block to get process information
-                processInfos = GetProcessInfos(bufferHandle.AddrOfPinnedObject());
-            }
-            finally
-            {
-                // Cache the final buffer for use on the next call.
-                Interlocked.Exchange(ref CachedBuffer, buffer);
-
-                if (bufferHandle.IsAllocated) bufferHandle.Free();
-            }
-
-            return processInfos;
-        }
-
         // Use a smaller buffer size on debug to ensure we hit the retry path.
 #if DEBUG
         private const int DefaultCachedBufferSize = 1024;
 #else
         private const int DefaultCachedBufferSize = 128 * 1024;
 #endif
-
-        // Cache a single buffer for use in GetProcessInfos().
-        private static long[] CachedBuffer;
 
         private static unsafe ProcessInfo[] GetProcessInfos(IntPtr dataPtr)
         {

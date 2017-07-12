@@ -2883,6 +2883,32 @@ public static partial class DataContractJsonSerializerTests
         Assert.StrictEqual(value["Bar"], deserializedValue["Bar"]);
     }
 
+    [Fact]
+    public static void DCJS_InvalidDataContract_Write_Invalid_Types_Throws()
+    {
+        foreach (NativeJsonTestData td in NativeJsonTestData.Json_InvalidTypes)
+        {
+            Assert.Throws<InvalidDataContractException>(() =>
+            {
+                object o = td.Instantiate();
+                DataContractJsonSerializer dcs = new DataContractJsonSerializer(o.GetType());
+                MemoryStream ms = new MemoryStream();
+                dcs.WriteObject(ms, o);
+            });
+        }
+    }
+
+    [Fact]
+    public static void DCJS_ValidateExceptionOnUnspecifiedRootSerializationType()
+    {
+        var value = new UnspecifiedRootSerializationType();
+        string baseline = "{\"MyIntProperty\":0,\"MyStringProperty\":null}";
+        var actual = SerializeAndDeserialize(value, baseline);
+        
+        Assert.Equal(value.MyIntProperty, actual.MyIntProperty);
+        Assert.Equal(value.MyStringProperty, actual.MyStringProperty);
+    } 
+
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractJsonSerializerSettings settings = null, Func<DataContractJsonSerializer> serializerFactory = null, bool skipStringCompare = false)
     {
         DataContractJsonSerializer dcjs;

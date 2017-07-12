@@ -198,6 +198,10 @@ namespace System
         public static bool IsCentos7 => IsDistroAndVersion("centos", "7");
         public static bool IsTizen => IsDistroAndVersion("tizen");
 
+        // If we need this long-term hopefully we can come up with a better detection than the kernel verison.
+        public static bool IsMacOsHighSierra { get; } =
+            IsOSX && RuntimeInformation.OSDescription.StartsWith("Darwin 17.0.0");
+
         /// <summary>
         /// Get whether the OS platform matches the given Linux distro and optional version.
         /// </summary>

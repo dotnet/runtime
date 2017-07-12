@@ -540,8 +540,12 @@ namespace System.IO
             if (changedEncoding)
             {
                 _decoder = _encoding.GetDecoder();
-                _maxCharsPerBuffer = _encoding.GetMaxCharCount(_byteBuffer.Length);
-                _charBuffer = new char[_maxCharsPerBuffer];
+                int newMaxCharsPerBuffer = _encoding.GetMaxCharCount(_byteBuffer.Length);
+                if (newMaxCharsPerBuffer > _maxCharsPerBuffer)
+                {
+                    _charBuffer = new char[newMaxCharsPerBuffer];
+                }
+                _maxCharsPerBuffer = newMaxCharsPerBuffer;
             }
         }
 

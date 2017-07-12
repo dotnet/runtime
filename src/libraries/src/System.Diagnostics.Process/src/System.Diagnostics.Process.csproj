@@ -50,6 +50,9 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.EnumProcessModules.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.EnumProcessModules.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.NtQuerySystemInformation.cs">
+      <Link>Common\Interop\Windows\NtDll\Interop.NtQuerySystemInformation.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\user32\Interop.EnumWindows.cs">
       <Link>Common\Interop\Windows\user32\Interop.EnumWindows.cs</Link>
     </Compile>
@@ -177,9 +180,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetPriorityClass.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.SetPriorityClass.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\NtDll\Interop.NtQuerySystemInformation.cs">
-      <Link>Common\Interop\Windows\NtDll\Interop.NtQuerySystemInformation.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.DuplicateHandle_SafeProcessHandle.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.DuplicateHandle.cs</Link>
