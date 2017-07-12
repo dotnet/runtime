@@ -136,11 +136,6 @@ private:
         return comp->gtNewPhysRegNode(reg, type);
     }
 
-    GenTree* PhysRegDst(regNumber reg, GenTree* src)
-    {
-        return comp->gtNewPhysRegNode(reg, src);
-    }
-
     GenTree* ThisReg(GenTreeCall* call)
     {
         return PhysReg(comp->codeGen->genGetThisArgReg(call), TYP_REF);
