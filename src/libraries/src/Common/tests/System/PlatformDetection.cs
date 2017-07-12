@@ -41,6 +41,10 @@ namespace System
             GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildNumber() >= 16215;
         public static bool IsArmProcess => RuntimeInformation.ProcessArchitecture == Architecture.Arm;
         public static bool IsNotArmProcess => !IsArmProcess;
+        // Windows 10 Insider Preview Build 16215 introduced the necessary APIs for the UAP version of
+        // ClientWebSocket.ReceiveAsync to consume partial message data as it arrives, without having to wait
+        // for "end of message" to be signaled.
+        public static bool ClientWebSocketPartialMessagesSupported => !IsUap || IsWindows10InsiderPreviewBuild16215OrGreater;
 
         // Windows OneCoreUAP SKU doesn't have httpapi.dll
         public static bool IsNotOneCoreUAP => (!IsWindows || 
