@@ -248,10 +248,6 @@ namespace System.IO
             while (stackDir.Count > 0)
             {
                 string name = stackDir.Pop();
-                if (name.Length >= Interop.Sys.MaxPath)
-                {
-                    throw new PathTooLongException(SR.IO_PathTooLong);
-                }
 
                 // The mkdir command uses 0777 by default (it'll be AND'd with the process umask internally).
                 // We do the same.
