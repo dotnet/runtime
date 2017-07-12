@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization.Formatters.Binary;
 
@@ -70,6 +71,52 @@ namespace System.Runtime.Serialization.Formatters.Tests
                     Assert.Equal(getter(expected), getter(actual));
                 }
             }
+        }
+
+        public static void AssertExceptionDeserializationFails<T>() where T : Exception
+        {
+            // .NET Core and .NET Native throw PlatformNotSupportedExceptions when deserializing many exceptions.
+            // The .NET Framework supports full deserialization.
+            if (PlatformDetection.IsFullFramework)
+            {
+                return;
+            }
+
+            // Construct a valid serialization payload. This is necessary as most constructors call
+            // the base constructor before throwing a PlatformNotSupportedException, and the base
+            // constructor validates the SerializationInfo passed.
+            var info = new SerializationInfo(typeof(T), new FormatterConverter());
+            info.AddValue("ClassName", "ClassName");
+            info.AddValue("Message", "Message");
+            info.AddValue("InnerException", null);
+            info.AddValue("HelpURL", null);
+            info.AddValue("StackTraceString", null);
+            info.AddValue("RemoteStackTraceString", null);
+            info.AddValue("RemoteStackIndex", 5);
+            info.AddValue("HResult", 5);
+            info.AddValue("Source", null);
+            info.AddValue("ExceptionMethod", null);
+
+            // Serialization constructors are of the form .ctor(SerializationInfo, StreamingContext).
+            ConstructorInfo constructor = null;
+            foreach (ConstructorInfo c in typeof(T).GetTypeInfo().DeclaredConstructors)
+            {
+                ParameterInfo[] parameters = c.GetParameters();
+                if (parameters.Length == 2 && parameters[0].ParameterType == typeof(SerializationInfo) && parameters[1].ParameterType == typeof(StreamingContext))
+                {
+                    constructor = c;
+                    break;
+                }
+            };
+
+            // .NET Native prevents reflection on private constructors on non-serializable types.
+            if (constructor == null)
+            {
+                return;
+            }
+
+            Exception ex = Assert.Throws<TargetInvocationException>(() => constructor.Invoke(new object[] { info, new StreamingContext() }));
+            Assert.IsType<PlatformNotSupportedException>(ex.InnerException);
         }
     }
 }
