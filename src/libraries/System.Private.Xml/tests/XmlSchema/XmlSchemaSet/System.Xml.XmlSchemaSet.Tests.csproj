@@ -17,6 +17,7 @@
     <Compile Include="TC_SchemaSet_Add_SchemaSet.cs" />
     <Compile Include="TC_SchemaSet_Add_URL.cs" />
     <Compile Include="TC_SchemaSet_AllowXmlAttributes.cs" />
+    <Compile Include="TC_SchemaSet_AnyAttribute.cs" />
     <Compile Include="TC_SchemaSet_Compile.cs" />
     <Compile Include="TC_SchemaSet_Constructors.cs" />
     <Compile Include="TC_SchemaSet_Contains_ns.cs" />
