@@ -8012,48 +8012,8 @@ DONE:
                 break;
 
             case IF_RRW_ARD:
-                assert(id->idGCref() == GCT_BYREF);
-
-#ifdef DEBUG
-                regMaskTP regMask;
-                regMask = genRegMask(id->idReg1());
-
-                // <BUGNUM> VSW 335101 </BUGNUM>
-                // Either id->idReg1(), id->idAddr()->iiaAddrMode.amBaseReg, or id->idAddr()->iiaAddrMode.amIndxReg
-                // could be a BYREF.
-                // For example in the following case:
-                //     mov     EDX, bword ptr [EBP-78H] ; EDX becomes BYREF after this instr.
-                //     add     EAX, bword ptr [EDX+8]   ; It is the EDX that's causing id->idGCref to be GCT_BYREF.
-                //                                      ; EAX becomes BYREF after this instr.
-                // <BUGNUM> DD 273707 </BUGNUM>
-                //     add     EDX, bword ptr [036464E0H] ; int + static field (technically a GCREF)=BYREF
-                regMaskTP baseRegMask;
-                if (reg == REG_NA)
-                {
-                    baseRegMask = RBM_NONE;
-                }
-                else
-                {
-                    baseRegMask = genRegMask(reg);
-                }
-                regMaskTP indexRegMask;
-                if (rgx == REG_NA)
-                {
-                    indexRegMask = RBM_NONE;
-                }
-                else
-                {
-                    indexRegMask = genRegMask(rgx);
-                }
-
-                // r1 could have been a GCREF as GCREF + int=BYREF
-                //                            or BYREF+/-int=BYREF
-                assert(((reg == REG_NA) && (rgx == REG_NA) && (ins == INS_add || ins == INS_sub)) ||
-                       (((regMask | baseRegMask | indexRegMask) & emitThisGCrefRegs) && (ins == INS_add)) ||
-                       (((regMask | baseRegMask | indexRegMask) & emitThisByrefRegs) &&
-                        (ins == INS_add || ins == INS_sub)));
-#endif
-                // Mark it as holding a GCT_BYREF
+                // Mark the destination register as holding a GCT_BYREF
+                assert(id->idGCref() == GCT_BYREF && (ins == INS_add || ins == INS_sub));
                 emitGCregLiveUpd(GCT_BYREF, id->idReg1(), dst);
                 break;
 
