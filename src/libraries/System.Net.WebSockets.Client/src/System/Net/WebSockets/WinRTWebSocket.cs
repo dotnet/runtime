@@ -177,7 +177,7 @@ namespace System.Net.WebSockets
             AbortInternal();
         }
 
-        private void AbortInternal(WebSocketException customException = null)
+        private void AbortInternal(Exception customException = null)
         {
             lock (_stateLock)
             {
@@ -196,7 +196,7 @@ namespace System.Net.WebSockets
             Dispose();
         }
 
-        private void CancelAllOperations(WebSocketException customException)
+        private void CancelAllOperations(Exception customException)
         {
             if (_receiveAsyncBufferTcs != null)
             {
@@ -412,7 +412,7 @@ namespace System.Net.WebSockets
                         break;
                 }
 
-                // Propagate a custom exception to any pending SendAsync/ReceiveAsync operations and close the socket.
+                // Propagate a custom exception to any pending ReceiveAsync/CloseAsync operations and close the socket.
                 WebSocketException customException = new WebSocketException(actualError, exc);
                 AbortInternal(customException);
             }
@@ -469,7 +469,14 @@ namespace System.Net.WebSockets
             }
 
             CancellationTokenRegistration cancellationRegistration =
-                cancellationToken.Register(s => ((WinRTWebSocket)s).Abort(), this);
+                cancellationToken.Register(s =>
+                {
+                    var thisRef = (WinRTWebSocket)s;
+
+                    // Propagate a custom exception to any pending ReceiveAsync/CloseAsync operations and close the socket.
+                    var customException = new OperationCanceledException(nameof(WebSocketState.Aborted));
+                    thisRef.AbortInternal(customException);
+                }, this);
 
             return cancellationRegistration;
         }
@@ -545,21 +552,6 @@ namespace System.Net.WebSockets
             if ((_state != WebSocketState.Closed) && (_state != WebSocketState.Aborted))
             {
                 _state = value;
-            }
-        }
-
-        private void UpdateStateCloseReceived()
-        {
-            lock (_stateLock)
-            {
-                if (_state == WebSocketState.CloseSent)
-                {
-                    UpdateState(WebSocketState.Closed);
-                }
-                else if (_state == WebSocketState.Open)
-                {
-                    UpdateState(WebSocketState.CloseReceived);
-                }
             }
         }
         #endregion
