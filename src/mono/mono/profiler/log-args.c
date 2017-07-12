@@ -248,46 +248,22 @@ set_hsmode (ProfilerConfig *config, const char* val)
 		usage ();
 }
 
-/*
-Sampling frequency allows for one undocumented, hidden and ignored argument. The sampling kind.
-Back in the day when this was done using perf, we could specify one of: cycles,instr,cacherefs,cachemiss,branches,branchmiss
-With us moving ot userland sampling, those options are now meaningless.
-*/
 static void
 set_sample_freq (ProfilerConfig *config, const char *val)
 {
 	if (!val)
 		return;
 
-	const char *p = val;
+	char *end;
 
-	// Is it only the frequency (new option style)?
-	if (isdigit (*p))
-		goto parse;
+	int freq = strtoul (val, &end, 10);
 
-	// Skip the sample type for backwards compatibility.
-	while (isalpha (*p))
-		p++;
-
-	// Skip the forward slash only if we got a sample type.
-	if (p != val && *p == '/') {
-		p++;
-
-		char *end;
-
-	parse:
-		config->sample_freq = strtoul (p, &end, 10);
-
-		if (p == end) {
-			usage ();
-			return;	
-		}
-
-		p = end;
+	if (val == end) {
+		usage ();
+		return;
 	}
 
-	if (*p)
-		usage ();
+	config->sample_freq = freq;
 }
 
 static void
