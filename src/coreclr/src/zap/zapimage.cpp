@@ -1682,6 +1682,15 @@ void ZapImage::CompileHotRegion()
 
                         compileResult = TryCompileInstantiatedMethod(pMethod, methodProfilingDataFlags);
                     }
+                    else
+                    {
+                        // This generic/parameterized method is not part of the native image
+                        // Either the IBC type  specified no longer exists or it is a SIMD types
+                        // or the type can't be loaded in a ReadyToRun native image because of
+                        // a cross-module type dependencies.
+                        //
+                        compileResult = COMPILE_EXCLUDED;
+                    }
                 }
             }
 
@@ -1925,65 +1934,18 @@ ZapImage::CompileStatus ZapImage::TryCompileMethodDef(mdMethodDef md, unsigned m
     CORINFO_METHOD_HANDLE handle = NULL;
     CompileStatus         result = NOT_COMPILED;
 
-    EX_TRY
+    if (ShouldCompileMethodDef(md))
     {
-        if (ShouldCompileMethodDef(md))
-            handle = m_pPreloader->LookupMethodDef(md);
-        else
-            result = COMPILE_EXCLUDED;
-    }
-    EX_CATCH
-    {
-        // Continue unwinding if fatal error was hit.
-        if (FAILED(g_hrFatalError))
-            ThrowHR(g_hrFatalError);
-
-        // COM introduces the notion of a vtable gap method, which is not a real method at all but instead
-        // aids in the explicit layout of COM interop vtables. These methods have no implementation and no
-        // direct runtime state tracking them. Trying to lookup a method handle for a vtable gap method will
-        // throw an exception but we choose to let that happen and filter out the warning here in the
-        // handler because (a) vtable gap methods are rare and (b) it's not all that cheap to identify them
-        // beforehand.
-        if (IsVTableGapMethod(md))
+        handle = m_pPreloader->LookupMethodDef(md);
+        if (handle == nullptr)
         {
-            handle = NULL;
-        }
-        else
-        {
-            Exception *ex = GET_EXCEPTION();
-            HRESULT hrException = ex->GetHR();
-
-            StackSString message;
-            ex->GetMessage(message);
-
-            CorZapLogLevel level;
-
-#ifdef CROSSGEN_COMPILE
-            // Warnings should not go to stderr during crossgen
-            level = CORZAP_LOGLEVEL_WARNING;
-#else
-            level = CORZAP_LOGLEVEL_ERROR;
-#endif
-
-            // FileNotFound errors here can be converted into a single error string per ngen compile, and the detailed error is available with verbose logging
-            if (hrException == COR_E_FILENOTFOUND)
-            {
-                StackSString logMessage(W("System.IO.FileNotFoundException: "));
-                logMessage.Append(message);
-                FileNotFoundError(logMessage.GetUnicode());
-                level = CORZAP_LOGLEVEL_INFO;
-            }
-
-            m_zapper->Print(level, W("%s while compiling method token 0x%x\n"), message.GetUnicode(), md);
-
             result = LOOKUP_FAILED;
-
-            m_zapper->m_failed = TRUE;
-            if (m_stats)
-                m_stats->m_failedMethods++;
         }
     }
-    EX_END_CATCH(SwallowAllExceptions);
+    else
+    {
+        result = COMPILE_EXCLUDED;
+    }
 
     if (handle == NULL)
         return result;
@@ -2187,28 +2149,44 @@ ZapImage::CompileStatus ZapImage::TryCompileMethodWorker(CORINFO_METHOD_HANDLE h
         Exception *ex = GET_EXCEPTION();
         HRESULT hrException = ex->GetHR();
 
+        CorZapLogLevel level;
+
+#ifdef CROSSGEN_COMPILE
+        // Warnings should not go to stderr during crossgen
+        level = CORZAP_LOGLEVEL_WARNING;
+#else
+        level = CORZAP_LOGLEVEL_ERROR;
+
+        m_zapper->m_failed = TRUE;
+#endif
+
+        result = COMPILE_FAILED;
+
 #ifdef FEATURE_READYTORUN_COMPILER
-        // NYI features in R2R - Stop crossgen from spitting unnecessary messages to the console
-        if (IsReadyToRunCompilation() && hrException == E_NOTIMPL)
+        // NYI features in R2R - Stop crossgen from spitting unnecessary
+        //     messages to the console
+        if (IsReadyToRunCompilation())
         {
-            result = NOT_COMPILED;
+            // When compiling the method we may recieve an exeception when the
+            // method uses a feature that is Not Implemented for ReadyToRun 
+            // or a Type Load exception if the method uses for a SIMD type.
+            //
+            // We skip the compilation of such methods and we don't want to
+            // issue a warning or error
+            //
+            if ((hrException == E_NOTIMPL) || (hrException == IDS_CLASSLOAD_GENERAL))
+            {
+                result = NOT_COMPILED;
+                level = CORZAP_LOGLEVEL_INFO;
+            }
         }
-        else
 #endif
         {
             StackSString message;
             ex->GetMessage(message);
 
-            CorZapLogLevel level;
-
-    #ifdef CROSSGEN_COMPILE
-            // Warnings should not go to stderr during crossgen
-            level = CORZAP_LOGLEVEL_WARNING;
-    #else
-            level = CORZAP_LOGLEVEL_ERROR;
-    #endif
-
-            // FileNotFound errors here can be converted into a single error string per ngen compile, and the detailed error is available with verbose logging
+            // FileNotFound errors here can be converted into a single error string per ngen compile, 
+            //  and the detailed error is available with verbose logging
             if (hrException == COR_E_FILENOTFOUND)
             {
                 StackSString logMessage(W("System.IO.FileNotFoundException: "));
@@ -2219,10 +2197,7 @@ ZapImage::CompileStatus ZapImage::TryCompileMethodWorker(CORINFO_METHOD_HANDLE h
 
             m_zapper->Print(level, W("%s while compiling method %s\n"), message.GetUnicode(), zapInfo.m_currentMethodName.GetUnicode());
 
-            result = COMPILE_FAILED;
-            m_zapper->m_failed = TRUE;
-
-            if (m_stats != NULL)
+            if ((result == COMPILE_FAILED) && (m_stats != NULL))
             {
                 if (!m_zapper->m_pOpt->m_compilerFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IL_STUB))
                     m_stats->m_failedMethods++;
@@ -3560,6 +3535,17 @@ void ZapImage::Error(mdToken token, HRESULT hr, UINT resID,  LPCWSTR message)
     if (FAILED(g_hrFatalError))
         ThrowHR(g_hrFatalError);
 
+    // COM introduces the notion of a vtable gap method, which is not a real method at all but instead
+    // aids in the explicit layout of COM interop vtables. These methods have no implementation and no
+    // direct runtime state tracking them. Trying to lookup a method handle for a vtable gap method will
+    // throw an exception but we choose to let that happen and filter out the warning here in the
+    // handler because (a) vtable gap methods are rare and (b) it's not all that cheap to identify them
+    // beforehand.
+    if ((TypeFromToken(token) == mdtMethodDef) && IsVTableGapMethod(token))
+    {
+        return;
+    }
+
     CorZapLogLevel level = CORZAP_LOGLEVEL_ERROR;
 
     // Some warnings are demoted to informational level
@@ -3568,6 +3554,15 @@ void ZapImage::Error(mdToken token, HRESULT hr, UINT resID,  LPCWSTR message)
         // Supress printing of "Target-dependent SIMD vector types may not be used with ngen."
         level = CORZAP_LOGLEVEL_INFO;
     }
+
+#ifdef CROSSGEN_COMPILE
+    if ((resID == IDS_IBC_MISSING_EXTERNAL_TYPE) ||
+        (resID == IDS_IBC_MISSING_EXTERNAL_METHOD))
+    {
+        // Supress printing of "The generic type/method specified by the IBC data is not available to this assembly"
+        level = CORZAP_LOGLEVEL_INFO;
+    }   
+#endif        
 
     if (m_zapper->m_pOpt->m_ignoreErrors)
     {

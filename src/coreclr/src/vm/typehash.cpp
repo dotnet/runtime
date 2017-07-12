@@ -716,7 +716,7 @@ void EETypeHashTable::Save(DataImage *image, Module *module, CorProfileData *pro
                     {
                         if (flags & (1<<ReadTypeHashTable))
                         {
-                            TypeHandle th = GetModule()->LoadIBCTypeHelper(pBlobSigEntry);
+                            TypeHandle th = GetModule()->LoadIBCTypeHelper(image, pBlobSigEntry);
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE)
                             g_pConfig->DebugCheckAndForceIBCFailure(EEConfig::CallSite_8);
 #endif
