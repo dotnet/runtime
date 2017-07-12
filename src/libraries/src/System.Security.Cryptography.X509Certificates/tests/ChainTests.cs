@@ -582,6 +582,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 else if (!valid)
                 {
                     Console.WriteLine($"SKIP [{nameof(VerifyWithRevocation)}]: Chain failed to build within {RetryLimit} tries.");
+                    return;
                 }
 
                 // Since the network was enabled, we should get the whole chain.
