@@ -595,48 +595,20 @@ pal::string_t fx_muxer_t::resolve_cli_version(const pal::string_t& global_json)
     return retval;
 }
 
-pal::string_t resolve_sdk_version(pal::string_t sdk_path, bool parse_only_production)
+pal::string_t resolve_sdk_version(pal::string_t sdk_path, bool parse_only_production, pal::string_t global_cli_version)
 {
-    trace::verbose(_X("--- Resolving SDK version from SDK dir [%s]"), sdk_path.c_str());
+    fx_ver_t specified(-1, -1, -1);
 
-    pal::string_t retval;
-    std::vector<pal::string_t> versions;
-
-    pal::readdir(sdk_path, &versions);
-    fx_ver_t max_ver(-1, -1, -1);
-    for (const auto& version : versions)
+    //   Validate the global cli version if specified
+    if (!global_cli_version.empty())
     {
-        trace::verbose(_X("Considering version... [%s]"), version.c_str());
-
-        fx_ver_t ver(-1, -1, -1);
-        if (fx_ver_t::parse(version, &ver, parse_only_production))
+        if (!fx_ver_t::parse(global_cli_version, &specified, false))
         {
-            max_ver = std::max(ver, max_ver);
+            trace::error(_X("The specified SDK version '%s' could not be parsed"), global_cli_version.c_str());
+            return pal::string_t();
         }
     }
 
-    pal::string_t max_ver_str = max_ver.as_str();
-    append_path(&sdk_path, max_ver_str.c_str());
-
-    trace::verbose(_X("Checking if resolved SDK dir [%s] exists"), sdk_path.c_str());
-    if (pal::directory_exists(sdk_path))
-    {
-        trace::verbose(_X("Resolved SDK dir is [%s]"), sdk_path.c_str());
-        retval = max_ver_str;
-    }
-
-    return retval;
-}
-
-pal::string_t resolve_patch_sdk_version(pal::string_t global_cli_version, pal::string_t sdk_path, bool parse_only_production)
-{
-    fx_ver_t specified(-1, -1, -1);
-    if (!fx_ver_t::parse(global_cli_version, &specified, false))
-    {
-        trace::error(_X("The specified SDK version '%s' could not be parsed"), global_cli_version.c_str());
-        return pal::string_t();
-    }
-
     trace::verbose(_X("--- Resolving SDK version from SDK dir [%s]"), sdk_path.c_str());
 
     pal::string_t retval;
@@ -651,9 +623,10 @@ pal::string_t resolve_patch_sdk_version(pal::string_t global_cli_version, pal::s
         fx_ver_t ver(-1, -1, -1);
         if (fx_ver_t::parse(version, &ver, parse_only_production))
         {
-            if (ver.get_major() == specified.get_major() && ver.get_minor() == specified.get_minor())
+            if (global_cli_version.empty() || 
+                    // Pick the greatest version that differs only in patch if a global cli version is specified.
+                    (ver.get_major() == specified.get_major() && ver.get_minor() == specified.get_minor()))
             {
-                // Pick the greatest version that differs only in patch.
                 max_ver = std::max(ver, max_ver);
             }
         }
@@ -766,7 +739,7 @@ bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, const pal
 
         if (global_cli_version.empty())
         {
-            pal::string_t new_cli_version = resolve_sdk_version(current_sdk_path, parse_only_production);
+            pal::string_t new_cli_version = resolve_sdk_version(current_sdk_path, parse_only_production, global_cli_version);
             if (higher_sdk_version(new_cli_version, &cli_version, parse_only_production))
             {
                 sdk_path = current_sdk_path;
@@ -787,7 +760,7 @@ bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, const pal
             }
             else
             {
-                pal::string_t new_cli_version = resolve_patch_sdk_version(global_cli_version, current_sdk_path, parse_only_production);
+                pal::string_t new_cli_version = resolve_sdk_version(current_sdk_path, parse_only_production, global_cli_version);
                 if (higher_sdk_version(new_cli_version, &cli_version, parse_only_production))
                 {
                     sdk_path = current_sdk_path;
@@ -796,8 +769,7 @@ bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, const pal
         }
     }
 
-    pal::string_t neg_version = _X("-1.-1.-1");
-    if ((!cli_version.empty()) && (pal::strcasecmp(cli_version.c_str(), neg_version.c_str()) != 0))
+    if (!cli_version.empty())
     {
         append_path(&sdk_path, cli_version.c_str());
         cli_sdk->assign(sdk_path);
