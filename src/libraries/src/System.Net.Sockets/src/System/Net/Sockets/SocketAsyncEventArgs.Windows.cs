@@ -48,7 +48,6 @@ namespace System.Net.Sockets
         // Internal variables for SendPackets
         private FileStream[] _sendPacketsFileStreams;
         private SafeHandle[] _sendPacketsFileHandles;
-        private IntPtr _ptrSendPacketsDescriptor;
 
         // Overlapped object related variables.
         private PreAllocatedOverlapped _preAllocatedOverlapped;
@@ -691,13 +690,24 @@ namespace System.Net.Sockets
 
         internal unsafe SocketError DoOperationSendPackets(Socket socket, SafeCloseSocket handle)
         {
+            Debug.Assert(_sendPacketsDescriptor != null);
+            Debug.Assert(_sendPacketsDescriptor.Length > 0);
+            Debug.Assert(_multipleBufferGCHandles != null);
+            Debug.Assert(_multipleBufferGCHandles[0].IsAllocated);
+            Debug.Assert(_multipleBufferGCHandles[0].Target == _sendPacketsDescriptor);
+            IntPtr ptrSendPacketsDescriptor;
+            fixed (void* p = &_sendPacketsDescriptor[0])
+            {
+                ptrSendPacketsDescriptor = (IntPtr)p;
+            }
+
             SocketError socketError = SocketError.Success;
             NativeOverlapped* overlapped = AllocateNativeOverlapped();
             try
             {
                 bool result = socket.TransmitPackets(
                     handle,
-                    _ptrSendPacketsDescriptor,
+                    ptrSendPacketsDescriptor,
                     _sendPacketsDescriptor.Length,
                     _sendPacketsSendSize,
                     overlapped,
@@ -1085,9 +1095,6 @@ namespace System.Net.Sockets
                     index++;
                 }
             }
-
-            // Get pointer to native descriptor.
-            _ptrSendPacketsDescriptor = Marshal.UnsafeAddrOfPinnedArrayElement(_sendPacketsDescriptor, 0);
 
             // Fill in native descriptor.
             int descriptorIndex = 0;
