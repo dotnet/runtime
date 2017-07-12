@@ -36,7 +36,6 @@ namespace System.Net.Sockets
         // Internal SocketAddress buffer
         private GCHandle _socketAddressGCHandle;
         private Internals.SocketAddress _pinnedSocketAddress;
-        private IntPtr _ptrSocketAddressBuffer;
         private IntPtr _ptrSocketAddressBufferSize;
 
         // SendPacketsElements property variables.
@@ -224,7 +223,7 @@ namespace System.Net.Sockets
 
                 bool success = socket.ConnectEx(
                     handle,
-                    _ptrSocketAddressBuffer,
+                    PtrSocketAddressBuffer,
                     _socketAddress.Size,
                     _ptrSingleBuffer,
                     Count,
@@ -366,7 +365,7 @@ namespace System.Net.Sockets
                         1,
                         out bytesTransferred,
                         ref flags,
-                        _ptrSocketAddressBuffer,
+                        PtrSocketAddressBuffer,
                         _ptrSocketAddressBufferSize,
                         overlapped,
                         IntPtr.Zero);
@@ -379,7 +378,7 @@ namespace System.Net.Sockets
                         _bufferListInternal.Count,
                         out bytesTransferred,
                         ref flags,
-                        _ptrSocketAddressBuffer,
+                        PtrSocketAddressBuffer,
                         _ptrSocketAddressBufferSize,
                         overlapped,
                         IntPtr.Zero);
@@ -473,7 +472,7 @@ namespace System.Net.Sockets
             unsafe
             {
                 Interop.Winsock.WSAMsg* pMessage = (Interop.Winsock.WSAMsg*)PtrWSAMessageBuffer;
-                pMessage->socketAddress = _ptrSocketAddressBuffer;
+                pMessage->socketAddress = PtrSocketAddressBuffer;
                 pMessage->addressLength = (uint)_socketAddress.Size;
                 fixed (void* ptrWSARecvMsgWSABufferArray = &wsaRecvMsgWSABufferArray[0])
                 {
@@ -759,7 +758,7 @@ namespace System.Net.Sockets
                         1,
                         out bytesTransferred,
                         _socketFlags,
-                        _ptrSocketAddressBuffer,
+                        PtrSocketAddressBuffer,
                         _socketAddress.Size,
                         overlapped,
                         IntPtr.Zero);
@@ -772,7 +771,7 @@ namespace System.Net.Sockets
                         _bufferListInternal.Count,
                         out bytesTransferred,
                         _socketFlags,
-                        _ptrSocketAddressBuffer,
+                        PtrSocketAddressBuffer,
                         _socketAddress.Size,
                         overlapped,
                         IntPtr.Zero);
@@ -903,9 +902,24 @@ namespace System.Net.Sockets
             // Pin down the new one.
             _socketAddressGCHandle = GCHandle.Alloc(_socketAddress.Buffer, GCHandleType.Pinned);
             _socketAddress.CopyAddressSizeIntoBuffer();
-            _ptrSocketAddressBuffer = Marshal.UnsafeAddrOfPinnedArrayElement(_socketAddress.Buffer, 0);
             _ptrSocketAddressBufferSize = Marshal.UnsafeAddrOfPinnedArrayElement(_socketAddress.Buffer, _socketAddress.GetAddressSizeOffset());
             _pinnedSocketAddress = _socketAddress;
+        }
+
+        private unsafe IntPtr PtrSocketAddressBuffer
+        {
+            get
+            {
+                Debug.Assert(_pinnedSocketAddress != null);
+                Debug.Assert(_pinnedSocketAddress.Buffer != null);
+                Debug.Assert(_pinnedSocketAddress.Buffer.Length > 0);
+                Debug.Assert(_socketAddressGCHandle.IsAllocated);
+                Debug.Assert(_socketAddressGCHandle.Target == _pinnedSocketAddress.Buffer);
+                fixed (void* ptrSocketAddressBuffer = &_pinnedSocketAddress.Buffer[0])
+                {
+                    return (IntPtr)ptrSocketAddressBuffer;
+                }
+            }
         }
 
         // Cleans up any existing Overlapped object and related state variables.
