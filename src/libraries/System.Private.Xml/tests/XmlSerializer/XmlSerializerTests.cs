@@ -13,6 +13,7 @@ using System.Text;
 using System.Threading;
 using System.Xml;
 using System.Xml.Linq;
+using System.Xml.Schema;
 using System.Xml.Serialization;
 using Xunit;
 
@@ -1235,6 +1236,16 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.StrictEqual(original.body, actual.body);
         Assert.NotNull(actual.xmlns);
         Assert.Contains(ns, actual.xmlns.ToArray());
+    }
+
+    [Fact]
+    public static void XML_XmlSchemaWithNamespacesWriteWithNamespaceManager()
+    {
+        var schema = new XmlSchema();
+        schema.Namespaces = new XmlSerializerNamespaces();
+
+        using (var memStream = new MemoryStream())
+            schema.Write(memStream, new XmlNamespaceManager(new NameTable()));
     }
 
     [Fact]
