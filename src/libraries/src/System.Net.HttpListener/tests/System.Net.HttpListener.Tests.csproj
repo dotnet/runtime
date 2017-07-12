@@ -10,26 +10,26 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="GetContextHelper.cs" />
+    <Compile Include="HttpListenerFactory.cs" />
     <Compile Include="HttpListenerAuthenticationTests.cs" />
     <Compile Include="HttpListenerContextTests.cs" />
     <Compile Include="HttpListenerPrefixCollectionTests.cs" />
+    <Compile Include="HttpListenerResponseTests.cs" />
     <Compile Include="HttpListenerResponseTests.Cookies.cs" />
     <Compile Include="HttpListenerResponseTests.Headers.cs" />
-    <Compile Include="HttpListenerResponseTests.cs" />
     <Compile Include="HttpListenerRequestTests.cs" />
     <Compile Include="HttpListenerTests.cs" />
+    <Compile Include="HttpListenerTimeoutManagerTests.cs" />
+    <Compile Include="HttpListenerWebSocketTests.cs" />
     <Compile Include="HttpRequestStreamTests.cs" />
     <Compile Include="HttpResponseStreamTests.cs" />
     <Compile Include="InvalidClientRequestTests.cs" />
     <Compile Include="SimpleHttpTests.cs" />
-    <Compile Include="HttpListenerFactory.cs" />
-    <Compile Include="HttpListenerWebSocketTests.cs" />
     <Compile Include="WebSocketTests.cs" />
     <Compile Include="XUnitAssemblyAttributes.cs" />
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\tests\System\PlatformDetection.cs</Link>
     </Compile>
-    <Compile Include="HttpListenerTimeoutManagerTests.cs" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\System.Net.HttpListener.Tests.rd.xml" />
