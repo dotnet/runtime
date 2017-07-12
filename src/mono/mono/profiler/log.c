@@ -1474,7 +1474,7 @@ gc_reference (MonoObject *obj, MonoClass *klass, uintptr_t size, uintptr_t num, 
 		emit_obj (logbuffer, refs [i]);
 	}
 
-	EXIT_LOG_EXPLICIT (DO_SEND);
+	EXIT_LOG;
 
 	return 0;
 }
@@ -1506,7 +1506,7 @@ gc_roots (MonoProfiler *prof, MonoObject *const *objects, const MonoProfilerGCRo
 		emit_value (logbuffer, extra_info [i]);
 	}
 
-	EXIT_LOG_EXPLICIT (DO_SEND);
+	EXIT_LOG;
 }
 
 
@@ -1553,7 +1553,7 @@ gc_event (MonoProfiler *profiler, MonoProfilerGCEvent ev, uint32_t generation)
 		emit_byte (logbuffer, ev);
 		emit_byte (logbuffer, generation);
 
-		EXIT_LOG_EXPLICIT (NO_SEND);
+		EXIT_LOG;
 	}
 
 	switch (ev) {
@@ -1591,7 +1591,7 @@ gc_event (MonoProfiler *profiler, MonoProfilerGCEvent ev, uint32_t generation)
 
 			emit_event (logbuffer, TYPE_HEAP_START | TYPE_HEAP);
 
-			EXIT_LOG_EXPLICIT (DO_SEND);
+			EXIT_LOG;
 		}
 
 		break;
@@ -1607,7 +1607,7 @@ gc_event (MonoProfiler *profiler, MonoProfilerGCEvent ev, uint32_t generation)
 
 			emit_event (logbuffer, TYPE_HEAP_END | TYPE_HEAP);
 
-			EXIT_LOG_EXPLICIT (DO_SEND);
+			EXIT_LOG;
 		}
 
 		if (ENABLED (PROFLOG_HEAPSHOT_FEATURE) && log_profiler.do_heap_walk) {
@@ -1648,7 +1648,7 @@ gc_resize (MonoProfiler *profiler, uintptr_t new_size)
 	emit_event (logbuffer, TYPE_GC_RESIZE | TYPE_GC);
 	emit_value (logbuffer, new_size);
 
-	EXIT_LOG_EXPLICIT (DO_SEND);
+	EXIT_LOG;
 }
 
 typedef struct {
@@ -1745,7 +1745,7 @@ gc_moves (MonoProfiler *prof, MonoObject *const *objects, uint64_t num)
 	for (int i = 0; i < num; ++i)
 		emit_obj (logbuffer, objects [i]);
 
-	EXIT_LOG_EXPLICIT (DO_SEND);
+	EXIT_LOG;
 }
 
 static void
@@ -2546,7 +2546,7 @@ dump_ubin (const char *filename, uintptr_t load_addr, uint64_t offset, uintptr_t
 	memcpy (logbuffer->cursor, filename, len);
 	logbuffer->cursor += len;
 
-	EXIT_LOG_EXPLICIT (DO_SEND);
+	EXIT_LOG;
 }
 #endif
 
@@ -2568,7 +2568,7 @@ dump_usym (const char *name, uintptr_t value, uintptr_t size)
 	memcpy (logbuffer->cursor, name, len);
 	logbuffer->cursor += len;
 
-	EXIT_LOG_EXPLICIT (DO_SEND);
+	EXIT_LOG;
 }
 
 /* ELF code crashes on some systems. */
@@ -2911,7 +2911,7 @@ counters_emit (void)
 		agent->emitted = TRUE;
 	}
 
-	EXIT_LOG_EXPLICIT (DO_SEND);
+	EXIT_LOG;
 
 done:
 	mono_os_mutex_unlock (&log_profiler.counters_mutex);
@@ -3034,7 +3034,7 @@ counters_sample (uint64_t timestamp)
 
 	emit_value (logbuffer, 0);
 
-	EXIT_LOG_EXPLICIT (DO_SEND);
+	EXIT_LOG;
 
 	mono_os_mutex_unlock (&log_profiler.counters_mutex);
 }
@@ -3089,7 +3089,7 @@ perfcounters_emit (void)
 		pcagent->emitted = TRUE;
 	}
 
-	EXIT_LOG_EXPLICIT (DO_SEND);
+	EXIT_LOG;
 }
 
 static gboolean
@@ -3181,7 +3181,7 @@ perfcounters_sample (uint64_t timestamp)
 
 	emit_value (logbuffer, 0);
 
-	EXIT_LOG_EXPLICIT (DO_SEND);
+	EXIT_LOG;
 
 done:
 	mono_os_mutex_unlock (&log_profiler.counters_mutex);
@@ -3337,7 +3337,7 @@ build_method_buffer (gpointer key, gpointer value, gpointer userdata)
 	emit_uvalue (logbuffer, log_profiler.coverage_method_id);
 	emit_value (logbuffer, log_profiler.coverage_data->len);
 
-	EXIT_LOG_EXPLICIT (DO_SEND);
+	EXIT_LOG;
 
 	for (i = 0; i < log_profiler.coverage_data->len; i++) {
 		CoverageEntry *entry = (CoverageEntry *)log_profiler.coverage_data->pdata[i];
@@ -3358,7 +3358,7 @@ build_method_buffer (gpointer key, gpointer value, gpointer userdata)
 		emit_uvalue (logbuffer, entry->line);
 		emit_uvalue (logbuffer, entry->column);
 
-		EXIT_LOG_EXPLICIT (DO_SEND);
+		EXIT_LOG;
 	}
 
 	log_profiler.coverage_method_id++;
@@ -3421,7 +3421,7 @@ build_class_buffer (gpointer key, gpointer value, gpointer userdata)
 	emit_uvalue (logbuffer, fully_covered);
 	emit_uvalue (logbuffer, partially_covered);
 
-	EXIT_LOG_EXPLICIT (DO_SEND);
+	EXIT_LOG;
 
 	g_free (class_name);
 }
@@ -3478,7 +3478,7 @@ build_assembly_buffer (gpointer key, gpointer value, gpointer userdata)
 	emit_uvalue (logbuffer, fully_covered);
 	emit_uvalue (logbuffer, partially_covered);
 
-	EXIT_LOG_EXPLICIT (DO_SEND);
+	EXIT_LOG;
 }
 
 static void
@@ -4324,7 +4324,7 @@ handle_dumper_queue_entry (void)
 		for (int i = 0; i < sample->count; ++i)
 			emit_method (logbuffer, sample->frames [i].method);
 
-		EXIT_LOG_EXPLICIT (DO_SEND);
+		EXIT_LOG;
 
 		mono_thread_hazardous_try_free (sample, reuse_sample_hit);
 
