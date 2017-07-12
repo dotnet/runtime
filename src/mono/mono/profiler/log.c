@@ -4498,22 +4498,14 @@ static void
 create_profiler (const char *args, const char *filename, GPtrArray *filters)
 {
 	char *nf;
-	int force_delete = 0;
 
 	log_profiler = (MonoProfiler *) g_calloc (1, sizeof (MonoProfiler));
 	log_profiler->args = pstrdup (args);
 	log_profiler->command_port = command_port;
 
-	if (filename && *filename == '-') {
-		force_delete = 1;
-		filename++;
-		g_warning ("WARNING: the output:-FILENAME option is deprecated, the profiler now always overrides the output file\n");
-	}
-
 	//If filename begin with +, append the pid at the end
 	if (filename && *filename == '+')
 		filename = g_strdup_printf ("%s.%d", filename + 1, getpid ());
-
 
 	if (!filename) {
 		if (do_report)
@@ -4537,11 +4529,9 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 	} else if (*nf == '#') {
 		int fd = strtol (nf + 1, NULL, 10);
 		log_profiler->file = fdopen (fd, "a");
-	} else {
-		if (force_delete)
-			unlink (nf);
+	} else
 		log_profiler->file = fopen (nf, "wb");
-	}
+
 	if (!log_profiler->file) {
 		fprintf (stderr, "Cannot create profiler output: %s\n", nf);
 		exit (1);
