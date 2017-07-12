@@ -35,7 +35,7 @@ namespace System.Net.Tests
         }
 
         [ActiveIssue(22164, TargetFrameworkMonikers.Uap)] // Fails in RS2 only (works in RS3).
-        [ConditionalTheory(nameof(IsNotWindows7))]
+        [ConditionalTheory(nameof(PlatformDetection.ClientWebSocketPartialMessagesSupported), nameof(IsNotWindows7))]
         [InlineData(WebSocketMessageType.Text, false)]
         [InlineData(WebSocketMessageType.Binary, false)]
         [InlineData(WebSocketMessageType.Text, true)]
