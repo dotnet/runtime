@@ -151,6 +151,36 @@ namespace System.Threading.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => b.RemoveParticipants(2));
         }
 
+        [Fact]
+        public static async Task RemovingWaitingParticipants()
+        {
+            Barrier b = new Barrier(4);
+            Task t = Task.Run(() =>
+            {
+                b.SignalAndWait();
+            });
+
+            while (b.ParticipantsRemaining > 3)
+            {
+                await Task.Delay(100);
+            }
+
+            b.RemoveParticipants(2); // Legal. Succeeds.
+
+            Assert.Equal(1, b.ParticipantsRemaining);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => b.RemoveParticipants(20)); // Too few total to remove
+
+            Assert.Equal(1, b.ParticipantsRemaining);
+
+            Assert.Throws<InvalidOperationException>(() => b.RemoveParticipants(2)); // Too few remaining to remove
+
+            Assert.Equal(1, b.ParticipantsRemaining);
+            b.RemoveParticipant(); // Barrier survives the incorrect removals, and we can still remove correctly.
+
+            await t; // t can now complete.
+        }
+
         /// <summary>
         /// Test AddParticipants
         /// </summary>
@@ -220,6 +250,15 @@ namespace System.Threading.Tests
             Barrier b = new Barrier(1);
             b.Dispose();
             Assert.Throws<ObjectDisposedException>(() => b.SignalAndWait());
+        }
+
+        [Fact]
+        public static void SignalBarrierWithoutParticipants()
+        {
+            using (Barrier b = new Barrier(0))
+            {
+                Assert.Throws<InvalidOperationException>(() => b.SignalAndWait());
+            }
         }
 
         [Fact]
