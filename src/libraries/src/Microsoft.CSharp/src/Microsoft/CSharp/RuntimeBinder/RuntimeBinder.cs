@@ -313,7 +313,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             Type t = argInfo.UseCompileTimeType ? param.Type : arg.LimitType;
             Debug.Assert(t != null);
 
-            if ((argInfo.Flags & (CSharpArgumentInfoFlags.IsRef | CSharpArgumentInfoFlags.IsOut)) != 0)
+            if (argInfo.IsByRefOrOut)
             {
                 // If we have a ref our an out parameter, make the byref type.
                 // If we have the receiver of a call or invoke that is ref, it must be because of 
@@ -459,7 +459,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     if (paramExp != null && paramExp.IsByRef)
                     {
                         CSharpArgumentInfo info = arguments[i].Info;
-                        if (info.IsByRef || info.IsOut)
+                        if (info.IsByRefOrOut)
                         {
                             type = _semanticChecker.GetTypeManager().GetParameterModifier(type, info.IsOut);
                         }
