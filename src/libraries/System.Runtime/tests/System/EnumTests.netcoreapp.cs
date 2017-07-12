@@ -32,7 +32,6 @@ namespace System.Tests
         
         [Theory]
         [MemberData(nameof(Parse_Invalid_TestData))]
-        [ActiveIssue("https://github.com/dotnet/corert/issues/3651 Enum.Parse<T>() validation.", TargetFrameworkMonikers.UapAot)]
         public static void Parse_Invalid_NetCoreApp11(Type enumType, string value, bool ignoreCase, Type exceptionType)
         {
             Type typeArgument = enumType == null || !enumType.GetTypeInfo().IsEnum ? typeof(SimpleEnum) : enumType;
