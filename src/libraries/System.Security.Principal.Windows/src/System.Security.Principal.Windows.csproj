@@ -9,6 +9,9 @@
     <ResourcesSourceOutputDirectory Condition="'$(TargetGroup)' == 'netfx'">None</ResourcesSourceOutputDirectory>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_Principal</GeneratePlatformNotSupportedAssemblyMessage>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetGroup)' == 'uap'">
+    <DefineConstants>$(DefineConstants);uap</DefineConstants>
+  </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
@@ -64,9 +67,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.OpenProcessToken_SafeAccessTokenHandle.cs">
       <Link>Common\Interop\Interop.OpenProcessToken.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.CheckTokenMembership.cs">
-      <Link>Common\Interop\Interop.CheckTokenMembership.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.GetTokenInformation.cs">
       <Link>Common\Interop\Interop.GetTokenInformation.cs</Link>
@@ -181,6 +181,16 @@
     </Compile>
     <Compile Include="$(CommonPath)\Microsoft\Win32\SafeHandles\SafeLsaHandle.cs">
       <Link>Common\Microsoft\Win32\SafeHandles\SafeLsaHandle.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp' AND '$(TargetsWindows)' == 'true'">
+    <Compile Include="$(CommonPath)\Interop\Windows\advapi32\Interop.CheckTokenMembership.cs">
+      <Link>Common\Interop\Interop.CheckTokenMembership.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'uap' AND '$(TargetsWindows)' == 'true'">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CheckTokenMembershipEx.cs">
+      <Link>Common\Interop\Interop.CheckTokenMembershipEx.cs</Link>
     </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'netfx'">

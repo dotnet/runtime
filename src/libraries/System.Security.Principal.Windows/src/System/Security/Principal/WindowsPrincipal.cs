@@ -194,11 +194,20 @@ namespace System.Security.Principal
             }
 
             bool isMember = false;
+
             // CheckTokenMembership will check if the SID is both present and enabled in the access token.
+#if uap
+            if (!Interop.Kernel32.CheckTokenMembershipEx((_identity.ImpersonationLevel != TokenImpersonationLevel.None ? _identity.AccessToken : token),
+                                                  sid.BinaryForm,
+                                                  Interop.Kernel32.CTMF_INCLUDE_APPCONTAINER,
+                                                  ref isMember))
+                throw new SecurityException(new Win32Exception().Message);
+#else
             if (!Interop.Advapi32.CheckTokenMembership((_identity.ImpersonationLevel != TokenImpersonationLevel.None ? _identity.AccessToken : token),
                                                   sid.BinaryForm,
                                                   ref isMember))
                 throw new SecurityException(new Win32Exception().Message);
+#endif
 
             token.Dispose();
             return isMember;
