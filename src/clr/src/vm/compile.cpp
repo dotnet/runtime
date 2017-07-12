@@ -5912,14 +5912,6 @@ void CEEPreloader::TriageMethodForZap(MethodDesc* pMD, BOOL fAcceptIfNotSure, BO
         goto Done;
     }
 
-    // Filter out other weird cases we do not care about.
-    if (!m_image->GetModule()->GetInstMethodHashTable()->ContainsMethodDesc(pMD))
-    {
-        triage = Rejected;
-        rejectReason = "method is not in the current module";
-        goto Done;
-    }
-
     // Always store items in their preferred zap module even if we are not sure
     if (Module::GetPreferredZapModuleForMethodDesc(pMD) == m_image->GetModule())
     {
@@ -6601,20 +6593,45 @@ bool CEEPreloader::CanSkipMethodPreparation (
 CORINFO_METHOD_HANDLE CEEPreloader::LookupMethodDef(mdMethodDef token)
 {
     STANDARD_VM_CONTRACT;
+    MethodDesc *resultMD = nullptr;
 
-    MethodDesc *pMD = MemberLoader::GetMethodDescFromMethodDef(
-                                     m_image->GetModule(),
-                                     token,
-                                     FALSE);
-
-    if (IsReadyToRunCompilation() && pMD->HasClassOrMethodInstantiation())
+    EX_TRY
     {
-        _ASSERTE(IsCompilationProcess() && pMD->GetModule_NoLogging() == GetAppDomain()->ToCompilationDomain()->GetTargetModule());
+        MethodDesc *pMD = MemberLoader::GetMethodDescFromMethodDef(m_image->GetModule(), token, FALSE);
+
+        if (IsReadyToRunCompilation() && pMD->HasClassOrMethodInstantiation())
+        {
+            _ASSERTE(IsCompilationProcess() && pMD->GetModule_NoLogging() == GetAppDomain()->ToCompilationDomain()->GetTargetModule());
+        }
+
+        resultMD = pMD->FindOrCreateTypicalSharedInstantiation();
     }
+    EX_CATCH
+    {
+        this->Error(token, GET_EXCEPTION());
+    }
+    EX_END_CATCH(SwallowAllExceptions)
 
-    pMD = pMD->FindOrCreateTypicalSharedInstantiation();
+    return CORINFO_METHOD_HANDLE(resultMD);
+}
 
-    return CORINFO_METHOD_HANDLE(pMD);
+bool CEEPreloader::GetMethodInfo(mdMethodDef token, CORINFO_METHOD_HANDLE ftnHnd, CORINFO_METHOD_INFO * methInfo)
+{
+    STANDARD_VM_CONTRACT;
+    bool result = false;
+
+    EX_TRY
+    {
+        result = GetZapJitInfo()->getMethodInfo(ftnHnd, methInfo);
+    }
+    EX_CATCH
+    {
+        result = false;
+        this->Error(token, GET_EXCEPTION());
+    }
+    EX_END_CATCH(SwallowAllExceptions)
+
+    return result;
 }
 
 static BOOL MethodIsVisibleOutsideItsAssembly(DWORD dwMethodAttr)
@@ -6710,33 +6727,20 @@ CorCompileILRegion CEEPreloader::GetILRegion(mdMethodDef token)
     return region;
 }
 
-CORINFO_CLASS_HANDLE CEEPreloader::FindTypeForProfileEntry(CORBBTPROF_BLOB_PARAM_SIG_ENTRY * profileBlobEntry)
-{
-    STANDARD_VM_CONTRACT;
-
-    _ASSERTE(profileBlobEntry->blob.type == ParamTypeSpec);
-
-    if (PartialNGenStressPercentage() != 0)
-        return CORINFO_CLASS_HANDLE( NULL );
-
-    Module *   pModule = GetAppDomain()->ToCompilationDomain()->GetTargetModule();
-    TypeHandle th      = pModule->LoadIBCTypeHelper(profileBlobEntry);
-
-    return CORINFO_CLASS_HANDLE(th.AsPtr());
-}
 
 CORINFO_METHOD_HANDLE CEEPreloader::FindMethodForProfileEntry(CORBBTPROF_BLOB_PARAM_SIG_ENTRY * profileBlobEntry)
 {
     STANDARD_VM_CONTRACT;
+    MethodDesc *  pMethod = nullptr;
 
     _ASSERTE(profileBlobEntry->blob.type == ParamMethodSpec);
 
     if (PartialNGenStressPercentage() != 0)
         return CORINFO_METHOD_HANDLE( NULL );
-    
-    Module *      pModule = GetAppDomain()->ToCompilationDomain()->GetTargetModule();
-    MethodDesc *  pMethod = pModule->LoadIBCMethodHelper(profileBlobEntry);
 
+    Module * pModule = GetAppDomain()->ToCompilationDomain()->GetTargetModule();
+    pMethod = pModule->LoadIBCMethodHelper(m_image, profileBlobEntry);
+   
     return CORINFO_METHOD_HANDLE( pMethod );
 }
 
