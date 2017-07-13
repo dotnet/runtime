@@ -219,16 +219,9 @@ namespace System.Drawing.Internal
         /// <summary>
         /// When hwnd is null, we are getting the screen DC.
         /// </summary>
-        public static DeviceContext FromHwnd(IntPtr hwnd)
-        {
-            return new DeviceContext(hwnd);
-        }
+        public static DeviceContext FromHwnd(IntPtr hwnd) => new DeviceContext(hwnd);
 
-
-        ~DeviceContext()
-        {
-            Dispose(false);
-        }
+        ~DeviceContext() => Dispose(false);
 
         public void Dispose()
         {
@@ -243,10 +236,7 @@ namespace System.Drawing.Internal
                 return;
             }
 
-            if (Disposing != null)
-            {
-                Disposing(this, EventArgs.Empty);
-            }
+            Disposing?.Invoke(this, EventArgs.Empty);
 
             _disposed = true;
 
@@ -491,11 +481,7 @@ namespace System.Drawing.Internal
         /// <summary>
         /// This allows collections to treat DeviceContext objects wrapping the same HDC as the same objects.
         /// </summary>
-        public override int GetHashCode()
-        {
-            return _hDC.GetHashCode();
-        }
-
+        public override int GetHashCode() => _hDC.GetHashCode();
 
         internal class GraphicsState
         {
