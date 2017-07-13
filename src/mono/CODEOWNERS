@@ -16,6 +16,7 @@
 # https://github.com/blog/2392-introducing-code-owners
 # https://help.github.com/articles/about-codeowners
 
+acceptance-tests/* @akoeplinger
 acceptance-tests/profiler-stress @alexrp
 docs/sources/mono-api-profiler.html @alexrp
 man/mprof-report.1 @alexrp
@@ -27,6 +28,11 @@ mono/utils/atomic* @alexrp
 mono/utils/mono-hwcap* @alexrp
 mono/utils/mono-mem* @alexrp
 msvc/*profiler* @alexrp
+packaging/Windows @akoeplinger
 samples/profiler @alexrp
 samples/size @alexrp
+scripts/ci/run-jenkins.sh @akoeplinger
+scripts/ci/run-test-acceptance-tests.sh @akoeplinger
+scripts/ci/run-test-default.sh @akoeplinger
 scripts/ci/run-test-profiler-stress-tests.sh @alexrp
+scripts/ci/util.sh @akoeplinger
