@@ -62,12 +62,12 @@ def create_list_file(file_name, metadata):
     old_metadata = [item for item in metadata if item[1] != -1]
 
     with open(file_name, "w") as file_handle:
-        file_handle.write("## This list file has been produced automatically. Any changes" + os.pathsep)
-        file_handle.write("## are subject to being overwritten when reproducing this file." + os.pathsep))
-        file_handle.write("## " + os.pathsep))
-        file_handle.write("## Last Updated: %s%s" % (current_time_str, os.pathsep))
-        file_handle.write("## Commit: %s%s" % (ARGS.commit_hash, os.pathsep))
-        file_handle.write("## " + os.pathsep))
+        file_handle.write("## This list file has been produced automatically. Any changes\n")
+        file_handle.write("## are subject to being overwritten when reproducing this file.\n")
+        file_handle.write("## \n")
+        file_handle.write("## Last Updated: %s\n" % current_time_str)
+        file_handle.write("## Commit: %s\n" % ARGS.commit_hash)
+        file_handle.write("## \n")
 
         order = ["RelativePath", "WorkingDir", "Expected", 
                 "MaxAllowedDurationSeconds", "Categories", "HostStyle"]
@@ -88,12 +88,21 @@ def create_list_file(file_name, metadata):
 
                 attribute_str = ""
                 for key in order:
-                    attribute_str += "%s=%s%s" % (key, item[key], os.pathsep))
+                    attribute_str += "%s=%s\n" % (key, item[key])
 
-                file_handle.write(attribute_str + os.pathsep))
+                file_handle.write(attribute_str + "\n")
 
         write_metadata(old_metadata)
-        write_metadata(new_metadata, old_metadata[-1][1] + 1)
+
+        old_number = 0
+        try:
+            old_number = old_metadata[-1][1] + 1
+
+        except:
+            # New lstFile
+            pass
+
+        write_metadata(new_metadata, old_number + 1)
 
 def create_metadata(tests):
     """ Given a set of tests create the metadata around them
@@ -298,6 +307,10 @@ def main(args):
 
     test_metadata = create_metadata(tests)
 
+    # Make sure the tuples are set up correctly.
+    for item in test_metadata:
+        test_metadata[item] = (test_metadata[item], -1)
+
     if old_test_metadata is not None:
         # If the new information has been changed, we will need to update
         # the lstFile.
@@ -317,7 +330,7 @@ def main(args):
             else:
                 index = old_metadata[1]
                 old_metadata = old_metadata[0]
-                attributes = set(old_metadata.keys() + new_metadata.keys())
+                attributes = set(old_metadata.keys() + new_metadata[0].keys())
 
                 # Make sure we go through all attributes of both sets.
                 # If an attribute exists in one set but not the other it will
@@ -331,7 +344,7 @@ def main(args):
                     if attribute == "MaxAllowedDurationSeconds":
                             continue
                     if attribute == "Categories":
-                        new_split = new_metadata["Categories"].split(";")
+                        new_split = new_metadata[0]["Categories"].split(";")
                         old_split = old_metadata["Categories"].split(";")
 
                         if unset_new:
@@ -350,24 +363,27 @@ def main(args):
 
                         joined_categories = set(old_split + new_split)
 
-                        overwritten = True
+                        if (old_split != new_split):
+                            overwritten = True
                         ordered_categories = []
                         for item in old_split:
                             if item in joined_categories:
                                 ordered_categories.append(item)
                                 joined_categories.remove(item)
 
+                        ordered_categories = [item for item in ordered_categories if item != ""]
+
                         old_metadata[attribute] = ";".join(ordered_categories)
                         old_metadata[attribute] = old_metadata[attribute] + ";" + ";".join(joined_categories) if len(joined_categories) > 0 else old_metadata[attribute]
                         old_test_metadata[test_name] = (old_metadata, index)
 
-                    elif new_metadata[attribute] != old_metadata[attribute]:
+                    elif new_metadata[0][attribute] != old_metadata[attribute]:
                             # If the old information is not the same as the new
                             # information, keep the new information. overwrite the old
                             # metadata.
-                            if new_metadata[attribute] is not None:
+                            if new_metadata[0][attribute] is not None:
                                 overwritten = True
-                                old_metadata[attribute] = new_metadata[attribute]
+                                old_metadata[attribute] = new_metadata[0][attribute]
 
                                 old_test_metadata[test_name] = (old_metadata, index)
 
