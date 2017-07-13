@@ -153,6 +153,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 Assert.True(handler.CheckCertificateRevocationList);
                 Assert.Equal(10, handler.MaxAutomaticRedirections);
+                Assert.Equal(0, handler.MaxRequestContentBufferSize);
                 Assert.Equal(-1, handler.MaxResponseHeadersLength);
                 Assert.True(handler.PreAuthenticate);
                 Assert.Equal(SslProtocols.None, handler.SslProtocols);
@@ -179,25 +180,14 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(20010, TargetFrameworkMonikers.Uap)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "MaxRequestContentBufferSize not used on .NET Core due to architecture differences")]
-        [Fact]
-        public void MaxRequestContentBufferSize_Get_ReturnsZero()
+        [Theory]
+        [InlineData(-1)]
+        [InlineData((long)int.MaxValue + (long)1)]
+        public void MaxRequestContentBufferSize_SetInvalidValue_ThrowsArgumentOutOfRangeException(long value)
         {
             using (var handler = new HttpClientHandler())
             {
-                Assert.Equal(0, handler.MaxRequestContentBufferSize);
-            }
-        }
-
-        [ActiveIssue(20010, TargetFrameworkMonikers.Uap)]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "MaxRequestContentBufferSize not used on .NET Core due to architecture differences")]
-        [Fact]
-        public void MaxRequestContentBufferSize_Set_ThrowsPlatformNotSupportedException()
-        {
-            using (var handler = new HttpClientHandler())
-            {
-                Assert.Throws<PlatformNotSupportedException>(() => handler.MaxRequestContentBufferSize = 1024);
+                Assert.Throws<ArgumentOutOfRangeException>(() => handler.MaxRequestContentBufferSize = value);
             }
         }
 
@@ -1608,14 +1598,11 @@ namespace System.Net.Http.Functional.Tests
             string method,
             bool secureServer)
         {
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsFullFramework && method == "GET")
             {
                 // .NET Framework doesn't allow a content body with this HTTP verb.
                 // It will throw a System.Net.ProtocolViolation exception.
-                if (method == "GET")
-                {
-                    return;
-                }
+                return;
             }
 
             using (var client = new HttpClient())
@@ -1682,25 +1669,19 @@ namespace System.Net.Http.Functional.Tests
             string method,
             bool secureServer)
         {
-            if (PlatformDetection.IsFullFramework)
+            if (PlatformDetection.IsFullFramework && method == "HEAD")
             {
                 // .NET Framework doesn't allow a content body with this HTTP verb.
                 // It will throw a System.Net.ProtocolViolation exception.
-                if (method == "HEAD")
-                {
-                    return;
-                }
+                return;
             }
 
-            if (PlatformDetection.IsUap)
+            if (PlatformDetection.IsUap && method == "TRACE")
             {
                 // UAP platform doesn't allow a content body with this HTTP verb.
                 // It will throw an exception HttpRequestException/COMException
                 // with "The requested operation is invalid" message.
-                if (method == "TRACE")
-                {
-                    return;
-                }
+                return;
             }
 
             using (var client = new HttpClient())

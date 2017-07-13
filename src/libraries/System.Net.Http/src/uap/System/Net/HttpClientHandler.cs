@@ -53,9 +53,6 @@ namespace System.Net.Http
         private readonly HttpHandlerToFilter _handlerToFilter;
         private readonly HttpMessageHandler _diagnosticsPipeline;
 
-        private volatile bool _operationStarted;
-        private volatile bool _disposed;
-
         private ClientCertificateOption _clientCertificateOptions;
         private CookieContainer _cookieContainer;
         private bool _useCookies;
@@ -254,23 +251,6 @@ namespace System.Net.Http
             {
                 CheckDisposedOrStarted();
                 _rtFilter.MaxConnectionsPerServer = (uint)value;
-            }
-        }
-        
-        public long MaxRequestContentBufferSize
-        {
-            get { return HttpContent.MaxBufferSize; }
-            set
-            {
-                // .NET Native port note: We don't have an easy way to implement the MaxRequestContentBufferSize property. To maximize the chance of app compat,
-                // we will "succeed" as long as the requested buffer size doesn't exceed the max. However, no actual
-                // enforcement of the max buffer size occurs.
-                if (value > MaxRequestContentBufferSize)
-                {
-                    throw new PlatformNotSupportedException(String.Format(CultureInfo.InvariantCulture,
-                        SR.net_http_value_not_supported, value, nameof(MaxRequestContentBufferSize)));
-                }
-                CheckDisposedOrStarted();
             }
         }
 
@@ -724,23 +704,6 @@ namespace System.Net.Http
                 }
 
                 _operationStarted = true;
-            }
-        }
-
-        private void CheckDisposed()
-        {
-            if (_disposed)
-            {
-                throw new ObjectDisposedException(GetType().ToString());
-            }
-        }
-
-        private void CheckDisposedOrStarted()
-        {
-            CheckDisposed();
-            if (_operationStarted)
-            {
-                throw new InvalidOperationException(SR.net_http_operation_started);
             }
         }
 
