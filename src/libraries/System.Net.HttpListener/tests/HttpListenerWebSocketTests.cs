@@ -35,7 +35,7 @@ namespace System.Net.Tests
             Client.Dispose();
         }
 
-        [ConditionalTheory(nameof(PartialMessagesSupported))]
+        [ConditionalTheory(nameof(PartialMessagesSupported), nameof(IsNotWindows7))]
         [InlineData(WebSocketMessageType.Text, false)]
         [InlineData(WebSocketMessageType.Binary, false)]
         [InlineData(WebSocketMessageType.Text, true)]
