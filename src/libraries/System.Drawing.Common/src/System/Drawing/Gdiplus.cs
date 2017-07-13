@@ -272,15 +272,7 @@ namespace System.Drawing
             [DllImport(ExternDll.Gdiplus, SetLastError = true, ExactSpelling = true, EntryPoint = "GdipDeletePath", CharSet = CharSet.Unicode)]
             private static extern int IntGdipDeletePath(HandleRef path);
 
-            internal static int GdipDeletePath(HandleRef path)
-            {
-                if (!Initialized)
-                {
-                    return Ok;
-                }
-
-                return IntGdipDeletePath(path);
-            }
+            internal static int GdipDeletePath(HandleRef path) => Initialized ? IntGdipDeletePath(path) : Ok;
 
             [DllImport(ExternDll.Gdiplus, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Unicode)]
             internal static extern int GdipResetPath(HandleRef path);
@@ -496,15 +488,8 @@ namespace System.Drawing
 
             [DllImport(ExternDll.Gdiplus, SetLastError = true, ExactSpelling = true, EntryPoint = "GdipDeletePathIter", CharSet = CharSet.Unicode)]
             private static extern int IntGdipDeletePathIter(HandleRef pathIter);
-            internal static int GdipDeletePathIter(HandleRef pathIter)
-            {
-                if (!Initialized)
-                {
-                    return Ok;
-                }
 
-                return IntGdipDeletePathIter(pathIter);
-            }
+            internal static int GdipDeletePathIter(HandleRef pathIter) => Initialized ? IntGdipDeletePathIter(pathIter) : Ok;
 
             [DllImport(ExternDll.Gdiplus, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Unicode)]
             internal static extern int GdipPathIterNextSubpath(HandleRef pathIter, out int resultCount,
@@ -572,15 +557,7 @@ namespace System.Drawing
             [DllImport(ExternDll.Gdiplus, SetLastError = true, ExactSpelling = true, EntryPoint = "GdipDeleteMatrix", CharSet = CharSet.Unicode)]
             private static extern int IntGdipDeleteMatrix(HandleRef matrix);
 
-            internal static int GdipDeleteMatrix(HandleRef matrix)
-            {
-                if (!Initialized)
-                {
-                    return Ok;
-                }
-
-                return IntGdipDeleteMatrix(matrix);
-            }
+            internal static int GdipDeleteMatrix(HandleRef matrix) => Initialized ? IntGdipDeleteMatrix(matrix) : Ok;
 
             [DllImport(ExternDll.Gdiplus, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Unicode)]
             internal static extern int GdipSetMatrixElements(HandleRef matrix, float m11,
@@ -661,15 +638,7 @@ namespace System.Drawing
             [DllImport(ExternDll.Gdiplus, SetLastError = true, ExactSpelling = true, EntryPoint = "GdipDeleteRegion", CharSet = CharSet.Unicode)]
             private static extern int IntGdipDeleteRegion(HandleRef region);
 
-            internal static int GdipDeleteRegion(HandleRef region)
-            {
-                if (!Initialized)
-                {
-                    return Ok;
-                }
-
-                return IntGdipDeleteRegion(region);
-            }
+            internal static int GdipDeleteRegion(HandleRef region) => Initialized ? IntGdipDeleteRegion(region) : Ok;
 
             [DllImport(ExternDll.Gdiplus, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Unicode)]
             internal static extern int GdipSetInfinite(HandleRef region);
@@ -758,15 +727,7 @@ namespace System.Drawing
             [DllImport(ExternDll.Gdiplus, SetLastError = true, ExactSpelling = true, EntryPoint = "GdipDeleteBrush", CharSet = CharSet.Unicode)]
             private static extern int IntGdipDeleteBrush(HandleRef brush);
 
-            internal static int GdipDeleteBrush(HandleRef brush)
-            {
-                if (!Initialized)
-                {
-                    return Ok;
-                }
-
-                return IntGdipDeleteBrush(brush);
-            }
+            internal static int GdipDeleteBrush(HandleRef brush) => Initialized ? IntGdipDeleteBrush(brush) : Ok;
 
             //----------------------------------------------------------------------------------------                                                           
             // Hatch Brush
@@ -1096,15 +1057,7 @@ namespace System.Drawing
             [DllImport(ExternDll.Gdiplus, SetLastError = true, ExactSpelling = true, EntryPoint = "GdipDeletePen", CharSet = CharSet.Unicode)]
             private static extern int IntGdipDeletePen(HandleRef Pen);
 
-            internal static int GdipDeletePen(HandleRef pen)
-            {
-                if (!Initialized)
-                {
-                    return Ok;
-                }
-
-                return IntGdipDeletePen(pen);
-            }
+            internal static int GdipDeletePen(HandleRef pen) => Initialized ? IntGdipDeletePen(pen) : Ok;
 
             [DllImport(ExternDll.Gdiplus, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Unicode)]
             internal static extern int GdipSetPenMode(HandleRef pen, PenAlignment penAlign);
@@ -1239,15 +1192,7 @@ namespace System.Drawing
             [DllImport(ExternDll.Gdiplus, SetLastError = true, ExactSpelling = true, EntryPoint = "GdipDeleteCustomLineCap", CharSet = CharSet.Unicode)]
             private static extern int IntGdipDeleteCustomLineCap(HandleRef customCap);
 
-            internal static int GdipDeleteCustomLineCap(HandleRef customCap)
-            {
-                if (!Initialized)
-                {
-                    return Ok;
-                }
-
-                return IntGdipDeleteCustomLineCap(customCap);
-            }
+            internal static int GdipDeleteCustomLineCap(HandleRef customCap) => Initialized ? IntGdipDeleteCustomLineCap(customCap) : Ok;
 
             [DllImport(ExternDll.Gdiplus, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Unicode)]
             internal static extern int GdipCloneCustomLineCap(HandleRef customCap, out IntPtr clonedCap);
@@ -1359,15 +1304,7 @@ namespace System.Drawing
             [DllImport(ExternDll.Gdiplus, SetLastError = true, ExactSpelling = true, EntryPoint = "GdipDisposeImage", CharSet = CharSet.Unicode)]
             private static extern int IntGdipDisposeImage(HandleRef image);
 
-            internal static int GdipDisposeImage(HandleRef image)
-            {
-                if (!Initialized)
-                {
-                    return Ok;
-                }
-
-                return IntGdipDisposeImage(image);
-            }
+            internal static int GdipDisposeImage(HandleRef image) => Initialized ? IntGdipDisposeImage(image) : Ok;
 
             [DllImport(ExternDll.Gdiplus, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Unicode)]
             internal static extern int GdipSaveImageToFile(HandleRef image, string filename,
@@ -1571,16 +1508,7 @@ namespace System.Drawing
             [DllImport(ExternDll.Gdiplus, SetLastError = true, ExactSpelling = true, EntryPoint = "GdipDisposeImageAttributes", CharSet = CharSet.Unicode)]
             private static extern int IntGdipDisposeImageAttributes(HandleRef imageattr);
 
-            internal static int GdipDisposeImageAttributes(HandleRef imageattr)
-            {
-                if (!Initialized)
-                {
-                    return Ok;
-                }
-
-                int result = IntGdipDisposeImageAttributes(imageattr);
-                return result;
-            }
+            internal static int GdipDisposeImageAttributes(HandleRef imageattr) => Initialized ? IntGdipDisposeImageAttributes(imageattr) : Ok;
 
             [DllImport(ExternDll.Gdiplus, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Unicode)]
             internal static extern int GdipSetImageAttributesColorMatrix(HandleRef imageattr,
@@ -1664,15 +1592,7 @@ namespace System.Drawing
             [DllImport(ExternDll.Gdiplus, SetLastError = true, ExactSpelling = true, EntryPoint = "GdipDeleteGraphics", CharSet = CharSet.Unicode)]
             private static extern int IntGdipDeleteGraphics(HandleRef graphics);
 
-            internal static int GdipDeleteGraphics(HandleRef graphics)
-            {
-                if (!Initialized)
-                {
-                    return Ok;
-                }
-
-                return IntGdipDeleteGraphics(graphics);
-            }
+            internal static int GdipDeleteGraphics(HandleRef graphics) => Initialized ? IntGdipDeleteGraphics(graphics) : Ok;
 
             [DllImport(ExternDll.Gdiplus, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Unicode)]
             internal static extern int GdipGetDC(HandleRef graphics, out IntPtr hdc);
@@ -1680,15 +1600,7 @@ namespace System.Drawing
             [DllImport(ExternDll.Gdiplus, SetLastError = true, ExactSpelling = true, EntryPoint = "GdipReleaseDC", CharSet = CharSet.Unicode)]
             private static extern int IntGdipReleaseDC(HandleRef graphics, HandleRef hdc);
 
-            internal static int GdipReleaseDC(HandleRef graphics, HandleRef hdc)
-            {
-                if (!Initialized)
-                {
-                    return Ok;
-                }
-
-                return IntGdipReleaseDC(graphics, hdc);
-            }
+            internal static int GdipReleaseDC(HandleRef graphics, HandleRef hdc) => Initialized ? IntGdipReleaseDC(graphics, hdc) : Ok;
 
             [DllImport(ExternDll.Gdiplus, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Unicode)]
             internal static extern int GdipSetCompositingMode(HandleRef graphics, int compositeMode);
@@ -2433,15 +2345,7 @@ namespace System.Drawing
             [DllImport(ExternDll.Gdiplus, SetLastError = true, ExactSpelling = true, EntryPoint = "GdipDeleteFontFamily", CharSet = CharSet.Unicode)]
             private static extern int IntGdipDeleteFontFamily(HandleRef fontFamily);
 
-            internal static int GdipDeleteFontFamily(HandleRef fontFamily)
-            {
-                if (!Initialized)
-                {
-                    return Ok;
-                }
-
-                return IntGdipDeleteFontFamily(fontFamily);
-            }
+            internal static int GdipDeleteFontFamily(HandleRef fontFamily) => Initialized ? IntGdipDeleteFontFamily(fontFamily) : Ok;
 
             [DllImport(ExternDll.Gdiplus, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Unicode)]
             internal static extern int GdipCloneFontFamily(HandleRef fontfamily, out IntPtr clonefontfamily);
@@ -2490,15 +2394,7 @@ namespace System.Drawing
             [DllImport(ExternDll.Gdiplus, SetLastError = true, ExactSpelling = true, EntryPoint = "GdipDeleteFont", CharSet = CharSet.Unicode)]
             private static extern int IntGdipDeleteFont(HandleRef font);
 
-            internal static int GdipDeleteFont(HandleRef font)
-            {
-                if (!Initialized)
-                {
-                    return Ok;
-                }
-
-                return IntGdipDeleteFont(font);
-            }
+            internal static int GdipDeleteFont(HandleRef font) => Initialized ? IntGdipDeleteFont(font) : Ok;
 
             [DllImport(ExternDll.Gdiplus, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Unicode)]
             internal static extern int GdipGetFamily(HandleRef font, out IntPtr family);
@@ -2548,16 +2444,7 @@ namespace System.Drawing
             [DllImport(ExternDll.Gdiplus, SetLastError = true, ExactSpelling = true, EntryPoint = "GdipDeleteStringFormat", CharSet = CharSet.Unicode)]
             private static extern int IntGdipDeleteStringFormat(HandleRef format);
 
-            internal static int GdipDeleteStringFormat(HandleRef format)
-            {
-                if (!Initialized)
-                {
-                    return SafeNativeMethods.Gdip.Ok;
-                }
-
-                int result = IntGdipDeleteStringFormat(format);
-                return result;
-            }
+            internal static int GdipDeleteStringFormat(HandleRef format) => Initialized ? IntGdipDeleteStringFormat(format) : Ok;
 
             [DllImport(ExternDll.Gdiplus, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Unicode)]
             internal static extern int GdipCloneStringFormat(HandleRef format, out IntPtr newFormat);
