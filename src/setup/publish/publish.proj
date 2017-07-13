@@ -161,8 +161,6 @@
       <!-- if we're not signing packages, publish directly from the download directory, as we won't be
 	       copying them to the indexed directory -->
       <PublishDirectory Condition="'$(WindowsSdkDir)' == ''">$(DownloadDirectory)</PublishDirectory>
-      <!-- list of packages that we want to embed symbol signatures in -->
-      <SymbolPackagesToPublishGlob Condition="'$(SymbolPackagesToPublishGlob)' == ''">$(DownloadDirectory)/**/*.nupkg</SymbolPackagesToPublishGlob>
     </PropertyGroup>
     <MakeDir Directories="$(DownloadDirectory)"
              Condition="!Exists('$(DownloadDirectory)')" />
@@ -181,13 +179,32 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="SignSymbolPackages" DependsOnTargets="InjectSignedSymbolCatalogIntoSymbolPackages" Condition="'$(WindowsSdkDir)' != ''">
+  <Target Name="FindDownloadedPackagesForSigning">
     <PropertyGroup>
-      <PowerShellExe Condition=" '$(PowerShellExe)'=='' ">powershell.exe</PowerShellExe>
-      <EmbedIndexScriptLocation Condition=" '$(EmbedIndexScriptLocation)'=='' ">$(VsoToolsDir)\scripts\DotNet-Trusted-Publish\Embed-Index.ps1</EmbedIndexScriptLocation>
+      <!-- Glob matching packages that we want to embed symbol signatures in. Used in BuildTools. -->
+      <SymbolPackagesToPublishGlob Condition="'$(SymbolPackagesToPublishGlob)' == ''">$(DownloadDirectory)**\*.symbols.nupkg</SymbolPackagesToPublishGlob>
     </PropertyGroup>
 
-    <Exec Command="$(PowerShellExe) -NonInteractive -ExecutionPolicy Unrestricted  -Command &quot;&amp; { &amp;&apos;$(EmbedIndexScriptLocation)&apos; $(DownloadDirectory) $(PublishDirectory) } &quot;" />
+    <ItemGroup>
+      <SymbolPackagesToEmbedIndex Include="$(SymbolPackagesToPublishGlob)" />
+      <NormalPackagesToNotEmbedIndex Include="$(DownloadDirectory)**\*.nupkg"
+                                     Exclude="@(SymbolPackagesToEmbedIndex)" />
+    </ItemGroup>
+
+    <!-- Copy any nupkgs we skip running EmbedIndex on directly to the output folder. -->
+    <Copy SourceFiles="@(NormalPackagesToNotEmbedIndex)"
+          DestinationFolder="$(PublishDirectory)" />
+  </Target>
+
+  <Target Name="SignSymbolPackages"
+          DependsOnTargets="FindDownloadedPackagesForSigning;InjectSignedSymbolCatalogIntoSymbolPackages"
+          Condition="'$(WindowsSdkDir)' != ''">
+    <ItemGroup>
+      <EmbedIndexArgPairs Include="@(SymbolPackagesToEmbedIndex -> '%(Identity) $(PublishDirectory)%(Filename)%(Extension)')" />
+    </ItemGroup>
+
+    <!-- Inline the EmbedIndex.ps1 script used in CoreFX and CoreCLR: directly call EmbedIndex. -->
+    <Exec Command="$(DotNetToolDir)\dotnet $(EmbedIndexToolDir)\tools\EmbedIndex.dll %(EmbedIndexArgPairs.Identity)" />
   </Target>
 
   <Target Name="DoPushCoreHostPackagesToFeed">
