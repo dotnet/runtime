@@ -335,7 +335,7 @@ mono_profiler_set_sample_mode (MonoProfilerHandle handle, MonoProfilerSampleMode
 	mono_profiler_state.sample_mode = mode;
 	mono_profiler_state.sample_freq = freq;
 
-	mono_os_sem_post (&mono_profiler_state.sampling_semaphore);
+	mono_profiler_sampling_thread_post ();
 
 	return TRUE;
 }
@@ -359,7 +359,13 @@ mono_profiler_sampling_enabled (void)
 }
 
 void
-mono_profiler_sampling_thread_sleep (void)
+mono_profiler_sampling_thread_post (void)
+{
+	mono_os_sem_post (&mono_profiler_state.sampling_semaphore);
+}
+
+void
+mono_profiler_sampling_thread_wait (void)
 {
 	mono_os_sem_wait (&mono_profiler_state.sampling_semaphore, MONO_SEM_FLAGS_NONE);
 }
