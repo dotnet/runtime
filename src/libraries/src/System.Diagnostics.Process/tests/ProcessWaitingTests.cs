@@ -11,7 +11,7 @@ namespace System.Diagnostics.Tests
     public class ProcessWaitingTests : ProcessTestBase
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "https://github.com/dotnet/corefx/issues/22174")]
         public void MultipleProcesses_StartAllKillAllWaitAll()
         {
             const int Iters = 10;
@@ -23,7 +23,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "https://github.com/dotnet/corefx/issues/22174")]
         public void MultipleProcesses_SerialStartKillWait()
         {
             const int Iters = 10;
@@ -37,7 +37,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "https://github.com/dotnet/corefx/issues/22174")]
         public void MultipleProcesses_ParallelStartKillWait()
         {
             const int Tasks = 4, ItersPerTask = 10;
@@ -63,7 +63,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "https://github.com/dotnet/corefx/issues/22174")]
         public void SingleProcess_TryWaitMultipleTimesBeforeCompleting()
         {
             Process p = CreateProcessLong();
@@ -84,7 +84,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "https://github.com/dotnet/corefx/issues/22174")]
         [InlineData(false)]
         [InlineData(true)]
         public async Task SingleProcess_WaitAfterExited(bool addHandlerBeforeStart)
@@ -110,7 +110,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "https://github.com/dotnet/corefx/issues/22174")]
         [ActiveIssue("https://github.com/dotnet/corefx/issues/18210", TargetFrameworkMonikers.UapAot)]
         [InlineData(0)]
         [InlineData(1)]
@@ -129,7 +129,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "https://github.com/dotnet/corefx/issues/22174")]
         public void SingleProcess_CopiesShareExitInformation()
         {
             Process p = CreateProcessLong();
@@ -148,7 +148,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "https://github.com/dotnet/corefx/issues/22174")]
         public void WaitForPeerProcess()
         {
             Process child1 = CreateProcessLong();
@@ -175,7 +175,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "https://github.com/dotnet/corefx/issues/22174")]
         [ActiveIssue(15844, TestPlatforms.AnyUnix)]
         public void WaitChain()
         {
@@ -204,7 +204,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "https://github.com/dotnet/corefx/issues/22174")]
         public void WaitForSelfTerminatingChild()
         {
             Process child = CreateProcess(() =>

@@ -10,7 +10,7 @@ namespace System.Diagnostics.Tests
 {
     public class ProcessTestBase : RemoteExecutorTestBase
     {
-        protected const int WaitInMS = 10 * 1000;
+        protected const int WaitInMS = 30 * 1000;
         protected Process _process;
         protected readonly List<Process> _processes = new List<Process>();
 

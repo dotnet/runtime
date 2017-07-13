@@ -29,7 +29,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/22174", TargetFrameworkMonikers.Uap)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "https://github.com/dotnet/corefx/issues/22174")]
         public void Modules_Get_ContainsHostFileName()
         {
             ProcessModuleCollection modules = Process.GetCurrentProcess().Modules;
