@@ -19,6 +19,7 @@
 acceptance-tests/profiler-stress @alexrp
 docs/sources/mono-api-profiler.html @alexrp
 man/mprof-report.1 @alexrp
+mcs/class/Mono.Options @jonpryor
 mcs/class/Mono.Profiler.Log @alexrp
 mono/metadata/profiler* @alexrp
 mono/profiler @alexrp
