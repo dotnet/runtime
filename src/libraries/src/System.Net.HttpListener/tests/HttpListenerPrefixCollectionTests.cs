@@ -11,7 +11,7 @@ namespace System.Net.Tests
 {
     public class HttpListenerPrefixCollectionTests
     {
-        public static bool IsNonZeroLowerBoundArraySupported { get; } = PlatformDetection.IsNonZeroLowerBoundArraySupported;
+        public static bool IsNonZeroLowerBoundArraySupported => PlatformDetection.IsNonZeroLowerBoundArraySupported;
 
         [Fact]
         public void Prefixes_Get_ReturnsEmpty()
