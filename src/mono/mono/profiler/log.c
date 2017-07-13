@@ -17,6 +17,7 @@
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/mono-perfcounters.h>
+#include <mono/metadata/tabledefs.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/hazard-pointer.h>
 #include <mono/utils/lock-free-alloc.h>
@@ -3218,8 +3219,8 @@ coverage_filter (MonoProfiler *prof, MonoMethod *method)
 	MonoLockFreeQueueNode *node;
 
 	flags = mono_method_get_flags (method, &iflags);
-	if ((iflags & 0x1000 /*METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL*/) ||
-	    (flags & 0x2000 /*METHOD_ATTRIBUTE_PINVOKE_IMPL*/))
+	if ((iflags & METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL) ||
+	    (flags & METHOD_ATTRIBUTE_PINVOKE_IMPL))
 		return FALSE;
 
 	// Don't need to do anything else if we're already tracking this method
