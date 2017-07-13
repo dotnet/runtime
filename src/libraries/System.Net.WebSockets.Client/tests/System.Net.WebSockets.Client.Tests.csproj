@@ -15,7 +15,10 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>Common\tests\System\PlatformDetection.cs</Link>
+      <Link>Common\System\PlatformDetection.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonTestPath)\System\Net\PlatformDetection.Networking.cs">
+      <Link>Common\System\Net\PlatformDetection.Networking.cs</Link>
     </Compile>
     <Compile Include="$(CommonTestPath)\System\Net\Capability.Security.cs">
       <Link>Common\System\Net\Capability.Security.cs</Link>
