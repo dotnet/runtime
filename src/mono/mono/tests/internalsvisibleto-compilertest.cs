@@ -1,11 +1,26 @@
 ﻿using System;
 
+#if SIGN2048
+using System.Reflection;
+[assembly: AssemblyDelaySign(true)]
+[assembly: AssemblyKeyFile(@"internalsvisibleto-2048.snk")]
+#endif
+
 namespace InternalsVisibleTo {
     class Program {
         static void Main (string[] args) {
             var failCount = 0;
 
             Console.WriteLine("-- Correct case --");
+
+	    try {
+		    var a = new CorrectCaseFriendAssembly.PublicClass ();
+		    a.InternalMethod ();
+		    Console.WriteLine ("Access friend internal method: OK");
+	    } catch (MemberAccessException) {
+		    failCount += 1;
+		    Console.WriteLine ("Access friend internal method: Fail");
+	    }
 
             try {
                 var a = new CorrectCaseFriendAssembly.InternalClass(@internal: 0);

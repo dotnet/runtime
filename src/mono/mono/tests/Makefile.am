@@ -69,11 +69,12 @@ if HYBRID_AOT_TESTS
 PROFILE_MCS_FLAGS = -d:MOBILE,MOBILE_LEGACY 
 endif
 
-MCS_NO_LIB = $(TOOLS_RUNTIME) $(CSC) -unsafe -debug:portable \
+MCS_NO_UNSAFE = $(TOOLS_RUNTIME) $(CSC) -debug:portable \
 	-noconfig -nologo \
 	-nowarn:0162 -nowarn:0168 -nowarn:0219 -nowarn:0414 -nowarn:0618 \
 	-nowarn:0169 -nowarn:1690 -nowarn:0649 -nowarn:0612 -nowarn:3021 \
 	-nowarn:0197 $(PROFILE_MCS_FLAGS)
+MCS_NO_LIB = $(MCS_NO_UNSAFE) -unsafe
 
 MCS = $(MCS_NO_LIB)
 
@@ -2008,24 +2009,63 @@ INTERNALSVISIBLETO_TEST_SRC = \
 INTERNALSVISIBLETO_TEST_LIB_SRC = \
 	internalsvisibleto-library.cs
 
+INTERNALSVISIBLETO_TEST_LIBS = \
+	internalsvisibleto-correctcase.dll \
+	internalsvisibleto-wrongcase.dll \
+	internalsvisibleto-correctcase-2.dll \
+	internalsvisibleto-wrongcase-2.dll \
+	internalsvisibleto-correctcase-sign2048.dll \
+	internalsvisibleto-wrongcase-sign2048.dll \
+	internalsvisibleto-correctcase-2-sign2048.dll \
+	internalsvisibleto-wrongcase-2-sign2048.dll
+
+
 INTERNALSVISIBLETO_TEST = \
-	$(INTERNALSVISIBLETO_TEST_SRC:.cs=.exe)
+	$(INTERNALSVISIBLETO_TEST_SRC:.cs=.exe) \
+	$(INTERNALSVISIBLETO_TEST_SRC:.cs=-sign2048.exe)
+
+if FULL_AOT_TESTS
+INTERNALSVISIBLETO_TESTAOT = \
+	$(INTERNALSVISIBLETO_TEST:.exe=.exe$(PLATFORM_AOT_SUFFIX))
+INTERNALSVISIBLETO_TESTAOT_LIBS = \
+	$(INTERNALSVISIBLETO_TEST_LIBS:.dll=.dll$(PLATFORM_AOT_SUFFIX))
+endif
+
+if HYBRID_AOT_TESTS
+INTERNALSVISIBLETO_TESTAOT = \
+	$(INTERNALSVISIBLETO_TEST:.exe=.exe$(PLATFORM_AOT_SUFFIX))
+INTERNALSVISIBLETO_TESTAOT_LIBS = \
+	$(INTERNALSVISIBLETO_TEST_LIBS:.dll=.dll$(PLATFORM_AOT_SUFFIX))
+endif
 
 EXTRA_DIST += $(INTERNALSVISIBLETO_TEST_SRC) $(INTERNALSVISIBLETO_TEST_LIB_SRC)
 
-test-internalsvisibleto: test-runner.exe $(INTERNALSVISIBLETO_TEST)
+test-internalsvisibleto: test-runner.exe $(INTERNALSVISIBLETO_TEST) $(INTERNALSVISIBLETO_TESTAOT) $(INTERNALSVISIBLETO_TESTAOT_LIBS)
 	$(TOOLS_RUNTIME) $(TEST_RUNNER) --testsuite-name $@ $(INTERNALSVISIBLETO_TEST)
 
-internalsvisibleto-runtimetest.exe: internalsvisibleto-runtimetest.cs internalsvisibleto-library.cs
-	$(Q) $(MCS) -out:internalsvisibleto-correctcase.dll -target:library -d:CORRECT_CASE -d:PERMISSIVE internalsvisibleto-library.cs	
-	$(Q) $(MCS) -out:internalsvisibleto-wrongcase.dll -target:library -d:WRONG_CASE -d:PERMISSIVE internalsvisibleto-library.cs
-	$(Q) $(MCS) -out:internalsvisibleto-runtimetest.exe -warn:0 -r:internalsvisibleto-correctcase.dll -r:internalsvisibleto-wrongcase.dll internalsvisibleto-runtimetest.cs
-	$(Q) $(MCS) -out:internalsvisibleto-correctcase.dll -target:library -d:CORRECT_CASE internalsvisibleto-library.cs	
-	$(Q) $(MCS) -out:internalsvisibleto-wrongcase.dll -target:library -d:WRONG_CASE internalsvisibleto-library.cs
+internalsvisibleto-correctcase.dll internalsvisibleto-wrongcase.dll internalsvisibleto-runtimetest.exe: internalsvisibleto-runtimetest.cs internalsvisibleto-library.cs
+	$(Q) $(MCS_NO_UNSAFE) -out:internalsvisibleto-correctcase.dll -target:library -d:CORRECT_CASE -d:PERMISSIVE internalsvisibleto-library.cs	
+	$(Q) $(MCS_NO_UNSAFE) -out:internalsvisibleto-wrongcase.dll -target:library -d:WRONG_CASE -d:PERMISSIVE internalsvisibleto-library.cs
+	$(Q) $(MCS_NO_UNSAFE) -out:internalsvisibleto-runtimetest.exe -warn:0 -r:internalsvisibleto-correctcase.dll -r:internalsvisibleto-wrongcase.dll internalsvisibleto-runtimetest.cs
+	$(Q) $(MCS_NO_UNSAFE) -out:internalsvisibleto-correctcase.dll -target:library -d:CORRECT_CASE internalsvisibleto-library.cs	
+	$(Q) $(MCS_NO_UNSAFE) -out:internalsvisibleto-wrongcase.dll -target:library -d:WRONG_CASE internalsvisibleto-library.cs
 
-internalsvisibleto-compilertest.exe: internalsvisibleto-compilertest.cs internalsvisibleto-library.cs
-	$(Q) $(MCS) -out:internalsvisibleto-correctcase-2.dll -target:library -d:CORRECT_CASE internalsvisibleto-library.cs	
-	$(Q) $(MCS) -out:internalsvisibleto-wrongcase-2.dll -target:library -d:WRONG_CASE internalsvisibleto-library.cs
-	$(Q) $(MCS) -out:internalsvisibleto-compilertest.exe -warn:0 -r:internalsvisibleto-correctcase-2.dll -r:internalsvisibleto-wrongcase-2.dll internalsvisibleto-compilertest.cs
+internalsvisibleto-correctcase-2.dll internalsvisibleto-wrongcase-2.dll  internalsvisibleto-compilertest.exe: internalsvisibleto-compilertest.cs internalsvisibleto-library.cs
+	$(Q) $(MCS_NO_UNSAFE) -out:internalsvisibleto-correctcase-2.dll -target:library -d:CORRECT_CASE internalsvisibleto-library.cs	
+	$(Q) $(MCS_NO_UNSAFE) -out:internalsvisibleto-wrongcase-2.dll -target:library -d:WRONG_CASE internalsvisibleto-library.cs
+	$(Q) $(MCS_NO_UNSAFE) -out:internalsvisibleto-compilertest.exe -warn:0 -r:internalsvisibleto-correctcase-2.dll -r:internalsvisibleto-wrongcase-2.dll internalsvisibleto-compilertest.cs
+
+internalsvisibleto-correctcase-sign2048.dll internalsvisibleto-wrongcase-sign2048.dll internalsvisibleto-runtimetest-sign2048.exe: internalsvisibleto-runtimetest.cs internalsvisibleto-library.cs internalsvisibleto-2048.snk
+	$(Q) $(MCS_NO_UNSAFE) -out:internalsvisibleto-correctcase-sign2048.dll -target:library -d:CORRECT_CASE -d:PERMISSIVE -d:SIGN2048 internalsvisibleto-library.cs
+	$(Q) $(MCS_NO_UNSAFE) -out:internalsvisibleto-wrongcase-sign2048.dll -target:library -d:WRONG_CASE -d:PERMISSIVE -d:SIGN2048 internalsvisibleto-library.cs
+	$(Q) $(MCS_NO_UNSAFE) -out:internalsvisibleto-runtimetest-sign2048.exe -warn:0 -r:internalsvisibleto-correctcase-sign2048.dll -r:internalsvisibleto-wrongcase-sign2048.dll -d:SIGN2048 internalsvisibleto-runtimetest.cs
+	$(Q) $(MCS_NO_UNSAFE) -out:internalsvisibleto-correctcase-sign2048.dll -target:library -d:CORRECT_CASE -d:SIGN2048 internalsvisibleto-library.cs
+	$(Q) $(MCS_NO_UNSAFE) -out:internalsvisibleto-wrongcase-sign2048.dll -target:library -d:WRONG_CASE -d:SIGN2048 internalsvisibleto-library.cs
+
+internalsvisibleto-correctcase-2-sign2048.dll internalsvisibleto-wrongcase-2-sign2048.dll internalsvisibleto-compilertest-sign2048.exe: internalsvisibleto-compilertest.cs internalsvisibleto-library.cs internalsvisibleto-2048.snk
+	$(Q) $(MCS_NO_UNSAFE) -out:internalsvisibleto-correctcase-2-sign2048.dll -target:library -d:CORRECT_CASE -d:SIGN2048 internalsvisibleto-library.cs	
+	$(Q) $(MCS_NO_UNSAFE) -out:internalsvisibleto-wrongcase-2-sign2048.dll -target:library -d:WRONG_CASE -d:SIGN2048 internalsvisibleto-library.cs
+	$(Q) $(MCS_NO_UNSAFE) -out:internalsvisibleto-compilertest-sign2048.exe -warn:0 -r:internalsvisibleto-correctcase-2-sign2048.dll -r:internalsvisibleto-wrongcase-2-sign2048.dll -d:SIGN2048 internalsvisibleto-compilertest.cs
+
 
 CLEANFILES = $(TESTS_CS) $(TESTS_IL) $(TESTS_BENCH) $(TESTS_STRESS) $(TESTSAOT_CS) $(TESTSAOT_IL) $(TESTSAOT_BENCH) $(TESTSAOT_STRESS) *.dll *.stdout *.aotlog *.exe stest.dat
