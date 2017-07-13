@@ -11,6 +11,8 @@ namespace System.Net.Tests
 {
     public class HttpListenerPrefixCollectionTests
     {
+        public static bool IsNonZeroLowerBoundArraySupported { get; } = PlatformDetection.IsNonZeroLowerBoundArraySupported;
+
         [Fact]
         public void Prefixes_Get_ReturnsEmpty()
         {
@@ -106,8 +108,7 @@ namespace System.Net.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => listener.Prefixes.CopyTo(new object[1, 1], 0));
         }
 
-        [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Arrays with non-zero lower bounds are not supported for NetNative")]
+        [ConditionalFact(nameof(IsNonZeroLowerBoundArraySupported))]
         public void CopyTo_NonZeroLowerBoundArray_ThrowsIndexOutOfRangeException()
         {
             var listener = new HttpListener();

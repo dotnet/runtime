@@ -16,7 +16,7 @@ namespace System.Net.WebSockets.Client.Tests
 {
     public class SendReceiveTest : ClientWebSocketTestBase
     {
-        public static bool PartialMessagesSupported => PlatformDetection.ClientWebSocketPartialMessagesSupported;
+        public static bool PartialMessagesSupported { get; } = PlatformDetection.ClientWebSocketPartialMessagesSupported;
 
         public SendReceiveTest(ITestOutputHelper output) : base(output) { }
 
