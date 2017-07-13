@@ -87,7 +87,6 @@ namespace System.Net.Tests
             yield return new object[] { "Unknown-Header: Test", Encoding.Default };
         }
 
-        [ActiveIssue(22063, TargetFrameworkMonikers.UapAot)]
         [Theory]
         [MemberData(nameof(ContentEncoding_TestData))]
         public async Task ContentEncoding_GetProperty_ReturnsExpected(string header, Encoding expected)

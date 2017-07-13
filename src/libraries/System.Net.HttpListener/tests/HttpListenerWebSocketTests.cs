@@ -13,9 +13,9 @@ namespace System.Net.Tests
 {
     public class HttpListenerWebSocketTests : IDisposable
     {
-        public static bool PartialMessagesSupported { get; } = PlatformDetection.ClientWebSocketPartialMessagesSupported;
+        public static bool PartialMessagesSupported => PlatformDetection.ClientWebSocketPartialMessagesSupported;
         public static bool IsNotWindows7 { get; } = !PlatformDetection.IsWindows7;
-        public static bool IsNotWindows7AndIsWindowsImplementation { get; } = IsNotWindows7 && Helpers.IsWindowsImplementation;
+        public static bool IsNotWindows7AndIsWindowsImplementation => IsNotWindows7 && Helpers.IsWindowsImplementation;
 
         private HttpListenerFactory Factory { get; }
         private HttpListener Listener { get; }
