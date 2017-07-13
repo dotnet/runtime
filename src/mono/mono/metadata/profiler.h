@@ -134,10 +134,10 @@ typedef enum {
 MONO_API mono_bool mono_profiler_enable_sampling (MonoProfilerHandle handle);
 
 /*
- * Sets the sampling mode and frequency (in Hz). If the calling profiler has
- * ownership over sampling settings, the settings will be changed and this
- * function will return TRUE; otherwise, it returns FALSE without changing any
- * settings.
+ * Sets the sampling mode and frequency (in Hz). The frequency must be a
+ * positive number. If the calling profiler has ownership over sampling
+ * settings, the settings will be changed and this function will return TRUE;
+ * otherwise, it returns FALSE without changing any settings.
  *
  * This function is async safe.
  */
