@@ -16,21 +16,10 @@ namespace System.Drawing.Internal
         {
         }
 
-        internal GPPOINT(PointF pt)
-        {
-            X = (int)pt.X;
-            Y = (int)pt.Y;
-        }
-
         internal GPPOINT(Point pt)
         {
             X = pt.X;
             Y = pt.Y;
-        }
-
-        internal PointF ToPoint()
-        {
-            return new PointF(X, Y);
         }
     }
 }

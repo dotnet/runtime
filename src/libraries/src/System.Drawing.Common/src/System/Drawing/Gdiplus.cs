@@ -235,9 +235,6 @@ namespace System.Drawing
             [DllImport(ExternDll.Gdiplus, SetLastError = true, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Unicode)] // 3 = Unicode
             private static extern int GdiplusStartup(out IntPtr token, ref StartupInput input, out StartupOutput output);
 
-            [DllImport(ExternDll.Gdiplus, SetLastError = true, ExactSpelling = true, CharSet = System.Runtime.InteropServices.CharSet.Unicode)] // 3 = Unicode
-            private static extern void GdiplusShutdown(HandleRef token);
-
             [StructLayout(LayoutKind.Sequential)]
             private struct StartupInput
             {
@@ -274,16 +271,7 @@ namespace System.Drawing
                 public IntPtr hook;//not used
                 public IntPtr unhook;//not used.
             }
-
-            private enum DebugEventLevel
-            {
-                Fatal,
-                Warning,
-            }
-
-
-            // private delegate void DebugEventProc(DebugEventLevel level, /* char* */ string message);
-
+            
             //----------------------------------------------------------------------------------------                                                           
             // Path methods
             //----------------------------------------------------------------------------------------
@@ -2803,98 +2791,27 @@ namespace System.Drawing
             }
         }
 
-        public static IntPtr InvalidIntPtr = ((IntPtr)((int)(-1)));
-
-
         public const int ERROR_CANCELLED = 1223;
 
         public const int
-        RASTERCAPS = 38,
-        RC_PALETTE = 0x0100,
-        SIZEPALETTE = 104,
-        SYSPAL_STATIC = 1,
-
-        BS_SOLID = 0,
-        HOLLOW_BRUSH = 5,
-
-        // Binary raster operations.
-        R2_BLACK = 1,  /*  0       */
-        R2_NOTMERGEPEN = 2,  /* DPon     */
-        R2_MASKNOTPEN = 3,  /* DPna     */
-        R2_NOTCOPYPEN = 4,  /* PN       */
-        R2_MASKPENNOT = 5,  /* PDna     */
-        R2_NOT = 6,  /* Dn       */
-        R2_XORPEN = 7,  /* DPx      */
-        R2_NOTMASKPEN = 8,  /* DPan     */
-        R2_MASKPEN = 9,  /* DPa      */
-        R2_NOTXORPEN = 10, /* DPxn     */
-        R2_NOP = 11, /* D        */
-        R2_MERGENOTPEN = 12, /* DPno     */
-        R2_COPYPEN = 13, /* P        */
-        R2_MERGEPENNOT = 14, /* PDno     */
-        R2_MERGEPEN = 15, /* DPo      */
-        R2_WHITE = 16, /*  1       */
-
-        UOI_FLAGS = 1,
-        WSF_VISIBLE = 0x0001,
         E_UNEXPECTED = unchecked((int)0x8000FFFF),
         E_NOTIMPL = unchecked((int)0x80004001),
-        E_OUTOFMEMORY = unchecked((int)0x8007000E),
-        E_INVALIDARG = unchecked((int)0x80070057),
-        E_NOINTERFACE = unchecked((int)0x80004002),
-        E_POINTER = unchecked((int)0x80004003),
-        E_HANDLE = unchecked((int)0x80070006),
         E_ABORT = unchecked((int)0x80004004),
         E_FAIL = unchecked((int)0x80004005),
         E_ACCESSDENIED = unchecked((int)0x80070005),
-        PM_NOREMOVE = 0x0000,
-        PM_REMOVE = 0x0001,
-        PM_NOYIELD = 0x0002,
-        GMEM_FIXED = 0x0000,
         GMEM_MOVEABLE = 0x0002,
-        GMEM_NOCOMPACT = 0x0010,
-        GMEM_NODISCARD = 0x0020,
         GMEM_ZEROINIT = 0x0040,
-        GMEM_MODIFY = 0x0080,
-        GMEM_DISCARDABLE = 0x0100,
-        GMEM_NOT_BANKED = 0x1000,
-        GMEM_SHARE = 0x2000,
-        GMEM_DDESHARE = 0x2000,
-        GMEM_NOTIFY = 0x4000,
-        GMEM_LOWER = 0x1000,
-        GMEM_VALID_FLAGS = 0x7F72,
-        GMEM_INVALID_HANDLE = unchecked((int)0x8000),
-        DM_UPDATE = 1,
-        DM_COPY = 2,
-        DM_PROMPT = 4,
-        DM_MODIFY = 8,
         DM_IN_BUFFER = 8,
-        DM_IN_PROMPT = 4,
         DM_OUT_BUFFER = 2,
-        DM_OUT_DEFAULT = 1,
         DT_PLOTTER = 0,
-        DT_RASDISPLAY = 1,
         DT_RASPRINTER = 2,
-        DT_RASCAMERA = 3,
-        DT_CHARSTREAM = 4,
-        DT_METAFILE = 5,
-        DT_DISPFILE = 6,
         TECHNOLOGY = 2,
-        DC_FIELDS = 1,
         DC_PAPERS = 2,
         DC_PAPERSIZE = 3,
-        DC_MINEXTENT = 4,
-        DC_MAXEXTENT = 5,
         DC_BINS = 6,
         DC_DUPLEX = 7,
-        DC_SIZE = 8,
-        DC_EXTRA = 9,
-        DC_VERSION = 10,
-        DC_DRIVER = 11,
         DC_BINNAMES = 12,
         DC_ENUMRESOLUTIONS = 13,
-        DC_FILEDEPENDENCIES = 14,
-        DC_TRUETYPE = 15,
         DC_PAPERNAMES = 16,
         DC_ORIENTATION = 17,
         DC_COPIES = 18,
@@ -2902,52 +2819,9 @@ namespace System.Drawing
         PD_SELECTION = 0x00000001,
         PD_PAGENUMS = 0x00000002,
         PD_CURRENTPAGE = 0x00400000,
-        PD_NOSELECTION = 0x00000004,
-        PD_NOPAGENUMS = 0x00000008,
-        PD_NOCURRENTPAGE = 0x00800000,
-        PD_COLLATE = 0x00000010,
-        PD_PRINTTOFILE = 0x00000020,
-        PD_PRINTSETUP = 0x00000040,
-        PD_NOWARNING = 0x00000080,
-        PD_RETURNDC = 0x00000100,
-        PD_RETURNIC = 0x00000200,
-        PD_RETURNDEFAULT = 0x00000400,
-        PD_SHOWHELP = 0x00000800,
-        PD_ENABLEPRINTHOOK = 0x00001000,
-        PD_ENABLESETUPHOOK = 0x00002000,
-        PD_ENABLEPRINTTEMPLATE = 0x00004000,
-        PD_ENABLESETUPTEMPLATE = 0x00008000,
-        PD_ENABLEPRINTTEMPLATEHANDLE = 0x00010000,
-        PD_ENABLESETUPTEMPLATEHANDLE = 0x00020000,
-        PD_USEDEVMODECOPIES = 0x00040000,
-        PD_USEDEVMODECOPIESANDCOLLATE = 0x00040000,
-        PD_DISABLEPRINTTOFILE = 0x00080000,
-        PD_HIDEPRINTTOFILE = 0x00100000,
-        PD_NONETWORKBUTTON = 0x00200000,
-        DI_MASK = 0x0001,
-        DI_IMAGE = 0x0002,
+        PD_RETURNDEFAULT = 0x00000400,            
         DI_NORMAL = 0x0003,
-        DI_COMPAT = 0x0004,
-        DI_DEFAULTSIZE = 0x0008,
-        IDC_ARROW = 32512,
-        IDC_IBEAM = 32513,
-        IDC_WAIT = 32514,
-        IDC_CROSS = 32515,
-        IDC_UPARROW = 32516,
-        IDC_SIZE = 32640,
-        IDC_ICON = 32641,
-        IDC_SIZENWSE = 32642,
-        IDC_SIZENESW = 32643,
-        IDC_SIZEWE = 32644,
-        IDC_SIZENS = 32645,
-        IDC_SIZEALL = 32646,
-        IDC_NO = 32648,
-        IDC_APPSTARTING = 32650,
-        IDC_HELP = 32651,
-        IMAGE_BITMAP = 0,
         IMAGE_ICON = 1,
-        IMAGE_CURSOR = 2,
-        IMAGE_ENHMETAFILE = 3,
         IDI_APPLICATION = 32512,
         IDI_HAND = 32513,
         IDI_QUESTION = 32514,
@@ -2957,70 +2831,28 @@ namespace System.Drawing
         IDI_WARNING = 32515,
         IDI_ERROR = 32513,
         IDI_INFORMATION = 32516,
-        IDI_SHIELD = 32518,
-        SRCCOPY = 0x00CC0020,
+        SRCCOPY = 0x00CC0020,        
         PLANES = 14,
-        PS_SOLID = 0,
-        PS_DASH = 1,
-        PS_DOT = 2,
-        PS_DASHDOT = 3,
-        PS_DASHDOTDOT = 4,
-        PS_NULL = 5,
-        PS_INSIDEFRAME = 6,
-        PS_USERSTYLE = 7,
-        PS_ALTERNATE = 8,
-        PS_STYLE_MASK = 0x0000000F,
-        PS_ENDCAP_ROUND = 0x00000000,
-        PS_ENDCAP_SQUARE = 0x00000100,
-        PS_ENDCAP_FLAT = 0x00000200,
-        PS_ENDCAP_MASK = 0x00000F00,
-        PS_JOIN_ROUND = 0x00000000,
-        PS_JOIN_BEVEL = 0x00001000,
-        PS_JOIN_MITER = 0x00002000,
-        PS_JOIN_MASK = 0x0000F000,
-        PS_COSMETIC = 0x00000000,
-        PS_GEOMETRIC = 0x00010000,
-        PS_TYPE_MASK = 0x000F0000,
         BITSPIXEL = 12,
-        ALTERNATE = 1,
         LOGPIXELSX = 88,
         LOGPIXELSY = 90,
         PHYSICALWIDTH = 110,
         PHYSICALHEIGHT = 111,
         PHYSICALOFFSETX = 112,
         PHYSICALOFFSETY = 113,
-        WINDING = 2,
         VERTRES = 10,
         HORZRES = 8,
-        DM_SPECVERSION = 0x0401,
         DM_ORIENTATION = 0x00000001,
         DM_PAPERSIZE = 0x00000002,
         DM_PAPERLENGTH = 0x00000004,
         DM_PAPERWIDTH = 0x00000008,
-        DM_SCALE = 0x00000010,
         DM_COPIES = 0x00000100,
         DM_DEFAULTSOURCE = 0x00000200,
         DM_PRINTQUALITY = 0x00000400,
         DM_COLOR = 0x00000800,
         DM_DUPLEX = 0x00001000,
         DM_YRESOLUTION = 0x00002000,
-        DM_TTOPTION = 0x00004000,
         DM_COLLATE = 0x00008000,
-        DM_FORMNAME = 0x00010000,
-        DM_LOGPIXELS = 0x00020000,
-        DM_BITSPERPEL = 0x00040000,
-        DM_PELSWIDTH = 0x00080000,
-        DM_PELSHEIGHT = 0x00100000,
-        DM_DISPLAYFLAGS = 0x00200000,
-        DM_DISPLAYFREQUENCY = 0x00400000,
-        DM_PANNINGWIDTH = 0x00800000,
-        DM_PANNINGHEIGHT = 0x01000000,
-        DM_ICMMETHOD = 0x02000000,
-        DM_ICMINTENT = 0x04000000,
-        DM_MEDIATYPE = 0x08000000,
-        DM_DITHERTYPE = 0x10000000,
-        DM_ICCMANUFACTURER = 0x20000000,
-        DM_ICCMODEL = 0x40000000,
         DMORIENT_PORTRAIT = 1,
         DMORIENT_LANDSCAPE = 2,
         DMPAPER_LETTER = 1,
@@ -3145,10 +2977,8 @@ namespace System.Drawing
         DMPAPER_PENV_10_ROTATED = 118, /* PRC Envelope #10 Rotated 458 x 324 mm */
 
         DMPAPER_LAST = DMPAPER_PENV_10_ROTATED,
-        DMPAPER_USER = 256,
 
         DMBIN_UPPER = 1,
-        DMBIN_ONLYONE = 1,
         DMBIN_LOWER = 2,
         DMBIN_MIDDLE = 3,
         DMBIN_MANUAL = 4,
@@ -3172,67 +3002,11 @@ namespace System.Drawing
         DMDUP_SIMPLEX = 1,
         DMDUP_VERTICAL = 2,
         DMDUP_HORIZONTAL = 3,
-        DMTT_BITMAP = 1,
-        DMTT_DOWNLOAD = 2,
-        DMTT_SUBDEV = 3,
-        DMTT_DOWNLOAD_OUTLINE = 4,
+
         DMCOLLATE_FALSE = 0,
         DMCOLLATE_TRUE = 1,
-        DMDISPLAYFLAGS_TEXTMODE = 0x00000004,
-        DMICMMETHOD_NONE = 1,
-        DMICMMETHOD_SYSTEM = 2,
-        DMICMMETHOD_DRIVER = 3,
-        DMICMMETHOD_DEVICE = 4,
-        DMICMMETHOD_USER = 256,
-        DMICM_SATURATE = 1,
-        DMICM_CONTRAST = 2,
-        DMICM_COLORMETRIC = 3,
-        DMICM_USER = 256,
-        DMMEDIA_STANDARD = 1,
-        DMMEDIA_TRANSPARENCY = 2,
-        DMMEDIA_GLOSSY = 3,
-        DMMEDIA_USER = 256,
-        DMDITHER_NONE = 1,
-        DMDITHER_COARSE = 2,
-        DMDITHER_FINE = 3,
-        DMDITHER_LINEART = 4,
-        DMDITHER_GRAYSCALE = 5,
-        DMDITHER_USER = 256,
-        PRINTER_ENUM_DEFAULT = 0x00000001,
         PRINTER_ENUM_LOCAL = 0x00000002,
         PRINTER_ENUM_CONNECTIONS = 0x00000004,
-        PRINTER_ENUM_FAVORITE = 0x00000004,
-        PRINTER_ENUM_NAME = 0x00000008,
-        PRINTER_ENUM_REMOTE = 0x00000010,
-        PRINTER_ENUM_SHARED = 0x00000020,
-        PRINTER_ENUM_NETWORK = 0x00000040,
-        PRINTER_ENUM_EXPAND = 0x00004000,
-        PRINTER_ENUM_CONTAINER = 0x00008000,
-        PRINTER_ENUM_ICONMASK = 0x00ff0000,
-        PRINTER_ENUM_ICON1 = 0x00010000,
-        PRINTER_ENUM_ICON2 = 0x00020000,
-        PRINTER_ENUM_ICON3 = 0x00040000,
-        PRINTER_ENUM_ICON4 = 0x00080000,
-        PRINTER_ENUM_ICON5 = 0x00100000,
-        PRINTER_ENUM_ICON6 = 0x00200000,
-        PRINTER_ENUM_ICON7 = 0x00400000,
-        PRINTER_ENUM_ICON8 = 0x00800000,
-        DC_BINADJUST = 19,
-        DC_EMF_COMPLIANT = 20,
-        DC_DATATYPE_PRODUCED = 21,
-        DC_COLLATE = 22,
-        DCTT_BITMAP = 0x0000001,
-        DCTT_DOWNLOAD = 0x0000002,
-        DCTT_SUBDEV = 0x0000004,
-        DCTT_DOWNLOAD_OUTLINE = 0x0000008,
-        DCBA_FACEUPNONE = 0x0000,
-        DCBA_FACEUPCENTER = 0x0001,
-        DCBA_FACEUPLEFT = 0x0002,
-        DCBA_FACEUPRIGHT = 0x0003,
-        DCBA_FACEDOWNNONE = 0x0100,
-        DCBA_FACEDOWNCENTER = 0x0101,
-        DCBA_FACEDOWNLEFT = 0x0102,
-        DCBA_FACEDOWNRIGHT = 0x0103,
         SRCPAINT = 0x00EE0086, /* dest = source OR dest           */
         SRCAND = 0x008800C6, /* dest = source AND dest          */
         SRCINVERT = 0x00660046, /* dest = source XOR dest          */
@@ -3248,141 +3022,9 @@ namespace System.Drawing
         BLACKNESS = 0x00000042, /* dest = BLACK                    */
         WHITENESS = 0x00FF0062, /* dest = WHITE                    */
         CAPTUREBLT = 0x40000000, /* Include layered windows */
-        SM_CXSCREEN = 0,
-        SM_CYSCREEN = 1,
-        SM_CXVSCROLL = 2,
-        SM_CYHSCROLL = 3,
-        SM_CYCAPTION = 4,
-        SM_CXBORDER = 5,
-        SM_CYBORDER = 6,
-        SM_CXDLGFRAME = 7,
-        SM_CYDLGFRAME = 8,
-        SM_CYVTHUMB = 9,
-        SM_CXHTHUMB = 10,
         SM_CXICON = 11,
         SM_CYICON = 12,
-        SM_CXCURSOR = 13,
-        SM_CYCURSOR = 14,
-        SM_CYMENU = 15,
-        SM_CXFULLSCREEN = 16,
-        SM_CYFULLSCREEN = 17,
-        SM_CYKANJIWINDOW = 18,
-        SM_MOUSEPRESENT = 19,
-        SM_CYVSCROLL = 20,
-        SM_CXHSCROLL = 21,
-        SM_DEBUG = 22,
-        SM_SWAPBUTTON = 23,
-        SM_RESERVED1 = 24,
-        SM_RESERVED2 = 25,
-        SM_RESERVED3 = 26,
-        SM_RESERVED4 = 27,
-        SM_CXMIN = 28,
-        SM_CYMIN = 29,
-        SM_CXSIZE = 30,
-        SM_CYSIZE = 31,
-        SM_CXFRAME = 32,
-        SM_CYFRAME = 33,
-        SM_CXMINTRACK = 34,
-        SM_CYMINTRACK = 35,
-        SM_CXDOUBLECLK = 36,
-        SM_CYDOUBLECLK = 37,
-        SM_CXICONSPACING = 38,
-        SM_CYICONSPACING = 39,
-        SM_MENUDROPALIGNMENT = 40,
-        SM_PENWINDOWS = 41,
-        SM_DBCSENABLED = 42,
-        SM_CMOUSEBUTTONS = 43,
-        SM_CXFIXEDFRAME = 7,
-        SM_CYFIXEDFRAME = 8,
-        SM_CXSIZEFRAME = 32,
-        SM_CYSIZEFRAME = 33,
-        SM_SECURE = 44,
-        SM_CXEDGE = 45,
-        SM_CYEDGE = 46,
-        SM_CXMINSPACING = 47,
-        SM_CYMINSPACING = 48,
-        SM_CXSMICON = 49,
-        SM_CYSMICON = 50,
-        SM_CYSMCAPTION = 51,
-        SM_CXSMSIZE = 52,
-        SM_CYSMSIZE = 53,
-        SM_CXMENUSIZE = 54,
-        SM_CYMENUSIZE = 55,
-        SM_ARRANGE = 56,
-        SM_CXMINIMIZED = 57,
-        SM_CYMINIMIZED = 58,
-        SM_CXMAXTRACK = 59,
-        SM_CYMAXTRACK = 60,
-        SM_CXMAXIMIZED = 61,
-        SM_CYMAXIMIZED = 62,
-        SM_NETWORK = 63,
-        SM_CLEANBOOT = 67,
-        SM_CXDRAG = 68,
-        SM_CYDRAG = 69,
-        SM_SHOWSOUNDS = 70,
-        SM_CXMENUCHECK = 71,
-        SM_CYMENUCHECK = 72,
-        SM_SLOWMACHINE = 73,
-        SM_MIDEASTENABLED = 74,
-        SM_MOUSEWHEELPRESENT = 75,
-        SM_XVIRTUALSCREEN = 76,
-        SM_YVIRTUALSCREEN = 77,
-        SM_CXVIRTUALSCREEN = 78,
-        SM_CYVIRTUALSCREEN = 79,
-        SM_CMONITORS = 80,
-        SM_SAMEDISPLAYFORMAT = 81,
-        SM_CMETRICS = 83,
-
-        /* SetGraphicsMode(hdc, iMode ) */
-        GM_COMPATIBLE = 1,
-        GM_ADVANCED = 2,
-        MWT_IDENTITY = 1,
-
-        /* FONT WEIGHT (BOLD) VALUES */
-        FW_DONTCARE = 0,
-        FW_NORMAL = 400,
-        FW_BOLD = 700,
-        // some others...
-
-        /* FONT CHARACTER SET */
-        ANSI_CHARSET = 0,
-        DEFAULT_CHARSET = 1,
-        // plus others ....
-
-        /* Font OutPrecision */
-        OUT_DEFAULT_PRECIS = 0,
-        OUT_TT_PRECIS = 4,
-        OUT_TT_ONLY_PRECIS = 7,
-        // some others...
-
-        /* Font clip precision */
-        CLIP_DEFAULT_PRECIS = 0,
-        // some others...
-
-        /* Font Quality */
-        DEFAULT_QUALITY = 0,
-
-        /* Mapping Modes */
-        MM_TEXT = 1,
-        // some others...
-
-        /* Object Definitions for GetCurrentObject() and others. */
-        OBJ_FONT = 6,
-        // some others...
-
-
-        /* Text Aligment */
-        //        TA_NOUPDATECP = 0,
-        //        TA_LEFT       = 0,
-        //        TA_TOP        = 0,
-        TA_DEFAULT = 0,
-
-        FORMAT_MESSAGE_ALLOCATE_BUFFER = 0x00000100,
-        FORMAT_MESSAGE_IGNORE_INSERTS = 0x00000200,
-        FORMAT_MESSAGE_FROM_SYSTEM = 0x00001000,
-        FORMAT_MESSAGE_DEFAULT = FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_FROM_SYSTEM;
-        // some others...
-
+        DEFAULT_CHARSET = 1;
 
         public const int NOMIRRORBITMAP = unchecked((int)0x80000000); /* Do not Mirror the bitmap in this call */
 
@@ -3633,36 +3275,6 @@ namespace System.Drawing
             public IntPtr hSetupTemplate;
         }
 
-
-
-        public enum StructFormat
-        {
-            Ansi = 1,
-            Unicode = 2,
-            Auto = 3,
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        public struct RECT
-        {
-            public int left;
-            public int top;
-            public int right;
-            public int bottom;
-        }
-
-        [StructLayout(LayoutKind.Sequential)]
-        public struct MSG
-        {
-            public IntPtr hwnd;
-            public int message;
-            public IntPtr wParam;
-            public IntPtr lParam;
-            public int time;
-            // pt was a by-value POINT structure
-            public int pt_x;
-            public int pt_y;
-        }
         [StructLayout(LayoutKind.Sequential)]
         public class ICONINFO
         {
@@ -3720,30 +3332,6 @@ namespace System.Drawing
             [MarshalAs(System.Runtime.InteropServices.UnmanagedType.ByValTStr, SizeConst = 32)]
             public string lfFaceName;
 
-            public LOGFONT()
-            {
-            }
-
-            public LOGFONT(LOGFONT lf)
-            {
-                Debug.Assert(lf != null, "lf is null");
-
-                lfHeight = lf.lfHeight;
-                lfWidth = lf.lfWidth;
-                lfEscapement = lf.lfEscapement;
-                lfOrientation = lf.lfOrientation;
-                lfWeight = lf.lfWeight;
-                lfItalic = lf.lfItalic;
-                lfUnderline = lf.lfUnderline;
-                lfStrikeOut = lf.lfStrikeOut;
-                lfCharSet = lf.lfCharSet;
-                lfOutPrecision = lf.lfOutPrecision;
-                lfClipPrecision = lf.lfClipPrecision;
-                lfQuality = lf.lfQuality;
-                lfPitchAndFamily = lf.lfPitchAndFamily;
-                lfFaceName = lf.lfFaceName;
-            }
-
             public override string ToString()
             {
                 return
@@ -3762,56 +3350,6 @@ namespace System.Drawing
                     "lfPitchAndFamily=" + lfPitchAndFamily + ", " +
                     "lfFaceName=" + lfFaceName;
             }
-        }
-
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        public struct TEXTMETRIC
-        {
-            public int tmHeight;
-            public int tmAscent;
-            public int tmDescent;
-            public int tmInternalLeading;
-            public int tmExternalLeading;
-            public int tmAveCharWidth;
-            public int tmMaxCharWidth;
-            public int tmWeight;
-            public int tmOverhang;
-            public int tmDigitizedAspectX;
-            public int tmDigitizedAspectY;
-            public char tmFirstChar;
-            public char tmLastChar;
-            public char tmDefaultChar;
-            public char tmBreakChar;
-            public byte tmItalic;
-            public byte tmUnderlined;
-            public byte tmStruckOut;
-            public byte tmPitchAndFamily;
-            public byte tmCharSet;
-        }
-
-        [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
-        public struct TEXTMETRICA
-        {
-            public int tmHeight;
-            public int tmAscent;
-            public int tmDescent;
-            public int tmInternalLeading;
-            public int tmExternalLeading;
-            public int tmAveCharWidth;
-            public int tmMaxCharWidth;
-            public int tmWeight;
-            public int tmOverhang;
-            public int tmDigitizedAspectX;
-            public int tmDigitizedAspectY;
-            public byte tmFirstChar;
-            public byte tmLastChar;
-            public byte tmDefaultChar;
-            public byte tmBreakChar;
-            public byte tmItalic;
-            public byte tmUnderlined;
-            public byte tmStruckOut;
-            public byte tmPitchAndFamily;
-            public byte tmCharSet;
         }
 
         [StructLayout(LayoutKind.Sequential, Pack = 2)]
@@ -3838,18 +3376,7 @@ namespace System.Drawing
 
         public class Ole
         {
-            /*
-             * Pictypes
-             */
-            public const int PICTYPE_UNINITIALIZED = -1;
-            public const int PICTYPE_NONE = 0;
-            public const int PICTYPE_BITMAP = 1;
-            public const int PICTYPE_METAFILE = 2;
             public const int PICTYPE_ICON = 3;
-            public const int PICTYPE_ENHMETAFILE = 4;
-
-            public const int STATFLAG_DEFAULT = 0;
-            public const int STATFLAG_NONAME = 1;
         }
 
 
@@ -3864,16 +3391,12 @@ namespace System.Drawing
 
             public static PICTDESC CreateIconPICTDESC(IntPtr hicon)
             {
-                PICTDESC pictdesc = new PICTDESC();
-                pictdesc.cbSizeOfStruct = 12;
-                pictdesc.picType = Ole.PICTYPE_ICON;
-                pictdesc.union1 = hicon;
-                return pictdesc;
-            }
-
-            public virtual IntPtr GetHandle()
-            {
-                return union1;
+                return new PICTDESC()
+                {
+                    cbSizeOfStruct = 12,
+                    picType = Ole.PICTYPE_ICON,
+                    union1 = hicon
+                };
             }
         }
 
@@ -3970,27 +3493,7 @@ namespace System.Drawing
                 AppDomain.CurrentDomain.ProcessExit += new EventHandler(CurrentDomain_ProcessExit);
 #endif
             }
-
-            /// <summary>
-            /// Handle type for accelerator tables.
-            /// </summary>
-            public static readonly int Accelerator = System.Internal.HandleCollector.RegisterType("Accelerator", 80, 50);
-
-            /// <summary>
-            /// Handle type for cursors.
-            /// </summary>
-            public static readonly int Cursor = System.Internal.HandleCollector.RegisterType("Cursor", 20, 500);
-
-            /// <summary>
-            /// Handle type for enhanced metafiles.
-            /// </summary>
-            public static readonly int EMF = System.Internal.HandleCollector.RegisterType("EnhancedMetaFile", 20, 500);
-
-            /// <summary>
-            /// Handle type for file find handles.
-            /// </summary>
-            public static readonly int Find = System.Internal.HandleCollector.RegisterType("Find", 0, 1000);
-
+            
             /// <summary>
             /// Handle type for GDI objects.
             /// </summary>
@@ -4012,16 +3515,6 @@ namespace System.Drawing
             /// </summary>
             public static readonly int Kernel = System.Internal.HandleCollector.RegisterType("Kernel", 0, 1000);
 
-            /// <summary>
-            /// Handle type for files.
-            /// </summary>
-            public static readonly int Menu = System.Internal.HandleCollector.RegisterType("Menu", 30, 1000);
-
-            /// <summary>
-            /// Handle type for windows.
-            /// </summary>
-            public static readonly int Window = System.Internal.HandleCollector.RegisterType("Window", 5, 1000);
-
 #if DEBUG
             private static void CurrentDomain_DomainUnload(object sender, EventArgs e)
             {
@@ -4038,16 +3531,6 @@ namespace System.Drawing
 
         public class StreamConsts
         {
-            public const int LOCK_WRITE = 0x1;
-            public const int LOCK_EXCLUSIVE = 0x2;
-            public const int LOCK_ONLYONCE = 0x4;
-            public const int STATFLAG_DEFAULT = 0x0;
-            public const int STATFLAG_NONAME = 0x1;
-            public const int STATFLAG_NOOPEN = 0x2;
-            public const int STGC_DEFAULT = 0x0;
-            public const int STGC_OVERWRITE = 0x1;
-            public const int STGC_ONLYIFCURRENT = 0x2;
-            public const int STGC_DANGEROUSLYCOMMITMERELYTODISKCACHE = 0x4;
             public const int STREAM_SEEK_SET = 0x0;
             public const int STREAM_SEEK_CUR = 0x1;
             public const int STREAM_SEEK_END = 0x2;
@@ -4226,70 +3709,6 @@ namespace System.Drawing
         }
 
 
-        // for pulling encoded IPictures out of Access Databases
-        //
-        [StructLayout(LayoutKind.Sequential)]
-        public struct OBJECTHEADER
-        {
-            public short signature; // this looks like it's always 0x1c15
-            public short headersize; // how big all this goo ends up being.  after this is the actual object data.
-            public short objectType; // we don't care about anything else...they don't seem to be meaningful anyway.
-            public short nameLen;
-            public short classLen;
-            public short nameOffset;
-            public short classOffset;
-            public short width;
-            public short height;
-            public IntPtr pInfo;
-        }
-
-
-        //values used in our known colortable
-        internal enum Win32SystemColors
-        {
-            ActiveBorder = 0x0A,
-            ActiveCaption = 0x02,
-            ActiveCaptionText = 0x09,
-            AppWorkspace = 0x0C,
-            ButtonFace = 0x0F,
-            ButtonHighlight = 0x14,
-            ButtonShadow = 0x10,
-            Control = 0x0F,
-            ControlDark = 0x10,
-            ControlDarkDark = 0x15,
-            ControlLight = 0x16,
-            ControlLightLight = 0x14,
-            ControlText = 0x12,
-            Desktop = 0x01,
-            GradientActiveCaption = 0x1B,
-            GradientInactiveCaption = 0x1C,
-            GrayText = 0x11,
-            Highlight = 0x0D,
-            HighlightText = 0x0E,
-            HotTrack = 0x1A,
-            InactiveBorder = 0x0B,
-            InactiveCaption = 0x03,
-            InactiveCaptionText = 0x13,
-            Info = 0x18,
-            InfoText = 0x17,
-            Menu = 0x04,
-            MenuBar = 0x1E,
-            MenuHighlight = 0x1D,
-            MenuText = 0x07,
-            ScrollBar = 0x00,
-            Window = 0x05,
-            WindowFrame = 0x06,
-            WindowText = 0x08
-        }
-
-
-        // GDI stuff
-
-        // see wingdi.h
-        public enum BackgroundMode : int
-        {
-            TRANSPARENT = 1,
-            OPAQUE = 2
         }
     }
 }

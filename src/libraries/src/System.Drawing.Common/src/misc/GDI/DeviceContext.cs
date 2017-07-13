@@ -86,22 +86,6 @@ namespace System.Drawing.Internal
 #endif
 
         /// <summary>
-        /// Specifies whether a modification has been applied to the dc, like setting the clipping area or a coordinate
-        /// transform.
-        /// </summary>
-
-        /// <summary>
-        /// The device type the context refers to.
-        /// </summary>
-        public DeviceContextType DeviceContextType
-        {
-            get
-            {
-                return _dcType;
-            }
-        }
-
-        /// <summary>
         /// This object's hdc.  If this property is called, then the object will be used as an HDC wrapper, so the hdc
         /// is cached and calls to GetHdc/ReleaseHdc won't PInvoke into GDI. Call Dispose to properly release the hdc.
         /// </summary>
@@ -146,42 +130,6 @@ namespace System.Drawing.Internal
             _hCurrentFont = _hInitialFont = IntUnsafeNativeMethods.GetCurrentObject(new HandleRef(this, _hDC), IntNativeMethods.OBJ_FONT);
         }
 
-        public void DeleteObject(IntPtr handle, GdiObjectType type)
-        {
-            IntPtr handleToDelete = IntPtr.Zero;
-            switch (type)
-            {
-                case GdiObjectType.Pen:
-                    if (handle == _hCurrentPen)
-                    {
-                        IntPtr currentPen = IntUnsafeNativeMethods.SelectObject(new HandleRef(this, Hdc), new HandleRef(this, _hInitialPen));
-                        Debug.Assert(currentPen == _hCurrentPen, "DeviceContext thinks a different pen is selected than the HDC");
-                        _hCurrentPen = IntPtr.Zero;
-                    }
-                    handleToDelete = handle;
-                    break;
-                case GdiObjectType.Brush:
-                    if (handle == _hCurrentBrush)
-                    {
-                        IntPtr currentBrush = IntUnsafeNativeMethods.SelectObject(new HandleRef(this, Hdc), new HandleRef(this, _hInitialBrush));
-                        Debug.Assert(currentBrush == _hCurrentBrush, "DeviceContext thinks a different brush is selected than the HDC");
-                        _hCurrentBrush = IntPtr.Zero;
-                    }
-                    handleToDelete = handle;
-                    break;
-                case GdiObjectType.Bitmap:
-                    if (handle == _hCurrentBmp)
-                    {
-                        IntPtr currentBmp = IntUnsafeNativeMethods.SelectObject(new HandleRef(this, Hdc), new HandleRef(this, _hInitialBmp));
-                        Debug.Assert(currentBmp == _hCurrentBmp, "DeviceContext thinks a different brush is selected than the HDC");
-                        _hCurrentBmp = IntPtr.Zero;
-                    }
-                    handleToDelete = handle;
-                    break;
-            }
-
-            IntUnsafeNativeMethods.DeleteObject(new HandleRef(this, handleToDelete));
-        }
 
         /// <summary>
         /// Constructor to contruct a DeviceContext object from an window handle.
@@ -387,27 +335,6 @@ namespace System.Drawing.Internal
 #endif                 
                 _hDC = IntPtr.Zero;
             }
-        }
-
-
-        /// <summary>
-        /// Specifies whether the DC is in GM_ADVANCE mode (supported only in NT platforms). If false, it is in
-        /// GM_COMPATIBLE mode.
-        /// </summary>
-        public DeviceContextGraphicsMode GraphicsMode
-        {
-            get
-            {
-                return (DeviceContextGraphicsMode)IntUnsafeNativeMethods.GetGraphicsMode(new HandleRef(this, _hDC));
-            }
-        }
-
-        /// <summary>
-        /// Sets the dc graphics mode and returns the old value.
-        /// </summary>
-        public DeviceContextGraphicsMode SetGraphicsMode(DeviceContextGraphicsMode newMode)
-        {
-            return (DeviceContextGraphicsMode)IntUnsafeNativeMethods.SetGraphicsMode(new HandleRef(this, _hDC), unchecked((int)newMode));
         }
 
         /// <summary>

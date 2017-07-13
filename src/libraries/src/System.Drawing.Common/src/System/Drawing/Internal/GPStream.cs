@@ -105,11 +105,6 @@ namespace System.Drawing.Internal
             return written;
         }
 
-        public virtual Stream GetDataStream()
-        {
-            return dataStream;
-        }
-
         public virtual void LockRegion(long libOffset, long cb, int dwLockType)
         {
         }
