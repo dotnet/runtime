@@ -13,31 +13,18 @@ typedef struct {
 } NameAndMask;
 
 static NameAndMask event_list[] = {
-	{ "domain", PROFLOG_DOMAIN_EVENTS },
-	{ "assembly", PROFLOG_ASSEMBLY_EVENTS },
-	{ "module", PROFLOG_MODULE_EVENTS },
-	{ "class", PROFLOG_CLASS_EVENTS },
-	{ "jit", PROFLOG_JIT_COMPILATION_EVENTS },
 	{ "exception", PROFLOG_EXCEPTION_EVENTS },
-	{ "gcalloc", PROFLOG_ALLOCATION_EVENTS },
-	{ "gc", PROFLOG_GC_EVENTS },
-	{ "thread", PROFLOG_THREAD_EVENTS },
-	{ "calls", PROFLOG_CALL_EVENTS },
-	//{ "inscov", PROFLOG_INS_COVERAGE_EVENTS }, //this is a profiler API event, but there's no actual event for us to emit here
-	//{ "sampling", PROFLOG_SAMPLING_EVENTS }, //it makes no sense to enable/disable this event by itself
 	{ "monitor", PROFLOG_MONITOR_EVENTS },
-	{ "gcmove", PROFLOG_GC_MOVES_EVENTS },
+	{ "gc", PROFLOG_GC_EVENTS },
+	{ "gcalloc", PROFLOG_GC_ALLOCATION_EVENTS },
+	{ "gcmove", PROFLOG_GC_MOVE_EVENTS },
 	{ "gcroot", PROFLOG_GC_ROOT_EVENTS },
-	{ "context", PROFLOG_CONTEXT_EVENTS },
+	{ "gchandle", PROFLOG_GC_HANDLE_EVENTS },
 	{ "finalization", PROFLOG_FINALIZATION_EVENTS },
 	{ "counter", PROFLOG_COUNTER_EVENTS },
-	{ "gchandle", PROFLOG_GC_HANDLE_EVENTS },
+	{ "jit", PROFLOG_JIT_EVENTS },
 
-	{ "typesystem", PROFLOG_TYPELOADING_ALIAS },
-	{ "coverage", PROFLOG_CODECOV_ALIAS },
-	//{ "sample", PROFLOG_PERF_SAMPLING_ALIAS }, //takes args, explicitly handles
-	{ "alloc", PROFLOG_GC_ALLOC_ALIAS },
-	//{ "heapshot", PROFLOG_HEAPSHOT_ALIAS }, //takes args, explicitly handled
+	{ "alloc", PROFLOG_ALLOC_ALIAS },
 	{ "legacy", PROFLOG_LEGACY_ALIAS },
 };
 
@@ -76,17 +63,22 @@ parse_arg (const char *arg, ProfilerConfig *config)
 		config->do_report = TRUE;
 	} else if (match_option (arg, "debug", NULL)) {
 		config->do_debug = TRUE;
-	} else if (match_option (arg, "sampling-real", NULL)) {
-		config->sampling_mode = MONO_PROFILER_SAMPLE_MODE_REAL;
-	} else if (match_option (arg, "sampling-process", NULL)) {
-		config->sampling_mode = MONO_PROFILER_SAMPLE_MODE_PROCESS;
 	} else if (match_option (arg, "heapshot", &val)) {
-		config->enable_mask |= PROFLOG_HEAPSHOT_ALIAS;
 		set_hsmode (config, val);
+		if (config->hs_mode != MONO_PROFILER_HEAPSHOT_NONE)
+			config->enable_mask |= PROFLOG_HEAPSHOT_ALIAS;
 	} else if (match_option (arg, "sample", &val)) {
 		set_sample_freq (config, val);
-		if (config->sample_freq)
-			config->enable_mask |= PROFLOG_PERF_SAMPLING_ALIAS;
+		config->sampling_mode = MONO_PROFILER_SAMPLE_MODE_PROCESS;
+		config->enable_mask |= PROFLOG_SAMPLE_EVENTS;
+	} else if (match_option (arg, "sample-real", &val)) {
+		set_sample_freq (config, val);
+		config->sampling_mode = MONO_PROFILER_SAMPLE_MODE_REAL;
+		config->enable_mask |= PROFLOG_SAMPLE_EVENTS;
+	} else if (match_option (arg, "calls", NULL)) {
+		config->enter_leave = TRUE;
+	} else if (match_option (arg, "coverage", NULL)) {
+		config->collect_coverage = TRUE;
 	} else if (match_option (arg, "zip", NULL)) {
 		config->use_zip = TRUE;
 	} else if (match_option (arg, "output", &val)) {
@@ -99,7 +91,6 @@ parse_arg (const char *arg, ProfilerConfig *config)
 		int num_frames = strtoul (val, &end, 10);
 		if (num_frames > MAX_FRAMES)
 			num_frames = MAX_FRAMES;
-		config->notraces = num_frames == 0;
 		config->num_frames = num_frames;
 	} else if (match_option (arg, "maxsamples", &val)) {
 		char *end;
@@ -137,7 +128,7 @@ load_args_from_env_or_default (ProfilerConfig *config)
 	//XXX change this to header constants
 
 	config->max_allocated_sample_hits = mono_cpu_count () * 1000;
-	config->sampling_mode = MONO_PROFILER_SAMPLE_MODE_PROCESS;
+	config->sampling_mode = MONO_PROFILER_SAMPLE_MODE_NONE;
 	config->sample_freq = 100;
 	config->max_call_depth = 100;
 	config->num_frames = MAX_FRAMES;
@@ -207,26 +198,32 @@ proflog_parse_args (ProfilerConfig *config, const char *desc)
 static void
 set_hsmode (ProfilerConfig *config, const char* val)
 {
-	char *end;
-	unsigned int count;
-	if (!val)
-		return;
-	if (strcmp (val, "ondemand") == 0) {
-		config->hs_mode_ondemand = TRUE;
+	if (!val) {
+		config->hs_mode = MONO_PROFILER_HEAPSHOT_MAJOR;
 		return;
 	}
 
-	count = strtoul (val, &end, 10);
+	if (strcmp (val, "ondemand") == 0) {
+		config->hs_mode = MONO_PROFILER_HEAPSHOT_ON_DEMAND;
+		return;
+	}
+
+	char *end;
+
+	unsigned int count = strtoul (val, &end, 10);
+
 	if (val == end) {
 		usage ();
 		return;
 	}
 
-	if (strcmp (end, "ms") == 0)
-		config->hs_mode_ms = count;
-	else if (strcmp (end, "gc") == 0)
-		config->hs_mode_gc = count;
-	else
+	if (strcmp (end, "ms") == 0) {
+		config->hs_mode = MONO_PROFILER_HEAPSHOT_X_MS;
+		config->hs_freq_ms = count;
+	} else if (strcmp (end, "gc") == 0) {
+		config->hs_mode = MONO_PROFILER_HEAPSHOT_X_GC;
+		config->hs_freq_gc = count;
+	} else
 		usage ();
 }
 
@@ -261,14 +258,15 @@ usage (void)
 	for (int i = 0; i < G_N_ELEMENTS (event_list); i++)
 		mono_profiler_printf ("\t                         %s", event_list [i].event_name);
 
-	mono_profiler_printf ("\t[no]typesystem       enable/disable type system related events such as class and assembly loading");
 	mono_profiler_printf ("\t[no]alloc            enable/disable recording allocation info");
-	mono_profiler_printf ("\t[no]calls            enable/disable recording enter/leave method events (very heavy)");
 	mono_profiler_printf ("\t[no]legacy           enable/disable pre mono 5.4 default profiler events");
-	mono_profiler_printf ("\tsample[=FREQ]        enable/disable statistical sampling of threads (FREQ in Hz, 100 by default)");
+	mono_profiler_printf ("\tsample[-real][=FREQ] enable/disable statistical sampling of threads");
+	mono_profiler_printf ("\t                     FREQ in Hz, 100 by default");
+	mono_profiler_printf ("\t                     the -real variant uses wall clock time instead of process time");
 	mono_profiler_printf ("\theapshot[=MODE]      record heapshot info (by default at each major collection)");
 	mono_profiler_printf ("\t                     MODE: every XXms milliseconds, every YYgc collections, ondemand");
-	mono_profiler_printf ("\t[no]coverage         enable/disable collection of code coverage data");
+	mono_profiler_printf ("\tcalls                enable recording enter/leave method events (very heavy)");
+	mono_profiler_printf ("\tcoverage             enable collection of code coverage data");
 	mono_profiler_printf ("\tcovfilter=ASSEMBLY   add ASSEMBLY to the code coverage filters");
 	mono_profiler_printf ("\t                     prefix a + to include the assembly or a - to exclude it");
 	mono_profiler_printf ("\t                     e.g. covfilter=-mscorlib");

@@ -162,59 +162,49 @@ enum {
 	MONO_PROFILER_GC_HANDLE_DESTROYED = 1,
 };
 
+typedef enum {
+	MONO_PROFILER_HEAPSHOT_NONE = 0,
+	MONO_PROFILER_HEAPSHOT_MAJOR = 1,
+	MONO_PROFILER_HEAPSHOT_ON_DEMAND = 2,
+	MONO_PROFILER_HEAPSHOT_X_GC = 3,
+	MONO_PROFILER_HEAPSHOT_X_MS = 4,
+} MonoProfilerHeapshotMode;
+
 // If you alter MAX_FRAMES, you may need to alter SAMPLE_BLOCK_SIZE too.
 #define MAX_FRAMES 32
 
 //The following flags control emitting individual events
-#define PROFLOG_DOMAIN_EVENTS (1 << 0)
-#define PROFLOG_ASSEMBLY_EVENTS	(1 << 1)
-#define PROFLOG_MODULE_EVENTS (1 << 2)
-#define PROFLOG_CLASS_EVENTS (1 << 3)
-#define PROFLOG_JIT_COMPILATION_EVENTS (1 << 4)
-#define PROFLOG_EXCEPTION_EVENTS (1 << 5)
-#define PROFLOG_ALLOCATION_EVENTS (1 << 6)
-#define PROFLOG_GC_EVENTS (1 << 7)
-#define PROFLOG_THREAD_EVENTS (1 << 8)
-//This generate enter/leave events
-#define PROFLOG_CALL_EVENTS (1 << 9)
-#define PROFLOG_INS_COVERAGE_EVENTS (1 << 10)
-#define PROFLOG_SAMPLING_EVENTS (1 << 11)
-#define PROFLOG_MONITOR_EVENTS (1 << 12)
-#define PROFLOG_GC_MOVES_EVENTS (1 << 13)
+#define PROFLOG_EXCEPTION_EVENTS (1 << 0)
+#define PROFLOG_MONITOR_EVENTS (1 << 1)
+#define PROFLOG_GC_EVENTS (1 << 2)
+#define PROFLOG_GC_ALLOCATION_EVENTS (1 << 3)
+#define PROFLOG_GC_MOVE_EVENTS (1 << 4)
+#define PROFLOG_GC_ROOT_EVENTS (1 << 5)
+#define PROFLOG_GC_HANDLE_EVENTS (1 << 6)
+#define PROFLOG_FINALIZATION_EVENTS (1 << 7)
+#define PROFLOG_COUNTER_EVENTS (1 << 8)
+#define PROFLOG_SAMPLE_EVENTS (1 << 9)
+#define PROFLOG_JIT_EVENTS (1 << 10)
 
-#define PROFLOG_GC_ROOT_EVENTS (1 << 14)
-#define PROFLOG_CONTEXT_EVENTS (1 << 15)
-#define PROFLOG_FINALIZATION_EVENTS (1 << 16)
-#define PROFLOG_COUNTER_EVENTS (1 << 17)
-#define PROFLOG_GC_HANDLE_EVENTS (1 << 18)
-
-//The following flags control whole subsystems
-//Enables code coverage generation
-#define PROFLOG_CODE_COV_FEATURE (1 << 19)
-//This enables sampling to be generated
-#define PROFLOG_SAMPLING_FEATURE (1 << 20)
-//This enable heap dumping during GCs and filter GCRoots and GCHandle events outside of the dumped collections
-#define PROFLOG_HEAPSHOT_FEATURE (1 << 21)
-
-
-
-//The follow flags are the common aliases we want ppl to use
-#define PROFLOG_TYPELOADING_ALIAS (PROFLOG_DOMAIN_EVENTS | PROFLOG_ASSEMBLY_EVENTS | PROFLOG_MODULE_EVENTS | PROFLOG_CLASS_EVENTS)
-#define PROFLOG_CODECOV_ALIAS (PROFLOG_INS_COVERAGE_EVENTS | PROFLOG_CODE_COV_FEATURE)
-#define PROFLOG_PERF_SAMPLING_ALIAS (PROFLOG_TYPELOADING_ALIAS | PROFLOG_THREAD_EVENTS | PROFLOG_SAMPLING_EVENTS | PROFLOG_SAMPLING_FEATURE)
-#define PROFLOG_GC_ALLOC_ALIAS (PROFLOG_TYPELOADING_ALIAS | PROFLOG_THREAD_EVENTS | PROFLOG_GC_EVENTS | PROFLOG_ALLOCATION_EVENTS)
-#define PROFLOG_HEAPSHOT_ALIAS (PROFLOG_TYPELOADING_ALIAS | PROFLOG_THREAD_EVENTS | PROFLOG_GC_EVENTS | PROFLOG_GC_ROOT_EVENTS | PROFLOG_HEAPSHOT_FEATURE)
-#define PROFLOG_LEGACY_ALIAS (PROFLOG_TYPELOADING_ALIAS | PROFLOG_GC_EVENTS | PROFLOG_THREAD_EVENTS | PROFLOG_JIT_COMPILATION_EVENTS | PROFLOG_EXCEPTION_EVENTS | PROFLOG_MONITOR_EVENTS | PROFLOG_GC_ROOT_EVENTS | PROFLOG_CONTEXT_EVENTS | PROFLOG_FINALIZATION_EVENTS | PROFLOG_COUNTER_EVENTS)
-
+#define PROFLOG_ALLOC_ALIAS (PROFLOG_GC_EVENTS | PROFLOG_GC_ALLOCATION_EVENTS | PROFLOG_GC_MOVE_EVENTS)
+#define PROFLOG_HEAPSHOT_ALIAS (PROFLOG_GC_EVENTS | PROFLOG_GC_ROOT_EVENTS)
+#define PROFLOG_LEGACY_ALIAS (PROFLOG_EXCEPTION_EVENTS | PROFLOG_MONITOR_EVENTS | PROFLOG_GC_EVENTS | PROFLOG_GC_MOVE_EVENTS | PROFLOG_GC_ROOT_EVENTS | PROFLOG_GC_HANDLE_EVENTS | PROFLOG_FINALIZATION_EVENTS | PROFLOG_COUNTER_EVENTS)
 
 typedef struct {
 	//Events explicitly enabled
 	int enable_mask;
+
 	//Events explicitly disabled
 	int disable_mask;
 
-	//Actual mask the profiler should use
+	// Actual mask the profiler should use. Can be changed at runtime.
 	int effective_mask;
+
+	// Whether to do method prologue/epilogue instrumentation. Only used at startup.
+	gboolean enter_leave;
+
+	// Whether to collect code coverage by instrumenting basic blocks.
+	gboolean collect_coverage;
 
 	//Emit a report at the end of execution
 	gboolean do_report;
@@ -225,25 +215,22 @@ typedef struct {
 	//Where to compress the output file
 	gboolean use_zip;
 
-	//If true, don't generate stacktraces
-	gboolean notraces;
+	// Heapshot mode (every major, on demand, XXgc, XXms). Can be changed at runtime.
+	MonoProfilerHeapshotMode hs_mode;
 
-	//If true, heapshots are generated on demand only
-	gboolean hs_mode_ondemand;
+	// Heapshot frequency in milliseconds (for MONO_HEAPSHOT_X_MS). Can be changed at runtime.
+	unsigned int hs_freq_ms;
 
-	//HeapShort frequency in milliseconds
-	unsigned int hs_mode_ms;
+	// Heapshot frequency in number of collections (for MONO_HEAPSHOT_X_GC). Can be changed at runtime.
+	unsigned int hs_freq_gc;
 
-	//HeapShort frequency in number of collections
-	unsigned int hs_mode_gc;
-
-	//Sample frequency in Hertz
+	// Sample frequency in Hertz. Only used at startup.
 	int sample_freq;
 
-	//Maximum number of frames to collect
+	// Maximum number of frames to collect. Can be changed at runtime.
 	int num_frames;
 
-	//Max depth to record enter/leave events
+	// Max depth to record enter/leave events. Can be changed at runtime.
 	int max_call_depth;
 
 	//Name of the generated mlpd file
@@ -252,12 +239,13 @@ typedef struct {
 	//Filter files used by the code coverage mode
 	GPtrArray *cov_filter_files;
 
-	//Port to listen for profiling commands
+	// Port to listen for profiling commands (e.g. "heapshot" for on-demand heapshot).
 	int command_port;
 
-	//Max size of the sample hit buffer, we'll drop frames if it's reached
+	// Maximum number of SampleHit structures. We'll drop samples if this number is not sufficient.
 	int max_allocated_sample_hits;
 
+	// Sample mode. Only used at startup.
 	MonoProfilerSampleMode sampling_mode;
 } ProfilerConfig;
 
