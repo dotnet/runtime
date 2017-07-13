@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 
@@ -59,7 +58,7 @@ namespace System.Drawing.Internal
             public byte lfClipPrecision;
             public byte lfQuality;
             public byte lfPitchAndFamily;
-            [MarshalAs(System.Runtime.InteropServices.UnmanagedType.ByValTStr, SizeConst = 32)]
+            [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
             public string lfFaceName;
         }
     }

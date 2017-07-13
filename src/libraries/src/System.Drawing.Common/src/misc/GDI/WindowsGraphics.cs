@@ -41,12 +41,13 @@ namespace System.Drawing.Internal
         public static WindowsGraphics FromHdc(IntPtr hDc)
         {
             Debug.Assert(hDc != IntPtr.Zero, "null hDc");
-
             DeviceContext dc = DeviceContext.FromHdc(hDc);
-            WindowsGraphics wg = new WindowsGraphics(dc);
-            wg._disposeDc = true; // we create it, we dispose it.
 
-            return wg;
+            // we create it, we dispose it.
+            return new WindowsGraphics(dc)
+            {
+                _disposeDc = true 
+            };
         }
 
         public static WindowsGraphics FromGraphics(Graphics g, ApplyGraphicsProperties properties)
@@ -61,9 +62,7 @@ namespace System.Drawing.Internal
 
             if ((properties & ApplyGraphicsProperties.TranslateTransform) != 0 || (properties & ApplyGraphicsProperties.Clipping) != 0)
             {
-                object[] data = g.GetContextInfo() as object[];
-
-                if (data != null && data.Length == 2)
+                if (g.GetContextInfo() is object[] data && data.Length == 2)
                 {
                     clipRgn = data[0] as Region;
                     worldTransf = data[1] as Matrix;
@@ -75,6 +74,7 @@ namespace System.Drawing.Internal
                     {
                         elements = worldTransf.Elements;
                     }
+
                     worldTransf.Dispose();
                 }
 
@@ -91,11 +91,12 @@ namespace System.Drawing.Internal
                             wr = WindowsRegion.FromRegion(clipRgn, g); // WindowsRegion will take ownership of the hRegion.
                         }
                     }
+
                     clipRgn.Dispose(); // Disposing the Region object doesn't destroy the hRegion.
                 }
             }
 
-            WindowsGraphics wg = WindowsGraphics.FromHdc(g.GetHdc()); // This locks the Graphics object.
+            WindowsGraphics wg = FromHdc(g.GetHdc()); // This locks the Graphics object.
             wg._graphics = g;
 
             // Apply transform and clip
@@ -119,19 +120,9 @@ namespace System.Drawing.Internal
             return wg;
         }
 
-        ~WindowsGraphics()
-        {
-            Dispose(false);
-        }
+        ~WindowsGraphics() => Dispose(false);
 
-        public DeviceContext DeviceContext
-        {
-            get
-            {
-                return _dc;
-            }
-        }
-
+        public DeviceContext DeviceContext => _dc;
 
         // Okay to suppress.
         // "WindowsGraphics object does not own the Graphics object.  For instance in a control’s Paint event we pass
@@ -165,12 +156,8 @@ namespace System.Drawing.Internal
                         _graphics = null;
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (!ClientUtils.IsSecurityOrCriticalException(ex))
                 {
-                    if (ClientUtils.IsSecurityOrCriticalException(ex))
-                    {
-                        throw; // rethrow the original exception.
-                    }
                     Debug.Fail("Exception thrown during disposing: \r\n" + ex.ToString());
                 }
                 finally
@@ -180,14 +167,8 @@ namespace System.Drawing.Internal
             }
         }
 
-        public IntPtr GetHdc()
-        {
-            return _dc.Hdc;
-        }
+        public IntPtr GetHdc() => _dc.Hdc;
 
-        public void ReleaseHdc()
-        {
-            _dc.Dispose();
-        }
+        public void ReleaseHdc() => _dc.Dispose();
     }
 }

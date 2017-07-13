@@ -147,7 +147,6 @@
     <Compile Include="System\Drawing\Internal\GPRECTF.cs" />
     <Compile Include="System\Drawing\Internal\GPStream.cs" />
     <Compile Include="System\Drawing\Internal\ISystemEventTracker.cs" />
-    <Compile Include="System\Drawing\Internal\RectangleFEx.cs" />
     <Compile Include="System\Drawing\Internal\SystemColorTracker.cs" />
     <Compile Include="System\Drawing\LocalAppContextSwitches.cs" />
     <Compile Include="System\Drawing\NativeMethods.cs" />

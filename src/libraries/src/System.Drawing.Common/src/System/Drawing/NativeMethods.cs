@@ -2,12 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-[assembly: System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope = "member", Target = "System.Drawing.NativeMethods..ctor()")]
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
+
+[assembly: SuppressMessage("Microsoft.Performance", "CA1811:AvoidUncalledPrivateCode", Scope = "member", Target = "System.Drawing.NativeMethods..ctor()")]
 
 namespace System.Drawing
 {
-    using System.Runtime.InteropServices;
-
     internal class NativeMethods
     {
         internal static HandleRef NullHandleRef = new HandleRef(null, IntPtr.Zero);
@@ -27,7 +28,6 @@ namespace System.Drawing
                          SPI_GETNONCLIENTMETRICS = 41,
                          DEFAULT_GUI_FONT = 17;
 
-
         [StructLayout(LayoutKind.Sequential)]
         internal struct BITMAPINFO_FLAT
         {
@@ -43,14 +43,14 @@ namespace System.Drawing
             public int bmiHeader_biClrUsed;
             public int bmiHeader_biClrImportant;
 
-            [MarshalAs(System.Runtime.InteropServices.UnmanagedType.ByValArray, SizeConst = BITMAPINFO_MAX_COLORSIZE * 4)]
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = BITMAPINFO_MAX_COLORSIZE * 4)]
             public byte[] bmiColors; // RGBQUAD structs... Blue-Green-Red-Reserved, repeat...
         }
 
         [StructLayout(LayoutKind.Sequential)]
         internal class BITMAPINFOHEADER
         {
-            public int biSize = 40;    // ndirect.DllLib.sizeOf( this );
+            public int biSize = 40;
             public int biWidth;
             public int biHeight;
             public short biPlanes;
@@ -62,8 +62,6 @@ namespace System.Drawing
             public int biClrUsed;
             public int biClrImportant;
         }
-
-
 
         [StructLayout(LayoutKind.Sequential)]
         internal struct PALETTEENTRY

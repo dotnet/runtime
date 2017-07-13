@@ -4,14 +4,16 @@
 
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Security;
 
 namespace System.Drawing.Internal
 {
-    [System.Security.SuppressUnmanagedCodeSecurityAttribute]
+    [SuppressUnmanagedCodeSecurity]
     internal static partial class IntUnsafeNativeMethods
     {
-        [DllImport(ExternDll.User32, SetLastError = true, ExactSpelling = true, EntryPoint = "GetDC", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+        [DllImport(ExternDll.User32, SetLastError = true, ExactSpelling = true, EntryPoint = "GetDC", CharSet = CharSet.Auto)]
         public static extern IntPtr IntGetDC(HandleRef hWnd);
+
         public static IntPtr GetDC(HandleRef hWnd)
         {
             IntPtr hdc = System.Internal.HandleCollector.Add(IntGetDC(hWnd), IntSafeNativeMethods.CommonHandles.HDC);
@@ -25,6 +27,7 @@ namespace System.Drawing.Internal
         /// </summary>
         [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true, EntryPoint = "DeleteDC", CharSet = CharSet.Auto)]
         public static extern bool IntDeleteDC(HandleRef hDC);
+
         public static bool DeleteDC(HandleRef hDC)
         {
             System.Internal.HandleCollector.Remove((IntPtr)hDC, IntSafeNativeMethods.CommonHandles.GDI);
@@ -32,6 +35,7 @@ namespace System.Drawing.Internal
             DbgUtil.AssertWin32(retVal, "DeleteDC([hdc=0x{0:X8}]) failed.", hDC.Handle);
             return retVal;
         }
+
         public static bool DeleteHDC(HandleRef hDC)
         {
             System.Internal.HandleCollector.Remove((IntPtr)hDC, IntSafeNativeMethods.CommonHandles.HDC);
@@ -40,8 +44,9 @@ namespace System.Drawing.Internal
             return retVal;
         }
 
-        [DllImport(ExternDll.User32, SetLastError = true, ExactSpelling = true, EntryPoint = "ReleaseDC", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+        [DllImport(ExternDll.User32, SetLastError = true, ExactSpelling = true, EntryPoint = "ReleaseDC", CharSet = CharSet.Auto)]
         public static extern int IntReleaseDC(HandleRef hWnd, HandleRef hDC);
+
         public static int ReleaseDC(HandleRef hWnd, HandleRef hDC)
         {
             System.Internal.HandleCollector.Remove((IntPtr)hDC, IntSafeNativeMethods.CommonHandles.HDC);
@@ -49,17 +54,19 @@ namespace System.Drawing.Internal
             return IntReleaseDC(hWnd, hDC);
         }
 
-        [DllImport(ExternDll.Gdi32, SetLastError = true, EntryPoint = "CreateDC", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+        [DllImport(ExternDll.Gdi32, SetLastError = true, EntryPoint = "CreateDC", CharSet = CharSet.Auto)]
         public static extern IntPtr IntCreateDC(string lpszDriverName, string lpszDeviceName, string lpszOutput, HandleRef /*DEVMODE*/ lpInitData);
-        public static IntPtr CreateDC(String lpszDriverName, string lpszDeviceName, string lpszOutput, HandleRef /*DEVMODE*/ lpInitData)
+
+        public static IntPtr CreateDC(string lpszDriverName, string lpszDeviceName, string lpszOutput, HandleRef /*DEVMODE*/ lpInitData)
         {
             IntPtr hdc = System.Internal.HandleCollector.Add(IntCreateDC(lpszDriverName, lpszDeviceName, lpszOutput, lpInitData), IntSafeNativeMethods.CommonHandles.HDC);
             DbgUtil.AssertWin32(hdc != IntPtr.Zero, "CreateDC([driverName={0}], [deviceName={1}], [fileName={2}], [devMode={3}]) failed.", lpszDriverName, lpszDeviceName, lpszOutput, lpInitData.Handle);
             return hdc;
         }
 
-        [DllImport(ExternDll.Gdi32, SetLastError = true, EntryPoint = "CreateIC", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+        [DllImport(ExternDll.Gdi32, SetLastError = true, EntryPoint = "CreateIC", CharSet = CharSet.Auto)]
         public static extern IntPtr IntCreateIC(string lpszDriverName, string lpszDeviceName, string lpszOutput, HandleRef /*DEVMODE*/ lpInitData);
+
         public static IntPtr CreateIC(string lpszDriverName, string lpszDeviceName, string lpszOutput, HandleRef /*DEVMODE*/ lpInitData)
         {
             IntPtr hdc = System.Internal.HandleCollector.Add(IntCreateIC(lpszDriverName, lpszDeviceName, lpszOutput, lpInitData), IntSafeNativeMethods.CommonHandles.HDC);
@@ -73,6 +80,7 @@ namespace System.Drawing.Internal
         /// </summary>
         [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true, EntryPoint = "CreateCompatibleDC", CharSet = CharSet.Auto)]
         public static extern IntPtr IntCreateCompatibleDC(HandleRef hDC);
+
         public static IntPtr CreateCompatibleDC(HandleRef hDC)
         {
             IntPtr compatibleDc = System.Internal.HandleCollector.Add(IntCreateCompatibleDC(hDC), IntSafeNativeMethods.CommonHandles.GDI);
@@ -81,8 +89,9 @@ namespace System.Drawing.Internal
         }
 
 
-        [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true, EntryPoint = "SaveDC", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+        [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true, EntryPoint = "SaveDC", CharSet = CharSet.Auto)]
         public static extern int IntSaveDC(HandleRef hDC);
+
         public static int SaveDC(HandleRef hDC)
         {
             int state = IntSaveDC(hDC);
@@ -90,8 +99,9 @@ namespace System.Drawing.Internal
             return state;
         }
 
-        [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true, EntryPoint = "RestoreDC", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+        [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true, EntryPoint = "RestoreDC", CharSet = CharSet.Auto)]
         public static extern bool IntRestoreDC(HandleRef hDC, int nSavedDC);
+
         public static bool RestoreDC(HandleRef hDC, int nSavedDC)
         {
             bool retVal = IntRestoreDC(hDC, nSavedDC);
@@ -105,11 +115,9 @@ namespace System.Drawing.Internal
         [DllImport(ExternDll.User32, SetLastError = true, ExactSpelling = true)]
         public static extern IntPtr WindowFromDC(HandleRef hDC);
 
-        [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true, CharSet = CharSet.Auto)]
-        public static extern int GetDeviceCaps(HandleRef hDC, int nIndex);
-
-        [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true, EntryPoint = "OffsetViewportOrgEx", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+        [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true, EntryPoint = "OffsetViewportOrgEx", CharSet = CharSet.Auto)]
         public static extern bool IntOffsetViewportOrgEx(HandleRef hDC, int nXOffset, int nYOffset, [In, Out] IntNativeMethods.POINT point);
+
         public static bool OffsetViewportOrgEx(HandleRef hDC, int nXOffset, int nYOffset, [In, Out] IntNativeMethods.POINT point)
         {
             bool retVal = IntOffsetViewportOrgEx(hDC, nXOffset, nYOffset, point);
@@ -118,8 +126,9 @@ namespace System.Drawing.Internal
         }
 
         // Region.
-        [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true, EntryPoint = "CombineRgn", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+        [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true, EntryPoint = "CombineRgn", CharSet = CharSet.Auto)]
         public static extern IntNativeMethods.RegionFlags IntCombineRgn(HandleRef hRgnDest, HandleRef hRgnSrc1, HandleRef hRgnSrc2, RegionCombineMode combineMode);
+
         public static IntNativeMethods.RegionFlags CombineRgn(HandleRef hRgnDest, HandleRef hRgnSrc1, HandleRef hRgnSrc2, RegionCombineMode combineMode)
         {
             Debug.Assert(hRgnDest.Wrapper != null && hRgnDest.Handle != IntPtr.Zero, "Destination region is invalid");
@@ -135,8 +144,9 @@ namespace System.Drawing.Internal
             return IntCombineRgn(hRgnDest, hRgnSrc1, hRgnSrc2, combineMode);
         }
 
-        [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true, EntryPoint = "GetClipRgn", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+        [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true, EntryPoint = "GetClipRgn", CharSet = CharSet.Auto)]
         public static extern int IntGetClipRgn(HandleRef hDC, HandleRef hRgn);
+
         public static int GetClipRgn(HandleRef hDC, HandleRef hRgn)
         {
             int retVal = IntGetClipRgn(hDC, hRgn);
@@ -144,8 +154,9 @@ namespace System.Drawing.Internal
             return retVal;
         }
 
-        [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true, EntryPoint = "SelectClipRgn", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+        [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true, EntryPoint = "SelectClipRgn", CharSet = CharSet.Auto)]
         public static extern IntNativeMethods.RegionFlags IntSelectClipRgn(HandleRef hDC, HandleRef hRgn);
+
         public static IntNativeMethods.RegionFlags SelectClipRgn(HandleRef hDC, HandleRef hRgn)
         {
             IntNativeMethods.RegionFlags result = IntSelectClipRgn(hDC, hRgn);
@@ -153,8 +164,9 @@ namespace System.Drawing.Internal
             return result;
         }
 
-        [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true, EntryPoint = "GetRgnBox", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+        [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true, EntryPoint = "GetRgnBox", CharSet = CharSet.Auto)]
         public static extern IntNativeMethods.RegionFlags IntGetRgnBox(HandleRef hRgn, [In, Out] ref IntNativeMethods.RECT clipRect);
+
         public static IntNativeMethods.RegionFlags GetRgnBox(HandleRef hRgn, [In, Out] ref IntNativeMethods.RECT clipRect)
         {
             IntNativeMethods.RegionFlags result = IntGetRgnBox(hRgn, ref clipRect);
@@ -164,14 +176,15 @@ namespace System.Drawing.Internal
 
         // Font.
 
-        [DllImport(ExternDll.Gdi32, SetLastError = true, EntryPoint = "CreateFontIndirect", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+        [DllImport(ExternDll.Gdi32, SetLastError = true, EntryPoint = "CreateFontIndirect", CharSet = CharSet.Auto)]
 #pragma warning disable CS0618 // Legacy code: We don't care about using obsolete API's.
         public static extern IntPtr IntCreateFontIndirect([In, Out, MarshalAs(UnmanagedType.AsAny)] object lf); // need object here since LOGFONT is not public.
 #pragma warning restore CS0618
 
         // Common.
-        [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true, EntryPoint = "DeleteObject", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+        [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true, EntryPoint = "DeleteObject", CharSet = CharSet.Auto)]
         public static extern bool IntDeleteObject(HandleRef hObject);
+
         public static bool DeleteObject(HandleRef hObject)
         {
             System.Internal.HandleCollector.Remove((IntPtr)hObject, IntSafeNativeMethods.CommonHandles.GDI);
@@ -180,8 +193,9 @@ namespace System.Drawing.Internal
             return retVal;
         }
 
-        [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true, EntryPoint = "GetCurrentObject", CharSet = System.Runtime.InteropServices.CharSet.Auto)]
+        [DllImport(ExternDll.Gdi32, SetLastError = true, ExactSpelling = true, EntryPoint = "GetCurrentObject", CharSet = CharSet.Auto)]
         public static extern IntPtr IntGetCurrentObject(HandleRef hDC, int uObjectType);
+
         public static IntPtr GetCurrentObject(HandleRef hDC, int uObjectType)
         {
             IntPtr hGdiObj = IntGetCurrentObject(hDC, uObjectType);
