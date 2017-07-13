@@ -157,7 +157,6 @@ namespace Windows.UI.Xaml.Media.Animation.Tests
 
         [Theory]
         [MemberData(nameof(Equals_TestData))]
-        [ActiveIssue(21351, TargetFrameworkMonikers.UapAot)]
         public void Equals_Object_ReturnsExpected(RepeatBehavior repeatBehaviour, object other, bool expected)
         {
             Assert.Equal(expected, repeatBehaviour.Equals(other));
@@ -172,9 +171,9 @@ namespace Windows.UI.Xaml.Media.Animation.Tests
                 {
                     Assert.Equal(expected, repeatBehaviour.GetHashCode().Equals(otherRepeatBehaviour.GetHashCode()));
                 }
-                else
+                else if (repeatBehaviour.Type == otherRepeatBehaviour.Type)
                 {
-                    Assert.Equal(repeatBehaviour.Type == otherRepeatBehaviour.Type, repeatBehaviour.GetHashCode().Equals(otherRepeatBehaviour.GetHashCode()));
+                    Assert.Equal(repeatBehaviour.GetHashCode(), otherRepeatBehaviour.GetHashCode());
                 }
             }
         }
