@@ -32,6 +32,7 @@
 
   <ItemGroup>
     <CrossGenFiles Include="..\packages\runtime.$(TargetRid).Microsoft.NETCore.Runtime.CoreCLR\$(DesiredPackageVersionArg)\tools\crossgen*"/>
+    <VCRuntimeFiles Include="..\packages\vc-runtime\$(VCRuntimeVersion)\lib\netcoreapp1.1\*.dll"/>
   </ItemGroup>
 
   <PropertyGroup>
@@ -148,6 +149,24 @@
     <Copy
       SourceFiles="@(CrossGenFiles)"
       DestinationFolder="$(ProductDestination)"
+      SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
+      OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
+      Retries="$(CopyRetryCount)"
+      RetryDelayMilliseconds="$(CopyRetryDelayMilliseconds)"
+      UseHardlinksIfPossible="$(CreateHardLinksForCopyFilesToOutputDirectoryIfPossible)">
+      <Output TaskParameter="DestinationFiles" ItemName="FileWrites" />
+    </Copy>
+
+  </Target>
+
+  <Target Name="CopyVCRuntimeToCoreRoot"
+    AfterTargets="CopyDependecyToCoreRoot"
+    Outputs="$(CORE_ROOT)\*.*"
+    Condition="'$(BuildArch)' == 'arm'">
+
+    <Copy
+      SourceFiles="@(VCRuntimeFiles)"
+      DestinationFolder="$(CORE_ROOT)"
       SkipUnchangedFiles="$(SkipCopyUnchangedFiles)"
       OverwriteReadOnlyFiles="$(OverwriteReadOnlyFiles)"
       Retries="$(CopyRetryCount)"
