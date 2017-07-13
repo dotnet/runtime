@@ -106,8 +106,8 @@ namespace System.Net.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => listener.Prefixes.CopyTo(new object[1, 1], 0));
         }
 
-        [ActiveIssue(22055, TargetFrameworkMonikers.UapAot)]
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Arrays with non-zero lower bounds are not supported for NetNative")]
         public void CopyTo_NonZeroLowerBoundArray_ThrowsIndexOutOfRangeException()
         {
             var listener = new HttpListener();
