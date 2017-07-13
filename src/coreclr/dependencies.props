@@ -30,6 +30,7 @@
     <XUnitConsoleNetCoreVersion>1.0.2-prerelease-00177</XUnitConsoleNetCoreVersion>
     <XUnitPerformanceApiVersion>1.0.0-beta-build0007</XUnitPerformanceApiVersion>
     <MicrosoftDiagnosticsTracingLibraryVersion>1.0.3-alpha-experimental</MicrosoftDiagnosticsTracingLibraryVersion>
+    <VCRuntimeVersion>1.2.0</VCRuntimeVersion>
   </PropertyGroup>
 
   <!-- Package dependency verification/auto-upgrade configuration. -->
