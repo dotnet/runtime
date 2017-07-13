@@ -17,6 +17,7 @@ namespace System.Diagnostics.Tracing
     /// To get the value of a property quickly, use a delegate produced by <see cref="PropertyValue.GetPropertyGetter(PropertyInfo)"/>.
     /// </summary>
 #if ES_BUILD_PN
+    [CLSCompliant(false)]
     public
 #else
     internal
