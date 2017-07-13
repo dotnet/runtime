@@ -9,20 +9,20 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>9114ada0abe6ec0a350612544f197aa5046ceb61</CoreFxCurrentRef>
-    <CoreClrCurrentRef>9114ada0abe6ec0a350612544f197aa5046ceb61</CoreClrCurrentRef>
-    <StandardCurrentRef>9114ada0abe6ec0a350612544f197aa5046ceb61</StandardCurrentRef>
+    <CoreFxCurrentRef>13b7a26a412f20b32ea84971405c9a452d86b136</CoreFxCurrentRef>
+    <CoreClrCurrentRef>13b7a26a412f20b32ea84971405c9a452d86b136</CoreClrCurrentRef>
+    <StandardCurrentRef>13b7a26a412f20b32ea84971405c9a452d86b136</StandardCurrentRef>
     <!-- Disable WCF Update until we have a package with UAP support available
     <WCFCurrentRef>a96e149ce150f6a15546032ca3966bf238c373fb</WCFCurrentRef> -->
   </PropertyGroup>
   
   <PropertyGroup>
-    <CoreFxVersion>4.5.0-preview2-25512-01</CoreFxVersion>
+    <CoreFxVersion>4.5.0-preview2-25513-02</CoreFxVersion>
     <PlatformPackageVersion>2.1.0-preview1-25324-02</PlatformPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview2-25511-05</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview2-25513-01</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <MicrosoftNETCoreRuntimeJitPackageVersion>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</MicrosoftNETCoreRuntimeJitPackageVersion>
     <MicrosoftNetNativeCompilerPackageVersion>2.0.0-preview-25511-00</MicrosoftNetNativeCompilerPackageVersion>
-    <NETStandardVersion>2.1.0-preview1-25512-01</NETStandardVersion>
+    <NETStandardVersion>2.1.0-preview1-25513-01</NETStandardVersion>
     <DiaSymReaderNativeVersion>1.4.1</DiaSymReaderNativeVersion>
     <WcfVersion>4.5.0-preview2-25507-04</WcfVersion>
   </PropertyGroup>
