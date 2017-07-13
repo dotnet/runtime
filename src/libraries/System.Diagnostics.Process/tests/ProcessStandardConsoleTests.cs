@@ -14,7 +14,7 @@ namespace System.Diagnostics.Tests
         private const int s_ConsoleEncoding = 437;
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "https://github.com/dotnet/corefx/issues/22174")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapNotUapAot, "https://github.com/dotnet/corefx/issues/22174")]
         public void TestChangesInConsoleEncoding()
         {
             Action<int> run = expectedCodePage =>

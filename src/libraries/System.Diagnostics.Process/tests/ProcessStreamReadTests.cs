@@ -10,10 +10,10 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
+    [SkipOnTargetFramework(TargetFrameworkMonikers.UapNotUapAot, "https://github.com/dotnet/corefx/issues/22174")]
     public class ProcessStreamReadTests : ProcessTestBase
     {
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "https://github.com/dotnet/corefx/issues/22174")]
         public void TestSyncErrorStream()
         {
             Process p = CreateProcess(ErrorProcessBody);
@@ -26,7 +26,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "https://github.com/dotnet/corefx/issues/22174")]
         public void TestAsyncErrorStream()
         {
             for (int i = 0; i < 2; ++i)
@@ -62,7 +61,6 @@ namespace System.Diagnostics.Tests
 
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "https://github.com/dotnet/corefx/issues/22174")]
         public void TestSyncOutputStream()
         {
             Process p = CreateProcess(StreamBody);
@@ -74,7 +72,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "https://github.com/dotnet/corefx/issues/22174")]
         public void TestAsyncOutputStream()
         {
             for (int i = 0; i < 2; ++i)
@@ -108,7 +105,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "https://github.com/dotnet/corefx/issues/22174")]
         public void TestSyncStreams()
         {
             const string expected = "This string should come as output";
@@ -129,7 +125,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "https://github.com/dotnet/corefx/issues/22174")]
         public void TestEOFReceivedWhenStdInClosed()
         {
             // This is the test for the fix of dotnet/corefx issue #13447.
@@ -193,7 +188,6 @@ namespace System.Diagnostics.Tests
 
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "There is 2 bugs in Desktop in this codepath, see: dotnet/corefx #18437 and #18436")]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "https://github.com/dotnet/corefx/issues/22174")]
         public void TestAsyncHalfCharacterAtATime()
         {
             var receivedOutput = false;
@@ -247,7 +241,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "https://github.com/dotnet/corefx/issues/22174")]
         public void TestManyOutputLines()
         {
             const int ExpectedLineCount = 144;
@@ -283,7 +276,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "https://github.com/dotnet/corefx/issues/22174")]
         public void TestStreamNegativeTests()
         {
             {
