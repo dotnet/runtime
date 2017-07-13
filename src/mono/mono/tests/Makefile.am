@@ -2001,9 +2001,20 @@ endif
 libtest_la_SOURCES = libtest.c
 libtest_la_LIBADD = $(GLIB_LIBS) $(LIBICONV)
 
-test-internalsvisibleto: internalsvisibleto-runtimetest.exe internalsvisibleto-compilertest.exe internalsvisibleto-library.dll
-	$(Q) $(RUNTIME) internalsvisibleto-runtimetest.exe 1>internalsvisibleto-runtimetest.exe.stdout 2>internalsvisibleto-runtimetest.exe.stderr
-	$(Q) $(RUNTIME) internalsvisibleto-compilertest.exe 1>internalsvisibleto-compilertest.exe.stdout 2>internalsvisibleto-compilertest.exe.stderr
+INTERNALSVISIBLETO_TEST_SRC = \
+	internalsvisibleto-runtimetest.cs \
+	internalsvisibleto-compilertest.cs
+
+INTERNALSVISIBLETO_TEST_LIB_SRC = \
+	internalsvisibleto-library.cs
+
+INTERNALSVISIBLETO_TEST = \
+	$(INTERNALSVISIBLETO_TEST_SRC:.cs=.exe)
+
+EXTRA_DIST += $(INTERNALSVISIBLETO_TEST_SRC) $(INTERNALSVISIBLETO_TEST_LIB_SRC)
+
+test-internalsvisibleto: test-runner.exe $(INTERNALSVISIBLETO_TEST)
+	$(TOOLS_RUNTIME) $(TEST_RUNNER) --testsuite-name $@ $(INTERNALSVISIBLETO_TEST)
 
 internalsvisibleto-runtimetest.exe: internalsvisibleto-runtimetest.cs internalsvisibleto-library.cs
 	$(Q) $(MCS) -out:internalsvisibleto-correctcase.dll -target:library -d:CORRECT_CASE -d:PERMISSIVE internalsvisibleto-library.cs	
