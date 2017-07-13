@@ -12,6 +12,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Concurrent;
+using System.Transactions;
 
 namespace System.Data.ProviderBase
 {
@@ -24,6 +25,25 @@ namespace System.Data.ProviderBase
             ShuttingDown,
         }
 
+        // This class is a way to stash our cloned Tx key for later disposal when it's no longer needed.
+        // We can't get at the key in the dictionary without enumerating entries, so we stash an extra
+        // copy as part of the value.
+        sealed private class TransactedConnectionList : List<DbConnectionInternal>
+        {
+            private Transaction _transaction;
+            internal TransactedConnectionList(int initialAllocation, Transaction tx) : base(initialAllocation)
+            {
+                _transaction = tx;
+            }
+
+            internal void Dispose()
+            {
+                if (null != _transaction)
+                {
+                    _transaction.Dispose();
+                }
+            }
+        }
 
         private sealed class PendingGetConnection
         {
@@ -39,6 +59,229 @@ namespace System.Data.ProviderBase
             public DbConnectionOptions UserOptions { get; private set; }
         }
 
+        sealed private class TransactedConnectionPool
+        {
+            Dictionary<Transaction, TransactedConnectionList> _transactedCxns;
+
+            DbConnectionPool _pool;
+
+            private static int _objectTypeCount; // Bid counter
+            internal readonly int _objectID = System.Threading.Interlocked.Increment(ref _objectTypeCount);
+
+            internal TransactedConnectionPool(DbConnectionPool pool)
+            {
+                Debug.Assert(null != pool, "null pool?");
+
+                _pool = pool;
+                _transactedCxns = new Dictionary<Transaction, TransactedConnectionList>();
+            }
+
+            internal int ObjectID
+            {
+                get
+                {
+                    return _objectID;
+                }
+            }
+
+            internal DbConnectionPool Pool
+            {
+                get
+                {
+                    return _pool;
+                }
+            }
+
+            internal DbConnectionInternal GetTransactedObject(Transaction transaction)
+            {
+                Debug.Assert(null != transaction, "null transaction?");
+
+                DbConnectionInternal transactedObject = null;
+
+                TransactedConnectionList connections;
+                bool txnFound = false;
+
+                lock (_transactedCxns)
+                {
+                    txnFound = _transactedCxns.TryGetValue(transaction, out connections);
+                }
+
+                // NOTE: GetTransactedObject is only used when AutoEnlist = True and the ambient transaction 
+                //   (Sys.Txns.Txn.Current) is still valid/non-null. This, in turn, means that we don't need 
+                //   to worry about a pending asynchronous TransactionCompletedEvent to trigger processing in
+                //   TransactionEnded below and potentially wipe out the connections list underneath us. It
+                //   is similarly alright if a pending addition to the connections list in PutTransactedObject
+                //   below is not completed prior to the lock on the connections object here...getting a new
+                //   connection is probably better than unnecessarily locking
+                if (txnFound)
+                {
+                    Debug.Assert(connections != null);
+
+                    // synchronize multi-threaded access with PutTransactedObject (TransactionEnded should
+                    //   not be a concern, see comments above)
+                    lock (connections)
+                    {
+                        int i = connections.Count - 1;
+                        if (0 <= i)
+                        {
+                            transactedObject = connections[i];
+                            connections.RemoveAt(i);
+                        }
+                    }
+                }
+                
+                return transactedObject;
+            }
+
+            internal void PutTransactedObject(Transaction transaction, DbConnectionInternal transactedObject)
+            {
+                Debug.Assert(null != transaction, "null transaction?");
+                Debug.Assert(null != transactedObject, "null transactedObject?");
+
+                TransactedConnectionList connections;
+                bool txnFound = false;
+
+                // NOTE: because TransactionEnded is an asynchronous notification, there's no guarantee
+                //   around the order in which PutTransactionObject and TransactionEnded are called. 
+
+                lock (_transactedCxns)
+                {
+                    // Check if a transacted pool has been created for this transaction
+                    if (txnFound = _transactedCxns.TryGetValue(transaction, out connections))
+                    {
+                        Debug.Assert(connections != null);
+
+                        // synchronize multi-threaded access with GetTransactedObject
+                        lock (connections)
+                        {
+                            Debug.Assert(0 > connections.IndexOf(transactedObject), "adding to pool a second time?");
+                            connections.Add(transactedObject);
+                        }
+                    }
+                }
+
+                // CONSIDER: the following code is more complicated than it needs to be to avoid cloning the 
+                //   transaction and allocating memory within a lock. Is that complexity really necessary?
+                if (!txnFound)
+                {
+                    // create the transacted pool, making sure to clone the associated transaction
+                    //   for use as a key in our internal dictionary of transactions and connections
+                    Transaction transactionClone = null;
+                    TransactedConnectionList newConnections = null;
+
+                    try
+                    {
+                        transactionClone = transaction.Clone();
+                        newConnections = new TransactedConnectionList(2, transactionClone); // start with only two connections in the list; most times we won't need that many.
+
+                        lock (_transactedCxns)
+                        {
+                            // NOTE: in the interim between the locks on the transacted pool (this) during 
+                            //   execution of this method, another thread (threadB) may have attempted to 
+                            //   add a different connection to the transacted pool under the same 
+                            //   transaction. As a result, threadB may have completed creating the
+                            //   transacted pool while threadA was processing the above instructions.
+                            if (txnFound = _transactedCxns.TryGetValue(transaction, out connections))
+                            {
+                                Debug.Assert(connections != null);
+
+                                // synchronize multi-threaded access with GetTransactedObject
+                                lock (connections)
+                                {
+                                    Debug.Assert(0 > connections.IndexOf(transactedObject), "adding to pool a second time?");
+                                    connections.Add(transactedObject);
+                                }
+                            }
+                            else
+                            {
+                                // add the connection/transacted object to the list
+                                newConnections.Add(transactedObject);
+
+                                _transactedCxns.Add(transactionClone, newConnections);
+                                transactionClone = null; // we've used it -- don't throw it or the TransactedConnectionList that references it away.                                
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        if (null != transactionClone)
+                        {
+                            if (newConnections != null)
+                            {
+                                // another thread created the transaction pool and thus the new 
+                                //   TransactedConnectionList was not used, so dispose of it and
+                                //   the transaction clone that it incorporates.
+                                newConnections.Dispose();
+                            }
+                            else
+                            {
+                                // memory allocation for newConnections failed...clean up unused transactionClone
+                                transactionClone.Dispose();
+                            }
+                        }
+                    }
+                }
+            }
+
+            internal void TransactionEnded(Transaction transaction, DbConnectionInternal transactedObject)
+            {
+                TransactedConnectionList connections;
+                int entry = -1;
+
+                // NOTE: because TransactionEnded is an asynchronous notification, there's no guarantee
+                //   around the order in which PutTransactionObject and TransactionEnded are called. As
+                //   such, it is possible that the transaction does not yet have a pool created.
+
+                // TODO: is this a plausible and/or likely scenario? Do we need to have a mechanism to ensure
+                // TODO:   that the pending creation of a transacted pool for this transaction is aborted when
+                // TODO:   PutTransactedObject finally gets some CPU time?
+
+                lock (_transactedCxns)
+                {
+                    if (_transactedCxns.TryGetValue(transaction, out connections))
+                    {
+                        Debug.Assert(connections != null);
+
+                        bool shouldDisposeConnections = false;
+
+                        // Lock connections to avoid conflict with GetTransactionObject
+                        lock (connections)
+                        {
+                            entry = connections.IndexOf(transactedObject);
+
+                            if (entry >= 0)
+                            {
+                                connections.RemoveAt(entry);
+                            }
+
+                            // Once we've completed all the ended notifications, we can
+                            // safely remove the list from the transacted pool.
+                            if (0 >= connections.Count)
+                            {
+                                _transactedCxns.Remove(transaction);
+
+                                // we really need to dispose our connection list; it may have 
+                                // native resources via the tx and GC may not happen soon enough.
+                                shouldDisposeConnections = true;
+                            }
+                        }
+
+                        if (shouldDisposeConnections)
+                        {
+                            connections.Dispose();
+                        }
+                    }
+                }
+
+                // If (and only if) we found the connection in the list of
+                // connections, we'll put it back...
+                if (0 <= entry)
+                {
+                    Pool.PutObjectFromTransactedPool(transactedObject);
+                }
+            }
+
+        }
 
         private sealed class PoolWaitHandles
         {
@@ -130,6 +373,7 @@ namespace System.Data.ProviderBase
 
         private Timer _cleanupTimer;
 
+        private readonly TransactedConnectionPool _transactedConnectionPool;
 
         private readonly List<DbConnectionInternal> _objectList;
         private int _totalObjects;
@@ -169,6 +413,11 @@ namespace System.Data.ProviderBase
 
             _objectList = new List<DbConnectionInternal>(MaxPoolSize);
 
+            if (ADP.IsPlatformNT5)
+            {
+                _transactedConnectionPool = new TransactedConnectionPool(this);
+            }
+
             _poolCreateRequest = new WaitCallback(PoolCreateRequest); // used by CleanupCallback
             _state = State.Running;
 
@@ -196,6 +445,10 @@ namespace System.Data.ProviderBase
             get { return _errorOccurred; }
         }
 
+        private bool HasTransactionAffinity
+        {
+            get { return PoolGroupOptions.HasTransactionAffinity; }
+        }
 
         internal TimeSpan LoadBalanceTimeout
         {
@@ -244,7 +497,6 @@ namespace System.Data.ProviderBase
         {
             get { return PoolGroupOptions.MinPoolSize; }
         }
-
 
         internal DbConnectionPoolGroup PoolGroup
         {
@@ -306,7 +558,36 @@ namespace System.Data.ProviderBase
                         Debug.Assert(obj != null, "null connection is not expected");
                         // If we obtained one from the old stack, destroy it.
 
-                        DestroyObject(obj);
+                        // Transaction roots must survive even aging out (TxEnd event will clean them up).
+                        bool shouldDestroy = true;
+                        lock (obj)
+                        {    // Lock to prevent race condition window between IsTransactionRoot and shouldDestroy assignment
+                            if (obj.IsTransactionRoot)
+                            {
+                                shouldDestroy = false;
+                            }
+                        }
+
+                        // !!!!!!!!!! WARNING !!!!!!!!!!!!!
+                        //   ONLY touch obj after lock release if shouldDestroy is false!!!  Otherwise, it may be destroyed
+                        //   by transaction-end thread!
+
+                        // Note that there is a minor race condition between this task and the transaction end event, if the latter runs 
+                        //  between the lock above and the SetInStasis call below. The reslult is that the stasis counter may be
+                        //  incremented without a corresponding decrement (the transaction end task is normally expected
+                        //  to decrement, but will only do so if the stasis flag is set when it runs). I've minimized the size
+                        //  of the window, but we aren't totally eliminating it due to SetInStasis needing to do bid tracing, which
+                        //  we don't want to do under this lock, if possible. It should be possible to eliminate this race condition with
+                        //  more substantial re-architecture of the pool, but we don't have the time to do that work for the current release.
+
+                        if (shouldDestroy)
+                        {
+                            DestroyObject(obj);
+                        }
+                        else
+                        {
+                            obj.SetInStasis();
+                        }
                     }
                     else
                     {
@@ -334,8 +615,6 @@ namespace System.Data.ProviderBase
                         break;
 
                     Debug.Assert(obj != null, "null connection is not expected");
-
-
                     Debug.Assert(!obj.IsEmancipated, "pooled object not in pool");
                     Debug.Assert(obj.CanBePooled, "pooled object is not poolable");
 
@@ -484,6 +763,7 @@ namespace System.Data.ProviderBase
 
             bool returnToGeneralPool = false;
             bool destroyObject = false;
+            bool rootTxn = false;
 
             if (obj.IsConnectionDoomed)
             {
@@ -506,26 +786,78 @@ namespace System.Data.ProviderBase
 
                     if (_state == State.ShuttingDown)
                     {
-                        // connection is being closed and the pool has been marked as shutting
-                        //   down, so destroy this object.
-                        destroyObject = true;
+                        if (obj.IsTransactionRoot)
+                        {
+                            // SQLHotfix# 50003503 - connections that are affiliated with a 
+                            //   root transaction and that also happen to be in a connection 
+                            //   pool that is being shutdown need to be put in stasis so that 
+                            //   the root transaction isn't effectively orphaned with no 
+                            //   means to promote itself to a full delegated transaction or
+                            //   Commit or Rollback
+                            obj.SetInStasis();
+                            rootTxn = true;
+                        }
+                        else
+                        {
+                            // connection is being closed and the pool has been marked as shutting
+                            //   down, so destroy this object.
+                            destroyObject = true;
+                        }
                     }
                     else
                     {
-                        if (obj.CanBePooled)
+                        if (obj.IsNonPoolableTransactionRoot)
+                        {
+                            obj.SetInStasis();
+                            rootTxn = true;
+                        }
+                        else if (obj.CanBePooled)
                         {
                             // We must put this connection into the transacted pool
                             // while inside a lock to prevent a race condition with
                             // the transaction asynchronously completing on a second
                             // thread.
 
-                            // return to general pool
-                            returnToGeneralPool = true;
+                            Transaction transaction = obj.EnlistedTransaction;
+                            if (null != transaction)
+                            {
+                                // NOTE: we're not locking on _state, so it's possible that its
+                                //   value could change between the conditional check and here.
+                                //   Although perhaps not ideal, this is OK because the 
+                                //   DelegatedTransactionEnded event will clean up the
+                                //   connection appropriately regardless of the pool state.
+                                Debug.Assert(_transactedConnectionPool != null, "Transacted connection pool was not expected to be null.");
+                                _transactedConnectionPool.PutTransactedObject(transaction, obj);
+                                rootTxn = true;
+                            }
+                            else
+                            {
+                                // return to general pool
+                                returnToGeneralPool = true;
+                            }
                         }
                         else
                         {
-                            // object is not fit for reuse -- just dispose of it
-                            destroyObject = true;
+                            if (obj.IsTransactionRoot && !obj.IsConnectionDoomed)
+                            {
+                                // SQLHotfix# 50003503 - if the object cannot be pooled but is a transaction
+                                //   root, then we must have hit one of two race conditions:
+                                //       1) PruneConnectionPoolGroups shutdown the pool and marked this connection 
+                                //          as non-poolable while we were processing within this lock
+                                //       2) The LoadBalancingTimeout expired on this connection and marked this
+                                //          connection as DoNotPool.
+                                //
+                                //   This connection needs to be put in stasis so that the root transaction isn't
+                                //   effectively orphaned with no means to promote itself to a full delegated 
+                                //   transaction or Commit or Rollback
+                                obj.SetInStasis();
+                                rootTxn = true;
+                            }
+                            else
+                            {
+                                // object is not fit for reuse -- just dispose of it
+                                destroyObject = true;
+                            }
                         }
                     }
                 }
@@ -549,8 +881,7 @@ namespace System.Data.ProviderBase
             // postcondition
 
             // ensure that the connection was processed
-            Debug.Assert(
-                returnToGeneralPool == true || destroyObject == true);
+            Debug.Assert(rootTxn == true || returnToGeneralPool == true || destroyObject == true);
         }
 
         internal void DestroyObject(DbConnectionInternal obj)
@@ -560,18 +891,18 @@ namespace System.Data.ProviderBase
             // we simply leave it alone; when the transaction completes, it will
             // come back through PutObjectFromTransactedPool, which will call us
             // again.
-            bool removed = false;
-            lock (_objectList)
+            if (!obj.IsTxRootWaitingForTxEnd)
             {
-                removed = _objectList.Remove(obj);
-                Debug.Assert(removed, "attempt to DestroyObject not in list");
-                _totalObjects = _objectList.Count;
-            }
+                bool removed = false;
+                lock (_objectList)
+                {
+                    removed = _objectList.Remove(obj);
+                    Debug.Assert(removed, "attempt to DestroyObject not in list");
+                    _totalObjects = _objectList.Count;
+                }
 
-            if (removed)
-            {
+                obj.Dispose();
             }
-            obj.Dispose();
         }
 
         private void ErrorCallback(Object state)
@@ -650,6 +981,7 @@ namespace System.Data.ProviderBase
                         {
                             bool allowCreate = true;
                             bool onlyOneCheckConnection = false;
+                            ADP.SetCurrentTransaction(next.Completion.Task.AsyncState as Transactions.Transaction);
                             timeout = !TryGetConnection(next.Owner, delay, allowCreate, onlyOneCheckConnection, next.UserOptions, out connection);
                         }
                         catch (Exception e)
@@ -742,6 +1074,15 @@ namespace System.Data.ProviderBase
         private bool TryGetConnection(DbConnection owningObject, uint waitForMultipleObjectsTimeout, bool allowCreate, bool onlyOneCheckConnection, DbConnectionOptions userOptions, out DbConnectionInternal connection)
         {
             DbConnectionInternal obj = null;
+            Transaction transaction = null;
+
+            // If automatic transaction enlistment is required, then we try to
+            // get the connection from the transacted connection pool first.
+            if (HasTransactionAffinity)
+            {
+                obj = GetFromTransactedPool(out transaction);
+            }
+
             if (null == obj)
             {
                 Interlocked.Increment(ref _waitCount);
@@ -778,7 +1119,6 @@ namespace System.Data.ProviderBase
                                 throw TryCloneCachedException();
 
                             case CREATION_HANDLE:
-
                                 try
                                 {
                                     obj = UserCreateRequest(owningObject, userOptions);
@@ -870,14 +1210,14 @@ namespace System.Data.ProviderBase
 
             if (null != obj)
             {
-                PrepareConnection(owningObject, obj);
+                PrepareConnection(owningObject, obj, transaction);
             }
 
             connection = obj;
             return true;
         }
 
-        private void PrepareConnection(DbConnection owningObject, DbConnectionInternal obj)
+        private void PrepareConnection(DbConnection owningObject, DbConnectionInternal obj, Transaction transaction)
         {
             lock (obj)
             {   // Protect against Clear and ReclaimEmancipatedObjects, which call IsEmancipated, which is affected by PrePush and PostPop
@@ -885,7 +1225,7 @@ namespace System.Data.ProviderBase
             }
             try
             {
-                obj.ActivateConnection();
+                obj.ActivateConnection(transaction);
             }
             catch
             {
@@ -909,7 +1249,7 @@ namespace System.Data.ProviderBase
 
             if (newConnection != null)
             {
-                PrepareConnection(owningObject, newConnection);
+                PrepareConnection(owningObject, newConnection, oldConnection.EnlistedTransaction);
                 oldConnection.PrepareForReplaceConnection();
                 oldConnection.DeactivateConnection();
                 oldConnection.Dispose();
@@ -947,6 +1287,39 @@ namespace System.Data.ProviderBase
             {
             }
             return (obj);
+        }
+
+        private DbConnectionInternal GetFromTransactedPool(out Transaction transaction)
+        {
+            transaction = ADP.GetCurrentTransaction();
+            DbConnectionInternal obj = null;
+
+            if (null != transaction && null != _transactedConnectionPool)
+            {
+                obj = _transactedConnectionPool.GetTransactedObject(transaction);
+
+                if (null != obj)
+                {
+                    if (obj.IsTransactionRoot)
+                    {
+                        try
+                        {
+                            obj.IsConnectionAlive(true);
+                        }
+                        catch
+                        {
+                            DestroyObject(obj);
+                            throw;
+                        }
+                    }
+                    else if (!obj.IsConnectionAlive())
+                    {
+                        DestroyObject(obj);
+                        obj = null;
+                    }
+                }
+            }
+            return obj;
         }
 
         private void PoolCreateRequest(object state)
@@ -1071,6 +1444,30 @@ namespace System.Data.ProviderBase
             DeactivateObject(obj);
         }
 
+        internal void PutObjectFromTransactedPool(DbConnectionInternal obj)
+        {
+            Debug.Assert(null != obj, "null pooledObject?");
+            Debug.Assert(obj.EnlistedTransaction == null, "pooledObject is still enlisted?");
+
+            // called by the transacted connection pool , once it's removed the
+            // connection from it's list.  We put the connection back in general
+            // circulation.
+
+            // NOTE: there is no locking required here because if we're in this
+            // method, we can safely presume that the caller is the only person
+            // that is using the connection, and that all pre-push logic has been
+            // done and all transactions are ended.
+
+            if (_state == State.Running && obj.CanBePooled)
+            {
+                PutNewObject(obj);
+            }
+            else
+            {
+                DestroyObject(obj);
+                QueuePoolCreateRequest();
+            }
+        }
 
         private void QueuePoolCreateRequest()
         {
@@ -1139,6 +1536,7 @@ namespace System.Data.ProviderBase
 
                 emancipatedObjectFound = true;
 
+                obj.DetachCurrentTransactionIfEnded();
                 DeactivateObject(obj);
             }
             return emancipatedObjectFound;
@@ -1166,6 +1564,27 @@ namespace System.Data.ProviderBase
             }
         }
 
+        // TransactionEnded merely provides the plumbing for DbConnectionInternal to access the transacted pool
+        //   that is implemented inside DbConnectionPool. This method's counterpart (PutTransactedObject) should
+        //   only be called from DbConnectionPool.DeactivateObject and thus the plumbing to provide access to 
+        //   other objects is unnecessary (hence the asymmetry of Ended but no Begin)
+        internal void TransactionEnded(Transaction transaction, DbConnectionInternal transactedObject)
+        {
+            Debug.Assert(null != transaction, "null transaction?");
+            Debug.Assert(null != transactedObject, "null transactedObject?");
+            // Note: connection may still be associated with transaction due to Explicit Unbinding requirement.
+
+            // called by the internal connection when it get's told that the
+            // transaction is completed.  We tell the transacted pool to remove
+            // the connection from it's list, then we put the connection back in
+            // general circulation.
+
+            TransactedConnectionPool transactedConnectionPool = _transactedConnectionPool;
+            if (null != transactedConnectionPool)
+            {
+                transactedConnectionPool.TransactionEnded(transaction, transactedObject);
+            }
+        }
 
         private DbConnectionInternal UserCreateRequest(DbConnection owningObject, DbConnectionOptions userOptions, DbConnectionInternal oldConnection = null)
         {

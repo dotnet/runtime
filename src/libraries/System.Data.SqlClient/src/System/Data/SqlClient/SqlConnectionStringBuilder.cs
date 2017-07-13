@@ -47,6 +47,7 @@ namespace System.Data.SqlClient
 
             UserInstance,
 
+            TransactionBinding,
 
             ApplicationIntent,
 
@@ -61,7 +62,7 @@ namespace System.Data.SqlClient
         }
 
         internal const int KeywordsCount = (int)Keywords.KeywordsCount;
-        internal const int DeprecatedKeywordsCount = 5;
+        internal const int DeprecatedKeywordsCount = 4;
 
         private static readonly string[] s_validKeywords = CreateValidKeywords();
         private static readonly Dictionary<string, Keywords> s_keywords = CreateKeywordsDictionary();
@@ -75,6 +76,7 @@ namespace System.Data.SqlClient
         private string _initialCatalog = DbConnectionStringDefaults.InitialCatalog;
         //      private string _namedConnection   = DbConnectionStringDefaults.NamedConnection;
         private string _password = DbConnectionStringDefaults.Password;
+        private string _transactionBinding = DbConnectionStringDefaults.TransactionBinding;
         private string _typeSystemVersion = DbConnectionStringDefaults.TypeSystemVersion;
         private string _userID = DbConnectionStringDefaults.UserID;
         private string _workstationID = DbConnectionStringDefaults.WorkstationID;
@@ -123,6 +125,7 @@ namespace System.Data.SqlClient
             validKeywords[(int)Keywords.PersistSecurityInfo] = DbConnectionStringKeywords.PersistSecurityInfo;
             validKeywords[(int)Keywords.Pooling] = DbConnectionStringKeywords.Pooling;
             validKeywords[(int)Keywords.Replication] = DbConnectionStringKeywords.Replication;
+            validKeywords[(int)Keywords.TransactionBinding] = DbConnectionStringKeywords.TransactionBinding;
             validKeywords[(int)Keywords.TrustServerCertificate] = DbConnectionStringKeywords.TrustServerCertificate;
             validKeywords[(int)Keywords.TypeSystemVersion] = DbConnectionStringKeywords.TypeSystemVersion;
             validKeywords[(int)Keywords.UserID] = DbConnectionStringKeywords.UserID;
@@ -158,6 +161,7 @@ namespace System.Data.SqlClient
             hash.Add(DbConnectionStringKeywords.PersistSecurityInfo, Keywords.PersistSecurityInfo);
             hash.Add(DbConnectionStringKeywords.Pooling, Keywords.Pooling);
             hash.Add(DbConnectionStringKeywords.Replication, Keywords.Replication);
+            hash.Add(DbConnectionStringKeywords.TransactionBinding, Keywords.TransactionBinding);
             hash.Add(DbConnectionStringKeywords.TrustServerCertificate, Keywords.TrustServerCertificate);
             hash.Add(DbConnectionStringKeywords.TypeSystemVersion, Keywords.TypeSystemVersion);
             hash.Add(DbConnectionStringKeywords.UserID, Keywords.UserID);
@@ -224,6 +228,7 @@ namespace System.Data.SqlClient
                         //                  case Keywords.NamedConnection:          NamedConnection = ConvertToString(value); break;
                         case Keywords.Password: Password = ConvertToString(value); break;
                         case Keywords.UserID: UserID = ConvertToString(value); break;
+                        case Keywords.TransactionBinding: TransactionBinding = ConvertToString(value); break;
                         case Keywords.TypeSystemVersion: TypeSystemVersion = ConvertToString(value); break;
                         case Keywords.WorkstationID: WorkstationID = ConvertToString(value); break;
 
@@ -549,6 +554,16 @@ namespace System.Data.SqlClient
             }
         }
 
+        public string TransactionBinding
+        {
+            get { return _transactionBinding; }
+            set
+            {
+                SetValue(DbConnectionStringKeywords.TransactionBinding, value);
+                _transactionBinding = value;
+            }
+        }
+
         public string TypeSystemVersion
         {
             get { return _typeSystemVersion; }
@@ -675,6 +690,7 @@ namespace System.Data.SqlClient
                 case Keywords.PersistSecurityInfo: return PersistSecurityInfo;
                 case Keywords.Pooling: return Pooling;
                 case Keywords.Replication: return Replication;
+                case Keywords.TransactionBinding: return TransactionBinding;
                 case Keywords.TrustServerCertificate: return TrustServerCertificate;
                 case Keywords.TypeSystemVersion: return TypeSystemVersion;
                 case Keywords.UserID: return UserID;
@@ -791,6 +807,9 @@ namespace System.Data.SqlClient
                     break;
                 case Keywords.Replication:
                     _replication = DbConnectionStringDefaults.Replication;
+                    break;
+                case Keywords.TransactionBinding:
+                    _transactionBinding = DbConnectionStringDefaults.TransactionBinding;
                     break;
                 case Keywords.TrustServerCertificate:
                     _trustServerCertificate = DbConnectionStringDefaults.TrustServerCertificate;

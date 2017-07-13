@@ -433,6 +433,7 @@ namespace System.Data.SqlClient
         public bool PersistSecurityInfo { get { throw null; } set { } }
         public bool Pooling { get { throw null; } set { } }
         public bool Replication { get { throw null; } set { } }
+        public string TransactionBinding { get { throw null; } set { } }
         public bool TrustServerCertificate { get { throw null; } set { } }
         public string TypeSystemVersion { get { throw null; } set { } }
         public string UserID { get { throw null; } set { } }

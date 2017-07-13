@@ -227,8 +227,7 @@ namespace System.Data.Common
     internal static partial class DbConnectionStringDefaults
     {
         // all
-        //        internal const string NamedConnection           = "";
-
+        // internal const string NamedConnection = "";
 
         // SqlClient
         internal const ApplicationIntent ApplicationIntent = System.Data.SqlClient.ApplicationIntent.ReadWrite;
@@ -266,8 +265,7 @@ namespace System.Data.Common
     internal static partial class DbConnectionStringKeywords
     {
         // all
-        //        internal const string NamedConnection           = "Named Connection";
-
+        // internal const string NamedConnection = "Named Connection";
 
         // SqlClient
         internal const string ApplicationIntent = "ApplicationIntent";

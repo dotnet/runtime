@@ -125,6 +125,7 @@
     <Compile Include="System\Data\SqlClient\SqlDependency.cs" />
     <Compile Include="System\Data\SqlClient\SqlDependencyListener.cs" />
     <Compile Include="System\Data\SqlClient\SqlDependencyUtils.cs" />
+    <Compile Include="System\Data\SqlClient\SqlDelegatedTransaction.cs" />
     <Compile Include="System\Data\SqlClient\SqlEnums.cs" />
     <Compile Include="System\Data\SqlClient\SqlError.cs" />
     <Compile Include="System\Data\SqlClient\SqlErrorCollection.cs" />
