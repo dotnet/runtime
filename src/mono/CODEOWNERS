@@ -1,0 +1,31 @@
+# Mono Code Owners File
+#
+# GitHub uses this file to determine who to ping for reviews on pull requests.
+# If you're the primary maintainer of an area of Mono and you don't mind
+# reviewing pull requests, please add yourself to this file. You may want to
+# avoid adding entries for commonly changed or automatically generated files
+# (e.g. stuff in external/, or various generated *.csproj files) so as not to
+# get spammed with emails.
+#
+# Note that if two patterns match a file, the later pattern takes precedence.
+#
+# Please keep this file alphabetically sorted.
+#
+# Reference:
+#
+# https://github.com/blog/2392-introducing-code-owners
+# https://help.github.com/articles/about-codeowners
+
+acceptance-tests/profiler-stress @alexrp
+docs/sources/mono-api-profiler.html @alexrp
+man/mprof-report.1 @alexrp
+mcs/class/Mono.Profiler.Log @alexrp
+mono/metadata/profiler* @alexrp
+mono/profiler @alexrp
+mono/utils/atomic* @alexrp
+mono/utils/mono-hwcap* @alexrp
+mono/utils/mono-mem* @alexrp
+msvc/*profiler* @alexrp
+samples/profiler @alexrp
+samples/size @alexrp
+scripts/ci/run-test-profiler-stress-tests.sh @alexrp
