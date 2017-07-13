@@ -38,9 +38,6 @@ namespace System.Drawing.Internal
             }
         }
 
-        internal RectangleF ToRectangleF()
-        {
-            return new RectangleF(X, Y, Width, Height);
-        }
+        internal RectangleF ToRectangleF() => new RectangleF(X, Y, Width, Height);
     }
 }

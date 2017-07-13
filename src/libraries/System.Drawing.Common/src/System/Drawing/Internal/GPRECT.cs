@@ -29,10 +29,5 @@ namespace System.Drawing.Internal
             Width = rect.Width;
             Height = rect.Height;
         }
-
-        internal Rectangle ToRectangle()
-        {
-            return new Rectangle(X, Y, Width, Height);
-        }
     }
 }

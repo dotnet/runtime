@@ -22,12 +22,6 @@ namespace System.Drawing.Internal
             Y = pt.Y;
         }
 
-        internal GPPOINTF(Point pt)
-        {
-            X = (float)pt.X;
-            Y = (float)pt.Y;
-        }
-
         internal PointF ToPoint()
         {
             return new PointF(X, Y);

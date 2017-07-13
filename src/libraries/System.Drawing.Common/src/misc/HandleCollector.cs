@@ -15,7 +15,6 @@ namespace System.Internal
     {
         private static HandleType[] s_handleTypes;
         private static int s_handleTypeCount;
-        private static int s_suspendCount;
 
         internal static event HandleChangeEventHandler HandleAdded;
 
@@ -31,51 +30,6 @@ namespace System.Internal
         {
             s_handleTypes[type - 1].Add(handle);
             return handle;
-        }
-
-        /// <summary>
-        /// Suspends GC.Collect
-        /// </summary>
-        internal static void SuspendCollect()
-        {
-            lock (s_internalSyncObject)
-            {
-                s_suspendCount++;
-            }
-        }
-
-        /// <summary>
-        /// Resumes GC.Collect
-        /// </summary>        
-        internal static void ResumeCollect()
-        {
-            bool performCollect = false;
-            lock (s_internalSyncObject)
-            {
-                if (s_suspendCount > 0)
-                {
-                    s_suspendCount--;
-                }
-
-                if (s_suspendCount == 0)
-                {
-                    for (int i = 0; i < s_handleTypeCount; i++)
-                    {
-                        lock (s_handleTypes[i])
-                        {
-                            if (s_handleTypes[i].NeedCollection())
-                            {
-                                performCollect = true;
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (performCollect)
-            {
-                GC.Collect();
-            }
         }
 
         /// <summary>
@@ -196,27 +150,11 @@ namespace System.Internal
                 }
             }
 
-
-            /// <summary>
-            /// Retrieves the outstanding handle count for this handle type.
-            /// </summary>
-            internal int GetHandleCount()
-            {
-                lock (this)
-                {
-                    return _handleCount;
-                }
-            }
-
             /// <summary>
             /// Determines if this handle type needs a garbage collection pass.
             /// </summary>
             internal bool NeedCollection()
             {
-                if (s_suspendCount > 0)
-                {
-                    return false;
-                }
                 if (_handleCount > _threshHold)
                 {
                     _threshHold = _handleCount + ((_handleCount * _deltaPercent) / 100);
