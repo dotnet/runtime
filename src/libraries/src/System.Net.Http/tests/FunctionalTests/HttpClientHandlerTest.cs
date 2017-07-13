@@ -42,12 +42,14 @@ namespace System.Net.Http.Functional.Tests
         public static readonly object[][] CompressedServers = Configuration.Http.CompressedServers;
         public static readonly object[][] HeaderValueAndUris = {
             new object[] { "X-CustomHeader", "x-value", Configuration.Http.RemoteEchoServer },
-            new object[] { "X-Cust-Header-NoValue", "" , Configuration.Http.RemoteEchoServer },
             new object[] { "X-CustomHeader", "x-value", Configuration.Http.RedirectUriForDestinationUri(
                 secure:false,
                 statusCode:302,
                 destinationUri:Configuration.Http.RemoteEchoServer,
                 hops:1) },
+        };
+        public static readonly object[][] HeaderWithEmptyValueAndUris = {
+            new object[] { "X-Cust-Header-NoValue", "" , Configuration.Http.RemoteEchoServer },
             new object[] { "X-Cust-Header-NoValue", "" , Configuration.Http.RedirectUriForDestinationUri(
                 secure:false,
                 statusCode:302,
@@ -341,7 +343,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(22159, TargetFrameworkMonikers.Uap)]
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task SendAsync_Cancel_CancellationTokenPropagates()
@@ -351,7 +352,7 @@ namespace System.Net.Http.Functional.Tests
             using (var client = new HttpClient())
             {
                 var request = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.RemoteEchoServer);
-                TaskCanceledException ex = await Assert.ThrowsAsync<TaskCanceledException>(() =>
+                OperationCanceledException ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
                     client.SendAsync(request, cts.Token));
                 Assert.True(cts.Token.IsCancellationRequested, "cts token IsCancellationRequested");
                 if (!PlatformDetection.IsFullFramework)
@@ -875,18 +876,38 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(20010, TargetFrameworkMonikers.Uap)]
+        [ActiveIssue(22187, TargetFrameworkMonikers.Uap)]
+        [OuterLoop] // TODO: Issue #11345
+        [Theory, MemberData(nameof(HeaderWithEmptyValueAndUris))]
+        public async Task GetAsync_RequestHeadersAddCustomHeaders_HeaderAndEmptyValueSent(string name, string value, Uri uri)
+        {
+            using (var client = new HttpClient())
+            {
+                _output.WriteLine($"name={name}, value={value}");
+                client.DefaultRequestHeaders.Add(name, value);
+                using (HttpResponseMessage httpResponse = await client.GetAsync(uri))
+                {
+                    Assert.Equal(HttpStatusCode.OK, httpResponse.StatusCode);
+                    string responseText = await httpResponse.Content.ReadAsStringAsync();
+                    _output.WriteLine(responseText);
+                    Assert.True(TestHelper.JsonMessageContainsKeyValue(responseText, name, value));
+                }
+            }
+        }
+
         [OuterLoop] // TODO: Issue #11345
         [Theory, MemberData(nameof(HeaderValueAndUris))]
         public async Task GetAsync_RequestHeadersAddCustomHeaders_HeaderAndValueSent(string name, string value, Uri uri)
         {
             using (var client = new HttpClient())
             {
+                _output.WriteLine($"name={name}, value={value}");
                 client.DefaultRequestHeaders.Add(name, value);
                 using (HttpResponseMessage httpResponse = await client.GetAsync(uri))
                 {
                     Assert.Equal(HttpStatusCode.OK, httpResponse.StatusCode);
                     string responseText = await httpResponse.Content.ReadAsStringAsync();
+                    _output.WriteLine(responseText);
                     Assert.True(TestHelper.JsonMessageContainsKeyValue(responseText, name, value));
                 }
             }
@@ -1201,31 +1222,18 @@ namespace System.Net.Http.Functional.Tests
             });
         }
 
-        [ActiveIssue(22163, TargetFrameworkMonikers.Uap)]
-        [OuterLoop] // TODO: Issue #11345
-        [Fact]
-        public async Task GetAsync_StatusCode99_ExpectedException()
-        {
-            await LoopbackServer.CreateServerAsync(async (server, url) =>
-            {
-                using (var client = new HttpClient())
-                {
-                    Task<HttpResponseMessage> getResponse = client.GetAsync(url);
-                    await LoopbackServer.ReadRequestAndSendResponseAsync(server,
-                            $"HTTP/1.1 99\r\n" +
-                            $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                            "\r\n");
-
-                    await Assert.ThrowsAsync<HttpRequestException>(() => getResponse);
-                }
-            });
-        }
-
         [OuterLoop] // TODO: Issue #11345
         [Theory]
+        [InlineData(99)]
         [InlineData(1000)]
         public async Task GetAsync_StatusCodeOutOfRange_ExpectedException(int statusCode)
         {
+            if (PlatformDetection.IsUap && statusCode == 99)
+            {
+                // UAP platform allows this status code due to historical reasons.
+                return;
+            }
+            
             await LoopbackServer.CreateServerAsync(async (server, url) =>
             {
                 using (var client = new HttpClient())
@@ -1493,12 +1501,22 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(20010, TargetFrameworkMonikers.Uap)]
+        [ActiveIssue(22191, TargetFrameworkMonikers.Uap)]
         [OuterLoop] // takes several seconds
-        [Theory]
-        [InlineData(302, false)]
-        [InlineData(307, true)] // Doesn't work in UAP
-        public async Task PostAsync_Redirect_LargePayload(int statusCode, bool expectRedirectToPost)
+        [Fact]
+        public async Task PostAsync_RedirectWith307_LargePayload()
+        {
+            await PostAsync_Redirect_LargePayload_Helper(307, true);
+        }
+
+        [OuterLoop] // takes several seconds
+        [Fact]
+        public async Task PostAsync_RedirectWith302_LargePayload()
+        {
+            await PostAsync_Redirect_LargePayload_Helper(302, false);
+        }
+
+        public async Task PostAsync_Redirect_LargePayload_Helper(int statusCode, bool expectRedirectToPost)
         {
             using (var fs = new FileStream(Path.Combine(Path.GetTempPath(), Path.GetTempFileName()), FileMode.Create, FileAccess.ReadWrite, FileShare.None, 0x1000, FileOptions.DeleteOnClose))
             {
@@ -1658,7 +1676,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(20010, TargetFrameworkMonikers.Uap)] // "The requested operation is invalid"
         [OuterLoop] // TODO: Issue #11345
         [Theory, MemberData(nameof(HttpMethodsThatDontAllowContent))]
         public async Task SendAsync_SendRequestUsingNoBodyMethodToEchoServerWithContent_NoBodySent(
@@ -1670,6 +1687,17 @@ namespace System.Net.Http.Functional.Tests
                 // .NET Framework doesn't allow a content body with this HTTP verb.
                 // It will throw a System.Net.ProtocolViolation exception.
                 if (method == "HEAD")
+                {
+                    return;
+                }
+            }
+
+            if (PlatformDetection.IsUap)
+            {
+                // UAP platform doesn't allow a content body with this HTTP verb.
+                // It will throw an exception HttpRequestException/COMException
+                // with "The requested operation is invalid" message.
+                if (method == "TRACE")
                 {
                     return;
                 }
