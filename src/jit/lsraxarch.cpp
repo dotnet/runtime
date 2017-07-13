@@ -1689,9 +1689,11 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* putArgStk)
     LinearScan*   l    = m_lsra;
     info->srcCount     = 0;
 
-#ifdef _TARGET_X86_
     if (putArgStk->gtOp1->gtOper == GT_FIELD_LIST)
     {
+        putArgStk->gtOp1->SetContained();
+
+#ifdef _TARGET_X86_
         unsigned fieldCount    = 0;
         bool     needsByteTemp = false;
         bool     needsSimdTemp = false;
@@ -1800,8 +1802,8 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* putArgStk)
 #endif // defined(FEATURE_SIMD)
 
         return;
-    }
 #endif // _TARGET_X86_
+    }
 
 #if defined(FEATURE_SIMD) && defined(_TARGET_X86_)
     // For PutArgStk of a TYP_SIMD12, we need an extra register.
