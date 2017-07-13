@@ -15,6 +15,7 @@
     <Compile Include="CharacterRangeTests.cs" />
     <Compile Include="ColorTranslatorTests.cs" />
     <Compile Include="Drawing2D\AdjustableArrowCapTests.cs" />
+    <Compile Include="Drawing2D\CustomLineCapTests.cs" />
     <Compile Include="Drawing2D\GraphicsPathIteratorTests.cs" />
     <Compile Include="Drawing2D\GraphicsPathTests.cs" />
     <Compile Include="FontTests.cs" />
