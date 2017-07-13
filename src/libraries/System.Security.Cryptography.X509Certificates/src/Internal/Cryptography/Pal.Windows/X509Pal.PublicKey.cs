@@ -42,8 +42,6 @@ namespace Internal.Cryptography.Pal
                         CngKey cngKey = CngKey.Import(keyBlob, CngKeyBlobFormat.GenericPublicBlob);
                         return new RSACng(cngKey);
                     }
-
-#if !uap
                 case AlgId.CALG_DSS_SIGN:
                     {
                         byte[] keyBlob = ConstructDSSPublicKeyCspBlob(encodedKeyValue, encodedParameters);
@@ -51,8 +49,6 @@ namespace Internal.Cryptography.Pal
                         dsa.ImportCspBlob(keyBlob);
                         return dsa;
                     }
-#endif
-
                 default:
                     throw new NotSupportedException(SR.NotSupported_KeyAlgorithm);
             }
@@ -65,14 +61,6 @@ namespace Internal.Cryptography.Pal
             {
                 CngKeyBlobFormat blobFormat;
                 byte[] keyBlob;
-#if uap
-                blobFormat = CngKeyBlobFormat.EccPublicBlob;
-                keyBlob = ExportKeyBlob(bCryptKeyHandle, blobFormat);
-                using (CngKey cngKey = CngKey.Import(keyBlob, blobFormat))
-                {
-                    ecdsa = new ECDsaCng(cngKey);
-                }
-#else
                 string curveName = GetCurveName(bCryptKeyHandle);
 
                 if (curveName == null)
@@ -102,7 +90,6 @@ namespace Internal.Cryptography.Pal
                     ecdsa = new ECDsaCng();
                     ecdsa.ImportParameters(ecparams);
                 }
-#endif
             }
 
             return ecdsa;
@@ -110,10 +97,6 @@ namespace Internal.Cryptography.Pal
 
         private static SafeBCryptKeyHandle ImportPublicKeyInfo(SafeCertContextHandle certContext)
         {
-#if uap
-            // CryptImportPublicKeyInfoEx2() not in the UWP api list.
-            throw new PlatformNotSupportedException();
-#else
             unsafe
             {
                 SafeBCryptKeyHandle bCryptKeyHandle;
@@ -135,15 +118,10 @@ namespace Internal.Cryptography.Pal
                         certContext.DangerousRelease();
                 }
             }
-#endif // uap
         }
 
         private static byte[] ExportKeyBlob(SafeBCryptKeyHandle bCryptKeyHandle, CngKeyBlobFormat blobFormat)
         {
-#if uap
-            // BCryptExportKey() not in the UWP api list.
-            throw new PlatformNotSupportedException();
-#else
             string blobFormatString = blobFormat.Format;
 
             int numBytesNeeded = 0;
@@ -158,10 +136,8 @@ namespace Internal.Cryptography.Pal
 
             Array.Resize(ref keyBlob, numBytesNeeded);
             return keyBlob;
-#endif // uap
         }
-
-#if !uap
+        
         private static void ExportNamedCurveParameters(ref ECParameters ecParams, byte[] ecBlob, bool includePrivateParameters)
         {
             // We now have a buffer laid out as follows:
@@ -194,7 +170,6 @@ namespace Internal.Cryptography.Pal
                 }
             }
         }
-#endif
 
         private static byte[] DecodeKeyBlob(CryptDecodeObjectStructType lpszStructType, byte[] encodedKeyValue)
         {
