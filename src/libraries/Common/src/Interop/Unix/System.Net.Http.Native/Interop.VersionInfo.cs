@@ -49,5 +49,6 @@ internal static partial class Interop
 
         internal const string OpenSsl10Description = "openssl/1.0";
         internal const string SecureTransportDescription = "SecureTransport";
+        internal const string LibreSslDescription = "LibreSSL";
     }
 }

@@ -37,8 +37,8 @@ namespace System.Net.Http
             private static readonly Interop.Http.ReadWriteCallback s_receiveBodyCallback = CurlReceiveBodyCallback;
             private static readonly Interop.Http.DebugCallback s_debugCallback = CurlDebugFunction;
 
-            /// <summary>CurlHandler that owns this MultiAgent.</summary>
-            private readonly CurlHandler _associatedHandler;
+            /// <summary>CurlHandler that created this MultiAgent.  If null, this is a shared handler.</summary>
+            private readonly CurlHandler _creatingHandler;
 
             /// <summary>
             /// A collection of not-yet-processed incoming requests for work to be done
@@ -79,18 +79,21 @@ namespace System.Net.Http
             /// </summary>
             private Interop.Http.SafeCurlMultiHandle _multiHandle;
 
+            /// <summary>Set when Dispose has been called.</summary>
+            private bool _disposed;
+
             /// <summary>Initializes the MultiAgent.</summary>
-            /// <param name="handler">The handler that owns this agent.</param>
+            /// <param name="handler">The handler that created this agent, or null if it's shared.</param>
             public MultiAgent(CurlHandler handler)
             {
-                Debug.Assert(handler != null, "Expected non-null handler");
-                _associatedHandler = handler;
+                _creatingHandler = handler;
             }
 
             /// <summary>Disposes of the agent.</summary>
             public void Dispose()
             {
                 EventSourceTrace(null);
+                _disposed = true;
                 QueueIfRunning(new IncomingRequest { Type = IncomingRequestType.Shutdown });
                 _multiHandle?.Dispose();
             }
@@ -247,20 +250,25 @@ namespace System.Net.Http
                     EventSourceTrace("Set multiplexing on multi handle");
                 }
 
-                // Configure max connections per host if it was changed from the default
-                int maxConnections = _associatedHandler.MaxConnectionsPerServer;
-                if (maxConnections < int.MaxValue) // int.MaxValue considered infinite, mapping to libcurl default of 0
+                // Configure max connections per host if it was changed from the default.  In shared mode,
+                // this will be pulled from the handler that first created the agent; the setting from subsequent
+                // handlers that use this will be ignored.
+                if (_creatingHandler != null)
                 {
-                    CURLMcode code = Interop.Http.MultiSetOptionLong(multiHandle, Interop.Http.CURLMoption.CURLMOPT_MAX_HOST_CONNECTIONS, maxConnections);
-                    switch (code)
+                    int maxConnections = _creatingHandler.MaxConnectionsPerServer;
+                    if (maxConnections < int.MaxValue) // int.MaxValue considered infinite, mapping to libcurl default of 0
                     {
-                        case CURLMcode.CURLM_OK:
-                            EventSourceTrace("Set max host connections to {0}", maxConnections);
-                            break;
-                        default:
-                            // Treat failures as non-fatal in release; worst case is we employ more connections than desired.
-                            EventSourceTrace("Setting CURLMOPT_MAX_HOST_CONNECTIONS failed: {0}. Ignoring option.", code);
-                            break;
+                        CURLMcode code = Interop.Http.MultiSetOptionLong(multiHandle, Interop.Http.CURLMoption.CURLMOPT_MAX_HOST_CONNECTIONS, maxConnections);
+                        switch (code)
+                        {
+                            case CURLMcode.CURLM_OK:
+                                EventSourceTrace("Set max host connections to {0}", maxConnections);
+                                break;
+                            default:
+                                // Treat failures as non-fatal in release; worst case is we employ more connections than desired.
+                                EventSourceTrace("Setting CURLMOPT_MAX_HOST_CONNECTIONS failed: {0}. Ignoring option.", code);
+                                break;
+                        }
                     }
                 }
 
@@ -306,7 +314,7 @@ namespace System.Net.Http
                             // more requests could have been added.  If they were,
                             // kick off another processing loop.
                             _runningWorker = null;
-                            if (_incomingRequests.Count > 0 && !_associatedHandler._disposed)
+                            if (_incomingRequests.Count > 0 && !_disposed)
                             {
                                 EnsureWorkerIsRunning();
                             }
