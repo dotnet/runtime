@@ -2936,17 +2936,11 @@ public:
     void SetProfileData(CorProfileData * profileData);
     CorProfileData *GetProfileData();
 
-
     mdTypeDef     LookupIbcTypeToken(  Module *   pExternalModule, mdToken ibcToken, SString* optionalFullNameOut = NULL);
     mdMethodDef   LookupIbcMethodToken(TypeHandle enclosingType,   mdToken ibcToken, SString* optionalFullNameOut = NULL);
 
-    void          IBCTypeLoadFailed(  CORBBTPROF_BLOB_PARAM_SIG_ENTRY *pBlobSigEntry, 
-                                      SString& exceptionMessage, SString* typeNameError);
-    void          IBCMethodLoadFailed(CORBBTPROF_BLOB_PARAM_SIG_ENTRY *pBlobSigEntry, 
-                                      SString& exceptionMessage, SString* typeNameError);
-
-    TypeHandle    LoadIBCTypeHelper(  CORBBTPROF_BLOB_PARAM_SIG_ENTRY *pBlobSigEntry);
-    MethodDesc *  LoadIBCMethodHelper(CORBBTPROF_BLOB_PARAM_SIG_ENTRY *pBlobSigEntry);
+    TypeHandle    LoadIBCTypeHelper(DataImage *image, CORBBTPROF_BLOB_PARAM_SIG_ENTRY *pBlobSigEntry);
+    MethodDesc *  LoadIBCMethodHelper(DataImage *image, CORBBTPROF_BLOB_PARAM_SIG_ENTRY *pBlobSigEntry);
  
 
     void ExpandAll(DataImage *image);
