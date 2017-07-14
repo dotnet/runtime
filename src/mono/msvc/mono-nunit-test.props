@@ -7,7 +7,7 @@
     <MONO_CFG_DIR>$(MONO_DIR)/runtime/etc</MONO_CFG_DIR>
     <MONO_NUNIT_RUN_TARGET>net_4_x_System_test.dll</MONO_NUNIT_RUN_TARGET>
     <MONO_NUNIT_FIXTURE></MONO_NUNIT_FIXTURE>
-    <MONO_NUNIT_ARGS>-noshadow -exclude=NotWorking,ValueAdd,CAS,InetAccess /labels</MONO_NUNIT_ARGS>
+    <MONO_NUNIT_ARGS>-noshadow -exclude=NotWorking,CAS /labels</MONO_NUNIT_ARGS>
     <MONO_NUNIT_ARGS Condition="'$(MONO_NUNIT_FIXTURE)'!=''">$(MONO_NUNIT_ARGS) -fixture $(MONO_NUNIT_FIXTURE)</MONO_NUNIT_ARGS>
     <MONO_NUNIT_RUN_ADDITIONAL_ARGS>
     </MONO_NUNIT_RUN_ADDITIONAL_ARGS>
