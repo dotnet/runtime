@@ -2900,6 +2900,19 @@ regMaskTP LinearScan::getKillSetForNode(GenTree* tree)
                 {
                     killMask = RBM_INT_CALLEE_TRASH;
                 }
+#ifdef _TARGET_ARM_
+                if (tree->AsCall()->IsVirtualStub())
+                {
+                    killMask |= compiler->virtualStubParamInfo->GetRegMask();
+                }
+#else // !_TARGET_ARM_
+            // Verify that the special virtual stub call registers are in the kill mask.
+            // We don't just add them unconditionally to the killMask because for most architectures
+            // they are already in the RBM_CALLEE_TRASH set,
+            // and we don't want to introduce extra checks and calls in this hot function.
+            assert(!tree->AsCall()->IsVirtualStub() || ((killMask & compiler->virtualStubParamInfo->GetRegMask()) ==
+                                                        compiler->virtualStubParamInfo->GetRegMask()));
+#endif
             }
             break;
         case GT_STOREIND:
