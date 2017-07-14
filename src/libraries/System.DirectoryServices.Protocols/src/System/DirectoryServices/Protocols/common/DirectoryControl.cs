@@ -708,15 +708,15 @@ namespace System.DirectoryServices.Protocols
 
         public override byte[] GetValue()
         {
-            IntPtr control = (IntPtr)0;
+            IntPtr control = IntPtr.Zero;
             int structSize = Marshal.SizeOf(typeof(SortKey));
             int keyCount = _keys.Length;
             IntPtr memHandle = Utility.AllocHGlobalIntPtrArray(keyCount + 1);
 
             try
             {
-                IntPtr tempPtr = (IntPtr)0;
-                IntPtr sortPtr = (IntPtr)0;
+                IntPtr tempPtr = IntPtr.Zero;
+                IntPtr sortPtr = IntPtr.Zero;
                 int i = 0;
                 for (i = 0; i < keyCount; i++)
                 {
@@ -726,7 +726,7 @@ namespace System.DirectoryServices.Protocols
                     Marshal.WriteIntPtr(tempPtr, sortPtr);
                 }
                 tempPtr = (IntPtr)((long)memHandle + IntPtr.Size * i);
-                Marshal.WriteIntPtr(tempPtr, (IntPtr)0);
+                Marshal.WriteIntPtr(tempPtr, IntPtr.Zero);
 
                 bool critical = IsCritical;
                 int error = Wldap32.ldap_create_sort_control(UtilityHandle.GetHandle(), memHandle, critical ? (byte)1 : (byte)0, ref control);
@@ -757,28 +757,28 @@ namespace System.DirectoryServices.Protocols
             }
             finally
             {
-                if (control != (IntPtr)0)
+                if (control != IntPtr.Zero)
                 {
                     Wldap32.ldap_control_free(control);
                 }
 
-                if (memHandle != (IntPtr)0)
+                if (memHandle != IntPtr.Zero)
                 {
                     //release the memory from the heap
                     for (int i = 0; i < keyCount; i++)
                     {
                         IntPtr tempPtr = Marshal.ReadIntPtr(memHandle, IntPtr.Size * i);
-                        if (tempPtr != (IntPtr)0)
+                        if (tempPtr != IntPtr.Zero)
                         {
                             // free the marshalled name
                             IntPtr ptr = Marshal.ReadIntPtr(tempPtr);
-                            if (ptr != (IntPtr)0)
+                            if (ptr != IntPtr.Zero)
                             {
                                 Marshal.FreeHGlobal(ptr);
                             }
                             // free the marshalled rule
                             ptr = Marshal.ReadIntPtr(tempPtr, IntPtr.Size);
-                            if (ptr != (IntPtr)0)
+                            if (ptr != IntPtr.Zero)
                             {
                                 Marshal.FreeHGlobal(ptr);
                             }
