@@ -1325,6 +1325,9 @@ mono_w32socket_convert_error (gint error)
 #ifdef EPROTOTYPE
 	case EPROTOTYPE: return WSAEPROTOTYPE;
 #endif
+#ifdef ENXIO
+	case ENXIO: return WSAENXIO;
+#endif
 	default:
 		g_error ("%s: no translation into winsock error for (%d) \"%s\"", __func__, error, g_strerror (error));
 	}
