@@ -2820,4 +2820,80 @@ END:
 	pop
 	ret
   }
+
+  .method public static int32 test_2_fault () cil managed
+  {
+	.maxstack 16
+	.locals init (int32 V_0)
+    IL_0000:  ldc.i4.0
+    IL_0001:  stloc.0
+    .try
+    {
+      .try
+      {
+        IL_0002:  newobj     instance void [mscorlib]System.Exception::.ctor()
+        IL_0007:  throw
+		leave.s    IL_0018
+      }  // end .try
+	  fault
+      {
+        IL_0009:  ldloc.0
+        IL_000a:  ldc.i4.1
+        IL_000b:  add
+        IL_000c:  stloc.0
+				  endfinally
+      }  // end handler
+      IL_000f:  leave.s    IL_0018
+
+    }  // end .try
+    catch [mscorlib]System.Object
+    {
+      IL_0011:  pop
+      IL_0012:  ldloc.0
+      IL_0013:  ldc.i4.1
+      IL_0014:  add
+      IL_0015:  stloc.0
+      IL_0016:  leave.s    IL_0018
+
+    }  // end handler
+    IL_0018:  ldloc.0
+	ret
+	}
+
+  .method public static int32 test_0_fault_no_exception () cil managed
+  {
+	.maxstack 16
+	.locals init (int32 V_0)
+    IL_0000:  ldc.i4.0
+    IL_0001:  stloc.0
+    .try
+    {
+      .try
+      {
+		leave.s    IL_0018
+      }  // end .try
+	  fault
+      {
+        IL_0009:  ldloc.0
+        IL_000a:  ldc.i4.1
+        IL_000b:  add
+        IL_000c:  stloc.0
+				  endfinally
+      }  // end handler
+      IL_000f:  leave.s    IL_0018
+
+    }  // end .try
+    catch [mscorlib]System.Object
+    {
+      IL_0011:  pop
+      IL_0012:  ldloc.0
+      IL_0013:  ldc.i4.1
+      IL_0014:  add
+      IL_0015:  stloc.0
+      IL_0016:  leave.s    IL_0018
+
+    }  // end handler
+    IL_0018:  ldloc.0
+	ret
+	}
 }

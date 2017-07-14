@@ -1832,7 +1832,7 @@ emit_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref, LL
 		clause = get_most_deep_clause (cfg, ctx, bb);
 
 		if (clause) {
-			g_assert (clause->flags == MONO_EXCEPTION_CLAUSE_NONE || clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY);
+			g_assert (clause->flags == MONO_EXCEPTION_CLAUSE_NONE || clause->flags == MONO_EXCEPTION_CLAUSE_FINALLY || clause->flags == MONO_EXCEPTION_CLAUSE_FAULT);
 
 			/*
 			 * Have to use an invoke instead of a call, branching to the
@@ -1871,7 +1871,7 @@ emit_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref, LL
 			 * handler bblock of the clause containing this bblock.
 			 */
 
-			g_assert (ec->flags == MONO_EXCEPTION_CLAUSE_NONE || ec->flags == MONO_EXCEPTION_CLAUSE_FINALLY);
+			g_assert (ec->flags == MONO_EXCEPTION_CLAUSE_NONE || ec->flags == MONO_EXCEPTION_CLAUSE_FINALLY || ec->flags == MONO_EXCEPTION_CLAUSE_FAULT);
 
 			tblock = cfg->cil_offset_to_bb [ec->handler_offset];
 			g_assert (tblock);
@@ -3911,7 +3911,7 @@ emit_landing_pad (EmitContext *ctx, int group_index, int group_size)
 	MonoExceptionClause *group_cursor = group_start;
 
 	for (int i = 0; i < group_size; i ++) {
-		if (!(group_cursor->flags & MONO_EXCEPTION_CLAUSE_FINALLY))
+		if (!(group_cursor->flags & MONO_EXCEPTION_CLAUSE_FINALLY || group_cursor->flags & MONO_EXCEPTION_CLAUSE_FAULT))
 			finally_only = FALSE;
 
 		group_cursor++;
@@ -3960,7 +3960,7 @@ emit_llvmonly_handler_start (EmitContext *ctx, MonoBasicBlock *bb, LLVMBasicBloc
 	MonoExceptionClause *clause = &ctx->cfg->header->clauses [clause_index];
 
 	// Make exception available to catch blocks
-	if (!(clause->flags & MONO_EXCEPTION_CLAUSE_FINALLY)) {
+	if (!(clause->flags & MONO_EXCEPTION_CLAUSE_FINALLY || clause->flags & MONO_EXCEPTION_CLAUSE_FAULT)) {
 		LLVMValueRef mono_exc = mono_llvm_emit_load_exception_call (ctx, ctx->builder);
 
 		g_assert (ctx->ex_var);
@@ -6537,33 +6537,39 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			LLVMValueRef val, switch_ins, callee;
 			GSList *bb_list;
 			BBInfo *info;
+			gboolean is_fault = MONO_REGION_FLAGS (bb->region) == MONO_EXCEPTION_CLAUSE_FAULT;
 
-			handler_bb = (MonoBasicBlock*)g_hash_table_lookup (ctx->region_to_handler, GUINT_TO_POINTER (mono_get_block_region_notry (cfg, bb->region)));
-			g_assert (handler_bb);
-			info = &bblocks [handler_bb->block_num];
-			lhs = info->finally_ind;
-			g_assert (lhs);
-
-			bb_list = info->call_handler_return_bbs;
-
-			resume_bb = gen_bb (ctx, "ENDFINALLY_RESUME_BB");
-
-			/* Load the finally variable */
-			val = LLVMBuildLoad (builder, lhs, "");
-
-			/* Reset the variable */
-			LLVMBuildStore (builder, LLVMConstInt (LLVMInt32Type (), 0, FALSE), lhs);
-
-			/* Branch to either resume_bb, or to the bblocks in bb_list */
-			switch_ins = LLVMBuildSwitch (builder, val, resume_bb, g_slist_length (bb_list));
-			/* 
-			 * The other targets are added at the end to handle OP_CALL_HANDLER
-			 * opcodes processed later.
+			/*
+			 * Fault clauses are like finally clauses, but they are only called if an exception is thrown.
 			 */
-			info->endfinally_switch_ins_list = g_slist_append_mempool (cfg->mempool, info->endfinally_switch_ins_list, switch_ins);
+			if (!is_fault) {
+				handler_bb = (MonoBasicBlock*)g_hash_table_lookup (ctx->region_to_handler, GUINT_TO_POINTER (mono_get_block_region_notry (cfg, bb->region)));
+				g_assert (handler_bb);
+				info = &bblocks [handler_bb->block_num];
+				lhs = info->finally_ind;
+				g_assert (lhs);
 
-			builder = ctx->builder = create_builder (ctx);
-			LLVMPositionBuilderAtEnd (ctx->builder, resume_bb);
+				bb_list = info->call_handler_return_bbs;
+
+				resume_bb = gen_bb (ctx, "ENDFINALLY_RESUME_BB");
+
+				/* Load the finally variable */
+				val = LLVMBuildLoad (builder, lhs, "");
+
+				/* Reset the variable */
+				LLVMBuildStore (builder, LLVMConstInt (LLVMInt32Type (), 0, FALSE), lhs);
+
+				/* Branch to either resume_bb, or to the bblocks in bb_list */
+				switch_ins = LLVMBuildSwitch (builder, val, resume_bb, g_slist_length (bb_list));
+				/*
+				 * The other targets are added at the end to handle OP_CALL_HANDLER
+				 * opcodes processed later.
+				 */
+				info->endfinally_switch_ins_list = g_slist_append_mempool (cfg->mempool, info->endfinally_switch_ins_list, switch_ins);
+
+				builder = ctx->builder = create_builder (ctx);
+				LLVMPositionBuilderAtEnd (ctx->builder, resume_bb);
+			}
 
 			if (ctx->llvm_only) {
 				emit_resume_eh (ctx, bb);
@@ -7003,8 +7009,8 @@ emit_method_inner (EmitContext *ctx)
 	header = cfg->header;
 	for (i = 0; i < header->num_clauses; ++i) {
 		clause = &header->clauses [i];
-		if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY && clause->flags != MONO_EXCEPTION_CLAUSE_NONE) {
-		    set_failure (ctx, "non-finally/catch clause.");
+		if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY && clause->flags != MONO_EXCEPTION_CLAUSE_FAULT && clause->flags != MONO_EXCEPTION_CLAUSE_NONE) {
+		    set_failure (ctx, "non-finally/catch/fault clause.");
 			return;
 		}
 	}
