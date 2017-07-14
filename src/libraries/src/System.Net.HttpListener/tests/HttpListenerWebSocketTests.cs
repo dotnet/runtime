@@ -13,8 +13,9 @@ namespace System.Net.Tests
 {
     public class HttpListenerWebSocketTests : IDisposable
     {
+        public static bool PartialMessagesSupported => PlatformDetection.ClientWebSocketPartialMessagesSupported;
         public static bool IsNotWindows7 { get; } = !PlatformDetection.IsWindows7;
-        public static bool IsNotWindows7AndIsWindowsImplementation { get; } = IsNotWindows7 && Helpers.IsWindowsImplementation;
+        public static bool IsNotWindows7AndIsWindowsImplementation => IsNotWindows7 && Helpers.IsWindowsImplementation;
 
         private HttpListenerFactory Factory { get; }
         private HttpListener Listener { get; }
@@ -34,8 +35,7 @@ namespace System.Net.Tests
             Client.Dispose();
         }
 
-        [ActiveIssue(22164, TargetFrameworkMonikers.Uap)] // Fails in RS2 only (works in RS3).
-        [ConditionalTheory(nameof(IsNotWindows7))]
+        [ConditionalTheory(nameof(PartialMessagesSupported), nameof(IsNotWindows7))]
         [InlineData(WebSocketMessageType.Text, false)]
         [InlineData(WebSocketMessageType.Binary, false)]
         [InlineData(WebSocketMessageType.Text, true)]
