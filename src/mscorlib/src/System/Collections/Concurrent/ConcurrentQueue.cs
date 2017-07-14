@@ -115,7 +115,7 @@ namespace System.Collections.Concurrent
                 int count = c.Count;
                 if (count > length)
                 {
-                    length = RoundUpToPowerOf2(count);
+                    length = Math.Min(RoundUpToPowerOf2(count), MaxSegmentLength);
                 }
             }
 
@@ -646,7 +646,7 @@ namespace System.Collections.Concurrent
                         // initial segment length; if these observations are happening frequently,
                         // this will help to avoid wasted memory, and if they're not, we'll
                         // relatively quickly grow again to a larger size.
-                        int nextSize = tail._preservedForObservation ? InitialSegmentLength : tail.Capacity * 2;
+                        int nextSize = tail._preservedForObservation ? InitialSegmentLength : Math.Min(tail.Capacity * 2, MaxSegmentLength);
                         var newTail = new Segment(nextSize);
 
                         // Hook up the new tail.
