@@ -2,20 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.ComponentModel;
-using System.Diagnostics;
-using System.Globalization;
-using System.IO;
-using System.Security.Permissions;
-
 namespace System.ComponentModel
 {
     /// <summary>
-    ///    <para>
-    ///       Encapsulates
-    ///       zero or more components.
-    ///    </para>
+    /// Encapsulates zero or more components.
     /// </summary>
     public class Container : IContainer
     {
@@ -25,19 +15,13 @@ namespace System.ComponentModel
         private ContainerFilterService _filter;
         private bool _checkedFilter;
 
-        private readonly object _syncObj = new Object();
+        private readonly object _syncObj = new object();
 
-        ~Container()
-        {
-            Dispose(false);
-        }
+        ~Container() => Dispose(false);
 
-        // Adds a component to the container.
         /// <summary>
-        ///    <para>
-        ///       Adds the specified component to the <see cref='System.ComponentModel.Container'/>
-        ///       . The component is unnamed.
-        ///    </para>
+        /// Adds the specified component to the <see cref='System.ComponentModel.Container'/>
+        /// The component is unnamed.
         /// </summary>
         public virtual void Add(IComponent component)
         {
@@ -46,12 +30,10 @@ namespace System.ComponentModel
 
         // Adds a component to the container.
         /// <summary>
-        ///    <para>
-        ///       Adds the specified component to the <see cref='System.ComponentModel.Container'/> and assigns a name to
-        ///       it.
-        ///    </para>
+        /// Adds the specified component to the <see cref='System.ComponentModel.Container'/> and assigns
+        /// a name to it.
         /// </summary>
-        public virtual void Add(IComponent component, String name)
+        public virtual void Add(IComponent component, string name)
         {
             lock (_syncObj)
             {
@@ -61,7 +43,6 @@ namespace System.ComponentModel
                 }
 
                 ISite site = component.Site;
-
                 if (site != null && site.Container == this)
                 {
                     return;
@@ -95,40 +76,34 @@ namespace System.ComponentModel
             }
         }
 
-        // Creates a site for the component within the container.
         /// <summary>
-        /// <para>Creates a Site <see cref='System.ComponentModel.ISite'/> for the given <see cref='System.ComponentModel.IComponent'/>
-        /// and assigns the given name to the site.</para>
+        /// Creates a Site <see cref='System.ComponentModel.ISite'/> for the given <see cref='System.ComponentModel.IComponent'/>
+        /// and assigns the given name to the site.
         /// </summary>
         protected virtual ISite CreateSite(IComponent component, string name)
         {
             return new Site(component, this, name);
         }
 
-        // Disposes of the container.  A call to the Dispose method indicates that
-        // the user of the container has no further need for it.
-        //
-        // The implementation of Dispose must:
-        //
-        // (1) Remove any references the container is holding to other components.
-        //     This is typically accomplished by assigning null to any fields that
-        //     contain references to other components.
-        //
-        // (2) Release any system resources that are associated with the container,
-        //     such as file handles, window handles, or database connections.
-        //
-        // (3) Dispose of child components by calling the Dispose method of each.
-        //
-        // Ideally, a call to Dispose will revert a container to the state it was
-        // in immediately after it was created. However, this is not a requirement.
-        // Following a call to its Dispose method, a container is permitted to raise
-        // exceptions for operations that cannot meaningfully be performed.
-        //
         /// <summary>
-        ///    <para>
-        ///       Disposes of the <see cref='System.ComponentModel.Container'/>
-        ///       .
-        ///    </para>
+        /// Disposes of the container.  A call to the Dispose method indicates that
+        /// the user of the container has no further need for it.
+        ///
+        /// The implementation of Dispose must:
+        ///
+        /// (1) Remove any references the container is holding to other components.
+        ///     This is typically accomplished by assigning null to any fields that
+        ///     contain references to other components.
+        ///
+        /// (2) Release any system resources that are associated with the container,
+        ///     such as file handles, window handles, or database connections.
+        ///
+        /// (3) Dispose of child components by calling the Dispose method of each.
+        ///
+        /// Ideally, a call to Dispose will revert a container to the state it was
+        /// in immediately after it was created. However, this is not a requirement.
+        /// Following a call to its Dispose method, a container is permitted to raise
+        /// exceptions for operations that cannot meaningfully be performed.
         /// </summary>
         public void Dispose()
         {
@@ -154,20 +129,10 @@ namespace System.ComponentModel
             }
         }
 
+        protected virtual object GetService(Type service) => service == typeof(IContainer) ? this : null;
+        
         /// <summary>
-        ///    <para>[To be supplied.]</para>
-        /// </summary>
-        protected virtual object GetService(Type service)
-        {
-            return ((service == typeof(IContainer)) ? this : null);
-        }
-
-        // The components in the container.
-        /// <summary>
-        ///    <para>
-        ///       Gets all the components in the <see cref='System.ComponentModel.Container'/>
-        ///       .
-        ///    </para>
+        /// Gets all the components in the <see cref='System.ComponentModel.Container'/>.
         /// </summary>
         public virtual ComponentCollection Components
         {
@@ -201,7 +166,6 @@ namespace System.ComponentModel
                     if (_filter != null)
                     {
                         ComponentCollection filteredComponents = _filter.FilterComponents(_components);
-                        Debug.Assert(filteredComponents != null, "Incorrect ContainerFilterService implementation.");
                         if (filteredComponents != null)
                         {
                             _components = filteredComponents;
@@ -213,17 +177,10 @@ namespace System.ComponentModel
             }
         }
 
-        // Removes a component from the container.
         /// <summary>
-        ///    <para>
-        ///       Removes a component from the <see cref='System.ComponentModel.Container'/>
-        ///       .
-        ///    </para>
+        /// Removes a component from the <see cref='System.ComponentModel.Container'/>.
         /// </summary>
-        public virtual void Remove(IComponent component)
-        {
-            Remove(component, false);
-        }
+        public virtual void Remove(IComponent component) => Remove(component, false);
 
         private void Remove(IComponent component, bool preserveSite)
         {
@@ -231,9 +188,15 @@ namespace System.ComponentModel
             {
                 ISite site = component?.Site;
                 if (site == null || site.Container != this)
+                {
                     return;
+                }
+
                 if (!preserveSite)
+                {
                     component.Site = null;
+                }
+
                 for (int i = 0; i < _siteCount; i++)
                 {
                     if (_sites[i] == site)
@@ -248,15 +211,12 @@ namespace System.ComponentModel
             }
         }
 
-        protected void RemoveWithoutUnsiting(IComponent component)
-        {
-            Remove(component, true);
-        }
+        protected void RemoveWithoutUnsiting(IComponent component) => Remove(component, true);
 
         /// <summary>
-        ///     Validates that the given name is valid for a component.  The default implementation
-        ///     verifies that name is either null or unique compared to the names of other
-        ///     components in the container.
+        /// Validates that the given name is valid for a component. The default implementation
+        /// verifies that name is either null or unique compared to the names of other
+        /// components in the container.
         /// </summary>
         protected virtual void ValidateName(IComponent component, string name)
         {
@@ -285,40 +245,45 @@ namespace System.ComponentModel
 
         private class Site : ISite
         {
-            private String _name;
+            private string _name;
 
-            internal Site(IComponent component, Container container, String name)
+            internal Site(IComponent component, Container container, string name)
             {
                 Component = component;
                 Container = container;
                 _name = name;
             }
 
-            // The component sited by this component site.
+            /// <summary>
+            /// The component sited by this component site.
+            /// </summary>
             public IComponent Component { get; }
 
-            // The container in which the component is sited.
+            /// <summary>
+            /// The container in which the component is sited.
+            /// </summary>
             public IContainer Container { get; }
 
-            public Object GetService(Type service)
+            public object GetService(Type service)
             {
                 return ((service == typeof(ISite)) ? this : ((Container)Container).GetService(service));
             }
 
-
-            // Indicates whether the component is in design mode.
+            /// <summary>
+            /// Indicates whether the component is in design mode.
+            /// </summary>
             public bool DesignMode => false;
 
-            // The name of the component.
-            //
-            public String Name
+            /// <summary>
+            /// The name of the component.
+            /// </summary>
+            public string Name
             {
                 get { return _name; }
                 set
                 {
                     if (value == null || _name == null || !value.Equals(_name))
                     {
-                        // UNDONE : This is a breaking change.  
                        ((Container)Container).ValidateName(Component, value);
                         _name = value;
                     }
