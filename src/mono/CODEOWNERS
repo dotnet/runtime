@@ -23,10 +23,14 @@ man/mprof-report.1 @alexrp
 mcs/class/Mono.Options @jonpryor
 mcs/class/Mono.Profiler.Log @alexrp
 mono/metadata/profiler* @alexrp
+mono/metadata/threads* @luhenry @kumpera
+mono/metadata/threadpool* @luhenry
+mono/metadata/w32* @luhenry
 mono/profiler @alexrp
 mono/utils/atomic* @alexrp
 mono/utils/mono-hwcap* @alexrp
 mono/utils/mono-mem* @alexrp
+mono/utils/mono-threads* @luhenry @kumpera
 msvc/*profiler* @alexrp
 packaging/Windows @akoeplinger
 samples/profiler @alexrp
