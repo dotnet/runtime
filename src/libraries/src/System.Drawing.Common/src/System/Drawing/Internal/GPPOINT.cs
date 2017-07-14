@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+
 namespace System.Drawing.Internal
 {
-    using System.Runtime.InteropServices;
-
     [StructLayout(LayoutKind.Sequential)]
     internal class GPPOINT
     {
@@ -16,21 +16,10 @@ namespace System.Drawing.Internal
         {
         }
 
-        internal GPPOINT(PointF pt)
-        {
-            X = (int)pt.X;
-            Y = (int)pt.Y;
-        }
-
         internal GPPOINT(Point pt)
         {
             X = pt.X;
             Y = pt.Y;
-        }
-
-        internal PointF ToPoint()
-        {
-            return new PointF(X, Y);
         }
     }
 }

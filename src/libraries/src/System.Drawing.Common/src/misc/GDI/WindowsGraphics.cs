@@ -38,67 +38,16 @@ namespace System.Drawing.Internal
             _dc.SaveHdc();
         }
 
-        /// <summary>
-        /// Creates a WindowsGraphics from a memory DeviceContext object compatible with the primary screen device.
-        /// This object is suitable for performing text measuring but not for drawing into it because it does not have
-        /// a backup bitmap.
-        /// </summary>
-        public static WindowsGraphics CreateMeasurementWindowsGraphics()
-        {
-            DeviceContext dc = DeviceContext.FromCompatibleDC(IntPtr.Zero);
-            WindowsGraphics wg = new WindowsGraphics(dc);
-            wg._disposeDc = true; // we create it, we dispose it.
-
-            return wg;
-        }
-
-        public static WindowsGraphics FromHwnd(IntPtr hWnd)
-        {
-            DeviceContext dc = DeviceContext.FromHwnd(hWnd);
-            WindowsGraphics wg = new WindowsGraphics(dc);
-            wg._disposeDc = true; // we create it, we dispose it.
-
-            return wg;
-        }
-
         public static WindowsGraphics FromHdc(IntPtr hDc)
         {
             Debug.Assert(hDc != IntPtr.Zero, "null hDc");
-
             DeviceContext dc = DeviceContext.FromHdc(hDc);
-            WindowsGraphics wg = new WindowsGraphics(dc);
-            wg._disposeDc = true; // we create it, we dispose it.
 
-            return wg;
-        }
-
-        /// <summary>
-        /// Creates a WindowsGraphics object from a Graphics object.  Clipping and coordinate transforms
-        /// are preserved.
-        /// 
-        /// Notes: 
-        /// - The passed Graphics object cannot be used until the WindowsGraphics is disposed
-        /// since it borrows the hdc from the Graphics object locking it.
-        /// - Changes to the hdc using the WindowsGraphics object are not preserved into the Graphics object;
-        /// the hdc is returned to the Graphics object intact.
-        /// 
-        /// Some background about how Graphics uses the internal hdc when created from an existing one
-        /// (mail from GillesK from GDI+ team):
-        /// User has an HDC with a particular state:
-        /// Graphics object gets created based on that HDC. We query the HDC for its state and apply it to the Graphics. 
-        /// At this stage, we do a SaveHDC and clear everything out of it.
-        /// User calls GetHdc. We restore the HDC to the state it was in and give it to the user.
-        /// User calls ReleaseHdc, we save the current state of the HDC and clear everything 
-        /// (so that the graphics state gets applied next time we use it).
-        /// Next time the user calls GetHdc we give him back the state after the second ReleaseHdc. 
-        /// (But the state changes between the GetHdc and ReleaseHdc are not applied to the Graphics).
-        /// Please note that this only applies the HDC created graphics, for Bitmap derived graphics, GetHdc creates a new DIBSection and 
-        /// things get a lot more complicated.
-        /// </summary>
-        public static WindowsGraphics FromGraphics(Graphics g)
-        {
-            ApplyGraphicsProperties properties = ApplyGraphicsProperties.All;
-            return WindowsGraphics.FromGraphics(g, properties);
+            // we create it, we dispose it.
+            return new WindowsGraphics(dc)
+            {
+                _disposeDc = true 
+            };
         }
 
         public static WindowsGraphics FromGraphics(Graphics g, ApplyGraphicsProperties properties)
@@ -113,9 +62,7 @@ namespace System.Drawing.Internal
 
             if ((properties & ApplyGraphicsProperties.TranslateTransform) != 0 || (properties & ApplyGraphicsProperties.Clipping) != 0)
             {
-                object[] data = g.GetContextInfo() as object[];
-
-                if (data != null && data.Length == 2)
+                if (g.GetContextInfo() is object[] data && data.Length == 2)
                 {
                     clipRgn = data[0] as Region;
                     worldTransf = data[1] as Matrix;
@@ -127,6 +74,7 @@ namespace System.Drawing.Internal
                     {
                         elements = worldTransf.Elements;
                     }
+
                     worldTransf.Dispose();
                 }
 
@@ -143,11 +91,12 @@ namespace System.Drawing.Internal
                             wr = WindowsRegion.FromRegion(clipRgn, g); // WindowsRegion will take ownership of the hRegion.
                         }
                     }
+
                     clipRgn.Dispose(); // Disposing the Region object doesn't destroy the hRegion.
                 }
             }
 
-            WindowsGraphics wg = WindowsGraphics.FromHdc(g.GetHdc()); // This locks the Graphics object.
+            WindowsGraphics wg = FromHdc(g.GetHdc()); // This locks the Graphics object.
             wg._graphics = g;
 
             // Apply transform and clip
@@ -171,19 +120,9 @@ namespace System.Drawing.Internal
             return wg;
         }
 
-        ~WindowsGraphics()
-        {
-            Dispose(false);
-        }
+        ~WindowsGraphics() => Dispose(false);
 
-        public DeviceContext DeviceContext
-        {
-            get
-            {
-                return _dc;
-            }
-        }
-
+        public DeviceContext DeviceContext => _dc;
 
         // Okay to suppress.
         // "WindowsGraphics object does not own the Graphics object.  For instance in a control’s Paint event we pass
@@ -217,12 +156,8 @@ namespace System.Drawing.Internal
                         _graphics = null;
                     }
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (!ClientUtils.IsSecurityOrCriticalException(ex))
                 {
-                    if (ClientUtils.IsSecurityOrCriticalException(ex))
-                    {
-                        throw; // rethrow the original exception.
-                    }
                     Debug.Fail("Exception thrown during disposing: \r\n" + ex.ToString());
                 }
                 finally
@@ -232,14 +167,8 @@ namespace System.Drawing.Internal
             }
         }
 
-        public IntPtr GetHdc()
-        {
-            return _dc.Hdc;
-        }
+        public IntPtr GetHdc() => _dc.Hdc;
 
-        public void ReleaseHdc()
-        {
-            _dc.Dispose();
-        }
+        public void ReleaseHdc() => _dc.Dispose();
     }
 }

@@ -981,7 +981,7 @@ namespace System.Drawing
                 {
                     for (int i = 0; i < count; i++)
                     {
-                        guids[i] = (Guid)UnsafeNativeMethods.PtrToStructure((IntPtr)((long)buffer + size * i), typeof(Guid));
+                        guids[i] = (Guid)Marshal.PtrToStructure((IntPtr)((long)buffer + size * i), typeof(Guid));
                     }
                 }
                 finally
