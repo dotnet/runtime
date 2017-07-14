@@ -49,6 +49,7 @@
     <Compile Include="Assertions\RemovedAssemblyAttribute.cs" />
     <Compile Include="Assertions\RemovedMemberInAssemblyAttribute.cs" />
     <Compile Include="Assertions\RemovedTypeInAssemblyAttribute.cs" />
+    <Compile Include="Assertions\SkipPeVerifyAttribute.cs" />
     <Compile Include="Metadata\BaseMetadataAttribute.cs" />
     <Compile Include="Metadata\CoreLinkAttribute.cs" />
     <Compile Include="Metadata\IncludeBlacklistStepAttribute.cs" />

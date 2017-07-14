@@ -10,6 +10,8 @@ namespace Mono.Linker.Tests.Cases.References {
 	[IncludeBlacklistStep("false")]
 	[Reference ("System.dll")]
 	[RemovedAssembly ("System.dll")]
+	// Can be removed once this bug is fixed https://bugzilla.xamarin.com/show_bug.cgi?id=58168
+	[SkipPeVerify(SkipPeVerifyForToolchian.Pedump)]
 	class ReferencesAreRemovedWhenAllUsagesAreRemoved {
 		public static void Main ()
 		{
