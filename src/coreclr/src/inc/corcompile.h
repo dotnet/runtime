@@ -1156,11 +1156,11 @@ class ICorCompilePreloader
     // If the class or method is generic, instantiate all parameters with <object>
     virtual CORINFO_METHOD_HANDLE LookupMethodDef(mdMethodDef token) = 0;
 
+    // For the given ftnHnd fill in the methInfo structure and return true if successful.
+    virtual bool GetMethodInfo(mdMethodDef token, CORINFO_METHOD_HANDLE ftnHnd, CORINFO_METHOD_INFO * methInfo) = 0;
+
     // Returns region that the IL should be emitted in
     virtual CorCompileILRegion GetILRegion(mdMethodDef token) = 0;
-
-    // Find the (parameterized) type for the given blob from the profile data
-    virtual CORINFO_CLASS_HANDLE FindTypeForProfileEntry(CORBBTPROF_BLOB_PARAM_SIG_ENTRY * profileBlobEntry) = 0;
 
     // Find the (parameterized) method for the given blob from the profile data
     virtual CORINFO_METHOD_HANDLE FindMethodForProfileEntry(CORBBTPROF_BLOB_PARAM_SIG_ENTRY * profileBlobEntry) = 0;

@@ -1200,8 +1200,6 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
             PREFIX_ASSUME(pZapSigContext != NULL);
             pModule = pZapSigContext->GetZapSigModule()->GetModuleFromIndex(ix);
 
-            // For ReadyToRunCompilation we return a null TypeHandle when we reference a non-local module
-            //
             if ((pModule != NULL) && pModule->IsInCurrentVersionBubble())
             {
                 thRet = psig.GetTypeHandleThrowing(pModule, 
@@ -1211,6 +1209,12 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                                                    dropGenericArgumentLevel,
                                                    pSubst, 
                                                    pZapSigContext);
+            }
+            else
+            {
+                // For ReadyToRunCompilation we return a null TypeHandle when we reference a non-local module
+                //
+                thRet = TypeHandle();
             }
 #else
             DacNotImpl();
@@ -1466,7 +1470,7 @@ TypeHandle SigPointer::GetTypeHandleThrowing(
                
                 if (IsNilToken(typeToken))
                 {
-                    THROW_BAD_FORMAT(BFA_MISSING_IBC_EXTERNAL_TYPE, pOrigModule);
+                    COMPlusThrow(kTypeLoadException, IDS_IBC_MISSING_EXTERNAL_TYPE);
                 }
             }
 #endif
@@ -1768,7 +1772,7 @@ TypeHandle SigPointer::GetGenericInstType(Module *        pModule,
 
             if (IsNilToken(typeToken))
             {
-                THROW_BAD_FORMAT(BFA_MISSING_IBC_EXTERNAL_TYPE, pOrigModule);
+                COMPlusThrow(kTypeLoadException, IDS_IBC_MISSING_EXTERNAL_TYPE);
             }
         }
 #endif
