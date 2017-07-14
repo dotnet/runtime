@@ -4016,7 +4016,7 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
 
             // For non-localVar uses we record nothing, as nothing needs to be written back to the tree.
             GenTree* const refPosNode = i->isLocalVar ? useNode : nullptr;
-            RefPosition* pos = newRefPosition(i, currentLoc, RefTypeUse, refPosNode, candidates,
+            RefPosition*   pos        = newRefPosition(i, currentLoc, RefTypeUse, refPosNode, candidates,
                                               locInfo.multiRegIdx DEBUG_ARG(minRegCountForUsePos));
 
             if (delayRegFree)
