@@ -12,16 +12,18 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 	{
 		readonly BaseAssemblyResolver _originalsResolver;
 		readonly BaseAssemblyResolver _linkedResolver;
+		readonly PeVerifier _peVerifier;
 
 		public ResultChecker ()
-			: this(new DefaultAssemblyResolver (), new DefaultAssemblyResolver ())
+			: this(new DefaultAssemblyResolver (), new DefaultAssemblyResolver (), new PeVerifier ())
 		{
 		}
 
-		public ResultChecker (BaseAssemblyResolver originalsResolver, BaseAssemblyResolver linkedResolver)
+		public ResultChecker (BaseAssemblyResolver originalsResolver, BaseAssemblyResolver linkedResolver, PeVerifier peVerifier)
 		{
 			_originalsResolver = originalsResolver;
 			_linkedResolver = linkedResolver;
+			_peVerifier = peVerifier;
 		}
 
 		public virtual void Check (LinkedTestCaseResult linkResult)
@@ -40,6 +42,8 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				new AssemblyChecker (original, linked).Verify ();
 
 				VerifyLinkingOfOtherAssemblies (original);
+
+				_peVerifier.Check (linkResult, original);
 
 				AdditionalChecking (linkResult, original, linked);
 			}

@@ -16,6 +16,9 @@ namespace Mono.Linker.Tests.Cases.CoreLink {
 
 	[RemovedTypeInAssembly ("mscorlib.dll", typeof (System.Resources.ResourceWriter))]
 	[RemovedTypeInAssembly ("System.dll", typeof (System.CodeDom.Compiler.CodeCompiler))]
+
+	// Can be removed once this bug is fixed https://bugzilla.xamarin.com/show_bug.cgi?id=58168
+	[SkipPeVerify (SkipPeVerifyForToolchian.Pedump)]
 	class LinkingOfCoreLibrariesRemovesUnusedTypes {
 		public static void Main ()
 		{

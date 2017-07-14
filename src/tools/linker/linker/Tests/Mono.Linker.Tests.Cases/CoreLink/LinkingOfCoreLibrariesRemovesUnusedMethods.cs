@@ -13,6 +13,9 @@ namespace Mono.Linker.Tests.Cases.CoreLink
 	// We can't check everything that should be removed, but we should be able to check a few niche things that
 	// we known should be removed which will at least verify that the core library was processed
 	[RemovedMemberInAssembly ("mscorlib.dll", typeof (Stack), ".ctor(System.Collections.ICollection)")]
+
+	// Can be removed once this bug is fixed https://bugzilla.xamarin.com/show_bug.cgi?id=58168
+	[SkipPeVerify (SkipPeVerifyForToolchian.Pedump)]
 	class LinkingOfCoreLibrariesRemovesUnusedMethods {
 		public static void Main()
 		{
