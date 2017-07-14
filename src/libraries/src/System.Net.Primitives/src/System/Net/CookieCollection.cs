@@ -168,10 +168,24 @@ namespace System.Net
             }
         }
 
+
         // If isStrict == false, assumes that incoming cookie is unique.
         // If isStrict == true, replace the cookie if found same with newest Variant.
         // Returns 1 if added, 0 if replaced or rejected.
-        internal int InternalAdd(Cookie cookie, bool isStrict)
+
+/* 
+    TODO: #13607
+    VSO 449560
+    Reflecting on internal method won't work on AOT without rd.xml and DisableReflection
+    block in toolchain.Networking team will be working on exposing methods from S.Net.Primitive
+    public, this is a temporary workaround till that happens. 
+*/
+#if uap 
+        public
+#else 
+        internal
+#endif
+        int InternalAdd(Cookie cookie, bool isStrict)
         {
             int ret = 1;
             if (isStrict)

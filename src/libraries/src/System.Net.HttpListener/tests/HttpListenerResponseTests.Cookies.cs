@@ -87,7 +87,6 @@ namespace System.Net.Tests
             };
         }
 
-        [ActiveIssue(22056, TargetFrameworkMonikers.UapAot)]
         [Theory]
         [MemberData(nameof(Cookies_TestData))]
         public async Task Cookies_SetAndSend_ClientReceivesExpectedHeaders(CookieCollection cookies, int expectedBytes, string expectedSetCookie, string expectedSetCookie2)
@@ -134,7 +133,6 @@ namespace System.Net.Tests
             Assert.Contains($"\r\nSet-Cookie2: name2=value2\r\n", clientResponse);
         }
 
-        [ActiveIssue(22056, TargetFrameworkMonikers.UapAot)]
         [Fact]
         public async Task Cookies_SetCookie2InHeadersButNotInCookies_RemovesFromHeaders()
         {
@@ -154,7 +152,6 @@ namespace System.Net.Tests
             Assert.Contains($"\r\nSet-Cookie2: name3=value3; Port=\"200\"; Version=1\r\n", clientResponse);
         }
 
-        [ActiveIssue(22056, TargetFrameworkMonikers.UapAot)]
         [Fact]
         public async Task Cookies_SetCookieInHeadersButNotInCookies_RemovesFromHeaders()
         {
@@ -174,7 +171,6 @@ namespace System.Net.Tests
             Assert.DoesNotContain("Set-Cookie2", clientResponse);
         }
 
-        [ActiveIssue(22056, TargetFrameworkMonikers.UapAot)]
         [Fact]
         public async Task AppendCookie_ValidCookie_AddsCookieToCollection()
         {
@@ -203,7 +199,6 @@ namespace System.Net.Tests
             AssertExtensions.Throws<ArgumentNullException>("cookie", () => response.AppendCookie(null));
         }
 
-        [ActiveIssue(22056, TargetFrameworkMonikers.UapAot)]
         [Fact]
         public async Task SetCookie_ValidCookie_AddsCookieToCollection()
         {
@@ -217,7 +212,6 @@ namespace System.Net.Tests
             Assert.Equal(new Cookie[] { cookie1, cookie2 }, response.Cookies.Cast<Cookie>());
         }
 
-        [ActiveIssue(22056, TargetFrameworkMonikers.UapAot)]
         [Fact]
         public async Task SetCookie_ValidCookie_ClonesCookie()
         {
@@ -237,7 +231,6 @@ namespace System.Net.Tests
             AssertExtensions.Throws<ArgumentNullException>("cookie", () => response.SetCookie(null));
         }
 
-        [ActiveIssue(22056, TargetFrameworkMonikers.UapAot)]
         [Fact]
         public async Task SetCookie_CookieDoesntExist_ThrowsArgumentException()
         {
