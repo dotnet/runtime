@@ -16,11 +16,7 @@ namespace System.Net.WebSockets.Client.Tests
 {
     public class SendReceiveTest : ClientWebSocketTestBase
     {
-        // Windows 10 Insider Preview Build 16215 introduced the necessary APIs for the UAP version of
-        // ClientWebSocket.ReceiveAsync to consume partial message data as it arrives, without having to wait
-        // for "end of message" to be signaled.
-        public static bool PartialMessagesSupported =>
-            !PlatformDetection.IsUap || PlatformDetection.IsWindows10InsiderPreviewBuild16215OrGreater;
+        public static bool PartialMessagesSupported => PlatformDetection.ClientWebSocketPartialMessagesSupported;
 
         public SendReceiveTest(ITestOutputHelper output) : base(output) { }
 
