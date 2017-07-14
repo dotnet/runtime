@@ -14,6 +14,7 @@ namespace System.IO.Pipes.Tests
     /// The Specific NamedPipe tests cover edge cases or otherwise narrow cases that
     /// show up within particular server/client directional combinations.
     /// </summary>
+    [ActiveIssue(22271, TargetFrameworkMonikers.UapNotUapAot)]
     public class NamedPipeTest_Specific : NamedPipeTestBase
     {
         [Fact]
@@ -56,7 +57,6 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // Unix implementation uses bidirectional sockets
-        [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
         public void ConnectWithConflictingDirections_Throws_UnauthorizedAccessException()
         {
             string serverName1 = GetUniquePipeName();
@@ -80,7 +80,6 @@ namespace System.IO.Pipes.Tests
         [InlineData(PipeOptions.None)]
         [InlineData(PipeOptions.Asynchronous)]
         [PlatformSpecific(TestPlatforms.Windows)] // Unix currently doesn't support message mode
-        [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
         public async Task Windows_MessagePipeTransissionMode(PipeOptions serverOptions)
         {
             byte[] msg1 = new byte[] { 5, 7, 9, 10 };
@@ -170,7 +169,6 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // Unix doesn't support MaxNumberOfServerInstances
-        [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
         public async Task Windows_Get_NumberOfServerInstances_Succeed()
         {
             string pipeName = GetUniquePipeName();
@@ -193,7 +191,6 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // Win32 P/Invokes to verify the user name
-        [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
         public async Task Windows_GetImpersonationUserName_Succeed()
         {
             string pipeName = GetUniquePipeName();
@@ -281,7 +278,6 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // Unix implementation uses bidirectional sockets
-        [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
         public static void Windows_BufferSizeRoundtripping()
         {
             int desiredBufferSize = 10;
@@ -310,7 +306,6 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
-        [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
         public void PipeTransmissionMode_Returns_Byte()
         {
             using (ServerClientPair pair = CreateServerClientPair())
@@ -322,7 +317,6 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // Unix doesn't currently support message mode
-        [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
         public void Windows_SetReadModeTo__PipeTransmissionModeByte()
         {
             string pipeName = GetUniquePipeName();
@@ -404,7 +398,6 @@ namespace System.IO.Pipes.Tests
         [Theory]
         [InlineData(PipeDirection.Out, PipeDirection.In)]
         [InlineData(PipeDirection.In, PipeDirection.Out)]
-        [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
         public void InvalidReadMode_Throws_ArgumentOutOfRangeException(PipeDirection serverDirection, PipeDirection clientDirection)
         {
             string pipeName = GetUniquePipeName();
