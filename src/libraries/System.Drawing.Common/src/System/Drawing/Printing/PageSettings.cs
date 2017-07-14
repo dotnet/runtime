@@ -165,7 +165,7 @@ namespace System.Drawing.Printing
                 {
                     IntPtr modeHandle = printerSettings.GetHdevmode();
                     IntPtr modePointer = SafeNativeMethods.GlobalLock(new HandleRef(this, modeHandle));
-                    SafeNativeMethods.DEVMODE mode = (SafeNativeMethods.DEVMODE)UnsafeNativeMethods.PtrToStructure(modePointer, typeof(SafeNativeMethods.DEVMODE));
+                    SafeNativeMethods.DEVMODE mode = (SafeNativeMethods.DEVMODE)Marshal.PtrToStructure(modePointer, typeof(SafeNativeMethods.DEVMODE));
 
                     PaperSource result = PaperSourceFromMode(mode);
 
@@ -234,7 +234,7 @@ namespace System.Drawing.Printing
                 {
                     IntPtr modeHandle = printerSettings.GetHdevmode();
                     IntPtr modePointer = SafeNativeMethods.GlobalLock(new HandleRef(this, modeHandle));
-                    SafeNativeMethods.DEVMODE mode = (SafeNativeMethods.DEVMODE)UnsafeNativeMethods.PtrToStructure(modePointer, typeof(SafeNativeMethods.DEVMODE));
+                    SafeNativeMethods.DEVMODE mode = (SafeNativeMethods.DEVMODE)Marshal.PtrToStructure(modePointer, typeof(SafeNativeMethods.DEVMODE));
 
                     PrinterResolution result = PrinterResolutionFromMode(mode);
 
@@ -282,7 +282,7 @@ namespace System.Drawing.Printing
         public void CopyToHdevmode(IntPtr hdevmode)
         {
             IntPtr modePointer = SafeNativeMethods.GlobalLock(new HandleRef(null, hdevmode));
-            SafeNativeMethods.DEVMODE mode = (SafeNativeMethods.DEVMODE)UnsafeNativeMethods.PtrToStructure(modePointer, typeof(SafeNativeMethods.DEVMODE));
+            SafeNativeMethods.DEVMODE mode = (SafeNativeMethods.DEVMODE)Marshal.PtrToStructure(modePointer, typeof(SafeNativeMethods.DEVMODE));
 
             if (_color.IsNotDefault && ((mode.dmFields & SafeNativeMethods.DM_COLOR) == SafeNativeMethods.DM_COLOR))
                 mode.dmColor = unchecked((short)(((bool)_color) ? SafeNativeMethods.DMCOLOR_COLOR : SafeNativeMethods.DMCOLOR_MONOCHROME));
@@ -383,7 +383,7 @@ namespace System.Drawing.Printing
             {
                 IntPtr modeHandle = printerSettings.GetHdevmodeInternal();
                 IntPtr modePointer = SafeNativeMethods.GlobalLock(new HandleRef(this, modeHandle));
-                SafeNativeMethods.DEVMODE mode = (SafeNativeMethods.DEVMODE)UnsafeNativeMethods.PtrToStructure(modePointer, typeof(SafeNativeMethods.DEVMODE));
+                SafeNativeMethods.DEVMODE mode = (SafeNativeMethods.DEVMODE)Marshal.PtrToStructure(modePointer, typeof(SafeNativeMethods.DEVMODE));
 
                 short result = mode.dmDriverExtra;
 
@@ -428,7 +428,7 @@ namespace System.Drawing.Printing
                 }
 
                 IntPtr modePointer = SafeNativeMethods.GlobalLock(new HandleRef(null, modeHandle));
-                SafeNativeMethods.DEVMODE mode = (SafeNativeMethods.DEVMODE)UnsafeNativeMethods.PtrToStructure(modePointer, typeof(SafeNativeMethods.DEVMODE));
+                SafeNativeMethods.DEVMODE mode = (SafeNativeMethods.DEVMODE)Marshal.PtrToStructure(modePointer, typeof(SafeNativeMethods.DEVMODE));
 
                 PaperSize result = PaperSizeFromMode(mode);
 
@@ -512,7 +512,7 @@ namespace System.Drawing.Printing
                 throw new ArgumentException(SR.Format(SR.InvalidPrinterHandle, hdevmode));
 
             IntPtr pointer = SafeNativeMethods.GlobalLock(new HandleRef(null, hdevmode));
-            SafeNativeMethods.DEVMODE mode = (SafeNativeMethods.DEVMODE)UnsafeNativeMethods.PtrToStructure(pointer, typeof(SafeNativeMethods.DEVMODE));
+            SafeNativeMethods.DEVMODE mode = (SafeNativeMethods.DEVMODE)Marshal.PtrToStructure(pointer, typeof(SafeNativeMethods.DEVMODE));
 
             if ((mode.dmFields & SafeNativeMethods.DM_COLOR) == SafeNativeMethods.DM_COLOR)
             {

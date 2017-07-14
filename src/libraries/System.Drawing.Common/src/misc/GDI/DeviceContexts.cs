@@ -20,8 +20,10 @@ namespace System.Drawing.Internal
         {
             if (t_activeDeviceContexts == null)
             {
-                t_activeDeviceContexts = new ClientUtils.WeakRefCollection();
-                t_activeDeviceContexts.RefCheckThreshold = 20;
+                t_activeDeviceContexts = new ClientUtils.WeakRefCollection()
+                {
+                    RefCheckThreshold = 20
+                };
             }
 
             if (!t_activeDeviceContexts.Contains(dc))
@@ -33,9 +35,7 @@ namespace System.Drawing.Internal
 
         private static void OnDcDisposing(object sender, EventArgs e)
         {
-            DeviceContext dc = sender as DeviceContext;
-
-            if (dc != null)
+            if (sender is DeviceContext dc)
             {
                 dc.Disposing -= new EventHandler(OnDcDisposing);
                 RemoveDeviceContext(dc);
@@ -44,11 +44,7 @@ namespace System.Drawing.Internal
 
         internal static void RemoveDeviceContext(DeviceContext dc)
         {
-            if (t_activeDeviceContexts == null)
-            {
-                return;
-            }
-            t_activeDeviceContexts.RemoveByHashCode(dc);
+            t_activeDeviceContexts?.RemoveByHashCode(dc);
         }
     }
 }

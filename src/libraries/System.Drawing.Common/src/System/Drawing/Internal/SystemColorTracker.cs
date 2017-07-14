@@ -3,16 +3,14 @@
 // See the LICENSE file in the project root for more information.
 
 #if FEATURE_SYSTEM_EVENTS
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.InteropServices;
+using Microsoft.Win32;
+
 namespace System.Drawing.Internal
 {
-    using System.Diagnostics;
-    using System.Diagnostics.CodeAnalysis;
-    using System;
-    using System.Drawing;
-    using Microsoft.Win32;
-    using System.Runtime.InteropServices;
-    using System.ComponentModel;
-
     // Keeps track of objects that need to be notified of system color change events.
     // Mostly this means maintaining a list of weak references.
     internal class SystemColorTracker

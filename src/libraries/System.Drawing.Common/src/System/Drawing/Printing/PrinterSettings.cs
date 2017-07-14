@@ -897,7 +897,7 @@ namespace System.Drawing.Printing
                 }
             }
 
-            SafeNativeMethods.DEVMODE mode = (SafeNativeMethods.DEVMODE)UnsafeNativeMethods.PtrToStructure(pointer, typeof(SafeNativeMethods.DEVMODE));
+            SafeNativeMethods.DEVMODE mode = (SafeNativeMethods.DEVMODE)Marshal.PtrToStructure(pointer, typeof(SafeNativeMethods.DEVMODE));
 
 
             if (_extrainfo != null)
@@ -1017,7 +1017,7 @@ namespace System.Drawing.Printing
                 }
 
                 IntPtr modePointer = SafeNativeMethods.GlobalLock(new HandleRef(this, modeHandle));
-                SafeNativeMethods.DEVMODE mode = (SafeNativeMethods.DEVMODE)UnsafeNativeMethods.PtrToStructure(modePointer, typeof(SafeNativeMethods.DEVMODE));
+                SafeNativeMethods.DEVMODE mode = (SafeNativeMethods.DEVMODE)Marshal.PtrToStructure(modePointer, typeof(SafeNativeMethods.DEVMODE));
                 switch (field)
                 {
                     case ModeField.Orientation:
@@ -1210,7 +1210,7 @@ namespace System.Drawing.Printing
                 throw new ArgumentException(SR.Format(SR.InvalidPrinterHandle, hdevmode));
 
             IntPtr pointer = SafeNativeMethods.GlobalLock(new HandleRef(null, hdevmode));
-            SafeNativeMethods.DEVMODE mode = (SafeNativeMethods.DEVMODE)UnsafeNativeMethods.PtrToStructure(pointer, typeof(SafeNativeMethods.DEVMODE));
+            SafeNativeMethods.DEVMODE mode = (SafeNativeMethods.DEVMODE)Marshal.PtrToStructure(pointer, typeof(SafeNativeMethods.DEVMODE));
 
             //Copy entire public devmode as a byte array...
             _devmodebytes = mode.dmSize;

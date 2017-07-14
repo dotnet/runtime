@@ -884,7 +884,7 @@ namespace System.Drawing.Drawing2D
         public void AddString(string s, FontFamily family, int style, float emSize,
                               Point origin, StringFormat format)
         {
-            GPRECT rect = new GPRECT(origin.X, origin.Y, 0, 0);
+            var rect = new GPRECT(origin.X, origin.Y, 0, 0);
 
             int status = SafeNativeMethods.Gdip.GdipAddPathStringI(new HandleRef(this, nativePath),
                                                     s,

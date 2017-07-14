@@ -2,11 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-#if DEBUG_HANDLECOLLECTOR
-  using System.Diagnostics;
-#endif
-
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+
 [module: SuppressMessage("Microsoft.Design", "CA1020:AvoidNamespacesWithFewTypes", Scope = "namespace", Target = "System.Internal")]
 
 namespace System.Internal
@@ -15,7 +13,6 @@ namespace System.Internal
     {
         private static HandleType[] s_handleTypes;
         private static int s_handleTypeCount;
-        private static int s_suspendCount;
 
         internal static event HandleChangeEventHandler HandleAdded;
 
@@ -34,51 +31,6 @@ namespace System.Internal
         }
 
         /// <summary>
-        /// Suspends GC.Collect
-        /// </summary>
-        internal static void SuspendCollect()
-        {
-            lock (s_internalSyncObject)
-            {
-                s_suspendCount++;
-            }
-        }
-
-        /// <summary>
-        /// Resumes GC.Collect
-        /// </summary>        
-        internal static void ResumeCollect()
-        {
-            bool performCollect = false;
-            lock (s_internalSyncObject)
-            {
-                if (s_suspendCount > 0)
-                {
-                    s_suspendCount--;
-                }
-
-                if (s_suspendCount == 0)
-                {
-                    for (int i = 0; i < s_handleTypeCount; i++)
-                    {
-                        lock (s_handleTypes[i])
-                        {
-                            if (s_handleTypes[i].NeedCollection())
-                            {
-                                performCollect = true;
-                            }
-                        }
-                    }
-                }
-            }
-
-            if (performCollect)
-            {
-                GC.Collect();
-            }
-        }
-
-        /// <summary>
         /// Registers a new type of handle with the handle collector.
         /// </summary>
         internal static int RegisterType(string typeName, int expense, int initialThreshold)
@@ -92,6 +44,7 @@ namespace System.Internal
                     {
                         Array.Copy(s_handleTypes, 0, newTypes, 0, s_handleTypeCount);
                     }
+
                     s_handleTypes = newTypes;
                 }
 
@@ -161,10 +114,7 @@ namespace System.Internal
                 }
                 lock (s_internalSyncObject)
                 {
-                    if (HandleCollector.HandleAdded != null)
-                    {
-                        HandleCollector.HandleAdded(name, handle, currentCount);
-                    }
+                    HandleAdded?.Invoke(name, handle, currentCount);
                 }
 
                 if (!performCollect)
@@ -196,27 +146,11 @@ namespace System.Internal
                 }
             }
 
-
-            /// <summary>
-            /// Retrieves the outstanding handle count for this handle type.
-            /// </summary>
-            internal int GetHandleCount()
-            {
-                lock (this)
-                {
-                    return _handleCount;
-                }
-            }
-
             /// <summary>
             /// Determines if this handle type needs a garbage collection pass.
             /// </summary>
             internal bool NeedCollection()
             {
-                if (s_suspendCount > 0)
-                {
-                    return false;
-                }
                 if (_handleCount > _threshHold)
                 {
                     _threshHold = _handleCount + ((_handleCount * _deltaPercent) / 100);
@@ -261,17 +195,14 @@ namespace System.Internal
 #endif
                     if (_handleCount < 0)
                     {
-                        System.Diagnostics.Debug.Fail("Handle collector underflow for type '" + name + "'");
+                        Debug.Fail("Handle collector underflow for type '" + name + "'");
                         _handleCount = 0;
                     }
                     currentCount = _handleCount;
                 }
                 lock (s_internalSyncObject)
                 {
-                    if (HandleCollector.HandleRemoved != null)
-                    {
-                        HandleCollector.HandleRemoved(name, handle, currentCount);
-                    }
+                    HandleRemoved?.Invoke(name, handle, currentCount);
                 }
                 return handle;
             }
