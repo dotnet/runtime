@@ -1355,7 +1355,7 @@ bool Compiler::fgMarkIntf(VARSET_VALARG_TP varSet1, VARSET_VALARG_TP varSet2)
 {
 #ifdef LEGACY_BACKEND
     /* If either set has no bits set (or we are not optimizing), take an early out */
-    if (VarSetOps::IsEmpty(this, varSet2) || VarSetOps::IsEmpty(this, varSet1) || opts.MinOpts())
+    if (opts.MinOpts() || VarSetOps::IsEmpty(this, varSet2) || VarSetOps::IsEmpty(this, varSet1))
     {
         return false;
     }
@@ -1386,6 +1386,54 @@ bool Compiler::fgMarkIntf(VARSET_VALARG_TP varSet1, VARSET_VALARG_TP varSet2)
         {
             // Calculate the set of new interference to add
             VARSET_TP newIntf(VarSetOps::Diff(this, varSet1, lvaVarIntf[refIndex]));
+            if (!VarSetOps::IsEmpty(this, newIntf))
+            {
+                addedIntf = true;
+                VarSetOps::UnionD(this, lvaVarIntf[refIndex], newIntf);
+            }
+        }
+    }
+
+    return addedIntf;
+#else
+    return false;
+#endif
+}
+
+bool Compiler::fgMarkIntf(VARSET_VALARG_TP varSet, unsigned varIndex)
+{
+#ifdef LEGACY_BACKEND
+    // If the input set has no bits set (or we are not optimizing), take an early out
+    if (opts.MinOpts() || VarSetOps::IsEmpty(this, varSet))
+    {
+        return false;
+    }
+
+    bool addedIntf = false; // This is set to true if we add any new interferences
+
+    VarSetOps::Assign(this, fgMarkIntfUnionVS, varSet);
+    VarSetOps::AddElemD(this, fgMarkIntfUnionVS, varIndex);
+
+    VarSetOps::Iter iter(this, fgMarkIntfUnionVS);
+    unsigned        refIndex = 0;
+    while (iter.NextElem(&refIndex))
+    {
+        // if varSet has this bit set then it interferes with varIndex
+        if (VarSetOps::IsMember(this, varSet, refIndex))
+        {
+            // Calculate the set of new interference to add
+            if (!VarSetOps::IsMember(this, lvaVarIntf[refIndex], varIndex))
+            {
+                addedIntf = true;
+                VarSetOps::AddElemD(this, lvaVarIntf[refIndex], varIndex);
+            }
+        }
+
+        // if this bit is the same as varIndex then it interferes with varSet1
+        if (refIndex == varIndex)
+        {
+            // Calculate the set of new interference to add
+            VARSET_TP newIntf(VarSetOps::Diff(this, varSet, lvaVarIntf[refIndex]));
             if (!VarSetOps::IsEmpty(this, newIntf))
             {
                 addedIntf = true;
@@ -1521,13 +1569,10 @@ void Compiler::fgComputeLifeCall(VARSET_TP& life, GenTreeCall* call)
 
             if (frameVarDsc->lvTracked)
             {
-                VARSET_TP varBit(VarSetOps::MakeSingleton(this, frameVarDsc->lvVarIndex));
-
                 VarSetOps::AddElemD(this, life, frameVarDsc->lvVarIndex);
 
-                /* Record interference with other live variables */
-
-                fgMarkIntf(life, varBit);
+                // Record interference with other live variables
+                fgMarkIntf(life, frameVarDsc->lvVarIndex);
             }
         }
     }
@@ -1572,9 +1617,7 @@ void Compiler::fgComputeLifeCall(VARSET_TP& life, GenTreeCall* call)
                 }
 
                 // Record an interference with the other live variables
-                //
-                VARSET_TP varBit(VarSetOps::MakeSingleton(this, varIndex));
-                fgMarkIntf(life, varBit);
+                fgMarkIntf(life, varIndex);
             }
         }
 
@@ -1735,7 +1778,7 @@ bool Compiler::fgComputeLifeLocal(VARSET_TP& life, VARSET_VALARG_TP keepAliveVar
                 printf("Ref V%02u,T%02u] at ", lclNum, varIndex);
                 printTreeID(node);
                 printf(" life %s -> %s\n", VarSetOps::ToString(this, life),
-                       VarSetOps::ToString(this, VarSetOps::Union(this, life, varBit)));
+                       VarSetOps::ToString(this, VarSetOps::AddElem(this, life, varIndex)));
             }
 #endif // DEBUG
 
@@ -1745,7 +1788,7 @@ bool Compiler::fgComputeLifeLocal(VARSET_TP& life, VARSET_VALARG_TP keepAliveVar
             VarSetOps::AddElemD(this, life, varIndex);
 
             // Record interference with other live variables
-            fgMarkIntf(life, VarSetOps::MakeSingleton(this, varIndex));
+            fgMarkIntf(life, varIndex);
         }
     }
     // Note that promoted implies not tracked (i.e. only the fields are tracked).
