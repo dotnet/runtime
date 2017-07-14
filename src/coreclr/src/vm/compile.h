@@ -637,10 +637,10 @@ public:
     void NoteDeduplicatedCode(CORINFO_METHOD_HANDLE method, CORINFO_METHOD_HANDLE duplicateMethod);
 
     CORINFO_METHOD_HANDLE LookupMethodDef(mdMethodDef token);
+    bool GetMethodInfo(mdMethodDef token, CORINFO_METHOD_HANDLE ftnHnd, CORINFO_METHOD_INFO * methInfo);
 
     CorCompileILRegion GetILRegion(mdMethodDef token);
 
-    CORINFO_CLASS_HANDLE  FindTypeForProfileEntry(CORBBTPROF_BLOB_PARAM_SIG_ENTRY * profileBlobEntry);
     CORINFO_METHOD_HANDLE FindMethodForProfileEntry(CORBBTPROF_BLOB_PARAM_SIG_ENTRY * profileBlobEntry);
 
     void ReportInlining(CORINFO_METHOD_HANDLE inliner, CORINFO_METHOD_HANDLE inlinee);
