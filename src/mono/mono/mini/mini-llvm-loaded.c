@@ -14,7 +14,7 @@ typedef struct {
 	void (*cleanup)(void);
 	void (*emit_method)(MonoCompile *cfg);
 	void (*emit_call)(MonoCompile *cfg, MonoCallInst *call);
-	void (*create_aot_module)(MonoAssembly *assembly, const char *global_prefix, gboolean emit_dwarf, gboolean static_link, gboolean llvm_only);
+	void (*create_aot_module)(MonoAssembly *assembly, const char *global_prefix, int initial_got_size, gboolean emit_dwarf, gboolean static_link, gboolean llvm_only);
 	void (*emit_aot_module)(const char *filename, const char *cu_name);
 	void (*check_method_supported)(MonoCompile *cfg);
 	void (*emit_aot_file_info)(MonoAotFileInfo *info, gboolean has_jitted_code);
@@ -50,9 +50,9 @@ mono_llvm_emit_call (MonoCompile *cfg, MonoCallInst *call)
 }
 
 void
-mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, gboolean emit_dwarf, gboolean static_link, gboolean llvm_only)
+mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, int initial_got_size, gboolean emit_dwarf, gboolean static_link, gboolean llvm_only)
 {
-	backend.create_aot_module (assembly, global_prefix, emit_dwarf, static_link, llvm_only);
+	backend.create_aot_module (assembly, global_prefix, initial_got_size, emit_dwarf, static_link, llvm_only);
 }
 
 void

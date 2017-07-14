@@ -8429,7 +8429,7 @@ mono_llvm_free_domain_info (MonoDomain *domain)
 }
 
 void
-mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, gboolean emit_dwarf, gboolean static_link, gboolean llvm_only)
+mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, int initial_got_size, gboolean emit_dwarf, gboolean static_link, gboolean llvm_only)
 {
 	MonoLLVMModule *module = &aot_module;
 
@@ -8453,7 +8453,7 @@ mono_llvm_create_aot_module (MonoAssembly *assembly, const char *global_prefix, 
 	module->static_link = static_link;
 	module->llvm_only = llvm_only;
 	/* The first few entries are reserved */
-	module->max_got_offset = 16;
+	module->max_got_offset = initial_got_size;
 	module->context = LLVMGetGlobalContext ();
 
 	if (llvm_only)
