@@ -3981,30 +3981,17 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
 
             JITDUMP("t%u ", locInfo.loc);
 
-            // for interstitial tree temps, a use is always last and end;
-            // this is  set by default in newRefPosition
-            GenTree* useNode = locInfo.treeNode;
+            // for interstitial tree temps, a use is always last and end; this is set by default in newRefPosition
+            GenTree* const useNode = locInfo.treeNode;
             assert(useNode != nullptr);
-            var_types type        = useNode->TypeGet();
-            regMaskTP candidates  = getUseCandidates(useNode);
-            Interval* i           = locInfo.interval;
-            unsigned  multiRegIdx = locInfo.multiRegIdx;
 
+            Interval* const i = locInfo.interval;
             if (useNode->gtLsraInfo.isTgtPref)
             {
                 prefSrcInterval = i;
             }
 
-            const bool regOptionalAtUse = useNode->IsRegOptional();
-            const bool delayRegFree     = (hasDelayFreeSrc && useNode->gtLsraInfo.isDelayFree);
-
-            assert(isCandidateLocalRef(useNode) == i->isLocalVar);
-            if (!i->isLocalVar)
-            {
-                // For non-localVar uses we record nothing,
-                // as nothing needs to be written back to the tree.
-                useNode = nullptr;
-            }
+            const bool delayRegFree = (hasDelayFreeSrc && useNode->gtLsraInfo.isDelayFree);
 
 #ifdef DEBUG
             // If delayRegFree, then Use will interfere with the destination of
@@ -4037,17 +4024,20 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
             }
 #endif // DEBUG
 
+            regMaskTP candidates = getUseCandidates(useNode);
             assert((candidates & allRegs(i->registerType)) != 0);
-            RefPosition* pos = newRefPosition(i, currentLoc, RefTypeUse, useNode, candidates,
-                                              multiRegIdx DEBUG_ARG(minRegCountForUsePos));
+
+            // For non-localVar uses we record nothing, as nothing needs to be written back to the tree.
+            GenTree* const refPosNode = i->isLocalVar ? useNode : nullptr;
+            RefPosition*   pos        = newRefPosition(i, currentLoc, RefTypeUse, refPosNode, candidates,
+                                              locInfo.multiRegIdx DEBUG_ARG(minRegCountForUsePos));
 
             if (delayRegFree)
             {
-                hasDelayFreeSrc   = true;
                 pos->delayRegFree = true;
             }
 
-            if (regOptionalAtUse)
+            if (useNode->IsRegOptional())
             {
                 pos->setAllocateIfProfitable(true);
             }
