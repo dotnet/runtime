@@ -1271,6 +1271,16 @@ gc_event (MonoProfiler *profiler, MonoProfilerGCEvent ev, uint32_t generation)
 			g_assert_not_reached ();
 		}
 
+		/*
+		 * heapshot_requested is set either because on-demand heapshot is
+		 * enabled and a heapshot was triggered, or because we're doing a
+		 * shutdown heapshot. In the latter case, we won't check it in the
+		 * switch above, so check it here and override any decision we made
+		 * above.
+		 */
+		if (InterlockedRead (&log_profiler.heapshot_requested))
+			log_profiler.do_heap_walk = TRUE;
+
 		if (ENABLED (PROFLOG_GC_ROOT_EVENTS) && log_profiler.do_heap_walk)
 			mono_profiler_set_gc_roots_callback (log_profiler.handle, gc_roots);
 
@@ -3481,6 +3491,15 @@ cleanup_reusable_samples (void)
 }
 
 static void
+log_early_shutdown (MonoProfiler *prof)
+{
+	if (log_config.hs_on_shutdown) {
+		InterlockedWrite (&log_profiler.heapshot_requested, 1);
+		mono_gc_collect (mono_gc_max_generation ());
+	}
+}
+
+static void
 log_shutdown (MonoProfiler *prof)
 {
 	InterlockedWrite (&log_profiler.in_shutdown, 1);
@@ -4287,6 +4306,7 @@ mono_profiler_init (const char *desc)
 	 * allocations, exceptions) are dynamically enabled/disabled.
 	 */
 
+	mono_profiler_set_runtime_shutdown_begin_callback (handle, log_early_shutdown);
 	mono_profiler_set_runtime_shutdown_end_callback (handle, log_shutdown);
 	mono_profiler_set_runtime_initialized_callback (handle, runtime_initialized);
 

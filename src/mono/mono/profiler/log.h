@@ -509,6 +509,9 @@ typedef struct {
 	// Heapshot frequency in number of collections (for MONO_HEAPSHOT_X_GC). Can be changed at runtime.
 	unsigned int hs_freq_gc;
 
+	// Whether to do a heapshot on shutdown.
+	gboolean hs_on_shutdown;
+
 	// Sample frequency in Hertz. Only used at startup.
 	int sample_freq;
 

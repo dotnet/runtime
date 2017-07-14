@@ -67,6 +67,9 @@ parse_arg (const char *arg, ProfilerConfig *config)
 		set_hsmode (config, val);
 		if (config->hs_mode != MONO_PROFILER_HEAPSHOT_NONE)
 			config->enable_mask |= PROFLOG_HEAPSHOT_ALIAS;
+	} else if (match_option (arg, "heapshot-on-shutdown", NULL)) {
+		config->hs_on_shutdown = TRUE;
+		config->enable_mask |= PROFLOG_HEAPSHOT_ALIAS;
 	} else if (match_option (arg, "sample", &val)) {
 		set_sample_freq (config, val);
 		config->sampling_mode = MONO_PROFILER_SAMPLE_MODE_PROCESS;
@@ -265,6 +268,8 @@ usage (void)
 	mono_profiler_printf ("\t                     the -real variant uses wall clock time instead of process time");
 	mono_profiler_printf ("\theapshot[=MODE]      record heapshot info (by default at each major collection)");
 	mono_profiler_printf ("\t                     MODE: every XXms milliseconds, every YYgc collections, ondemand");
+	mono_profiler_printf ("\theapshot-on-shutdown do a heapshot on runtime shutdown");
+	mono_profiler_printf ("\t                     this option is independent of the above option");
 	mono_profiler_printf ("\tcalls                enable recording enter/leave method events (very heavy)");
 	mono_profiler_printf ("\tcoverage             enable collection of code coverage data");
 	mono_profiler_printf ("\tcovfilter=ASSEMBLY   add ASSEMBLY to the code coverage filters");
