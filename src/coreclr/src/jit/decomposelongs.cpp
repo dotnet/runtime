@@ -1426,6 +1426,11 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
         GenTree* call = m_compiler->gtNewHelperCallNode(helper, TYP_LONG, 0, argList);
         call->gtFlags |= shift->gtFlags & GTF_ALL_EFFECT;
 
+        if ((shift->gtLIRFlags & LIR::Flags::IsUnusedValue) != 0)
+        {
+            call->gtLIRFlags |= LIR::Flags::IsUnusedValue;
+        }
+
         GenTreeCall*    callNode    = call->AsCall();
         ReturnTypeDesc* retTypeDesc = callNode->GetReturnTypeDesc();
         retTypeDesc->InitializeLongReturnType(m_compiler);
