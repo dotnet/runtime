@@ -56,7 +56,7 @@
         "scriptName": "",
         "arguments": "-ConfigGroup $(PB_ConfigurationGroup) -SymPkgGlob $(PB_AzureContainerSymbolPackageGlob) -Branch $(SourceBranch)",
         "workingFolder": "$(Pipeline.SourcesDirectory)",
-        "inlineScript": "param($ConfigGroup, $SymPkgGlob, $Branch)\nif ($ConfigGroup -ne \"Release\") { exit }\n$archive = $Branch.StartsWith(\"release/\")\n\n$target = \"UnzipSymbolPackagesForPublish\"\nif ($archive) { $target = \"SubmitSymbolsRequest\" }\n\n.\\build-managed.cmd -- `\n/t:$target `\n/p:SymbolPackagesToPublishGlob=$SymPkgGlob `\n/p:ArchiveSymbols=$archive `\n/v:D",
+        "inlineScript": "param($ConfigGroup, $SymPkgGlob, $Branch)\nif ($ConfigGroup -ne \"Release\") { exit }\n$archive = $Branch.StartsWith(\"release/\")\n\n$target = \"GetAllSymbolFilesToPublish\"\nif ($archive) { $target = \"SubmitSymbolsRequest\" }\n\n.\\build-managed.cmd -- `\n/t:$target `\n/p:SymbolPackagesToPublishGlob=$SymPkgGlob `\n/p:ArchiveSymbols=$archive `\n/v:D",
         "failOnStandardError": "true"
       }
     },
