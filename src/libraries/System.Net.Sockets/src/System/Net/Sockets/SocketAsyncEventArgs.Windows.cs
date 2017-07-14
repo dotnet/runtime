@@ -25,13 +25,10 @@ namespace System.Net.Sockets
         // Internal buffers for WSARecvMsg
         private byte[] _wsaMessageBuffer;
         private GCHandle _wsaMessageBufferGCHandle;
-        private IntPtr _ptrWSAMessageBuffer;
         private byte[] _controlBuffer;
         private GCHandle _controlBufferGCHandle;
-        private IntPtr _ptrControlBuffer;
         private WSABuffer[] _wsaRecvMsgWSABufferArray;
         private GCHandle _wsaRecvMsgWSABufferArrayGCHandle;
-        private IntPtr _ptrWSARecvMsgWSABufferArray;
 
         // Internal buffer for AcceptEx when Buffer not supplied.
         private IntPtr _ptrAcceptBuffer;
@@ -39,8 +36,6 @@ namespace System.Net.Sockets
         // Internal SocketAddress buffer
         private GCHandle _socketAddressGCHandle;
         private Internals.SocketAddress _pinnedSocketAddress;
-        private IntPtr _ptrSocketAddressBuffer;
-        private IntPtr _ptrSocketAddressBufferSize;
 
         // SendPacketsElements property variables.
         private SendPacketsElement[] _sendPacketsElementsInternal;
@@ -51,7 +46,6 @@ namespace System.Net.Sockets
         // Internal variables for SendPackets
         private FileStream[] _sendPacketsFileStreams;
         private SafeHandle[] _sendPacketsFileHandles;
-        private IntPtr _ptrSendPacketsDescriptor;
 
         // Overlapped object related variables.
         private PreAllocatedOverlapped _preAllocatedOverlapped;
@@ -228,7 +222,7 @@ namespace System.Net.Sockets
 
                 bool success = socket.ConnectEx(
                     handle,
-                    _ptrSocketAddressBuffer,
+                    PtrSocketAddressBuffer,
                     _socketAddress.Size,
                     _ptrSingleBuffer,
                     Count,
@@ -370,8 +364,8 @@ namespace System.Net.Sockets
                         1,
                         out bytesTransferred,
                         ref flags,
-                        _ptrSocketAddressBuffer,
-                        _ptrSocketAddressBufferSize,
+                        PtrSocketAddressBuffer,
+                        PtrSocketAddressBufferSize,
                         overlapped,
                         IntPtr.Zero);
                 }
@@ -383,8 +377,8 @@ namespace System.Net.Sockets
                         _bufferListInternal.Count,
                         out bytesTransferred,
                         ref flags,
-                        _ptrSocketAddressBuffer,
-                        _ptrSocketAddressBufferSize,
+                        PtrSocketAddressBuffer,
+                        PtrSocketAddressBufferSize,
                         overlapped,
                         IntPtr.Zero);
                 }
@@ -413,21 +407,14 @@ namespace System.Net.Sockets
             if (_wsaMessageBuffer == null)
             {
                 Debug.Assert(!_wsaMessageBufferGCHandle.IsAllocated);
-                Debug.Assert(_ptrWSAMessageBuffer == IntPtr.Zero);
                 _wsaMessageBuffer = new byte[sizeof(Interop.Winsock.WSAMsg)];
             }
 
             // And ensure the WSAMessageBuffer is appropriately pinned.
-            if (_ptrWSAMessageBuffer == IntPtr.Zero)
+            Debug.Assert(!_wsaMessageBufferGCHandle.IsAllocated || _wsaMessageBufferGCHandle.Target == _wsaMessageBuffer);
+            if (!_wsaMessageBufferGCHandle.IsAllocated)
             {
-                Debug.Assert(!_wsaMessageBufferGCHandle.IsAllocated);
                 _wsaMessageBufferGCHandle = GCHandle.Alloc(_wsaMessageBuffer, GCHandleType.Pinned);
-                _ptrWSAMessageBuffer = Marshal.UnsafeAddrOfPinnedArrayElement(_wsaMessageBuffer, 0);
-            }
-            else
-            {
-                Debug.Assert(_wsaMessageBufferGCHandle.IsAllocated);
-                Debug.Assert(_ptrWSAMessageBuffer == Marshal.UnsafeAddrOfPinnedArrayElement(_wsaMessageBuffer, 0));
             }
 
             // Create and pin an appropriately sized control buffer if none already
@@ -451,14 +438,10 @@ namespace System.Net.Sockets
                 }
                 _controlBuffer = new byte[sizeof(Interop.Winsock.ControlDataIPv6)];
             }
-            if (!_controlBufferGCHandle.IsAllocated)
-            {
-                _controlBufferGCHandle = GCHandle.Alloc(_controlBuffer, GCHandleType.Pinned);
-                _ptrControlBuffer = Marshal.UnsafeAddrOfPinnedArrayElement(_controlBuffer, 0);
-            }
 
             // If single buffer we need a single element WSABuffer.
             WSABuffer[] wsaRecvMsgWSABufferArray;
+            uint wsaRecvMsgWSABufferCount;
             if (_buffer != null)
             {
                 if (_wsaRecvMsgWSABufferArray == null)
@@ -468,47 +451,65 @@ namespace System.Net.Sockets
                 _wsaRecvMsgWSABufferArray[0].Pointer = _ptrSingleBuffer;
                 _wsaRecvMsgWSABufferArray[0].Length = _count;
                 wsaRecvMsgWSABufferArray = _wsaRecvMsgWSABufferArray;
+                wsaRecvMsgWSABufferCount = 1;
             }
             else
             {
                 // Use the multi-buffer WSABuffer.
                 wsaRecvMsgWSABufferArray = _wsaBufferArray;
+                wsaRecvMsgWSABufferCount = (uint)_bufferListInternal.Count;
             }
 
             // Ensure the array is pinned.
+            Debug.Assert(!_wsaRecvMsgWSABufferArrayGCHandle.IsAllocated || _wsaRecvMsgWSABufferArrayGCHandle.Target == wsaRecvMsgWSABufferArray);
             if (!_wsaRecvMsgWSABufferArrayGCHandle.IsAllocated)
             {
                 _wsaRecvMsgWSABufferArrayGCHandle = GCHandle.Alloc(wsaRecvMsgWSABufferArray, GCHandleType.Pinned);
-                _ptrWSARecvMsgWSABufferArray = Marshal.UnsafeAddrOfPinnedArrayElement(wsaRecvMsgWSABufferArray, 0);
-            }
-            else
-            {
-                Debug.Assert(_wsaRecvMsgWSABufferArrayGCHandle.Target == wsaRecvMsgWSABufferArray);
-                Debug.Assert(_ptrWSARecvMsgWSABufferArray == Marshal.UnsafeAddrOfPinnedArrayElement(wsaRecvMsgWSABufferArray, 0));
             }
 
             // Fill in WSAMessageBuffer.
             unsafe
             {
-                Interop.Winsock.WSAMsg* pMessage = (Interop.Winsock.WSAMsg*)_ptrWSAMessageBuffer; ;
-                pMessage->socketAddress = _ptrSocketAddressBuffer;
+                Interop.Winsock.WSAMsg* pMessage = (Interop.Winsock.WSAMsg*)PtrWSAMessageBuffer;
+                pMessage->socketAddress = PtrSocketAddressBuffer;
                 pMessage->addressLength = (uint)_socketAddress.Size;
-                pMessage->buffers = _ptrWSARecvMsgWSABufferArray;
-                if (_buffer != null)
+                fixed (void* ptrWSARecvMsgWSABufferArray = &wsaRecvMsgWSABufferArray[0])
                 {
-                    pMessage->count = (uint)1;
+                    pMessage->buffers = (IntPtr)ptrWSARecvMsgWSABufferArray;
                 }
-                else
-                {
-                    pMessage->count = (uint)_bufferListInternal.Count;
-                }
+                pMessage->count = wsaRecvMsgWSABufferCount;
 
                 if (_controlBuffer != null)
                 {
-                    pMessage->controlBuffer.Pointer = _ptrControlBuffer;
+                    Debug.Assert(_controlBuffer.Length > 0);
+                    Debug.Assert(!_controlBufferGCHandle.IsAllocated || _controlBufferGCHandle.Target == _controlBuffer);
+                    if (!_controlBufferGCHandle.IsAllocated)
+                    {
+                        _controlBufferGCHandle = GCHandle.Alloc(_controlBuffer, GCHandleType.Pinned);
+                    }
+
+                    fixed (void* ptrControlBuffer = &_controlBuffer[0])
+                    {
+                        pMessage->controlBuffer.Pointer = (IntPtr)ptrControlBuffer;
+                    }
                     pMessage->controlBuffer.Length = _controlBuffer.Length;
                 }
                 pMessage->flags = _socketFlags;
+            }
+        }
+
+        private unsafe IntPtr PtrWSAMessageBuffer
+        {
+            get
+            {
+                Debug.Assert(_wsaMessageBuffer != null);
+                Debug.Assert(_wsaMessageBuffer.Length == sizeof(Interop.Winsock.WSAMsg));
+                Debug.Assert(_wsaMessageBufferGCHandle.IsAllocated);
+                Debug.Assert(_wsaMessageBufferGCHandle.Target == _wsaMessageBuffer);
+                fixed (void* ptrWSAMessageBuffer = &_wsaMessageBuffer[0])
+                {
+                    return (IntPtr)ptrWSAMessageBuffer;
+                }
             }
         }
 
@@ -522,7 +523,7 @@ namespace System.Net.Sockets
 
                 socketError = socket.WSARecvMsg(
                     handle,
-                    _ptrWSAMessageBuffer,
+                    PtrWSAMessageBuffer,
                     out bytesTransferred,
                     overlapped,
                     IntPtr.Zero);
@@ -687,13 +688,24 @@ namespace System.Net.Sockets
 
         internal unsafe SocketError DoOperationSendPackets(Socket socket, SafeCloseSocket handle)
         {
+            Debug.Assert(_sendPacketsDescriptor != null);
+            Debug.Assert(_sendPacketsDescriptor.Length > 0);
+            Debug.Assert(_multipleBufferGCHandles != null);
+            Debug.Assert(_multipleBufferGCHandles[0].IsAllocated);
+            Debug.Assert(_multipleBufferGCHandles[0].Target == _sendPacketsDescriptor);
+            IntPtr ptrSendPacketsDescriptor;
+            fixed (void* p = &_sendPacketsDescriptor[0])
+            {
+                ptrSendPacketsDescriptor = (IntPtr)p;
+            }
+
             SocketError socketError = SocketError.Success;
             NativeOverlapped* overlapped = AllocateNativeOverlapped();
             try
             {
                 bool result = socket.TransmitPackets(
                     handle,
-                    _ptrSendPacketsDescriptor,
+                    ptrSendPacketsDescriptor,
                     _sendPacketsDescriptor.Length,
                     _sendPacketsSendSize,
                     overlapped,
@@ -745,7 +757,7 @@ namespace System.Net.Sockets
                         1,
                         out bytesTransferred,
                         _socketFlags,
-                        _ptrSocketAddressBuffer,
+                        PtrSocketAddressBuffer,
                         _socketAddress.Size,
                         overlapped,
                         IntPtr.Zero);
@@ -758,7 +770,7 @@ namespace System.Net.Sockets
                         _bufferListInternal.Count,
                         out bytesTransferred,
                         _socketFlags,
-                        _ptrSocketAddressBuffer,
+                        PtrSocketAddressBuffer,
                         _socketAddress.Size,
                         overlapped,
                         IntPtr.Zero);
@@ -889,10 +901,26 @@ namespace System.Net.Sockets
             // Pin down the new one.
             _socketAddressGCHandle = GCHandle.Alloc(_socketAddress.Buffer, GCHandleType.Pinned);
             _socketAddress.CopyAddressSizeIntoBuffer();
-            _ptrSocketAddressBuffer = Marshal.UnsafeAddrOfPinnedArrayElement(_socketAddress.Buffer, 0);
-            _ptrSocketAddressBufferSize = Marshal.UnsafeAddrOfPinnedArrayElement(_socketAddress.Buffer, _socketAddress.GetAddressSizeOffset());
             _pinnedSocketAddress = _socketAddress;
         }
+
+        private unsafe IntPtr PtrSocketAddressBuffer
+        {
+            get
+            {
+                Debug.Assert(_pinnedSocketAddress != null);
+                Debug.Assert(_pinnedSocketAddress.Buffer != null);
+                Debug.Assert(_pinnedSocketAddress.Buffer.Length > 0);
+                Debug.Assert(_socketAddressGCHandle.IsAllocated);
+                Debug.Assert(_socketAddressGCHandle.Target == _pinnedSocketAddress.Buffer);
+                fixed (void* ptrSocketAddressBuffer = &_pinnedSocketAddress.Buffer[0])
+                {
+                    return (IntPtr)ptrSocketAddressBuffer;
+                }
+            }
+        }
+
+        private IntPtr PtrSocketAddressBufferSize => PtrSocketAddressBuffer + _socketAddress.GetAddressSizeOffset();
 
         // Cleans up any existing Overlapped object and related state variables.
         private void FreeOverlapped()
@@ -941,19 +969,16 @@ namespace System.Net.Sockets
             if (_wsaMessageBufferGCHandle.IsAllocated)
             {
                 _wsaMessageBufferGCHandle.Free();
-                _ptrWSAMessageBuffer = IntPtr.Zero;
             }
 
             if (_wsaRecvMsgWSABufferArrayGCHandle.IsAllocated)
             {
                 _wsaRecvMsgWSABufferArrayGCHandle.Free();
-                _ptrWSARecvMsgWSABufferArray = IntPtr.Zero;
             }
 
             if (_controlBufferGCHandle.IsAllocated)
             {
                 _controlBufferGCHandle.Free();
-                _ptrControlBuffer = IntPtr.Zero;
             }
         }
 
@@ -1084,9 +1109,6 @@ namespace System.Net.Sockets
                     index++;
                 }
             }
-
-            // Get pointer to native descriptor.
-            _ptrSendPacketsDescriptor = Marshal.UnsafeAddrOfPinnedArrayElement(_sendPacketsDescriptor, 0);
 
             // Fill in native descriptor.
             int descriptorIndex = 0;
@@ -1247,7 +1269,7 @@ namespace System.Net.Sockets
 
         private unsafe int GetSocketAddressSize()
         {
-            return *(int*)_ptrSocketAddressBufferSize;
+            return *(int*)PtrSocketAddressBufferSize;
         }
 
         private unsafe void FinishOperationReceiveMessageFrom()
