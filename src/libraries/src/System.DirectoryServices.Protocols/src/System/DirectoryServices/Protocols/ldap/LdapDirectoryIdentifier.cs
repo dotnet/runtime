@@ -4,15 +4,9 @@
 
 namespace System.DirectoryServices.Protocols
 {
-    using System;
-    using System.Globalization;
-
     public class LdapDirectoryIdentifier : DirectoryIdentifier
     {
         private string[] _servers = null;
-        private bool _fullyQualifiedDnsHostName = false;
-        private bool _connectionless = false;
-        private int _portNumber = 389;
 
         public LdapDirectoryIdentifier(string server) : this(server != null ? new string[] { server } : null, false, false)
         {
@@ -43,18 +37,22 @@ namespace System.DirectoryServices.Protocols
                         string trimmedName = servers[i].Trim();
                         string[] result = trimmedName.Split(new char[] { ' ' });
                         if (result.Length > 1)
-                            throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.WhiteSpaceServerName));
+                        {
+                            throw new ArgumentException(SR.WhiteSpaceServerName);
+                        }
+
                         _servers[i] = trimmedName;
                     }
                 }
             }
-            _fullyQualifiedDnsHostName = fullyQualifiedDnsHostName;
-            _connectionless = connectionless;
+
+            FullyQualifiedDnsHostName = fullyQualifiedDnsHostName;
+            Connectionless = connectionless;
         }
 
         public LdapDirectoryIdentifier(string[] servers, int portNumber, bool fullyQualifiedDnsHostName, bool connectionless) : this(servers, fullyQualifiedDnsHostName, connectionless)
         {
-            _portNumber = portNumber;
+            PortNumber = portNumber;
         }
 
         public string[] Servers
@@ -62,44 +60,31 @@ namespace System.DirectoryServices.Protocols
             get
             {
                 if (_servers == null)
-                    return new string[0];
-                else
                 {
-                    string[] temporaryServers = new string[_servers.Length];
-                    for (int i = 0; i < _servers.Length; i++)
-                    {
-                        if (_servers[i] != null)
-                            temporaryServers[i] = String.Copy(_servers[i]);
-                        else
-                            temporaryServers[i] = null;
-                    }
-                    return temporaryServers;
+                    return Array.Empty<string>();
                 }
+                
+                var temporaryServers = new string[_servers.Length];
+                for (int i = 0; i < _servers.Length; i++)
+                {
+                    if (_servers[i] != null)
+                    {
+                        temporaryServers[i] = string.Copy(_servers[i]);
+                    }
+                    else
+                    {
+                        temporaryServers[i] = null;
+                    }
+                }
+
+                return temporaryServers;
             }
         }
 
-        public bool Connectionless
-        {
-            get
-            {
-                return _connectionless;
-            }
-        }
+        public bool Connectionless { get; }
 
-        public bool FullyQualifiedDnsHostName
-        {
-            get
-            {
-                return _fullyQualifiedDnsHostName;
-            }
-        }
+        public bool FullyQualifiedDnsHostName { get; }
 
-        public int PortNumber
-        {
-            get
-            {
-                return _portNumber;
-            }
-        }
+        public int PortNumber { get; } = 389;
     }
 }
