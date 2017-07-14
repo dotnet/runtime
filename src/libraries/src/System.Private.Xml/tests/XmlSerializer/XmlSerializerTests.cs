@@ -4481,10 +4481,8 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     public static void Xml_VerifyCompilationIssueOnly()
     {
         AssertSerializationFailure<TypeWithEnumerableMembers, InvalidOperationException>();
-#if uapaot
         AssertSerializationFailure<TypeWithoutPublicSetter, InvalidOperationException>();
         AssertSerializationFailure<TypeWithCompilerGeneratedAttributeButWithoutPublicSetter, InvalidOperationException>();
-#endif
         AssertSerializationFailure<InvalidDerivedClass, InvalidOperationException>();
         AssertSerializationFailure<AnotherInvalidDerivedClass, InvalidOperationException>();
         AssertSerializationFailure<InternalTypeWithNestedPublicType.LevelData, InvalidOperationException>();
@@ -4698,15 +4696,14 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
 
     private static void AssertSerializationFailure<T, ExceptionType>() where T : new() where ExceptionType : Exception
     {
-        using (var ms = new MemoryStream())
+        try
         {
-            Assert.Throws<ExceptionType>(() =>
-            {
-                var serializer = new XmlSerializer(typeof(T));
-                var value = new T();
-                serializer.Serialize(ms, value);
-            });
+            SerializeAndDeserialize(new T(), string.Empty, skipStringCompare: true);
+            Assert.True(false, $"Assert.True failed for {typeof(T)}. The above operation should have thrown, but it didn't.");
+        }
+        catch(Exception e)
+        {
+            Assert.True(e is ExceptionType, $"Assert.True failed for {typeof(T)}. Expected: {typeof(ExceptionType)}; Actual: {e.GetType()}");
         }
     }
-
 }
