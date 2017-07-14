@@ -147,7 +147,7 @@ namespace System.Internal
             private int _handleCount;
             private HandleEntry[] _buckets;
 
-            private const int NumberOfBuckers = 10;
+            private const int NumberOfBuckets = 10;
 
             /// <summary>
             /// Creates a new handle type.
@@ -155,7 +155,7 @@ namespace System.Internal
             public HandleType(string name)
             {
                 this.name = name;
-                _buckets = new HandleEntry[NumberOfBuckers];
+                _buckets = new HandleEntry[NumberOfBuckets];
             }
 
             /// <summary>
@@ -198,7 +198,7 @@ namespace System.Internal
                     bool reportedFirstLeak = false;
                     if (_handleCount > 0)
                     {
-                        for (int i = 0; i < NumberOfBuckers; i++)
+                        for (int i = 0; i < NumberOfBuckets; i++)
                         {
                             HandleEntry e = _buckets[i];
                             while (e != null)
@@ -228,7 +228,7 @@ namespace System.Internal
                 {
                     if (_handleCount > 0)
                     {
-                        for (int i = 0; i < NumberOfBuckers; i++)
+                        for (int i = 0; i < NumberOfBuckets; i++)
                         {
                             HandleEntry e = _buckets[i];
                             while (e != null)
@@ -246,7 +246,7 @@ namespace System.Internal
             /// </summary>
             private int ComputeHash(IntPtr handle)
             {
-                return (unchecked((int)handle) & 0xFFFF) % NumberOfBuckers;
+                return (unchecked((int)handle) & 0xFFFF) % NumberOfBuckets;
             }
 
             /// <summary>
