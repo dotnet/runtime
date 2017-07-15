@@ -29,6 +29,7 @@
     <Compile Include="ArrayConverterTests.cs" />
     <Compile Include="AttributeCollectionTests.cs" />
     <Compile Include="AttributeProviderAttributeTests.cs" />
+    <Compile Include="BindingListTests.cs" />
     <Compile Include="BooleanConverterTests.cs" />
     <Compile Include="ByteConvertersTests.cs" />
     <Compile Include="CharConverterTests.cs" />
@@ -80,7 +81,6 @@
     <Compile Include="UriTypeConverterTests.cs" />
     <Compile Include="Drawing\StringTypeConverterTestBase.cs" />
     <Compile Include="TimerTests.cs" />
-    <Compile Include="BindingListTests.cs" />
     <Compile Include="ContainerTests.cs" />
     <Compile Include="CultureInfoConverterTests.cs" />
     <Compile Include="LicenseManagerTests.cs" />

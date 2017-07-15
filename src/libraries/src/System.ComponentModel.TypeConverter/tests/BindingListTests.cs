@@ -9,671 +9,996 @@ namespace System.ComponentModel.Tests
     public class BindingListTest
     {
         [Fact]
-        public void BindingListDefaults()
+        public void Ctor_Default()
         {
-            BindingList<string> l = new BindingList<string>();
-            IBindingList ibl = (IBindingList)l;
+            var list = new BindingList<string>();
+            IBindingList iBindingList = list;
 
-            Assert.True(l.AllowEdit, "1");
-            Assert.False(l.AllowNew, "2");
-            Assert.True(l.AllowRemove, "3");
-            Assert.True(l.RaiseListChangedEvents, "4");
+            Assert.True(list.AllowEdit);
+            Assert.False(list.AllowNew);
+            Assert.True(list.AllowRemove);
+            Assert.True(list.RaiseListChangedEvents);
 
-            Assert.False(ibl.IsSorted, "5");
-            Assert.Equal(ibl.SortDirection, ListSortDirection.Ascending);
-            Assert.True(ibl.SupportsChangeNotification, "7");
-            Assert.False(ibl.SupportsSearching, "8");
-            Assert.False(ibl.SupportsSorting, "9");
-            Assert.False(((IRaiseItemChangedEvents)l).RaisesItemChangedEvents, "10");
+            Assert.True(iBindingList.AllowEdit);
+            Assert.False(iBindingList.AllowNew);
+            Assert.True(iBindingList.AllowRemove);
+            Assert.Equal(ListSortDirection.Ascending, iBindingList.SortDirection);
+            Assert.True(iBindingList.SupportsChangeNotification);
+            Assert.False(iBindingList.SupportsSearching);
+            Assert.False(iBindingList.SupportsSorting);
+            Assert.False(((IRaiseItemChangedEvents)list).RaisesItemChangedEvents);
         }
 
         [Fact]
-        public void BindingListDefaults_FixedSizeList()
+        public void Ctor_FixedSizeIList()
         {
-            string[] arr = new string[10];
-            BindingList<string> l = new BindingList<string>(arr);
-            IBindingList ibl = (IBindingList)l;
+            var array = new string[10];
+            var bindingList = new BindingList<string>(array);
+            IBindingList iBindingList = bindingList;
 
-            Assert.True(l.AllowEdit, "1");
-            Assert.False(l.AllowNew, "2");
-            Assert.True(l.AllowRemove, "3");
-            Assert.True(l.RaiseListChangedEvents, "4");
+            Assert.True(bindingList.AllowEdit);
+            Assert.False(bindingList.AllowNew);
+            Assert.True(bindingList.AllowRemove);
+            Assert.True(bindingList.RaiseListChangedEvents);
 
-            Assert.False(ibl.IsSorted, "5");
-            Assert.Equal(ibl.SortDirection, ListSortDirection.Ascending);
-            Assert.True(ibl.SupportsChangeNotification, "7");
-            Assert.False(ibl.SupportsSearching, "8");
-            Assert.False(ibl.SupportsSorting, "9");
-            Assert.False(((IRaiseItemChangedEvents)l).RaisesItemChangedEvents, "10");
+            Assert.True(iBindingList.AllowEdit);
+            Assert.False(iBindingList.AllowNew);
+            Assert.True(iBindingList.AllowRemove);
+            Assert.False(iBindingList.IsSorted);
+            Assert.Equal(ListSortDirection.Ascending, iBindingList.SortDirection);
+            Assert.True(iBindingList.SupportsChangeNotification);
+            Assert.False(iBindingList.SupportsSearching);
+            Assert.False(iBindingList.SupportsSorting);
+            Assert.False(((IRaiseItemChangedEvents)bindingList).RaisesItemChangedEvents);
         }
 
         [Fact]
-        public void BindingListDefaults_NonFixedSizeList()
+        public void Ctor_NonFixedSizeIList()
         {
-            List<string> list = new List<string>();
-            BindingList<string> l = new BindingList<string>(list);
-            IBindingList ibl = (IBindingList)l;
+            var list = new List<string>();
+            var bindingList = new BindingList<string>(list);
+            IBindingList iBindingList = bindingList;
 
-            Assert.True(l.AllowEdit, "1");
-            Assert.False(l.AllowNew, "2");
-            Assert.True(l.AllowRemove, "3");
-            Assert.True(l.RaiseListChangedEvents, "4");
+            Assert.True(bindingList.AllowEdit);
+            Assert.False(bindingList.AllowNew);
+            Assert.True(bindingList.AllowRemove);
+            Assert.True(bindingList.RaiseListChangedEvents);
 
-            Assert.False(ibl.IsSorted, "5");
-            Assert.Equal(ibl.SortDirection, ListSortDirection.Ascending);
-            Assert.True(ibl.SupportsChangeNotification, "7");
-            Assert.False(ibl.SupportsSearching, "8");
-            Assert.False(ibl.SupportsSorting, "9");
-            Assert.False(((IRaiseItemChangedEvents)l).RaisesItemChangedEvents, "10");
+            Assert.True(iBindingList.AllowEdit);
+            Assert.False(iBindingList.AllowNew);
+            Assert.True(iBindingList.AllowRemove);
+            Assert.False(iBindingList.IsSorted);
+            Assert.Equal(ListSortDirection.Ascending, iBindingList.SortDirection);
+            Assert.True(iBindingList.SupportsChangeNotification);
+            Assert.False(iBindingList.SupportsSearching);
+            Assert.False(iBindingList.SupportsSorting);
+            Assert.False(((IRaiseItemChangedEvents)bindingList).RaisesItemChangedEvents);
         }
 
         [Fact]
-        public void BindingListDefaults_ReadOnlyList()
+        public void Ctor_IReadOnlyList()
         {
-            List<string> list = new List<string>();
-            BindingList<string> l = new BindingList<string>(list);
-            IBindingList ibl = (IBindingList)l;
+            var list = new List<string>();
+            var bindingList = new BindingList<string>(list);
+            IBindingList iBindingList = bindingList;
 
-            Assert.True(l.AllowEdit, "1");
-            Assert.False(l.AllowNew, "2");
-            Assert.True(l.AllowRemove, "3");
-            Assert.True(l.RaiseListChangedEvents, "4");
+            Assert.True(bindingList.AllowEdit);
+            Assert.False(bindingList.AllowNew);
+            Assert.True(bindingList.AllowRemove);
+            Assert.True(bindingList.RaiseListChangedEvents);
 
-            Assert.False(ibl.IsSorted, "5");
-            Assert.Equal(ibl.SortDirection, ListSortDirection.Ascending);
-            Assert.True(ibl.SupportsChangeNotification, "7");
-            Assert.False(ibl.SupportsSearching, "8");
-            Assert.False(ibl.SupportsSorting, "9");
-            Assert.False(((IRaiseItemChangedEvents)l).RaisesItemChangedEvents, "10");
+            Assert.True(iBindingList.AllowEdit);
+            Assert.False(iBindingList.AllowNew);
+            Assert.True(iBindingList.AllowRemove);
+            Assert.False(iBindingList.IsSorted);
+            Assert.Equal(ListSortDirection.Ascending, iBindingList.SortDirection);
+            Assert.True(iBindingList.SupportsChangeNotification);
+            Assert.False(iBindingList.SupportsSearching);
+            Assert.False(iBindingList.SupportsSorting);
+            Assert.False(((IRaiseItemChangedEvents)bindingList).RaisesItemChangedEvents);
         }
 
         [Fact]
-        public void TestAllowNew()
+        public void AllowNew_GetWithDefaultCtor_ReturnsTrue()
         {
-            // Object has a default ctor
-            BindingList<object> l1 = new BindingList<object>();
-            Assert.True(l1.AllowNew, "1");
+            var bindingList = new BindingList<object>();
+            Assert.True(bindingList.AllowNew);
+        }
 
-            // string has no default ctor
-            BindingList<string> l2 = new BindingList<string>();
-            Assert.False(l2.AllowNew, "2");
+        [Fact]
+        public void AllowNew_Primitive_ReturnsTrue()
+        {
+            var bindingList = new BindingList<int>();
+            Assert.True(bindingList.AllowNew);
+        }
 
-            // adding a delegate to AddingNew fixes that
-            l2.AddingNew += delegate (object sender, AddingNewEventArgs e) { };
-            Assert.True(l2.AllowNew, "3");
+        [Fact]
+        public void AllowNew_NoDefaultCtor_ReturnsExpected()
+        {
+            var bindingList = new BindingList<string>();
+            Assert.False(bindingList.AllowNew);
 
-            l1 = new BindingList<object>();
+            // Binding an AddingNew delegate allows new. 
+            bindingList.AddingNew += (object sender, AddingNewEventArgs e) => { };
+            Assert.True(bindingList.AllowNew);
+        }
 
-            bool list_changed = false;
-            bool expected = false;
+        [Fact]
+        public void AllowNew_SetFalse_CallsListChanged()
+        {
+            var bindingList = new BindingList<object>();
 
-            l1.ListChanged += delegate (object sender, ListChangedEventArgs e)
+            bool calledListChanged = false;
+            bindingList.ListChanged += (object sender, ListChangedEventArgs e) =>
             {
-                list_changed = true;
+                calledListChanged = true;
                 Assert.Equal(-1, e.NewIndex);
                 Assert.Equal(ListChangedType.Reset, e.ListChangedType);
-                Assert.Equal(expected, l1.AllowNew);
+                Assert.False(bindingList.AllowNew);
             };
+            bindingList.AllowNew = false;
 
-            expected = false;
-            l1.AllowNew = false;
-
-            Assert.True(list_changed, "7");
-
-            //the default for T=object is true, so check
-			//if we enter the block for raising the event
-			//if we explicitly set it to the value it
-			//currently has.
-            l1 = new BindingList<object>();
-
-            list_changed = false;
-
-            l1.ListChanged += delegate (object sender, ListChangedEventArgs e)
-            {
-                list_changed = true;
-                Assert.Equal(-1, e.NewIndex);
-                Assert.Equal(ListChangedType.Reset, e.ListChangedType);
-                Assert.Equal(expected, l1.AllowNew);
-            };
-
-            expected = true;
-            l1.AllowNew = true;
-
-            //turns out it doesn't raise the event, so the check must only be for "allow_new == value"
-            Assert.False(list_changed, "11");
+            Assert.True(calledListChanged);
         }
 
         [Fact]
-        public void TestResetBindings()
+        public void AllowNew_SetTrue_DoesNotCallListChanged()
         {
-            BindingList<object> l = new BindingList<object>();
+            // The default for T=object is true, so check if we enter the
+            // block for raising the event if we explicitly set it to the value
+            // it currently has.
+            var bindingList = new BindingList<object>();
 
-            bool list_changed = false;
-
-            l.ListChanged += delegate (object sender, ListChangedEventArgs e)
+            bool calledListChanged = false;
+            bindingList.ListChanged += delegate (object sender, ListChangedEventArgs e)
             {
-                list_changed = true;
+                calledListChanged = true;
                 Assert.Equal(-1, e.NewIndex);
                 Assert.Equal(ListChangedType.Reset, e.ListChangedType);
+                Assert.True(bindingList.AllowNew);
             };
+            bindingList.AllowNew = true;
 
-            l.ResetBindings();
-
-            Assert.True(list_changed, "3");
+            // It doesn't raise the event.
+            Assert.False(calledListChanged);
         }
 
         [Fact]
-        public void TestResetItem()
+        public void ResetBindings_Invoke_CallsListChanged()
         {
-            List<object> list = new List<object>();
-            list.Add(new object());
+            var bindingList = new BindingList<object>();
 
-            BindingList<object> l = new BindingList<object>(list);
-
-            bool item_changed = false;
-
-            l.ListChanged += delegate (object sender, ListChangedEventArgs e)
+            bool calledListChanged = false;
+            bindingList.ListChanged += (object sender, ListChangedEventArgs e) =>
             {
-                item_changed = true;
+                calledListChanged = true;
+                Assert.Equal(-1, e.NewIndex);
+                Assert.Equal(ListChangedType.Reset, e.ListChangedType);
+            };
+            bindingList.ResetBindings();
+
+            Assert.True(calledListChanged);
+        }
+
+        [Fact]
+        public void ResetItem_Invoke_CallsListChanged()
+        {
+            var list = new List<object> { new object() };
+            var bindingList = new BindingList<object>(list);
+
+            bool calledListChanged = false;
+            bindingList.ListChanged += (object sender, ListChangedEventArgs e) =>
+            {
+                calledListChanged = true;
                 Assert.Equal(0, e.NewIndex);
                 Assert.Equal(ListChangedType.ItemChanged, e.ListChangedType);
             };
+            bindingList.ResetItem(0);
 
-            l.ResetItem(0);
-
-            Assert.True(item_changed, "3");
+            Assert.True(calledListChanged);
         }
 
         [Fact]
-        public void TestRemoveItem()
+        public void RemoveAt_Invoke_CallsListChanged()
         {
-            List<object> list = new List<object>();
-            list.Add(new object());
+            var list = new List<object> { new object() };
+            var bindingList = new BindingList<object>(list);
 
-            BindingList<object> l = new BindingList<object>(list);
-
-            bool item_deleted = false;
-
-            l.ListChanged += delegate (object sender, ListChangedEventArgs e)
+            bool calledListChanged = false;
+            bindingList.ListChanged += (object sender, ListChangedEventArgs e) =>
             {
-                item_deleted = true;
+                calledListChanged = true;
                 Assert.Equal(0, e.NewIndex);
                 Assert.Equal(ListChangedType.ItemDeleted, e.ListChangedType);
-                Assert.Equal(0, l.Count); // to show the event is raised after the removal
+
+                // The event is raised after the removal.
+                Assert.Equal(0, bindingList.Count);
             };
+            bindingList.RemoveAt(0);
 
-            l.RemoveAt(0);
-
-            Assert.True(item_deleted, "4");
+            Assert.True(calledListChanged);
         }
 
         [Fact]
-        public void TestRemoveItem_AllowRemoveFalse()
+        public void RemoteAt_AllowRemoveFalse_ThrowsNotSupportedException()
         {
-            List<object> list = new List<object>();
-            list.Add(new object());
+            var list = new List<object> { new object() };
+            var bindingList = new BindingList<object>(list) { AllowRemove = false };
 
-            BindingList<object> l = new BindingList<object>(list);
-
-            l.AllowRemove = false;
-
-            Assert.Throws<NotSupportedException>(() => l.RemoveAt(0));
-
+            Assert.Throws<NotSupportedException>(() => bindingList.RemoveAt(0));
         }
 
         [Fact]
-        public void TestAllowEditEvent()
+        public void AllowEdit_Set_InvokesListChanged()
         {
-            BindingList<object> l = new BindingList<object>();
+            var bindingList = new BindingList<object>();
 
-            bool event_raised = false;
-            bool expected = false;
-
-            l.ListChanged += delegate (object sender, ListChangedEventArgs e)
+            bool calledListChanged = false;
+            bool expectedAllowEdit = false;
+            bindingList.ListChanged += (object sender, ListChangedEventArgs e) =>
             {
-                event_raised = true;
+                calledListChanged = true;
                 Assert.Equal(-1, e.NewIndex);
                 Assert.Equal(ListChangedType.Reset, e.ListChangedType);
-                Assert.Equal(expected, l.AllowEdit);
+                Assert.Equal(expectedAllowEdit, bindingList.AllowEdit);
             };
 
-            expected = false;
-            l.AllowEdit = false;
+            bindingList.AllowEdit = false;
+            Assert.True(calledListChanged);
 
-            Assert.True(event_raised, "4");
+            // ListChanged is not called if RaiseListChangedEvents is false.
+            bindingList.RaiseListChangedEvents = false;
+            bindingList.RaiseListChangedEvents = false;
 
-            // check to see if RaiseListChangedEvents affects AllowEdit's event.
-            l.RaiseListChangedEvents = false;
-
-            event_raised = false;
-            expected = true;
-            l.AllowEdit = true;
-
-            Assert.False(event_raised, "5");
+            calledListChanged = false;
+            bindingList.AllowEdit = true;
+            Assert.False(calledListChanged);
         }
 
         [Fact]
-        public void TestAllowRemove()
+        public void AllowRemove_Set_InvokesListChanged()
         {
-            BindingList<object> l = new BindingList<object>();
+            var bindingList = new BindingList<object>();
 
-            bool event_raised = false;
-            bool expected = false;
-
-            l.ListChanged += delegate (object sender, ListChangedEventArgs e)
+            bool calledListChanged = false;
+            bool expectedAllowRemove = false;
+            bindingList.ListChanged += (object sender, ListChangedEventArgs e) =>
             {
-                event_raised = true;
+                calledListChanged = true;
                 Assert.Equal(-1, e.NewIndex);
                 Assert.Equal(ListChangedType.Reset, e.ListChangedType);
-                Assert.Equal(expected, l.AllowRemove);
+                Assert.Equal(expectedAllowRemove, bindingList.AllowRemove);
             };
+            
+            bindingList.AllowRemove = false;
+            Assert.True(calledListChanged);
 
-            expected = false;
-            l.AllowRemove = false;
+            // ListChanged is not called if RaiseListChangedEvents is false.
+            bindingList.RaiseListChangedEvents = false;
 
-            Assert.True(event_raised, "4");
-
-            // check to see if RaiseListChangedEvents affects AllowRemove's event.
-            l.RaiseListChangedEvents = false;
-
-            event_raised = false;
-            expected = true;
-            l.AllowRemove = true;
-
-            Assert.False(event_raised, "5");
+            calledListChanged = false;
+            bindingList.AllowRemove = true;
+            Assert.False(calledListChanged);
         }
 
         [Fact]
-        public void TestAddNew_SettingArgsNewObject()
+        public void AddNew_SetArgsNewObject_ReturnsNewObject()
         {
-            BindingList<object> l = new BindingList<object>();
+            BindingList<object> bindingList = new BindingList<object>();
 
-            bool adding_event_raised = false;
-            object o = new object();
+            bool calledAddingNew = false;
+            var newObject = new object();
 
-            l.AddingNew += delegate (object sender, AddingNewEventArgs e)
+            bindingList.AddingNew += (object sender, AddingNewEventArgs e) =>
             {
-                adding_event_raised = true;
+                calledAddingNew = true;
                 Assert.Null(e.NewObject);
-                e.NewObject = o;
+                e.NewObject = newObject;
             };
 
-            object rv = l.AddNew();
-            Assert.True(adding_event_raised, "2");
-            Assert.Same(o, rv);
+            Assert.Same(newObject, bindingList.AddNew());
+            Assert.True(calledAddingNew);
         }
 
         [Fact]
-        public void TestAddNew()
+        public void AddNew_NullArgsNewObject_ReturnsNotNul()
         {
-            BindingList<object> l = new BindingList<object>();
+            var bindingList = new BindingList<object>();
 
-            bool adding_event_raised = false;
-            object o = new object();
-
-            l.AddingNew += delegate (object sender, AddingNewEventArgs e)
+            bool calledAddingNew = false;
+            bindingList.AddingNew += delegate (object sender, AddingNewEventArgs e)
             {
-                adding_event_raised = true;
+                calledAddingNew = true;
                 Assert.Null(e.NewObject);
             };
 
-            object rv = l.AddNew();
-            Assert.True(adding_event_raised, "2");
-            Assert.NotNull(rv);
+            Assert.NotNull(bindingList.AddNew());
+            Assert.True(calledAddingNew);
         }
 
         [Fact]
-        public void TestAddNew_Cancel()
+        public void AddNew_CancelNew_Success()
         {
-            BindingList<object> l = new BindingList<object>();
+            var bindingList = new BindingList<object>();
 
-            bool adding_event_raised = false;
-            object o = new object();
+            bool calledAddingNew = false;
+            bool calledListChanged = false;
+            ListChangedType listChangedType = ListChangedType.Reset;
+            int listChangedIndex = -1;
 
-            bool list_changed = false;
-            ListChangedType change_type = ListChangedType.Reset;
-            int list_changed_index = -1;
-
-            l.AddingNew += delegate (object sender, AddingNewEventArgs e)
+            bindingList.AddingNew += (object sender, AddingNewEventArgs e) =>
             {
-                adding_event_raised = true;
+                calledAddingNew = true;
                 Assert.Null(e.NewObject);
             };
-
-            l.ListChanged += delegate (object sender, ListChangedEventArgs e)
+            bindingList.ListChanged += (object sender, ListChangedEventArgs e) =>
             {
-                list_changed = true;
-                change_type = e.ListChangedType;
-                list_changed_index = e.NewIndex;
+                calledListChanged = true;
+                listChangedType = e.ListChangedType;
+                listChangedIndex = e.NewIndex;
             };
 
-            object rv = l.AddNew();
-            Assert.True(adding_event_raised, "2");
-            Assert.NotNull(rv);
+            object newValue = bindingList.AddNew();
+            Assert.True(calledAddingNew);
+            Assert.NotNull(newValue);
 
-            Assert.Equal(1, l.Count);
-            Assert.Equal(0, l.IndexOf(rv));
-            Assert.True(list_changed, "6");
-            Assert.Equal(ListChangedType.ItemAdded, change_type);
-            Assert.Equal(0, list_changed_index);
+            Assert.Equal(1, bindingList.Count);
+            Assert.Equal(0, bindingList.IndexOf(newValue));
+            Assert.True(calledListChanged);
+            Assert.Equal(ListChangedType.ItemAdded, listChangedType);
+            Assert.Equal(0, listChangedIndex);
 
-            list_changed = false;
-
-            l.CancelNew(0);
-
-            Assert.Equal(0, l.Count);
-            Assert.True(list_changed, "10");
-            Assert.Equal(ListChangedType.ItemDeleted, change_type);
-            Assert.Equal(0, list_changed_index);
+            calledListChanged = false;
+            bindingList.CancelNew(0);
+            Assert.Equal(0, bindingList.Count);
+            Assert.True(calledListChanged);
+            Assert.Equal(ListChangedType.ItemDeleted, listChangedType);
+            Assert.Equal(0, listChangedIndex);
         }
 
         [Fact]
-        public void TestAddNew_CancelDifferentIndex()
+        public void AddNew_CancelNewMultipleIndices_RemovesAddNewIndex()
         {
-            List<object> list = new List<object>();
+            var list = new List<object> { new object(), new object() };
+            var bindingList = new BindingList<object>(list);
 
-            list.Add(new object());
-            list.Add(new object());
+            bool calledAddingNew = false;
+            bool calledListChanged = false;
+            ListChangedType listChangedType = ListChangedType.Reset;
+            int listChangedIndex = -1;
 
-            BindingList<object> l = new BindingList<object>(list);
-
-            bool adding_event_raised = false;
-            object o = new object();
-
-            bool list_changed = false;
-            ListChangedType change_type = ListChangedType.Reset;
-            int list_changed_index = -1;
-
-            l.AddingNew += delegate (object sender, AddingNewEventArgs e)
+            bindingList.AddingNew += (object sender, AddingNewEventArgs e) =>
             {
-                adding_event_raised = true;
+                calledAddingNew = true;
                 Assert.Null(e.NewObject);
             };
-
-            l.ListChanged += delegate (object sender, ListChangedEventArgs e)
+            bindingList.ListChanged += (object sender, ListChangedEventArgs e) =>
             {
-                list_changed = true;
-                change_type = e.ListChangedType;
-                list_changed_index = e.NewIndex;
+                calledListChanged = true;
+                listChangedType = e.ListChangedType;
+                listChangedIndex = e.NewIndex;
             };
 
-            object rv = l.AddNew();
-            Assert.True(adding_event_raised, "2");
-            Assert.NotNull(rv);
+            object newValue = bindingList.AddNew();
+            Assert.True(calledAddingNew);
+            Assert.NotNull(newValue);
 
-            Assert.Equal(3, l.Count);
-            Assert.Equal(2, l.IndexOf(rv));
-            Assert.True(list_changed, "6");
-            Assert.Equal(ListChangedType.ItemAdded, change_type);
-            Assert.Equal(2, list_changed_index);
+            Assert.Equal(3, bindingList.Count);
+            Assert.Equal(2, bindingList.IndexOf(newValue));
+            Assert.True(calledListChanged);
+            Assert.Equal(ListChangedType.ItemAdded, listChangedType);
+            Assert.Equal(2, listChangedIndex);
 
-            list_changed = false;
+            // Cancelling index 0 does not change the list.
+            calledListChanged = false;
+            bindingList.CancelNew(0);
 
-            l.CancelNew(0);
+            Assert.False(calledListChanged);
+            Assert.Equal(3, bindingList.Count);
 
-            Assert.False(list_changed, "9");
-            Assert.Equal(3, l.Count);
+            // Cancelling index 2 changes the list.
+            bindingList.CancelNew(2);
 
-            l.CancelNew(2);
-
-            Assert.True(list_changed, "11");
-            Assert.Equal(ListChangedType.ItemDeleted, change_type);
-            Assert.Equal(2, list_changed_index);
-            Assert.Equal(2, l.Count);
+            Assert.True(calledListChanged);
+            Assert.Equal(ListChangedType.ItemDeleted, listChangedType);
+            Assert.Equal(2, listChangedIndex);
+            Assert.Equal(2, bindingList.Count);
         }
 
         [Fact]
-        public void TestAddNew_End()
+        public void AddNew_EndNew_Success()
         {
-            BindingList<object> l = new BindingList<object>();
+            var bindingList = new BindingList<object>();
 
-            bool adding_event_raised = false;
-            object o = new object();
+            bool calledAddNew = false;
+            bool calledListChanged = false;
+            ListChangedType listChangedType = ListChangedType.Reset;
+            int listChangedIndex = -1;
 
-            bool list_changed = false;
-            ListChangedType change_type = ListChangedType.Reset;
-            int list_changed_index = -1;
-
-            l.AddingNew += delegate (object sender, AddingNewEventArgs e)
+            bindingList.AddingNew += (object sender, AddingNewEventArgs e) =>
             {
-                adding_event_raised = true;
+                calledAddNew = true;
                 Assert.Null(e.NewObject);
             };
-
-            l.ListChanged += delegate (object sender, ListChangedEventArgs e)
+            bindingList.ListChanged += (object sender, ListChangedEventArgs e) =>
             {
-                list_changed = true;
-                change_type = e.ListChangedType;
-                list_changed_index = e.NewIndex;
+                calledListChanged = true;
+                listChangedType = e.ListChangedType;
+                listChangedIndex = e.NewIndex;
             };
 
-            object rv = l.AddNew();
-            Assert.True(adding_event_raised, "2");
-            Assert.NotNull(rv);
+            // Make sure the item was added.
+            object newValue = bindingList.AddNew();
+            Assert.True(calledAddNew);
+            Assert.NotNull(newValue);
 
-            Assert.Equal(1, l.Count);
-            Assert.Equal(0, l.IndexOf(rv));
-            Assert.True(list_changed, "6");
-            Assert.Equal(ListChangedType.ItemAdded, change_type);
-            Assert.Equal(0, list_changed_index);
+            Assert.Equal(1, bindingList.Count);
+            Assert.Equal(0, bindingList.IndexOf(newValue));
+            Assert.True(calledListChanged);
+            Assert.Equal(ListChangedType.ItemAdded, listChangedType);
+            Assert.Equal(0, listChangedIndex);
 
-            list_changed = false;
-
-            l.EndNew(0);
-
-            Assert.Equal(1, l.Count);
-            Assert.False(list_changed, "10");
+            // EndNew does not change the list.
+            calledListChanged = false;
+            bindingList.EndNew(0);
+            Assert.Equal(1, bindingList.Count);
+            Assert.False(calledListChanged);
         }
 
         [Fact]
-        public void TestAddNew_CancelDifferentIndexThenEnd()
+        public void AddNew_CancelDifferentIndexThenEnd_Success()
         {
-            BindingList<object> l = new BindingList<object>();
+            var list = new BindingList<object>();
 
-            bool adding_event_raised = false;
-            object o = new object();
+            bool calledAddingNew = false;
+            bool calledListChanged = false;
+            ListChangedType listChangedType = ListChangedType.Reset;
+            int listChangedIndex = -1;
 
-            bool list_changed = false;
-            ListChangedType change_type = ListChangedType.Reset;
-            int list_changed_index = -1;
-
-            l.AddingNew += delegate (object sender, AddingNewEventArgs e)
+            list.AddingNew += delegate (object sender, AddingNewEventArgs e)
             {
-                adding_event_raised = true;
+                calledAddingNew = true;
                 Assert.Null(e.NewObject);
             };
-
-            l.ListChanged += delegate (object sender, ListChangedEventArgs e)
+            list.ListChanged += delegate (object sender, ListChangedEventArgs e)
             {
-                list_changed = true;
-                change_type = e.ListChangedType;
-                list_changed_index = e.NewIndex;
+                calledListChanged = true;
+                listChangedType = e.ListChangedType;
+                listChangedIndex = e.NewIndex;
             };
 
-            object rv = l.AddNew();
-            Assert.True(adding_event_raised, "2");
-            Assert.NotNull(rv);
+            // Make sure AddNew changed the list.
+            object newValue = list.AddNew();
+            Assert.True(calledAddingNew);
+            Assert.NotNull(newValue);
 
-            Assert.Equal(1, l.Count);
-            Assert.Equal(0, l.IndexOf(rv));
-            Assert.True(list_changed, "6");
-            Assert.Equal(ListChangedType.ItemAdded, change_type);
-            Assert.Equal(0, list_changed_index);
+            Assert.Equal(1, list.Count);
+            Assert.Equal(0, list.IndexOf(newValue));
+            Assert.True(calledListChanged);
+            Assert.Equal(ListChangedType.ItemAdded, listChangedType);
+            Assert.Equal(0, listChangedIndex);
 
-            list_changed = false;
+            // Calling CancelNew on an invalid index does not change the list.
+            calledListChanged = false;
+            list.CancelNew(2);
+            Assert.Equal(1, list.Count);
+            Assert.False(calledListChanged);
 
-            l.CancelNew(2);
-
-            Assert.Equal(1, l.Count);
-            Assert.False(list_changed, "10");
-
-            l.EndNew(0);
-
-            Assert.Equal(1, l.Count);
-            Assert.False(list_changed, "12");
+            // Calling EndNew does not change the list.
+            list.EndNew(0);
+            Assert.Equal(1, list.Count);
+            Assert.False(calledListChanged);
         }
 
         [Fact]
-        public void TestAddNew_EndDifferentIndexThenCancel()
+        public void AddNew_EndDifferenceIndexThanCancel_Success()
         {
-            BindingList<object> l = new BindingList<object>();
+            var bindingList = new BindingList<object>();
 
-            bool adding_event_raised = false;
-            object o = new object();
+            bool calledAddingNew = false;
+            bool calledListChanged = false;
+            ListChangedType listChangedType = ListChangedType.Reset;
+            int listChangedIndex = -1;
 
-            bool list_changed = false;
-            ListChangedType change_type = ListChangedType.Reset;
-            int list_changed_index = -1;
-
-            l.AddingNew += delegate (object sender, AddingNewEventArgs e)
+            bindingList.AddingNew += (object sender, AddingNewEventArgs e) =>
             {
-                adding_event_raised = true;
+                calledAddingNew = true;
                 Assert.Null(e.NewObject);
             };
-
-            l.ListChanged += delegate (object sender, ListChangedEventArgs e)
+            bindingList.ListChanged += (object sender, ListChangedEventArgs e) =>
             {
-                list_changed = true;
-                change_type = e.ListChangedType;
-                list_changed_index = e.NewIndex;
+                calledListChanged = true;
+                listChangedType = e.ListChangedType;
+                listChangedIndex = e.NewIndex;
             };
 
-            object rv = l.AddNew();
-            Assert.True(adding_event_raised, "2");
-            Assert.NotNull(rv);
+            // Make sure AddNew changed the list.
+            object newValue = bindingList.AddNew();
+            Assert.True(calledAddingNew);
+            Assert.NotNull(newValue);
 
-            Assert.Equal(1, l.Count);
-            Assert.Equal(0, l.IndexOf(rv));
-            Assert.True(list_changed, "6");
-            Assert.Equal(ListChangedType.ItemAdded, change_type);
-            Assert.Equal(0, list_changed_index);
+            Assert.Equal(1, bindingList.Count);
+            Assert.Equal(0, bindingList.IndexOf(newValue));
+            Assert.True(calledListChanged);
+            Assert.Equal(ListChangedType.ItemAdded, listChangedType);
+            Assert.Equal(0, listChangedIndex);
 
-            list_changed = false;
+            // EndNew with an invalid index does not change the list.
+            calledListChanged = false;
+            bindingList.EndNew(2);
+            Assert.Equal(1, bindingList.Count);
+            Assert.False(calledListChanged);
 
-            l.EndNew(2);
-
-            Assert.Equal(1, l.Count);
-            Assert.False(list_changed, "10");
-
-            l.CancelNew(0);
-
-            Assert.True(list_changed, "11");
-            Assert.Equal(ListChangedType.ItemDeleted, change_type);
-            Assert.Equal(0, list_changed_index);
+            // CancelNew with a valid index changes the list.
+            bindingList.CancelNew(0);
+            Assert.True(calledListChanged);
+            Assert.Equal(ListChangedType.ItemDeleted, listChangedType);
+            Assert.Equal(0, listChangedIndex);
         }
 
-        class BindingListPoker : BindingList<object>
-        {
-            public object DoAddNewCore()
-            {
-                return base.AddNewCore();
-            }
-        }
-
-        // test to make sure that the events are raised in AddNewCore and not in AddNew
         [Fact]
-        public void TestAddNewCore_Insert()
+        public void AddingNew_RemoveWithAllowNewByDefault_Success()
         {
-            BindingListPoker poker = new BindingListPoker();
+            var bindingList = new BindingList<int>();
 
-            bool adding_event_raised = false;
+            bool calledAddingNew = false;
+            AddingNewEventHandler handler = (object sender, AddingNewEventArgs e) => calledAddingNew = true;
+            bindingList.AddingNew += handler;
 
-            bool list_changed = false;
-            ListChangedType change_type = ListChangedType.Reset;
-            int list_changed_index = -1;
+            bool calledListChanged = false;
+            bindingList.ListChanged += (object sender, ListChangedEventArgs e) => calledListChanged = true;
 
-            poker.AddingNew += delegate (object sender, AddingNewEventArgs e)
+            // Make sure removing the handler was successful.
+            bindingList.AddingNew -= handler;
+            Assert.False(calledListChanged);
+
+            bindingList.AddNew();
+            Assert.False(calledAddingNew);
+
+            // Make sure removing multiple times is a nop.
+            bindingList.AddingNew -= handler;
+        }
+
+        [Fact]
+        public void AddingNew_RemoveWithNotAllowNewByDefault_CallsListChanged()
+        {
+            var bindingList = new BindingList<string>();
+
+            bool calledAddingNew = false;
+            AddingNewEventHandler handler = (object sender, AddingNewEventArgs e) => calledAddingNew = true;
+            bindingList.AddingNew += handler;
+
+            bool calledListChanged = false;
+            bindingList.ListChanged += (object sender, ListChangedEventArgs e) =>
             {
-                adding_event_raised = true;
+                calledListChanged = true;
+                Assert.Equal(ListChangedType.Reset, e.ListChangedType);
+                Assert.Equal(-1, e.NewIndex);
             };
 
-            poker.ListChanged += delegate (object sender, ListChangedEventArgs e)
+            // Make sure removing the handler was successful.
+            bindingList.AddingNew -= handler;
+            Assert.True(calledListChanged);
+
+            Assert.Throws<MissingMethodException>(() => bindingList.AddNew());
+            Assert.False(calledAddingNew);
+        }
+
+        [Fact]
+        public void ListChanged_AddRemove_Success()
+        {
+            var bindingList = new BindingList<int>();
+
+            bool calledListChanged = false;
+            ListChangedEventHandler handler = (object sender, ListChangedEventArgs e) => calledListChanged = true;
+            bindingList.ListChanged += handler;
+
+            // Make sure removing the handler was successful.
+            bindingList.ListChanged -= handler;
+            bindingList.AddNew();
+            Assert.False(calledListChanged);
+        }
+
+        [Fact]
+        public void RaiseListChangedEvents_Set_GetReturnsExpected()
+        {
+            var bindingList = new BindingList<object> { RaiseListChangedEvents = false };
+            Assert.False(bindingList.RaiseListChangedEvents);
+
+            bindingList.RaiseListChangedEvents = false;
+            Assert.False(bindingList.RaiseListChangedEvents);
+        }
+
+        [Fact]
+        public void AllowNew_Set_GetReturnsExpected()
+        {
+            var bindingList = new BindingList<int> { AllowNew = false };
+            Assert.False(bindingList.AllowNew);
+
+            bindingList.AllowNew = false;
+            Assert.False(bindingList.AllowNew);
+        }
+
+        [Fact]
+        public void AllowEdit_Set_GetReturnsExpected()
+        {
+            var bindingList = new BindingList<int> { AllowEdit = false };
+            Assert.False(bindingList.AllowEdit);
+
+            bindingList.AllowEdit = false;
+            Assert.False(bindingList.AllowEdit);
+        }
+
+        [Fact]
+        public void AllowRemove_Set_GetReturnsExpected()
+        {
+            var bindingList = new BindingList<int> { AllowRemove = false };
+            Assert.False(bindingList.AllowRemove);
+
+            bindingList.AllowRemove = false;
+            Assert.False(bindingList.AllowRemove);
+        }
+
+        [Fact]
+        public void Clear_Invoke_Success()
+        {
+            var bindingList = new BindingList<object> { new object(), new object() };
+
+            bool calledListChanged = false;
+            bindingList.ListChanged += (object sender, ListChangedEventArgs e) =>
             {
-                list_changed = true;
-                change_type = e.ListChangedType;
-                list_changed_index = e.NewIndex;
+                calledListChanged = true;
+                Assert.Equal(ListChangedType.Reset, e.ListChangedType);
+                Assert.Equal(-1, e.NewIndex);
             };
 
-            object o = poker.DoAddNewCore();
+            bindingList.Clear();
+            Assert.True(calledListChanged);
+            Assert.Empty(bindingList);
+        }
 
-            Assert.True(adding_event_raised, "1");
-            Assert.True(list_changed, "2");
-            Assert.Equal(ListChangedType.ItemAdded, change_type);
-            Assert.Equal(0, list_changed_index);
+        [Fact]
+        public void Clear_INotifyPropertyChangedItems_RemovesPropertyChangedEventHandlers()
+        {
+            var item1 = new Item();
+            var item2 = new Item();
+            var list = new List<Item> { item1, item2, null };
+            var bindingList = new BindingList<Item>(list);
+            Assert.Equal(1, item1.InvocationList.Length);
+            Assert.Equal(1, item2.InvocationList.Length);
+
+            bool calledListChanged = false;
+            bindingList.ListChanged += (object sender, ListChangedEventArgs e) =>
+            {
+                calledListChanged = true;
+                Assert.Equal(ListChangedType.Reset, e.ListChangedType);
+                Assert.Equal(-1, e.NewIndex);
+            };
+
+            bindingList.Clear();
+            Assert.True(calledListChanged);
+            Assert.Empty(bindingList);
+
+            Assert.Null(item1.InvocationList);
+            Assert.Null(item2.InvocationList);
+        }
+
+        [Fact]
+        public void RemoveAt_INotifyPropertyChangedItems_RemovesPropertyChangedEventHandlers()
+        {
+            var item = new Item();
+            var bindingList = new BindingList<Item> { item };
+            Assert.Equal(1, item.InvocationList.Length);
+
+            bool calledListChanged = false;
+            bindingList.ListChanged += (object sender, ListChangedEventArgs e) =>
+            {
+                calledListChanged = true;
+                Assert.Equal(ListChangedType.ItemDeleted, e.ListChangedType);
+                Assert.Equal(0, e.NewIndex);
+            };
+
+            bindingList.RemoveAt(0);
+            Assert.True(calledListChanged);
+            Assert.Empty(bindingList);
+            Assert.Null(item.InvocationList);
+        }
+
+        [Fact]
+        public void ItemSet_Invoke_CallsListChanged()
+        {
+            var bindingList = new BindingList<int> { 1 };
+
+            bool calledListChanged = false;
+            bindingList.ListChanged += (object sender, ListChangedEventArgs e) =>
+            {
+                calledListChanged = true;
+                Assert.Equal(ListChangedType.ItemChanged, e.ListChangedType);
+                Assert.Equal(0, e.NewIndex);
+            };
+
+            bindingList[0] = 2;
+            Assert.True(calledListChanged);
+            Assert.Equal(2, bindingList[0]);
+        }
+
+        [Fact]
+        public void ItemSet_INotifyPropertyChangedItem_RemovesPropertyChangedEventHandlers()
+        {
+            var item1 = new Item();
+            var item2 = new Item();
+            var bindingList = new BindingList<Item> { item1 };
+            Assert.Equal(1, item1.InvocationList.Length);
+
+            bool calledListChanged = false;
+            bindingList.ListChanged += (object sender, ListChangedEventArgs e) =>
+            {
+                calledListChanged = true;
+                Assert.Equal(ListChangedType.ItemChanged, e.ListChangedType);
+                Assert.Equal(0, e.NewIndex);
+            };
+
+            bindingList[0] = item2;
+            Assert.True(calledListChanged);
+            Assert.Equal(item2, bindingList[0]);
+            Assert.Null(item1.InvocationList);
+            Assert.Equal(1, item2.InvocationList.Length);
+        }
+
+        [Fact]
+        public void SortProperty_Get_ReturnsNull()
+        {
+            IBindingList bindingList = new BindingList<object>();
+            Assert.Null(bindingList.SortProperty);
+        }
+
+        [Fact]
+        public void ApplySort_Invoke_ThrowsNotSupportedException()
+        {
+            IBindingList bindingList = new BindingList<object>();
+            Assert.Throws<NotSupportedException>(() => bindingList.ApplySort(null, ListSortDirection.Descending));
+        }
+
+        [Fact]
+        public void RemoveSort_Invoke_ThrowsNotSupportedException()
+        {
+            IBindingList bindingList = new BindingList<object>();
+            Assert.Throws<NotSupportedException>(() => bindingList.RemoveSort());
+        }
+
+        [Fact]
+        public void Find_Invoke_ThrowsNotSupportedException()
+        {
+            IBindingList bindingList = new BindingList<object>();
+            Assert.Throws<NotSupportedException>(() => bindingList.Find(null, null));
+        }
+
+        [Fact]
+        public void AddIndex_RemoveIndex_Nop()
+        {
+            IBindingList bindingList = new BindingList<object>();
+            bindingList.AddIndex(null);
+            bindingList.RemoveIndex(null);
+        }
+
+        [Fact]
+        public void ItemPropertyChanged_RaiseListChangedEventsFalse_InvokesItemChanged()
+        {
+            var item = new Item();
+            var bindingList = new BindingList<Item> { item };
+
+            bool calledListChanged = false;
+            bindingList.ListChanged += (object sender, ListChangedEventArgs e) =>
+            {
+                calledListChanged = true;
+                Assert.Equal(ListChangedType.ItemChanged, e.ListChangedType);
+                Assert.Equal(0, e.NewIndex);
+                Assert.Equal("Name", e.PropertyDescriptor.Name);
+                Assert.Equal(typeof(string), e.PropertyDescriptor.PropertyType);
+            };
+
+            // Invoke once
+            item.Name = "name";
+            Assert.True(calledListChanged);
+
+            // Invoke twice.
+            calledListChanged = false;
+            item.Name = "name2";
+            Assert.True(calledListChanged);
+        }
+
+        [Theory]
+        [InlineData(null)]
+        [InlineData("sender")]
+        public void ItemPropertyChanged_InvalidSender_InvokesReset(object invokeSender)
+        {
+            var item = new Item();
+            var bindingList = new BindingList<Item> { item };
+
+            bool calledListChanged = false;
+            bindingList.ListChanged += (object sender, ListChangedEventArgs e) =>
+            {
+                calledListChanged = true;
+                Assert.Equal(ListChangedType.Reset, e.ListChangedType);
+                Assert.Equal(-1, e.NewIndex);
+            };
+
+            item.InvokePropertyChanged(invokeSender, new PropertyChangedEventArgs("Name"));
+            Assert.True(calledListChanged);
+        }
+
+        public static IEnumerable<object[]> InvalidEventArgs_TestData()
+        {
+            yield return new object[] { null };
+            yield return new object[] { new PropertyChangedEventArgs(null) };
+            yield return new object[] { new PropertyChangedEventArgs(string.Empty) };
+        }
+
+        [Theory]
+        [MemberData(nameof(InvalidEventArgs_TestData))]
+        public void ItemPropertyChanged_InvalidEventArgs_InvokesReset(PropertyChangedEventArgs eventArgs)
+        {
+            var item = new Item();
+            var bindingList = new BindingList<Item> { item };
+
+            bool calledListChanged = false;
+            bindingList.ListChanged += (object sender, ListChangedEventArgs e) =>
+            {
+                calledListChanged = true;
+                Assert.Equal(ListChangedType.Reset, e.ListChangedType);
+                Assert.Equal(-1, e.NewIndex);
+            };
+
+            item.InvokePropertyChanged(item, eventArgs);
+            Assert.True(calledListChanged);
+        }
+
+        [Fact]
+        public void InvokePropertyChanged_NoSuchObjectAnymore_InvokesReset()
+        {
+            var item1 = new Item();
+            var item2 = new Item();
+            var bindingList = new BindingList<Item> { item1 };
+
+            bool calledListChanged = false;
+            bindingList.ListChanged += (object sender, ListChangedEventArgs e) =>
+            {
+                calledListChanged = true;
+                Assert.Equal(ListChangedType.Reset, e.ListChangedType);
+                Assert.Equal(-1, e.NewIndex);
+            };
+
+            item1.InvokePropertyChanged(item2, new PropertyChangedEventArgs("Name"));
+            Assert.True(calledListChanged);
+        }
+
+        [Fact]
+        public void ItemPropertyChanged_RaiseListChangedEventsFalse_DoesNotInvokeListChanged()
+        {
+            var item = new Item();
+            var bindingList = new BindingList<Item> { item };
+            bindingList.RaiseListChangedEvents = false;
+
+            bool calledListChanged = false;
+            bindingList.ListChanged += (object sender, ListChangedEventArgs e) => calledListChanged = true;
+
+            item.Name = "name";
+            Assert.False(calledListChanged);
+        }
+
+        [Fact]
+        public void AddingNewCore_ReturnsNull_Success()
+        {
+            var bindingList = new BindingListWithNullAddCore();
+            Assert.Null(bindingList.AddNew());
+        }
+
+        private class BindingListWithNullAddCore : BindingList<object>
+        {
+            protected override object AddNewCore() => null;
+        }
+
+        private class BindingListPoker : BindingList<object>
+        {
+            public object DoAddNewCore() => base.AddNewCore();
+        }
+
+        [Fact]
+        public void AddNewCore_Invoke_CallsAddingNewAndListChanged()
+        {
+            var poker = new BindingListPoker();
+
+            bool calledAddingNew = false;
+            bool calledListChanged = false;
+            ListChangedType listChangedType = ListChangedType.Reset;
+            int listChangedIndex = -1;
+
+            poker.AddingNew += (object sender, AddingNewEventArgs e) =>
+            {
+                calledAddingNew = true;
+            };
+            poker.ListChanged += (object sender, ListChangedEventArgs e) =>
+            {
+                calledListChanged = true;
+                listChangedType = e.ListChangedType;
+                listChangedIndex = e.NewIndex;
+            };
+
+            object newValue = poker.DoAddNewCore();
+            Assert.True(calledAddingNew);
+            Assert.True(calledListChanged);
+
+            Assert.Equal(ListChangedType.ItemAdded, listChangedType);
+            Assert.Equal(0, listChangedIndex);
             Assert.Equal(1, poker.Count);
         }
 
         private class Item : INotifyPropertyChanged
         {
-
             public event PropertyChangedEventHandler PropertyChanged;
 
-            string _name;
-
+            private string _name;
             public string Name
             {
-                get { return _name; }
+                get => _name;
                 set
                 {
                     if (_name != value)
                     {
                         _name = value;
-                        OnPropertyChanged("Name");
+                        OnPropertyChanged();
                     }
                 }
             }
 
-            void OnPropertyChanged(string name)
+            public Delegate[] InvocationList => PropertyChanged?.GetInvocationList();
+
+            public void InvokePropertyChanged(object sender, PropertyChangedEventArgs e)
             {
-                var fn = PropertyChanged;
-                if (fn != null)
-                    fn(this, new PropertyChangedEventArgs(name));
+                PropertyChanged?.Invoke(sender, e);
+            }
+
+            private void OnPropertyChanged()
+            {
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Name)));
             }
         }
 
         [Fact]
-        public void Test_InsertNull()
+        public void Insert_Null_Success()
         {
             var list = new BindingList<Item>();
             list.Insert(0, null);
-            var count = list.Count;
 
-            Assert.Equal(1, count);
+            Assert.Equal(1, list.Count);
         }
 
-        private class Person : INotifyPropertyChanged
+        [Fact]
+        public void ApplySort_ApplySortCoreOverriden_DoesNotThrow()
         {
-            private string _lastName;
-            private string _firstName;
+            IBindingList bindingList = new SubBindingList();
+            bindingList.ApplySort(null, ListSortDirection.Descending);
+        }
 
-            public string FirstName
-            {
-                get { return _firstName; }
-                set
-                {
-                    _firstName = value;
-                    OnPropertyChanged("FirstName"); // string matches property name
-                }
-            }
+        [Fact]
+        public void RemoveSort_RemoveSortCoreOverriden_DoesNotThrow()
+        {
+            IBindingList bindingList = new SubBindingList();
+            bindingList.RemoveSort();
+        }
 
-            public string LastName
-            {
-                get { return _lastName; }
-                set
-                {
-                    _lastName = value;
-                    OnPropertyChanged("NotTheName"); // string doesn't match property name
-                }
-            }
+        [Fact]
+        public void Find_FindCoreOverriden_DoesNotThrow()
+        {
+            IBindingList bindingList = new SubBindingList();
+            Assert.Equal(200, bindingList.Find(null, null));
+        }
 
-            public event PropertyChangedEventHandler PropertyChanged;
-
-            protected virtual void OnPropertyChanged(string propertyName = null)
-            {
-                PropertyChangedEventHandler handler = PropertyChanged;
-                if (handler != null)
-                    handler(this, new PropertyChangedEventArgs(propertyName));
-            }
+        private class SubBindingList : BindingList<object>
+        {
+            protected override void ApplySortCore(PropertyDescriptor prop, ListSortDirection direction) { }
+            protected override void RemoveSortCore() { }
+            protected override int FindCore(PropertyDescriptor prop, object key) => 200;
         }
     }
 }
