@@ -9915,7 +9915,7 @@ void Compiler::gtDispRegVal(GenTree* tree)
         // 0th reg is gtRegNum, which is already printed above.
         // Print the remaining regs of a multi-reg call node.
         GenTreeCall* call     = tree->AsCall();
-        unsigned     regCount = call->GetReturnTypeDesc()->GetReturnRegCount();
+        unsigned     regCount = call->GetReturnTypeDesc()->TryGetReturnRegCount();
         for (unsigned i = 1; i < regCount; ++i)
         {
             printf(",%s", compRegVarName(call->GetRegNumByIdx(i)));
@@ -9925,7 +9925,7 @@ void Compiler::gtDispRegVal(GenTree* tree)
     {
         GenTreeCopyOrReload* copyOrReload = tree->AsCopyOrReload();
         GenTreeCall*         call         = tree->gtGetOp1()->AsCall();
-        unsigned             regCount     = call->GetReturnTypeDesc()->GetReturnRegCount();
+        unsigned             regCount     = call->GetReturnTypeDesc()->TryGetReturnRegCount();
         for (unsigned i = 1; i < regCount; ++i)
         {
             printf(",%s", compRegVarName(copyOrReload->GetRegNumByIdx(i)));
