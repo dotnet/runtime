@@ -2,23 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Collections;
-    using System.Globalization;
-
     public class AttributeMetadataCollection : ReadOnlyCollectionBase
     {
         internal AttributeMetadataCollection() { }
 
-        public AttributeMetadata this[int index]
-        {
-            get
-            {
-                return (AttributeMetadata)InnerList[index];
-            }
-        }
+        public AttributeMetadata this[int index] => (AttributeMetadata)InnerList[index];
 
         public bool Contains(AttributeMetadata metadata)
         {
@@ -60,9 +52,6 @@ namespace System.DirectoryServices.ActiveDirectory
             InnerList.CopyTo(metadata, index);
         }
 
-        internal int Add(AttributeMetadata metadata)
-        {
-            return InnerList.Add(metadata);
-        }
+        internal int Add(AttributeMetadata metadata) => InnerList.Add(metadata);
     }
 }

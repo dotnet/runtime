@@ -2,88 +2,43 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// </copyright>
+using System.Runtime.InteropServices;
+using System.Security.Authentication;
+using System.Text;
+using System.Collections;
+using System.Runtime.Serialization;
+using System.Security.Permissions;
 
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Net;
-    using System.Runtime.InteropServices;
-    using System.Security.Authentication;
-    using System.Text;
-    using System.Collections;
-    using System.Runtime.Serialization;
-    using System.Security.Permissions;
-    using System.Globalization;
-
-
     public class SyncFromAllServersErrorInformation
     {
-        private SyncFromAllServersErrorCategory _category;
-        private int _errorCode;
-        private string _errorMessage = null;
-        private string _sourceServer = null;
-        private string _targetServer = null;
-
         internal SyncFromAllServersErrorInformation(SyncFromAllServersErrorCategory category, int errorCode, string errorMessage, string sourceServer, string targetServer)
         {
-            _category = category;
-            _errorCode = errorCode;
-            _errorMessage = errorMessage;
-            _sourceServer = sourceServer;
-            _targetServer = targetServer;
+            ErrorCategory = category;
+            ErrorCode = errorCode;
+            ErrorMessage = errorMessage;
+            SourceServer = sourceServer;
+            TargetServer = targetServer;
         }
 
-        public SyncFromAllServersErrorCategory ErrorCategory
-        {
-            get
-            {
-                return _category;
-            }
-        }
+        public SyncFromAllServersErrorCategory ErrorCategory { get; }
 
-        public int ErrorCode
-        {
-            get
-            {
-                return _errorCode;
-            }
-        }
+        public int ErrorCode { get; }
 
-        public string ErrorMessage
-        {
-            get
-            {
-                return _errorMessage;
-            }
-        }
+        public string ErrorMessage { get; }
 
-        public string TargetServer
-        {
-            get
-            {
-                return _targetServer;
-            }
-        }
+        public string TargetServer { get; }
 
-        public string SourceServer
-        {
-            get
-            {
-                return _sourceServer;
-            }
-        }
+        public string SourceServer { get; }
     }
 
     public class ActiveDirectoryObjectNotFoundException : Exception, ISerializable
     {
-        private Type _objectType;
-        private string _name = null;
-
         public ActiveDirectoryObjectNotFoundException(string message, Type type, string name) : base(message)
         {
-            _objectType = type;
-            _name = name;
+            Type = type;
+            Name = name;
         }
 
         public ActiveDirectoryObjectNotFoundException(string message, Exception inner) : base(message, inner) { }
@@ -97,21 +52,9 @@ namespace System.DirectoryServices.ActiveDirectory
             throw new PlatformNotSupportedException();
         }
 
-        public Type Type
-        {
-            get
-            {
-                return _objectType;
-            }
-        }
+        public Type Type { get; }
 
-        public string Name
-        {
-            get
-            {
-                return _name;
-            }
-        }
+        public string Name { get; }
 
         [SecurityPermissionAttribute(SecurityAction.LinkDemand, SerializationFormatter = true)]
         public override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
@@ -122,16 +65,14 @@ namespace System.DirectoryServices.ActiveDirectory
 
     public class ActiveDirectoryOperationException : Exception, ISerializable
     {
-        private int _errorCode = 0;
-
         public ActiveDirectoryOperationException(string message, Exception inner, int errorCode) : base(message, inner)
         {
-            _errorCode = errorCode;
+            ErrorCode = errorCode;
         }
 
         public ActiveDirectoryOperationException(string message, int errorCode) : base(message)
         {
-            _errorCode = errorCode;
+            ErrorCode = errorCode;
         }
 
         public ActiveDirectoryOperationException(string message, Exception inner) : base(message, inner) { }
@@ -145,13 +86,7 @@ namespace System.DirectoryServices.ActiveDirectory
             throw new PlatformNotSupportedException();
         }
 
-        public int ErrorCode
-        {
-            get
-            {
-                return _errorCode;
-            }
-        }
+        public int ErrorCode { get; }
         
         public override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
@@ -161,19 +96,16 @@ namespace System.DirectoryServices.ActiveDirectory
 
     public class ActiveDirectoryServerDownException : Exception, ISerializable
     {
-        private int _errorCode = 0;
-        private string _name = null;
-
         public ActiveDirectoryServerDownException(string message, Exception inner, int errorCode, string name) : base(message, inner)
         {
-            _errorCode = errorCode;
-            _name = name;
+            ErrorCode = errorCode;
+            Name = name;
         }
 
         public ActiveDirectoryServerDownException(string message, int errorCode, string name) : base(message)
         {
-            _errorCode = errorCode;
-            _name = name;
+            ErrorCode = errorCode;
+            Name = name;
         }
 
         public ActiveDirectoryServerDownException(string message, Exception inner) : base(message, inner) { }
@@ -187,30 +119,18 @@ namespace System.DirectoryServices.ActiveDirectory
             throw new PlatformNotSupportedException();
         }
 
-        public int ErrorCode
-        {
-            get
-            {
-                return _errorCode;
-            }
-        }
+        public int ErrorCode { get; }
 
-        public string Name
-        {
-            get
-            {
-                return _name;
-            }
-        }
+        public string Name { get; }
 
         public override String Message
         {
             get
             {
                 String s = base.Message;
-                if (!((_name == null) ||
-                       (_name.Length == 0)))
-                    return s + Environment.NewLine + String.Format(CultureInfo.CurrentCulture, SR.Name , _name) + Environment.NewLine;
+                if (!((Name == null) ||
+                       (Name.Length == 0)))
+                    return s + Environment.NewLine + SR.Format(SR.Name , Name) + Environment.NewLine;
                 else
                     return s;
             }
@@ -279,11 +199,9 @@ namespace System.DirectoryServices.ActiveDirectory
 
     public class ForestTrustCollisionException : ActiveDirectoryOperationException, ISerializable
     {
-        private ForestTrustRelationshipCollisionCollection _collisions = new ForestTrustRelationshipCollisionCollection();
-
         public ForestTrustCollisionException(string message, Exception inner, ForestTrustRelationshipCollisionCollection collisions) : base(message, inner)
         {
-            _collisions = collisions;
+            Collisions = collisions;
         }
 
         public ForestTrustCollisionException(string message, Exception inner) : base(message, inner) { }
@@ -297,13 +215,7 @@ namespace System.DirectoryServices.ActiveDirectory
             throw new PlatformNotSupportedException();
         }
 
-        public ForestTrustRelationshipCollisionCollection Collisions
-        {
-            get
-            {
-                return _collisions;
-            }
-        }
+        public ForestTrustRelationshipCollisionCollection Collisions { get; } = new ForestTrustRelationshipCollisionCollection();
         
         public override void GetObjectData(SerializationInfo serializationInfo, StreamingContext streamingContext)
         {
@@ -461,7 +373,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
             else
             {
-                errorMsg = String.Format(CultureInfo.CurrentCulture, SR.DSUnknown , Convert.ToString(temp, 16));
+                errorMsg = SR.Format(SR.DSUnknown , Convert.ToString(temp, 16));
             }
 
             return errorMsg;

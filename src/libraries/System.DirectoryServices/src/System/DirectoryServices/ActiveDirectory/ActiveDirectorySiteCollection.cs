@@ -2,14 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+using System.Collections;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Runtime.InteropServices;
-    using System.Collections;
-    using System.DirectoryServices;
-    using System.Globalization;
-
     public class ActiveDirectorySiteCollection : CollectionBase
     {
         internal DirectoryEntry de = null;
@@ -26,10 +23,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public ActiveDirectorySite this[int index]
         {
-            get
-            {
-                return (ActiveDirectorySite)InnerList[index];
-            }
+            get => (ActiveDirectorySite)InnerList[index];
             set
             {
                 ActiveDirectorySite site = (ActiveDirectorySite)value;
@@ -38,12 +32,12 @@ namespace System.DirectoryServices.ActiveDirectory
                     throw new ArgumentNullException("value");
 
                 if (!site.existing)
-                    throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.SiteNotCommitted , site.Name));
+                    throw new InvalidOperationException(SR.Format(SR.SiteNotCommitted , site.Name));
 
                 if (!Contains(site))
                     List[index] = site;
                 else
-                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.AlreadyExistingInCollection , site), "value");
+                    throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection , site), "value");
             }
         }
 
@@ -53,12 +47,12 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("site");
 
             if (!site.existing)
-                throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.SiteNotCommitted , site.Name));
+                throw new InvalidOperationException(SR.Format(SR.SiteNotCommitted , site.Name));
 
             if (!Contains(site))
                 return List.Add(site);
             else
-                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.AlreadyExistingInCollection , site), "site");
+                throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection , site), "site");
         }
 
         public void AddRange(ActiveDirectorySite[] sites)
@@ -86,7 +80,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("site");
 
             if (!site.existing)
-                throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.SiteNotCommitted , site.Name));
+                throw new InvalidOperationException(SR.Format(SR.SiteNotCommitted , site.Name));
 
             string dn = (string)PropertyManager.GetPropertyValue(site.context, site.cachedEntry, PropertyManager.DistinguishedName);
 
@@ -114,7 +108,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("site");
 
             if (!site.existing)
-                throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.SiteNotCommitted , site.Name));
+                throw new InvalidOperationException(SR.Format(SR.SiteNotCommitted , site.Name));
 
             string dn = (string)PropertyManager.GetPropertyValue(site.context, site.cachedEntry, PropertyManager.DistinguishedName);
 
@@ -137,12 +131,12 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("site");
 
             if (!site.existing)
-                throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.SiteNotCommitted , site.Name));
+                throw new InvalidOperationException(SR.Format(SR.SiteNotCommitted , site.Name));
 
             if (!Contains(site))
                 List.Insert(index, site);
             else
-                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.AlreadyExistingInCollection , site), "site");
+                throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection , site), "site");
         }
 
         public void Remove(ActiveDirectorySite site)
@@ -151,7 +145,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("site");
 
             if (!site.existing)
-                throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.SiteNotCommitted , site.Name));
+                throw new InvalidOperationException(SR.Format(SR.SiteNotCommitted , site.Name));
 
             string dn = (string)PropertyManager.GetPropertyValue(site.context, site.cachedEntry, PropertyManager.DistinguishedName);
 
@@ -168,7 +162,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
 
             // something that does not exist in the collectio
-            throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NotFoundInCollection , site), "site");
+            throw new ArgumentException(SR.Format(SR.NotFoundInCollection , site), "site");
         }
 
         protected override void OnClearComplete()
@@ -241,7 +235,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentException("value");
 
             if (!((ActiveDirectorySite)value).existing)
-                throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.SiteNotCommitted , ((ActiveDirectorySite)value).Name));
+                throw new InvalidOperationException(SR.Format(SR.SiteNotCommitted , ((ActiveDirectorySite)value).Name));
         }
     }
 }
