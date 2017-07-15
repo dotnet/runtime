@@ -182,7 +182,7 @@
     </ProjectReference>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\mono\profiler\mono-profiler-vtune.c" />
+    <ClCompile Include="..\mono\profiler\vtune.c" />
   </ItemGroup>
   <ItemGroup>
     <None Include="mono-profiler-vtune.def" />

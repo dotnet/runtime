@@ -62,7 +62,7 @@ if ($report ne "missing binary") {
 	report_errors ();
 }
 # test heapshot traces
-$report = run_test_sgen ("test-heapshot.exe", "heapshot,output=-traces.mlpd,legacy", "--traces traces.mlpd");
+$report = run_test_sgen ("test-heapshot.exe", "heapshot,output=traces.mlpd,legacy", "--traces traces.mlpd");
 if ($report ne "missing binary") {
 	check_report_basics ($report);
 	check_report_heapshot ($report, 0, {"T" => 5000});
@@ -76,7 +76,7 @@ if ($report ne "missing binary") {
 	report_errors ();
 }
 # test traces
-$report = run_test ("test-traces.exe", "legacy,calls,alloc,output=-traces.mlpd", "--maxframes=7 --traces traces.mlpd");
+$report = run_test ("test-traces.exe", "legacy,calls,alloc,output=traces.mlpd", "--maxframes=7 --traces traces.mlpd");
 check_report_basics ($report);
 check_call_traces ($report,
 	"T:level3 (int)" => [2020, "T:Main (string[])"],
@@ -92,7 +92,7 @@ check_alloc_traces ($report,
 );
 report_errors ();
 # test traces without enter/leave events
-$report = run_test ("test-traces.exe", "legacy,alloc,output=-traces.mlpd", "--traces traces.mlpd");
+$report = run_test ("test-traces.exe", "legacy,alloc,output=traces.mlpd", "--traces traces.mlpd");
 check_report_basics ($report);
 # this has been broken recently
 check_exception_traces ($report,

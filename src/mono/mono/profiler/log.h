@@ -69,6 +69,292 @@
                added an exception object field to TYPE_CLAUSE
                class unload events no longer exist (they were never emitted)
                removed type field from TYPE_SAMPLE_HIT
+               removed MONO_GC_EVENT_{MARK,RECLAIM}_{START,END}
+ */
+
+/*
+ * file format:
+ * [header] [buffer]*
+ *
+ * The file is composed by a header followed by 0 or more buffers.
+ * Each buffer contains events that happened on a thread: for a given thread
+ * buffers that appear later in the file are guaranteed to contain events
+ * that happened later in time. Buffers from separate threads could be interleaved,
+ * though.
+ * Buffers are not required to be aligned.
+ *
+ * header format:
+ * [id: 4 bytes] constant value: LOG_HEADER_ID
+ * [major: 1 byte] [minor: 1 byte] major and minor version of the log profiler
+ * [format: 1 byte] version of the data format for the rest of the file
+ * [ptrsize: 1 byte] size in bytes of a pointer in the profiled program
+ * [startup time: 8 bytes] time in milliseconds since the unix epoch when the program started
+ * [timer overhead: 4 bytes] approximate overhead in nanoseconds of the timer
+ * [flags: 4 bytes] file format flags, should be 0 for now
+ * [pid: 4 bytes] pid of the profiled process
+ * [port: 2 bytes] tcp port for server if != 0
+ * [args size: 4 bytes] size of args
+ * [args: string] arguments passed to the profiler
+ * [arch size: 4 bytes] size of arch
+ * [arch: string] architecture the profiler is running on
+ * [os size: 4 bytes] size of os
+ * [os: string] operating system the profiler is running on
+ *
+ * The multiple byte integers are in little-endian format.
+ *
+ * buffer format:
+ * [buffer header] [event]*
+ * Buffers have a fixed-size header followed by 0 or more bytes of event data.
+ * Timing information and other values in the event data are usually stored
+ * as uleb128 or sleb128 integers. To save space, as noted for each item below,
+ * some data is represented as a difference between the actual value and
+ * either the last value of the same type (like for timing information) or
+ * as the difference from a value stored in a buffer header.
+ *
+ * For timing information the data is stored as uleb128, since timing
+ * increases in a monotonic way in each thread: the value is the number of
+ * nanoseconds to add to the last seen timing data in a buffer. The first value
+ * in a buffer will be calculated from the time_base field in the buffer head.
+ *
+ * Object or heap sizes are stored as uleb128.
+ * Pointer differences are stored as sleb128, instead.
+ *
+ * If an unexpected value is found, the rest of the buffer should be ignored,
+ * as generally the later values need the former to be interpreted correctly.
+ *
+ * buffer header format:
+ * [bufid: 4 bytes] constant value: BUF_ID
+ * [len: 4 bytes] size of the data following the buffer header
+ * [time_base: 8 bytes] time base in nanoseconds since an unspecified epoch
+ * [ptr_base: 8 bytes] base value for pointers
+ * [obj_base: 8 bytes] base value for object addresses
+ * [thread id: 8 bytes] system-specific thread ID (pthread_t for example)
+ * [method_base: 8 bytes] base value for MonoMethod pointers
+ *
+ * event format:
+ * [extended info: upper 4 bits] [type: lower 4 bits]
+ * [time diff: uleb128] nanoseconds since last timing
+ * [data]*
+ * The data that follows depends on type and the extended info.
+ * Type is one of the enum values in mono-profiler-log.h: TYPE_ALLOC, TYPE_GC,
+ * TYPE_METADATA, TYPE_METHOD, TYPE_EXCEPTION, TYPE_MONITOR, TYPE_HEAP.
+ * The extended info bits are interpreted based on type, see
+ * each individual event description below.
+ * strings are represented as a 0-terminated utf8 sequence.
+ *
+ * backtrace format:
+ * [num: uleb128] number of frames following
+ * [frame: sleb128]* mum MonoMethod* as a pointer difference from the last such
+ * pointer or the buffer method_base
+ *
+ * type alloc format:
+ * type: TYPE_ALLOC
+ * exinfo: zero or TYPE_ALLOC_BT
+ * [ptr: sleb128] class as a byte difference from ptr_base
+ * [obj: sleb128] object address as a byte difference from obj_base
+ * [size: uleb128] size of the object in the heap
+ * If exinfo == TYPE_ALLOC_BT, a backtrace follows.
+ *
+ * type GC format:
+ * type: TYPE_GC
+ * exinfo: one of TYPE_GC_EVENT, TYPE_GC_RESIZE, TYPE_GC_MOVE, TYPE_GC_HANDLE_CREATED[_BT],
+ * TYPE_GC_HANDLE_DESTROYED[_BT], TYPE_GC_FINALIZE_START, TYPE_GC_FINALIZE_END,
+ * TYPE_GC_FINALIZE_OBJECT_START, TYPE_GC_FINALIZE_OBJECT_END
+ * if exinfo == TYPE_GC_RESIZE
+ *	[heap_size: uleb128] new heap size
+ * if exinfo == TYPE_GC_EVENT
+ *	[event type: byte] GC event (MONO_GC_EVENT_* from profiler.h)
+ *	[generation: byte] GC generation event refers to
+ * if exinfo == TYPE_GC_MOVE
+ *	[num_objects: uleb128] number of object moves that follow
+ *	[objaddr: sleb128]+ num_objects object pointer differences from obj_base
+ *	num is always an even number: the even items are the old
+ *	addresses, the odd numbers are the respective new object addresses
+ * if exinfo == TYPE_GC_HANDLE_CREATED[_BT]
+ *	[handle_type: uleb128] MonoGCHandleType enum value
+ *	upper bits reserved as flags
+ *	[handle: uleb128] GC handle value
+ *	[objaddr: sleb128] object pointer differences from obj_base
+ * 	If exinfo == TYPE_GC_HANDLE_CREATED_BT, a backtrace follows.
+ * if exinfo == TYPE_GC_HANDLE_DESTROYED[_BT]
+ *	[handle_type: uleb128] MonoGCHandleType enum value
+ *	upper bits reserved as flags
+ *	[handle: uleb128] GC handle value
+ * 	If exinfo == TYPE_GC_HANDLE_DESTROYED_BT, a backtrace follows.
+ * if exinfo == TYPE_GC_FINALIZE_OBJECT_{START,END}
+ * 	[object: sleb128] the object as a difference from obj_base
+ *
+ * type metadata format:
+ * type: TYPE_METADATA
+ * exinfo: one of: TYPE_END_LOAD, TYPE_END_UNLOAD (optional for TYPE_THREAD and TYPE_DOMAIN,
+ * doesn't occur for TYPE_CLASS)
+ * [mtype: byte] metadata type, one of: TYPE_CLASS, TYPE_IMAGE, TYPE_ASSEMBLY, TYPE_DOMAIN,
+ * TYPE_THREAD, TYPE_CONTEXT
+ * [pointer: sleb128] pointer of the metadata type depending on mtype
+ * if mtype == TYPE_CLASS
+ *	[image: sleb128] MonoImage* as a pointer difference from ptr_base
+ * 	[name: string] full class name
+ * if mtype == TYPE_IMAGE
+ * 	[name: string] image file name
+ * if mtype == TYPE_ASSEMBLY
+ *	[image: sleb128] MonoImage* as a pointer difference from ptr_base
+ * 	[name: string] assembly name
+ * if mtype == TYPE_DOMAIN && exinfo == 0
+ * 	[name: string] domain friendly name
+ * if mtype == TYPE_CONTEXT
+ * 	[domain: sleb128] domain id as pointer
+ * if mtype == TYPE_THREAD && exinfo == 0
+ * 	[name: string] thread name
+ *
+ * type method format:
+ * type: TYPE_METHOD
+ * exinfo: one of: TYPE_LEAVE, TYPE_ENTER, TYPE_EXC_LEAVE, TYPE_JIT
+ * [method: sleb128] MonoMethod* as a pointer difference from the last such
+ * pointer or the buffer method_base
+ * if exinfo == TYPE_JIT
+ *	[code address: sleb128] pointer to the native code as a diff from ptr_base
+ *	[code size: uleb128] size of the generated code
+ *	[name: string] full method name
+ *
+ * type exception format:
+ * type: TYPE_EXCEPTION
+ * exinfo: zero, TYPE_CLAUSE, or TYPE_THROW_BT
+ * if exinfo == TYPE_CLAUSE
+ * 	[clause type: byte] MonoExceptionEnum enum value
+ * 	[clause index: uleb128] index of the current clause
+ * 	[method: sleb128] MonoMethod* as a pointer difference from the last such
+ * 	pointer or the buffer method_base
+ * 	[object: sleb128] the exception object as a difference from obj_base
+ * else
+ * 	[object: sleb128] the exception object as a difference from obj_base
+ * 	If exinfo == TYPE_THROW_BT, a backtrace follows.
+ *
+ * type runtime format:
+ * type: TYPE_RUNTIME
+ * exinfo: one of: TYPE_JITHELPER
+ * if exinfo == TYPE_JITHELPER
+ *	[type: byte] MonoProfilerCodeBufferType enum value
+ *	[buffer address: sleb128] pointer to the native code as a diff from ptr_base
+ *	[buffer size: uleb128] size of the generated code
+ *	if type == MONO_PROFILER_CODE_BUFFER_SPECIFIC_TRAMPOLINE
+ *		[name: string] buffer description name
+ *
+ * type monitor format:
+ * type: TYPE_MONITOR
+ * exinfo: zero or TYPE_MONITOR_BT
+ * [type: byte] MonoProfilerMonitorEvent enum value
+ * [object: sleb128] the lock object as a difference from obj_base
+ * If exinfo == TYPE_MONITOR_BT, a backtrace follows.
+ *
+ * type heap format
+ * type: TYPE_HEAP
+ * exinfo: one of TYPE_HEAP_START, TYPE_HEAP_END, TYPE_HEAP_OBJECT, TYPE_HEAP_ROOT
+ * if exinfo == TYPE_HEAP_OBJECT
+ * 	[object: sleb128] the object as a difference from obj_base
+ * 	[class: sleb128] the object MonoClass* as a difference from ptr_base
+ * 	[size: uleb128] size of the object on the heap
+ * 	[num_refs: uleb128] number of object references
+ * 	each referenced objref is preceded by a uleb128 encoded offset: the
+ * 	first offset is from the object address and each next offset is relative
+ * 	to the previous one
+ * 	[objrefs: sleb128]+ object referenced as a difference from obj_base
+ * 	The same object can appear multiple times, but only the first time
+ * 	with size != 0: in the other cases this data will only be used to
+ * 	provide additional referenced objects.
+ * if exinfo == TYPE_HEAP_ROOT
+ * 	[num_roots: uleb128] number of root references
+ * 	[num_gc: uleb128] number of major gcs
+ * 	[object: sleb128] the object as a difference from obj_base
+ * 	[root_type: byte] the root_type: MonoProfileGCRootType (profiler.h)
+ * 	[extra_info: uleb128] the extra_info value
+ * 	object, root_type and extra_info are repeated num_roots times
+ *
+ * type sample format
+ * type: TYPE_SAMPLE
+ * exinfo: one of TYPE_SAMPLE_HIT, TYPE_SAMPLE_USYM, TYPE_SAMPLE_UBIN, TYPE_SAMPLE_COUNTERS_DESC, TYPE_SAMPLE_COUNTERS
+ * if exinfo == TYPE_SAMPLE_HIT
+ * 	[thread: sleb128] thread id as difference from ptr_base
+ * 	[count: uleb128] number of following instruction addresses
+ * 	[ip: sleb128]* instruction pointer as difference from ptr_base
+ *	[mbt_count: uleb128] number of managed backtrace frames
+ *	[method: sleb128]* MonoMethod* as a pointer difference from the last such
+ * 	pointer or the buffer method_base (the first such method can be also indentified by ip, but this is not neccessarily true)
+ * if exinfo == TYPE_SAMPLE_USYM
+ * 	[address: sleb128] symbol address as a difference from ptr_base
+ * 	[size: uleb128] symbol size (may be 0 if unknown)
+ * 	[name: string] symbol name
+ * if exinfo == TYPE_SAMPLE_UBIN
+ * 	[address: sleb128] address where binary has been loaded as a difference from ptr_base
+ * 	[offset: uleb128] file offset of mapping (the same file can be mapped multiple times)
+ * 	[size: uleb128] memory size
+ * 	[name: string] binary name
+ * if exinfo == TYPE_SAMPLE_COUNTERS_DESC
+ * 	[len: uleb128] number of counters
+ * 	for i = 0 to len
+ * 		[section: uleb128] section of counter
+ * 		if section == MONO_COUNTER_PERFCOUNTERS:
+ * 			[section_name: string] section name of counter
+ * 		[name: string] name of counter
+ * 		[type: byte] type of counter
+ * 		[unit: byte] unit of counter
+ * 		[variance: byte] variance of counter
+ * 		[index: uleb128] unique index of counter
+ * if exinfo == TYPE_SAMPLE_COUNTERS
+ * 	while true:
+ * 		[index: uleb128] unique index of counter
+ * 		if index == 0:
+ * 			break
+ * 		[type: byte] type of counter value
+ * 		if type == string:
+ * 			if value == null:
+ * 				[0: byte] 0 -> value is null
+ * 			else:
+ * 				[1: byte] 1 -> value is not null
+ * 				[value: string] counter value
+ * 		else:
+ * 			[value: uleb128/sleb128/double] counter value, can be sleb128, uleb128 or double (determined by using type)
+ *
+ * type coverage format
+ * type: TYPE_COVERAGE
+ * exinfo: one of TYPE_COVERAGE_METHOD, TYPE_COVERAGE_STATEMENT, TYPE_COVERAGE_ASSEMBLY, TYPE_COVERAGE_CLASS
+ * if exinfo == TYPE_COVERAGE_METHOD
+ *  [assembly: string] name of assembly
+ *  [class: string] name of the class
+ *  [name: string] name of the method
+ *  [signature: string] the signature of the method
+ *  [filename: string] the file path of the file that contains this method
+ *  [token: uleb128] the method token
+ *  [method_id: uleb128] an ID for this data to associate with the buffers of TYPE_COVERAGE_STATEMENTS
+ *  [len: uleb128] the number of TYPE_COVERAGE_BUFFERS associated with this method
+ * if exinfo == TYPE_COVERAGE_STATEMENTS
+ *  [method_id: uleb128] an the TYPE_COVERAGE_METHOD buffer to associate this with
+ *  [offset: uleb128] the il offset relative to the previous offset
+ *  [counter: uleb128] the counter for this instruction
+ *  [line: uleb128] the line of filename containing this instruction
+ *  [column: uleb128] the column containing this instruction
+ * if exinfo == TYPE_COVERAGE_ASSEMBLY
+ *  [name: string] assembly name
+ *  [guid: string] assembly GUID
+ *  [filename: string] assembly filename
+ *  [number_of_methods: uleb128] the number of methods in this assembly
+ *  [fully_covered: uleb128] the number of fully covered methods
+ *  [partially_covered: uleb128] the number of partially covered methods
+ *    currently partially_covered will always be 0, and fully_covered is the
+ *    number of methods that are fully and partially covered.
+ * if exinfo == TYPE_COVERAGE_CLASS
+ *  [name: string] assembly name
+ *  [class: string] class name
+ *  [number_of_methods: uleb128] the number of methods in this class
+ *  [fully_covered: uleb128] the number of fully covered methods
+ *  [partially_covered: uleb128] the number of partially covered methods
+ *    currently partially_covered will always be 0, and fully_covered is the
+ *    number of methods that are fully and partially covered.
+ *
+ * type meta format:
+ * type: TYPE_META
+ * exinfo: one of: TYPE_SYNC_POINT
+ * if exinfo == TYPE_SYNC_POINT
+ *	[type: byte] MonoProfilerSyncPointType enum value
  */
 
 enum {
@@ -133,7 +419,6 @@ enum {
 	TYPE_COVERAGE_CLASS = 3 << 4,
 	/* extended type for TYPE_META */
 	TYPE_SYNC_POINT = 0 << 4,
-	TYPE_END
 };
 
 enum {
@@ -147,9 +432,9 @@ enum {
 };
 
 typedef enum {
-	SYNC_POINT_PERIODIC,
-	SYNC_POINT_WORLD_STOP,
-	SYNC_POINT_WORLD_START
+	SYNC_POINT_PERIODIC = 0,
+	SYNC_POINT_WORLD_STOP = 1,
+	SYNC_POINT_WORLD_START = 2,
 } MonoProfilerSyncPointType;
 
 typedef enum {
@@ -159,63 +444,53 @@ typedef enum {
 } MonoProfilerMonitorEvent;
 
 enum {
-	MONO_PROFILER_GC_HANDLE_CREATED,
-	MONO_PROFILER_GC_HANDLE_DESTROYED,
+	MONO_PROFILER_GC_HANDLE_CREATED = 0,
+	MONO_PROFILER_GC_HANDLE_DESTROYED = 1,
 };
+
+typedef enum {
+	MONO_PROFILER_HEAPSHOT_NONE = 0,
+	MONO_PROFILER_HEAPSHOT_MAJOR = 1,
+	MONO_PROFILER_HEAPSHOT_ON_DEMAND = 2,
+	MONO_PROFILER_HEAPSHOT_X_GC = 3,
+	MONO_PROFILER_HEAPSHOT_X_MS = 4,
+} MonoProfilerHeapshotMode;
 
 // If you alter MAX_FRAMES, you may need to alter SAMPLE_BLOCK_SIZE too.
 #define MAX_FRAMES 32
 
 //The following flags control emitting individual events
-#define PROFLOG_DOMAIN_EVENTS (1 << 0)
-#define PROFLOG_ASSEMBLY_EVENTS	(1 << 1)
-#define PROFLOG_MODULE_EVENTS (1 << 2)
-#define PROFLOG_CLASS_EVENTS (1 << 3)
-#define PROFLOG_JIT_COMPILATION_EVENTS (1 << 4)
-#define PROFLOG_EXCEPTION_EVENTS (1 << 5)
-#define PROFLOG_ALLOCATION_EVENTS (1 << 6)
-#define PROFLOG_GC_EVENTS (1 << 7)
-#define PROFLOG_THREAD_EVENTS (1 << 8)
-//This generate enter/leave events
-#define PROFLOG_CALL_EVENTS (1 << 9)
-#define PROFLOG_INS_COVERAGE_EVENTS (1 << 10)
-#define PROFLOG_SAMPLING_EVENTS (1 << 11)
-#define PROFLOG_MONITOR_EVENTS (1 << 12)
-#define PROFLOG_GC_MOVES_EVENTS (1 << 13)
+#define PROFLOG_EXCEPTION_EVENTS (1 << 0)
+#define PROFLOG_MONITOR_EVENTS (1 << 1)
+#define PROFLOG_GC_EVENTS (1 << 2)
+#define PROFLOG_GC_ALLOCATION_EVENTS (1 << 3)
+#define PROFLOG_GC_MOVE_EVENTS (1 << 4)
+#define PROFLOG_GC_ROOT_EVENTS (1 << 5)
+#define PROFLOG_GC_HANDLE_EVENTS (1 << 6)
+#define PROFLOG_FINALIZATION_EVENTS (1 << 7)
+#define PROFLOG_COUNTER_EVENTS (1 << 8)
+#define PROFLOG_SAMPLE_EVENTS (1 << 9)
+#define PROFLOG_JIT_EVENTS (1 << 10)
 
-#define PROFLOG_GC_ROOT_EVENTS (1 << 14)
-#define PROFLOG_CONTEXT_EVENTS (1 << 15)
-#define PROFLOG_FINALIZATION_EVENTS (1 << 16)
-#define PROFLOG_COUNTER_EVENTS (1 << 17)
-#define PROFLOG_GC_HANDLE_EVENTS (1 << 18)
-
-//The following flags control whole subsystems
-//Enables code coverage generation
-#define PROFLOG_CODE_COV_FEATURE (1 << 19)
-//This enables sampling to be generated
-#define PROFLOG_SAMPLING_FEATURE (1 << 20)
-//This enable heap dumping during GCs and filter GCRoots and GCHandle events outside of the dumped collections
-#define PROFLOG_HEAPSHOT_FEATURE (1 << 21)
-
-
-
-//The follow flags are the common aliases we want ppl to use
-#define PROFLOG_TYPELOADING_ALIAS (PROFLOG_DOMAIN_EVENTS | PROFLOG_ASSEMBLY_EVENTS | PROFLOG_MODULE_EVENTS | PROFLOG_CLASS_EVENTS)
-#define PROFLOG_CODECOV_ALIAS (PROFLOG_INS_COVERAGE_EVENTS | PROFLOG_CODE_COV_FEATURE)
-#define PROFLOG_PERF_SAMPLING_ALIAS (PROFLOG_TYPELOADING_ALIAS | PROFLOG_THREAD_EVENTS | PROFLOG_SAMPLING_EVENTS | PROFLOG_SAMPLING_FEATURE)
-#define PROFLOG_GC_ALLOC_ALIAS (PROFLOG_TYPELOADING_ALIAS | PROFLOG_THREAD_EVENTS | PROFLOG_GC_EVENTS | PROFLOG_ALLOCATION_EVENTS)
-#define PROFLOG_HEAPSHOT_ALIAS (PROFLOG_TYPELOADING_ALIAS | PROFLOG_THREAD_EVENTS | PROFLOG_GC_EVENTS | PROFLOG_GC_ROOT_EVENTS | PROFLOG_HEAPSHOT_FEATURE)
-#define PROFLOG_LEGACY_ALIAS (PROFLOG_TYPELOADING_ALIAS | PROFLOG_GC_EVENTS | PROFLOG_THREAD_EVENTS | PROFLOG_JIT_COMPILATION_EVENTS | PROFLOG_EXCEPTION_EVENTS | PROFLOG_MONITOR_EVENTS | PROFLOG_GC_ROOT_EVENTS | PROFLOG_CONTEXT_EVENTS | PROFLOG_FINALIZATION_EVENTS | PROFLOG_COUNTER_EVENTS)
-
+#define PROFLOG_ALLOC_ALIAS (PROFLOG_GC_EVENTS | PROFLOG_GC_ALLOCATION_EVENTS | PROFLOG_GC_MOVE_EVENTS)
+#define PROFLOG_HEAPSHOT_ALIAS (PROFLOG_GC_EVENTS | PROFLOG_GC_ROOT_EVENTS)
+#define PROFLOG_LEGACY_ALIAS (PROFLOG_EXCEPTION_EVENTS | PROFLOG_MONITOR_EVENTS | PROFLOG_GC_EVENTS | PROFLOG_GC_MOVE_EVENTS | PROFLOG_GC_ROOT_EVENTS | PROFLOG_GC_HANDLE_EVENTS | PROFLOG_FINALIZATION_EVENTS | PROFLOG_COUNTER_EVENTS)
 
 typedef struct {
 	//Events explicitly enabled
 	int enable_mask;
+
 	//Events explicitly disabled
 	int disable_mask;
 
-	//Actual mask the profiler should use
+	// Actual mask the profiler should use. Can be changed at runtime.
 	int effective_mask;
+
+	// Whether to do method prologue/epilogue instrumentation. Only used at startup.
+	gboolean enter_leave;
+
+	// Whether to collect code coverage by instrumenting basic blocks.
+	gboolean collect_coverage;
 
 	//Emit a report at the end of execution
 	gboolean do_report;
@@ -223,31 +498,28 @@ typedef struct {
 	//Enable profiler internal debugging
 	gboolean do_debug;
 
-	//Enable code coverage specific debugging
-	gboolean debug_coverage;
-
 	//Where to compress the output file
 	gboolean use_zip;
 
-	//If true, don't generate stacktraces
-	gboolean notraces;
+	// Heapshot mode (every major, on demand, XXgc, XXms). Can be changed at runtime.
+	MonoProfilerHeapshotMode hs_mode;
 
-	//If true, heapshots are generated on demand only
-	gboolean hs_mode_ondemand;
+	// Heapshot frequency in milliseconds (for MONO_HEAPSHOT_X_MS). Can be changed at runtime.
+	unsigned int hs_freq_ms;
 
-	//HeapShort frequency in milliseconds
-	unsigned int hs_mode_ms;
+	// Heapshot frequency in number of collections (for MONO_HEAPSHOT_X_GC). Can be changed at runtime.
+	unsigned int hs_freq_gc;
 
-	//HeapShort frequency in number of collections
-	unsigned int hs_mode_gc;
+	// Whether to do a heapshot on shutdown.
+	gboolean hs_on_shutdown;
 
-	//Sample frequency in Hertz
+	// Sample frequency in Hertz. Only used at startup.
 	int sample_freq;
 
-	//Maximum number of frames to collect
+	// Maximum number of frames to collect. Can be changed at runtime.
 	int num_frames;
 
-	//Max depth to record enter/leave events
+	// Max depth to record enter/leave events. Can be changed at runtime.
 	int max_call_depth;
 
 	//Name of the generated mlpd file
@@ -256,12 +528,13 @@ typedef struct {
 	//Filter files used by the code coverage mode
 	GPtrArray *cov_filter_files;
 
-	//Port to listen for profiling commands
+	// Port to listen for profiling commands (e.g. "heapshot" for on-demand heapshot).
 	int command_port;
 
-	//Max size of the sample hit buffer, we'll drop frames if it's reached
+	// Maximum number of SampleHit structures. We'll drop samples if this number is not sufficient.
 	int max_allocated_sample_hits;
 
+	// Sample mode. Only used at startup.
 	MonoProfilerSampleMode sampling_mode;
 } ProfilerConfig;
 

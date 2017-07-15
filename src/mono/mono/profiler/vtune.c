@@ -1,5 +1,5 @@
 /*
- * mono-codeanalyst.c: VTune profiler
+ * vtune.c: VTune profiler
  *
  * Author:
  *   Virgile Bello (virgile.bello@gmail.com)

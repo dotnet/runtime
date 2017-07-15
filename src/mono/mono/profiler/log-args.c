@@ -1,26 +1,10 @@
 #include <config.h>
-
+#include <mono/utils/mono-logger-internals.h>
+#include <mono/utils/mono-proclib.h>
 #include "log.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
-#endif
-
-#ifdef HAVE_SCHED_GETAFFINITY
-#include <sched.h>
-
-#  ifndef GLIBC_HAS_CPU_COUNT
-static int
-CPU_COUNT(cpu_set_t *set)
-{
-	int i, count = 0;
-
-	for (int i = 0; i < CPU_SETSIZE; i++)
-		if (CPU_ISSET(i, set))
-			count++;
-	return count;
-}
-#  endif
 #endif
 
 typedef struct {
@@ -29,39 +13,24 @@ typedef struct {
 } NameAndMask;
 
 static NameAndMask event_list[] = {
-	{ "domain", PROFLOG_DOMAIN_EVENTS },
-	{ "assembly", PROFLOG_ASSEMBLY_EVENTS },
-	{ "module", PROFLOG_MODULE_EVENTS },
-	{ "class", PROFLOG_CLASS_EVENTS },
-	{ "jit", PROFLOG_JIT_COMPILATION_EVENTS },
 	{ "exception", PROFLOG_EXCEPTION_EVENTS },
-	{ "gcalloc", PROFLOG_ALLOCATION_EVENTS },
-	{ "gc", PROFLOG_GC_EVENTS },
-	{ "thread", PROFLOG_THREAD_EVENTS },
-	{ "calls", PROFLOG_CALL_EVENTS },
-	//{ "inscov", PROFLOG_INS_COVERAGE_EVENTS }, //this is a profiler API event, but there's no actual event for us to emit here
-	//{ "sampling", PROFLOG_SAMPLING_EVENTS }, //it makes no sense to enable/disable this event by itself
 	{ "monitor", PROFLOG_MONITOR_EVENTS },
-	{ "gcmove", PROFLOG_GC_MOVES_EVENTS },
+	{ "gc", PROFLOG_GC_EVENTS },
+	{ "gcalloc", PROFLOG_GC_ALLOCATION_EVENTS },
+	{ "gcmove", PROFLOG_GC_MOVE_EVENTS },
 	{ "gcroot", PROFLOG_GC_ROOT_EVENTS },
-	{ "context", PROFLOG_CONTEXT_EVENTS },
+	{ "gchandle", PROFLOG_GC_HANDLE_EVENTS },
 	{ "finalization", PROFLOG_FINALIZATION_EVENTS },
 	{ "counter", PROFLOG_COUNTER_EVENTS },
-	{ "gchandle", PROFLOG_GC_HANDLE_EVENTS },
+	{ "jit", PROFLOG_JIT_EVENTS },
 
-	{ "typesystem", PROFLOG_TYPELOADING_ALIAS },
-	{ "coverage", PROFLOG_CODECOV_ALIAS },
-	//{ "sample", PROFLOG_PERF_SAMPLING_ALIAS }, //takes args, explicitly handles
-	{ "alloc", PROFLOG_GC_ALLOC_ALIAS },
-	//{ "heapshot", PROFLOG_HEAPSHOT_ALIAS }, //takes args, explicitly handled
+	{ "alloc", PROFLOG_ALLOC_ALIAS },
 	{ "legacy", PROFLOG_LEGACY_ALIAS },
 };
 
 static void usage (void);
 static void set_hsmode (ProfilerConfig *config, const char* val);
 static void set_sample_freq (ProfilerConfig *config, const char *val);
-static int mono_cpu_count (void);
-
 
 static gboolean
 match_option (const char *arg, const char *opt_name, const char **rval)
@@ -94,19 +63,25 @@ parse_arg (const char *arg, ProfilerConfig *config)
 		config->do_report = TRUE;
 	} else if (match_option (arg, "debug", NULL)) {
 		config->do_debug = TRUE;
-	} else if (match_option (arg, "debug-coverage", NULL)) {
-		config->debug_coverage = TRUE;
-	} else if (match_option (arg, "sampling-real", NULL)) {
-		config->sampling_mode = MONO_PROFILER_SAMPLE_MODE_REAL;
-	} else if (match_option (arg, "sampling-process", NULL)) {
-		config->sampling_mode = MONO_PROFILER_SAMPLE_MODE_PROCESS;
 	} else if (match_option (arg, "heapshot", &val)) {
-		config->enable_mask |= PROFLOG_HEAPSHOT_ALIAS;
 		set_hsmode (config, val);
+		if (config->hs_mode != MONO_PROFILER_HEAPSHOT_NONE)
+			config->enable_mask |= PROFLOG_HEAPSHOT_ALIAS;
+	} else if (match_option (arg, "heapshot-on-shutdown", NULL)) {
+		config->hs_on_shutdown = TRUE;
+		config->enable_mask |= PROFLOG_HEAPSHOT_ALIAS;
 	} else if (match_option (arg, "sample", &val)) {
 		set_sample_freq (config, val);
-		if (config->sample_freq)
-			config->enable_mask |= PROFLOG_PERF_SAMPLING_ALIAS;
+		config->sampling_mode = MONO_PROFILER_SAMPLE_MODE_PROCESS;
+		config->enable_mask |= PROFLOG_SAMPLE_EVENTS;
+	} else if (match_option (arg, "sample-real", &val)) {
+		set_sample_freq (config, val);
+		config->sampling_mode = MONO_PROFILER_SAMPLE_MODE_REAL;
+		config->enable_mask |= PROFLOG_SAMPLE_EVENTS;
+	} else if (match_option (arg, "calls", NULL)) {
+		config->enter_leave = TRUE;
+	} else if (match_option (arg, "coverage", NULL)) {
+		config->collect_coverage = TRUE;
 	} else if (match_option (arg, "zip", NULL)) {
 		config->use_zip = TRUE;
 	} else if (match_option (arg, "output", &val)) {
@@ -119,7 +94,6 @@ parse_arg (const char *arg, ProfilerConfig *config)
 		int num_frames = strtoul (val, &end, 10);
 		if (num_frames > MAX_FRAMES)
 			num_frames = MAX_FRAMES;
-		config->notraces = num_frames == 0;
 		config->num_frames = num_frames;
 	} else if (match_option (arg, "maxsamples", &val)) {
 		char *end;
@@ -145,9 +119,9 @@ parse_arg (const char *arg, ProfilerConfig *config)
 				break;
 			}
 		}
-		if (i == G_N_ELEMENTS (event_list)) {
-			printf ("Could not parse argument %s\n", arg);
-		}
+
+		if (i == G_N_ELEMENTS (event_list))
+			mono_profiler_printf_err ("Could not parse argument: %s", arg);
 	}
 }
 
@@ -157,7 +131,7 @@ load_args_from_env_or_default (ProfilerConfig *config)
 	//XXX change this to header constants
 
 	config->max_allocated_sample_hits = mono_cpu_count () * 1000;
-	config->sampling_mode = MONO_PROFILER_SAMPLE_MODE_PROCESS;
+	config->sampling_mode = MONO_PROFILER_SAMPLE_MODE_NONE;
 	config->sample_freq = 100;
 	config->max_call_depth = 100;
 	config->num_frames = MAX_FRAMES;
@@ -227,183 +201,88 @@ proflog_parse_args (ProfilerConfig *config, const char *desc)
 static void
 set_hsmode (ProfilerConfig *config, const char* val)
 {
-	char *end;
-	unsigned int count;
-	if (!val)
-		return;
-	if (strcmp (val, "ondemand") == 0) {
-		config->hs_mode_ondemand = TRUE;
+	if (!val) {
+		config->hs_mode = MONO_PROFILER_HEAPSHOT_MAJOR;
 		return;
 	}
 
-	count = strtoul (val, &end, 10);
+	if (strcmp (val, "ondemand") == 0) {
+		config->hs_mode = MONO_PROFILER_HEAPSHOT_ON_DEMAND;
+		return;
+	}
+
+	char *end;
+
+	unsigned int count = strtoul (val, &end, 10);
+
 	if (val == end) {
 		usage ();
 		return;
 	}
 
-	if (strcmp (end, "ms") == 0)
-		config->hs_mode_ms = count;
-	else if (strcmp (end, "gc") == 0)
-		config->hs_mode_gc = count;
-	else
+	if (strcmp (end, "ms") == 0) {
+		config->hs_mode = MONO_PROFILER_HEAPSHOT_X_MS;
+		config->hs_freq_ms = count;
+	} else if (strcmp (end, "gc") == 0) {
+		config->hs_mode = MONO_PROFILER_HEAPSHOT_X_GC;
+		config->hs_freq_gc = count;
+	} else
 		usage ();
 }
 
-/*
-Sampling frequency allows for one undocumented, hidden and ignored argument. The sampling kind.
-Back in the day when this was done using perf, we could specify one of: cycles,instr,cacherefs,cachemiss,branches,branchmiss
-With us moving ot userland sampling, those options are now meaningless.
-*/
 static void
 set_sample_freq (ProfilerConfig *config, const char *val)
 {
 	if (!val)
 		return;
 
-	const char *p = val;
+	char *end;
 
-	// Is it only the frequency (new option style)?
-	if (isdigit (*p))
-		goto parse;
+	int freq = strtoul (val, &end, 10);
 
-	// Skip the sample type for backwards compatibility.
-	while (isalpha (*p))
-		p++;
-
-	// Skip the forward slash only if we got a sample type.
-	if (p != val && *p == '/') {
-		p++;
-
-		char *end;
-
-	parse:
-		config->sample_freq = strtoul (p, &end, 10);
-
-		if (p == end) {
-			usage ();
-			return;	
-		}
-
-		p = end;
+	if (val == end) {
+		usage ();
+		return;
 	}
 
-	if (*p)
-		usage ();
+	config->sample_freq = freq;
 }
 
 static void
 usage (void)
 {
-	printf ("Log profiler version %d.%d (format: %d)\n", LOG_VERSION_MAJOR, LOG_VERSION_MINOR, LOG_DATA_VERSION);
-	printf ("Usage: mono --profile=log[:OPTION1[,OPTION2...]] program.exe\n");
-	printf ("Options:\n");
-	printf ("\thelp                 show this usage info\n");
-	printf ("\t[no]'event'          enable/disable a profiling event. Valid values: domain, assembly, module, class, jit, exception, gcalloc, gc, thread, monitor, gcmove, gcroot, context, finalization, counter, gchandle\n");
-	printf ("\t[no]typesystem       enable/disable typesystem related events such as class and assembly loading\n");
-	printf ("\t[no]alloc            enable/disable recording allocation info\n");
-	printf ("\t[no]calls            enable/disable recording enter/leave method events\n");
-	printf ("\t[no]legacy           enable/disable pre mono 5.4 default profiler events\n");
-	printf ("\tsample[=frequency]   enable/disable statistical sampling of threads (frequency in Hz, 100 by default)\n");
-	printf ("\theapshot[=MODE]      record heap shot info (by default at each major collection)\n");
-	printf ("\t                     MODE: every XXms milliseconds, every YYgc collections, ondemand\n");
-	printf ("\t[no]coverage         enable collection of code coverage data\n");
-	printf ("\tcovfilter=ASSEMBLY   add an assembly to the code coverage filters\n");
-	printf ("\t                     add a + to include the assembly or a - to exclude it\n");
-	printf ("\t                     covfilter=-mscorlib\n");
-	printf ("\tcovfilter-file=FILE  use FILE to generate the list of assemblies to be filtered\n");
-	printf ("\tmaxframes=NUM        collect up to NUM stack frames\n");
-	printf ("\tcalldepth=NUM        ignore method events for call chain depth bigger than NUM\n");
-	printf ("\toutput=FILENAME      write the data to file FILENAME (The file is always overwriten)\n");
-	printf ("\toutput=+FILENAME     write the data to file FILENAME.pid (The file is always overwriten)\n");
-	printf ("\toutput=|PROGRAM      write the data to the stdin of PROGRAM\n");
-	printf ("\t                     %%t is subtituted with date and time, %%p with the pid\n");
-	printf ("\treport               create a report instead of writing the raw data to a file\n");
-	printf ("\tzip                  compress the output data\n");
-	printf ("\tport=PORTNUM         use PORTNUM for the listening command server\n");
-}
+	mono_profiler_printf ("Mono log profiler version %d.%d (format: %d)", LOG_VERSION_MAJOR, LOG_VERSION_MINOR, LOG_DATA_VERSION);
+	mono_profiler_printf ("Usage: mono --profile=log[:OPTION1[,OPTION2...]] program.exe\n");
+	mono_profiler_printf ("Options:");
+	mono_profiler_printf ("\thelp                 show this usage info");
+	mono_profiler_printf ("\t[no]'EVENT'          enable/disable an individual profiling event");
+	mono_profiler_printf ("\t                     valid EVENT values:");
 
-static int
-mono_cpu_count (void)
-{
-#ifdef PLATFORM_ANDROID
-	/* Android tries really hard to save power by powering off CPUs on SMP phones which
-	 * means the normal way to query cpu count returns a wrong value with userspace API.
-	 * Instead we use /sys entries to query the actual hardware CPU count.
-	 */
-	int count = 0;
-	char buffer[8] = {'\0'};
-	int present = open ("/sys/devices/system/cpu/present", O_RDONLY);
-	/* Format of the /sys entry is a cpulist of indexes which in the case
-	 * of present is always of the form "0-(n-1)" when there is more than
-	 * 1 core, n being the number of CPU cores in the system. Otherwise
-	 * the value is simply 0
-	 */
-	if (present != -1 && read (present, (char*)buffer, sizeof (buffer)) > 3)
-		count = strtol (((char*)buffer) + 2, NULL, 10);
-	if (present != -1)
-		close (present);
-	if (count > 0)
-		return count + 1;
-#endif
+	for (int i = 0; i < G_N_ELEMENTS (event_list); i++)
+		mono_profiler_printf ("\t                         %s", event_list [i].event_name);
 
-#if defined(HOST_ARM) || defined (HOST_ARM64)
-
-	/* ARM platforms tries really hard to save power by powering off CPUs on SMP phones which
-	 * means the normal way to query cpu count returns a wrong value with userspace API. */
-
-#ifdef _SC_NPROCESSORS_CONF
-	{
-		int count = sysconf (_SC_NPROCESSORS_CONF);
-		if (count > 0)
-			return count;
-	}
-#endif
-
-#else
-
-#ifdef HAVE_SCHED_GETAFFINITY
-	{
-		cpu_set_t set;
-		if (sched_getaffinity (getpid (), sizeof (set), &set) == 0)
-			return CPU_COUNT (&set);
-	}
-#endif
-#ifdef _SC_NPROCESSORS_ONLN
-	{
-		int count = sysconf (_SC_NPROCESSORS_ONLN);
-		if (count > 0)
-			return count;
-	}
-#endif
-
-#endif /* defined(HOST_ARM) || defined (HOST_ARM64) */
-
-#ifdef USE_SYSCTL
-	{
-		int count;
-		int mib [2];
-		size_t len = sizeof (int);
-		mib [0] = CTL_HW;
-		mib [1] = HW_NCPU;
-		if (sysctl (mib, 2, &count, &len, NULL, 0) == 0)
-			return count;
-	}
-#endif
-#ifdef HOST_WIN32
-	{
-		SYSTEM_INFO info;
-		GetSystemInfo (&info);
-		return info.dwNumberOfProcessors;
-	}
-#endif
-
-	static gboolean warned;
-
-	if (!warned) {
-		g_warning ("Don't know how to determine CPU count on this platform; assuming 1");
-		warned = TRUE;
-	}
-
-	return 1;
+	mono_profiler_printf ("\t[no]alloc            enable/disable recording allocation info");
+	mono_profiler_printf ("\t[no]legacy           enable/disable pre mono 5.4 default profiler events");
+	mono_profiler_printf ("\tsample[-real][=FREQ] enable/disable statistical sampling of threads");
+	mono_profiler_printf ("\t                     FREQ in Hz, 100 by default");
+	mono_profiler_printf ("\t                     the -real variant uses wall clock time instead of process time");
+	mono_profiler_printf ("\theapshot[=MODE]      record heapshot info (by default at each major collection)");
+	mono_profiler_printf ("\t                     MODE: every XXms milliseconds, every YYgc collections, ondemand");
+	mono_profiler_printf ("\theapshot-on-shutdown do a heapshot on runtime shutdown");
+	mono_profiler_printf ("\t                     this option is independent of the above option");
+	mono_profiler_printf ("\tcalls                enable recording enter/leave method events (very heavy)");
+	mono_profiler_printf ("\tcoverage             enable collection of code coverage data");
+	mono_profiler_printf ("\tcovfilter=ASSEMBLY   add ASSEMBLY to the code coverage filters");
+	mono_profiler_printf ("\t                     prefix a + to include the assembly or a - to exclude it");
+	mono_profiler_printf ("\t                     e.g. covfilter=-mscorlib");
+	mono_profiler_printf ("\tcovfilter-file=FILE  use FILE to generate the list of assemblies to be filtered");
+	mono_profiler_printf ("\tmaxframes=NUM        collect up to NUM stack frames");
+	mono_profiler_printf ("\tcalldepth=NUM        ignore method events for call chain depth bigger than NUM");
+	mono_profiler_printf ("\toutput=FILENAME      write the data to file FILENAME (the file is always overwritten)");
+	mono_profiler_printf ("\toutput=+FILENAME     write the data to file FILENAME.pid (the file is always overwritten)");
+	mono_profiler_printf ("\toutput=|PROGRAM      write the data to the stdin of PROGRAM");
+	mono_profiler_printf ("\t                     %%t is substituted with date and time, %%p with the pid");
+	mono_profiler_printf ("\treport               create a report instead of writing the raw data to a file");
+	mono_profiler_printf ("\tzip                  compress the output data");
+	mono_profiler_printf ("\tport=PORTNUM         use PORTNUM for the listening command server");
 }

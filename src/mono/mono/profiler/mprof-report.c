@@ -906,6 +906,13 @@ enum {
 	SAMPLE_BRANCH_MISSES,
 };
 
+enum {
+	MONO_GC_EVENT_MARK_START = 1,
+	MONO_GC_EVENT_MARK_END = 2,
+	MONO_GC_EVENT_RECLAIM_START = 3,
+	MONO_GC_EVENT_RECLAIM_END = 4,
+};
+
 static const char*
 sample_type_name (int type)
 {

@@ -134,10 +134,10 @@ typedef enum {
 MONO_API mono_bool mono_profiler_enable_sampling (MonoProfilerHandle handle);
 
 /*
- * Sets the sampling mode and frequency (in Hz). If the calling profiler has
- * ownership over sampling settings, the settings will be changed and this
- * function will return TRUE; otherwise, it returns FALSE without changing any
- * settings.
+ * Sets the sampling mode and frequency (in Hz). The frequency must be a
+ * positive number. If the calling profiler has ownership over sampling
+ * settings, the settings will be changed and this function will return TRUE;
+ * otherwise, it returns FALSE without changing any settings.
  *
  * This function is async safe.
  */
@@ -229,18 +229,13 @@ typedef enum {
 	MONO_PROFILER_CODE_BUFFER_EXCEPTION_HANDLING = 9,
 } MonoProfilerCodeBufferType;
 
-// Keep somewhat in sync with libgc/include/gc.h : GC_EventType.
 typedef enum {
-	MONO_GC_EVENT_START = 0,
-	MONO_GC_EVENT_MARK_START = 1,
-	MONO_GC_EVENT_MARK_END = 2,
-	MONO_GC_EVENT_RECLAIM_START = 3,
-	MONO_GC_EVENT_RECLAIM_END = 4,
-	MONO_GC_EVENT_END = 5,
 	MONO_GC_EVENT_PRE_STOP_WORLD = 6,
 	/* When this event arrives, the GC and suspend locks are acquired. */
 	MONO_GC_EVENT_PRE_STOP_WORLD_LOCKED = 10,
 	MONO_GC_EVENT_POST_STOP_WORLD = 7,
+	MONO_GC_EVENT_START = 0,
+	MONO_GC_EVENT_END = 5,
 	MONO_GC_EVENT_PRE_START_WORLD = 8,
 	/* When this event arrives, the GC and suspend locks are released. */
 	MONO_GC_EVENT_POST_START_WORLD_UNLOCKED = 11,

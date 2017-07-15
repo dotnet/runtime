@@ -11,6 +11,7 @@
 #include <mono/metadata/profiler-private.h>
 #include <mono/utils/mono-dl.h>
 #include <mono/utils/mono-error-internals.h>
+#include <mono/utils/mono-logger-internals.h>
 
 MonoProfilerState mono_profiler_state;
 
@@ -37,7 +38,7 @@ load_profiler (MonoDl *module, const char *desc, const char *suffix)
 	char *err;
 
 	if (!(err = mono_dl_symbol (module, old_name, (gpointer) &func))) {
-		g_warning ("Found old-style startup symbol %s; profiler has not been migrated to the new API.", old_name);
+		mono_profiler_printf_err ("Found old-style startup symbol %s for %s; profiler has not been migrated to the new API.", old_name, desc);
 		g_free (old_name);
 		return FALSE;
 	}
@@ -81,7 +82,7 @@ load_profiler_from_executable (const char *desc, const char *name)
 	MonoDl *module = mono_dl_open (NULL, MONO_DL_EAGER, &err);
 
 	if (!module) {
-		g_warning ("Could not open main executable (%s).", err);
+		mono_profiler_printf_err ("Could not open main executable: %s", err);
 		g_free (err);
 		return FALSE;
 	}
@@ -150,7 +151,7 @@ mono_profiler_load (const char *desc)
 			res = load_profiler_from_directory (NULL, libname, desc);
 
 		if (!res)
-			g_warning ("The '%s' profiler wasn't found in the main executable nor could it be loaded from '%s'.", mname, libname);
+			mono_profiler_printf_err ("The '%s' profiler wasn't found in the main executable nor could it be loaded from '%s'.", mname, libname);
 
 		g_free (libname);
 	}
@@ -334,7 +335,7 @@ mono_profiler_set_sample_mode (MonoProfilerHandle handle, MonoProfilerSampleMode
 	mono_profiler_state.sample_mode = mode;
 	mono_profiler_state.sample_freq = freq;
 
-	mono_os_sem_post (&mono_profiler_state.sampling_semaphore);
+	mono_profiler_sampling_thread_post ();
 
 	return TRUE;
 }
@@ -358,7 +359,13 @@ mono_profiler_sampling_enabled (void)
 }
 
 void
-mono_profiler_sampling_thread_sleep (void)
+mono_profiler_sampling_thread_post (void)
+{
+	mono_os_sem_post (&mono_profiler_state.sampling_semaphore);
+}
+
+void
+mono_profiler_sampling_thread_wait (void)
 {
 	mono_os_sem_wait (&mono_profiler_state.sampling_semaphore, MONO_SEM_FLAGS_NONE);
 }

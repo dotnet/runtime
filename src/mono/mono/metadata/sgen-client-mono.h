@@ -383,25 +383,21 @@ sgen_client_binary_protocol_block_set_state (gpointer addr, size_t size, int old
 static void G_GNUC_UNUSED
 sgen_client_binary_protocol_mark_start (int generation)
 {
-	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_MARK_START, generation));
 }
 
 static void G_GNUC_UNUSED
 sgen_client_binary_protocol_mark_end (int generation)
 {
-	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_MARK_END, generation));
 }
 
 static void G_GNUC_UNUSED
 sgen_client_binary_protocol_reclaim_start (int generation)
 {
-	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_RECLAIM_START, generation));
 }
 
 static void G_GNUC_UNUSED
 sgen_client_binary_protocol_reclaim_end (int generation)
 {
-	MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_RECLAIM_END, generation));
 }
 
 static void

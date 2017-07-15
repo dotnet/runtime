@@ -1,5 +1,5 @@
 /*
- * mono-profiler-iomap.c: IOMAP string profiler for Mono.
+ * iomap.c: IOMAP string profiler for Mono.
  *
  * Authors:
  *   Marek Habersack <mhabersack@novell.com>

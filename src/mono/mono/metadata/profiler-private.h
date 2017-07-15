@@ -98,7 +98,8 @@ void mono_profiler_coverage_free (MonoMethod *method);
 gboolean mono_profiler_should_instrument_method (MonoMethod *method, gboolean entry);
 
 gboolean mono_profiler_sampling_enabled (void);
-void mono_profiler_sampling_thread_sleep (void);
+void mono_profiler_sampling_thread_post (void);
+void mono_profiler_sampling_thread_wait (void);
 
 static inline gboolean
 mono_profiler_allocations_enabled (void)
