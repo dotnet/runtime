@@ -3762,6 +3762,8 @@ public:
 
     bool fgMarkIntf(VARSET_VALARG_TP varSet1, VARSET_VALARG_TP varSet2);
 
+    bool fgMarkIntf(VARSET_VALARG_TP varSet1, unsigned varIndex);
+
     void fgUpdateRefCntForClone(BasicBlock* addedToBlock, GenTreePtr clonedTree);
 
     void fgUpdateRefCntForExtract(GenTreePtr wholeTree, GenTreePtr keptTree);
