@@ -1578,13 +1578,14 @@ void Compiler::fgComputeLifeCall(VARSET_TP& life, GenTreeCall* call)
             }
         }
 
+#ifdef LEGACY_BACKEND
         /* Do we have any live variables? */
-
         if (!VarSetOps::IsEmpty(this, life))
         {
-            // For each live variable if it is a GC-ref type, we
-            // mark it volatile to prevent if from being enregistered
+            // For each live variable if it is a GC-ref type, mark it volatile to prevent if from being enregistered
             // across the unmanaged call.
+            //
+            // Note that this is not necessary when targeting the RyuJIT backend, as its RA handles these kills itself.
 
             unsigned   lclNum;
             LclVarDsc* varDsc;
@@ -1613,6 +1614,7 @@ void Compiler::fgComputeLifeCall(VARSET_TP& life, GenTreeCall* call)
                 }
             }
         }
+#endif // LEGACY_BACKEND
     }
 }
 
