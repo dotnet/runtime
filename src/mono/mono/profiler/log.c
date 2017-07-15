@@ -4184,7 +4184,7 @@ proflog_icall_SetCallDepth (gint32 value)
 ICALL_EXPORT void
 proflog_icall_GetSampleMode (MonoProfilerSampleMode *mode, gint32 *frequency)
 {
-	guint64 freq;
+	uint32_t freq;
 
 	mono_profiler_get_sample_mode (log_profiler.handle, mode, &freq);
 
