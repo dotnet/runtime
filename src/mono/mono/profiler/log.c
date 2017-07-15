@@ -3523,7 +3523,7 @@ log_shutdown (MonoProfiler *prof)
 	char c = 1;
 
 	if (write (prof->pipes [1], &c, 1) != 1) {
-		mono_profiler_printf_err ("Could not write to log profiler pipe: %s", strerror (errno));
+		mono_profiler_printf_err ("Could not write to log profiler pipe: %s", g_strerror (errno));
 		exit (1);
 	}
 
@@ -3737,7 +3737,7 @@ helper_thread (void *arg)
 			if (errno == EINTR)
 				continue;
 
-			mono_profiler_printf_err ("Could not poll in log profiler helper thread: %s", strerror (errno));
+			mono_profiler_printf_err ("Could not poll in log profiler helper thread: %s", g_strerror (errno));
 			exit (1);
 		}
 
@@ -3815,14 +3815,14 @@ static void
 start_helper_thread (void)
 {
 	if (pipe (log_profiler.pipes) == -1) {
-		mono_profiler_printf_err ("Could not create log profiler pipe: %s", strerror (errno));
+		mono_profiler_printf_err ("Could not create log profiler pipe: %s", g_strerror (errno));
 		exit (1);
 	}
 
 	log_profiler.server_socket = socket (PF_INET, SOCK_STREAM, 0);
 
 	if (log_profiler.server_socket == -1) {
-		mono_profiler_printf_err ("Could not create log profiler server socket: %s", strerror (errno));
+		mono_profiler_printf_err ("Could not create log profiler server socket: %s", g_strerror (errno));
 		exit (1);
 	}
 
@@ -3834,13 +3834,13 @@ start_helper_thread (void)
 	server_address.sin_port = htons (log_profiler.command_port);
 
 	if (bind (log_profiler.server_socket, (struct sockaddr *) &server_address, sizeof (server_address)) == -1) {
-		mono_profiler_printf_err ("Could not bind log profiler server socket on port %d: %s", log_profiler.command_port, strerror (errno));
+		mono_profiler_printf_err ("Could not bind log profiler server socket on port %d: %s", log_profiler.command_port, g_strerror (errno));
 		close (log_profiler.server_socket);
 		exit (1);
 	}
 
 	if (listen (log_profiler.server_socket, 1) == -1) {
-		mono_profiler_printf_err ("Could not listen on log profiler server socket: %s", strerror (errno));
+		mono_profiler_printf_err ("Could not listen on log profiler server socket: %s", g_strerror (errno));
 		close (log_profiler.server_socket);
 		exit (1);
 	}
@@ -3848,7 +3848,7 @@ start_helper_thread (void)
 	socklen_t slen = sizeof (server_address);
 
 	if (getsockname (log_profiler.server_socket, (struct sockaddr *) &server_address, &slen)) {
-		mono_profiler_printf_err ("Could not retrieve assigned port for log profiler server socket: %s", strerror (errno));
+		mono_profiler_printf_err ("Could not retrieve assigned port for log profiler server socket: %s", g_strerror (errno));
 		close (log_profiler.server_socket);
 		exit (1);
 	}
