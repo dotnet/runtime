@@ -712,9 +712,11 @@ void Lowering::TreeNodeInfoInitPutArgSplit(GenTreePutArgSplit* argNode, TreeNode
         assert(putArgChild->TypeGet() == TYP_STRUCT);
         assert(putArgChild->OperGet() == GT_OBJ);
 
-        argNode->gtLsraInfo.srcCount = 1;
         // We could use a ldr/str sequence so we need a internal register
+        argNode->gtLsraInfo.srcCount         = 1;
         argNode->gtLsraInfo.internalIntCount = 1;
+        regMaskTP internalMask               = RBM_ALLINT & ~argMask;
+        argNode->gtLsraInfo.setInternalCandidates(m_lsra, internalMask);
 
         GenTreePtr objChild = putArgChild->gtOp.gtOp1;
         if (objChild->OperGet() == GT_LCL_VAR_ADDR)
