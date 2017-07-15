@@ -1247,10 +1247,7 @@ gc_event (MonoProfiler *profiler, MonoProfilerGCEvent ev, uint32_t generation)
 	}
 
 	switch (ev) {
-	case MONO_GC_EVENT_START:
-		if (generation == mono_gc_max_generation ())
-			log_profiler.gc_count++;
-
+	case MONO_GC_EVENT_PRE_STOP_WORLD_LOCKED:
 		switch (log_config.hs_mode) {
 		case MONO_PROFILER_HEAPSHOT_NONE:
 			log_profiler.do_heap_walk = FALSE;
@@ -1284,13 +1281,12 @@ gc_event (MonoProfiler *profiler, MonoProfilerGCEvent ev, uint32_t generation)
 		if (ENABLED (PROFLOG_GC_ROOT_EVENTS) && log_profiler.do_heap_walk)
 			mono_profiler_set_gc_roots_callback (log_profiler.handle, gc_roots);
 
-		break;
-	case MONO_GC_EVENT_PRE_STOP_WORLD_LOCKED:
 		/*
 		 * Ensure that no thread can be in the middle of writing to
 		 * a buffer when the world stops...
 		 */
 		buffer_lock_excl ();
+
 		break;
 	case MONO_GC_EVENT_POST_STOP_WORLD:
 		/*
@@ -1313,6 +1309,11 @@ gc_event (MonoProfiler *profiler, MonoProfilerGCEvent ev, uint32_t generation)
 
 			EXIT_LOG;
 		}
+
+		break;
+	case MONO_GC_EVENT_START:
+		if (generation == mono_gc_max_generation ())
+			log_profiler.gc_count++;
 
 		break;
 	case MONO_GC_EVENT_PRE_START_WORLD:
@@ -1343,6 +1344,7 @@ gc_event (MonoProfiler *profiler, MonoProfilerGCEvent ev, uint32_t generation)
 		 */
 		if (ENABLED (ALL_GC_EVENTS_MASK))
 			sync_point_mark (SYNC_POINT_WORLD_START);
+
 		break;
 	case MONO_GC_EVENT_POST_START_WORLD_UNLOCKED:
 		/*
@@ -1350,6 +1352,7 @@ gc_event (MonoProfiler *profiler, MonoProfilerGCEvent ev, uint32_t generation)
 		 * their buffers again.
 		 */
 		buffer_unlock_excl ();
+
 		break;
 	default:
 		break;
