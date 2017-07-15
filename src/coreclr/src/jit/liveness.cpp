@@ -1341,16 +1341,24 @@ void Compiler::fgLiveVarAnalysis(bool updateInternalOnly)
 #endif // DEBUG
 }
 
-/*****************************************************************************
- *
- *  Mark any variables in varSet1 as interfering with any variables
- *  specified in varSet2.
- *  We ensure that the interference graph is reflective:
- *  (if T11 interferes with T16, then T16 interferes with T11)
- *  returns true if an interference was added
- *  This function returns true if any new interferences were added
- *  and returns false if no new interference were added
- */
+//------------------------------------------------------------------------
+// Compiler::fgMarkIntf:
+//    Mark any variables in varSet1 as interfering with any variables
+//    specified in varSet2.
+//
+//    We ensure that the interference graph is reflective: if T_x
+//    interferes with T_y, then T_y interferes with T_x.
+//
+//    Note that this function is a no-op when targeting the RyuJIT
+//    backend, as it does not require the interference graph.
+//
+// Arguments:
+//    varSet1 - The first set of variables.
+//    varSet2 - The second set of variables.
+//
+// Returns:
+//    True if any new interferences were recorded; false otherwise.
+//
 bool Compiler::fgMarkIntf(VARSET_VALARG_TP varSet1, VARSET_VALARG_TP varSet2)
 {
 #ifdef LEGACY_BACKEND
@@ -1400,6 +1408,24 @@ bool Compiler::fgMarkIntf(VARSET_VALARG_TP varSet1, VARSET_VALARG_TP varSet2)
 #endif
 }
 
+//------------------------------------------------------------------------
+// Compiler::fgMarkIntf:
+//    Mark any variables in varSet1 as interfering with the variable
+//    specified by varIndex.
+//
+//    We ensure that the interference graph is reflective: if T_x
+//    interferes with T_y, then T_y interferes with T_x.
+//
+//    Note that this function is a no-op when targeting the RyuJIT
+//    backend, as it does not require the interference graph.
+//
+// Arguments:
+//    varSet1  - The first set of variables.
+//    varIndex - The second variable.
+//
+// Returns:
+//    True if any new interferences were recorded; false otherwise.
+//
 bool Compiler::fgMarkIntf(VARSET_VALARG_TP varSet, unsigned varIndex)
 {
 #ifdef LEGACY_BACKEND
