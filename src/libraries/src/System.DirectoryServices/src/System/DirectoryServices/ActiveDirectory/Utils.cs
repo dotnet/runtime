@@ -2,19 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
 using System.Text;
 using System.Net;
 using System.Collections;
 using System.Security.Principal;
 using System.Security.Permissions;
-using System.DirectoryServices;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
 using System.Globalization;
 
 #pragma warning disable 618
-[assembly:SecurityPermission(SecurityAction.RequestMinimum, UnmanagedCode = true),
+[assembly: SecurityPermission(SecurityAction.RequestMinimum, UnmanagedCode = true),
 SecurityPermission(SecurityAction.RequestMinimum, SkipVerification = true),
 EnvironmentPermission(SecurityAction.RequestMinimum, Unrestricted = true),
 ]
@@ -321,7 +319,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 if (resCol.Count != 2)
                 {
-                    throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.NoHostNameOrPortNumber , dn));
+                    throw new ActiveDirectoryOperationException(SR.Format(SR.NoHostNameOrPortNumber , dn));
                 }
 
                 foreach (SearchResult res in resCol)
@@ -347,7 +345,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if ((ldapPort == -1) || (dnsHostName == null))
             {
-                throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.NoHostNameOrPortNumber , dn));
+                throw new ActiveDirectoryOperationException(SR.Format(SR.NoHostNameOrPortNumber , dn));
             }
 
             return dnsHostName + ":" + ldapPort;
@@ -380,7 +378,7 @@ namespace System.DirectoryServices.ActiveDirectory
             {
                 if (resCol.Count != 2)
                 {
-                    throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.NoHostNameOrPortNumber , dn));
+                    throw new ActiveDirectoryOperationException(SR.Format(SR.NoHostNameOrPortNumber , dn));
                 }
 
                 foreach (SearchResult res in resCol)
@@ -407,7 +405,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
             if ((ldapPort == -1) || (sslPort == -1) || (dnsHostName == null))
             {
-                throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.NoHostNameOrPortNumber , dn));
+                throw new ActiveDirectoryOperationException(SR.Format(SR.NoHostNameOrPortNumber , dn));
             }
 
             return dnsHostName + ":" + ldapPort + ":" + sslPort;
@@ -814,7 +812,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 return ActiveDirectoryTransportType.Smtp;
             else
             {
-                string message = String.Format(CultureInfo.CurrentCulture, SR.UnknownTransport , transportName);
+                string message = SR.Format(SR.UnknownTransport , transportName);
                 throw new ActiveDirectoryOperationException(message);
             }
         }
@@ -1746,11 +1744,11 @@ namespace System.DirectoryServices.ActiveDirectory
                     Debug.Fail(string.Format(CultureInfo.InvariantCulture, "ConfigurationSet::GetReplicaList - no dnsHostName information for replica {0}", ntdsaName));
                     if (isADAM)
                     {
-                        throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.NoHostNameOrPortNumber , ntdsaName));
+                        throw new ActiveDirectoryOperationException(SR.Format(SR.NoHostNameOrPortNumber , ntdsaName));
                     }
                     else
                     {
-                        throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.NoHostName , ntdsaName));
+                        throw new ActiveDirectoryOperationException(SR.Format(SR.NoHostName , ntdsaName));
                     }
                 }
 
@@ -1759,7 +1757,7 @@ namespace System.DirectoryServices.ActiveDirectory
                     if (serverPorts[ntdsaName] == null)
                     {
                         Debug.Fail(string.Format(CultureInfo.InvariantCulture, "ConfigurationSet::GetReplicaList - no port number  information for replica {0}", ntdsaName));
-                        throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.NoHostNameOrPortNumber , ntdsaName));
+                        throw new ActiveDirectoryOperationException(SR.Format(SR.NoHostNameOrPortNumber , ntdsaName));
                     }
                 }
 
@@ -2101,18 +2099,12 @@ namespace System.DirectoryServices.ActiveDirectory
                                         ))
                         {
                             int lastError = Marshal.GetLastWin32Error();
-                            throw new InvalidOperationException(
-                                            String.Format(CultureInfo.CurrentCulture,
-                                                          SR.UnableToOpenToken,
-                                                          lastError));
+                            throw new InvalidOperationException(SR.Format(SR.UnableToOpenToken, lastError));
                         }
                     }
                     else
                     {
-                        throw new InvalidOperationException(
-                                        String.Format(CultureInfo.CurrentCulture,
-                                                      SR.UnableToOpenToken,
-                                                      error));
+                        throw new InvalidOperationException(SR.Format(SR.UnableToOpenToken, error));
                     }
                 }
 
@@ -2133,7 +2125,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 if ((getTokenInfoError = Marshal.GetLastWin32Error()) != 122) // ERROR_INSUFFICIENT_BUFFER
                 {
                     throw new InvalidOperationException(
-                                    String.Format(CultureInfo.CurrentCulture, SR.UnableToRetrieveTokenInfo, getTokenInfoError));
+                                    SR.Format(SR.UnableToRetrieveTokenInfo, getTokenInfoError));
                 }
 
                 // Allocate the necessary buffer.
@@ -2152,7 +2144,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     int lastError = Marshal.GetLastWin32Error();
                     throw new InvalidOperationException(
-                                    String.Format(CultureInfo.CurrentCulture, SR.UnableToRetrieveTokenInfo, lastError));
+                                    SR.Format(SR.UnableToRetrieveTokenInfo, lastError));
                 }
 
                 // Retrieve the user's SID from the user info
@@ -2169,7 +2161,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     int lastError = Marshal.GetLastWin32Error();
                     throw new InvalidOperationException(
-                                    String.Format(CultureInfo.CurrentCulture, SR.UnableToRetrieveTokenInfo, lastError));
+                                    SR.Format(SR.UnableToRetrieveTokenInfo, lastError));
                 }
 
                 return pCopyOfUserSid;
@@ -2205,9 +2197,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (err != 0)
                 {
-                    throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture,
-                                                               SR.UnableToRetrievePolicy,
-                                                               NativeMethods.LsaNtStatusToWinError(err)));
+                    throw new InvalidOperationException(SR.Format(SR.UnableToRetrievePolicy, NativeMethods.LsaNtStatusToWinError(err)));
                 }
 
                 Debug.Assert(pPolicyHandle != IntPtr.Zero);
@@ -2218,9 +2208,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
                 if (err != 0)
                 {
-                    throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture,
-                                                               SR.UnableToRetrievePolicy,
-                                                               NativeMethods.LsaNtStatusToWinError(err)));
+                    throw new InvalidOperationException(SR.Format(SR.UnableToRetrievePolicy, NativeMethods.LsaNtStatusToWinError(err)));
                 }
 
                 Debug.Assert(pBuffer != IntPtr.Zero);
@@ -2237,7 +2225,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 {
                     int lastError = Marshal.GetLastWin32Error();
                     throw new InvalidOperationException(
-                                    String.Format(CultureInfo.CurrentCulture, SR.UnableToRetrievePolicy, lastError));
+                                    SR.Format(SR.UnableToRetrievePolicy, lastError));
                 }
 
                 return pCopyOfSid;

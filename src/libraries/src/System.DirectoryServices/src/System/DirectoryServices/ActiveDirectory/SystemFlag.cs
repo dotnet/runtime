@@ -4,8 +4,6 @@
 
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-
     internal enum SystemFlag : int
     {
         SystemFlagNtdsNC = 1,

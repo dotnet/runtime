@@ -2,14 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+using System.Collections;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Runtime.InteropServices;
-    using System.Collections;
-    using System.DirectoryServices;
-    using System.Globalization;
-
     public class ActiveDirectorySiteLinkCollection : CollectionBase
     {
         internal DirectoryEntry de = null;
@@ -20,10 +17,7 @@ namespace System.DirectoryServices.ActiveDirectory
 
         public ActiveDirectorySiteLink this[int index]
         {
-            get
-            {
-                return (ActiveDirectorySiteLink)InnerList[index];
-            }
+            get => (ActiveDirectorySiteLink)InnerList[index];
             set
             {
                 ActiveDirectorySiteLink link = (ActiveDirectorySiteLink)value;
@@ -32,12 +26,12 @@ namespace System.DirectoryServices.ActiveDirectory
                     throw new ArgumentNullException("value");
 
                 if (!link.existing)
-                    throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.SiteLinkNotCommitted , link.Name));
+                    throw new InvalidOperationException(SR.Format(SR.SiteLinkNotCommitted , link.Name));
 
                 if (!Contains(link))
                     List[index] = link;
                 else
-                    throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.AlreadyExistingInCollection , link), "value");
+                    throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection , link), "value");
             }
         }
 
@@ -47,12 +41,12 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("link");
 
             if (!link.existing)
-                throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.SiteLinkNotCommitted , link.Name));
+                throw new InvalidOperationException(SR.Format(SR.SiteLinkNotCommitted , link.Name));
 
             if (!Contains(link))
                 return List.Add(link);
             else
-                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.AlreadyExistingInCollection , link), "link");
+                throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection , link), "link");
         }
 
         public void AddRange(ActiveDirectorySiteLink[] links)
@@ -80,7 +74,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("link");
 
             if (!link.existing)
-                throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.SiteLinkNotCommitted , link.Name));
+                throw new InvalidOperationException(SR.Format(SR.SiteLinkNotCommitted , link.Name));
 
             string dn = (string)PropertyManager.GetPropertyValue(link.context, link.cachedEntry, PropertyManager.DistinguishedName);
 
@@ -108,7 +102,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("link");
 
             if (!link.existing)
-                throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.SiteLinkNotCommitted , link.Name));
+                throw new InvalidOperationException(SR.Format(SR.SiteLinkNotCommitted , link.Name));
 
             string dn = (string)PropertyManager.GetPropertyValue(link.context, link.cachedEntry, PropertyManager.DistinguishedName);
 
@@ -131,12 +125,12 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("value");
 
             if (!link.existing)
-                throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.SiteLinkNotCommitted , link.Name));
+                throw new InvalidOperationException(SR.Format(SR.SiteLinkNotCommitted , link.Name));
 
             if (!Contains(link))
                 List.Insert(index, link);
             else
-                throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.AlreadyExistingInCollection , link), "link");
+                throw new ArgumentException(SR.Format(SR.AlreadyExistingInCollection , link), "link");
         }
 
         public void Remove(ActiveDirectorySiteLink link)
@@ -145,7 +139,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentNullException("link");
 
             if (!link.existing)
-                throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.SiteLinkNotCommitted , link.Name));
+                throw new InvalidOperationException(SR.Format(SR.SiteLinkNotCommitted , link.Name));
 
             string dn = (string)PropertyManager.GetPropertyValue(link.context, link.cachedEntry, PropertyManager.DistinguishedName);
 
@@ -162,7 +156,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
 
             // something that does not exist in the collectio
-            throw new ArgumentException(String.Format(CultureInfo.CurrentCulture, SR.NotFoundInCollection , link), "link");
+            throw new ArgumentException(SR.Format(SR.NotFoundInCollection , link), "link");
         }
 
         protected override void OnClearComplete()
@@ -235,7 +229,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 throw new ArgumentException("value");
 
             if (!((ActiveDirectorySiteLink)value).existing)
-                throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, SR.SiteLinkNotCommitted , ((ActiveDirectorySiteLink)value).Name));
+                throw new InvalidOperationException(SR.Format(SR.SiteLinkNotCommitted , ((ActiveDirectorySiteLink)value).Name));
         }
     }
 }
