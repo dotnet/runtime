@@ -3628,61 +3628,58 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
 
     assert(((consume == 0) && (produce == 0)) || (ComputeAvailableSrcCount(tree) == consume));
 
-    if (isCandidateLocalRef(tree) && !tree->OperIsLocalStore())
+    if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD))
     {
-        assert(consume == 0);
-
-        // We handle tracked variables differently from non-tracked ones.  If it is tracked,
-        // we simply add a use or def of the tracked variable.  Otherwise, for a use we need
-        // to actually add the appropriate references for loading or storing the variable.
-        //
-        // It won't actually get used or defined until the appropriate ancestor tree node
-        // is processed, unless this is marked "isLocalDefUse" because it is a stack-based argument
-        // to a call
-
-        LclVarDsc* varDsc = &compiler->lvaTable[tree->gtLclVarCommon.gtLclNum];
-        assert(varDsc->lvTracked);
-        unsigned  varIndex   = varDsc->lvVarIndex;
-        Interval* interval   = getIntervalForLocalVar(varIndex);
-        regMaskTP candidates = getUseCandidates(tree);
-
-        // We have only approximate last-use information at this point.  This is because the
-        // execution order doesn't actually reflect the true order in which the localVars
-        // are referenced - but the order of the RefPositions will, so we recompute it after
-        // RefPositions are built.
-        // Use the old value for setting currentLiveVars - note that we do this with the
-        // not-quite-correct setting of lastUse.  However, this is OK because
-        // 1) this is only for preferencing, which doesn't require strict correctness, and
-        // 2) the cases where these out-of-order uses occur should not overlap a kill.
-        // TODO-Throughput: clean this up once we have the execution order correct.  At that point
-        // we can update currentLiveVars at the same place that we create the RefPosition.
-        if ((tree->gtFlags & GTF_VAR_DEATH) != 0)
+        LclVarDsc* const varDsc = &compiler->lvaTable[tree->AsLclVarCommon()->gtLclNum];
+        if (isCandidateVar(varDsc))
         {
-            VarSetOps::RemoveElemD(compiler, currentLiveVars, varIndex);
-        }
+            assert(consume == 0);
 
-        JITDUMP("t%u (i:%u)\n", currentLoc, interval->intervalIndex);
+            // We handle tracked variables differently from non-tracked ones.  If it is tracked,
+            // we simply add a use or def of the tracked variable.  Otherwise, for a use we need
+            // to actually add the appropriate references for loading or storing the variable.
+            //
+            // It won't actually get used or defined until the appropriate ancestor tree node
+            // is processed, unless this is marked "isLocalDefUse" because it is a stack-based argument
+            // to a call
 
-        if (!info.isLocalDefUse)
-        {
-            if (produce != 0)
+            assert(varDsc->lvTracked);
+            unsigned varIndex = varDsc->lvVarIndex;
+
+            // We have only approximate last-use information at this point.  This is because the
+            // execution order doesn't actually reflect the true order in which the localVars
+            // are referenced - but the order of the RefPositions will, so we recompute it after
+            // RefPositions are built.
+            // Use the old value for setting currentLiveVars - note that we do this with the
+            // not-quite-correct setting of lastUse.  However, this is OK because
+            // 1) this is only for preferencing, which doesn't require strict correctness, and
+            // 2) the cases where these out-of-order uses occur should not overlap a kill.
+            // TODO-Throughput: clean this up once we have the execution order correct.  At that point
+            // we can update currentLiveVars at the same place that we create the RefPosition.
+            if ((tree->gtFlags & GTF_VAR_DEATH) != 0)
             {
-                LocationInfoList list(listNodePool.GetNode(currentLoc, interval, tree));
+                VarSetOps::RemoveElemD(compiler, currentLiveVars, varIndex);
+            }
+
+            JITDUMP("t%u (i:%u)", currentLoc, getIntervalForLocalVar(varIndex)->intervalIndex);
+
+            if (!info.isLocalDefUse && !tree->isContained())
+            {
+                assert(produce != 0);
+
+                LocationInfoList list(listNodePool.GetNode(currentLoc, getIntervalForLocalVar(varIndex), tree));
                 bool             added = operandToLocationInfoMap.AddOrUpdate(tree, list);
                 assert(added);
 
                 tree->gtLsraInfo.definesAnyRegisters = true;
             }
-
-            return;
-        }
-        else
-        {
-            JITDUMP("    Not added to map\n");
-            RefPosition* pos   = newRefPosition(interval, currentLoc, RefTypeUse, tree, candidates);
-            pos->isLocalDefUse = true;
-            pos->setAllocateIfProfitable(tree->IsRegOptional());
-            DBEXEC(VERBOSE, pos->dump());
+#ifdef DEBUG
+            else
+            {
+                JITDUMP(": %s", tree->isContained() ? "contained" : "unused");
+            }
+            JITDUMP("\n");
+#endif // DEBUG
             return;
         }
     }
