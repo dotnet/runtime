@@ -428,26 +428,31 @@ static gint64 gc_start_time;
 static void
 on_gc_notification (GC_EventType event)
 {
-	MonoProfilerGCEvent e = (MonoProfilerGCEvent)event;
+	MonoProfilerGCEvent e;
 
-	switch (e) {
-	case MONO_GC_EVENT_PRE_STOP_WORLD:
+	switch (event) {
+	case GC_EVENT_PRE_STOP_WORLD:
+		e = MONO_GC_EVENT_PRE_STOP_WORLD;
 		MONO_GC_WORLD_STOP_BEGIN ();
 		break;
 
-	case MONO_GC_EVENT_POST_STOP_WORLD:
+	case GC_EVENT_POST_STOP_WORLD:
+		e = MONO_GC_EVENT_POST_STOP_WORLD;
 		MONO_GC_WORLD_STOP_END ();
 		break;
 
-	case MONO_GC_EVENT_PRE_START_WORLD:
+	case GC_EVENT_PRE_START_WORLD:
+		e = MONO_GC_EVENT_PRE_START_WORLD;
 		MONO_GC_WORLD_RESTART_BEGIN (1);
 		break;
 
-	case MONO_GC_EVENT_POST_START_WORLD:
+	case GC_EVENT_POST_START_WORLD:
+		e = MONO_GC_EVENT_POST_START_WORLD;
 		MONO_GC_WORLD_RESTART_END (1);
 		break;
 
-	case MONO_GC_EVENT_START:
+	case GC_EVENT_START:
+		e = MONO_GC_EVENT_START;
 		MONO_GC_BEGIN (1);
 #ifndef DISABLE_PERFCOUNTERS
 		if (mono_perfcounters)
@@ -457,7 +462,8 @@ on_gc_notification (GC_EventType event)
 		gc_start_time = mono_100ns_ticks ();
 		break;
 
-	case MONO_GC_EVENT_END:
+	case GC_EVENT_END:
+		e = MONO_GC_EVENT_END;
 		MONO_GC_END (1);
 #if defined(ENABLE_DTRACE) && defined(__sun__)
 		/* This works around a dtrace -G problem on Solaris.
@@ -483,14 +489,23 @@ on_gc_notification (GC_EventType event)
 		break;
 	}
 
-	MONO_PROFILER_RAISE (gc_event, (e, 0));
+	switch (event) {
+	case GC_EVENT_MARK_START:
+	case GC_EVENT_MARK_END:
+	case GC_EVENT_RECLAIM_START:
+	case GC_EVENT_RECLAIM_END:
+		break;
+	default:
+		MONO_PROFILER_RAISE (gc_event, (e, 0));
+		break;
+	}
 
-	switch (e) {
-	case MONO_GC_EVENT_PRE_STOP_WORLD:
+	switch (event) {
+	case GC_EVENT_PRE_STOP_WORLD:
 		mono_thread_info_suspend_lock ();
 		MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_PRE_STOP_WORLD_LOCKED, 0));
 		break;
-	case MONO_GC_EVENT_POST_START_WORLD:
+	case GC_EVENT_POST_START_WORLD:
 		mono_thread_info_suspend_unlock ();
 		MONO_PROFILER_RAISE (gc_event, (MONO_GC_EVENT_POST_START_WORLD_UNLOCKED, 0));
 		break;

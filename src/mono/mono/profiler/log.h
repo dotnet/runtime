@@ -69,6 +69,7 @@
                added an exception object field to TYPE_CLAUSE
                class unload events no longer exist (they were never emitted)
                removed type field from TYPE_SAMPLE_HIT
+               removed MONO_GC_EVENT_{MARK,RECLAIM}_{START,END}
  */
 
 /*
