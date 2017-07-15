@@ -889,7 +889,7 @@ namespace System.Resources
         //       contains the PRI resources.
         private bool ShouldUseSatelliteAssemblyResourceLookupUnderAppX(RuntimeAssembly resourcesAssembly)
         {
-            bool fUseSatelliteAssemblyResourceLookupUnderAppX = true; // TODO: https://github.com/dotnet/coreclr/issues/12178 once we fix our uap testhost
+            bool fUseSatelliteAssemblyResourceLookupUnderAppX = typeof(Object).Assembly == resourcesAssembly;
 
             if (!fUseSatelliteAssemblyResourceLookupUnderAppX)
             {
