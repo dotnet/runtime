@@ -1412,10 +1412,18 @@ BOOL Thread::IsContextSafeToRedirect(CONTEXT* pContext)
     }
     CONTRACTL_END;
 
+    BOOL isSafeToRedirect = TRUE;
+
 #ifndef FEATURE_PAL
     
 #if !defined(_TARGET_X86_)
-    CONSISTENCY_CHECK_MSG(pContext->ContextFlags & CONTEXT_EXCEPTION_REPORTING, "ERROR: you didn't pass CONTEXT_EXCEPTION_REQUEST into GetThreadContext\n");
+    // In some cases (x86 WOW64, ARM32 on ARM64) Windows will not set the CONTEXT_EXCEPTION_REPORTING flag
+    // if the thread is executing in kernel mode (i.e. in the middle of a syscall or exception handling).
+    // Therefore, we should treat the absence of the CONTEXT_EXCEPTION_REPORTING flag as an indication that
+    // it is not safe to manipulate with the current state of the thread context.
+    // Note: the x86 WOW64 case is already handled in GetSafelyRedirectableThreadContext; in addition, this
+    // flag is never set on Windows7 x86 WOW64. So this check is valid for non-x86 architectures only.
+    isSafeToRedirect = (pContext->ContextFlags & CONTEXT_EXCEPTION_REPORTING) != 0;
 #endif // !defined(_TARGET_X86_)
 
     if (pContext->ContextFlags & CONTEXT_EXCEPTION_REPORTING)
@@ -1424,13 +1432,13 @@ BOOL Thread::IsContextSafeToRedirect(CONTEXT* pContext)
         {
             // cannot process exception
             LOG((LF_ALWAYS, LL_WARNING, "thread [os id=0x08%x id=0x08%x] redirect failed due to ContextFlags of 0x%08x\n", m_OSThreadId, m_ThreadId, pContext->ContextFlags));
-            return FALSE;
+            isSafeToRedirect = FALSE;
         }
     }
 
 #endif // !FEATURE_PAL
 
-    return TRUE;
+    return isSafeToRedirect;
 }
 
 void Thread::SetAbortEndTime(ULONGLONG endTime, BOOL fRudeAbort)
