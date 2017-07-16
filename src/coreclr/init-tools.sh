@@ -12,19 +12,26 @@ __BUILD_TOOLS_PACKAGE_VERSION=$(cat $__scriptpath/BuildToolsVersion.txt)
 __DOTNET_TOOLS_VERSION=$(cat $__scriptpath/DotnetCLIVersion.txt)
 __BUILD_TOOLS_PATH=$__PACKAGES_DIR/microsoft.dotnet.buildtools/$__BUILD_TOOLS_PACKAGE_VERSION/lib
 __INIT_TOOLS_RESTORE_PROJECT=$__scriptpath/init-tools.msbuild
-__INIT_TOOLS_DONE_MARKER=$__TOOLRUNTIME_DIR/$__BUILD_TOOLS_PACKAGE_VERSION/done
+__INIT_TOOLS_DONE_MARKER_DIR=$__TOOLRUNTIME_DIR/$__BUILD_TOOLS_PACKAGE_VERSION
+__INIT_TOOLS_DONE_MARKER=$__INIT_TOOLS_DONE_MARKER_DIR/done
 
 if [ -z "$__DOTNET_PKG" ]; then
     if [ "$(uname -m | grep "i[3456]86")" = "i686" ]; then
         echo "Error: build not supported on 32 bit Unix"
         exit 1
     fi
-OSName=$(uname -s)
+    OSName=$(uname -s)
     case $OSName in
         Darwin)
             OS=OSX
             __DOTNET_PKG=dotnet-dev-osx-x64
             ulimit -n 2048
+            # Format x.y.z as single integer with three digits for each part
+            VERSION=`sw_vers -productVersion| sed -e 's/\./ /g' | xargs printf "%03d%03d%03d"`
+            if [ "$VERSION" -lt 010012000 ]; then
+                echo error: macOS version `sw_vers -productVersion` is too old. 10.12 is needed as minimum.
+                exit 1
+            fi
             ;;
 
         Linux)
@@ -64,14 +71,13 @@ if [ ! -e $__INIT_TOOLS_DONE_MARKER ]; then
             cp -r $DOTNET_TOOL_DIR/* $__DOTNET_PATH
         else
             echo "Installing dotnet cli..."
-            __DOTNET_LOCATION="https://dotnetcli.blob.core.windows.net/dotnet/Sdk/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.${__DOTNET_TOOLS_VERSION}.tar.gz"
+            __DOTNET_LOCATION="https://dotnetcli.azureedge.net/dotnet/Sdk/${__DOTNET_TOOLS_VERSION}/${__DOTNET_PKG}.${__DOTNET_TOOLS_VERSION}.tar.gz"
             # curl has HTTPS CA trust-issues less often than wget, so lets try that first.
             echo "Installing '${__DOTNET_LOCATION}' to '$__DOTNET_PATH/dotnet.tar'" >> $__init_tools_log
-            which curl > /dev/null 2> /dev/null
-            if [ $? -ne 0 ]; then
-                wget -q -O $__DOTNET_PATH/dotnet.tar ${__DOTNET_LOCATION}
-            else
+            if command -v curl > /dev/null; then
                 curl --retry 10 -sSL --create-dirs -o $__DOTNET_PATH/dotnet.tar ${__DOTNET_LOCATION}
+            else
+                wget -q -O $__DOTNET_PATH/dotnet.tar ${__DOTNET_LOCATION}
             fi
             cd $__DOTNET_PATH
             tar -xf $__DOTNET_PATH/dotnet.tar
@@ -81,6 +87,7 @@ if [ ! -e $__INIT_TOOLS_DONE_MARKER ]; then
             __PATCH_CLI_NUGET_FRAMEWORKS=1
         fi
     fi
+
 
     if [ -n "$BUILD_TOOLS_TOOLSET_DIR" ] && [ -d "$BUILD_TOOLS_TOOLSET_DIR/$__BUILD_TOOLS_PACKAGE_VERSION" ]; then
         echo "Copying $BUILD_TOOLS_TOOLSET_DIR/$__BUILD_TOOLS_PACKAGE_VERSION to $__TOOLRUNTIME_DIR" >> $__init_tools_log
@@ -119,6 +126,7 @@ if [ ! -e $__INIT_TOOLS_DONE_MARKER ]; then
 
     Tools/crossgen.sh $__scriptpath/Tools
 
+    mkdir -p $__INIT_TOOLS_DONE_MARKER_DIR
     touch $__INIT_TOOLS_DONE_MARKER
 
     echo "Done initializing tools."
