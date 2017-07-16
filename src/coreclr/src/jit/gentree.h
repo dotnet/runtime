@@ -3176,7 +3176,7 @@ public:
     {
         return m_inited ? GetReturnRegCount() : 0;
     }
-#endif //DEBUG
+#endif // DEBUG
 
     //--------------------------------------------------------------------------------------------
     // GetReturnRegCount:  Get the count of return registers in which the return value is returned.
