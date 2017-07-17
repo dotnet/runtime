@@ -9288,10 +9288,6 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[IND_VOLATILE]");
                 }
-                if (tree->gtFlags & GTF_IND_REFARR_LAYOUT)
-                {
-                    chars += printf("[IND_REFARR_LAYOUT]");
-                }
                 if (tree->gtFlags & GTF_IND_TGTANYWHERE)
                 {
                     chars += printf("[IND_TGTANYWHERE]");
