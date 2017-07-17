@@ -150,7 +150,6 @@ namespace System.Tests
         }
 
         [Fact]
-        [ActiveIssue(21680, TargetFrameworkMonikers.UapAot)]
         public void FirstChanceException_Called()
         {
             RemoteInvoke(() => {
