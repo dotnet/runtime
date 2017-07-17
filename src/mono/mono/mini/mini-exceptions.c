@@ -349,7 +349,7 @@ is_address_protected (MonoJitInfo *ji, MonoJitExceptionInfo *ei, gpointer ip)
 
 	for (i = 0; i < table->num_holes; ++i) {
 		MonoTryBlockHoleJitInfo *hole = &table->holes [i];
-		if (hole->clause == clause && hole->offset <= offset && hole->offset + hole->length > offset)
+		if (ji->clauses [hole->clause].try_offset == ji->clauses [clause].try_offset && hole->offset <= offset && hole->offset + hole->length > offset)
 			return FALSE;
 	}
 	return TRUE;
@@ -2917,7 +2917,7 @@ find_last_handler_block (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
 			continue;
 		/*If ip points to the first instruction it means the handler block didn't start
 		 so we can leave its execution to the EH machinery*/
-		if (ei->handler_start < ip && ip < ei->data.handler_end) {
+		if (ei->handler_start <= ip && ip < ei->data.handler_end) {
 			pdata->ji = ji;
 			pdata->ei = ei;
 			pdata->ctx = *ctx;
@@ -2941,16 +2941,12 @@ install_handler_block_guard (MonoJitInfo *ji, MonoContext *ctx)
 		clause = &ji->clauses [i];
 		if (clause->flags != MONO_EXCEPTION_CLAUSE_FINALLY)
 			continue;
-		if (clause->handler_start < ip && clause->data.handler_end > ip)
+		if (clause->handler_start <= ip && clause->data.handler_end > ip)
 			break;
 	}
 
 	/*no matching finally */
 	if (i == ji->num_clauses)
-		return NULL;
-
-	/*If we stopped on the instruction right before the try, we haven't actually started executing it*/
-	if (ip == clause->handler_start)
 		return NULL;
 
 	return mono_arch_install_handler_block_guard (ji, clause, ctx, mono_create_handler_block_trampoline ());
