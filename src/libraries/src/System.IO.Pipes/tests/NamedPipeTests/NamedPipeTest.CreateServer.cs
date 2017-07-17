@@ -56,14 +56,12 @@ namespace System.IO.Pipes.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("pipeName", () => new NamedPipeServerStream(reservedName, direction, 1, PipeTransmissionMode.Byte, PipeOptions.None, 0, 0));}
 
         [Fact]
-        [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
         public static void Create_PipeName()
         {
             new NamedPipeServerStream(GetUniquePipeName()).Dispose();
         }
 
         [Fact]
-        [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
         public static void Create_PipeName_Direction_MaxInstances()
         {
             new NamedPipeServerStream(GetUniquePipeName(), PipeDirection.Out, 1).Dispose();
@@ -71,7 +69,6 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // can't access SafePipeHandle on Unix until after connection created
-        [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
         public static void CreateWithNegativeOneServerInstances_DefaultsToMaxServerInstances()
         {
             // When passed -1 as the maxnumberofserverisntances, the NamedPipeServerStream.Windows class
@@ -199,7 +196,6 @@ namespace System.IO.Pipes.Tests
         [InlineData(PipeDirection.Out)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "This scenario is not handled with System.ArgumentException on Full Framework")]
         [PlatformSpecific(TestPlatforms.Windows)] // accessing SafePipeHandle on Unix fails for a non-connected stream
-        [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
         public static void Windows_CreateFromDisposedServerHandle_Throws_ObjectDisposedException(PipeDirection direction)
         {
             // The pipe is closed when we try to make a new Stream with it
@@ -241,7 +237,6 @@ namespace System.IO.Pipes.Tests
         [InlineData(PipeDirection.Out)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET framework handles this scenario by throwing ApplicationException instead")]
         [PlatformSpecific(TestPlatforms.Windows)] // accessing SafePipeHandle on Unix fails for a non-connected stream
-        [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
         public static void Windows_CreateFromAlreadyBoundHandle_Throws_ArgumentException(PipeDirection direction)
         {
             // The pipe is already bound
@@ -253,7 +248,6 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // NumberOfServerInstances > 1 isn't supported and has undefined behavior on Unix
-        [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
         public static void ServerCountOverMaxServerInstances_Throws_IOException()
         {
             string uniqueServerName = GetUniquePipeName();
@@ -265,7 +259,6 @@ namespace System.IO.Pipes.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)] // NumberOfServerInstances > 1 isn't supported and has undefined behavior on Unix
-        [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
         public static void Windows_ServerCloneWithDifferentDirection_Throws_UnauthorizedAccessException()
         {
             string uniqueServerName = GetUniquePipeName();
