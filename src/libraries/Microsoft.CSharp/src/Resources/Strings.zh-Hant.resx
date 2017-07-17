@@ -36,12 +36,6 @@
   <data name="BindInvokeFailedNonDelegate" xml:space="preserve">
     <value>無法叫用非委派型別</value>
   </data>
-  <data name="BindImplicitConversionRequireOneArgument" xml:space="preserve">
-    <value>隱含轉換只接受一個引數</value>
-  </data>
-  <data name="BindExplicitConversionRequireOneArgument" xml:space="preserve">
-    <value>明確轉換只接受一個引數</value>
-  </data>
   <data name="BindBinaryAssignmentRequireTwoArguments" xml:space="preserve">
     <value>無法以一個引數叫用二元運算子</value>
   </data>

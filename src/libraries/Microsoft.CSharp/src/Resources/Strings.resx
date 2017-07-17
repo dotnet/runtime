@@ -82,12 +82,6 @@
   <data name="BindInvokeFailedNonDelegate" xml:space="preserve">
     <value>Cannot invoke a non-delegate type</value>
   </data>
-  <data name="BindImplicitConversionRequireOneArgument" xml:space="preserve">
-    <value>Implicit conversion takes exactly one argument</value>
-  </data>
-  <data name="BindExplicitConversionRequireOneArgument" xml:space="preserve">
-    <value>Explicit conversion takes exactly one argument</value>
-  </data>
   <data name="BindBinaryAssignmentRequireTwoArguments" xml:space="preserve">
     <value>Binary operators cannot be invoked with one argument</value>
   </data>

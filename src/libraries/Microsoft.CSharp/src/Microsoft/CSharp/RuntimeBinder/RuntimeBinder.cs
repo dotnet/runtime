@@ -1463,10 +1463,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             LocalVariableSymbol[] locals,
             bool bIsArrayCreationConversion)
         {
-            if (arguments.Length != 1)
-            {
-                throw Error.BindImplicitConversionRequireOneArgument();
-            }
+            Debug.Assert(arguments.Length == 1);
 
             // Load the conversions on the target.
             _symbolTable.AddConversionsForType(returnType);
@@ -1505,10 +1502,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         internal Expr BindExplicitConversion(ArgumentObject[] arguments, Type returnType, LocalVariableSymbol[] locals)
         {
-            if (arguments.Length != 1)
-            {
-                throw Error.BindExplicitConversionRequireOneArgument();
-            }
+            Debug.Assert(arguments.Length == 1);
 
             // Load the conversions on the target.
             _symbolTable.AddConversionsForType(returnType);

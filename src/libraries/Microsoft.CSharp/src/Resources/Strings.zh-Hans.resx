@@ -36,12 +36,6 @@
   <data name="BindInvokeFailedNonDelegate" xml:space="preserve">
     <value>无法调用非委托类型</value>
   </data>
-  <data name="BindImplicitConversionRequireOneArgument" xml:space="preserve">
-    <value>隐式转换采用一个且仅一个参数</value>
-  </data>
-  <data name="BindExplicitConversionRequireOneArgument" xml:space="preserve">
-    <value>显式转换采用一个且仅一个参数</value>
-  </data>
   <data name="BindBinaryAssignmentRequireTwoArguments" xml:space="preserve">
     <value>无法使用一个参数调用二元运算符</value>
   </data>

@@ -36,12 +36,6 @@
   <data name="BindInvokeFailedNonDelegate" xml:space="preserve">
     <value>Impossible d'appeler un type non-délégué</value>
   </data>
-  <data name="BindImplicitConversionRequireOneArgument" xml:space="preserve">
-    <value>La conversion implicite n'accepte qu'un seul argument</value>
-  </data>
-  <data name="BindExplicitConversionRequireOneArgument" xml:space="preserve">
-    <value>La conversion explicite n'accepte qu'un seul argument</value>
-  </data>
   <data name="BindBinaryAssignmentRequireTwoArguments" xml:space="preserve">
     <value>Impossible d'appeler les opérateurs binaires avec un argument</value>
   </data>

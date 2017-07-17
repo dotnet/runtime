@@ -36,12 +36,6 @@
   <data name="BindInvokeFailedNonDelegate" xml:space="preserve">
     <value>Не удалось вызвать тип, не являющийся делегатом</value>
   </data>
-  <data name="BindImplicitConversionRequireOneArgument" xml:space="preserve">
-    <value>Для неявного преобразования нужен строго один аргумент</value>
-  </data>
-  <data name="BindExplicitConversionRequireOneArgument" xml:space="preserve">
-    <value>Для явного преобразования нужен строго один аргумент</value>
-  </data>
   <data name="BindBinaryAssignmentRequireTwoArguments" xml:space="preserve">
     <value>Невозможно вызвать бинарные операторы с использованием одного аргумента</value>
   </data>

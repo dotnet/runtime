@@ -38,14 +38,6 @@
           <source>Cannot invoke a non-delegate type</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">无法调用非委托类型</target>
         </trans-unit>
-        <trans-unit id="BindImplicitConversionRequireOneArgument" translate="yes" xml:space="preserve">
-          <source>Implicit conversion takes exactly one argument</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">隐式转换采用一个且仅一个参数</target>
-        </trans-unit>
-        <trans-unit id="BindExplicitConversionRequireOneArgument" translate="yes" xml:space="preserve">
-          <source>Explicit conversion takes exactly one argument</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">显式转换采用一个且仅一个参数</target>
-        </trans-unit>
         <trans-unit id="BindBinaryAssignmentRequireTwoArguments" translate="yes" xml:space="preserve">
           <source>Binary operators cannot be invoked with one argument</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">无法使用一个参数调用二元运算符</target>
