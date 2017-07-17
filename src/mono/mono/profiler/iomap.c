@@ -92,7 +92,7 @@ static inline gchar *build_hint (SavedString *head);
 static inline gchar *build_hint_from_stack (MonoDomain *domain, void **stack, gint stack_entries);
 static inline void store_string_location (MonoProfiler *prof, const gchar *string, guint32 hash, size_t len);
 static void mono_portability_remember_string (MonoProfiler *prof, MonoDomain *domain, MonoString *str);
-void mono_profiler_init (const char *desc);
+void mono_profiler_init_iomap (const char *desc);
 
 static void mismatched_stats_foreach_func (gpointer key, gpointer value, gpointer user_data)
 {
@@ -531,7 +531,7 @@ static void profiler_shutdown (MonoProfiler *prof)
 	mono_os_mutex_destroy (&mismatched_files_section);
 }
 
-void mono_profiler_init (const char *desc)
+void mono_profiler_init_iomap (const char *desc)
 {
 	MonoProfiler *prof = g_new0 (MonoProfiler, 1);
 

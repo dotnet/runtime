@@ -4626,28 +4626,11 @@ create_profiler (const char *args, const char *filename, GPtrArray *filters)
 	log_profiler.startup_time = current_time ();
 }
 
-/*
- * declaration to silence the compiler: this is the entry point that
- * mono will load from the shared library and call.
- */
-extern void
-mono_profiler_init (const char *desc);
-
-extern void
+MONO_API void
 mono_profiler_init_log (const char *desc);
 
-/*
- * this is the entry point that will be used when the profiler
- * is embedded inside the main executable.
- */
 void
 mono_profiler_init_log (const char *desc)
-{
-	mono_profiler_init (desc);
-}
-
-void
-mono_profiler_init (const char *desc)
 {
 	GPtrArray *filters = NULL;
 

@@ -27,9 +27,9 @@ MONO_BEGIN_DECLS
  * the module after it has been loaded. If the specified module has already
  * been loaded, this function has no effect.
  *
- * A module should declare an entry point like so:
+ * A module called foo should declare an entry point like so:
  *
- * void mono_profiler_init (const char *desc)
+ * void mono_profiler_init_foo (const char *desc)
  * {
  * }
  *

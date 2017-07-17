@@ -21,24 +21,16 @@ typedef void (*MonoProfilerInitializer) (const char *);
 #define NEW_INITIALIZER_NAME "mono_profiler_init"
 
 static gboolean
-load_profiler (MonoDl *module, const char *desc, const char *suffix)
+load_profiler (MonoDl *module, const char *name, const char *desc)
 {
 	if (!module)
 		return FALSE;
 
-	char *old_name;
-
-	if (suffix)
-		old_name = g_strdup_printf (OLD_INITIALIZER_NAME "_%s", suffix);
-	else
-		old_name = g_strdup_printf (OLD_INITIALIZER_NAME);
-
+	char *err, *old_name = g_strdup_printf (OLD_INITIALIZER_NAME);
 	MonoProfilerInitializer func;
 
-	char *err;
-
 	if (!(err = mono_dl_symbol (module, old_name, (gpointer) &func))) {
-		mono_profiler_printf_err ("Found old-style startup symbol %s for %s; profiler has not been migrated to the new API.", old_name, desc);
+		mono_profiler_printf_err ("Found old-style startup symbol '%s' for the '%s' profiler; it has not been migrated to the new API.", old_name, name);
 		g_free (old_name);
 		return FALSE;
 	}
@@ -46,12 +38,7 @@ load_profiler (MonoDl *module, const char *desc, const char *suffix)
 	g_free (err);
 	g_free (old_name);
 
-	char *new_name;
-
-	if (suffix)
-		new_name = g_strdup_printf (NEW_INITIALIZER_NAME "_%s", suffix);
-	else
-		new_name = g_strdup_printf (NEW_INITIALIZER_NAME);
+	char *new_name = g_strdup_printf (NEW_INITIALIZER_NAME "_%s", name);
 
 	if ((err = mono_dl_symbol (module, new_name, (gpointer *) &func))) {
 		g_free (err);
@@ -67,7 +54,7 @@ load_profiler (MonoDl *module, const char *desc, const char *suffix)
 }
 
 static gboolean
-load_profiler_from_executable (const char *desc, const char *name)
+load_profiler_from_executable (const char *name, const char *desc)
 {
 	char *err;
 
@@ -87,11 +74,11 @@ load_profiler_from_executable (const char *desc, const char *name)
 		return FALSE;
 	}
 
-	return load_profiler (module, desc, name);
+	return load_profiler (module, name, desc);
 }
 
 static gboolean
-load_profiler_from_directory (const char *directory, const char *libname, const char *desc)
+load_profiler_from_directory (const char *directory, const char *libname, const char *name, const char *desc)
 {
 	char* path;
 	void *iter = NULL;
@@ -103,14 +90,14 @@ load_profiler_from_directory (const char *directory, const char *libname, const 
 		g_free (path);
 
 		if (module)
-			return load_profiler (module, desc, NULL);
+			return load_profiler (module, name, desc);
 	}
 
 	return FALSE;
 }
 
 static gboolean
-load_profiler_from_installation (const char *libname, const char *desc)
+load_profiler_from_installation (const char *libname, const char *name, const char *desc)
 {
 	char *err;
 	MonoDl *module = mono_dl_open_runtime_lib (libname, MONO_DL_EAGER, &err);
@@ -118,7 +105,7 @@ load_profiler_from_installation (const char *libname, const char *desc)
 	g_free (err);
 
 	if (module)
-		return load_profiler (module, desc, NULL);
+		return load_profiler (module, name, desc);
 
 	return FALSE;
 }
@@ -138,15 +125,15 @@ mono_profiler_load (const char *desc)
 	} else
 		mname = g_strdup (desc);
 
-	if (!load_profiler_from_executable (desc, mname)) {
+	if (!load_profiler_from_executable (mname, desc)) {
 		char *libname = g_strdup_printf ("mono-profiler-%s", mname);
-		gboolean res = load_profiler_from_installation (libname, desc);
+		gboolean res = load_profiler_from_installation (libname, mname, desc);
 
 		if (!res && mono_config_get_assemblies_dir ())
-			res = load_profiler_from_directory (mono_assembly_getrootdir (), libname, desc);
+			res = load_profiler_from_directory (mono_assembly_getrootdir (), libname, mname, desc);
 
 		if (!res)
-			res = load_profiler_from_directory (NULL, libname, desc);
+			res = load_profiler_from_directory (NULL, libname, mname, desc);
 
 		if (!res)
 			mono_profiler_printf_err ("The '%s' profiler wasn't found in the main executable nor could it be loaded from '%s'.", mname, libname);

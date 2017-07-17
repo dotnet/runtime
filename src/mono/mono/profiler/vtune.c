@@ -161,7 +161,7 @@ code_buffer_new (MonoProfiler *prof, void *buffer, int size, MonoProfilerCodeBuf
 
 /* the entry point */
 void
-mono_profiler_init (const char *desc)
+mono_profiler_init_vtune (const char *desc)
 {
 	iJIT_IsProfilingActiveFlags flags = iJIT_IsProfilingActive();
 	if (flags == iJIT_SAMPLING_ON)
