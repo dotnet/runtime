@@ -12,6 +12,9 @@
     <Compile Include="BitmapTests.cs" />
     <Compile Include="BrushTests.cs" />
     <Compile Include="BrushesTests.cs" />
+    <Compile Include="BufferedGraphicsTests.cs" />
+    <Compile Include="BufferedGraphicsContextTests.cs" />
+    <Compile Include="BufferedGraphicsManagerTests.cs" />
     <Compile Include="CharacterRangeTests.cs" />
     <Compile Include="ColorTranslatorTests.cs" />
     <Compile Include="Drawing2D\AdjustableArrowCapTests.cs" />

@@ -224,9 +224,8 @@ namespace System.Drawing
         ~BufferedGraphicsContext() { }
         public void Invalidate() { }
     }
-    public sealed partial class BufferedGraphicsManager
+    public static partial class BufferedGraphicsManager
     {
-        internal BufferedGraphicsManager() { }
         public static System.Drawing.BufferedGraphicsContext Current { get { throw null; } }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
