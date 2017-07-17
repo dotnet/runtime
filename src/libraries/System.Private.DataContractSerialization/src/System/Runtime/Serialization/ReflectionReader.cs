@@ -458,7 +458,7 @@ namespace System.Runtime.Serialization
                 }
                 else
                 {
-                    ConstructorInfo ci = collectionContract.UnderlyingType.GetConstructor(Array.Empty<Type>());
+                    ConstructorInfo ci = collectionContract.Constructor;
                     object newCollection = ci.Invoke(Array.Empty<object>());
                     return newCollection;
                 }
@@ -507,15 +507,29 @@ namespace System.Runtime.Serialization
                 Func<object, object> objectToKeyValuePairGetKey = (Func<object, object>)s_objectToKeyValuePairGetKey.MakeGenericMethod(keyType, valueType).CreateDelegate(typeof(Func<object, object>));
                 Func<object, object> objectToKeyValuePairGetValue = (Func<object, object>)s_objectToKeyValuePairGetValue.MakeGenericMethod(keyType, valueType).CreateDelegate(typeof(Func<object, object>));
 
-                return (resultCollection, collectionItem, index) =>
+                if (collectionContract.Kind == CollectionKind.GenericDictionary)
                 {
-                    object key = objectToKeyValuePairGetKey(collectionItem);
-                    object value = objectToKeyValuePairGetValue(collectionItem);
+                    return (resultCollection, collectionItem, index) =>
+                    {
+                        object key = objectToKeyValuePairGetKey(collectionItem);
+                        object value = objectToKeyValuePairGetValue(collectionItem);
 
-                    IDictionary dict = (IDictionary)resultCollection;
-                    dict.Add(key, value);
-                    return resultCollection;
-                };
+                        collectionContract.AddMethod.Invoke(resultCollection, new object[] { key, value });
+                        return resultCollection;
+                    };
+                }
+                else
+                {
+                    return (resultCollection, collectionItem, index) =>
+                    {
+                        object key = objectToKeyValuePairGetKey(collectionItem);
+                        object value = objectToKeyValuePairGetValue(collectionItem);
+
+                        IDictionary dict = (IDictionary)resultCollection;
+                        dict.Add(key, value);
+                        return resultCollection;
+                    };
+                }
             }
             else
             {
@@ -540,7 +554,7 @@ namespace System.Runtime.Serialization
                 }
                 else
                 {
-                    MethodInfo addMethod = collectionType.GetMethod("Add");
+                    MethodInfo addMethod = collectionContract.AddMethod;
                     if (addMethod == null)
                     {
                         throw DiagnosticUtility.ExceptionUtility.ThrowHelperError(new InvalidDataContractException(SR.Format(SR.CollectionMustHaveAddMethod, DataContract.GetClrTypeFullName(collectionContract.UnderlyingType))));
