@@ -10,6 +10,11 @@ using Xunit;
 
 namespace System
 {
+    public static class AdminHelpers
+    {
+        public static int RunAsSudo(string commandLine) => throw null;
+    }
+
     public static class AssertExtensions
     {
         public static void Throws<T>(System.Action action, string message) where T : System.Exception { }
