@@ -357,6 +357,7 @@ static void sigill_handler(int code, siginfo_t *siginfo, void *context)
     }
 
     PROCNotifyProcessShutdown();
+    PROCCreateCrashDumpIfEnabled();
 }
 
 /*++
@@ -391,6 +392,7 @@ static void sigfpe_handler(int code, siginfo_t *siginfo, void *context)
     }
 
     PROCNotifyProcessShutdown();
+    PROCCreateCrashDumpIfEnabled();
 }
 
 /*++
@@ -498,6 +500,7 @@ static void sigsegv_handler(int code, siginfo_t *siginfo, void *context)
     }
 
     PROCNotifyProcessShutdown();
+    PROCCreateCrashDumpIfEnabled();
 }
 
 /*++
@@ -533,6 +536,7 @@ static void sigtrap_handler(int code, siginfo_t *siginfo, void *context)
     }
 
     PROCNotifyProcessShutdown();
+    PROCCreateCrashDumpIfEnabled();
 }
 
 /*++
@@ -570,6 +574,7 @@ static void sigbus_handler(int code, siginfo_t *siginfo, void *context)
     }
 
     PROCNotifyProcessShutdown();
+    PROCCreateCrashDumpIfEnabled();
 }
 
 /*++
