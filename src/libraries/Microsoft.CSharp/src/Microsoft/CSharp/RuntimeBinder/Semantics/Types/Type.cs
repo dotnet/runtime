@@ -585,16 +585,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return getAggregate().GetPredefType();
         }
 
-        ////////////////////////////////////////////////////////////////////////////////
-        // Is this type System.TypedReference or System.ArgIterator?
-        // (used for errors because these types can't go certain places)
-
-        public bool isSpecialByRefType()
-        {
-            // ArgIterator, TypedReference and RuntimeArgumentHandle are not supported.
-            return false;
-        }
-
         public bool isStaticClass()
         {
             AggregateSymbol agg = GetNakedAgg(false);

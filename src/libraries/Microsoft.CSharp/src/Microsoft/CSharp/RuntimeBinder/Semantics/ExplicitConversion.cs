@@ -790,12 +790,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Debug.Assert(_typeSrc != null);
                 Debug.Assert(aggTypeDest != null);
 
-                // TypeReference and ArgIterator can't be boxed (or converted to anything else)
-                if (_typeSrc.isSpecialByRefType())
-                {
-                    return AggCastResult.Abort;
-                }
-
                 AggCastResult result = bindExplicitConversionFromEnumToAggregate(aggTypeDest);
                 if (result != AggCastResult.Failure)
                 {
