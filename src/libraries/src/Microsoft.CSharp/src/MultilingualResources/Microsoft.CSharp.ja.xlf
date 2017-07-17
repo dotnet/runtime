@@ -38,14 +38,6 @@
           <source>Cannot invoke a non-delegate type</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">非デリゲート型を呼び出すことはできません</target>
         </trans-unit>
-        <trans-unit id="BindImplicitConversionRequireOneArgument" translate="yes" xml:space="preserve">
-          <source>Implicit conversion takes exactly one argument</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">暗黙の型変換では 1 つの引数のみ受け取ります</target>
-        </trans-unit>
-        <trans-unit id="BindExplicitConversionRequireOneArgument" translate="yes" xml:space="preserve">
-          <source>Explicit conversion takes exactly one argument</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">明示的な変換では 1 つの引数のみ受け取ります</target>
-        </trans-unit>
         <trans-unit id="BindBinaryAssignmentRequireTwoArguments" translate="yes" xml:space="preserve">
           <source>Binary operators cannot be invoked with one argument</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">1 つの引数を指定して二項演算子を呼び出すことはできません</target>

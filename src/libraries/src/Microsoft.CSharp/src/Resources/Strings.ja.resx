@@ -36,12 +36,6 @@
   <data name="BindInvokeFailedNonDelegate" xml:space="preserve">
     <value>非デリゲート型を呼び出すことはできません</value>
   </data>
-  <data name="BindImplicitConversionRequireOneArgument" xml:space="preserve">
-    <value>暗黙の型変換では 1 つの引数のみ受け取ります</value>
-  </data>
-  <data name="BindExplicitConversionRequireOneArgument" xml:space="preserve">
-    <value>明示的な変換では 1 つの引数のみ受け取ります</value>
-  </data>
   <data name="BindBinaryAssignmentRequireTwoArguments" xml:space="preserve">
     <value>1 つの引数を指定して二項演算子を呼び出すことはできません</value>
   </data>

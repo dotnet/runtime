@@ -36,12 +36,6 @@
   <data name="BindInvokeFailedNonDelegate" xml:space="preserve">
     <value>Ein Nichtdelegattyp kann nicht aufgerufen werden.</value>
   </data>
-  <data name="BindImplicitConversionRequireOneArgument" xml:space="preserve">
-    <value>Eine implizite Konvertierung akzeptiert genau ein Argument.</value>
-  </data>
-  <data name="BindExplicitConversionRequireOneArgument" xml:space="preserve">
-    <value>Eine explizite Konvertierung akzeptiert genau ein Argument.</value>
-  </data>
   <data name="BindBinaryAssignmentRequireTwoArguments" xml:space="preserve">
     <value>Binäre Operatoren können nicht mit einem Argument aufgerufen werden.</value>
   </data>

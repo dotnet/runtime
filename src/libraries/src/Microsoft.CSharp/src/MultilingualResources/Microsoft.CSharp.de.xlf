@@ -38,14 +38,6 @@
           <source>Cannot invoke a non-delegate type</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Ein Nichtdelegattyp kann nicht aufgerufen werden.</target>
         </trans-unit>
-        <trans-unit id="BindImplicitConversionRequireOneArgument" translate="yes" xml:space="preserve">
-          <source>Implicit conversion takes exactly one argument</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Eine implizite Konvertierung akzeptiert genau ein Argument.</target>
-        </trans-unit>
-        <trans-unit id="BindExplicitConversionRequireOneArgument" translate="yes" xml:space="preserve">
-          <source>Explicit conversion takes exactly one argument</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Eine explizite Konvertierung akzeptiert genau ein Argument.</target>
-        </trans-unit>
         <trans-unit id="BindBinaryAssignmentRequireTwoArguments" translate="yes" xml:space="preserve">
           <source>Binary operators cannot be invoked with one argument</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Binäre Operatoren können nicht mit einem Argument aufgerufen werden.</target>

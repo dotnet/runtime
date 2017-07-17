@@ -36,12 +36,6 @@
   <data name="BindInvokeFailedNonDelegate" xml:space="preserve">
     <value>Impossibile richiamare un tipo non delegato</value>
   </data>
-  <data name="BindImplicitConversionRequireOneArgument" xml:space="preserve">
-    <value>Per la conversione implicita viene accettato un solo argomento</value>
-  </data>
-  <data name="BindExplicitConversionRequireOneArgument" xml:space="preserve">
-    <value>Per la conversione esplicita viene accettato un solo argomento</value>
-  </data>
   <data name="BindBinaryAssignmentRequireTwoArguments" xml:space="preserve">
     <value>Impossibile richiamare operatori binari con un solo argomento</value>
   </data>
