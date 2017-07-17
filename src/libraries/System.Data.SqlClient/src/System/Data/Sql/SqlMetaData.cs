@@ -22,7 +22,7 @@ namespace Microsoft.SqlServer.Server
     //        2) Inferring type from a value.
     //        3) Adjusting a value to match the metadata.
 
-    public sealed class SqlMetaData
+    public sealed partial class SqlMetaData
     {
         private string _strName;
         private long _lMaxLength;

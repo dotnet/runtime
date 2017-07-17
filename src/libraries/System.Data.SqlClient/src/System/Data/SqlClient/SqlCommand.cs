@@ -17,7 +17,7 @@ using Microsoft.SqlServer.Server;
 
 namespace System.Data.SqlClient
 {
-    public sealed class SqlCommand : DbCommand, ICloneable
+    public sealed partial class SqlCommand : DbCommand, ICloneable
     {
         private string _commandText;
         private CommandType _commandType;

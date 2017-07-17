@@ -16,7 +16,7 @@ using System.Text; // StringBuilder
 
 namespace System.Data.SqlClient
 {
-    public sealed class SqlException : System.Data.Common.DbException
+    public sealed partial class SqlException : System.Data.Common.DbException
     {
         private const string OriginalClientConnectionIdKey = "OriginalClientConnectionId";
         private const string RoutingDestinationKey = "RoutingDestination";
