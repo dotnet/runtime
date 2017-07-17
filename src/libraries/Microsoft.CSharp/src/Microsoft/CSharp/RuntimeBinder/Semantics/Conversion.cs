@@ -425,7 +425,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 {
                     BindGrpConversion(memGrp, dest, true);
                 }
-                else if (!TypeManager.TypeContainsAnonymousTypes(dest) && canCast(expr.Type, dest, flags))
+                else if (canCast(expr.Type, dest, flags))
                 {
                     // can't convert, but explicit exists and can be specified by the user (no anonymous types).
                     ErrorContext.Error(ErrorCode.ERR_NoImplicitConvCast, new ErrArg(expr.Type, ErrArgFlags.Unique), new ErrArg(dest, ErrArgFlags.Unique));
