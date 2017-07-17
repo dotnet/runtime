@@ -2,16 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+using System.Runtime.InteropServices;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Collections;
-    using System.Runtime.InteropServices;
-
     public class ReplicationOperationCollection : ReadOnlyCollectionBase
     {
-        private DirectoryServer _server = null;
-        private Hashtable _nameTable = null;
+        private readonly DirectoryServer _server = null;
+        private readonly Hashtable _nameTable = null;
 
         internal ReplicationOperationCollection(DirectoryServer server)
         {
@@ -20,13 +19,7 @@ namespace System.DirectoryServices.ActiveDirectory
             _nameTable = Hashtable.Synchronized(tempNameTable);
         }
 
-        public ReplicationOperation this[int index]
-        {
-            get
-            {
-                return (ReplicationOperation)InnerList[index];
-            }
-        }
+        public ReplicationOperation this[int index] => (ReplicationOperation)InnerList[index];
 
         public bool Contains(ReplicationOperation operation)
         {
@@ -49,10 +42,7 @@ namespace System.DirectoryServices.ActiveDirectory
             InnerList.CopyTo(operations, index);
         }
 
-        private int Add(ReplicationOperation operation)
-        {
-            return InnerList.Add(operation);
-        }
+        private int Add(ReplicationOperation operation) => InnerList.Add(operation);
 
         internal void AddHelper(DS_REPL_PENDING_OPS operations, IntPtr info)
         {
@@ -79,4 +69,3 @@ namespace System.DirectoryServices.ActiveDirectory
         }
     }
 }
-

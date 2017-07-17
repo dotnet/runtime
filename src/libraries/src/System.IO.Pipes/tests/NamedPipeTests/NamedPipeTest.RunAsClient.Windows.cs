@@ -15,10 +15,10 @@ namespace System.IO.Pipes.Tests
     {
         [Fact]
         [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes
-        [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
+        [ActiveIssue(22271, TargetFrameworkMonikers.UapNotUapAot)]
         public async Task RunAsClient_Windows()
         {
-            string pipeName = Path.GetRandomFileName();
+            string pipeName = GetUniquePipeName();
             using (var server = new NamedPipeServerStream(pipeName))
             using (var client = new NamedPipeClientStream(".", pipeName, PipeDirection.InOut, PipeOptions.None, TokenImpersonationLevel.Impersonation))
             {
@@ -31,6 +31,15 @@ namespace System.IO.Pipes.Tests
                 server.RunAsClient(() => ran = true);
                 Assert.True(ran, "Expected delegate to have been invoked");
             }
+        }
+
+        private static string GetUniquePipeName()
+        {
+            if (PlatformDetection.IsWinRT)
+            {
+                return @"LOCAL\" + Path.GetRandomFileName();
+            }
+            return Path.GetRandomFileName();
         }
     }
 }

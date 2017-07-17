@@ -204,12 +204,14 @@ namespace System.Data.SqlClient
         // Feature Extension
         public const byte FEATUREEXT_TERMINATOR = 0xFF;
         public const byte FEATUREEXT_SRECOVERY = 0x01;
+        public const byte FEATUREEXT_GLOBALTRANSACTIONS = 0x05;
 
         [Flags]
         public enum FeatureExtension : uint
         {
             None = 0,
             SessionRecovery = 1,
+            GlobalTransactions = 8,
         }
 
 
@@ -828,7 +830,10 @@ namespace System.Data.SqlClient
 
         internal enum TransactionManagerRequestType
         {
+            GetDTCAddress = 0,
+            Propagate = 1,
             Begin = 5,
+            Promote = 6,
             Commit = 7,
             Rollback = 8,
             Save = 9

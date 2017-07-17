@@ -11,6 +11,8 @@ namespace System.Net.Tests
 {
     public class HttpListenerPrefixCollectionTests
     {
+        public static bool IsNonZeroLowerBoundArraySupported => PlatformDetection.IsNonZeroLowerBoundArraySupported;
+
         [Fact]
         public void Prefixes_Get_ReturnsEmpty()
         {
@@ -106,8 +108,7 @@ namespace System.Net.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => listener.Prefixes.CopyTo(new object[1, 1], 0));
         }
 
-        [ActiveIssue(22055, TargetFrameworkMonikers.UapAot)]
-        [Fact]
+        [ConditionalFact(nameof(IsNonZeroLowerBoundArraySupported))]
         public void CopyTo_NonZeroLowerBoundArray_ThrowsIndexOutOfRangeException()
         {
             var listener = new HttpListener();

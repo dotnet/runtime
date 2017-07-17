@@ -10,6 +10,7 @@ using Xunit;
 
 namespace System.Diagnostics.Tests
 {
+    [SkipOnTargetFramework(TargetFrameworkMonikers.UapNotUapAot, "https://github.com/dotnet/corefx/issues/22174")]
     public class ProcessStreamReadTests : ProcessTestBase
     {
         [Fact]

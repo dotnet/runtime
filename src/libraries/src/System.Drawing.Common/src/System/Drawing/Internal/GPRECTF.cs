@@ -2,9 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+
 namespace System.Drawing.Internal
 {
-    using System.Runtime.InteropServices;
 
     [StructLayout(LayoutKind.Sequential)]
     internal struct GPRECTF
@@ -30,17 +31,8 @@ namespace System.Drawing.Internal
             Height = rect.Height;
         }
 
-        internal SizeF SizeF
-        {
-            get
-            {
-                return new SizeF(Width, Height);
-            }
-        }
+        internal SizeF SizeF => new SizeF(Width, Height);
 
-        internal RectangleF ToRectangleF()
-        {
-            return new RectangleF(X, Y, Width, Height);
-        }
+        internal RectangleF ToRectangleF() => new RectangleF(X, Y, Width, Height);
     }
 }

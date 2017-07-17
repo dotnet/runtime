@@ -83,24 +83,6 @@ namespace System.IO
         }
 
         /// <summary>
-        /// Returns true if the path is too long
-        /// </summary>
-        internal static bool IsPathTooLong(string fullPath)
-        {
-            // We'll never know precisely what will fail as paths get changed internally in Windows and
-            // may grow to exceed MaxLongPath.
-            return fullPath.Length >= MaxLongPath;
-        }
-
-        /// <summary>
-        /// Returns true if the directory is too long
-        /// </summary>
-        internal static bool IsDirectoryTooLong(string fullPath)
-        {
-            return IsPathTooLong(fullPath);
-        }
-
-        /// <summary>
         /// Adds the extended path prefix (\\?\) if not already a device path, IF the path is not relative,
         /// AND the path is more than 259 characters. (> MAX_PATH + null)
         /// </summary>

@@ -132,12 +132,7 @@ namespace System.ComponentModel
             foreach (KeyValuePair<string, object> kvp in resources)
             {
                 // See if this key matches our object.
-                //
                 string key = kvp.Key;
-                if (key == null)
-                {
-                    continue;
-                }
 
                 if (IgnoreCase)
                 {

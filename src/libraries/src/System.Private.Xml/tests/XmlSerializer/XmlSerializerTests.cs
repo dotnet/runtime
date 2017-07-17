@@ -13,6 +13,7 @@ using System.Text;
 using System.Threading;
 using System.Xml;
 using System.Xml.Linq;
+using System.Xml.Schema;
 using System.Xml.Serialization;
 using Xunit;
 
@@ -1216,6 +1217,35 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
 </Envelope>");
         Assert.StrictEqual(original.header, actual.header);
         Assert.StrictEqual(original.body, actual.body);
+    }
+
+    [Fact]
+    public static void XML_TypeWithMemberWithXmlNamespaceDeclarationsAttribute_WithInitialValue()
+    {
+        var ns = new XmlQualifiedName("ns", "http://tempuri.org");
+        var original = new TypeWithMemberWithXmlNamespaceDeclarationsAttribute() { header = "foo", body = "bar", xmlns = new XmlSerializerNamespaces(new[] { ns }) };
+
+        var actual = SerializeAndDeserialize<TypeWithMemberWithXmlNamespaceDeclarationsAttribute>(original,
+            @"<?xml version=""1.0""?>
+<Envelope xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"" xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns=""http://www.w3.org/2003/05/soap-envelope"" xmlns:ns=""http://tempuri.org"">
+  <header>foo</header>
+  <body>bar</body>
+</Envelope>");
+
+        Assert.StrictEqual(original.header, actual.header);
+        Assert.StrictEqual(original.body, actual.body);
+        Assert.NotNull(actual.xmlns);
+        Assert.Contains(ns, actual.xmlns.ToArray());
+    }
+
+    [Fact]
+    public static void XML_XmlSchemaWithNamespacesWriteWithNamespaceManager()
+    {
+        var schema = new XmlSchema();
+        schema.Namespaces = new XmlSerializerNamespaces();
+
+        using (var memStream = new MemoryStream())
+            schema.Write(memStream, new XmlNamespaceManager(new NameTable()));
     }
 
     [Fact]
@@ -4451,10 +4481,8 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
     public static void Xml_VerifyCompilationIssueOnly()
     {
         AssertSerializationFailure<TypeWithEnumerableMembers, InvalidOperationException>();
-#if uapaot
         AssertSerializationFailure<TypeWithoutPublicSetter, InvalidOperationException>();
         AssertSerializationFailure<TypeWithCompilerGeneratedAttributeButWithoutPublicSetter, InvalidOperationException>();
-#endif
         AssertSerializationFailure<InvalidDerivedClass, InvalidOperationException>();
         AssertSerializationFailure<AnotherInvalidDerivedClass, InvalidOperationException>();
         AssertSerializationFailure<InternalTypeWithNestedPublicType.LevelData, InvalidOperationException>();
@@ -4668,15 +4696,14 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
 
     private static void AssertSerializationFailure<T, ExceptionType>() where T : new() where ExceptionType : Exception
     {
-        using (var ms = new MemoryStream())
+        try
         {
-            Assert.Throws<ExceptionType>(() =>
-            {
-                var serializer = new XmlSerializer(typeof(T));
-                var value = new T();
-                serializer.Serialize(ms, value);
-            });
+            SerializeAndDeserialize(new T(), string.Empty, skipStringCompare: true);
+            Assert.True(false, $"Assert.True failed for {typeof(T)}. The above operation should have thrown, but it didn't.");
+        }
+        catch(Exception e)
+        {
+            Assert.True(e is ExceptionType, $"Assert.True failed for {typeof(T)}. Expected: {typeof(ExceptionType)}; Actual: {e.GetType()}");
         }
     }
-
 }

@@ -370,8 +370,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             // No test is performed here for the ephemeral flag failing downlevel, because the live
             // binary is always used by default, meaning it doesn't know EphemeralKeySet doesn't exist.
         }
-
-#if netcoreapp
+        
         [Fact]
         public static void InvalidStorageFlags_PersistedEphemeral()
         {
@@ -396,6 +395,5 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 "keyStorageFlags",
                 () => new X509Certificate2(string.Empty, string.Empty, PersistedEphemeral));
         }
-#endif
     }
 }

@@ -37,4 +37,3 @@ namespace System.DirectoryServices.Interop
         ADSTYPE_DN_WITH_STRING = 28
     }
 }
-

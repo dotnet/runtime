@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Reflection;
 
 namespace System.Net
@@ -15,8 +16,16 @@ namespace System.Net
         {
             if (s_toServerStringFunc == null)
             {
-                s_toServerStringFunc = (Func<Cookie, string>)typeof(Cookie).GetMethod("ToServerString", BindingFlags.NonPublic | BindingFlags.Instance).CreateDelegate(typeof(Func<Cookie, string>));
+                BindingFlags flags = BindingFlags.Instance;
+#if uap
+                flags |= BindingFlags.Public;
+#else
+                flags |= BindingFlags.NonPublic;
+#endif
+                s_toServerStringFunc = (Func<Cookie, string>)typeof(Cookie).GetMethod("ToServerString", flags).CreateDelegate(typeof(Func<Cookie, string>));
             }
+
+            Debug.Assert(s_toServerStringFunc != null, "Reflection failed for Cookie.ToServerString().");
             return s_toServerStringFunc(cookie);
         }
 
@@ -26,8 +35,16 @@ namespace System.Net
         {
             if (s_cloneFunc == null)
             {
-                s_cloneFunc = (Func<Cookie, Cookie>)typeof(Cookie).GetMethod("Clone", BindingFlags.NonPublic | BindingFlags.Instance).CreateDelegate(typeof(Func<Cookie, Cookie>));
+                BindingFlags flags = BindingFlags.Instance;
+#if uap
+                flags |= BindingFlags.Public;
+#else
+                flags |= BindingFlags.NonPublic;
+#endif
+                s_cloneFunc = (Func<Cookie, Cookie>)typeof(Cookie).GetMethod("Clone", flags).CreateDelegate(typeof(Func<Cookie, Cookie>));
             }
+
+            Debug.Assert(s_cloneFunc != null, "Reflection failed for Cookie.Clone().");
             return s_cloneFunc(cookie);
         }
 
@@ -46,9 +63,16 @@ namespace System.Net
         {
             if (s_getVariantFunc == null)
             {
-                s_getVariantFunc = (Func<Cookie, CookieVariant>)typeof(Cookie).GetProperty("Variant", BindingFlags.NonPublic | BindingFlags.Instance).GetGetMethod(true).CreateDelegate(typeof(Func<Cookie, CookieVariant>));
+                BindingFlags flags = BindingFlags.Instance;
+#if uap
+                flags |= BindingFlags.Public;
+#else
+                flags |= BindingFlags.NonPublic;
+#endif
+                s_getVariantFunc = (Func<Cookie, CookieVariant>)typeof(Cookie).GetProperty("Variant", flags).GetGetMethod(true).CreateDelegate(typeof(Func<Cookie, CookieVariant>));
             }
 
+            Debug.Assert(s_getVariantFunc != null, "Reflection failed for Cookie.Variant.");
             CookieVariant variant = s_getVariantFunc(cookie);
 
             return variant == CookieVariant.Rfc2965;
@@ -63,9 +87,16 @@ namespace System.Net
         {
             if (s_internalAddFunc == null)
             {
-                s_internalAddFunc = (Func<CookieCollection, Cookie, bool, int>)typeof(CookieCollection).GetMethod("InternalAdd", BindingFlags.NonPublic | BindingFlags.Instance).CreateDelegate(typeof(Func<CookieCollection, Cookie, bool, int>));
+                BindingFlags flags = BindingFlags.Instance;
+#if uap
+                flags |= BindingFlags.Public;
+#else
+                flags |= BindingFlags.NonPublic;
+#endif
+                s_internalAddFunc = (Func<CookieCollection, Cookie, bool, int>)typeof(CookieCollection).GetMethod("InternalAdd", flags).CreateDelegate(typeof(Func<CookieCollection, Cookie, bool, int>));
             }
 
+            Debug.Assert(s_internalAddFunc != null, "Reflection failed for CookieCollection.InternalAdd().");
             return s_internalAddFunc(cookieCollection, cookie, isStrict);
         }
     }

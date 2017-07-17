@@ -160,7 +160,7 @@ namespace System.Net.Http.Functional.Tests
     //    }
     //}
 
-    public sealed class ManagedHandler_HttpClientHandler_ConnectionPooling_Test
+    public sealed class ManagedHandler_HttpClientHandler_ConnectionPooling_Test : IDisposable
     {
         public ManagedHandler_HttpClientHandler_ConnectionPooling_Test() => ManagedHandlerTestHelpers.SetEnvVar();
         public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();

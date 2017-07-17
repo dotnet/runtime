@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+
 namespace System.Drawing.Internal
 {
-    using System.Runtime.InteropServices;
-
     [StructLayout(LayoutKind.Sequential)]
     internal struct GPRECT
     {
@@ -28,11 +28,6 @@ namespace System.Drawing.Internal
             Y = rect.Y;
             Width = rect.Width;
             Height = rect.Height;
-        }
-
-        internal Rectangle ToRectangle()
-        {
-            return new Rectangle(X, Y, Width, Height);
         }
     }
 }

@@ -512,8 +512,6 @@ namespace System.IO
             if (path.Length == 0)
                 throw new ArgumentException(SR.Argument_PathEmpty, nameof(path));
             Contract.EndContractBlock();
-            if (PathInternal.IsPathTooLong(path))
-                throw new PathTooLongException(SR.IO_PathTooLong);
 
             string fulldestDirName = Path.GetFullPath(path);
 
@@ -537,13 +535,8 @@ namespace System.IO
             string fullsourceDirName = Path.GetFullPath(sourceDirName);
             string sourcePath = EnsureTrailingDirectorySeparator(fullsourceDirName);
 
-            if (PathInternal.IsDirectoryTooLong(sourcePath))
-                throw new PathTooLongException(SR.IO_PathTooLong);
-
             string fulldestDirName = Path.GetFullPath(destDirName);
             string destPath = EnsureTrailingDirectorySeparator(fulldestDirName);
-            if (PathInternal.IsDirectoryTooLong(destPath))
-                throw new PathTooLongException(SR.IO_PathTooLong);
 
             StringComparison pathComparison = PathInternal.StringComparison;
 

@@ -36,7 +36,7 @@ namespace System.Net.Security
         private X509Certificate _selectedClientCertificate;
         private bool _isRemoteCertificateAvailable;
 
-        private readonly X509CertificateCollection _clientCertificates;
+        private X509CertificateCollection _clientCertificates;
         private LocalCertSelectionCallback _certSelectionDelegate;
 
         // These are the MAX encrypt buffer output sizes, not the actual sizes.
@@ -139,14 +139,6 @@ namespace System.Net.Security
             get
             {
                 return _checkCertRevocation;
-            }
-        }
-
-        internal X509CertificateCollection ClientCertificates
-        {
-            get
-            {
-                return _clientCertificates;
             }
         }
 
@@ -384,7 +376,11 @@ namespace System.Net.Security
                 {
                     X509Certificate2Collection dummyCollection;
                     remoteCert = CertificateValidationPal.GetRemoteCertificate(_securityContext, out dummyCollection);
-                    clientCertificate = _certSelectionDelegate(_hostName, ClientCertificates, remoteCert, issuers);
+                    if (_clientCertificates == null)
+                    {
+                        _clientCertificates = new X509CertificateCollection();
+                    }
+                    clientCertificate = _certSelectionDelegate(_hostName, _clientCertificates, remoteCert, issuers);
                 }
                 finally
                 {
@@ -407,7 +403,7 @@ namespace System.Net.Security
                 }
                 else
                 {
-                    if (ClientCertificates.Count == 0)
+                    if (_clientCertificates == null || _clientCertificates.Count == 0)
                     {
                         if (NetEventSource.IsEnabled) NetEventSource.Log.NoDelegateNoClientCert(this);
 
@@ -423,7 +419,7 @@ namespace System.Net.Security
             {
                 // This is where we attempt to restart a session by picking the FIRST cert from the collection.
                 // Otherwise it is either server sending a client cert request or the session is renegotiated.
-                clientCertificate = ClientCertificates[0];
+                clientCertificate = _clientCertificates[0];
                 sessionRestartAttempt = true;
                 if (clientCertificate != null)
                 {

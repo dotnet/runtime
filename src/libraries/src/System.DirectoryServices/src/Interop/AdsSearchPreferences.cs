@@ -27,4 +27,3 @@ namespace System.DirectoryServices.Interop
         EXTENDED_DN = 18
     }
 }
-

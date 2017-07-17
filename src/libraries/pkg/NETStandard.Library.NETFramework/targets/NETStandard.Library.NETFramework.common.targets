@@ -1,4 +1,7 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <ImportedNETStandardLibraryNETFrameworkCommonTargets>true</ImportedNETStandardLibraryNETFrameworkCommonTargets>
+  </PropertyGroup>
   <Choose>
     <!-- Allow completely disabling the conflict resolution targets-->
     <When Condition="'$(ImplicitlyExpandNETStandardFacades)' != 'true'" />
@@ -28,7 +31,7 @@
     <!-- Ensure this runs before conflict resolution since the added files may cause conflicts -->
     <HandlePackageFileConflictsDependsOn>ImplicitlyExpandNETStandardFacades;$(HandlePackageFileConflictsDependsOn)</HandlePackageFileConflictsDependsOn>
   </PropertyGroup>
-  
+
   <ItemGroup Condition="'$(DontTrimNETStandardLibraryNETFramework)' != 'true'">
     <!-- mark this package as trimmable so that files in the same package aren't automatically rooted -->
     <TrimmablePackages Include="NETStandard.Library.NETFramework" />

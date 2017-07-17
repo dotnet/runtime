@@ -19,7 +19,6 @@
     <Compile Include="FxCopBaseline.AnyOS.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Compile Include="System\DirectoryServices\Protocols\externdll.cs" />
     <Compile Include="System\DirectoryServices\Protocols\common\AuthTypes.cs" />
     <Compile Include="System\DirectoryServices\Protocols\common\BerConverter.cs" />
     <Compile Include="System\DirectoryServices\Protocols\common\DereferenceAlias.cs" />

@@ -4,8 +4,6 @@
 
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-
     public enum ActiveDirectoryRole : int
     {
         SchemaRole = 0,

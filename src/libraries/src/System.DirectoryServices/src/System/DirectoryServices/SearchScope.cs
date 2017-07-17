@@ -4,26 +4,23 @@
 
 namespace System.DirectoryServices
 {
-    /// <include file='doc\SearchScope.uex' path='docs/doc[@for="SearchScope"]/*' />
     /// <devdoc>
-    ///    <para>Specifies the scope of a directory search.</para>
+    /// Specifies the scope of a directory search.
     /// </devdoc>
     public enum SearchScope
     {
-        /// <include file='doc\SearchScope.uex' path='docs/doc[@for="SearchScope.Base"]/*' />
         /// <devdoc>
-        ///    <para>Limits the search to the base object. The result contains at most one object. </para>
+        /// Limits the search to the base object. The result contains at most one object.
         /// </devdoc>
         Base = 0,
-        /// <include file='doc\SearchScope.uex' path='docs/doc[@for="SearchScope.OneLevel"]/*' />
+
         /// <devdoc>
-        ///    <para>Searched one level of the immediate children, excluding the base object.</para>
+        /// Searched one level of the immediate children, excluding the base object.
         /// </devdoc>
         OneLevel = 1,
-        /// <include file='doc\SearchScope.uex' path='docs/doc[@for="SearchScope.Subtree"]/*' />
+
         /// <devdoc>
-        ///    <para>Searches the whole subtree, including all the children and the base object 
-        ///       itself.</para>
+        /// Searches the whole subtree, including all the children and the base object itself.
         /// </devdoc>
         Subtree = 2
     }

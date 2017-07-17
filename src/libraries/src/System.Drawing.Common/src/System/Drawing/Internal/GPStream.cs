@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
+using System.Runtime.InteropServices;
+using System.Security.Permissions;
+
 namespace System.Drawing.Internal
 {
-    using System.IO;
-    using System.Runtime.InteropServices;
-    using System.Security.Permissions;
-
     internal class GPStream : UnsafeNativeMethods.IStream
     {
         protected Stream dataStream;
@@ -31,6 +31,7 @@ namespace System.Drawing.Internal
                         Array.Copy(bytes, newData, bytes.Length);
                         bytes = newData;
                     }
+
                     readLen = stream.Read(bytes, current, ReadBlock);
                     current += readLen;
                 } while (readLen != 0);
@@ -45,10 +46,15 @@ namespace System.Drawing.Internal
 
         private void ActualizeVirtualPosition()
         {
-            if (_virtualPosition == -1) return;
+            if (_virtualPosition == -1)
+            {
+                return;
+            }
 
             if (_virtualPosition > dataStream.Length)
+            {
                 dataStream.SetLength(_virtualPosition);
+            }
 
             dataStream.Position = _virtualPosition;
 
@@ -68,28 +74,39 @@ namespace System.Drawing.Internal
             ActualizeVirtualPosition();
         }
 
-        [
-            UIPermission(SecurityAction.Demand, Window = UIPermissionWindow.AllWindows),
-            SecurityPermission(SecurityAction.Assert, Flags = SecurityPermissionFlag.UnmanagedCode)
-        ]
+        [UIPermission(SecurityAction.Demand, Window = UIPermissionWindow.AllWindows)]
+        [SecurityPermission(SecurityAction.Assert, Flags = SecurityPermissionFlag.UnmanagedCode)]
         public virtual long CopyTo(UnsafeNativeMethods.IStream pstm, long cb, long[] pcbRead)
         {
             int bufsize = 4096; // one page
             IntPtr buffer = Marshal.AllocHGlobal(bufsize);
-            if (buffer == IntPtr.Zero) throw new OutOfMemoryException();
+            if (buffer == IntPtr.Zero)
+            {
+                throw new OutOfMemoryException();
+            }
+
             long written = 0;
             try
             {
                 while (written < cb)
                 {
                     int toRead = bufsize;
-                    if (written + toRead > cb) toRead = (int)(cb - written);
+                    if (written + toRead > cb)
+                    {
+                        toRead = (int)(cb - written);
+                    }
+
                     int read = Read(buffer, toRead);
-                    if (read == 0) break;
+                    if (read == 0)
+                    {
+                        break;
+                    }
+
                     if (pstm.Write(buffer, read) != read)
                     {
                         throw EFail("Wrote an incorrect number of bytes");
                     }
+
                     written += read;
                 }
             }
@@ -103,11 +120,6 @@ namespace System.Drawing.Internal
             }
 
             return written;
-        }
-
-        public virtual Stream GetDataStream()
-        {
-            return dataStream;
         }
 
         public virtual void LockRegion(long libOffset, long cb, int dwLockType)
@@ -124,34 +136,30 @@ namespace System.Drawing.Internal
             throw new ExternalException(SR.Format(SR.NotImplemented), SafeNativeMethods.E_NOTIMPL);
         }
 
-        public virtual int Read(IntPtr buf, /* cpr: int offset,*/  int length)
+        public virtual int Read(IntPtr buf, int length)
         {
-            //        System.Text.Out.WriteLine("IStream::Read(" + length + ")");
             byte[] buffer = new byte[length];
             int count = Read(buffer, length);
             Marshal.Copy(buffer, 0, buf, length);
             return count;
         }
 
-        public virtual int Read(byte[] buffer, /* cpr: int offset,*/  int length)
+        public virtual int Read(byte[] buffer, int length)
         {
             ActualizeVirtualPosition();
             return dataStream.Read(buffer, 0, length);
         }
 
-        public virtual void Revert()
-        {
-            NotImplemented();
-        }
+        public virtual void Revert() => NotImplemented();
 
         public virtual long Seek(long offset, int origin)
         {
-            // Console.WriteLine("IStream::Seek("+ offset + ", " + origin + ")");
             long pos = _virtualPosition;
             if (_virtualPosition == -1)
             {
                 pos = dataStream.Position;
             }
+
             long len = dataStream.Length;
             switch (origin)
             {
@@ -189,6 +197,7 @@ namespace System.Drawing.Internal
                     }
                     break;
             }
+
             if (_virtualPosition != -1)
             {
                 return _virtualPosition;
@@ -199,15 +208,11 @@ namespace System.Drawing.Internal
             }
         }
 
-        public virtual void SetSize(long value)
-        {
-            dataStream.SetLength(value);
-        }
+        public virtual void SetSize(long value) => dataStream.SetLength(value);
 
         public void Stat(IntPtr pstatstg, int grfStatFlag)
         {
-            STATSTG stats = new STATSTG();
-            stats.cbSize = dataStream.Length;
+            var stats = new STATSTG { cbSize = dataStream.Length };
             Marshal.StructureToPtr(stats, pstatstg, true);
         }
 
@@ -215,14 +220,14 @@ namespace System.Drawing.Internal
         {
         }
 
-        public virtual int Write(IntPtr buf, /* cpr: int offset,*/ int length)
+        public virtual int Write(IntPtr buf, int length)
         {
             byte[] buffer = new byte[length];
             Marshal.Copy(buf, buffer, 0, length);
             return Write(buffer, length);
         }
 
-        public virtual int Write(byte[] buffer, /* cpr: int offset,*/ int length)
+        public virtual int Write(byte[] buffer, int length)
         {
             ActualizeVirtualPosition();
             dataStream.Write(buffer, 0, length);

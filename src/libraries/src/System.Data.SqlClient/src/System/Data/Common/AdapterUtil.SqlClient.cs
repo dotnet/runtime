@@ -312,7 +312,7 @@ namespace System.Data.Common
             return InvalidOperation(SR.GetString(SR.ADP_NonSequentialColumnAccess, badCol.ToString(CultureInfo.InvariantCulture), currCol.ToString(CultureInfo.InvariantCulture)));
         }
 
-        static internal Exception InvalidXmlInvalidValue(string collectionName, string columnName)
+        internal static Exception InvalidXmlInvalidValue(string collectionName, string columnName)
         {
             return Argument(SR.GetString(SR.MDF_InvalidXmlInvalidValue, collectionName, columnName));
         }
@@ -394,6 +394,14 @@ namespace System.Data.Common
         internal static Exception ConnectionAlreadyOpen(ConnectionState state)
         {
             return InvalidOperation(SR.GetString(SR.ADP_ConnectionAlreadyOpen, ADP.ConnectionStateMsg(state)));
+        }
+        internal static Exception TransactionPresent()
+        {
+            return InvalidOperation(SR.GetString(SR.ADP_TransactionPresent));
+        }
+        internal static Exception LocalTransactionPresent()
+        {
+            return InvalidOperation(SR.GetString(SR.ADP_LocalTransactionPresent));
         }
         internal static Exception OpenConnectionPropertySet(string property, ConnectionState state)
         {
@@ -769,7 +777,7 @@ namespace System.Data.Common
             return false;
         }
 
-        static internal ArgumentOutOfRangeException InvalidDataRowVersion(DataRowVersion value)
+        internal static ArgumentOutOfRangeException InvalidDataRowVersion(DataRowVersion value)
         {
 #if DEBUG
             switch (value)
@@ -896,6 +904,14 @@ namespace System.Data.Common
         internal static Exception NoStoredProcedureExists(string sproc)
         {
             return InvalidOperation(SR.GetString(SR.ADP_NoStoredProcedureExists, sproc));
+        }
+
+        //
+        // DbProviderException
+        //
+        internal static InvalidOperationException TransactionCompletedButNotDisposed()
+        {
+            return Provider(SR.GetString(SR.ADP_TransactionCompletedButNotDisposed));
         }
     }
 }

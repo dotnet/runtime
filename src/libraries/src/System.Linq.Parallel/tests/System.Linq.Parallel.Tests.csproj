@@ -2,8 +2,6 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
-    <!-- [ActiveIssue(https://github.com/dotnet/corefx/issues/22040)] // when building this tests in ret mode they crash and not produce testResults.xml -->
-    <ILCBuildType Condition="'$(ArchGroup)' == 'arm'">chk</ILCBuildType>
     <ProjectGuid>{A7074928-82C3-4739-88FE-9B528977950C}</ProjectGuid>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->

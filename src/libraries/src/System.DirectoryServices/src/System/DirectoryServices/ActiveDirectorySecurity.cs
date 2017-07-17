@@ -2,18 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
+using System.ComponentModel;
+using System.Security.Principal;
+using System.Security.AccessControl;
+
 namespace System.DirectoryServices
 {
-    using System;
-    using System.Security;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.ComponentModel;
-    using System.Security.Principal;
-    using System.Security.AccessControl;
-    using System.Runtime.InteropServices;
-    using System.DirectoryServices.Interop;
-
     [Flags]
     public enum ActiveDirectoryRights
     {
@@ -55,12 +50,11 @@ namespace System.DirectoryServices
 
     public class ActiveDirectorySecurity : DirectoryObjectSecurity
     {
-        private SecurityMasks _securityMaskUsedInRetrieval = SecurityMasks.Owner | SecurityMasks.Group | SecurityMasks.Dacl | SecurityMasks.Sacl;
+        private readonly SecurityMasks _securityMaskUsedInRetrieval = SecurityMasks.Owner | SecurityMasks.Group | SecurityMasks.Dacl | SecurityMasks.Sacl;
 
         #region Constructors
 
         public ActiveDirectorySecurity()
-            : base()
         {
         }
 
@@ -360,20 +354,13 @@ namespace System.DirectoryServices
         #endregion
 
         #region some overrides
-        public override Type AccessRightType
-        {
-            get { return typeof(System.DirectoryServices.ActiveDirectoryRights); }
-        }
 
-        public override Type AccessRuleType
-        {
-            get { return typeof(System.DirectoryServices.ActiveDirectoryAccessRule); }
-        }
+        public override Type AccessRightType => typeof(ActiveDirectoryRights);
 
-        public override Type AuditRuleType
-        {
-            get { return typeof(System.DirectoryServices.ActiveDirectoryAuditRule); }
-        }
+        public override Type AccessRuleType => typeof(ActiveDirectoryAccessRule);
+
+        public override Type AuditRuleType => typeof(ActiveDirectoryAuditRule);
+
         #endregion
 
     }
@@ -382,10 +369,8 @@ namespace System.DirectoryServices
     {
         #region Access mask to rights translation
 
-        internal static int AccessMaskFromRights(ActiveDirectoryRights adRights)
-        {
-            return (int)adRights;
-        }
+        internal static int AccessMaskFromRights(ActiveDirectoryRights adRights) => (int)adRights;
+
         internal static ActiveDirectoryRights RightsFromAccessMask(int accessMask)
         {
             return (ActiveDirectoryRights)accessMask;
@@ -671,18 +656,12 @@ namespace System.DirectoryServices
 
         public ActiveDirectoryRights ActiveDirectoryRights
         {
-            get
-            {
-                return ActiveDirectoryRightsTranslator.RightsFromAccessMask(base.AccessMask);
-            }
+            get => ActiveDirectoryRightsTranslator.RightsFromAccessMask(base.AccessMask);
         }
 
         public ActiveDirectorySecurityInheritance InheritanceType
         {
-            get
-            {
-                return ActiveDirectoryInheritanceTranslator.GetEffectiveInheritanceFlags(base.InheritanceFlags, base.PropagationFlags);
-            }
+            get => ActiveDirectoryInheritanceTranslator.GetEffectiveInheritanceFlags(InheritanceFlags, PropagationFlags);
         }
 
         #endregion
@@ -1422,18 +1401,12 @@ namespace System.DirectoryServices
 
         public ActiveDirectoryRights ActiveDirectoryRights
         {
-            get
-            {
-                return ActiveDirectoryRightsTranslator.RightsFromAccessMask(base.AccessMask);
-            }
+            get => ActiveDirectoryRightsTranslator.RightsFromAccessMask(AccessMask);
         }
 
         public ActiveDirectorySecurityInheritance InheritanceType
         {
-            get
-            {
-                return ActiveDirectoryInheritanceTranslator.GetEffectiveInheritanceFlags(base.InheritanceFlags, base.PropagationFlags);
-            }
+            get => ActiveDirectoryInheritanceTranslator.GetEffectiveInheritanceFlags(InheritanceFlags, PropagationFlags);
         }
 
         #endregion
