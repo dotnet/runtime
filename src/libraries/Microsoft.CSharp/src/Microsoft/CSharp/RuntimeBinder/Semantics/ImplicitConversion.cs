@@ -331,17 +331,17 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return true;
                 }
 
-                int cnubDst;
-                int cnubSrc;
-                CType typeDstBase = nubDst.StripNubs(out cnubDst);
+                bool dstWasNullable;
+                bool srcWasNullable;
+                CType typeDstBase = nubDst.StripNubs(out dstWasNullable);
                 ExprClass exprTypeDstBase = GetExprFactory().MakeClass(typeDstBase);
-                CType typeSrcBase = _typeSrc.StripNubs(out cnubSrc);
+                CType typeSrcBase = _typeSrc.StripNubs(out srcWasNullable);
 
                 ConversionFunc pfn = (_flags & CONVERTTYPE.ISEXPLICIT) != 0 ?
                     (ConversionFunc)_binder.BindExplicitConversion :
                     (ConversionFunc)_binder.BindImplicitConversion;
 
-                if (cnubSrc == 0)
+                if (!srcWasNullable)
                 {
                     Debug.Assert(_typeSrc == typeSrcBase);
 
@@ -378,20 +378,19 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                                 exprTmp = exprUDC.UserDefinedCall;
                             }
 
-                            // This logic is left over from the days when T?? was legal. However there are error/LAF cases that necessitates the loop.
-                            // typeSrc is not nullable so just wrap the required number of times. For legal code (cnubDst <= 0).
-
-                            for (int i = 0; i < cnubDst; i++)
+                            if (dstWasNullable)
                             {
                                 ExprCall call = _binder.BindNubNew(exprTmp);
                                 exprTmp = call;
                                 call.NullableCallLiftKind = NullableCallLiftKind.NullableConversionConstructor;
                             }
+
                             if (exprUDC != null)
                             {
                                 exprUDC.UserDefinedCall = exprTmp;
                                 exprTmp = exprUDC;
                             }
+
                             Debug.Assert(exprTmp.Type == nubDst);
                             _exprDest = exprTmp;
                         }
