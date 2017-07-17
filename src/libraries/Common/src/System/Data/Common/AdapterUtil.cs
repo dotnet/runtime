@@ -11,6 +11,7 @@ using System.Security;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Transactions;
 
 namespace System.Data.Common
 {
@@ -427,6 +428,14 @@ namespace System.Data.Common
         internal static Exception InvalidSeekOrigin(string parameterName)
         {
             return ArgumentOutOfRange(SR.ADP_InvalidSeekOrigin, parameterName);
+        }
+
+        internal static readonly bool IsWindowsNT = (PlatformID.Win32NT == Environment.OSVersion.Platform);
+        internal static readonly bool IsPlatformNT5 = (ADP.IsWindowsNT && (Environment.OSVersion.Version.Major >= 5));
+
+        internal static void SetCurrentTransaction(Transaction transaction)
+        {
+            Transaction.Current = transaction;
         }
     }
 }

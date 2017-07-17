@@ -2,14 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Runtime.InteropServices;
+using System.ComponentModel;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Runtime.InteropServices;
-    using System.Collections;
-    using System.Globalization;
-    using System.ComponentModel;
-
     public enum TopLevelNameStatus
     {
         Enabled = 0,
@@ -20,31 +17,21 @@ namespace System.DirectoryServices.ActiveDirectory
 
     public class TopLevelName
     {
-        private string _name = null;
         private TopLevelNameStatus _status;
-        internal LARGE_INTEGER time;
+        internal readonly LARGE_INTEGER time;
 
         internal TopLevelName(int flag, LSA_UNICODE_STRING val, LARGE_INTEGER time)
         {
             _status = (TopLevelNameStatus)flag;
-            _name = Marshal.PtrToStringUni(val.Buffer, val.Length / 2);
+            Name = Marshal.PtrToStringUni(val.Buffer, val.Length / 2);
             this.time = time;
         }
 
-        public string Name
-        {
-            get
-            {
-                return _name;
-            }
-        }
+        public string Name { get; }
 
         public TopLevelNameStatus Status
         {
-            get
-            {
-                return _status;
-            }
+            get => _status;
             set
             {
                 if (value != TopLevelNameStatus.Enabled &&

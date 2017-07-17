@@ -61,9 +61,6 @@ namespace System.IO
         [System.Security.SecuritySafeCritical]
         public override void CreateDirectory(string fullPath)
         {
-            if (PathInternal.IsDirectoryTooLong(fullPath))
-                throw new PathTooLongException(SR.IO_PathTooLong);
-
             // We can save a bunch of work if the directory we want to create already exists.  This also
             // saves us in the case where sub paths are inaccessible (due to ERROR_ACCESS_DENIED) but the
             // final path is accessible and the directory already exists.  For example, consider trying

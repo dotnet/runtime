@@ -2,31 +2,20 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+
 namespace System.DirectoryServices
 {
-    using System;
-    using System.Runtime.InteropServices;
-    using System.Collections;
-    using System.Diagnostics;
-
-    /// <include file='doc\ResultPropertyValueCollection.uex' path='docs/doc[@for="ResultPropertyValueCollection"]/*' />
     /// <devdoc>
-    ///    <para>Specifies a collection of values for a multi-valued property.</para>
+    /// Specifies a collection of values for a multi-valued property.
     /// </devdoc>
     public class ResultPropertyValueCollection : ReadOnlyCollectionBase
     {
         internal ResultPropertyValueCollection(object[] values)
         {
-            if (values == null)
-                values = new object[0];
-
-            InnerList.AddRange(values);
+            InnerList.AddRange(values ?? Array.Empty<object>());
         }
 
-        /// <include file='doc\ResultPropertyValueCollection.uex' path='docs/doc[@for="ResultPropertyValueCollection.this"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
         public object this[int index]
         {
             get
@@ -39,31 +28,10 @@ namespace System.DirectoryServices
             }
         }
 
-        /// <include file='doc\ResultPropertyValueCollection.uex' path='docs/doc[@for="ResultPropertyValueCollection.Contains"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
-        public bool Contains(object value)
-        {
-            return InnerList.Contains(value);
-        }
+        public bool Contains(object value) => InnerList.Contains(value);
 
-        /// <include file='doc\ResultPropertyValueCollection.uex' path='docs/doc[@for="ResultPropertyValueCollection.IndexOf"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
-        public int IndexOf(object value)
-        {
-            return InnerList.IndexOf(value);
-        }
+        public int IndexOf(object value) => InnerList.IndexOf(value);
 
-        /// <include file='doc\ResultPropertyValueCollection.uex' path='docs/doc[@for="ResultPropertyValueCollection.CopyTo"]/*' />
-        /// <devdoc>
-        ///    <para>[To be supplied.]</para>
-        /// </devdoc>
-        public void CopyTo(object[] values, int index)
-        {
-            InnerList.CopyTo(values, index);
-        }
+        public void CopyTo(object[] values, int index) => InnerList.CopyTo(values, index);
     }
 }

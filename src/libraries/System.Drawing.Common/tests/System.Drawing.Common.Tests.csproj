@@ -12,11 +12,16 @@
     <Compile Include="BitmapTests.cs" />
     <Compile Include="BrushTests.cs" />
     <Compile Include="BrushesTests.cs" />
+    <Compile Include="BufferedGraphicsTests.cs" />
+    <Compile Include="BufferedGraphicsContextTests.cs" />
+    <Compile Include="BufferedGraphicsManagerTests.cs" />
     <Compile Include="CharacterRangeTests.cs" />
     <Compile Include="ColorTranslatorTests.cs" />
     <Compile Include="Drawing2D\AdjustableArrowCapTests.cs" />
+    <Compile Include="Drawing2D\CustomLineCapTests.cs" />
     <Compile Include="Drawing2D\GraphicsPathIteratorTests.cs" />
     <Compile Include="Drawing2D\GraphicsPathTests.cs" />
+    <Compile Include="Drawing2D\PathGradientBrushTests.cs" />
     <Compile Include="FontTests.cs" />
     <Compile Include="FontFamilyTests.cs" />
     <Compile Include="GraphicsTests.cs" />

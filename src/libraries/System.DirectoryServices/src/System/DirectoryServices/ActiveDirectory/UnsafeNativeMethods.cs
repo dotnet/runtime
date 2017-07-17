@@ -25,13 +25,13 @@
 //    public int dwEnumerationContext;
 //}
 
+using System.Runtime.InteropServices;
+using System.Security;
+using System.Text;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
 #pragma warning disable BCL0015 // CoreFxPort
-    using System;
-    using System.Runtime.InteropServices;
-    using System.Security;
-    using System.Text;
 
     internal enum DS_REPL_INFO_TYPE
     {

@@ -340,7 +340,7 @@ namespace System.Data.SqlClient
             {
                 if (null != _activeConnection)
                 {
-                    if (_activeConnection.StatisticsEnabled || 
+                    if (_activeConnection.StatisticsEnabled ||
                         _diagnosticListener.IsEnabled(SqlClientDiagnosticListenerExtensions.SqlAfterExecuteCommand))
                     {
                         return _activeConnection.Statistics;
@@ -792,7 +792,7 @@ namespace System.Data.SqlClient
             Guid operationId = _diagnosticListener.WriteCommandBefore(this);
 
             SqlStatistics statistics = null;
-            
+
             Exception e = null;
             try
             {
@@ -860,7 +860,7 @@ namespace System.Data.SqlClient
             Guid operationId = _diagnosticListener.WriteCommandBefore(this);
 
             SqlStatistics statistics = null;
-            
+
             Exception e = null;
             try
             {
@@ -876,7 +876,7 @@ namespace System.Data.SqlClient
             finally
             {
                 SqlStatistics.StopTimer(statistics);
-                
+
                 if (e != null)
                 {
                     _diagnosticListener.WriteCommandError(operationId, this, e);
@@ -1185,7 +1185,7 @@ namespace System.Data.SqlClient
             Guid operationId = _diagnosticListener.WriteCommandBefore(this);
 
             SqlStatistics statistics = null;
-            
+
             Exception e = null;
             try
             {
@@ -1204,7 +1204,7 @@ namespace System.Data.SqlClient
             finally
             {
                 SqlStatistics.StopTimer(statistics);
-                
+
                 if (e != null)
                 {
                     _diagnosticListener.WriteCommandError(operationId, this, e);
@@ -1402,7 +1402,7 @@ namespace System.Data.SqlClient
             Guid operationId = _diagnosticListener.WriteCommandBefore(this);
 
             SqlStatistics statistics = null;
-            
+
             Exception e = null;
             try
             {
@@ -1417,7 +1417,7 @@ namespace System.Data.SqlClient
             finally
             {
                 SqlStatistics.StopTimer(statistics);
-                
+
                 if (e != null)
                 {
                     _diagnosticListener.WriteCommandError(operationId, this, e);
@@ -2699,7 +2699,7 @@ namespace System.Data.SqlClient
                             {
                                 ds.Close();
                             }
-                            catch(Exception exClose)
+                            catch (Exception exClose)
                             {
                                 Debug.WriteLine("Received this exception from SqlDataReader.Close() while in another catch block: " + exClose.ToString());
                             }

@@ -179,7 +179,7 @@ namespace System.Drawing.Imaging
             {
                 IntPtr curcodec = (IntPtr)((long)memoryStart + (int)Marshal.SizeOf(typeof(ImageCodecInfoPrivate)) * index);
                 ImageCodecInfoPrivate codecp = new ImageCodecInfoPrivate();
-                UnsafeNativeMethods.PtrToStructure(curcodec, codecp);
+                Marshal.PtrToStructure(curcodec, codecp);
 
                 codecs[index] = new ImageCodecInfo();
                 codecs[index].Clsid = codecp.Clsid;

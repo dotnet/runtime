@@ -4,8 +4,6 @@
 
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-
     public enum ActiveDirectorySyntax : int
     {
         CaseExactString = 0,
@@ -35,21 +33,16 @@ namespace System.DirectoryServices.ActiveDirectory
 
     internal class OMObjectClass
     {
-        public byte[] data = null;
-
-        public OMObjectClass(byte[] data)
-        {
-            this.data = data;
-        }
+        public OMObjectClass(byte[] data) => Data = data;
 
         public bool Equals(OMObjectClass OMObjectClass)
         {
             bool result = true;
-            if (data.Length == OMObjectClass.data.Length)
+            if (Data.Length == OMObjectClass.Data.Length)
             {
-                for (int i = 0; i < data.Length; i++)
+                for (int i = 0; i < Data.Length; i++)
                 {
-                    if (data[i] != OMObjectClass.data[i])
+                    if (Data[i] != OMObjectClass.Data[i])
                     {
                         result = false;
                         break;
@@ -63,20 +56,14 @@ namespace System.DirectoryServices.ActiveDirectory
             return result;
         }
 
-        public byte[] Data
-        {
-            get
-            {
-                return data;
-            }
-        }
+        public byte[] Data { get; }
     }
 
     internal class Syntax
     {
-        public string attributeSyntax = null;
-        public int oMSyntax = 0;
-        public OMObjectClass oMObjectClass = null;
+        public readonly string attributeSyntax = null;
+        public readonly int oMSyntax = 0;
+        public readonly OMObjectClass oMObjectClass = null;
 
         public Syntax(string attributeSyntax, int oMSyntax, OMObjectClass oMObjectClass)
         {

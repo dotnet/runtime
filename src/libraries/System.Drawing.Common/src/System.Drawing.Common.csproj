@@ -147,7 +147,6 @@
     <Compile Include="System\Drawing\Internal\GPRECTF.cs" />
     <Compile Include="System\Drawing\Internal\GPStream.cs" />
     <Compile Include="System\Drawing\Internal\ISystemEventTracker.cs" />
-    <Compile Include="System\Drawing\Internal\RectangleFEx.cs" />
     <Compile Include="System\Drawing\Internal\SystemColorTracker.cs" />
     <Compile Include="System\Drawing\LocalAppContextSwitches.cs" />
     <Compile Include="System\Drawing\NativeMethods.cs" />
@@ -210,17 +209,14 @@
     <Compile Include="System\Drawing\Unit.cs" />
     <Compile Include="System\Drawing\UnsafeNativeMethods.cs" />
     <Compile Include="misc\CompModSwitches.cs" />
-    <Compile Include="misc\CoreSwitches.cs" />
     <Compile Include="misc\DbgUtil.cs" />
     <Compile Include="misc\DebugHandleTracker.cs" />
     <Compile Include="misc\DpiHelper.cs" />
     <Compile Include="misc\ExternDll.cs" />
     <Compile Include="misc\GDI\ApplyGraphicsProperties.cs" />
     <Compile Include="misc\GDI\DeviceContext.cs" />
-    <Compile Include="misc\GDI\DeviceContextGraphicsMode.cs" />
     <Compile Include="misc\GDI\DeviceContexts.cs" />
     <Compile Include="misc\GDI\DeviceContextType.cs" />
-    <Compile Include="misc\GDI\GdiObjectType.cs" />
     <Compile Include="misc\GDI\NativeMethods.cs" />
     <Compile Include="misc\GDI\SafeNativeMethods.cs" />
     <Compile Include="misc\GDI\UnsafeNativeMethods.cs" />

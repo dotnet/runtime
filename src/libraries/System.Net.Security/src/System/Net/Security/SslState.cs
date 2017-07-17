@@ -120,11 +120,6 @@ namespace System.Net.Security
                 throw new ArgumentNullException(nameof(serverCertificate));
             }
 
-            if (clientCertificates == null)
-            {
-                clientCertificates = new X509CertificateCollection();
-            }
-
             if (targetHost.Length == 0)
             {
                 targetHost = "?" + Interlocked.Increment(ref s_uniqueNameInteger).ToString(NumberFormatInfo.InvariantInfo);

@@ -14,6 +14,7 @@ using System.Globalization;
 using System.Threading;
 using System.Diagnostics.CodeAnalysis;
 using System.Threading.Tasks;
+using System.Transactions;
 
 namespace System.Data.SqlClient
 {
@@ -424,7 +425,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override internal SqlInternalTransaction CurrentTransaction
+        internal override SqlInternalTransaction CurrentTransaction
         {
             get
             {
@@ -432,7 +433,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override internal SqlInternalTransaction AvailableInternalTransaction
+        internal override SqlInternalTransaction AvailableInternalTransaction
         {
             get
             {
@@ -440,7 +441,13 @@ namespace System.Data.SqlClient
             }
         }
 
-
+        internal override SqlInternalTransaction PendingTransaction
+        {
+            get
+            {
+                return _parser.PendingTransaction;
+            }
+        }
 
         internal DbConnectionPoolIdentity Identity
         {
@@ -458,7 +465,7 @@ namespace System.Data.SqlClient
             }
         }
 
-        override internal bool IsLockedForBulkCopy
+        internal override bool IsLockedForBulkCopy
         {
             get
             {
@@ -466,8 +473,15 @@ namespace System.Data.SqlClient
             }
         }
 
+        internal protected override bool IsNonPoolableTransactionRoot
+        {
+            get
+            {
+                return IsTransactionRoot && (!IsKatmaiOrNewer || null == Pool);
+            }
+        }
 
-        override internal bool IsKatmaiOrNewer
+        internal override bool IsKatmaiOrNewer
         {
             get
             {
@@ -507,8 +521,16 @@ namespace System.Data.SqlClient
             }
         }
 
+        protected override bool ReadyToPrepareTransaction
+        {
+            get
+            {
+                bool result = (null == FindLiveReader(null)); // can't prepare with a live data reader...
+                return result;
+            }
+        }
 
-        override public string ServerVersion
+        public override string ServerVersion
         {
             get
             {
@@ -517,13 +539,20 @@ namespace System.Data.SqlClient
             }
         }
 
+        protected override bool UnbindOnTransactionCompletion
+        {
+            get
+            {
+                return false;
+            }
+        }
 
 
         ////////////////////////////////////////////////////////////////////////////////////////
         // GENERAL METHODS
         ////////////////////////////////////////////////////////////////////////////////////////
         [SuppressMessage("Microsoft.Globalization", "CA1303:DoNotPassLiteralsAsLocalizedParameters")] // copied from Triaged.cs
-        override protected void ChangeDatabaseInternal(string database)
+        protected override void ChangeDatabaseInternal(string database)
         {
             // Add brackets around database
             database = SqlConnection.FixupDatabaseTransactionName(database);
@@ -532,7 +561,7 @@ namespace System.Data.SqlClient
             _parser.Run(RunBehavior.UntilDone, null, null, null, _parser._physicalStateObj);
         }
 
-        override public void Dispose()
+        public override void Dispose()
         {
             try
             {
@@ -554,7 +583,7 @@ namespace System.Data.SqlClient
             base.Dispose();
         }
 
-        override internal void ValidateConnectionForExecute(SqlCommand command)
+        internal override void ValidateConnectionForExecute(SqlCommand command)
         {
             TdsParser parser = _parser;
             if ((parser == null) || (parser.State == TdsParserState.Broken) || (parser.State == TdsParserState.Closed))
@@ -596,6 +625,64 @@ namespace System.Data.SqlClient
             }
         }
 
+        /// <summary>
+        /// Validate the enlisted transaction state, taking into consideration the ambient transaction and transaction unbinding mode.
+        /// If there is no enlisted transaction, this method is a nop.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// This method must be called while holding a lock on the SqlInternalConnection instance,
+        /// to ensure we don't accidentally execute after the transaction has completed on a different thread, 
+        /// causing us to unwittingly execute in auto-commit mode.
+        /// </para>
+        /// 
+        /// <para>
+        /// When using Explicit transaction unbinding, 
+        /// verify that the enlisted transaction is active and equal to the current ambient transaction.
+        /// </para>
+        /// 
+        /// <para>
+        /// When using Implicit transaction unbinding,
+        /// verify that the enlisted transaction is active.
+        /// If it is not active, and the transaction object has been diposed, unbind from the transaction.
+        /// If it is not active and not disposed, throw an exception.
+        /// </para>
+        /// </remarks>
+        internal void CheckEnlistedTransactionBinding()
+        {
+            // If we are enlisted in a transaction, check that transaction is active.
+            // When using explicit transaction unbinding, also verify that the enlisted transaction is the current transaction.
+            Transaction enlistedTransaction = EnlistedTransaction;
+
+            if (enlistedTransaction != null)
+            {
+                bool requireExplicitTransactionUnbind = ConnectionOptions.TransactionBinding == SqlConnectionString.TransactionBindingEnum.ExplicitUnbind;
+
+                if (requireExplicitTransactionUnbind)
+                {
+                    Transaction currentTransaction = Transaction.Current;
+
+                    if (TransactionStatus.Active != enlistedTransaction.TransactionInformation.Status || !enlistedTransaction.Equals(currentTransaction))
+                    {
+                        throw ADP.TransactionConnectionMismatch();
+                    }
+                }
+                else // implicit transaction unbind
+                {
+                    if (TransactionStatus.Active != enlistedTransaction.TransactionInformation.Status)
+                    {
+                        if (EnlistedTransactionDisposed)
+                        {
+                            DetachTransaction(enlistedTransaction, true);
+                        }
+                        else
+                        {
+                            throw ADP.TransactionCompletedButNotDisposed();
+                        }
+                    }
+                }
+            }
+        }
 
         internal override bool IsConnectionAlive(bool throwOnException)
         {
@@ -608,11 +695,30 @@ namespace System.Data.SqlClient
         // POOLING METHODS
         ////////////////////////////////////////////////////////////////////////////////////////
 
-        override protected void Activate()
+        protected override void Activate(Transaction transaction)
         {
+            // When we're required to automatically enlist in transactions and
+            // there is one we enlist in it. On the other hand, if there isn't a
+            // transaction and we are currently enlisted in one, then we
+            // unenlist from it.
+            //
+            // Regardless of whether we're required to automatically enlist,
+            // when there is not a current transaction, we cannot leave the
+            // connection enlisted in a transaction.
+            if (null != transaction)
+            {
+                if (ConnectionOptions.Enlist)
+                {
+                    Enlist(transaction);
+                }
+            }
+            else
+            {
+                Enlist(null);
+            }
         }
 
-        override protected void InternalDeactivate()
+        protected override void InternalDeactivate()
         {
             // When we're deactivated, the user must have called End on all
             // the async commands, or we don't know that we're in a state that
@@ -628,14 +734,17 @@ namespace System.Data.SqlClient
             // cause our transaction to be rolled back and the connection
             // to be reset.  We'll get called again once the delegated
             // transaction is completed and we can do it all then.
-            Debug.Assert(null != _parser || IsConnectionDoomed, "Deactivating a disposed connection?");
-            if (_parser != null)
+            if (!IsNonPoolableTransactionRoot)
             {
-                _parser.Deactivate(IsConnectionDoomed);
-
-                if (!IsConnectionDoomed)
+                Debug.Assert(null != _parser || IsConnectionDoomed, "Deactivating a disposed connection?");
+                if (_parser != null)
                 {
-                    ResetConnection();
+                    _parser.Deactivate(IsConnectionDoomed);
+
+                    if (!IsConnectionDoomed)
+                    {
+                        ResetConnection();
+                    }
                 }
             }
         }
@@ -657,7 +766,7 @@ namespace System.Data.SqlClient
                 // distributed transaction - otherwise don't reset!
                 // Prepare the parser for the connection reset - the next time a trip
                 // to the server is made.
-                _parser.PrepareResetConnection();
+                _parser.PrepareResetConnection(IsTransactionRoot && !IsNonPoolableTransactionRoot);
 
                 // Reset dictionary values, since calling reset will not send us env_changes.
                 CurrentDatabase = _originalDatabase;
@@ -680,7 +789,7 @@ namespace System.Data.SqlClient
         // LOCAL TRANSACTION METHODS
         ////////////////////////////////////////////////////////////////////////////////////////
 
-        override internal void DisconnectTransaction(SqlInternalTransaction internalTransaction)
+        internal override void DisconnectTransaction(SqlInternalTransaction internalTransaction)
         {
             TdsParser parser = Parser;
 
@@ -690,7 +799,12 @@ namespace System.Data.SqlClient
             }
         }
 
-        override internal void ExecuteTransaction(TransactionRequest transactionRequest, string name, IsolationLevel iso, SqlInternalTransaction internalTransaction)
+        internal void ExecuteTransaction(TransactionRequest transactionRequest, string name, IsolationLevel iso)
+        {
+            ExecuteTransaction(transactionRequest, name, iso, null, false);
+        }
+
+        internal override void ExecuteTransaction(TransactionRequest transactionRequest, string name, IsolationLevel iso, SqlInternalTransaction internalTransaction, bool isDelegateControlRequest)
         {
             if (IsConnectionDoomed)
             {  // doomed means we can't do anything else...
@@ -714,7 +828,7 @@ namespace System.Data.SqlClient
 
             string transactionName = (null == name) ? String.Empty : name;
 
-            ExecuteTransactionYukon(transactionRequest, transactionName, iso, internalTransaction);
+            ExecuteTransactionYukon(transactionRequest, transactionName, iso, internalTransaction, isDelegateControlRequest);
         }
 
 
@@ -722,7 +836,8 @@ namespace System.Data.SqlClient
                     TransactionRequest transactionRequest,
                     string transactionName,
                     IsolationLevel iso,
-                    SqlInternalTransaction internalTransaction
+                    SqlInternalTransaction internalTransaction,
+                    bool isDelegateControlRequest
         )
         {
             TdsEnums.TransactionManagerRequestType requestType = TdsEnums.TransactionManagerRequestType.Begin;
@@ -773,6 +888,9 @@ namespace System.Data.SqlClient
                     case TransactionRequest.Begin:
                         requestType = TdsEnums.TransactionManagerRequestType.Begin;
                         break;
+                    case TransactionRequest.Promote:
+                        requestType = TdsEnums.TransactionManagerRequestType.Promote;
+                        break;
                     case TransactionRequest.Commit:
                         requestType = TdsEnums.TransactionManagerRequestType.Commit;
                         break;
@@ -808,14 +926,39 @@ namespace System.Data.SqlClient
                     }
                 }
 
+                // SQLBUDT #20010853 - Promote, Commit and Rollback requests for
+                // delegated transactions often happen while there is an open result
+                // set, so we need to handle them by using a different MARS session, 
+                // otherwise we'll write on the physical state objects while someone
+                // else is using it.  When we don't have MARS enabled, we need to 
+                // lock the physical state object to syncronize it's use at least 
+                // until we increment the open results count.  Once it's been 
+                // incremented the delegated transaction requests will fail, so they
+                // won't stomp on anything.
+                // 
+                // We need to keep this lock through the duration of the TM reqeuest
+                // so that we won't hijack a different request's data stream and a
+                // different request won't hijack ours, so we have a lock here on 
+                // an object that the ExecTMReq will also lock, but since we're on
+                // the same thread, the lock is a no-op.
 
-
+                if (null != internalTransaction && internalTransaction.IsDelegated)
+                {
+                    if (_parser.MARSOn)
+                    {
+                        stateObj = _parser.GetSession(this);
+                        mustPutSession = true;
+                    }
+                    else if (internalTransaction.OpenResultsCount != 0)
+                    {
+                        //throw SQL.CannotCompleteDelegatedTransactionWithOpenResults(this);
+                    }
+                }
 
                 //  _parser may be nulled out during TdsExecuteTrannsactionManagerRequest.
                 //  Only use local variable after this call.
                 _parser.TdsExecuteTransactionManagerRequest(null, requestType, transactionName, isoLevel,
-                    ConnectionOptions.ConnectTimeout, internalTransaction, stateObj
-                    );
+                    ConnectionOptions.ConnectTimeout, internalTransaction, stateObj, isDelegateControlRequest);
             }
             finally
             {
@@ -836,6 +979,22 @@ namespace System.Data.SqlClient
         // DISTRIBUTED TRANSACTION METHODS
         ////////////////////////////////////////////////////////////////////////////////////////
 
+        internal override void DelegatedTransactionEnded()
+        {
+            base.DelegatedTransactionEnded();
+        }
+
+        protected override byte[] GetDTCAddress()
+        {
+            byte[] dtcAddress = _parser.GetDTCAddress(ConnectionOptions.ConnectTimeout, _parser.GetSession(this));
+            Debug.Assert(null != dtcAddress, "null dtcAddress?");
+            return dtcAddress;
+        }
+
+        protected override void PropagateTransactionCookie(byte[] cookie)
+        {
+            _parser.PropagateDistributedTransaction(cookie, ConnectionOptions.ConnectTimeout, _parser._physicalStateObj);
+        }
 
         ////////////////////////////////////////////////////////////////////////////////////////
         // LOGIN-RELATED METHODS
@@ -881,6 +1040,15 @@ namespace System.Data.SqlClient
             _parser.EnableMars();
 
             _fConnectionOpen = true; // mark connection as open
+
+            // for non-pooled connections, enlist in a distributed transaction
+            // if present - and user specified to enlist
+            if (enlistOK && ConnectionOptions.Enlist)
+            {
+                _parser._physicalStateObj.SniContext = SniContext.Snix_AutoEnlist;
+                Transaction tx = ADP.GetCurrentTransaction();
+                Enlist(tx);
+            }
 
             _parser._physicalStateObj.SniContext = SniContext.Snix_Login;
         }
@@ -940,6 +1108,8 @@ namespace System.Data.SqlClient
                 _sessionRecoveryRequested = true;
             }
 
+            // The GLOBALTRANSACTIONS feature is implicitly requested
+            requestedFeatures |= TdsEnums.FeatureExtension.GlobalTransactions;
             _parser.TdsLogin(login, requestedFeatures, _recoverySessionData);
         }
 
@@ -1554,6 +1724,8 @@ namespace System.Data.SqlClient
                 case TdsEnums.ENV_BEGINTRAN:
                 case TdsEnums.ENV_COMMITTRAN:
                 case TdsEnums.ENV_ROLLBACKTRAN:
+                case TdsEnums.ENV_ENLISTDTC:
+                case TdsEnums.ENV_DEFECTDTC:
                     // only used on parser
                     break;
 
@@ -1565,6 +1737,16 @@ namespace System.Data.SqlClient
                     _currentFailoverPartner = rec.newValue;
                     break;
 
+                case TdsEnums.ENV_PROMOTETRANSACTION:
+                    PromotedDTCToken = rec.newBinValue;
+                    break;
+
+                case TdsEnums.ENV_TRANSACTIONENDED:
+                    break;
+
+                case TdsEnums.ENV_TRANSACTIONMANAGERADDRESS:
+                    // For now we skip these Yukon only env change notifications
+                    break;
 
                 case TdsEnums.ENV_SPRESETCONNECTIONACK:
                     // connection is being reset 
@@ -1584,15 +1766,6 @@ namespace System.Data.SqlClient
                         throw SQL.ROR_InvalidRoutingInfo(this);
                     }
                     _routingInfo = rec.newRoutingInfo;
-                    break;
-
-                // ENVCHANGE tokens not supported by Project K\CoreCLR
-                case TdsEnums.ENV_ENLISTDTC:
-                case TdsEnums.ENV_DEFECTDTC:
-                case TdsEnums.ENV_TRANSACTIONENDED:
-                case TdsEnums.ENV_PROMOTETRANSACTION:
-                case TdsEnums.ENV_TRANSACTIONMANAGERADDRESS:
-                    Debug.Assert(false, "Unsupported tokens were passed to OnEnvChange - TdsParser should have failed these");
                     break;
 
                 default:
@@ -1670,6 +1843,22 @@ namespace System.Data.SqlClient
                         }
                         break;
                     }
+
+                case TdsEnums.FEATUREEXT_GLOBALTRANSACTIONS:
+                    {
+                        if (data.Length < 1)
+                        {
+                            throw SQL.ParsingError();
+                        }
+
+                        IsGlobalTransaction = true;
+                        if (1 == data[0])
+                        {
+                            IsGlobalTransactionsEnabledForServer = true;
+                        }
+                        break;
+                    }
+
                 default:
                     {
                         // Unknown feature ack 

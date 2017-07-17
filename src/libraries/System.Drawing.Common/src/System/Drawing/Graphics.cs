@@ -2960,7 +2960,7 @@ namespace System.Drawing
         }
 
         [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
+        [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
         public void EnumerateMetafile(Metafile metafile, PointF[] destPoints,
                                       EnumerateMetafileProc callback, IntPtr callbackData,
                                       ImageAttributes imageAttr)
@@ -3276,8 +3276,8 @@ namespace System.Drawing
             EnumerateMetafile(metafile, destPoints, srcRect, srcUnit, callback, callbackData, null);
         }
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
+        [SuppressMessage("Microsoft.Design", "CA1011:ConsiderPassingBaseTypesAsParameters")]
+        [SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public void EnumerateMetafile(Metafile metafile, Point[] destPoints,
                                       Rectangle srcRect, GraphicsUnit unit,
                                       EnumerateMetafileProc callback, IntPtr callbackData,
@@ -3701,8 +3701,8 @@ namespace System.Drawing
             var context = new GraphicsContext(this);
             int state = 0;
 
-            GPRECTF dstf = dstrect.ToGPRECTF();
-            GPRECTF srcf = srcrect.ToGPRECTF();
+            var dstf = new GPRECTF(dstrect);
+            var srcf = new GPRECTF(srcrect);
 
             int status = SafeNativeMethods.Gdip.GdipBeginContainer(new HandleRef(this, NativeGraphics), ref dstf,
                                                     ref srcf, unchecked((int)unit), out state);

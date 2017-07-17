@@ -115,6 +115,12 @@
   <data name="ADP_InvalidOffsetValue" xml:space="preserve">
     <value>Invalid parameter Offset value '{0}'. The value must be greater than or equal to 0.</value>
   </data>
+  <data name="ADP_TransactionPresent" xml:space="preserve">
+    <value>Connection currently has transaction enlisted.  Finish current transaction and retry.</value>
+  </data>
+  <data name="ADP_LocalTransactionPresent" xml:space="preserve">
+    <value>Cannot enlist in the transaction because a local transaction is in progress on the connection.  Finish local transaction and retry.</value>
+  </data>
   <data name="ADP_NoConnectionString" xml:space="preserve">
     <value>The ConnectionString property has not been initialized.</value>
   </data>
@@ -493,6 +499,9 @@
   <data name="SQL_XmlReaderNotSupportOnColumnType" xml:space="preserve">
     <value>Invalid attempt to GetXmlReader on column '{0}'. The GetXmlReader function can only be used on columns of type Xml.</value>
   </data>
+  <data name="SqlDelegatedTransaction_PromotionFailed" xml:space="preserve">
+    <value>Failure while attempting to promote transaction.</value>
+  </data>
   <data name="SQL_InvalidBufferSizeOrIndex" xml:space="preserve">
     <value>Buffer offset '{1}' plus the bytes available '{0}' is greater than the length of the passed in buffer.</value>
   </data>
@@ -550,6 +559,9 @@
   <data name="SQL_BulkLoadPendingOperation" xml:space="preserve">
     <value>Attempt to invoke bulk copy on an object that has a pending operation.</value>
   </data>
+  <data name="SQL_CannotGetDTCAddress" xml:space="preserve">
+    <value>Unable to get the address of the distributed transaction coordinator for the server, from the server.  Is DTC enabled on the server?</value>
+  </data>
   <data name="SQL_ConnectionDoomed" xml:space="preserve">
     <value>The requested operation cannot be completed because the connection has been broken.</value>
   </data>
@@ -576,6 +588,9 @@
   </data>
   <data name="SQL_ExRoutingDestination" xml:space="preserve">
     <value>Routing Destination:{0}</value>
+  </data>
+  <data name="SQL_UnsupportedSysTxVersion" xml:space="preserve">
+    <value>The currently loaded System.Transactions.dll does not support Global Transactions.</value>
   </data>
   <data name="SqlMisc_NullString" xml:space="preserve">
     <value>Null</value>
@@ -667,6 +682,9 @@
   <data name="ADP_OperationAbortedExceptionMessage" xml:space="preserve">
     <value>Operation aborted due to an exception (see InnerException for details).</value>
   </data>
+  <data name="ADP_TransactionCompletedButNotDisposed" xml:space="preserve">
+    <value>The transaction associated with the current connection has completed but has not been disposed.  The transaction must be disposed before the connection can be used to execute SQL statements.</value>
+  </data>
   <data name="SqlParameter_UnsupportedTVPOutputParameter" xml:space="preserve">
     <value>ParameterDirection '{0}' specified for parameter '{1}' is not supported. Table-valued parameters only support ParameterDirection.Input.</value>
   </data>
@@ -687,6 +705,12 @@
   </data>
   <data name="SQL_EnumeratedRecordFieldCountChanged" xml:space="preserve">
     <value>Number of fields in record '{0}' does not match the number in the original record.</value>
+  </data>
+  <data name="GT_Disabled" xml:space="preserve">
+    <value>Global Transactions are not enabled for this Azure SQL Database. Please contact Azure SQL Database support for assistance.</value>
+  </data>
+  <data name="SQL_UnknownSysTxIsolationLevel" xml:space="preserve">
+    <value>Unrecognized System.Transactions.IsolationLevel enumeration value: {0}.</value>
   </data>
   <data name="SQLNotify_AlreadyHasCommand" xml:space="preserve">
     <value>This SqlCommand object is already associated with another SqlDependency object.</value>
@@ -1106,28 +1130,28 @@
     <value>The size of column '{0}' is not supported. The size is {1}.</value>
   </data>
   <data name="MDF_InvalidXmlInvalidValue" xml:space="preserve"> 
-	<value>The metadata XML is invalid. The {1} column of the {0} collection must contain a non-empty string.</value>
+    <value>The metadata XML is invalid. The {1} column of the {0} collection must contain a non-empty string.</value>
   </data>
   <data name="MDF_CollectionNameISNotUnique" xml:space="preserve"> 
-	<value>There are multiple collections named '{0}'.</value>
+    <value>There are multiple collections named '{0}'.</value>
   </data>
   <data name="MDF_InvalidXmlMissingColumn" xml:space="preserve"> 
-	<value>The metadata XML is invalid. The {0} collection must contain a {1} column and it must be a string column.</value>
+    <value>The metadata XML is invalid. The {0} collection must contain a {1} column and it must be a string column.</value>
   </data>
   <data name="MDF_InvalidXml" xml:space="preserve"> 
-	<value>The metadata XML is invalid.</value>
+    <value>The metadata XML is invalid.</value>
   </data>
   <data name="MDF_NoColumns" xml:space="preserve"> 
-	<value>The schema table contains no columns.</value>
+    <value>The schema table contains no columns.</value>
   </data>
   <data name="MDF_QueryFailed" xml:space="preserve"> 
-	<value>Unable to build the '{0}' collection because execution of the SQL query failed. See the inner exception for details.</value>
+    <value>Unable to build the '{0}' collection because execution of the SQL query failed. See the inner exception for details.</value>
   </data>
   <data name="MDF_TooManyRestrictions" xml:space="preserve"> 
-	<value>More restrictions were provided than the requested schema ('{0}') supports.</value>
+    <value>More restrictions were provided than the requested schema ('{0}') supports.</value>
   </data>
   <data name="MDF_DataTableDoesNotExist" xml:space="preserve"> 
-	<value>The collection '{0}' is missing from the metadata XML.</value>
+    <value>The collection '{0}' is missing from the metadata XML.</value>
   </data>
   <data name="MDF_UndefinedCollection" xml:space="preserve"> 
     <value>The requested collection ({0}) is not defined.</value> 

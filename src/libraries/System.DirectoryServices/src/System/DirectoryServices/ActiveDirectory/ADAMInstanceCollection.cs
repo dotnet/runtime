@@ -2,12 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Globalization;
-    using System.Collections;
-
     public class AdamInstanceCollection : ReadOnlyCollectionBase
     {
         internal AdamInstanceCollection() { }
@@ -20,13 +18,7 @@ namespace System.DirectoryServices.ActiveDirectory
             }
         }
 
-        public AdamInstance this[int index]
-        {
-            get
-            {
-                return (AdamInstance)InnerList[index];
-            }
-        }
+        public AdamInstance this[int index] => (AdamInstance)InnerList[index];
 
         public bool Contains(AdamInstance adamInstance)
         {

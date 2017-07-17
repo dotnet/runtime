@@ -107,6 +107,13 @@
     <Compile Include="ManagedHandlerTest.cs" />
     <Compile Include="HttpClientHandlerTest.AcceptAllCerts.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'uap'">
+    <Reference Include="Windows" />
+    <Compile Include="MultiInterfaceNonRewindableReadOnlyStream.cs" />
+    <Compile Include="MultiInterfaceReadOnlyStream.cs" />
+    <Compile Include="MultiInterfaceStreamContent.cs" />
+    <Compile Include="PostScenarioUWPTest.cs" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\System\Diagnostics\RemoteExecutorConsoleApp\RemoteExecutorConsoleApp.csproj">
       <Project>{69e46a6f-9966-45a5-8945-2559fe337827}</Project>

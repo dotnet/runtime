@@ -82,17 +82,6 @@ namespace System.Data.SqlClient.Tests
             });
         }
 
-        [Theory]
-        [MemberData(nameof(ExceptionTestDataForNotSupportedException))]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework doesn't throw the Not Supported Exception")]
-        public void TestNotSupportedException(Action<string> connectAction, string connectionString)
-        {
-            Assert.Throws<NotSupportedException>(() =>
-            {
-                connectAction(connectionString);
-            });
-        }
-
         [Fact]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, ".NET Framework doesn't throw the Not Supported Exception")]
         public void TestNotSupportedExceptionForTransactionScopeAsync()

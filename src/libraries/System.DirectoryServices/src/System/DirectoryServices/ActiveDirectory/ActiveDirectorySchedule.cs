@@ -2,15 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.ComponentModel;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Runtime.InteropServices;
-    using System.Collections;
-    using System.DirectoryServices;
-    using System.Globalization;
-    using System.ComponentModel;
-
     public enum HourOfDay
     {
         Zero,
@@ -50,8 +45,8 @@ namespace System.DirectoryServices.ActiveDirectory
     public class ActiveDirectorySchedule
     {
         // 24*7*4 = 672
-        private bool[] _scheduleArray = new bool[672];
-        private long _utcOffSet = 0;
+        private readonly bool[] _scheduleArray = new bool[672];
+        private readonly long _utcOffSet = 0;
 
         public ActiveDirectorySchedule()
         {

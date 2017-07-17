@@ -145,6 +145,14 @@ namespace System.Data.SqlClient
             }
         }
 
+        internal SqlConnectionString.TransactionBindingEnum TransactionBinding
+        {
+            get
+            {
+                return ((SqlConnectionString)ConnectionOptions).TransactionBinding;
+            }
+        }
+
         internal SqlConnectionString.TypeSystem TypeSystem
         {
             get
@@ -612,11 +620,6 @@ namespace System.Data.SqlClient
             }
         }
 
-        public override void EnlistTransaction(Transaction transaction)
-        {
-            throw ADP.AmbientTransactionIsNotSupported();
-        }
-
         internal void RegisterWaitingForReconnect(Task waitingTask)
         {
             if (((SqlConnectionString)ConnectionOptions).MARS)
@@ -729,6 +732,7 @@ namespace System.Data.SqlClient
                                 bool callDisconnect = false;
                                 lock (_reconnectLock)
                                 {
+                                    tdsConn.CheckEnlistedTransactionBinding();
                                     runningReconnect = _currentReconnectionTask; // double check after obtaining the lock
                                     if (runningReconnect == null)
                                     {
@@ -834,7 +838,8 @@ namespace System.Data.SqlClient
             {
                 statistics = SqlStatistics.StartTimer(Statistics);
 
-                TaskCompletionSource<DbConnectionInternal> completion = new TaskCompletionSource<DbConnectionInternal>();
+                System.Transactions.Transaction transaction = ADP.GetCurrentTransaction();
+                TaskCompletionSource<DbConnectionInternal> completion = new TaskCompletionSource<DbConnectionInternal>(transaction);
                 TaskCompletionSource<object> result = new TaskCompletionSource<object>();
 
                 if (s_diagnosticListener.IsEnabled(SqlClientDiagnosticListenerExtensions.SqlAfterOpenConnection) ||
@@ -1012,12 +1017,6 @@ namespace System.Data.SqlClient
         {
             SqlConnectionString connectionOptions = (SqlConnectionString)ConnectionOptions;
 
-            // Fail Fast in case an application is trying to enlist the SqlConnection in a Transaction Scope.
-            if (connectionOptions.Enlist && ADP.GetCurrentTransaction() != null)
-            {
-                throw ADP.AmbientTransactionIsNotSupported();
-            }
-
             _applyTransientFaultHandling = (retry == null && connectionOptions != null && connectionOptions.ConnectRetryCount > 0);
 
             if (ForceNewConnection)
@@ -1037,6 +1036,7 @@ namespace System.Data.SqlClient
             // does not require GC.KeepAlive(this) because of OnStateChange
 
             var tdsInnerConnection = (SqlInternalConnectionTds)InnerConnection;
+
             Debug.Assert(tdsInnerConnection.Parser != null, "Where's the parser?");
 
             if (!tdsInnerConnection.ConnectionOptions.Pooling)
@@ -1048,7 +1048,7 @@ namespace System.Data.SqlClient
             // The _statistics can change with StatisticsEnabled. Copying to a local variable before checking for a null value.
             SqlStatistics statistics = _statistics;
             if (StatisticsEnabled ||
-                ( s_diagnosticListener.IsEnabled(SqlClientDiagnosticListenerExtensions.SqlAfterExecuteCommand) && statistics != null))
+                (s_diagnosticListener.IsEnabled(SqlClientDiagnosticListenerExtensions.SqlAfterExecuteCommand) && statistics != null))
             {
                 ADP.TimerCurrent(out _statistics._openTimestamp);
                 tdsInnerConnection.Parser.Statistics = _statistics;

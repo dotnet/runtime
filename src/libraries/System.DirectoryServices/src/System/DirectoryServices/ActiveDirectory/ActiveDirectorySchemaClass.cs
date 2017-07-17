@@ -2,18 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Text;
+using System.ComponentModel;
+using System.Collections;
+using System.Diagnostics;
+using System.Globalization;
+using System.Runtime.InteropServices;
+using System.Security.AccessControl;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Text;
-    using System.ComponentModel;
-    using System.Collections;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.Runtime.InteropServices;
-    using System.Security.AccessControl;
-    using System.Security.Permissions;
-
     public class ActiveDirectorySchemaClass : IDisposable
     {
         // private variables
@@ -131,7 +129,7 @@ namespace System.DirectoryServices.ActiveDirectory
             catch (ActiveDirectoryObjectNotFoundException)
             {
                 // this is the case where the context is a config set and we could not find an ADAM instance in that config set
-                throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.ADAMInstanceNotFoundInConfigSet , context.Name));
+                throw new ActiveDirectoryOperationException(SR.Format(SR.ADAMInstanceNotFoundInConfigSet , context.Name));
             }
 
             // set the bind flag
@@ -308,7 +306,7 @@ namespace System.DirectoryServices.ActiveDirectory
                 catch (ActiveDirectoryObjectNotFoundException)
                 {
                     // this is the case where the context is a config set and we could not find an ADAM instance in that config set
-                    throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.ADAMInstanceNotFoundInConfigSet , _context.Name));
+                    throw new ActiveDirectoryOperationException(SR.Format(SR.ADAMInstanceNotFoundInConfigSet , _context.Name));
                 }
 
                 // set the ldap display name property
@@ -1098,7 +1096,7 @@ namespace System.DirectoryServices.ActiveDirectory
             Debug.Assert(values != null);
             if (values.Count < 1 && mustExist)
             {
-                throw new ActiveDirectoryOperationException(String.Format(CultureInfo.CurrentCulture, SR.PropertyNotFound , propertyName));
+                throw new ActiveDirectoryOperationException(SR.Format(SR.PropertyNotFound , propertyName));
             }
             else if (values.Count > 0)
             {

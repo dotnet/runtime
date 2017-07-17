@@ -21,7 +21,6 @@ namespace System.Net.Http
         private readonly ManagedHandler _managedHandler;
         private readonly DiagnosticsHandler _diagnosticsHandler;
         private bool _useProxy;
-        private bool _disposed;
 
         public HttpClientHandler()
         {

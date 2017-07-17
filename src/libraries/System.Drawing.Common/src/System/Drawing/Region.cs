@@ -29,7 +29,7 @@ namespace System.Drawing
         public Region(RectangleF rect)
         {
             IntPtr region = IntPtr.Zero;
-            GPRECTF gprectf = rect.ToGPRECTF();
+            var gprectf = new GPRECTF(rect);
             int status = SafeNativeMethods.Gdip.GdipCreateRegionRect(ref gprectf, out region);
             SafeNativeMethods.Gdip.CheckStatus(status);
 
@@ -156,7 +156,7 @@ namespace System.Drawing
 
         public void Intersect(RectangleF rect)
         {
-            GPRECTF gprectf = rect.ToGPRECTF();
+            var gprectf = new GPRECTF(rect);
             int status = SafeNativeMethods.Gdip.GdipCombineRegionRect(new HandleRef(this, _nativeRegion), ref gprectf, CombineMode.Intersect);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
@@ -313,7 +313,7 @@ namespace System.Drawing
 
         public void Complement(RectangleF rect)
         {
-            GPRECTF gprectf = rect.ToGPRECTF();
+            var gprectf = new GPRECTF(rect);
             int status = SafeNativeMethods.Gdip.GdipCombineRegionRect(new HandleRef(this, _nativeRegion), ref gprectf, CombineMode.Complement);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
@@ -561,7 +561,7 @@ namespace System.Drawing
                 var rectangles = new RectangleF[count];
                 for (int index = 0; index < count; index++)
                 {
-                    gprectf = (GPRECTF)UnsafeNativeMethods.PtrToStructure((IntPtr)(checked((long)memoryRects + rectsize * index)), typeof(GPRECTF));
+                    gprectf = (GPRECTF)Marshal.PtrToStructure((IntPtr)(checked((long)memoryRects + rectsize * index)), typeof(GPRECTF));
                     rectangles[index] = gprectf.ToRectangleF();
                 }
 

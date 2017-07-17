@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace System.Drawing
@@ -16,16 +15,15 @@ namespace System.Drawing
     public sealed class BufferedGraphics : IDisposable
     {
         private Graphics _bufferedGraphicsSurface;
-        private Graphics _targetGraphics;
+        private readonly Graphics _targetGraphics;
         private BufferedGraphicsContext _context;
-        private IntPtr _targetDC;
-        private Point _targetLoc;
-        private Size _virtualSize;
-        private bool _disposeContext;
-        private static int s_rop = 0xcc0020; // RasterOp.SOURCE.GetRop();
+        private readonly IntPtr _targetDC;
+        private readonly Point _targetLoc;
+        private readonly Size _virtualSize;
+        private const int RasterOp = 0xcc0020; // RasterOp.SOURCE.GetRop();
 
         /// <summary>
-        /// Internal constructor, this class is created by the BufferedGraphicsContext.
+        /// Internal constructor, this class is created by BufferedGraphicsContext.
         /// </summary>
         internal BufferedGraphics(Graphics bufferedGraphicsSurface, BufferedGraphicsContext context, Graphics targetGraphics,
                                   IntPtr targetDC, Point targetLoc, Size virtualSize)
@@ -38,18 +36,12 @@ namespace System.Drawing
             _virtualSize = virtualSize;
         }
 
-        ~BufferedGraphics()
-        {
-            Dispose(false);
-        }
+        ~BufferedGraphics() => Dispose(false);
 
         /// <summary>
         /// Disposes the object and releases the lock on the memory.
         /// </summary>
-        public void Dispose()
-        {
-            Dispose(true);
-        }
+        public void Dispose() => Dispose(true);
 
         private void Dispose(bool disposing)
         {
@@ -65,6 +57,7 @@ namespace System.Drawing
                         _context = null;
                     }
                 }
+
                 if (_bufferedGraphicsSurface != null)
                 {
                     _bufferedGraphicsSurface.Dispose();
@@ -76,29 +69,12 @@ namespace System.Drawing
         /// <summary>
         /// Determines if we need to dispose of the Context when this is disposed
         /// </summary>
-        internal bool DisposeContext
-        {
-            get
-            {
-                return _disposeContext;
-            }
-            set
-            {
-                _disposeContext = value;
-            }
-        }
+        internal bool DisposeContext { get; set; }
 
         /// <summary>
         /// Allows access to the Graphics wrapper for the buffer.
         /// </summary>
-        public Graphics Graphics
-        {
-            get
-            {
-                Debug.Assert(_bufferedGraphicsSurface != null, "The BufferedGraphicsSurface is null!");
-                return _bufferedGraphicsSurface;
-            }
-        }
+        public Graphics Graphics => _bufferedGraphicsSurface;
 
         /// <summary>
         /// Renders the buffer to the original graphics used to allocate the buffer.
@@ -138,10 +114,7 @@ namespace System.Drawing
         /// <summary>
         /// Renders the buffer to the specified target HDC.
         /// </summary>
-        public void Render(IntPtr targetDC)
-        {
-            RenderInternal(new HandleRef(null, targetDC), this);
-        }
+        public void Render(IntPtr targetDC) => RenderInternal(new HandleRef(null, targetDC), this);
 
         /// <summary>
         /// Internal method that renders the specified buffer into the target.
@@ -153,7 +126,7 @@ namespace System.Drawing
             try
             {
                 SafeNativeMethods.BitBlt(refTargetDC, _targetLoc.X, _targetLoc.Y, _virtualSize.Width, _virtualSize.Height,
-                                         new HandleRef(buffer.Graphics, sourceDC), 0, 0, s_rop);
+                                         new HandleRef(buffer.Graphics, sourceDC), 0, 0, RasterOp);
             }
             finally
             {

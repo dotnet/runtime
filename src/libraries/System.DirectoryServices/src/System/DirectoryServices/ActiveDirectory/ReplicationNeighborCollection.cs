@@ -2,16 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
+using System.Runtime.InteropServices;
+
 namespace System.DirectoryServices.ActiveDirectory
 {
-    using System;
-    using System.Collections;
-    using System.Runtime.InteropServices;
-
     public class ReplicationNeighborCollection : ReadOnlyCollectionBase
     {
-        private DirectoryServer _server = null;
-        private Hashtable _nameTable = null;
+        private readonly DirectoryServer _server = null;
+        private readonly Hashtable _nameTable = null;
 
         internal ReplicationNeighborCollection(DirectoryServer server)
         {
@@ -20,13 +19,7 @@ namespace System.DirectoryServices.ActiveDirectory
             _nameTable = Hashtable.Synchronized(tempNameTable);
         }
 
-        public ReplicationNeighbor this[int index]
-        {
-            get
-            {
-                return (ReplicationNeighbor)InnerList[index];
-            }
-        }
+        public ReplicationNeighbor this[int index] => (ReplicationNeighbor)InnerList[index];
 
         public bool Contains(ReplicationNeighbor neighbor)
         {
@@ -49,10 +42,7 @@ namespace System.DirectoryServices.ActiveDirectory
             InnerList.CopyTo(neighbors, index);
         }
 
-        private int Add(ReplicationNeighbor neighbor)
-        {
-            return InnerList.Add(neighbor);
-        }
+        private int Add(ReplicationNeighbor neighbor) => InnerList.Add(neighbor);
 
         internal void AddHelper(DS_REPL_NEIGHBORS neighbors, IntPtr info)
         {

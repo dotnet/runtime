@@ -15,6 +15,7 @@ namespace System.Data.ProviderBase
         private readonly int _maxPoolSize;
         private readonly int _creationTimeout;
         private readonly TimeSpan _loadBalanceTimeout;
+        private readonly bool _hasTransactionAffinity;
         private readonly bool _useLoadBalancing;
 
         public DbConnectionPoolGroupOptions(
@@ -22,7 +23,8 @@ namespace System.Data.ProviderBase
                                         int minPoolSize,
                                         int maxPoolSize,
                                         int creationTimeout,
-                                        int loadBalanceTimeout
+                                        int loadBalanceTimeout,
+                                        bool hasTransactionAffinity
         )
         {
             _poolByIdentity = poolByIdentity;
@@ -35,11 +37,17 @@ namespace System.Data.ProviderBase
                 _loadBalanceTimeout = new TimeSpan(0, 0, loadBalanceTimeout);
                 _useLoadBalancing = true;
             }
+
+            _hasTransactionAffinity = hasTransactionAffinity;
         }
 
         public int CreationTimeout
         {
             get { return _creationTimeout; }
+        }
+        public bool HasTransactionAffinity
+        {
+            get { return _hasTransactionAffinity; }
         }
         public TimeSpan LoadBalanceTimeout
         {

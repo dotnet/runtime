@@ -71,7 +71,7 @@ namespace System.Drawing.Imaging
                 PropertyItemInternal propcopy = null;
                 try
                 {
-                    propcopy = (PropertyItemInternal)UnsafeNativeMethods.PtrToStructure(propdata,
+                    propcopy = (PropertyItemInternal)Marshal.PtrToStructure(propdata,
                                                   typeof(PropertyItemInternal));
 
                     props[i] = new PropertyItem();

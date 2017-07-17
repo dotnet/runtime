@@ -2,10 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections;
 using System.ComponentModel;
 using System.Diagnostics;
-
-using Hashtable = System.Collections.Hashtable;
 
 namespace System.Internal
 {
@@ -30,8 +29,8 @@ namespace System.Internal
 
             if (CompModSwitches.HandleLeak.Level > TraceLevel.Off || CompModSwitches.TraceCollect.Enabled)
             {
-                System.Internal.HandleCollector.HandleAdded += new System.Internal.HandleChangeEventHandler(s_tracker.OnHandleAdd);
-                System.Internal.HandleCollector.HandleRemoved += new System.Internal.HandleChangeEventHandler(s_tracker.OnHandleRemove);
+                HandleCollector.HandleAdded += new HandleChangeEventHandler(s_tracker.OnHandleAdd);
+                HandleCollector.HandleRemoved += new HandleChangeEventHandler(s_tracker.OnHandleRemove);
             }
         }
 
@@ -55,10 +54,7 @@ namespace System.Internal
 
                     for (int i = 0; i < types.Length; i++)
                     {
-                        if (types[i] != null)
-                        {
-                            types[i].IgnoreCurrentHandlesAsLeaks();
-                        }
+                        types[i]?.IgnoreCurrentHandlesAsLeaks();
                     }
                 }
             }
@@ -82,10 +78,7 @@ namespace System.Internal
                     Debug.WriteLine("------------Begin--CheckLeaks--------------------");
                     for (int i = 0; i < types.Length; i++)
                     {
-                        if (types[i] != null)
-                        {
-                            types[i].CheckLeaks();
-                        }
+                        types[i]?.CheckLeaks();
                     }
                     Debug.WriteLine("-------------End--CheckLeaks---------------------");
                 }
@@ -154,7 +147,7 @@ namespace System.Internal
             private int _handleCount;
             private HandleEntry[] _buckets;
 
-            private const int BUCKETS = 10;
+            private const int NumberOfBuckets = 10;
 
             /// <summary>
             /// Creates a new handle type.
@@ -162,7 +155,7 @@ namespace System.Internal
             public HandleType(string name)
             {
                 this.name = name;
-                _buckets = new HandleEntry[BUCKETS];
+                _buckets = new HandleEntry[NumberOfBuckets];
             }
 
             /// <summary>
@@ -205,7 +198,7 @@ namespace System.Internal
                     bool reportedFirstLeak = false;
                     if (_handleCount > 0)
                     {
-                        for (int i = 0; i < BUCKETS; i++)
+                        for (int i = 0; i < NumberOfBuckets; i++)
                         {
                             HandleEntry e = _buckets[i];
                             while (e != null)
@@ -235,7 +228,7 @@ namespace System.Internal
                 {
                     if (_handleCount > 0)
                     {
-                        for (int i = 0; i < BUCKETS; i++)
+                        for (int i = 0; i < NumberOfBuckets; i++)
                         {
                             HandleEntry e = _buckets[i];
                             while (e != null)
@@ -253,7 +246,7 @@ namespace System.Internal
             /// </summary>
             private int ComputeHash(IntPtr handle)
             {
-                return (unchecked((int)handle) & 0xFFFF) % BUCKETS;
+                return (unchecked((int)handle) & 0xFFFF) % NumberOfBuckets;
             }
 
             /// <summary>
