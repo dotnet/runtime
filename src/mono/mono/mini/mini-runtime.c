@@ -130,15 +130,11 @@ int valgrind_register;
 #endif
 GList* mono_aot_paths;
 
-static gboolean mini_enable_profiler = FALSE;
-static char* mini_profiler_options = NULL;
+static GPtrArray *profile_options;
 
 static GSList *tramp_infos;
 
 static void register_icalls (void);
-
-static gboolean mini_profiler_enabled (void) { return mini_enable_profiler; }
-static const char* mini_profiler_get_options (void) {  return mini_profiler_options;  }
 
 gboolean
 mono_running_on_valgrind (void)
@@ -3764,10 +3760,12 @@ mini_llvm_init (void)
 }
 
 void
-mini_profiler_enable_with_options (const char* profile_options)
+mini_add_profiler_argument (const char *desc)
 {
-	mini_enable_profiler = TRUE;
-	mini_profiler_options = g_strdup (profile_options);
+	if (!profile_options)
+		profile_options = g_ptr_array_new ();
+
+	g_ptr_array_add (profile_options, (gpointer) desc);
 }
 
 MonoDomain *
@@ -3940,8 +3938,9 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_install_get_class_from_name (mono_aot_get_class_from_name);
 	mono_install_jit_info_find_in_aot (mono_aot_find_jit_info);
 
-	if (mini_profiler_enabled ())
-		mono_profiler_load (mini_profiler_get_options ());
+	if (profile_options)
+		for (guint i = 0; i < profile_options->len; i++)
+			mono_profiler_load ((const char *) g_ptr_array_index (profile_options, i));
 
 	mono_profiler_started ();
 
@@ -4383,6 +4382,9 @@ mini_cleanup (MonoDomain *domain)
 	MONO_PROFILER_RAISE (runtime_shutdown_end, ());
 
 	mono_profiler_cleanup ();
+
+	if (profile_options)
+		g_ptr_array_free (profile_options, TRUE);
 
 	free_jit_tls_data ((MonoJitTlsData *)mono_tls_get_jit_tls ());
 
