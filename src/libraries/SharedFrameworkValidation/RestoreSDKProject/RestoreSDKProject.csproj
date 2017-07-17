@@ -4,7 +4,7 @@
     <TargetFramework>netcoreapp2.0</TargetFramework>
     <RuntimeFrameworkVersion>$(_RuntimeFrameworkVersion)</RuntimeFrameworkVersion>
     <CoreFxPackageVersion>4.4.0-$(CoreFxExpectedPrerelease)</CoreFxPackageVersion>
-    <RuntimeIdentifier>$(_PublishRID)</RuntimeIdentifier>
+    <RuntimeIdentifier>$(_PackageRID)</RuntimeIdentifier>
     <SelfContained>true</SelfContained>
   </PropertyGroup>
 
