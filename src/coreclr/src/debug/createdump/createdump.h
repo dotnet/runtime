@@ -49,6 +49,8 @@ typedef int T_CONTEXT;
 #include <fcntl.h>
 #include <elf.h>
 #include <link.h>
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
 #include <map>
 #include <set>
 #include <vector>

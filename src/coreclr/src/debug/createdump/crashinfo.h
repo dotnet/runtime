@@ -5,8 +5,18 @@
 // typedef for our parsing of the auxv variables in /proc/pid/auxv.
 #if defined(__i386) || defined(__ARM_EABI__) 
 typedef Elf32_auxv_t elf_aux_entry;
+#define PRIx PRIx32
+#define PRIu PRIu32
+#define PRId PRId32
+#define PRIA "08"
+#define PRIxA PRIA PRIx
 #elif defined(__x86_64) || defined(__aarch64__)
 typedef Elf64_auxv_t elf_aux_entry;
+#define PRIx PRIx64
+#define PRIu PRIu64
+#define PRId PRId64
+#define PRIA "016"
+#define PRIxA PRIA PRIx
 #endif
 
 typedef __typeof__(((elf_aux_entry*) 0)->a_un.a_val) elf_aux_val_t;
