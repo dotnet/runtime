@@ -167,7 +167,7 @@ namespace Microsoft.ServiceModel.Syndication
 
         public async Task<XmlReader> GetReaderAsync()
         {
-            this.EnsureBuffer();
+            await this.EnsureBuffer();
             XmlReaderWrapper reader = XmlReaderWrapper.CreateFromReader(_buffer.GetReader(0));
             int index = 0;
             reader.ReadStartElement(Rss20Constants.ExtensionWrapperTag);

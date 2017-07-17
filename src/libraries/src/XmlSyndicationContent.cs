@@ -172,7 +172,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
             if (_extension != null)
             {
-                _extension.WriteToAsync(writer);
+                _extension.WriteToAsync(writer).GetAwaiter().GetResult();
             }
             else if (_contentBuffer != null)
             {

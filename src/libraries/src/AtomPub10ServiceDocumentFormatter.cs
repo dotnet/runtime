@@ -700,7 +700,7 @@ namespace Microsoft.ServiceModel.Syndication
                 await writer.WriteAttributeStringAsync(App10Constants.Href, FeedUtils.GetUriString(collection.Link));
             }
 
-            WriteAttributeExtensionsAsync(writer, collection, this.Version);
+            await WriteAttributeExtensionsAsync(writer, collection, this.Version);
             if (collection.Title != null)
             {
                 await collection.Title.WriteToAsync(writer, Atom10Constants.TitleTag, Atom10Constants.Atom10Namespace);
