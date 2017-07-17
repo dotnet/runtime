@@ -2,6 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+#if defined(__arm__)
+#define PAGE_SIZE sysconf(_SC_PAGESIZE)
+#define PAGE_MASK (~(PAGE_SIZE-1))
+#endif
+
+#ifdef BIT64
+#define PRIA "016"
+#else
+#define PRIA "08"
+#endif
+
 enum MEMORY_REGION_FLAGS : uint32_t
 {
     // PF_X        = 0x01,      // Execute
@@ -109,7 +120,7 @@ public:
 
     void Trace() const
     {
-        TRACE("%s%016lx - %016lx (%06ld) %016lx %02x %s\n", IsBackedByMemory() ? "*" : " ", m_startAddress, m_endAddress, 
-            (Size() >> PAGE_SHIFT), m_offset, m_flags, m_fileName != nullptr ? m_fileName : "");
+        TRACE("%s%" PRIA PRIx64 " - %" PRIA PRIx64 " (%06" PRId64 ") %" PRIA PRIx64 " %02x %s\n", IsBackedByMemory() ? "*" : " ", m_startAddress, m_endAddress,
+            Size() / PAGE_SIZE, m_offset, m_flags, m_fileName != nullptr ? m_fileName : "");
     }
 };

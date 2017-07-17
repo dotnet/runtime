@@ -4,6 +4,20 @@
 
 class CrashInfo;
 
+#if defined(__arm__)
+#define user_regs_struct user_regs
+#define user_fpregs_struct user_fpregs
+
+#if defined(__VFP_FP__) && !defined(__SOFTFP__)
+struct user_vfpregs_struct
+{
+  unsigned long long  fpregs[32];
+  unsigned long       fpscr;
+} __attribute__((__packed__));
+#endif
+
+#endif
+
 class ThreadInfo 
 {
 private:
@@ -14,6 +28,8 @@ private:
     struct user_fpregs_struct m_fpRegisters;    // floating point registers
 #if defined(__i386__)
     struct user_fpxregs_struct m_fpxRegisters;  // x86 floating point registers
+#elif defined(__arm__) && defined(__VFP_FP__) && !defined(__SOFTFP__)
+    struct user_vfpregs_struct m_vfpRegisters;  // ARM VFP/NEON registers
 #endif
 
 public:
@@ -33,10 +49,11 @@ public:
     const user_fpregs_struct* FPRegisters() const { return &m_fpRegisters; }
 #if defined(__i386__)
     const user_fpxregs_struct* FPXRegisters() const { return &m_fpxRegisters; }
+#elif defined(__arm__) && defined(__VFP_FP__) && !defined(__SOFTFP__)
+    const user_vfpregs_struct* VFPRegisters() const { return &m_vfpRegisters; }
 #endif
 
 private:
     bool GetRegistersWithPTrace();
     bool GetRegistersWithDataTarget(ICLRDataTarget* dataTarget);
 };
-
