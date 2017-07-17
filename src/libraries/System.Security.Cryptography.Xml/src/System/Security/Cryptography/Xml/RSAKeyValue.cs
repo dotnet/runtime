@@ -106,10 +106,10 @@ namespace System.Security.Cryptography.Xml
             {
                 throw new ArgumentNullException(nameof(value));
             }
-            if (value.Name != KeyValueElementName
+            if (value.LocalName != KeyValueElementName
                 || value.NamespaceURI != SignedXml.XmlDsigNamespaceUrl)
             {
-                throw new CryptographicException($"Root element must be {KeyValueElementName} element in namepsace {SignedXml.XmlDsigNamespaceUrl}");
+                throw new CryptographicException($"Root element must be {KeyValueElementName} element in namespace {SignedXml.XmlDsigNamespaceUrl}");
             }
 
             const string xmlDsigNamespacePrefix = "dsig";
