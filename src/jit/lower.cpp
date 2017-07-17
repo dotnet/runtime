@@ -4552,34 +4552,6 @@ GenTree* Lowering::LowerArrElem(GenTree* node)
 
 void Lowering::DoPhase()
 {
-#if 0
-    // The code in this #if can be used to debug lowering issues according to
-    // method hash.  To use, simply set environment variables lowerhashlo and lowerhashhi
-#ifdef DEBUG
-    unsigned methHash = info.compMethodHash();
-    char* lostr = getenv("lowerhashlo");
-    unsigned methHashLo = 0;
-    if (lostr != NULL)
-    {
-        sscanf_s(lostr, "%x", &methHashLo);
-    }
-    char* histr = getenv("lowerhashhi");
-    unsigned methHashHi = UINT32_MAX;
-    if (histr != NULL)
-    {
-        sscanf_s(histr, "%x", &methHashHi);
-    }
-    if (methHash < methHashLo || methHash > methHashHi)
-        return;
-    else
-    {
-        printf("Lowering for method %s, hash = 0x%x.\n",
-               info.compFullName, info.compMethodHash());
-        printf("");         // in our logic this causes a flush
-    }
-#endif
-#endif
-
     // If we have any PInvoke calls, insert the one-time prolog code. We'll inserted the epilog code in the
     // appropriate spots later. NOTE: there is a minor optimization opportunity here, as we still create p/invoke
     // data structures and setup/teardown even if we've eliminated all p/invoke calls due to dead code elimination.
