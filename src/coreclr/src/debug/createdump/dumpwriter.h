@@ -60,11 +60,14 @@ private:
     const size_t GetThreadInfoSize() const 
     {
         return m_crashInfo.Threads().size() * ((sizeof(Nhdr) + 8 + sizeof(prstatus_t))
-#if defined(__i386__) || defined(__x86_64__)
+#if defined(__i386__) || defined(__x86_64__) || defined(__arm__)
             + sizeof(Nhdr) + 8 + sizeof(user_fpregs_struct)
 #endif
 #if defined(__i386__)
             + sizeof(Nhdr) + 8 + sizeof(user_fpxregs_struct)
+#endif
+#if defined(__arm__) && defined(__VFP_FP__) && !defined(__SOFTFP__)
+            + sizeof(Nhdr) + 8 + sizeof(user_vfpregs_struct)
 #endif
         );
     }

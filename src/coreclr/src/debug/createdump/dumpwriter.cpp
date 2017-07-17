@@ -207,7 +207,7 @@ DumpWriter::WriteDump()
         return false;
     }
 
-    TRACE("Writing %ld thread entries to core file\n", m_crashInfo.Threads().size());
+    TRACE("Writing %zd thread entries to core file\n", m_crashInfo.Threads().size());
 
     // Write all the thread's state and registers
     for (const ThreadInfo* thread : m_crashInfo.Threads()) 
@@ -227,7 +227,7 @@ DumpWriter::WriteDump()
         }
     }
 
-    TRACE("Writing %ld memory regions to core file\n", m_crashInfo.MemoryRegions().size());
+    TRACE("Writing %zd memory regions to core file\n", m_crashInfo.MemoryRegions().size());
 
     // Read from target process and write memory regions to core
     uint64_t total = 0;
@@ -246,7 +246,7 @@ DumpWriter::WriteDump()
                 uint32_t read = 0;
 
                 if (FAILED(m_crashInfo.DataTarget()->ReadVirtual(address, m_tempBuffer, bytesToRead, &read))) {
-                    fprintf(stderr, "ReadVirtual(%016lx, %08x) FAILED\n", address, bytesToRead);
+                    fprintf(stderr, "ReadVirtual(%" PRIA PRIx64 ", %08x) FAILED\n", address, bytesToRead);
                     return false;
                 }
 
@@ -260,7 +260,7 @@ DumpWriter::WriteDump()
         }
     }
 
-    printf("Written %ld bytes (%ld pages) to core file\n", total, total >> PAGE_SHIFT);
+    printf("Written %" PRId64 " bytes (%" PRId64 " pages) to core file\n", total, total / PAGE_SIZE);
 
     return true;
 }
@@ -302,7 +302,7 @@ DumpWriter::WriteAuxv()
     nhdr.n_descsz = m_crashInfo.GetAuxvSize();
     nhdr.n_type = NT_AUXV;
 
-    TRACE("Writing %ld auxv entries to core file\n", m_crashInfo.AuxvEntries().size());
+    TRACE("Writing %zd auxv entries to core file\n", m_crashInfo.AuxvEntries().size());
 
     if (!WriteData(&nhdr, sizeof(nhdr)) ||
         !WriteData("CORE\0AUX", 8)) { 
@@ -319,9 +319,9 @@ DumpWriter::WriteAuxv()
 
 struct NTFileEntry
 {
-    uint64_t StartAddress;
-    uint64_t EndAddress;
-    uint64_t Offset;
+    unsigned long StartAddress;
+    unsigned long EndAddress;
+    unsigned long Offset;
 };
 
 // Calculate the NT_FILE entries total size
@@ -332,7 +332,7 @@ DumpWriter::GetNTFileInfoSize(size_t* alignmentBytes)
     size_t size = 0;
 
     // Header, CORE, entry count, page size
-    size = sizeof(Nhdr) + sizeof(NTFileEntry);
+    size = sizeof(Nhdr) + 8 + sizeof(count) + sizeof(size);
 
     // start_address, end_address, offset
     size += count * sizeof(NTFileEntry);
@@ -380,12 +380,12 @@ DumpWriter::WriteNTFileInfo()
     size_t count = m_crashInfo.ModuleMappings().size();
     size_t pageSize = PAGE_SIZE;
 
-    TRACE("Writing %ld NT_FILE entries to core file\n", m_crashInfo.ModuleMappings().size());
+    TRACE("Writing %zd NT_FILE entries to core file\n", m_crashInfo.ModuleMappings().size());
 
     if (!WriteData(&nhdr, sizeof(nhdr)) ||
         !WriteData("CORE\0FIL", 8) ||
-        !WriteData(&count, 8) ||
-        !WriteData(&pageSize, 8)) {
+        !WriteData(&count, sizeof(count)) ||
+        !WriteData(&pageSize, sizeof(pageSize))) {
         return false;
     }
 
@@ -447,7 +447,7 @@ DumpWriter::WriteThread(const ThreadInfo& thread, int fatal_signal)
         return false;
     }
 
-#if defined(__i386__) || defined(__x86_64__)
+#if defined(__i386__) || defined(__x86_64__) || defined(__arm__)
     nhdr.n_descsz = sizeof(user_fpregs_struct);
     nhdr.n_type = NT_FPREGSET;
     if (!WriteData(&nhdr, sizeof(nhdr)) ||
@@ -457,12 +457,24 @@ DumpWriter::WriteThread(const ThreadInfo& thread, int fatal_signal)
     }
 #endif
 
+    nhdr.n_namesz = 6;
+
 #if defined(__i386__)
     nhdr.n_descsz = sizeof(user_fpxregs_struct);
     nhdr.n_type = NT_PRXFPREG;
     if (!WriteData(&nhdr, sizeof(nhdr)) ||
         !WriteData("LINUX\0\0\0", 8) ||
-        !WriteData(&thread.FPXRegisters(), sizeof(user_fpxregs_struct))) {
+        !WriteData(thread.FPXRegisters(), sizeof(user_fpxregs_struct))) {
+        return false;
+    }
+#endif
+
+#if defined(__arm__) && defined(__VFP_FP__) && !defined(__SOFTFP__)
+    nhdr.n_descsz = sizeof(user_vfpregs_struct);
+    nhdr.n_type = NT_ARM_VFP;
+    if (!WriteData(&nhdr, sizeof(nhdr)) ||
+        !WriteData("LINUX\0\0\0", 8) ||
+        !WriteData(thread.VFPRegisters(), sizeof(user_vfpregs_struct))) {
         return false;
     }
 #endif
