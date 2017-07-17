@@ -126,8 +126,6 @@ load_profiler_from_installation (const char *libname, const char *desc)
 void
 mono_profiler_load (const char *desc)
 {
-	mono_gc_base_init ();
-
 	if (!desc || !strcmp ("default", desc))
 		desc = "log:report";
 
