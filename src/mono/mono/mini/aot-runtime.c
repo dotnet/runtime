@@ -3005,6 +3005,7 @@ decode_exception_debug_info (MonoAotModule *amodule, MonoDomain *domain,
 				g_slist_free (nesting [i]);
 			g_free (nesting);
 		}
+		jinfo->from_llvm = 1;
 	} else {
 		len = mono_jit_info_size (flags, num_clauses, num_holes);
 		jinfo = (MonoJitInfo *)alloc0_jit_info_data (domain, len, async);
