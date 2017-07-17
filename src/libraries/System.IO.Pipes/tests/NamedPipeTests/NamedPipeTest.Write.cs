@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.IO.Pipes.Tests
 {
-    [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
+    [ActiveIssue(22271, TargetFrameworkMonikers.UapNotUapAot)]
     public class NamedPipeTest_Write_ServerOut_ClientIn : PipeTest_Write
     {
         protected override ServerClientPair CreateServerClientPair()
@@ -27,8 +27,8 @@ namespace System.IO.Pipes.Tests
             return ret;
         }
     }
-
-    [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
+    
+    [ActiveIssue(22271, TargetFrameworkMonikers.UapNotUapAot)]
     public class NamedPipeTest_Write_ServerIn_ClientOut : PipeTest_Write
     {
         protected override ServerClientPair CreateServerClientPair()
@@ -47,8 +47,8 @@ namespace System.IO.Pipes.Tests
             return ret;
         }
     }
-
-    [ActiveIssue(21392, TargetFrameworkMonikers.Uap)]
+    
+    [ActiveIssue(22271, TargetFrameworkMonikers.UapNotUapAot)]
     public class NamedPipeTest_Write_ServerInOut_ClientInOut : PipeTest_Write
     {
         protected override ServerClientPair CreateServerClientPair()

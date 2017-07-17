@@ -57,6 +57,15 @@ namespace System.IO.Tests
             return success;
         });
 
+        protected string GetNamedPipeServerStreamName()
+        {
+            if (PlatformDetection.IsWinRT)
+            {
+                return @"LOCAL\" + Guid.NewGuid().ToString("N");
+            }
+            return Guid.NewGuid().ToString("N");
+        }
+
         /// <summary>
         /// Runs the given command as sudo
         /// </summary>
