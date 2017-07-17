@@ -124,7 +124,7 @@ mono_profiler_init_aot (const char *desc)
 	MonoProfiler *prof;
 	const char *p;
 	const char *opt;
-	char *outfile_name;
+	char *outfile_name = NULL;
 
 	p = desc;
 	if (strncmp (p, "aot", 3))
