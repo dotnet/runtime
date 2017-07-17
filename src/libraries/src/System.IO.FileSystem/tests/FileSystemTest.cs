@@ -67,26 +67,6 @@ namespace System.IO.Tests
         }
 
         /// <summary>
-        /// Runs the given command as sudo
-        /// </summary>
-        /// <param name="commandLine">The command line to run as sudo</param>
-        /// <returns> Returns the process exit code (0 typically means it is successful)</returns>
-        protected static int RunAsSudo(string commandLine)
-        {
-            ProcessStartInfo startInfo = new ProcessStartInfo()
-            {
-                FileName = "sudo",
-                Arguments = commandLine
-            };
-
-            using (Process process = Process.Start(startInfo))
-            {
-                Assert.True(process.WaitForExit(30000));
-                return process.ExitCode;
-            }
-        }
-
-        /// <summary>
         /// Do a test action against read only file system.
         /// </summary>
         /// <param name="testAction">Test action to perform. The string argument will be read only directory.</param>
@@ -110,17 +90,17 @@ namespace System.IO.Tests
             string readOnlyDirectory = GetTestFilePath();
             Directory.CreateDirectory(readOnlyDirectory);
 
-            Assert.Equal(0, RunAsSudo($"mount --bind {sourceDirectory} {readOnlyDirectory}"));
+            Assert.Equal(0, AdminHelpers.RunAsSudo($"mount --bind {sourceDirectory} {readOnlyDirectory}"));
 
             try
             {
-                Assert.Equal(0, RunAsSudo($"mount -o remount,ro,bind {sourceDirectory} {readOnlyDirectory}"));
+                Assert.Equal(0, AdminHelpers.RunAsSudo($"mount -o remount,ro,bind {sourceDirectory} {readOnlyDirectory}"));
                 testAction(readOnlyDirectory);
             }
             finally
             {
                 // Clean up test environment
-                Assert.Equal(0, RunAsSudo($"umount {readOnlyDirectory}"));
+                Assert.Equal(0, AdminHelpers.RunAsSudo($"umount {readOnlyDirectory}"));
             }
         }
     }
