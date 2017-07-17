@@ -505,7 +505,7 @@ namespace System.Diagnostics.Tests
 
         [PlatformSpecific(TestPlatforms.Windows)]  // Test case is specific to Windows
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapNotUapAot, "https://github.com/dotnet/corefx/issues/22174")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Not supported on UAP")]
         public void Verbs_GetWithExeExtension_ReturnsExpected()
         {
             var psi = new ProcessStartInfo { FileName = $"{Process.GetCurrentProcess().ProcessName}.exe" };
