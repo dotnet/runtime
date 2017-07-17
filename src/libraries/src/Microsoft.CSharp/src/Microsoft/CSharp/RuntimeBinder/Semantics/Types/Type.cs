@@ -462,20 +462,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return AsAggregateType().GetOwningAggregate();
         }
 
-        public CType StripNubs()
+        public virtual CType StripNubs() => this;
+
+        public virtual CType StripNubs(out bool wasNullable)
         {
-            CType type;
-            for (type = this; type.IsNullableType(); type = type.AsNullableType().GetUnderlyingType())
-                ;
-            return type;
-        }
-        public CType StripNubs(out int pcnub)
-        {
-            pcnub = 0;
-            CType type;
-            for (type = this; type.IsNullableType(); type = type.AsNullableType().GetUnderlyingType())
-                (pcnub)++;
-            return type;
+            wasNullable = false;
+            return this;
         }
 
         public bool isDelegateType()

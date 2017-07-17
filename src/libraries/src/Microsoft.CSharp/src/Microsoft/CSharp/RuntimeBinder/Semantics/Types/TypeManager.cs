@@ -281,6 +281,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public NullableType GetNullable(CType pUnderlyingType)
         {
+            if (pUnderlyingType is NullableType nt)
+            {
+                Debug.Fail("Attempt to make nullable of nullable");
+                return nt;
+            }
+
             NullableType pNullableType = _typeTable.LookupNullable(pUnderlyingType);
             if (pNullableType == null)
             {
