@@ -1417,7 +1417,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             // If it is virtual, find a remap of the method to something more specific.  This
             // may alter where the method is found.
-            if (pObject != null && (fBaseCall || pObject.Type.isSimpleType() || pObject.Type.isSpecialByRefType()))
+            if (pObject != null && (fBaseCall || pObject.Type.isSimpleType()))
             {
                 RemapToOverride(GetSymbolLoader(), pMWI, pObject.Type);
             }
@@ -1594,15 +1594,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // WE don't give a great message for this, but it'll do.
                 if (objNew == null)
                 {
-                    if (!pObject.Type.isSpecialByRefType())
-                    {
-                        ErrorContext.Error(ErrorCode.ERR_WrongNestedThis, swt.GetType(), pObject.Type);
-                    }
-                    else
-                    {
-                        ErrorContext.Error(ErrorCode.ERR_NoImplicitConv, pObject.Type, swt.GetType());
-                    }
+                    ErrorContext.Error(ErrorCode.ERR_WrongNestedThis, swt.GetType(), pObject.Type);
                 }
+
                 pObject = objNew;
             }
 

@@ -214,11 +214,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         // If not, try user defined implicit conversions.
                         break;
                     case TypeKind.TK_AggregateType:
-                        // TypeReference and ArgIterator can't be boxed (or converted to anything else)
-                        if (_typeSrc.isSpecialByRefType())
-                        {
-                            return false;
-                        }
                         if (bindImplicitConversionFromAgg(_typeSrc.AsAggregateType()))
                         {
                             return true;
