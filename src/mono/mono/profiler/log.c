@@ -12,8 +12,10 @@
 
 #include <config.h>
 #include <mono/metadata/assembly.h>
+#include <mono/metadata/class-internals.h>
 #include <mono/metadata/debug-helpers.h>
-#include "../metadata/metadata-internals.h"
+#include <mono/metadata/loader.h>
+#include <mono/metadata/metadata-internals.h>
 #include <mono/metadata/mono-config.h>
 #include <mono/metadata/mono-gc.h>
 #include <mono/metadata/mono-perfcounters.h>
@@ -23,6 +25,7 @@
 #include <mono/utils/lock-free-alloc.h>
 #include <mono/utils/lock-free-queue.h>
 #include <mono/utils/mono-conc-hashtable.h>
+#include <mono/utils/mono-coop-mutex.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-linked-list-set.h>
@@ -210,7 +213,9 @@ process_id (void)
 #endif
 }
 
-#define ENABLED(EVT) (log_config.effective_mask & (EVT))
+#define ENABLED(EVT) (!!(log_config.effective_mask & (EVT)))
+#define ENABLE(EVT) do { log_config.effective_mask |= (EVT); } while (0)
+#define DISABLE(EVT) do { log_config.effective_mask &= ~(EVT); } while (0)
 
 /*
  * These macros should be used when writing an event to a log buffer. They
@@ -358,6 +363,8 @@ struct _MonoProfiler {
 
 	guint32 coverage_previous_offset;
 	guint32 coverage_method_id;
+
+	MonoCoopMutex api_mutex;
 };
 
 static ProfilerConfig log_config;
@@ -1543,7 +1550,7 @@ static void
 finalize_end (MonoProfiler *prof)
 {
 	trigger_on_demand_heapshot ();
-	if (ENABLED (PROFLOG_FINALIZATION_EVENTS)) {
+	if (ENABLED (PROFLOG_GC_FINALIZATION_EVENTS)) {
 		ENTER_LOG (&finalize_ends_ctr, buf,
 			EVENT_SIZE /* event */
 		);
@@ -3516,7 +3523,7 @@ log_shutdown (MonoProfiler *prof)
 	char c = 1;
 
 	if (write (prof->pipes [1], &c, 1) != 1) {
-		mono_profiler_printf_err ("Could not write to log profiler pipe: %s", strerror (errno));
+		mono_profiler_printf_err ("Could not write to log profiler pipe: %s", g_strerror (errno));
 		exit (1);
 	}
 
@@ -3614,6 +3621,8 @@ log_shutdown (MonoProfiler *prof)
 		mono_conc_hashtable_destroy (log_profiler.coverage_suppressed_assemblies);
 		mono_os_mutex_destroy (&log_profiler.coverage_mutex);
 	}
+
+	mono_coop_mutex_destroy (&log_profiler.api_mutex);
 
 	PROF_TLS_FREE ();
 
@@ -3728,7 +3737,7 @@ helper_thread (void *arg)
 			if (errno == EINTR)
 				continue;
 
-			mono_profiler_printf_err ("Could not poll in log profiler helper thread: %s", strerror (errno));
+			mono_profiler_printf_err ("Could not poll in log profiler helper thread: %s", g_strerror (errno));
 			exit (1);
 		}
 
@@ -3806,14 +3815,14 @@ static void
 start_helper_thread (void)
 {
 	if (pipe (log_profiler.pipes) == -1) {
-		mono_profiler_printf_err ("Could not create log profiler pipe: %s", strerror (errno));
+		mono_profiler_printf_err ("Could not create log profiler pipe: %s", g_strerror (errno));
 		exit (1);
 	}
 
 	log_profiler.server_socket = socket (PF_INET, SOCK_STREAM, 0);
 
 	if (log_profiler.server_socket == -1) {
-		mono_profiler_printf_err ("Could not create log profiler server socket: %s", strerror (errno));
+		mono_profiler_printf_err ("Could not create log profiler server socket: %s", g_strerror (errno));
 		exit (1);
 	}
 
@@ -3825,13 +3834,13 @@ start_helper_thread (void)
 	server_address.sin_port = htons (log_profiler.command_port);
 
 	if (bind (log_profiler.server_socket, (struct sockaddr *) &server_address, sizeof (server_address)) == -1) {
-		mono_profiler_printf_err ("Could not bind log profiler server socket on port %d: %s", log_profiler.command_port, strerror (errno));
+		mono_profiler_printf_err ("Could not bind log profiler server socket on port %d: %s", log_profiler.command_port, g_strerror (errno));
 		close (log_profiler.server_socket);
 		exit (1);
 	}
 
 	if (listen (log_profiler.server_socket, 1) == -1) {
-		mono_profiler_printf_err ("Could not listen on log profiler server socket: %s", strerror (errno));
+		mono_profiler_printf_err ("Could not listen on log profiler server socket: %s", g_strerror (errno));
 		close (log_profiler.server_socket);
 		exit (1);
 	}
@@ -3839,7 +3848,7 @@ start_helper_thread (void)
 	socklen_t slen = sizeof (server_address);
 
 	if (getsockname (log_profiler.server_socket, (struct sockaddr *) &server_address, &slen)) {
-		mono_profiler_printf_err ("Could not retrieve assigned port for log profiler server socket: %s", strerror (errno));
+		mono_profiler_printf_err ("Could not retrieve assigned port for log profiler server socket: %s", g_strerror (errno));
 		close (log_profiler.server_socket);
 		exit (1);
 	}
@@ -4106,6 +4115,325 @@ register_counter (const char *name, gint32 *counter)
 	mono_counters_register (name, MONO_COUNTER_UINT | MONO_COUNTER_PROFILER | MONO_COUNTER_MONOTONIC, counter);
 }
 
+ICALL_EXPORT gint32
+proflog_icall_GetMaxStackTraceFrames (void)
+{
+	return MAX_FRAMES;
+}
+
+ICALL_EXPORT gint32
+proflog_icall_GetStackTraceFrames (void)
+{
+	return log_config.num_frames;
+}
+
+ICALL_EXPORT void
+proflog_icall_SetStackTraceFrames (gint32 value)
+{
+	log_config.num_frames = value;
+}
+
+ICALL_EXPORT MonoProfilerHeapshotMode
+proflog_icall_GetHeapshotMode (void)
+{
+	return log_config.hs_mode;
+}
+
+ICALL_EXPORT void
+proflog_icall_SetHeapshotMode (MonoProfilerHeapshotMode value)
+{
+	log_config.hs_mode = value;
+}
+
+ICALL_EXPORT gint32
+proflog_icall_GetHeapshotMillisecondsFrequency (void)
+{
+	return log_config.hs_freq_ms;
+}
+
+ICALL_EXPORT void
+proflog_icall_SetHeapshotMillisecondsFrequency (gint32 value)
+{
+	log_config.hs_freq_ms = value;
+}
+
+ICALL_EXPORT gint32
+proflog_icall_GetHeapshotCollectionsFrequency (void)
+{
+	return log_config.hs_freq_gc;
+}
+
+ICALL_EXPORT void
+proflog_icall_SetHeapshotCollectionsFrequency (gint32 value)
+{
+	log_config.hs_freq_gc = value;
+}
+
+ICALL_EXPORT gint32
+proflog_icall_GetCallDepth (void)
+{
+	return log_config.max_call_depth;
+}
+
+ICALL_EXPORT void
+proflog_icall_SetCallDepth (gint32 value)
+{
+	log_config.max_call_depth = value;
+}
+
+ICALL_EXPORT void
+proflog_icall_GetSampleMode (MonoProfilerSampleMode *mode, gint32 *frequency)
+{
+	uint32_t freq;
+
+	mono_profiler_get_sample_mode (log_profiler.handle, mode, &freq);
+
+	*frequency = freq;
+}
+
+ICALL_EXPORT MonoBoolean
+proflog_icall_SetSampleMode (MonoProfilerSampleMode mode, gint32 frequency)
+{
+	mono_coop_mutex_lock (&log_profiler.api_mutex);
+
+	mono_bool result = mono_profiler_set_sample_mode (log_profiler.handle, mode, frequency);
+
+	if (mode != MONO_PROFILER_SAMPLE_MODE_NONE) {
+		ENABLE (PROFLOG_SAMPLE_EVENTS);
+		mono_profiler_set_sample_hit_callback (log_profiler.handle, mono_sample_hit);
+	} else {
+		DISABLE (PROFLOG_SAMPLE_EVENTS);
+		mono_profiler_set_sample_hit_callback (log_profiler.handle, NULL);
+	}
+
+	mono_coop_mutex_unlock (&log_profiler.api_mutex);
+
+	return result;
+}
+
+ICALL_EXPORT MonoBoolean
+proflog_icall_GetExceptionEvents (void)
+{
+	return ENABLED (PROFLOG_EXCEPTION_EVENTS);
+}
+
+ICALL_EXPORT void
+proflog_icall_SetExceptionEvents (MonoBoolean value)
+{
+	mono_coop_mutex_lock (&log_profiler.api_mutex);
+
+	if (value) {
+		ENABLE (PROFLOG_EXCEPTION_EVENTS);
+		mono_profiler_set_exception_throw_callback (log_profiler.handle, throw_exc);
+		mono_profiler_set_exception_clause_callback (log_profiler.handle, clause_exc);
+	} else {
+		DISABLE (PROFLOG_EXCEPTION_EVENTS);
+		mono_profiler_set_exception_throw_callback (log_profiler.handle, NULL);
+		mono_profiler_set_exception_clause_callback (log_profiler.handle, NULL);
+	}
+
+	mono_coop_mutex_unlock (&log_profiler.api_mutex);
+}
+
+ICALL_EXPORT MonoBoolean
+proflog_icall_GetMonitorEvents (void)
+{
+	return ENABLED (PROFLOG_MONITOR_EVENTS);
+}
+
+ICALL_EXPORT void
+proflog_icall_SetMonitorEvents (MonoBoolean value)
+{
+	mono_coop_mutex_lock (&log_profiler.api_mutex);
+
+	if (value) {
+		ENABLE (PROFLOG_EXCEPTION_EVENTS);
+		mono_profiler_set_monitor_contention_callback (log_profiler.handle, monitor_contention);
+		mono_profiler_set_monitor_acquired_callback (log_profiler.handle, monitor_acquired);
+		mono_profiler_set_monitor_failed_callback (log_profiler.handle, monitor_failed);
+	} else {
+		DISABLE (PROFLOG_EXCEPTION_EVENTS);
+		mono_profiler_set_monitor_contention_callback (log_profiler.handle, NULL);
+		mono_profiler_set_monitor_acquired_callback (log_profiler.handle, NULL);
+		mono_profiler_set_monitor_failed_callback (log_profiler.handle, NULL);
+	}
+
+	mono_coop_mutex_unlock (&log_profiler.api_mutex);
+}
+
+ICALL_EXPORT MonoBoolean
+proflog_icall_GetGCEvents (void)
+{
+	return ENABLED (PROFLOG_GC_EVENTS);
+}
+
+ICALL_EXPORT void
+proflog_icall_SetGCEvents (MonoBoolean value)
+{
+	mono_coop_mutex_lock (&log_profiler.api_mutex);
+
+	if (value)
+		ENABLE (PROFLOG_GC_EVENTS);
+	else
+		DISABLE (PROFLOG_GC_EVENTS);
+
+	mono_coop_mutex_unlock (&log_profiler.api_mutex);
+}
+
+ICALL_EXPORT MonoBoolean
+proflog_icall_GetGCAllocationEvents (void)
+{
+	return ENABLED (PROFLOG_GC_ALLOCATION_EVENTS);
+}
+
+ICALL_EXPORT void
+proflog_icall_SetGCAllocationEvents (MonoBoolean value)
+{
+	mono_coop_mutex_lock (&log_profiler.api_mutex);
+
+	if (value) {
+		ENABLE (PROFLOG_GC_ALLOCATION_EVENTS);
+		mono_profiler_set_gc_allocation_callback (log_profiler.handle, gc_alloc);
+	} else {
+		DISABLE (PROFLOG_GC_ALLOCATION_EVENTS);
+		mono_profiler_set_gc_allocation_callback (log_profiler.handle, NULL);
+	}
+
+	mono_coop_mutex_unlock (&log_profiler.api_mutex);
+}
+
+ICALL_EXPORT MonoBoolean
+proflog_icall_GetGCMoveEvents (void)
+{
+	return ENABLED (PROFLOG_GC_MOVE_EVENTS);
+}
+
+ICALL_EXPORT void
+proflog_icall_SetGCMoveEvents (MonoBoolean value)
+{
+	mono_coop_mutex_lock (&log_profiler.api_mutex);
+
+	if (value) {
+		ENABLE (PROFLOG_GC_MOVE_EVENTS);
+		mono_profiler_set_gc_moves_callback (log_profiler.handle, gc_moves);
+	} else {
+		DISABLE (PROFLOG_GC_MOVE_EVENTS);
+		mono_profiler_set_gc_moves_callback (log_profiler.handle, NULL);
+	}
+
+	mono_coop_mutex_unlock (&log_profiler.api_mutex);
+}
+
+ICALL_EXPORT MonoBoolean
+proflog_icall_GetGCRootEvents (void)
+{
+	return ENABLED (PROFLOG_GC_ROOT_EVENTS);
+}
+
+ICALL_EXPORT void
+proflog_icall_SetGCRootEvents (MonoBoolean value)
+{
+	mono_coop_mutex_lock (&log_profiler.api_mutex);
+
+	if (value)
+		ENABLE (PROFLOG_GC_ROOT_EVENTS);
+	else
+		DISABLE (PROFLOG_GC_ROOT_EVENTS);
+
+	mono_coop_mutex_unlock (&log_profiler.api_mutex);
+}
+
+ICALL_EXPORT MonoBoolean
+proflog_icall_GetGCHandleEvents (void)
+{
+	return ENABLED (PROFLOG_GC_HANDLE_EVENTS);
+}
+
+ICALL_EXPORT void
+proflog_icall_SetGCHandleEvents (MonoBoolean value)
+{
+	mono_coop_mutex_lock (&log_profiler.api_mutex);
+
+	if (value) {
+		ENABLE (PROFLOG_GC_HANDLE_EVENTS);
+		mono_profiler_set_gc_handle_created_callback (log_profiler.handle, gc_handle_created);
+		mono_profiler_set_gc_handle_deleted_callback (log_profiler.handle, gc_handle_deleted);
+	} else {
+		DISABLE (PROFLOG_GC_HANDLE_EVENTS);
+		mono_profiler_set_gc_handle_created_callback (log_profiler.handle, NULL);
+		mono_profiler_set_gc_handle_deleted_callback (log_profiler.handle, NULL);
+	}
+
+	mono_coop_mutex_unlock (&log_profiler.api_mutex);
+}
+
+ICALL_EXPORT MonoBoolean
+proflog_icall_GetGCFinalizationEvents (void)
+{
+	return ENABLED (PROFLOG_GC_FINALIZATION_EVENTS);
+}
+
+ICALL_EXPORT void
+proflog_icall_SetGCFinalizationEvents (MonoBoolean value)
+{
+	mono_coop_mutex_lock (&log_profiler.api_mutex);
+
+	if (value) {
+		ENABLE (PROFLOG_GC_FINALIZATION_EVENTS);
+		mono_profiler_set_gc_finalizing_callback (log_profiler.handle, finalize_begin);
+		mono_profiler_set_gc_finalizing_object_callback (log_profiler.handle, finalize_object_begin);
+		mono_profiler_set_gc_finalized_object_callback (log_profiler.handle, finalize_object_end);
+	} else {
+		DISABLE (PROFLOG_GC_FINALIZATION_EVENTS);
+		mono_profiler_set_gc_finalizing_callback (log_profiler.handle, NULL);
+		mono_profiler_set_gc_finalizing_object_callback (log_profiler.handle, NULL);
+		mono_profiler_set_gc_finalized_object_callback (log_profiler.handle, NULL);
+	}
+
+	mono_coop_mutex_unlock (&log_profiler.api_mutex);
+}
+
+ICALL_EXPORT MonoBoolean
+proflog_icall_GetCounterEvents (void)
+{
+	return ENABLED (PROFLOG_COUNTER_EVENTS);
+}
+
+ICALL_EXPORT void
+proflog_icall_SetCounterEvents (MonoBoolean value)
+{
+	mono_coop_mutex_lock (&log_profiler.api_mutex);
+
+	if (value)
+		ENABLE (PROFLOG_COUNTER_EVENTS);
+	else
+		DISABLE (PROFLOG_COUNTER_EVENTS);
+
+	mono_coop_mutex_unlock (&log_profiler.api_mutex);
+}
+
+ICALL_EXPORT MonoBoolean
+proflog_icall_GetJitEvents (void)
+{
+	return ENABLED (PROFLOG_JIT_EVENTS);
+}
+
+ICALL_EXPORT void
+proflog_icall_SetJitEvents (MonoBoolean value)
+{
+	mono_coop_mutex_lock (&log_profiler.api_mutex);
+
+	if (value) {
+		ENABLE (PROFLOG_JIT_EVENTS);
+		mono_profiler_set_jit_code_buffer_callback (log_profiler.handle, code_buffer_new);
+	} else {
+		DISABLE (PROFLOG_JIT_EVENTS);
+		mono_profiler_set_jit_code_buffer_callback (log_profiler.handle, NULL);
+	}
+
+	mono_coop_mutex_unlock (&log_profiler.api_mutex);
+}
+
 static void
 runtime_initialized (MonoProfiler *profiler)
 {
@@ -4173,6 +4501,47 @@ runtime_initialized (MonoProfiler *profiler)
 	start_helper_thread ();
 	start_writer_thread ();
 	start_dumper_thread ();
+
+	mono_coop_mutex_init (&log_profiler.api_mutex);
+
+#define ADD_ICALL(NAME) \
+	mono_add_internal_call ("Mono.Profiler.Log.LogProfiler::" EGLIB_STRINGIFY (NAME), proflog_icall_ ## NAME);
+
+	ADD_ICALL (GetMaxStackTraceFrames);
+	ADD_ICALL (GetStackTraceFrames);
+	ADD_ICALL (SetStackTraceFrames);
+	ADD_ICALL (GetHeapshotMode);
+	ADD_ICALL (SetHeapshotMode);
+	ADD_ICALL (GetHeapshotMillisecondsFrequency);
+	ADD_ICALL (SetHeapshotMillisecondsFrequency);
+	ADD_ICALL (GetHeapshotCollectionsFrequency);
+	ADD_ICALL (SetHeapshotCollectionsFrequency);
+	ADD_ICALL (GetCallDepth);
+	ADD_ICALL (SetCallDepth);
+	ADD_ICALL (GetSampleMode);
+	ADD_ICALL (SetSampleMode);
+	ADD_ICALL (GetExceptionEvents);
+	ADD_ICALL (SetExceptionEvents);
+	ADD_ICALL (GetMonitorEvents);
+	ADD_ICALL (SetMonitorEvents);
+	ADD_ICALL (GetGCEvents);
+	ADD_ICALL (SetGCEvents);
+	ADD_ICALL (GetGCAllocationEvents);
+	ADD_ICALL (SetGCAllocationEvents);
+	ADD_ICALL (GetGCMoveEvents);
+	ADD_ICALL (SetGCMoveEvents);
+	ADD_ICALL (GetGCRootEvents);
+	ADD_ICALL (SetGCRootEvents);
+	ADD_ICALL (GetGCHandleEvents);
+	ADD_ICALL (SetGCHandleEvents);
+	ADD_ICALL (GetGCFinalizationEvents);
+	ADD_ICALL (SetGCFinalizationEvents);
+	ADD_ICALL (GetCounterEvents);
+	ADD_ICALL (SetCounterEvents);
+	ADD_ICALL (GetJitEvents);
+	ADD_ICALL (SetJitEvents);
+
+#undef ADD_ICALL
 }
 
 static void
@@ -4350,10 +4719,8 @@ mono_profiler_init (const char *desc)
 	if (ENABLED (PROFLOG_GC_EVENTS))
 		mono_profiler_set_gc_resize_callback (handle, gc_resize);
 
-	if (ENABLED (PROFLOG_GC_ALLOCATION_EVENTS)) {
-		mono_profiler_enable_allocations ();
+	if (ENABLED (PROFLOG_GC_ALLOCATION_EVENTS))
 		mono_profiler_set_gc_allocation_callback (handle, gc_alloc);
-	}
 
 	if (ENABLED (PROFLOG_GC_MOVE_EVENTS))
 		mono_profiler_set_gc_moves_callback (handle, gc_moves);
@@ -4366,15 +4733,14 @@ mono_profiler_init (const char *desc)
 		mono_profiler_set_gc_handle_deleted_callback (handle, gc_handle_deleted);
 	}
 
-	if (ENABLED (PROFLOG_FINALIZATION_EVENTS)) {
+	if (ENABLED (PROFLOG_GC_FINALIZATION_EVENTS)) {
 		mono_profiler_set_gc_finalizing_callback (handle, finalize_begin);
 		mono_profiler_set_gc_finalized_callback (handle, finalize_end);
 		mono_profiler_set_gc_finalizing_object_callback (handle, finalize_object_begin);
-		mono_profiler_set_gc_finalized_object_callback (handle, finalize_object_end);
-	} else if (log_config.hs_mode == MONO_PROFILER_HEAPSHOT_ON_DEMAND) {
-		//On Demand heapshot uses the finalizer thread to force a collection and thus a heapshot
-		mono_profiler_set_gc_finalized_callback (handle, finalize_end);
 	}
+
+	//On Demand heapshot uses the finalizer thread to force a collection and thus a heapshot
+	mono_profiler_set_gc_finalized_callback (handle, finalize_end);
 
 	if (ENABLED (PROFLOG_SAMPLE_EVENTS))
 		mono_profiler_set_sample_hit_callback (handle, mono_sample_hit);
@@ -4392,6 +4758,7 @@ mono_profiler_init (const char *desc)
 	if (log_config.collect_coverage)
 		mono_profiler_set_coverage_filter_callback (handle, coverage_filter);
 
+	mono_profiler_enable_allocations ();
 	mono_profiler_enable_sampling (handle);
 
 	/*

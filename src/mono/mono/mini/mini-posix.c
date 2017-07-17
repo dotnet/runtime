@@ -651,7 +651,7 @@ init:
 	clock_init (mode);
 
 	for (guint64 sleep = clock_get_time_ns (); InterlockedRead (&sampling_thread_running); clock_sleep_ns_abs (sleep)) {
-		uint64_t freq;
+		uint32_t freq;
 		MonoProfilerSampleMode new_mode;
 
 		mono_profiler_get_sample_mode (NULL, &new_mode, &freq);

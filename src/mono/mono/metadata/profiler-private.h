@@ -49,7 +49,7 @@ typedef struct {
 	MonoProfilerHandle sampling_owner;
 	MonoSemType sampling_semaphore;
 	MonoProfilerSampleMode sample_mode;
-	uint64_t sample_freq;
+	guint32 sample_freq;
 	gboolean allocations;
 
 #define _MONO_PROFILER_EVENT(name) \

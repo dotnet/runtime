@@ -327,7 +327,7 @@ mono_profiler_enable_sampling (MonoProfilerHandle handle)
 }
 
 mono_bool
-mono_profiler_set_sample_mode (MonoProfilerHandle handle, MonoProfilerSampleMode mode, uint64_t freq)
+mono_profiler_set_sample_mode (MonoProfilerHandle handle, MonoProfilerSampleMode mode, uint32_t freq)
 {
 	if (handle != mono_profiler_state.sampling_owner)
 		return FALSE;
@@ -341,7 +341,7 @@ mono_profiler_set_sample_mode (MonoProfilerHandle handle, MonoProfilerSampleMode
 }
 
 mono_bool
-mono_profiler_get_sample_mode (MonoProfilerHandle handle, MonoProfilerSampleMode *mode, uint64_t *freq)
+mono_profiler_get_sample_mode (MonoProfilerHandle handle, MonoProfilerSampleMode *mode, uint32_t *freq)
 {
 	if (mode)
 		*mode = mono_profiler_state.sample_mode;

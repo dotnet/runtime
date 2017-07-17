@@ -20,7 +20,7 @@ static NameAndMask event_list[] = {
 	{ "gcmove", PROFLOG_GC_MOVE_EVENTS },
 	{ "gcroot", PROFLOG_GC_ROOT_EVENTS },
 	{ "gchandle", PROFLOG_GC_HANDLE_EVENTS },
-	{ "finalization", PROFLOG_FINALIZATION_EVENTS },
+	{ "finalization", PROFLOG_GC_FINALIZATION_EVENTS },
 	{ "counter", PROFLOG_COUNTER_EVENTS },
 	{ "jit", PROFLOG_JIT_EVENTS },
 
