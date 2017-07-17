@@ -103,9 +103,9 @@ endfunction()
 
 if(CLR_CMAKE_PLATFORM_UNIX)
   if(CLR_CMAKE_PLATFORM_LINUX)
-    if(CLR_CMAKE_PLATFORM_UNIX_AMD64)
+    if(CLR_CMAKE_PLATFORM_UNIX_AMD64 OR CLR_CMAKE_PLATFORM_UNIX_ARM)
       add_subdirectory(debug/createdump)
-    endif(CLR_CMAKE_PLATFORM_UNIX_AMD64)
+    endif()
   endif(CLR_CMAKE_PLATFORM_LINUX)
 
   add_subdirectory(ToolBox/SOS/Strike)
