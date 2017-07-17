@@ -1101,7 +1101,6 @@ namespace Microsoft.CSharp.RuntimeBinder
                 }
             }
 
-            agg.SetAnonymousType(false);
             agg.SetAbstract(type.IsAbstract);
 
             {

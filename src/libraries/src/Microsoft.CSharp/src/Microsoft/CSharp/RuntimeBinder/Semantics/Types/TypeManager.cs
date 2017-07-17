@@ -72,59 +72,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
         }
 
-        public static bool TypeContainsAnonymousTypes(CType type)
-        {
-            CType ctype = (CType)type;
-
-        LRecurse:  // Label used for "tail" recursion.
-            switch (ctype.GetTypeKind())
-            {
-                default:
-                    Debug.Assert(false, "Bad Symbol kind in TypeContainsAnonymousTypes");
-                    return false;
-
-                case TypeKind.TK_NullType:
-                case TypeKind.TK_VoidType:
-                case TypeKind.TK_NullableType:
-                case TypeKind.TK_TypeParameterType:
-                case TypeKind.TK_UnboundLambdaType:
-                case TypeKind.TK_MethodGroupType:
-                    return false;
-
-                case TypeKind.TK_ArrayType:
-                case TypeKind.TK_ParameterModifierType:
-                case TypeKind.TK_PointerType:
-                    ctype = (CType)ctype.GetBaseOrParameterOrElementType();
-                    goto LRecurse;
-
-                case TypeKind.TK_AggregateType:
-                    if (ctype.AsAggregateType().getAggregate().IsAnonymousType())
-                    {
-                        return true;
-                    }
-
-                    TypeArray typeArgsAll = ctype.AsAggregateType().GetTypeArgsAll();
-                    for (int i = 0; i < typeArgsAll.Count; i++)
-                    {
-                        CType typeArg = typeArgsAll[i];
-
-                        if (TypeContainsAnonymousTypes(typeArg))
-                        {
-                            return true;
-                        }
-                    }
-                    return false;
-
-                case TypeKind.TK_ErrorType:
-                    if (ctype.AsErrorType().HasTypeParent())
-                    {
-                        ctype = ctype.AsErrorType().GetTypeParent();
-                        goto LRecurse;
-                    }
-                    return false;
-            }
-        }
-
         private sealed class StdTypeVarColl
         {
             private readonly List<TypeParameterType> prgptvs;

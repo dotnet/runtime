@@ -946,15 +946,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Expr constructorInfo = GetExprFactory().CreateMethodInfo(expr.MethWithInst);
             Expr args = GenerateArgsList(expr.OptionalArguments);
             Expr Params = GenerateParamsArray(args, PredefinedType.PT_EXPRESSION);
-            if (expr.Type.IsAggregateType() && expr.Type.AsAggregateType().getAggregate().IsAnonymousType())
-            {
-                Expr members = GenerateMembersArray(expr.Type.AsAggregateType(), PredefinedType.PT_METHODINFO);
-                return GenerateCall(PREDEFMETH.PM_EXPRESSION_NEW_MEMBERS, constructorInfo, Params, members);
-            }
-            else
-            {
-                return GenerateCall(PREDEFMETH.PM_EXPRESSION_NEW, constructorInfo, Params);
-            }
+            return GenerateCall(PREDEFMETH.PM_EXPRESSION_NEW, constructorInfo, Params);
         }
 
         private Expr GenerateDelegateConstructor(ExprCall expr)
@@ -1124,36 +1116,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             ExprConstant paramsArrayArg = GetExprFactory().CreateIntegerConstant(parameterCount);
             ExprArrayInit arrayInit = GetExprFactory().CreateArrayInit(EXPRFLAG.EXF_CANTBENULL, paramsArrayType, args, paramsArrayArg, null);
             arrayInit.DimensionSize = parameterCount;
-            arrayInit.DimensionSizes = new int[] { arrayInit.DimensionSize }; // CLEANUP: Why isn't this done by the factory?
-            return arrayInit;
-        }
-
-        private ExprArrayInit GenerateMembersArray(AggregateType anonymousType, PredefinedType pt)
-        {
-            Expr newArgs = null;
-            Expr newArgsTail = newArgs;
-            int methodCount = 0;
-            AggregateSymbol aggSym = anonymousType.getAggregate();
-
-            for (Symbol member = aggSym.firstChild; member != null; member = member.nextChild)
-            {
-                if (member.IsMethodSymbol())
-                {
-                    MethodSymbol method = member.AsMethodSymbol();
-                    if (method.MethKind() == MethodKindEnum.PropAccessor)
-                    {
-                        ExprMethodInfo methodInfo = GetExprFactory().CreateMethodInfo(method, anonymousType, method.Params);
-                        GetExprFactory().AppendItemToList(methodInfo, ref newArgs, ref newArgsTail);
-                        methodCount++;
-                    }
-                }
-            }
-
-            AggregateType paramsArrayElementType = GetSymbolLoader().GetOptPredefTypeErr(pt, true);
-            ArrayType paramsArrayType = GetSymbolLoader().GetTypeManager().GetArray(paramsArrayElementType, 1, true);
-            ExprConstant paramsArrayArg = GetExprFactory().CreateIntegerConstant(methodCount);
-            ExprArrayInit arrayInit = GetExprFactory().CreateArrayInit(EXPRFLAG.EXF_CANTBENULL, paramsArrayType, newArgs, paramsArrayArg, null);
-            arrayInit.DimensionSize = methodCount;
             arrayInit.DimensionSizes = new int[] { arrayInit.DimensionSize }; // CLEANUP: Why isn't this done by the factory?
             return arrayInit;
         }

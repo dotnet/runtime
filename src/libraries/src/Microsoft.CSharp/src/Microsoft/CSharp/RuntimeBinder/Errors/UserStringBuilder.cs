@@ -441,11 +441,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                             // Found a nice name.
                             ErrAppendString(text);
                         }
-                        else if (sym.AsAggregateSymbol().IsAnonymousType())
-                        {
-                            ErrAppendId(MessageID.AnonymousType);
-                            break;
-                        }
                         else
                         {
                             ErrAppendParentSym(sym, pctx);
@@ -542,11 +537,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                         {
                             // Found a nice name.
                             ErrAppendString(text);
-                        }
-                        else if (pAggType.getAggregate().IsAnonymousType())
-                        {
-                            ErrAppendPrintf("AnonymousType#{0}", GetTypeID(pAggType));
-                            break;
                         }
                         else
                         {
