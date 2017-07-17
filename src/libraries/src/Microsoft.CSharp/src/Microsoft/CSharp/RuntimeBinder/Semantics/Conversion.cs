@@ -57,15 +57,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private static long I64(long x) { return x; }
         private static long I64(ulong x) { return (long)x; }
 
-        private static void RETAILVERIFY(bool b)
-        {
-            if (!b)
-            {
-                Debug.Assert(false, "panic!");
-                throw Error.InternalCompilerError();
-            }
-        }
-
         // 13.1.2 Implicit numeric conversions
         //
         // The implicit numeric conversions are:
@@ -250,8 +241,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 #if DEBUG
             CheckBetterTable();
 #endif // DEBUG
-            RETAILVERIFY((int)pt1 < NUM_EXT_TYPES);
-            RETAILVERIFY((int)pt2 < NUM_EXT_TYPES);
+            Debug.Assert((int)pt1 < NUM_EXT_TYPES);
+            Debug.Assert((int)pt2 < NUM_EXT_TYPES);
             return (BetterType)s_simpleTypeBetter[(int)pt1][(int)pt2];
         }
 
