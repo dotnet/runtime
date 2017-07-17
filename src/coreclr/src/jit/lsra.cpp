@@ -4137,7 +4137,6 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
             pos->isLocalDefUse = true;
             pos->lastUse       = true;
         }
-        DBEXEC(VERBOSE, pos->dump());
         interval->updateRegisterPreferences(currCandidates);
         interval->updateRegisterPreferences(useCandidates);
     }
