@@ -152,7 +152,7 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 for (int i = 0; i < this.Items.Count; ++i)
                 {
-                    this.Items[i].WriteToAsync(writer);
+                    await this.Items[i].WriteToAsync(writer);
                 }
             }
         }

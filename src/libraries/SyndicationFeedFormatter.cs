@@ -280,7 +280,7 @@ namespace Microsoft.ServiceModel.Syndication
             return person.TryParseElement(reader, version);
         }
 
-        internal static protected async Task WriteAttributeExtensions(XmlWriter writer, SyndicationFeed feed, string version)
+        internal static protected async Task WriteAttributeExtensionsAsync(XmlWriter writer, SyndicationFeed feed, string version)
         {
             if (feed == null)
             {

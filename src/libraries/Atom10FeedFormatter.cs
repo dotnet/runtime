@@ -1278,7 +1278,7 @@ namespace Microsoft.ServiceModel.Syndication
                 {
                     await writer.WriteAttributeStringAsync("xml", "base", XmlNs, FeedUtils.GetUriString(feed.BaseUri));
                 }
-                WriteAttributeExtensions(writer, feed, this.Version);
+                await WriteAttributeExtensionsAsync(writer, feed, this.Version);
             }
             bool isElementRequired = !isSourceFeed;
             TextSyndicationContent title = feed.Title;
@@ -1366,7 +1366,7 @@ namespace Microsoft.ServiceModel.Syndication
         private async Task WritePersonToAsync(XmlWriterWrapper writer, SyndicationPerson p, string elementName)
         {
             await writer.WriteStartElementAsync(elementName, Atom10Constants.Atom10Namespace);
-            WriteAttributeExtensionsAsync(writer, p, this.Version);
+            await WriteAttributeExtensionsAsync(writer, p, this.Version);
             await WriteElementAsync(writer, Atom10Constants.NameTag, p.Name);
             if (!string.IsNullOrEmpty(p.Uri))
             {
