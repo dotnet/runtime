@@ -427,6 +427,9 @@
   <data name="SQL_KerberosTicketMissingError" xml:space="preserve">
     <value>Cannot access Kerberos ticket. Ensure Kerberos has been initialized with 'kinit'.</value>
   </data>
+  <data name="SQL_SqlServerBrowserNotAccessible" xml:space="preserve">
+    <value>Cannot connect to SQL Server Browser. Ensure SQL Server Browser has been started.</value>
+  </data>
   <data name="SQL_InvalidSSPIPacketSize" xml:space="preserve">
     <value>Invalid SSPI packet size.</value>
   </data>
