@@ -4108,17 +4108,9 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                         // we skip the corresponding floating point register argument
                         intArgRegNum = min(intArgRegNum + size, MAX_REG_ARG);
 #endif // WINDOWS_AMD64_ABI
-#ifdef _TARGET_ARM_
-                        if (fltArgRegNum > MAX_FLOAT_REG_ARG)
-                        {
-                            // This indicates a partial enregistration of a struct type
-                            assert(varTypeIsStruct(argx));
-                            unsigned numRegsPartial = size - (fltArgRegNum - MAX_FLOAT_REG_ARG);
-                            assert((unsigned char)numRegsPartial == numRegsPartial);
-                            call->fgArgInfo->SplitArg(argIndex, numRegsPartial, size - numRegsPartial);
-                            fltArgRegNum = MAX_FLOAT_REG_ARG;
-                        }
-#endif // _TARGET_ARM_
+                        // There is no partial struct using float registers
+                        // on all supported architectures
+                        assert(fltArgRegNum <= MAX_FLOAT_REG_ARG);
                     }
                     else
                     {
@@ -4766,12 +4758,7 @@ GenTreePtr Compiler::fgMorphMultiregStructArg(GenTreePtr arg, fgArgTabEntryPtr f
 #ifdef _TARGET_ARM_
     if (fgEntryPtr->isSplit)
     {
-        if (fgEntryPtr->isHfaRegArg)
-        {
-            // We cannot handle HFA split struct morphed to GT_FIELD_LIST yet
-            NYI_ARM("Struct split between float registers and stack");
-        }
-        else if (fgEntryPtr->numSlots + fgEntryPtr->numRegs > 4)
+        if (fgEntryPtr->numSlots + fgEntryPtr->numRegs > 4)
         {
             return arg;
         }

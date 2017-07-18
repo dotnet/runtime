@@ -810,7 +810,7 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
 
         putArg = new (comp, GT_PUTARG_SPLIT)
             GenTreePutArgSplit(arg, info->slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(info->numSlots), info->numRegs,
-                               info->isHfaRegArg, call->IsFastTailCall(), call);
+                               call->IsFastTailCall(), call);
 
         // If struct argument is morphed to GT_FIELD_LIST node(s),
         // we can know GC info by type of each GT_FIELD_LIST node.
