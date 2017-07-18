@@ -6,9 +6,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal sealed class ExprArrayInit : ExprWithType
     {
-        public ExprArrayInit(CType type)
+        public ExprArrayInit(CType type, Expr arguments, Expr argumentDimensions, int[] dimensionSizes, int dimensionSize)
             : base(ExpressionKind.ArrayInit, type)
         {
+            OptionalArguments = arguments;
+            OptionalArgumentDimensions = argumentDimensions;
+            DimensionSizes = dimensionSizes;
+            DimensionSize = dimensionSize;
         }
 
         public Expr OptionalArguments { get; set; }
@@ -16,7 +20,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public Expr OptionalArgumentDimensions { get; set; }
 
         // The Exprs bound as the size of the array.
-        public int[] DimensionSizes { get; set; }
+        public int[] DimensionSizes { get; }
 
         public int DimensionSize { get; set; }
 

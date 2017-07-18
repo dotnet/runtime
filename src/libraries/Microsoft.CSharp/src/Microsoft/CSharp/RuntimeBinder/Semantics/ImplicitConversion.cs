@@ -334,9 +334,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 bool dstWasNullable;
                 bool srcWasNullable;
                 CType typeDstBase = nubDst.StripNubs(out dstWasNullable);
-                ExprClass exprTypeDstBase = GetExprFactory().MakeClass(typeDstBase);
+                ExprClass exprTypeDstBase = GetExprFactory().CreateClass(typeDstBase);
                 CType typeSrcBase = _typeSrc.StripNubs(out srcWasNullable);
-
                 ConversionFunc pfn = (_flags & CONVERTTYPE.ISEXPLICIT) != 0 ?
                     (ConversionFunc)_binder.BindExplicitConversion :
                     (ConversionFunc)_binder.BindImplicitConversion;
@@ -359,7 +358,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             }
                             else
                             {
-                                _exprDest = GetExprFactory().CreateCast(0x00, _typeDest, _exprSrc);
+                                _exprDest = GetExprFactory().CreateCast(_typeDest, _exprSrc);
                             }
                         }
                         return true;
@@ -418,7 +417,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     // Here we want to first check whether or not the conversions work on the base types.
 
                     Expr arg1 = _binder.mustCast(_exprSrc, typeSrcBase);
-                    ExprClass arg2 = GetExprFactory().MakeClass(typeDstBase);
+                    ExprClass arg2 = GetExprFactory().CreateClass(typeDstBase);
 
                     bool convertible;
                     if (0 != (_flags & CONVERTTYPE.ISEXPLICIT))
@@ -468,7 +467,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
                     else
                     {
-                        _exprDest = GetExprFactory().CreateCast(0x00, _typeDest, _exprSrc);
+                        _exprDest = GetExprFactory().CreateCast(_typeDest, _exprSrc);
                     }
                 }
                 return true;
@@ -850,7 +849,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         {
                             // For a type var destination we need to cast to object then to the other type var.
                             Expr exprT;
-                            ExprClass exprObj = GetExprFactory().MakeClass(_binder.GetReqPDT(PredefinedType.PT_OBJECT));
+                            ExprClass exprObj = GetExprFactory().CreateClass(_binder.GetReqPDT(PredefinedType.PT_OBJECT));
                             _binder.bindSimpleCast(_exprSrc, exprObj, out exprT, EXPRFLAG.EXF_FORCE_BOX);
                             _binder.bindSimpleCast(exprT, _exprTypeDest, out _exprDest, EXPRFLAG.EXF_FORCE_UNBOX);
                         }

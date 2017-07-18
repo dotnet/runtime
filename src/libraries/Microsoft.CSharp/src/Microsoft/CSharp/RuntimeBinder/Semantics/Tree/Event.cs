@@ -6,13 +6,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal sealed class ExprEvent : ExprWithType, IExprWithObject
     {
-        public ExprEvent(CType type)
+        public ExprEvent(CType type, Expr obj, EventWithType ev)
             : base(ExpressionKind.Event, type)
         {
+            OptionalObject = obj;
+            EventWithType = ev;
         }
 
         public Expr OptionalObject { get; set; }
 
-        public EventWithType EventWithType { get; set; }
+        public EventWithType EventWithType { get; }
     }
 }
