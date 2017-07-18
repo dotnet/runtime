@@ -3655,6 +3655,9 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                                 {
                                     fgAddSkippedRegsInPromotedStructArg(varDsc, intArgRegNum, &argSkippedRegMask);
                                 }
+#if !defined(LEGACY_BACKEND)
+                                copyBlkClass = objClass;
+#endif
                             }
                         }
 #endif // _TARGET_ARM_
