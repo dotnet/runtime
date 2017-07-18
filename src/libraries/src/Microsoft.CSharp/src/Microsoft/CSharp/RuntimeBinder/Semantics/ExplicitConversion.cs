@@ -297,7 +297,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     {
                         // Need to box first before unboxing.
                         Expr exprT;
-                        ExprClass exprObj = GetExprFactory().MakeClass(_binder.GetReqPDT(PredefinedType.PT_OBJECT));
+                        ExprClass exprObj = GetExprFactory().CreateClass(_binder.GetReqPDT(PredefinedType.PT_OBJECT));
                         _binder.bindSimpleCast(_exprSrc, exprObj, out exprT, EXPRFLAG.EXF_FORCE_BOX);
                         _exprSrc = exprT;
                     }
@@ -543,7 +543,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
                 else
                 {
-                    ExprClass underlyingExpr = GetExprFactory().MakeClass(underlyingType);
+                    ExprClass underlyingExpr = GetExprFactory().CreateClass(underlyingType);
                     _binder.bindSimpleCast(_exprSrc, underlyingExpr, out exprCast);
                 }
 

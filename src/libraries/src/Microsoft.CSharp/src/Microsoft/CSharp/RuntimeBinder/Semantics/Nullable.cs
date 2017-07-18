@@ -84,10 +84,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             PropWithType pwt = new PropWithType(prop, ats);
-            MethWithType mwt = new MethWithType(prop?.methGet, ats);
             MethPropWithInst mpwi = new MethPropWithInst(prop, ats);
             ExprMemberGroup pMemGroup = GetExprFactory().CreateMemGroup(exprSrc, mpwi);
-            ExprProperty exprRes = GetExprFactory().CreateProperty(typeBase, null, null, pMemGroup, pwt, mwt, null);
+            ExprProperty exprRes = GetExprFactory().CreateProperty(typeBase, null, null, pMemGroup, pwt, null);
 
             if (prop == null)
             {

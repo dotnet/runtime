@@ -8,12 +8,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal sealed class ExprBoundLambda : ExprWithType
     {
-        private Scope _argumentScope;
-
-        public ExprBoundLambda(CType type)
+        public ExprBoundLambda(CType type, Scope argumentScope)
             : base(ExpressionKind.BoundLambda, type)
         {
             Debug.Assert(type == null || type.isDelegateType());
+            Debug.Assert(argumentScope != null);
+            ArgumentScope = argumentScope;
         }
 
         public ExprBlock OptionalBody { get; set; }
@@ -23,18 +23,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // The scope containing the names of the parameters
         // The scope that will hold this anonymous function. This starts off as the outer scope and is then
         // ratcheted down to the correct scope after the containing method is fully bound.
-        public Scope ArgumentScope
-        {
-            get
-            {
-                Debug.Assert(_argumentScope != null);
-                return _argumentScope;
-            }
-            set
-            {
-                Debug.Assert(value != null);
-                _argumentScope = value;
-            }
-        }
+        public Scope ArgumentScope { get; }
     }
 }
