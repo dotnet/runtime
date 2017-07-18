@@ -332,7 +332,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             }
 
                             // Mark object.
-                            AggregateType typeObject = GetSymbolLoader().GetReqPredefType(PredefinedType.PT_OBJECT, true);
+                            AggregateType typeObject = GetSymbolLoader().GetReqPredefType(PredefinedType.PT_OBJECT);
                             _HiddenTypes.Add(typeObject);
                         }
                     }
