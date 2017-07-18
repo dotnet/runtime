@@ -69,7 +69,7 @@ namespace System.IO.Tests
         }
 
         /// <summary>
-        /// Do a test action against read only file system.
+        /// Do a test action against read only file system (for Unix).
         /// </summary>
         /// <param name="testAction">Test action to perform. The string argument will be read only directory.</param>
         /// <param name="subDirectoryName">Optional subdirectory to create.</param>
