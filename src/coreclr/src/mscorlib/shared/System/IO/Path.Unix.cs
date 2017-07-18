@@ -62,15 +62,12 @@ namespace System.IO
                 sb.Append(path, 0, skip);
             }
 
-            int componentCharCount = 0;
             for (int i = skip; i < path.Length; i++)
             {
                 char c = path[i];
 
                 if (PathInternal.IsDirectorySeparator(c) && i + 1 < path.Length)
                 {
-                    componentCharCount = 0;
-
                     // Skip this character if it's a directory separator and if the next character is, too,
                     // e.g. "parent//child" => "parent/child"
                     if (PathInternal.IsDirectorySeparator(path[i + 1]))
