@@ -56,14 +56,12 @@ namespace System.IO
 
         internal const int MaxShortPath = 260;
         internal const int MaxShortDirectoryPath = 248;
-        internal const int MaxLongPath = short.MaxValue;
         // \\?\, \\.\, \??\
         internal const int DevicePrefixLength = 4;
         // \\
         internal const int UncPrefixLength = 2;
         // \\?\UNC\, \\.\UNC\
         internal const int UncExtendedPrefixLength = 8;
-        internal const int MaxComponentLength = 255;
 
         /// <summary>
         /// Returns true if the given character is a valid drive letter
