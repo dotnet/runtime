@@ -341,11 +341,11 @@ GenTree* DecomposeLongs::FinalizeDecomposition(LIR::Use& use,
     GenTree* gtLong = new (m_compiler, GT_LONG) GenTreeOp(GT_LONG, TYP_LONG, loResult, hiResult);
     if (use.IsDummyUse())
     {
-        gtLong->gtLIRFlags |= LIR::Flags::IsUnusedValue;
+        gtLong->SetUnusedValue();
     }
 
-    loResult->gtLIRFlags &= ~LIR::Flags::IsUnusedValue;
-    hiResult->gtLIRFlags &= ~LIR::Flags::IsUnusedValue;
+    loResult->ClearUnusedValue();
+    hiResult->ClearUnusedValue();
 
     Range().InsertAfter(insertResultAfter, gtLong);
 
@@ -1127,7 +1127,7 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
                     }
                     else
                     {
-                        hiOp1->gtLIRFlags |= LIR::Flags::IsUnusedValue;
+                        hiOp1->SetUnusedValue();
                     }
 
                     if (count < 64)
@@ -1175,7 +1175,7 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
                         }
                         else
                         {
-                            loOp1->gtLIRFlags |= LIR::Flags::IsUnusedValue;
+                            loOp1->SetUnusedValue();
                         }
 
                         // Zero out hi (shift of >= 64 bits moves all the bits out of the two registers)
@@ -1235,7 +1235,7 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
                     }
                     else
                     {
-                        loOp1->gtLIRFlags |= LIR::Flags::IsUnusedValue;
+                        loOp1->SetUnusedValue();
                     }
 
                     assert(count >= 32);
@@ -1271,7 +1271,7 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
                         }
                         else
                         {
-                            hiOp1->gtLIRFlags |= LIR::Flags::IsUnusedValue;
+                            hiOp1->SetUnusedValue();
                         }
 
                         // Zero out lo
@@ -1333,7 +1333,7 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
                     }
                     else
                     {
-                        loOp1->gtLIRFlags |= LIR::Flags::IsUnusedValue;
+                        loOp1->SetUnusedValue();
                     }
 
                     if (count < 64)
@@ -1426,9 +1426,9 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
         GenTree* call = m_compiler->gtNewHelperCallNode(helper, TYP_LONG, 0, argList);
         call->gtFlags |= shift->gtFlags & GTF_ALL_EFFECT;
 
-        if ((shift->gtLIRFlags & LIR::Flags::IsUnusedValue) != 0)
+        if (shift->IsUnusedValue())
         {
-            call->gtLIRFlags |= LIR::Flags::IsUnusedValue;
+            call->SetUnusedValue();
         }
 
         GenTreeCall*    callNode    = call->AsCall();

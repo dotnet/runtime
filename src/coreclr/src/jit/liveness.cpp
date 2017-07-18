@@ -2359,7 +2359,7 @@ bool Compiler::fgTryRemoveDeadLIRStore(LIR::Range& blockRange, GenTree* node, Ge
         // do not remove it. Instead, just remove the store.
 
         store->VisitOperands([](GenTree* operand) -> GenTree::VisitResult {
-            operand->gtLIRFlags |= LIR::Flags::IsUnusedValue;
+            operand->SetUnusedValue();
             return GenTree::VisitResult::Continue;
         });
 
