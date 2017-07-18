@@ -5360,7 +5360,7 @@ protected:
                                 GenTreePtr* ppTest,
                                 GenTreePtr* ppIncr);
 
-    void optRecordLoop(BasicBlock*   head,
+    bool optRecordLoop(BasicBlock*   head,
                        BasicBlock*   first,
                        BasicBlock*   top,
                        BasicBlock*   entry,
