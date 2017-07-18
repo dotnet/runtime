@@ -112,19 +112,19 @@ match_option (const char* p, const char *opt, char **rval)
 }
 
 void
-mono_profiler_init (const char *desc);
+mono_profiler_init_aot (const char *desc);
 
 /**
- * mono_profiler_init:
+ * mono_profiler_init_aot:
  * the entry point
  */
 void
-mono_profiler_init (const char *desc)
+mono_profiler_init_aot (const char *desc)
 {
 	MonoProfiler *prof;
 	const char *p;
 	const char *opt;
-	char *outfile_name;
+	char *outfile_name = NULL;
 
 	p = desc;
 	if (strncmp (p, "aot", 3))

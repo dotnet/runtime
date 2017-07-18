@@ -2346,7 +2346,7 @@ MonoDomain* mini_init                      (const char *filename, const char *ru
 void        mini_cleanup                   (MonoDomain *domain);
 MONO_API MonoDebugOptions *mini_get_debug_options   (void);
 MONO_API gboolean    mini_parse_debug_option (const char *option);
-void        mini_profiler_enable_with_options (const char *profile_options);
+void        mini_add_profiler_argument (const char *desc);
 
 /* graph dumping */
 void mono_cfg_dump_create_context (MonoCompile *cfg);

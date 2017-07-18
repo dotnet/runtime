@@ -1584,9 +1584,7 @@ mono_main (int argc, char* argv[])
 	guint32 opt, action = DO_EXEC, recompilation_times = 1;
 	MonoGraphOptions mono_graph_options = (MonoGraphOptions)0;
 	int mini_verbose = 0;
-	gboolean enable_profile = FALSE;
 	char *trace_options = NULL;
-	char *profile_options = NULL;
 	char *aot_options = NULL;
 	char *forced_version = NULL;
 	GPtrArray *agents = NULL;
@@ -1797,11 +1795,9 @@ mono_main (int argc, char* argv[])
 		} else if (strcmp (argv [i], "--jitmap") == 0) {
 			mono_enable_jit_map ();
 		} else if (strcmp (argv [i], "--profile") == 0) {
-			enable_profile = TRUE;
-			profile_options = NULL;
+			mini_add_profiler_argument (NULL);
 		} else if (strncmp (argv [i], "--profile=", 10) == 0) {
-			enable_profile = TRUE;
-			profile_options = argv [i] + 10;
+			mini_add_profiler_argument (argv [i] + 10);
 		} else if (strncmp (argv [i], "--agent=", 8) == 0) {
 			if (agents == NULL)
 				agents = g_ptr_array_new ();
@@ -2010,10 +2006,6 @@ mono_main (int argc, char* argv[])
 
 	/* Set rootdir before loading config */
 	mono_set_rootdir ();
-
-	if (enable_profile) {
-		mini_profiler_enable_with_options (profile_options);
-	}
 
 	mono_attach_parse_options (attach_options);
 
