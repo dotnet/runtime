@@ -207,8 +207,8 @@ namespace System.IO.Tests
             Directory.CreateDirectory(testDir);
             Assert.All((IOInputs.GetPathsLongerThanMaxLongPath(GetTestFilePath())), (path) =>
             {
-                Assert.Throws<PathTooLongException>(() => Move(testDir, path));
-                Assert.Throws<PathTooLongException>(() => Move(path, testDir));
+                AssertExtensions.ThrowsAny<PathTooLongException, DirectoryNotFoundException>(() => Move(testDir, path));
+                AssertExtensions.ThrowsAny<PathTooLongException, DirectoryNotFoundException>(() => Move(path, testDir));
             });
         }
 
