@@ -7002,21 +7002,37 @@ void LinearScan::processBlockStartLocations(BasicBlock* currentBlock, bool alloc
                     }
                     inVarToRegMap[assignedInterval->getVarIndex(compiler)] = REG_STK;
                 }
-#ifdef _TARGET_ARM_
-                // Consider overlapping floating point register for TYP_DOUBLE
-                else if (!assignedInterval->isConstant && assignedInterval->registerType == TYP_DOUBLE)
-                {
-                    assert(!assignedInterval->isActive || isSecondHalfReg(physRegRecord, assignedInterval));
-                }
-#endif // _TARGET_ARM_
                 else
                 {
                     // This interval may still be active, but was in another register in an
                     // intervening block.
-                    physRegRecord->assignedInterval = nullptr;
+                    updateAssignedInterval(physRegRecord, nullptr, assignedInterval->registerType);
                 }
+
+#ifdef _TARGET_ARM_
+                if (assignedInterval->registerType == TYP_DOUBLE)
+                {
+                    // Skip next float register, because we already addressed a double register
+                    assert(genIsValidDoubleReg(reg));
+                    reg = REG_NEXT(reg);
+                }
+#endif // _TARGET_ARM_
             }
         }
+#ifdef _TARGET_ARM_
+        else
+        {
+            RegRecord* physRegRecord    = getRegisterRecord(reg);
+            Interval*  assignedInterval = physRegRecord->assignedInterval;
+
+            if (assignedInterval != nullptr && assignedInterval->registerType == TYP_DOUBLE)
+            {
+                // Skip next float register, because we already addressed a double register
+                assert(genIsValidDoubleReg(reg));
+                reg = REG_NEXT(reg);
+            }
+        }
+#endif // _TARGET_ARM_
     }
     INDEBUG(dumpLsraAllocationEvent(LSRA_EVENT_START_BB, nullptr, REG_NA, currentBlock));
 }
