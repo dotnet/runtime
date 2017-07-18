@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.Serialization;
 using System.Text;
 using System;
 using System.Diagnostics.Contracts;
@@ -21,46 +20,33 @@ namespace System.Text
     // of Encoding objects.
     //
 
-    internal class EncoderNLS : Encoder, ISerializable
+    internal class EncoderNLS : Encoder
     {
         // Need a place for the last left over character, most of our encodings use this
-        internal char charLeftOver;
-
-        protected Encoding m_encoding;
-
-        [NonSerialized] protected bool m_mustFlush;
-        [NonSerialized] internal bool m_throwOnOverflow;
-        [NonSerialized] internal int m_charsUsed;
-
-        #region Serialization
-
-        // ISerializable implementation.
-        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            throw new PlatformNotSupportedException();
-        }
-
-        #endregion Serialization 
+        internal char _charLeftOver;
+        private Encoding _encoding;
+        private bool _mustFlush;
+        internal bool _throwOnOverflow;
+        internal int _charsUsed;
 
         internal EncoderNLS(Encoding encoding)
         {
-            this.m_encoding = encoding;
-            this.m_fallback = this.m_encoding.EncoderFallback;
+            _encoding = encoding;
+            _fallback = _encoding.EncoderFallback;
             this.Reset();
         }
 
-        // This one is used when deserializing (like UTF7Encoding.Encoder)
         internal EncoderNLS()
         {
-            this.m_encoding = null;
+            _encoding = null;
             this.Reset();
         }
 
         public override void Reset()
         {
-            this.charLeftOver = (char)0;
-            if (m_fallbackBuffer != null)
-                m_fallbackBuffer.Reset();
+            _charLeftOver = (char)0;
+            if (_fallbackBuffer != null)
+                _fallbackBuffer.Reset();
         }
 
         public override unsafe int GetByteCount(char[] chars, int index, int count, bool flush)
@@ -104,9 +90,9 @@ namespace System.Text
                       SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
 
-            this.m_mustFlush = flush;
-            this.m_throwOnOverflow = true;
-            return m_encoding.GetByteCount(chars, count, this);
+            _mustFlush = flush;
+            _throwOnOverflow = true;
+            return _encoding.GetByteCount(chars, count, this);
         }
 
         public override unsafe int GetBytes(char[] chars, int charIndex, int charCount,
@@ -158,9 +144,9 @@ namespace System.Text
                       SR.ArgumentOutOfRange_NeedNonNegNum);
             Contract.EndContractBlock();
 
-            this.m_mustFlush = flush;
-            this.m_throwOnOverflow = true;
-            return m_encoding.GetBytes(chars, charCount, bytes, byteCount, this);
+            _mustFlush = flush;
+            _throwOnOverflow = true;
+            return _encoding.GetBytes(chars, charCount, bytes, byteCount, this);
         }
 
         // This method is used when your output buffer might not be large enough for the entire result.
@@ -225,17 +211,17 @@ namespace System.Text
             Contract.EndContractBlock();
 
             // We don't want to throw
-            this.m_mustFlush = flush;
-            this.m_throwOnOverflow = false;
-            this.m_charsUsed = 0;
+            _mustFlush = flush;
+            _throwOnOverflow = false;
+            _charsUsed = 0;
 
             // Do conversion
-            bytesUsed = this.m_encoding.GetBytes(chars, charCount, bytes, byteCount, this);
-            charsUsed = this.m_charsUsed;
+            bytesUsed = _encoding.GetBytes(chars, charCount, bytes, byteCount, this);
+            charsUsed = _charsUsed;
 
             // Its completed if they've used what they wanted AND if they didn't want flush or if we are flushed
             completed = (charsUsed == charCount) && (!flush || !this.HasState) &&
-                (m_fallbackBuffer == null || m_fallbackBuffer.Remaining == 0);
+                (_fallbackBuffer == null || _fallbackBuffer.Remaining == 0);
 
             // Our data thingys are now full, we can return
         }
@@ -244,7 +230,7 @@ namespace System.Text
         {
             get
             {
-                return m_encoding;
+                return _encoding;
             }
         }
 
@@ -252,7 +238,7 @@ namespace System.Text
         {
             get
             {
-                return m_mustFlush;
+                return _mustFlush;
             }
         }
 
@@ -262,14 +248,14 @@ namespace System.Text
         {
             get
             {
-                return (this.charLeftOver != (char)0);
+                return (_charLeftOver != (char)0);
             }
         }
 
         // Allow encoding to clear our must flush instead of throwing (in ThrowBytesOverflow)
         internal void ClearMustFlush()
         {
-            m_mustFlush = false;
+            _mustFlush = false;
         }
     }
 }

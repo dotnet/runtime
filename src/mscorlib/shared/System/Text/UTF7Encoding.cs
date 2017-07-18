@@ -7,7 +7,6 @@
 //
 
 using System;
-using System.Runtime.Serialization;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
@@ -118,7 +117,7 @@ namespace System.Text
         }
 
         // The following methods are copied from EncodingNLS.cs.
-        // Unfortunately EncodingNLS.cs is internal and we're public, so we have to reimpliment them here.
+        // Unfortunately EncodingNLS.cs is internal and we're public, so we have to re-implement them here.
         // These should be kept in sync for the following classes:
         // EncodingNLS, UTF7Encoding, UTF8Encoding, UTF32Encoding, ASCIIEncoding, UnicodeEncoding
 
@@ -563,7 +562,7 @@ namespace System.Text
                 // We already cleared bits & bitcount for mustflush case
                 encoder.bits = bits;
                 encoder.bitCount = bitCount;
-                encoder.m_charsUsed = buffer.CharsUsed;
+                encoder._charsUsed = buffer.CharsUsed;
             }
 
             return buffer.Count;
@@ -737,7 +736,7 @@ namespace System.Text
                     decoder.bitCount = bitCount;
                     decoder.firstByte = firstByte;
                 }
-                decoder.m_bytesUsed = buffer.BytesUsed;
+                decoder._bytesUsed = buffer.BytesUsed;
             }
             // else ignore any hanging bits.
 
@@ -808,7 +807,7 @@ namespace System.Text
 
         // Of all the amazing things... This MUST be Decoder so that our com name
         // for System.Text.Decoder doesn't change
-        private sealed class Decoder : DecoderNLS, ISerializable
+        private sealed class Decoder : DecoderNLS
         {
             /*private*/
             internal int bits;
@@ -822,19 +821,13 @@ namespace System.Text
                 // base calls reset
             }
 
-            // ISerializable implementation, get data for this object
-            void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
-            {
-                throw new PlatformNotSupportedException();
-            }
-
             public override void Reset()
             {
                 this.bits = 0;
                 this.bitCount = -1;
                 this.firstByte = false;
-                if (m_fallbackBuffer != null)
-                    m_fallbackBuffer.Reset();
+                if (_fallbackBuffer != null)
+                    _fallbackBuffer.Reset();
             }
 
             // Anything left in our encoder?
@@ -851,7 +844,7 @@ namespace System.Text
 
         // Of all the amazing things... This MUST be Encoder so that our com name
         // for System.Text.Encoder doesn't change
-        private sealed class Encoder : EncoderNLS, ISerializable
+        private sealed class Encoder : EncoderNLS
         {
             /*private*/
             internal int bits;
@@ -863,18 +856,12 @@ namespace System.Text
                 // base calls reset
             }
 
-            // ISerializable implementation
-            void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
-            {
-                throw new PlatformNotSupportedException();
-            }
-
             public override void Reset()
             {
                 this.bitCount = -1;
                 this.bits = 0;
-                if (m_fallbackBuffer != null)
-                    m_fallbackBuffer.Reset();
+                if (_fallbackBuffer != null)
+                    _fallbackBuffer.Reset();
             }
 
             // Anything left in our encoder?

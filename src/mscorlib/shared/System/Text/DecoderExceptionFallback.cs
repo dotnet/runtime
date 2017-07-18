@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Runtime.Serialization;
 using System.Globalization;
 
 namespace System.Text
@@ -82,9 +81,9 @@ namespace System.Text
             int i;
             for (i = 0; i < bytesUnknown.Length && i < 20; i++)
             {
-                strBytes.Append("[");
+                strBytes.Append('[');
                 strBytes.Append(bytesUnknown[i].ToString("X2", CultureInfo.InvariantCulture));
-                strBytes.Append("]");
+                strBytes.Append(']');
             }
 
             // In case the string's really long
@@ -93,15 +92,16 @@ namespace System.Text
 
             // Known index
             throw new DecoderFallbackException(
-                SR.Format(SR.Argument_InvalidCodePageBytesIndex, strBytes, index), bytesUnknown, index);
+                SR.Format(SR.Argument_InvalidCodePageBytesIndex,
+                   strBytes, index), bytesUnknown, index);
         }
     }
 
     // Exception for decoding unknown byte sequences.
     public sealed class DecoderFallbackException : ArgumentException
     {
-        private byte[] bytesUnknown = null;
-        private int index = 0;
+        private byte[] _bytesUnknown = null;
+        private int _index = 0;
 
         public DecoderFallbackException()
             : base(SR.Arg_ArgumentException)
@@ -121,23 +121,18 @@ namespace System.Text
             HResult = __HResults.COR_E_ARGUMENT;
         }
 
-        internal DecoderFallbackException(SerializationInfo info, StreamingContext context) : base(info, context)
+        public DecoderFallbackException(String message, byte[] bytesUnknown, int index)
+            : base(message)
         {
-            throw new PlatformNotSupportedException();
-        }
-
-        public DecoderFallbackException(
-            String message, byte[] bytesUnknown, int index) : base(message)
-        {
-            this.bytesUnknown = bytesUnknown;
-            this.index = index;
+            _bytesUnknown = bytesUnknown;
+            _index = index;
         }
 
         public byte[] BytesUnknown
         {
             get
             {
-                return (bytesUnknown);
+                return (_bytesUnknown);
             }
         }
 
@@ -145,7 +140,7 @@ namespace System.Text
         {
             get
             {
-                return index;
+                return _index;
             }
         }
     }
