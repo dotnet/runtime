@@ -131,9 +131,6 @@ namespace Microsoft.ServiceModel.Syndication
         }
 
         // inherited methods
-
-        
-
         public override WriteState WriteState
         {
             get
