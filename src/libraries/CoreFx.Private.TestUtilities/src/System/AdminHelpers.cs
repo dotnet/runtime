@@ -9,8 +9,9 @@ namespace System
 {
     public static class AdminHelpers
     {
+
         /// <summary>
-        /// Runs the given command as sudo
+        /// Runs the given command as sudo (for Unix).
         /// </summary>
         /// <param name="commandLine">The command line to run as sudo</param>
         /// <returns> Returns the process exit code (0 typically means it is successful)</returns>
