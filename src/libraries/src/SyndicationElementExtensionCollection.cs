@@ -135,7 +135,7 @@ namespace Microsoft.ServiceModel.Syndication
             return ReadExtensions<TExtension>(extensionName, extensionNamespace, null, serializer);
         }
 
-        internal async Task WriteToAsync(XmlWriterWrapper writer)
+        internal async Task WriteToAsync(XmlWriter writer)
         {
             if (_buffer != null)
             {

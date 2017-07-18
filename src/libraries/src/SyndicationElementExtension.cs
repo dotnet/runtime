@@ -202,10 +202,10 @@ namespace Microsoft.ServiceModel.Syndication
             }
             else
             {
-                XmlWriterWrapper wrappedWriter = XmlWriterWrapper.CreateFromWriter(writer);
+                writer = XmlWriterWrapper.CreateFromWriter(writer);
                 using (XmlReader reader = GetReader())
                 {
-                    await wrappedWriter.WriteNodeAsync(reader, false);
+                    await writer.WriteNodeAsync(reader, false);
                 }
             }
         }
@@ -269,16 +269,16 @@ namespace Microsoft.ServiceModel.Syndication
                 else
                 {
                     Debug.Assert(_xmlSerializer == null, "Xml serializer cannot be configured");
-                    XmlWriterWrapper wrappedWriter = XmlWriterWrapper.CreateFromWriter(writer);
+                    writer = XmlWriterWrapper.CreateFromWriter(writer);
                     if (_outerName != null)
                     {
-                        wrappedWriter.WriteStartElementAsync(_outerName, _outerNamespace);
+                        writer.WriteStartElementAsync(_outerName, _outerNamespace);
                         _dataContractSerializer.WriteObjectContent(writer, _extensionData);
-                        wrappedWriter.WriteEndElementAsync();
+                        writer.WriteEndElementAsync();
                     }
                     else
                     {
-                        _dataContractSerializer.WriteObject(wrappedWriter, _extensionData);
+                        _dataContractSerializer.WriteObject(writer, _extensionData);
                     }
                 }
             }

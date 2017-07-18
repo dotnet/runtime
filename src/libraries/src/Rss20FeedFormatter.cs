@@ -174,7 +174,7 @@ namespace Microsoft.ServiceModel.Syndication
                 throw new ArgumentNullException(nameof(writer));
             }
 
-            return WriteFeedAsync(XmlWriterWrapper.CreateFromWriter( writer) );
+            return WriteFeedAsync(writer);
         }
 
         public override async Task WriteToAsync(XmlWriter writer, CancellationToken ct)
@@ -184,11 +184,11 @@ namespace Microsoft.ServiceModel.Syndication
                 throw new ArgumentNullException(nameof(writer));
             }
 
-            XmlWriterWrapper writerWrapped = XmlWriterWrapper.CreateFromWriter(writer);
+            writer = XmlWriterWrapper.CreateFromWriter(writer);
 
-            await writerWrapped.WriteStartElementAsync(Rss20Constants.RssTag, Rss20Constants.Rss20Namespace);
-            await WriteFeedAsync(writerWrapped);
-            await writerWrapped.WriteEndElementAsync();
+            await writer.WriteStartElementAsync(Rss20Constants.RssTag, Rss20Constants.Rss20Namespace);
+            await WriteFeedAsync(writer);
+            await writer.WriteEndElementAsync();
         }
 
         protected internal override void SetFeed(SyndicationFeed feed)
@@ -416,8 +416,8 @@ namespace Microsoft.ServiceModel.Syndication
 
         internal Task WriteItemContentsAsync(XmlWriter writer, SyndicationItem item)
         {
-            XmlWriterWrapper writerWrapped = XmlWriterWrapper.CreateFromWriter(writer);
-            return WriteItemContentsAsync(writerWrapped, item, null);
+            writer = XmlWriterWrapper.CreateFromWriter(writer);
+            return WriteItemContentsAsync(writer, item, null);
         }
 
         protected override SyndicationFeed CreateFeedInstance()
@@ -443,11 +443,11 @@ namespace Microsoft.ServiceModel.Syndication
 
         protected virtual async Task WriteItemAsync(XmlWriter writer, SyndicationItem item, Uri feedBaseUri)
         {
-            XmlWriterWrapper writerWrapped = XmlWriterWrapper.CreateFromWriter(writer);
+            writer = XmlWriterWrapper.CreateFromWriter(writer);
 
-            await writerWrapped.WriteStartElementAsync(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace);
-            await WriteItemContentsAsync(writerWrapped, item, feedBaseUri);
-            await writerWrapped.WriteEndElementAsync();
+            await writer.WriteStartElementAsync(Rss20Constants.ItemTag, Rss20Constants.Rss20Namespace);
+            await WriteItemContentsAsync(writer, item, feedBaseUri);
+            await writer.WriteEndElementAsync();
         }
 
         protected virtual async Task WriteItemsAsync(XmlWriter writer, IEnumerable<SyndicationItem> items, Uri feedBaseUri)
@@ -1149,7 +1149,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        private async Task WriteAlternateLinkAsync(XmlWriterWrapper writer, SyndicationLink link, Uri baseUri)
+        private async Task WriteAlternateLinkAsync(XmlWriter writer, SyndicationLink link, Uri baseUri)
         {
             await writer.WriteStartElementAsync(Rss20Constants.LinkTag, Rss20Constants.Rss20Namespace);
             Uri baseUriToWrite = FeedUtils.GetBaseUriToWrite(baseUri, link.BaseUri);
@@ -1162,7 +1162,7 @@ namespace Microsoft.ServiceModel.Syndication
             await writer.WriteEndElementAsync();
         }
         
-        private async Task WriteCategoryAsync(XmlWriterWrapper writer, SyndicationCategory category)
+        private async Task WriteCategoryAsync(XmlWriter writer, SyndicationCategory category)
         {
             if (category == null)
             {
@@ -1178,7 +1178,7 @@ namespace Microsoft.ServiceModel.Syndication
             await writer.WriteEndElementAsync();
         }
         
-        private async Task WriteFeedAsync(XmlWriterWrapper writer)
+        private async Task WriteFeedAsync(XmlWriter writer)
         {
             if (this.Feed == null)
             {
@@ -1186,13 +1186,13 @@ namespace Microsoft.ServiceModel.Syndication
             }
             if (_serializeExtensionsAsAtom)
             {
-                await writer.WriteAttributeStringAsync("xmlns", Atom10Constants.Atom10Prefix, null, Atom10Constants.Atom10Namespace);
+                await writer.InternalWriteAttributeStringAsync("xmlns", Atom10Constants.Atom10Prefix, null, Atom10Constants.Atom10Namespace);
             }
             await writer.WriteAttributeStringAsync(Rss20Constants.VersionTag, Rss20Constants.Version);
             await writer.WriteStartElementAsync(Rss20Constants.ChannelTag, Rss20Constants.Rss20Namespace);
             if (this.Feed.BaseUri != null)
             {
-                await writer.WriteAttributeStringAsync("xml", "base", Atom10FeedFormatter.XmlNs, FeedUtils.GetUriString(this.Feed.BaseUri));
+                await writer.InternalWriteAttributeStringAsync("xml", "base", Atom10FeedFormatter.XmlNs, FeedUtils.GetUriString(this.Feed.BaseUri));
             }
             await WriteAttributeExtensionsAsync(writer, this.Feed, this.Version);
             string title = this.Feed.Title != null ? this.Feed.Title.Text : string.Empty;
@@ -1344,12 +1344,12 @@ namespace Microsoft.ServiceModel.Syndication
             await writer.WriteEndElementAsync(); // channel
         }
         
-        private async Task WriteItemContentsAsync(XmlWriterWrapper writer, SyndicationItem item, Uri feedBaseUri)
+        private async Task WriteItemContentsAsync(XmlWriter writer, SyndicationItem item, Uri feedBaseUri)
         {
             Uri baseUriToWrite = FeedUtils.GetBaseUriToWrite(feedBaseUri, item.BaseUri);
             if (baseUriToWrite != null)
             {
-                await writer.WriteAttributeStringAsync("xml", "base", Atom10FeedFormatter.XmlNs, FeedUtils.GetUriString(baseUriToWrite));
+                await writer.InternalWriteAttributeStringAsync("xml", "base", Atom10FeedFormatter.XmlNs, FeedUtils.GetUriString(baseUriToWrite));
             }
             await WriteAttributeExtensionsAsync(writer, item, this.Version);
             string guid = item.Id ?? string.Empty;
@@ -1519,13 +1519,13 @@ namespace Microsoft.ServiceModel.Syndication
             await WriteElementExtensionsAsync(writer, item, this.Version);
         }
         
-        private async Task WriteMediaEnclosureAsync(XmlWriterWrapper writer, SyndicationLink link, Uri baseUri)
+        private async Task WriteMediaEnclosureAsync(XmlWriter writer, SyndicationLink link, Uri baseUri)
         {
             await writer.WriteStartElementAsync(Rss20Constants.EnclosureTag, Rss20Constants.Rss20Namespace);
             Uri baseUriToWrite = FeedUtils.GetBaseUriToWrite(baseUri, link.BaseUri);
             if (baseUriToWrite != null)
             {
-                await writer.WriteAttributeStringAsync("xml", "base", Atom10FeedFormatter.XmlNs, FeedUtils.GetUriString(baseUriToWrite));
+                await writer.InternalWriteAttributeStringAsync("xml", "base", Atom10FeedFormatter.XmlNs, FeedUtils.GetUriString(baseUriToWrite));
             }
             await link.WriteAttributeExtensionsAsync(writer, SyndicationVersions.Rss20);
             if (!link.AttributeExtensions.ContainsKey(s_rss20Url))
@@ -1543,7 +1543,7 @@ namespace Microsoft.ServiceModel.Syndication
             await writer.WriteEndElementAsync();
         }
         
-        private async Task WritePersonAsync(XmlWriterWrapper writer, string elementTag, SyndicationPerson person)
+        private async Task WritePersonAsync(XmlWriter writer, string elementTag, SyndicationPerson person)
         {
             await writer.WriteStartElementAsync(elementTag, Rss20Constants.Rss20Namespace);
             await WriteAttributeExtensionsAsync(writer, person, this.Version);

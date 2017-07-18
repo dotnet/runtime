@@ -25,38 +25,35 @@ namespace Microsoft.ServiceModel.Syndication
         private void InitAsync()
         {
             this.writeStringFunc = new Func<XmlWriterWrapper, string, Task>((thisPtr, text) => { return thisPtr.writer.WriteStringAsync(text); });
-            this.writeStartElementFunc1 = new Func<XmlWriterWrapper, string, Task>( (thisPtr,localname) => { return this.writer.WriteStartElementAsync("",localname,""); });
             this.writeStartElementFunc2 = new Func<XmlWriterWrapper, string, string, Task>((thisPtr, localName, ns) => { return this.writer.WriteStartElementAsync("", localName, ns); });
             this.writeEndElementFunc = new Func<XmlWriterWrapper, Task>((thisPtr) => { return thisPtr.writer.WriteEndElementAsync(); });
-            this.writeElementStringFunc1 = new Func<XmlWriterWrapper, string, string, Task>((thisPtr, localName, value) => { return thisPtr.writer.WriteElementStringAsync("", localName, "", value); });
-            this.writeElementStringFunc2 = new Func<XmlWriterWrapper, string, string, string, Task>((thisPtr, localName, ns, value) => { return thisPtr.writer.WriteElementStringAsync("", localName, ns, value); });
-            this.writeAttributeStringFunc2 = new Func<XmlWriterWrapper, string, string, Task>((thisPtr,localname,value) => { return thisPtr.writer.WriteAttributeStringAsync("", localname, "", value); });
-            this.writeAttributeStringFunc3 = new Func<XmlWriterWrapper, string, string, string, Task>( (thisPtr,localName, ns, value) => { return thisPtr.writer.WriteAttributeStringAsync("", localName, ns, value); });
+            this.writeAttributeStringFunc2 = new Func<XmlWriterWrapper, string, string, Task>((thisPtr, localname, value) => { return thisPtr.writer.WriteAttributeStringAsync("", localname, "", value); });
+            this.writeAttributeStringFunc3 = new Func<XmlWriterWrapper, string, string, string, Task>((thisPtr, localName, ns, value) => { return thisPtr.writer.WriteAttributeStringAsync("", localName, ns, value); });
             this.writeAttributeStringFunc4 = new Func<XmlWriterWrapper, string, string, string, string, Task>((thisPtr, prefix, localName, ns, value) => { return thisPtr.writer.WriteAttributeStringAsync(prefix, localName, ns, value); });
 
-            this.WriteNodeFunc = new Func<XmlWriterWrapper, XmlReader, bool, Task>((thisPtr,reader,defattr) => { return thisPtr.writer.WriteNodeAsync(reader, defattr);  });
+            this.WriteNodeFunc = new Func<XmlWriterWrapper, XmlReader, bool, Task>((thisPtr, reader, defattr) => { return thisPtr.writer.WriteNodeAsync(reader, defattr); });
         }
 
         private void Init()
         {
             this.writeStringFunc = new Func<XmlWriterWrapper, string, Task>((thisPtr, text) => { thisPtr.writer.WriteString(text); return Task.CompletedTask; });
-            this.writeStartElementFunc1 = new Func<XmlWriterWrapper, string, Task>((thisPtr, localname) => { this.writer.WriteStartElement(localname); return Task.CompletedTask; });
-            this.writeStartElementFunc2 = new Func<XmlWriterWrapper, string, string, Task>((thisPtr, localName, ns) => { this.writer.WriteStartElement(localName,ns); return Task.CompletedTask; });
+            this.writeStartElementFunc2 = new Func<XmlWriterWrapper, string, string, Task>((thisPtr, localName, ns) => { this.writer.WriteStartElement(localName, ns); return Task.CompletedTask; });
             this.writeEndElementFunc = new Func<XmlWriterWrapper, Task>((thisPtr) => { thisPtr.writer.WriteEndElement(); return Task.CompletedTask; });
-            this.writeElementStringFunc1 = new Func<XmlWriterWrapper, string, string, Task>((thisPtr, localName, value) => { thisPtr.writer.WriteElementString(localName, value); return Task.CompletedTask; });
-            this.writeElementStringFunc2 = new Func<XmlWriterWrapper, string, string, string, Task>((thisPtr, localName, ns, value) => { thisPtr.writer.WriteElementString(localName,ns,value); return Task.CompletedTask; });
-            this.writeAttributeStringFunc2 = new Func<XmlWriterWrapper, string, string, Task>((thisPtr, localname, value) => {  thisPtr.writer.WriteAttributeString("", localname, "", value); return Task.CompletedTask; });
-            this.writeAttributeStringFunc3 = new Func<XmlWriterWrapper, string, string, string, Task>((thisPtr, localName, ns, value) => { thisPtr.writer.WriteAttributeString(localName,ns,value); return Task.CompletedTask; });
+            this.writeAttributeStringFunc2 = new Func<XmlWriterWrapper, string, string, Task>((thisPtr, localname, value) => { thisPtr.writer.WriteAttributeString("", localname, "", value); return Task.CompletedTask; });
+            this.writeAttributeStringFunc3 = new Func<XmlWriterWrapper, string, string, string, Task>((thisPtr, localName, ns, value) => { thisPtr.writer.WriteAttributeString(localName, ns, value); return Task.CompletedTask; });
             this.writeAttributeStringFunc4 = new Func<XmlWriterWrapper, string, string, string, string, Task>((thisPtr, prefix, localName, ns, value) => { thisPtr.writer.WriteAttributeString(prefix, localName, ns, value); return Task.CompletedTask; });
 
-            this.WriteNodeFunc = new Func<XmlWriterWrapper, XmlReader, bool, Task>((thisPtr,reader,defattr) => { thisPtr.writer.WriteNode(reader, defattr); return Task.CompletedTask; });
+            this.WriteNodeFunc = new Func<XmlWriterWrapper, XmlReader, bool, Task>((thisPtr, reader, defattr) => { thisPtr.writer.WriteNode(reader, defattr); return Task.CompletedTask; });
         }
 
-        public static XmlWriterWrapper CreateFromWriter(XmlWriter writer)
+        public static XmlWriter CreateFromWriter(XmlWriter writer)
         {
-            XmlWriterWrapper wrappedWriter = writer as XmlWriterWrapper;
+            if (writer is XmlWriterWrapper || writer.Settings.Async)
+            {
+                return writer;
+            }
 
-            return wrappedWriter != null ? wrappedWriter : new XmlWriterWrapper(writer);
+            return new XmlWriterWrapper(writer);
         }
 
 
@@ -77,27 +74,22 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-
         // wrapper methods
 
         public override Task WriteNodeAsync(XmlReader reader, bool defattr)
         {
-            return WriteNodeFunc(this,reader,defattr);
+            return WriteNodeFunc(this, reader, defattr);
         }
 
         public override Task WriteStringAsync(string text)
         {
-            return writeStringFunc(this,text);
+            return writeStringFunc(this, text);
         }
 
-        public Task WriteStartElementAsync(string localName)
+        public override Task WriteStartElementAsync(string prefix, string localName, string ns)
         {
-            return writeStartElementFunc1(this, localName);
-        }
-
-        public Task WriteStartElementAsync(string localName, string ns)
-        {
-            return writeStartElementFunc2(this,localName,ns);
+            writer.WriteStartElement(prefix, localName, ns);
+            return Task.CompletedTask;
         }
 
         public override Task WriteEndElementAsync()
@@ -105,29 +97,10 @@ namespace Microsoft.ServiceModel.Syndication
             return writeEndElementFunc(this);
         }
 
-        public Task WriteElementStringAsync(string localName, string value)
+        public override Task WriteAttributesAsync(XmlReader reader, bool defattr)
         {
-            return writeElementStringFunc1(this,localName,value);
-        }
-
-        public Task WriteElementStringAsync(string localName, string ns, string value)
-        {
-            return writeElementStringFunc2(this, localName, ns, value);
-        }
-
-        public new Task WriteAttributeStringAsync(string prefix, string localName, string ns, string value) // ????
-        {
-            return writeAttributeStringFunc4(this, prefix, localName, ns, value);
-        }
-
-        public Task WriteAttributeStringAsync(string localName, string ns, string value)
-        {
-            return writeAttributeStringFunc3(this,localName, ns, value);
-        }
-
-        public Task WriteAttributeStringAsync(string localName,string value)
-        {
-            return writeAttributeStringFunc3(this, localName, "", value);
+            writer.WriteAttributes(reader, defattr);
+            return Task.CompletedTask;
         }
 
         // inherited methods
@@ -138,7 +111,6 @@ namespace Microsoft.ServiceModel.Syndication
                 return this.writer.WriteState;
             }
         }
-        
 
         public override void Flush()
         {
@@ -167,7 +139,7 @@ namespace Microsoft.ServiceModel.Syndication
 
         public override void WriteChars(char[] buffer, int index, int count)
         {
-            this.writer.WriteChars(buffer,index,count);
+            this.writer.WriteChars(buffer, index, count);
         }
 
         public override void WriteComment(string text)
@@ -212,7 +184,7 @@ namespace Microsoft.ServiceModel.Syndication
 
         public override void WriteRaw(char[] buffer, int index, int count)
         {
-            this.writer.WriteRaw(buffer,index,count);
+            this.writer.WriteRaw(buffer, index, count);
         }
 
         public override void WriteRaw(string data)
@@ -222,7 +194,7 @@ namespace Microsoft.ServiceModel.Syndication
 
         public override void WriteStartAttribute(string prefix, string localName, string ns)
         {
-            this.writer.WriteStartAttribute(prefix,localName,ns);
+            this.writer.WriteStartAttribute(prefix, localName, ns);
         }
 
         public override void WriteStartDocument()
@@ -237,7 +209,7 @@ namespace Microsoft.ServiceModel.Syndication
 
         public override void WriteStartElement(string prefix, string localName, string ns)
         {
-            this.writer.WriteStartElement(prefix,localName,ns);
+            this.writer.WriteStartElement(prefix, localName, ns);
         }
 
         public override void WriteString(string text)
@@ -256,79 +228,47 @@ namespace Microsoft.ServiceModel.Syndication
         }
     }
 
-    internal static class XmlWritterExtensions
+    internal static class XmlWriterExtensions
     {
-        //public static async Task WriteNodeAsync(this XmlWriter writer, XmlReader reader, bool defattr)
-        //{
-        //    if (null == reader)
-        //    {
-        //        throw new ArgumentNullException("reader");
-        //    }
+        public static Task WriteStartElementAsync(this XmlWriter writer, string localName)
+        {
+            return writer.WriteStartElementAsync(null, localName, (string)null);
+        }
 
-        //    bool canReadChunk = reader.CanReadValueChunk;
-        //    int d = reader.NodeType == XmlNodeType.None ? -1 : reader.Depth;
-        //    do
-        //    {
-        //        switch (reader.NodeType)
-        //        {
-        //            case XmlNodeType.Element:
-        //                writer.WriteStartElementAsync(reader.Prefix, reader.LocalName, reader.NamespaceURI);
-        //                writer.WriteAttributesAsync(reader, defattr);
-        //                if (reader.IsEmptyElement)
-        //                {
-        //                    writer.WriteEndElementAsync();
-        //                    break;
-        //                }
-        //                break;
-        //            case XmlNodeType.Text:
-        //                if (canReadChunk)
-        //                {
-        //                    if (writer.writeNodeBuffer == null)
-        //                    {
-        //                        writeNodeBuffer = new char[WriteNodeBufferSize];
-        //                    }
-        //                    int read;
-        //                    while ((read = reader.ReadValueChunk(writeNodeBuffer, 0, WriteNodeBufferSize)) > 0)
-        //                    {
-        //                        this.WriteChars(writeNodeBuffer, 0, read);
-        //                    }
-        //                }
-        //                else
-        //                {
+        public static Task WriteStartElementAsync(this XmlWriter writer, string localName, string ns)
+        {
+            return writer.WriteStartElementAsync(null, localName, ns);
+        }
 
-        //                    WriteString(reader.Value);
+        public static Task WriteElementStringAsync(this XmlWriter writer, string localName, string value)
+        {
+            return writer.WriteElementStringAsync(null, localName, null, value);
+        }
 
-        //                }
-        //                break;
-        //            case XmlNodeType.Whitespace:
-        //            case XmlNodeType.SignificantWhitespace:
+        public static Task WriteElementStringAsync(this XmlWriter writer, string localName, string ns, string value)
+        {
+            return writer.WriteElementStringAsync(null, localName, ns, value);
+        }
 
-        //                WriteWhitespace(reader.Value);
+        public static Task WriteAttributeStringAsync(this XmlWriter writer, string localName, string ns, string value)
+        {
+            return writer.InternalWriteAttributeStringAsync(null, localName, ns, value);
+        }
 
-        //                break;
-        //            case XmlNodeType.CDATA:
-        //                WriteCData(reader.Value);
-        //                break;
-        //            case XmlNodeType.EntityReference:
-        //                WriteEntityRef(reader.Name);
-        //                break;
-        //            case XmlNodeType.XmlDeclaration:
-        //            case XmlNodeType.ProcessingInstruction:
-        //                WriteProcessingInstruction(reader.Name, reader.Value);
-        //                break;
-        //            case XmlNodeType.DocumentType:
-        //                WriteDocType(reader.Name, reader.GetAttribute("PUBLIC"), reader.GetAttribute("SYSTEM"), reader.Value);
-        //                break;
+        public static Task WriteAttributeStringAsync(this XmlWriter writer, string localName, string value)
+        {
+            return writer.InternalWriteAttributeStringAsync(null, localName, null, value);
+        }
 
-        //            case XmlNodeType.Comment:
-        //                WriteComment(reader.Value);
-        //                break;
-        //            case XmlNodeType.EndElement:
-        //                WriteFullEndElement();
-        //                break;
-        //        }
-        //    } while (reader.Read() && (d < reader.Depth || (d == reader.Depth && reader.NodeType == XmlNodeType.EndElement)));
-        //}
+        public static Task InternalWriteAttributeStringAsync(this XmlWriter writer, string prefix, string localName, string ns, string value)
+        {
+            if (writer is XmlWriterWrapper)
+            {
+                writer.WriteAttributeString(prefix, localName, ns, value);
+                return Task.CompletedTask;
+            }
 
+            return writer.WriteAttributeStringAsync(prefix, localName, ns, value);
+        }
     }
 }
