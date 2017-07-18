@@ -31,7 +31,7 @@ Globalization support has the following potential challenges for applications:
 * Different behavior across OSes (and potentially OS versions).
 * Installing/carrying the [ICU](http://icu-project.org) package on Linux (~28 MB).
 
-Note: On Linux, .NET Core relies on globalization data from ICU. For example, [.NET Core Linux Docker images](https://github.com/dotnet/dotnet-docker/blob/master/2.0/runtime-deps/stretch/Dockerfile) intall this component. Globalization data is available on Windows and macOS as part of their base installs.
+Note: On Linux, .NET Core relies on globalization data from ICU. For example, [.NET Core Linux Docker images](https://github.com/dotnet/dotnet-docker/blob/master/2.0/runtime-deps/stretch/Dockerfile) install this component. Globalization data is available on Windows and macOS as part of their base installs.
   
 ## Cultures and culture data
  
@@ -86,7 +86,7 @@ String normalization normalizes a string into some form (for example, composed, 
  
 ## Internationalized Domain Names (IDN) support
 
-[Internationalized Domain Names](https://en.wikipedia.org/wiki/Internationalized_domain_name) require globalization data to perform conversion to ACII or Unicode forms, which isn't available in the invariant mode. In this mode, IDN functionality has the following behavior:
+[Internationalized Domain Names](https://en.wikipedia.org/wiki/Internationalized_domain_name) require globalization data to perform conversion to ASCII or Unicode forms, which isn't available in the invariant mode. In this mode, IDN functionality has the following behavior:
 
 * IDN support doesn't conform to the latest standard.
 * IDN support will be incorrect if the input IDN string is not normalized since normalization is not supported in invariant mode.
