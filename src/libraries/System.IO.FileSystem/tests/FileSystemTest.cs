@@ -30,6 +30,8 @@ namespace System.IO.Tests
         public static TheoryData PathsWithReservedDeviceNames = IOInputs.GetPathsWithReservedDeviceNames().ToTheoryData();
         public static TheoryData PathsWithAlternativeDataStreams = IOInputs.GetPathsWithAlternativeDataStreams().ToTheoryData();
         public static TheoryData PathsWithComponentLongerThanMaxComponent = IOInputs.GetPathsWithComponentLongerThanMaxComponent().ToTheoryData();
+        public static TheoryData ControlWhiteSpace = IOInputs.GetControlWhiteSpace().ToTheoryData();
+        public static TheoryData NonControlWhiteSpace = IOInputs.GetNonControlWhiteSpace().ToTheoryData();
 
         /// <summary>
         /// In some cases (such as when running without elevated privileges),

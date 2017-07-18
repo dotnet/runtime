@@ -45,6 +45,26 @@ namespace System.IO.Tests
         }
 
         [Theory]
+        [InlineData("\u00A0")] // Non-breaking Space
+        [InlineData("\u2028")] // Line separator
+        [InlineData("\u2029")] // Paragraph separator
+        [ActiveIssue(21358)] // Pending CoreCLR behavior change
+        public static void GetDirectoryName_NonControl(string path)
+        {
+            Assert.Equal(string.Empty, Path.GetDirectoryName(path));
+        }
+
+        [Theory]
+        [InlineData("\u00A0")] // Non-breaking Space
+        [InlineData("\u2028")] // Line separator
+        [InlineData("\u2029")] // Paragraph separator
+        [ActiveIssue(21358)] // Pending CoreCLR behavior change
+        public static void GetDirectoryName_NonControlWithSeparator(string path)
+        {
+            Assert.Equal(path, Path.GetDirectoryName(Path.Combine(path, path)));
+        }
+
+        [Theory]
         [InlineData(null, null)]
         [InlineData(".", "")]
         [InlineData("..", "")]
@@ -416,8 +436,33 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [Theory]
+        [InlineData("\u0085")] // Next line
+        [InlineData("\u00A0")] // Non breaking space
+        [InlineData("\u2028")] // Line separator
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [ActiveIssue(21358)] // Pending CoreCLR behavior change
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // not NetFX
+        public static void GetFullPath_NonControlWhiteSpaceStays(string component)
+        {
+            // When not NetFX full path should not cut off component
+            string path = "C:\\Test" + component;
+            Assert.Equal(path, Path.GetFullPath(path));
+        }
 
+        [Theory]
+        [InlineData(" ")]
+        [InlineData("  ")]
+        [InlineData("   ")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void GetFullPath_TrailingSpaceCut(string component)
+        {
+            // Windows cuts off any simple white space added to a path
+            string path = "C:\\Test" + component;
+            Assert.Equal("C:\\Test", Path.GetFullPath(path));
+        }
+
+        [Fact]
         public static void GetFullPath_InvalidArgs()
         {
             Assert.Throws<ArgumentNullException>(() => Path.GetFullPath(null));

@@ -333,11 +333,42 @@ namespace System.IO.Tests
         }
 
         [Theory,
-            MemberData(nameof(WhiteSpace))]
+            MemberData(nameof(ControlWhiteSpace))]
         [PlatformSpecific(TestPlatforms.Windows)]  // trailing whitespace in path is removed on Windows
-        public void WindowsTrailingWhiteSpace(string component)
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)] // e.g. NetFX only
+        public void TrailingWhiteSpace_Trimmed(string component)
         {
-            // Windows will remove all non-significant whitespace in a path
+            // On desktop, we trim a number of whitespace characters 
+            DirectoryInfo testDir = Create(GetTestFilePath());
+            string path = IOServices.RemoveTrailingSlash(testDir.FullName) + component;
+            DirectoryInfo result = Create(path);
+
+            Assert.True(Directory.Exists(result.FullName));
+            Assert.Equal(testDir.FullName, IOServices.RemoveTrailingSlash(result.FullName));
+        }
+
+        [Theory,
+            MemberData(nameof(NonControlWhiteSpace))]
+        [PlatformSpecific(TestPlatforms.Windows)]  // trailing whitespace in path is removed on Windows
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // Not NetFX
+        [ActiveIssue(21358)] // Pending CoreCLR behavior change
+        public void TrailingWhiteSpace_NotTrimmed(string component)
+        {
+            // In CoreFX we don't trim anything other than space (' ')
+            DirectoryInfo testDir = Create(GetTestFilePath() + component);
+            string path = IOServices.RemoveTrailingSlash(testDir.FullName);
+            DirectoryInfo result = Create(path);
+
+            Assert.True(Directory.Exists(result.FullName));
+            Assert.Equal(testDir.FullName, IOServices.RemoveTrailingSlash(result.FullName));
+        }
+
+        [Theory,
+            MemberData(nameof(SimpleWhiteSpace))] //*Just Spaces*
+        [PlatformSpecific(TestPlatforms.Windows)]  // trailing whitespace in path is removed on Windows
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // Not NetFX
+        public void TrailingSpace_NotTrimmed(string component)
+        {
             DirectoryInfo testDir = Create(GetTestFilePath());
             string path = IOServices.RemoveTrailingSlash(testDir.FullName) + component;
             DirectoryInfo result = Create(path);

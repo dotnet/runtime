@@ -266,20 +266,41 @@ namespace System.IO.Tests
             Assert.True(Exists(testDir.FullName));
         }
 
-        [ConditionalTheory(nameof(UsingNewNormalization)),
-            MemberData(nameof(WhiteSpace))]
-        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
-        [PlatformSpecific(TestPlatforms.Windows)] // In Windows, trailing whitespace in a path is trimmed appropriately
-        public void TrailingWhitespaceExistence_WhiteSpace(string component)
+        [Theory,
+            MemberData(nameof(ControlWhiteSpace))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)] // e.g. NetFX only
+        public void ControlWhiteSpaceExists(string component)
         {
-            // This test relies on \\?\ support
-
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
 
             string path = testDir.FullName + component;
-            Assert.True(Exists(path), path); // string concat in case Path.Combine() trims whitespace before Exists gets to it
-            Assert.False(Exists(IOInputs.ExtendedPrefix + path), path);
+            Assert.True(Exists(path), "directory with control whitespace should exist");
+        }
 
+        [Theory,
+            MemberData(nameof(NonControlWhiteSpace))]
+        [ActiveIssue(21358)] // Pending CoreCLR behavior change
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // not NetFX
+        public void NonControlWhiteSpaceExists(string component)
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath() + component);
+
+            string path = testDir.FullName;
+            Assert.True(Exists(path), "directory with non control whitespace should exist");
+        }
+
+        [Theory,
+            MemberData(nameof(SimpleWhiteSpace))] // *Just spaces*
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void TrailingSpaceExists(string component)
+        {
+            // Windows trims spaces
+            string path = GetTestFilePath();
+            DirectoryInfo testDir = Directory.CreateDirectory(path + component);
+            Assert.True(Exists(path), "can find without space");
+            Assert.True(Exists(path + component), "can find with space");
         }
 
         [Theory,
