@@ -11,7 +11,6 @@ namespace System.Diagnostics.Tests
     public class ProcessWaitingTests : ProcessTestBase
     {
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapNotUapAot, "https://github.com/dotnet/corefx/issues/22174")]
         public void MultipleProcesses_StartAllKillAllWaitAll()
         {
             const int Iters = 10;
@@ -23,7 +22,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapNotUapAot, "https://github.com/dotnet/corefx/issues/22174")]
         public void MultipleProcesses_SerialStartKillWait()
         {
             const int Iters = 10;
@@ -37,7 +35,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapNotUapAot, "https://github.com/dotnet/corefx/issues/22174")]
         public void MultipleProcesses_ParallelStartKillWait()
         {
             const int Tasks = 4, ItersPerTask = 10;
@@ -63,7 +60,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapNotUapAot, "https://github.com/dotnet/corefx/issues/22174")]
         public void SingleProcess_TryWaitMultipleTimesBeforeCompleting()
         {
             Process p = CreateProcessLong();
@@ -84,7 +80,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapNotUapAot, "https://github.com/dotnet/corefx/issues/22174")]
         [InlineData(false)]
         [InlineData(true)]
         public async Task SingleProcess_WaitAfterExited(bool addHandlerBeforeStart)
@@ -110,18 +105,17 @@ namespace System.Diagnostics.Tests
         }
 
         [Theory]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapNotUapAot, "https://github.com/dotnet/corefx/issues/22174")]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/18210", TargetFrameworkMonikers.UapAot)]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(127)]
         public async Task SingleProcess_EnableRaisingEvents_CorrectExitCode(int exitCode)
         {
-            using (Process p = RemoteInvoke(exitCodeStr => int.Parse(exitCodeStr), exitCode.ToString(), new RemoteInvokeOptions { Start = false }).Process)
+            using (Process p = CreateProcessPortable(RemotelyInvokable.ExitWithCode, exitCode.ToString()))
             {
                 var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
                 p.EnableRaisingEvents = true;
-                p.Exited += delegate { tcs.SetResult(true); };
+                p.Exited += delegate
+                { tcs.SetResult(true); };
                 p.Start();
                 Assert.True(await tcs.Task);
                 Assert.Equal(exitCode, p.ExitCode);
@@ -129,7 +123,6 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapNotUapAot, "https://github.com/dotnet/corefx/issues/22174")]
         public void SingleProcess_CopiesShareExitInformation()
         {
             Process p = CreateProcessLong();
@@ -148,7 +141,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapNotUapAot, "https://github.com/dotnet/corefx/issues/22174")]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22269", TargetFrameworkMonikers.UapNotUapAot)]
         public void WaitForPeerProcess()
         {
             Process child1 = CreateProcessLong();
@@ -175,7 +168,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapNotUapAot, "https://github.com/dotnet/corefx/issues/22174")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapNotUapAot, "Not applicable on uap - RemoteInvoke does not give back process handle")]
         [ActiveIssue(15844, TestPlatforms.AnyUnix)]
         public void WaitChain()
         {
@@ -204,14 +197,9 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [SkipOnTargetFramework(TargetFrameworkMonikers.UapNotUapAot, "https://github.com/dotnet/corefx/issues/22174")]
         public void WaitForSelfTerminatingChild()
         {
-            Process child = CreateProcess(() =>
-            {
-                Process.GetCurrentProcess().Kill();
-                throw new ShouldNotBeInvokedException();
-            });
+            Process child = CreateProcessPortable(RemotelyInvokable.SelfTerminate);
             child.Start();
             Assert.True(child.WaitForExit(WaitInMS));
             Assert.NotEqual(SuccessExitCode, child.ExitCode);
