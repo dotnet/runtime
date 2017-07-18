@@ -215,9 +215,9 @@ namespace System.IO.Tests
 
             Assert.All(IOInputs.GetPathsLongerThanMaxLongPath(GetTestFilePath()), (path) =>
             {
-                Assert.Throws<PathTooLongException>(() => Move(testFileSource, path));
+                AssertExtensions.ThrowsAny<PathTooLongException, FileNotFoundException>(() => Move(testFileSource, path));
                 File.Delete(testFileSource);
-                Assert.Throws<PathTooLongException>(() => Move(path, testFileSource));
+                AssertExtensions.ThrowsAny<PathTooLongException, FileNotFoundException>(() => Move(path, testFileSource));
             });
         }
 
