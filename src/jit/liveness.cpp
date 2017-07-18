@@ -1687,6 +1687,162 @@ void Compiler::fgComputeLifeCall(VARSET_TP& life, GenTreeCall* call)
     }
 }
 
+void Compiler::fgComputeLifeTrackedLocalUse(VARSET_TP& life, LclVarDsc& varDsc, GenTreeLclVarCommon* node)
+{
+    assert(node != nullptr);
+    assert((node->gtFlags & GTF_VAR_DEF) == 0);
+    assert(varDsc.lvTracked);
+
+    const unsigned varIndex = varDsc.lvVarIndex;
+
+    // Is the variable already known to be alive?
+    if (VarSetOps::IsMember(this, life, varIndex))
+    {
+        // Since we may do liveness analysis multiple times, clear the GTF_VAR_DEATH if set.
+        node->gtFlags &= ~GTF_VAR_DEATH;
+        return;
+    }
+
+#ifdef DEBUG
+    if (verbose && 0)
+    {
+        printf("Ref V%02u,T%02u] at ", node->gtLclNum, varIndex);
+        printTreeID(node);
+        printf(" life %s -> %s\n", VarSetOps::ToString(this, life),
+               VarSetOps::ToString(this, VarSetOps::AddElem(this, life, varIndex)));
+    }
+#endif // DEBUG
+
+    // The variable is being used, and it is not currently live.
+    // So the variable is just coming to life
+    node->gtFlags |= GTF_VAR_DEATH;
+    VarSetOps::AddElemD(this, life, varIndex);
+
+    // Record interference with other live variables
+    fgMarkIntf(life, varIndex);
+}
+
+bool Compiler::fgComputeLifeTrackedLocalDef(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, LclVarDsc& varDsc, GenTreeLclVarCommon* node)
+{
+    assert(node != nullptr);
+    assert((node->gtFlags & GTF_VAR_DEF) != 0);
+    assert(varDsc.lvTracked);
+
+    const unsigned varIndex = varDsc.lvVarIndex;
+    if (VarSetOps::IsMember(this, life, varIndex))
+    {
+        /* The variable is live */
+
+        if ((node->gtFlags & GTF_VAR_USEASG) == 0)
+        {
+            /* Mark variable as dead from here to its closest use */
+
+            if (!VarSetOps::IsMember(this, keepAliveVars, varIndex))
+            {
+                VarSetOps::RemoveElemD(this, life, varIndex);
+            }
+#ifdef DEBUG
+            if (verbose && 0)
+            {
+                printf("Def V%02u,T%02u at ", node->gtLclNum, varIndex);
+                printTreeID(node);
+                printf(" life %s -> %s\n",
+                       VarSetOps::ToString(this, VarSetOps::Union(this, life,
+                                                                  VarSetOps::MakeSingleton(this, varIndex))),
+                       VarSetOps::ToString(this, life));
+            }
+#endif // DEBUG
+        }
+    }
+    else
+    {
+        /* Dead assignment to the variable */
+        node->gtFlags |= GTF_VAR_DEATH;
+
+        if (!opts.MinOpts())
+        {
+            // keepAliveVars always stay alive
+            noway_assert(!VarSetOps::IsMember(this, keepAliveVars, varIndex));
+
+            // Do not consider this store dead if the target local variable represents
+            // a promoted struct field of an address exposed local or if the address
+            // of the variable has been exposed. Improved alias analysis could allow
+            // stores to these sorts of variables to be removed at the cost of compile
+            // time.
+            return !varDsc.lvAddrExposed &&
+                   !(varDsc.lvIsStructField && lvaTable[varDsc.lvParentLcl].lvAddrExposed);
+        }
+    }
+
+    return false;
+}
+
+void Compiler::fgComputeLifeUntrackedLocal(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, LclVarDsc& varDsc, GenTreeLclVarCommon* lclVarNode, GenTree* node)
+{
+    assert(lclVarNode != nullptr);
+    assert(node != nullptr);
+
+    if (!varTypeIsStruct(varDsc.lvType) || (lvaGetPromotionType(&varDsc) == PROMOTION_TYPE_NONE))
+    {
+        return;
+    }
+
+    VARSET_TP varBit(VarSetOps::MakeEmpty(this));
+
+    for (unsigned i = varDsc.lvFieldLclStart; i < varDsc.lvFieldLclStart + varDsc.lvFieldCnt; ++i)
+    {
+#if !defined(_TARGET_64BIT_) && !defined(LEGACY_BACKEND)
+        if (!varTypeIsLong(lvaTable[i].lvType) || !lvaTable[i].lvPromoted)
+#endif // !defined(_TARGET_64BIT_) && !defined(LEGACY_BACKEND)
+        {
+            noway_assert(lvaTable[i].lvIsStructField);
+        }
+        if (lvaTable[i].lvTracked)
+        {
+            const unsigned varIndex = lvaTable[i].lvVarIndex;
+            noway_assert(varIndex < lvaTrackedCount);
+            VarSetOps::AddElemD(this, varBit, varIndex);
+        }
+    }
+    if (node->gtFlags & GTF_VAR_DEF)
+    {
+        VarSetOps::DiffD(this, varBit, keepAliveVars);
+        VarSetOps::DiffD(this, life, varBit);
+        return;
+    }
+    // This is a use.
+
+    // Are the variables already known to be alive?
+    if (VarSetOps::IsSubset(this, varBit, life))
+    {
+        node->gtFlags &= ~GTF_VAR_DEATH; // Since we may now call this multiple times, reset if live.
+        return;
+    }
+
+    // Some variables are being used, and they are not currently live.
+    // So they are just coming to life, in the backwards traversal; in a forwards
+    // traversal, one or more are dying.  Mark this.
+
+    node->gtFlags |= GTF_VAR_DEATH;
+
+    // Are all the variables becoming alive (in the backwards traversal), or just a subset?
+    if (!VarSetOps::IsEmptyIntersection(this, varBit, life))
+    {
+        // Only a subset of the variables are become live; we must record that subset.
+        // (Lack of an entry for "lclVarNode" will be considered to imply all become dead in the
+        // forward traversal.)
+        VARSET_TP* deadVarSet = new (this, CMK_bitset) VARSET_TP;
+        VarSetOps::AssignNoCopy(this, *deadVarSet, VarSetOps::Diff(this, varBit, life));
+        GetPromotedStructDeathVars()->Set(lclVarNode, deadVarSet);
+    }
+
+    // In any case, all the field vars are now live (in the backwards traversal).
+    VarSetOps::UnionD(this, life, varBit);
+
+    // Record interference with other live variables
+    fgMarkIntf(life, varBit);
+}
+
 //------------------------------------------------------------------------
 // Compiler::fgComputeLifeLocal: compute the changes to local var liveness
 //                               due to a use or a def of a local var and
@@ -1711,180 +1867,25 @@ bool Compiler::fgComputeLifeLocal(VARSET_TP& life, VARSET_VALARG_TP keepAliveVar
     unsigned lclNum = lclVarNode->gtLclVarCommon.gtLclNum;
 
     assert(lclNum < lvaCount);
-    LclVarDsc* varDsc = &lvaTable[lclNum];
-
-    unsigned  varIndex;
-    VARSET_TP varBit;
+    LclVarDsc& varDsc = lvaTable[lclNum];
 
     // Is this a tracked variable?
-    if (varDsc->lvTracked)
+    if (varDsc.lvTracked)
     {
-        varIndex = varDsc->lvVarIndex;
-        assert(varIndex < lvaTrackedCount);
-
         /* Is this a definition or use? */
-
         if (lclVarNode->gtFlags & GTF_VAR_DEF)
         {
-            /*
-                The variable is being defined here. The variable
-                should be marked dead from here until its closest
-                previous use.
-
-                IMPORTANT OBSERVATION:
-
-                    For GTF_VAR_USEASG (i.e. x <op>= a) we cannot
-                    consider it a "pure" definition because it would
-                    kill x (which would be wrong because x is
-                    "used" in such a construct) -> see below the case when x is live
-             */
-
-            if (VarSetOps::IsMember(this, life, varIndex))
-            {
-                /* The variable is live */
-
-                if ((lclVarNode->gtFlags & GTF_VAR_USEASG) == 0)
-                {
-                    /* Mark variable as dead from here to its closest use */
-
-                    if (!VarSetOps::IsMember(this, keepAliveVars, varIndex))
-                    {
-                        VarSetOps::RemoveElemD(this, life, varIndex);
-                    }
-#ifdef DEBUG
-                    if (verbose && 0)
-                    {
-                        printf("Def V%02u,T%02u at ", lclNum, varIndex);
-                        printTreeID(lclVarNode);
-                        printf(" life %s -> %s\n",
-                               VarSetOps::ToString(this, VarSetOps::Union(this, life,
-                                                                          VarSetOps::MakeSingleton(this, varIndex))),
-                               VarSetOps::ToString(this, life));
-                    }
-#endif // DEBUG
-                }
-            }
-            else
-            {
-                /* Dead assignment to the variable */
-                lclVarNode->gtFlags |= GTF_VAR_DEATH;
-
-                if (!opts.MinOpts())
-                {
-                    // keepAliveVars always stay alive
-                    noway_assert(!VarSetOps::IsMember(this, keepAliveVars, varIndex));
-
-                    /* This is a dead store unless the variable is marked
-                       GTF_VAR_USEASG and we are in an interior statement
-                       that will be used (e.g. while (i++) or a GT_COMMA) */
-
-                    // Do not consider this store dead if the target local variable represents
-                    // a promoted struct field of an address exposed local or if the address
-                    // of the variable has been exposed. Improved alias analysis could allow
-                    // stores to these sorts of variables to be removed at the cost of compile
-                    // time.
-                    return !varDsc->lvAddrExposed &&
-                           !(varDsc->lvIsStructField && lvaTable[varDsc->lvParentLcl].lvAddrExposed);
-                }
-            }
-
-            return false;
+            return fgComputeLifeTrackedLocalDef(life, keepAliveVars, varDsc, lclVarNode->AsLclVarCommon());
         }
-        else // it is a use
+        else
         {
-            // Is the variable already known to be alive?
-            if (VarSetOps::IsMember(this, life, varIndex))
-            {
-                // Since we may do liveness analysis multiple times, clear the GTF_VAR_DEATH if set.
-                lclVarNode->gtFlags &= ~GTF_VAR_DEATH;
-                return false;
-            }
-
-#ifdef DEBUG
-            if (verbose && 0)
-            {
-                printf("Ref V%02u,T%02u] at ", lclNum, varIndex);
-                printTreeID(node);
-                printf(" life %s -> %s\n", VarSetOps::ToString(this, life),
-                       VarSetOps::ToString(this, VarSetOps::AddElem(this, life, varIndex)));
-            }
-#endif // DEBUG
-
-            // The variable is being used, and it is not currently live.
-            // So the variable is just coming to life
-            lclVarNode->gtFlags |= GTF_VAR_DEATH;
-            VarSetOps::AddElemD(this, life, varIndex);
-
-            // Record interference with other live variables
-            fgMarkIntf(life, varIndex);
+            fgComputeLifeTrackedLocalUse(life, varDsc, lclVarNode->AsLclVarCommon());
         }
     }
-    // Note that promoted implies not tracked (i.e. only the fields are tracked).
-    else if (varTypeIsStruct(varDsc->lvType))
+    else
     {
-        noway_assert(!varDsc->lvTracked);
-
-        lvaPromotionType promotionType = lvaGetPromotionType(varDsc);
-
-        if (promotionType != PROMOTION_TYPE_NONE)
-        {
-            VarSetOps::AssignNoCopy(this, varBit, VarSetOps::MakeEmpty(this));
-
-            for (unsigned i = varDsc->lvFieldLclStart; i < varDsc->lvFieldLclStart + varDsc->lvFieldCnt; ++i)
-            {
-#if !defined(_TARGET_64BIT_) && !defined(LEGACY_BACKEND)
-                if (!varTypeIsLong(lvaTable[i].lvType) || !lvaTable[i].lvPromoted)
-#endif // !defined(_TARGET_64BIT_) && !defined(LEGACY_BACKEND)
-                {
-                    noway_assert(lvaTable[i].lvIsStructField);
-                }
-                if (lvaTable[i].lvTracked)
-                {
-                    varIndex = lvaTable[i].lvVarIndex;
-                    noway_assert(varIndex < lvaTrackedCount);
-                    VarSetOps::AddElemD(this, varBit, varIndex);
-                }
-            }
-            if (node->gtFlags & GTF_VAR_DEF)
-            {
-                VarSetOps::DiffD(this, varBit, keepAliveVars);
-                VarSetOps::DiffD(this, life, varBit);
-                return false;
-            }
-            // This is a use.
-
-            // Are the variables already known to be alive?
-            if (VarSetOps::IsSubset(this, varBit, life))
-            {
-                node->gtFlags &= ~GTF_VAR_DEATH; // Since we may now call this multiple times, reset if live.
-                return false;
-            }
-
-            // Some variables are being used, and they are not currently live.
-            // So they are just coming to life, in the backwards traversal; in a forwards
-            // traversal, one or more are dying.  Mark this.
-
-            node->gtFlags |= GTF_VAR_DEATH;
-
-            // Are all the variables becoming alive (in the backwards traversal), or just a subset?
-            if (!VarSetOps::IsEmptyIntersection(this, varBit, life))
-            {
-                // Only a subset of the variables are become live; we must record that subset.
-                // (Lack of an entry for "lclVarNode" will be considered to imply all become dead in the
-                // forward traversal.)
-                VARSET_TP* deadVarSet = new (this, CMK_bitset) VARSET_TP;
-                VarSetOps::AssignNoCopy(this, *deadVarSet, VarSetOps::Diff(this, varBit, life));
-                GetPromotedStructDeathVars()->Set(lclVarNode, deadVarSet);
-            }
-
-            // In any case, all the field vars are now live (in the backwards traversal).
-            VarSetOps::UnionD(this, life, varBit);
-
-            // Record interference with other live variables
-            fgMarkIntf(life, varBit);
-        }
+        fgComputeLifeUntrackedLocal(life, keepAliveVars, varDsc, lclVarNode->AsLclVarCommon(), node);
     }
-
     return false;
 }
 
