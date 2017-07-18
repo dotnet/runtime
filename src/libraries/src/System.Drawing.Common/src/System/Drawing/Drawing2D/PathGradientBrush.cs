@@ -334,6 +334,11 @@ namespace System.Drawing.Drawing2D
 
         public void SetSigmaBellShape(float focus, float scale)
         {
+            if (focus < 0 || focus > 1 || scale < 0 || scale > 1)
+            {
+                throw new ArgumentException(SR.Format(SR.GdiplusInvalidParameter));
+            }
+
             int status = SafeNativeMethods.Gdip.GdipSetPathGradientSigmaBlend(new HandleRef(this, NativeBrush), focus, scale);
 
             if (status != SafeNativeMethods.Gdip.Ok)
@@ -344,6 +349,11 @@ namespace System.Drawing.Drawing2D
 
         public void SetBlendTriangularShape(float focus, float scale)
         {
+            if (focus < 0 || focus > 1 || scale < 0 || scale > 1)
+            {
+                throw new ArgumentException(SR.Format(SR.GdiplusInvalidParameter));
+            }
+
             int status = SafeNativeMethods.Gdip.GdipSetPathGradientLinearBlend(new HandleRef(this, NativeBrush), focus, scale);
 
             if (status != SafeNativeMethods.Gdip.Ok)
