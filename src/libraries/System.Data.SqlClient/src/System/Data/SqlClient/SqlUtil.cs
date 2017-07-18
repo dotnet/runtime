@@ -939,6 +939,10 @@ namespace System.Data.SqlClient
         {
             return SR.GetString(SR.SQL_SSPIGenerateError);
         }
+        internal static string SqlServerBrowserNotAccessible()
+        {
+            return SR.GetString(SR.SQL_SqlServerBrowserNotAccessible);
+        }
         internal static string KerberosTicketMissingError()
         {
             return SR.GetString(SR.SQL_KerberosTicketMissingError);

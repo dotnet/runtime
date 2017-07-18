@@ -27,7 +27,15 @@ namespace System.Data.SqlClient.SNI
             Debug.Assert(!string.IsNullOrWhiteSpace(instanceName), "instanceName should not be null, empty, or whitespace");
 
             byte[] instanceInfoRequest = CreateInstanceInfoRequest(instanceName);
-            byte[] responsePacket = SendUDPRequest(browserHostName, SqlServerBrowserPort, instanceInfoRequest);
+            byte[] responsePacket = null;
+            try
+            {
+                responsePacket = SendUDPRequest(browserHostName, SqlServerBrowserPort, instanceInfoRequest);
+            }
+            catch (SocketException se)
+            {
+                throw new Exception(SQLMessage.SqlServerBrowserNotAccessible(), se);
+            }
 
             const byte SvrResp = 0x05;
             if (responsePacket == null || responsePacket.Length <= 3 || responsePacket[0] != SvrResp ||
