@@ -116,13 +116,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
     Compiler*   compiler = comp;
 
     TreeNodeInfo* info = &(tree->gtLsraInfo);
-#ifdef DEBUG
-    if (comp->verbose)
-    {
-        printf("TreeNodeInfoInit:\n");
-        comp->gtDispTreeRange(BlockRange(), tree);
-    }
-#endif
+
     // floating type generates AVX instruction (vmovss etc.), set the flag
     SetContainsAVXFlags(varTypeIsFloating(tree->TypeGet()));
     switch (tree->OperGet())
