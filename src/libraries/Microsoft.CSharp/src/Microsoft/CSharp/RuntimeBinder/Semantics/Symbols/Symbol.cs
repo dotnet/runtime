@@ -9,23 +9,6 @@ using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
-    // Alias ID's are indices into BitSets.
-    // 0 is reserved for the global namespace alias.
-    // 1 is reserved for this assembly.
-    // Start assigning at kaidStartAssigning.
-    internal enum KAID
-    {
-        kaidNil = -1,
-
-        kaidGlobal = 0,
-        kaidThisAssembly,
-        kaidUnresolved,
-        kaidStartAssigning,
-
-        // Module id's are in their own range.
-        kaidMinModule = 0x10000000,
-    }
-
     /*
      * Define the different access levels that symbols can have.
      */

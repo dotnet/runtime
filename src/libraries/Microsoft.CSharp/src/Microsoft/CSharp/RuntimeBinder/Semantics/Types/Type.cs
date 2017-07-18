@@ -16,7 +16,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private Name _pName;
 
         private bool _fHasErrors;  // Whether anyituents have errors. This is immutable.
-        private bool _fUnres;      // Whether anyituents are unresolved. This is immutable.
         private bool _isBogus;     // can't be used in our language -- unsupported type(s)
         private bool _checkedBogus; // Have we checked a method args/return for bogus types
 
@@ -300,7 +299,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             _fHasErrors = typePar.HasErrors();
-            _fUnres = typePar.IsUnresolved();
         }
 
         public bool HasErrors()
@@ -310,14 +308,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public void SetErrors(bool fHasErrors)
         {
             _fHasErrors = fHasErrors;
-        }
-        public bool IsUnresolved()
-        {
-            return _fUnres;
-        }
-        public void SetUnresolved(bool fUnres)
-        {
-            _fUnres = fUnres;
         }
 
         ////////////////////////////////////////////////////////////////////////////////
