@@ -76,7 +76,7 @@ namespace System.IO
         // "\\server\share").
         public static string GetDirectoryName(string path)
         {
-            if (string.IsNullOrWhiteSpace(path))
+            if (PathInternal.IsEffectivelyEmpty(path))
             {
                 if (path == null) return null;
                 throw new ArgumentException(SR.Arg_PathEmpty, nameof(path));
@@ -491,7 +491,7 @@ namespace System.IO
         private static string GetRelativePath(string relativeTo, string path, StringComparison comparisonType)
         {
             if (string.IsNullOrEmpty(relativeTo)) throw new ArgumentNullException(nameof(relativeTo));
-            if (string.IsNullOrWhiteSpace(path)) throw new ArgumentNullException(nameof(path));
+            if (PathInternal.IsEffectivelyEmpty(path)) throw new ArgumentNullException(nameof(path));
             Debug.Assert(comparisonType == StringComparison.Ordinal || comparisonType == StringComparison.OrdinalIgnoreCase);
 
             relativeTo = GetFullPath(relativeTo);

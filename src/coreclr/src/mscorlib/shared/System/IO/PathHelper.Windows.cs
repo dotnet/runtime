@@ -23,7 +23,7 @@ namespace System.IO
         /// Normalize the given path.
         /// </summary>
         /// <remarks>
-        /// Normalizes via Win32 GetFullPathName(). It will also trim all "typical" whitespace at the end of the path (see s_trimEndChars). Will also trim initial
+        /// Normalizes via Win32 GetFullPathName(). Will also trim initial
         /// spaces if the path is determined to be rooted.
         /// 
         /// Note that invalid characters will be checked after the path is normalized, which could remove bad characters. (C:\|\..\a.txt -- C:\a.txt)
@@ -46,9 +46,6 @@ namespace System.IO
             try
             {
                 GetFullPathName(path, ref fullPath);
-
-                // Trim whitespace off the end of the string. Win32 normalization trims only U+0020.
-                fullPath.TrimEnd(PathInternal.s_trimEndChars);
 
                 // Checking path validity used to happen before getting the full path name. To avoid additional input allocation
                 // (to trim trailing whitespace) we now do it after the Win32 call. This will allow legitimate paths through that
