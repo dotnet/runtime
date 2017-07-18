@@ -21,7 +21,7 @@
     <PlatformPackageVersion>2.1.0-preview1-25324-02</PlatformPackageVersion>
     <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview2-25517-01</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <MicrosoftNETCoreRuntimeJitPackageVersion>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</MicrosoftNETCoreRuntimeJitPackageVersion>
-    <MicrosoftNetNativeCompilerPackageVersion>2.0.0-preview-25511-00</MicrosoftNetNativeCompilerPackageVersion>
+    <MicrosoftNetNativeCompilerPackageVersion>2.0.0-preview-25518-00</MicrosoftNetNativeCompilerPackageVersion>
     <NETStandardVersion>2.1.0-preview1-25517-01</NETStandardVersion>
     <DiaSymReaderNativeVersion>1.4.1</DiaSymReaderNativeVersion>
     <WcfVersion>4.5.0-preview2-25507-04</WcfVersion>
