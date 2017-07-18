@@ -4427,7 +4427,7 @@ array_constructed:
 				goto main_loop;
 			}
 			if (frame->ex)
-				goto handle_fault;
+				goto handle_catch;
 			ves_abort();
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_LEAVE) /* Fall through */
@@ -5067,6 +5067,7 @@ die_on_ex:
 		int i;
 		guint32 ip_offset;
 		MonoExceptionClause *clause;
+		GSList *old_list = finally_ips;
 		MonoMethod *method = frame->runtime_method->method;
 		MonoMethodHeader *header = mono_method_get_header_checked (method, &error);
 		mono_error_cleanup (&error); /* FIXME: don't swallow the error */
@@ -5080,13 +5081,23 @@ die_on_ex:
 			clause = &rtm->clauses [i];
 			if (clause->flags == MONO_EXCEPTION_CLAUSE_FAULT && MONO_OFFSET_IN_CLAUSE (clause, ip_offset)) {
 				ip = rtm->code + clause->handler_offset;
+				finally_ips = g_slist_prepend (finally_ips, (gpointer) ip);
 #if DEBUG_INTERP
 				if (tracing)
 					g_print ("* Executing handler at IL_%04x\n", clause->handler_offset);
 #endif
-				goto main_loop;
 			}
 		}
+
+		if (old_list != finally_ips && finally_ips) {
+			ip = finally_ips->data;
+			finally_ips = g_slist_remove (finally_ips, ip);
+			sp = frame->stack; /* spec says stack should be empty at endfinally so it should be at the start too */
+			goto main_loop;
+		}
+	}
+	handle_catch:
+	{
 		/*
 		 * If the handler for the exception was found in this method, we jump
 		 * to it right away, otherwise we return and let the caller run
