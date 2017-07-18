@@ -3171,6 +3171,15 @@ public:
 #endif
     }
 
+#ifdef DEBUG
+    // NOTE: we only use this function when writing out IR dumps. These dumps may take place before the ReturnTypeDesc
+    // has been initialized.
+    unsigned TryGetReturnRegCount() const
+    {
+        return m_inited ? GetReturnRegCount() : 0;
+    }
+#endif // DEBUG
+
     //--------------------------------------------------------------------------------------------
     // GetReturnRegCount:  Get the count of return registers in which the return value is returned.
     //
