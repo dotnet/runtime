@@ -6,13 +6,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
     internal sealed class ExprBlock : ExprStatement
     {
-        public ExprBlock()
+        public ExprBlock(ExprStatement optionalStatements)
             : base(ExpressionKind.Block)
         {
+            OptionalStatements = optionalStatements;
         }
 
         public ExprStatement OptionalStatements { get; set; }
-
-        public Scope OptionalScopeSymbol { get; set; }
     }
 }

@@ -332,7 +332,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // returns true if an implicit conversion exists from source type to dest type. flags is an optional parameter.
         private bool canConvert(CType src, CType dest, CONVERTTYPE flags)
         {
-            ExprClass exprDest = ExprFactory.MakeClass(dest);
+            ExprClass exprDest = ExprFactory.CreateClass(dest);
             return BindImplicitConversion(null, src, exprDest, dest, flags);
         }
 
@@ -349,7 +349,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private bool canConvert(Expr expr, CType dest, CONVERTTYPE flags)
         {
-            ExprClass exprDest = ExprFactory.MakeClass(dest);
+            ExprClass exprDest = ExprFactory.CreateClass(dest);
             return BindImplicitConversion(expr, expr.Type, exprDest, dest, flags);
         }
 
@@ -446,7 +446,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private Expr tryConvert(Expr expr, CType dest, CONVERTTYPE flags)
         {
             Expr exprResult;
-            ExprClass exprDest = ExprFactory.MakeClass(dest);
+            ExprClass exprDest = ExprFactory.CreateClass(dest);
             if (BindImplicitConversion(expr, expr.Type, exprDest, dest, out exprResult, flags))
             {
                 checkUnsafe(expr.Type); // added to the binder so we don't bind to pointer ops
@@ -463,7 +463,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private Expr mustConvert(Expr expr, CType dest, CONVERTTYPE flags)
         {
-            ExprClass exprClass = ExprFactory.MakeClass(dest);
+            ExprClass exprClass = ExprFactory.CreateClass(dest);
             return mustConvert(expr, exprClass, flags);
         }
         private Expr mustConvert(Expr expr, ExprClass dest, CONVERTTYPE flags)
@@ -577,7 +577,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
         public Expr mustCast(Expr expr, CType dest, CONVERTTYPE flags)
         {
-            ExprClass exprDest = ExprFactory.MakeClass(dest);
+            ExprClass exprDest = ExprFactory.CreateClass(dest);
             return mustCastCore(expr, exprDest, flags);
         }
         private Expr mustCastInUncheckedContext(Expr expr, CType dest, CONVERTTYPE flags)
@@ -589,7 +589,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // returns true if an explicit conversion exists from source type to dest type. flags is an optional parameter.
         private bool canCast(CType src, CType dest, CONVERTTYPE flags)
         {
-            ExprClass destExpr = ExprFactory.MakeClass(dest);
+            ExprClass destExpr = ExprFactory.CreateClass(dest);
             return BindExplicitConversion(null, src, destExpr, dest, flags);
         }
 
@@ -1376,7 +1376,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(0 <= iuciBestSrc && iuciBestSrc < prguci.Count);
             Debug.Assert(0 <= iuciBestDst && iuciBestDst < prguci.Count);
             ErrorContext.Error(ErrorCode.ERR_AmbigUDConv, prguci[iuciBestSrc].mwt, prguci[iuciBestDst].mwt, typeSrc, typeDst);
-            ExprClass exprClass = ExprFactory.MakeClass(typeDst);
+            ExprClass exprClass = ExprFactory.CreateClass(typeDst);
             Expr pexprDst = ExprFactory.CreateCast(0, exprClass, exprSrc);
             pexprDst.SetError();
             return pexprDst;
@@ -1420,12 +1420,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private Expr BindUDConversionCore(Expr pFrom, CType pTypeFrom, CType pTypeTo, CType pTypeDestination, MethWithInst mwiBest, out Expr ppTransformedArgument)
         {
-            ExprClass pClassFrom = ExprFactory.MakeClass(pTypeFrom);
+            ExprClass pClassFrom = ExprFactory.CreateClass(pTypeFrom);
             Expr pTransformedArgument = mustCastCore(pFrom, pClassFrom, CONVERTTYPE.NOUDC);
             Debug.Assert(pTransformedArgument != null);
             ExprMemberGroup pMemGroup = ExprFactory.CreateMemGroup(null, mwiBest);
             ExprCall pCall = ExprFactory.CreateCall(0, pTypeTo, pTransformedArgument, pMemGroup, mwiBest);
-            ExprClass pDestination = ExprFactory.MakeClass(pTypeDestination);
+            ExprClass pDestination = ExprFactory.CreateClass(pTypeDestination);
             Expr pCast = mustCastCore(pCall, pDestination, CONVERTTYPE.NOUDC);
             Debug.Assert(pCast != null);
             ppTransformedArgument = pTransformedArgument;

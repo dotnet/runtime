@@ -2413,7 +2413,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (ptOp == PredefinedType.PT_UINT && op.Type.fundType() == FUNDTYPE.FT_U4)
             {
-                ExprClass exprObj = GetExprFactory().MakeClass(GetReqPDT(PredefinedType.PT_LONG));
+                ExprClass exprObj = GetExprFactory().CreateClass(GetReqPDT(PredefinedType.PT_LONG));
                 op = mustConvertCore(op, exprObj, CONVERTTYPE.NOUDC);
             }
 

@@ -146,7 +146,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return local.Local.wrap;
             }
             Debug.Assert(local.Local.fUsedInAnonMeth);
-            return GetExprFactory().CreateHoistedLocalInExpression(local);
+            return GetExprFactory().CreateHoistedLocalInExpression();
         }
         protected override Expr VisitFIELD(ExprField expr)
         {
@@ -895,7 +895,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
                 Debug.Assert(anonmeth.OptionalBody != null);
                 Expr create = GenerateParameter(local.name.Text, local.GetType());
-                local.wrap = GetExprFactory().CreateWrapNoAutoFree(anonmeth.OptionalBody.OptionalScopeSymbol, create);
+                local.wrap = GetExprFactory().CreateWrap(create);
                 Expr save = GetExprFactory().CreateSave(local.wrap);
                 if (sequence == null)
                 {
@@ -925,7 +925,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
                 Debug.Assert(local.wrap != null);
                 Debug.Assert(anonmeth.OptionalBody != null);
-                Expr freeWrap = GetExprFactory().CreateWrap(anonmeth.OptionalBody.OptionalScopeSymbol, local.wrap);
+                Expr freeWrap = GetExprFactory().CreateWrap(local.wrap);
                 sequence = GetExprFactory().CreateReverseSequence(sequence, freeWrap);
             }
             return sequence;
@@ -1016,7 +1016,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Expr newIndex = it.Current();
                 if (newIndex.Type != intType)
                 {
-                    ExprClass exprType = expressionFactory.CreateClass(intType, null);
+                    ExprClass exprType = expressionFactory.CreateClass(intType);
                     newIndex = expressionFactory.CreateCast(EXPRFLAG.EXF_INDEXEXPR, exprType, newIndex);
                     newIndex.Flags |= EXPRFLAG.EXF_CHECKOVERFLOW;
                 }
@@ -1044,7 +1044,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 flags = EXPRFLAG.EXF_BOX;
             }
 
-            ExprClass objectType = GetExprFactory().MakeClass(pObject);
+            ExprClass objectType = GetExprFactory().CreateClass(pObject);
             ExprCast cast = GetExprFactory().CreateCast(flags, objectType, expr);
             ExprTypeOf pTypeOf2 = CreateTypeOf(expr.Type);
 
@@ -1114,10 +1114,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             AggregateType paramsArrayElementType = GetSymbolLoader().GetOptPredefTypeErr(pt);
             ArrayType paramsArrayType = GetSymbolLoader().GetTypeManager().GetArray(paramsArrayElementType, 1, true);
             ExprConstant paramsArrayArg = GetExprFactory().CreateIntegerConstant(parameterCount);
-            ExprArrayInit arrayInit = GetExprFactory().CreateArrayInit(EXPRFLAG.EXF_CANTBENULL, paramsArrayType, args, paramsArrayArg, null);
-            arrayInit.DimensionSize = parameterCount;
-            arrayInit.DimensionSizes = new int[] { arrayInit.DimensionSize }; // CLEANUP: Why isn't this done by the factory?
-            return arrayInit;
+            return GetExprFactory().CreateArrayInit(paramsArrayType, args, paramsArrayArg, new int[] { parameterCount }, parameterCount);
         }
 
         private void FixLiftedUserDefinedBinaryOperators(ExprBinOp expr, ref Expr pp1, ref Expr pp2)

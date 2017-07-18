@@ -14,9 +14,22 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // of the type we are actually calling through.  (We need to know the
         // "through" type to ensure that protected semantics are correctly enforced.)
 
-        public ExprProperty(CType type)
+        public ExprProperty(CType type, Expr pOptionalObjectThrough, Expr pOptionalArguments, ExprMemberGroup pMemberGroup, PropWithType pwtSlot, MethWithType mwtSet)
             : base(ExpressionKind.Property, type)
         {
+            OptionalObjectThrough = pOptionalObjectThrough;
+            OptionalArguments = pOptionalArguments;
+            MemberGroup = pMemberGroup;
+
+            if (pwtSlot != null)
+            {
+                PropWithTypeSlot = pwtSlot;
+            }
+
+            if (mwtSet != null)
+            {
+                MethWithTypeSet = mwtSet;
+            }
         }
 
         public Expr OptionalArguments { get; set; }
@@ -25,15 +38,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public Expr OptionalObject
         {
-            get { return MemberGroup.OptionalObject; }
-            set { MemberGroup.OptionalObject = value; }
+            get => MemberGroup.OptionalObject;
+            set => MemberGroup.OptionalObject = value;
         }
 
-        public Expr OptionalObjectThrough { get; set; }
+        public Expr OptionalObjectThrough { get; }
 
-        public PropWithType PropWithTypeSlot { get; set; }
+        public PropWithType PropWithTypeSlot { get; }
 
-        public MethWithType MethWithTypeSet { get; set; }
+        public MethWithType MethWithTypeSet { get; }
 
         public bool IsBaseCall => 0 != (Flags & EXPRFLAG.EXF_BASECALL);
 

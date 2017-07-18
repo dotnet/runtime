@@ -122,8 +122,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return VisitLOCAL(pExpr as ExprLocal);
                 case ExpressionKind.Constant:
                     return VisitCONSTANT(pExpr as ExprConstant);
-                case ExpressionKind.TypeArguments:
-                    return VisitTYPEARGUMENTS(pExpr as ExprTypeArguments);
                 case ExpressionKind.Class:
                     return VisitCLASS(pExpr as ExprClass);
                 case ExpressionKind.FunctionPointer:
@@ -154,8 +152,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return VisitMEMGRP(pExpr as ExprMemberGroup);
                 case ExpressionKind.BoundLambda:
                     return VisitBOUNDLAMBDA(pExpr as ExprBoundLambda);
-                case ExpressionKind.UnboundLambda:
-                    return VisitUNBOUNDLAMBDA(pExpr as ExprUnboundLambda);
                 case ExpressionKind.HoistedLocalExpression:
                     return VisitHOISTEDLOCALEXPR(pExpr as ExprHoistedLocalExpr);
                 case ExpressionKind.FieldInfo:
@@ -429,7 +425,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                   TYPEORNAMESPACEERROR - This is the error class for the type or namespace exprs when we don't know
                     what to bind it to.
 
-                  The following three exprs all have a TYPEORNAMESPACE child, which is their fundamental type:
+                  The following two exprs all have a TYPEORNAMESPACE child, which is their fundamental type:
                     POINTERTYPE - This wraps the sym for the pointer type.
                     NULLABLETYPE - This wraps the sym for the nullable type.
 
@@ -441,11 +437,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                   ALIAS - This represents an alias
 
                 *************************************************************************************************/
-
-                case ExpressionKind.TypeArguments:
-                    exprRet = Visit((pExpr as ExprTypeArguments).OptionalElements);
-                    (pExpr as ExprTypeArguments).OptionalElements = exprRet;
-                    break;
 
                 case ExpressionKind.Multi:
                     exprRet = Visit((pExpr as ExprMulti).Left);
@@ -483,7 +474,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case ExpressionKind.MultiGet:
                 case ExpressionKind.Wrap:
                 case ExpressionKind.NoOp:
-                case ExpressionKind.UnboundLambda:
                 case ExpressionKind.HoistedLocalExpression:
                 case ExpressionKind.FieldInfo:
                 case ExpressionKind.MethodInfo:
@@ -590,10 +580,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual Expr VisitTYPEARGUMENTS(ExprTypeArguments pExpr)
-        {
-            return VisitEXPR(pExpr);
-        }
         protected virtual Expr VisitFUNCPTR(ExprFuncPtr pExpr)
         {
             return VisitEXPR(pExpr);
@@ -622,10 +608,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             return VisitEXPR(pExpr);
         }
-        protected virtual Expr VisitUNBOUNDLAMBDA(ExprUnboundLambda pExpr)
-        {
-            return VisitEXPR(pExpr);
-        }
+
         protected virtual Expr VisitHOISTEDLOCALEXPR(ExprHoistedLocalExpr pExpr)
         {
             return VisitEXPR(pExpr);
