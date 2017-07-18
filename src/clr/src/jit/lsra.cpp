@@ -1754,15 +1754,6 @@ BasicBlock* LinearScan::getNextBlock()
 
 void LinearScan::doLinearScan()
 {
-#ifdef DEBUG
-    if (VERBOSE)
-    {
-        printf("*************** In doLinearScan\n");
-        printf("Trees before linear scan register allocator (LSRA)\n");
-        compiler->fgDispBasicBlocks(true);
-    }
-#endif // DEBUG
-
     unsigned lsraBlockEpoch = compiler->GetCurBasicBlockEpoch();
 
     splitBBNumToTargetBBNumMap = nullptr;
@@ -3598,33 +3589,51 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
     // gtRsvdRegs register mask. Clear it out.
     tree->gtRsvdRegs = RBM_NONE;
 
-#ifdef DEBUG
-    if (VERBOSE)
-    {
-        JITDUMP("at start of tree, map contains: { ");
-        bool first = true;
-        for (auto kvp : operandToLocationInfoMap)
-        {
-            GenTree*         node    = kvp.Key();
-            LocationInfoList defList = kvp.Value();
-
-            JITDUMP("%sN%03u. %s -> (", first ? "" : "; ", node->gtSeqNum, GenTree::OpName(node->OperGet()));
-            for (LocationInfoListNode *def = defList.Begin(), *end = defList.End(); def != end; def = def->Next())
-            {
-                JITDUMP("%s%d.N%03u", def == defList.Begin() ? "" : ", ", def->loc, def->treeNode->gtSeqNum);
-            }
-            JITDUMP(")");
-
-            first = false;
-        }
-        JITDUMP(" }\n");
-    }
-#endif // DEBUG
-
     TreeNodeInfo info = tree->gtLsraInfo;
     assert(info.IsValid(this));
     int consume = info.srcCount;
     int produce = info.dstCount;
+
+#ifdef DEBUG
+    if (VERBOSE)
+    {
+        lsraDispNode(tree, LSRA_DUMP_REFPOS, (produce != 0));
+        JITDUMP("\n");
+        if (tree->isContained())
+        {
+            JITDUMP("Contained\n");
+        }
+        else if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD) && info.isLocalDefUse)
+        {
+            JITDUMP("Unused\n");
+        }
+        else
+        {
+            JITDUMP("  consume=%d produce=%d\n", consume, produce);
+        }
+
+        if (consume != 0)
+        {
+            JITDUMP("at start of tree, map contains: { ");
+            bool first = true;
+            for (auto kvp : operandToLocationInfoMap)
+            {
+                GenTree*         node    = kvp.Key();
+                LocationInfoList defList = kvp.Value();
+
+                JITDUMP("%sN%03u. %s -> (", first ? "" : "; ", node->gtSeqNum, GenTree::OpName(node->OperGet()));
+                for (LocationInfoListNode *def = defList.Begin(), *end = defList.End(); def != end; def = def->Next())
+                {
+                    JITDUMP("%s%d.N%03u", def == defList.Begin() ? "" : ", ", def->loc, def->treeNode->gtSeqNum);
+                }
+                JITDUMP(")");
+
+                first = false;
+            }
+            JITDUMP(" }\n");
+        }
+    }
+#endif // DEBUG
 
     assert(((consume == 0) && (produce == 0)) || (ComputeAvailableSrcCount(tree) == consume));
 
@@ -3661,8 +3670,6 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
                 VarSetOps::RemoveElemD(compiler, currentLiveVars, varIndex);
             }
 
-            JITDUMP("t%u (i:%u)", currentLoc, getIntervalForLocalVar(varIndex)->intervalIndex);
-
             if (!info.isLocalDefUse && !tree->isContained())
             {
                 assert(produce != 0);
@@ -3673,25 +3680,9 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
 
                 tree->gtLsraInfo.definesAnyRegisters = true;
             }
-#ifdef DEBUG
-            else
-            {
-                JITDUMP(": %s", tree->isContained() ? "contained" : "unused");
-            }
-            JITDUMP("\n");
-#endif // DEBUG
             return;
         }
     }
-
-#ifdef DEBUG
-    if (VERBOSE)
-    {
-        lsraDispNode(tree, LSRA_DUMP_REFPOS, (produce != 0));
-        JITDUMP("\n");
-        JITDUMP("  consume=%d produce=%d\n", consume, produce);
-    }
-#endif // DEBUG
 
     if (tree->isContained())
     {
@@ -3724,7 +3715,7 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
             assert(added);
             tree->gtLsraInfo.definesAnyRegisters = true;
         }
-
+        JITDUMP("\n");
         return;
     }
 
@@ -3843,32 +3834,6 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
         }
     }
 
-#ifdef DEBUG
-    if (VERBOSE)
-    {
-        if (produce)
-        {
-            if (varDefInterval != nullptr)
-            {
-                printf("t%u (i:%u) = op ", currentLoc, varDefInterval->intervalIndex);
-            }
-            else
-            {
-                for (int i = 0; i < produce; i++)
-                {
-                    printf("t%u ", currentLoc);
-                }
-                printf("= op ");
-            }
-        }
-        else
-        {
-            printf("     op ");
-        }
-        printf("\n");
-    }
-#endif // DEBUG
-
     Interval* prefSrcInterval = nullptr;
 
     // If this is a binary operator that will be encoded with 2 operand fields
@@ -3976,8 +3941,6 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
         {
             LocationInfo& locInfo = *static_cast<LocationInfo*>(operandDefsIterator);
 
-            JITDUMP("t%u ", locInfo.loc);
-
             // for interstitial tree temps, a use is always last and end; this is set by default in newRefPosition
             GenTree* const useNode = locInfo.treeNode;
             assert(useNode != nullptr);
@@ -4044,7 +4007,6 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
 
         return GenTree::VisitResult::Continue;
     });
-    JITDUMP("\n");
 
     buildInternalRegisterUsesForNode(tree, currentLoc, internalRefs, internalCount DEBUG_ARG(minRegCount));
 
@@ -4053,7 +4015,7 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
     regMaskTP    useCandidates = getUseCandidates(tree);
 
 #ifdef DEBUG
-    if (VERBOSE)
+    if (VERBOSE && produce)
     {
         printf("Def candidates ");
         dumpRegMask(candidates);
@@ -4175,7 +4137,6 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
             pos->isLocalDefUse = true;
             pos->lastUse       = true;
         }
-        DBEXEC(VERBOSE, pos->dump());
         interval->updateRegisterPreferences(currCandidates);
         interval->updateRegisterPreferences(useCandidates);
     }
@@ -4194,6 +4155,7 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
         assert(added);
         tree->gtLsraInfo.definesAnyRegisters = true;
     }
+    JITDUMP("\n");
 }
 
 // make an interval for each physical register
@@ -4746,6 +4708,7 @@ void LinearScan::buildIntervals()
         // this point.
 
         RefPosition* pos = newRefPosition((Interval*)nullptr, currentLoc, RefTypeBB, nullptr, RBM_NONE);
+        JITDUMP("\n");
 
         LIR::Range& blockRange = LIR::AsRange(block);
         for (GenTree* node : blockRange.NonPhiNodes())
@@ -8583,12 +8546,13 @@ void LinearScan::recordMaxSpill()
             // nothing else normalizes to 'i', either.
             assert(maxSpill[i] == 0);
         }
-        JITDUMP("  %s: %d\n", varTypeName(var_types(i)), maxSpill[i]);
         if (maxSpill[i] != 0)
         {
+            JITDUMP("  %s: %d\n", varTypeName(var_types(i)), maxSpill[i]);
             compiler->tmpPreAllocateTemps(var_types(i), maxSpill[i]);
         }
     }
+    JITDUMP("\n");
 }
 
 //------------------------------------------------------------------------
@@ -8779,10 +8743,6 @@ void LinearScan::resolveRegisters()
                (currentRefPosition->refType != RefTypeParamDef && currentRefPosition->refType != RefTypeZeroInit));
     }
 
-    JITDUMP("------------------------\n");
-    JITDUMP("WRITING BACK ASSIGNMENTS\n");
-    JITDUMP("------------------------\n");
-
     BasicBlock* insertionBlock = compiler->fgFirstBB;
     GenTreePtr  insertionPoint = LIR::AsRange(insertionBlock).FirstNonPhiNode();
 
@@ -8790,14 +8750,6 @@ void LinearScan::resolveRegisters()
     for (block = startBlockSequence(); block != nullptr; block = moveToNextBlock())
     {
         assert(curBBNum == block->bbNum);
-
-#ifdef DEBUG
-        if (VERBOSE)
-        {
-            block->dspBlockHeader(compiler);
-            currentRefPosition->dump();
-        }
-#endif // DEBUG
 
         if (enregisterLocalVars)
         {
@@ -8843,8 +8795,6 @@ void LinearScan::resolveRegisters()
              ++currentRefPosition)
         {
             currentLocation = currentRefPosition->nodeLocation;
-            JITDUMP("current : ");
-            DBEXEC(VERBOSE, currentRefPosition->dump());
 
             // Ensure that the spill & copy info is valid.
             // First, if it's reload, it must not be copyReg or moveReg
@@ -8933,53 +8883,14 @@ void LinearScan::resolveRegisters()
                     assert(currentRefPosition->refType == RefTypeDef);
                     varDsc->lvRegNum = REG_STK;
                 }
-
-                JITDUMP("No tree node to write back to\n");
                 continue;
             }
 
-            DBEXEC(VERBOSE, lsraDispNode(treeNode, LSRA_DUMP_REFPOS, true));
-            JITDUMP("\n");
-
             LsraLocation loc = treeNode->gtLsraInfo.loc;
-            JITDUMP("curr = %u mapped = %u", currentLocation, loc);
             assert(treeNode->IsLocal() || currentLocation == loc || currentLocation == loc + 1);
 
             if (currentRefPosition->isIntervalRef() && currentRefPosition->getInterval()->isInternal)
             {
-                JITDUMP(" internal");
-                GenTreePtr indNode = nullptr;
-                if (treeNode->OperGet() == GT_IND)
-                {
-                    indNode = treeNode;
-                    JITDUMP(" allocated at GT_IND");
-                }
-                if (indNode != nullptr)
-                {
-                    GenTreePtr addrNode = indNode->gtOp.gtOp1;
-                    if (addrNode->OperGet() != GT_ARR_ELEM)
-                    {
-                        addrNode->gtRsvdRegs |= currentRefPosition->registerAssignment;
-                        JITDUMP(", recorded on addr");
-                    }
-                }
-                if (treeNode->OperGet() == GT_ARR_ELEM)
-                {
-                    // TODO-Review: See WORKAROUND ALERT in buildRefPositionsForNode()
-                    GenTreePtr firstIndexTree = treeNode->gtArrElem.gtArrInds[0];
-                    assert(firstIndexTree != nullptr);
-                    if (firstIndexTree->IsLocal() && (firstIndexTree->gtFlags & GTF_VAR_DEATH) == 0)
-                    {
-                        // Record the LAST internal interval
-                        // (Yes, this naively just records each one, but the next will replace it;
-                        // I'd fix this if it wasn't just a temporary fix)
-                        if (currentRefPosition->refType == RefTypeDef)
-                        {
-                            JITDUMP(" allocated at GT_ARR_ELEM, recorded on firstIndex V%02u");
-                            firstIndexTree->gtRsvdRegs = (regMaskSmall)currentRefPosition->registerAssignment;
-                        }
-                    }
-                }
                 treeNode->gtRsvdRegs |= currentRefPosition->registerAssignment;
             }
             else
@@ -9066,7 +8977,6 @@ void LinearScan::resolveRegisters()
                     }
                 }
             }
-            JITDUMP("\n");
         }
 
         if (enregisterLocalVars)
@@ -10868,10 +10778,10 @@ void LinearScan::lsraGetOperandString(GenTreePtr        tree,
     switch (mode)
     {
         case LinearScan::LSRA_DUMP_PRE:
-            _snprintf_s(operandString, operandStringLength, operandStringLength, "t%d%s", tree->gtSeqNum, lastUseChar);
+            _snprintf_s(operandString, operandStringLength, operandStringLength, "t%d%s", tree->gtTreeID, lastUseChar);
             break;
         case LinearScan::LSRA_DUMP_REFPOS:
-            _snprintf_s(operandString, operandStringLength, operandStringLength, "t%d%s", tree->gtSeqNum, lastUseChar);
+            _snprintf_s(operandString, operandStringLength, operandStringLength, "t%d%s", tree->gtTreeID, lastUseChar);
             break;
         case LinearScan::LSRA_DUMP_POST:
         {
@@ -11959,20 +11869,18 @@ void LinearScan::dumpRegRecords()
 
 void LinearScan::dumpIntervalName(Interval* interval)
 {
-    char intervalChar;
     if (interval->isLocalVar)
     {
-        intervalChar = 'V';
+        printf(intervalNameFormat, 'V', interval->varNum);
     }
     else if (interval->isConstant)
     {
-        intervalChar = 'C';
+        printf(intervalNameFormat, 'C', interval->intervalIndex);
     }
     else
     {
-        intervalChar = 'I';
+        printf(intervalNameFormat, 'I', interval->intervalIndex);
     }
-    printf(intervalNameFormat, intervalChar, interval->intervalIndex);
 }
 
 void LinearScan::dumpEmptyRefPosition()
