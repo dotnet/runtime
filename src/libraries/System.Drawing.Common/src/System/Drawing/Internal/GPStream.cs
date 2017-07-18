@@ -74,8 +74,6 @@ namespace System.Drawing.Internal
             ActualizeVirtualPosition();
         }
 
-        [UIPermission(SecurityAction.Demand, Window = UIPermissionWindow.AllWindows)]
-        [SecurityPermission(SecurityAction.Assert, Flags = SecurityPermissionFlag.UnmanagedCode)]
         public virtual long CopyTo(UnsafeNativeMethods.IStream pstm, long cb, long[] pcbRead)
         {
             int bufsize = 4096; // one page

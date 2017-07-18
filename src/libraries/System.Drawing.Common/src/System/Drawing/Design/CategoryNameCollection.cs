@@ -10,7 +10,6 @@ namespace System.Drawing.Design
     /// <summary>
     /// A collection that stores <see cref='string'/> objects.
     /// </summary>
-    [PermissionSet(SecurityAction.LinkDemand, Name = "FullTrust")]
     public sealed class CategoryNameCollection : ReadOnlyCollectionBase
     {
         /// <summary>
