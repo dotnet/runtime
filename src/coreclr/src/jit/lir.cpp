@@ -981,7 +981,7 @@ void LIR::Range::Remove(GenTree* node, bool markOperandsUnused)
     if (markOperandsUnused)
     {
         node->VisitOperands([](GenTree* operand) -> GenTree::VisitResult {
-            operand->gtLIRFlags |= Flags::IsUnusedValue;
+            operand->SetUnusedValue();
             return GenTree::VisitResult::Continue;
         });
     }
@@ -1189,7 +1189,7 @@ bool LIR::Range::TryGetUse(GenTree* node, Use* use)
     // Don't bother looking for uses of nodes that are not values.
     // If the node is the last node, we won't find a use (and we would
     // end up creating an illegal range if we tried).
-    if (node->IsValue() && ((node->gtLIRFlags & Flags::IsUnusedValue) == 0) && (node != LastNode()))
+    if (node->IsValue() && !node->IsUnusedValue() && (node != LastNode()))
     {
         for (GenTree* n : ReadOnlyRange(node->gtNext, m_lastNode))
         {
@@ -1499,8 +1499,7 @@ bool LIR::Range::CheckLIR(Compiler* compiler, bool checkUnusedValues) const
         {
             GenTree* def = *useEdge;
 
-            assert((!checkUnusedValues || ((def->gtLIRFlags & LIR::Flags::IsUnusedValue) == 0)) &&
-                   "operands should never be marked as unused values");
+            assert(!(checkUnusedValues && def->IsUnusedValue()) && "operands should never be marked as unused values");
 
             if (def->OperGet() == GT_ARGPLACE)
             {
@@ -1562,7 +1561,7 @@ bool LIR::Range::CheckLIR(Compiler* compiler, bool checkUnusedValues) const
         for (auto kvp : unusedDefs)
         {
             GenTree* node = kvp.Key();
-            assert(((node->gtLIRFlags & LIR::Flags::IsUnusedValue) != 0) && "found an unmarked unused value");
+            assert(node->IsUnusedValue() && "found an unmarked unused value");
         }
     }
 
