@@ -15,12 +15,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private SymbolTable _runtimeBinderSymbolTable;
         private readonly BSYMMGR _pBSymmgr;
         private AggregateSymbol[] _predefSyms;    // array of predefined symbol types.
-        private KAID _aidMsCorLib;        // The assembly ID for all predefined types.
 
         public PredefinedTypes(BSYMMGR pBSymmgr)
         {
             _pBSymmgr = pBSymmgr;
-            _aidMsCorLib = KAID.kaidNil;
             _runtimeBinderSymbolTable = null;
         }
 
@@ -47,154 +45,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return sym;
         }
 
-        public bool Init(ErrorHandling errorContext, SymbolTable symtable)
+        public void Init(SymbolTable symtable)
         {
             _runtimeBinderSymbolTable = symtable;
             Debug.Assert(_pBSymmgr != null);
             Debug.Assert(_predefSyms == null);
 
-            if (_aidMsCorLib == KAID.kaidNil)
-            {
-                // If we haven't found mscorlib yet, first look for System.Object. Then use its assembly as
-                // the location for all other pre-defined types.
-                AggregateSymbol aggObj = FindPredefinedType(errorContext, PredefinedTypeFacts.GetName(PredefinedType.PT_OBJECT), KAID.kaidGlobal, AggKindEnum.Class, 0, true);
-                if (aggObj == null)
-                    return false;
-                _aidMsCorLib = aggObj.GetAssemblyID();
-            }
-
             _predefSyms = new AggregateSymbol[(int)PredefinedType.PT_COUNT];
-            Debug.Assert(_predefSyms != null);
-
-            return true;
-        }
-
-        ////////////////////////////////////////////////////////////////////////////////
-        // finds an existing declaration for a predefined type.
-        // returns null on failure. If isRequired is true, an error message is also 
-        // given.
-
-        private static readonly char[] s_nameSeparators = new char[] { '.' };
-
-        private AggregateSymbol FindPredefinedType(ErrorHandling errorContext, string pszType, KAID aid, AggKindEnum aggKind, int arity, bool isRequired)
-        {
-            Debug.Assert(!string.IsNullOrEmpty(pszType)); // Shouldn't be the empty string!
-
-            NamespaceOrAggregateSymbol bagCur = _pBSymmgr.GetRootNS();
-            Name name = null;
-
-            string[] nameParts = pszType.Split(s_nameSeparators);
-            for (int i = 0, n = nameParts.Length; i < n; i++)
-            {
-                name = _pBSymmgr.GetNameManager().Add(nameParts[i]);
-
-                if (i == n - 1)
-                {
-                    // This is the last component. Handle it special below.
-                    break;
-                }
-
-                // first search for an outer type which is also predefined
-                // this must be first because we always create a namespace for
-                // outer names, even for nested types
-                AggregateSymbol aggNext = _pBSymmgr.LookupGlobalSymCore(name, bagCur, symbmask_t.MASK_AggregateSymbol).AsAggregateSymbol();
-                if (aggNext != null && aggNext.InAlias(aid) && aggNext.IsPredefined())
-                {
-                    bagCur = aggNext;
-                }
-                else
-                {
-                    // ... if no outer type, then search for namespaces
-                    NamespaceSymbol nsNext = _pBSymmgr.LookupGlobalSymCore(name, bagCur, symbmask_t.MASK_NamespaceSymbol).AsNamespaceSymbol();
-                    bool bIsInAlias = true;
-                    if (nsNext == null)
-                    {
-                        bIsInAlias = false;
-                    }
-                    else
-                    {
-                        bIsInAlias = nsNext.InAlias(aid);
-                    }
-                    if (!bIsInAlias)
-                    {
-                        // Didn't find the namespace in this aid.
-                        if (isRequired)
-                        {
-                            errorContext.Error(ErrorCode.ERR_PredefinedTypeNotFound, pszType);
-                        }
-                        return null;
-                    }
-                    bagCur = nsNext;
-                }
-            }
-
-            AggregateSymbol aggAmbig;
-            AggregateSymbol aggBad;
-            AggregateSymbol aggFound = FindPredefinedTypeCore(name, bagCur, aid, aggKind, arity, out aggAmbig, out aggBad);
-
-            if (aggFound == null)
-            {
-                // Didn't find the AggregateSymbol.
-                if (isRequired)
-                {
-                    if (aggBad != null)
-                        errorContext.ErrorRef(ErrorCode.ERR_PredefinedTypeBadType, aggBad);
-                    else
-                        errorContext.Error(ErrorCode.ERR_PredefinedTypeNotFound, pszType);
-                }
-                return null;
-            }
-
-            if (aggAmbig == null && aid != KAID.kaidGlobal)
-            {
-                // Look in kaidGlobal to make sure there isn't a conflicting one.
-                AggregateSymbol tmp;
-                AggregateSymbol agg2 = FindPredefinedTypeCore(name, bagCur, KAID.kaidGlobal, aggKind, arity, out aggAmbig, out tmp);
-                Debug.Assert(agg2 != null);
-                if (agg2 != aggFound)
-                    aggAmbig = agg2;
-            }
-
-            return aggFound;
-        }
-
-        private AggregateSymbol FindPredefinedTypeCore(Name name, NamespaceOrAggregateSymbol bag, KAID aid, AggKindEnum aggKind, int arity,
-                out AggregateSymbol paggAmbig, out AggregateSymbol paggBad)
-        {
-            AggregateSymbol aggFound = null;
-            paggAmbig = null;
-            paggBad = null;
-
-            for (AggregateSymbol aggCur = _pBSymmgr.LookupGlobalSymCore(name, bag, symbmask_t.MASK_AggregateSymbol).AsAggregateSymbol();
-                 aggCur != null;
-                 aggCur = BSYMMGR.LookupNextSym(aggCur, bag, symbmask_t.MASK_AggregateSymbol).AsAggregateSymbol())
-            {
-                if (!aggCur.InAlias(aid) || aggCur.GetTypeVarsAll().Count != arity)
-                {
-                    continue;
-                }
-                if (aggCur.AggKind() != aggKind)
-                {
-                    if (paggBad == null)
-                    {
-                        paggBad = aggCur;
-                    }
-                    continue;
-                }
-                if (aggFound != null)
-                {
-                    Debug.Assert(paggAmbig == null);
-                    paggAmbig = aggCur;
-                    break;
-                }
-                aggFound = aggCur;
-                if (paggAmbig == null)
-                {
-                    break;
-                }
-            }
-
-            return aggFound;
         }
 
         public void ReportMissingPredefTypeError(ErrorHandling errorContext, PredefinedType pt)

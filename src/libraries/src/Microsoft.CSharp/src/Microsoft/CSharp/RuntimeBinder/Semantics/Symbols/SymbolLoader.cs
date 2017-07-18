@@ -19,7 +19,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public SymbolLoader(
             GlobalSymbolContext globalSymbols,
-            UserStringBuilder userStringBuilder,
             ErrorHandling errorContext
         )
         {
@@ -97,11 +96,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public AggregateType GetReqPredefType(PredefinedType pt)
         {
-            return GetReqPredefType(pt, true);
-        }
-
-        public AggregateType GetReqPredefType(PredefinedType pt, bool fEnsureState)
-        {
             AggregateSymbol agg = GetTypeManager().GetReqPredefAgg(pt);
             if (agg == null)
             {
@@ -114,21 +108,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public AggregateSymbol GetOptPredefAgg(PredefinedType pt)
         {
-            return GetOptPredefAgg(pt, true);
-        }
-
-        private AggregateSymbol GetOptPredefAgg(PredefinedType pt, bool fEnsureState)
-        {
-            AggregateSymbol agg = GetTypeManager().GetOptPredefAgg(pt);
-            return agg;
+            return GetTypeManager().GetOptPredefAgg(pt);
         }
 
         public AggregateType GetOptPredefType(PredefinedType pt)
-        {
-            return GetOptPredefType(pt, true);
-        }
-
-        public AggregateType GetOptPredefType(PredefinedType pt, bool fEnsureState)
         {
             AggregateSymbol agg = GetTypeManager().GetOptPredefAgg(pt);
             if (agg == null)
@@ -137,7 +120,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return ats;
         }
 
-        public AggregateType GetOptPredefTypeErr(PredefinedType pt, bool fEnsureState)
+        public AggregateType GetOptPredefTypeErr(PredefinedType pt)
         {
             AggregateSymbol agg = GetTypeManager().GetOptPredefAgg(pt);
             if (agg == null)
@@ -402,7 +385,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
             // * From any array type to System.Array or any interface implemented by System.Array.
             if (pSource.IsArrayType() && (pDest.isPredefType(PredefinedType.PT_ARRAY) ||
-                IsBaseInterface(GetReqPredefType(PredefinedType.PT_ARRAY, false), pDest)))
+                IsBaseInterface(GetReqPredefType(PredefinedType.PT_ARRAY), pDest)))
             {
                 return true;
             }
@@ -426,7 +409,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (pSource.isDelegateType() &&
                 (pDest.isPredefType(PredefinedType.PT_MULTIDEL) ||
                 pDest.isPredefType(PredefinedType.PT_DELEGATE) ||
-                IsBaseInterface(GetReqPredefType(PredefinedType.PT_MULTIDEL, false), pDest)))
+                IsBaseInterface(GetReqPredefType(PredefinedType.PT_MULTIDEL), pDest)))
             {
                 return true;
             }
@@ -800,7 +783,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public bool FCanLift()
         {
-            return null != GetOptPredefAgg(PredefinedType.PT_G_OPTIONAL, false);
+            return null != GetOptPredefAgg(PredefinedType.PT_G_OPTIONAL);
         }
 
         public bool IsBaseAggregate(AggregateSymbol derived, AggregateSymbol @base)

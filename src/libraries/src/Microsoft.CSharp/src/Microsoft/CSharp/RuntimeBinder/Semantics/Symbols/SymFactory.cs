@@ -23,7 +23,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return (sym);
         }
 
-        public AssemblyQualifiedNamespaceSymbol CreateNamespaceAid(Name name, ParentSymbol parent, KAID assemblyID)
+        public AssemblyQualifiedNamespaceSymbol CreateNamespaceAid(Name name, ParentSymbol parent)
         {
             Debug.Assert(name != null);
 
@@ -34,33 +34,23 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         /////////////////////////////////////////////////////////////////////////////////
-        public AggregateSymbol CreateAggregate(Name name, NamespaceOrAggregateSymbol parent, InputFile infile, TypeManager typeManager)
+        public AggregateSymbol CreateAggregate(Name name, NamespaceOrAggregateSymbol parent, TypeManager typeManager)
         {
-            if (name == null || parent == null || infile == null || typeManager == null)
+            if (name == null || parent == null || typeManager == null)
             {
                 throw Error.InternalCompilerError();
             }
 
-            AggregateSymbol sym = null;
-            if (infile.GetAssemblyID() == KAID.kaidUnresolved)
-            {
-                // Unresolved aggs need extra storage.
-                sym = CreateUnresolvedAggregate(name, parent, typeManager);
-            }
-            else
-            {
-                sym = newBasicSym(SYMKIND.SK_AggregateSymbol, name, parent).AsAggregateSymbol();
-                sym.name = name;
-                sym.SetTypeManager(typeManager);
-                sym.SetSealed(false);
-                sym.SetAccess(ACCESS.ACC_UNKNOWN);
-                sym.initBogus();
-                sym.SetIfaces(null);
-                sym.SetIfacesAll(null);
-                sym.SetTypeVars(null);
-            }
+            AggregateSymbol sym = newBasicSym(SYMKIND.SK_AggregateSymbol, name, parent).AsAggregateSymbol();
+            sym.name = name;
+            sym.SetTypeManager(typeManager);
+            sym.SetSealed(false);
+            sym.SetAccess(ACCESS.ACC_UNKNOWN);
+            sym.initBogus();
+            sym.SetIfaces(null);
+            sym.SetIfacesAll(null);
+            sym.SetTypeVars(null);
 
-            sym.InitFromInfile(infile);
             return sym;
         }
 
@@ -77,23 +67,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             Debug.Assert(sym != null);
             return (sym);
-        }
-
-        private AggregateSymbol CreateUnresolvedAggregate(Name name, ParentSymbol parent, TypeManager typeManager)
-        {
-            Debug.Assert(name != null);
-
-            Symbol sym = newBasicSym(SYMKIND.SK_UnresolvedAggregateSymbol, name, parent);
-            AggregateSymbol AggregateSymbol = null;
-
-            // Unresolved Aggs need extra storage, but are still considered Aggs.
-
-            sym.setKind(SYMKIND.SK_AggregateSymbol);
-            AggregateSymbol = sym.AsAggregateSymbol();
-            AggregateSymbol.SetTypeManager(typeManager);
-
-            Debug.Assert(AggregateSymbol != null);
-            return (AggregateSymbol);
         }
 
         // Members of aggs

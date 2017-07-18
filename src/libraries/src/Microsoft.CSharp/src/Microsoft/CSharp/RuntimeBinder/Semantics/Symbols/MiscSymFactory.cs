@@ -16,13 +16,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
         }
 
-        // Files
-        public InputFile CreateMDInfile(Name name)
-        {
-            InputFile sym = new InputFile();
-            return sym;
-        }
-
         public Scope CreateScope(Scope parent)
         {
             Scope sym = newBasicSym(SYMKIND.SK_Scope, null, parent).AsScope();
