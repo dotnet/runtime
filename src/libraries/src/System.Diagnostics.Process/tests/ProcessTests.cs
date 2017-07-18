@@ -143,14 +143,25 @@ namespace System.Diagnostics.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapNotUapAot, "https://github.com/dotnet/corefx/issues/22174")]
         public void TestExitTime()
         {
-            // ExitTime resolution on some platforms is less accurate than our DateTime.UtcNow resolution, so
-            // we subtract ms from the begin time to account for it.
-            DateTime timeBeforeProcessStart = DateTime.UtcNow.AddMilliseconds(-25);
-            Process p = CreateProcessLong();
-            p.Start();
-            Assert.Throws<InvalidOperationException>(() => p.ExitTime);
-            p.Kill();
-            Assert.True(p.WaitForExit(WaitInMS));
+            // Try twice, since it's possible that the system clock could be adjusted backwards between when we snapshot it
+            // and when the process ends, but vanishingly unlikely that would happen twice.
+            DateTime timeBeforeProcessStart = DateTime.MaxValue;
+            Process p = null;
+
+            for (int i = 0; i <= 1; i++)
+            {
+                // ExitTime resolution on some platforms is less accurate than our DateTime.UtcNow resolution, so
+                // we subtract ms from the begin time to account for it.
+                timeBeforeProcessStart = DateTime.UtcNow.AddMilliseconds(-25);
+                p = CreateProcessLong();
+                p.Start();
+                Assert.Throws<InvalidOperationException>(() => p.ExitTime);
+                p.Kill();
+                Assert.True(p.WaitForExit(WaitInMS));
+
+                if (p.ExitTime.ToUniversalTime() >= timeBeforeProcessStart)
+                    break;
+            }
 
             Assert.True(p.ExitTime.ToUniversalTime() >= timeBeforeProcessStart,
                 $@"TestExitTime is incorrect. " +
