@@ -137,11 +137,11 @@ namespace Microsoft.ServiceModel.Syndication
                 throw new ArgumentNullException(nameof(writer));
             }
 
-            XmlWriterWrapper wrappedWriter = XmlWriterWrapper.CreateFromWriter(writer);
+            writer = XmlWriterWrapper.CreateFromWriter(writer);
 
-            await wrappedWriter.WriteStartElementAsync(Atom10Constants.FeedTag, Atom10Constants.Atom10Namespace);
-            await WriteFeedAsync(wrappedWriter);
-            await wrappedWriter.WriteEndElementAsync();
+            await writer.WriteStartElementAsync(Atom10Constants.FeedTag, Atom10Constants.Atom10Namespace);
+            await WriteFeedAsync(writer);
+            await writer.WriteEndElementAsync();
         }
 
         internal static async Task ReadCategoryAsync(XmlReaderWrapper reader, SyndicationCategory category, string version, bool preserveAttributeExtensions, bool preserveElementExtensions, int _maxExtensionSize)
@@ -250,7 +250,7 @@ namespace Microsoft.ServiceModel.Syndication
             return ReadTextContentFromHelperAsync(reader, type, context, preserveAttributeExtensions);
         }
 
-        internal static async Task WriteCategoryAsync(XmlWriterWrapper writer, SyndicationCategory category, string version)
+        internal static async Task WriteCategoryAsync(XmlWriter writer, SyndicationCategory category, string version)
         {
             await writer.WriteStartElementAsync(Atom10Constants.CategoryTag, Atom10Constants.Atom10Namespace);
             await WriteAttributeExtensionsAsync(writer, category, version);
@@ -416,7 +416,7 @@ namespace Microsoft.ServiceModel.Syndication
             return Task.CompletedTask;
         }
 
-        internal async Task WriteElementAsync(XmlWriterWrapper writer, string elementName, string value)
+        internal async Task WriteElementAsync(XmlWriter writer, string elementName, string value)
         {
             if (value != null)
             {
@@ -426,25 +426,25 @@ namespace Microsoft.ServiceModel.Syndication
 
         internal async Task WriteFeedAuthorsToAsync(XmlWriter writer, Collection<SyndicationPerson> authors)
         {
-            XmlWriterWrapper wrappedWriter = XmlWriterWrapper.CreateFromWriter(writer);
+            writer = XmlWriterWrapper.CreateFromWriter(writer);
             for (int i = 0; i < authors.Count; ++i)
             {
                 SyndicationPerson p = authors[i];
-                await WritePersonToAsync(wrappedWriter, p, Atom10Constants.AuthorTag);
+                await WritePersonToAsync(writer, p, Atom10Constants.AuthorTag);
             }
         }
 
         internal async Task WriteFeedContributorsToAsync(XmlWriter writer, Collection<SyndicationPerson> contributors)
         {
-            XmlWriterWrapper wrappedWriter = XmlWriterWrapper.CreateFromWriter(writer);
+            writer = XmlWriterWrapper.CreateFromWriter(writer);
             for (int i = 0; i < contributors.Count; ++i)
             {
                 SyndicationPerson p = contributors[i];
-                await WritePersonToAsync(wrappedWriter, p, Atom10Constants.ContributorTag);
+                await WritePersonToAsync(writer, p, Atom10Constants.ContributorTag);
             }
         }
 
-        internal Task WriteFeedLastUpdatedTimeToAsync(XmlWriterWrapper writer, DateTimeOffset lastUpdatedTime, bool isRequired)
+        internal Task WriteFeedLastUpdatedTimeToAsync(XmlWriter writer, DateTimeOffset lastUpdatedTime, bool isRequired)
         {
             if (lastUpdatedTime == DateTimeOffset.MinValue && isRequired)
             {
@@ -461,31 +461,31 @@ namespace Microsoft.ServiceModel.Syndication
 
         internal async Task WriteItemAuthorsToAsync(XmlWriter writer, Collection<SyndicationPerson> authors)
         {
-            XmlWriterWrapper wrappedWriter = XmlWriterWrapper.CreateFromWriter(writer);
+            writer = XmlWriterWrapper.CreateFromWriter(writer);
             for (int i = 0; i < authors.Count; ++i)
             {
                 SyndicationPerson p = authors[i];
-                await WritePersonToAsync(wrappedWriter, p, Atom10Constants.AuthorTag);
+                await WritePersonToAsync(writer, p, Atom10Constants.AuthorTag);
             }
         }
 
         internal Task WriteItemContentsAsync(XmlWriter dictWriter, SyndicationItem item)
         {
-            return WriteItemContentsAsync(XmlWriterWrapper.CreateFromWriter(dictWriter), item, null);
+            return WriteItemContentsAsync(dictWriter, item, null);
         }
 
         internal async Task WriteItemContributorsToAsync(XmlWriter writer, Collection<SyndicationPerson> contributors)
         {
-            XmlWriterWrapper wrappedWriter = XmlWriterWrapper.CreateFromWriter(writer);
+            writer = XmlWriterWrapper.CreateFromWriter(writer);
 
             for (int i = 0; i < contributors.Count; ++i)
             {
                 SyndicationPerson p = contributors[i];
-                await WritePersonToAsync(wrappedWriter, p, Atom10Constants.ContributorTag);
+                await WritePersonToAsync(writer, p, Atom10Constants.ContributorTag);
             }
         }
 
-        internal  Task WriteItemLastUpdatedTimeToAsync(XmlWriterWrapper writer, DateTimeOffset lastUpdatedTime)
+        internal  Task WriteItemLastUpdatedTimeToAsync(XmlWriter writer, DateTimeOffset lastUpdatedTime)
         {
             if (lastUpdatedTime == DateTimeOffset.MinValue)
             {
@@ -497,7 +497,7 @@ namespace Microsoft.ServiceModel.Syndication
                 AsString(lastUpdatedTime));
         }
 
-        internal async Task WriteLinkAsync(XmlWriterWrapper writer, SyndicationLink link, Uri baseUri)
+        internal async Task WriteLinkAsync(XmlWriter writer, SyndicationLink link, Uri baseUri)
         {
             await writer.WriteStartElementAsync(Atom10Constants.LinkTag, Atom10Constants.Atom10Namespace);
             Uri baseUriToWrite = FeedUtils.GetBaseUriToWrite(baseUri, link.BaseUri);
@@ -585,10 +585,10 @@ namespace Microsoft.ServiceModel.Syndication
 
         protected virtual async Task WriteItemAsync(XmlWriter writer, SyndicationItem item, Uri feedBaseUri)
         {
-            XmlWriterWrapper wrappedWriter = XmlWriterWrapper.CreateFromWriter(writer);
-            await wrappedWriter.WriteStartElementAsync(Atom10Constants.EntryTag, Atom10Constants.Atom10Namespace);
-            await WriteItemContentsAsync(wrappedWriter, item, feedBaseUri);
-            await wrappedWriter.WriteEndElementAsync();
+            writer = XmlWriterWrapper.CreateFromWriter(writer);
+            await writer.WriteStartElementAsync(Atom10Constants.EntryTag, Atom10Constants.Atom10Namespace);
+            await WriteItemContentsAsync(writer, item, feedBaseUri);
+            await writer.WriteEndElementAsync();
         }
 
         protected virtual async Task WriteItemsAsync(XmlWriter writer, IEnumerable<SyndicationItem> items, Uri feedBaseUri)
@@ -1250,14 +1250,14 @@ namespace Microsoft.ServiceModel.Syndication
         
         private async Task WriteCategoriesToAsync(XmlWriter writer, Collection<SyndicationCategory> categories)
         {
-            XmlWriterWrapper wrappedWriter = XmlWriterWrapper.CreateFromWriter(writer);
+            writer = XmlWriterWrapper.CreateFromWriter(writer);
             for (int i = 0; i < categories.Count; ++i)
             {
-                await WriteCategoryAsync(wrappedWriter, categories[i], this.Version);
+                await WriteCategoryAsync(writer, categories[i], this.Version);
             }
         }
         
-        private Task WriteFeedAsync(XmlWriterWrapper writer)
+        private Task WriteFeedAsync(XmlWriter writer)
         {
             if (this.Feed == null)
             {
@@ -1266,7 +1266,7 @@ namespace Microsoft.ServiceModel.Syndication
             return WriteFeedToAsync(writer, this.Feed, false); //  isSourceFeed 
         }
         
-        private async Task WriteFeedToAsync(XmlWriterWrapper writer, SyndicationFeed feed, bool isSourceFeed)
+        private async Task WriteFeedToAsync(XmlWriter writer, SyndicationFeed feed, bool isSourceFeed)
         {
             if (!isSourceFeed)
             {
@@ -1276,7 +1276,7 @@ namespace Microsoft.ServiceModel.Syndication
                 }
                 if (feed.BaseUri != null)
                 {
-                    await writer.WriteAttributeStringAsync("xml", "base", XmlNs, FeedUtils.GetUriString(feed.BaseUri));
+                    await writer.InternalWriteAttributeStringAsync("xml", "base", XmlNs, FeedUtils.GetUriString(feed.BaseUri));
                 }
                 await WriteAttributeExtensionsAsync(writer, feed, this.Version);
             }
@@ -1323,12 +1323,12 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
         
-        private async Task WriteItemContentsAsync(XmlWriterWrapper dictWriter, SyndicationItem item, Uri feedBaseUri)
+        private async Task WriteItemContentsAsync(XmlWriter dictWriter, SyndicationItem item, Uri feedBaseUri)
         {
             Uri baseUriToWrite = FeedUtils.GetBaseUriToWrite(feedBaseUri, item.BaseUri);
             if (baseUriToWrite != null)
             {
-                await dictWriter.WriteAttributeStringAsync("xml", "base", XmlNs, FeedUtils.GetUriString(baseUriToWrite));
+                await dictWriter.InternalWriteAttributeStringAsync("xml", "base", XmlNs, FeedUtils.GetUriString(baseUriToWrite));
             }
             await WriteAttributeExtensionsAsync(dictWriter, item, this.Version);
 
@@ -1363,7 +1363,7 @@ namespace Microsoft.ServiceModel.Syndication
             await WriteElementExtensionsAsync(dictWriter, item, this.Version);
         }
         
-        private async Task WritePersonToAsync(XmlWriterWrapper writer, SyndicationPerson p, string elementName)
+        private async Task WritePersonToAsync(XmlWriter writer, SyndicationPerson p, string elementName)
         {
             await writer.WriteStartElementAsync(elementName, Atom10Constants.Atom10Namespace);
             await WriteAttributeExtensionsAsync(writer, p, this.Version);

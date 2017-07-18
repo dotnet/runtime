@@ -96,10 +96,10 @@ namespace Microsoft.ServiceModel.Syndication
                 throw new ArgumentException(SR.OuterElementNameNotSpecified);
             }
 
-            XmlWriterWrapper wrappedWriter = XmlWriterWrapper.CreateFromWriter(writer);
+            writer = XmlWriterWrapper.CreateFromWriter(writer);
 
-            await wrappedWriter.WriteStartElementAsync(outerElementName, outerElementNamespace);
-            await wrappedWriter.WriteAttributeStringAsync(Atom10Constants.TypeTag, string.Empty, this.Type);
+            await writer.WriteStartElementAsync(outerElementName, outerElementNamespace);
+            await writer.WriteAttributeStringAsync(Atom10Constants.TypeTag, string.Empty, this.Type);
             if (_attributeExtensions != null)
             {
                 foreach (XmlQualifiedName key in _attributeExtensions.Keys)
@@ -111,12 +111,12 @@ namespace Microsoft.ServiceModel.Syndication
                     string attrValue;
                     if (_attributeExtensions.TryGetValue(key, out attrValue))
                     {
-                        await wrappedWriter.WriteAttributeStringAsync(key.Name, key.Namespace, attrValue);
+                        await writer.WriteAttributeStringAsync(key.Name, key.Namespace, attrValue);
                     }
                 }
             }
             WriteContentsTo(writer);
-            await wrappedWriter.WriteEndElementAsync();
+            await writer.WriteEndElementAsync();
         }
 
         internal void CopyAttributeExtensions(SyndicationContent source)

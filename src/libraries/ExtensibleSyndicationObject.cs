@@ -109,14 +109,14 @@ namespace Microsoft.ServiceModel.Syndication
                 throw new ArgumentNullException(nameof(writer));
             }
 
-            XmlWriterWrapper wrappedWriter = XmlWriterWrapper.CreateFromWriter(writer);
+            writer = XmlWriterWrapper.CreateFromWriter(writer);
 
             if (_attributeExtensions != null)
             {
                 foreach (XmlQualifiedName qname in _attributeExtensions.Keys)
                 {
                     string value = _attributeExtensions[qname];
-                    await wrappedWriter.WriteAttributeStringAsync(qname.Name, qname.Namespace, value);
+                    await writer.WriteAttributeStringAsync(qname.Name, qname.Namespace, value);
                 }
             }
         }
@@ -130,7 +130,7 @@ namespace Microsoft.ServiceModel.Syndication
 
             if (_elementExtensions != null)
             {
-                await _elementExtensions.WriteToAsync(XmlWriterWrapper.CreateFromWriter(writer));
+                await _elementExtensions.WriteToAsync(writer);
             }
         }
 

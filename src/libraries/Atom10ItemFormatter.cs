@@ -118,11 +118,11 @@ namespace Microsoft.ServiceModel.Syndication
                 throw new ArgumentNullException(nameof(writer));
             }
 
-            XmlWriterWrapper wrappedWriter = XmlWriterWrapper.CreateFromWriter(writer);
+            writer = XmlWriterWrapper.CreateFromWriter(writer);
 
-            await wrappedWriter.WriteStartElementAsync(Atom10Constants.EntryTag, Atom10Constants.Atom10Namespace);
+            await writer.WriteStartElementAsync(Atom10Constants.EntryTag, Atom10Constants.Atom10Namespace);
             await WriteItemAsync(writer);
-            await wrappedWriter.WriteEndElementAsync();
+            await writer.WriteEndElementAsync();
         }
 
         protected override SyndicationItem CreateItemInstance()

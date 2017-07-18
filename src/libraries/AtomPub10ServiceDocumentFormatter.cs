@@ -128,11 +128,11 @@ namespace Microsoft.ServiceModel.Syndication
                 throw new InvalidOperationException(SR.DocumentFormatterDoesNotHaveDocument);
             }
 
-            XmlWriterWrapper wrappedWriter = XmlWriterWrapper.CreateFromWriter(writer);
+            writer = XmlWriterWrapper.CreateFromWriter(writer);
 
-            await wrappedWriter.WriteStartElementAsync(App10Constants.Prefix, App10Constants.Service, App10Constants.Namespace);
-            await WriteDocumentAsync(wrappedWriter);
-            await wrappedWriter.WriteEndElementAsync();
+            await writer.WriteStartElementAsync(App10Constants.Prefix, App10Constants.Service, App10Constants.Namespace);
+            await WriteDocumentAsync(writer);
+            await writer.WriteEndElementAsync();
         }
 
         internal static async Task<CategoriesDocument> ReadCategories(XmlReaderWrapper reader, Uri baseUri, CreateInlineCategoriesDelegate inlineCategoriesFactory, CreateReferencedCategoriesDelegate referencedCategoriesFactory, string version, bool preserveElementExtensions, bool preserveAttributeExtensions, int maxExtensionSize)
@@ -359,16 +359,16 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
         
-        private static async Task WriteCategoriesAsync(XmlWriterWrapper writer, CategoriesDocument categories, Uri baseUri, string version)
+        private static async Task WriteCategoriesAsync(XmlWriter writer, CategoriesDocument categories, Uri baseUri, string version)
         {
             await writer.WriteStartElementAsync(App10Constants.Prefix, App10Constants.Categories, App10Constants.Namespace);
             await WriteCategoriesInnerXml(writer, categories, baseUri, version);
             await writer.WriteEndElementAsync();
         }
         
-        private static async Task WriteInlineCategoriesContentAsync(XmlWriterWrapper writer, InlineCategoriesDocument categories, string version)
+        private static async Task WriteInlineCategoriesContentAsync(XmlWriter writer, InlineCategoriesDocument categories, string version)
         {
-            XmlWriterWrapper wrappedWriter = XmlWriterWrapper.CreateFromWriter(writer);
+            writer = XmlWriterWrapper.CreateFromWriter(writer);
             if (!string.IsNullOrEmpty(categories.Scheme))
             {
                 await writer.WriteAttributeStringAsync(Atom10Constants.SchemeTag, categories.Scheme);
@@ -383,7 +383,7 @@ namespace Microsoft.ServiceModel.Syndication
 
             for (int i = 0; i < categories.Categories.Count; ++i)
             {
-                await Atom10FeedFormatter.WriteCategoryAsync(wrappedWriter, categories.Categories[i], version);
+                await Atom10FeedFormatter.WriteCategoryAsync(writer, categories.Categories[i], version);
             }
 
             await WriteElementExtensionsAsync(writer, categories, version);
@@ -685,7 +685,7 @@ namespace Microsoft.ServiceModel.Syndication
             return result;
         }
         
-        private async Task WriteCollectionAsync(XmlWriterWrapper writer, ResourceCollectionInfo collection, Uri baseUri)
+        private async Task WriteCollectionAsync(XmlWriter writer, ResourceCollectionInfo collection, Uri baseUri)
         {
             await writer.WriteStartElementAsync(App10Constants.Prefix, App10Constants.Collection, App10Constants.Namespace);
             Uri baseUriToWrite = FeedUtils.GetBaseUriToWrite(baseUri, collection.BaseUri);
@@ -720,7 +720,7 @@ namespace Microsoft.ServiceModel.Syndication
             await writer.WriteEndElementAsync();
         }
         
-        private async Task WriteDocumentAsync(XmlWriterWrapper writer)
+        private async Task WriteDocumentAsync(XmlWriter writer)
         {
             // declare the atom10 namespace upfront for compactness
             await writer.WriteAttributeStringAsync(Atom10Constants.Atom10Prefix, Atom10FeedFormatter.XmlNsNs, Atom10Constants.Atom10Namespace);
@@ -745,7 +745,7 @@ namespace Microsoft.ServiceModel.Syndication
             await WriteElementExtensionsAsync(writer, this.Document, this.Version);
         }
         
-        private async Task WriteWorkspaceAsync(XmlWriterWrapper writer, Workspace workspace, Uri baseUri)
+        private async Task WriteWorkspaceAsync(XmlWriter writer, Workspace workspace, Uri baseUri)
         {
             await writer.WriteStartElementAsync(App10Constants.Prefix, App10Constants.Workspace, App10Constants.Namespace);
             Uri baseUriToWrite = FeedUtils.GetBaseUriToWrite(baseUri, workspace.BaseUri);
