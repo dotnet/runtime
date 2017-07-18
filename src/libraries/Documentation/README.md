@@ -16,6 +16,11 @@ Get .NET Core
 
 - [Get .NET Core SDK](https://www.microsoft.com/net/core)
 
+Architecture Docs
+=================
+
+- [.NET Core Globalization Invariant Mode](architecture/globalization-invariant-mode.md)
+
 Project Docs
 ============
 
