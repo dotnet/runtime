@@ -2077,8 +2077,11 @@ mono_compile_create_vars (MonoCompile *cfg)
 	if (cfg->verbose_level > 2)
 		g_print ("creating locals\n");
 
-	for (i = 0; i < header->num_locals; ++i)
+	for (i = 0; i < header->num_locals; ++i) {
+		if (cfg->verbose_level > 2)
+			g_print ("\tlocal [%d]: ", i);
 		cfg->locals [i] = mono_compile_create_var (cfg, header->locals [i], OP_LOCAL);
+	}
 
 	if (cfg->verbose_level > 2)
 		g_print ("locals done\n");
