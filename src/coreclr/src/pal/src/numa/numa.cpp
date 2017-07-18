@@ -25,11 +25,6 @@ SET_DEFAULT_DEBUG_CHANNEL(NUMA);
 #include "pal/corunix.hpp"
 #include "pal/thread.hpp"
 
-#if HAVE_NUMA_H
-#include <numa.h>
-#include <numaif.h>
-#endif
-
 #if HAVE_PTHREAD_NP_H
 #include <pthread_np.h>
 #endif
@@ -161,7 +156,7 @@ NUMASupportInitialize()
 FOR_ALL_NUMA_FUNCTIONS
 #undef PER_FUNCTION_BLOCK
 
-        if (numa_available() != -1)
+        if (numa_available() == -1)
         {
             dlclose(numaHandle);
         }
@@ -234,8 +229,8 @@ FOR_ALL_NUMA_FUNCTIONS
             g_highestNumaNode = numa_max_node();
         }
     }
-    else
 #endif // HAVE_NUMA_H
+    if (!g_numaAvailable)
     {
         // No NUMA
         g_possibleCpuCount = PAL_GetLogicalCpuCountFromOS();
