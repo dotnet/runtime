@@ -3,11 +3,12 @@ setlocal
 
 :SetupArgs
 :: Initialize the args that will be passed to cmake
+set __thisScriptFolder=%~dp0
 set __nativeWindowsDir=%~dp0Windows
 set __binDir=%~dp0..\..\Bin
 set __rootDir=%~dp0..\..
-set __CMakeBinDir=""
-set __IntermediatesDir=""
+set __CMakeBinBaseDir=""
+set __IntermediatesBaseDir=""
 set __BuildArch=x64
 set __appContainer=""
 set __VCBuildArch=x86_amd64
@@ -80,47 +81,64 @@ if NOT "%__BuildArch%" == "arm64" (
 echo Commencing build of native UWP components
 echo.
 
-if %__CMakeBinDir% == "" (
-    set "__CMakeBinDir=%__binDir%\%__TargetRid%.%CMAKE_BUILD_TYPE%\uwphost"
+if %__CMakeBinBaseDir% == "" (
+    set "__CMakeBinBaseDir=%__binDir%\%__TargetRid%.%CMAKE_BUILD_TYPE%\"
 )
-if %__IntermediatesDir% == "" (
-    set "__IntermediatesDir=%__binDir%\obj\%__TargetRid%.%CMAKE_BUILD_TYPE%\uwphost"
+if %__IntermediatesBaseDir% == "" (
+    set "__IntermediatesBaseDir=%__binDir%\obj\%__TargetRid%.%CMAKE_BUILD_TYPE%\"
 )
 set "__ResourcesDir=%__binDir%\obj\%__TargetRid%.%CMAKE_BUILD_TYPE%\uwphostResourceFiles"
-set "__CMakeBinDir=%__CMakeBinDir:\=/%"
-set "__IntermediatesDir=%__IntermediatesDir:\=/%"
+set "__CMakeBinBaseDir=%__CMakeBinBaseDir:\=/%"
+set "__IntermediatesBaseDir=%__IntermediatesBaseDir:\=/%"
 
 set __SDKVersion="-DCMAKE_SYSTEM_VERSION=10.0"
+set __CMAKE_SYSTEM=
+set __CMAKE_CUSTOM_DEFINES=
 
-:: Check that the intermediate directory exists so we can place our cmake build tree there
-if exist "%__IntermediatesDir%" rd /s /q "%__IntermediatesDir%"
-if not exist "%__IntermediatesDir%" md "%__IntermediatesDir%"
+call :GenerateAndCompile uwphost %__thisScriptFolder%
+if ERRORLEVEL 1 goto :Failure
+set __CMAKE_SYSTEM="-DCMAKE_SYSTEM_NAME:STRING=WindowsStore"
+set __CMAKE_CUSTOM_DEFINES="-DUWPHOST_LIB_PATH:STRING=%__IntermediatesBaseDir%\uwphost\Host\UWPHost\%CMAKE_BUILD_TYPE%"
+call :GenerateAndCompile uwpshim %__thisScriptFolder%host\UWPShim
+if ERRORLEVEL 1 goto :Failure
 
-:: Regenerate the VS solution
-
-echo Calling "%__nativeWindowsDir%\gen-buildsys-win.bat" %~dp0 %__BuildArch% %__ResourcesDir% %__CMakeBinDir%
-pushd "%__IntermediatesDir%"
-call "%__nativeWindowsDir%\gen-buildsys-win.bat" %~dp0 %__BuildArch% %__ResourcesDir% %__CMakeBinDir%
-popd
-
-:CheckForProj
-:: Check that the project created by Cmake exists
-if exist "%__IntermediatesDir%\ALL_BUILD.vcxproj" goto BuildNativeProj
-goto :Failure
-
-:BuildNativeProj
-:: Build the project created by Cmake
-set __msbuildArgs=/p:Platform=%__BuildArch% /p:PlatformToolset="%__PlatformToolset%"
-
-cd %__rootDir%
-
-echo %__rootDir%\run.cmd build-native -- "%__IntermediatesDir%\ALL_BUILD.vcxproj" /t:rebuild /p:Configuration=%CMAKE_BUILD_TYPE% %__msbuildArgs%
-call %__rootDir%\run.cmd build-native -- "%__IntermediatesDir%\ALL_BUILD.vcxproj" /t:rebuild /p:Configuration=%CMAKE_BUILD_TYPE% %__msbuildArgs%
-IF ERRORLEVEL 1 (
-    goto :Failure
-)
 echo Done building Native components
-exit /B 0
+exit /b 0
+
+:GenerateAndCompile
+    set __IntermediatesDir=%__IntermediatesBaseDir%%1
+    set __CMakeBinDir=%__CMakeBinBaseDir%%1
+
+    echo Building project system for %__IntermediatesDir% Source: %2
+    :: Check that the intermediate directory exists so we can place our cmake build tree there
+    if exist "%__IntermediatesDir%" rd /s /q "%__IntermediatesDir%"
+    if not exist "%__IntermediatesDir%" md "%__IntermediatesDir%"
+
+    :: Regenerate the VS solution
+
+    echo Calling "%__nativeWindowsDir%\gen-buildsys-win.bat" %2 %__BuildArch% %__ResourcesDir% %__CMakeBinDir%
+    pushd "%__IntermediatesDir%"
+    call "%__nativeWindowsDir%\gen-buildsys-win.bat" %2 %__BuildArch% %__ResourcesDir% %__CMakeBinDir%
+    popd
+
+    :CheckForProj
+    :: Check that the project created by Cmake exists
+    if exist "%__IntermediatesDir%\ALL_BUILD.vcxproj" goto BuildNativeProj
+    exit /b 1
+
+    :BuildNativeProj
+    :: Build the project created by Cmake
+    set __msbuildArgs=/p:Platform=%__BuildArch% /p:PlatformToolset="%__PlatformToolset%"
+
+    cd %__rootDir%
+
+    echo %__rootDir%\run.cmd build-native -- "%__IntermediatesDir%\ALL_BUILD.vcxproj" /t:rebuild /p:Configuration=%CMAKE_BUILD_TYPE% %__msbuildArgs% /v:d
+    call %__rootDir%\run.cmd build-native -- "%__IntermediatesDir%\ALL_BUILD.vcxproj" /t:rebuild /p:Configuration=%CMAKE_BUILD_TYPE% %__msbuildArgs% /v:d
+    IF ERRORLEVEL 1 (
+        exit /b 1
+    )
+    
+    goto :eof
 
 :Failure
 :: Build failed
