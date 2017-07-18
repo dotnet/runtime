@@ -9,7 +9,7 @@ Intro to .NET Core
 Learn about .NET Core
 ====================
 
-- [[WIP] Official .NET Core Docs](http://dotnet.github.io/)
+- [Official .NET Core Docs](https://docs.microsoft.com/dotnet/core)
 
 Get .NET Core
 =============
@@ -20,6 +20,7 @@ Architecture Docs
 =================
 
 - [.NET Core Globalization Invariant Mode](architecture/globalization-invariant-mode.md)
+- [Cross-Platform Cryptography](architecture/cross-platform-cryptography.md)
 
 Project Docs
 ============
