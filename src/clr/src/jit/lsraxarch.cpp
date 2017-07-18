@@ -169,7 +169,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
 #if !defined(_TARGET_64BIT_)
 
         case GT_LONG:
-            if ((tree->gtLIRFlags & LIR::Flags::IsUnusedValue) != 0)
+            if (tree->IsUnusedValue())
             {
                 // An unused GT_LONG node needs to consume its sources.
                 info->srcCount = 2;

@@ -1169,6 +1169,11 @@ public:
         }
     }
 
+    // NOTE: the three UnusedValue helpers immediately below are defined in lir.h.
+    inline void SetUnusedValue();
+    inline void ClearUnusedValue();
+    inline bool IsUnusedValue() const;
+
     bool OperIs(genTreeOps oper)
     {
         return OperGet() == oper;
