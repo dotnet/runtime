@@ -76,11 +76,11 @@ namespace System.IO
         // "\\server\share").
         public static string GetDirectoryName(string path)
         {
+            if (path == null)
+                return null;
+
             if (PathInternal.IsEffectivelyEmpty(path))
-            {
-                if (path == null) return null;
                 throw new ArgumentException(SR.Arg_PathEmpty, nameof(path));
-            }
 
             PathInternal.CheckInvalidPathChars(path);
             path = PathInternal.NormalizeDirectorySeparators(path);
