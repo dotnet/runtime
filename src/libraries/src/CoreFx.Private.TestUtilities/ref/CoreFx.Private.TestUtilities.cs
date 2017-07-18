@@ -35,6 +35,11 @@ namespace System
             where TFirstExceptionType : System.Exception
             where TSecondExceptionType : System.Exception
         { }
+        public static void ThrowsAny<TFirstExceptionType, TSecondExceptionType, TThirdExceptionType>(Action action)
+            where TFirstExceptionType : Exception
+            where TSecondExceptionType : Exception
+            where TThirdExceptionType : Exception
+        { }
         public static void ThrowsIf<T>(bool condition, System.Action action) where T : System.Exception { }
         public static void GreaterThan<T>(T actual, T greaterThan, string userMessage = null) where T : System.IComparable { }
         public static void LessThan<T>(T actual, T lessThan, string userMessage = null) where T : System.IComparable { }
