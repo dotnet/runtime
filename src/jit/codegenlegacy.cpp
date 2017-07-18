@@ -10613,10 +10613,11 @@ void CodeGen::genCodeForNumericCast(GenTreePtr tree, regMaskTP destReg, regMaskT
       * We don't do this optimization for debug code/no optimization
       */
 
-    noway_assert((op1->gtOper != GT_CNS_INT && op1->gtOper != GT_CNS_LNG && op1->gtOper != GT_CNS_DBL) ||
-                 tree->gtOverflow() || (op1->gtOper == GT_CNS_DBL && !_finite(op1->gtDblCon.gtDconVal)) ||
-                 (op1->gtDblCon.gtDconVal <= -1.0 && varTypeIsUnsigned(tree->CastToType())) ||
-                 !compiler->opts.OptEnabled(CLFLG_CONSTANTFOLD));
+    noway_assert(
+        (op1->gtOper != GT_CNS_INT && op1->gtOper != GT_CNS_LNG && op1->gtOper != GT_CNS_DBL) || tree->gtOverflow() ||
+        (op1->gtOper == GT_CNS_DBL && !_finite(op1->gtDblCon.gtDconVal)) ||
+        (op1->gtOper == GT_CNS_DBL && op1->gtDblCon.gtDconVal <= -1.0 && varTypeIsUnsigned(tree->CastToType())) ||
+        !compiler->opts.OptEnabled(CLFLG_CONSTANTFOLD));
 
     noway_assert(dstType != TYP_VOID);
 
