@@ -999,7 +999,6 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
         BYTE*    gcPtrs     = treeNode->gtGcPtrs;
         unsigned gcPtrCount = treeNode->gtNumberReferenceSlots; // The count of GC pointers in the struct
         int      structSize = treeNode->getArgSize();
-        bool     isHfa      = treeNode->gtIsHfa;
 
         // This is the varNum for our load operations,
         // only used when we have a struct with a LclVar source
@@ -1016,6 +1015,9 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             {
                 NYI_ARM("CodeGen::genPutArgSplit - promoted struct");
             }
+
+            // We don't split HFA struct
+            assert(!varDsc->lvIsHfa());
         }
         else // addrNode is used
         {
@@ -1029,13 +1031,9 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
             // Because the candidate mask for the internal baseReg does not include any of the target register,
             // we can ensure that baseReg, addrReg, and the last target register are not all same.
             assert(baseReg != addrReg);
-        }
 
-        // If we have an HFA we can't have any GC pointers,
-        // if not then the max size for the the struct is 16 bytes
-        if (isHfa)
-        {
-            assert(gcPtrCount == 0);
+            // We don't split HFA struct
+            assert(!compiler->IsHfa(source->gtObj.gtClass));
         }
 
         // Put on stack first
