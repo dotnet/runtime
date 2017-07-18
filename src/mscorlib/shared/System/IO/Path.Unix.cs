@@ -40,11 +40,6 @@ namespace System.IO
             Debug.Assert(collapsedString.Length < path.Length || collapsedString.ToString() == path,
                 "Either we've removed characters, or the string should be unmodified from the input path.");
 
-            if (collapsedString.Length > Interop.Sys.MaxPath)
-            {
-                throw new PathTooLongException(SR.Format(SR.IO_PathTooLong_Path, path));
-            }
-
             string result = collapsedString.Length == 0 ? PathInternal.DirectorySeparatorCharAsString : collapsedString;
 
             return result;
@@ -116,11 +111,6 @@ namespace System.IO
                         i += 2;
                         continue;
                     }
-                }
-
-                if (++componentCharCount > Interop.Sys.MaxName)
-                {
-                    throw new PathTooLongException(SR.Format(SR.IO_PathTooLong_Path, path));
                 }
 
                 // Normalize the directory separator if needed
