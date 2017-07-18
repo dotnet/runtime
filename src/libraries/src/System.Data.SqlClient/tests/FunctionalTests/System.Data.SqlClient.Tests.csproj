@@ -2,6 +2,8 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
+    <!-- [ActiveIssue(https://github.com/dotnet/corefx/issues/22416, TargetFrameworkMonikers.UapAot)] Crashes on UapAot -->
+    <ILCBuildType Condition="'$(ConfigurationGroup)|$(ArchGroup)' == 'Release|x86'">chk</ILCBuildType>
     <ProjectGuid>{F3E72F35-0351-4D67-9388-725BCAD807BA}</ProjectGuid>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Debug|AnyCPU'" />
