@@ -10,22 +10,6 @@ namespace System.IO
     /// <summary>Contains internal path helpers that are shared between many projects.</summary>
     internal static partial class PathInternal
     {
-        // Trim trailing white spaces, tabs etc but don't be aggressive in removing everything that has UnicodeCategory of trailing space.
-        // string.WhitespaceChars will trim more aggressively than what the underlying FS does (for ex, NTFS, FAT).
-        //
-        // (This is for compatibility with old behavior.)
-        internal static readonly char[] s_trimEndChars =
-        {
-            (char)0x9,          // Horizontal tab
-            (char)0xA,          // Line feed
-            (char)0xB,          // Vertical tab
-            (char)0xC,          // Form feed
-            (char)0xD,          // Carriage return
-            (char)0x20,         // Space
-            (char)0x85,         // Next line
-            (char)0xA0          // Non breaking space
-        };
-
         /// <summary>
         /// Checks for invalid path characters in the given path.
         /// </summary>
