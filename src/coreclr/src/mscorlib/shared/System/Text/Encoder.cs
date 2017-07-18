@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Runtime.Serialization;
 using System.Text;
 using System;
 using System.Diagnostics;
@@ -23,15 +22,9 @@ namespace System.Text
     //
     public abstract class Encoder
     {
-        internal EncoderFallback m_fallback = null;
+        internal EncoderFallback _fallback = null;
 
-        [NonSerialized]
-        internal EncoderFallbackBuffer m_fallbackBuffer = null;
-
-        internal void SerializeEncoder(SerializationInfo info)
-        {
-            info.AddValue("m_fallback", this.m_fallback);
-        }
+        internal EncoderFallbackBuffer _fallbackBuffer = null;
 
         protected Encoder()
         {
@@ -42,7 +35,7 @@ namespace System.Text
         {
             get
             {
-                return m_fallback;
+                return _fallback;
             }
 
             set
@@ -52,12 +45,12 @@ namespace System.Text
                 Contract.EndContractBlock();
 
                 // Can't change fallback if buffer is wrong
-                if (m_fallbackBuffer != null && m_fallbackBuffer.Remaining > 0)
+                if (_fallbackBuffer != null && _fallbackBuffer.Remaining > 0)
                     throw new ArgumentException(
                       SR.Argument_FallbackBufferNotEmpty, nameof(value));
 
-                m_fallback = value;
-                m_fallbackBuffer = null;
+                _fallback = value;
+                _fallbackBuffer = null;
             }
         }
 
@@ -67,15 +60,15 @@ namespace System.Text
         {
             get
             {
-                if (m_fallbackBuffer == null)
+                if (_fallbackBuffer == null)
                 {
-                    if (m_fallback != null)
-                        m_fallbackBuffer = m_fallback.CreateFallbackBuffer();
+                    if (_fallback != null)
+                        _fallbackBuffer = _fallback.CreateFallbackBuffer();
                     else
-                        m_fallbackBuffer = EncoderFallback.ReplacementFallback.CreateFallbackBuffer();
+                        _fallbackBuffer = EncoderFallback.ReplacementFallback.CreateFallbackBuffer();
                 }
 
-                return m_fallbackBuffer;
+                return _fallbackBuffer;
             }
         }
 
@@ -83,7 +76,7 @@ namespace System.Text
         {
             get
             {
-                return m_fallbackBuffer != null;
+                return _fallbackBuffer != null;
             }
         }
 
@@ -101,8 +94,8 @@ namespace System.Text
             char[] charTemp = { };
             byte[] byteTemp = new byte[GetByteCount(charTemp, 0, 0, true)];
             GetBytes(charTemp, 0, 0, byteTemp, 0, true);
-            if (m_fallbackBuffer != null)
-                m_fallbackBuffer.Reset();
+            if (_fallbackBuffer != null)
+                _fallbackBuffer.Reset();
         }
 
         // Returns the number of bytes the next call to GetBytes will
@@ -271,7 +264,7 @@ namespace System.Text
                 {
                     bytesUsed = GetBytes(chars, charIndex, charsUsed, bytes, byteIndex, flush);
                     completed = (charsUsed == charCount &&
-                        (m_fallbackBuffer == null || m_fallbackBuffer.Remaining == 0));
+                        (_fallbackBuffer == null || _fallbackBuffer.Remaining == 0));
                     return;
                 }
 
@@ -315,7 +308,7 @@ namespace System.Text
                 {
                     bytesUsed = GetBytes(chars, charsUsed, bytes, byteCount, flush);
                     completed = (charsUsed == charCount &&
-                        (m_fallbackBuffer == null || m_fallbackBuffer.Remaining == 0));
+                        (_fallbackBuffer == null || _fallbackBuffer.Remaining == 0));
                     return;
                 }
 

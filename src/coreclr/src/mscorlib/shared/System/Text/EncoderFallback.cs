@@ -2,38 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Security;
-using System.Threading;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
+using System.Threading;
 
 namespace System.Text
 {
     public abstract class EncoderFallback
     {
-        // disable csharp compiler warning #0414: field assigned unused value
-#pragma warning disable 0414
-        internal bool bIsMicrosoftBestFitFallback = false;
-#pragma warning restore 0414
-
-        private static volatile EncoderFallback replacementFallback; // Default fallback, uses no best fit & "?"
-        private static volatile EncoderFallback exceptionFallback;
-
-        // Private object for locking instead of locking on a public type for SQL reliability work.
-        private static Object s_InternalSyncObject;
-        private static Object InternalSyncObject
-        {
-            get
-            {
-                if (s_InternalSyncObject == null)
-                {
-                    Object o = new Object();
-                    Interlocked.CompareExchange<Object>(ref s_InternalSyncObject, o, null);
-                }
-                return s_InternalSyncObject;
-            }
-        }
+        private static EncoderFallback s_replacementFallback; // Default fallback, uses no best fit & "?"
+        private static EncoderFallback s_exceptionFallback;
 
         // Get each of our generic fallbacks.
 
@@ -41,12 +18,10 @@ namespace System.Text
         {
             get
             {
-                if (replacementFallback == null)
-                    lock (InternalSyncObject)
-                        if (replacementFallback == null)
-                            replacementFallback = new EncoderReplacementFallback();
+                if (s_replacementFallback == null)
+                    Interlocked.CompareExchange<EncoderFallback>(ref s_replacementFallback, new EncoderReplacementFallback(), null);
 
-                return replacementFallback;
+                return s_replacementFallback;
             }
         }
 
@@ -55,19 +30,17 @@ namespace System.Text
         {
             get
             {
-                if (exceptionFallback == null)
-                    lock (InternalSyncObject)
-                        if (exceptionFallback == null)
-                            exceptionFallback = new EncoderExceptionFallback();
+                if (s_exceptionFallback == null)
+                    Interlocked.CompareExchange<EncoderFallback>(ref s_exceptionFallback, new EncoderExceptionFallback(), null);
 
-                return exceptionFallback;
+                return s_exceptionFallback;
             }
         }
 
         // Fallback
         //
         // Return the appropriate unicode string alternative to the character that need to fall back.
-        // Most implimentations will be:
+        // Most implementations will be:
         //      return new MyCustomEncoderFallbackBuffer(this);
 
         public abstract EncoderFallbackBuffer CreateFallbackBuffer();
@@ -80,9 +53,9 @@ namespace System.Text
 
     public abstract class EncoderFallbackBuffer
     {
-        // Most implementations will probably need an implemenation-specific constructor
+        // Most implementations will probably need an implementation-specific constructor
 
-        // Public methods that cannot be overriden that let us do our fallback thing
+        // Public methods that cannot be overridden that let us do our fallback thing
         // These wrap the internal methods so that we can check for people doing stuff that is incorrect
 
         public abstract bool Fallback(char charUnknown, int index);
@@ -131,7 +104,7 @@ namespace System.Text
         }
 
         // Set the above values
-        // This can't be part of the constructor because EncoderFallbacks would have to know how to impliment these.
+        // This can't be part of the constructor because EncoderFallbacks would have to know how to implement these.
         internal unsafe void InternalInitialize(char* charStart, char* charEnd, EncoderNLS encoder, bool setEncoder)
         {
             this.charStart = charStart;
@@ -182,7 +155,7 @@ namespace System.Text
                         if (this.setEncoder)
                         {
                             bUsedEncoder = true;
-                            this.encoder.charLeftOver = ch;
+                            this.encoder._charLeftOver = ch;
                         }
                         bFallingBack = false;
                         return false;
@@ -203,7 +176,6 @@ namespace System.Text
                         bFallingBack = Fallback(ch, cNext, index);
                         return bFallingBack;
                     }
-
                     // Next isn't a low surrogate, just fallback the high surrogate
                 }
             }
@@ -223,7 +195,8 @@ namespace System.Text
         {
             // Throw it, using our complete character
             throw new ArgumentException(
-                SR.Format(SR.Argument_RecursiveFallback, charRecursive), "chars");
+                SR.Format(SR.Argument_RecursiveFallback,
+                    charRecursive), "chars");
         }
     }
 }

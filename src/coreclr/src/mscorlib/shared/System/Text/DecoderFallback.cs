@@ -2,72 +2,28 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-//
-
-using System;
-using System.Security;
-using System.Threading;
-using System.Globalization;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
+using System.Globalization;
+using System.Threading;
 
 namespace System.Text
 {
     public abstract class DecoderFallback
     {
-        internal bool bIsMicrosoftBestFitFallback = false;
+        private static DecoderFallback s_replacementFallback; // Default fallback, uses no best fit & "?"
+        private static DecoderFallback s_exceptionFallback;
 
-        private static volatile DecoderFallback replacementFallback; // Default fallback, uses no best fit & "?"
-        private static volatile DecoderFallback exceptionFallback;
-
-        // Private object for locking instead of locking on a internal type for SQL reliability work.
-        private static Object s_InternalSyncObject;
-        private static Object InternalSyncObject
-        {
-            get
-            {
-                if (s_InternalSyncObject == null)
-                {
-                    Object o = new Object();
-                    Interlocked.CompareExchange<Object>(ref s_InternalSyncObject, o, null);
-                }
-                return s_InternalSyncObject;
-            }
-        }
-
-        // Get each of our generic fallbacks.
-
-        public static DecoderFallback ReplacementFallback
-        {
-            get
-            {
-                if (replacementFallback == null)
-                    lock (InternalSyncObject)
-                        if (replacementFallback == null)
-                            replacementFallback = new DecoderReplacementFallback();
-
-                return replacementFallback;
-            }
-        }
+        public static DecoderFallback ReplacementFallback =>
+            s_replacementFallback ?? Interlocked.CompareExchange(ref s_replacementFallback, new DecoderReplacementFallback(), null) ?? s_replacementFallback;        
 
 
-        public static DecoderFallback ExceptionFallback
-        {
-            get
-            {
-                if (exceptionFallback == null)
-                    lock (InternalSyncObject)
-                        if (exceptionFallback == null)
-                            exceptionFallback = new DecoderExceptionFallback();
-
-                return exceptionFallback;
-            }
-        }
+        public static DecoderFallback ExceptionFallback =>
+            s_exceptionFallback ?? Interlocked.CompareExchange<DecoderFallback>(ref s_exceptionFallback, new DecoderExceptionFallback(), null) ?? s_exceptionFallback;
 
         // Fallback
         //
         // Return the appropriate unicode string alternative to the character that need to fall back.
-        // Most implimentations will be:
+        // Most implementations will be:
         //      return new MyCustomDecoderFallbackBuffer(this);
 
         public abstract DecoderFallbackBuffer CreateFallbackBuffer();
@@ -80,9 +36,9 @@ namespace System.Text
 
     public abstract class DecoderFallbackBuffer
     {
-        // Most implimentations will probably need an implimenation-specific constructor
+        // Most implementations will probably need an implementation-specific constructor
 
-        // internal methods that cannot be overriden that let us do our fallback thing
+        // internal methods that cannot be overridden that let us do our fallback thing
         // These wrap the internal methods so that we can check for people doing stuff that's incorrect
 
         public abstract bool Fallback(byte[] bytesUnknown, int index);
@@ -119,7 +75,7 @@ namespace System.Text
         }
 
         // Set the above values
-        // This can't be part of the constructor because DecoderFallbacks would have to know how to impliment these.
+        // This can't be part of the constructor because DecoderFallbacks would have to know how to implement these.
         internal unsafe void InternalInitialize(byte* byteStart, char* charEnd)
         {
             this.byteStart = byteStart;
@@ -136,11 +92,6 @@ namespace System.Text
         // Don't touch ref chars unless we succeed
         internal unsafe virtual bool InternalFallback(byte[] bytes, byte* pBytes, ref char* chars)
         {
-            // Copy bytes to array (slow, but right now that's what we get to do.
-            //  byte[] bytesUnknown = new byte[count];
-            //            for (int i = 0; i < count; i++)
-            //                bytesUnknown[i] = *(bytes++);
-
             Debug.Assert(byteStart != null, "[DecoderFallback.InternalFallback]Used InternalFallback without calling InternalInitialize");
 
             // See if there's a fallback character and we have an output buffer then copy our string.
@@ -196,11 +147,6 @@ namespace System.Text
         // Right now this has both bytes and bytes[], since we might have extra bytes, hence the
         // array, and we might need the index, hence the byte*
         {
-            // Copy bytes to array (slow, but right now that's what we get to do.
-            //            byte[] bytesUnknown = new byte[count];
-            //            for (int i = 0; i < count; i++)
-            //              bytesUnknown[i] = *(bytes++);
-
             Debug.Assert(byteStart != null, "[DecoderFallback.InternalFallback]Used InternalFallback without calling InternalInitialize");
 
             // See if there's a fallback character and we have an output buffer then copy our string.
@@ -254,8 +200,8 @@ namespace System.Text
             for (i = 0; i < bytesUnknown.Length && i < 20; i++)
             {
                 if (strBytes.Length > 0)
-                    strBytes.Append(" ");
-                strBytes.Append(String.Format(CultureInfo.InvariantCulture, "\\x{0:X2}", bytesUnknown[i]));
+                    strBytes.Append(' ');
+                strBytes.AppendFormat(CultureInfo.InvariantCulture, "\\x{0:X2}", bytesUnknown[i]);
             }
             // In case the string's really long
             if (i == 20)
@@ -263,7 +209,8 @@ namespace System.Text
 
             // Throw it, using our complete bytes
             throw new ArgumentException(
-                SR.Format(SR.Argument_RecursiveFallbackBytes, strBytes.ToString()), nameof(bytesUnknown));
+                SR.Format(SR.Argument_RecursiveFallbackBytes,
+                    strBytes.ToString()), nameof(bytesUnknown));
         }
     }
 }

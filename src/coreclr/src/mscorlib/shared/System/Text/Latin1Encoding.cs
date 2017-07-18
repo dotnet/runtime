@@ -5,7 +5,6 @@
 using System;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
-using System.Runtime.Serialization;
 
 namespace System.Text
 {
@@ -13,7 +12,7 @@ namespace System.Text
     // Latin1Encoding is a simple override to optimize the GetString version of Latin1Encoding.
     // because of the best fit cases we can't do this when encoding the string, only when decoding
     //
-    internal class Latin1Encoding : EncodingNLS, ISerializable
+    internal class Latin1Encoding : EncodingNLS
     {
         // Used by Encoding.Latin1 for lazy initialization
         // The initialization code will not be run until a static member of the class is referenced
@@ -22,12 +21,6 @@ namespace System.Text
         // We only use the best-fit table, of which ASCII is a superset for us.
         public Latin1Encoding() : base(Encoding.ISO_8859_1)
         {
-        }
-
-        // ISerializable implementation
-        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
-        {
-            throw new PlatformNotSupportedException();
         }
 
         // GetByteCount
@@ -49,14 +42,14 @@ namespace System.Text
             EncoderReplacementFallback fallback;
             if (encoder != null)
             {
-                charLeftOver = encoder.charLeftOver;
+                charLeftOver = encoder._charLeftOver;
                 Debug.Assert(charLeftOver == 0 || Char.IsHighSurrogate(charLeftOver),
                     "[Latin1Encoding.GetByteCount]leftover character should be high surrogate");
 
                 fallback = encoder.Fallback as EncoderReplacementFallback;
 
                 // Verify that we have no fallbackbuffer, for Latin1 its always empty, so just assert
-                Debug.Assert(!encoder.m_throwOnOverflow || !encoder.InternalHasFallbackBuffer ||
+                Debug.Assert(!encoder._throwOnOverflow || !encoder.InternalHasFallbackBuffer ||
                     encoder.FallbackBuffer.Remaining == 0,
                     "[Latin1CodePageEncoding.GetByteCount]Expected empty fallback buffer");
             }
@@ -170,13 +163,13 @@ namespace System.Text
             EncoderReplacementFallback fallback = null;
             if (encoder != null)
             {
-                charLeftOver = encoder.charLeftOver;
+                charLeftOver = encoder._charLeftOver;
                 fallback = encoder.Fallback as EncoderReplacementFallback;
                 Debug.Assert(charLeftOver == 0 || Char.IsHighSurrogate(charLeftOver),
                     "[Latin1Encoding.GetBytes]leftover character should be high surrogate");
 
                 // Verify that we have no fallbackbuffer, for ASCII its always empty, so just assert
-                Debug.Assert(!encoder.m_throwOnOverflow || !encoder.InternalHasFallbackBuffer ||
+                Debug.Assert(!encoder._throwOnOverflow || !encoder.InternalHasFallbackBuffer ||
                     encoder.FallbackBuffer.Remaining == 0,
                     "[Latin1CodePageEncoding.GetBytes]Expected empty fallback buffer");
             }
@@ -239,8 +232,8 @@ namespace System.Text
                     // Clear encoder
                     if (encoder != null)
                     {
-                        encoder.charLeftOver = (char)0;
-                        encoder.m_charsUsed = (int)(chars - charStart);
+                        encoder._charLeftOver = (char)0;
+                        encoder._charsUsed = (int)(chars - charStart);
                     }
                     return (int)(bytes - byteStart);
                 }
@@ -360,10 +353,10 @@ namespace System.Text
                 // Fallback stuck it in encoder if necessary, but we have to clear MustFlush cases
                 if (fallbackBuffer != null && !fallbackBuffer.bUsedEncoder)
                     // Clear it in case of MustFlush
-                    encoder.charLeftOver = (char)0;
+                    encoder._charLeftOver = (char)0;
 
                 // Set our chars used count
-                encoder.m_charsUsed = (int)(chars - charStart);
+                encoder._charsUsed = (int)(chars - charStart);
             }
 
             Debug.Assert(fallbackBuffer == null || fallbackBuffer.Remaining == 0,
@@ -416,7 +409,7 @@ namespace System.Text
 
             // Might need to know input bytes used
             if (decoder != null)
-                decoder.m_bytesUsed = byteCount;
+                decoder._bytesUsed = byteCount;
 
             // Converted sequence is same length as input, so output charsUsed is same as byteCount;
             return byteCount;

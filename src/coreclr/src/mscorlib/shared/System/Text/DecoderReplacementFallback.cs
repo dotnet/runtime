@@ -2,26 +2,23 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System;
-using System.Runtime;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 
 namespace System.Text
 {
-    public sealed class EncoderReplacementFallback : EncoderFallback
+    public sealed class DecoderReplacementFallback : DecoderFallback
     {
         // Our variables
-        private String strDefault;
+        private String _strDefault;
 
         // Construction.  Default replacement fallback uses no best fit and ? replacement string
-        public EncoderReplacementFallback() : this("?")
+        public DecoderReplacementFallback() : this("?")
         {
         }
 
-        public EncoderReplacementFallback(String replacement)
+        public DecoderReplacementFallback(String replacement)
         {
-            // Must not be null
             if (replacement == null)
                 throw new ArgumentNullException(nameof(replacement));
             Contract.EndContractBlock();
@@ -62,20 +59,20 @@ namespace System.Text
             if (bFoundHigh)
                 throw new ArgumentException(SR.Format(SR.Argument_InvalidCharSequenceNoIndex, nameof(replacement)));
 
-            strDefault = replacement;
+            _strDefault = replacement;
         }
 
         public String DefaultString
         {
             get
             {
-                return strDefault;
+                return _strDefault;
             }
         }
 
-        public override EncoderFallbackBuffer CreateFallbackBuffer()
+        public override DecoderFallbackBuffer CreateFallbackBuffer()
         {
-            return new EncoderReplacementFallbackBuffer(this);
+            return new DecoderReplacementFallbackBuffer(this);
         }
 
         // Maximum number of characters that this instance of this fallback could return
@@ -83,123 +80,94 @@ namespace System.Text
         {
             get
             {
-                return strDefault.Length;
+                return _strDefault.Length;
             }
         }
 
         public override bool Equals(Object value)
         {
-            EncoderReplacementFallback that = value as EncoderReplacementFallback;
+            DecoderReplacementFallback that = value as DecoderReplacementFallback;
             if (that != null)
             {
-                return (strDefault == that.strDefault);
+                return (_strDefault == that._strDefault);
             }
             return (false);
         }
 
         public override int GetHashCode()
         {
-            return strDefault.GetHashCode();
+            return _strDefault.GetHashCode();
         }
     }
 
 
 
-    public sealed class EncoderReplacementFallbackBuffer : EncoderFallbackBuffer
+    public sealed class DecoderReplacementFallbackBuffer : DecoderFallbackBuffer
     {
         // Store our default string
-        private String strDefault;
-        private int fallbackCount = -1;
-        private int fallbackIndex = -1;
+        private String _strDefault;
+        private int _fallbackCount = -1;
+        private int _fallbackIndex = -1;
 
         // Construction
-        public EncoderReplacementFallbackBuffer(EncoderReplacementFallback fallback)
+        public DecoderReplacementFallbackBuffer(DecoderReplacementFallback fallback)
         {
-            // 2X in case we're a surrogate pair
-            strDefault = fallback.DefaultString + fallback.DefaultString;
+            _strDefault = fallback.DefaultString;
         }
 
         // Fallback Methods
-        public override bool Fallback(char charUnknown, int index)
+        public override bool Fallback(byte[] bytesUnknown, int index)
         {
-            // If we had a buffer already we're being recursive, throw, it's probably at the suspect
-            // character in our array.
-            if (fallbackCount >= 1)
+            // We expect no previous fallback in our buffer
+            // We can't call recursively but others might (note, we don't test on last char!!!)
+            if (_fallbackCount >= 1)
             {
-                // If we're recursive we may still have something in our buffer that makes this a surrogate
-                if (char.IsHighSurrogate(charUnknown) && fallbackCount >= 0 &&
-                    char.IsLowSurrogate(strDefault[fallbackIndex + 1]))
-                    ThrowLastCharRecursive(Char.ConvertToUtf32(charUnknown, strDefault[fallbackIndex + 1]));
-
-                // Nope, just one character
-                ThrowLastCharRecursive(unchecked((int)charUnknown));
+                ThrowLastBytesRecursive(bytesUnknown);
             }
 
             // Go ahead and get our fallback
-            // Divide by 2 because we aren't a surrogate pair
-            fallbackCount = strDefault.Length / 2;
-            fallbackIndex = -1;
+            if (_strDefault.Length == 0)
+                return false;
 
-            return fallbackCount != 0;
-        }
+            _fallbackCount = _strDefault.Length;
+            _fallbackIndex = -1;
 
-        public override bool Fallback(char charUnknownHigh, char charUnknownLow, int index)
-        {
-            // Double check input surrogate pair
-            if (!Char.IsHighSurrogate(charUnknownHigh))
-                throw new ArgumentOutOfRangeException(nameof(charUnknownHigh),
-                    SR.Format(SR.ArgumentOutOfRange_Range, 0xD800, 0xDBFF));
-
-            if (!Char.IsLowSurrogate(charUnknownLow))
-                throw new ArgumentOutOfRangeException(nameof(charUnknownLow),
-                    SR.Format(SR.ArgumentOutOfRange_Range, 0xDC00, 0xDFFF));
-            Contract.EndContractBlock();
-
-            // If we had a buffer already we're being recursive, throw, it's probably at the suspect
-            // character in our array.
-            if (fallbackCount >= 1)
-                ThrowLastCharRecursive(Char.ConvertToUtf32(charUnknownHigh, charUnknownLow));
-
-            // Go ahead and get our fallback
-            fallbackCount = strDefault.Length;
-            fallbackIndex = -1;
-
-            return fallbackCount != 0;
+            return true;
         }
 
         public override char GetNextChar()
         {
             // We want it to get < 0 because == 0 means that the current/last character is a fallback
             // and we need to detect recursion.  We could have a flag but we already have this counter.
-            fallbackCount--;
-            fallbackIndex++;
+            _fallbackCount--;
+            _fallbackIndex++;
 
             // Do we have anything left? 0 is now last fallback char, negative is nothing left
-            if (fallbackCount < 0)
+            if (_fallbackCount < 0)
                 return '\0';
 
             // Need to get it out of the buffer.
             // Make sure it didn't wrap from the fast count-- path
-            if (fallbackCount == int.MaxValue)
+            if (_fallbackCount == int.MaxValue)
             {
-                fallbackCount = -1;
+                _fallbackCount = -1;
                 return '\0';
             }
 
             // Now make sure its in the expected range
-            Debug.Assert(fallbackIndex < strDefault.Length && fallbackIndex >= 0,
+            Debug.Assert(_fallbackIndex < _strDefault.Length && _fallbackIndex >= 0,
                             "Index exceeds buffer range");
 
-            return strDefault[fallbackIndex];
+            return _strDefault[_fallbackIndex];
         }
 
         public override bool MovePrevious()
         {
             // Back up one, only if we just processed the last character (or earlier)
-            if (fallbackCount >= -1 && fallbackIndex >= 0)
+            if (_fallbackCount >= -1 && _fallbackIndex >= 0)
             {
-                fallbackIndex--;
-                fallbackCount++;
+                _fallbackIndex--;
+                _fallbackCount++;
                 return true;
             }
 
@@ -213,17 +181,25 @@ namespace System.Text
             get
             {
                 // Our count is 0 for 1 character left.
-                return (fallbackCount < 0) ? 0 : fallbackCount;
+                return (_fallbackCount < 0) ? 0 : _fallbackCount;
             }
         }
 
         // Clear the buffer
         public override unsafe void Reset()
         {
-            fallbackCount = -1;
-            fallbackIndex = 0;
-            charStart = null;
-            bFallingBack = false;
+            _fallbackCount = -1;
+            _fallbackIndex = -1;
+            byteStart = null;
+        }
+
+        // This version just counts the fallback and doesn't actually copy anything.
+        internal unsafe override int InternalFallback(byte[] bytes, byte* pBytes)
+        // Right now this has both bytes and bytes[], since we might have extra bytes, hence the
+        // array, and we might need the index, hence the byte*
+        {
+            // return our replacement string Length
+            return _strDefault.Length;
         }
     }
 }
