@@ -3780,6 +3780,9 @@ public:
 
     void fgComputeLifeCall(VARSET_TP& life, GenTreeCall* call);
 
+    void fgComputeLifeTrackedLocalUse(VARSET_TP& life, LclVarDsc& varDsc, GenTreeLclVarCommon* node);
+    bool fgComputeLifeTrackedLocalDef(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, LclVarDsc& varDsc, GenTreeLclVarCommon* node);
+    void fgComputeLifeUntrackedLocal(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, LclVarDsc& varDsc, GenTreeLclVarCommon* lclVarNode, GenTree* node);
     bool fgComputeLifeLocal(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTree* lclVarNode, GenTree* node);
 
     void fgComputeLife(VARSET_TP&       life,
