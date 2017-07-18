@@ -141,7 +141,7 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 using (XmlDictionaryReader reader = _buffer.GetReader(0))
                 {
-                    await reader.ReadStartElementAsync();
+                    reader.ReadStartElement();
                     while (reader.IsStartElement())
                     {
                         await writer.WriteNodeAsync(reader, false);
