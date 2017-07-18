@@ -198,11 +198,19 @@ namespace System.IO.Tests
 
         [Theory,
             MemberData(nameof(PathsWithComponentLongerThanMaxComponent))]
-        public void DirectoryWithComponentLongerThanMaxComponentAsPath_ThrowsPathTooLongException(string path)
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/8655")]
+        public void DirectoryWithComponentLongerThanMaxComponentAsPath_ThrowsException(string path)
         {
             // While paths themselves can be up to 260 characters including trailing null, file systems
-            // limit each components of the path to a total of 255 characters.
-             Assert.Throws<PathTooLongException>(() => Create(path));
+            // limit each components of the path to a total of 255 characters on Desktop.
+            if (PlatformDetection.IsFullFramework)
+            {
+                Assert.Throws<PathTooLongException>(() => Create(path));
+            }
+            else
+            {
+                AssertExtensions.ThrowsAny<IOException, DirectoryNotFoundException>(() => Create(path));
+            }
         }
 
         #endregion
