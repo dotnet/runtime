@@ -75,7 +75,7 @@ namespace System.IO
             }
 
             // Technically this doesn't matter but we used to throw for this case
-            if (string.IsNullOrWhiteSpace(path))
+            if (PathInternal.IsEffectivelyEmpty(path))
                 throw new ArgumentException(SR.Arg_PathEmpty, nameof(path));
 
             // We don't want to check invalid characters for device format- see comments for extended above
@@ -141,7 +141,7 @@ namespace System.IO
         public static string GetPathRoot(string path)
         {
             if (path == null) return null;
-            if (string.IsNullOrWhiteSpace(path)) 
+            if (string.IsNullOrEmpty(path))
                 throw new ArgumentException(SR.Arg_PathEmpty, nameof(path));
 
             PathInternal.CheckInvalidPathChars(path);

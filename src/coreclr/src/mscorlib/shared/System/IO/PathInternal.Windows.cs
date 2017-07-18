@@ -441,5 +441,23 @@ namespace System.IO
             EndsInDirectorySeparator(path) ?
             path.Substring(0, path.Length - 1) :
             path;
+
+        /// <summary>
+        /// Returns true if the path is effectively empty for the current OS.
+        /// For unix, this is empty or null. For Windows, this is empty, null, or 
+        /// just spaces ((char)32).
+        /// </summary>
+        internal static bool IsEffectivelyEmpty(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+                return true;
+
+            foreach (char c in path)
+            {
+                if (c != ' ')
+                    return false;
+            }
+            return true;
+        }
     }
 }
