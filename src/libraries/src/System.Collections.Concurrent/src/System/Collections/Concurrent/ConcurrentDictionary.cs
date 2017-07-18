@@ -485,7 +485,8 @@ namespace System.Collections.Concurrent
             int bucketNo = GetBucket(hashcode, tables._buckets.Length);
 
             // We can get away w/out a lock here.
-            // The Volatile.Read ensures that the load of the fields of 'n' doesn't move before the load from buckets[i].
+            // The Volatile.Read ensures that we have a copy of the reference to tables._buckets[bucketNo].
+            // This protects us from reading fields ('_hashcode', '_key', '_value' and '_next') of different instances.
             Node n = Volatile.Read<Node>(ref tables._buckets[bucketNo]);
 
             while (n != null)
@@ -581,7 +582,7 @@ namespace System.Collections.Concurrent
 
                                     if (prev == null)
                                     {
-                                        tables._buckets[bucketNo] = newNode;
+                                        Volatile.Write(ref tables._buckets[bucketNo], newNode);
                                     }
                                     else
                                     {
@@ -780,7 +781,8 @@ namespace System.Collections.Concurrent
 
             for (int i = 0; i < buckets.Length; i++)
             {
-                // The Volatile.Read ensures that the load of the fields of 'current' doesn't move before the load from buckets[i].
+                // The Volatile.Read ensures that we have a copy of the reference to buckets[i].
+                // This protects us from reading fields ('_key', '_value' and '_next') of different instances.
                 Node current = Volatile.Read<Node>(ref buckets[i]);
 
                 while (current != null)
@@ -842,7 +844,7 @@ namespace System.Collections.Concurrent
                                     Node newNode = new Node(node._key, value, hashcode, node._next);
                                     if (prev == null)
                                     {
-                                        tables._buckets[bucketNo] = newNode;
+                                        Volatile.Write(ref tables._buckets[bucketNo], newNode);
                                     }
                                     else
                                     {
