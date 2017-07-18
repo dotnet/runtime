@@ -8,7 +8,6 @@ namespace System.IO.Tests
 {
     public class DirectoryInfo_CreateSubDirectory : FileSystemTest
     {
-        public static TheoryData ControlWhiteSpace = IOInputs.GetControlWhiteSpace().ToTheoryData(); 
         #region UniversalTests
 
         [Fact]
