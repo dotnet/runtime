@@ -2216,7 +2216,7 @@ void Lowering::LowerCompare(GenTree* cmp)
                 }
                 else
                 {
-                    loSrc1->gtLIRFlags |= LIR::Flags::IsUnusedValue;
+                    loSrc1->SetUnusedValue();
                 }
 
                 hiCmp = comp->gtNewOperNode(GT_CMP, TYP_VOID, hiSrc1, hiSrc2);
@@ -2247,7 +2247,7 @@ void Lowering::LowerCompare(GenTree* cmp)
         hiCmp->gtFlags |= GTF_SET_FLAGS;
         if (hiCmp->IsValue())
         {
-            hiCmp->gtLIRFlags |= LIR::Flags::IsUnusedValue;
+            hiCmp->SetUnusedValue();
         }
 
         LIR::Use cmpUse;
@@ -4538,7 +4538,7 @@ GenTree* Lowering::LowerArrElem(GenTree* node)
     }
     else
     {
-        leaNode->gtLIRFlags |= LIR::Flags::IsUnusedValue;
+        leaNode->SetUnusedValue();
     }
 
     BlockRange().Remove(arrElem);
@@ -4682,7 +4682,7 @@ void Lowering::DoPhase()
             assert((node->gtLsraInfo.dstCount == 0) || node->IsValue());
 
             // If the node produces an unused value, mark it as a local def-use
-            if (node->IsValue() && ((node->gtLIRFlags & LIR::Flags::IsUnusedValue) != 0))
+            if (node->IsValue() && node->IsUnusedValue())
             {
                 node->gtLsraInfo.isLocalDefUse = true;
                 node->gtLsraInfo.dstCount      = 0;
