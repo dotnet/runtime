@@ -578,18 +578,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\Serialization\SerializationInfo.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(BclSourcesRoot)\System\Text\DecoderNLS.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\DecoderBestFitFallback.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\DecoderExceptionFallback.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\DecoderFallback.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\DecoderReplacementFallback.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\EncoderNLS.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\EncoderBestFitFallback.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\EncoderExceptionFallback.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\EncoderFallback.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Text\EncoderReplacementFallback.cs" />
-  </ItemGroup>
-  <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\UnsafeNativeMethods.cs" />
     <Compile Include="$(BclSourcesRoot)\Microsoft\Win32\Win32Native.cs" />
     <Compile Condition="'$(FeatureWin32Registry)' == 'true'" Include="$(BclSourcesRoot)\Microsoft\Win32\Registry.cs" />

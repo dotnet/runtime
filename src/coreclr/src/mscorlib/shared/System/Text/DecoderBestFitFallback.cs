@@ -6,26 +6,22 @@
 // This is used internally to create best fit behavior as per the original windows best fit behavior.
 //
 
-using System;
-using System.Text;
-using System.Threading;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
+using System.Threading;
 
 namespace System.Text
 {
     internal sealed class InternalDecoderBestFitFallback : DecoderFallback
     {
         // Our variables
-        internal Encoding encoding = null;
-        internal char[] arrayBestFit = null;
-        internal char cReplacement = '?';
+        internal Encoding _encoding = null;
+        internal char[] _arrayBestFit = null;
+        internal char _cReplacement = '?';
 
         internal InternalDecoderBestFitFallback(Encoding encoding)
         {
             // Need to load our replacement characters table.
-            this.encoding = encoding;
-            this.bIsMicrosoftBestFitFallback = true;
+            _encoding = encoding;
         }
 
         public override DecoderFallbackBuffer CreateFallbackBuffer()
@@ -47,24 +43,24 @@ namespace System.Text
             InternalDecoderBestFitFallback that = value as InternalDecoderBestFitFallback;
             if (that != null)
             {
-                return (this.encoding.CodePage == that.encoding.CodePage);
+                return (_encoding.CodePage == that._encoding.CodePage);
             }
             return (false);
         }
 
         public override int GetHashCode()
         {
-            return this.encoding.CodePage;
+            return _encoding.CodePage;
         }
     }
 
     internal sealed class InternalDecoderBestFitFallbackBuffer : DecoderFallbackBuffer
     {
         // Our variables
-        internal char cBestFit = '\0';
-        internal int iCount = -1;
-        internal int iSize;
-        private InternalDecoderBestFitFallback oFallback;
+        private char _cBestFit = '\0';
+        private int _iCount = -1;
+        private int _iSize;
+        private InternalDecoderBestFitFallback _oFallback;
 
         // Private object for locking instead of locking on a public type for SQL reliability work.
         private static Object s_InternalSyncObject;
@@ -84,16 +80,16 @@ namespace System.Text
         // Constructor
         public InternalDecoderBestFitFallbackBuffer(InternalDecoderBestFitFallback fallback)
         {
-            oFallback = fallback;
+            _oFallback = fallback;
 
-            if (oFallback.arrayBestFit == null)
+            if (_oFallback._arrayBestFit == null)
             {
                 // Lock so we don't confuse ourselves.
                 lock (InternalSyncObject)
                 {
                     // Double check before we do it again.
-                    if (oFallback.arrayBestFit == null)
-                        oFallback.arrayBestFit = fallback.encoding.GetBestFitBytesToUnicodeData();
+                    if (_oFallback._arrayBestFit == null)
+                        _oFallback._arrayBestFit = fallback._encoding.GetBestFitBytesToUnicodeData();
                 }
             }
         }
@@ -102,13 +98,13 @@ namespace System.Text
         public override bool Fallback(byte[] bytesUnknown, int index)
         {
             // We expect no previous fallback in our buffer
-            Debug.Assert(iCount < 1, "[DecoderReplacementFallbackBuffer.Fallback] Calling fallback without a previously empty buffer");
+            Debug.Assert(_iCount < 1, "[DecoderReplacementFallbackBuffer.Fallback] Calling fallback without a previously empty buffer");
 
-            cBestFit = TryBestFit(bytesUnknown);
-            if (cBestFit == '\0')
-                cBestFit = oFallback.cReplacement;
+            _cBestFit = TryBestFit(bytesUnknown);
+            if (_cBestFit == '\0')
+                _cBestFit = _oFallback._cReplacement;
 
-            iCount = iSize = 1;
+            _iCount = _iSize = 1;
 
             return true;
         }
@@ -118,32 +114,32 @@ namespace System.Text
         {
             // We want it to get < 0 because == 0 means that the current/last character is a fallback
             // and we need to detect recursion.  We could have a flag but we already have this counter.
-            iCount--;
+            _iCount--;
 
             // Do we have anything left? 0 is now last fallback char, negative is nothing left
-            if (iCount < 0)
+            if (_iCount < 0)
                 return '\0';
 
             // Need to get it out of the buffer.
             // Make sure it didn't wrap from the fast count-- path
-            if (iCount == int.MaxValue)
+            if (_iCount == int.MaxValue)
             {
-                iCount = -1;
+                _iCount = -1;
                 return '\0';
             }
 
             // Return the best fit character
-            return cBestFit;
+            return _cBestFit;
         }
 
         public override bool MovePrevious()
         {
             // Exception fallback doesn't have anywhere to back up to.
-            if (iCount >= 0)
-                iCount++;
+            if (_iCount >= 0)
+                _iCount++;
 
             // Return true if we could do it.
-            return (iCount >= 0 && iCount <= iSize);
+            return (_iCount >= 0 && _iCount <= _iSize);
         }
 
         // How many characters left to output?
@@ -151,14 +147,14 @@ namespace System.Text
         {
             get
             {
-                return (iCount > 0) ? iCount : 0;
+                return (_iCount > 0) ? _iCount : 0;
             }
         }
 
         // Clear the buffer
         public override unsafe void Reset()
         {
-            iCount = -1;
+            _iCount = -1;
             byteStart = null;
         }
 
@@ -177,7 +173,7 @@ namespace System.Text
         {
             // Need to figure out our best fit character, low is beginning of array, high is 1 AFTER end of array
             int lowBound = 0;
-            int highBound = oFallback.arrayBestFit.Length;
+            int highBound = _oFallback._arrayBestFit.Length;
             int index;
             char cCheck;
 
@@ -195,7 +191,7 @@ namespace System.Text
                 cCheck = unchecked((char)((bytesCheck[0] << 8) + bytesCheck[1]));
 
             // Check trivial out of range case
-            if (cCheck < oFallback.arrayBestFit[0] || cCheck > oFallback.arrayBestFit[highBound - 2])
+            if (cCheck < _oFallback._arrayBestFit[0] || cCheck > _oFallback._arrayBestFit[highBound - 2])
                 return '\0';
 
             // Binary search the array
@@ -207,13 +203,13 @@ namespace System.Text
                 // Also note that index can never == highBound (because diff is rounded down)
                 index = ((iDiff / 2) + lowBound) & 0xFFFE;
 
-                char cTest = oFallback.arrayBestFit[index];
+                char cTest = _oFallback._arrayBestFit[index];
                 if (cTest == cCheck)
                 {
                     // We found it
-                    Debug.Assert(index + 1 < oFallback.arrayBestFit.Length,
+                    Debug.Assert(index + 1 < _oFallback._arrayBestFit.Length,
                         "[InternalDecoderBestFitFallbackBuffer.TryBestFit]Expected replacement character at end of array");
-                    return oFallback.arrayBestFit[index + 1];
+                    return _oFallback._arrayBestFit[index + 1];
                 }
                 else if (cTest < cCheck)
                 {
@@ -229,12 +225,12 @@ namespace System.Text
 
             for (index = lowBound; index < highBound; index += 2)
             {
-                if (oFallback.arrayBestFit[index] == cCheck)
+                if (_oFallback._arrayBestFit[index] == cCheck)
                 {
                     // We found it
-                    Debug.Assert(index + 1 < oFallback.arrayBestFit.Length,
+                    Debug.Assert(index + 1 < _oFallback._arrayBestFit.Length,
                         "[InternalDecoderBestFitFallbackBuffer.TryBestFit]Expected replacement character at end of array");
-                    return oFallback.arrayBestFit[index + 1];
+                    return _oFallback._arrayBestFit[index + 1];
                 }
             }
 

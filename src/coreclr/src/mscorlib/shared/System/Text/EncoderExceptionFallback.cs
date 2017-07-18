@@ -100,10 +100,10 @@ namespace System.Text
 
     public sealed class EncoderFallbackException : ArgumentException
     {
-        private char charUnknown;
-        private char charUnknownHigh;
-        private char charUnknownLow;
-        private int index;
+        private char _charUnknown;
+        private char _charUnknownHigh;
+        private char _charUnknownLow;
+        private int _index;
 
         public EncoderFallbackException()
             : base(SR.Arg_ArgumentException)
@@ -126,8 +126,8 @@ namespace System.Text
         internal EncoderFallbackException(
             String message, char charUnknown, int index) : base(message)
         {
-            this.charUnknown = charUnknown;
-            this.index = index;
+            _charUnknown = charUnknown;
+            _index = index;
         }
 
         internal EncoderFallbackException(
@@ -145,16 +145,16 @@ namespace System.Text
             }
             Contract.EndContractBlock();
 
-            this.charUnknownHigh = charUnknownHigh;
-            this.charUnknownLow = charUnknownLow;
-            this.index = index;
+            _charUnknownHigh = charUnknownHigh;
+            _charUnknownLow = charUnknownLow;
+            _index = index;
         }
 
         public char CharUnknown
         {
             get
             {
-                return (charUnknown);
+                return (_charUnknown);
             }
         }
 
@@ -162,7 +162,7 @@ namespace System.Text
         {
             get
             {
-                return (charUnknownHigh);
+                return (_charUnknownHigh);
             }
         }
 
@@ -170,7 +170,7 @@ namespace System.Text
         {
             get
             {
-                return (charUnknownLow);
+                return (_charUnknownLow);
             }
         }
 
@@ -178,14 +178,14 @@ namespace System.Text
         {
             get
             {
-                return index;
+                return _index;
             }
         }
 
         // Return true if the unknown character is a surrogate pair.
         public bool IsUnknownSurrogate()
         {
-            return (charUnknownHigh != '\0');
+            return (_charUnknownHigh != '\0');
         }
     }
 }
