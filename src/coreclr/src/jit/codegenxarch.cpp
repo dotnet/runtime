@@ -6640,34 +6640,7 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
             ins = INS_mov;
         }
 
-        if (ins == INS_AND)
-        {
-            noway_assert(isUnsignedDst);
-
-            /* Generate "and reg, MASK */
-            unsigned fillPattern;
-            if (dstSize == EA_1BYTE)
-            {
-                fillPattern = 0xff;
-            }
-            else if (dstSize == EA_2BYTE)
-            {
-                fillPattern = 0xffff;
-            }
-            else
-            {
-                fillPattern = 0xffffffff;
-            }
-
-            inst_RV_IV(INS_AND, targetReg, fillPattern, EA_4BYTE);
-        }
-#ifdef _TARGET_AMD64_
-        else if (ins == INS_movsxd)
-        {
-            inst_RV_RV(ins, targetReg, sourceReg, srcType, srcSize);
-        }
-#endif // _TARGET_AMD64_
-        else if (ins == INS_mov)
+        if (ins == INS_mov)
         {
             if (targetReg != sourceReg
 #ifdef _TARGET_AMD64_
@@ -6680,6 +6653,12 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
                 inst_RV_RV(ins, targetReg, sourceReg, srcType, srcSize);
             }
         }
+#ifdef _TARGET_AMD64_
+        else if (ins == INS_movsxd)
+        {
+            inst_RV_RV(ins, targetReg, sourceReg, srcType, srcSize);
+        }
+#endif // _TARGET_AMD64_
         else
         {
             noway_assert(ins == INS_movsx || ins == INS_movzx);
