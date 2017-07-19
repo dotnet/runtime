@@ -9,12 +9,12 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>401c80913afdea5399e0f39376db88e465ae62c9</CoreFxCurrentRef>
-    <CoreClrCurrentRef>401c80913afdea5399e0f39376db88e465ae62c9</CoreClrCurrentRef>
-    <CoreSetupCurrentRef>151c601aea7beb5643ee8ab6ab8c75630d44962c</CoreSetupCurrentRef>
+    <CoreFxCurrentRef>8aa0d2ec7b1618387c2234573abcc4e5e7fc71a1</CoreFxCurrentRef>
+    <CoreClrCurrentRef>8aa0d2ec7b1618387c2234573abcc4e5e7fc71a1</CoreClrCurrentRef>
+    <CoreSetupCurrentRef>8aa0d2ec7b1618387c2234573abcc4e5e7fc71a1</CoreSetupCurrentRef>
     <ExternalCurrentRef>5a0606fccb09fce4b47545ae9896139acca547f5</ExternalCurrentRef>
-    <ProjectNTfsCurrentRef>151c601aea7beb5643ee8ab6ab8c75630d44962c</ProjectNTfsCurrentRef>
-    <ProjectNTfsTestILCCurrentRef>151c601aea7beb5643ee8ab6ab8c75630d44962c</ProjectNTfsTestILCCurrentRef>
+    <ProjectNTfsCurrentRef>8aa0d2ec7b1618387c2234573abcc4e5e7fc71a1</ProjectNTfsCurrentRef>
+    <ProjectNTfsTestILCCurrentRef>8aa0d2ec7b1618387c2234573abcc4e5e7fc71a1</ProjectNTfsTestILCCurrentRef>
     <SniCurrentRef>8bd1ec5fac9f0eec34ff6b34b1d878b4359e02dd</SniCurrentRef>
     <StandardCurrentRef>401c80913afdea5399e0f39376db88e465ae62c9</StandardCurrentRef>
   </PropertyGroup>
@@ -22,15 +22,15 @@
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
     <PlatformPackageVersion>2.1.0-preview1-25324-02</PlatformPackageVersion>
-    <CoreFxExpectedPrerelease>preview2-25518-02</CoreFxExpectedPrerelease>
-    <CoreClrPackageVersion>2.1.0-preview2-25518-01</CoreClrPackageVersion>
+    <CoreFxExpectedPrerelease>preview2-25519-01</CoreFxExpectedPrerelease>
+    <CoreClrPackageVersion>2.1.0-preview2-25519-01</CoreClrPackageVersion>
     <ExternalExpectedPrerelease>beta-25322-00</ExternalExpectedPrerelease>
-    <ProjectNTfsExpectedPrerelease>beta-25518-00</ProjectNTfsExpectedPrerelease>
-    <ProjectNTfsTestILCExpectedPrerelease>beta-25518-00</ProjectNTfsTestILCExpectedPrerelease>
-    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-25518-00</ProjectNTfsTestILCPackageVersion>
+    <ProjectNTfsExpectedPrerelease>beta-25518-01</ProjectNTfsExpectedPrerelease>
+    <ProjectNTfsTestILCExpectedPrerelease>beta-25518-01</ProjectNTfsTestILCExpectedPrerelease>
+    <ProjectNTfsTestILCPackageVersion>1.0.0-beta-25518-01</ProjectNTfsTestILCPackageVersion>
     <NETStandardPackageVersion>2.1.0-preview1-25518-01</NETStandardPackageVersion>
     <NETStandardPackageId>NETStandard.Library</NETStandardPackageId>
-    <MicrosoftNETCoreAppPackageVersion>2.1.0-preview2-25517-02</MicrosoftNETCoreAppPackageVersion>
+    <MicrosoftNETCoreAppPackageVersion>2.1.0-preview2-25518-01</MicrosoftNETCoreAppPackageVersion>
     <!-- Use the SNI runtime package -->
     <SniPackageVersion>4.4.0</SniPackageVersion>
   </PropertyGroup>
