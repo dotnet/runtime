@@ -157,7 +157,9 @@ def static setMachineAffinity(def job, def os, def architecture, def options = n
         Utilities.setMachineAffinity(job, os, 'arm64-cross-latest');
     } else if ((architecture == 'arm') && (os == 'Ubuntu' || os == 'Ubuntu16.04' || os == 'Tizen')) {
         Utilities.setMachineAffinity(job, 'Ubuntu', 'arm-cross-latest');
-    } else {
+    } else if ((architecture == 'arm') && (os == 'Windows_NT') && options['use_arm64_build_machine'] == true) {
+        Utilities.setMachineAffinity(job, os, 'latest-arm64');
+    }else {
         Utilities.setMachineAffinity(job, os, 'latest-or-auto');
     }
 }
@@ -1628,6 +1630,8 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} -priority=1"
                     }
                     else if (lowerConfiguration == "checked") {
+                        def machineAffinityOptions = ['use_arm64_build_machine' : true]
+                        setMachineAffinity(newJob, os, architecture, machineAffinityOptions)
                         // For checked runs we will also run testing.
                         buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} -priority=1"
                         buildCommands += "python tests\\scripts\\arm64_post_build.py -repo_root %WORKSPACE% -arch ${architecture} -build_type ${lowerConfiguration} -scenario ${scenario} -key_location C:\\tools\\key.txt"
@@ -2107,6 +2111,7 @@ combinedScenarios.each { scenario ->
                     def newJob = job(Utilities.getFullJobName(project, jobName, isPR, folderName)) {}
 
                     def machineAffinityOptions = architecture == 'arm64' ? ['is_build_only': true] : null
+                    machineAffinityOptions = architecture == 'arm' ? ['use_arm64_build_machine': false] : machineAffinityOptions
                     setMachineAffinity(newJob, os, architecture, machineAffinityOptions)
 
                     // Add all the standard options
