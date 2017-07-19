@@ -13,13 +13,27 @@ void
 mono_threads_platform_get_stack_bounds (guint8 **staddr, size_t *stsize)
 {
 	pthread_attr_t attr;
+	gint res;
 
 	*staddr = NULL;
 	*stsize = (size_t)-1;
 
-	pthread_getattr_np (pthread_self (), &attr);
-	pthread_attr_getstack (&attr, (void**)staddr, stsize);
-	pthread_attr_destroy (&attr);
+	res = pthread_attr_init (&attr);
+	if (G_UNLIKELY (res != 0))
+		g_error ("%s: pthread_attr_init failed with \"%s\" (%d)", __func__, g_strerror (res), res);
+
+	res = pthread_getattr_np (pthread_self (), &attr);
+	if (G_UNLIKELY (res != 0))
+		g_error ("%s: pthread_getattr_np failed with \"%s\" (%d)", __func__, g_strerror (res), res);
+
+	res = pthread_attr_getstack (&attr, (void**)staddr, stsize);
+	if (G_UNLIKELY (res != 0))
+		g_error ("%s: pthread_attr_getstack failed with \"%s\" (%d)", __func__, g_strerror (res), res);
+
+	res = pthread_attr_destroy (&attr);
+	if (G_UNLIKELY (res != 0))
+		g_error ("%s: pthread_attr_destroy failed with \"%s\" (%d)", __func__, g_strerror (res), res);
+
 }
 
 #endif
