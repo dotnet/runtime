@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -141,7 +143,7 @@ namespace System.Diagnostics.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/22269", TargetFrameworkMonikers.UapNotUapAot)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapNotUapAot, "Getting handle of child process running on UAP is not possible")]
         public void WaitForPeerProcess()
         {
             Process child1 = CreateProcessLong();
@@ -165,6 +167,51 @@ namespace System.Diagnostics.Tests
             Assert.True(child2.WaitForExit(WaitInMS));
 
             Assert.Equal(SuccessExitCode, child2.ExitCode);
+        }
+
+        [Fact]
+        public void WaitForSignal()
+        {
+            const string expectedSignal = "Signal";
+            const string successResponse = "Success";
+            const int timeout = 5 * 1000;
+
+            Process p = CreateProcessPortable(RemotelyInvokable.WriteLineReadLine);
+            p.StartInfo.RedirectStandardInput = true;
+            p.StartInfo.RedirectStandardOutput = true;
+            var mre = new ManualResetEventSlim(false);
+
+            int linesReceived = 0;
+            p.OutputDataReceived += (s, e) =>
+            {
+                if (e.Data != null)
+                {
+                    linesReceived++;
+
+                    if (e.Data == expectedSignal)
+                    {
+                        mre.Set();
+                    }
+                }
+            };
+
+            p.Start();
+            p.BeginOutputReadLine();
+
+            Assert.True(mre.Wait(timeout));
+            Assert.Equal(1, linesReceived);
+
+            // Wait a little bit to make sure process didn't exit on itself
+            Thread.Sleep(100);
+            Assert.False(p.HasExited, "Process has prematurely exited");
+
+            using (StreamWriter writer = p.StandardInput)
+            {
+                writer.WriteLine(successResponse);
+            }
+
+            Assert.True(p.WaitForExit(timeout), "Process has not exited");
+            Assert.Equal(RemotelyInvokable.SuccessExitCode, p.ExitCode);
         }
 
         [Fact]
