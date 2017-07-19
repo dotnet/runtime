@@ -29065,7 +29065,7 @@ RelativePath=JIT\jit64\localloc\verify\verify01_small\verify01_small.cmd
 WorkingDir=JIT\jit64\localloc\verify\verify01_small
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL
+Categories=EXPECTED_FAIL;4851
 HostStyle=0
 
 [TreeInsert.cmd_3634]
