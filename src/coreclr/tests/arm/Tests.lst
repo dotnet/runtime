@@ -8993,7 +8993,7 @@ RelativePath=JIT\Directed\StructABI\StructABI\StructABI.cmd
 WorkingDir=JIT\Directed\StructABI\StructABI
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8093
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [Ackermann.cmd_1125]
