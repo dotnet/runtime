@@ -366,6 +366,7 @@
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
+            "Architecture": "arm64",
             "SubType":  "Build-Tests",
             "Type": "build/product/",
             "PB_BuildType": "Release"
@@ -384,6 +385,7 @@
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
+            "Architecture": "arm64",
             "SubType":  "Build-Tests-R2R",
             "Type": "build/product/",
             "PB_BuildType": "Release"
