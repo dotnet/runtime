@@ -33,8 +33,8 @@ from collections import defaultdict
 ################################################################################
 
 g_arm64ci_path = os.path.join(os.environ["USERPROFILE"], "bin")
-g_dotnet_url = "https://go.microsoft.com/fwlink/?LinkID=831469"
-g_x64_client_url = "https://clrjit.blob.core.windows.net/arm64ci/x64_client_live_tests.zip"
+g_dotnet_url = "https://clrjit.blob.core.windows.net/arm64ci/dotnet-sdk.zip"
+g_x64_client_url = "https://clrjit.blob.core.windows.net/arm64ci/x64_client_2_0_update.zip"
 
 ################################################################################
 # Argument Parser
@@ -226,7 +226,7 @@ def validate_args(args):
    build_type = args.build_type
    scenario = args.scenario
    key_location = args.key_location
-   force_update = args.force_update
+   force_update = True
 
    def validate_arg(arg, check):
       """ Validate an individual arg
