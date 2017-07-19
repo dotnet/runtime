@@ -74,6 +74,12 @@ bool g_numaAvailable = false;
 
 void* numaHandle = nullptr;
 
+#if HAVE_NUMA_H
+#define PER_FUNCTION_BLOCK(fn) decltype(fn)* fn##_ptr;
+FOR_ALL_NUMA_FUNCTIONS
+#undef PER_FUNCTION_BLOCK
+#endif // HAVE_NUMA_H
+
 static const int MaxCpusPerGroup = 8 * sizeof(KAFFINITY);
 static const WORD NO_GROUP = 0xffff;
 
