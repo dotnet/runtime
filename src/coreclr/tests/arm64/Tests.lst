@@ -69748,14 +69748,6 @@ MaxAllowedDurationSeconds=600
 Categories=Pri0;EXPECTED_PASS
 HostStyle=0
 
-[BadCheckedAdd1.cmd_9019]
-RelativePath=JIT\Regression\Dev11\External\dev11_77709\BadCheckedAdd1\BadCheckedAdd1.cmd
-WorkingDir=JIT\Regression\Dev11\External\dev11_77709\BadCheckedAdd1
-Expected=0
-MaxAllowedDurationSeconds=600
-Categories=Pri0;EXPECTED_PASS
-HostStyle=0
-
 [UseUnalignedDouble.cmd_9020]
 RelativePath=JIT\Regression\Dev11\External\Dev11_90434\UseUnalignedDouble\UseUnalignedDouble.cmd
 WorkingDir=JIT\Regression\Dev11\External\Dev11_90434\UseUnalignedDouble
