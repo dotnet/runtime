@@ -816,7 +816,7 @@ AC_ARG_WITH(orbis,               [  --with-orbis=yes,no                 If you w
 AC_ARG_WITH(unreal,              [  --with-unreal=yes,no                If you want to build the Unreal assemblies (defaults to no)], [], [with_unreal=default])
 
 
-AC_ARG_WITH(runtime_preset, [  --with-runtime_preset=net_4_x,all,aot,hybridaot,fullaot,bitcode   Which default profile to build (defaults to net_4_x)],  [], [with_runtime_preset=net_4_x])
+AC_ARG_WITH(runtime_preset, [  --with-runtime_preset=net_4_x,all,aot,hybridaot,fullaot,bitcode,unreal   Which default profile to build (defaults to net_4_x)],  [], [with_runtime_preset=net_4_x])
 
 dnl
 dnl Profile defaults
@@ -928,11 +928,11 @@ elif test x$with_runtime_preset = xorbis; then
 elif test x$with_runtime_preset = xunreal; then
    DISABLE_MCS_DOCS_default=yes
    with_unreal_default=yes
-   TEST_PROFILE=ounreal
+   TEST_PROFILE=unreal
 
    mono_feature_disable_com='yes'
    mono_feature_disable_remoting='yes'
-   mono_feature_disable_appdomains='yes'
+   mono_feature_disable_appdomains='no'
 
    AOT_BUILD_FLAGS="--runtime=mobile --aot=hybrid,$INVARIANT_AOT_OPTIONS"
    AOT_RUN_FLAGS="--runtime=mobile --hybrid-aot"
