@@ -82065,7 +82065,7 @@ RelativePath=GC\Features\SustainedLowLatency\scenario\scenario.cmd
 WorkingDir=GC\Features\SustainedLowLatency\scenario
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;3392;LONG_RUNNING;NEW
+Categories=EXPECTED_PASS;LONG_RUNNING;NEW
 HostStyle=0
 
 [Generated1205.cmd_10567]

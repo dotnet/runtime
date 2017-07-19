@@ -484,9 +484,6 @@
         <ExcludeList Include="$(XunitTestBinBase)\GC\Features\LOHFragmentation\lohfragmentation\lohfragmentation.cmd">
             <Issue>needs triage</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)\GC\Features\SustainedLowLatency\scenario\scenario.cmd">
-            <Issue>needs triage</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)\GC\LargeMemory\API\gc\collect\collect.cmd">
             <Issue>needs triage</Issue>
         </ExcludeList>
