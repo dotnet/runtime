@@ -87,6 +87,18 @@ namespace System.Diagnostics.Tests
             return SuccessExitCode;
         }
 
+        public static string WriteLineReadLineUapCmd()
+        {
+            return $"((echo Signal) && findstr -src:^Success$ && exit {SuccessExitCode}) || exit {SuccessExitCode + 1}";
+        }
+
+        public static int WriteLineReadLine()
+        {
+            Console.WriteLine("Signal");
+            string line = Console.ReadLine();
+            return line == "Success" ? SuccessExitCode : SuccessExitCode + 1;
+        }
+
         public static string ReadLineWriteIfNullUapCmd()
         {
             return $"(((findstr -src:^..*$) && (echo NOT_NULL)) || (echo NULL)) & exit {SuccessExitCode}";
