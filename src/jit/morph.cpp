@@ -3660,6 +3660,13 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 #endif
                             }
                         }
+
+#if !defined(LEGACY_BACKEND)
+                        if (structSize < TARGET_POINTER_SIZE)
+                        {
+                            copyBlkClass = objClass;
+                        }
+#endif
 #endif // _TARGET_ARM_
                     }
 #ifndef FEATURE_UNIX_AMD64_STRUCT_PASSING
