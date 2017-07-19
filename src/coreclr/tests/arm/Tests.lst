@@ -15585,7 +15585,7 @@ RelativePath=GC\Features\Finalizer\finalizeother\finalizearraysleep\finalizearra
 WorkingDir=GC\Features\Finalizer\finalizeother\finalizearraysleep
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;JITSTRESS_FAIL
 HostStyle=0
 
 [_il_dbgindcall.cmd_1949]
@@ -65665,7 +65665,7 @@ RelativePath=GC\Scenarios\LeakWheel\leakwheel\leakwheel.cmd
 WorkingDir=GC\Scenarios\LeakWheel\leakwheel
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;JITSTRESS_FAIL
 HostStyle=0
 
 [GCSimulator_280.cmd_8209]
@@ -67761,7 +67761,7 @@ RelativePath=GC\Scenarios\DoublinkList\doublinkstay\doublinkstay.cmd
 WorkingDir=GC\Scenarios\DoublinkList\doublinkstay
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL;8091
+Categories=EXPECTED_PASS;JITSTRESS_FAIL
 HostStyle=0
 
 [b57516.cmd_8471]
@@ -69401,7 +69401,7 @@ RelativePath=GC\Scenarios\DoublinkList\doublinkgen\doublinkgen.cmd
 WorkingDir=GC\Scenarios\DoublinkList\doublinkgen
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;JITSTRESS_FAIL
 HostStyle=0
 
 [ConvertToString15.cmd_8676]
@@ -70465,7 +70465,7 @@ RelativePath=GC\API\GCHandle\HandleCopy\HandleCopy.cmd
 WorkingDir=GC\API\GCHandle\HandleCopy
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;JITSTRESS_FAIL
 HostStyle=0
 
 [Dup_ro.cmd_8809]
@@ -82129,7 +82129,7 @@ RelativePath=GC\API\GC\KeepAliveNull\KeepAliveNull.cmd
 WorkingDir=GC\API\GC\KeepAliveNull
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;JITSTRESS_FAIL
 HostStyle=0
 
 [starg_r4.cmd_10267]
