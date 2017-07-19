@@ -33737,7 +33737,7 @@ RelativePath=JIT\Regression\JitBlue\GitHub_11408\GitHub_11408\GitHub_11408.cmd
 WorkingDir=JIT\Regression\JitBlue\GitHub_11408\GitHub_11408
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL
+Categories=EXPECTED_FAIL;11408
 HostStyle=0
 
 [Generated762.cmd_4218]
