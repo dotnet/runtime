@@ -32801,7 +32801,7 @@ RelativePath=JIT\Regression\CLR-x86-EJIT\V1-M12-Beta2\b26323\b26323\b26323.cmd
 WorkingDir=JIT\Regression\CLR-x86-EJIT\V1-M12-Beta2\b26323\b26323
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [b219940.cmd_4101]
@@ -63545,7 +63545,7 @@ RelativePath=JIT\jit64\mcc\interop\mcc_i73\mcc_i73.cmd
 WorkingDir=JIT\jit64\mcc\interop\mcc_i73
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL
+Categories=EXPECTED_FAIL;9462;EXCLUDED;VARARG
 HostStyle=0
 
 [Foo.cmd_7944]
