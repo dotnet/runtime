@@ -65,7 +65,7 @@ class request
         pin.Free();
     }
 
-    static public void Main(String[] args)
+    static public int Main(String[] args)
     {
         int n_requests = 600;
         int allocation_volume = 100000; // 1 mil
@@ -109,6 +109,8 @@ class request
 
             total_elapsed_ms = stopwatch.Elapsed.TotalMilliseconds;
         }
+
+        return 100;
     }
 }
 
