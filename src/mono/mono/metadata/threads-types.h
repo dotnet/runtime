@@ -245,8 +245,6 @@ void mono_threads_add_joinable_thread (gpointer tid);
 void mono_threads_join_threads (void);
 void mono_thread_join (gpointer tid);
 
-void mono_thread_detach_internal (MonoInternalThread *thread);
-
 void ves_icall_System_Threading_Thread_GetStackTraces (MonoArray **out_threads, MonoArray **out_stack_traces);
 
 MONO_API gpointer
