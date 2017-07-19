@@ -144,7 +144,7 @@ namespace Microsoft.ServiceModel.Syndication
             await writer.WriteEndElementAsync();
         }
 
-        internal static async Task ReadCategoryAsync(XmlReaderWrapper reader, SyndicationCategory category, string version, bool preserveAttributeExtensions, bool preserveElementExtensions, int _maxExtensionSize)
+        internal static async Task<SyndicationCategory> ReadCategoryAsync(XmlReaderWrapper reader, SyndicationCategory category, string version, bool preserveAttributeExtensions, bool preserveElementExtensions, int _maxExtensionSize)
         {
             await MoveToStartElementAsync(reader);
             bool isEmpty = reader.IsEmptyElement;
@@ -242,6 +242,8 @@ namespace Microsoft.ServiceModel.Syndication
             {
                 await reader.ReadStartElementAsync();
             }
+
+            return category;
         }
 
         internal Task<TextSyndicationContent> ReadTextContentFromAsync(XmlReaderWrapper reader, string context, bool preserveAttributeExtensions)
@@ -721,17 +723,16 @@ namespace Microsoft.ServiceModel.Syndication
             return new DateTimeOffset();
         }
         
-        private Task ReadCategoryAsync(XmlReaderWrapper reader, SyndicationCategory category)
+        private Task<SyndicationCategory> ReadCategoryAsync(XmlReaderWrapper reader, SyndicationCategory category)
         {
              return ReadCategoryAsync(reader, category, this.Version, this.PreserveAttributeExtensions, this.PreserveElementExtensions, _maxExtensionSize);
         }
 
-        private async Task<SyndicationCategory> ReadCategoryFromAsync(XmlReaderWrapper reader, SyndicationFeed feed)
+        private Task<SyndicationCategory> ReadCategoryFromAsync(XmlReaderWrapper reader, SyndicationFeed feed)
 
         {
             SyndicationCategory result = CreateCategory(feed);
-            await ReadCategoryAsync(reader, result);
-            return result;
+            return ReadCategoryAsync(reader, result);
         }
         
         private async Task<SyndicationCategory> ReadCategoryFromAsync(XmlReaderWrapper reader, SyndicationItem item)
