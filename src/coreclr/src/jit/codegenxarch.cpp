@@ -6577,7 +6577,7 @@ void CodeGen::genIntToIntCast(GenTreePtr treeNode)
         if (signCheckOnly)
         {
             // We only need to check for a negative value in sourceReg
-            inst_RV_IV(INS_cmp, sourceReg, 0, srcSize);
+            inst_RV_RV(INS_test, sourceReg, sourceReg, srcType, srcSize);
             genJumpToThrowHlpBlk(EJ_jl, SCK_OVERFLOW);
         }
         else
