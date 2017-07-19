@@ -206,6 +206,25 @@ namespace System.Globalization
             InitializeFromName(name, useUserOverride);
         }
 
+        private CultureInfo(CultureData cultureData)
+        {
+            Debug.Assert(cultureData != null);
+            _cultureData = cultureData;
+            _name = cultureData.CultureName;
+            _isInherited = false;
+        }
+
+        private static CultureInfo CreateCultureInfoNoThrow(string name, bool useUserOverride)
+        {
+            Debug.Assert(name != null);
+            CultureData cultureData = CultureData.GetCultureData(name, useUserOverride);
+            if (cultureData == null)
+            {
+                return null;
+            }
+
+            return new CultureInfo(cultureData);
+        } 
         public CultureInfo(int culture) : this(culture, true) 
         {
         }
@@ -533,25 +552,22 @@ namespace System.Globalization
             {
                 if (null == _parent)
                 {
-                    try
-                    {
-                        string parentName = _cultureData.SPARENT;
+                    string parentName = _cultureData.SPARENT;
 
-                        if (String.IsNullOrEmpty(parentName))
+                    if (String.IsNullOrEmpty(parentName))
+                    {
+                        _parent = InvariantCulture;
+                    }
+                    else
+                    {
+                        _parent = CreateCultureInfoNoThrow(parentName, _cultureData.UseUserOverride);
+                        if (_parent == null)
                         {
+                            // For whatever reason our IPARENT or SPARENT wasn't correct, so use invariant
+                            // We can't allow ourselves to fail.  In case of custom cultures the parent of the
+                            // current custom culture isn't installed.
                             _parent = InvariantCulture;
                         }
-                        else
-                        {
-                            _parent = new CultureInfo(parentName, _cultureData.UseUserOverride);
-                        }
-                    }
-                    catch (ArgumentException)
-                    {
-                        // For whatever reason our IPARENT or SPARENT wasn't correct, so use invariant
-                        // We can't allow ourselves to fail.  In case of custom cultures the parent of the
-                        // current custom culture isn't installed.
-                        _parent = InvariantCulture;
                     }
                 }
                 return _parent;
