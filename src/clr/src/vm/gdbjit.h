@@ -331,7 +331,7 @@ class NotifyGdb
 {
 public:
     static void MethodCompiled(MethodDesc* methodDescPtr);
-    static void MethodDropped(MethodDesc* methodDescPtr);
+    static void MethodPitched(MethodDesc* methodDescPtr);
     template <typename PARENT_TRAITS>
     class DeleteValuesOnDestructSHashTraits : public PARENT_TRAITS
     {

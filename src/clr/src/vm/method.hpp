@@ -1318,6 +1318,12 @@ public:
     BOOL IsNativeCodeStableAfterInit()
     {
         LIMITED_METHOD_DAC_CONTRACT;
+
+#if defined(FEATURE_JIT_PITCHING)
+        if (IsPitchable())
+            return false;
+#endif
+
         return 
 #ifdef FEATURE_TIERED_COMPILATION
             !IsEligibleForTieredCompilation() &&
@@ -1433,6 +1439,11 @@ public:
     // - jitted code if !IsPreImplemented()
     // - ngened code if IsPreImplemented()
     PCODE GetNativeCode();
+
+#if defined(FEATURE_JIT_PITCHING)
+    bool IsPitchable();
+    void PitchNativeCode();
+#endif
 
     //================================================================
     // FindOrCreateAssociatedMethodDesc
