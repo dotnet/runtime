@@ -36,6 +36,16 @@ namespace System.Threading
             }
         }
 
+        /// <summary>
+        /// Disposes of the registration and unregisters the target callback from the associated 
+        /// <see cref="T:System.Threading.CancellationToken">CancellationToken</see>.
+        /// </summary>
+        internal bool TryDeregister() // corefx currently has an InternalsVisibleTo dependency on this
+        {
+            CancellationTokenSource.CallbackNode node = _node;
+            return node != null && node.Partition.Unregister(_id, node);
+        }
+
         private void WaitForCallbackIfNecessary()
         {
             // We're a valid registration but we were unable to unregister, which means the callback wasn't in the list,
