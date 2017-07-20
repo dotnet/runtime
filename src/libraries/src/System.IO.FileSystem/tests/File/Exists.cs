@@ -207,7 +207,6 @@ namespace System.IO.Tests
            MemberData(nameof(NonControlWhiteSpace))]
         [PlatformSpecific(TestPlatforms.Windows)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // Not NetFX
-        [ActiveIssue(21358)] // Pending CoreCLR behavior change
         public void TrailingWhiteSpace_NotTrimmed(string component)
         {
             // In CoreFX we don't trim anything other than space (' ')
