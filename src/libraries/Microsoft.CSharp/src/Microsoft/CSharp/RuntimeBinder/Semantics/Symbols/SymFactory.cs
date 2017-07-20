@@ -10,7 +10,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal sealed class SymFactory : SymFactoryBase
     {
         public SymFactory(SYMTBL symtable) :
-            base(symtable, true)
+            base(symtable)
         {
         }
 
