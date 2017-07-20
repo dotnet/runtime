@@ -638,6 +638,7 @@ namespace System.Tests
 
         [Fact]
         [ActiveIssue(21680, TargetFrameworkMonikers.UapAot)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapNotUapAot, "In UWP the resources always exist in the resources.pri file even if the assembly is not loaded")]
         public void ResourceResolve()
         {
             RemoteInvoke(() => {

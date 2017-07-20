@@ -68,6 +68,7 @@ namespace System.Resources.Tests
 
         [Theory]
         [MemberData(nameof(EnglishResourceData))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.UapNotUapAot, "When getting resources from PRI file the casing doesn't matter, if it is there it will always find and return the resource")]
         public static void IgnoreCase(string key, string expectedValue)
         {
             var manager = new ResourceManager("System.Resources.Tests.Resources.TestResx", typeof(ResourceManagerTests).GetTypeInfo().Assembly);

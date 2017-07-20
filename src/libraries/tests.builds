@@ -22,8 +22,7 @@
     <SerializeProjects>true</SerializeProjects>
   </PropertyGroup>
 
-  <Import Project="$(ToolsDir)CodeCoverage.targets" Condition="Exists('$(ToolsDir)CodeCoverage.targets')" />
-  <Import Project="$(ToolsDir)PerfTesting.targets" Condition="Exists('$(ToolsDir)PerfTesting.targets') and '$(Performance)' == 'true'"/>
+  <Import Project="$(ToolsDir)tests.targets" Condition="Exists('$(ToolsDir)tests.targets')" />
   <Import Project="$(ToolsDir)VersionTools.targets" Condition="Exists('$(ToolsDir)VersionTools.targets')" />
 
   <PropertyGroup>
@@ -40,6 +39,13 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
+
+  <PropertyGroup>
+    <TraversalBuildDependsOn>
+      MakeCommonResourcesPriFile;
+      $(TraversalBuildDependsOn)
+    </TraversalBuildDependsOn>
+  </PropertyGroup>
 
     <!-- TODO: Can we move this archive test build to BuildTools -->
   <UsingTask TaskName="ZipFileCreateFromDependencyLists" Condition="'$(Platform)' == 'ARM64' and '$(ArchiveTests)' == 'true'" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
