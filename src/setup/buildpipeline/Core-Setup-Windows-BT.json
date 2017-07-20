@@ -689,7 +689,8 @@
       "value": "dn-bot"
     },
     "PB_VsoPassword": {
-      "value": "cwzvo2apfo6wdij6q3vyruzfmbbcc2wkyus6widyltfkev7vumfa"
+      "value": null,
+      "isSecret": true
     },
     "PB_VsoRepoUrl": {
       "value": "--branch $(PB_Branch) https://$(PB_VsoAccountName):$(PB_VsoPassword)@devdiv.visualstudio.com/DevDiv/_git/DotNet-Core-Setup-Trusted"
