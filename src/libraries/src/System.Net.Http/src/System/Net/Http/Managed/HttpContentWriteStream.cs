@@ -9,27 +9,6 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal abstract class HttpContentStream : Stream
-    {
-        protected void ValidateBufferArgs(byte[] buffer, int offset, int count)
-        {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
-
-            if (offset < 0 || offset > buffer.Length)
-            {
-                throw new ArgumentOutOfRangeException(nameof(offset));
-            }
-
-            if (count < 0 || count > buffer.Length - offset)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-        }
-    }
-
     internal abstract class HttpContentWriteStream : HttpContentStream
     {
         protected HttpConnection _connection;
