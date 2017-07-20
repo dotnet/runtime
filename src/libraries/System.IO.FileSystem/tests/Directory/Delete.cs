@@ -131,7 +131,7 @@ namespace System.IO.Tests
         [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
         public void LongPathExtendedDirectory()
         {
-            DirectoryInfo testDir = Directory.CreateDirectory(IOServices.GetPath(IOInputs.ExtendedPrefix + TestDirectory, characterCount: 500).FullPath);
+            DirectoryInfo testDir = Directory.CreateDirectory(IOServices.GetPath(IOInputs.ExtendedPrefix + TestDirectory, characterCount: 500));
             Delete(testDir.FullName);
             Assert.False(testDir.Exists);
         }

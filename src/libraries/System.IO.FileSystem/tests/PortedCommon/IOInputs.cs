@@ -218,7 +218,7 @@ internal static class IOInputs
 
     private static string GetLongPath(string rootPath, int characterCount, bool extended = false)
     {
-        return IOServices.GetPath(rootPath, characterCount, extended).FullPath;
+        return IOServices.GetPath(rootPath, characterCount, extended);
     }
 
     public static IEnumerable<string> GetReservedDeviceNames()
