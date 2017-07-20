@@ -128,5 +128,51 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             Assert.Equal(1, dynamicDelegate(dto));
         }
 
+        interface ITestInterface
+        {
+            int this[int index] { get; }
+
+            int Add(int arg);
+        }
+
+        interface ITestDerived : ITestInterface
+        {
+            
+        }
+
+        class TestImpl : ITestDerived
+        {
+            public int this[int index] => index * 2;
+
+            public int Add(int arg) => arg + 2;
+        }
+
+        [Fact]
+        public void InheritedInterfaceMethod()
+        {
+            ITestDerived itd = new TestImpl();
+            dynamic d = 3;
+            dynamic res = itd.Add(d);
+            Assert.Equal(5, res);
+        }
+
+
+        [Fact]
+        public void InheritedInterfaceIndexer()
+        {
+            ITestDerived itd = new TestImpl();
+            dynamic d = 3;
+            dynamic res = itd[d];
+            Assert.Equal(6, res);
+        }
+
+        [Fact]
+        public void InterfaceMethodInheritedFromObject()
+        {
+            ITestDerived itd = new TestImpl();
+            dynamic d = itd;
+            dynamic res = itd.Equals(d);
+            Assert.True(res);
+        }
     }
 }

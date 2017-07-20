@@ -1231,6 +1231,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return false;
         }
 
+        public AggregateType ObjectAggregateType => (AggregateType)_symbolTable.GetCTypeFromType(typeof(object));
+
         private readonly Dictionary<Tuple<Assembly, Assembly>, bool> _internalsVisibleToCalculated
             = new Dictionary<Tuple<Assembly, Assembly>, bool>();
 

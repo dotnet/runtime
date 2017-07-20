@@ -669,7 +669,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             // If we have a constructor, only find its type.
             bool bIsConstructor = name == NameManager.GetPredefinedName(PredefinedName.PN_CTOR);
-            for (AggregateType t = callingType; t != null; t = t.GetBaseClass())
+            foreach(AggregateType t in callingType.TypeHierarchy)
             {
                 if (_symbolTable.AggregateContainsMethod(t.GetOwningAggregate(), Name, mask))
                 {
