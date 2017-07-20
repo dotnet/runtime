@@ -172,27 +172,13 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void DirectoryEqualToMaxDirectory_CanBeCreated()
-        {
-            DirectoryInfo testDir = Create(GetTestFilePath());
-            PathInfo path = IOServices.GetPath(testDir.FullName, IOInputs.MaxDirectory, IOInputs.MaxComponent);
-            Assert.All(path.SubPaths, (subpath) =>
-            {
-                DirectoryInfo result = Create(subpath);
-
-                Assert.Equal(subpath, result.FullName);
-                Assert.True(Directory.Exists(result.FullName));
-            });
-        }
-
-        [Fact]
         public void DirectoryEqualToMaxDirectory_CanBeCreatedAllAtOnce()
         {
             DirectoryInfo testDir = Create(GetTestFilePath());
-            PathInfo path = IOServices.GetPath(testDir.FullName, IOInputs.MaxDirectory, maxComponent: 10);
-            DirectoryInfo result = Create(path.FullPath);
+            string path = IOServices.GetPath(testDir.FullName, IOInputs.MaxDirectory);
+            DirectoryInfo result = Create(path);
 
-            Assert.Equal(path.FullPath, result.FullName);
+            Assert.Equal(path, result.FullName);
             Assert.True(Directory.Exists(result.FullName));
         }
 
@@ -304,9 +290,9 @@ namespace System.IO.Tests
         public void UnixPathLongerThan256_Allowed()
         {
             DirectoryInfo testDir = Create(GetTestFilePath());
-            PathInfo path = IOServices.GetPath(testDir.FullName, 257, IOInputs.MaxComponent);
-            DirectoryInfo result = Create(path.FullPath);
-            Assert.Equal(path.FullPath, result.FullName);
+            string path = IOServices.GetPath(testDir.FullName, 257);
+            DirectoryInfo result = Create(path);
+            Assert.Equal(path, result.FullName);
             Assert.True(Directory.Exists(result.FullName));
         }
 

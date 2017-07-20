@@ -333,9 +333,9 @@ namespace System.IO.Tests
         {
             // Creates directories up to the maximum directory length all at once
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            PathInfo path = IOServices.GetPath(testDir.FullName, IOInputs.MaxDirectory, maxComponent: 10);
-            Directory.CreateDirectory(path.FullPath);
-            Assert.True(Exists(path.FullPath));
+            string path = IOServices.GetPath(testDir.FullName, IOInputs.MaxDirectory);
+            Directory.CreateDirectory(path);
+            Assert.True(Exists(path));
         }
 
         [Theory,
