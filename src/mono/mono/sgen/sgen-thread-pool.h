@@ -24,6 +24,7 @@ typedef void (*SgenThreadPoolThreadInitFunc) (void*);
 typedef void (*SgenThreadPoolIdleJobFunc) (void*);
 typedef gboolean (*SgenThreadPoolContinueIdleJobFunc) (void*, int);
 typedef gboolean (*SgenThreadPoolShouldWorkFunc) (void*);
+typedef gboolean (*SgenThreadPoolContinueIdleWaitFunc) (int, int*);
 
 struct _SgenThreadPoolJob {
 	const char *name;
@@ -60,7 +61,7 @@ void sgen_thread_pool_job_enqueue (int context_id, SgenThreadPoolJob *job);
 void sgen_thread_pool_job_wait (int context_id, SgenThreadPoolJob *job);
 
 void sgen_thread_pool_idle_signal (int context_id);
-void sgen_thread_pool_idle_wait (int context_id);
+void sgen_thread_pool_idle_wait (int context_id, SgenThreadPoolContinueIdleWaitFunc continue_wait);
 
 void sgen_thread_pool_wait_for_all_jobs (int context_id);
 

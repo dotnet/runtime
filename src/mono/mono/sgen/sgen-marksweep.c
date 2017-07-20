@@ -212,6 +212,7 @@ static SgenArrayList allocated_blocks = SGEN_ARRAY_LIST_INIT (NULL, sgen_array_l
 /* non-allocated block free-list */
 static void *empty_blocks = NULL;
 static size_t num_empty_blocks = 0;
+static gboolean compact_blocks = FALSE;
 
 /*
  * We can iterate the block list also while sweep is in progress but we
@@ -233,6 +234,16 @@ static size_t num_empty_blocks = 0;
 		(hr) = BLOCK_IS_TAGGED_HAS_REFERENCES ((bl));		\
 		(bl) = BLOCK_UNTAG ((bl));
 #define END_FOREACH_BLOCK_NO_LOCK	} SGEN_ARRAY_LIST_END_FOREACH_SLOT; }
+
+#define FOREACH_BLOCK_RANGE_HAS_REFERENCES_NO_LOCK(bl,begin,end,index,hr) {	\
+	volatile gpointer *slot;					\
+	SGEN_ARRAY_LIST_FOREACH_SLOT_RANGE (&allocated_blocks, begin, end, slot, index) { \
+		(bl) = (MSBlockInfo *) (*slot);				\
+		if (!(bl))						\
+			continue;					\
+		(hr) = BLOCK_IS_TAGGED_HAS_REFERENCES ((bl));		\
+		(bl) = BLOCK_UNTAG ((bl));
+#define END_FOREACH_BLOCK_RANGE_NO_LOCK	} SGEN_ARRAY_LIST_END_FOREACH_SLOT_RANGE; }
 
 static volatile size_t num_major_sections = 0;
 /*
@@ -1601,6 +1612,8 @@ sweep_start (void)
 
 	sgen_workers_foreach (GENERATION_NURSERY, sgen_worker_clear_free_block_lists);
 	sgen_workers_foreach (GENERATION_OLD, sgen_worker_clear_free_block_lists);
+
+	compact_blocks = TRUE;
 }
 
 static void sweep_finish (void);
@@ -1974,6 +1987,18 @@ major_start_nursery_collection (void)
 #endif
 
 	old_num_major_sections = num_major_sections;
+
+	/* Compact the block list if it hasn't been compacted in a while and nobody is using it */
+	if (compact_blocks && !sweep_in_progress () && !sweep_blocks_job && !sgen_concurrent_collection_in_progress ()) {
+		/*
+		 * We support null elements in the array but do regular compaction to avoid
+		 * excessive traversal of the array and to facilitate splitting into well
+		 * balanced sections for parallel modes. We compact as soon as possible after
+		 * sweep.
+		 */
+		sgen_array_list_remove_nulls (&allocated_blocks);
+		compact_blocks = FALSE;
+	}
 }
 
 static void
@@ -2603,10 +2628,24 @@ scan_card_table_for_block (MSBlockInfo *block, CardTableScanType scan_type, Scan
 }
 
 static void
-major_scan_card_table (CardTableScanType scan_type, ScanCopyContext ctx, int job_index, int job_split_count)
+major_scan_card_table (CardTableScanType scan_type, ScanCopyContext ctx, int job_index, int job_split_count, int block_count)
 {
 	MSBlockInfo *block;
 	gboolean has_references, was_sweeping, skip_scan;
+	int first_block, last_block, index;
+
+	/*
+	 * The last_block's index is at least (num_major_sections - 1) since we
+	 * can have nulls in the allocated_blocks list. The last worker will
+	 * scan the left-overs of the list. We expect few null entries in the
+	 * allocated_blocks list, therefore using num_major_sections for computing
+	 * block_count shouldn't affect work distribution.
+	 */
+	first_block = block_count * job_index;
+	if (job_index == job_split_count - 1)
+		last_block = allocated_blocks.next_slot;
+	else
+		last_block = block_count * (job_index + 1);
 
 	if (!concurrent_mark)
 		g_assert (scan_type == CARDTABLE_SCAN_GLOBAL);
@@ -2616,11 +2655,9 @@ major_scan_card_table (CardTableScanType scan_type, ScanCopyContext ctx, int job
 	was_sweeping = sweep_in_progress ();
 
 	binary_protocol_major_card_table_scan_start (sgen_timestamp (), scan_type & CARDTABLE_SCAN_MOD_UNION);
-	FOREACH_BLOCK_HAS_REFERENCES_NO_LOCK (block, has_references) {
-		if (__index % job_split_count != job_index)
-			continue;
+	FOREACH_BLOCK_RANGE_HAS_REFERENCES_NO_LOCK (block, first_block, last_block, index, has_references) {
 #ifdef PREFETCH_CARDS
-		int prefetch_index = __index + 6 * job_split_count;
+		int prefetch_index = index + 6;
 		if (prefetch_index < allocated_blocks.next_slot) {
 			MSBlockInfo *prefetch_block = BLOCK_UNTAG (*sgen_array_list_get_slot (&allocated_blocks, prefetch_index));
 			PREFETCH_READ (prefetch_block);
@@ -2631,7 +2668,6 @@ major_scan_card_table (CardTableScanType scan_type, ScanCopyContext ctx, int job
 			}
                 }
 #endif
-
 		if (!has_references)
 			continue;
 		skip_scan = FALSE;
@@ -2655,16 +2691,16 @@ major_scan_card_table (CardTableScanType scan_type, ScanCopyContext ctx, int job
 				 * sweep start since we are in a nursery collection. Also avoid CAS-ing
 				 */
 				if (sweep_in_progress ()) {
-					skip_scan = !ensure_block_is_checked_for_sweeping (__index, TRUE, NULL);
+					skip_scan = !ensure_block_is_checked_for_sweeping (index, TRUE, NULL);
 				} else if (was_sweeping) {
 					/* Recheck in case sweep finished after dereferencing the slot */
-					skip_scan = *sgen_array_list_get_slot (&allocated_blocks, __index) == 0;
+					skip_scan = *sgen_array_list_get_slot (&allocated_blocks, index) == 0;
 				}
 			}
 		}
 		if (!skip_scan)
 			scan_card_table_for_block (block, scan_type, ctx);
-	} END_FOREACH_BLOCK_NO_LOCK;
+	} END_FOREACH_BLOCK_RANGE_NO_LOCK;
 	binary_protocol_major_card_table_scan_end (sgen_timestamp (), scan_type & CARDTABLE_SCAN_MOD_UNION);
 }
 

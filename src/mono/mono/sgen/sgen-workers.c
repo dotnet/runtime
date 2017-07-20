@@ -56,8 +56,6 @@ set_state (WorkerData *data, State old_state, State new_state)
 		SGEN_ASSERT (0, old_state == STATE_WORKING, "We can only transition to NOT WORKING from WORKING");
 	else if (new_state == STATE_WORKING)
 		SGEN_ASSERT (0, old_state == STATE_WORK_ENQUEUED, "We can only transition to WORKING from WORK ENQUEUED");
-	if (new_state == STATE_NOT_WORKING || new_state == STATE_WORKING)
-		SGEN_ASSERT (6, sgen_thread_pool_is_thread_pool_thread (mono_native_thread_id_get ()), "Only the worker thread is allowed to transition to NOT_WORKING or WORKING");
 
 	return InterlockedCompareExchange (&data->state, new_state, old_state) == old_state;
 }
@@ -94,6 +92,9 @@ sgen_workers_ensure_awake (WorkerContext *context)
 				break;
 
 			did_set_state = set_state (&context->workers_data [i], old_state, STATE_WORK_ENQUEUED);
+
+			if (did_set_state && old_state == STATE_NOT_WORKING)
+				context->workers_data [i].last_start = sgen_timestamp ();
 		} while (!did_set_state);
 
 		if (!state_is_working_or_enqueued (old_state))
@@ -110,6 +111,7 @@ worker_try_finish (WorkerData *data)
 	State old_state;
 	int i, working = 0;
 	WorkerContext *context = data->context;
+	gint64 last_start = data->last_start;
 
 	++stat_workers_num_finished;
 
@@ -132,6 +134,12 @@ worker_try_finish (WorkerData *data)
 			/* Make sure each worker has a chance of seeing the enqueued jobs */
 			sgen_workers_ensure_awake (context);
 			SGEN_ASSERT (0, data->state == STATE_WORK_ENQUEUED, "Why did we fail to set our own state to ENQUEUED");
+
+			/*
+			 * Log to be able to get the duration of normal concurrent M&S phase.
+			 * Worker indexes are 1 based, since 0 is logically considered gc thread.
+			 */
+			binary_protocol_worker_finish_stats (data - &context->workers_data [0] + 1, context->generation, context->forced_stop, data->major_scan_time, data->los_scan_time, data->total_time + sgen_timestamp () - last_start);
 			goto work_available;
 		}
 	}
@@ -156,7 +164,8 @@ worker_try_finish (WorkerData *data)
 	context->workers_finished = TRUE;
 	mono_os_mutex_unlock (&context->finished_lock);
 
-	binary_protocol_worker_finish (sgen_timestamp (), context->forced_stop);
+	data->total_time += (sgen_timestamp () - last_start);
+	binary_protocol_worker_finish_stats (data - &context->workers_data [0] + 1, context->generation, context->forced_stop, data->major_scan_time, data->los_scan_time, data->total_time);
 
 	sgen_gray_object_queue_trim_free_list (&data->private_gray_queue);
 	return;
@@ -378,17 +387,63 @@ sgen_workers_create_context (int generation, int num_workers)
 	}
 }
 
+/* This is called with thread pool lock so no context switch can happen */
+static gboolean
+continue_idle_wait (int calling_context, int *threads_context)
+{
+	WorkerContext *context;
+	int i;
+
+	if (worker_contexts [GENERATION_OLD].workers_num && calling_context == worker_contexts [GENERATION_OLD].thread_pool_context)
+		context = &worker_contexts [GENERATION_OLD];
+	else if (worker_contexts [GENERATION_NURSERY].workers_num && calling_context == worker_contexts [GENERATION_NURSERY].thread_pool_context)
+		context = &worker_contexts [GENERATION_NURSERY];
+	else
+		g_assert_not_reached ();
+
+	/*
+	 * We assume there are no pending jobs, since this is called only after
+	 * we waited for all the jobs.
+	 */
+	for (i = 0; i < context->active_workers_num; i++) {
+		if (threads_context [i] == calling_context)
+			return TRUE;
+	}
+
+	if (sgen_workers_have_idle_work (context->generation) && !context->forced_stop)
+		return TRUE;
+
+	/*
+	 * At this point there are no jobs to be done, and no objects to be scanned
+	 * in the gray queues. We can simply asynchronously finish all the workers
+	 * from the context that were not finished already (due to being stuck working
+	 * in another context)
+	 */
+
+	for (i = 0; i < context->active_workers_num; i++) {
+		if (context->workers_data [i].state == STATE_WORK_ENQUEUED)
+			set_state (&context->workers_data [i], STATE_WORK_ENQUEUED, STATE_WORKING);
+		if (context->workers_data [i].state == STATE_WORKING)
+			worker_try_finish (&context->workers_data [i]);
+	}
+
+	return FALSE;
+}
+
+
 void
 sgen_workers_stop_all_workers (int generation)
 {
 	WorkerContext *context = &worker_contexts [generation];
 
+	mono_os_mutex_lock (&context->finished_lock);
 	context->finish_callback = NULL;
-	mono_memory_write_barrier ();
+	mono_os_mutex_unlock (&context->finished_lock);
+
 	context->forced_stop = TRUE;
 
 	sgen_thread_pool_wait_for_all_jobs (context->thread_pool_context);
-	sgen_thread_pool_idle_wait (context->thread_pool_context);
+	sgen_thread_pool_idle_wait (context->thread_pool_context, continue_idle_wait);
 	SGEN_ASSERT (0, !sgen_workers_are_working (context), "Can only signal enqueue work when in no work state");
 
 	context->started = FALSE;
@@ -410,6 +465,7 @@ void
 sgen_workers_start_all_workers (int generation, SgenObjectOperations *object_ops_nopar, SgenObjectOperations *object_ops_par, SgenWorkersFinishCallback callback)
 {
 	WorkerContext *context = &worker_contexts [generation];
+	int i;
 	SGEN_ASSERT (0, !context->started, "Why are we starting to work without finishing previous cycle");
 
 	context->idle_func_object_ops_par = object_ops_par;
@@ -418,6 +474,13 @@ sgen_workers_start_all_workers (int generation, SgenObjectOperations *object_ops
 	context->finish_callback = callback;
 	context->worker_awakenings = 0;
 	context->started = TRUE;
+
+	for (i = 0; i < context->active_workers_num; i++) {
+		context->workers_data [i].major_scan_time = 0;
+		context->workers_data [i].los_scan_time = 0;
+		context->workers_data [i].total_time = 0;
+		context->workers_data [i].last_start = 0;
+	}
 	mono_memory_write_barrier ();
 
 	/*
@@ -435,16 +498,10 @@ sgen_workers_join (int generation)
 	WorkerContext *context = &worker_contexts [generation];
 	int i;
 
-	/*
-	 * It might be the case that a worker didn't get to run anything
-	 * in this context, because it was stuck working on a long job
-	 * in another context. In this case its state is active (WORK_ENQUEUED)
-	 * and we need to wait for it to finish itself.
-	 * FIXME Avoid having to wait for the worker to report its own finish.
-	 */
+	SGEN_ASSERT (0, !context->finish_callback, "Why are we joining concurrent mark early");
 
 	sgen_thread_pool_wait_for_all_jobs (context->thread_pool_context);
-	sgen_thread_pool_idle_wait (context->thread_pool_context);
+	sgen_thread_pool_idle_wait (context->thread_pool_context, continue_idle_wait);
 	SGEN_ASSERT (0, !sgen_workers_are_working (context), "Can only signal enqueue work when in no work state");
 
 	/* At this point all the workers have stopped. */
@@ -457,16 +514,14 @@ sgen_workers_join (int generation)
 }
 
 /*
- * Can only be called if the workers are stopped.
- * If we're stopped, there are also no pending jobs.
+ * Can only be called if the workers are not working in the
+ * context and there are no pending jobs.
  */
 gboolean
 sgen_workers_have_idle_work (int generation)
 {
 	WorkerContext *context = &worker_contexts [generation];
 	int i;
-
-	SGEN_ASSERT (0, context->forced_stop && !sgen_workers_are_working (context), "Checking for idle work should only happen if the workers are stopped.");
 
 	if (!sgen_section_gray_queue_is_empty (&context->workers_distribute_gray_queue))
 		return TRUE;

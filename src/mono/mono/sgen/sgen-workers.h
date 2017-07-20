@@ -32,6 +32,15 @@ struct _WorkerData {
 	 */
 	gpointer free_block_lists;
 	WorkerContext *context;
+
+	/* Work time distribution. Measured in ticks. */
+	gint64 major_scan_time, los_scan_time, total_time;
+	/*
+	 * When changing the state of the worker from not working to work enqueued
+	 * we set the timestamp so we can compute for how long the worker did actual
+	 * work during the phase
+	 */
+	gint64 last_start;
 };
 
 struct _WorkerContext {

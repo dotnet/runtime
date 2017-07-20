@@ -135,6 +135,6 @@ guint32 sgen_array_list_add (SgenArrayList *array, gpointer ptr, int data, gbool
 guint32 sgen_array_list_find (SgenArrayList *array, gpointer ptr);
 gboolean sgen_array_list_default_cas_setter (volatile gpointer *slot, gpointer ptr, int data);
 gboolean sgen_array_list_default_is_slot_set (volatile gpointer *slot);
-
+void sgen_array_list_remove_nulls (SgenArrayList *array);
 
 #endif
