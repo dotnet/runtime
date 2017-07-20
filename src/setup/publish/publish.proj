@@ -145,7 +145,7 @@
     <GetAzureBlobList AccountName="$(AzureAccountName)"
                       AccountKey="$(AzureAccessToken)"
                       ContainerName="$(ContainerName)"
-                      FilterblobNames="Runtime/$(SharedFrameworkNugetVersion)">
+                      FilterblobNames="Runtime/$(SharedFrameworkNugetVersion)/">
       <Output TaskParameter="BlobNames" ItemName="_BlobList" />
     </GetAzureBlobList>
     <ItemGroup>
