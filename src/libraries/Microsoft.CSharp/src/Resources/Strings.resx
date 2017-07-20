@@ -100,9 +100,6 @@
   <data name="BadBinaryOps" xml:space="preserve">
     <value>Operator '{0}' cannot be applied to operands of type '{1}' and '{2}'</value>
   </data>
-  <data name="IntDivByZero" xml:space="preserve">
-    <value>Division by constant zero</value>
-  </data>
   <data name="BadIndexLHS" xml:space="preserve">
     <value>Cannot apply indexing with [] to an expression of type '{0}'</value>
   </data>
@@ -184,12 +181,6 @@
   <data name="RefProperty" xml:space="preserve">
     <value>A property or indexer may not be passed as an out or ref parameter</value>
   </data>
-  <data name="ManagedAddr" xml:space="preserve">
-    <value>Cannot take the address of, get the size of, or declare a pointer to a managed type ('{0}')</value>
-  </data>
-  <data name="FixedNotNeeded" xml:space="preserve">
-    <value>You cannot use the fixed statement to take the address of an already fixed expression</value>
-  </data>
   <data name="UnsafeNeeded" xml:space="preserve">
     <value>Dynamic calls cannot be used in conjunction with pointers</value>
   </data>
@@ -198,9 +189,6 @@
   </data>
   <data name="MustHaveOpTF" xml:space="preserve">
     <value>The type ('{0}') must contain declarations of operator true and operator false</value>
-  </data>
-  <data name="CheckedOverflow" xml:space="preserve">
-    <value>The operation overflows at compile time in checked mode</value>
   </data>
   <data name="ConstOutOfRangeChecked" xml:space="preserve">
     <value>Constant value '{0}' cannot be converted to a '{1}' (use 'unchecked' syntax to override)</value>
@@ -211,17 +199,11 @@
   <data name="SizeofUnsafe" xml:space="preserve">
     <value>'{0}' does not have a predefined size, therefore sizeof can only be used in an unsafe context (consider using System.Runtime.InteropServices.Marshal.SizeOf)</value>
   </data>
-  <data name="FieldInitRefNonstatic" xml:space="preserve">
-    <value>A field initializer cannot reference the non-static field, method, or property '{0}'</value>
-  </data>
   <data name="CallingFinalizeDepracated" xml:space="preserve">
     <value>Destructors and object.Finalize cannot be called directly. Consider calling IDisposable.Dispose if available.</value>
   </data>
   <data name="CallingBaseFinalizeDeprecated" xml:space="preserve">
     <value>Do not directly call your base class Finalize method. It is called automatically from your destructor.</value>
-  </data>
-  <data name="BadCastInFixed" xml:space="preserve">
-    <value>The right hand side of a fixed statement assignment may not be a cast expression</value>
   </data>
   <data name="NoImplicitConvCast" xml:space="preserve">
     <value>Cannot implicitly convert type '{0}' to '{1}'. An explicit conversion exists (are you missing a cast?)</value>
@@ -280,23 +262,11 @@
   <data name="ValConstraintNotSatisfied" xml:space="preserve">
     <value>The type '{2}' must be a non-nullable value type in order to use it as parameter '{1}' in the generic type or method '{0}'</value>
   </data>
-  <data name="CircularConstraint" xml:space="preserve">
-    <value>Circular constraint dependency involving '{0}' and '{1}'</value>
-  </data>
-  <data name="BaseConstraintConflict" xml:space="preserve">
-    <value>Type parameter '{0}' inherits conflicting constraints '{1}' and '{2}'</value>
-  </data>
-  <data name="ConWithValCon" xml:space="preserve">
-    <value>Type parameter '{1}' has the 'struct' constraint so '{1}' cannot be used as a constraint for '{0}'</value>
-  </data>
   <data name="AmbigUDConv" xml:space="preserve">
     <value>Ambiguous user defined conversions '{0}' and '{1}' when converting from '{2}' to '{3}'</value>
   </data>
   <data name="PredefinedTypeNotFound" xml:space="preserve">
     <value>Predefined type '{0}' is not defined or imported</value>
-  </data>
-  <data name="PredefinedTypeBadType" xml:space="preserve">
-    <value>Predefined type '{0}' is declared incorrectly</value>
   </data>
   <data name="BindToBogus" xml:space="preserve">
     <value>'{0}' is not supported by the language</value>
@@ -312,9 +282,6 @@
   </data>
   <data name="LiteralDoubleCast" xml:space="preserve">
     <value>Literal of type double cannot be implicitly converted to type '{1}'; use an '{0}' suffix to create a literal of this type</value>
-  </data>
-  <data name="UnifyingInterfaceInstantiations" xml:space="preserve">
-    <value>'{0}' cannot implement both '{1}' and '{2}' because they may unify for some type parameter substitutions</value>
   </data>
   <data name="ConvertToStaticClass" xml:space="preserve">
     <value>Cannot convert to static type '{0}'</value>
@@ -393,9 +360,6 @@
   </data>
   <data name="RefReadonlyLocalCause" xml:space="preserve">
     <value>Cannot pass '{0}' as a ref or out argument because it is a '{1}'</value>
-  </data>
-  <data name="ThisStructNotInAnonMeth" xml:space="preserve">
-    <value>Anonymous methods, lambda expressions, and query expressions inside structs cannot access instance members of 'this'. Consider copying 'this' to a local variable outside the anonymous method, lambda expression or query expression and using the local instead.</value>
   </data>
   <data name="DelegateOnNullable" xml:space="preserve">
     <value>Cannot bind delegate to '{0}' because it is a member of 'System.Nullable&lt;T&gt;'</value>

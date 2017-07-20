@@ -54,9 +54,6 @@
   <data name="BadBinaryOps" xml:space="preserve">
     <value>Der {0}-Operator kann nicht auf Operanden vom Typ "{1}" und "{2}" angewendet werden.</value>
   </data>
-  <data name="IntDivByZero" xml:space="preserve">
-    <value>Division durch Konstante NULL</value>
-  </data>
   <data name="BadIndexLHS" xml:space="preserve">
     <value>Eine Indizierung mit [] kann nicht auf einen Ausdruck vom Typ "{0}" angewendet werden.</value>
   </data>
@@ -138,12 +135,6 @@
   <data name="RefProperty" xml:space="preserve">
     <value>Eine Eigenschaft oder ein Indexer kann nicht als out- oder ref-Parameter übergeben werden.</value>
   </data>
-  <data name="ManagedAddr" xml:space="preserve">
-    <value>Es ist nicht möglich, einen Zeiger für den verwalteten Typ ({0}) zu deklarieren oder dessen Adresse oder Größe abzurufen.</value>
-  </data>
-  <data name="FixedNotNeeded" xml:space="preserve">
-    <value>Sie können nicht die fixed-Anweisung verwenden, um die Adresse eines bereits festen Ausdrucks abzurufen.</value>
-  </data>
   <data name="UnsafeNeeded" xml:space="preserve">
     <value>Dynamische Aufrufe können nicht in Verbindung mit Zeigern verwendet werden.</value>
   </data>
@@ -152,9 +143,6 @@
   </data>
   <data name="MustHaveOpTF" xml:space="preserve">
     <value>Der Typ ({0}) muss Deklarationen des True- und des False-Operators enthalten.</value>
-  </data>
-  <data name="CheckedOverflow" xml:space="preserve">
-    <value>Vorgangsüberlauf zur Kompilierzeit im aktivierten Modus.</value>
   </data>
   <data name="ConstOutOfRangeChecked" xml:space="preserve">
     <value>Der Konstantenwert "{0}" kann nicht in {1} konvertiert werden (verwenden Sie zum Außerkraftsetzen die unchecked-Syntax).</value>
@@ -165,17 +153,11 @@
   <data name="SizeofUnsafe" xml:space="preserve">
     <value>{0} enthält keine vordefinierte Größe, sizeof kann daher nur in einem ungeschützten Kontext verwendet werden (verwenden Sie ggf. System.Runtime.InteropServices.Marshal.SizeOf).</value>
   </data>
-  <data name="FieldInitRefNonstatic" xml:space="preserve">
-    <value>Ein Feldinitialisierer kann nicht auf das nicht statische Feld bzw. die nicht statische Methode oder Eigenschaft "{0}" verweisen.</value>
-  </data>
   <data name="CallingFinalizeDepracated" xml:space="preserve">
     <value>Destruktoren und object.Finalize können nicht direkt aufgerufen werden. Rufen Sie IDisposable.Dispose auf, sofern verfügbar.</value>
   </data>
   <data name="CallingBaseFinalizeDeprecated" xml:space="preserve">
     <value>Rufen Sie die Finalize-Methode Ihrer Basisklasse nicht direkt auf, da sie automatisch vom Destruktor aufgerufen wird.</value>
-  </data>
-  <data name="BadCastInFixed" xml:space="preserve">
-    <value>Die rechte Seite einer fixed-Anweisungszuweisung darf kein Umwandlungsausdruck sein.</value>
   </data>
   <data name="NoImplicitConvCast" xml:space="preserve">
     <value>Der {0}-Typ kann nicht implizit in {1} konvertiert werden. Es ist bereits eine explizite Konvertierung vorhanden (möglicherweise fehlt eine Umwandlung).</value>
@@ -234,23 +216,11 @@
   <data name="ValConstraintNotSatisfied" xml:space="preserve">
     <value>Der {2}-Typ darf keine NULL-Werte zulassen, wenn er als {1}-Parameter im generischen Typ oder in der generischen {0}-Methode verwendet werden soll.</value>
   </data>
-  <data name="CircularConstraint" xml:space="preserve">
-    <value>Einschränkungsringabhängigkeit zwischen {0} und {1}</value>
-  </data>
-  <data name="BaseConstraintConflict" xml:space="preserve">
-    <value>Der {0}-Typparameter erbt die in Konflikt stehenden Einschränkungen "{1}" und "{2}"</value>
-  </data>
-  <data name="ConWithValCon" xml:space="preserve">
-    <value>Der {1}-Typparameter enthält die Einschränkung "struct". {1} kann daher nicht als Einschränkung für {0} verwendet werden.</value>
-  </data>
   <data name="AmbigUDConv" xml:space="preserve">
     <value>Mehrdeutige benutzerdefinierte Konvertierungen von {0} und {1} bei der Konvertierung von {2} in {3}</value>
   </data>
   <data name="PredefinedTypeNotFound" xml:space="preserve">
     <value>Der vordefinierte {0}-Typ ist nicht definiert oder importiert.</value>
-  </data>
-  <data name="PredefinedTypeBadType" xml:space="preserve">
-    <value>Der vordefinierte {0}-Typ wurde falsch deklariert.</value>
   </data>
   <data name="BindToBogus" xml:space="preserve">
     <value>{0} wird von der Sprache nicht unterstützt.</value>
@@ -266,9 +236,6 @@
   </data>
   <data name="LiteralDoubleCast" xml:space="preserve">
     <value>Literale vom Typ "double" können nicht implizit in den {1}-Typ konvertiert werden. Verwenden Sie ein {0}-Suffix, um ein Literal mit diesem Typ zu erstellen.</value>
-  </data>
-  <data name="UnifyingInterfaceInstantiations" xml:space="preserve">
-    <value>{0} kann nicht gleichzeitig {1} und {2} implementieren, da diese für einige Typparameterersetzungen zusammengeführt werden können.</value>
   </data>
   <data name="ConvertToStaticClass" xml:space="preserve">
     <value>Die Konvertierung in den statischen {0}-Typ ist nicht möglich.</value>
@@ -347,9 +314,6 @@
   </data>
   <data name="RefReadonlyLocalCause" xml:space="preserve">
     <value>{0} ist ein(e) {1} und kann daher nicht als ref- oder out-Argument übergeben werden.</value>
-  </data>
-  <data name="ThisStructNotInAnonMeth" xml:space="preserve">
-    <value>Anonyme Methoden, lambda-Ausdrücke und Abfrageausdrücke innerhalb von Strukturen können nicht auf Instanzmember von "this" zugreifen. Kopieren Sie "this" in eine lokale Variable außerhalb der anonymen Methode, des lambda-Ausdrucks oder des Abfrageausdrucks, und verwenden Sie die lokale Variable.</value>
   </data>
   <data name="DelegateOnNullable" xml:space="preserve">
     <value>Kann Delegaten "{0}" keine Bindung an weil es ein Mitglied von "System.Nullable&lt;T&gt;ist"</value>

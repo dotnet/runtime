@@ -62,10 +62,6 @@
           <source>Operator '{0}' cannot be applied to operands of type '{1}' and '{2}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}' 연산자는 '{1}' 및 '{2}' 형식의 피연산자에 적용할 수 없습니다.</target>
         </trans-unit>
-        <trans-unit id="IntDivByZero" translate="yes" xml:space="preserve">
-          <source>Division by constant zero</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">상수 0으로 나누기</target>
-        </trans-unit>
         <trans-unit id="BadIndexLHS" translate="yes" xml:space="preserve">
           <source>Cannot apply indexing with [] to an expression of type '{0}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">[]을 사용하는 인덱싱을 '{0}' 형식의 식에 적용할 수 없습니다.</target>
@@ -174,14 +170,6 @@
           <source>A property or indexer may not be passed as an out or ref parameter</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">속성 또는 인덱서는 out 또는 ref 매개 변수로 전달할 수 없습니다.</target>
         </trans-unit>
-        <trans-unit id="ManagedAddr" translate="yes" xml:space="preserve">
-          <source>Cannot take the address of, get the size of, or declare a pointer to a managed type ('{0}')</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">관리되는 형식('{0}')의 주소 또는 크기를 가져오거나 해당 형식에 대한 포인터를 선언할 수 없습니다.</target>
-        </trans-unit>
-        <trans-unit id="FixedNotNeeded" translate="yes" xml:space="preserve">
-          <source>You cannot use the fixed statement to take the address of an already fixed expression</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">이미 고정된 식의 주소를 가져오는 데 fixed 문을 사용할 수 없습니다.</target>
-        </trans-unit>
         <trans-unit id="UnsafeNeeded" translate="yes" xml:space="preserve">
           <source>Dynamic calls cannot be used in conjunction with pointers</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">동적 호출을 포인터와 함께 사용할 수 없습니다.</target>
@@ -193,10 +181,6 @@
         <trans-unit id="MustHaveOpTF" translate="yes" xml:space="preserve">
           <source>The type ('{0}') must contain declarations of operator true and operator false</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}' 형식에는 true 및 false 연산자 선언이 있어야 합니다.</target>
-        </trans-unit>
-        <trans-unit id="CheckedOverflow" translate="yes" xml:space="preserve">
-          <source>The operation overflows at compile time in checked mode</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">작업 선택된 모드에서 컴파일 타임에 오버플로</target>
         </trans-unit>
         <trans-unit id="ConstOutOfRangeChecked" translate="yes" xml:space="preserve">
           <source>Constant value '{0}' cannot be converted to a '{1}' (use 'unchecked' syntax to override)</source>
@@ -210,10 +194,6 @@
           <source>'{0}' does not have a predefined size, therefore sizeof can only be used in an unsafe context (consider using System.Runtime.InteropServices.Marshal.SizeOf)</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}'에 미리 정의된 크기가 없으므로 sizeof는 안전하지 않은 컨텍스트에서만 사용할 수 있습니다. System.Runtime.InteropServices.Marshal.SizeOf를 사용하십시오.</target>
         </trans-unit>
-        <trans-unit id="FieldInitRefNonstatic" translate="yes" xml:space="preserve">
-          <source>A field initializer cannot reference the non-static field, method, or property '{0}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">필드 이니셜라이저는 static이 아닌 필드, 메서드 또는 속성 '{0}'을(를) 참조할 수 없습니다.</target>
-        </trans-unit>
         <trans-unit id="CallingFinalizeDepracated" translate="yes" xml:space="preserve">
           <source>Destructors and object.Finalize cannot be called directly. Consider calling IDisposable.Dispose if available.</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">소멸자 및 object.Finalize는 직접 호출할 수 없습니다. 가능한 경우 IDisposable.Dispose를 호출하십시오.</target>
@@ -221,10 +201,6 @@
         <trans-unit id="CallingBaseFinalizeDeprecated" translate="yes" xml:space="preserve">
           <source>Do not directly call your base class Finalize method. It is called automatically from your destructor.</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">기본 클래스 Finalize 메서드를 직접 호출하지 마십시오. 이 메서드는 소멸자에서 자동으로 호출됩니다.</target>
-        </trans-unit>
-        <trans-unit id="BadCastInFixed" translate="yes" xml:space="preserve">
-          <source>The right hand side of a fixed statement assignment may not be a cast expression</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">fixed 문의 오른쪽에는 캐스트 식을 할당할 수 없습니다.</target>
         </trans-unit>
         <trans-unit id="NoImplicitConvCast" translate="yes" xml:space="preserve">
           <source>Cannot implicitly convert type '{0}' to '{1}'. An explicit conversion exists (are you missing a cast?)</source>
@@ -302,18 +278,6 @@
           <source>The type '{2}' must be a non-nullable value type in order to use it as parameter '{1}' in the generic type or method '{0}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">제네릭 형식 또는 메서드 '{0}'에서 '{2}' 형식을 '{1}' 매개 변수로 사용하려면 해당 형식이 null을 허용하지 않는 값 형식이어야 합니다.</target>
         </trans-unit>
-        <trans-unit id="CircularConstraint" translate="yes" xml:space="preserve">
-          <source>Circular constraint dependency involving '{0}' and '{1}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}' 및 '{1}'과(와) 관련된 순환 제약 조건 종속성입니다.</target>
-        </trans-unit>
-        <trans-unit id="BaseConstraintConflict" translate="yes" xml:space="preserve">
-          <source>Type parameter '{0}' inherits conflicting constraints '{1}' and '{2}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">형식 매개 변수 '{0}'이(가) 상속하는 '{1}' 및 '{2}' 제약 조건이 충돌합니다.</target>
-        </trans-unit>
-        <trans-unit id="ConWithValCon" translate="yes" xml:space="preserve">
-          <source>Type parameter '{1}' has the 'struct' constraint so '{1}' cannot be used as a constraint for '{0}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">형식 매개 변수 '{1}'에 'struct' 제약 조건이 있으므로 '{1}'은(는) '{0}'에 대한 제약 조건으로 사용할 수 없습니다.</target>
-        </trans-unit>
         <trans-unit id="AmbigUDConv" translate="yes" xml:space="preserve">
           <source>Ambiguous user defined conversions '{0}' and '{1}' when converting from '{2}' to '{3}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">'{2}'에서 '{3}(으)로 변환하는 동안 모호한 사용자 정의 변환 '{0}' 및 '{1}'이(가) 발생했습니다.</target>
@@ -321,10 +285,6 @@
         <trans-unit id="PredefinedTypeNotFound" translate="yes" xml:space="preserve">
           <source>Predefined type '{0}' is not defined or imported</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">미리 정의된 형식 '{0}'을(를) 정의하지 않았거나 가져오지 않았습니다.</target>
-        </trans-unit>
-        <trans-unit id="PredefinedTypeBadType" translate="yes" xml:space="preserve">
-          <source>Predefined type '{0}' is declared incorrectly</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">미리 정의된 형식 '{0}'이(가) 잘못 선언되었습니다.</target>
         </trans-unit>
         <trans-unit id="BindToBogus" translate="yes" xml:space="preserve">
           <source>'{0}' is not supported by the language</source>
@@ -345,10 +305,6 @@
         <trans-unit id="LiteralDoubleCast" translate="yes" xml:space="preserve">
           <source>Literal of type double cannot be implicitly converted to type '{1}'; use an '{0}' suffix to create a literal of this type</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">double 형식의 리터럴을 암시적으로 '{1}' 형식으로 변환할 수 없습니다. 이 형식의 리터럴을 만들려면 '{0}' 접미사를 사용하십시오.</target>
-        </trans-unit>
-        <trans-unit id="UnifyingInterfaceInstantiations" translate="yes" xml:space="preserve">
-          <source>'{0}' cannot implement both '{1}' and '{2}' because they may unify for some type parameter substitutions</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">'{1}'과(와) '{2}'은(는) 일부 형식 매개 변수를 대체할 때 통합될 수 있으므로 '{0}'에서 둘 다 구현할 수는 없습니다.</target>
         </trans-unit>
         <trans-unit id="ConvertToStaticClass" translate="yes" xml:space="preserve">
           <source>Cannot convert to static type '{0}'</source>
@@ -453,10 +409,6 @@
         <trans-unit id="RefReadonlyLocalCause" translate="yes" xml:space="preserve">
           <source>Cannot pass '{0}' as a ref or out argument because it is a '{1}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}'은(는) '{1}'이므로 ref 또는 out 인수로 전달할 수 없습니다.</target>
-        </trans-unit>
-        <trans-unit id="ThisStructNotInAnonMeth" translate="yes" xml:space="preserve">
-          <source>Anonymous methods, lambda expressions, and query expressions inside structs cannot access instance members of 'this'. Consider copying 'this' to a local variable outside the anonymous method, lambda expression or query expression and using the local instead.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">구조체 안의 무명 메서드, 람다 식 및 쿼리 식은 'this'의 인스턴스 멤버에 액세스할 수 없습니다. 'this'를 무명 메서드, 람다 식 또는 쿼리 식 외부에 있는 지역 변수에 복사한 다음 이 지역 변수를 대신 사용하십시오.</target>
         </trans-unit>
         <trans-unit id="DelegateOnNullable" translate="yes" xml:space="preserve">
           <source>Cannot bind delegate to '{0}' because it is a member of 'System.Nullable<it id="1" pos="open">&lt;T&gt;</it>'</source>
