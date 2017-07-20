@@ -97,8 +97,8 @@ namespace System.Collections.Concurrent.Tests
         [InlineData(3, 3, 1024)]
         public void MultipleProducerConsumer_AllItemsTransferred(int producers, int consumers, int itemsPerProducer)
         {
-            //ActiveIssue("https://github.com/dotnet/corefx/issues/22385 - Never terminates on Win10.Amd64.RS3 - when built as 64-bit binary using CHK framework on ILC", TargetFrameworkMonikers.UapAot)
-            if (PlatformDetection.IsNetNative && IntPtr.Size == 8 && PlatformDetection.IsWindows10InsiderPreviewBuild16215OrGreater)
+            //ActiveIssue("https://github.com/dotnet/corefx/issues/22385 - Never terminates on Win10 RS3 - when built using CHK framework on ILC", TargetFrameworkMonikers.UapAot)
+            if (PlatformDetection.IsNetNative && PlatformDetection.IsWindows10InsiderPreviewBuild16215OrGreater)
                 return;
 
             var cq = new ConcurrentQueue<int>();
