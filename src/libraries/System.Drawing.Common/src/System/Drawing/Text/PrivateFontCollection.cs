@@ -35,7 +35,7 @@ namespace System.Drawing.Text
 #if DEBUG
                     int status =
 #endif
-                    SafeNativeMethods.Gdip.GdipDeletePrivateFontCollection(out _nativeFontCollection);
+                    SafeNativeMethods.Gdip.GdipDeletePrivateFontCollection(ref _nativeFontCollection);
 #if DEBUG
                     Debug.Assert(status == SafeNativeMethods.Gdip.Ok, "GDI+ returned an error status: " + status.ToString(CultureInfo.InvariantCulture));
 #endif        

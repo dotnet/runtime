@@ -73,12 +73,12 @@ namespace System.Drawing
             }
 
             setProperties(family, emSize, style, unit, charSet, isVertical);
-            Status status = GDIPlus.GdipCreateFont(family.NativeFamily, emSize, style, unit, out fontObject);
+            Status status = SafeNativeMethods.Gdip.GdipCreateFont(family.NativeFamily, emSize, style, unit, out fontObject);
 
             if (status == Status.FontStyleNotFound)
                 throw new ArgumentException(string.Format("Style {0} isn't supported by font {1}.", style.ToString(), familyName));
 
-            GDIPlus.CheckStatus(status);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         private Font(SerializationInfo info, StreamingContext context)
@@ -113,11 +113,11 @@ namespace System.Drawing
         {
             if (fontObject != IntPtr.Zero)
             {
-                Status status = GDIPlus.GdipDeleteFont(fontObject);
+                Status status = SafeNativeMethods.Gdip.GdipDeleteFont(fontObject);
                 fontObject = IntPtr.Zero;
                 GC.SuppressFinalize(this);
                 // check the status code (throw) at the last step
-                GDIPlus.CheckStatus(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
@@ -217,7 +217,7 @@ namespace System.Drawing
             IntPtr hdc;
             FontStyle newStyle = FontStyle.Regular;
             float newSize;
-            LOGFONT lf = new LOGFONT();
+            SafeNativeMethods.LOGFONT lf = new SafeNativeMethods.LOGFONT();
 
             // Sanity. Should we throw an exception?
             if (hfont == IntPtr.Zero)
@@ -230,8 +230,8 @@ namespace System.Drawing
             {
                 // If we're on Unix we use our private gdiplus API to avoid Wine 
                 // dependencies in S.D
-                Status s = GDIPlus.GdipCreateFontFromHfont(hfont, out newObject, ref lf);
-                GDIPlus.CheckStatus(s);
+                Status s = SafeNativeMethods.Gdip.GdipCreateFontFromHfont(hfont, out newObject, ref lf);
+                SafeNativeMethods.Gdip.CheckStatus(s);
             }
             else
             {
@@ -325,8 +325,8 @@ namespace System.Drawing
             // no null checks, MS throws a NullReferenceException if original is null
             setProperties(prototype.FontFamily, prototype.Size, newStyle, prototype.Unit, prototype.GdiCharSet, prototype.GdiVerticalFont);
 
-            Status status = GDIPlus.GdipCreateFont(_fontFamily.NativeFamily, Size, Style, Unit, out fontObject);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipCreateFont(_fontFamily.NativeFamily, Size, Style, Unit, out fontObject);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         public Font(FontFamily family, float emSize, GraphicsUnit unit)
@@ -367,8 +367,8 @@ namespace System.Drawing
 
             Status status;
             setProperties(family, emSize, style, unit, gdiCharSet, gdiVerticalFont);
-            status = GDIPlus.GdipCreateFont(family.NativeFamily, emSize, style, unit, out fontObject);
-            GDIPlus.CheckStatus(status);
+            status = SafeNativeMethods.Gdip.GdipCreateFont(family.NativeFamily, emSize, style, unit, out fontObject);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         public Font(string familyName, float emSize)
@@ -631,9 +631,9 @@ namespace System.Drawing
         public static Font FromLogFont(object lf, IntPtr hdc)
         {
             IntPtr newObject;
-            LOGFONT o = (LOGFONT)lf;
-            Status status = GDIPlus.GdipCreateFontFromLogfont(hdc, ref o, out newObject);
-            GDIPlus.CheckStatus(status);
+            SafeNativeMethods.LOGFONT o = (SafeNativeMethods.LOGFONT)lf;
+            Status status = SafeNativeMethods.Gdip.GdipCreateFontFromLogfont(hdc, ref o, out newObject);
+            SafeNativeMethods.Gdip.CheckStatus(status);
             return new Font(newObject, "Microsoft Sans Serif", FontStyle.Regular, 10);
         }
 
@@ -717,7 +717,7 @@ namespace System.Drawing
                 {
                     Marshal.StructureToPtr(logFont, copy, false);
 
-                    status = GDIPlus.GdipGetLogFont(NativeObject, graphics.NativeObject, logFont);
+                    status = SafeNativeMethods.Gdip.GdipGetLogFont(NativeObject, graphics.NativeObject, logFont);
                     if (status != Status.Ok)
                     {
                         // reset to original values
@@ -754,7 +754,7 @@ namespace System.Drawing
                 }
 
                 // now we can throw, if required
-                GDIPlus.CheckStatus(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
@@ -764,16 +764,16 @@ namespace System.Drawing
                 throw new ArgumentNullException("graphics");
 
             float size;
-            Status status = GDIPlus.GdipGetFontHeight(fontObject, graphics.NativeObject, out size);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipGetFontHeight(fontObject, graphics.NativeObject, out size);
+            SafeNativeMethods.Gdip.CheckStatus(status);
             return size;
         }
 
         public float GetHeight(float dpi)
         {
             float size;
-            Status status = GDIPlus.GdipGetFontHeightGivenDPI(fontObject, dpi, out size);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipGetFontHeightGivenDPI(fontObject, dpi, out size);
+            SafeNativeMethods.Gdip.CheckStatus(status);
             return size;
         }
 

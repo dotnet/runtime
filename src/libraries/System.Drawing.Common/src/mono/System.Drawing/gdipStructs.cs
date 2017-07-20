@@ -35,41 +35,6 @@ using System.Runtime.InteropServices;
 namespace System.Drawing
 {
     [StructLayout(LayoutKind.Sequential)]
-    internal struct GdiplusStartupInput
-    {
-        // internalted to silent compiler
-        internal uint GdiplusVersion;
-        internal IntPtr DebugEventCallback;
-        internal int SuppressBackgroundThread;
-        internal int SuppressExternalCodecs;
-
-        internal static GdiplusStartupInput MakeGdiplusStartupInput()
-        {
-            GdiplusStartupInput result = new GdiplusStartupInput();
-            result.GdiplusVersion = 1;
-            result.DebugEventCallback = IntPtr.Zero;
-            result.SuppressBackgroundThread = 0;
-            result.SuppressExternalCodecs = 0;
-            return result;
-        }
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct GdiplusStartupOutput
-    {
-        internal IntPtr NotificationHook;
-        internal IntPtr NotificationUnhook;
-
-        internal static GdiplusStartupOutput MakeGdiplusStartupOutput()
-        {
-            GdiplusStartupOutput result = new GdiplusStartupOutput();
-            result.NotificationHook = result.NotificationUnhook = IntPtr.Zero;
-            return result;
-        }
-    }
-
-
-    [StructLayout(LayoutKind.Sequential)]
     internal struct GdiColorPalette
     {
         internal int Flags;             // Palette flags

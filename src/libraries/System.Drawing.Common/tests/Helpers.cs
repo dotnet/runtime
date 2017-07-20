@@ -15,25 +15,25 @@ namespace System.Drawing
 
         public static bool GetGdiplusIsAvailable()
         {
-            try
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                GdiplusStartup(IntPtr.Zero, IntPtr.Zero, IntPtr.Zero);
+                return PlatformDetection.IsNotWindowsNanoServer;
             }
-            catch (EntryPointNotFoundException)
+            else
             {
-                return false;
-            }
-            catch (DllNotFoundException)
-            {
-                return false;
-            }
-            catch (Exception) { }
+                IntPtr nativeLib = dlopen("libgdiplus.so", RTLD_NOW);
+                if (nativeLib == IntPtr.Zero)
+                {
+                    nativeLib = dlopen("libgdiplus.so.0", RTLD_NOW);
+                }
 
-            return true;
+                return nativeLib != IntPtr.Zero;
+            }
         }
 
-        [DllImport("gdiplus")]
-        private static extern int GdiplusStartup(IntPtr token, IntPtr input, IntPtr output);
+        [DllImport("libdl")]
+        private static extern IntPtr dlopen(string libName, int flags);
+        public const int RTLD_NOW = 0x002;
 
         public static string GetTestBitmapPath(string fileName) => GetTestPath("bitmaps", fileName);
         public static string GetTestFontPath(string fileName) => GetTestPath("fonts", fileName);
