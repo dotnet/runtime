@@ -64,15 +64,15 @@ namespace System.Drawing
             if (brush == null)
                 throw new ArgumentNullException("brush");
 
-            Status status = GDIPlus.GdipCreatePen2(brush.NativeBrush, width, GraphicsUnit.World, out nativeObject);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipCreatePen2(brush.NativeBrush, width, GraphicsUnit.World, out nativeObject);
+            SafeNativeMethods.Gdip.CheckStatus(status);
             color = Color.Empty;
         }
 
         public Pen(Color color, float width)
         {
-            Status status = GDIPlus.GdipCreatePen1(color.ToArgb(), width, GraphicsUnit.World, out nativeObject);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipCreatePen1(color.ToArgb(), width, GraphicsUnit.World, out nativeObject);
+            SafeNativeMethods.Gdip.CheckStatus(status);
             this.color = color;
         }
 
@@ -85,8 +85,8 @@ namespace System.Drawing
             get
             {
                 PenAlignment retval;
-                Status status = GDIPlus.GdipGetPenMode(nativeObject, out retval);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipGetPenMode(nativeObject, out retval);
+                SafeNativeMethods.Gdip.CheckStatus(status);
                 return retval;
             }
 
@@ -97,8 +97,8 @@ namespace System.Drawing
 
                 if (isModifiable)
                 {
-                    Status status = GDIPlus.GdipSetPenMode(nativeObject, value);
-                    GDIPlus.CheckStatus(status);
+                    Status status = SafeNativeMethods.Gdip.GdipSetPenMode(nativeObject, value);
+                    SafeNativeMethods.Gdip.CheckStatus(status);
                 }
                 else
                     throw new ArgumentException("This Pen object can't be modified.");
@@ -110,8 +110,8 @@ namespace System.Drawing
             get
             {
                 IntPtr brush;
-                Status status = GDIPlus.GdipGetPenBrushFill(nativeObject, out brush);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipGetPenBrushFill(nativeObject, out brush);
+                SafeNativeMethods.Gdip.CheckStatus(status);
                 return new SolidBrush(brush);
             }
 
@@ -122,8 +122,8 @@ namespace System.Drawing
                 if (!isModifiable)
                     throw new ArgumentException("This Pen object can't be modified.");
 
-                Status status = GDIPlus.GdipSetPenBrushFill(nativeObject, value.NativeBrush);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipSetPenBrushFill(nativeObject, value.NativeBrush);
+                SafeNativeMethods.Gdip.CheckStatus(status);
                 color = Color.Empty;
             }
         }
@@ -135,8 +135,8 @@ namespace System.Drawing
                 if (color.Equals(Color.Empty))
                 {
                     int c;
-                    Status status = GDIPlus.GdipGetPenColor(nativeObject, out c);
-                    GDIPlus.CheckStatus(status);
+                    Status status = SafeNativeMethods.Gdip.GdipGetPenColor(nativeObject, out c);
+                    SafeNativeMethods.Gdip.CheckStatus(status);
                     color = Color.FromArgb(c);
                 }
                 return color;
@@ -147,8 +147,8 @@ namespace System.Drawing
                 if (!isModifiable)
                     throw new ArgumentException("This Pen object can't be modified.");
 
-                Status status = GDIPlus.GdipSetPenColor(nativeObject, value.ToArgb());
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipSetPenColor(nativeObject, value.ToArgb());
+                SafeNativeMethods.Gdip.CheckStatus(status);
                 color = value;
             }
         }
@@ -158,12 +158,12 @@ namespace System.Drawing
             get
             {
                 int count;
-                Status status = GDIPlus.GdipGetPenCompoundCount(nativeObject, out count);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipGetPenCompoundCount(nativeObject, out count);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 float[] compArray = new float[count];
-                status = GDIPlus.GdipGetPenCompoundArray(nativeObject, compArray, count);
-                GDIPlus.CheckStatus(status);
+                status = SafeNativeMethods.Gdip.GdipGetPenCompoundArray(nativeObject, compArray, count);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 return compArray;
             }
@@ -179,8 +179,8 @@ namespace System.Drawing
                         if (val < 0 || val > 1)
                             throw new ArgumentException("Invalid parameter.");
 
-                    Status status = GDIPlus.GdipSetPenCompoundArray(nativeObject, value, value.Length);
-                    GDIPlus.CheckStatus(status);
+                    Status status = SafeNativeMethods.Gdip.GdipSetPenCompoundArray(nativeObject, value, value.Length);
+                    SafeNativeMethods.Gdip.CheckStatus(status);
                 }
                 else
                     throw new ArgumentException("This Pen object can't be modified.");
@@ -198,8 +198,8 @@ namespace System.Drawing
             {
                 if (isModifiable)
                 {
-                    Status status = GDIPlus.GdipSetPenCustomEndCap(nativeObject, value.nativeCap);
-                    GDIPlus.CheckStatus(status);
+                    Status status = SafeNativeMethods.Gdip.GdipSetPenCustomEndCap(nativeObject, value.nativeCap);
+                    SafeNativeMethods.Gdip.CheckStatus(status);
                     endCap = value;
                 }
                 else
@@ -218,8 +218,8 @@ namespace System.Drawing
             {
                 if (isModifiable)
                 {
-                    Status status = GDIPlus.GdipSetPenCustomStartCap(nativeObject, value.nativeCap);
-                    GDIPlus.CheckStatus(status);
+                    Status status = SafeNativeMethods.Gdip.GdipSetPenCustomStartCap(nativeObject, value.nativeCap);
+                    SafeNativeMethods.Gdip.CheckStatus(status);
                     startCap = value;
                 }
                 else
@@ -233,8 +233,8 @@ namespace System.Drawing
             get
             {
                 DashCap retval;
-                Status status = GDIPlus.GdipGetPenDashCap197819(nativeObject, out retval);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipGetPenDashCap197819(nativeObject, out retval);
+                SafeNativeMethods.Gdip.CheckStatus(status);
                 return retval;
             }
 
@@ -245,8 +245,8 @@ namespace System.Drawing
 
                 if (isModifiable)
                 {
-                    Status status = GDIPlus.GdipSetPenDashCap197819(nativeObject, value);
-                    GDIPlus.CheckStatus(status);
+                    Status status = SafeNativeMethods.Gdip.GdipSetPenDashCap197819(nativeObject, value);
+                    SafeNativeMethods.Gdip.CheckStatus(status);
                 }
                 else
                     throw new ArgumentException("This Pen object can't be modified.");
@@ -259,8 +259,8 @@ namespace System.Drawing
             get
             {
                 float retval;
-                Status status = GDIPlus.GdipGetPenDashOffset(nativeObject, out retval);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipGetPenDashOffset(nativeObject, out retval);
+                SafeNativeMethods.Gdip.CheckStatus(status);
                 return retval;
             }
 
@@ -268,8 +268,8 @@ namespace System.Drawing
             {
                 if (isModifiable)
                 {
-                    Status status = GDIPlus.GdipSetPenDashOffset(nativeObject, value);
-                    GDIPlus.CheckStatus(status);
+                    Status status = SafeNativeMethods.Gdip.GdipSetPenDashOffset(nativeObject, value);
+                    SafeNativeMethods.Gdip.CheckStatus(status);
                 }
                 else
                     throw new ArgumentException("This Pen object can't be modified.");
@@ -281,16 +281,16 @@ namespace System.Drawing
             get
             {
                 int count;
-                Status status = GDIPlus.GdipGetPenDashCount(nativeObject, out count);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipGetPenDashCount(nativeObject, out count);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 float[] pattern;
                 // don't call GdipGetPenDashArray with a 0 count
                 if (count > 0)
                 {
                     pattern = new float[count];
-                    status = GDIPlus.GdipGetPenDashArray(nativeObject, pattern, count);
-                    GDIPlus.CheckStatus(status);
+                    status = SafeNativeMethods.Gdip.GdipGetPenDashArray(nativeObject, pattern, count);
+                    SafeNativeMethods.Gdip.CheckStatus(status);
                 }
                 else if (DashStyle == DashStyle.Custom)
                 {
@@ -315,8 +315,8 @@ namespace System.Drawing
                     foreach (float val in value)
                         if (val <= 0)
                             throw new ArgumentException("Invalid parameter.");
-                    Status status = GDIPlus.GdipSetPenDashArray(nativeObject, value, value.Length);
-                    GDIPlus.CheckStatus(status);
+                    Status status = SafeNativeMethods.Gdip.GdipSetPenDashArray(nativeObject, value, value.Length);
+                    SafeNativeMethods.Gdip.CheckStatus(status);
                 }
                 else
                     throw new ArgumentException("This Pen object can't be modified.");
@@ -328,8 +328,8 @@ namespace System.Drawing
             get
             {
                 DashStyle retval;
-                Status status = GDIPlus.GdipGetPenDashStyle(nativeObject, out retval);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipGetPenDashStyle(nativeObject, out retval);
+                SafeNativeMethods.Gdip.CheckStatus(status);
                 return retval;
             }
 
@@ -340,8 +340,8 @@ namespace System.Drawing
 
                 if (isModifiable)
                 {
-                    Status status = GDIPlus.GdipSetPenDashStyle(nativeObject, value);
-                    GDIPlus.CheckStatus(status);
+                    Status status = SafeNativeMethods.Gdip.GdipSetPenDashStyle(nativeObject, value);
+                    SafeNativeMethods.Gdip.CheckStatus(status);
                 }
                 else
                     throw new ArgumentException("This Pen object can't be modified.");
@@ -353,8 +353,8 @@ namespace System.Drawing
             get
             {
                 LineCap retval;
-                Status status = GDIPlus.GdipGetPenStartCap(nativeObject, out retval);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipGetPenStartCap(nativeObject, out retval);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 return retval;
             }
@@ -366,8 +366,8 @@ namespace System.Drawing
 
                 if (isModifiable)
                 {
-                    Status status = GDIPlus.GdipSetPenStartCap(nativeObject, value);
-                    GDIPlus.CheckStatus(status);
+                    Status status = SafeNativeMethods.Gdip.GdipSetPenStartCap(nativeObject, value);
+                    SafeNativeMethods.Gdip.CheckStatus(status);
                 }
                 else
                     throw new ArgumentException("This Pen object can't be modified.");
@@ -379,8 +379,8 @@ namespace System.Drawing
             get
             {
                 LineCap retval;
-                Status status = GDIPlus.GdipGetPenEndCap(nativeObject, out retval);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipGetPenEndCap(nativeObject, out retval);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 return retval;
             }
@@ -392,8 +392,8 @@ namespace System.Drawing
 
                 if (isModifiable)
                 {
-                    Status status = GDIPlus.GdipSetPenEndCap(nativeObject, value);
-                    GDIPlus.CheckStatus(status);
+                    Status status = SafeNativeMethods.Gdip.GdipSetPenEndCap(nativeObject, value);
+                    SafeNativeMethods.Gdip.CheckStatus(status);
                 }
                 else
                     throw new ArgumentException("This Pen object can't be modified.");
@@ -406,8 +406,8 @@ namespace System.Drawing
             get
             {
                 LineJoin result;
-                Status status = GDIPlus.GdipGetPenLineJoin(nativeObject, out result);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipGetPenLineJoin(nativeObject, out result);
+                SafeNativeMethods.Gdip.CheckStatus(status);
                 return result;
             }
 
@@ -418,8 +418,8 @@ namespace System.Drawing
 
                 if (isModifiable)
                 {
-                    Status status = GDIPlus.GdipSetPenLineJoin(nativeObject, value);
-                    GDIPlus.CheckStatus(status);
+                    Status status = SafeNativeMethods.Gdip.GdipSetPenLineJoin(nativeObject, value);
+                    SafeNativeMethods.Gdip.CheckStatus(status);
                 }
                 else
                     throw new ArgumentException("This Pen object can't be modified.");
@@ -433,8 +433,8 @@ namespace System.Drawing
             get
             {
                 float result;
-                Status status = GDIPlus.GdipGetPenMiterLimit(nativeObject, out result);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipGetPenMiterLimit(nativeObject, out result);
+                SafeNativeMethods.Gdip.CheckStatus(status);
                 return result;
             }
 
@@ -442,8 +442,8 @@ namespace System.Drawing
             {
                 if (isModifiable)
                 {
-                    Status status = GDIPlus.GdipSetPenMiterLimit(nativeObject, value);
-                    GDIPlus.CheckStatus(status);
+                    Status status = SafeNativeMethods.Gdip.GdipSetPenMiterLimit(nativeObject, value);
+                    SafeNativeMethods.Gdip.CheckStatus(status);
                 }
                 else
                     throw new ArgumentException("This Pen object can't be modified.");
@@ -456,8 +456,8 @@ namespace System.Drawing
             get
             {
                 PenType type;
-                Status status = GDIPlus.GdipGetPenFillType(nativeObject, out type);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipGetPenFillType(nativeObject, out type);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 return type;
             }
@@ -469,8 +469,8 @@ namespace System.Drawing
             get
             {
                 Matrix matrix = new Matrix();
-                Status status = GDIPlus.GdipGetPenTransform(nativeObject, matrix.nativeMatrix);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipGetPenTransform(nativeObject, matrix.nativeMatrix);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 return matrix;
             }
@@ -482,8 +482,8 @@ namespace System.Drawing
 
                 if (isModifiable)
                 {
-                    Status status = GDIPlus.GdipSetPenTransform(nativeObject, value.nativeMatrix);
-                    GDIPlus.CheckStatus(status);
+                    Status status = SafeNativeMethods.Gdip.GdipSetPenTransform(nativeObject, value.nativeMatrix);
+                    SafeNativeMethods.Gdip.CheckStatus(status);
                 }
                 else
                     throw new ArgumentException("This Pen object can't be modified.");
@@ -495,16 +495,16 @@ namespace System.Drawing
             get
             {
                 float f;
-                Status status = GDIPlus.GdipGetPenWidth(nativeObject, out f);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipGetPenWidth(nativeObject, out f);
+                SafeNativeMethods.Gdip.CheckStatus(status);
                 return f;
             }
             set
             {
                 if (isModifiable)
                 {
-                    Status status = GDIPlus.GdipSetPenWidth(nativeObject, value);
-                    GDIPlus.CheckStatus(status);
+                    Status status = SafeNativeMethods.Gdip.GdipSetPenWidth(nativeObject, value);
+                    SafeNativeMethods.Gdip.CheckStatus(status);
                 }
                 else
                     throw new ArgumentException("This Pen object can't be modified.");
@@ -516,8 +516,8 @@ namespace System.Drawing
         public object Clone()
         {
             IntPtr ptr;
-            Status status = GDIPlus.GdipClonePen(nativeObject, out ptr);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipClonePen(nativeObject, out ptr);
+            SafeNativeMethods.Gdip.CheckStatus(status);
             Pen p = new Pen(ptr);
             p.startCap = startCap;
             p.endCap = endCap;
@@ -538,9 +538,9 @@ namespace System.Drawing
 
             if (nativeObject != IntPtr.Zero)
             {
-                Status status = GDIPlus.GdipDeletePen(nativeObject);
+                Status status = SafeNativeMethods.Gdip.GdipDeletePen(nativeObject);
                 nativeObject = IntPtr.Zero;
-                GDIPlus.CheckStatus(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
@@ -556,14 +556,14 @@ namespace System.Drawing
 
         public void MultiplyTransform(Matrix matrix, MatrixOrder order)
         {
-            Status status = GDIPlus.GdipMultiplyPenTransform(nativeObject, matrix.nativeMatrix, order);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipMultiplyPenTransform(nativeObject, matrix.nativeMatrix, order);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         public void ResetTransform()
         {
-            Status status = GDIPlus.GdipResetPenTransform(nativeObject);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipResetPenTransform(nativeObject);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         public void RotateTransform(float angle)
@@ -573,8 +573,8 @@ namespace System.Drawing
 
         public void RotateTransform(float angle, MatrixOrder order)
         {
-            Status status = GDIPlus.GdipRotatePenTransform(nativeObject, angle, order);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipRotatePenTransform(nativeObject, angle, order);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         public void ScaleTransform(float sx, float sy)
@@ -584,16 +584,16 @@ namespace System.Drawing
 
         public void ScaleTransform(float sx, float sy, MatrixOrder order)
         {
-            Status status = GDIPlus.GdipScalePenTransform(nativeObject, sx, sy, order);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipScalePenTransform(nativeObject, sx, sy, order);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         public void SetLineCap(LineCap startCap, LineCap endCap, DashCap dashCap)
         {
             if (isModifiable)
             {
-                Status status = GDIPlus.GdipSetPenLineCap197819(nativeObject, startCap, endCap, dashCap);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipSetPenLineCap197819(nativeObject, startCap, endCap, dashCap);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
             else
                 throw new ArgumentException("This Pen object can't be modified.");
@@ -606,8 +606,8 @@ namespace System.Drawing
 
         public void TranslateTransform(float dx, float dy, MatrixOrder order)
         {
-            Status status = GDIPlus.GdipTranslatePenTransform(nativeObject, dx, dy, order);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipTranslatePenTransform(nativeObject, dx, dy, order);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
     }
 }

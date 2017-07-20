@@ -229,7 +229,7 @@ namespace System.Drawing
 		// so we force it to opaque (or everything will be transparent) and reverse B and R
 		static uint GetSysColor (GetSysColorIndex index)
 		{
-			uint bgr = GDIPlus.Win32GetSysColor (index);
+			uint bgr = SafeNativeMethods.Gdip.Win32GetSysColor (index);
 			return 0xFF000000 | (bgr & 0xFF) << 16 | (bgr & 0xFF00) | (bgr >> 16);
 		}
 
