@@ -106,8 +106,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
             int piarg = 0;
             int cargUnique = 0;
 
-            _userStringBuilder.ResetUndisplayableStringFlag();
-
             for (int iarg = 0; iarg < parameterizedError.GetParameterCount(); iarg++)
             {
                 ErrArg arg = parameterizedError.GetParameter(iarg);
@@ -139,15 +137,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 }
                 prgiarg[piarg] = iargRec;
                 piarg++;
-            }
-
-            // don't ever display undisplayable strings to the user
-            // if this happens we should track down the caller to not display the error
-            // this should only ever occur in a cascading error situation due to
-            // error tolerance
-            if (_userStringBuilder.HadUndisplayableString())
-            {
-                return null;
             }
 
             int cpsz = ppsz;
