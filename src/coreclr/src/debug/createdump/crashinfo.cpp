@@ -500,37 +500,6 @@ CrashInfo::GetDSOInfo()
     return true;
 }
 
-inline bool
-NameCompare(const char* name, const char* sectionName)
-{
-    return strncmp(name, sectionName, strlen(sectionName) + 1) == 0;
-}
-
-bool
-ValidShdr(const std::set<MemoryRegion>& mappings, uint64_t elfBaseAddr, Shdr *shdrAddr)
-{
-    bool isValid = false;
-    const char *moduleName = nullptr;
-    for (const MemoryRegion& region : mappings)
-    {
-        if (elfBaseAddr == region.StartAddress())
-            moduleName = region.FileName();
-
-        if (!moduleName)
-            continue;
-
-        if ((uint64_t)shdrAddr < region.StartAddress() || (uint64_t)shdrAddr >= region.EndAddress())
-            continue;
-
-        if (!strcmp(region.FileName(), moduleName)) {
-            isValid = true;
-            break;
-        }
-    }
-
-    return isValid;
-}
-
 //
 // Add all the necessary ELF headers to the core dump
 //
@@ -546,12 +515,8 @@ CrashInfo::GetELFInfo(uint64_t baseAddress)
         return false;
     }
     int phnum = ehdr.e_phnum;
-    int shnum = ehdr.e_shnum;
     assert(phnum != PN_XNUM);
-    assert(shnum != SHN_XINDEX);
-    assert(ehdr.e_shstrndx != SHN_XINDEX);
     assert(ehdr.e_phentsize == sizeof(Phdr));
-    assert(ehdr.e_shentsize == sizeof(Shdr));
 #ifdef BIT64
     assert(ehdr.e_ident[EI_CLASS] == ELFCLASS64);
 #else
@@ -560,7 +525,7 @@ CrashInfo::GetELFInfo(uint64_t baseAddress)
     assert(ehdr.e_ident[EI_DATA] == ELFDATA2LSB);
 
     TRACE("ELF: type %d mach 0x%x ver %d flags 0x%x phnum %d phoff %" PRIxA " phentsize 0x%02x shnum %d shoff %" PRIxA " shentsize 0x%02x shstrndx %d\n",
-        ehdr.e_type, ehdr.e_machine, ehdr.e_version, ehdr.e_flags, phnum, ehdr.e_phoff, ehdr.e_phentsize, shnum, ehdr.e_shoff, ehdr.e_shentsize, ehdr.e_shstrndx);
+        ehdr.e_type, ehdr.e_machine, ehdr.e_version, ehdr.e_flags, phnum, ehdr.e_phoff, ehdr.e_phentsize, ehdr.e_shnum, ehdr.e_shoff, ehdr.e_shentsize, ehdr.e_shstrndx);
 
     if (ehdr.e_phoff != 0 && phnum > 0)
     {
@@ -582,61 +547,6 @@ CrashInfo::GetELFInfo(uint64_t baseAddress)
                 if (ph.p_vaddr != 0 && ph.p_memsz != 0)
                 {
                     InsertMemoryRegion(baseAddress + ph.p_vaddr, ph.p_memsz);
-                }
-            }
-        }
-    }
-
-    // Skip the "interpreter" module i.e. /lib64/ld-linux-x86-64.so.2 or ld-2.19.so. The in-memory section headers are 
-    // not valid. Ignore all failures too because on debug builds of coreclr, the section headers are not in valid memory.
-    if (baseAddress != m_auxvValues[AT_BASE] && ehdr.e_shoff != 0 && shnum > 0 && ehdr.e_shstrndx != SHN_UNDEF)
-    {
-        Shdr* shdrAddr = reinterpret_cast<Shdr*>(baseAddress + ehdr.e_shoff);
-        Shdr* stringTableShdrAddr = shdrAddr + ehdr.e_shstrndx;
-
-        // Check the section headers address. In some cases there isn't section header table in process memory.
-        if ((!ValidShdr(m_moduleMappings, baseAddress, shdrAddr) && !ValidShdr(m_otherMappings, baseAddress, shdrAddr)) ||
-            (!ValidShdr(m_moduleMappings, baseAddress, stringTableShdrAddr) && !ValidShdr(m_otherMappings, baseAddress, stringTableShdrAddr))) {
-            TRACE("ELF: %2d shdr %p Invalid section headers table address\n", ehdr.e_shstrndx, shdrAddr);
-            return true;
-        }
-
-        // Get the string table section header
-        Shdr stringTableSectionHeader;
-        if (!ReadMemory(stringTableShdrAddr, &stringTableSectionHeader, sizeof(stringTableSectionHeader))) {
-            TRACE("ELF: %2d shdr %p ReadMemory string table section header FAILED\n", ehdr.e_shstrndx, stringTableShdrAddr);
-            return true;
-        }
-
-        // Get the string table
-        ArrayHolder<char> stringTable = new char[stringTableSectionHeader.sh_size];
-        if (!ReadMemory((void*)(baseAddress + stringTableSectionHeader.sh_offset), stringTable.GetPtr(), stringTableSectionHeader.sh_size)) {
-            TRACE("ELF: %2d shdr %p ReadMemory string table FAILED\n", ehdr.e_shstrndx, (void*)(baseAddress + stringTableSectionHeader.sh_offset));
-            return true;
-        }
-        // Add the section headers to the core dump
-        for (int sectionIndex = 0; sectionIndex < shnum; sectionIndex++, shdrAddr++)
-        {
-            Shdr sh;
-            if (!ReadMemory(shdrAddr, &sh, sizeof(sh))) {
-                TRACE("ELF: %2d shdr %p ReadMemory FAILED\n", sectionIndex, shdrAddr);
-                return true;
-            }
-            TRACE("ELF: %2d shdr %p type %2d (%x) addr %" PRIxA " offset %" PRIxA " size %" PRIxA " link %08x info %08x name %4d %s\n",
-                sectionIndex, shdrAddr, sh.sh_type, sh.sh_type, sh.sh_addr, sh.sh_offset, sh.sh_size, sh.sh_link, sh.sh_info, sh.sh_name, &stringTable[sh.sh_name]);
-
-            if (sh.sh_name != SHN_UNDEF && sh.sh_offset > 0 && sh.sh_size > 0) {
-                char* name = &stringTable[sh.sh_name];
-
-                // Add the .eh_frame/.eh_frame_hdr unwind info to the core dump
-                if (NameCompare(name, ".eh_frame") ||
-                    NameCompare(name, ".eh_frame_hdr") ||
-                    NameCompare(name, ".note.gnu.build-id") ||
-                    NameCompare(name, ".note.gnu.ABI-tag") ||
-                    NameCompare(name, ".gnu_debuglink"))
-                {
-                    TRACE("ELF: %s %p size %" PRIxA "\n", name, (void*)(baseAddress + sh.sh_offset), sh.sh_size);
-                    InsertMemoryRegion(baseAddress + sh.sh_offset, sh.sh_size);
                 }
             }
         }
