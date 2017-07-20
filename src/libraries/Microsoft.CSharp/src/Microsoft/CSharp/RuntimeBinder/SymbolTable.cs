@@ -349,7 +349,16 @@ namespace Microsoft.CSharp.RuntimeBinder
         private Name GetName(Type type)
         {
             string name = type.Name;
-            return type.IsGenericType ? _nameManager.Add(name, name.IndexOf('`')) : _nameManager.Add(name);
+            if (type.IsGenericType)
+            {
+                int idx = name.IndexOf('`');
+                if (idx >= 0)
+                {
+                    return _nameManager.Add(name, idx);
+                }
+            }
+
+            return _nameManager.Add(name);
         }
 
         #endregion
