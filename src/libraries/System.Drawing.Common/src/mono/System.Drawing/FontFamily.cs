@@ -60,8 +60,8 @@ namespace System.Drawing
                 return;
 
             sb = new StringBuilder(GDIPlus.FACESIZE);
-            Status status = GDIPlus.GdipGetFamilyName(nativeFontFamily, sb, 0);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipGetFamilyName(nativeFontFamily, sb, 0);
+            SafeNativeMethods.Gdip.CheckStatus(status);
             name = sb.ToString();
         }
 
@@ -92,17 +92,17 @@ namespace System.Drawing
             switch (genericFamily)
             {
                 case GenericFontFamilies.SansSerif:
-                    status = GDIPlus.GdipGetGenericFontFamilySansSerif(out nativeFontFamily);
+                    status = SafeNativeMethods.Gdip.GdipGetGenericFontFamilySansSerif(out nativeFontFamily);
                     break;
                 case GenericFontFamilies.Serif:
-                    status = GDIPlus.GdipGetGenericFontFamilySerif(out nativeFontFamily);
+                    status = SafeNativeMethods.Gdip.GdipGetGenericFontFamilySerif(out nativeFontFamily);
                     break;
                 case GenericFontFamilies.Monospace:
                 default:    // Undocumented default 
-                    status = GDIPlus.GdipGetGenericFontFamilyMonospace(out nativeFontFamily);
+                    status = SafeNativeMethods.Gdip.GdipGetGenericFontFamilyMonospace(out nativeFontFamily);
                     break;
             }
-            GDIPlus.CheckStatus(status);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         public FontFamily(string name) : this(name, null)
@@ -112,8 +112,8 @@ namespace System.Drawing
         public FontFamily(string name, FontCollection fontCollection)
         {
             IntPtr handle = (fontCollection == null) ? IntPtr.Zero : fontCollection._nativeFontCollection;
-            Status status = GDIPlus.GdipCreateFontFamilyFromName(name, handle, out nativeFontFamily);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipCreateFontFamilyFromName(name, handle, out nativeFontFamily);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         public string Name
@@ -146,8 +146,8 @@ namespace System.Drawing
         public int GetCellAscent(FontStyle style)
         {
             short outProperty;
-            Status status = GDIPlus.GdipGetCellAscent(nativeFontFamily, (int)style, out outProperty);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipGetCellAscent(nativeFontFamily, (int)style, out outProperty);
+            SafeNativeMethods.Gdip.CheckStatus(status);
 
             return (int)outProperty;
         }
@@ -155,8 +155,8 @@ namespace System.Drawing
         public int GetCellDescent(FontStyle style)
         {
             short outProperty;
-            Status status = GDIPlus.GdipGetCellDescent(nativeFontFamily, (int)style, out outProperty);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipGetCellDescent(nativeFontFamily, (int)style, out outProperty);
+            SafeNativeMethods.Gdip.CheckStatus(status);
 
             return (int)outProperty;
         }
@@ -164,8 +164,8 @@ namespace System.Drawing
         public int GetEmHeight(FontStyle style)
         {
             short outProperty;
-            Status status = GDIPlus.GdipGetEmHeight(nativeFontFamily, (int)style, out outProperty);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipGetEmHeight(nativeFontFamily, (int)style, out outProperty);
+            SafeNativeMethods.Gdip.CheckStatus(status);
 
             return (int)outProperty;
         }
@@ -173,8 +173,8 @@ namespace System.Drawing
         public int GetLineSpacing(FontStyle style)
         {
             short outProperty;
-            Status status = GDIPlus.GdipGetLineSpacing(nativeFontFamily, (int)style, out outProperty);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipGetLineSpacing(nativeFontFamily, (int)style, out outProperty);
+            SafeNativeMethods.Gdip.CheckStatus(status);
 
             return (int)outProperty;
         }
@@ -183,8 +183,8 @@ namespace System.Drawing
         public bool IsStyleAvailable(FontStyle style)
         {
             bool outProperty;
-            Status status = GDIPlus.GdipIsStyleAvailable(nativeFontFamily, (int)style, out outProperty);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipIsStyleAvailable(nativeFontFamily, (int)style, out outProperty);
+            SafeNativeMethods.Gdip.CheckStatus(status);
 
             return outProperty;
         }
@@ -193,11 +193,11 @@ namespace System.Drawing
         {
             if (nativeFontFamily != IntPtr.Zero)
             {
-                Status status = GDIPlus.GdipDeleteFontFamily(nativeFontFamily);
+                Status status = SafeNativeMethods.Gdip.GdipDeleteFontFamily(nativeFontFamily);
                 nativeFontFamily = IntPtr.Zero;
                 GC.SuppressFinalize(this);
                 // check the status code (throw) at the last step
-                GDIPlus.CheckStatus(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 

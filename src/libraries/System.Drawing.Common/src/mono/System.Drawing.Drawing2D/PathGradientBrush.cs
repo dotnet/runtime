@@ -32,6 +32,7 @@
 //
 
 using System.ComponentModel;
+using System.Runtime.InteropServices;
 
 namespace System.Drawing.Drawing2D
 {
@@ -51,8 +52,8 @@ namespace System.Drawing.Drawing2D
                 throw new ArgumentNullException("path");
 
             IntPtr nativeObject;
-            Status status = GDIPlus.GdipCreatePathGradientFromPath(path.nativePath, out nativeObject);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipCreatePathGradientFromPath(path.nativePath, out nativeObject);
+            SafeNativeMethods.Gdip.CheckStatus(status);
             SetNativeBrush(nativeObject);
         }
 
@@ -72,8 +73,8 @@ namespace System.Drawing.Drawing2D
                 throw new InvalidEnumArgumentException("WrapMode");
 
             IntPtr nativeObject;
-            Status status = GDIPlus.GdipCreatePathGradientI(points, points.Length, wrapMode, out nativeObject);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipCreatePathGradientI(points, points.Length, wrapMode, out nativeObject);
+            SafeNativeMethods.Gdip.CheckStatus(status);
             SetNativeBrush(nativeObject);
         }
 
@@ -85,8 +86,8 @@ namespace System.Drawing.Drawing2D
                 throw new InvalidEnumArgumentException("WrapMode");
             
             IntPtr nativeObject;
-            Status status = GDIPlus.GdipCreatePathGradient(points, points.Length, wrapMode, out nativeObject);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipCreatePathGradient(points, points.Length, wrapMode, out nativeObject);
+            SafeNativeMethods.Gdip.CheckStatus(status);
             SetNativeBrush(nativeObject);
         }
 
@@ -97,12 +98,12 @@ namespace System.Drawing.Drawing2D
             get
             {
                 int count;
-                Status status = GDIPlus.GdipGetPathGradientBlendCount(NativeBrush, out count);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipGetPathGradientBlendCount(NativeBrush, out count);
+                SafeNativeMethods.Gdip.CheckStatus(status);
                 float[] factors = new float[count];
                 float[] positions = new float[count];
-                status = GDIPlus.GdipGetPathGradientBlend(NativeBrush, factors, positions, count);
-                GDIPlus.CheckStatus(status);
+                status = SafeNativeMethods.Gdip.GdipGetPathGradientBlend(NativeBrush, factors, positions, count);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 Blend blend = new Blend();
                 blend.Factors = factors;
@@ -130,8 +131,8 @@ namespace System.Drawing.Drawing2D
                 if (positions[count - 1] != 1.0F)
                     throw new ArgumentException("Invalid Blend object. The positions array must have 1.0 as its last element.");
 
-                Status status = GDIPlus.GdipSetPathGradientBlend(NativeBrush, factors, positions, count);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipSetPathGradientBlend(NativeBrush, factors, positions, count);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
@@ -140,14 +141,14 @@ namespace System.Drawing.Drawing2D
             get
             {
                 int centerColor;
-                Status status = GDIPlus.GdipGetPathGradientCenterColor(NativeBrush, out centerColor);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipGetPathGradientCenterColor(NativeBrush, out centerColor);
+                SafeNativeMethods.Gdip.CheckStatus(status);
                 return Color.FromArgb(centerColor);
             }
             set
             {
-                Status status = GDIPlus.GdipSetPathGradientCenterColor(NativeBrush, value.ToArgb());
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipSetPathGradientCenterColor(NativeBrush, value.ToArgb());
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
@@ -156,16 +157,16 @@ namespace System.Drawing.Drawing2D
             get
             {
                 PointF center;
-                Status status = GDIPlus.GdipGetPathGradientCenterPoint(NativeBrush, out center);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipGetPathGradientCenterPoint(NativeBrush, out center);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 return center;
             }
             set
             {
                 PointF center = value;
-                Status status = GDIPlus.GdipSetPathGradientCenterPoint(NativeBrush, ref center);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipSetPathGradientCenterPoint(NativeBrush, ref center);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
@@ -175,15 +176,15 @@ namespace System.Drawing.Drawing2D
             {
                 float xScale;
                 float yScale;
-                Status status = GDIPlus.GdipGetPathGradientFocusScales(NativeBrush, out xScale, out yScale);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipGetPathGradientFocusScales(NativeBrush, out xScale, out yScale);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 return new PointF(xScale, yScale);
             }
             set
             {
-                Status status = GDIPlus.GdipSetPathGradientFocusScales(NativeBrush, value.X, value.Y);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipSetPathGradientFocusScales(NativeBrush, value.X, value.Y);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
@@ -192,8 +193,8 @@ namespace System.Drawing.Drawing2D
             get
             {
                 int count;
-                Status status = GDIPlus.GdipGetPathGradientPresetBlendCount(NativeBrush, out count);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipGetPathGradientPresetBlendCount(NativeBrush, out count);
+                SafeNativeMethods.Gdip.CheckStatus(status);
                 // if no failure, then the "managed" minimum is 1
                 if (count < 1)
                     count = 1;
@@ -203,8 +204,8 @@ namespace System.Drawing.Drawing2D
                 // status would fail if we ask points or types with a < 2 count
                 if (count > 1)
                 {
-                    status = GDIPlus.GdipGetPathGradientPresetBlend(NativeBrush, intcolors, positions, count);
-                    GDIPlus.CheckStatus(status);
+                    status = SafeNativeMethods.Gdip.GdipGetPathGradientPresetBlend(NativeBrush, intcolors, positions, count);
+                    SafeNativeMethods.Gdip.CheckStatus(status);
                 }
 
                 ColorBlend interpolationColors = new ColorBlend();
@@ -240,8 +241,8 @@ namespace System.Drawing.Drawing2D
                 for (int i = 0; i < colors.Length; i++)
                     blend[i] = colors[i].ToArgb();
 
-                Status status = GDIPlus.GdipSetPathGradientPresetBlend(NativeBrush, blend, positions, count);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipSetPathGradientPresetBlend(NativeBrush, blend, positions, count);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
@@ -250,8 +251,8 @@ namespace System.Drawing.Drawing2D
             get
             {
                 RectangleF rect;
-                Status status = GDIPlus.GdipGetPathGradientRect(NativeBrush, out rect);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipGetPathGradientRect(NativeBrush, out rect);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 return rect;
             }
@@ -262,12 +263,12 @@ namespace System.Drawing.Drawing2D
             get
             {
                 int count;
-                Status status = GDIPlus.GdipGetPathGradientSurroundColorCount(NativeBrush, out count);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipGetPathGradientSurroundColorCount(NativeBrush, out count);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 int[] intcolors = new int[count];
-                status = GDIPlus.GdipGetPathGradientSurroundColorsWithCount(NativeBrush, intcolors, ref count);
-                GDIPlus.CheckStatus(status);
+                status = SafeNativeMethods.Gdip.GdipGetPathGradientSurroundColorsWithCount(NativeBrush, intcolors, ref count);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 Color[] colors = new Color[count];
                 for (int i = 0; i < count; i++)
@@ -283,8 +284,8 @@ namespace System.Drawing.Drawing2D
                 for (int i = 0; i < count; i++)
                     colors[i] = value[i].ToArgb();
 
-                Status status = GDIPlus.GdipSetPathGradientSurroundColorsWithCount(NativeBrush, colors, ref count);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipSetPathGradientSurroundColorsWithCount(NativeBrush, colors, ref count);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
@@ -293,8 +294,8 @@ namespace System.Drawing.Drawing2D
             get
             {
                 Matrix matrix = new Matrix();
-                Status status = GDIPlus.GdipGetPathGradientTransform(NativeBrush, matrix.nativeMatrix);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipGetPathGradientTransform(NativeBrush, matrix.nativeMatrix);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 return matrix;
             }
@@ -303,8 +304,8 @@ namespace System.Drawing.Drawing2D
                 if (value == null)
                     throw new ArgumentNullException("Transform");
 
-                Status status = GDIPlus.GdipSetPathGradientTransform(NativeBrush, value.nativeMatrix);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipSetPathGradientTransform(NativeBrush, value.nativeMatrix);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
@@ -313,8 +314,8 @@ namespace System.Drawing.Drawing2D
             get
             {
                 WrapMode wrapMode;
-                Status status = GDIPlus.GdipGetPathGradientWrapMode(NativeBrush, out wrapMode);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipGetPathGradientWrapMode(NativeBrush, out wrapMode);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 return wrapMode;
             }
@@ -323,8 +324,8 @@ namespace System.Drawing.Drawing2D
                 if ((value < WrapMode.Tile) || (value > WrapMode.Clamp))
                     throw new InvalidEnumArgumentException("WrapMode");
 
-                Status status = GDIPlus.GdipSetPathGradientWrapMode(NativeBrush, value);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipSetPathGradientWrapMode(NativeBrush, value);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
@@ -340,14 +341,14 @@ namespace System.Drawing.Drawing2D
             if (matrix == null)
                 throw new ArgumentNullException("matrix");
 
-            Status status = GDIPlus.GdipMultiplyPathGradientTransform(NativeBrush, matrix.nativeMatrix, order);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipMultiplyPathGradientTransform(NativeBrush, matrix.nativeMatrix, order);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         public void ResetTransform()
         {
-            Status status = GDIPlus.GdipResetPathGradientTransform(NativeBrush);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipResetPathGradientTransform(NativeBrush);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         public void RotateTransform(float angle)
@@ -357,8 +358,8 @@ namespace System.Drawing.Drawing2D
 
         public void RotateTransform(float angle, MatrixOrder order)
         {
-            Status status = GDIPlus.GdipRotatePathGradientTransform(NativeBrush, angle, order);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipRotatePathGradientTransform(NativeBrush, angle, order);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         public void ScaleTransform(float sx, float sy)
@@ -368,8 +369,8 @@ namespace System.Drawing.Drawing2D
 
         public void ScaleTransform(float sx, float sy, MatrixOrder order)
         {
-            Status status = GDIPlus.GdipScalePathGradientTransform(NativeBrush, sx, sy, order);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipScalePathGradientTransform(NativeBrush, sx, sy, order);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         public void SetBlendTriangularShape(float focus)
@@ -382,8 +383,8 @@ namespace System.Drawing.Drawing2D
             if (focus < 0 || focus > 1 || scale < 0 || scale > 1)
                 throw new ArgumentException("Invalid parameter passed.");
 
-            Status status = GDIPlus.GdipSetPathGradientLinearBlend(NativeBrush, focus, scale);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipSetPathGradientLinearBlend(NativeBrush, focus, scale);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         public void SetSigmaBellShape(float focus)
@@ -396,8 +397,8 @@ namespace System.Drawing.Drawing2D
             if (focus < 0 || focus > 1 || scale < 0 || scale > 1)
                 throw new ArgumentException("Invalid parameter passed.");
 
-            Status status = GDIPlus.GdipSetPathGradientSigmaBlend(NativeBrush, focus, scale);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipSetPathGradientSigmaBlend(NativeBrush, focus, scale);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         public void TranslateTransform(float dx, float dy)
@@ -407,15 +408,15 @@ namespace System.Drawing.Drawing2D
 
         public void TranslateTransform(float dx, float dy, MatrixOrder order)
         {
-            Status status = GDIPlus.GdipTranslatePathGradientTransform(NativeBrush, dx, dy, order);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipTranslatePathGradientTransform(NativeBrush, dx, dy, order);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         public override object Clone()
         {
             IntPtr clonePtr;
-            Status status = GDIPlus.GdipCloneBrush(NativeBrush, out clonePtr);
-            GDIPlus.CheckStatus(status);
+            int status = SafeNativeMethods.Gdip.GdipCloneBrush(new HandleRef(this, NativeBrush), out clonePtr);
+            SafeNativeMethods.Gdip.CheckStatus(status);
 
             PathGradientBrush clone = new PathGradientBrush(clonePtr);
             return clone;

@@ -44,8 +44,8 @@ namespace System.Drawing.Text
 
         public PrivateFontCollection()
         {
-            Status status = GDIPlus.GdipNewPrivateFontCollection(out _nativeFontCollection);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipNewPrivateFontCollection(out _nativeFontCollection);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         // methods
@@ -61,15 +61,15 @@ namespace System.Drawing.Text
                 throw new FileNotFoundException();
 
             // note: MS throw the same exception FileNotFoundException if the file exists but isn't a valid font file
-            Status status = GDIPlus.GdipPrivateAddFontFile(_nativeFontCollection, fname);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipPrivateAddFontFile(_nativeFontCollection, fname);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         public void AddMemoryFont(IntPtr memory, int length)
         {
             // note: MS throw FileNotFoundException if something is bad with the data (except for a null pointer)
-            Status status = GDIPlus.GdipPrivateAddMemoryFont(_nativeFontCollection, memory, length);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipPrivateAddMemoryFont(_nativeFontCollection, memory, length);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         // methods	
@@ -77,7 +77,7 @@ namespace System.Drawing.Text
         {
             if (_nativeFontCollection != IntPtr.Zero)
             {
-                GDIPlus.GdipDeletePrivateFontCollection(ref _nativeFontCollection);
+                SafeNativeMethods.Gdip.GdipDeletePrivateFontCollection(ref _nativeFontCollection);
 
                 // This must be zeroed out, otherwise our base will also call
                 // the GDI+ delete method on unix platforms. We're keeping the

@@ -3,7 +3,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <RootNamespace>System.Drawing</RootNamespace>
     <ProjectGuid>{191B3618-FECD-4ABD-9D6B-5AC90DC33621}</ProjectGuid>
     <DefineConstants>$(DefineConstants);DRAWING_NAMESPACE</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -100,6 +99,8 @@
     <Compile Include="System\Drawing\FontFamily.cs" />
     <Compile Include="System\Drawing\FontStyle.cs" />
     <Compile Include="System\Drawing\Gdiplus.cs" />
+    <Compile Include="System\Drawing\GdiplusNative.cs" />
+    <Compile Include="System\Drawing\GdiplusNative.Windows.cs" />
     <Compile Include="System\Drawing\Graphics.cs" />
     <Compile Include="System\Drawing\GraphicsContext.cs" />
     <Compile Include="System\Drawing\Icon.cs" />
@@ -266,6 +267,7 @@
     <Compile Include="mono\System.Drawing\GraphicsUnit.cs" />
     <Compile Include="mono\System.Drawing\gdipEnums.cs" />
     <Compile Include="mono\System.Drawing\gdipFunctions.cs" />
+    <Compile Include="System\Drawing\GdiplusNative.Unix.cs" />
     <Compile Include="mono\System.Drawing\gdipStructs.cs" />
     <Compile Include="mono\System.Drawing\Icon.cs" />
     <Compile Include="mono\System.Drawing\ImageAnimator.cs" />
@@ -310,6 +312,7 @@
     <Compile Include="System/Drawing/BitmapSuffixInSameAssemblyAttribute.cs" />
     <Compile Include="System/Drawing/BitmapSuffixInSatelliteAssemblyAttribute.cs" />
     <Compile Include="System/Drawing/IDeviceContext.cs" />
+    <Compile Include="System/Drawing/GdiplusNative.cs" />
     <Compile Include="System/Drawing/RotateFlipType.cs" />
     <Compile Include="System/Drawing/Printing/PrinterUnit.cs" />
     <Compile Include="System/Drawing/Printing/PreviewPageInfo.cs" />
@@ -380,7 +383,7 @@
     <Compile Include="System/Drawing/ClientUtils.cs" />
     <Compile Include="misc/CompModSwitches.cs" />
     <Compile Include="misc/DebugHandleTracker.cs" />
-    <Compile Include="misc/ExternDll.Unix.cs" />    
+    <Compile Include="misc/ExternDll.Unix.cs" />
     <Compile Include="misc/HandleCollector.cs" />
     <Compile Include="System/Drawing/Gdiplus.cs" />
     <Compile Include="System/Drawing/NativeMethods.cs" />

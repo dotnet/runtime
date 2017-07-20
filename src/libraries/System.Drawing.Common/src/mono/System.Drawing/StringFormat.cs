@@ -49,8 +49,8 @@ namespace System.Drawing
 
         public StringFormat(StringFormatFlags options, int language)
         {
-            Status status = GDIPlus.GdipCreateStringFormat(options, language, out nativeStrFmt);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipCreateStringFormat(options, language, out nativeStrFmt);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         internal StringFormat(IntPtr native)
@@ -73,9 +73,9 @@ namespace System.Drawing
         {
             if (nativeStrFmt != IntPtr.Zero)
             {
-                Status status = GDIPlus.GdipDeleteStringFormat(nativeStrFmt);
+                Status status = SafeNativeMethods.Gdip.GdipDeleteStringFormat(nativeStrFmt);
                 nativeStrFmt = IntPtr.Zero;
-                GDIPlus.CheckStatus(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
@@ -84,14 +84,14 @@ namespace System.Drawing
             if (format == null)
                 throw new ArgumentNullException("format");
 
-            Status status = GDIPlus.GdipCloneStringFormat(format.NativeObject, out nativeStrFmt);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipCloneStringFormat(format.NativeObject, out nativeStrFmt);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         public StringFormat(StringFormatFlags options)
         {
-            Status status = GDIPlus.GdipCreateStringFormat(options, GDIPlus.LANG_NEUTRAL, out nativeStrFmt);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipCreateStringFormat(options, GDIPlus.LANG_NEUTRAL, out nativeStrFmt);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         public StringAlignment Alignment
@@ -99,8 +99,8 @@ namespace System.Drawing
             get
             {
                 StringAlignment align;
-                Status status = GDIPlus.GdipGetStringFormatAlign(nativeStrFmt, out align);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipGetStringFormatAlign(nativeStrFmt, out align);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 return align;
             }
@@ -110,8 +110,8 @@ namespace System.Drawing
                 if ((value < StringAlignment.Near) || (value > StringAlignment.Far))
                     throw new InvalidEnumArgumentException("Alignment");
 
-                Status status = GDIPlus.GdipSetStringFormatAlign(nativeStrFmt, value);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipSetStringFormatAlign(nativeStrFmt, value);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
@@ -120,8 +120,8 @@ namespace System.Drawing
             get
             {
                 StringAlignment align;
-                Status status = GDIPlus.GdipGetStringFormatLineAlign(nativeStrFmt, out align);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipGetStringFormatLineAlign(nativeStrFmt, out align);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 return align;
             }
@@ -131,8 +131,8 @@ namespace System.Drawing
                 if ((value < StringAlignment.Near) || (value > StringAlignment.Far))
                     throw new InvalidEnumArgumentException("Alignment");
 
-                Status status = GDIPlus.GdipSetStringFormatLineAlign(nativeStrFmt, value);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipSetStringFormatLineAlign(nativeStrFmt, value);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
@@ -141,16 +141,16 @@ namespace System.Drawing
             get
             {
                 StringFormatFlags flags;
-                Status status = GDIPlus.GdipGetStringFormatFlags(nativeStrFmt, out flags);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipGetStringFormatFlags(nativeStrFmt, out flags);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 return flags;
             }
 
             set
             {
-                Status status = GDIPlus.GdipSetStringFormatFlags(nativeStrFmt, value);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipSetStringFormatFlags(nativeStrFmt, value);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
@@ -159,8 +159,8 @@ namespace System.Drawing
             get
             {
                 HotkeyPrefix hotkeyPrefix;
-                Status status = GDIPlus.GdipGetStringFormatHotkeyPrefix(nativeStrFmt, out hotkeyPrefix);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipGetStringFormatHotkeyPrefix(nativeStrFmt, out hotkeyPrefix);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 return hotkeyPrefix;
             }
@@ -170,8 +170,8 @@ namespace System.Drawing
                 if ((value < HotkeyPrefix.None) || (value > HotkeyPrefix.Hide))
                     throw new InvalidEnumArgumentException("HotkeyPrefix");
 
-                Status status = GDIPlus.GdipSetStringFormatHotkeyPrefix(nativeStrFmt, value);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipSetStringFormatHotkeyPrefix(nativeStrFmt, value);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
@@ -181,8 +181,8 @@ namespace System.Drawing
             get
             {
                 StringTrimming trimming;
-                Status status = GDIPlus.GdipGetStringFormatTrimming(nativeStrFmt, out trimming);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipGetStringFormatTrimming(nativeStrFmt, out trimming);
+                SafeNativeMethods.Gdip.CheckStatus(status);
                 return trimming;
             }
 
@@ -191,8 +191,8 @@ namespace System.Drawing
                 if ((value < StringTrimming.None) || (value > StringTrimming.EllipsisPath))
                     throw new InvalidEnumArgumentException("Trimming");
 
-                Status status = GDIPlus.GdipSetStringFormatTrimming(nativeStrFmt, value);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipSetStringFormatTrimming(nativeStrFmt, value);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
@@ -202,8 +202,8 @@ namespace System.Drawing
             {
                 IntPtr ptr;
 
-                Status status = GDIPlus.GdipStringFormatGetGenericDefault(out ptr);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipStringFormatGetGenericDefault(out ptr);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 return new StringFormat(ptr);
             }
@@ -225,8 +225,8 @@ namespace System.Drawing
             {
                 IntPtr ptr;
 
-                Status status = GDIPlus.GdipStringFormatGetGenericTypographic(out ptr);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipStringFormatGetGenericTypographic(out ptr);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 return new StringFormat(ptr);
             }
@@ -238,8 +238,8 @@ namespace System.Drawing
             {
                 StringDigitSubstitute substitute;
 
-                Status status = GDIPlus.GdipGetStringFormatDigitSubstitution(nativeStrFmt, language, out substitute);
-                GDIPlus.CheckStatus(status);
+                Status status = SafeNativeMethods.Gdip.GdipGetStringFormatDigitSubstitution(nativeStrFmt, language, out substitute);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
                 return substitute;
             }
@@ -248,18 +248,18 @@ namespace System.Drawing
 
         public void SetMeasurableCharacterRanges(CharacterRange[] ranges)
         {
-            Status status = GDIPlus.GdipSetStringFormatMeasurableCharacterRanges(nativeStrFmt,
+            Status status = SafeNativeMethods.Gdip.GdipSetStringFormatMeasurableCharacterRanges(nativeStrFmt,
                 ranges.Length, ranges);
 
-            GDIPlus.CheckStatus(status);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         internal int GetMeasurableCharacterRangeCount()
         {
             int cnt;
-            Status status = GDIPlus.GdipGetStringFormatMeasurableCharacterRangeCount(nativeStrFmt, out cnt);
+            Status status = SafeNativeMethods.Gdip.GdipGetStringFormatMeasurableCharacterRangeCount(nativeStrFmt, out cnt);
 
-            GDIPlus.CheckStatus(status);
+            SafeNativeMethods.Gdip.CheckStatus(status);
             return cnt;
         }
 
@@ -267,8 +267,8 @@ namespace System.Drawing
         {
             IntPtr native;
 
-            Status status = GDIPlus.GdipCloneStringFormat(nativeStrFmt, out native);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipCloneStringFormat(nativeStrFmt, out native);
+            SafeNativeMethods.Gdip.CheckStatus(status);
 
             return new StringFormat(native);
         }
@@ -294,14 +294,14 @@ namespace System.Drawing
 
         public void SetTabStops(float firstTabOffset, float[] tabStops)
         {
-            Status status = GDIPlus.GdipSetStringFormatTabStops(nativeStrFmt, firstTabOffset, tabStops.Length, tabStops);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipSetStringFormatTabStops(nativeStrFmt, firstTabOffset, tabStops.Length, tabStops);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         public void SetDigitSubstitution(int language, StringDigitSubstitute substitute)
         {
-            Status status = GDIPlus.GdipSetStringFormatDigitSubstitution(nativeStrFmt, this.language, substitute);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipSetStringFormatDigitSubstitution(nativeStrFmt, this.language, substitute);
+            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
         public float[] GetTabStops(out float firstTabOffset)
@@ -309,15 +309,15 @@ namespace System.Drawing
             int count = 0;
             firstTabOffset = 0;
 
-            Status status = GDIPlus.GdipGetStringFormatTabStopCount(nativeStrFmt, out count);
-            GDIPlus.CheckStatus(status);
+            Status status = SafeNativeMethods.Gdip.GdipGetStringFormatTabStopCount(nativeStrFmt, out count);
+            SafeNativeMethods.Gdip.CheckStatus(status);
 
             float[] tabStops = new float[count];
 
             if (count != 0)
             {
-                status = GDIPlus.GdipGetStringFormatTabStops(nativeStrFmt, count, out firstTabOffset, tabStops);
-                GDIPlus.CheckStatus(status);
+                status = SafeNativeMethods.Gdip.GdipGetStringFormatTabStops(nativeStrFmt, count, out firstTabOffset, tabStops);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
 
             return tabStops;
