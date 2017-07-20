@@ -5643,13 +5643,7 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
 
     bool tempsAllocated = false;
 
-#ifdef _TARGET_ARM_
-    // On ARM, SP based offsets use smaller encoding. Since temps are relatively
-    // rarer than lcl usage, allocate them farther from SP.
-    if (!opts.MinOpts() && !compLocallocUsed)
-#else
     if (lvaTempsHaveLargerOffsetThanVars() && !codeGen->isFramePointerUsed())
-#endif
     {
         // Because we want the temps to have a larger offset than locals
         // and we're not using a frame pointer, we have to place the temps
