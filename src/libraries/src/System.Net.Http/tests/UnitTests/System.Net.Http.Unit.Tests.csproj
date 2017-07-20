@@ -327,6 +327,12 @@
     <Compile Include="..\..\src\System\Net\Http\Managed\HttpConnectionPool.cs">
       <Link>ProductionCode\System\Net\Http\Managed\HttpConnectionPool.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\System\Net\Http\Managed\HttpConnectionPools.cs">
+      <Link>ProductionCode\System\Net\Http\Managed\HttpConnectionPools.cs</Link>
+    </Compile>
+    <Compile Include="..\..\src\System\Net\Http\Managed\HttpConnectionSettings.cs">
+      <Link>ProductionCode\System\Net\Http\Managed\HttpConnectionSettings.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\System\Net\Http\Managed\HttpContentReadStream.cs">
       <Link>ProductionCode\System\Net\Http\Managed\HttpContentReadStream.cs</Link>
     </Compile>

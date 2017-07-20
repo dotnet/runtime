@@ -13,22 +13,20 @@ namespace System.Net.Http
 {
     internal sealed class HttpProxyConnectionHandler : HttpMessageHandler
     {
-        private readonly IWebProxy _proxy;
         private readonly HttpMessageHandler _innerHandler;
+        private readonly IWebProxy _proxy;
         private readonly ICredentials _defaultCredentials;
-
-        private readonly ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool> _connectionPoolTable;
+        private readonly HttpConnectionPools _connectionPools;
         private bool _disposed;
 
-        public HttpProxyConnectionHandler(IWebProxy proxy, ICredentials defaultCredentials, HttpMessageHandler innerHandler)
+        public HttpProxyConnectionHandler(HttpConnectionSettings settings, HttpMessageHandler innerHandler)
         {
-            Debug.Assert(proxy != null || EnvironmentProxyConfigured);
             Debug.Assert(innerHandler != null);
 
-            _proxy = proxy ?? new PassthroughWebProxy(s_proxyFromEnvironment.Value);
-            _defaultCredentials = defaultCredentials;
             _innerHandler = innerHandler;
-            _connectionPoolTable = new ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool>();
+            _proxy = settings._useProxy ? settings._proxy : new PassthroughWebProxy(s_proxyFromEnvironment.Value);
+            _defaultCredentials = settings._defaultProxyCredentials;
+            _connectionPools = new HttpConnectionPools(settings._maxConnectionsPerServer);
         }
 
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -102,28 +100,15 @@ namespace System.Net.Http
             return response;
         }
 
-        private async ValueTask<HttpConnection> GetOrCreateConnection(HttpRequestMessage request, Uri proxyUri)
+        private ValueTask<HttpConnection> GetOrCreateConnection(HttpRequestMessage request, Uri proxyUri)
         {
-            HttpConnectionKey key = new HttpConnectionKey(proxyUri);
-
-            HttpConnectionPool pool;
-            if (_connectionPoolTable.TryGetValue(key, out pool))
+            var key = new HttpConnectionKey(proxyUri);
+            HttpConnectionPool pool = _connectionPools.GetOrAddPool(key);
+            return pool.GetConnectionAsync(async state =>
             {
-                HttpConnection poolConnection = pool.GetConnection();
-                if (poolConnection != null)
-                {
-                    return poolConnection;
-                }
-            }
-
-            Stream stream = await ConnectHelper.ConnectAsync(proxyUri.IdnHost, proxyUri.Port).ConfigureAwait(false);
-
-            if (pool == null)
-            {
-                pool = _connectionPoolTable.GetOrAdd(key, _ => new HttpConnectionPool());
-            }
-
-            return new HttpConnection(pool, key, null, stream, null, true);
+                Stream stream = await ConnectHelper.ConnectAsync(state.proxyUri.IdnHost, state.proxyUri.Port).ConfigureAwait(false);
+                return new HttpConnection(state.pool, state.key, null, stream, null, true);
+            }, (pool: pool, key: key, request: request, proxyUri: proxyUri));
         }
 
         protected override void Dispose(bool disposing)
@@ -131,14 +116,7 @@ namespace System.Net.Http
             if (disposing && !_disposed)
             {
                 _disposed = true;
-
-                // Close all open connections
-                // TODO #21452: There's a timing issue here
-                // Revisit when we improve the connection pooling implementation
-                foreach (HttpConnectionPool connectionPool in _connectionPoolTable.Values)
-                {
-                    connectionPool.Dispose();
-                }
+                _connectionPools.Dispose();
             }
 
             base.Dispose(disposing);

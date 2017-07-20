@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Diagnostics;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,9 +18,12 @@ namespace System.Net.Http
 
         public AuthenticationHandler(bool preAuthenticate, ICredentials credentials, HttpMessageHandler innerHandler)
         {
+            Debug.Assert(credentials != null);
+            Debug.Assert(innerHandler != null);
+
             _preAuthenticate = preAuthenticate;
-            _credentials = credentials ?? throw new ArgumentNullException(nameof(credentials));
-            _innerHandler = innerHandler ?? throw new ArgumentNullException(nameof(innerHandler));
+            _credentials = credentials;
+            _innerHandler = innerHandler;
         }
 
         private bool TrySetBasicAuthToken(HttpRequestMessage request)
