@@ -15,8 +15,6 @@ namespace System.Net.Http
     {
         /// <summary>Maximum number of milliseconds a connection is allowed to be idle in the pool before we remove it.</summary>
         private const int MaxIdleTimeMilliseconds = 100_000;
-        /// <summary>Value used with <see cref="_associatedConnectionCount"/> to indicate that no connection has been added to the new pool yet.</summary>
-        private const int NewPoolSentinel = int.MinValue;
 
         /// <summary>List of idle connections stored in the pool.</summary>
         private readonly List<CachedConnection> _idleConnections = new List<CachedConnection>();
@@ -26,9 +24,9 @@ namespace System.Net.Http
         private readonly Queue<ConnectionWaiter> _waiters;
 
         /// <summary>The number of connections associated with the pool.  Some of these may be in <see cref="_idleConnections"/>, others may be in use.</summary>
-        private int _associatedConnectionCount = NewPoolSentinel;
+        private int _associatedConnectionCount;
         /// <summary>Whether the pool has been used since the last time a cleanup occurred.</summary>
-        private bool _usedSinceLastCleanup = false;
+        private bool _usedSinceLastCleanup = true;
         /// <summary>Whether the pool has been disposed.</summary>
         private bool _disposed;
         
@@ -49,7 +47,6 @@ namespace System.Net.Http
         public ValueTask<HttpConnection> GetConnectionAsync<TState>(Func<TState, ValueTask<HttpConnection>> createConnection, TState state)
         {
             List<CachedConnection> list = _idleConnections;
-            DateTimeOffset now = DateTimeOffset.UtcNow;
             lock (SyncObj)
             {
                 // Try to return a cached connection.  We need to loop in case the connection
@@ -58,7 +55,7 @@ namespace System.Net.Http
                 {
                     CachedConnection cachedConnection = list[list.Count - 1];
                     list.RemoveAt(list.Count - 1);
-                    if (cachedConnection.IsUsable(now))
+                    if (cachedConnection.IsUsable())
                     {
                         // We found a valid collection.  Return it.
                         return new ValueTask<HttpConnection>(cachedConnection._connection);
@@ -133,17 +130,10 @@ namespace System.Net.Http
 
             _usedSinceLastCleanup = true;
 
-            if (_associatedConnectionCount == NewPoolSentinel)
-            {
-                _associatedConnectionCount = 1;
-            }
-            else
-            {
-                Debug.Assert(
-                    _associatedConnectionCount >= 0 && _associatedConnectionCount < _maxConnections,
-                    $"Expected 0 <= {_associatedConnectionCount} < {_maxConnections}");
-                _associatedConnectionCount++;
-            }
+            Debug.Assert(
+                _associatedConnectionCount >= 0 && _associatedConnectionCount < _maxConnections,
+                $"Expected 0 <= {_associatedConnectionCount} < {_maxConnections}");
+            _associatedConnectionCount++;
         }
 
         /// <summary>
@@ -155,7 +145,8 @@ namespace System.Net.Http
         {
             lock (SyncObj)
             {
-                Debug.Assert(_associatedConnectionCount > 0, $"Expected {_associatedConnectionCount} > 0");
+                Debug.Assert(_associatedConnectionCount > 0 && _associatedConnectionCount <= _maxConnections,
+                    $"Expected 0 < {_associatedConnectionCount} <= {_maxConnections}");
 
                 // Mark the pool as not being stale.
                 _usedSinceLastCleanup = true;
@@ -237,8 +228,10 @@ namespace System.Net.Http
                     return;
                 }
 
-                // If the pool has been disposed of, dispose the connection
-                // being returned, as the pool is being deactivated.
+                // If the pool has been disposed of, dispose the connection being returned,
+                // as the pool is being deactivated. We do this after the above in order to
+                // use pooled connections to satisfy any requests that pended before the
+                // the pool was disposed of.
                 if (_disposed)
                 {
                     connection.Dispose();
@@ -276,8 +269,12 @@ namespace System.Net.Http
         public bool CleanCacheAndDisposeIfUnused()
         {
             List<CachedConnection> list = _idleConnections;
-            lock (SyncObj)
+            List<HttpConnection> toDispose = null;
+            bool tookLock = false;
+            try
             {
+                Monitor.Enter(SyncObj, ref tookLock);
+
                 // Get the current time.  This is compared against each connection's last returned
                 // time to determine whether a connection is too old and should be closed.
                 DateTimeOffset now = DateTimeOffset.Now;
@@ -294,7 +291,7 @@ namespace System.Net.Http
                 if (freeIndex < list.Count)
                 {
                     // We know the connection at freeIndex is unusable, so dispose of it.
-                    list[freeIndex]._connection.Dispose();
+                    toDispose = new List<HttpConnection> { list[freeIndex]._connection };
 
                     // Find the first item after the one to be removed that should be kept.
                     int current = freeIndex + 1;
@@ -304,7 +301,7 @@ namespace System.Net.Http
                         // that shouldn't be kept are disposed of.
                         while (current < list.Count && !list[current].IsUsable(now))
                         {
-                            list[current]._connection.Dispose();
+                            toDispose.Add(list[current]._connection);
                             current++;
                         }
 
@@ -318,15 +315,15 @@ namespace System.Net.Http
                         // Keep going until there are no more good items.
                     }
 
-                    // At this point, everything at and after freeIndex are garbage connections
-                    // that have been disposed.  Remove them all from the list.
+                    // At this point, good connections have been moved below freeIndex, and garbage connections have
+                    // been added to the dispose list, so clear the end of the list past freeIndex.
                     list.RemoveRange(freeIndex, list.Count - freeIndex);
 
-                    // If there are now no connections associated with this pool, we can dispose of it.  Note that 
-                    // the value could be NewPoolSentinel, in which case we don't want to clean it up, as the first
-                    // connection it was created for hasn't yet been added. We also avoid aggressively cleaning up
-                    // pools that have recently been used but currently aren't; if a pool was used since the last
-                    // time we cleaned up, give it another chance.
+                    // If there are now no connections associated with this pool, we can dispose of it. We
+                    // avoid aggressively cleaning up pools that have recently been used but currently aren't;
+                    // if a pool was used since the last time we cleaned up, give it another chance. New pools
+                    // start out saying they've recently been used, to give them a bit of breathing room and time
+                    // for the initial collection to be added to it.
                     if (_associatedConnectionCount == 0 && !_usedSinceLastCleanup)
                     {
                         Debug.Assert(list.Count == 0, $"Expected {nameof(list)}.{nameof(list.Count)} == 0");
@@ -338,6 +335,16 @@ namespace System.Net.Http
                 // Reset the cleanup flag.  Any pools that are empty and not used since the last cleanup
                 // will be purged next time around.
                 _usedSinceLastCleanup = false;
+            }
+            finally
+            {
+                if (tookLock)
+                {
+                    Monitor.Exit(SyncObj);
+                }
+
+                // Dispose the stale connections outside the pool lock.
+                toDispose?.ForEach(c => c.Dispose());
             }
 
             // Pool is active.  Should not be removed.
@@ -357,11 +364,16 @@ namespace System.Net.Http
             /// <param name="connection">The connection.</param>
             public CachedConnection(HttpConnection connection)
             {
+                Debug.Assert(connection != null);
                 _connection = connection;
                 _returnedTime = DateTimeOffset.UtcNow;
             }
 
             /// <summary>Gets whether the connection is currently usable.</summary>
+            /// <returns>true if we believe the connection can be reused; otherwise, false.  See comments on other overload.</returns>
+            public bool IsUsable() => !_connection.ReadAheadCompleted;
+
+            /// <summary>Gets whether the connection is currently usable, factoring in expiration time.</summary>
             /// <param name="now">The current time.  Passed in to ammortize the cost of calling DateTime.UtcNow.</param>
             /// <returns>
             /// true if we believe the connection can be reused; otherwise, false.  There is an inherent race condition here,
@@ -372,7 +384,7 @@ namespace System.Net.Http
             /// </returns>
             public bool IsUsable(DateTimeOffset now) =>
                 now - _returnedTime <= TimeSpan.FromMilliseconds(MaxIdleTimeMilliseconds) &&
-                !_connection.ReadAheadCompleted;
+                IsUsable();
 
             public bool Equals(CachedConnection other) => ReferenceEquals(other._connection, _connection);
             public override bool Equals(object obj) => obj is CachedConnection && Equals((CachedConnection)obj);
@@ -383,7 +395,7 @@ namespace System.Net.Http
         private sealed class ConnectionWaiter<TState> : ConnectionWaiter
         {
             /// <summary>The function to invoke if/when <see cref="CreateConnectionAsync"/> is invoked.</summary>
-            private readonly Func<TState, ValueTask<HttpConnection>> _func;
+            private readonly Func<TState, ValueTask<HttpConnection>> _createConnectionAsync;
             /// <summary>The state to pass to <paramref name="func"/> when it's invoked.</summary>
             private readonly TState _state;
 
@@ -392,16 +404,16 @@ namespace System.Net.Http
             /// <param name="state">The state to pass to <paramref name="func"/> when it's invoked.</param>
             public ConnectionWaiter(HttpConnectionPool pool, Func<TState, ValueTask<HttpConnection>> func, TState state) : base(pool)
             {
-                _func = func;
+                _createConnectionAsync = func;
                 _state = state;
             }
 
-            /// <summary>Creates a connection by invoking <see cref="_func"/> with <see cref="_state"/>.</summary>
+            /// <summary>Creates a connection by invoking <see cref="_createConnectionAsync"/> with <see cref="_state"/>.</summary>
             public override ValueTask<HttpConnection> CreateConnectionAsync()
             {
                 try
                 {
-                    return _func(_state);
+                    return _createConnectionAsync(_state);
                 }
                 catch (Exception e)
                 {
