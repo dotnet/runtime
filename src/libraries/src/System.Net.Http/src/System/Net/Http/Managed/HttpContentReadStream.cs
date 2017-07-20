@@ -7,7 +7,7 @@ using System.Threading;
 
 namespace System.Net.Http
 {
-    internal abstract class HttpContentReadStream : Stream
+    internal abstract class HttpContentReadStream : HttpContentStream
     {
         protected HttpConnection _connection;
 
