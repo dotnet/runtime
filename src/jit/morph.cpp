@@ -4767,7 +4767,7 @@ GenTreePtr Compiler::fgMorphMultiregStructArg(GenTreePtr arg, fgArgTabEntryPtr f
 
 #ifdef _TARGET_ARM_
     if ((fgEntryPtr->isSplit && fgEntryPtr->numSlots + fgEntryPtr->numRegs > 4) ||
-        (!fgEntryPtr->isSplit && !fgEntryPtr->isHfaRegArg && fgEntryPtr->regNum == REG_STK))
+        (!fgEntryPtr->isSplit && fgEntryPtr->regNum == REG_STK))
     {
         // If already OBJ it is set properly already.
         if (arg->OperGet() == GT_OBJ)
