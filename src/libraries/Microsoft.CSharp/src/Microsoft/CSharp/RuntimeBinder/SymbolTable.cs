@@ -221,9 +221,9 @@ namespace Microsoft.CSharp.RuntimeBinder
         {
             IEnumerable<MemberInfo> result = Array.Empty<MemberInfo>();
 
-            foreach (Type t in inheritance)
+            for (int i = inheritance.Count - 1; i >= 0; --i)
             {
-                Type type = t;
+                Type type = inheritance[i];
                 if (type.IsGenericType)
                 {
                     type = type.GetGenericTypeDefinition();
@@ -305,15 +305,37 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private List<Type> CreateInheritanceHierarchyList(Type type)
         {
-            List<Type> list = new List<Type>();
-            list.Insert(0, type);
-            for (Type parent = type.BaseType; parent != null; parent = parent.BaseType)
+            List<Type> list;
+            if (type.IsInterface)
             {
-                // Load it in the symbol table.
-                LoadSymbolsFromType(parent);
+                Type[] ifaces = type.GetInterfaces();
 
-                // Insert into our list of Types.
-                list.Insert(0, parent);
+                // Since IsWindowsRuntimeType() is rare, this is probably the final size
+                list = new List<Type>(ifaces.Length + 2)
+                {
+                    type
+                };
+                foreach (Type iface in type.GetInterfaces())
+                {
+                    LoadSymbolsFromType(iface);
+                    list.Add(iface);
+                }
+
+                Type obj = typeof(object);
+                LoadSymbolsFromType(obj);
+                list.Add(obj);
+            }
+            else
+            {
+                list = new List<Type> { type };
+                for (Type parent = type.BaseType; parent != null; parent = parent.BaseType)
+                {
+                    // Load it in the symbol table.
+                    LoadSymbolsFromType(parent);
+
+                    // Insert into our list of Types.
+                    list.Add(parent);
+                }
             }
 
             // If we have a WinRT type then we should load the members of it's collection interfaces
@@ -329,7 +351,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     Debug.Assert(collectionType.isInterfaceType());
 
                     // Insert into our list of Types.
-                    list.Insert(0, collectionType.AssociatedSystemType);
+                    list.Add(collectionType.AssociatedSystemType);
                 }
             }
             return list;
@@ -2015,6 +2037,10 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         internal void AddConversionsForType(Type type)
         {
+            if (type.IsInterface)
+            {
+                AddConversionsForOneType(type);
+            }
             for (Type t = type; t.BaseType != null; t = t.BaseType)
             {
                 AddConversionsForOneType(t);
