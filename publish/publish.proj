@@ -148,7 +148,7 @@
     <ListAzureBlobs AccountName="$(AzureAccountName)"
                       AccountKey="$(AzureAccessToken)"
                       ContainerName="$(ContainerName)"
-                      FilterBlobNames="Runtime/$(SharedFrameworkNugetVersion)">
+                      FilterBlobNames="Runtime/$(SharedFrameworkNugetVersion)/">
       <Output TaskParameter="BlobNames" ItemName="_BlobList" />
     </ListAzureBlobs>
     <ItemGroup>
@@ -168,7 +168,7 @@
                            AccountKey="$(AzureAccessToken)"
                            ContainerName="$(ContainerName)"
                            BlobNames="@(_CoreHostPackages)"
-                           BlobNamePrefix="Runtime/$(SharedFrameworkNugetVersion)"
+                           BlobNamePrefix="Runtime/$(SharedFrameworkNugetVersion)/"
                            DownloadDirectory="$(DownloadDirectory)" />
     <ItemGroup>
       <_DownloadedPackages Include="@(_CoreHostPackages->'$(PublishDirectory)%(Filename)%(Extension)')" />
