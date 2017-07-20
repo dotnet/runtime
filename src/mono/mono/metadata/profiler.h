@@ -54,12 +54,12 @@ typedef struct _MonoProfilerDesc *MonoProfilerHandle;
  * };
  *
  * MonoProfiler *prof = calloc (1, sizeof (MonoProfiler));
- * MonoProfilerHandle handle = mono_profiler_install (prof);
+ * MonoProfilerHandle handle = mono_profiler_create (prof);
  * mono_profiler_set_shutdown_callback (handle, my_shutdown_cb);
  *
  * This function is not async safe.
  */
-MONO_API MonoProfilerHandle mono_profiler_install (MonoProfiler *prof);
+MONO_API MonoProfilerHandle mono_profiler_create (MonoProfiler *prof);
 
 typedef mono_bool (*MonoProfilerCoverageFilterCallback) (MonoProfiler *prof, MonoMethod *method);
 
