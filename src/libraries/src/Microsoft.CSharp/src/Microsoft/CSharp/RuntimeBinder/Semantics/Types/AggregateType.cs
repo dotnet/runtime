@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
@@ -47,6 +48,30 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             return _baseType ??
                 (_baseType = getAggregate().GetTypeManager().SubstType(getAggregate().GetBaseClass(), GetTypeArgsAll()) as AggregateType);
+        }
+
+        public IEnumerable<AggregateType> TypeHierarchy
+        {
+            get
+            {
+                if (isInterfaceType())
+                {
+                    yield return this;
+                    foreach (AggregateType iface in GetIfacesAll().Items)
+                    {
+                        yield return iface;
+                    }
+
+                    yield return getAggregate().GetTypeManager().ObjectAggregateType;
+                }
+                else
+                {
+                    for (AggregateType agg = this; agg != null; agg = agg.GetBaseClass())
+                    {
+                        yield return agg;
+                    }
+                }
+            }
         }
 
         public void SetTypeArgsThis(TypeArray pTypeArgsThis)
