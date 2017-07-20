@@ -5,7 +5,7 @@
       <Version>5.0.2</Version>
     </NetCore50Dependency>
     <NetCore50Dependency Include="Microsoft.Net.Native.Compiler">
-      <Version>1.6.0</Version>
+      <Version>1.7.0</Version>
     </NetCore50Dependency>
     <NetCore50Dependency Include="Microsoft.NETCore.Portable.Compatibility">
       <Version>1.0.2</Version>
