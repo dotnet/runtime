@@ -4942,10 +4942,10 @@ namespace System.Diagnostics.Tracing
             get
             {
                 // For contract based events we create the list lazily.
-                if (m_payloadNames == null)
+                // You can have m_payloadNames be null in the TraceLogging case (EventID < 0) so only
+                // do the lazy init if you know it is contract based (EventID >= 0)
+                if (EventId >= 0 && m_payloadNames == null)
                 {
-                    // Self described events are identified by id -1.
-                    Debug.Assert(EventId != -1);
 
                     var names = new List<string>();
                     foreach (var parameter in m_eventSource.m_eventData[EventId].Parameters)
