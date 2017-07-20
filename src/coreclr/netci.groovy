@@ -1207,7 +1207,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     switch (scenario) {
                         case 'default':
                             if (isFlowJob == true) {
-                                Utilities.addGithubPRTriggerForBranch(job, branch, "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}.*")
+                                Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} ${configuration}", "(?i).*test\\W+${os}\\W+${architecture}\\W+${configuration}.*")
                             }
 
                             // For now only run Debug jobs on PR Trigger.
