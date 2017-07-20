@@ -397,4 +397,7 @@
   <data name="NamedArgumentUsedInPositional" xml:space="preserve">
     <value>Named argument '{0}' specifies a parameter for which a positional argument has already been given</value>
   </data>
+  <data name="TypeArgumentRequiredForStaticCall" xml:space="preserve">
+    <value>The first argument to dynamically-bound static call must be a Type</value>
+  </data>
 </root>
