@@ -4421,15 +4421,6 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
 #ifndef LEGACY_BACKEND
     // In the future we can migrate UNIX_AMD64 to use this
     // method instead of fgMorphSystemVStructArgs
-    CLANG_FORMAT_COMMENT_ANCHOR;
-
-#ifdef _TARGET_ARM_
-    // Rewrite the struct args to be passed by value on stack.
-    if (hasStructArgument)
-    {
-        fgMorphStructArgs(call);
-    }
-#endif // _TARGET_ARM_
 
     // We only build GT_FIELD_LISTs for MultiReg structs for the RyuJIT backend
     if (hasMultiregStructArgs)
@@ -4643,110 +4634,6 @@ void Compiler::fgMorphSystemVStructArgs(GenTreeCall* call, bool hasStructArgumen
 }
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
-#ifdef _TARGET_ARM_
-//-----------------------------------------------------------------------------
-// fgMorphStructArgs:  Rewrite the struct args to be passed by value on stack.
-//
-// Arguments:
-//    call:    a GenTreeCall node that has one or more TYP_STRUCT arguments
-//
-void Compiler::fgMorphStructArgs(GenTreeCall* call)
-{
-    unsigned   flagsSummary = 0;
-    GenTreePtr args;
-
-    for (args = call->gtCallArgs; args != nullptr; args = args->gtOp.gtOp2)
-    {
-        // For late arguments the arg tree that is overridden is in the gtCallLateArgs list.
-        // For such late args the gtCallArgList contains the setup arg node (evaluating the arg.)
-        // The tree from the gtCallLateArgs list is passed to the callee. The fgArgEntry node contains the mapping
-        // between the nodes in both lists. If the arg is not a late arg, the fgArgEntry->node points to itself,
-        // otherwise points to the list in the late args list.
-        bool             isLateArg  = (args->gtOp.gtOp1->gtFlags & GTF_LATE_ARG) != 0;
-        fgArgTabEntryPtr fgEntryPtr = gtArgEntryByNode(call, args->gtOp.gtOp1);
-        assert(fgEntryPtr != nullptr);
-        GenTreePtr argx     = fgEntryPtr->node;
-        GenTreePtr lateList = nullptr;
-        GenTreePtr lateNode = nullptr;
-
-        if (isLateArg)
-        {
-            for (GenTreePtr list = call->gtCallLateArgs; list; list = list->MoveNext())
-            {
-                assert(list->OperIsList());
-
-                GenTreePtr argNode = list->Current();
-                if (argx == argNode)
-                {
-                    lateList = list;
-                    lateNode = argNode;
-                    break;
-                }
-            }
-            assert(lateList != nullptr && lateNode != nullptr);
-        }
-
-        GenTreePtr arg = argx;
-
-        if (arg->TypeGet() == TYP_STRUCT)
-        {
-            // If we have already processed the arg...
-            if (arg->OperGet() == GT_FIELD_LIST && varTypeIsStruct(arg))
-            {
-                continue;
-            }
-
-            // If already OBJ it is set properly already.
-            if (arg->OperGet() == GT_OBJ)
-            {
-                continue;
-            }
-
-            assert(arg->OperGet() == GT_LCL_VAR || arg->OperGet() == GT_LCL_FLD ||
-                   (arg->OperGet() == GT_ADDR &&
-                    (arg->gtOp.gtOp1->OperGet() == GT_LCL_FLD || arg->gtOp.gtOp1->OperGet() == GT_LCL_VAR)));
-
-            GenTreeLclVarCommon* lclCommon =
-                arg->OperGet() == GT_ADDR ? arg->gtOp.gtOp1->AsLclVarCommon() : arg->AsLclVarCommon();
-
-            // If we didn't change the type of the struct, it means
-            // its classification doesn't support to be passed directly through a
-            // register, so we need to pass a pointer to the destination where
-            // where we copied the struct to.
-            // Make sure this is an addr node.
-            if (arg->OperGet() != GT_ADDR && arg->OperGet() != GT_LCL_VAR_ADDR)
-            {
-                arg = gtNewOperNode(GT_ADDR, TYP_I_IMPL, arg);
-            }
-
-            assert(arg->OperGet() == GT_ADDR || arg->OperGet() == GT_LCL_VAR_ADDR);
-
-            // Create an Obj of the temp to use it as a call argument.
-            arg = gtNewObjNode(lvaGetStruct(lclCommon->gtLclNum), arg);
-        }
-
-        // Did we replace 'argx' with a new tree?
-        if (argx != arg)
-        {
-            fgEntryPtr->node = arg; // Record the new value for the arg in the fgEntryPtr->node
-
-            // link the new arg node into either the late arg list or the gtCallArgs list
-            if (isLateArg)
-            {
-                lateList->gtOp.gtOp1 = arg;
-            }
-            else
-            {
-                args->gtOp.gtOp1 = arg;
-            }
-        }
-    }
-
-    // Update the flags
-    call->gtFlags |= (flagsSummary & GTF_ALL_EFFECT);
-}
-#endif // _TARGET_ARM_
-
 //-----------------------------------------------------------------------------
 // fgMorphMultiregStructArgs:  Locate the TYP_STRUCT arguments and
 //                             call fgMorphMultiregStructArg on each of them.
@@ -4879,15 +4766,33 @@ GenTreePtr Compiler::fgMorphMultiregStructArg(GenTreePtr arg, fgArgTabEntryPtr f
 #endif
 
 #ifdef _TARGET_ARM_
-    if (fgEntryPtr->isSplit)
+    if ((fgEntryPtr->isSplit && fgEntryPtr->numSlots + fgEntryPtr->numRegs > 4) ||
+        (!fgEntryPtr->isSplit && !fgEntryPtr->isHfaRegArg && fgEntryPtr->regNum == REG_STK))
     {
-        if (fgEntryPtr->numSlots + fgEntryPtr->numRegs > 4)
+        // If already OBJ it is set properly already.
+        if (arg->OperGet() == GT_OBJ)
         {
             return arg;
         }
-    }
-    else if (!fgEntryPtr->isHfaRegArg && fgEntryPtr->numSlots > 4)
-    {
+
+        GenTreeLclVarCommon* lclCommon =
+            arg->OperGet() == GT_ADDR ? arg->gtOp.gtOp1->AsLclVarCommon() : arg->AsLclVarCommon();
+
+        // If we didn't change the type of the struct, it means
+        // its classification doesn't support to be passed directly through a
+        // register, so we need to pass a pointer to the destination where
+        // where we copied the struct to.
+        // Make sure this is an addr node.
+        if (arg->OperGet() != GT_ADDR && arg->OperGet() != GT_LCL_VAR_ADDR)
+        {
+            arg = gtNewOperNode(GT_ADDR, TYP_I_IMPL, arg);
+        }
+
+        assert(arg->OperGet() == GT_ADDR || arg->OperGet() == GT_LCL_VAR_ADDR);
+
+        // Create an Obj of the temp to use it as a call argument.
+        arg = gtNewObjNode(lvaGetStruct(lclCommon->gtLclNum), arg);
+
         return arg;
     }
 #endif
