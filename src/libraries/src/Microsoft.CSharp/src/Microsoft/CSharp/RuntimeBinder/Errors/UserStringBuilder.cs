@@ -12,7 +12,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
 {
     internal sealed class UserStringBuilder
     {
-        private bool fHadUndisplayableStringInError;
         private bool m_buildingInProgress;
         private GlobalSymbolContext m_globalSymbols;
         private StringBuilder m_strBuilder;
@@ -21,7 +20,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
             GlobalSymbolContext globalSymbols)
         {
             Debug.Assert(globalSymbols != null);
-            fHadUndisplayableStringInError = false;
             m_buildingInProgress = false;
             m_globalSymbols = globalSymbols;
         }
@@ -39,17 +37,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
             m_buildingInProgress = false;
             s = m_strBuilder.ToString();
             m_strBuilder = null;
-        }
-
-
-        public bool HadUndisplayableString()
-        {
-            return fHadUndisplayableStringInError;
-        }
-
-        public void ResetUndisplayableStringFlag()
-        {
-            fHadUndisplayableStringInError = false;
         }
 
         private void ErrSK(out string psz, SYMKIND sk)
@@ -146,8 +133,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         }
         private void ErrAppendName(Name name)
         {
-            CheckDisplayableName(name);
-
             if (name == NameManager.GetPredefinedName(PredefinedName.PN_INDEXERINTERNAL))
             {
                 ErrAppendString("this");
@@ -756,19 +741,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
             }
 
             return result;
-        }
-
-        private bool IsDisplayableName(Name name)
-        {
-            return name != NameManager.GetPredefinedName(PredefinedName.PN_MISSING);
-        }
-
-        private void CheckDisplayableName(Name name)
-        {
-            if (!IsDisplayableName(name))
-            {
-                fHadUndisplayableStringInError = true;
-            }
         }
 
         private NameManager GetNameManager()
