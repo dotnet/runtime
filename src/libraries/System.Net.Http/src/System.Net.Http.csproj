@@ -119,20 +119,22 @@
   </ItemGroup>
   <!-- Managed HttpClientHandler implementation -->
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
-    <Compile Include="System\Net\Http\Managed\ManagedHandler.cs" />
+    <Compile Include="System\Net\Http\Managed\AuthenticationHandler.cs" />
+    <Compile Include="System\Net\Http\Managed\AutoRedirectHandler.cs" />
+    <Compile Include="System\Net\Http\Managed\BasicAuthenticationHelper.cs" />
     <Compile Include="System\Net\Http\Managed\ConnectHelper.cs" />
+    <Compile Include="System\Net\Http\Managed\CookieHandler.cs" />
+    <Compile Include="System\Net\Http\Managed\DecompressionHandler.cs" />
     <Compile Include="System\Net\Http\Managed\HttpConnection.cs" />
     <Compile Include="System\Net\Http\Managed\HttpConnectionHandler.cs" />
     <Compile Include="System\Net\Http\Managed\HttpConnectionKey.cs" />
     <Compile Include="System\Net\Http\Managed\HttpConnectionPool.cs" />
-    <Compile Include="System\Net\Http\Managed\AuthenticationHandler.cs" />
-    <Compile Include="System\Net\Http\Managed\AutoRedirectHandler.cs" />
-    <Compile Include="System\Net\Http\Managed\BasicAuthenticationHelper.cs" />
-    <Compile Include="System\Net\Http\Managed\CookieHandler.cs" />
-    <Compile Include="System\Net\Http\Managed\DecompressionHandler.cs" />
-    <Compile Include="System\Net\Http\Managed\HttpContentWriteStream.cs" />
+    <Compile Include="System\Net\Http\Managed\HttpConnectionPools.cs" />
+    <Compile Include="System\Net\Http\Managed\HttpConnectionSettings.cs" />
     <Compile Include="System\Net\Http\Managed\HttpContentReadStream.cs" />
+    <Compile Include="System\Net\Http\Managed\HttpContentWriteStream.cs" />
     <Compile Include="System\Net\Http\Managed\HttpProxyConnectionHandler.cs" />
+    <Compile Include="System\Net\Http\Managed\ManagedHandler.cs" />
   </ItemGroup>
   <!-- Common, except for Windows net46 build -->
   <ItemGroup Condition="'$(TargetGroup)' != 'net46'  And '$(TargetGroup)' != 'netfx'">
@@ -435,6 +437,7 @@
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Threading.Tasks.Extensions" />
+    <Reference Include="System.Threading.Timer" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Reference Include="System.Security.Cryptography.Algorithms" />
