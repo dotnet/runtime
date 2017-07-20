@@ -54,9 +54,6 @@
   <data name="BadBinaryOps" xml:space="preserve">
     <value>El operador '{0}' no se puede aplicar a operandos del tipo '{1}' y '{2}'</value>
   </data>
-  <data name="IntDivByZero" xml:space="preserve">
-    <value>División por cero constante</value>
-  </data>
   <data name="BadIndexLHS" xml:space="preserve">
     <value>No se puede aplicar la indización con [] a una expresión del tipo '{0}'</value>
   </data>
@@ -138,12 +135,6 @@
   <data name="RefProperty" xml:space="preserve">
     <value>Una propiedad o un indizador no se puede pasar como parámetro out o ref</value>
   </data>
-  <data name="ManagedAddr" xml:space="preserve">
-    <value>No se puede adquirir la dirección, obtener el tamaño ni declarar un puntero a un tipo administrado ('{0}')</value>
-  </data>
-  <data name="FixedNotNeeded" xml:space="preserve">
-    <value>No se puede utilizar la instrucción fixed para adquirir la dirección de una expresión de tipo fixed</value>
-  </data>
   <data name="UnsafeNeeded" xml:space="preserve">
     <value>No se pueden usar llamadas dinámicas en combinación con los punteros.</value>
   </data>
@@ -152,9 +143,6 @@
   </data>
   <data name="MustHaveOpTF" xml:space="preserve">
     <value>El tipo ('{0}') debe incluir declaraciones de operador true y operador false.</value>
-  </data>
-  <data name="CheckedOverflow" xml:space="preserve">
-    <value>La operación se desborda en tiempo de compilación en modo comprobado</value>
   </data>
   <data name="ConstOutOfRangeChecked" xml:space="preserve">
     <value>El valor constante '{0}' no se puede convertir en '{1}' (use la sintaxis 'unchecked' para invalidar el valor)</value>
@@ -165,17 +153,11 @@
   <data name="SizeofUnsafe" xml:space="preserve">
     <value>'{0}' no tiene un tamaño predefinido; por tanto, sizeof sólo se puede usar en un contexto no seguro (use System.Runtime.InteropServices.Marshal.SizeOf).</value>
   </data>
-  <data name="FieldInitRefNonstatic" xml:space="preserve">
-    <value>Un inicializador de campo no puede hacer referencia al campo, método o propiedad no estáticos '{0}'</value>
-  </data>
   <data name="CallingFinalizeDepracated" xml:space="preserve">
     <value>Los destructores y object.Finalize no se pueden llamar directamente. Llame a IDisposable.Dispose si está disponible.</value>
   </data>
   <data name="CallingBaseFinalizeDeprecated" xml:space="preserve">
     <value>No llame directamente al método Finalize de la clase base. Se llama automáticamente desde el destructor.</value>
-  </data>
-  <data name="BadCastInFixed" xml:space="preserve">
-    <value>El lado derecho de una asignación de instrucción fixed puede no ser una expresión de conversión</value>
   </data>
   <data name="NoImplicitConvCast" xml:space="preserve">
     <value>No se puede convertir implícitamente el tipo '{0}' en '{1}'. Ya existe una conversión explícita (compruebe si le falta una conversión).</value>
@@ -234,23 +216,11 @@
   <data name="ValConstraintNotSatisfied" xml:space="preserve">
     <value>El tipo '{2}' debe ser un tipo de valor que no acepte valores NULL para poder usarlo como parámetro '{1}' en el tipo o método genérico '{0}'.</value>
   </data>
-  <data name="CircularConstraint" xml:space="preserve">
-    <value>Dependencia de restricción circular que implica '{0}' y '{1}'</value>
-  </data>
-  <data name="BaseConstraintConflict" xml:space="preserve">
-    <value>El parámetro de tipo '{0}' hereda las restricciones conflictivas '{1}' y '{2}'</value>
-  </data>
-  <data name="ConWithValCon" xml:space="preserve">
-    <value>El parámetro de tipo '{1}' tiene la restricción 'struct'; por tanto,  '{1}' no se puede usar como restricción para  '{0}'</value>
-  </data>
   <data name="AmbigUDConv" xml:space="preserve">
     <value>Conversiones ambiguas definidas por el usuario '{0}' y '{1}' al convertir de '{2}' a '{3}'</value>
   </data>
   <data name="PredefinedTypeNotFound" xml:space="preserve">
     <value>El tipo predefinido '{0}' no está definido ni importado.</value>
-  </data>
-  <data name="PredefinedTypeBadType" xml:space="preserve">
-    <value>Tipo predefinido '{0}' declarado incorrectamente.</value>
   </data>
   <data name="BindToBogus" xml:space="preserve">
     <value>'{0}' no es compatible con el lenguaje</value>
@@ -266,9 +236,6 @@
   </data>
   <data name="LiteralDoubleCast" xml:space="preserve">
     <value>El literal de tipo double no se puede convertir implícitamente en el tipo '{1}'; use un sufijo '{0}' para crear un literal de este tipo</value>
-  </data>
-  <data name="UnifyingInterfaceInstantiations" xml:space="preserve">
-    <value>'{0}' no puede implementar tanto '{1}' como '{2}' porque se pueden unificar para algunas sustituciones de parámetros de tipo.</value>
   </data>
   <data name="ConvertToStaticClass" xml:space="preserve">
     <value>No se puede convertir en el tipo estático '{0}'</value>
@@ -347,9 +314,6 @@
   </data>
   <data name="RefReadonlyLocalCause" xml:space="preserve">
     <value>No se puede pasar '{0}' como argumento out o ref porque es '{1}'.</value>
-  </data>
-  <data name="ThisStructNotInAnonMeth" xml:space="preserve">
-    <value>Los métodos anónimos, las expresiones lambda y las expresiones de consulta incluidos en structs no pueden obtener acceso a miembros de instancia de 'this'. Copie 'this' en una variable local fuera del método anónimo, la expresión lambda o la expresión de consulta y use la variable local en su lugar.</value>
   </data>
   <data name="DelegateOnNullable" xml:space="preserve">
     <value>No se puede enlazar el delegado para '{0}' porque es un miembro de 'System.Nullable&lt;T&gt;'</value>
