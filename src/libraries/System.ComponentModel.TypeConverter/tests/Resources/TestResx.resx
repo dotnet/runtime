@@ -58,22 +58,34 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="" xml:space="preserve">
+  <data name="_" xml:space="preserve">
     <value>No Name</value>
   </data>
-  <data name="Object" xml:space="preserve">
-    <value>Value-One</value>
+  <data name="Default" xml:space="preserve">
+    <value>Default</value>
+  </data>
+  <data name="Default-GetSetProperty" xml:space="preserve">
+    <value>DefaultGetSetProperty</value>
+  </data>
+  <data name="Default-NoSuchProperty" xml:space="preserve">
+    <value>DefaultNoSuchProperty</value>
+  </data>
+  <data name="Default-GetOnlyProperty" xml:space="preserve">
+    <value>DefaultGetOnlyProperty</value>
+  </data>
+  <data name="Default-PrivateProperty" xml:space="preserve">
+    <value>DefaultPrivateProperty</value>
   </data>
   <data name="Object.GetSetProperty" xml:space="preserve">
-    <value>One</value>
+    <value>ObjectGetSetProperty</value>
   </data>
   <data name="Object.NoSuchProperty" xml:space="preserve">
-    <value>Second</value>
+    <value>ObjectNoSuchProperty</value>
   </data>
   <data name="Object.GetOnlyProperty" xml:space="preserve">
-    <value>Third</value>
+    <value>ObjectGetOnlyProperty</value>
   </data>
   <data name="Object.PrivateProperty" xml:space="preserve">
-    <value>Third</value>
+    <value>ObjectPrivateProperty</value>
   </data>
 </root>
