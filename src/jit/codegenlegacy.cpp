@@ -2001,16 +2001,16 @@ void CodeGen::genRangeCheck(GenTreePtr oper)
     // Free the registers that were used.
     if (!index->IsCnsIntOrI())
     {
-        regSet.rsMarkRegFree(index->gtRegNum, index);
+        genReleaseReg(index);
     }
 
     if (arrRef != NULL)
     {
-        regSet.rsMarkRegFree(arrRef->gtRegNum, arrRef);
+        genReleaseReg(arrRef);
     }
     else if (!arrLen->IsCnsIntOrI())
     {
-        regSet.rsMarkRegFree(arrLen->gtRegNum, arrLen);
+        genReleaseReg(arrLen);
     }
 }
 
