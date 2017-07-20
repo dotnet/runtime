@@ -21,7 +21,7 @@ namespace System.Net.Http
         /// <summary>The pools, indexed by endpoint.</summary>
         private readonly ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool> _pools;
         /// <summary>Timer used to initiate cleaning of the pools.</summary>
-        private readonly Timer _cleaningTimer;
+        private readonly Timer _cleaningTimer; // TODO: Consider changing this to stop when _pools is empty.
         /// <summary>The maximum number of connections allowed per pool. <see cref="int.MaxValue"/> indicates unlimited.</summary>
         private readonly int _maxConnectionsPerServer;
 
@@ -39,13 +39,6 @@ namespace System.Net.Http
         /// <returns>The retrieved pool.</returns>
         public HttpConnectionPool GetOrAddPool(HttpConnectionKey key) =>
             _pools.GetOrAdd(key, (k, s) => new HttpConnectionPool(s), _maxConnectionsPerServer);
-
-        /// <summary>Gets a pool for the specified endpoint, if one exists.</summary>
-        /// <param name="key"></param>
-        /// <param name="pool"></param>
-        /// <returns></returns>
-        public bool TryGetPool(HttpConnectionKey key, out HttpConnectionPool pool) =>
-            _pools.TryGetValue(key, out pool);
 
         /// <summary>Disposes of the pools, disposing of each individual pool.</summary>
         public void Dispose()

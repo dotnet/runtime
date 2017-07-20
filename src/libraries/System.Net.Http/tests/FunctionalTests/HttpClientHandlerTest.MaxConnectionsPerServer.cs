@@ -65,6 +65,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(2, 2, true)]
         [InlineData(3, 2, false)]
         [InlineData(3, 2, true)]
+        [InlineData(3, 5, false)]
         public async Task GetAsync_MaxLimited_ConcurrentCallsStillSucceed(int maxConnections, int numRequests, bool secure)
         {
             using (var client = new HttpClient(new HttpClientHandler { MaxConnectionsPerServer = maxConnections }))
