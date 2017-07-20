@@ -6,6 +6,14 @@
     <PrereleaseResolveNuGetPackages>true</PrereleaseResolveNuGetPackages>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <!--
+      If we are stabilizing set the StableVersion property for the packages.
+      Needs to happen in dir.targets to allow all the pkgproj's to set Version property first.
+    -->
+    <StableVersion Condition="'$(StabilizePackageVersion)' =='true'">$(Version)</StableVersion>
+  </PropertyGroup>
+
   <!--
     Finds symbol files and injects them into the package build.
   -->
@@ -58,7 +66,7 @@
           DestinationFolder="%(_SymbolsFiles.DestinationFolder)" />
   </Target>
 
-  <!-- override GetPackageIdentity so that it doesn't attempt to gather 
+  <!-- override GetPackageIdentity so that it doesn't attempt to gather
        files from runtime dependencies,  this prevents folks from needing
        packages that don't apply to their local OS.
        https://github.com/dotnet/buildtools/issues/1273 -->
@@ -73,7 +81,7 @@
 
   <!-- override AssignPkgProjPackageDependenciesTargetFramework so that
        it doesn't attempt to resolve all files in order to get dependency
-       TargetFrameworks.  
+       TargetFrameworks.
        https://github.com/dotnet/buildtools/issues/1273 -->
   <Target Name="AssignPkgProjPackageDependenciesTargetFramework" DependsOnTargets="GetPkgProjPackageDependencies">
     <SplitDependenciesBySupport Condition="'$(SplitDependenciesBySupport)' == 'true'" OriginalDependencies="@(PkgProjDependency)">
@@ -107,5 +115,5 @@
               ItemName="Dependency" />
     </MSBuild>
   </Target>
-  
+
 </Project>
