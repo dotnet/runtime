@@ -4,7 +4,7 @@
   <PropertyGroup>
     <!-- we intentionally don't want to produce output -->
     <OutputPath>unused</OutputPath>
-    <!-- we don't want any analyzers by ResolveNuGetPackageAssets 
+    <!-- we don't want any analyzers by ResolveNuGetPackageAssets
          null-refs when this isn't set and an analyzer is in the packages -->
     <Language>unused</Language>
     <NuGetTargetMoniker>.NETCoreApp,Version=v2.0</NuGetTargetMoniker>
@@ -23,7 +23,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Private.CoreFx.NETCoreApp">
-      <Version>$(CoreFxVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxNETCoreAppPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="transport.Microsoft.NETCore.Runtime.CoreCLR">
       <Version>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</Version>
@@ -40,7 +40,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' == ''">
-    <!-- Bring in Platforms for RID graph, NETStandard.Library for build-tools, 
+    <!-- Bring in Platforms for RID graph, NETStandard.Library for build-tools,
          Targets for an empty runtime.json to reduce conflicts from 1.x packages -->
     <DependenciesToPackage Include="NETStandard.Library" />
     <DependenciesToPackage Include="Microsoft.NETCore.Platforms" />
@@ -68,11 +68,11 @@
       <_runtimePackageId>%(_runtimeCLR.NuGetPackageId)</_runtimePackageId>
       <_runtimePackageVersion>%(_runtimeCLR.NuGetPackageVersion)</_runtimePackageVersion>
       <_runtimePackagePath>$(PackagesDir)/$(_runtimePackageId.ToLowerInvariant())/$(_runtimePackageVersion)</_runtimePackagePath>
-      
+
       <_crossGenPath>$(_runtimePackagePath)/tools$(_crossDir)/crossgen$(ApplicationFileExtension)</_crossGenPath>
       <_runtimeDirectory>%(_runtimeCLR.RootDir)%(_runtimeCLR.Directory)</_runtimeDirectory>
     </PropertyGroup>
-    
+
     <PropertyGroup Condition="'@(_runtimeCoreLib)' != ''">
       <_coreLibDirectory>%(_runtimeCoreLib.RootDir)%(_runtimeCoreLib.Directory)</_coreLibDirectory>
     </PropertyGroup>
@@ -84,7 +84,7 @@
       <_jitPath>%(_runtimeJIT.FullPath)</_jitPath>
       <_jitPath Condition="'$(_crossDir)' != ''">$(_jitPackagePath)/runtimes$(_crossDir)/native/$(LibraryFilePrefix)clrjit$(LibraryFileExtension)</_jitPath>
     </PropertyGroup>
-    
+
     <PropertyGroup Condition="'@(_fxSystemRuntime)' != ''">
       <_fxLibDirectory>%(_fxSystemRuntime.RootDir)%(_fxSystemRuntime.Directory)</_fxLibDirectory>
     </PropertyGroup>
@@ -100,7 +100,7 @@
 
   <Target Name="GenerateHashVersionsFile" DependsOnTargets="GetPackagePaths;ResolveNuGetPackages">
     <PropertyGroup>
-      <CoreFxVersionFile 
+      <CoreFxVersionFile
         Condition="$([System.String]::new('%(Reference.Identity)').ToLowerInvariant().Contains('system.runtime.dll'))">
           $(PackagesDir)$([System.String]::new('%(Reference.NuGetPackageId)').ToLowerInvariant())/%(Reference.NuGetPackageVersion)/version.txt
       </CoreFxVersionFile>
@@ -135,7 +135,7 @@
     <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' != ''">
       <!-- RID-specific: include all runtime files -->
       <FilesToPackage Include="@(ReferenceCopyLocalPaths)">
-        <!-- ResolveNugetPackageAssets doesn't preserve the asset type (native), 
+        <!-- ResolveNugetPackageAssets doesn't preserve the asset type (native),
              calculate it by looking for native in the path -->
         <IsNative Condition="$([System.String]::new('%(Identity)').ToLowerInvariant().Replace('\', '/').Contains('/native/'))">true</IsNative>
       </FilesToPackage>
@@ -157,7 +157,7 @@
 
       <!-- include all doc files -->
       <_docFilesToPackage Include="%(FilesToPackage.RootDir)%(FilesToPackage.Directory)**\%(FilesToPackage.FileName).xml" />
-      
+
       <FilesToPackage Include="@(_docFilesToPackage)">
         <TargetPath>ref/$(PackageTargetFramework)/%(RecursiveDir)</TargetPath>
       </FilesToPackage>
@@ -215,7 +215,7 @@
       </_filesToCrossGen>
 
       <FilesToPackage Remove="@(_filesToCrossGen)" />
-      
+
       <_crossGenedFilesToPackage Include="@(_filesToCrossGen->'%(CrossGenedPath)')" />
       <FilesToPackage Include="@(_crossGenedFilesToPackage)" />
     </ItemGroup>
@@ -228,7 +228,7 @@
       <!-- the following path must be passed to crossgen to locate all dependencies. -->
       <_crossgenPlatformDirectories Include="%(_filesToCrossGen.RootDir)%(_filesToCrossGen.Directory)" />
     </ItemGroup>
-    
+
     <PropertyGroup>
       <!-- Use PathSeparator so that we get a ':' on unix and ';' on windows
            Escape the value so that the ';' doesn't result multiple lines when writing to the RSP file -->
@@ -261,7 +261,7 @@
 
     <Exec Command="$(_crossGenPath) @$(_crossGenResponseFile)" WorkingDirectory="$(_clrDirectory)" EnvironmentVariables="COMPlus_PartialNGen=0" />
   </Target>
-  
+
   <Target Name="CreateCrossGenSymbols"
           Condition="'$(CrossGenSymbolExtension)' != ''"
           DependsOnTargets="CreateCrossGenImages"
@@ -273,7 +273,7 @@
       <_crossGenSymbolsOptionName Condition="'$(_crossGenSymbolsOptionName)' == ''">CreatePerfMap</_crossGenSymbolsOptionName>
       <_crossGenSymbolsOutputDirectory>$(CrossGenSymbolsOutputPath)/%(_filesToCrossGen.TargetPath)</_crossGenSymbolsOutputDirectory>
     </PropertyGroup>
-    
+
     <ItemGroup>
       <_crossGenSymbolsArgs Include="-readytorun" />
       <_crossGenSymbolsArgs Include="-platform_assemblies_paths %(_filesToCrossGen.CrossGenedDirectory)$(_pathSeparatorEscaped)$(_coreLibDirectory)" />
@@ -283,9 +283,9 @@
     </ItemGroup>
 
     <WriteLinesToFile File="$(_crossGenSymbolsResponseFile)" Lines="@(_crossGenSymbolsArgs)" Overwrite="true" />
-    
+
     <MakeDir Directories="$(_crossGenSymbolsOutputDirectory)" />
-    
+
     <Exec Command="$(_crossGenPath) @$(_crossGenSymbolsResponseFile)" WorkingDirectory="$(_clrDirectory)" EnvironmentVariables="COMPlus_PartialNGen=0" />
 
     <Touch Files="%(_filesToCrossGen.CrossGenSymbolSemaphorePath)" AlwaysCreate="true" />
@@ -305,7 +305,7 @@
       </FilesToPackage>
     </ItemGroup>
   </Target>
-  
+
   <Target Name="GetFilesToPackage"
           DependsOnTargets="ResolveNuGetPackages;GetFilesFromPackages;PrepareForCrossGen;GetCrossGenSymbolsFiles"
           Returns="@(FilesToPackage)" />
@@ -320,10 +320,10 @@
 
     <Message Importance="low" Text="%(_DependenciesToPackageWithVersion.Identity) : %(_DependenciesToPackageWithVersion.Version) : %(_DependenciesToPackageWithVersion.TargetFramework)" />
   </Target>
- 
+
   <!-- Run crossgen -->
   <Target Name="Build" DependsOnTargets="GenerateHashVersionsFile;CrossGen;GetFilesToPackage" />
-  
+
   <!-- remove when fixing https://github.com/dotnet/buildtools/issues/1273 -->
   <Target Name="DetermineRuntimeDependencies" />
 </Project>
