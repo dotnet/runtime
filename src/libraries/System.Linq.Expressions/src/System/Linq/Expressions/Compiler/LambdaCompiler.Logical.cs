@@ -146,17 +146,20 @@ namespace System.Linq.Expressions.Compiler
                 // emit call to invoke
                 _ilg.Emit(OpCodes.Callvirt, b.Conversion.Type.GetInvokeMethod());
             }
-            else if (!TypeUtils.AreEquivalent(b.Type, nnLeftType))
+            else if (TypeUtils.AreEquivalent(b.Type, b.Left.Type))
             {
-                _ilg.Emit(OpCodes.Ldloca, loc);
-                _ilg.EmitGetValueOrDefault(b.Left.Type);
-                _ilg.EmitConvertToType(nnLeftType, b.Type, isChecked: true, locals: this);
+                _ilg.Emit(OpCodes.Ldloc, loc);
             }
             else
             {
                 _ilg.Emit(OpCodes.Ldloca, loc);
                 _ilg.EmitGetValueOrDefault(b.Left.Type);
+                if (!TypeUtils.AreEquivalent(b.Type, nnLeftType))
+                {
+                    _ilg.EmitConvertToType(nnLeftType, b.Type, isChecked: true, locals: this);
+                }
             }
+
             FreeLocal(loc);
 
             _ilg.Emit(OpCodes.Br, labEnd);
