@@ -31161,7 +31161,7 @@ RelativePath=JIT\Directed\rvastatics\rvastatic2\rvastatic2.cmd
 WorkingDir=JIT\Directed\rvastatics\rvastatic2
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL
+Categories=EXPECTED_FAIL;2451;EXCLUDED;RVA_STATIC
 HostStyle=0
 
 [GCSimulator_211.cmd_3896]
@@ -40441,7 +40441,7 @@ RelativePath=JIT\Directed\rvastatics\rvastatic3\rvastatic3.cmd
 WorkingDir=JIT\Directed\rvastatics\rvastatic3
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_FAIL
+Categories=EXPECTED_FAIL;2451;EXCLUDED;RVA_STATIC
 HostStyle=0
 
 [CallingConventionsExplicitThis.cmd_5056]
