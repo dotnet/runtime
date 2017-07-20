@@ -512,6 +512,11 @@ mini_regression (MonoImage *image, int verbose, int *total_run)
 		}
 	} else {
 		for (opt = 0; opt < G_N_ELEMENTS (opt_sets); ++opt) {
+			/* builtin-types.cs needs OPT_INTRINS enabled */
+			if (!strcmp ("builtin-types", image->assembly_name))
+				if (!(opt_sets [opt] & MONO_OPT_INTRINS))
+					continue;
+
 			mini_regression_step (image, verbose, total_run, &total,
 					opt_sets [opt] & ~exclude,
 					timer, domain);

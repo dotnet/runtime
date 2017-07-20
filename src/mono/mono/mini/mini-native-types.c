@@ -352,6 +352,9 @@ mono_class_is_magic_assembly (MonoClass *klass)
 		return TRUE;
 	if (!strcmp ("Xamarin.WatchOS", klass->image->assembly_name))
 		return TRUE;
+	/* regression test suite */
+	if (!strcmp ("builtin-types", klass->image->assembly_name))
+		return TRUE;
 	return FALSE;
 }
 

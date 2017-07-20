@@ -494,6 +494,7 @@ test_sources = 			\
 	basic-calls.cs 		\
 	basic-long.cs 		\
 	bench.cs 		\
+	builtin-types.cs 	\
 	objects.cs 		\
 	arrays.cs		\
 	basic-float.cs		\
@@ -519,6 +520,7 @@ regtests_UNIVERSAL = \
 	basic-float.exe \
 	basic-long.exe \
 	basic-calls.exe \
+	builtin-types.exe \
 	objects.exe \
 	arrays.exe \
 	basic-math.exe \
@@ -533,7 +535,7 @@ regtests_UNIVERSAL = \
 regtests_DISABLED = 
 
 if FULL_AOT_TESTS
-regtests_DISABLED += 
+regtests_DISABLED += builtin-types.exe
 endif
 
 regtests = $(filter-out $(regtests_DISABLED),$(regtests_UNIVERSAL))
@@ -650,6 +652,9 @@ basic-simd.exe: basic-simd.cs TestDriver.dll
 
 basic-vectors.exe: basic-vectors.cs TestDriver.dll
 	$(MCS) -out:$@ $(CSFLAGS) $< -r:TestDriver.dll -r:$(CLASS)/System.Numerics.dll -r:$(CLASS)/System.Numerics.Vectors.dll
+
+builtin-types.exe: builtin-types.cs TestDriver.dll
+	$(MCS) -out:$@ $(CSFLAGS) -define:ARCH_$(shell echo $$((8 * $(SIZEOF_VOID_P)))) $< -r:TestDriver.dll
 
 nacl.exe: nacl.cs TestDriver.dll
 	$(MCS) -out:$@ $(CSFLAGS) $< -r:TestDriver.dll -r:$(CLASS)/Mono.Simd.dll

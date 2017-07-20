@@ -3532,6 +3532,8 @@ else
    AC_DEFINE(SIZEOF_REGISTER,SIZEOF_VOID_P,[size of machine integer registers])
 fi
 
+AC_SUBST(SIZEOF_VOID_P,[$ac_cv_sizeof_void_p])
+
 if test "x$target_byte_order" = "xG_BIG_ENDIAN"; then
    AC_DEFINE(TARGET_BYTE_ORDER,G_BIG_ENDIAN,[byte order of target])
 elif test "x$target_byte_order" = "xG_LITTLE_ENDIAN"; then
