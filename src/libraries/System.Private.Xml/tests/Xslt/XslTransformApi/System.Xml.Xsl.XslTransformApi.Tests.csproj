@@ -13,7 +13,6 @@
     <Compile Include="CXmlCache.cs" />
     <Compile Include="CXslTArgumentList.cs" />
     <Compile Include="CXsltArgumentListMultith.cs" />
-    <Compile Include="CXsltChecksum.cs" />
     <Compile Include="CXslTransform.cs" />
     <Compile Include="CXslTransformMultith.cs" />
     <Compile Include="DataHelper.cs" />
