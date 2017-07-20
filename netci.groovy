@@ -1634,6 +1634,14 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} -priority=1"
                     }
                     else if (lowerConfiguration == "checked") {
+
+                        if ((scenario != 'gcstress0x3') && (scenario != 'gcstress0xc'))
+                        {
+                           // Up the timeout for arm checked testing only.
+                           // Keep the longer timeout for gcstress.
+                           Utilities.setJobTimeout(newJob, 240)
+                        }
+
                         def machineAffinityOptions = ['use_arm64_build_machine' : true]
                         setMachineAffinity(newJob, os, architecture, machineAffinityOptions)
                         // For checked runs we will also run testing.
