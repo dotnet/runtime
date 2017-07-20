@@ -15,12 +15,13 @@ namespace System.Net.Http
 {
     internal sealed class HttpConnection : IDisposable
     {
-        private const int BufferSize =
+        private const int InitialReadBufferSize =
 #if DEBUG
             10;
 #else
             4096;
 #endif
+        private const int InitialWriteBufferSize = InitialReadBufferSize;
 
         private static readonly byte[] s_contentLength0NewlineAsciiBytes = Encoding.ASCII.GetBytes("Content-Length: 0\r\n");
         private static readonly byte[] s_spaceHttp11NewlineAsciiBytes = Encoding.ASCII.GetBytes(" HTTP/1.1\r\n");
@@ -39,7 +40,7 @@ namespace System.Net.Http
         private int _writeOffset;
 
         private Task<int> _readAheadTask;
-        private readonly byte[] _readBuffer;
+        private byte[] _readBuffer;
         private int _readOffset;
         private int _readLength;
 
@@ -217,74 +218,65 @@ namespace System.Net.Http
             {
                 Debug.Assert(_chunkBytesRemaining == 0);
 
-                // Start of chunk, read chunk size
-                int chunkSize = 0;
-                char c = await _connection.ReadCharAsync(cancellationToken).ConfigureAwait(false);
-                while (true)
+                // Start of chunk, read chunk size.
+                int chunkSize = ParseHexSize(await _connection.ReadNextLineAsync(cancellationToken).ConfigureAwait(false));
+                _chunkBytesRemaining = chunkSize;
+
+                if (chunkSize > 0)
                 {
-                    // Get hex digit
+                    return true;
+                }
+
+                // Indicates end of response body. We expect final CRLF after this.
+                if ((await _connection.ReadNextLineAsync(cancellationToken).ConfigureAwait(false)).Count != 2) // \r\n
+                {
+                    throw new IOException("missing final CRLF for chunked encoding");
+                }
+
+                _connection.ReturnConnectionToPool();
+                _connection = null;
+                return false;
+            }
+
+            private int ParseHexSize(ArraySegment<byte> line)
+            {
+                // TODO #21452: Handle overflow of size
+                long size = 0;
+                for (int i = 0; i < line.Count; i++)
+                {
+                    char c = (char)line[i];
                     if ((uint)(c - '0') <= '9' - '0')
                     {
-                        chunkSize = chunkSize * 16 + (c - '0');
+                        size = size * 16 + (c - '0');
                     }
                     else if ((uint)(c - 'a') <= ('f' - 'a'))
                     {
-                        chunkSize = chunkSize * 16 + (c - 'a' + 10);
+                        size = size * 16 + (c - 'a' + 10);
                     }
                     else if ((uint)(c - 'A') <= ('F' - 'A'))
                     {
-                        chunkSize = chunkSize * 16 + (c - 'A' + 10);
+                        size = size * 16 + (c - 'A' + 10);
+                    }
+                    else if (c == '\r')
+                    {
+                        break;
                     }
                     else
                     {
                         throw new IOException("Invalid chunk size in response stream");
                     }
-
-                    c = await _connection.ReadCharAsync(cancellationToken).ConfigureAwait(false);
-                    if (c == '\r')
-                    {
-                        if (await _connection.ReadCharAsync(cancellationToken).ConfigureAwait(false) != '\n')
-                        {
-                            throw new IOException("Saw CR without LF while parsing chunk size");
-                        }
-
-                        break;
-                    }
                 }
-
-                _chunkBytesRemaining = chunkSize;
-                if (chunkSize == 0)
-                {
-                    // Indicates end of response body
-
-                    // We expect final CRLF after this
-                    if (await _connection.ReadByteAsync(cancellationToken).ConfigureAwait(false) != (byte)'\r' ||
-                        await _connection.ReadByteAsync(cancellationToken).ConfigureAwait(false) != (byte)'\n')
-                    {
-                        throw new IOException("missing final CRLF for chunked encoding");
-                    }
-
-                    _connection.ReturnConnectionToPool();
-                    _connection = null;
-                    return false;
-                }
-
-                return true;
+                return (int)size;
             }
 
             private async Task ConsumeChunkBytes(int bytesConsumed, CancellationToken cancellationToken)
             {
                 Debug.Assert(bytesConsumed <= _chunkBytesRemaining);
                 _chunkBytesRemaining -= bytesConsumed;
-
-                if (_chunkBytesRemaining == 0)
+                if (_chunkBytesRemaining == 0 &&
+                    (await _connection.ReadNextLineAsync(cancellationToken).ConfigureAwait(false)).Count != 2)
                 {
-                    // Parse CRLF at end of chunk
-                    if (await _connection.ReadCharAsync(cancellationToken).ConfigureAwait(false) != '\r' ||
-                        await _connection.ReadCharAsync(cancellationToken).ConfigureAwait(false) != '\n')
-                    {
-                        throw new IOException("missing CRLF for end of chunk");
-                    }
+                    throw new IOException("missing CRLF for end of chunk");
                 }
             }
 
@@ -559,10 +551,10 @@ namespace System.Net.Http
             const int DefaultCapacity = 16;
             _sb = new ValueStringBuilder(DefaultCapacity);
 
-            _writeBuffer = new byte[BufferSize];
+            _writeBuffer = new byte[InitialWriteBufferSize];
             _writeOffset = 0;
 
-            _readBuffer = new byte[BufferSize];
+            _readBuffer = new byte[InitialReadBufferSize];
             _readLength = 0;
             _readOffset = 0;
 
@@ -642,7 +634,7 @@ namespace System.Net.Http
             const int MaxFormattedInt32Length = 10; // number of digits in int.MaxValue.ToString()
 
             // If the maximum possible number of digits fits in our buffer, we can format synchronously
-            if (_writeOffset <= BufferSize - MaxFormattedInt32Length)
+            if (_writeOffset <= _writeBuffer.Length - MaxFormattedInt32Length)
             {
                 if (value == 0)
                 {
@@ -674,15 +666,15 @@ namespace System.Net.Http
 
                 if (request.Version.Major != 1 || request.Version.Minor != 1)
                 {
+                    // TODO #21452: Support 1.0
+                    // TODO #21452: Support 2.0
                     throw new PlatformNotSupportedException($"Only HTTP 1.1 supported -- request.Version was {request.Version}");
                 }
 
-                HttpContent requestContent = request.Content;
-
                 // Add headers to define content transfer, if not present
-                if (requestContent != null &&
+                if (request.Content != null &&
                     (!request.HasHeaders || request.Headers.TransferEncodingChunked != true) &&
-                    requestContent.Headers.ContentLength == null)
+                    request.Content.Headers.ContentLength == null)
                 {
                     // We have content, but neither Transfer-Encoding or Content-Length is set.
                     request.Headers.TransferEncodingChunked = true;
@@ -691,11 +683,9 @@ namespace System.Net.Http
                 // Write request line
                 await WriteStringAsync(request.Method.Method, cancellationToken).ConfigureAwait(false);
                 await WriteByteAsync((byte)' ', cancellationToken).ConfigureAwait(false);
-
                 await WriteStringAsync(
                     _usingProxy ? request.RequestUri.AbsoluteUri : request.RequestUri.PathAndQuery,
                     cancellationToken).ConfigureAwait(false);
-
                 await WriteBytesAsync(s_spaceHttp11NewlineAsciiBytes, cancellationToken).ConfigureAwait(false);
 
                 // Write request headers
@@ -704,12 +694,11 @@ namespace System.Net.Http
                     await WriteHeadersAsync(request.Headers, cancellationToken).ConfigureAwait(false);
                 }
 
-                if (requestContent == null)
+                if (request.Content == null)
                 {
                     // Write out Content-Length: 0 header to indicate no body, 
                     // unless this is a method that never has a body.
-                    if (request.Method != HttpMethod.Get &&
-                        request.Method != HttpMethod.Head)
+                    if (request.Method != HttpMethod.Get && request.Method != HttpMethod.Head)
                     {
                         await WriteBytesAsync(s_contentLength0NewlineAsciiBytes, cancellationToken).ConfigureAwait(false);
                     }
@@ -717,7 +706,7 @@ namespace System.Net.Http
                 else
                 {
                     // Write content headers
-                    await WriteHeadersAsync(requestContent.Headers, cancellationToken).ConfigureAwait(false);
+                    await WriteHeadersAsync(request.Content.Headers, cancellationToken).ConfigureAwait(false);
                 }
 
                 // Write special additional headers.  If a host isn't in the headers list, then a Host header
@@ -731,7 +720,7 @@ namespace System.Net.Http
                 await WriteTwoBytesAsync((byte)'\r', (byte)'\n', cancellationToken).ConfigureAwait(false);
 
                 // Write body, if any
-                if (requestContent != null)
+                if (request.Content != null)
                 {
                     HttpContentWriteStream stream = (request.HasHeaders && request.Headers.TransferEncodingChunked == true ?
                         (HttpContentWriteStream)new ChunkedEncodingWriteStream(this) :
@@ -739,178 +728,42 @@ namespace System.Net.Http
 
                     // TODO #21452: CopyToAsync doesn't take a CancellationToken, how do we deal with Cancellation here?
                     // TODO #21452: We need to enable duplex communication, which means not waiting here until all data is sent.
+                    // TODO #21452: Support Expect: 100-continue
                     await request.Content.CopyToAsync(stream, _transportContext).ConfigureAwait(false);
                     await stream.FinishAsync(cancellationToken).ConfigureAwait(false);
                 }
 
+                // Flush out anything buffered from the request to finish sending it.
                 await FlushAsync(cancellationToken).ConfigureAwait(false);
 
-                // Parse the response.
-
-                var response = new HttpResponseMessage() { RequestMessage = request };
-
-                if (await ReadCharAsync(cancellationToken).ConfigureAwait(false) != 'H' ||
-                    await ReadCharAsync(cancellationToken).ConfigureAwait(false) != 'T' ||
-                    await ReadCharAsync(cancellationToken).ConfigureAwait(false) != 'T' ||
-                    await ReadCharAsync(cancellationToken).ConfigureAwait(false) != 'P' ||
-                    await ReadCharAsync(cancellationToken).ConfigureAwait(false) != '/')
-                {
-                    throw new HttpRequestException("could not read response HTTP version");
-                }
-
-                // Set the response HttpVersion.
-                char majorVersion = await ReadCharAsync(cancellationToken).ConfigureAwait(false);
-                if (!char.IsDigit(majorVersion) ||
-                    await ReadCharAsync(cancellationToken).ConfigureAwait(false) != '.')
-                {
-                    throw new HttpRequestException("could not read response HTTP version");
-                }
-                char minorVersion = await ReadCharAsync(cancellationToken).ConfigureAwait(false);
-                if (!char.IsDigit(minorVersion))
-                {
-                    throw new HttpRequestException("could not read response HTTP version");
-                }
-                response.Version =
-                    (majorVersion == '1' && minorVersion == '1') ? HttpVersionInternal.Version11 :
-                    (majorVersion == '1' && minorVersion == '0') ? HttpVersionInternal.Version10 :
-                    (majorVersion == '2' && minorVersion == '0') ? HttpVersionInternal.Version20 :
-                    HttpVersionInternal.Unknown;
-
-                if (await ReadCharAsync(cancellationToken).ConfigureAwait(false) != ' ')
-                {
-                    throw new HttpRequestException("Invalid characters in response");
-                }
-
-                char status1 = await ReadCharAsync(cancellationToken).ConfigureAwait(false);
-                char status2 = await ReadCharAsync(cancellationToken).ConfigureAwait(false);
-                char status3 = await ReadCharAsync(cancellationToken).ConfigureAwait(false);
-
-                if (!char.IsDigit(status1) ||
-                    !char.IsDigit(status2) ||
-                    !char.IsDigit(status3))
-                {
-                    throw new HttpRequestException("could not read response status code");
-                }
-
-                int status = 100 * (status1 - '0') + 10 * (status2 - '0') + (status3 - '0');
-                response.StatusCode = (HttpStatusCode)status;
-
-                // Parse (optional) reason phrase
-                _sb.Clear();
-                char c = await ReadCharAsync(cancellationToken).ConfigureAwait(false);
-                if (c == ' ')
-                {
-                    c = await ReadCharAsync(cancellationToken).ConfigureAwait(false);
-                }
-                else if (c != '\r')
-                {
-                    throw new HttpRequestException("Invalid characters in response line");
-                }
-
-                while (c != '\r')
-                {
-                    _sb.Append(c);
-                    c = await ReadCharAsync(cancellationToken).ConfigureAwait(false);
-                }
-
-                if (await ReadCharAsync(cancellationToken).ConfigureAwait(false) != '\n')
-                {
-                    throw new HttpRequestException("Saw CR without LF while parsing response line");
-                }
-
-                string knownReasonPhrase = HttpStatusDescription.Get(response.StatusCode);
-                response.ReasonPhrase = knownReasonPhrase != null && CharArrayHelpers.EqualsOrdinal(knownReasonPhrase, _sb.Chars, 0, _sb.Length) ?
-                    knownReasonPhrase :
-                    _sb.ToString();
-
+                // Parse the response status line and headers
                 var responseContent = new HttpConnectionContent(CancellationToken.None);
-
-                // Parse headers
-                _sb.Clear();
-                c = await ReadCharAsync(cancellationToken).ConfigureAwait(false);
+                var response = new HttpResponseMessage() { RequestMessage = request, Content = responseContent };
+                ParseStatusLine(response, await ReadNextLineAsync(cancellationToken).ConfigureAwait(false));
                 while (true)
                 {
-                    if (c == '\r')
+                    ArraySegment<byte> line = await ReadNextLineAsync(cancellationToken).ConfigureAwait(false);
+                    if (line[0] == (byte)'\r')
                     {
-                        if (await ReadCharAsync(cancellationToken).ConfigureAwait(false) != '\n')
-                        {
-                            throw new HttpRequestException("Saw CR without LF while parsing headers");
-                        }
-
                         break;
                     }
-
-                    // Get header name
-                    while (c != ':')
-                    {
-                        _sb.Append(c);
-                        c = await ReadCharAsync(cancellationToken).ConfigureAwait(false);
-                    }
-
-                    string headerName;
-                    if (!HttpKnownHeaderNames.TryGetHeaderName(_sb.Chars, 0, _sb.Length, out headerName))
-                    {
-                        headerName = _sb.ToString();
-                    }
-
-                    _sb.Clear();
-
-                    // Get header value
-                    c = await ReadCharAsync(cancellationToken).ConfigureAwait(false);
-                    while (c == ' ')
-                    {
-                        c = await ReadCharAsync(cancellationToken).ConfigureAwait(false);
-                    }
-
-                    while (c != '\r')
-                    {
-                        _sb.Append(c);
-                        c = await ReadCharAsync(cancellationToken).ConfigureAwait(false);
-                    }
-
-                    if (await ReadCharAsync(cancellationToken).ConfigureAwait(false) != '\n')
-                    {
-                        throw new HttpRequestException("Saw CR without LF while parsing headers");
-                    }
-
-                    string headerValue = HttpKnownHeaderNames.GetHeaderValue(headerName, _sb.Chars, 0, _sb.Length);
-
-                    // TryAddWithoutValidation will fail if the header name has trailing whitespace.
-                    // So, trim it here.
-                    // TODO #21452: Not clear to me from the RFC that this is really correct; RFC seems to indicate this should be an error.
-                    // However, tests claim this is important for compat in practice.
-                    headerName = headerName.TrimEnd();
-
-                    // Add header to appropriate collection
-                    if (!response.Headers.TryAddWithoutValidation(headerName, headerValue))
-                    {
-                        // The existing handlers ignore headers that couldn't be added.  Do the same here.
-                        responseContent.Headers.TryAddWithoutValidation(headerName, headerValue);
-                    }
-
-                    _sb.Clear();
-
-                    c = await ReadCharAsync(cancellationToken).ConfigureAwait(false);
+                    ParseHeaderNameValue(line, response);
                 }
 
-                if (response.Headers.ConnectionClose ?? false)
+                // Determine whether we need to force close the connection when the request/response has completed.
+                if (response.Headers.ConnectionClose.GetValueOrDefault())
                 {
                     _connectionClose = true;
                 }
 
-                // Instantiate responseStream
-                HttpContentReadStream responseStream =
-                    request.Method == HttpMethod.Head || status == 204 || status == 304 ? new ContentLengthReadStream(this, 0) : // no response body
+                // Create the response stream.
+                // TODO #21452: Use a singleton empty stream when 0 content length.
+                responseContent.SetStream(
+                    request.Method == HttpMethod.Head || (int)response.StatusCode == 204 || (int)response.StatusCode == 304 ? new ContentLengthReadStream(this, 0) : // no response body
                     responseContent.Headers.ContentLength != null ? new ContentLengthReadStream(this, responseContent.Headers.ContentLength.Value) :
                     response.Headers.TransferEncodingChunked == true ? new ChunkedEncodingReadStream(this) :
-                    (HttpContentReadStream)new ConnectionCloseReadStream(this);
+                    (HttpContentReadStream)new ConnectionCloseReadStream(this));
 
-                // TODO #21452: When there's no response body, why is there any content here at all?
-                // i.e. why not just set response.Content = null? This is legal for request bodies (e.g. GET).
-                // However, setting response.Content = null causes a bunch of tests to fail.
-
-                responseContent.SetStream(responseStream);
-                response.Content = responseContent;
                 return response;
             }
             catch (Exception inner)
@@ -925,9 +778,103 @@ namespace System.Net.Http
             }
         }
 
+        private void ParseStatusLine(HttpResponseMessage response, ArraySegment<byte> line)
+        {
+            if (line.Count < 14 || // "HTTP/1.1 123\r\n" with optional phrase before the crlf
+                line[0] != 'H' ||
+                line[1] != 'T' ||
+                line[2] != 'T' ||
+                line[3] != 'P' ||
+                line[4] != '/' ||
+                line[8] != ' ')
+            {
+                throw new HttpRequestException(SR.net_http_unix_invalid_response);
+            }
+
+            // Set the response HttpVersion.
+            char majorVersion = (char)line[5], minorVersion = (char)line[7];
+            if (!char.IsDigit(majorVersion) || line[6] != (byte)'.' || !char.IsDigit(minorVersion))
+            {
+                throw new HttpRequestException("could not read response HTTP version");
+            }
+            response.Version =
+                (majorVersion == '1' && minorVersion == '1') ? HttpVersionInternal.Version11 :
+                (majorVersion == '1' && minorVersion == '0') ? HttpVersionInternal.Version10 :
+                (majorVersion == '2' && minorVersion == '0') ? HttpVersionInternal.Version20 :
+                HttpVersionInternal.Unknown;
+
+            char status1 = (char)line[9], status2 = (char)line[10], status3 = (char)line[11];
+            if (!char.IsDigit(status1) || !char.IsDigit(status2) || !char.IsDigit(status3))
+            {
+                throw new HttpRequestException("could not read response status code");
+            }
+
+            int status = 100 * (status1 - '0') + 10 * (status2 - '0') + (status3 - '0');
+            response.StatusCode = (HttpStatusCode)status;
+
+            // Parse (optional) reason phrase
+            _sb.Clear();
+            int pos = 12;
+            char c = (char)line[pos++];
+            if (c == ' ')
+            {
+                c = (char)line[pos++];
+            }
+            else if (c != '\r')
+            {
+                throw new HttpRequestException("Invalid characters in response line");
+            }
+
+            while (c != '\r')
+            {
+                _sb.Append(c);
+                c = (char)line[pos++];
+            }
+
+            string knownReasonPhrase = HttpStatusDescription.Get(response.StatusCode);
+            response.ReasonPhrase = knownReasonPhrase != null && CharArrayHelpers.EqualsOrdinal(knownReasonPhrase, _sb.Chars, 0, _sb.Length) ?
+                knownReasonPhrase :
+                _sb.ToString();
+        }
+
+        private void ParseHeaderNameValue(ArraySegment<byte> line, HttpResponseMessage response)
+        {
+            _sb.Clear();
+            int pos = 0;
+
+            // Get header name
+            char c = (char)line[pos++];
+            while (c != ':')
+            {
+                _sb.Append(c);
+                c = (char)line[pos++];
+            }
+            if (!HttpKnownHeaderNames.TryGetHeaderName(_sb.Chars, 0, _sb.Length, out string headerName))
+            {
+                headerName = _sb.ToString().TrimEnd(); // TryAddWithoutValidation will fail if the header name has trailing whitespace. So, trim it here.
+            }
+
+            // Get header value
+            _sb.Clear();
+            while ((c = (char)line[pos++]) == ' ');
+            while (c != '\r')
+            {
+                _sb.Append(c);
+                c = (char)line[pos++];
+            }
+            string headerValue = HttpKnownHeaderNames.GetHeaderValue(headerName, _sb.Chars, 0, _sb.Length);
+
+            // Add header to appropriate collection.
+            if (!response.Headers.TryAddWithoutValidation(headerName, headerValue))
+            {
+                response.Content.Headers.TryAddWithoutValidation(headerName, headerValue);
+                // Existing handlers ignore headers that couldn't be added.  Do the same here.
+            }
+        }
+
         private void WriteToBuffer(byte[] buffer, int offset, int count)
         {
-            Debug.Assert(count <= BufferSize - _writeOffset);
+            Debug.Assert(count <= _writeBuffer.Length - _writeOffset);
 
             Buffer.BlockCopy(buffer, offset, _writeBuffer, _writeOffset, count);
             _writeOffset += count;
@@ -935,7 +882,7 @@ namespace System.Net.Http
 
         private async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            int remaining = BufferSize - _writeOffset;
+            int remaining = _writeBuffer.Length - _writeOffset;
 
             if (count <= remaining)
             {
@@ -955,7 +902,7 @@ namespace System.Net.Http
                 count -= remaining;
             }
 
-            if (count >= BufferSize)
+            if (count >= _writeBuffer.Length)
             {
                 // Large write.  No sense buffering this.  Write directly to stream.
                 // CONSIDER: May want to be a bit smarter here?  Think about how large writes should work...
@@ -970,7 +917,7 @@ namespace System.Net.Http
 
         private Task WriteByteAsync(byte b, CancellationToken cancellationToken)
         {
-            if (_writeOffset < BufferSize)
+            if (_writeOffset < _writeBuffer.Length)
             {
                 _writeBuffer[_writeOffset++] = b;
                 return Task.CompletedTask;
@@ -980,7 +927,8 @@ namespace System.Net.Http
 
         private async Task WriteByteSlowAsync(byte b, CancellationToken cancellationToken)
         {
-            await _stream.WriteAsync(_writeBuffer, 0, BufferSize, cancellationToken).ConfigureAwait(false);
+            Debug.Assert(_writeOffset == _writeBuffer.Length);
+            await _stream.WriteAsync(_writeBuffer, 0, _writeBuffer.Length, cancellationToken).ConfigureAwait(false);
 
             _writeBuffer[0] = b;
             _writeOffset = 1;
@@ -988,7 +936,7 @@ namespace System.Net.Http
 
         private Task WriteTwoBytesAsync(byte b1, byte b2, CancellationToken cancellationToken)
         {
-            if (_writeOffset <= BufferSize - 2)
+            if (_writeOffset <= _writeBuffer.Length - 2)
             {
                 byte[] buffer = _writeBuffer;
                 buffer[_writeOffset++] = b1;
@@ -1006,7 +954,7 @@ namespace System.Net.Http
 
         private Task WriteBytesAsync(byte[] bytes, CancellationToken cancellationToken)
         {
-            if (_writeOffset <= BufferSize - bytes.Length)
+            if (_writeOffset <= _writeBuffer.Length - bytes.Length)
             {
                 Buffer.BlockCopy(bytes, 0, _writeBuffer, _writeOffset, bytes.Length);
                 _writeOffset += bytes.Length;
@@ -1021,20 +969,20 @@ namespace System.Net.Http
             while (true)
             {
                 int remaining = bytes.Length - offset;
-                int toCopy = Math.Min(remaining, BufferSize - _writeOffset);
+                int toCopy = Math.Min(remaining, _writeBuffer.Length - _writeOffset);
                 Buffer.BlockCopy(bytes, offset, _writeBuffer, _writeOffset, toCopy);
                 _writeOffset += toCopy;
                 offset += toCopy;
 
                 Debug.Assert(offset <= bytes.Length, $"Expected {nameof(offset)} to be <= {bytes.Length}, got {offset}");
-                Debug.Assert(_writeOffset <= BufferSize, $"Expected {nameof(_writeOffset)} to be <= {BufferSize}, got {_writeOffset}");
+                Debug.Assert(_writeOffset <= _writeBuffer.Length, $"Expected {nameof(_writeOffset)} to be <= {_writeBuffer.Length}, got {_writeOffset}");
                 if (offset == bytes.Length)
                 {
                     break;
                 }
-                else if (_writeOffset == BufferSize)
+                else if (_writeOffset == _writeBuffer.Length)
                 {
-                    await _stream.WriteAsync(_writeBuffer, 0, BufferSize, cancellationToken).ConfigureAwait(false);
+                    await _stream.WriteAsync(_writeBuffer, 0, _writeBuffer.Length, cancellationToken).ConfigureAwait(false);
                     _writeOffset = 0;
                 }
             }
@@ -1045,7 +993,7 @@ namespace System.Net.Http
             // If there's enough space in the buffer to just copy all of the string's bytes, do so.
             // Unlike WriteAsciiStringAsync, validate each char along the way.
             int offset = _writeOffset;
-            if (s.Length <= BufferSize - offset)
+            if (s.Length <= _writeBuffer.Length - offset)
             {
                 byte[] writeBuffer = _writeBuffer;
                 foreach (char c in s)
@@ -1069,7 +1017,7 @@ namespace System.Net.Http
         {
             // If there's enough space in the buffer to just copy all of the string's bytes, do so.
             int offset = _writeOffset;
-            if (s.Length <= BufferSize - offset)
+            if (s.Length <= _writeBuffer.Length - offset)
             {
                 byte[] writeBuffer = _writeBuffer;
                 foreach (char c in s)
@@ -1109,30 +1057,102 @@ namespace System.Net.Http
             return Task.CompletedTask;
         }
 
+        private async ValueTask<ArraySegment<byte>> ReadNextLineAsync(CancellationToken cancellationToken)
+        {
+            int searchOffset = 0;
+            while (true)
+            {
+                int remaining = _readLength - _readOffset;
+                int startIndex = _readOffset + searchOffset;
+                int length = _readLength - startIndex;
+                int crPos = Array.IndexOf(_readBuffer, (byte)'\r', startIndex, length);
+                if (crPos < 0)
+                {
+                    // Couldn't find a \r.  Read more.
+                    searchOffset = length;
+                    await FillAsync(cancellationToken);
+                }
+                else if (crPos + 1 >= _readLength)
+                {
+                    // We found a \r, but we don't have enough data buffered to read the \n.
+                    searchOffset = length - 1;
+                    await FillAsync(cancellationToken).ConfigureAwait(false);
+                }
+                else if (_readBuffer[crPos + 1] == (byte)'\n')
+                {
+                    // We found a \r\n.  Return the data up to and including it.
+                    int lineLength = crPos - _readOffset + 2;
+                    var result = new ArraySegment<byte>(_readBuffer, _readOffset, lineLength);
+                    _readOffset += lineLength;
+                    return result;
+                }
+                else
+                {
+                    throw new HttpRequestException("Found \\r without \\n");
+                }
+
+                if (remaining == _readLength - _readOffset)
+                {
+                    throw new HttpRequestException("Response ended with invalid headers");
+                }
+            }
+        }
+
         private Task FillAsync(CancellationToken cancellationToken)
         {
-            Debug.Assert(_readOffset == _readLength);
+            int remaining = _readLength - _readOffset;
+            Debug.Assert(remaining >= 0);
 
-            _readOffset = 0;
-            Task<int> t;
-            if (_readAheadTask != null)
+            if (remaining == 0)
             {
-                // When the connection is put back into the pool, a pre-emptive read is performed
-                // into the read buffer.  That read should not complete prior to us using the
-                // connection again, as that would mean the connection was either closed or had
-                // erroneous data sent on it by the server in response to no request from us.
-                // We need to consume that read prior to issuing another read request.
-                t = _readAheadTask;
+                // No data in the buffer.  Simply reset the offset and length to 0 to allow
+                // the whole buffer to be filled.
+                _readOffset = _readLength = 0;
+            }
+            else if (_readOffset > 0)
+            {
+                // There's some data in the buffer but it's not at the beginning.  Shift it
+                // down to make room for more.
+                Buffer.BlockCopy(_readBuffer, _readOffset, _readBuffer, 0, remaining);
+                _readOffset = 0;
+                _readLength = remaining;
+            }
+            else if (remaining == _readBuffer.Length)
+            {
+                // The whole buffer is full, but the caller is still requesting more data,
+                // so increase the size of the buffer.
+                Debug.Assert(_readOffset == 0);
+                Debug.Assert(_readLength == _readBuffer.Length);
+
+                byte[] newReadBuffer = new byte[_readBuffer.Length * 2];
+                Buffer.BlockCopy(_readBuffer, 0, newReadBuffer, 0, remaining);
+                _readBuffer = newReadBuffer;
+                _readOffset = 0;
+                _readLength = remaining;
+            }
+
+            // When the connection was put back into the pool, a pre-emptive read was performed
+            // into the read buffer.  That read should not complete prior to us using the
+            // connection again, as that would mean the connection was either closed or had
+            // erroneous data sent on it by the server in response to no request from us.
+            // We need to consume that read prior to issuing another read request.
+            Task<int> t = _readAheadTask;
+            if (t != null)
+            {
+                Debug.Assert(_readOffset == 0);
+                Debug.Assert(_readLength == 0);
                 _readAheadTask = null;
             }
             else
             {
-                t = _stream.ReadAsync(_readBuffer, 0, BufferSize, cancellationToken);
+                // No existing read ahead.  Issue a new read for us much space as remains in the buffer.
+                t = _stream.ReadAsync(_readBuffer, _readLength, _readBuffer.Length - _readLength, cancellationToken);
             }
 
             if (t.IsCompleted)
             {
-                _readLength = t.GetAwaiter().GetResult();
+                // The read completed synchronously, so update the amount of data in the buffer and return.
+                _readLength += t.GetAwaiter().GetResult();
                 return Task.CompletedTask;
             }
             else
@@ -1140,68 +1160,9 @@ namespace System.Net.Http
                 // Using async/await results in slightly higher allocations for the case of a single await,
                 // and it's simple to transform this one into ContinueWith.
                 return t.ContinueWith((completed, state) =>
-                    ((HttpConnection)state)._readLength = completed.GetAwaiter().GetResult(),
+                    ((HttpConnection)state)._readLength += completed.GetAwaiter().GetResult(),
                     this, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             }
-        }
-
-        private async ValueTask<byte> ReadByteSlowAsync(CancellationToken cancellationToken)
-        {
-            await FillAsync(cancellationToken).ConfigureAwait(false);
-
-            if (_readLength == 0)
-            {
-                // End of stream
-                throw new IOException("unexpected end of stream");
-            }
-
-            return _readBuffer[_readOffset++];
-        }
-
-        // TODO #21452: Revisit perf characteristics of this approach
-        private ValueTask<byte> ReadByteAsync(CancellationToken cancellationToken)
-        {
-            if (_readOffset < _readLength)
-            {
-                return new ValueTask<byte>(_readBuffer[_readOffset++]);
-            }
-
-            return ReadByteSlowAsync(cancellationToken);
-        }
-
-        private async ValueTask<char> ReadCharSlowAsync(CancellationToken cancellationToken)
-        {
-            await FillAsync(cancellationToken).ConfigureAwait(false);
-
-            if (_readLength == 0)
-            {
-                // End of stream
-                throw new IOException("unexpected end of stream");
-            }
-
-            byte b = _readBuffer[_readOffset++];
-            if ((b & 0x80) != 0)
-            {
-                throw new HttpRequestException("Invalid character read from stream");
-            }
-
-            return (char)b;
-        }
-
-        private ValueTask<char> ReadCharAsync(CancellationToken cancellationToken)
-        {
-            if (_readOffset < _readLength)
-            {
-                byte b = _readBuffer[_readOffset++];
-                if ((b & 0x80) != 0)
-                {
-                    return new ValueTask<char>(Task.FromException<char>(new HttpRequestException("Invalid character read from stream")));
-                }
-
-                return new ValueTask<char>((char)b);
-            }
-
-            return ReadCharSlowAsync(cancellationToken);
         }
 
         private void ReadFromBuffer(byte[] buffer, int offset, int count)
@@ -1226,7 +1187,7 @@ namespace System.Net.Http
             }
 
             // No data in read buffer. 
-            if (count < BufferSize / 2)
+            if (count < _readBuffer.Length / 2)
             {
                 // Caller requested a small read size (less than half the read buffer size).
                 // Read into the buffer, so that we read as much as possible, hopefully.
