@@ -20,6 +20,11 @@ acceptance-tests/* @akoeplinger
 acceptance-tests/profiler-stress @alexrp
 docs/sources/mono-api-profiler.html @alexrp
 man/mprof-report.1 @alexrp
+mcs/build @marek-safar
+mcs/class @marek-safar
+mcs/errors @marek-safar
+mcs/mcs @marek-safar
+mcs/tests @marek-safar
 mcs/class/Mono.Options @jonpryor
 mcs/class/Mono.Profiler.Log @alexrp
 mono/metadata/profiler* @alexrp
