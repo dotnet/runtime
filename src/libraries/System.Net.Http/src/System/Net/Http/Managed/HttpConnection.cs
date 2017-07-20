@@ -116,6 +116,22 @@ namespace System.Net.Http
             }
         }
 
+        private sealed class EmptyReadStream : HttpContentReadStream
+        {
+            internal static EmptyReadStream Instance { get; } = new EmptyReadStream();
+
+            private readonly static Task<int> s_zeroTask = Task.FromResult(0);
+
+            private EmptyReadStream() : base(null) { }
+
+            public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                ValidateBufferArgs(buffer, offset, count);
+                return s_zeroTask;
+            }
+        }
+
+
         private sealed class ContentLengthReadStream : HttpContentReadStream
         {
             private long _contentBytesRemaining;
@@ -137,20 +153,7 @@ namespace System.Net.Http
 
             public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
-                if (buffer == null)
-                {
-                    throw new ArgumentNullException(nameof(buffer));
-                }
-
-                if (offset < 0 || offset > buffer.Length)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(offset));
-                }
-
-                if (count < 0 || count > buffer.Length - offset)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count));
-                }
+                ValidateBufferArgs(buffer, offset, count);
 
                 if (_connection == null || count == 0)
                 {
@@ -282,20 +285,7 @@ namespace System.Net.Http
 
             public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
-                if (buffer == null)
-                {
-                    throw new ArgumentNullException(nameof(buffer));
-                }
-
-                if (offset < 0 || offset > buffer.Length)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(offset));
-                }
-
-                if (count < 0 || count > buffer.Length - offset)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count));
-                }
+                ValidateBufferArgs(buffer, offset, count);
 
                 if (_connection == null || count == 0)
                 {
@@ -363,20 +353,7 @@ namespace System.Net.Http
 
             public override async Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
-                if (buffer == null)
-                {
-                    throw new ArgumentNullException(nameof(buffer));
-                }
-
-                if (offset < 0 || offset > buffer.Length)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(offset));
-                }
-
-                if (count < 0 || count > buffer.Length - offset)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count));
-                }
+                ValidateBufferArgs(buffer, offset, count);
 
                 if (_connection == null || count == 0)
                 {
@@ -427,20 +404,7 @@ namespace System.Net.Http
 
             public override async Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
-                if (buffer == null)
-                {
-                    throw new ArgumentNullException(nameof(buffer));
-                }
-
-                if (offset < 0 || offset > buffer.Length)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(offset));
-                }
-
-                if (count < 0 || count > buffer.Length - offset)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count));
-                }
+                ValidateBufferArgs(buffer, offset, count);
 
                 // Don't write if nothing was given
                 // Especially since we don't want to accidentally send a 0 chunk, which would indicate end of body
@@ -497,21 +461,7 @@ namespace System.Net.Http
 
             public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
-                if (buffer == null)
-                {
-                    throw new ArgumentNullException(nameof(buffer));
-                }
-
-                if (offset < 0 || offset > buffer.Length)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(offset));
-                }
-
-                if (count < 0 || count > buffer.Length - offset)
-                {
-                    throw new ArgumentOutOfRangeException(nameof(count));
-                }
-
+                ValidateBufferArgs(buffer, offset, count);
                 return _connection.WriteAsync(buffer, offset, count, cancellationToken);
             }
 
@@ -757,12 +707,27 @@ namespace System.Net.Http
                 }
 
                 // Create the response stream.
-                // TODO #21452: Use a singleton empty stream when 0 content length.
-                responseContent.SetStream(
-                    request.Method == HttpMethod.Head || (int)response.StatusCode == 204 || (int)response.StatusCode == 304 ? new ContentLengthReadStream(this, 0) : // no response body
-                    responseContent.Headers.ContentLength != null ? new ContentLengthReadStream(this, responseContent.Headers.ContentLength.Value) :
-                    response.Headers.TransferEncodingChunked == true ? new ChunkedEncodingReadStream(this) :
-                    (HttpContentReadStream)new ConnectionCloseReadStream(this));
+                HttpContentReadStream responseStream;
+                if (request.Method == HttpMethod.Head || (int)response.StatusCode == 204 || (int)response.StatusCode == 304)
+                {
+                    responseStream = EmptyReadStream.Instance;
+                }
+                else if (responseContent.Headers.ContentLength != null)
+                {
+                    long contentLength = responseContent.Headers.ContentLength.GetValueOrDefault();
+                    responseStream = contentLength == 0 ?
+                        (HttpContentReadStream)EmptyReadStream.Instance :
+                        new ContentLengthReadStream(this, contentLength);
+                }
+                else if (response.Headers.TransferEncodingChunked == true)
+                {
+                    responseStream = new ChunkedEncodingReadStream(this);
+                }
+                else
+                {
+                    responseStream = new ConnectionCloseReadStream(this);
+                }
+                responseContent.SetStream(responseStream);
 
                 return response;
             }
