@@ -1055,7 +1055,7 @@ namespace System.Collections.Concurrent
         /// if the key was not in the dictionary.</returns>
         public TValue GetOrAdd<TArg>(TKey key, Func<TKey, TArg, TValue> valueFactory, TArg factoryArgument)
         {
-            if (key == null) throw new ArgumentNullException(nameof(key));
+            if (key == null) ThrowKeyNullException();
             if (valueFactory == null) throw new ArgumentNullException(nameof(valueFactory));
 
             int hashcode = _comparer.GetHashCode(key);
@@ -1117,7 +1117,7 @@ namespace System.Collections.Concurrent
         public TValue AddOrUpdate<TArg>(
             TKey key, Func<TKey, TArg, TValue> addValueFactory, Func<TKey, TValue, TArg, TValue> updateValueFactory, TArg factoryArgument)
         {
-            if (key == null) throw new ArgumentNullException(nameof(key));
+            if (key == null) ThrowKeyNullException();
             if (addValueFactory == null) throw new ArgumentNullException(nameof(addValueFactory));
             if (updateValueFactory == null) throw new ArgumentNullException(nameof(updateValueFactory));
 
