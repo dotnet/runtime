@@ -4,7 +4,7 @@
   <PropertyGroup>
     <!-- we intentionally don't want to produce output -->
     <OutputPath>unused</OutputPath>
-    <!-- we don't want any analyzers by ResolveNuGetPackageAssets 
+    <!-- we don't want any analyzers by ResolveNuGetPackageAssets
          null-refs when this isn't set and an analyzer is in the packages -->
     <Language>unused</Language>
     <NuGetTargetMoniker>UAP,Version=v10.1</NuGetTargetMoniker>
@@ -24,7 +24,7 @@
       <Version>1.6.1</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.Private.CoreFx.UAP">
-      <Version>$(CoreFxVersion)</Version>
+      <Version>$(MicrosoftPrivateCoreFxUAPPackageVersion)</Version>
     </PackageReference>
     <PackageReference Include="transport.Microsoft.NETCore.Runtime.CoreCLR">
       <Version>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</Version>
@@ -53,7 +53,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' == ''">
-    <!-- Bring in Platforms for RID graph, NETStandard.Library for build-tools, 
+    <!-- Bring in Platforms for RID graph, NETStandard.Library for build-tools,
          Targets for an empty runtime.json to reduce conflicts from 1.x packages,
          and toolset. -->
     <DependenciesToPackage Include="NETStandard.Library" />
@@ -71,7 +71,7 @@
     <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' != ''">
       <!-- RID-specific: include all runtime files -->
       <_FilesToPackage Include="@(ReferenceCopyLocalPaths)">
-        <!-- ResolveNugetPackageAssets doesn't preserve the asset type (native), 
+        <!-- ResolveNugetPackageAssets doesn't preserve the asset type (native),
              calculate it by looking for native in the path -->
         <IsNative Condition="$([System.String]::new('%(Identity)').ToLowerInvariant().Replace('\', '/').Contains('/native/'))">true</IsNative>
         <!-- We previously shipped a clrcompression on the lib folder, so we need to flag it as native in here -->
@@ -113,13 +113,13 @@
     <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' == ''">
       <!-- include all docs files -->
       <_docFilesToPackage Include="%(FilesToPackage.RootDir)%(FilesToPackage.Directory)**\%(FilesToPackage.FileName).xml" />
-      
+
       <FilesToPackage Include="@(_docFilesToPackage)">
         <TargetPath>ref/$(PackageTargetFramework)/%(RecursiveDir)</TargetPath>
       </FilesToPackage>
     </ItemGroup>
 
-    <!-- simple check to make sure we don't accidentally pull an old 
+    <!-- simple check to make sure we don't accidentally pull an old
          package that should have been merged to the primary package -->
     <ItemGroup>
       <PermittedSystemPackages Include="System.ServiceModel.Duplex" />
@@ -172,10 +172,10 @@
 
     <Message Importance="low" Text="%(_DependenciesToPackageWithVersion.Identity) : %(_DependenciesToPackageWithVersion.Version) : %(_DependenciesToPackageWithVersion.TargetFramework)" />
   </Target>
- 
+
   <!-- only calculate paths from this project, don't copy -->
   <Target Name="Build" DependsOnTargets="GetFilesToPackage" />
-  
+
   <!-- remove when fixing https://github.com/dotnet/buildtools/issues/1273 -->
   <Target Name="DetermineRuntimeDependencies" />
 </Project>

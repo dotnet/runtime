@@ -173,7 +173,7 @@
     <PropertyGroup>
       <OutputArg>--output $(PackagesOutDir)</OutputArg>
       <ConfigArg>--configuration $(ConfigurationGroup)</ConfigArg>
-      <VersionSuffixArg>--version-suffix $(VersionSuffix)</VersionSuffixArg>
+      <VersionSuffixArg Condition="'$(StabilizePackageVersion)' != 'true'">--version-suffix $(VersionSuffix)</VersionSuffixArg>
     </PropertyGroup>
 
     <Exec Command="$(DotnetToolCommand) pack %(PackageProjects.Identity) --no-build $(OutputArg) $(ConfigArg) $(VersionSuffixArg) /p:BaseOutputPath=$(IntermediateOutputForPackaging)"
