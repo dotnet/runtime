@@ -9,7 +9,7 @@ Module Name:
     cgroup.cpp
 
 Abstract:
-    Read memory limits for the current process
+    Read memory and cpu limits for the current process
 --*/
 
 #include "pal/dbgmsg.h"
@@ -22,41 +22,23 @@ SET_DEFAULT_DEBUG_CHANNEL(MISC);
 #define PROC_CGROUP_FILENAME "/proc/self/cgroup"
 #define PROC_STATM_FILENAME "/proc/self/statm"
 #define MEM_LIMIT_FILENAME "/memory.limit_in_bytes"
-
+#define CFS_QUOTA_FILENAME "/cpu.cfs_quota_us"
+#define CFS_PERIOD_FILENAME "/cpu.cfs_period_us"
 class CGroup
 {
     char *m_memory_cgroup_path;
+    char *m_cpu_cgroup_path;
 public:
     CGroup()
     {
-        m_memory_cgroup_path = nullptr;
-        char* memoryHierarchyMount = nullptr;
-        char *cgroup_path_relative_to_mount = nullptr;
-        size_t len;
-        memoryHierarchyMount = FindMemoryHierarchyMount();
-        if (memoryHierarchyMount == nullptr)
-            goto done;
-
-        cgroup_path_relative_to_mount = FindCGroupPathForMemorySubsystem();
-        if (cgroup_path_relative_to_mount == nullptr)
-            goto done;
-
-        len = strlen(memoryHierarchyMount);
-        len += strlen(cgroup_path_relative_to_mount);
-        m_memory_cgroup_path = (char*)PAL_malloc(len+1);
-        if (m_memory_cgroup_path == nullptr)
-           goto done;
-        
-        strcpy_s(m_memory_cgroup_path, len+1, memoryHierarchyMount);
-        strcat_s(m_memory_cgroup_path, len+1, cgroup_path_relative_to_mount);
-
-    done:
-        PAL_free(memoryHierarchyMount);
-        PAL_free(cgroup_path_relative_to_mount);
+       m_memory_cgroup_path = FindMemoryCgroupPath();
+       m_cpu_cgroup_path = FindCpuCgroupPath();
     }
+
     ~CGroup()
     {
         PAL_free(m_memory_cgroup_path);
+        PAL_free(m_cpu_cgroup_path);
     }
     
     bool GetPhysicalMemoryLimit(size_t *val)
@@ -79,14 +61,115 @@ public:
         PAL_free(mem_limit_filename);
         return result;
     }
+
+    bool GetCpuLimit(UINT *val)
+    {
+        long long quota;
+        long long period;
+        long long cpu_count;
+
+        quota = ReadCpuCGroupValue(CFS_QUOTA_FILENAME);
+        if (quota <= 0)
+            return false;
+
+        period = ReadCpuCGroupValue(CFS_PERIOD_FILENAME);
+        if (period <= 0)
+            return false;
+
+        // Cannot have less than 1 CPU
+        if (quota <= period)
+        {
+            *val = 1;
+            return true;
+        }
+        
+        cpu_count = quota / period;
+        if (cpu_count < UINT_MAX)
+        {
+            *val = cpu_count;
+        }
+        else
+        {
+            *val = UINT_MAX;
+        }
+
+        return true;
+    }
+
 private:
-    char* FindMemoryHierarchyMount()
+    static bool IsMemorySubsystem(const char *strTok){
+        return strcmp("memory", strTok) == 0;
+    }
+
+    static bool IsCpuSubsystem(const char *strTok){
+        return strcmp("cpu", strTok) == 0;
+    }
+
+    static char* FindMemoryCgroupPath(){
+        char *memory_cgroup_path = nullptr;
+        char *memory_hierarchy_mount = nullptr;
+        char *mem_cgroup_path_relative_to_mount = nullptr;
+        size_t len;
+
+        memory_hierarchy_mount = FindHierarchyMount(&IsMemorySubsystem);
+        if (memory_hierarchy_mount == nullptr)
+            goto done;
+
+        mem_cgroup_path_relative_to_mount = FindCGroupPathForSubsystem(&IsMemorySubsystem);
+        if (mem_cgroup_path_relative_to_mount == nullptr)
+            goto done;
+
+        len = strlen(memory_hierarchy_mount);
+        len += strlen(mem_cgroup_path_relative_to_mount);
+        memory_cgroup_path = (char*)PAL_malloc(len+1);
+        if (memory_cgroup_path == nullptr)
+           goto done;
+        
+        strcpy_s(memory_cgroup_path, len+1, memory_hierarchy_mount);
+        strcat_s(memory_cgroup_path, len+1, mem_cgroup_path_relative_to_mount);
+
+    done:
+        PAL_free(memory_hierarchy_mount);
+        PAL_free(mem_cgroup_path_relative_to_mount);
+        return memory_cgroup_path;
+    }
+
+    static char* FindCpuCgroupPath(){
+        char *cpu_cgroup_path = nullptr;
+        char *cpu_hierarchy_mount = nullptr;     
+        char *cpu_cgroup_path_relative_to_mount = nullptr;
+        size_t len;
+
+        cpu_hierarchy_mount = FindHierarchyMount(&IsCpuSubsystem);
+        if (cpu_hierarchy_mount == nullptr)
+            goto done;
+
+        cpu_cgroup_path_relative_to_mount = FindCGroupPathForSubsystem(&IsCpuSubsystem);
+        if (cpu_cgroup_path_relative_to_mount == nullptr)
+            goto done;
+
+        len = strlen(cpu_hierarchy_mount);
+        len += strlen(cpu_cgroup_path_relative_to_mount);
+        cpu_cgroup_path = (char*)PAL_malloc(len+1);
+        if (cpu_cgroup_path == nullptr)
+           goto done;
+
+        strcpy_s(cpu_cgroup_path, len+1, cpu_hierarchy_mount);
+        strcat_s(cpu_cgroup_path, len+1, cpu_cgroup_path_relative_to_mount);
+
+    done:
+        PAL_free(cpu_hierarchy_mount);
+        PAL_free(cpu_cgroup_path_relative_to_mount);
+        return cpu_cgroup_path;
+    }
+
+    static char* FindHierarchyMount(bool (*is_subsystem)(const char *))
     {
         char *line = nullptr;
         size_t lineLen = 0, maxLineLen = 0;
         char *filesystemType = nullptr;
         char *options = nullptr;
-        char* mountpath = nullptr;
+        char *mountpath = nullptr;
 
         FILE *mountinfofile = fopen(PROC_MOUNTINFO_FILENAME, "r");
         if (mountinfofile == nullptr)
@@ -125,7 +208,7 @@ private:
                 char* strTok = strtok_s(options, ",", &context); 
                 while (strTok != nullptr)
                 {
-                    if (strncmp("memory", strTok, 6) == 0)
+                    if (is_subsystem(strTok))
                     {
                         mountpath = (char*)PAL_malloc(lineLen+1);
                         if (mountpath == nullptr)
@@ -155,7 +238,7 @@ private:
         return mountpath;
     }
 
-    char* FindCGroupPathForMemorySubsystem()
+    static char* FindCGroupPathForSubsystem(bool (*is_subsystem)(const char *))
     {
         char *line = nullptr;
         size_t lineLen = 0;
@@ -198,7 +281,7 @@ private:
             char* strTok = strtok_s(subsystem_list, ",", &context); 
             while (strTok != nullptr)
             {
-                if (strncmp("memory", strTok, 6) == 0)
+                if (is_subsystem(strTok))
                 {
                     result = true;
                     break;  
@@ -257,6 +340,60 @@ private:
         result = true;
         if (*val/multiplier != num)
             result = false;
+    done:
+        if (file)
+            fclose(file);
+        free(line);    
+        return result;
+    }
+
+    long long ReadCpuCGroupValue(const char* subsystemFilename){
+        char *filename = nullptr;
+        bool result = false;
+        long long val;
+        size_t len;
+
+        if (m_cpu_cgroup_path == nullptr)
+            return -1;
+
+        len = strlen(m_cpu_cgroup_path);
+        len += strlen(subsystemFilename);
+        filename = (char*)PAL_malloc(len + 1);
+        if (filename == nullptr)
+            return -1;
+
+        strcpy_s(filename, len+1, m_cpu_cgroup_path);
+        strcat_s(filename, len+1, subsystemFilename);
+        result = ReadLongLongValueFromFile(filename, &val);
+        PAL_free(filename);
+        if (!result)
+            return -1;
+
+        return val;
+    }
+
+    bool ReadLongLongValueFromFile(const char* filename, long long* val)
+    {
+        bool result = false;
+        char *line = nullptr;
+        size_t lineLen = 0;
+  
+        if (val == nullptr)
+            return false;;
+    
+        FILE* file = fopen(filename, "r");
+        if (file == nullptr)
+            goto done;
+        
+        if (getline(&line, &lineLen, file) == -1)
+            goto done;
+
+        errno = 0;
+        *val = atoll(line);
+        if (errno != 0)
+            goto done;      
+
+        result = true;
     done:
         if (file)
             fclose(file);
@@ -332,4 +469,16 @@ PAL_GetWorkingSetSize(size_t* val)
         fclose(file);
     free(line);
     return result;
+}
+
+BOOL
+PALAPI
+PAL_GetCpuLimit(UINT* val)
+{
+    CGroup cgroup;
+
+    if (val == nullptr)
+        return FALSE;
+
+    return cgroup.GetCpuLimit(val);
 }
