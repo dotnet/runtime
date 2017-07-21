@@ -140,7 +140,7 @@
     <SdkRestoreProjects Include="$(MSBuildThisFileDirectory)src\managed\Microsoft.DotNet.PlatformAbstractions\Microsoft.DotNet.PlatformAbstractions.csproj" />
     <SdkRestoreProjects Include="$(MSBuildThisFileDirectory)src\managed\Microsoft.Extensions.DependencyModel\Microsoft.Extensions.DependencyModel.csproj">
       <!-- Workaround https://github.com/NuGet/Home/issues/4337 -->
-      <ExtraRestoreArgs>/p:VersionSuffix=$(VersionSuffix)</ExtraRestoreArgs>
+      <ExtraRestoreArgs Condition="'$(StabilizePackageVersion)' != 'true'">/p:VersionSuffix=$(VersionSuffix)</ExtraRestoreArgs>
     </SdkRestoreProjects>
   </ItemGroup>
   <PropertyGroup>
