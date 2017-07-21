@@ -2,16 +2,13 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Threading;
-using System.Data.SqlClient;
-using System.Data.SqlClient.SNI;
-using System.Runtime.InteropServices;
-
-namespace System.Data
+namespace System.Data.SqlClient.SNI
 {
-    internal static partial class LocalDBAPI
+    internal class LocalDB
     {
-        private static IntPtr LoadProcAddress() =>
+        internal static string GetLocalDBConnectionString(string localDbInstance)
+        {
             throw new PlatformNotSupportedException(SR.LocalDBNotSupported); // No Registry support on UAP
+        }
     }
 }
