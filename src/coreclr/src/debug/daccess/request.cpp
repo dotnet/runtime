@@ -13,8 +13,6 @@
 #include "stdafx.h"
 #include <win32threadpool.h>
 
-// TODO(Local GC) - The DAC should not include GC headers
-#include <../../gc/handletablepriv.h>
 #include "typestring.h"
 #include <gccover.h>
 #include <virtualcallstub.h>
@@ -3871,7 +3869,7 @@ HRESULT ClrDataAccess::GetClrWatsonBucketsWorker(Thread * pThread, GenericModeBl
     if (ohThrowable != NULL)
     {
         // Get the object from handle and check if the throwable is preallocated or not
-        OBJECTREF oThrowable = ::HndFetchHandle(ohThrowable);
+        OBJECTREF oThrowable = ObjectFromHandle(ohThrowable);
         if (oThrowable != NULL)
         {
             // Does the throwable have buckets?
@@ -4165,7 +4163,7 @@ HRESULT ClrDataAccess::GetCCWData(CLRDATA_ADDRESS ccw, struct DacpCCWData *ccwDa
     ccwData->isAggregated = pCCW->GetSimpleWrapper()->IsAggregated();
 
     if (pCCW->GetObjectHandle() != NULL)
-        ccwData->managedObject = PTR_CDADDR(::HndFetchHandle(pCCW->GetObjectHandle()));
+        ccwData->managedObject = PTR_CDADDR(ObjectFromHandle(pCCW->GetObjectHandle()));
 
     // count the number of COM vtables
     ccwData->interfaceCount = 0;

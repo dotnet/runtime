@@ -249,11 +249,13 @@ void TouchPages(void * pStart, size_t cb);
 void updateGCShadow(Object** ptr, Object* val);
 #endif
 
+#ifndef DACCESS_COMPILE
 // The single GC heap instance, shared with the VM.
 extern IGCHeapInternal* g_theGCHeap;
 
 // The single GC handle manager instance, shared with the VM.
 extern IGCHandleManager* g_theGCHandleManager;
+#endif // DACCESS_COMPILE
 
 #ifndef DACCESS_COMPILE
 inline bool IsGCInProgress(bool bConsiderGCStart = false)
