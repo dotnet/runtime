@@ -22,6 +22,7 @@ PAL_GetResourceString
 PAL_get_stdout
 PAL_get_stderr
 PAL_GetCurrentThread
+PAL_GetCpuLimit
 PAL_GetSymbolModuleBase
 PAL_GetTransportPipeName
 PAL_InitializeDLL
