@@ -9948,9 +9948,9 @@ void Compiler::gtDispRegVal(GenTree* tree)
 #endif
 
 #if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
-    if (tree->IsMultiReg())
+    if (tree->IsMultiReg() && tree->AsMultiRegOp()->gtOtherReg != REG_NA)
     {
-        printf(",%s", compRegVarName((regNumber)tree->AsMultiRegOp()->gtOtherReg));
+        printf(",%s", compRegVarName(tree->AsMultiRegOp()->gtOtherReg));
     }
 #endif
 
