@@ -14,10 +14,7 @@
 #ifndef __DACIMPL_H__
 #define __DACIMPL_H__
 
-// This header include will need to be removed as part of GitHub#12170.
-// The only reason it's here now is that this header references the GC-private
-// structure "HandleTableMap".
-#include "../../gc/objecthandle.h"
+#include "gcinterface.dac.h"
 
 #if defined(_TARGET_ARM_) || defined(FEATURE_CORESYSTEM) // @ARMTODO: STL breaks the build with current VC headers
 //---------------------------------------------------------------------------------------
@@ -2242,7 +2239,7 @@ private:
     ULONG32 m_instanceAge;
     
     // Handle table walking variables.
-    HandleTableMap *mMap;
+    dac_handle_table_map *mMap;
     int mIndex;
     UINT32 mTypeMask;
     int mGenerationFilter;

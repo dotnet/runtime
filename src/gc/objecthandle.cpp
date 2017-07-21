@@ -28,7 +28,7 @@
 #include "nativeoverlapped.h"
 #endif // FEATURE_REDHAWK
 
-GVAL_IMPL(HandleTableMap, g_HandleTableMap);
+HandleTableMap g_HandleTableMap;
 
 // Array of contexts used while scanning dependent handles for promotion. There are as many contexts as GC
 // heaps and they're allocated by Ref_Initialize and initialized during each GC by GcDhInitialScan.
@@ -1894,9 +1894,24 @@ bool HandleTableBucket::Contains(OBJECTHANDLE handle)
 
 #endif // !DACCESS_COMPILE
 
+GC_DAC_VISIBLE
 OBJECTREF GetDependentHandleSecondary(OBJECTHANDLE handle)
 { 
     WRAPPER_NO_CONTRACT;
 
     return UNCHECKED_OBJECTREF_TO_OBJECTREF((_UNCHECKED_OBJECTREF)HndGetHandleExtraInfo(handle));
+}
+
+void PopulateHandleTableDacVars(GcDacVars* gcDacVars)
+{
+    static_assert(offsetof(HandleTableMap, pBuckets) == offsetof(dac_handle_table_map, pBuckets), "handle table map DAC layout mismatch");
+    static_assert(offsetof(HandleTableMap, pNext) == offsetof(dac_handle_table_map, pNext), "handle table map DAC layout mismatch");
+    static_assert(offsetof(HandleTableMap, dwMaxIndex) == offsetof(dac_handle_table_map, dwMaxIndex), "handle table map DAC layout mismatch");
+    static_assert(offsetof(HandleTableBucket, pTable) == offsetof(dac_handle_table_bucket, pTable), "handle table bucket DAC layout mismatch");
+    static_assert(offsetof(HandleTableBucket, HandleTableIndex) == offsetof(dac_handle_table_bucket, HandleTableIndex), "handle table bucket DAC layout mismatch");
+    static_assert(offsetof(HandleTable, uADIndex) == offsetof(dac_handle_table, uADIndex), "handle table DAC layout mismatch");
+
+#ifndef DACCESS_COMPILE
+    gcDacVars->handle_table_map = reinterpret_cast<dac_handle_table_map*>(&g_HandleTableMap);
+#endif // DACCESS_COMPILE
 }
