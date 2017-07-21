@@ -145,7 +145,7 @@ mono_profiler_load (const char *desc)
 }
 
 MonoProfilerHandle
-mono_profiler_install (MonoProfiler *prof)
+mono_profiler_create (MonoProfiler *prof)
 {
 	MonoProfilerHandle handle = g_new0 (struct _MonoProfilerDesc, 1);
 

@@ -4653,7 +4653,7 @@ mono_profiler_init_log (const char *desc)
 
 	mono_lls_init (&log_profiler.profiler_thread_list, NULL);
 
-	MonoProfilerHandle handle = log_profiler.handle = mono_profiler_install (&log_profiler);
+	MonoProfilerHandle handle = log_profiler.handle = mono_profiler_create (&log_profiler);
 
 	/*
 	 * Required callbacks. These are either necessary for the profiler itself

@@ -595,11 +595,6 @@ typedef struct {
 	MonoClass *klass;
 } EventInfo;
 
-/* Dummy structure used for the profiler callbacks */
-typedef struct {
-	void* dummy;
-} DebuggerProfiler;
-
 typedef struct {
 	guint8 *buf, *p, *end;
 } Buffer;
@@ -699,8 +694,6 @@ static MonoCoopCond debugger_thread_exited_cond;
 
 /* Mutex for the cond var above */
 static MonoCoopMutex debugger_thread_exited_mutex;
-
-static DebuggerProfiler debugger_profiler;
 
 /* The single step request instance */
 static SingleStepReq *ss_req;
@@ -999,7 +992,7 @@ mono_debugger_agent_init (void)
 	mono_coop_mutex_init (&debugger_thread_exited_mutex);
 	mono_coop_cond_init (&debugger_thread_exited_cond);
 
-	MonoProfilerHandle prof = mono_profiler_install ((MonoProfiler*)&debugger_profiler);
+	MonoProfilerHandle prof = mono_profiler_create (NULL);
 	mono_profiler_set_runtime_shutdown_end_callback (prof, runtime_shutdown);
 	mono_profiler_set_runtime_initialized_callback (prof, runtime_initialized);
 	mono_profiler_set_domain_loaded_callback (prof, appdomain_load);
