@@ -124,6 +124,8 @@ namespace SVR
     extern void PopulateDacVars(GcDacVars* dacVars);
 }
 
+extern void PopulateHandleTableDacVars(GcDacVars* dacVars);
+
 //------------------------------------------------------------------
 // Externally-facing GC symbols, used to initialize the GC
 // -----------------------------------------------------------------
@@ -203,6 +205,7 @@ InitializeGarbageCollector(
     WKS::PopulateDacVars(gcDacVars);
 #endif
 
+    PopulateHandleTableDacVars(gcDacVars);
     if (heap == nullptr)
     {
         return false;

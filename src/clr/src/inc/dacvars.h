@@ -242,7 +242,6 @@ DEFINE_DACVAR(ULONG, SIZE_T, dac__g_runtimeVirtualSize, ::g_runtimeVirtualSize)
 
 DEFINE_DACVAR(ULONG, SyncBlockCache *, SyncBlockCache__s_pSyncBlockCache, SyncBlockCache::s_pSyncBlockCache)
 
-DEFINE_DACVAR(ULONG, HandleTableMap, dac__g_HandleTableMap, ::g_HandleTableMap)
 DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pStressLog, ::g_pStressLog)
 
 DEFINE_DACVAR(ULONG, SIZE_T, dac__s_gsCookie, ::s_gsCookie)
