@@ -129,7 +129,6 @@ namespace System.Drawing.Text.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        [ActiveIssue("https://github.com/dotnet/corefx/issues/8655")]
         public void AddFontFile_LongFilePath_ThrowsException()
         {
             using (var fontCollection = new PrivateFontCollection())
