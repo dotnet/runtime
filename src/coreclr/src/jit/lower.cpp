@@ -907,7 +907,7 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
                     //
                     // clang-format on
 
-                    putArg = comp->gtNewOperNode(GT_PUTARG_REG, type, arg);
+                    putArg = comp->gtNewPutArgReg(type, arg);
                 }
                 else if (info->structDesc.eightByteCount == 2)
                 {
@@ -950,8 +950,7 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
                     for (unsigned ctr = 0; fieldListPtr != nullptr; fieldListPtr = fieldListPtr->Rest(), ctr++)
                     {
                         // Create a new GT_PUTARG_REG node with op1 the original GT_LCL_FLD.
-                        GenTreePtr newOper = comp->gtNewOperNode(
-                            GT_PUTARG_REG,
+                        GenTreePtr newOper = comp->gtNewPutArgReg(
                             comp->GetTypeFromClassificationAndSizes(info->structDesc.eightByteClassifications[ctr],
                                                                     info->structDesc.eightByteSizes[ctr]),
                             fieldListPtr->gtOp.gtOp1);
@@ -986,7 +985,7 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
                     var_types  curTyp = curOp->TypeGet();
 
                     // Create a new GT_PUTARG_REG node with op1
-                    GenTreePtr newOper = comp->gtNewOperNode(GT_PUTARG_REG, curTyp, curOp);
+                    GenTreePtr newOper = comp->gtNewPutArgReg(curTyp, curOp);
 
                     // Splice in the new GT_PUTARG_REG node in the GT_FIELD_LIST
                     ReplaceArgWithPutArgOrCopy(&fieldListPtr->gtOp.gtOp1, newOper);
