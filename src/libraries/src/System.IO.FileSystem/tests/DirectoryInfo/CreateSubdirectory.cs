@@ -189,7 +189,6 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(UsingNewNormalization))]
-        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
         [PlatformSpecific(TestPlatforms.Windows)]  // Extended windows path
         public void ExtendedPathSubdirectory()
         {

@@ -118,7 +118,6 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(UsingNewNormalization))]
-        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
         public void ExtendedDirectoryWithSubdirectories()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(IOInputs.ExtendedPrefix + GetTestFilePath());
@@ -128,7 +127,6 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(LongPathsAreNotBlocked), nameof(UsingNewNormalization))]
-        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
         public void LongPathExtendedDirectory()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(IOServices.GetPath(IOInputs.ExtendedPrefix + TestDirectory, characterCount: 500));
@@ -152,7 +150,6 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(UsingNewNormalization))]
-        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
         [PlatformSpecific(TestPlatforms.Windows)]  // Deleting extended readonly directory throws IOException
         public void WindowsDeleteExtendedReadOnlyDirectory()
         {
@@ -184,7 +181,6 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(UsingNewNormalization))]
-        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
         [PlatformSpecific(TestPlatforms.Windows)]  // Deleting extended hidden directory succeeds
         public void WindowsShouldBeAbleToDeleteExtendedHiddenDirectory()
         {

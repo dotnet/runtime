@@ -174,7 +174,6 @@ namespace System.IO.Tests
 
         [ConditionalTheory(nameof(UsingNewNormalization)),
             MemberData(nameof(ValidPathComponentNames))]
-        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
         [PlatformSpecific(TestPlatforms.Windows)]  // Extended path exists
         public void ValidExtendedPathExists_ReturnsTrue(string component)
         {
@@ -184,7 +183,6 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(UsingNewNormalization))]
-        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
         [PlatformSpecific(TestPlatforms.Windows)]  // Extended path already exists as file
         public void ExtendedPathAlreadyExistsAsFile()
         {
@@ -197,7 +195,6 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(UsingNewNormalization))]
-        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
         [PlatformSpecific(TestPlatforms.Windows)]  // Extended path already exists as directory
         public void ExtendedPathAlreadyExistsAsDirectory()
         {
@@ -210,7 +207,6 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
-        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
         [PlatformSpecific(TestPlatforms.Windows)]  // Long directory path doesn't throw on Exists
         public void DirectoryLongerThanMaxDirectoryAsPath_DoesntThrow()
         {
@@ -252,7 +248,6 @@ namespace System.IO.Tests
 
         [ConditionalTheory(nameof(UsingNewNormalization)),
             MemberData(nameof(SimpleWhiteSpace))]
-        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
         [PlatformSpecific(TestPlatforms.Windows)] // In Windows, trailing whitespace in a path is trimmed appropriately
         public void TrailingWhitespaceExistence_SimpleWhiteSpace(string component)
         {
