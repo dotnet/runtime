@@ -95,7 +95,7 @@ namespace Microsoft.DotNet.Build.Tasks
 
                 try
                 {
-                    CopyBlobs($"Runtime/{ProductVersion}", $"Runtime/{Channel}/");
+                    CopyBlobs($"Runtime/{ProductVersion}/", $"Runtime/{Channel}/");
 
                     // Generate the latest version text file
                     string sfxVersion = GetSharedFrameworkVersionFileContent();
