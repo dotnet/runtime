@@ -4775,20 +4775,13 @@ GenTreePtr Compiler::fgMorphMultiregStructArg(GenTreePtr arg, fgArgTabEntryPtr f
             return arg;
         }
 
-        GenTreeLclVarCommon* lclCommon =
-            arg->OperGet() == GT_ADDR ? arg->gtOp.gtOp1->AsLclVarCommon() : arg->AsLclVarCommon();
+        assert(arg->OperGet() == GT_LCL_VAR);
 
-        // If we didn't change the type of the struct, it means
-        // its classification doesn't support to be passed directly through a
-        // register, so we need to pass a pointer to the destination where
-        // where we copied the struct to.
-        // Make sure this is an addr node.
-        if (arg->OperGet() != GT_ADDR && arg->OperGet() != GT_LCL_VAR_ADDR)
-        {
-            arg = gtNewOperNode(GT_ADDR, TYP_I_IMPL, arg);
-        }
+        // We need to construct a `GT_OBJ` node for the argmuent,
+        // so we need to get the address of the lclVar.
+        GenTreeLclVarCommon* lclCommon = arg->AsLclVarCommon();
 
-        assert(arg->OperGet() == GT_ADDR || arg->OperGet() == GT_LCL_VAR_ADDR);
+        arg = gtNewOperNode(GT_ADDR, TYP_I_IMPL, arg);
 
         // Create an Obj of the temp to use it as a call argument.
         arg = gtNewObjNode(lvaGetStruct(lclCommon->gtLclNum), arg);
