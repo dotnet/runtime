@@ -4766,15 +4766,26 @@ GenTreePtr Compiler::fgMorphMultiregStructArg(GenTreePtr arg, fgArgTabEntryPtr f
 #endif
 
 #ifdef _TARGET_ARM_
-    if (fgEntryPtr->isSplit)
+    if ((fgEntryPtr->isSplit && fgEntryPtr->numSlots + fgEntryPtr->numRegs > 4) ||
+        (!fgEntryPtr->isSplit && fgEntryPtr->regNum == REG_STK))
     {
-        if (fgEntryPtr->numSlots + fgEntryPtr->numRegs > 4)
+        // If already OBJ it is set properly already.
+        if (arg->OperGet() == GT_OBJ)
         {
             return arg;
         }
-    }
-    else if (!fgEntryPtr->isHfaRegArg && fgEntryPtr->numSlots > 4)
-    {
+
+        assert(arg->OperGet() == GT_LCL_VAR);
+
+        // We need to construct a `GT_OBJ` node for the argmuent,
+        // so we need to get the address of the lclVar.
+        GenTreeLclVarCommon* lclCommon = arg->AsLclVarCommon();
+
+        arg = gtNewOperNode(GT_ADDR, TYP_I_IMPL, arg);
+
+        // Create an Obj of the temp to use it as a call argument.
+        arg = gtNewObjNode(lvaGetStruct(lclCommon->gtLclNum), arg);
+
         return arg;
     }
 #endif
