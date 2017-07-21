@@ -790,7 +790,7 @@ namespace System.Runtime.Serialization
                             {
                                 _incrementCollectionCountDelegate = (x, o, c) =>
                                 {
-                                    context.IncrementCollectionCount(x, (ICollection)o);
+                                    c.IncrementCollectionCount(x, (ICollection)o);
                                 };
                             }
                             break;
