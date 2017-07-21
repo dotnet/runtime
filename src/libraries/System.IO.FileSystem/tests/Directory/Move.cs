@@ -217,7 +217,6 @@ namespace System.IO.Tests
         #region PlatformSpecific
 
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
-        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
         [PlatformSpecific(TestPlatforms.Windows)]  // Long path succeeds
         public void Path_With_Longer_Than_MaxDirectory_Succeeds()
         {
