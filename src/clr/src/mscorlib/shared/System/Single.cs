@@ -11,20 +11,20 @@
 **
 ===========================================================*/
 
-using System.Globalization;
 using System;
-using System.Runtime.InteropServices;
+using System.Diagnostics.Contracts;
+using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.ConstrainedExecution;
-using System.Diagnostics.Contracts;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace System
 {
     [Serializable]
-    [System.Runtime.InteropServices.StructLayout(LayoutKind.Sequential)]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public struct Single : IComparable, IFormattable, IConvertible
-            , IComparable<Single>, IEquatable<Single>
+    [StructLayout(LayoutKind.Sequential)]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    public struct Single : IComparable, IConvertible, IFormattable, IComparable<Single>, IEquatable<Single>
     {
         private float m_value; // Do not rename (binary serialization)
 
@@ -38,11 +38,12 @@ namespace System
         public const float NegativeInfinity = (float)-1.0 / (float)0.0;
         public const float NaN = (float)0.0 / (float)0.0;
 
-        internal static float NegativeZero = BitConverter.Int32BitsToSingle(unchecked((int)0x80000000));
+        // We use this explicit definition to avoid the confusion between 0.0 and -0.0.
+        internal const float NegativeZero = (float)-0.0;
 
         /// <summary>Determines whether the specified value is finite (zero, subnormal, or normal).</summary>
         [Pure]
-        [System.Runtime.Versioning.NonVersionable]
+        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsFinite(float f)
         {
@@ -52,7 +53,7 @@ namespace System
 
         /// <summary>Determines whether the specified value is infinite.</summary>
         [Pure]
-        [System.Runtime.Versioning.NonVersionable]
+        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe static bool IsInfinity(float f)
         {
@@ -62,7 +63,7 @@ namespace System
 
         /// <summary>Determines whether the specified value is NaN.</summary>
         [Pure]
-        [System.Runtime.Versioning.NonVersionable]
+        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe static bool IsNaN(float f)
         {
@@ -72,7 +73,7 @@ namespace System
 
         /// <summary>Determines whether the specified value is negative.</summary>
         [Pure]
-        [System.Runtime.Versioning.NonVersionable]
+        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe static bool IsNegative(float f)
         {
@@ -82,7 +83,7 @@ namespace System
 
         /// <summary>Determines whether the specified value is negative infinity.</summary>
         [Pure]
-        [System.Runtime.Versioning.NonVersionable]
+        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe static bool IsNegativeInfinity(float f)
         {
@@ -91,7 +92,7 @@ namespace System
 
         /// <summary>Determines whether the specified value is normal.</summary>
         [Pure]
-        [System.Runtime.Versioning.NonVersionable]
+        [NonVersionable]
         // This is probably not worth inlining, it has branches and should be rarely called
         public unsafe static bool IsNormal(float f)
         {
@@ -102,7 +103,7 @@ namespace System
 
         /// <summary>Determines whether the specified value is positive infinity.</summary>
         [Pure]
-        [System.Runtime.Versioning.NonVersionable]
+        [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public unsafe static bool IsPositiveInfinity(float f)
         {
@@ -111,7 +112,7 @@ namespace System
 
         /// <summary>Determines whether the specified value is subnormal.</summary>
         [Pure]
-        [System.Runtime.Versioning.NonVersionable]
+        [NonVersionable]
         // This is probably not worth inlining, it has branches and should be rarely called
         public unsafe static bool IsSubnormal(float f)
         {
@@ -162,37 +163,37 @@ namespace System
                 return 1;
         }
 
-        [System.Runtime.Versioning.NonVersionable]
+        [NonVersionable]
         public static bool operator ==(Single left, Single right)
         {
             return left == right;
         }
 
-        [System.Runtime.Versioning.NonVersionable]
+        [NonVersionable]
         public static bool operator !=(Single left, Single right)
         {
             return left != right;
         }
 
-        [System.Runtime.Versioning.NonVersionable]
+        [NonVersionable]
         public static bool operator <(Single left, Single right)
         {
             return left < right;
         }
 
-        [System.Runtime.Versioning.NonVersionable]
+        [NonVersionable]
         public static bool operator >(Single left, Single right)
         {
             return left > right;
         }
 
-        [System.Runtime.Versioning.NonVersionable]
+        [NonVersionable]
         public static bool operator <=(Single left, Single right)
         {
             return left <= right;
         }
 
-        [System.Runtime.Versioning.NonVersionable]
+        [NonVersionable]
         public static bool operator >=(Single left, Single right)
         {
             return left >= right;
