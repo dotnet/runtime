@@ -320,7 +320,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Currency.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Decimal.cs" />
     <Compile Include="$(BclSourcesRoot)\System\DefaultBinder.CanConvert.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Double.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Empty.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Enum.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Environment.cs" />
@@ -347,7 +346,6 @@
     <Compile Include="$(BclSourcesRoot)\System\SByte.cs" />
     <Compile Include="$(BclSourcesRoot)\System\SerializableAttribute.cs" />
     <Compile Include="$(BclSourcesRoot)\System\SharedStatics.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Single.cs" />
     <Compile Include="$(BclSourcesRoot)\System\StubHelpers.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TimeZoneInfo.AdjustmentRule.cs" />
     <Compile Include="$(BclSourcesRoot)\System\TimeZoneInfo.cs" />
