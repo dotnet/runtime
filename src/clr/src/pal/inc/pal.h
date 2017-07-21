@@ -2569,6 +2569,11 @@ PALAPI
 PAL_GetWorkingSetSize(size_t* val);
 
 PALIMPORT
+BOOL
+PALAPI
+PAL_GetCpuLimit(UINT* val);
+
+PALIMPORT
 size_t
 PALAPI
 PAL_GetLogicalProcessorCacheSizeFromOS(VOID);
