@@ -199,6 +199,7 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'uap'">
     <Compile Include="System\Data\SqlClient\TdsParserStateObjectFactory.Managed.cs" />
     <Compile Include="System\Data\SqlClient\LocalDBAPI.uap.cs" />
+    <Compile Include="System\Data\SqlClient\SNI\LocalDB.uap.cs" />
     <Compile Include="System\Data\ProviderBase\DbConnectionPoolIdentity.Unix.cs" />
     <Compile Include="System\Data\SqlClient\TdsParser.Unix.cs" />
   </ItemGroup>
@@ -208,15 +209,15 @@
     <Compile Include="Interop\SNINativeMethodWrapper.Windows.cs" />
     <Compile Include="System\Data\SqlClient\TdsParserSafeHandles.cs" />
     <Compile Include="System\Data\SqlClient\LocalDBAPI.Windows.cs" />
+    <Compile Include="System\Data\SqlClient\SNI\LocalDB.Windows.cs" />
     <Compile Include="System\Data\ProviderBase\DbConnectionPoolIdentity.Windows.cs" />
     <Compile Include="System\Data\SqlClient\TdsParser.Windows.cs" />
-  </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(IsPartialFacadeAssembly)' != 'true'">
-    <Compile Include="System\Data\SqlClient\SNI\LocalDB.Windows.cs" />
-    <Compile Include="System\Data\SqlClient\LocalDBAPI.Common.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.LoadLibraryEx.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.LoadLibraryEx.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' And '$(IsPartialFacadeAssembly)' != 'true'">
+    <Compile Include="System\Data\SqlClient\LocalDBAPI.Common.cs" />
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FreeLibrary.cs">
       <Link>Common\Interop\Windows\kernel32\Interop.FreeLibrary.cs</Link>
     </Compile>
@@ -394,7 +395,7 @@
     <Compile Include="System\Data\SqlClient\LocalDBAPI.Unix.cs" />
     <Compile Include="System\Data\SqlClient\SNI\LocalDB.Unix.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(IsPartialFacadeAssembly)' != 'true' ">
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' And '$(IsPartialFacadeAssembly)' != 'true' and '$(TargetGroup)' != 'uap'">
     <Reference Include="Microsoft.Win32.Registry" />
   </ItemGroup>
   <ItemGroup Condition="'$(IsPartialFacadeAssembly)' != 'true'">
