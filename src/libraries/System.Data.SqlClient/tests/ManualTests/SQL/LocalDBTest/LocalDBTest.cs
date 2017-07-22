@@ -62,8 +62,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             builder.IntegratedSecurity = true;
             builder.ConnectTimeout = 2;
 
-            string errorMsg = SystemDataResourceManager.Instance.LocalDBNotSupported;
-            DataTestUtility.AssertThrowsWrapper<PlatformNotSupportedException>(() => OpenConnection(builder.ConnectionString), errorMsg);
+            DataTestUtility.AssertThrowsWrapper<PlatformNotSupportedException>(() => OpenConnection(builder.ConnectionString));
         }
     }
 }
