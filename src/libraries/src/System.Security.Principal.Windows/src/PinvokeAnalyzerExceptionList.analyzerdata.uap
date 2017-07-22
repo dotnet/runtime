@@ -1,16 +1,1 @@
-# Discussing with networking team
-advapi32.dll!LsaClose
-advapi32.dll!LsaFreeMemory
-advapi32.dll!LsaLookupNames2
-advapi32.dll!LsaLookupSids
-advapi32.dll!LsaNtStatusToWinError
-advapi32.dll!LsaOpenPolicy
-advapi32.dll!OpenProcessToken
 kernel32.dll!CheckTokenMembershipEx
-ntdll.dll!RtlNtStatusToDosError
-sspicli.dll!LsaConnectUntrusted
-sspicli.dll!LsaDeregisterLogonProcess
-sspicli.dll!LsaFreeReturnBuffer
-sspicli.dll!LsaGetLogonSessionData
-sspicli.dll!LsaLogonUser
-sspicli.dll!LsaLookupAuthenticationPackage
