@@ -540,31 +540,29 @@ namespace System.Xml.Xsl.XsltOld
 
         public static XPathResultType GetXPathType(Type type)
         {
-            if (type == typeof(String))
-                return XPathResultType.String;
-            if (type == typeof(Boolean))
-                return XPathResultType.Boolean;
-            if (type == typeof(Object))
+            switch (Type.GetTypeCode(type))
             {
-                if (
-                    typeof(XPathNavigator).IsAssignableFrom(type) ||
-                    typeof(IXPathNavigable).IsAssignableFrom(type)
-                )
-                {
-                    return XPathResultType.Navigator;
-                }
-                if (typeof(XPathNodeIterator).IsAssignableFrom(type))
-                {
-                    return XPathResultType.NodeSet;
-                }
-                // sdub: It be better to check that type is realy object and otherwise return XPathResultType.Error
-                return XPathResultType.Any;
-            }
-            if (type == typeof(DateTime))
-                return XPathResultType.Error;
+                case TypeCode.String:
+                    return XPathResultType.String;
+                case TypeCode.Boolean:
+                    return XPathResultType.Boolean;
+                case TypeCode.Object:
+                    if (typeof(XPathNavigator).IsAssignableFrom(type) || typeof(IXPathNavigable).IsAssignableFrom(type))
+                    {
+                        return XPathResultType.Navigator;
+                    }
+                    if (typeof(XPathNodeIterator).IsAssignableFrom(type))
+                    {
+                        return XPathResultType.NodeSet;
+                    }
+                    // sdub: It be better to check that type is realy object and otherwise return XPathResultType.Error
+                    return XPathResultType.Any;
+                case TypeCode.DateTime:
+                    return XPathResultType.Error;
 
-            /* all numeric types */
-            return XPathResultType.Number;
+                default: /* all numeric types */
+                    return XPathResultType.Number;
+            }
         }
 
         // ---------------- Xslt Function Implementations -------------------

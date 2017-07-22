@@ -386,7 +386,7 @@ namespace System.Xml.Xsl.XsltOld
             // If it's already a double we would like to keep it as double.
             // So this function converts to string only if if result is nodeset or RTF
             Debug.Assert(!(value is int));
-            if (value.GetType() == typeof(Object))
+            if (Type.GetTypeCode(value.GetType()) == TypeCode.Object)
             {
                 XPathNodeIterator nodeset = value as XPathNodeIterator;
                 if (nodeset != null)
