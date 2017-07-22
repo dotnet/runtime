@@ -85,7 +85,7 @@ namespace System.Net.Http
                             response.Dispose();
 
                             request.Headers.ProxyAuthorization = new AuthenticationHeaderValue(Basic,
-                                BasicAuthenticationHelper.GetBasicTokenForCredential(credential));
+                             AuthenticationHelper.GetBasicTokenForCredential(credential));
 
                             connection = await GetOrCreateConnection(request, proxyUri).ConfigureAwait(false);
                             response = await connection.SendAsync(request, cancellationToken).ConfigureAwait(false);

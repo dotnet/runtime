@@ -121,7 +121,8 @@
   <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
     <Compile Include="System\Net\Http\Managed\AuthenticationHandler.cs" />
     <Compile Include="System\Net\Http\Managed\AutoRedirectHandler.cs" />
-    <Compile Include="System\Net\Http\Managed\BasicAuthenticationHelper.cs" />
+    <Compile Include="System\Net\Http\Managed\AuthenticationHelper.Basic.cs" />
+    <Compile Include="System\Net\Http\Managed\AuthenticationHelper.Digest.cs" />
     <Compile Include="System\Net\Http\Managed\ChunkedEncodingReadStream.cs" />
     <Compile Include="System\Net\Http\Managed\ChunkedEncodingWriteStream.cs" />
     <Compile Include="System\Net\Http\Managed\ConnectHelper.cs" />
@@ -438,8 +439,11 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
+    <Reference Include="System.Security.Cryptography.Algorithms" />
+    <Reference Include="System.Security.Cryptography.Csp" />
     <Reference Include="System.Security.Cryptography.Encoding" />
     <Reference Include="System.Security.Cryptography.OpenSsl" />
+    <Reference Include="System.Security.Cryptography.Primitives" />
     <Reference Include="System.Security.Cryptography.X509Certificates" />
     <Reference Include="System.Text.Encoding" />
     <Reference Include="System.Text.Encoding.Extensions" />
