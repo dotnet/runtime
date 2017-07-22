@@ -163,15 +163,9 @@ namespace System.IO.Tests
             }
             else
             {
-                AssertExtensions.ThrowsAny<IOException, PathTooLongException>(
+                AssertExtensions.ThrowsAny<IOException, DirectoryNotFoundException, PathTooLongException>(
                     () => Create(Path.Combine(testDir.FullName, new string('a', 300))));
             }
-
-            //TODO #645: File creation does not yet have long path support on Unix or Windows
-            //using (Create(Path.Combine(testDir.FullName, new string('k', 257))))
-            //{
-            //    Assert.True(File.Exists(Path.Combine(testDir.FullName, new string('k', 257))));
-            //}
         }
 
         #endregion
