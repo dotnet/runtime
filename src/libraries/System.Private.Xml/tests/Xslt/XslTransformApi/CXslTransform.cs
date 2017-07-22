@@ -2711,7 +2711,6 @@ param2 (correct answer is 'local-param2-arg'): local-param2-arg
         [InlineData(InputType.URI, ReaderType.XmlValidatingReader, TransformType.Stream, DocType.XPathDocument)]
         [InlineData(InputType.Navigator, ReaderType.XmlValidatingReader, TransformType.TextWriter, DocType.XPathDocument)]
         [Theory]
-        [ActiveIssue(22373)]
         public void TC_XPathNodeIterator_From_ExtensionObject(InputType inputType, ReaderType readerType, TransformType transformType, DocType docType)
         {
             m_xsltArg = new XsltArgumentList();
@@ -2719,7 +2718,7 @@ param2 (correct answer is 'local-param2-arg'): local-param2-arg
             LoadXSL("Bug111075.xsl", inputType, readerType);
             Transform_ArgList("Bug111075.xml", transformType, docType);
 
-            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><distinct-countries>France, Spain, Austria, Germany</distinct-countries>";
+            string expected = @"<?xml version=""1.0"" encoding=""utf-8""?><distinct-countries>Austria, France, Germany, Spain</distinct-countries>";
             VerifyResult(expected);
         }
 
