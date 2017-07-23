@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -24,6 +25,15 @@ namespace System.Net.Sockets.Tests
                         yield return new object[] { listenAt, sendPreAndPostBuffers, bytesToSend };
                     }
                 }
+            }
+        }
+
+        public static IEnumerable<object[]> SendFileSync_MemberData()
+        {
+            foreach (object[] memberData in SendFile_MemberData())
+            {
+                yield return memberData.Concat(new object[] { true }).ToArray();
+                yield return memberData.Concat(new object[] { false }).ToArray();
             }
         }
 
@@ -97,8 +107,8 @@ namespace System.Net.Sockets.Tests
 
         [OuterLoop] // TODO: Issue #11345
         [Theory]
-        [MemberData(nameof(SendFile_MemberData))]
-        public void SendFile_Synchronous(IPAddress listenAt, bool sendPreAndPostBuffers, int bytesToSend)
+        [MemberData(nameof(SendFileSync_MemberData))]
+        public void SendFile_Synchronous(IPAddress listenAt, bool sendPreAndPostBuffers, int bytesToSend, bool forceNonBlocking)
         {
             const int ListenBacklog = 1;
             const int TestTimeout = 30000;
@@ -115,6 +125,11 @@ namespace System.Net.Sockets.Tests
 
             server.Listen(ListenBacklog);
 
+            if (forceNonBlocking)
+            {
+                server.ForceNonBlocking();
+            }
+
             int bytesReceived = 0;
             var receivedChecksum = new Fletcher32();
             var serverThread = new Thread(() =>
@@ -123,6 +138,11 @@ namespace System.Net.Sockets.Tests
                 {
                     Socket remote = server.Accept();
                     Assert.NotNull(remote);
+
+                    if (forceNonBlocking)
+                    {
+                        remote.ForceNonBlocking();
+                    }
 
                     using (remote)
                     {
@@ -146,6 +166,12 @@ namespace System.Net.Sockets.Tests
             // Run client
             EndPoint clientEndpoint = server.LocalEndPoint;
             var client = new Socket(clientEndpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+
+            if (forceNonBlocking)
+            {
+                client.ForceNonBlocking();
+            }
+
             client.Connect(clientEndpoint);
 
             using (client)
