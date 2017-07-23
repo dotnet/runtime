@@ -1014,7 +1014,7 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    public sealed class SendReceiveSync : SendReceive
+    public class SendReceiveSync : SendReceive
     {
         public SendReceiveSync(ITestOutputHelper output) : base(output) { }
         public override Task<Socket> AcceptAsync(Socket s) =>
@@ -1044,6 +1044,15 @@ namespace System.Net.Sockets.Tests
 
         public override bool GuaranteedSendOrdering => false;
         public override bool UsesSync => true;
+    }
+
+    public sealed class SendReceiveSyncForceNonBlocking : SendReceiveSync
+    {
+        public SendReceiveSyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
+        public override Task<Socket> AcceptAsync(Socket s) =>
+            Task.Run(() => { s.ForceNonBlocking(); Socket accepted = s.Accept(); accepted.ForceNonBlocking(); return accepted; });
+        public override Task ConnectAsync(Socket s, EndPoint endPoint) =>
+            Task.Run(() => { s.ForceNonBlocking(); s.Connect(endPoint); });
     }
 
     public sealed class SendReceiveApm : SendReceive
