@@ -11,6 +11,13 @@ namespace System.Security.AccessControl
 {
     public class DirectoryObjectSecurityTests
     {
+        //https://msdn.microsoft.com/en-us/library/aa394063(v=vs.85).aspx
+        private const int ReadWriteAccessMask = 0x01 | 0x02;
+        private const int SynchronizeAccessMask = 0x100000;
+        private const int ReadAccessMask = 0x01;
+        private const int WriteAccessMask = 0x02;
+        private const int ReadAttributeAccessMask = 0x80;
+
         [Fact]
         public void ObjectInitialization_DefaultConstructor_Success()
         {
@@ -102,17 +109,14 @@ namespace System.Security.AccessControl
             var objectTypeGuid = Guid.NewGuid();
             var identityReference = new NTAccount(@"NT AUTHORITY\SYSTEM");
 
-            //https://msdn.microsoft.com/en-us/library/aa394063(v=vs.85).aspx
-            // read access mask  : 0x01
-            // write access mask : 0x02
             var customAuditRuleReadWrite = new CustomAuditRule
                 (
-                    identityReference, 0x01 | 0x02, true, InheritanceFlags.None,
+                    identityReference, ReadWriteAccessMask, true, InheritanceFlags.None,
                     PropagationFlags.None, objectTypeGuid, Guid.NewGuid(), AuditFlags.Success
                 );
             var customAuditRuleSynchronize = new CustomAuditRule
                 (
-                    new NTAccount(@"NT AUTHORITY\SYSTEM"), 0x100000, true, InheritanceFlags.None,
+                    new NTAccount(@"NT AUTHORITY\SYSTEM"), SynchronizeAccessMask, true, InheritanceFlags.None,
                     PropagationFlags.None, objectTypeGuid, Guid.NewGuid(), AuditFlags.Success
                 );
 
@@ -141,13 +145,10 @@ namespace System.Security.AccessControl
             var descriptor = new CommonSecurityDescriptor(true, true, string.Empty);
             var customObjectSecurity = new CustomDirectoryObjectSecurity(descriptor);
 
-            // read access mask  : 0x01
-            // write access mask : 0x02
-            int readWriteAccessMask = 0x01 | 0x02;
             var objectTypeGuid = Guid.NewGuid();
             var identityReference = new NTAccount(@"NT AUTHORITY\SYSTEM");
             var customAuditRuleReadWrite = new CustomAuditRule(
-                identityReference, readWriteAccessMask, true, InheritanceFlags.None,
+                identityReference, ReadWriteAccessMask, true, InheritanceFlags.None,
                 PropagationFlags.None, objectTypeGuid, Guid.NewGuid(), AuditFlags.Success
                 );
 
@@ -169,19 +170,15 @@ namespace System.Security.AccessControl
             var descriptor = new CommonSecurityDescriptor(true, true, string.Empty);
             var customObjectSecurity = new CustomDirectoryObjectSecurity(descriptor);
 
-            // read access mask  : 0x01
-            // write access mask : 0x02
-            int readWriteAccessMask = 0x01 | 0x02;
             var objectTypeGuid = Guid.NewGuid();
             var identityReference = new NTAccount(@"NT AUTHORITY\SYSTEM");
             var customAuditRuleReadWrite = new CustomAuditRule(
-                identityReference, readWriteAccessMask, true, InheritanceFlags.None,
+                identityReference, ReadWriteAccessMask, true, InheritanceFlags.None,
                 PropagationFlags.None, objectTypeGuid, Guid.NewGuid(), AuditFlags.Success
                 );
 
-            int writeAccessMask = 0x02;
             var customAuditRuleWrite = new CustomAuditRule(
-                identityReference, writeAccessMask, true, InheritanceFlags.None,
+                identityReference, WriteAccessMask, true, InheritanceFlags.None,
                 PropagationFlags.None, objectTypeGuid, Guid.NewGuid(), AuditFlags.Success
                 );
 
@@ -208,7 +205,7 @@ namespace System.Security.AccessControl
         {
             var descriptor = new CommonSecurityDescriptor(true, true, string.Empty);
             var customObjectSecurity = new CustomDirectoryObjectSecurity(descriptor);
-            int WriteAccessMask = 0x02;
+
             var identity = new NTAccount(@"NT AUTHORITY\SYSTEM");
             var objectType = Guid.NewGuid();
             var customAuditRuleWrite = new CustomAuditRule(
@@ -217,7 +214,7 @@ namespace System.Security.AccessControl
                 );
 
             var customAuditRuleReadWrite = new CustomAuditRule(
-                identity, 0x01 | 0x02, true, InheritanceFlags.None,
+                identity, ReadWriteAccessMask, true, InheritanceFlags.None,
                 PropagationFlags.None, objectType, Guid.NewGuid(), AuditFlags.Success
                 );
             customObjectSecurity.AddAuditRule(customAuditRuleReadWrite);
@@ -230,10 +227,9 @@ namespace System.Security.AccessControl
             Assert.NotNull(ruleCollection);
             List<CustomAuditRule> existingRules = ruleCollection.Cast<CustomAuditRule>().ToList();
             Assert.True(existingRules.Count > 0);
-            int readAccessMask = 0x01;
             Assert.True(
                 existingRules.Any(
-                    x => x.AccessMaskValue == readAccessMask &&
+                    x => x.AccessMaskValue == ReadAccessMask &&
                     x.AuditFlags == AuditFlags.Success &&
                     x.IdentityReference == identity
                     )
@@ -256,12 +252,12 @@ namespace System.Security.AccessControl
             var objectTypeGuid = Guid.NewGuid();
             var identityReference = new NTAccount(@"NT AUTHORITY\SYSTEM");
             var customAuditRuleReadWrite = new CustomAuditRule(
-                identityReference, 0x01 | 0x02, true, InheritanceFlags.None,
+                identityReference, ReadWriteAccessMask, true, InheritanceFlags.None,
                 PropagationFlags.None, objectTypeGuid, Guid.NewGuid(), AuditFlags.Success
                 );
 
             var customAuditRuleRead = new CustomAuditRule(
-                new NTAccount(@"NT AUTHORITY\SYSTEM"), 0x01, true, InheritanceFlags.None,
+                new NTAccount(@"NT AUTHORITY\SYSTEM"), ReadAccessMask, true, InheritanceFlags.None,
                 PropagationFlags.None, objectTypeGuid, Guid.NewGuid(), AuditFlags.Success
                 );
 
@@ -289,15 +285,14 @@ namespace System.Security.AccessControl
         {
             var descriptor = new CommonSecurityDescriptor(true, true, string.Empty);
             var customObjectSecurity = new CustomDirectoryObjectSecurity(descriptor);
-            int readAccessMask = 0x01;
 
             var customAuditRuleRead = new CustomAuditRule(
-                new NTAccount(@"NT AUTHORITY\Network Service"), readAccessMask, true, InheritanceFlags.None,
+                new NTAccount(@"NT AUTHORITY\Network Service"), ReadAccessMask, true, InheritanceFlags.None,
                 PropagationFlags.None, Guid.NewGuid(), Guid.NewGuid(), AuditFlags.Success
                 );
-            int readAttributeAccessMask = 0x80;
+
             var customAuditRuleReadAttribute = new CustomAuditRule(
-                new NTAccount(@"NT AUTHORITY\SYSTEM"), readAttributeAccessMask, true, InheritanceFlags.None,
+                new NTAccount(@"NT AUTHORITY\SYSTEM"), ReadAttributeAccessMask, true, InheritanceFlags.None,
                 PropagationFlags.None, Guid.NewGuid(), Guid.NewGuid(), AuditFlags.Success
                 );
 
@@ -326,20 +321,17 @@ namespace System.Security.AccessControl
         {
             var descriptor = new CommonSecurityDescriptor(true, true, string.Empty);
             var customObjectSecurity = new CustomDirectoryObjectSecurity(descriptor);
-            // read access mask  : 0x01
-            // write access mask : 0x02
-            int readWriteAccessMask = 0x01 | 0x02;
+
             var objectTypeGuid = Guid.NewGuid();
             var identityReference = new NTAccount(@"NT AUTHORITY\SYSTEM");
 
             var customAccessRuleReadWrite = new CustomAccessRule(
-                identityReference, readWriteAccessMask, true, InheritanceFlags.None,
+                identityReference, ReadWriteAccessMask, true, InheritanceFlags.None,
                 PropagationFlags.None, objectTypeGuid, Guid.NewGuid(), AccessControlType.Allow
                 );
 
-            int writeAccessMask = 0x02;
             var customAccessRuleWrite = new CustomAccessRule(
-                identityReference, writeAccessMask, true, InheritanceFlags.None,
+                identityReference, WriteAccessMask, true, InheritanceFlags.None,
                 PropagationFlags.None, objectTypeGuid, Guid.NewGuid(), AccessControlType.Allow
                 );
 
@@ -353,13 +345,12 @@ namespace System.Security.AccessControl
 
             Assert.NotNull(ruleCollection);
             List<CustomAccessRule> existingRules = ruleCollection.Cast<CustomAccessRule>().ToList();
-            int readAccessMask = 0x01;
 
             Assert.True(
                 existingRules.Any(
                     x => x.IdentityReference == identityReference &&
                     x.AccessControlType == customAccessRuleReadWrite.AccessControlType &&
-                    x.AccessMaskValue == readAccessMask
+                    x.AccessMaskValue == ReadAccessMask
                     ));
         }
 
@@ -369,9 +360,7 @@ namespace System.Security.AccessControl
             var descriptor = new CommonSecurityDescriptor(true, true, string.Empty);
             var customObjectSecurity = new CustomDirectoryObjectSecurity(descriptor);
 
-            // read access mask : 0x01
-            // read attribute access mask : 0x80
-            int readDataAndAttribute = 0x01 | 0x80;
+            int readDataAndAttribute = ReadAccessMask | ReadAttributeAccessMask;
             var identityReference = new NTAccount(@"NT AUTHORITY\SYSTEM");
             var objectTypeGuid = Guid.NewGuid();
             var customAccessRuleReadDataAndAttribute = new CustomAccessRule(
@@ -379,9 +368,8 @@ namespace System.Security.AccessControl
                 PropagationFlags.None, objectTypeGuid, Guid.NewGuid(), AccessControlType.Deny
                 );
 
-            int readAccessMask = 0x01;
             var customAccessRuleRead = new CustomAccessRule(
-                identityReference, readAccessMask, true, InheritanceFlags.None,
+                identityReference, ReadAccessMask, true, InheritanceFlags.None,
                 PropagationFlags.None, objectTypeGuid, Guid.NewGuid(), AccessControlType.Deny
                 );
 
@@ -395,13 +383,11 @@ namespace System.Security.AccessControl
             Assert.NotNull(ruleCollection);
             List<CustomAccessRule> existingRules = ruleCollection.Cast<CustomAccessRule>().ToList();
 
-            int readAttributeAccessMask = 0x80;
-
             Assert.True(
                  existingRules.Any(
                         x => x.IdentityReference == identityReference &&
                         x.AccessControlType == AccessControlType.Deny &&
-                        x.AccessMaskValue == readAttributeAccessMask
+                        x.AccessMaskValue == ReadAttributeAccessMask
                     ));
         }
 
@@ -418,14 +404,11 @@ namespace System.Security.AccessControl
             var descriptor = new CommonSecurityDescriptor(true, true, string.Empty);
             var customObjectSecurity = new CustomDirectoryObjectSecurity(descriptor);
 
-            // read access mask  : 0x01
-            // write access mask : 0x02
-            int readWriteAccessMask = 0x01 | 0x02;
             var objectTypeGuid = Guid.NewGuid();
             var identityReference = new NTAccount(@"NT AUTHORITY\SYSTEM");
 
             var customAccessRuleReadWrite = new CustomAccessRule(
-                identityReference, readWriteAccessMask, true, InheritanceFlags.None,
+                identityReference, ReadWriteAccessMask, true, InheritanceFlags.None,
                 PropagationFlags.None, objectTypeGuid, Guid.NewGuid(), AccessControlType.Allow
                 );
 
@@ -446,20 +429,16 @@ namespace System.Security.AccessControl
             var descriptor = new CommonSecurityDescriptor(true, true, string.Empty);
             var customObjectSecurity = new CustomDirectoryObjectSecurity(descriptor);
 
-            // read access mask  : 0x01
-            // write access mask : 0x02
-            int readWriteAccessMask = 0x01 | 0x02;
             var objectTypeGuid = Guid.NewGuid();
             var identityReference = new NTAccount(@"NT AUTHORITY\SYSTEM");
 
             var customAccessRuleReadWrite = new CustomAccessRule(
-                identityReference, readWriteAccessMask, true, InheritanceFlags.None,
+                identityReference, ReadWriteAccessMask, true, InheritanceFlags.None,
                 PropagationFlags.None, objectTypeGuid, Guid.NewGuid(), AccessControlType.Deny
                 );
 
-            int readAccessMask = 0x01;
             var customAccessRuleRead = new CustomAccessRule(
-                new NTAccount(@"NT AUTHORITY\SYSTEM"), readAccessMask, true, InheritanceFlags.None,
+                new NTAccount(@"NT AUTHORITY\SYSTEM"), ReadAccessMask, true, InheritanceFlags.None,
                 PropagationFlags.None, objectTypeGuid, Guid.NewGuid(), AccessControlType.Deny
                 );
 
@@ -490,12 +469,12 @@ namespace System.Security.AccessControl
             var objectTypeGuid = Guid.NewGuid();
             var identityReference = new NTAccount(@"NT AUTHORITY\SYSTEM");
             var customAccessRuleReadWrite = new CustomAccessRule(
-                identityReference, 0x01 | 0x02, true, InheritanceFlags.None,
+                identityReference, ReadWriteAccessMask, true, InheritanceFlags.None,
                 PropagationFlags.None, objectTypeGuid, Guid.NewGuid(), AccessControlType.Allow
                 );
 
             var customAccessRuleSynchronize = new CustomAccessRule(
-                identityReference, 0x100000, true, InheritanceFlags.None,
+                identityReference, SynchronizeAccessMask, true, InheritanceFlags.None,
                 PropagationFlags.None, objectTypeGuid, Guid.NewGuid(), AccessControlType.Allow
                 );
 
@@ -522,12 +501,12 @@ namespace System.Security.AccessControl
             var objectTypeGuid = Guid.NewGuid();
             var identityReference = new NTAccount(@"NT AUTHORITY\SYSTEM");
             var customAccessRuleReadWrite = new CustomAccessRule(
-                identityReference, 0x01 | 0x02, true, InheritanceFlags.None,
+                identityReference, ReadWriteAccessMask, true, InheritanceFlags.None,
                 PropagationFlags.None, objectTypeGuid, Guid.NewGuid(), AccessControlType.Deny
                 );
 
             var customAccessRuleSynchronize = new CustomAccessRule(
-                identityReference, 0x100000, true, InheritanceFlags.None,
+                identityReference, SynchronizeAccessMask, true, InheritanceFlags.None,
                 PropagationFlags.None, objectTypeGuid, Guid.NewGuid(), AccessControlType.Deny
                 );
 
@@ -561,17 +540,17 @@ namespace System.Security.AccessControl
             var objectTypeGuid = Guid.NewGuid();
             var identityReference = new NTAccount(@"NT AUTHORITY\SYSTEM");
             var customAccessRuleReadWrite = new CustomAccessRule(
-                identityReference, 0x01 | 0x02, true, InheritanceFlags.None,
+                identityReference, ReadWriteAccessMask, true, InheritanceFlags.None,
                 PropagationFlags.None, objectTypeGuid, Guid.NewGuid(), AccessControlType.Deny
                 );
 
             var customAccessRuleNetworkService = new CustomAccessRule(
-                new NTAccount(@"NT AUTHORITY\NetworkService"), 0x100000, true, InheritanceFlags.None,
+                new NTAccount(@"NT AUTHORITY\NetworkService"), SynchronizeAccessMask, true, InheritanceFlags.None,
                 PropagationFlags.None, objectTypeGuid, Guid.NewGuid(), AccessControlType.Allow
                 );
 
             var customAccessRuleRead = new CustomAccessRule(
-                new NTAccount(@"NT AUTHORITY\SYSTEM"), 0x01, true, InheritanceFlags.None,
+                new NTAccount(@"NT AUTHORITY\SYSTEM"), ReadAccessMask, true, InheritanceFlags.None,
                 PropagationFlags.None, objectTypeGuid, Guid.NewGuid(), AccessControlType.Allow
                 );
 
@@ -598,17 +577,17 @@ namespace System.Security.AccessControl
             var objectTypeGuid = Guid.NewGuid();
             var identityReference = new NTAccount(@"NT AUTHORITY\SYSTEM");
             var customAccessRuleReadWrite = new CustomAccessRule(
-                identityReference, 0x01 | 0x02, true, InheritanceFlags.None,
+                identityReference, ReadWriteAccessMask, true, InheritanceFlags.None,
                 PropagationFlags.None, objectTypeGuid, Guid.NewGuid(), AccessControlType.Deny
                 );
 
             var customAccessRuleNetworkService = new CustomAccessRule(
-                new NTAccount(@"NT AUTHORITY\NetworkService"), 0x100000, true, InheritanceFlags.None,
+                new NTAccount(@"NT AUTHORITY\NetworkService"), SynchronizeAccessMask, true, InheritanceFlags.None,
                 PropagationFlags.None, objectTypeGuid, Guid.NewGuid(), AccessControlType.Allow
                 );
 
             var customAccessRuleWrite = new CustomAccessRule(
-                new NTAccount(@"NT AUTHORITY\SYSTEM"), 0x02, true, InheritanceFlags.None,
+                new NTAccount(@"NT AUTHORITY\SYSTEM"), WriteAccessMask, true, InheritanceFlags.None,
                 PropagationFlags.None, objectTypeGuid, Guid.NewGuid(), AccessControlType.Deny
                 );
 
@@ -642,12 +621,12 @@ namespace System.Security.AccessControl
             var objectTypeGuid = Guid.NewGuid();
             var identityReference = new NTAccount(@"NT AUTHORITY\SYSTEM");
             var customAccessRuleReadWrite = new CustomAccessRule(
-                identityReference, 0x01 | 0x02, true, InheritanceFlags.None,
+                identityReference, ReadWriteAccessMask, true, InheritanceFlags.None,
                 PropagationFlags.None, objectTypeGuid, Guid.NewGuid(), AccessControlType.Allow
                 );
 
             var customAccessRuleRead = new CustomAccessRule(
-                new NTAccount(@"NT AUTHORITY\SYSTEM"), 0x01, true, InheritanceFlags.None,
+                new NTAccount(@"NT AUTHORITY\SYSTEM"), ReadAccessMask, true, InheritanceFlags.None,
                 PropagationFlags.None, objectTypeGuid, Guid.NewGuid(), AccessControlType.Allow
                 );
 
@@ -672,12 +651,12 @@ namespace System.Security.AccessControl
             var objectTypeGuid = Guid.NewGuid();
             var identityReference = new NTAccount(@"NT AUTHORITY\SYSTEM");
             var customAccessRuleReadWrite = new CustomAccessRule(
-                identityReference, 0x01 | 0x02, true, InheritanceFlags.None,
+                identityReference, ReadWriteAccessMask, true, InheritanceFlags.None,
                 PropagationFlags.None, objectTypeGuid, Guid.NewGuid(), AccessControlType.Deny
                 );
 
             var customAccessRuleRead = new CustomAccessRule(
-                new NTAccount(@"NT AUTHORITY\SYSTEM"), 0x01, true, InheritanceFlags.None,
+                new NTAccount(@"NT AUTHORITY\SYSTEM"), ReadAccessMask, true, InheritanceFlags.None,
                 PropagationFlags.None, objectTypeGuid, Guid.NewGuid(), AccessControlType.Deny
                 );
 
@@ -706,15 +685,14 @@ namespace System.Security.AccessControl
         {
             var descriptor = new CommonSecurityDescriptor(true, true, string.Empty);
             var customObjectSecurity = new CustomDirectoryObjectSecurity(descriptor);
-            int readAccessMask = 0x000001;
 
             var customAccessRuleAllow = new CustomAccessRule(
-                new NTAccount(@"NT AUTHORITY\Network Service"), readAccessMask, true, InheritanceFlags.None,
+                new NTAccount(@"NT AUTHORITY\Network Service"), ReadAccessMask, true, InheritanceFlags.None,
                 PropagationFlags.None, Guid.NewGuid(), Guid.NewGuid(), AccessControlType.Allow
                 );
 
             var customAccessRuleDeny = new CustomAccessRule(
-                new NTAccount(@"NT AUTHORITY\SYSTEM"), readAccessMask, true, InheritanceFlags.None,
+                new NTAccount(@"NT AUTHORITY\SYSTEM"), ReadAccessMask, true, InheritanceFlags.None,
                 PropagationFlags.None, Guid.NewGuid(), Guid.NewGuid(), AccessControlType.Deny
                 );
 
