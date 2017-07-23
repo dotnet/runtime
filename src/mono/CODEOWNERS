@@ -17,7 +17,7 @@
 # https://help.github.com/articles/about-codeowners
 
 acceptance-tests/* @akoeplinger
-acceptance-tests/profiler-stress @alexrp
+acceptance-tests/profiler-stress* @alexrp
 docs/sources/mono-api-profiler.html @alexrp
 man/mprof-report.1 @alexrp
 mcs/build @marek-safar
