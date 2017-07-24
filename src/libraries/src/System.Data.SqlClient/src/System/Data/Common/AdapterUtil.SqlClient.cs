@@ -721,11 +721,6 @@ namespace System.Data.Common
             }
         }
 
-        internal static Exception AmbientTransactionIsNotSupported()
-        {
-            return new NotSupportedException(SR.AmbientTransactionsNotSupported);
-        }
-
         private static Version s_systemDataVersion;
 
         internal static Version GetAssemblyVersion()

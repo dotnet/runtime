@@ -1180,7 +1180,4 @@
   <data name="MDF_UnableToBuildCollection" xml:space="preserve">
     <value>Unable to build schema collection '{0}';</value>
   </data>
-  <data name="AmbientTransactionsNotSupported" xml:space="preserve">
-    <value>Enlisting in Ambient transactions is not supported.</value>
-  </data>
 </root>
