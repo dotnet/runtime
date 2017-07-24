@@ -172,7 +172,7 @@ namespace CorUnix
 
     public:
         CSynchData() 
-            : m_ulcWaitingThreads(0), m_shridThis(NULLSharedID), m_lRefCount(1),
+            : m_ulcWaitingThreads(0), m_shridThis(NULL), m_lRefCount(1),
               m_lSignalCount(0), m_lOwnershipCount(0), m_dwOwnerPid(0),
               m_dwOwnerTid(0), m_pOwnerThread(NULL), 
               m_poolnOwnedObjectListNode(NULL), m_fAbandoned(false)
