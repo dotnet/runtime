@@ -235,5 +235,13 @@ namespace System.Xml.Tests
         {
             RunTest(() => new TCWriteEndDocumentOnCloseTest() { Attribute = new TestCase() { Name = "XmlWriterSettings: WriteEndDocumentOnClose" } });
         }
+
+        [Theory]
+        [XmlWriterInlineData("abc")]
+        public void TestTest(string test, string a)
+        {
+            Assert.StartsWith("test", test);
+            Assert.Equal("abc", a);
+        }
     }
 }
