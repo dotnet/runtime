@@ -14,7 +14,7 @@ namespace System.Runtime.CompilerServices
     public struct AsyncValueTaskMethodBuilder<TResult>
     {
         /// <summary>The <see cref="AsyncTaskMethodBuilder{TResult}"/> to which most operations are delegated.</summary>
-        private AsyncTaskMethodBuilder<TResult> _methodBuilder;
+        private AsyncTaskMethodBuilder<TResult> _methodBuilder; // mutable struct; do not make it readonly
         /// <summary>The result for this builder, if it's completed before any awaits occur.</summary>
         private TResult _result;
         /// <summary>true if <see cref="_result"/> contains the synchronous result for the async method; otherwise, false.</summary>

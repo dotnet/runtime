@@ -115,7 +115,7 @@ namespace System.Threading.Tasks
         public bool IsCompleted => _task == null || _task.IsCompleted;
 
         /// <summary>Gets whether the <see cref="ValueTask{TResult}"/> represents a successfully completed operation.</summary>
-        public bool IsCompletedSuccessfully => _task == null || _task.Status == TaskStatus.RanToCompletion;
+        public bool IsCompletedSuccessfully => _task == null || _task.IsCompletedSuccessfully;
 
         /// <summary>Gets whether the <see cref="ValueTask{TResult}"/> represents a failed operation.</summary>
         public bool IsFaulted => _task != null && _task.IsFaulted;
@@ -134,14 +134,14 @@ namespace System.Threading.Tasks
         /// true to attempt to marshal the continuation back to the captured context; otherwise, false.
         /// </param>
         public ConfiguredValueTaskAwaitable<TResult> ConfigureAwait(bool continueOnCapturedContext) =>
-            new ConfiguredValueTaskAwaitable<TResult>(this, continueOnCapturedContext: continueOnCapturedContext);
+            new ConfiguredValueTaskAwaitable<TResult>(this, continueOnCapturedContext);
 
         /// <summary>Gets a string-representation of this <see cref="ValueTask{TResult}"/>.</summary>
         public override string ToString()
         {
             if (_task != null)
             {
-                return _task.Status == TaskStatus.RanToCompletion && _task.Result != null ?
+                return _task.IsCompletedSuccessfully && _task.Result != null ?
                     _task.Result.ToString() :
                     string.Empty;
             }
@@ -153,7 +153,8 @@ namespace System.Threading.Tasks
             }
         }
 
-        // TODO: Remove CreateAsyncMethodBuilder once the C# compiler relies on the AsyncBuilder attribute.
+        // TODO https://github.com/dotnet/corefx/issues/22171:
+        // Remove CreateAsyncMethodBuilder once the C# compiler relies on the AsyncBuilder attribute.
 
         /// <summary>Creates a method builder for use with an async method.</summary>
         /// <returns>The created builder.</returns>
