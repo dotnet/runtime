@@ -96,6 +96,7 @@ namespace BasicEventSourceTests
                 int testNumber = 0;
                 foreach (var test in tests)
                 {
+                    Console.WriteLine("Starting Sub-Test {0}", test.Name);
                     testHarnessEventSource.StartTest(test.Name, testNumber);
                     test.EventGenerator();
                     testNumber++;

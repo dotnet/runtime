@@ -46,11 +46,13 @@ namespace System.Diagnostics.Tracing
 
             InitializeBuffer();
             _name = name;
-            EventCounterGroup.AddEventCounter(eventSource, this);
+            _group = EventCounterGroup.GetEventCounterGroup(eventSource);
+            _group.Add(this);
         }
 
         /// <summary>
-        /// Writes the metric.
+        /// Writes 'value' to the stream of values tracked by the counter.  This updates the sum and other statistics that will 
+        /// be logged on the next timer interval.  
         /// </summary>
         /// <param name="value">The value.</param>
         public void WriteMetric(float value)
@@ -58,9 +60,24 @@ namespace System.Diagnostics.Tracing
             Enqueue(value);
         }
 
+#if EventCounterDispose
+        // TODO Go through API review and expose this.  
+        /// <summary>
+        /// Removes the counter from set that the EventSource will report on.
+        /// </summary>
+        public void Dispose()
+        {
+            _group.Remove(this);
+        }
+#endif
+        public override string ToString()
+        {
+            return "EventCounter '" + _name + "' Count " + _count + " Mean " + (((double)_sum) / _count).ToString("n3");
+        }
         #region private implementation
 
         private readonly string _name;
+        private readonly EventCounterGroup _group;
 
         #region Buffer Management
 
@@ -68,8 +85,11 @@ namespace System.Diagnostics.Tracing
         private const int BufferedSize = 10;
         private const float UnusedBufferSlotValue = float.NegativeInfinity;
         private const int UnsetIndex = -1;
-        private volatile float[] _bufferedValues; 
+        private volatile float[] _bufferedValues;
         private volatile int _bufferedValuesIndex;
+
+        // arbitrarily we use _bufferfValues as the lock object.  
+        private object MyLock { get { return _bufferedValues; } }  
 
         private void InitializeBuffer()
         {
@@ -92,10 +112,8 @@ namespace System.Diagnostics.Tracing
                 {
                     // It is possible that two threads both think the buffer is full, but only one get to actually flush it, the other
                     // will eventually enter this code path and potentially calling Flushing on a buffer that is not full, and that's okay too.
-                    lock (_bufferedValues)
-                    {
+                    lock (MyLock) // Lock the counter
                         Flush();
-                    }
                     i = 0;
                 }
 
@@ -110,6 +128,7 @@ namespace System.Diagnostics.Tracing
 
         private void Flush()
         {
+            Debug.Assert(Monitor.IsEntered(MyLock));
             for (int i = 0; i < _bufferedValues.Length; i++)
             {
                 var value = Interlocked.Exchange(ref _bufferedValues[i], UnusedBufferSlotValue);
@@ -135,6 +154,7 @@ namespace System.Diagnostics.Tracing
 
         private void OnMetricWritten(float value)
         {
+            Debug.Assert(Monitor.IsEntered(MyLock));
             _sum += value;
             _sumSquared += value * value;
             if (_count == 0 || value > _max)
@@ -152,7 +172,7 @@ namespace System.Diagnostics.Tracing
 
         internal EventCounterPayload GetEventCounterPayload()
         {
-            lock (_bufferedValues)
+            lock (MyLock)     // Lock the counter
             {
                 Flush();
                 EventCounterPayload result = new EventCounterPayload();
@@ -169,6 +189,7 @@ namespace System.Diagnostics.Tracing
 
         private void ResetStatistics()
         {
+            Debug.Assert(Monitor.IsEntered(MyLock));
             _count = 0;
             _sum = 0;
             _sumSquared = 0;
@@ -228,31 +249,49 @@ namespace System.Diagnostics.Tracing
         #endregion // Implementation of the IEnumerable interface
     }
 
-    internal class EventCounterGroup : IDisposable
+    internal class EventCounterGroup
     {
         private readonly EventSource _eventSource;
-        private readonly int _eventSourceIndex;
         private readonly List<EventCounter> _eventCounters;
 
-        internal EventCounterGroup(EventSource eventSource, int eventSourceIndex)
+        internal EventCounterGroup(EventSource eventSource)
         {
             _eventSource = eventSource;
-            _eventSourceIndex = eventSourceIndex;
             _eventCounters = new List<EventCounter>();
             RegisterCommandCallback();
         }
 
-        private void Add(EventCounter eventCounter)
+        internal void Add(EventCounter eventCounter)
         {
-            _eventCounters.Add(eventCounter);
+            lock (this) // Lock the EventCounterGroup
+                _eventCounters.Add(eventCounter);
+        }
+
+        internal void Remove(EventCounter eventCounter)
+        {
+            lock (this) // Lock the EventCounterGroup
+                _eventCounters.Remove(eventCounter);
         }
 
         #region EventSource Command Processing
 
         private void RegisterCommandCallback()
         {
-#if SUPPORTS_EVENTCOMMANDEXECUTED
+            // Old destktop runtimes don't have this 
+#if !NO_EVENTCOMMANDEXECUTED_SUPPORT
             _eventSource.EventCommandExecuted += OnEventSourceCommand;
+#else
+            // We could not build against the API that had the EventCommandExecuted but maybe it is there are runtime.  
+            // use reflection to try to get it.  
+            var method = typeof(EventSource).GetMethod("add_EventCommandExecuted");
+            if (method != null)
+                method.Invoke(_eventSource, new object[] { (EventHandler<EventCommandEventArgs>)OnEventSourceCommand });
+            else
+            {
+                var msg = "EventCounterError: Old Runtime that does not support EventSource.EventCommandExecuted.  EventCounters not Supported";
+                _eventSource.Write(msg);
+                Debug.WriteLine(msg);
+            }
 #endif
         }
 
@@ -264,7 +303,13 @@ namespace System.Diagnostics.Tracing
                 float value;
                 if (e.Arguments.TryGetValue("EventCounterIntervalSec", out valueStr) && float.TryParse(valueStr, out value))
                 {
-                    EnableTimer(value);
+                    // Recursion through EventSource callbacks possible.  When we enable the timer
+                    // we synchonously issue a EventSource.Write event, which in turn can call back
+                    // to user code (in an EventListener) while holding this lock.   This is dangerous
+                    // because it mean this code might inadvertantly participate in a lock loop. 
+                    // The scenario seems very unlikely so we ignore that problem for now.  
+                    lock (this)      // Lock the EventCounterGroup
+                        EnableTimer(value);
                 }
             }
         }
@@ -273,42 +318,42 @@ namespace System.Diagnostics.Tracing
 
         #region Global EventCounterGroup Array management
 
-        private static EventCounterGroup[] s_eventCounterGroups;
-
-        internal static void AddEventCounter(EventSource eventSource, EventCounter eventCounter)
-        {
-            int eventSourceIndex = EventListenerHelper.EventSourceIndex(eventSource);
-
-            EventCounterGroup.EnsureEventSourceIndexAvailable(eventSourceIndex);
-            EventCounterGroup eventCounterGroup = GetEventCounterGroup(eventSource);
-            eventCounterGroup.Add(eventCounter);
-        }
+        // We need eventCounters to 'attach' themselves to a particular EventSource.   
+        // this table provides the mapping from EventSource -> EventCounterGroup 
+        // which represents this 'attached' information.   
+        private static WeakReference<EventCounterGroup>[] s_eventCounterGroups;
+        private static readonly object s_eventCounterGroupsLock = new object();
 
         private static void EnsureEventSourceIndexAvailable(int eventSourceIndex)
         {
+            Debug.Assert(Monitor.IsEntered(s_eventCounterGroupsLock));
             if (EventCounterGroup.s_eventCounterGroups == null)
             {
-                EventCounterGroup.s_eventCounterGroups = new EventCounterGroup[eventSourceIndex + 1];
+                EventCounterGroup.s_eventCounterGroups = new WeakReference<EventCounterGroup>[eventSourceIndex + 1];
             }
             else if (eventSourceIndex >= EventCounterGroup.s_eventCounterGroups.Length)
             {
-                EventCounterGroup[] newEventCounterGroups = new EventCounterGroup[eventSourceIndex + 1];
+                WeakReference<EventCounterGroup>[] newEventCounterGroups = new WeakReference<EventCounterGroup>[eventSourceIndex + 1];
                 Array.Copy(EventCounterGroup.s_eventCounterGroups, 0, newEventCounterGroups, 0, EventCounterGroup.s_eventCounterGroups.Length);
                 EventCounterGroup.s_eventCounterGroups = newEventCounterGroups;
             }
         }
 
-        private static EventCounterGroup GetEventCounterGroup(EventSource eventSource)
+        internal static EventCounterGroup GetEventCounterGroup(EventSource eventSource)
         {
-            int eventSourceIndex = EventListenerHelper.EventSourceIndex(eventSource);
-            EventCounterGroup result = EventCounterGroup.s_eventCounterGroups[eventSourceIndex];
-            if (result == null)
+            lock (s_eventCounterGroupsLock)
             {
-                result = new EventCounterGroup(eventSource, eventSourceIndex);
-                EventCounterGroup.s_eventCounterGroups[eventSourceIndex] = result;
+                int eventSourceIndex = EventListenerHelper.EventSourceIndex(eventSource);
+                EnsureEventSourceIndexAvailable(eventSourceIndex);
+                WeakReference<EventCounterGroup> weakRef = EventCounterGroup.s_eventCounterGroups[eventSourceIndex];
+                EventCounterGroup ret = null;
+                if (weakRef == null || !weakRef.TryGetTarget(out ret))
+                {
+                    ret = new EventCounterGroup(eventSource);
+                    EventCounterGroup.s_eventCounterGroups[eventSourceIndex] = new WeakReference<EventCounterGroup>(ret);
+                }
+                return ret;
             }
-
-            return result;
         }
 
         #endregion // Global EventCounterGroup Array management
@@ -319,57 +364,67 @@ namespace System.Diagnostics.Tracing
         private int _pollingIntervalInMilliseconds;
         private Timer _pollingTimer;
 
+        private void DisposeTimer()
+        {
+            Debug.Assert(Monitor.IsEntered(this));
+            if (_pollingTimer != null)
+            {
+                _pollingTimer.Dispose();
+                _pollingTimer = null;
+            }
+        }
+
         private void EnableTimer(float pollingIntervalInSeconds)
         {
-            if (pollingIntervalInSeconds == 0)
+            Debug.Assert(Monitor.IsEntered(this));
+            if (pollingIntervalInSeconds <= 0)
             {
-                if (_pollingTimer != null)
-                {
-                    _pollingTimer.Dispose();
-                    _pollingTimer = null;
-                }
-
+                DisposeTimer();
                 _pollingIntervalInMilliseconds = 0;
             }
-            else if (_pollingIntervalInMilliseconds == 0 || pollingIntervalInSeconds < _pollingIntervalInMilliseconds)
+            else if (_pollingIntervalInMilliseconds == 0 || pollingIntervalInSeconds * 1000 < _pollingIntervalInMilliseconds)
             {
+                Debug.WriteLine("Polling interval changed at " + DateTime.UtcNow.ToString("mm.ss.ffffff"));
                 _pollingIntervalInMilliseconds = (int)(pollingIntervalInSeconds * 1000);
-                if (_pollingTimer != null)
-                {
-                    _pollingTimer.Dispose();
-                    _pollingTimer = null;
-                }
-
-                _timeStampSinceCollectionStarted = DateTime.Now;
+                DisposeTimer();
+                _timeStampSinceCollectionStarted = DateTime.UtcNow;
                 _pollingTimer = new Timer(OnTimer, null, _pollingIntervalInMilliseconds, _pollingIntervalInMilliseconds);
             }
+            // Always fire the timer event (so you see everything up to this time).  
+            OnTimer(null);
         }
 
         private void OnTimer(object state)
         {
-            if (_eventSource.IsEnabled())
+            Debug.WriteLine("Timer fired at " + DateTime.UtcNow.ToString("mm.ss.ffffff"));
+            lock (this) // Lock the EventCounterGroup
             {
-                DateTime now = DateTime.Now;
-                TimeSpan elapsed = now - _timeStampSinceCollectionStarted;
-                lock (_pollingTimer)
+                if (_eventSource.IsEnabled())
                 {
+                    DateTime now = DateTime.UtcNow;
+                    TimeSpan elapsed = now - _timeStampSinceCollectionStarted;
+
                     foreach (var eventCounter in _eventCounters)
                     {
                         EventCounterPayload payload = eventCounter.GetEventCounterPayload();
                         payload.IntervalSec = (float)elapsed.TotalSeconds;
-                        _eventSource.Write("EventCounters", new EventSourceOptions() { Level = EventLevel.LogAlways }, new { Payload = payload });
+                        _eventSource.Write("EventCounters", new EventSourceOptions() { Level = EventLevel.LogAlways }, new PayloadType(payload));
                     }
-
-
                     _timeStampSinceCollectionStarted = now;
                 }
+                else
+                    DisposeTimer();
             }
-            else
-            {
-                _pollingTimer.Dispose();
-                _pollingTimer = null;
-                EventCounterGroup.s_eventCounterGroups[_eventSourceIndex] = null;
-            }
+        }
+
+        /// <summary>
+        /// This is the payload that is sent in the with EventSource.Write
+        /// </summary>
+        [EventData]
+        class PayloadType
+        {
+            public PayloadType(EventCounterPayload payload) { Payload = payload; }
+            public EventCounterPayload Payload { get; set; }
         }
 
         #region PCL timer hack
@@ -409,41 +464,13 @@ namespace System.Diagnostics.Tracing
 
         #endregion // Timer Processing
 
-        #region Implementation of the IDisposable interface
-
-        private bool _disposed = false;
-
-        public void Dispose()
-        {
-            Dispose(true);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (_disposed)
-            {
-                return;
-            }
-
-            if (disposing)
-            {
-                if (_pollingTimer != null)
-                {
-                    _pollingTimer.Dispose();
-                    _pollingTimer = null;
-                }
-            }
-
-            _disposed = true;
-        }
-
-        #endregion // Implementation of the IDisposable interface
     }
 
     // This class a work-around because .NET V4.6.2 did not make EventSourceIndex public (it was only protected)
     // We make this helper class to get around that protection.   We want V4.6.3 to make this public at which
     // point this class is no longer needed and can be removed.
-    internal class EventListenerHelper : EventListener {
+    internal class EventListenerHelper : EventListener
+    {
         public new static int EventSourceIndex(EventSource eventSource) { return EventListener.EventSourceIndex(eventSource); }
         protected override void OnEventWritten(EventWrittenEventArgs eventData) { } // override abstact methods to keep compiler happy
     }
