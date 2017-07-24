@@ -28,10 +28,13 @@ namespace System.Net.Sockets.Tests
         // or by performing an async operation), we always stay in non-blocking mode.
         // Therefore, sync operation have to be simulated via async and explicit blocking.
         // Force us into this mode for testing purposes.
-        public static void ForceNonBlocking(this Socket socket)
+        public static void ForceNonBlocking(this Socket socket, bool force)
         {
-            socket.Blocking = false;
-            socket.Blocking = true;
+            if (force)
+            {
+                socket.Blocking = false;
+                socket.Blocking = true;
+            }
         }
     }
 }

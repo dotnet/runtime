@@ -125,10 +125,7 @@ namespace System.Net.Sockets.Tests
 
             server.Listen(ListenBacklog);
 
-            if (forceNonBlocking)
-            {
-                server.ForceNonBlocking();
-            }
+            server.ForceNonBlocking(forceNonBlocking);
 
             int bytesReceived = 0;
             var receivedChecksum = new Fletcher32();
@@ -139,10 +136,7 @@ namespace System.Net.Sockets.Tests
                     Socket remote = server.Accept();
                     Assert.NotNull(remote);
 
-                    if (forceNonBlocking)
-                    {
-                        remote.ForceNonBlocking();
-                    }
+                    remote.ForceNonBlocking(forceNonBlocking);
 
                     using (remote)
                     {
@@ -167,10 +161,7 @@ namespace System.Net.Sockets.Tests
             EndPoint clientEndpoint = server.LocalEndPoint;
             var client = new Socket(clientEndpoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
 
-            if (forceNonBlocking)
-            {
-                client.ForceNonBlocking();
-            }
+            client.ForceNonBlocking(forceNonBlocking);
 
             client.Connect(clientEndpoint);
 

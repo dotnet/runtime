@@ -53,20 +53,14 @@ namespace System.Net.Sockets.Tests
                 localSocket.Listen(1);
                 IAsyncResult localAsync = localSocket.BeginAccept(null, null);
 
-                if (forceNonBlocking)
-                {
-                    remoteSocket.ForceNonBlocking();
-                }
+                remoteSocket.ForceNonBlocking(forceNonBlocking);
 
                 remoteSocket.Connect(IPAddress.IPv6Loopback, port);
 
                 Socket acceptedSocket = localSocket.EndAccept(localAsync);
                 acceptedSocket.ReceiveTimeout = TestSettings.FailingTestTimeout;
 
-                if (forceNonBlocking)
-                {
-                    acceptedSocket.ForceNonBlocking();
-                }
+                acceptedSocket.ForceNonBlocking(forceNonBlocking);
 
                 SocketException sockEx = Assert.Throws<SocketException>(() =>
                 {
@@ -91,20 +85,14 @@ namespace System.Net.Sockets.Tests
                 localSocket.Listen(1);
                 IAsyncResult localAsync = localSocket.BeginAccept(null, null);
 
-                if (forceNonBlocking)
-                {
-                    remoteSocket.ForceNonBlocking();
-                }
+                remoteSocket.ForceNonBlocking(forceNonBlocking);
 
                 remoteSocket.Connect(IPAddress.IPv6Loopback, port);
 
                 Socket acceptedSocket = localSocket.EndAccept(localAsync);
                 acceptedSocket.SendTimeout = TestSettings.FailingTestTimeout;
 
-                if (forceNonBlocking)
-                {
-                    acceptedSocket.ForceNonBlocking();
-                }
+                acceptedSocket.ForceNonBlocking(forceNonBlocking);
 
                 // Force Send to timeout by filling the kernel buffer.
                 var sendBuffer = new byte[16 * 1024];

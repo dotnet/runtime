@@ -1050,9 +1050,9 @@ namespace System.Net.Sockets.Tests
     {
         public SendReceiveSyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
         public override Task<Socket> AcceptAsync(Socket s) =>
-            Task.Run(() => { s.ForceNonBlocking(); Socket accepted = s.Accept(); accepted.ForceNonBlocking(); return accepted; });
+            Task.Run(() => { s.ForceNonBlocking(true); Socket accepted = s.Accept(); accepted.ForceNonBlocking(true); return accepted; });
         public override Task ConnectAsync(Socket s, EndPoint endPoint) =>
-            Task.Run(() => { s.ForceNonBlocking(); s.Connect(endPoint); });
+            Task.Run(() => { s.ForceNonBlocking(true); s.Connect(endPoint); });
     }
 
     public sealed class SendReceiveApm : SendReceive
