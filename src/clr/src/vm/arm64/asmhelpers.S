@@ -1112,6 +1112,7 @@ LOCAL_LABEL(Promote):
     mov     x16, #256
     str     x16, [x13]         // be quick to reset the counter so we don't get a bunch of contending threads
     orr     x11, x11, #PROMOTE_CHAIN_FLAG   // set PROMOTE_CHAIN_FLAG
+    mov     x12, x9           // We pass the ResolveCacheElem to ResolveWorkerAsmStub instead of the DispatchToken
 
 LOCAL_LABEL(Fail):
     b       ResolveWorkerAsmStub // call the ResolveWorkerAsmStub method to transition into the VM
