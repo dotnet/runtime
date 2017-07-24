@@ -116,7 +116,7 @@ namespace System.Net.Http
         {
             if (!condition)
             {
-                throw new HttpRequestException(SR.net_http_unix_invalid_response);
+                throw new HttpRequestException(SR.net_http_invalid_response);
             }
         }
 
