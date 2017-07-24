@@ -829,7 +829,7 @@ get_simd_vreg (MonoCompile *cfg, MonoMethod *cmethod, MonoInst *src)
 		return src->sreg1;
 	} else if (spec [MONO_INST_DEST] == 'x') {
 		return src->dreg;
-	} else if (src->opcode == OP_VCALL) {
+	} else if (src->opcode == OP_VCALL || src->opcode == OP_VCALL_MEMBASE) {
 		return src->dreg;
 	}
 
