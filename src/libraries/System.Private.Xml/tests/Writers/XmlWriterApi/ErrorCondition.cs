@@ -7,18 +7,13 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using XmlCoreTest.Common;
+using Xunit;
 
 namespace System.Xml.Tests
 {
     //[TestCase(Name = "ErrorCondition")]
     public partial class TCErrorConditionWriter : XmlWriterTestCaseBase
     {
-        public override int Init(object o)
-        {
-            int i = base.Init(0);
-            return i;
-        }
-
         public static string file = "writerErr.out";
 
         //[Variation(Desc = "XmlWriter.Create((Stream)null)", Pri = 2, Param = 1)]
@@ -29,7 +24,8 @@ namespace System.Xml.Tests
         //[Variation(Desc = "XmlWriter.Create((TextWriter)null, ws)", Pri = 2, Param = 6)]
         //[Variation(Desc = "XmlWriter.Create((StringBuilder)null, ws)", Pri = 2, Param = 7)]
         //[Variation(Desc = "XmlWriter.Create((XmlWriter)null, ws)", Pri = 2, Param = 8)]
-        public int var_01()
+        [Fact]
+        public void var_01()
         {
             XmlWriterSettings ws = new XmlWriterSettings();
             int param = (int)CurVariation.Param;
@@ -47,13 +43,14 @@ namespace System.Xml.Tests
                     case 8: XmlWriter w8 = WriterHelper.Create((XmlWriter)null, ws); break;
                 }
             }
-            catch (ArgumentNullException) { return TEST_PASS; }
-            return TEST_FAIL;
+            catch (ArgumentNullException) { return; }
+            Assert.True(false);
         }
 
         //[Variation(Desc = "XmlWriter.WriteAttributes(null, true)", Pri = 2, Param = true)]
         //[Variation(Desc = "XmlWriter.WriteAttributes(null, false)", Pri = 2, Param = false)]
-        public int var_02()
+        [Fact]
+        public void var_02()
         {
             bool param = (bool)CurVariation.Param;
             bool result = false;
@@ -75,12 +72,13 @@ namespace System.Xml.Tests
             {
                 w.Dispose();
             }
-            return (result) ? TEST_PASS : TEST_FAIL;
+            Assert.True(result);
         }
 
         //[Variation(Desc = "XmlWriter.WriteNode((XmlReader)null, true)", Pri = 2, Param = true)]
         //[Variation(Desc = "XmlWriter.WriteNode((XmlReader)null, false)", Pri = 2, Param = false)]
-        public int var_03()
+        [Fact]
+        public void var_03()
         {
             bool param = (bool)CurVariation.Param;
             bool result = false;
@@ -102,7 +100,7 @@ namespace System.Xml.Tests
             {
                 w.Dispose();
             }
-            return (result) ? TEST_PASS : TEST_FAIL;
+            Assert.True((result));
         }
 
         //[Variation(Desc = "XmlWriter.WriteAttributeString(null, null)", Pri = 2, Param = 1)]
@@ -125,7 +123,8 @@ namespace System.Xml.Tests
         //[Variation(Desc = "XmlWriter.WriteStartElement(null)", Pri = 2, Param = 18)]
         //[Variation(Desc = "XmlWriter.WriteStartElement(null, null)", Pri = 2, Param = 19)]
         //[Variation(Desc = "XmlWriter.WriteStartElement('a', null, null)", Pri = 2, Param = 20)]
-        public int var_04()
+        [Fact]
+        public void var_04()
         {
             int param = (int)CurVariation.Param;
             bool result = false;
@@ -205,7 +204,7 @@ namespace System.Xml.Tests
             {
                 w.Dispose();
             }
-            return (result || param == 14 && WriterType == WriterType.CustomWriter) ? TEST_PASS : TEST_FAIL;
+            Assert.True((result || param == 14 && WriterType == WriterType.CustomWriter));
         }
 
         //[Variation(Desc = "XmlWriter.WriteBinHex(null)", Pri = 2, Param = 1)]
@@ -214,7 +213,8 @@ namespace System.Xml.Tests
         //[Variation(Desc = "XmlWriter.LookupPrefix(null)", Pri = 2, Param = 4)]
         //[Variation(Desc = "XmlWriter.WriteRaw(null)", Pri = 2, Param = 5)]
         //[Variation(Desc = "XmlWriter.WriteValue((object)null)", Pri = 2, Param = 6)]
-        public int var_05()
+        [Fact]
+        public void var_05()
         {
             int param = (int)CurVariation.Param;
             bool result = false;
@@ -254,7 +254,7 @@ namespace System.Xml.Tests
             {
                 w.Dispose();
             }
-            return (result) ? TEST_PASS : TEST_FAIL;
+            Assert.True((result));
         }
 
         //[Variation(Desc = "XmlWriter.WriteComment", Pri = 2, Param = 1)]
@@ -293,7 +293,8 @@ namespace System.Xml.Tests
         //[Variation(Desc = "XmlWriter.WriteElementString('a', '\ud800')", Pri = 2, Param = 34)]
         //[Variation(Desc = "XmlWriter.WriteProcessingInstruction('a', '\ud800')", Pri = 2, Param = 35)]
         //[Variation(Desc = "XmlWriter.WriteQualifiedName('a', '\ud800')", Pri = 2, Param = 36)]
-        public int var_07()
+        [Fact]
+        public void var_07()
         {
             int param = (int)CurVariation.Param;
             bool result = false;
@@ -396,8 +397,8 @@ namespace System.Xml.Tests
                         case 36: w.WriteQualifiedName("a", "\ud800\ud800"); break;
                     }
                 }
-                catch (InvalidOperationException) { return TEST_PASS; }
-                catch (ArgumentException) { return TEST_PASS; }
+                catch (InvalidOperationException) { return; }
+                catch (ArgumentException) { return; }
             }
             catch (XmlException)
             {
@@ -411,8 +412,8 @@ namespace System.Xml.Tests
                         case 32: w.WriteDocType("a", "b", "c", "\ud800\ud800"); break;
                     }
                 }
-                catch (XmlException) { return (param == 14) ? TEST_PASS : TEST_FAIL; }
-                catch (InvalidOperationException) { return TEST_FAIL; }
+                catch (XmlException) { Assert.True((param == 14)); }
+                catch (InvalidOperationException) { Assert.True(false); }
             }
             finally
             {
@@ -422,14 +423,15 @@ namespace System.Xml.Tests
                 }
                 catch (ArgumentException) { result = true; }
             }
-            return (result || (WriterType == WriterType.CharCheckingWriter && skipParams.Contains(param))) ? TEST_PASS : TEST_FAIL;
+            Assert.True((result || (WriterType == WriterType.CharCheckingWriter && skipParams.Contains(param))));
         }
 
         //[Variation(Desc = "XmlWriter:WriteChars with wrong size throws wrong exception", Pri = 2, Param = 1)]
         //[Variation(Desc = "XmlWriter:WriteRaw with wrong size throws wrong exception", Pri = 2, Param = 2)]
         //[Variation(Desc = "XmlWriter:WriteBinHex with wrong size throws wrong exception", Pri = 2, Param = 3)]
         //[Variation(Desc = "XmlWriter:WriteBase64 with wrong size throws wrong exception", Pri = 2, Param = 4)]
-        public int var_10()
+        [Fact]
+        public void var_10()
         {
             int iBufferSize = 5;
             int iIndex = 0;
@@ -468,8 +470,8 @@ namespace System.Xml.Tests
                             case 4: w.WriteBase64(byteBuffer, iIndex, iCount); break;
                         }
                     }
-                    catch (ArgumentOutOfRangeException) { return TEST_PASS; }
-                    catch (InvalidOperationException) { return TEST_PASS; }
+                    catch (ArgumentOutOfRangeException) { return; }
+                    catch (InvalidOperationException) { return; }
                 }
                 catch (IndexOutOfRangeException)
                 {
@@ -480,17 +482,18 @@ namespace System.Xml.Tests
                             case 1: w.WriteChars(charBuffer, iIndex, iCount); break;
                         }
                     }
-                    catch (IndexOutOfRangeException) { return (WriterType == WriterType.CharCheckingWriter) ? TEST_PASS : TEST_FAIL; }
+                    catch (IndexOutOfRangeException) { Assert.True((WriterType == WriterType.CharCheckingWriter)); }
                 }
             }
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(Desc = "XmlWriterSettings.ConformanceLevel - invalid values", Pri = 2, Param = 1)]
         //[Variation(Desc = "XmlWriterSettings.NewLineHandling - invalid values", Pri = 2, Param = 2)]
         //[Variation(Desc = "XmlWriterSettings.ConformanceLevel - invalid values", Pri = 2, Param = 3)]
         //[Variation(Desc = "XmlWriterSettings.NewLineHandling - invalid values", Pri = 2, Param = 4)]
-        public int var_11()
+        [Fact]
+        public void var_11()
         {
             XmlWriterSettings ws = new XmlWriterSettings();
             try
@@ -515,9 +518,9 @@ namespace System.Xml.Tests
                         case 4: ws.NewLineHandling = (NewLineHandling)(-1); break;
                     }
                 }
-                catch (ArgumentOutOfRangeException) { return TEST_PASS; }
+                catch (ArgumentOutOfRangeException) { return; }
             }
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(Desc = "XmlWriter.Create((Stream))", Pri = 2, Param = 1)]
@@ -528,7 +531,8 @@ namespace System.Xml.Tests
         //[Variation(Desc = "XmlWriter.Create((TextWriter), ws)", Pri = 2, Param = 6)]
         //[Variation(Desc = "XmlWriter.Create((StringBuilder), ws)", Pri = 2, Param = 7)]
         //[Variation(Desc = "XmlWriter.Create((XmlWriter), ws)", Pri = 2, Param = 8)]
-        public int var_12()
+        [Fact]
+        public void var_12()
         {
             XmlWriterSettings ws = new XmlWriterSettings();
             TextWriter stringWriter = new StringWriter();
@@ -545,7 +549,7 @@ namespace System.Xml.Tests
                 case 7: XmlWriter w7 = WriterHelper.Create(new StringBuilder(), ws); break;
                 case 8: XmlWriter w8 = WriterHelper.Create(WriterHelper.Create(stringWriter), ws); break;
             }
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "XmlWriter.WriteComment(String.Empty)", Pri = 2, Param = 1)]           
@@ -575,7 +579,8 @@ namespace System.Xml.Tests
         //[Variation(Desc = "XmlWriter.WriteStartElement(String.Empty, String.Empty, String.Empty)", Pri = 2, Param = 25)]
         //[Variation(Desc = "XmlWriter.WriteDocType(String.Empty, String.Empty, String.Empty, String.Empty)", Pri = 2, Param = 26)]
         //[Variation(Desc = "XmlWriter.WriteProcessingInstruction(String.Empty, String.Empty)", Pri = 2, Param = 27)]
-        public int var_13()
+        [Fact]
+        public void var_13()
         {
             int param = (int)CurVariation.Param;
             XmlWriterSettings ws = new XmlWriterSettings();
@@ -655,12 +660,13 @@ namespace System.Xml.Tests
             {
                 w.Dispose();
             }
-            return (result || param == 19 && WriterType == WriterType.CustomWriter) ? TEST_PASS : TEST_FAIL;
+            Assert.True((result || param == 19 && WriterType == WriterType.CustomWriter));
         }
 
         //[Variation(Desc = "XmlWriterSettings.IndentChars - invalid values", Pri = 2, Param = 1)]
         //[Variation(Desc = "XmlWriterSettings.NewLineChars - invalid values", Pri = 2, Param = 2)]
-        public int var_14()
+        [Fact]
+        public void var_14()
         {
             XmlWriterSettings ws = new XmlWriterSettings();
             try
@@ -681,13 +687,14 @@ namespace System.Xml.Tests
                         case 2: ws.NewLineChars = null; break;
                     }
                 }
-                catch (ArgumentNullException) { return TEST_PASS; }
+                catch (ArgumentNullException) { return; }
             }
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(Desc = "XmlWriter properties after Dispose", Pri = 2)]
-        public int var_15()
+        [Fact]
+        public void var_15()
         {
             XmlWriter w = CreateWriter();
             bool isUnicode = (WriterType == WriterType.UnicodeWriter || WriterType == WriterType.UnicodeWriterIndent) ? true : false;
@@ -714,11 +721,12 @@ namespace System.Xml.Tests
                 CError.Compare(w.Settings.OmitXmlDeclaration, true, "OmitXmlDeclaration");
                 CError.Compare(w.Settings.Encoding.WebName, (isUnicode) ? "utf-16" : "utf-8", "Encoding");
             }
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "XmlWriter properties after Error", Pri = 2)]
-        public int var_16()
+        [Fact]
+        public void var_16()
         {
             XmlWriter w = CreateWriter();
             bool isUnicode = (WriterType == WriterType.UnicodeWriter || WriterType == WriterType.UnicodeWriterIndent) ? true : false;
@@ -748,13 +756,14 @@ namespace System.Xml.Tests
                     CError.Compare(w.Settings.OmitXmlDeclaration, true, "OmitXmlDeclaration");
                     CError.Compare(w.Settings.Encoding.WebName, (isUnicode) ? "utf-16" : "utf-8", "Encoding");
                 }
-                return TEST_PASS;
+                return;
             }
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(Desc = "XmlWriter.WriteStartElement() should inspect attributes before emitting the element tag", Pri = 2)]
-        public int bug601305()
+        [Fact]
+        public void bug601305()
         {
             CError.WriteLine("expected:");
             CError.WriteLine("<p:root xmlns:p='uri' />");
@@ -769,7 +778,7 @@ namespace System.Xml.Tests
                 w.WriteString("uri");
             }
             CError.Compare(sw.ToString(), "<root xmlns:p=\"uri\" xmlns=\"uri\" />", "writer output");
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "writer.Settings.CheckCharacters - readonly", Pri = 2, Param = 1)]
@@ -782,9 +791,10 @@ namespace System.Xml.Tests
         //[Variation(Desc = "writer.Settings.NewLineHandling - readonly", Pri = 2, Param = 8)]
         //[Variation(Desc = "writer.Settings.NewLineOnAttributes - readonly", Pri = 2, Param = 9)]
         //[Variation(Desc = "writer.Settings.OmitXmlDeclaration - readonly", Pri = 2, Param = 10)]
-        public int var17()
+        [Fact]
+        public void var17()
         {
-            if (WriterType == WriterType.CustomWriter) return TEST_PASS;
+            if (WriterType == WriterType.CustomWriter) return;
             int param = (int)CurVariation.Param;
             XmlWriter writer = CreateWriter();
             try
@@ -821,9 +831,9 @@ namespace System.Xml.Tests
                         case 10: writer.Settings.OmitXmlDeclaration = true; break;
                     }
                 }
-                catch (XmlException) { return TEST_PASS; }
+                catch (XmlException) { return; }
             }
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(Desc = "WriteQualifiedName after close", Pri = 2, Param = 1)]
@@ -855,7 +865,8 @@ namespace System.Xml.Tests
         //[Variation(Desc = "WriteSurrogateCharEntity after close", Pri = 2, Param = 27)]
         //[Variation(Desc = "WriteValue after close", Pri = 2, Param = 28)]
         //[Variation(Desc = "WriteWhitespace after close", Pri = 2, Param = 29)]            
-        public int var_18()
+        [Fact]
+        public void var_18()
         {
             int param = (int)CurVariation.Param;
             XmlReader r = ReaderHelper.Create(new StringReader("<xmlns/>"));
@@ -935,7 +946,7 @@ namespace System.Xml.Tests
                         case 29: w.WriteWhitespace(""); break;
                     }
                 }
-                catch (InvalidOperationException) { return TEST_PASS; }
+                catch (InvalidOperationException) { return; }
             }
             catch (ArgumentException)
             {
@@ -947,7 +958,7 @@ namespace System.Xml.Tests
                         case 27: w.WriteSurrogateCharEntity('\uD812', '\uDD12'); break;
                     }
                 }
-                catch (ArgumentException) { return TEST_PASS; }
+                catch (ArgumentException) { return; }
             }
             catch (XmlException)
             {
@@ -958,9 +969,9 @@ namespace System.Xml.Tests
                         case 2: w.WriteAttributes(r, true); break;
                     }
                 }
-                catch (XmlException) { return TEST_PASS; }
+                catch (XmlException) { return; }
             }
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(Desc = "WriteQualifiedName after error", Pri = 2, Param = 1)]
@@ -992,7 +1003,8 @@ namespace System.Xml.Tests
         //[Variation(Desc = "WriteSurrogateCharEntity after error", Pri = 2, Param = 27)]
         //[Variation(Desc = "WriteValue after error", Pri = 2, Param = 28)]
         //[Variation(Desc = "WriteWhitespace after error", Pri = 2, Param = 29)]
-        public int var_19()
+        [Fact]
+        public void var_19()
         {
             int param = (int)CurVariation.Param;
             XmlReader r = ReaderHelper.Create(new StringReader("<xmlns/>"));
@@ -1077,7 +1089,7 @@ namespace System.Xml.Tests
                             case 29: w.WriteWhitespace(""); break;
                         }
                     }
-                    catch (InvalidOperationException) { return TEST_PASS; }
+                    catch (InvalidOperationException) { return; }
                 }
                 catch (ArgumentException)
                 {
@@ -1089,7 +1101,7 @@ namespace System.Xml.Tests
                             case 27: w.WriteSurrogateCharEntity('\uD812', '\uDD12'); break;
                         }
                     }
-                    catch (ArgumentException) { return TEST_PASS; }
+                    catch (ArgumentException) { return; }
                 }
                 catch (XmlException)
                 {
@@ -1100,14 +1112,15 @@ namespace System.Xml.Tests
                             case 2: w.WriteAttributes(r, true); break;
                         }
                     }
-                    catch (XmlException) { return TEST_PASS; }
+                    catch (XmlException) { return; }
                 }
             }
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(Desc = "Assert when write attribute value with invalid surrogate pair and encoding ASCII")]
-        public int var_20()
+        [Fact]
+        public void var_20()
         {
             XmlWriter w = CreateWriter();
             w.WriteStartElement("root");
@@ -1124,14 +1137,14 @@ namespace System.Xml.Tests
                     w.WriteAttributeString("attr2", "\uD812\uD812");
                     w.WriteEndElement();
                 }
-                catch (InvalidOperationException ioe) { CError.WriteLine(ioe); return TEST_PASS; }
-                catch (ArgumentException ae) { CError.WriteLine(ae); return TEST_PASS; }
+                catch (InvalidOperationException ioe) { CError.WriteLine(ioe); return; }
+                catch (ArgumentException ae) { CError.WriteLine(ae); return; }
             }
             finally
             {
                 w.Dispose();
             }
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(Desc = "WriteValue attr swap surrogate pair", Param = 1)]
@@ -1168,7 +1181,8 @@ namespace System.Xml.Tests
         //[Variation(Desc = "WriteWhitespace swap surrogate pair", Param = 32)]
         //[Variation(Desc = "WriteString attr swap surrogate pair", Param = 33)]
         //[Variation(Desc = "WriteSurrogateCharEntity swap surrogate pair", Param = 34)]
-        public int var_21()
+        [Fact]
+        public void var_21()
         {
             int param = (int)this.CurVariation.Param;
             bool result = false;
@@ -1286,14 +1300,15 @@ namespace System.Xml.Tests
                 }
                 catch (ArgumentException) { result = true; }
             }
-            return result ? TEST_PASS : TEST_FAIL;
+            Assert.True(result);
         }
 
         //[Variation(Desc = "System.Xml.XmlWriter::WriteAttributes", Param = 1)]
         //[Variation(Desc = "System.Xml.XmlWriter::WriteAttributes", Param = 2)]
         //[Variation(Desc = "System.Xml.XmlWriter::WriteAttributes", Param = 3)]
         //[Variation(Desc = "System.Xml.XmlWriter::WriteAttributes", Param = 4)]
-        public int bug600541()
+        [Fact]
+        public void bug600541()
         {
             int param = (int)this.CurVariation.Param;
             string xml = "<root a=\"a\" b=\"b\" c=\"c\" d=\"d\" />";
@@ -1321,13 +1336,14 @@ namespace System.Xml.Tests
                     }
                     w.WriteAttributes(r, true);
                     w.Dispose();
-                    return (CompareString(xml)) ? TEST_PASS : TEST_FAIL;
+                    Assert.True((CompareString(xml)));
                 }
             }
         }
 
         //[Variation(Desc = "Schema.XmlUntypedStringConverter::ToString")]
-        public int bug630890()
+        [Fact]
+        public void bug630890()
         {
             object obj = (object)1;
             for (int i = 0; i < 100000; i++)
@@ -1351,15 +1367,16 @@ namespace System.Xml.Tests
                         w.WriteValue(obj);
                         CError.Compare(false, "Failed1");
                     }
-                    catch (InvalidOperationException) { CError.WriteLine(e.Message); return TEST_PASS; }
-                    catch (InvalidCastException) { CError.WriteLine(e.Message); return TEST_PASS; }
+                    catch (InvalidOperationException) { CError.WriteLine(e.Message); return; }
+                    catch (InvalidCastException) { CError.WriteLine(e.Message); return; }
                 }
             }
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(Desc = "XMLWriter.WriteValue fails with ArgumentNullException if passed an array which has null/empty items")]
-        public int PassingArrayWithNullOrEmptyItemsCausesWriteValueToFail()
+        [Fact]
+        public void PassingArrayWithNullOrEmptyItemsCausesWriteValueToFail()
         {
             string[] a = new string[5];
             string exp = "<b>a a1 </b>";
@@ -1373,7 +1390,7 @@ namespace System.Xml.Tests
                 w.WriteStartElement("b");
                 w.WriteValue(a);
             }
-            return (CompareString(exp)) ? TEST_PASS : TEST_FAIL;
+            Assert.True((CompareString(exp)));
         }
     }
 }

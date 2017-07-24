@@ -440,12 +440,6 @@ namespace System.Xml.Tests
     //[TestCase(Name = "WriteStart/EndDocument")]
     public partial class TCDocument : XmlWriterTestCaseBase
     {
-        public override int Init(object o)
-        {
-            int i = base.Init(0);
-            return i;
-        }
-
         //[Variation(id = 1, Desc = "StartDocument-EndDocument Sanity Test", Pri = 0)]
         [Fact]
         public void document_1()

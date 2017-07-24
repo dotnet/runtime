@@ -6,22 +6,13 @@ using OLEDB.Test.ModuleCore;
 using System.IO;
 using System.Text;
 using XmlCoreTest.Common;
+using Xunit;
 
 namespace System.Xml.Tests
 {
     //[TestCase(Name = "XmlWriterSettings: NamespaceHandling")]
-    public partial class TCNamespaceHandling : XmlFactoryWriterTestCaseBase
+    public partial class TCNamespaceHandling
     {
-        public override int Init(object o)
-        {
-            if (!(WriterType == WriterType.CustomWriter || WriterType == WriterType.UTF8WriterIndent || WriterType == WriterType.UnicodeWriterIndent /*|| WriterType == WriterType.DOMWriter || WriterType == WriterType.XmlTextWriter*/))
-            {
-                int i = base.Init(0);
-                return i;
-            }
-            return TEST_SKIPPED;
-        }
-
         private static NamespaceHandling[] s_nlHandlingMembers = { NamespaceHandling.Default, NamespaceHandling.OmitDuplicates };
         private StringWriter _strWriter = null;
 
@@ -80,7 +71,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "NamespaceHandling Default value - NamespaceHandling.Default")]
-        public int NS_Handling_1()
+        [Fact]
+        public void NS_Handling_1()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             CError.Compare(wSettings.NamespaceHandling, NamespaceHandling.Default, "Incorrect default value for XmlWriterSettings.NamespaceHandling");
@@ -89,12 +81,13 @@ namespace System.Xml.Tests
             {
                 CError.Compare(w.Settings.NamespaceHandling, NamespaceHandling.Default, "Incorrect default value for XmlWriter.Settings.NamespaceHandling");
             }
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "XmlWriter creation with NamespaceHandling.Default", Param = NamespaceHandling.Default)]
         //[Variation(Desc = "XmlWriter creation with NamespaceHandling.OmitDuplicates", Param = NamespaceHandling.OmitDuplicates)]
-        public int NS_Handling_2()
+        [Fact]
+        public void NS_Handling_2()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = (NamespaceHandling)this.CurVariation.Param;
@@ -104,11 +97,12 @@ namespace System.Xml.Tests
                 CError.Compare(w != null, "XmlWriter creation failed");
                 CError.Compare(w.Settings.NamespaceHandling, (NamespaceHandling)this.CurVariation.Param, "Invalid NamespaceHandling assignment");
             }
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "NamespaceHandling = NamespaceHandling.Default | NamespaceHandling.OmitDuplicates")]
-        public int NS_Handling_2a()
+        [Fact]
+        public void NS_Handling_2a()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = NamespaceHandling.Default | NamespaceHandling.OmitDuplicates;
@@ -117,12 +111,13 @@ namespace System.Xml.Tests
             {
                 CError.Compare(w.Settings.NamespaceHandling, NamespaceHandling.OmitDuplicates, "Invalid NamespaceHandling assignment");
             }
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "NamespaceHandling override with Default.Default", Param = NamespaceHandling.Default)]
         //[Variation(Desc = "NamespaceHandling override with Default.OmitDuplicates", Param = NamespaceHandling.OmitDuplicates)]
-        public int NS_Handling_3()
+        [Fact]
+        public void NS_Handling_3()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = NamespaceHandling.OmitDuplicates;
@@ -134,12 +129,13 @@ namespace System.Xml.Tests
                 CError.Compare(w != null, "XmlWriter creation failed");
                 CError.Compare(w.Settings.NamespaceHandling, (NamespaceHandling)this.CurVariation.Param, "Invalid NamespaceHandling assignment");
             }
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "NamespaceHandling override with negativeVal.Default", Param = NamespaceHandling.Default)]
         //[Variation(Desc = "NamespaceHandling override with negativeVal.OmitDuplicates", Param = NamespaceHandling.OmitDuplicates)]
-        public int NS_Handling_3a()
+        [Fact]
+        public void NS_Handling_3a()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = (NamespaceHandling)this.CurVariation.Param;
@@ -163,7 +159,7 @@ namespace System.Xml.Tests
                 CError.Compare(w != null, "XmlWriter creation failed");
                 CError.Compare(w.Settings.NamespaceHandling, (NamespaceHandling)this.CurVariation.Param, "Invalid NamespaceHandling assignment");
             }
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "1.NamespaceHandling.Default", Params = new object[] { NamespaceHandling.Default, "<root><p:foo xmlns:p=\"uri\"><a xmlns:p=\"uri\" /></p:foo></root>",null })]
@@ -190,7 +186,8 @@ namespace System.Xml.Tests
         //[Variation(Desc = "11.NamespaceHandling.Diff NS.Same prefix.OmitDuplicates", Params = new object[] { NamespaceHandling.OmitDuplicates, "<a xmlns:p=\"p1\"><b xmlns:p=\"p2\"><c xmlns:p=\"p3\" /></b></a>", null })]
         //[Variation(Desc = "12.NamespaceHandling.NS Redefinition.Unused NS.Default", Params = new object[] { NamespaceHandling.Default, "<a xmlns:p=\"p1\"><b xmlns:p=\"p2\"><c xmlns:p=\"p1\" /></b></a>", null })]
         //[Variation(Desc = "12.NamespaceHandling.NS Redefinition.Unused NS.OmitDuplicates", Params = new object[] { NamespaceHandling.OmitDuplicates, "<a xmlns:p=\"p1\"><b xmlns:p=\"p2\"><c xmlns:p=\"p1\" /></b></a>", null })]
-        public int NS_Handling_3b()
+        [Fact]
+        public void NS_Handling_3b()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = (NamespaceHandling)this.CurVariation.Params[0];
@@ -206,12 +203,13 @@ namespace System.Xml.Tests
                     VerifyOutput(exp == null ? xml : exp);
                 }
             }
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "NamespaceHandling wrap with Default.Default", Param = NamespaceHandling.Default)]
         //[Variation(Desc = "NamespaceHandling wrap with Default.OmitDuplicates", Param = NamespaceHandling.OmitDuplicates)]
-        public int NS_Handling_4a()
+        [Fact]
+        public void NS_Handling_4a()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = (NamespaceHandling)this.CurVariation.Param;
@@ -226,12 +224,13 @@ namespace System.Xml.Tests
                     CError.Compare(w.Settings.NamespaceHandling, (NamespaceHandling)this.CurVariation.Param, "Invalid NamespaceHandling assignment");
                 }
             }
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "NamespaceHandling wrap with OmitDuplicates.Default", Param = NamespaceHandling.Default)]
         //[Variation(Desc = "NamespaceHandling wrap with OmitDuplicates.OmitDuplicates", Param = NamespaceHandling.OmitDuplicates)]
-        public int NS_Handling_4b()
+        [Fact]
+        public void NS_Handling_4b()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = (NamespaceHandling)this.CurVariation.Param;
@@ -246,12 +245,13 @@ namespace System.Xml.Tests
                     CError.Compare(w.Settings.NamespaceHandling, (NamespaceHandling)this.CurVariation.Param, "Invalid NamespaceHandling assignment");
                 }
             }
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "XmlWriter.WriteStartElement() should inspect attributes before emitting the element tag.Default", Param = NamespaceHandling.Default)]
         //[Variation(Desc = "XmlWriter.WriteStartElement() should inspect attributes before emitting the element tag.OmitDuplicates", Param = NamespaceHandling.OmitDuplicates)]
-        public int NS_Handling_5()
+        [Fact]
+        public void NS_Handling_5()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = (NamespaceHandling)this.CurVariation.Param;
@@ -263,12 +263,13 @@ namespace System.Xml.Tests
                 w.WriteEndElement();
             }
             VerifyOutput("<root xmlns:p=\"uri\" xmlns=\"uri\" />");
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "WriteStartElement,AttrString with null prefix.Default", Param = NamespaceHandling.Default)]
         //[Variation(Desc = "WriteStartElement,AttrString with null prefix.OmitDuplicates", Param = NamespaceHandling.OmitDuplicates)]
-        public int NS_Handling_6()
+        [Fact]
+        public void NS_Handling_6()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = (NamespaceHandling)this.CurVariation.Param;
@@ -280,12 +281,13 @@ namespace System.Xml.Tests
                 w.WriteElementString(null, "el", "ns", "val");
             }
             VerifyOutput("<e p1:attr=\"val\" xmlns:p1=\"ns\" xmlns=\"ns\"><p1:el>val</p1:el></e>");
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "WriteStartElement,AttrString with empty prefix.Default", Param = NamespaceHandling.Default)]
         //[Variation(Desc = "WriteStartElement,AttrString with empty prefix.OmitDuplicates", Param = NamespaceHandling.OmitDuplicates)]
-        public int NS_Handling_7()
+        [Fact]
+        public void NS_Handling_7()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = (NamespaceHandling)this.CurVariation.Param;
@@ -297,12 +299,13 @@ namespace System.Xml.Tests
                 w.WriteElementString(String.Empty, "el", "ns", "val");
             }
             VerifyOutput("<e p1:attr=\"val\" xmlns:p1=\"ns\" xmlns=\"ns\"><el>val</el></e>");
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "WriteStartElement,AttrString with not null prefix and namespace.Default", Param = NamespaceHandling.Default)]
         //[Variation(Desc = "WriteStartElement,AttrString with not null prefix and namespace.OmitDuplicates", Param = NamespaceHandling.OmitDuplicates)]
-        public int NS_Handling_8()
+        [Fact]
+        public void NS_Handling_8()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = (NamespaceHandling)this.CurVariation.Param;
@@ -314,12 +317,13 @@ namespace System.Xml.Tests
                 w.WriteElementString("a", "el", "ns", "val");
             }
             VerifyOutput("<a:e a:attr=\"val\" xmlns:a=\"ns\"><a:el>val</a:el></a:e>");
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "WriteStartElement,AttrString without prefix.Default", Param = NamespaceHandling.Default)]
         //[Variation(Desc = "WriteStartElement,AttrString without prefix.OmitDuplicates", Param = NamespaceHandling.OmitDuplicates)]
-        public int NS_Handling_9()
+        [Fact]
+        public void NS_Handling_9()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = (NamespaceHandling)this.CurVariation.Param;
@@ -331,12 +335,13 @@ namespace System.Xml.Tests
                 w.WriteElementString("el", "ns", "val");
             }
             VerifyOutput("<e p1:attr=\"val\" xmlns:p1=\"ns\" xmlns=\"ns\"><p1:el>val</p1:el></e>");
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "WriteStartElement,AttrString with null namespace,prefix.Default", Param = NamespaceHandling.Default)]
         //[Variation(Desc = "WriteStartElement,AttrString with null namespace,prefix.OmitDuplicates", Param = NamespaceHandling.OmitDuplicates)]
-        public int NS_Handling_10()
+        [Fact]
+        public void NS_Handling_10()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = (NamespaceHandling)this.CurVariation.Param;
@@ -348,12 +353,13 @@ namespace System.Xml.Tests
                 w.WriteElementString(null, "el", null, "val");
             }
             VerifyOutput("<e attr=\"val\"><el>val</el></e>");
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "WriteStartElement,AttrString with empty namespace,prefix.Default", Param = NamespaceHandling.Default)]
         //[Variation(Desc = "WriteStartElement,AttrString with empty namespace,prefix.OmitDuplicates", Param = NamespaceHandling.OmitDuplicates)]
-        public int NS_Handling_11()
+        [Fact]
+        public void NS_Handling_11()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = (NamespaceHandling)this.CurVariation.Param;
@@ -365,12 +371,13 @@ namespace System.Xml.Tests
                 w.WriteElementString(String.Empty, "el", String.Empty, "val");
             }
             VerifyOutput("<e attr=\"val\"><el>val</el></e>");
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "WriteStartElement,AttrString without namespace,prefix.Default", Param = NamespaceHandling.Default)]
         //[Variation(Desc = "WriteStartElement,AttrString without namespace,prefix.OmitDuplicates", Param = NamespaceHandling.OmitDuplicates)]
-        public int NS_Handling_12()
+        [Fact]
+        public void NS_Handling_12()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = (NamespaceHandling)this.CurVariation.Param;
@@ -382,12 +389,13 @@ namespace System.Xml.Tests
                 w.WriteElementString("el", "val");
             }
             VerifyOutput("<e attr=\"val\"><el>val</el></e>");
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "LookupPrefix.Default", Param = NamespaceHandling.Default)] 
         //[Variation(Desc = "LookupPrefix.OmitDuplicates", Param = NamespaceHandling.OmitDuplicates)]         
-        public int NS_Handling_16()
+        [Fact]
+        public void NS_Handling_16()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = (NamespaceHandling)this.CurVariation.Param;
@@ -401,12 +409,13 @@ namespace System.Xml.Tests
                 CError.Compare(w.LookupPrefix("foo"), "p1", "FailedEl");
             }
             VerifyOutput("<a:foo p1:a=\"b\" xmlns:p1=\"foo\" xmlns:a=\"b\"><p1:e>b</p1:e></a:foo>");
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "WriteAttributeString with dup.namespace,w/o prefix.Default", Param = NamespaceHandling.Default)]
         //[Variation(Desc = "WriteAttributeString with dup.namespace,w/o prefix.OmitDuplicates", Param = NamespaceHandling.OmitDuplicates)]
-        public int NS_Handling_17()
+        [Fact]
+        public void NS_Handling_17()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = (NamespaceHandling)this.CurVariation.Param;
@@ -423,16 +432,17 @@ namespace System.Xml.Tests
                     w.WriteAttributeString("a", "n" + 999, "val");
                     CError.Compare(false, "Failed");
                 }
-                catch (XmlException e) { CError.WriteLine(e); return TEST_PASS; }
+                catch (XmlException e) { CError.WriteLine(e); return; }
             }
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(Desc = "WriteAttributeString with prefix bind to the same ns.Default", Params = new object[] { NamespaceHandling.Default, true })]
         //[Variation(Desc = "WriteAttributeString with prefix bind to the same ns.OmitDuplicates", Params = new object[] { NamespaceHandling.OmitDuplicates, true })]
         //[Variation(Desc = "WriteElementString with prefix bind to the same ns.Default", Params = new object[] { NamespaceHandling.Default, false })]
         //[Variation(Desc = "WriteElementString with prefix bind to the same ns.OmitDuplicates", Params = new object[] { NamespaceHandling.OmitDuplicates, false })]
-        public int NS_Handling_17a()
+        [Fact]
+        public void NS_Handling_17a()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = (NamespaceHandling)this.CurVariation.Params[0];
@@ -454,14 +464,15 @@ namespace System.Xml.Tests
                 "<!DOCTYPE a [<!ATTLIST Root a CDATA #IMPLIED>]><Root p:a0=\"val\" p:a1=\"val\" p:a2=\"val\" p:a3=\"val\" p:a4=\"val\" p:a5=\"val\" p:a6=\"val\" p:a7=\"val\" p:a8=\"val\" p:a9=\"val\" xmlns:p=\"n\" />" :
                 "<!DOCTYPE a [<!ATTLIST Root a CDATA #IMPLIED>]><Root><p:a0 xmlns:p=\"n\">val</p:a0><p:a1 xmlns:p=\"n\">val</p:a1><p:a2 xmlns:p=\"n\">val</p:a2><p:a3 xmlns:p=\"n\">val</p:a3><p:a4 xmlns:p=\"n\">val</p:a4><p:a5 xmlns:p=\"n\">val</p:a5><p:a6 xmlns:p=\"n\">val</p:a6><p:a7 xmlns:p=\"n\">val</p:a7><p:a8 xmlns:p=\"n\">val</p:a8><p:a9 xmlns:p=\"n\">val</p:a9></Root>";
             VerifyOutput(exp);
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "WriteAttributeString with prefix bind to default ns.Default", Params = new object[] { NamespaceHandling.Default, true })]
         //[Variation(Desc = "WriteAttributeString with prefix bind to default ns.OmitDuplicates", Params = new object[] { NamespaceHandling.OmitDuplicates, true })]
         //[Variation(Desc = "WriteElementString with prefix bind to default ns.Default", Params = new object[] { NamespaceHandling.Default, false })]
         //[Variation(Desc = "WriteElementString with prefix bind to default ns.OmitDuplicates", Params = new object[] { NamespaceHandling.OmitDuplicates, false })]
-        public int NS_Handling_17b()
+        [Fact]
+        public void NS_Handling_17b()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = (NamespaceHandling)this.CurVariation.Params[0];
@@ -482,14 +493,15 @@ namespace System.Xml.Tests
                 "<Root p:a0=\"val\" p:a1=\"val\" p:a2=\"val\" p:a3=\"val\" p:a4=\"val\" xmlns:p=\"xmlns\" />" :
                 "<Root><p:a0 xmlns:p=\"xmlns\">val</p:a0><p:a1 xmlns:p=\"xmlns\">val</p:a1><p:a2 xmlns:p=\"xmlns\">val</p:a2><p:a3 xmlns:p=\"xmlns\">val</p:a3><p:a4 xmlns:p=\"xmlns\">val</p:a4></Root>";
             VerifyOutput(exp);
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "WriteAttributeString with prefix bind to non-default ns.dup.namespace.Default", Params = new object[] { NamespaceHandling.Default, true })]
         //[Variation(Desc = "WriteAttributeString with prefix bind to non-default ns.dup.namespace.OmitDuplicates", Params = new object[] { NamespaceHandling.OmitDuplicates, true })]
         //[Variation(Desc = "WriteElementString with prefix bind to non-default ns.dup.namespace.Default", Params = new object[] { NamespaceHandling.Default, false })]
         //[Variation(Desc = "WriteElementString with prefix bind to non-default ns.dup.namespace.OmitDuplicates", Params = new object[] { NamespaceHandling.OmitDuplicates, false })]
-        public int NS_Handling_17c()
+        [Fact]
+        public void NS_Handling_17c()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = (NamespaceHandling)this.CurVariation.Params[0];
@@ -523,14 +535,15 @@ namespace System.Xml.Tests
                     "<Root><p0:a xmlns:p0=\"n0\">val0</p0:a><p1:a xmlns:p1=\"n1\">val1</p1:a><p2:a xmlns:p2=\"n2\">val2</p2:a><p3:a xmlns:p3=\"n3\">val3</p3:a><p4:a xmlns:p4=\"n4\">val4</p4:a><p:a xmlns:p=\"n4\">val</p:a></Root>";
                 VerifyOutput(exp);
             }
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "WriteAttributeString with prefix bind to ns uri.Default", Params = new object[] { NamespaceHandling.Default, true })]
         //[Variation(Desc = "WriteAttributeString with prefix bind to ns uri.OmitDuplicates", Params = new object[] { NamespaceHandling.OmitDuplicates, true })]
         //[Variation(Desc = "WriteElementString with prefix bind to ns uri.Default", Params = new object[] { NamespaceHandling.Default, false })]
         //[Variation(Desc = "WriteElementString with prefix bind to ns uri.OmitDuplicates", Params = new object[] { NamespaceHandling.OmitDuplicates, false })]
-        public int NS_Handling_17d()
+        [Fact]
+        public void NS_Handling_17d()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = (NamespaceHandling)this.CurVariation.Params[0];
@@ -555,14 +568,15 @@ namespace System.Xml.Tests
             string exp = isAttr ?
                 "<Root xml:a0=\"val\" xmlns:a0=\"val\" xml:a1=\"val\" xmlns:a1=\"val\" xml:a2=\"val\" xmlns:a2=\"val\" xml:a3=\"val\" xmlns:a3=\"val\" xml:a4=\"val\" xmlns:a4=\"val\" />" :
                 "<Root><xml:a0>val</xml:a0><xml:a1>val</xml:a1><xml:a2>val</xml:a2><xml:a3>val</xml:a3><xml:a4>val</xml:a4></Root>";
-            VerifyOutput(exp); return TEST_PASS;
+            VerifyOutput(exp); return;
         }
 
         //[Variation(Desc = "WriteAttributeString with ns uri.Default", Params = new object[] { NamespaceHandling.Default, true })]
         //[Variation(Desc = "WriteAttributeString with ns uri.OmitDuplicates", Params = new object[] { NamespaceHandling.OmitDuplicates, true })]
         //[Variation(Desc = "WriteElementString with ns uri.Default", Params = new object[] { NamespaceHandling.Default, false })]
         //[Variation(Desc = "WriteElementString with ns uri.OmitDuplicates", Params = new object[] { NamespaceHandling.OmitDuplicates, false })]
-        public int NS_Handling_17e()
+        [Fact]
+        public void NS_Handling_17e()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = (NamespaceHandling)this.CurVariation.Params[0];
@@ -582,12 +596,13 @@ namespace System.Xml.Tests
             string exp = isAttr ?
                 "<Root xml:a0=\"val\" xml:a1=\"val\" xml:a2=\"val\" xml:a3=\"val\" xml:a4=\"val\" />" :
                 "<Root><xml:a0>val</xml:a0><xml:a1>val</xml:a1><xml:a2>val</xml:a2><xml:a3>val</xml:a3><xml:a4>val</xml:a4></Root>";
-            VerifyOutput(exp); return TEST_PASS;
+            VerifyOutput(exp); return;
         }
 
         //[Variation(Desc = "WriteAttribute/ElemString with prefixes.namespace.Default", Param = NamespaceHandling.Default)]
         //[Variation(Desc = "WriteAttribute/ElemString with prefixes.namespace.OmitDuplicates", Param = NamespaceHandling.OmitDuplicates)]
-        public int NS_Handling_18()
+        [Fact]
+        public void NS_Handling_18()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = (NamespaceHandling)this.CurVariation.Param;
@@ -603,12 +618,13 @@ namespace System.Xml.Tests
                 w.WriteEndElement();
             }
             string exp = "<test p:a1=\"v\" xmlns:p=\"ns1\"><base p:a2=\"v\" p4:a3=\"v\" xmlns:p4=\"ns2\"><p:e xmlns:p=\"ns2\">v</p:e></base></test>";
-            VerifyOutput(exp); return TEST_PASS;
+            VerifyOutput(exp); return;
         }
 
         //[Variation(Desc = "WriteAttribute/ElemString with xmlns:xml,space,lang.Default", Param = NamespaceHandling.Default)]
         //[Variation(Desc = "WriteAttribute/ElemString with xmlns:xml,space,lang.OmitDuplicates", Param = NamespaceHandling.OmitDuplicates)]
-        public int NS_Handling_19()
+        [Fact]
+        public void NS_Handling_19()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = (NamespaceHandling)this.CurVariation.Param;
@@ -626,7 +642,7 @@ namespace System.Xml.Tests
             string exp = ((NamespaceHandling)this.CurVariation.Param == NamespaceHandling.OmitDuplicates) ?
                 "<Root xmlns:space=\"preserve\" xmlns:lang=\"chs\"><xml:lang>jpn</xml:lang><xml:space>default</xml:space><xml:xml>http://www.w3.org/XML/1998/namespace</xml:xml></Root>" :
                 "<Root xmlns:xml=\"http://www.w3.org/XML/1998/namespace\" xmlns:space=\"preserve\" xmlns:lang=\"chs\"><xml:lang>jpn</xml:lang><xml:space>default</xml:space><xml:xml>http://www.w3.org/XML/1998/namespace</xml:xml></Root>";
-            VerifyOutput(exp); return TEST_PASS;
+            VerifyOutput(exp); return;
         }
 
         //[Variation(Desc = "WriteAttributeString with null val,ns.attr=xmlns:xml.Default", Params = new object[] { NamespaceHandling.Default, "xmlns", "xml", true })]
@@ -643,7 +659,8 @@ namespace System.Xml.Tests
         //[Variation(Desc = "WriteAttributeString with null val,ns.attr=xmlns:lang.OmitDuplicates", Params = new object[] { NamespaceHandling.OmitDuplicates, "xmlns", "lang", true })]
         //[Variation(Desc = "WriteAttributeString with null val,ns.elem=xmlns:lang.Default", Params = new object[] { NamespaceHandling.Default, "xmlns", "lang", false })]
         //[Variation(Desc = "WriteAttributeString with null val,ns.elem=xmlns:lang.OmitDuplicates", Params = new object[] { NamespaceHandling.OmitDuplicates, "xmlns", "lang", false })]
-        public int NS_Handling_19a()
+        [Fact]
+        public void NS_Handling_19a()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = (NamespaceHandling)this.CurVariation.Params[0];
@@ -666,14 +683,15 @@ namespace System.Xml.Tests
                 w.Dispose();
                 CError.Compare(w.WriteState, WriteState.Closed, "state");
             }
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "WriteAttributeString in error state.Default", Params = new object[] { NamespaceHandling.Default, true })]
         //[Variation(Desc = "WriteAttributeString in error state.OmitDuplicates", Params = new object[] { NamespaceHandling.OmitDuplicates, true })]
         //[Variation(Desc = "WriteElementString in error state.Default", Params = new object[] { NamespaceHandling.Default, false })]
         //[Variation(Desc = "WriteElementString in error state.OmitDuplicates", Params = new object[] { NamespaceHandling.OmitDuplicates, false })]
-        public int NS_Handling_19b()
+        [Fact]
+        public void NS_Handling_19b()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = (NamespaceHandling)this.CurVariation.Params[0];
@@ -692,12 +710,13 @@ namespace System.Xml.Tests
                 catch (ArgumentException e) { CError.WriteLine(e.Message); }
             }
             string exp = isAttr ? "<Root" : "<Root><xmlns:xml";
-            VerifyOutput(exp); return TEST_PASS;
+            VerifyOutput(exp); return;
         }
 
         //[Variation(Desc = "WriteAttributeString,StartElement with hello:world.Default", Param = NamespaceHandling.Default)]
         //[Variation(Desc = "WriteAttributeString,StartElement with hello:worldl.OmitDuplicates", Param = NamespaceHandling.OmitDuplicates)]
-        public int NS_Handling_20()
+        [Fact]
+        public void NS_Handling_20()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = (NamespaceHandling)this.CurVariation.Param;
@@ -713,12 +732,13 @@ namespace System.Xml.Tests
                 w.WriteEndElement();
             }
             VerifyOutput("<d:Data xmlns:d=\"http://example.org/data\"><g:GoodStuff hello=\"world\" xmlns:g=\"http://example.org/data/good\" /><BadStuff hello=\"world\" xmlns=\"http://example.org/data/bad\" /></d:Data>");
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "WriteStartAttribute(xml:lang),WriteRaw(0,0).Default", Param = NamespaceHandling.Default)]
         //[Variation(Desc = "WriteStartAttribute(xml:lang),WriteRaw(0,0).OmitDuplicates", Param = NamespaceHandling.OmitDuplicates)]
-        public int NS_Handling_21()
+        [Fact]
+        public void NS_Handling_21()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = (NamespaceHandling)this.CurVariation.Param;
@@ -734,12 +754,13 @@ namespace System.Xml.Tests
                 w.WriteRaw(buffer, 0, 2);
                 w.WriteEndElement();
             }
-            VerifyOutput("<root xml:lang=\"bab\" />"); return TEST_PASS;
+            VerifyOutput("<root xml:lang=\"bab\" />"); return;
         }
 
         //[Variation(Desc = "WriteStartAttribute(xml:lang),WriteBinHex(0,0).Default", Param = NamespaceHandling.Default)]
         //[Variation(Desc = "WriteStartAttribute(xml:lang),WriteBinHex(0,0).OmitDuplicates", Param = NamespaceHandling.OmitDuplicates)]
-        public int NS_Handling_22()
+        [Fact]
+        public void NS_Handling_22()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = (NamespaceHandling)this.CurVariation.Param;
@@ -754,12 +775,13 @@ namespace System.Xml.Tests
                 w.WriteBinHex(buffer, 0, 2);
                 w.WriteEndElement();
             }
-            VerifyOutput("<root xml:lang=\"626162\" />"); return TEST_PASS;
+            VerifyOutput("<root xml:lang=\"626162\" />"); return;
         }
 
         //[Variation(Desc = "WriteStartAttribute(xml:lang),WriteBase64(0,0).Default", Param = NamespaceHandling.Default)]
         //[Variation(Desc = "WriteStartAttribute(xml:lang),WriteBase64(0,0).OmitDuplicates", Param = NamespaceHandling.OmitDuplicates)]
-        public int NS_Handling_23()
+        [Fact]
+        public void NS_Handling_23()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = (NamespaceHandling)this.CurVariation.Param;
@@ -774,12 +796,13 @@ namespace System.Xml.Tests
                 w.WriteBase64(buffer, 0, 2);
                 w.WriteEndElement();
             }
-            VerifyOutput("<root b=\"YmFi\" />"); return TEST_PASS;
+            VerifyOutput("<root b=\"YmFi\" />"); return;
         }
 
         //[Variation(Desc = "Duplicate attribute conflict when the namespace decl. is being omitted.Default", Param = NamespaceHandling.Default)]
         //[Variation(Desc = "Duplicate attribute conflict when the namespace decl. is being omitted.OmitDuplicates", Param = NamespaceHandling.OmitDuplicates)]
-        public int NS_Handling_24()
+        [Fact]
+        public void NS_Handling_24()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = (NamespaceHandling)this.CurVariation.Param;
@@ -801,12 +824,13 @@ namespace System.Xml.Tests
                 w.Dispose();
                 VerifyOutput((NamespaceHandling)this.CurVariation.Param == NamespaceHandling.OmitDuplicates ? "<A xmlns:p=\"ns1\"><B" : "<A xmlns:p=\"ns1\"><B xmlns:p=\"ns1\"");
             }
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "1.Namespace redefinition.Default", Param = NamespaceHandling.Default)]
         //[Variation(Desc = "1.Namespace redefinition.OmitDuplicates", Param = NamespaceHandling.OmitDuplicates)]
-        public int NS_Handling_25()
+        [Fact]
+        public void NS_Handling_25()
         {
             string xml = "<employees xmlns:email=\"http://www.w3c.org/some-spec-3.2\">" +
     "<employee><name>Bob Worker</name><address xmlns=\"http://postal.ie/spec-1.0\"><street>Nassau Street</street>" +
@@ -822,12 +846,13 @@ namespace System.Xml.Tests
                     w.WriteNode(r, false);
                 }
             }
-            VerifyOutput(xml); return TEST_PASS;
+            VerifyOutput(xml); return;
         }
 
         //[Variation(Desc = "2.Default Namespace redefinition.Default", Param = NamespaceHandling.Default)]
         //[Variation(Desc = "2.Default Namespace redefinition.OmitDuplicates", Param = NamespaceHandling.OmitDuplicates)]
-        public int NS_Handling_25a()
+        [Fact]
+        public void NS_Handling_25a()
         {
             string xml = "<root><elem1 xmlns=\"urn:URN1\" xmlns:ns1=\"urn:URN2\"><ns1:childElem1><grandChild1 /></ns1:childElem1><childElem2><grandChild2 /></childElem2></elem1></root>";
 
@@ -840,12 +865,13 @@ namespace System.Xml.Tests
                     w.WriteNode(r, false);
                 }
             }
-            VerifyOutput(xml); return TEST_PASS;
+            VerifyOutput(xml); return;
         }
 
         //[Variation(Desc = "Namespaces with the same prefix different NS value.Default", Param = NamespaceHandling.Default)]
         //[Variation(Desc = "Namespaces with the same prefix different NS value.OmitDuplicates", Param = NamespaceHandling.OmitDuplicates)]
-        public int NS_Handling_26()
+        [Fact]
+        public void NS_Handling_26()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = (NamespaceHandling)this.CurVariation.Param;
@@ -858,12 +884,13 @@ namespace System.Xml.Tests
                 w.WriteElementString("p", "e", "uri2", "val");
             }
             VerifyOutput("<p:e p:e=\"val\" p1:e=\"val\" xmlns:p1=\"uri2\" xmlns:p=\"uri1\"><p:e>val</p:e><p:e xmlns:p=\"uri2\">val</p:e></p:e>");
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "Namespaces with the same NS value but different prefixes.Default", Param = NamespaceHandling.Default)]
         //[Variation(Desc = "Namespaces with the same NS value but different prefixes.OmitDuplicates", Param = NamespaceHandling.OmitDuplicates)]
-        public int NS_Handling_27()
+        [Fact]
+        public void NS_Handling_27()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = (NamespaceHandling)this.CurVariation.Param;
@@ -876,12 +903,13 @@ namespace System.Xml.Tests
                 w.WriteElementString("p2", "e", "uri", "val");
             }
             VerifyOutput("<p1:e p1:e=\"val\" p2:e2=\"val\" xmlns:p2=\"uri\" xmlns:p1=\"uri\"><p1:e>val</p1:e><p2:e>val</p2:e></p1:e>");
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "Reader got the namespaces as a fixed value from DTD.Default", Param = NamespaceHandling.Default)]
         //[Variation(Desc = "Reader got the namespaces as a fixed value from DTD.OmitDuplicates", Param = NamespaceHandling.OmitDuplicates)]
-        public int NS_Handling_29()
+        [Fact]
+        public void NS_Handling_29()
         {
             string xml = "<!DOCTYPE root [ <!ELEMENT root ANY > <!ELEMENT ns1:elem1 ANY >" +
 "<!ATTLIST ns1:elem1 xmlns CDATA #FIXED \"urn:URN2\">  <!ATTLIST ns1:elem1 xmlns:ns1 CDATA #FIXED \"urn:URN1\">" +
@@ -899,12 +927,13 @@ namespace System.Xml.Tests
                     w.WriteNode(r, false);
                 }
             }
-            VerifyOutput(xml); return TEST_PASS;
+            VerifyOutput(xml); return;
         }
 
         //[Variation(Desc = "Reader got the namespaces as default attribute from DTD.Default", Param = NamespaceHandling.Default)]
         //[Variation(Desc = "Reader got the namespaces as default attribute from DTD.OmitDuplicates", Param = NamespaceHandling.OmitDuplicates)]
-        public int NS_Handling_30()
+        [Fact]
+        public void NS_Handling_30()
         {
             string xml = "<!DOCTYPE doc " +
 "[<!ELEMENT doc ANY>" +
@@ -936,12 +965,13 @@ namespace System.Xml.Tests
                     w.WriteNode(r, false);
                 }
             }
-            VerifyOutput(exp); return TEST_PASS;
+            VerifyOutput(exp); return;
         }
 
         //[Variation(Desc = "Reader got the default namespaces as default attribute from DTD.Default", Param = NamespaceHandling.Default)]
         //[Variation(Desc = "Reader got the default namespaces as default attribute from DTD.OmitDuplicates", Param = NamespaceHandling.OmitDuplicates)]
-        public int NS_Handling_30a()
+        [Fact]
+        public void NS_Handling_30a()
         {
             string xml = "<!DOCTYPE doc " +
 "[<!ELEMENT doc ANY>" +
@@ -973,12 +1003,13 @@ namespace System.Xml.Tests
                     w.WriteNode(r, false);
                 }
             }
-            VerifyOutput(exp); return TEST_PASS;
+            VerifyOutput(exp); return;
         }
 
         //[Variation(Desc = "XmlTextWriter : Wrong prefix management if the same prefix is used at inner level.Default", Param = NamespaceHandling.Default)]
         //[Variation(Desc = "XmlTextWriter : Wrong prefix management if the same prefix is used at inner level.OmitDuplicates", Param = NamespaceHandling.OmitDuplicates)]
-        public int NS_Handling_31()
+        [Fact]
+        public void NS_Handling_31()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = (NamespaceHandling)this.CurVariation.Param;
@@ -993,7 +1024,7 @@ namespace System.Xml.Tests
                 w.WriteEndElement();
             }
             VerifyOutput("<test p:a1=\"v\" xmlns:p=\"ns1\"><base p:a2=\"v\" p4:a3=\"v\" xmlns:p4=\"ns2\" /></test>");
-            return TEST_PASS;
+            return;
         }
     }
 }
