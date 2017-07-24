@@ -20,8 +20,8 @@
     <Compile Include="ReaderParamTestCase.cs" />-->
     <Compile Include="TestExtensions.cs" />
     <Compile Include="WriteEndDocumentOnCloseTest.cs" />
-    <!--<Compile Include="XmlFactoryWriterTests.cs" />
-    <Compile Include="XmlWriterTestCaseBase.cs" />
+    <Compile Include="XmlFactoryWriterTests.cs" />
+    <!--<Compile Include="XmlWriterTestCaseBase.cs" />
     <Compile Include="XmlWriterTestModule.cs" />-->
   </ItemGroup>
   <ItemGroup>
