@@ -418,6 +418,7 @@ namespace System.Data.SqlClient
         public string CurrentLanguage { get { throw null; } set { } }
         public string DataSource { get { throw null; } set { } }
         public bool Encrypt { get { throw null; } set { } }
+        public bool Enlist { get { throw null; } set { } }
         public string FailoverPartner { get { throw null; } set { } }
         public string InitialCatalog { get { throw null; } set { } }
         public bool IntegratedSecurity { get { throw null; } set { } }
