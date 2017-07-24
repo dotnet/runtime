@@ -3,22 +3,22 @@
 // See the LICENSE file in the project root for more information.
 
 using OLEDB.Test.ModuleCore;
+using XmlCoreTest.Common;
 using Xunit;
 
 namespace System.Xml.Tests
 {
     public class TCNewLineOnAttributes
     {
-        //[Variation(id=1, Desc="Make sure the setting has no effect when Indent is false", Pri=0)]
-        [Fact]
-        public void NewLineOnAttributes_1()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & WriterType.AllButIndenting)]
+        public void NewLineOnAttributes_1(XmlWriterTestCaseBase utils)
         {
-            if (IsIndent()) return;
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.OmitXmlDeclaration = true;
             wSettings.NewLineOnAttributes = true;
 
-            XmlWriter w = CreateWriter(wSettings);
+            XmlWriter w = utils.CreateWriter(wSettings);
             CError.Compare(w.Settings.NewLineOnAttributes, false, "Mismatch in NewLineOnAttributes");
 
             w.WriteStartElement("root");
@@ -27,19 +27,19 @@ namespace System.Xml.Tests
             w.WriteEndElement();
             w.Dispose();
 
-            Assert.True(CompareString("<root attr1=\"value1\" attr2=\"value2\" />"));
+            Assert.True(utils.CompareString("<root attr1=\"value1\" attr2=\"value2\" />"));
         }
 
-        //[Variation(id=2, Desc="Sanity test when Indent is true", Pri=1)]
-        [Fact]
-        public void NewLineOnAttributes_2()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
+        public void NewLineOnAttributes_2(XmlWriterTestCaseBase utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.OmitXmlDeclaration = true;
             wSettings.Indent = true;
             wSettings.NewLineOnAttributes = true;
 
-            XmlWriter w = CreateWriter(wSettings);
+            XmlWriter w = utils.CreateWriter(wSettings);
             CError.Compare(w.Settings.NewLineOnAttributes, true, "Mismatch in NewLineOnAttributes");
 
             w.WriteStartElement("root");
@@ -48,19 +48,19 @@ namespace System.Xml.Tests
             w.WriteEndElement();
             w.Dispose();
 
-            return CompareString("<root" + wSettings.NewLineChars + "  attr1=\"value1\"" + wSettings.NewLineChars + "  attr2=\"value2\" />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(utils.CompareString("<root" + wSettings.NewLineChars + "  attr1=\"value1\"" + wSettings.NewLineChars + "  attr2=\"value2\" />"));
         }
 
-        //[Variation(id=3, Desc="Attributes of nested elements", Pri=1)]
-        [Fact]
-        public void NewLineOnAttributes_3()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void NewLineOnAttributes_3(XmlWriterTestCaseBase utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.OmitXmlDeclaration = true;
             wSettings.Indent = true;
             wSettings.NewLineOnAttributes = true;
 
-            XmlWriter w = CreateWriter(wSettings);
+            XmlWriter w = utils.CreateWriter(wSettings);
             w.WriteStartElement("level1");
             w.WriteAttributeString("attr1", "value1");
             w.WriteAttributeString("attr2", "value2");
@@ -71,7 +71,7 @@ namespace System.Xml.Tests
             w.WriteEndElement();
             w.Dispose();
 
-            Assert.True(CompareBaseline("NewLineOnAttributes3.txt"));
+            Assert.True(utils.CompareBaseline("NewLineOnAttributes3.txt"));
         }
     }
 }

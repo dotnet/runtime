@@ -12,7 +12,7 @@ namespace System.Xml.Tests
 {
     public class TCWriterWithMemoryStream
     {
-        public XmlWriter CreateMemWriter(Stream writerStream, XmlWriterSettings settings)
+        public XmlWriter CreateMemWriter(XmlWriterTestCaseBase utils, Stream writerStream, XmlWriterSettings settings)
         {
             XmlWriterSettings wSettings = settings.Clone();
             wSettings.CloseOutput = false;
@@ -20,38 +20,39 @@ namespace System.Xml.Tests
             wSettings.CheckCharacters = false;
             XmlWriter w = null;
 
-            switch (WriterType)
+            switch (utils.WriterType)
             {
                 case WriterType.UTF8Writer:
                     wSettings.Encoding = Encoding.UTF8;
-                    w = WriterHelper.Create(writerStream, wSettings);
+                    w = WriterHelper.Create(writerStream, wSettings, overrideAsync: true, async: utils.Async);
                     break;
                 case WriterType.UnicodeWriter:
                     wSettings.Encoding = Encoding.Unicode;
-                    w = WriterHelper.Create(writerStream, wSettings);
+                    w = WriterHelper.Create(writerStream, wSettings, overrideAsync: true, async: utils.Async);
                     break;
                 case WriterType.WrappedWriter:
-                    XmlWriter ww = WriterHelper.Create(writerStream, wSettings);
-                    w = WriterHelper.Create(ww, wSettings);
+                    XmlWriter ww = WriterHelper.Create(writerStream, wSettings, overrideAsync: true, async: utils.Async);
+                    w = WriterHelper.Create(ww, wSettings, overrideAsync: true, async: utils.Async);
                     break;
                 case WriterType.CharCheckingWriter:
-                    XmlWriter cw = WriterHelper.Create(writerStream, wSettings);
+                    XmlWriter cw = WriterHelper.Create(writerStream, wSettings, overrideAsync: true, async: utils.Async);
                     XmlWriterSettings cws = settings.Clone();
                     cws.CheckCharacters = true;
-                    w = WriterHelper.Create(cw, cws);
+                    w = WriterHelper.Create(cw, cws, overrideAsync: true, async: utils.Async);
                     break;
                 case WriterType.CustomWriter:
+                    wSettings.Async = utils.Async;
                     w = new CustomWriter(writerStream, wSettings);
                     break;
                 case WriterType.UTF8WriterIndent:
                     wSettings.Encoding = Encoding.UTF8;
                     wSettings.Indent = true;
-                    w = WriterHelper.Create(writerStream, wSettings);
+                    w = WriterHelper.Create(writerStream, wSettings, overrideAsync: true, async: utils.Async);
                     break;
                 case WriterType.UnicodeWriterIndent:
                     wSettings.Encoding = Encoding.Unicode;
                     wSettings.Indent = true;
-                    w = WriterHelper.Create(writerStream, wSettings);
+                    w = WriterHelper.Create(writerStream, wSettings, overrideAsync: true, async: utils.Async);
                     break;
                 default:
                     throw new Exception("Unknown writer type");
@@ -59,14 +60,14 @@ namespace System.Xml.Tests
             return w;
         }
 
-        //[Variation(Desc = "XmlWellFormedWriter.Close() throws IndexOutOfRangeException")]
-        [Fact]
-        public void TFS_661130()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void XmlWellFormedWriterDoesNotThrowIndexOutOfRange0(XmlWriterTestCaseBase utils)
         {
             XmlWriterSettings ws = new XmlWriterSettings();
             using (MemoryStream ms = new MemoryStream())
             {
-                using (XmlWriter w = CreateMemWriter(ms, ws))
+                using (XmlWriter w = CreateMemWriter(utils, ms, ws))
                 {
                     w.WriteStartElement("foo");
                     w.WriteString(new String('a', (2048 * 3) - 50));
@@ -76,17 +77,16 @@ namespace System.Xml.Tests
                     w.WriteComment(String.Empty);
                 }
             }
-            return;
         }
 
-        //[Variation(Desc = "XmlWellFormedWriter.Close() throws IndexOutOfRangeException")]
-        [Fact]
-        public void XmlWellFormedWriterCloseThrowsIndexOutOfRangeException()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void XmlWellFormedWriterDoesNotThrowIndexOutOfRange1(XmlWriterTestCaseBase utils)
         {
             XmlWriterSettings ws = new XmlWriterSettings();
             using (MemoryStream ms = new MemoryStream())
             {
-                using (XmlWriter w = CreateMemWriter(ms, ws))
+                using (XmlWriter w = CreateMemWriter(utils, ms, ws))
                 {
                     w.WriteStartElement("foo");
                     w.WriteString(new String('a', (2048 * 3) - 50));
@@ -101,14 +101,14 @@ namespace System.Xml.Tests
             return;
         }
 
-        //[Variation(Desc = "XmlWellFormedWriter.Close() throws IndexOutOfRangeException")]
-        [Fact]
-        public void TFS_661130b()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void XmlWellFormedWriterDoesNotThrowIndexOutOfRange2(XmlWriterTestCaseBase utils)
         {
             XmlWriterSettings ws = new XmlWriterSettings();
             using (MemoryStream ms = new MemoryStream())
             {
-                using (XmlWriter w = CreateMemWriter(ms, ws))
+                using (XmlWriter w = CreateMemWriter(utils, ms, ws))
                 {
                     w.WriteStartElement("foo");
                     w.WriteString(new String('a', (2048 * 3) - 50));
@@ -126,9 +126,9 @@ namespace System.Xml.Tests
             return;
         }
 
-        //[Variation(Desc = "860167.IPublisher.PublishPackage crashes due to disposed.MS", Param = "FileStream")]
-        [Fact]
-        public void TFS_860167()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void DisposedFileStreamDoesNotCauseCrash0(XmlWriterTestCaseBase utils)
         {
             XmlWriterSettings ws = new XmlWriterSettings();
             try
@@ -136,7 +136,7 @@ namespace System.Xml.Tests
                 string outputXml;
                 using (MemoryStream ms = new MemoryStream())
                 {
-                    using (XmlWriter w = CreateMemWriter(ms, ws))
+                    using (XmlWriter w = CreateMemWriter(utils, ms, ws))
                     {
                         w.WriteElementString("elem", "text");
                         w.Flush();
@@ -158,9 +158,9 @@ namespace System.Xml.Tests
             }
         }
 
-        //[Variation(Desc = "IPublisher.PublishPackage crashes due to disposed.FS")]
-        [Fact]
-        public void TFS_860167a()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void DisposedFileStreamDoesNotCauseCrash1(XmlWriterTestCaseBase utils)
         {
             XmlWriterSettings ws = new XmlWriterSettings();
             try
@@ -168,7 +168,7 @@ namespace System.Xml.Tests
                 string outputXml;
                 using (Stream ms = new MemoryStream())
                 {
-                    using (XmlWriter w = CreateMemWriter(ms, ws))
+                    using (XmlWriter w = CreateMemWriter(utils, ms, ws))
                     {
                         w.WriteElementString("elem", "text");
                         w.Flush();
@@ -190,9 +190,9 @@ namespace System.Xml.Tests
             }
         }
 
-        //[Variation(Desc = "IPublisher.PublishPackage crashes due to disposed.BS with MS")]
-        [Fact]
-        public void TFS_860167e()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void DisposedFileStreamDoesNotCauseCrash2(XmlWriterTestCaseBase utils)
         {
             XmlWriterSettings ws = new XmlWriterSettings();
             try
@@ -202,7 +202,7 @@ namespace System.Xml.Tests
                 {
                     using (Stream bs = ms)
                     {
-                        using (XmlWriter w = CreateMemWriter(bs, ws))
+                        using (XmlWriter w = CreateMemWriter(utils, bs, ws))
                         {
                             w.WriteElementString("elem", "text");
                             w.Flush();
@@ -225,9 +225,9 @@ namespace System.Xml.Tests
             }
         }
 
-        //[Variation(Desc = "IPublisher.PublishPackage crashes due to disposed.BS with FS")]
-        [Fact]
-        public void TFS_860167f()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void DisposedFileStreamDoesNotCauseCrash3(XmlWriterTestCaseBase utils)
         {
             XmlWriterSettings ws = new XmlWriterSettings();
             try
@@ -237,7 +237,7 @@ namespace System.Xml.Tests
                 {
                     using (Stream bs = ms)
                     {
-                        using (XmlWriter w = CreateMemWriter(bs, ws))
+                        using (XmlWriter w = CreateMemWriter(utils, bs, ws))
                         {
                             w.WriteElementString("elem", "text");
                             w.Flush();
@@ -260,16 +260,16 @@ namespace System.Xml.Tests
             }
         }
 
-        //[Variation(Desc = "IPublisher.PublishPackage crashes due to dispose.MS.WriteRaw")]
-        [Fact]
-        public void TFS_860167b()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void DisposedFileStreamDoesNotCauseCrash4(XmlWriterTestCaseBase utils)
         {
             XmlWriterSettings ws = new XmlWriterSettings();
             try
             {
                 using (MemoryStream ms = new MemoryStream())
                 {
-                    using (XmlWriter w = CreateMemWriter(ms, ws))
+                    using (XmlWriter w = CreateMemWriter(utils, ms, ws))
                     {
                         w.WriteStartElement("foo");
                         w.WriteString(new String('a', (2048 * 3) - 50));
@@ -297,16 +297,16 @@ namespace System.Xml.Tests
             }
         }
 
-        //[Variation(Desc = "IPublisher.PublishPackage crashes due to dispose.MS.WriteComment")]
-        [Fact]
-        public void TFS_860167c()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void DisposedFileStreamDoesNotCauseCrash5(XmlWriterTestCaseBase utils)
         {
             XmlWriterSettings ws = new XmlWriterSettings();
             try
             {
                 using (MemoryStream ms = new MemoryStream())
                 {
-                    using (XmlWriter w = CreateMemWriter(ms, ws))
+                    using (XmlWriter w = CreateMemWriter(utils, ms, ws))
                     {
                         w.WriteStartElement("foo");
                         w.WriteString(new String('a', (2048 * 3) - 50));
@@ -332,16 +332,16 @@ namespace System.Xml.Tests
             }
         }
 
-        //[Variation(Desc = "IPublisher.PublishPackage crashes due to dispose.MS.WriteCData")]
-        [Fact]
-        public void TFS_860167d()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.All & ~WriterType.Async)]
+        public void DisposedFileStreamDoesNotCauseCrash6(XmlWriterTestCaseBase utils)
         {
             XmlWriterSettings ws = new XmlWriterSettings();
             try
             {
                 using (MemoryStream ms = new MemoryStream())
                 {
-                    using (XmlWriter w = CreateMemWriter(ms, ws))
+                    using (XmlWriter w = CreateMemWriter(utils, ms, ws))
                     {
                         w.WriteStartElement("foo");
                         w.WriteString(new String('a', (2048 * 3) - 50));
@@ -362,7 +362,8 @@ namespace System.Xml.Tests
                         }
                     }
                 }
-                Assert.True(false);
+
+                Assert.True(false, "Exception was not thrown");
             }
             catch (ObjectDisposedException e)
             {

@@ -3,23 +3,91 @@ using System.Linq;
 using System.Reflection;
 using Xunit.Abstractions;
 using Xunit.Sdk;
+using XmlCoreTest.Common;
 
 namespace System.Xml.Tests
 {
     // Based on https://github.com/xunit/xunit/blob/bccfcccf26b2c63c90573fe1a17e6572882ef39c/src/xunit.core/Sdk/InlineDataDiscoverer.cs
     public class XmlWriterInlineDataDiscoverer : IDataDiscoverer
     {
-        public static IEnumerable<object[]> GenerateTestCases(object[] args)
+        public static IEnumerable<object[]> GenerateTestCases(TestCaseUtilsImplementation implementation, WriterType writerTypeFlags, object[] args)
         {
-            yield return args.Prepend("test1").ToArray();
-            yield return args.Prepend("test2").ToArray();
-            yield return args.Prepend("test3").ToArray();
+            bool noAsyncFlag = writerTypeFlags.HasFlag(WriterType.NoAsync);
+            bool asyncFlag = writerTypeFlags.HasFlag(WriterType.Async);
+
+            if (!noAsyncFlag && !asyncFlag)
+            {
+                // flags for writers specified directly, none of those would mean no tests should be run
+                // this is likely not what was meant
+                noAsyncFlag = true;
+                asyncFlag = true;
+            }
+
+            foreach (WriterType writerType in GetWriterTypes(writerTypeFlags))
+            {
+                if (noAsyncFlag)
+                    yield return args.Prepend(CreateTestUtils(implementation, writerType, async: false)).ToArray();
+
+                if (asyncFlag)
+                    yield return args.Prepend(CreateTestUtils(implementation, writerType, async: true)).ToArray();
+            }
+        }
+
+        private static IEnumerable<WriterType> GetWriterTypes(WriterType writerTypeFlags)
+        {
+            if (writerTypeFlags.HasFlag(WriterType.UTF8Writer))
+                yield return WriterType.UTF8Writer;
+
+            if (writerTypeFlags.HasFlag(WriterType.UnicodeWriter))
+                yield return WriterType.UnicodeWriter;
+
+            if (writerTypeFlags.HasFlag(WriterType.CustomWriter))
+                yield return WriterType.CustomWriter;
+
+            if (writerTypeFlags.HasFlag(WriterType.CharCheckingWriter))
+                yield return WriterType.CharCheckingWriter;
+
+            if (writerTypeFlags.HasFlag(WriterType.UTF8WriterIndent))
+                yield return WriterType.UTF8WriterIndent;
+
+            if (writerTypeFlags.HasFlag(WriterType.UnicodeWriterIndent))
+                yield return WriterType.UnicodeWriterIndent;
+
+            if (writerTypeFlags.HasFlag(WriterType.WrappedWriter))
+                yield return WriterType.WrappedWriter;
+        }
+
+        private static object CreateTestUtils(TestCaseUtilsImplementation implementation, WriterType writerType, bool async)
+        {
+            switch (implementation)
+            {
+                case TestCaseUtilsImplementation.XmlFactoryWriter:
+                    return new XmlFactoryWriterTestCaseUtils(writerType, async: async);
+            }
+
+            throw new Exception("Invalid implementation");
         }
 
         public virtual IEnumerable<object[]> GetData(IAttributeInfo dataAttribute, IMethodInfo testMethod)
         {
-            var args = ((IEnumerable<object>)dataAttribute.GetConstructorArguments().Single() ?? new object[] { null }).ToArray();
-            return GenerateTestCases(args);
+            object[] constructorArgs = dataAttribute.GetConstructorArguments().ToArray();
+
+            if (constructorArgs.Length == 2)
+            {
+                TestCaseUtilsImplementation implementation = (TestCaseUtilsImplementation)constructorArgs[0];
+                object[] args = ((IEnumerable<object>)constructorArgs[1] ?? new object[] { null }).ToArray();
+                return GenerateTestCases(implementation, WriterType.All, args);
+            }
+
+            if (constructorArgs.Length == 3)
+            {
+                TestCaseUtilsImplementation implementation = (TestCaseUtilsImplementation)constructorArgs[0];
+                WriterType writerTypeFlags = (WriterType)constructorArgs[1];
+                object[] args = ((IEnumerable<object>)constructorArgs[2] ?? new object[] { null }).ToArray();
+                return GenerateTestCases(implementation, writerTypeFlags, args);
+            }
+
+            throw new Exception("Invalid args");
         }
 
         public virtual bool SupportsDiscoveryEnumeration(IAttributeInfo dataAttribute, IMethodInfo testMethod)
@@ -33,46 +101,32 @@ namespace System.Xml.Tests
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = true)]
     public sealed class XmlWriterInlineDataAttribute : DataAttribute
     {
-        readonly object[] data;
+        private readonly object[] _data;
+        TestCaseUtilsImplementation _implementation;
+        WriterType _writerTypeFlags;
 
-        public XmlWriterInlineDataAttribute(params object[] data)
+        public XmlWriterInlineDataAttribute(TestCaseUtilsImplementation implementation, params object[] data)
         {
-            this.data = data;
+            _data = data;
+            _implementation = implementation;
+            _writerTypeFlags = WriterType.All;
+        }
+
+        public XmlWriterInlineDataAttribute(TestCaseUtilsImplementation implementation, WriterType writerTypeFlag, params object[] data)
+        {
+            _data = data;
+            _implementation = implementation;
+            _writerTypeFlags = writerTypeFlag;
         }
 
         public override IEnumerable<object[]> GetData(MethodInfo testMethod)
         {
-            return XmlWriterInlineDataDiscoverer.GenerateTestCases(data);
+            return XmlWriterInlineDataDiscoverer.GenerateTestCases(_implementation, _writerTypeFlags, _data);
         }
     }
 
-    // new XmlCoreTest.Common.WriterFactory(writerType1);
-    [Flags]
-    public enum WriterImplementation
+    public enum TestCaseUtilsImplementation
     {
-        All = UTF8Writer | UnicodeWriter | CustomWriter | CharCheckingWriter | UTF8WriterIndent | UnicodeWriterIndent | WrappedWriter,
-        UTF8Writer = 1,
-        UnicodeWriter = 2,
-        CustomWriter = 4,
-        CharCheckingWriter = 8,
-        UTF8WriterIndent = 16,
-        UnicodeWriterIndent = 32,
-        WrappedWriter = 64
+        XmlFactoryWriter
     }
-
-
-    //public virtual XmlWriter CreateWriter()
-    //{
-    //    return this.XmlWriterTestModule.WriterFactory.CreateWriter();
-    //}
-
-    //public virtual XmlWriter CreateWriter(XmlWriterSettings s)
-    //{
-    //    return this.XmlWriterTestModule.WriterFactory.CreateWriter(s);
-    //}
-
-    //public virtual XmlReader GetReader()
-    //{
-    //    return this.XmlWriterTestModule.WriterFactory.GetReader();
-    //}
 }

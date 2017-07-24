@@ -12,14 +12,14 @@ namespace System.Xml.Tests
 {
     public class TCCloseOutput
     {
-        //[Variation(id=1, Desc="Check that underlying stream is NOT CLOSED when CloseOutput = FALSE and Create(Stream)", Pri=0, Param="Stream")]
-        //[Variation(id=2, Desc="Check that underlying stream is NOT CLOSED when CloseOutput = FALSE and Create(TextWriter)", Pri=0, Param="Textwriter")]
-        [Fact]
-        public void CloseOutput_1()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.UTF8Writer | WriterType.UnicodeWriter, "Stream")]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.UTF8Writer | WriterType.UnicodeWriter, "Textwriter")]
+        public void CloseOutput_1(XmlWriterTestCaseBase utils, string outputType)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             XmlWriter w = null;
-            switch (WriterType)
+            switch (utils.WriterType)
             {
                 case WriterType.UTF8Writer:
                     wSettings.Encoding = Encoding.UTF8;
@@ -29,14 +29,14 @@ namespace System.Xml.Tests
                     break;
             }
             Stream writerStream = new MemoryStream();
-            switch (CurVariation.Param.ToString())
+            switch (outputType)
             {
                 case "Stream":
-                    w = WriterHelper.Create(writerStream, wSettings);
+                    w = WriterHelper.Create(writerStream, wSettings, overrideAsync: true, async: utils.Async);
                     break;
                 case "Textwriter":
                     StreamWriter tw = new StreamWriter(writerStream, wSettings.Encoding);
-                    w = WriterHelper.Create(tw, wSettings);
+                    w = WriterHelper.Create(tw, wSettings, overrideAsync: true, async: utils.Async);
                     break;
             }
 
@@ -53,13 +53,13 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(id=3, Desc="Check that underlying stream is CLOSED when CloseOutput = FALSE and Create(Uri)", Pri=0, Param="false")]
-        //[Variation(id=4, Desc="Check that underlying stream is CLOSED when CloseOutput = TRUE and Create(Uri)", Pri=0, Param="true")]
-        [Fact]
-        public void CloseOutput_2()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.UTF8Writer | WriterType.UnicodeWriter, true)]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.UTF8Writer | WriterType.UnicodeWriter, false)]
+        public void CloseOutput_2(XmlWriterTestCaseBase utils, bool closeOutput)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
-            switch (WriterType)
+            switch (utils.WriterType)
             {
                 case WriterType.UTF8Writer:
                     wSettings.Encoding = Encoding.UTF8;
@@ -68,9 +68,9 @@ namespace System.Xml.Tests
                     wSettings.Encoding = Encoding.Unicode;
                     break;
             }
-            wSettings.CloseOutput = Boolean.Parse(CurVariation.Param.ToString());
+            wSettings.CloseOutput = closeOutput;
 
-            XmlWriter w = WriterHelper.Create("writer.out", wSettings);
+            XmlWriter w = WriterHelper.Create("writer.out", wSettings, overrideAsync: true, async: utils.Async);
             w.WriteStartElement("root");
             w.WriteEndElement();
             w.Dispose();
@@ -94,16 +94,16 @@ namespace System.Xml.Tests
             return;
         }
 
-        //[Variation(id=5, Desc="Check that underlying stream is CLOSED when CloseOutput = TRUE and Create(Stream)", Pri=0, Param="Stream")]
-        //[Variation(id=6, Desc="Check that underlying stream is CLOSED when CloseOutput = TRUE and Create(Textwriter)", Pri=0, Param="Textwriter")]
-        [Fact]
-        public void CloseOutput_3()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.NoAsync | WriterType.UTF8Writer | WriterType.UnicodeWriter, "Stream")]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.NoAsync | WriterType.UTF8Writer | WriterType.UnicodeWriter, "Textwriter")]
+        public void CloseOutput_3(XmlWriterTestCaseBase utils, string outputType)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.CloseOutput = true;
             XmlWriter w = null;
 
-            switch (WriterType)
+            switch (utils.WriterType)
             {
                 case WriterType.UTF8Writer:
                     wSettings.Encoding = Encoding.UTF8;
@@ -112,17 +112,19 @@ namespace System.Xml.Tests
                     wSettings.Encoding = Encoding.Unicode;
                     break;
             }
+
             Stream writerStream = FilePathUtil.getStream("writer.out");
-            switch (CurVariation.Param.ToString())
+            switch (outputType)
             {
                 case "Stream":
-                    w = WriterHelper.Create(writerStream, wSettings);
+                    w = WriterHelper.Create(writerStream, wSettings, overrideAsync: true, async: utils.Async);
                     break;
                 case "Textwriter":
                     StreamWriter tw = new StreamWriter(writerStream, wSettings.Encoding);
-                    w = WriterHelper.Create(tw, wSettings);
+                    w = WriterHelper.Create(tw, wSettings, overrideAsync: true, async: utils.Async);
                     break;
             }
+
             w.WriteStartElement("root");
             w.WriteEndElement();
             w.Dispose();
@@ -132,21 +134,19 @@ namespace System.Xml.Tests
                 writerStream.Dispose();
                 Assert.True(false);
             }
-            else
-                return;
         }
 
-        //[Variation(id=7, Desc="Writer should not close underlying stream when an exception is thrown before Close (Stream)", Pri=1, Param="Stream")]
-        //[Variation(id=8, Desc="Writer should not close underlying stream when an exception is thrown before Close (Textwriter)", Pri=1, Param="Textwriter")]
-        [Fact]
-        public void CloseOutput_4()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.UTF8Writer | WriterType.UnicodeWriter, "Stream")]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.UTF8Writer | WriterType.UnicodeWriter, "Textwriter")]
+        public void CloseOutput_4(XmlWriterTestCaseBase utils, string outputType)
         {
             Stream writerStream = FilePathUtil.getStream("writer.out");
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.CloseOutput = true;
             XmlWriter w = null;
 
-            switch (WriterType)
+            switch (utils.WriterType)
             {
                 case WriterType.UTF8Writer:
                     wSettings.Encoding = Encoding.UTF8;
@@ -156,14 +156,14 @@ namespace System.Xml.Tests
                     break;
             }
 
-            switch (CurVariation.Param.ToString())
+            switch (outputType)
             {
                 case "Stream":
-                    w = WriterHelper.Create(writerStream, wSettings);
+                    w = WriterHelper.Create(writerStream, wSettings, overrideAsync: true, async: utils.Async);
                     break;
                 case "Textwriter":
                     StreamWriter tw = new StreamWriter(writerStream, wSettings.Encoding);
-                    w = WriterHelper.Create(tw, wSettings);
+                    w = WriterHelper.Create(tw, wSettings, overrideAsync: true, async: utils.Async);
                     break;
             }
 
