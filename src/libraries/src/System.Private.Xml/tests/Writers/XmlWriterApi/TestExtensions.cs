@@ -45,4 +45,34 @@ namespace System.Xml.Tests
             return XmlWriterInlineDataDiscoverer.GenerateTestCases(data);
         }
     }
+
+    // new XmlCoreTest.Common.WriterFactory(writerType1);
+    [Flags]
+    public enum WriterImplementation
+    {
+        All = UTF8Writer | UnicodeWriter | CustomWriter | CharCheckingWriter | UTF8WriterIndent | UnicodeWriterIndent | WrappedWriter,
+        UTF8Writer = 1,
+        UnicodeWriter = 2,
+        CustomWriter = 4,
+        CharCheckingWriter = 8,
+        UTF8WriterIndent = 16,
+        UnicodeWriterIndent = 32,
+        WrappedWriter = 64
+    }
+
+
+    //public virtual XmlWriter CreateWriter()
+    //{
+    //    return this.XmlWriterTestModule.WriterFactory.CreateWriter();
+    //}
+
+    //public virtual XmlWriter CreateWriter(XmlWriterSettings s)
+    //{
+    //    return this.XmlWriterTestModule.WriterFactory.CreateWriter(s);
+    //}
+
+    //public virtual XmlReader GetReader()
+    //{
+    //    return this.XmlWriterTestModule.WriterFactory.GetReader();
+    //}
 }
