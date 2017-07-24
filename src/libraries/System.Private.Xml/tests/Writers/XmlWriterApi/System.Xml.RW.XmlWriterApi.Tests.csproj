@@ -10,6 +10,9 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
+    <ReferenceFromRuntime Include="xunit.execution.dotnet" />
+  </ItemGroup>
+  <ItemGroup> 
     <Compile Include="CommonTests.cs" />
     <Compile Include="EndOfLineHandlingTests.cs" />
     <Compile Include="ErrorCondition.cs" />
@@ -44,6 +47,7 @@
     <Compile Include="TCWriterSettingsMisc.cs" />
     <Compile Include="TCWriterWithMemoryStream.cs" />
     <Compile Include="TCXmlWriterTestModule.cs" />
+    <Compile Include="TestExtensions.cs" />
     <Compile Include="WriteEndDocumentOnCloseTest.cs" />
     <Compile Include="XmlFactoryWriterTests.cs" />
     <Compile Include="XmlWriterTestCaseBase.cs" />
