@@ -2963,11 +2963,6 @@ mono_install_handler_block_guard (MonoThreadUnwindState *ctx)
 	FindHandlerBlockData data = { 0 };
 	MonoJitTlsData *jit_tls = (MonoJitTlsData *)ctx->unwind_data [MONO_UNWIND_DATA_JIT_TLS];
 
-#ifndef MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD_AOT
-	if (mono_aot_only)
-		return FALSE;
-#endif
-
 	/* Guard against a null MonoJitTlsData. This can happens if the thread receives the
          * interrupt signal before the JIT has time to initialize its TLS data for the given thread.
 	 */

@@ -6742,10 +6742,6 @@ emit_trampolines (MonoAotCompile *acfg)
 			if (tramp_type == MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING)
 				continue;
 #endif
-#ifndef MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD
-			if (tramp_type == MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD)
-				continue;
-#endif
 			mono_arch_create_generic_trampoline ((MonoTrampolineType)tramp_type, &info, acfg->aot_opts.use_trampolines_page? 2: TRUE);
 			emit_trampoline (acfg, acfg->got_offset, info);
 		}
@@ -6824,11 +6820,6 @@ emit_trampolines (MonoAotCompile *acfg)
 				l = l->next;
 			}
 		}
-
-#ifdef MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD_AOT
-		mono_arch_create_handler_block_trampoline (&info, TRUE);
-		emit_trampoline (acfg, acfg->got_offset, info);
-#endif
 
 		if (mono_aot_mode_is_interp (&acfg->aot_opts)) {
 			mono_arch_get_enter_icall_trampoline (&info);

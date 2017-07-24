@@ -89,13 +89,6 @@ mono_arch_patch_plt_entry (guint8 *code, gpointer *got, mgreg_t *regs, guint8 *a
 	*(guint8**)jump_entry = addr;
 }
 
-gpointer
-mono_arm_handler_block_trampoline_helper (gpointer *ptr)
-{
-	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
-	return jit_tls->handler_block_return_address;
-}
-
 #ifndef DISABLE_JIT
 
 #define arm_is_imm12(v) ((int)(v) > -4096 && (int)(v) < 4096)
@@ -692,62 +685,6 @@ mono_arch_create_general_rgctx_lazy_fetch_trampoline (MonoTrampInfo **info, gboo
 	return buf;
 }
 
-gpointer
-mono_arch_create_handler_block_trampoline (MonoTrampInfo **info, gboolean aot)
-{
-	guint8 *tramp;
-	guint8 *code, *buf;
-	int tramp_size = 64;
-	MonoJumpInfo *ji = NULL;
-	GSList *unwind_ops = NULL;
-
-	code = buf = mono_global_codeman_reserve (tramp_size);
-
-	unwind_ops = mono_arch_get_cie_program ();
-
-	tramp = mono_arch_create_specific_trampoline (NULL, MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD, NULL, NULL);
-
-	/*
-	This trampoline restore the call chain of the handler block then jumps into the code that deals with it.
-	*/
-
-	/*
-	 * We are in a method frame after the call emitted by OP_CALL_HANDLER.
-	 */
-	/* Obtain jit_tls->handler_block_return_address */
-	if (aot) {
-		code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_R0, MONO_PATCH_INFO_JIT_ICALL_ADDR, "mono_arm_handler_block_trampoline_helper");
-	} else {
-		ARM_LDR_IMM (code, ARMREG_R0, ARMREG_PC, 0);
-		ARM_B (code, 0);
-		*(gpointer*)code = mono_arm_handler_block_trampoline_helper;
-		code += 4;
-	}
-	ARM_BLX_REG (code, ARMREG_R0);
-	/* Set it as the return address so the trampoline will return to it */
-	ARM_MOV_REG_REG (code, ARMREG_LR, ARMREG_R0);
-
-	/* Call the trampoline */
-	if (aot) {
-		char *name = g_strdup_printf ("trampoline_func_%d", MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD);
-		code = mono_arm_emit_aotconst (&ji, code, buf, ARMREG_R0, MONO_PATCH_INFO_JIT_ICALL_ADDR, name);
-		code = emit_bx (code, ARMREG_R0);
-	} else {
-		ARM_LDR_IMM (code, ARMREG_R0, ARMREG_PC, 0);
-		code = emit_bx (code, ARMREG_R0);
-		*(gpointer*)code = tramp;
-		code += 4;
-	}
-
-	mono_arch_flush_icache (buf, code - buf);
-	MONO_PROFILER_RAISE (jit_code_buffer, (buf, code - buf, MONO_PROFILER_CODE_BUFFER_HELPER, NULL));
-	g_assert (code - buf <= tramp_size);
-
-	*info = mono_tramp_info_create ("handler_block_trampoline", buf, code - buf, ji, unwind_ops);
-
-	return buf;
-}
-
 guint8*
 mono_arch_create_sdb_trampoline (gboolean single_step, MonoTrampInfo **info, gboolean aot)
 {
@@ -1023,13 +960,6 @@ mono_arch_get_static_rgctx_trampoline (gpointer arg, gpointer addr)
 
 gpointer
 mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info, gboolean aot)
-{
-	g_assert_not_reached ();
-	return NULL;
-}
-
-gpointer
-mono_arch_create_handler_block_trampoline (MonoTrampInfo **info, gboolean aot)
 {
 	g_assert_not_reached ();
 	return NULL;
