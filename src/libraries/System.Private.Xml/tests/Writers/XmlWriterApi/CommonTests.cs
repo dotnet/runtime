@@ -6060,35 +6060,35 @@ namespace System.Xml.Tests
             [Fact]
             public void writeChars_6()
             {
-                return VerifyInvalidWrite("WriteChars", 5, 0, 6, typeof(ArgumentOutOfRangeException));
+                Assert.Equal(TEST_PASS, VerifyInvalidWrite("WriteChars", 5, 0, 6, typeof(ArgumentOutOfRangeException)));
             }
 
             //[Variation(id = 7, Desc = "WriteChars with count < 0", Pri = 1)]
             [Fact]
             public void writeChars_7()
             {
-                return VerifyInvalidWrite("WriteChars", 5, 2, -1, typeof(ArgumentOutOfRangeException));
+                Assert.Equal(TEST_PASS, VerifyInvalidWrite("WriteChars", 5, 2, -1, typeof(ArgumentOutOfRangeException)));
             }
 
             //[Variation(id = 8, Desc = "WriteChars with index > buffer size", Pri = 1)]
             [Fact]
             public void writeChars_8()
             {
-                return VerifyInvalidWrite("WriteChars", 5, 6, 1, typeof(ArgumentOutOfRangeException));
+                Assert.Equal(TEST_PASS, VerifyInvalidWrite("WriteChars", 5, 6, 1, typeof(ArgumentOutOfRangeException)));
             }
 
             //[Variation(id = 9, Desc = "WriteChars with index < 0", Pri = 1)]
             [Fact]
             public void writeChars_9()
             {
-                return VerifyInvalidWrite("WriteChars", 5, -1, 1, typeof(ArgumentOutOfRangeException));
+                Assert.Equal(TEST_PASS, VerifyInvalidWrite("WriteChars", 5, -1, 1, typeof(ArgumentOutOfRangeException)));
             }
 
             //[Variation(id = 10, Desc = "WriteChars with index + count exceeds buffer", Pri = 1)]
             [Fact]
             public void writeChars_10()
             {
-                return VerifyInvalidWrite("WriteChars", 5, 2, 5, typeof(ArgumentOutOfRangeException));
+                Assert.Equal(TEST_PASS, VerifyInvalidWrite("WriteChars", 5, 2, 5, typeof(ArgumentOutOfRangeException)));
             }
 
             //[Variation(id = 11, Desc = "WriteChars for xml:lang attribute, index = count = 0", Pri = 1)]
@@ -8357,35 +8357,35 @@ namespace System.Xml.Tests
                 [Fact]
                 public void writeRaw_6()
                 {
-                    return VerifyInvalidWrite("WriteRaw", 5, 0, 6, typeof(ArgumentOutOfRangeException/*ArgumentException*/));
+                    Assert.Equal(TEST_PASS, VerifyInvalidWrite("WriteRaw", 5, 0, 6, typeof(ArgumentOutOfRangeException/*ArgumentException*/)));
                 }
 
                 //[Variation(id = 7, Desc = "WriteRaw with count < 0", Pri = 1)]
                 [Fact]
                 public void writeRaw_7()
                 {
-                    return VerifyInvalidWrite("WriteRaw", 5, 2, -1, typeof(ArgumentOutOfRangeException));
+                    Assert.Equal(TEST_PASS, VerifyInvalidWrite("WriteRaw", 5, 2, -1, typeof(ArgumentOutOfRangeException)));
                 }
 
                 //[Variation(id = 8, Desc = "WriteRaw with index > buffer size", Pri = 1)]
                 [Fact]
                 public void writeRaw_8()
                 {
-                    return VerifyInvalidWrite("WriteRaw", 5, 6, 1, typeof(ArgumentOutOfRangeException/*ArgumentException*/));
+                    Assert.Equal(TEST_PASS, VerifyInvalidWrite("WriteRaw", 5, 6, 1, typeof(ArgumentOutOfRangeException/*ArgumentException*/)));
                 }
 
                 //[Variation(id = 9, Desc = "WriteRaw with index < 0", Pri = 1)]
                 [Fact]
                 public void writeRaw_9()
                 {
-                    return VerifyInvalidWrite("WriteRaw", 5, -1, 1, typeof(ArgumentOutOfRangeException));
+                    Assert.Equal(TEST_PASS, VerifyInvalidWrite("WriteRaw", 5, -1, 1, typeof(ArgumentOutOfRangeException)));
                 }
 
                 //[Variation(id = 10, Desc = "WriteRaw with index + count exceeds buffer", Pri = 1)]
                 [Fact]
                 public void writeRaw_10()
                 {
-                    return VerifyInvalidWrite("WriteRaw", 5, 2, 5, typeof(ArgumentOutOfRangeException/*ArgumentException*/));
+                    Assert.Equal(TEST_PASS, VerifyInvalidWrite("WriteRaw", 5, 2, 5, typeof(ArgumentOutOfRangeException/*ArgumentException*/)));
                 }
 
                 //[Variation(id = 11, Desc = "WriteRaw with buffer = null", Pri = 1)]
@@ -8524,35 +8524,35 @@ namespace System.Xml.Tests
                 [Fact]
                 public void Base64_2()
                 {
-                    return VerifyInvalidWrite("WriteBase64", 5, 0, 6, typeof(ArgumentOutOfRangeException/*ArgumentException*/));
+                    Assert.Equal(TEST_PASS, VerifyInvalidWrite("WriteBase64", 5, 0, 6, typeof(ArgumentOutOfRangeException/*ArgumentException*/)));
                 }
 
                 //[Variation(id = 30, Desc = "WriteBase64 with count < 0", Pri = 1)]
                 [Fact]
                 public void Base64_3()
                 {
-                    return VerifyInvalidWrite("WriteBase64", 5, 2, -1, typeof(ArgumentOutOfRangeException));
+                    Assert.Equal(TEST_PASS, VerifyInvalidWrite("WriteBase64", 5, 2, -1, typeof(ArgumentOutOfRangeException)));
                 }
 
                 //[Variation(id = 40, Desc = "WriteBase64 with index > buffer size", Pri = 1)]
                 [Fact]
                 public void Base64_4()
                 {
-                    return VerifyInvalidWrite("WriteBase64", 5, 5, 1, typeof(ArgumentOutOfRangeException/*ArgumentException*/));
+                    Assert.Equal(TEST_PASS, VerifyInvalidWrite("WriteBase64", 5, 5, 1, typeof(ArgumentOutOfRangeException/*ArgumentException*/)));
                 }
 
                 //[Variation(id = 50, Desc = "WriteBase64 with index < 0", Pri = 1)]
                 [Fact]
                 public void Base64_5()
                 {
-                    return VerifyInvalidWrite("WriteBase64", 5, -1, 1, typeof(ArgumentOutOfRangeException));
+                    Assert.Equal(TEST_PASS, VerifyInvalidWrite("WriteBase64", 5, -1, 1, typeof(ArgumentOutOfRangeException)));
                 }
 
                 //[Variation(id = 60, Desc = "WriteBase64 with index + count exceeds buffer", Pri = 1)]
                 [Fact]
                 public void Base64_6()
                 {
-                    return VerifyInvalidWrite("WriteBase64", 5, 2, 5, typeof(ArgumentOutOfRangeException/*ArgumentException*/));
+                    Assert.Equal(TEST_PASS, VerifyInvalidWrite("WriteBase64", 5, 2, 5, typeof(ArgumentOutOfRangeException/*ArgumentException*/)));
                 }
 
                 //[Variation(id = 70, Desc = "WriteBase64 with buffer = null", Pri = 1)]
@@ -8835,35 +8835,35 @@ namespace System.Xml.Tests
                 [Fact]
                 public void BinHex_2()
                 {
-                    return VerifyInvalidWrite("WriteBinHex", 5, 0, 6, typeof(ArgumentOutOfRangeException/*ArgumentException*/));
+                    Assert.Equal(TEST_PASS, VerifyInvalidWrite("WriteBinHex", 5, 0, 6, typeof(ArgumentOutOfRangeException/*ArgumentException*/)));
                 }
 
                 //[Variation(id = 3, Desc = "WriteBinHex with count < 0", Pri = 1)]
                 [Fact]
                 public void BinHex_3()
                 {
-                    return VerifyInvalidWrite("WriteBinHex", 5, 2, -1, typeof(ArgumentOutOfRangeException));
+                    Assert.Equal(TEST_PASS, VerifyInvalidWrite("WriteBinHex", 5, 2, -1, typeof(ArgumentOutOfRangeException)));
                 }
 
                 //[Variation(id = 4, Desc = "WriteBinHex with index > buffer size", Pri = 1)]
                 [Fact]
                 public void BinHex_4()
                 {
-                    return VerifyInvalidWrite("WriteBinHex", 5, 5, 1, typeof(ArgumentOutOfRangeException/*ArgumentException*/));
+                    Assert.Equal(TEST_PASS, VerifyInvalidWrite("WriteBinHex", 5, 5, 1, typeof(ArgumentOutOfRangeException/*ArgumentException*/)));
                 }
 
                 //[Variation(id = 5, Desc = "WriteBinHex with index < 0", Pri = 1)]
                 [Fact]
                 public void BinHex_5()
                 {
-                    return VerifyInvalidWrite("WriteBinHex", 5, -1, 1, typeof(ArgumentOutOfRangeException));
+                    Assert.Equal(TEST_PASS, VerifyInvalidWrite("WriteBinHex", 5, -1, 1, typeof(ArgumentOutOfRangeException)));
                 }
 
                 //[Variation(id = 6, Desc = "WriteBinHex with index + count exceeds buffer", Pri = 1)]
                 [Fact]
                 public void BinHex_6()
                 {
-                    return VerifyInvalidWrite("WriteBinHex", 5, 2, 5, typeof(ArgumentOutOfRangeException/*ArgumentException*/));
+                    Assert.Equal(TEST_PASS, VerifyInvalidWrite("WriteBinHex", 5, 2, 5, typeof(ArgumentOutOfRangeException/*ArgumentException*/)));
                 }
 
                 //[Variation(id = 7, Desc = "WriteBinHex with buffer = null", Pri = 1)]

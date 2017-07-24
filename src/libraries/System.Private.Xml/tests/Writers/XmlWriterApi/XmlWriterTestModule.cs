@@ -5,16 +5,13 @@
 using OLEDB.Test.ModuleCore;
 using System.IO;
 using XmlCoreTest.Common;
+using Xunit;
 
 namespace System.Xml.Tests
 {
     //[TestModule(Name="XmlWriter API")]
-    public partial class XmlWriterTestModule : CTestModule
+    public class XmlWriterTestModule
     {
-        public XmlWriterTestModule() : base()
-        {
-        }
-
         protected WriterType writerType1;
         public WriterType WriterType
         {
@@ -42,40 +39,12 @@ namespace System.Xml.Tests
             }
         }
 
-        public override int Init(object objParam)
+        [Theory]
+        [XmlWriterInlineData("abc")]
+        public void TestTest(string test, string a)
         {
-            baselinePath1 = Path.Combine(FilePathUtil.GetTestDataPath(), @"XmlWriter2\");
-            string temp = FilePathUtil.GetVariableValue("WriterType").ToUpperInvariant();
-
-            switch (temp)
-            {
-                case "UTF8WRITER":
-                    writerType1 = WriterType.UTF8Writer;
-                    break;
-                case "UNICODEWRITER":
-                    writerType1 = WriterType.UnicodeWriter;
-                    break;
-                case "CUSTOMWRITER":
-                    writerType1 = WriterType.CustomWriter;
-                    break;
-                case "UTF8WRITERINDENT":
-                    writerType1 = WriterType.UTF8WriterIndent;
-                    break;
-                case "UNICODEWRITERINDENT":
-                    writerType1 = WriterType.UnicodeWriterIndent;
-                    break;
-                case "CHARCHECKINGWRITER":
-                    writerType1 = WriterType.CharCheckingWriter;
-                    break;
-                case "WRAPPEDWRITER":
-                    writerType1 = WriterType.WrappedWriter;
-                    break;
-                default:
-                    throw new Exception("Unknown writer type: " + temp);
-            }
-
-            writerFactory1 = new XmlCoreTest.Common.WriterFactory(writerType1);
-            return base.Init(objParam);
+            Assert.StartsWith("test", test);
+            Assert.Equal("abc", a);
         }
     }
 }

@@ -12,15 +12,6 @@ namespace System.Xml.Tests
     //[TestCase(Name="XmlWriterSettings: Default Values", Pri=0)]
     public partial class TCDefaultWriterSettings : XmlFactoryWriterTestCaseBase
     {
-        public override int Init(object o)
-        {
-            // This testcase should run only once 
-            if (WriterType == WriterType.CustomWriter) /*|| WriterType == WriterType.DOMWriter)*/
-                return TEST_SKIPPED;
-            int i = base.Init(0);
-            return i;
-        }
-
         //[Variation(id=1, Desc="Default value of Encoding")]
         public int default_1()
         {

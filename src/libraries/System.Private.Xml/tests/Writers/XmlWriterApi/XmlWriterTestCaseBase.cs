@@ -8,38 +8,15 @@ using XmlCoreTest.Common;
 
 namespace System.Xml.Tests
 {
-    public abstract partial class XmlWriterTestCaseBase : CTestCase
+    public abstract class XmlWriterTestCaseBase
     {
         public static string nl = Environment.NewLine;
-
-        public XmlWriterTestCaseBase() : base() { }
-
-        public override int Init(object o)
-        {
-            return base.Init(o);
-        }
-
-        public XmlWriterTestModule XmlWriterTestModule
-        {
-            get
-            {
-                return (XmlWriterTestModule)this.TestModule;
-            }
-        }
-
-        public WriterType WriterType
-        {
-            get
-            {
-                return this.XmlWriterTestModule.WriterFactory.WriterType;
-            }
-        }
 
         public string BaselinePath
         {
             get
             {
-                return this.XmlWriterTestModule.BaselinePath;
+                return XmlWriterTestModule.BaselinePath;
             }
         }
 
@@ -48,21 +25,6 @@ namespace System.Xml.Tests
             if (fileName == null || fileName == String.Empty)
                 return fileName;
             return BaselinePath + fileName;
-        }
-
-        public virtual XmlWriter CreateWriter()
-        {
-            return this.XmlWriterTestModule.WriterFactory.CreateWriter();
-        }
-
-        public virtual XmlWriter CreateWriter(XmlWriterSettings s)
-        {
-            return this.XmlWriterTestModule.WriterFactory.CreateWriter(s);
-        }
-
-        public virtual XmlReader GetReader()
-        {
-            return this.XmlWriterTestModule.WriterFactory.GetReader();
         }
 
         public bool CompareReader(string strExpected)
