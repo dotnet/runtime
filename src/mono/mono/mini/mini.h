@@ -755,6 +755,9 @@ struct MonoBasicBlock {
 	/* List of call sites in this bblock sorted by pc_offset */
 	GSList *gc_callsites;
 
+	/* If this is not null, the basic block is a try hole for this clause */
+	MonoExceptionClause *clause_hole;
+
 	/*
 	 * The region encodes whether the basic block is inside
 	 * a finally, catch, filter or none of these.
@@ -1635,10 +1638,18 @@ typedef struct {
 
 	/* A hashtable of region ID-> SP var mappings */
 	/* An SP var is a place to store the stack pointer (used by handlers)*/
+	/*
+	 * FIXME We can potentially get rid of this, since it was mainly used
+	 * for hijacking return address for handler.
+	 */
 	GHashTable      *spvars;
 
-	/* A hashtable of region ID -> EX var mappings */
-	/* An EX var stores the exception object passed to catch/filter blocks */
+	/*
+	 * A hashtable of region ID -> EX var mappings
+	 * An EX var stores the exception object passed to catch/filter blocks
+	 * For finally blocks, it is set to TRUE if we should throw an abort
+	 * once the execution of the finally block is over.
+	 */
 	GHashTable      *exvars;
 
 	GList           *ldstr_list; /* used by AOT */
@@ -2857,7 +2868,6 @@ gpointer mono_arch_get_enter_icall_trampoline   (MonoTrampInfo **info);
 gpointer mono_arch_install_handler_block_guard (MonoJitInfo *ji, MonoJitExceptionInfo *clause, MonoContext *ctx, gpointer new_value);
 gpointer mono_arch_create_handler_block_trampoline (MonoTrampInfo **info, gboolean aot);
 gpointer mono_create_handler_block_trampoline (void);
-gboolean mono_install_handler_block_guard (MonoThreadUnwindState *ctx);
 
 /*New interruption machinery */
 void

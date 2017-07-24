@@ -120,6 +120,7 @@ static void mono_walk_stack_full (MonoJitStackWalk func, MonoContext *start_ctx,
 static void mono_raise_exception_with_ctx (MonoException *exc, MonoContext *ctx);
 static void mono_runtime_walk_stack_with_ctx (MonoJitStackWalk func, MonoContext *start_ctx, MonoUnwindOptions unwind_options, void *user_data);
 static gboolean mono_current_thread_has_handle_block_guard (void);
+static gboolean mono_install_handler_block_guard (MonoThreadUnwindState *ctx);
 
 static gboolean
 first_managed (MonoStackFrameInfo *frame, MonoContext *ctx, gpointer addr)
@@ -2106,11 +2107,12 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 					 * that was called by the EH machinery. It won't have a guard trampoline installed, so we must
 					 * check for this situation here and resume interruption if we are below the guarded block.
 					 */
-					if (G_UNLIKELY (jit_tls->handler_block_return_address)) {
+					if (G_UNLIKELY (jit_tls->handler_block)) {
 						gboolean is_outside = FALSE;
 						gpointer prot_bp = MONO_CONTEXT_GET_BP (&jit_tls->handler_block_context);
 						gpointer catch_bp = MONO_CONTEXT_GET_BP (ctx);
 						//FIXME make this stack direction aware
+
 						if (catch_bp > prot_bp) {
 							is_outside = TRUE;
 						} else if (catch_bp == prot_bp) {
@@ -2130,7 +2132,6 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 							}
 						}
 						if (is_outside) {
-							jit_tls->handler_block_return_address = NULL;
 							jit_tls->handler_block = NULL;
 							mono_thread_resume_interruption (TRUE); /*We ignore the exception here, it will be raised later*/
 						}
@@ -2890,8 +2891,6 @@ mono_resume_unwind (MonoContext *ctx)
 	mono_restore_context (&new_ctx);
 }
 
-#ifdef MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD
-
 typedef struct {
 	MonoJitInfo *ji;
 	MonoContext ctx;
@@ -2928,12 +2927,13 @@ find_last_handler_block (StackFrameInfo *frame, MonoContext *ctx, gpointer data)
 }
 
 
-static gpointer
+static void
 install_handler_block_guard (MonoJitInfo *ji, MonoContext *ctx)
 {
 	int i;
 	MonoJitExceptionInfo *clause = NULL;
 	gpointer ip;
+	guint8 *bp;
 
 	ip = MONO_CONTEXT_GET_IP (ctx);
 
@@ -2947,20 +2947,21 @@ install_handler_block_guard (MonoJitInfo *ji, MonoContext *ctx)
 
 	/*no matching finally */
 	if (i == ji->num_clauses)
-		return NULL;
+		return;
 
-	return mono_arch_install_handler_block_guard (ji, clause, ctx, mono_create_handler_block_trampoline ());
+        /*Load the spvar*/
+        bp = (guint8*)MONO_CONTEXT_GET_BP (ctx);
+        *(bp + clause->exvar_offset) = 1;
 }
 
 /*
  * Finds the bottom handler block running and install a block guard if needed.
  */
-gboolean
+static gboolean
 mono_install_handler_block_guard (MonoThreadUnwindState *ctx)
 {
 	FindHandlerBlockData data = { 0 };
 	MonoJitTlsData *jit_tls = (MonoJitTlsData *)ctx->unwind_data [MONO_UNWIND_DATA_JIT_TLS];
-	gpointer resume_ip;
 
 #ifndef MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD_AOT
 	if (mono_aot_only)
@@ -2970,7 +2971,7 @@ mono_install_handler_block_guard (MonoThreadUnwindState *ctx)
 	/* Guard against a null MonoJitTlsData. This can happens if the thread receives the
          * interrupt signal before the JIT has time to initialize its TLS data for the given thread.
 	 */
-	if (!jit_tls || jit_tls->handler_block_return_address)
+	if (!jit_tls || jit_tls->handler_block)
 		return FALSE;
 
 	/* Do an async safe stack walk */
@@ -2983,11 +2984,8 @@ mono_install_handler_block_guard (MonoThreadUnwindState *ctx)
 
 	memcpy (&jit_tls->handler_block_context, &data.ctx, sizeof (MonoContext));
 
-	resume_ip = install_handler_block_guard (data.ji, &data.ctx);
-	if (resume_ip == NULL)
-		return FALSE;
+	install_handler_block_guard (data.ji, &data.ctx);
 
-	jit_tls->handler_block_return_address = resume_ip;
 	jit_tls->handler_block = data.ei;
 
 	return TRUE;
@@ -2997,23 +2995,8 @@ static gboolean
 mono_current_thread_has_handle_block_guard (void)
 {
 	MonoJitTlsData *jit_tls = (MonoJitTlsData *)mono_tls_get_jit_tls ();
-	return jit_tls && jit_tls->handler_block_return_address != NULL;
+	return jit_tls && jit_tls->handler_block != NULL;
 }
-
-#else
-gboolean
-mono_install_handler_block_guard (MonoThreadUnwindState *ctx)
-{
-	return FALSE;
-}
-
-static gboolean
-mono_current_thread_has_handle_block_guard (void)
-{
-	return FALSE;
-}
-
-#endif
 
 void
 mono_set_cast_details (MonoClass *from, MonoClass *to)

@@ -3947,6 +3947,14 @@ mono_threads_abort_appdomain_threads (MonoDomain *domain, int timeout)
 	return TRUE;
 }
 
+void
+mono_thread_self_abort (void)
+{
+	MonoError error;
+	self_abort_internal (&error);
+	mono_error_set_pending_exception (&error);
+}
+
 /*
  * mono_thread_get_undeniable_exception:
  *
