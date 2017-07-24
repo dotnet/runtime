@@ -11,20 +11,20 @@ namespace System.Xml.Tests
 {
     public class TCOmitXmlDecl
     {
-        //[Variation(id=1, Desc="Check when false", Pri=1)]
-        [Fact]
-        public void XmlDecl_1()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
+        public void XmlDecl_1(XmlWriterTestCaseBase utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.ConformanceLevel = ConformanceLevel.Document;
 
-            XmlWriter w = CreateWriter(wSettings);
+            XmlWriter w = utils.CreateWriter(wSettings);
             CError.Compare(w.Settings.ConformanceLevel, ConformanceLevel.Document, "Mismatch in CL");
             w.WriteStartElement("root");
             w.WriteEndElement();
             w.Dispose();
 
-            XmlReader xr = GetReader();
+            XmlReader xr = utils.GetReader();
             // First node should be XmlDeclaration
             xr.Read();
             if (xr.NodeType != XmlNodeType.XmlDeclaration)
@@ -45,22 +45,22 @@ namespace System.Xml.Tests
             }
         }
 
-        //[Variation(id=2, Desc="Check when true", Pri=1)]
-        [Fact]
-        public void XmlDecl_2()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
+        public void XmlDecl_2(XmlWriterTestCaseBase utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.ConformanceLevel = ConformanceLevel.Document;
             wSettings.OmitXmlDeclaration = true;
 
-            XmlWriter w = CreateWriter(wSettings);
+            XmlWriter w = utils.CreateWriter(wSettings);
             CError.Compare(w.Settings.ConformanceLevel, ConformanceLevel.Document, "Mismatch in CL");
             CError.Compare(w.Settings.OmitXmlDeclaration, true, "Mismatch in OmitXmlDecl");
             w.WriteStartElement("root");
             w.WriteEndElement();
             w.Dispose();
 
-            XmlReader xr = GetReader();
+            XmlReader xr = utils.GetReader();
             // Should not read XmlDeclaration
             while (xr.Read())
             {
@@ -75,15 +75,15 @@ namespace System.Xml.Tests
             return;
         }
 
-        //[Variation(id=3, Desc="Set to true, write standalone attribute. Should not write XmlDecl", Pri=1)]
-        [Fact]
-        public void XmlDecl_3()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
+        public void XmlDecl_3(XmlWriterTestCaseBase utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.ConformanceLevel = ConformanceLevel.Document;
             wSettings.OmitXmlDeclaration = true;
 
-            XmlWriter w = CreateWriter(wSettings);
+            XmlWriter w = utils.CreateWriter(wSettings);
             w.WriteStartDocument(true);
             w.WriteStartElement("root");
             w.WriteEndElement();
@@ -91,7 +91,7 @@ namespace System.Xml.Tests
             w.Dispose();
 
 
-            XmlReader xr = GetReader();
+            XmlReader xr = utils.GetReader();
             // Should not read XmlDeclaration
             while (xr.Read())
             {
@@ -106,14 +106,14 @@ namespace System.Xml.Tests
             return;
         }
 
-        //[Variation(id=4, Desc="Set to false, write document fragment. Should not write XmlDecl", Pri=1)]
-        [Fact]
-        public void XmlDecl_4()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
+        public void XmlDecl_4(XmlWriterTestCaseBase utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.ConformanceLevel = ConformanceLevel.Fragment;
 
-            XmlWriter w = CreateWriter(wSettings);
+            XmlWriter w = utils.CreateWriter(wSettings);
             CError.Compare(w.Settings.ConformanceLevel, ConformanceLevel.Fragment, "Mismatch in CL");
             w.WriteStartElement("root");
             w.WriteEndElement();
@@ -122,18 +122,17 @@ namespace System.Xml.Tests
             w.Dispose();
 
 
-            Assert.True(CompareReader("<root /><root />"));
+            Assert.True(utils.CompareReader("<root /><root />"));
         }
 
-        //[Variation(id=5, Desc="WritePI with name = 'xml' text = 'version = 1.0' should work if WriteStartDocument is not called", Pri=1)]
-        [Fact]
-        public void XmlDecl_5()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
+        public void XmlDecl_5(XmlWriterTestCaseBase utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.CloseOutput = false;
 
-
-            XmlWriter w = CreateWriter(wSettings);
+            XmlWriter w = utils.CreateWriter(wSettings);
             CError.Compare(w.Settings.CloseOutput, false, "Mismatch in CloseOutput");
             w.WriteProcessingInstruction("xml", "version = \"1.0\"");
             w.WriteStartElement("Root");
@@ -141,12 +140,12 @@ namespace System.Xml.Tests
             w.Dispose();
 
 
-            Assert.True(CompareReader("<?xml version = \"1.0\"?><Root />"));
+            Assert.True(utils.CompareReader("<?xml version = \"1.0\"?><Root />"));
         }
 
-        //[Variation(id=6, Desc="WriteNode(reader) positioned on XmlDecl, OmitXmlDecl = true", Pri=1)]
-        [Fact]
-        public void XmlDecl_6()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
+        public void XmlDecl_6(XmlWriterTestCaseBase utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.CloseOutput = false;
@@ -157,7 +156,7 @@ namespace System.Xml.Tests
             XmlReader xr = ReaderHelper.Create(new StringReader(strxml));
             xr.Read();
 
-            XmlWriter w = CreateWriter(wSettings);
+            XmlWriter w = utils.CreateWriter(wSettings);
             w.WriteNode(xr, false);
             w.WriteStartElement("root");
             w.WriteEndElement();
@@ -165,12 +164,12 @@ namespace System.Xml.Tests
             w.Dispose();
 
 
-            Assert.True(CompareReader("<root />"));
+            Assert.True(utils.CompareReader("<root />"));
         }
 
-        //[Variation(id=7, Desc="WriteNode(reader) positioned on XmlDecl, OmitXmlDecl = false", Pri=1)]
-        [Fact]
-        public void XmlDecl_7()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
+        public void XmlDecl_7(XmlWriterTestCaseBase utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.CloseOutput = false;
@@ -181,7 +180,7 @@ namespace System.Xml.Tests
             XmlReader xr = ReaderHelper.Create(new StringReader(strxml));
             xr.Read();
 
-            XmlWriter w = CreateWriter(wSettings);
+            XmlWriter w = utils.CreateWriter(wSettings);
             w.WriteNode(xr, false);
             w.WriteStartElement("root");
             w.WriteString("blah");
@@ -189,7 +188,7 @@ namespace System.Xml.Tests
             xr.Dispose();
             w.Dispose();
 
-            Assert.True(CompareReader(strxml));
+            Assert.True(utils.CompareReader(strxml));
         }
     }
 }

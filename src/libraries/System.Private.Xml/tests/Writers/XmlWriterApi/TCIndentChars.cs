@@ -10,16 +10,16 @@ namespace System.Xml.Tests
 {
     public class TCIndentChars
     {
-        //[Variation(id=1, Desc="Set to tab char", Pri=0)]
-        [Fact]
-        public void IndentChars_1()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
+        public void IndentChars_1(XmlWriterTestCaseBase utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.OmitXmlDeclaration = true;
             wSettings.Indent = true;
             wSettings.IndentChars = "\x9";
 
-            XmlWriter w = CreateWriter(wSettings);
+            XmlWriter w = utils.CreateWriter(wSettings);
             CError.Compare(w.Settings.IndentChars, "\x9", "Mismatch in IndentChars");
             w.WriteStartElement("root");
             w.WriteStartElement("child");
@@ -27,19 +27,19 @@ namespace System.Xml.Tests
             w.WriteEndElement();
             w.Dispose();
 
-            return CompareString("<root>" + wSettings.NewLineChars + "\x9<child />" + wSettings.NewLineChars + "</root>") ? TEST_PASS : TEST_FAIL;
+            Assert.True(utils.CompareString("<root>" + wSettings.NewLineChars + "\x9<child />" + wSettings.NewLineChars + "</root>"));
         }
 
-        //[Variation(id=2, Desc="Set to multiple whitespace chars", Pri=0)]
-        [Fact]
-        public void IndentChars_2()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
+        public void IndentChars_2(XmlWriterTestCaseBase utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.OmitXmlDeclaration = true;
             wSettings.Indent = true;
             wSettings.IndentChars = "     ";
 
-            XmlWriter w = CreateWriter(wSettings);
+            XmlWriter w = utils.CreateWriter(wSettings);
             CError.Compare(w.Settings.IndentChars, "     ", "Mismatch in IndentChars");
             w.WriteStartElement("root");
             w.WriteStartElement("child");
@@ -47,19 +47,19 @@ namespace System.Xml.Tests
             w.WriteEndElement();
             w.Dispose();
 
-            return CompareString("<root>" + wSettings.NewLineChars + "     <child />" + wSettings.NewLineChars + "</root>") ? TEST_PASS : TEST_FAIL;
+            Assert.True(utils.CompareString("<root>" + wSettings.NewLineChars + "     <child />" + wSettings.NewLineChars + "</root>"));
         }
 
-        //[Variation(id=3, Desc="Set to 0xA", Pri=0)]
-        [Fact]
-        public void IndentChars_3()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
+        public void IndentChars_3(XmlWriterTestCaseBase utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.OmitXmlDeclaration = true;
             wSettings.Indent = true;
             wSettings.IndentChars = "\xA";
 
-            XmlWriter w = CreateWriter(wSettings);
+            XmlWriter w = utils.CreateWriter(wSettings);
             CError.Compare(w.Settings.IndentChars, "\xA", "Mismatch in IndentChars");
             w.WriteStartElement("root");
             w.WriteStartElement("child");
@@ -67,19 +67,19 @@ namespace System.Xml.Tests
             w.WriteEndElement();
             w.Dispose();
 
-            return CompareString("<root>" + wSettings.NewLineChars + "\xA<child />" + wSettings.NewLineChars + "</root>") ? TEST_PASS : TEST_FAIL;
+            Assert.True(utils.CompareString("<root>" + wSettings.NewLineChars + "\xA<child />" + wSettings.NewLineChars + "</root>"));
         }
 
-        //[Variation(id=4, Desc="Set to 0xD", Pri=0)]
-        [Fact]
-        public void IndentChars_4()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
+        public void IndentChars_4(XmlWriterTestCaseBase utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.OmitXmlDeclaration = true;
             wSettings.Indent = true;
             wSettings.IndentChars = "\xD";
 
-            XmlWriter w = CreateWriter(wSettings);
+            XmlWriter w = utils.CreateWriter(wSettings);
             CError.Compare(w.Settings.IndentChars, "\xD", "Mismatch in IndentChars");
             w.WriteStartElement("root");
             w.WriteStartElement("child");
@@ -87,19 +87,19 @@ namespace System.Xml.Tests
             w.WriteEndElement();
             w.Dispose();
 
-            return CompareString("<root>" + wSettings.NewLineChars + "\xD<child />" + wSettings.NewLineChars + "</root>") ? TEST_PASS : TEST_FAIL;
+            Assert.True(utils.CompareString("<root>" + wSettings.NewLineChars + "\xD<child />" + wSettings.NewLineChars + "</root>"));
         }
 
-        //[Variation(id=5, Desc="Set to 0x20", Pri=0)]
-        [Fact]
-        public void IndentChars_5()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
+        public void IndentChars_5(XmlWriterTestCaseBase utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.OmitXmlDeclaration = true;
             wSettings.Indent = true;
             wSettings.IndentChars = "\x20";
 
-            XmlWriter w = CreateWriter(wSettings);
+            XmlWriter w = utils.CreateWriter(wSettings);
             CError.Compare(w.Settings.IndentChars, "\x20", "Mismatch in IndentChars");
             w.WriteStartElement("root");
             w.WriteStartElement("child");
@@ -107,31 +107,31 @@ namespace System.Xml.Tests
             w.WriteEndElement();
             w.Dispose();
 
-            return CompareString("<root>" + wSettings.NewLineChars + "\x20<child />" + wSettings.NewLineChars + "</root>") ? TEST_PASS : TEST_FAIL;
+            Assert.True(utils.CompareString("<root>" + wSettings.NewLineChars + "\x20<child />" + wSettings.NewLineChars + "</root>"));
         }
 
-        //[Variation(id=6, Desc="Set to element start tag", Pri=1, Param="<")]
-        //[Variation(id=7, Desc="Set to &", Pri=1, Param="&")]
-        //[Variation(id=8, Desc="Set to comment start tag", Pri=1, Param="<!--")]
-        [Fact]
-        public void IndentChars_6()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "<")]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "&")]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "<!--")]
+        public void IndentChars_6(XmlWriterTestCaseBase utils, string indentChars)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.OmitXmlDeclaration = true;
             wSettings.Indent = true;
-            wSettings.IndentChars = CurVariation.Param.ToString();
+            wSettings.IndentChars = indentChars;
 
             XmlWriter w = null;
             try
             {
-                w = CreateWriter(wSettings);
+                w = utils.CreateWriter(wSettings);
             }
             catch (ArgumentException e)
             {
                 CError.WriteLineIgnore("Exception: " + e.ToString());
                 return;
             }
-            Assert.True((WriterType == WriterType.CharCheckingWriter));
+            Assert.True((utils.WriterType == WriterType.CharCheckingWriter));
         }
     }
 }

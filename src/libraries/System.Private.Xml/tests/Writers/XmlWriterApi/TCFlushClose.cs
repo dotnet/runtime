@@ -12,61 +12,59 @@ namespace System.Xml.Tests
 {
     public class TCFlushClose
     {
-        //[Variation(id=1, Desc="Verify Flush() flushes underlying stream when CloseOutput = true", Pri=1,Param="true")]
-        //[Variation(id=2, Desc="Verify Flush() flushes underlying stream when CloseOutput = false", Pri=1,Param="false")]
-        [Fact]
-        public void flush_1()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom, true)]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom, false)]
+        public void flush_1(XmlWriterTestCaseBase utils, bool closeOutput)
         {
             Stream writerStream = new MemoryStream();
             XmlWriterSettings wSettings = new XmlWriterSettings();
             XmlWriter w = null;
             long expectedLength = 0;
-            if (this.CurVariation.Param.ToString() == "true")
-                wSettings.CloseOutput = true;
-            else
-                wSettings.CloseOutput = false;
+            wSettings.CloseOutput = closeOutput;
 
-            switch (WriterType)
+            switch (utils.WriterType)
             {
                 case WriterType.WrappedWriter:
                     expectedLength = 113;
-                    XmlWriter ww = WriterHelper.Create(writerStream, wSettings);
-                    w = WriterHelper.Create(ww, wSettings);
+                    XmlWriter ww = WriterHelper.Create(writerStream, wSettings, overrideAsync: true, async: utils.Async);
+                    w = WriterHelper.Create(ww, wSettings, overrideAsync: true, async: utils.Async);
                     break;
                 case WriterType.CharCheckingWriter:
                     expectedLength = 113;
-                    XmlWriter w1 = WriterHelper.Create(writerStream, wSettings);
+                    XmlWriter w1 = WriterHelper.Create(writerStream, wSettings, overrideAsync: true, async: utils.Async);
                     XmlWriterSettings ws1 = new XmlWriterSettings();
                     ws1.CheckCharacters = true;
-                    w = WriterHelper.Create(w1, ws1);
+                    w = WriterHelper.Create(w1, ws1, overrideAsync: true, async: utils.Async);
                     break;
                 case WriterType.UTF8Writer:
                     wSettings.Encoding = Encoding.UTF8;
                     expectedLength = 113;
-                    w = WriterHelper.Create(writerStream, wSettings);
+                    w = WriterHelper.Create(writerStream, wSettings, overrideAsync: true, async: utils.Async);
                     break;
                 case WriterType.UnicodeWriter:
                     wSettings.Encoding = Encoding.Unicode;
                     expectedLength = 224;
-                    w = WriterHelper.Create(writerStream, wSettings);
+                    w = WriterHelper.Create(writerStream, wSettings, overrideAsync: true, async: utils.Async);
                     break;
                 case WriterType.UTF8WriterIndent:
                     wSettings.Encoding = Encoding.UTF8;
                     expectedLength = 125;
                     wSettings.Indent = true;
-                    w = WriterHelper.Create(writerStream, wSettings);
+                    w = WriterHelper.Create(writerStream, wSettings, overrideAsync: true, async: utils.Async);
                     break;
                 case WriterType.UnicodeWriterIndent:
                     wSettings.Encoding = Encoding.Unicode;
                     expectedLength = 248;
                     wSettings.Indent = true;
-                    w = WriterHelper.Create(writerStream, wSettings);
+                    w = WriterHelper.Create(writerStream, wSettings, overrideAsync: true, async: utils.Async);
+                    break;
+                default:
+                    Assert.True(false, "unknown writer");
                     break;
             }
-            if (CurVariation.Param.ToString() == "true")
-                wSettings.CloseOutput = true;
-            else
-                wSettings.CloseOutput = false;
+
+            wSettings.CloseOutput = closeOutput;
 
             var beginning = writerStream.Length;
 
@@ -103,21 +101,17 @@ namespace System.Xml.Tests
             return;
         }
 
-        //[Variation(id=3, Desc="Verify Close() flushes underlying stream when CloseOutput = true", Pri=1,Param="true")]
-        //[Variation(id=4, Desc="Verify Close() flushes underlying stream when CloseOutput = false", Pri=1,Param="false")]
-        [Fact]
-        public void close_1()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.NoAsync | WriterType.UTF8Writer | WriterType.UnicodeWriter)]
+        public void close_1(XmlWriterTestCaseBase utils)
         {
-            if (WriterType != WriterType.UTF8Writer && WriterType != WriterType.UnicodeWriter)
-                return;
-
             Stream writerStream = new MemoryStream();
             XmlWriterSettings wSettings = new XmlWriterSettings();
 
             long expectedLength1 = 0;
             long expectedLength2 = 0;
 
-            switch (WriterType)
+            switch (utils.WriterType)
             {
                 case WriterType.UTF8Writer:
                     wSettings.Encoding = Encoding.UTF8;
@@ -131,12 +125,9 @@ namespace System.Xml.Tests
                     break;
             }
 
-            if (CurVariation.Param.ToString() == "true")
-                wSettings.CloseOutput = true;
-            else
-                wSettings.CloseOutput = false;
+            wSettings.CloseOutput = false;
 
-            XmlWriter w = WriterHelper.Create(writerStream, wSettings);
+            XmlWriter w = WriterHelper.Create(writerStream, wSettings, overrideAsync: true, async: utils.Async);
 
             try
             {
@@ -186,15 +177,14 @@ namespace System.Xml.Tests
             return;
         }
 
-        //[Variation(id=5, Desc="Verify WriterSettings after Close()", Pri=1)]
-        [Fact]
-        public void close_2()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
+        public void close_2(XmlWriterTestCaseBase utils)
         {
-            XmlWriter w = CreateWriter();
+            XmlWriter w = utils.CreateWriter();
             w.Dispose();
-            CError.Equals(w.Settings.Indent, IsIndent() ? true : false, "Incorrect default value of Indent");
+            CError.Equals(w.Settings.Indent, utils.IsIndent(), "Incorrect default value of Indent");
             CError.Equals(w.Settings.CheckCharacters, true, "Incorrect default value of CheckCharacters");
-            return;
         }
     }
 }

@@ -10,7 +10,6 @@ namespace System.Xml.Tests
 {
     public class TCWriterSettingsMisc
     {
-        //[Variation(id=1, Desc="Test for Reset()", Pri=0)]
         [Fact]
         public void Reset_1()
         {
@@ -38,11 +37,8 @@ namespace System.Xml.Tests
             CError.Equals(wSettings.CheckCharacters, true, "CheckCharacters");
             CError.Equals(wSettings.ConformanceLevel, ConformanceLevel.Document, "ConformanceLevel");
             CError.Equals(wSettings.WriteEndDocumentOnClose, true, "WriteEndDocumentOnClose");
-
-            return;
         }
 
-        //[Variation(id=2, Desc="Test for Clone()", Pri=0)]
         [Fact]
         public void Clone_1()
         {
@@ -71,8 +67,6 @@ namespace System.Xml.Tests
             CError.Equals(wSettings.CheckCharacters, newSettings.CheckCharacters, "CheckCharacters");
             CError.Equals(wSettings.ConformanceLevel, newSettings.ConformanceLevel, "ConformanceLevel");
             CError.Equals(wSettings.WriteEndDocumentOnClose, newSettings.WriteEndDocumentOnClose, "WriteEndDocumentOnClose");
-
-            return;
         }
     }
 }
