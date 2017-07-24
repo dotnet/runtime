@@ -11,6 +11,8 @@ namespace System.Net.Http
     {
         private sealed class ChunkedEncodingWriteStream : HttpContentWriteStream
         {
+            private static readonly byte[] s_finalChunkBytes = { (byte)'0', (byte)'\r', (byte)'\n', (byte)'\r', (byte)'\n' };
+
             public ChunkedEncodingWriteStream(HttpConnection connection)
                 : base(connection)
             {
@@ -52,16 +54,11 @@ namespace System.Net.Http
             {
                 return _connection.FlushAsync(cancellationToken);
             }
-
+            
             public override async Task FinishAsync(CancellationToken cancellationToken)
             {
-                // Send 0 byte chunk to indicate end
-                await _connection.WriteByteAsync((byte)'0', cancellationToken).ConfigureAwait(false);
-                await _connection.WriteTwoBytesAsync((byte)'\r', (byte)'\n', cancellationToken).ConfigureAwait(false);
-
-                // Send final _CRLF
-                await _connection.WriteTwoBytesAsync((byte)'\r', (byte)'\n', cancellationToken).ConfigureAwait(false);
-
+                // Send 0 byte chunk to indicate end, then final CrLf
+                await _connection.WriteBytesAsync(s_finalChunkBytes, cancellationToken).ConfigureAwait(false);
                 _connection = null;
             }
         }
