@@ -11,11 +11,11 @@ namespace System.Xml.Tests
 {
     public class TCAutoCL
     {
-        //[Variation(id=1, Desc = "Change to CL Document after WriteStartDocument()", Pri = 0)]
-        [Fact]
-        public void auto_1()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
+        public void auto_1(XmlWriterTestCaseBase utils)
         {
-            XmlWriter w = CreateWriter(ConformanceLevel.Auto);
+            XmlWriter w = utils.CreateWriter(ConformanceLevel.Auto);
 
             CError.Compare(w.Settings.ConformanceLevel, ConformanceLevel.Auto, "Error");
             w.WriteStartDocument();
@@ -42,22 +42,15 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(id=2, Desc="Change to CL Document after WriteStartDocument(standalone = true)", Pri=0, Param="true")]
-        //[Variation(id=3, Desc="Change to CL Document after WriteStartDocument(standalone = false)", Pri=0, Param="false")]
-        [Fact]
-        public void auto_2()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom, true)]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom, false)]
+        public void auto_2(XmlWriterTestCaseBase utils, bool writeStartDocument)
         {
-            XmlWriter w = CreateWriter(ConformanceLevel.Auto);
+            XmlWriter w = utils.CreateWriter(ConformanceLevel.Auto);
             CError.Compare(w.Settings.ConformanceLevel, ConformanceLevel.Auto, "Error");
-            switch (CurVariation.Param.ToString())
-            {
-                case "true":
-                    w.WriteStartDocument(true);
-                    break;
-                case "false":
-                    w.WriteStartDocument(true);
-                    break;
-            }
+            w.WriteStartDocument(writeStartDocument);
+
             // PROLOG
             CError.Compare(w.Settings.ConformanceLevel, ConformanceLevel.Document, "Error");
             w.WriteStartElement("root");
@@ -85,11 +78,11 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(id=4, Desc="Change to CL Document when you write DocType decl", Pri=0)]
-        [Fact]
-        public void auto_3()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
+        public void auto_3(XmlWriterTestCaseBase utils)
         {
-            XmlWriter w = CreateWriter(ConformanceLevel.Auto);
+            XmlWriter w = utils.CreateWriter(ConformanceLevel.Auto);
             w.WriteDocType("ROOT", "publicid", "sysid", "<!ENTITY e 'abc'>");
             // PROLOG
             CError.Compare(w.Settings.ConformanceLevel, ConformanceLevel.Document, "Should switch to Document from Auto when you write top level DTD");
@@ -113,11 +106,11 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(id=5, Desc="Change to CL Fragment when you write a root element", Pri=1)]
-        [Fact]
-        public void auto_4()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
+        public void auto_4(XmlWriterTestCaseBase utils)
         {
-            XmlWriter w = CreateWriter(ConformanceLevel.Auto);
+            XmlWriter w = utils.CreateWriter(ConformanceLevel.Auto);
             w.WriteStartElement("root");
             CError.Compare(w.Settings.ConformanceLevel, ConformanceLevel.Fragment, "Error");
             w.WriteEndElement();
@@ -128,22 +121,22 @@ namespace System.Xml.Tests
             return;
         }
 
-        //[Variation(id=6, Desc="Change to CL Fragment for WriteString at top level", Pri=1, Param="String")]
-        //[Variation(id=7, Desc="Change to CL Fragment for WriteCData at top level", Pri=1, Param="CData")]
-        //[Variation(id=8, Desc="Change to CL Fragment for WriteEntityRef at top level", Pri=1, Param="EntityRef")]		
-        //[Variation(id=9, Desc="Change to CL Fragment for WriteCharEntity at top level", Pri=1, Param="CharEntity")]		
-        //[Variation(id=10, Desc="Change to CL Fragment for WriteSurrogateCharEntity at top level", Pri=1, Param="SurrogateCharEntity")]		
-        //[Variation(id=11, Desc="Change to CL Fragment for WriteChars at top level", Pri=1, Param="Chars")]				
-        //[Variation(id=12, Desc="Change to CL Fragment for WriteRaw at top level", Pri=1, Param="Raw")]		
-        //[Variation(id=13, Desc="Change to CL Fragment for WriteBase64 at top level", Pri=1, Param="Base64")]		
-        //[Variation(id=14, Desc="Change to CL Fragment for WriteBinHex at top level", Pri=1, Param="BinHex")]		
-        [Fact]
-        public void auto_5()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom, "String")]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom, "CData")]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom, "EntityRef")]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom, "CharEntity")]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom, "SurrogateCharEntity")]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom, "Chars")]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom, "Raw")]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom, "Base64")]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom, "BinHex")]
+        public void auto_5(XmlWriterTestCaseBase utils, string tokenType)
         {
-            XmlWriter w = CreateWriter(ConformanceLevel.Auto);
+            XmlWriter w = utils.CreateWriter(ConformanceLevel.Auto);
             byte[] buffer = new byte[10];
 
-            switch (CurVariation.Param.ToString())
+            switch (tokenType)
             {
                 case "String":
                     w.WriteString("text");
@@ -183,14 +176,14 @@ namespace System.Xml.Tests
             return;
         }
 
-        //[Variation(id=15, Desc="WritePI at top level, followed by DTD, expected CL = Document", Pri=2, Param="PI")]		
-        //[Variation(id=16, Desc="WriteComment at top level, followed by DTD, expected CL = Document", Pri=2, Param="Comment")]		
-        //[Variation(id=17, Desc="WriteWhitespace at top level, followed by DTD, expected CL = Document", Pri=2, Param="WS")]				
-        [Fact]
-        public void auto_6()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom, "PI")]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom, "Comment")]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom, "WS")]
+        public void auto_6(XmlWriterTestCaseBase utils, string tokenType)
         {
-            XmlWriter w = CreateWriter(ConformanceLevel.Auto);
-            switch (CurVariation.Param.ToString())
+            XmlWriter w = utils.CreateWriter(ConformanceLevel.Auto);
+            switch (tokenType)
             {
                 case "PI":
                     w.WriteProcessingInstruction("pi", "text");
@@ -212,13 +205,11 @@ namespace System.Xml.Tests
             return;
         }
 
-        //[Variation(id=18, Desc="WritePI at top level, followed by text, expected CL = Fragment", Pri=2, Param="PI")]		
-        //[Variation(id=19, Desc="WriteComment at top level, followed by text, expected CL = Fragment", Pri=2, Param="Comment")]		
-        //[Variation(id=20, Desc="WriteWhitespace at top level, followed by text, expected CL = Fragment", Pri=2, Param="WS")]				
-        [Fact]
-        public void auto_7()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
+        public void auto_7(XmlWriterTestCaseBase utils)
         {
-            XmlWriter w = CreateWriter(ConformanceLevel.Auto);
+            XmlWriter w = utils.CreateWriter(ConformanceLevel.Auto);
             w.WriteProcessingInstruction("pi", "text");
             CError.Compare(w.Settings.ConformanceLevel, ConformanceLevel.Auto, "Error");
             w.WriteString("text");
@@ -227,15 +218,16 @@ namespace System.Xml.Tests
             return;
         }
 
-        //[Variation(id=21, Desc="WriteNode(XmlReader) when reader positioned on DocType node, expected CL = Document", Pri=2)]
-        [Fact]
-        public void auto_8()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
+        public void auto_8(XmlWriterTestCaseBase utils)
         {
-            XmlWriter w = CreateWriter(ConformanceLevel.Auto);
+            XmlWriter w = utils.CreateWriter(ConformanceLevel.Auto);
 
             string strxml = "<!DOCTYPE test [<!ENTITY e 'abc'>]><Root />";
             XmlReaderSettings rSettings = new XmlReaderSettings();
             rSettings.CloseInput = true;
+            rSettings.DtdProcessing = DtdProcessing.Parse;
             XmlReader xr = ReaderHelper.Create(new StringReader(strxml), rSettings, (string)null);
 
             CError.Compare(w.Settings.ConformanceLevel, ConformanceLevel.Auto, "Error");
@@ -248,11 +240,11 @@ namespace System.Xml.Tests
             return;
         }
 
-        //[Variation(id=22, Desc="WriteNode(XmlReader) when reader positioned on text node, expected CL = Fragment", Pri=2)]
-        [Fact]
-        public void auto_10()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
+        public void auto_10(XmlWriterTestCaseBase utils)
         {
-            XmlWriter w = CreateWriter(ConformanceLevel.Auto);
+            XmlWriter w = utils.CreateWriter(ConformanceLevel.Auto);
 
             string strxml = "<Root>text</Root>";
             XmlReader xr = ReaderHelper.Create(new StringReader(strxml));

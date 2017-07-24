@@ -9,15 +9,15 @@ namespace System.Xml.Tests
 {
     public class TCStandAlone
     {
-        //[Variation(id=1, Desc="StartDocument(bool standalone = true)", Pri=0)]
-        [Fact]
-        public void standalone_1()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void standalone_1(XmlWriterTestCaseBase utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.ConformanceLevel = ConformanceLevel.Document;
             wSettings.CloseOutput = false;
 
-            XmlWriter w = CreateWriter(wSettings);
+            XmlWriter w = utils.CreateWriter(wSettings);
             w.WriteStartDocument(true);
             w.WriteStartElement("Root");
             w.WriteEndElement();
@@ -26,23 +26,23 @@ namespace System.Xml.Tests
 
             bool ret = false;
 
-            if (WriterType == WriterType.UnicodeWriter)
-                ret = CompareReader("<?xml version=\"1.0\" encoding=\"unicode\" standalone=\"yes\"?><Root />");
+            if (utils.WriterType == WriterType.UnicodeWriter)
+                ret = utils.CompareReader("<?xml version=\"1.0\" encoding=\"unicode\" standalone=\"yes\"?><Root />");
             else
-                ret = CompareReader("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?><Root />");
+                ret = utils.CompareReader("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?><Root />");
 
             Assert.True(ret);
         }
 
-        //[Variation(id=2, Desc="StartDocument(bool standalone = false)", Pri=0)]
-        [Fact]
-        public void standalone_2()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void standalone_2(XmlWriterTestCaseBase utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.ConformanceLevel = ConformanceLevel.Document;
             wSettings.CloseOutput = false;
 
-            XmlWriter w = CreateWriter(wSettings);
+            XmlWriter w = utils.CreateWriter(wSettings);
             w.WriteStartDocument(false);
             w.WriteStartElement("Root");
             w.WriteEndElement();
@@ -51,10 +51,10 @@ namespace System.Xml.Tests
 
             bool ret = false;
 
-            if (WriterType == WriterType.UnicodeWriter)
-                ret = CompareReader("<?xml version=\"1.0\" encoding=\"unicode\" standalone=\"no\"?><Root />");
+            if (utils.WriterType == WriterType.UnicodeWriter)
+                ret = utils.CompareReader("<?xml version=\"1.0\" encoding=\"unicode\" standalone=\"no\"?><Root />");
             else
-                ret = CompareReader("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"no\"?><Root />");
+                ret = utils.CompareReader("<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"no\"?><Root />");
 
             Assert.True(ret);
         }
