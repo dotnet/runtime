@@ -313,7 +313,7 @@ namespace System.Xml.Tests
                     }
                 }
             }
-            return CompareBaseline2(xml) ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareBaseline2(xml));
         }
     }
 
@@ -332,7 +332,7 @@ namespace System.Xml.Tests
                 w.WriteEndElement();
                 w.WriteEndElement();
             }
-            return CompareReader("<Root attr=''><child /></Root>") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root attr=''><child /></Root>"));
         }
 
         //[Variation(id = 2, Desc = "Missing EndAttr, followed by comment", Pri = 1)]
@@ -346,7 +346,7 @@ namespace System.Xml.Tests
                 w.WriteComment("This text is a comment");
                 w.WriteEndElement();
             }
-            return CompareReader("<Root attr=''><!--This text is a comment--></Root>") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root attr=''><!--This text is a comment--></Root>"));
         }
 
         //[Variation(id = 3, Desc = "Write EndDocument with unclosed element tag", Pri = 1)]
@@ -359,7 +359,7 @@ namespace System.Xml.Tests
                 w.WriteStartElement("Root");
                 w.WriteEndDocument();
             }
-            return CompareReader("<Root />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root />"));
         }
 
         //[Variation(id = 4, Desc = "WriteStartDocument - WriteEndDocument", Pri = 1)]
@@ -457,7 +457,7 @@ namespace System.Xml.Tests
                 w.WriteEndElement();
                 w.WriteEndDocument();
             }
-            return CompareReader("<Root />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root />"));
         }
 
         //[Variation(id = 2, Desc = "Multiple StartDocument should error", Pri = 1)]
@@ -492,7 +492,7 @@ namespace System.Xml.Tests
                 w.WriteEndElement();
                 w.WriteEndDocument();
             }
-            return CompareReader("<Root />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root />"));
         }
 
 
@@ -531,7 +531,7 @@ namespace System.Xml.Tests
                 w.WriteStartElement("Root");
                 w.WriteEndElement();
             }
-            return CompareReader("<Root />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root />"));
         }
 
         //[Variation(id = 6, Desc = "Call Start-EndDocument multiple times, should error", Pri = 2)]
@@ -718,7 +718,7 @@ namespace System.Xml.Tests
             string exp = IsIndent() ? 
                 "<!DOCTYPE ROOT PUBLIC \"publicid\" \"sysid\"[<!ENTITY e 'abc'>]>" + Environment.NewLine + "<ROOT />" :
                 "<!DOCTYPE ROOT PUBLIC \"publicid\" \"sysid\"[<!ENTITY e 'abc'>]><ROOT />";
-            return CompareString(exp) ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareString(exp));
         }
 
         //[Variation(id = 2, Desc = "WriteDocType pubid = null and sysid = null", Pri = 1)]
@@ -734,7 +734,7 @@ namespace System.Xml.Tests
             string exp = IsIndent() ? 
                 "<!DOCTYPE test [<!ENTITY e 'abc'>]>" + Environment.NewLine + "<Root />" :
                 "<!DOCTYPE test [<!ENTITY e 'abc'>]><Root />";
-            return CompareString(exp) ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareString(exp));
         }
 
         //[Variation(id = 3, Desc = "Call WriteDocType twice", Pri = 1)]
@@ -805,7 +805,7 @@ namespace System.Xml.Tests
                 w.WriteEndElement();
             }
             string exp = IsIndent() ? "<!DOCTYPE Root []>]>" + Environment.NewLine + "<Root />" : "<!DOCTYPE Root []>]><Root />";
-            return CompareString(exp) ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareString(exp));
         }
 
         //[Variation(id = 7, Desc = "Call WriteDocType in the root element", Pri = 1)]
@@ -867,7 +867,7 @@ namespace System.Xml.Tests
                 w.WriteStartElement("Root");
                 w.WriteEndElement();
             }
-            return CompareReader("<Root />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root />"));
         }
 
         //[Variation(id = 2, Desc = "Sanity test for overload WriteStartElement(string prefix, string name, string ns)", Pri = 0)]
@@ -879,7 +879,7 @@ namespace System.Xml.Tests
                 w.WriteStartElement("pre1", "Root", "http://my.com");
                 w.WriteEndElement();
             }
-            return CompareReader("<pre1:Root xmlns:pre1=\"http://my.com\" />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<pre1:Root xmlns:pre1=\"http://my.com\" />"));
         }
 
         //[Variation(id = 3, Desc = "Sanity test for overload WriteStartElement(string name, string ns)", Pri = 0)]
@@ -891,7 +891,7 @@ namespace System.Xml.Tests
                 w.WriteStartElement("Root", "http://my.com");
                 w.WriteEndElement();
             }
-            return CompareReader("<Root xmlns=\"http://my.com\" />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root xmlns=\"http://my.com\" />"));
         }
 
         //[Variation(id = 4, Desc = "Element name = String.Empty should error", Pri = 1)]
@@ -945,7 +945,7 @@ namespace System.Xml.Tests
                 w.WriteStartElement("Root", String.Empty);
                 w.WriteEndElement();
             }
-            return CompareReader("<Root />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root />"));
         }
 
         //[Variation(id = 7, Desc = "Element NS = null", Pri = 1)]
@@ -957,7 +957,7 @@ namespace System.Xml.Tests
                 w.WriteStartElement("Root", null);
                 w.WriteEndElement();
             }
-            return CompareReader("<Root />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root />"));
         }
 
         //[Variation(Desc = "Write 100 nested elements")]
@@ -977,7 +977,7 @@ namespace System.Xml.Tests
 
             string exp = (WriterType == WriterType.UTF8WriterIndent || WriterType == WriterType.UnicodeWriterIndent) ?
                 "100ElementsIndent.txt" : "100Elements.txt";
-            return CompareBaseline(exp) ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareBaseline(exp));
         }
 
         //[Variation(id = 9, Desc = "WriteDecl with start element with prefix and namespace")]
@@ -996,7 +996,7 @@ namespace System.Xml.Tests
                 w.WriteStartElement("a", "b", "c");
             }
 
-            return (CompareString(exp)) ? TEST_PASS : TEST_FAIL;
+            Assert.True((CompareString(exp)));
         }
 
         //[Variation(Desc = "Write many attributes with same names and diff.namespaces", Param = true)]
@@ -1011,7 +1011,7 @@ namespace System.Xml.Tests
                 w.WriteNode(r, (bool)CurVariation.Param);
             }
 
-            return (CompareString(xml)) ? TEST_PASS : TEST_FAIL;
+            Assert.True((CompareString(xml)));
         }
 
         //[Variation(Desc = "Write many attributes and dup namespace")]
@@ -1148,7 +1148,7 @@ namespace System.Xml.Tests
                 w.WriteEndAttribute();
                 w.WriteEndElement();
             }
-            return (CompareString(exp)) ? TEST_PASS : TEST_FAIL;
+            Assert.True((CompareString(exp)));
         }
 
         //[Variation(Desc = "WriteValue & WriteWhitespace on a special attribute value – xml:xmlns", Param = 1)]
@@ -1196,7 +1196,7 @@ namespace System.Xml.Tests
                 CError.WriteLine(e);
                 Assert.True(false);
             }
-            return CompareString(exp) ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareString(exp));
         }
 
         //[Variation(Desc = "WriteValue element double value", Params = new object[] { false, "<Root>-0</Root>" })]
@@ -1218,7 +1218,7 @@ namespace System.Xml.Tests
                 w.WriteValue(d);
                 w.WriteEndElement();
             }
-            return (CompareString(exp)) ? TEST_PASS : TEST_FAIL;
+            Assert.True((CompareString(exp)));
         }
 
         //[Variation(Desc = "WriteNode with euc-jp encoding.pr-xml-euc-jp.xml", Param = "pr-xml-euc-jp.xml")]
@@ -1269,7 +1269,7 @@ namespace System.Xml.Tests
                 w.WriteAttributeString("attr2", "val2");
                 w.WriteEndElement();
             }
-            return CompareReader("<Root attr1=\"\" attr2=\"val2\" />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root attr1=\"\" attr2=\"val2\" />"));
         }
 
         //[Variation(id = 2, Desc = "Missing EndAttribute should be fixed", Pri = 0)]
@@ -1282,7 +1282,7 @@ namespace System.Xml.Tests
                 w.WriteStartAttribute("attr1");
                 w.WriteEndElement();
             }
-            return CompareReader("<Root attr1=\"\" />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root attr1=\"\" />"));
         }
 
         //[Variation(id = 3, Desc = "WriteStartAttribute followed by WriteStartAttribute", Pri = 0)]
@@ -1296,7 +1296,7 @@ namespace System.Xml.Tests
                 w.WriteStartAttribute("attr2");
                 w.WriteEndElement();
             }
-            return CompareReader("<Root attr1=\"\" attr2=\"\" />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root attr1=\"\" attr2=\"\" />"));
         }
 
         //[Variation(id = 4, Desc = "Multiple WritetAttributeString", Pri = 0)]
@@ -1310,7 +1310,7 @@ namespace System.Xml.Tests
                 w.WriteAttributeString("attr2", "val2");
                 w.WriteEndElement();
             }
-            return CompareReader("<Root attr1=\"val1\" attr2=\"val2\" />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root attr1=\"val1\" attr2=\"val2\" />"));
         }
 
         //[Variation(id = 5, Desc = "WriteStartAttribute followed by WriteString", Pri = 0)]
@@ -1324,7 +1324,7 @@ namespace System.Xml.Tests
                 w.WriteString("test");
                 w.WriteEndElement();
             }
-            return CompareReader("<Root attr1=\"test\" />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root attr1=\"test\" />"));
         }
 
         //[Variation(id = 6, Desc = "Sanity test for overload WriteStartAttribute(name, ns)", Pri = 1)]
@@ -1338,7 +1338,7 @@ namespace System.Xml.Tests
                 w.WriteEndAttribute();
                 w.WriteEndElement();
             }
-            return CompareString("<Root ~a p1 a~:attr1=\"\" xmlns:~a p1 A~=\"http://my.com\" />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareString("<Root ~a p1 a~:attr1=\"\" xmlns:~a p1 A~=\"http://my.com\" />"));
         }
 
         //[Variation(id = 7, Desc = "Sanity test for overload WriteStartAttribute(prefix, name, ns)", Pri = 0)]
@@ -1352,7 +1352,7 @@ namespace System.Xml.Tests
                 w.WriteEndAttribute();
                 w.WriteEndElement();
             }
-            return CompareReader("<Root pre1:attr1=\"\" xmlns:pre1=\"http://my.com\" />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root pre1:attr1=\"\" xmlns:pre1=\"http://my.com\" />"));
         }
 
         //[Variation(id = 8, Desc = "DCR 64183: Duplicate attribute 'attr1'", Pri = 1)]
@@ -1459,7 +1459,7 @@ namespace System.Xml.Tests
                 }
                 w.WriteEndElement();
             }
-            return CompareReader("<Root Foo=\"x\" fOo=\"x\" foO=\"x\" FOO=\"x\" />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root Foo=\"x\" fOo=\"x\" foO=\"x\" FOO=\"x\" />"));
         }
 
         //[Variation(id = 13, Desc = "Invalid value of xml:space", Pri = 1)]
@@ -1494,7 +1494,7 @@ namespace System.Xml.Tests
                 w.WriteAttributeString("a", null, "b'c");
                 w.WriteEndElement();
             }
-            return CompareReader("<Root a=\"b'c\" />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root a=\"b'c\" />"));
         }
 
         //[Variation(id = 15, Desc = "DoubleQuote in attribute value should be escaped")]
@@ -1507,7 +1507,7 @@ namespace System.Xml.Tests
                 w.WriteAttributeString("a", null, "b\"c");
                 w.WriteEndElement();
             }
-            return CompareReader("<Root a=\"b&quot;c\" />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root a=\"b&quot;c\" />"));
         }
 
         //[Variation(id = 16, Desc = "WriteAttribute with value = &, #65, #x20", Pri = 1)]
@@ -1522,7 +1522,7 @@ namespace System.Xml.Tests
                 w.WriteAttributeString("c", "&#x43;");
                 w.WriteEndElement();
             }
-            return CompareReader("<Root a=\"&amp;\" b=\"&amp;#65;\" c=\"&amp;#x43;\" />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root a=\"&amp;\" b=\"&amp;#65;\" c=\"&amp;#x43;\" />"));
         }
 
         //[Variation(id = 17, Desc = "WriteAttributeString followed by WriteString", Pri = 1)]
@@ -1536,7 +1536,7 @@ namespace System.Xml.Tests
                 w.WriteString("test");
                 w.WriteEndElement();
             }
-            return CompareReader("<Root a=\"b\">test</Root>") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root a=\"b\">test</Root>"));
         }
 
         //[Variation(id = 18, Desc = "WriteAttribute followed by WriteString", Pri = 1)]
@@ -1550,7 +1550,7 @@ namespace System.Xml.Tests
                 w.WriteString("test");
                 w.WriteEndElement();
             }
-            return CompareReader("<Root a=\"test\" />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root a=\"test\" />"));
         }
 
         //[Variation(id = 19, Desc = "WriteAttribute with all whitespace characters", Pri = 1)]
@@ -1564,7 +1564,7 @@ namespace System.Xml.Tests
                 w.WriteEndElement();
             }
 
-            return CompareReader("<Root a=\" &#x9;&#xD;&#xA;\" />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root a=\" &#x9;&#xD;&#xA;\" />"));
         }
 
         //[Variation(id = 20, Desc = "< > & chars should be escaped in attribute value", Pri = 1)]
@@ -1577,7 +1577,7 @@ namespace System.Xml.Tests
                 w.WriteAttributeString("a", null, "< > &");
                 w.WriteEndElement();
             }
-            return CompareReader("<Root a=\"&lt; &gt; &amp;\" />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root a=\"&lt; &gt; &amp;\" />"));
         }
 
         //[Variation(id = 21, Desc = "Redefine auto generated prefix n1")]
@@ -1597,7 +1597,7 @@ namespace System.Xml.Tests
             string exp = IsIndent() ?
                 "<test xmlns:n1=\"http://testbasens\">" + Environment.NewLine + "  <base n1:id=\"5\" p4:lang=\"en\" xmlns:p4=\"http://common\" />" + Environment.NewLine + "</test>" :
                 "<test xmlns:~f n1 A~=\"http://testbasens\"><base ~f n1 a~:id=\"5\" ~a p4 a~:lang=\"en\" xmlns:~a p4 A~=\"http://common\" /></test>";
-            return CompareString(exp) ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareString(exp));
         }
 
         //[Variation(id = 22, Desc = "Reuse and redefine existing prefix")]
@@ -1618,7 +1618,7 @@ namespace System.Xml.Tests
             }
             exp = IsIndent() ?
                 "<test p:a1=\"v\" xmlns:p=\"ns1\">" + Environment.NewLine + "  <base p:a2=\"v\" p4:a3=\"v\" xmlns:p4=\"ns2\" />" + Environment.NewLine + "</test>" : exp;
-            return CompareString(exp) ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareString(exp));
         }
 
         //[Variation(id = 23, Desc = "WriteStartAttribute(attr) sanity test")]
@@ -1632,7 +1632,7 @@ namespace System.Xml.Tests
                 w.WriteEndAttribute();
                 w.WriteEndElement();
             }
-            return CompareReader("<test attr=\"\" />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<test attr=\"\" />"));
         }
 
         //[Variation(id = 24, Desc = "WriteStartAttribute(attr) inside an element with changed default namespace")]
@@ -1646,7 +1646,7 @@ namespace System.Xml.Tests
                 w.WriteEndAttribute();
                 w.WriteEndElement();
             }
-            return CompareReader("<test attr=\"\" xmlns=\"ns\" />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<test attr=\"\" xmlns=\"ns\" />"));
         }
 
         //[Variation(id = 25, Desc = "WriteStartAttribute(attr) and duplicate attrs")]
@@ -1682,7 +1682,7 @@ namespace System.Xml.Tests
                 w.WriteStartAttribute("attr");
                 w.WriteEndElement();
             }
-            return CompareReader("<pre:test pre:attr=\"\" attr=\"\" xmlns:pre=\"ns\" />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<pre:test pre:attr=\"\" attr=\"\" xmlns:pre=\"ns\" />"));
         }
 
         //[Variation(id = 27, Desc = "XmlCharCheckingWriter should not normalize newLines in attribute values when NewLinesHandling = Replace")]
@@ -1698,7 +1698,7 @@ namespace System.Xml.Tests
                 w.WriteAttributeString("a", "|\x0D|\x0A|\x0D\x0A|");
                 w.WriteEndElement();
             }
-            return CompareReader("<root a=\"|&#xD;|&#xA;|&#xD;&#xA;|\" />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<root a=\"|&#xD;|&#xA;|&#xD;&#xA;|\" />"));
         }
 
         //[Variation(id = 28, Desc = "Wrapped XmlTextWriter: Invalid replacement of newline characters in text values")]
@@ -1715,7 +1715,7 @@ namespace System.Xml.Tests
                 w.WriteElementString("foo", "|\x0D\x0A|");
                 w.WriteEndElement();
             }
-            return CompareReader("<root a=\"|&#xD;&#xA;|\"><foo>|\x0D\x0A|</foo></root>") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<root a=\"|&#xD;&#xA;|\"><foo>|\x0D\x0A|</foo></root>"));
         }
 
         //[Variation(id = 29, Desc = "WriteAttributeString doesn't fail on invalid surrogate pair sequences")]
@@ -1771,7 +1771,7 @@ namespace System.Xml.Tests
                     w.WriteEndElement();
                 }
             }
-            return CompareReader("<Root a=\"b\" FIRST=\"KEVIN\" LAST=\"WHITE\" />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root a=\"b\" FIRST=\"KEVIN\" LAST=\"WHITE\" />"));
         }
 
         //[Variation(id = 2, Desc = "Call WriteAttributes with default DTD attributes = false", Pri = 1)]
@@ -1798,9 +1798,9 @@ namespace System.Xml.Tests
 
             if (IsXPathDataModelReader())
                 // always sees default attributes
-                return CompareReader("<Root a=\"b\" FIRST=\"KEVIN\" LAST=\"WHITE\" />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root a=\"b\" FIRST=\"KEVIN\" LAST=\"WHITE\" />"));
             else
-                return CompareReader("<Root a=\"b\" />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root a=\"b\" />"));
         }
 
         //[Variation(id = 3, Desc = "Call WriteAttributes with XmlReader = null")]
@@ -1855,7 +1855,7 @@ namespace System.Xml.Tests
                     w.WriteEndElement();
                 }
             }
-            return CompareReader("<Root a=\"b\" c=\"d\" e=\"f\" />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root a=\"b\" c=\"d\" e=\"f\" />"));
         }
 
         //[Variation(id = 5, Desc = "Call WriteAttributes when reader is located in the middle attribute", Pri = 1)]
@@ -1888,7 +1888,7 @@ namespace System.Xml.Tests
                     w.WriteEndElement();
                 }
             }
-            return CompareReader("<Root c=\"d\" e=\"f\" />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root c=\"d\" e=\"f\" />"));
         }
 
         //[Variation(id = 6, Desc = "Call WriteAttributes when reader is located in the last attribute", Pri = 1)]
@@ -1923,7 +1923,7 @@ namespace System.Xml.Tests
                     w.WriteEndElement();
                 }
             }
-            return CompareReader("<Root e=\"f\" />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root e=\"f\" />"));
         }
 
         //[Variation(id = 7, Desc = "Call WriteAttributes when reader is located on an attribute with an entity reference in the value", Pri = 1)]
@@ -1957,9 +1957,9 @@ namespace System.Xml.Tests
                 }
             }
             if (!ReaderExpandsEntityRef())
-                return CompareString("<Root a=\"&e;\" />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareString("<Root a=\"&e;\" />"));
             else
-                return CompareReader("<Root a=\"Test Entity\" />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root a=\"Test Entity\" />"));
         }
 
         //[Variation(id = 8, Desc = "Call WriteAttributes with reader on XmlDeclaration", Pri = 1)]
@@ -1989,7 +1989,7 @@ namespace System.Xml.Tests
                     w.WriteEndElement();
                 }
             }
-            return CompareReader("<Root version=\"1.0\" standalone=\"yes\" />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root version=\"1.0\" standalone=\"yes\" />"));
         }
 
         //[Variation(id = 9, Desc = "Call WriteAttributes with reader on DocType", Pri = 1, Param = "DocumentType")]
@@ -2113,7 +2113,7 @@ namespace System.Xml.Tests
                     w.WriteEndElement();
                 }
             }
-            return CompareReader("<Root a=\"b&quot;c\" />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root a=\"b&quot;c\" />"));
         }
 
         //[Variation(id = 18, Desc = "Call WriteAttribute with single quote char in the value", Pri = 1)]
@@ -2139,7 +2139,7 @@ namespace System.Xml.Tests
                     w.WriteEndElement();
                 }
             }
-            return CompareReader("<Root a=\"b'c\" />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root a=\"b'c\" />"));
         }
 
         //[Variation(id = 19, Desc = "Call WriteAttributes with 100 attributes", Pri = 1)]
@@ -2170,7 +2170,7 @@ namespace System.Xml.Tests
                     w.WriteEndElement();
                 }
             }
-            return CompareBaseline("OneHundredAttributes.xml") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareBaseline("OneHundredAttributes.xml"));
         }
 
         //[Variation(id = 20, Desc = "WriteAttributes with different builtin entities in attribute value", Pri = 1)]
@@ -2197,7 +2197,7 @@ namespace System.Xml.Tests
                     w.WriteEndElement();
                 }
             }
-            return CompareReader("<Root a=\"&gt;&lt;&quot;&apos;&amp;\" />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root a=\"&gt;&lt;&quot;&apos;&amp;\" />"));
         }
 
         //[Variation(id = 21, Desc = "WriteAttributes tries to duplicate attribute", Pri = 1)]
@@ -2304,7 +2304,7 @@ namespace System.Xml.Tests
                     w.WriteEndElement();
                 }
             }
-            return CompareReader("<Root />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root />"));
         }
 
         //[Variation(id = 3, Desc = "WriteNode before reader.Read()", Pri = 1)]
@@ -2319,7 +2319,7 @@ namespace System.Xml.Tests
                 }
             }
 
-            return CompareReader("<root />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<root />"));
         }
 
         //[Variation(id = 4, Desc = "WriteNode after first reader.Read()", Pri = 1)]
@@ -2335,7 +2335,7 @@ namespace System.Xml.Tests
                 }
             }
 
-            return CompareReader("<root />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<root />"));
         }
 
         //[Variation(id = 5, Desc = "WriteNode when reader is positioned on middle of an element node", Pri = 1)]
@@ -2359,7 +2359,7 @@ namespace System.Xml.Tests
                 CError.Compare(xr.NodeType, XmlNodeType.Comment, "Error");
                 CError.Compare(xr.Value, "WriteComment", "Error");
             }
-            return CompareReader("<node2>Node Text<node3></node3><?name Instruction?></node2>") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<node2>Node Text<node3></node3><?name Instruction?></node2>"));
         }
 
         //[Variation(id = 6, Desc = "WriteNode when reader state is EOF", Pri = 1)]
@@ -2377,7 +2377,7 @@ namespace System.Xml.Tests
                     w.WriteEndElement();
                 }
             }
-            return CompareReader("<Root />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root />"));
         }
 
         //[Variation(id = 7, Desc = "WriteNode when reader state is Closed", Pri = 1)]
@@ -2394,7 +2394,7 @@ namespace System.Xml.Tests
                 w.WriteNode(xr, false);
                 w.WriteEndElement();
             }
-            return CompareReader("<Root />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root />"));
         }
 
         //[Variation(id = 8, Desc = "WriteNode with reader on empty element node", Pri = 1)]
@@ -2420,7 +2420,7 @@ namespace System.Xml.Tests
             CError.Compare(xr.Name, "EmptyElement", "Error");
             xr.Dispose();
 
-            return CompareReader("<node1 />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<node1 />"));
         }
 
         //[Variation(id = 9, Desc = "WriteNode with reader on 100 Nodes", Pri = 1)]
@@ -2441,7 +2441,7 @@ namespace System.Xml.Tests
                 w.WriteNode(xr, false);
             }
             xr.Dispose();
-            return CompareBaseline("100Nodes.txt") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareBaseline("100Nodes.txt"));
         }
 
         //[Variation(id = 10, Desc = "WriteNode with reader on node with mixed content", Pri = 1)]
@@ -2469,10 +2469,10 @@ namespace System.Xml.Tests
 
             if (IsXPathDataModelReader())
             {
-                return CompareReader("<node1><?PI Instruction?><!--Comment-->Textcdata</node1>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<node1><?PI Instruction?><!--Comment-->Textcdata</node1>"));
             }
 
-            return CompareReader("<node1><?PI Instruction?><!--Comment-->Text<![CDATA[cdata]]></node1>") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<node1><?PI Instruction?><!--Comment-->Text<![CDATA[cdata]]></node1>"));
         }
 
         //[Variation(id = 11, Desc = "WriteNode with reader on node with declared namespace in parent", Pri = 1)]
@@ -2494,7 +2494,7 @@ namespace System.Xml.Tests
                 w.WriteNode(xr, false);
             }
             xr.Dispose();
-            return CompareReader("<node1 xmlns=\"foo\"></node1>") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<node1 xmlns=\"foo\"></node1>"));
         }
 
         //[Variation(id = 12, Desc = "WriteNode with reader on node with entity reference included in element", Pri = 1)]
@@ -2516,9 +2516,9 @@ namespace System.Xml.Tests
             }
             xr.Dispose();
             if (!ReaderExpandsEntityRef())
-                return CompareString("<node>&e;</node>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareString("<node>&e;</node>"));
             else
-                return CompareReader("<node>Test Entity</node>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<node>Test Entity</node>"));
         }
 
         //[Variation(id = 14, Desc = "WriteNode with element that has different prefix", Pri = 1)]
@@ -2544,7 +2544,7 @@ namespace System.Xml.Tests
             }
             xr.Dispose();
 
-            return CompareReader("<x:bar xmlns:x=\"foo\"><z:node xmlns:z=\"foo\" /><x:blah /></x:bar>") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<x:bar xmlns:x=\"foo\"><z:node xmlns:z=\"foo\" /><x:blah /></x:bar>"));
         }
 
         //[Variation(id = 15, Desc = "Call WriteNode with default attributes = true and DTD", Pri = 1)]
@@ -2568,9 +2568,9 @@ namespace System.Xml.Tests
             }
             xr.Dispose();
             if (!ReaderParsesDTD())
-                return CompareReader("<Root><name a='b' /></Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root><name a='b' /></Root>"));
             else
-                return CompareReader("<Root><name a='b' FIRST='KEVIN' LAST='WHITE'/></Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root><name a='b' FIRST='KEVIN' LAST='WHITE'/></Root>"));
         }
 
         //[Variation(id = 16, Desc = "Call WriteNode with default attributes = false and DTD", Pri = 1)]
@@ -2594,9 +2594,9 @@ namespace System.Xml.Tests
             }
             xr.Dispose();
             if (ReaderLoosesDefaultAttrInfo())
-                return CompareReader("<Root><name a='b' FIRST='KEVIN' LAST='WHITE'/></Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root><name a='b' FIRST='KEVIN' LAST='WHITE'/></Root>"));
             else
-                return CompareReader("<Root><name a='b' /></Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root><name a='b' /></Root>"));
         }
 
         //[Variation(id = 17, Desc = "WriteNode with reader on empty element with attributes", Pri = 1)]
@@ -2616,7 +2616,7 @@ namespace System.Xml.Tests
             {
                 w.WriteNode(xr, false);
             }
-            return CompareReader("<node1 a='foo' />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<node1 a='foo' />"));
         }
 
         //[Variation(id = 18, Desc = "WriteNode with document containing just empty element with attributes", Pri = 1)]
@@ -2632,7 +2632,7 @@ namespace System.Xml.Tests
             }
 
             xr.Dispose();
-            return CompareReader("<Root a=\"foo\" />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root a=\"foo\" />"));
         }
 
         //[Variation(id = 19, Desc = "Call WriteNode with special entity references as attribute value", Pri = 1)]
@@ -2648,7 +2648,7 @@ namespace System.Xml.Tests
                         w.WriteNode(xr, true);
                 }
             }
-            return CompareReader("<Root foo='&amp; &lt; &gt; &quot; &apos; &#65;'/>") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root foo='&amp; &lt; &gt; &quot; &apos; &#65;'/>"));
         }
 
         //[Variation(id = 20, Desc = "Call WriteNode with reader on doctype", Pri = 1)]
@@ -2668,7 +2668,7 @@ namespace System.Xml.Tests
             }
             xr.Dispose();
 
-            return CompareReader("<!DOCTYPE ROOT[]><ROOT />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<!DOCTYPE ROOT[]><ROOT />"));
         }
 
         //[Variation(id = 21, Desc = "Call WriteNode with full end element", Pri = 1)]
@@ -2683,7 +2683,7 @@ namespace System.Xml.Tests
             }
 
             xr.Dispose();
-            return CompareReader("<root></root>") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<root></root>"));
         }
 
         //[Variation(Desc = "Call WriteNode with tag mismatch")]
@@ -2766,7 +2766,7 @@ namespace System.Xml.Tests
                 w.WriteNode(xr, false);
             }
             xr.Dispose();
-            return CompareBaseline("OneHundredAttributes.xml") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareBaseline("OneHundredAttributes.xml"));
         }
 
         //[Variation(id = 23, Desc = "Call WriteNode with reader on text node", Pri = 1)]
@@ -2796,7 +2796,7 @@ namespace System.Xml.Tests
                 w.WriteEndElement();
             }
             xr.Dispose();
-            return CompareReader("<root>Node Text</root>") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<root>Node Text</root>"));
         }
 
         //[Variation(id = 24, Desc = "Call WriteNode with reader on CDATA node", Pri = 1)]
@@ -2832,7 +2832,7 @@ namespace System.Xml.Tests
             }
             xr.Dispose();
 
-            return CompareReader("<root><![CDATA[cdata content]]></root>") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<root><![CDATA[cdata content]]></root>"));
         }
 
         //[Variation(id = 25, Desc = "Call WriteNode with reader on PI node", Pri = 1)]
@@ -2861,7 +2861,7 @@ namespace System.Xml.Tests
                 w.WriteEndElement();
             }
             xr.Dispose();
-            return CompareReader("<root><?PI Text?></root>") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<root><?PI Text?></root>"));
         }
 
         //[Variation(id = 26, Desc = "Call WriteNode with reader on Comment node", Pri = 1)]
@@ -2890,7 +2890,7 @@ namespace System.Xml.Tests
                 w.WriteEndElement();
             }
             xr.Dispose();
-            return CompareReader("<root><!--Comment--></root>") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<root><!--Comment--></root>"));
         }
 
         //[Variation(Desc = "Call WriteNode with reader on XmlDecl (OmitXmlDecl false)", Pri = 1)]
@@ -2917,7 +2917,7 @@ namespace System.Xml.Tests
             xr.Dispose();
             w.Dispose();
             strxml = IsIndent() ? "<?xml version=\"1.0\" standalone=\"yes\"?>" + Environment.NewLine + "<Root />" : strxml;
-            return CompareString(strxml) ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareString(strxml));
         }
 
         //[Variation(id = 27, Desc = "WriteNode should only write required namespaces", Pri = 1)]
@@ -2936,7 +2936,7 @@ namespace System.Xml.Tests
                 w.WriteNode(xr, false);
                 xr.Dispose();
             }
-            return CompareReader("<p2:child xmlns:p2='p2' />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<p2:child xmlns:p2='p2' />"));
         }
 
         //[Variation(id = 28, Desc = "Reader.WriteNode should only write required namespaces, include xmlns:xml", Pri = 1)]
@@ -2956,7 +2956,7 @@ namespace System.Xml.Tests
                 xr.Dispose();
             }
             string exp = (WriterType == WriterType.UnicodeWriter) ? "<p2:child xmlns:p2=\"p2\" />" : "<p2:child xmlns:p2=\"p2\" xmlns:xml='http://www.w3.org/XML/1998/namespace' />";
-            return CompareReader(exp) ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader(exp));
         }
 
         //[Variation(id = 29, Desc = "WriteNode should only write required namespaces, exclude xmlns:xml", Pri = 1)]
@@ -2976,7 +2976,7 @@ namespace System.Xml.Tests
 
                 xr.Dispose();
             }
-            return CompareReader("<p2:child xmlns:p2=\"p2\" />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<p2:child xmlns:p2=\"p2\" />"));
         }
 
         //[Variation(id = 30, Desc = "WriteNode should only write required namespaces, change default ns at top level", Pri = 1)]
@@ -2995,7 +2995,7 @@ namespace System.Xml.Tests
                 w.WriteNode(xr, false);
                 xr.Dispose();
             }
-            return CompareReader("<child xmlns='p1' />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<child xmlns='p1' />"));
         }
 
         //[Variation(id = 31, Desc = "WriteNode should only write required namespaces, change default ns at same level", Pri = 1)]
@@ -3014,7 +3014,7 @@ namespace System.Xml.Tests
                 w.WriteNode(xr, false);
                 xr.Dispose();
             }
-            return CompareReader("<child xmlns='p2' />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<child xmlns='p2' />"));
         }
 
         //[Variation(id = 32, Desc = "WriteNode should only write required namespaces, change default ns at both levels", Pri = 1)]
@@ -3034,7 +3034,7 @@ namespace System.Xml.Tests
 
                 xr.Dispose();
             }
-            return CompareReader("<child xmlns='p2' />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<child xmlns='p2' />"));
         }
 
         //[Variation(id = 33, Desc = "WriteNode should only write required namespaces, change ns uri for same prefix", Pri = 1)]
@@ -3053,7 +3053,7 @@ namespace System.Xml.Tests
                 w.WriteNode(xr, false);
                 xr.Dispose();
             }
-            return CompareReader("<p1:child xmlns:p1='p2' />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<p1:child xmlns:p1='p2' />"));
         }
 
         //[Variation(id = 34, Desc = "WriteNode should only write required namespaces, reuse prefix from top level", Pri = 1)]
@@ -3072,7 +3072,7 @@ namespace System.Xml.Tests
                 w.WriteNode(xr, false);
                 xr.Dispose();
             }
-            return CompareReader("<p1:child xmlns:p1='p1' />") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<p1:child xmlns:p1='p1' />"));
         }
 
         //[Variation(Desc = "1. XDocument does not format content while Saving", Param = @"<?xml version='1.0'?><?pi?><?pi?>  <shouldbeindented><a>text</a></shouldbeindented><?pi?>")]
@@ -3090,7 +3090,7 @@ namespace System.Xml.Tests
             w.WriteNode(xr, false);
             xr.Dispose();
             w.Dispose();
-            return CompareReader(strxml) ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader(strxml));
         }
 
         //[Variation(Desc = "1.WriteNode with ascii encoding", Param = true)]
@@ -3112,7 +3112,7 @@ namespace System.Xml.Tests
             }
             xr.Dispose();
             w.Dispose();
-            return (CompareString(exp)) ? TEST_PASS : TEST_FAIL;
+            Assert.True((CompareString(exp)));
         }
 
         //[Variation(Desc = "WriteNode DTD PUBLIC with identifier", Param = true)]
@@ -3182,7 +3182,7 @@ namespace System.Xml.Tests
             catch (FileNotFoundException e) { CError.WriteLine(e); return; }
             if (WriterType == WriterType.CharCheckingWriter)
             {
-                return (CompareString(exp)) ? TEST_PASS : TEST_FAIL;
+                Assert.True((CompareString(exp)));
             }
             Assert.True(false);
         }
@@ -3236,15 +3236,15 @@ namespace System.Xml.Tests
             switch (size)
             {
                 case 1023:
-                    return CompareBaseline("textnode_1K-1_utf8.xml") ? TEST_PASS : TEST_FAIL;
+                    Assert.True(CompareBaseline("textnode_1K-1_utf8.xml"));
                 case 1024:
-                    return CompareBaseline("textnode_1K_utf8.xml") ? TEST_PASS : TEST_FAIL;
+                    Assert.True(CompareBaseline("textnode_1K_utf8.xml"));
                 case 1025:
                     return CompareBaseline("textnode_1K+1_utf8.xml") ? TEST_PASS : TEST_FAIL;
                 case 2048:
-                    return CompareBaseline("textnode_2K_utf8.xml") ? TEST_PASS : TEST_FAIL;
+                    Assert.True(CompareBaseline("textnode_2K_utf8.xml"));
                 case 4096:
-                    return CompareBaseline("textnode_4K_utf8.xml") ? TEST_PASS : TEST_FAIL;
+                    Assert.True(CompareBaseline("textnode_4K_utf8.xml"));
             }
             CError.WriteLine("Error");
             Assert.True(false);
@@ -3273,15 +3273,15 @@ namespace System.Xml.Tests
             switch (size)
             {
                 case 1023:
-                    return CompareBaseline("textnode_1K-1_unicode.xml") ? TEST_PASS : TEST_FAIL;
+                    Assert.True(CompareBaseline("textnode_1K-1_unicode.xml"));
                 case 1024:
-                    return CompareBaseline("textnode_1K_unicode.xml") ? TEST_PASS : TEST_FAIL;
+                    Assert.True(CompareBaseline("textnode_1K_unicode.xml"));
                 case 1025:
                     return CompareBaseline("textnode_1K+1_unicode.xml") ? TEST_PASS : TEST_FAIL;
                 case 2048:
-                    return CompareBaseline("textnode_2K_unicode.xml") ? TEST_PASS : TEST_FAIL;
+                    Assert.True(CompareBaseline("textnode_2K_unicode.xml"));
                 case 4096:
-                    return CompareBaseline("textnode_4K_unicode.xml") ? TEST_PASS : TEST_FAIL;
+                    Assert.True(CompareBaseline("textnode_4K_unicode.xml"));
             }
             CError.WriteLine("Error");
             Assert.True(false);
@@ -3312,7 +3312,7 @@ namespace System.Xml.Tests
                     }
                 }
             }
-            return CompareBaseline("trailing_surrogate_1K.xml") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareBaseline("trailing_surrogate_1K.xml"));
         }
 
         //[Variation(id = 12, Desc = "Leading surrogate pair", Pri = 1)]
@@ -3339,7 +3339,7 @@ namespace System.Xml.Tests
             }
             r.Dispose();
 
-            return CompareBaseline("leading_surrogate_1K.xml") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareBaseline("leading_surrogate_1K.xml"));
         }
 
         //[Variation(id = 13, Desc = "Split surrogate pair across 1K buffer boundary", Pri = 1)]
@@ -3367,7 +3367,7 @@ namespace System.Xml.Tests
             }
             r.Dispose();
 
-            return CompareBaseline("split_surrogate_1K.xml") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareBaseline("split_surrogate_1K.xml"));
         }
     }
 
@@ -3383,7 +3383,7 @@ namespace System.Xml.Tests
                 w.WriteStartElement("Root");
                 w.WriteFullEndElement();
             }
-            return CompareReader("<Root></Root>") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root></Root>"));
         }
 
         //[Variation(id = 2, Desc = "Call WriteFullEndElement before calling WriteStartElement", Pri = 2)]
@@ -3441,7 +3441,7 @@ namespace System.Xml.Tests
                 w.WriteString("b");
                 w.WriteFullEndElement();
             }
-            return CompareReader("<Root a=\"b\"></Root>") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root a=\"b\"></Root>"));
         }
 
         //[Variation(id = 5, Desc = "Call WriteFullEndElement after WriteStartAttribute", Pri = 1)]
@@ -3454,7 +3454,7 @@ namespace System.Xml.Tests
                 w.WriteStartAttribute("a");
                 w.WriteFullEndElement();
             }
-            return CompareReader("<Root a=\"\"></Root>") ? TEST_PASS : TEST_FAIL;
+            Assert.True(CompareReader("<Root a=\"\"></Root>"));
         }
 
         //[Variation(id = 6, Desc = "WriteFullEndElement for 100 nested elements", Pri = 1)]
@@ -3472,7 +3472,7 @@ namespace System.Xml.Tests
                     w.WriteFullEndElement();
 
                 w.Dispose();
-                return CompareBaseline("100FullEndElements.txt") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareBaseline("100FullEndElements.txt"));
             }
         }
 
@@ -3535,7 +3535,7 @@ namespace System.Xml.Tests
                     w.WriteAttributeString("x", "a", "bar", "b");
                     w.WriteEndElement();
                 }
-                return CompareString("<~f x a~:Root ~a p1 a~:a=\"b\" xmlns:~a p1 A~=\"bar\" xmlns:~f x A~=\"foo\" />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareString("<~f x a~:Root ~a p1 a~:a=\"b\" xmlns:~a p1 A~=\"bar\" xmlns:~f x A~=\"foo\" />"));
             }
 
             //[Variation(id = 4, Desc = "Nested elements have same prefix, but different namespace", Pri = 1)]
@@ -3551,7 +3551,7 @@ namespace System.Xml.Tests
                     w.WriteEndElement();
                     w.WriteEndElement();
                 }
-                return CompareReader("<x:Root xmlns:x=\"foo\"><x:level1 xmlns:x=\"bar\"><x:level2 xmlns:x=\"blah\" /></x:level1></x:Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<x:Root xmlns:x=\"foo\"><x:level1 xmlns:x=\"bar\"><x:level2 xmlns:x=\"blah\" /></x:level1></x:Root>"));
             }
 
             //[Variation(id = 5, Desc = "Mapping reserved prefix xml to invalid namespace", Pri = 1)]
@@ -3585,7 +3585,7 @@ namespace System.Xml.Tests
                     w.WriteEndElement();
                 }
 
-                return CompareReader("<xml:Root />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<xml:Root />"));
             }
 
             //[Variation(id = 7, Desc = "Write element with prefix beginning with xml", Pri = 1)]
@@ -3601,7 +3601,7 @@ namespace System.Xml.Tests
                     w.WriteEndElement();
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root><xmlA:elem1 xmlns:xmlA=\"test\" /><xMlB:elem2 xmlns:xMlB=\"test\" /></Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root><xmlA:elem1 xmlns:xmlA=\"test\" /><xMlB:elem2 xmlns:xMlB=\"test\" /></Root>"));
             }
 
             //[Variation(id = 8, Desc = "Reuse prefix that refers the same as default namespace", Pri = 2)]
@@ -3617,7 +3617,7 @@ namespace System.Xml.Tests
                     w.WriteEndElement();
                     w.WriteEndElement();
                 }
-                return CompareReader("<x:foo xmlns:x=\"uri-1\"><bar xmlns=\"uri-1\"><x:bop /></bar></x:foo>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<x:foo xmlns:x=\"uri-1\"><bar xmlns=\"uri-1\"><x:bop /></bar></x:foo>"));
             }
 
             //[Variation(id = 9, Desc = "Should throw error for prefix=xmlns", Pri = 2)]
@@ -3654,7 +3654,7 @@ namespace System.Xml.Tests
                     w.WriteEndElement();
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root xmlns:x=\"fo\"><x:level1 /></Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root xmlns:x=\"fo\"><x:level1 /></Root>"));
             }
 
             //[Variation(id = 11, Desc = "Create different prefix for element and attribute that have same namespace", Pri = 2)]
@@ -3667,7 +3667,7 @@ namespace System.Xml.Tests
                     w.WriteAttributeString("y", "attr", "foo", "b");
                     w.WriteEndElement();
                 }
-                return CompareReader("<x:Root y:attr=\"b\" xmlns:y=\"foo\" xmlns:x=\"foo\" />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<x:Root y:attr=\"b\" xmlns:y=\"foo\" xmlns:x=\"foo\" />"));
             }
 
             //[Variation(id = 12, Desc = "Create same prefix for element and attribute that have same namespace", Pri = 2)]
@@ -3680,7 +3680,7 @@ namespace System.Xml.Tests
                     w.WriteAttributeString("x", "attr", "foo", "b");
                     w.WriteEndElement();
                 }
-                return CompareReader("<x:Root x:attr=\"b\" xmlns:x=\"foo\" />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<x:Root x:attr=\"b\" xmlns:x=\"foo\" />"));
             }
 
             //[Variation(id = 13, Desc = "Try to re-define NS prefix on attribute which is already defined on an element", Pri = 2)]
@@ -3693,7 +3693,7 @@ namespace System.Xml.Tests
                     w.WriteAttributeString("x", "attr", "bar", "test");
                     w.WriteEndElement();
                 }
-                return CompareString("<~f x a~:Root ~a p1 a~:attr=\"test\" xmlns:~a p1 A~=\"bar\" xmlns:~f x A~=\"foo\" />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareString("<~f x a~:Root ~a p1 a~:attr=\"test\" xmlns:~a p1 A~=\"bar\" xmlns:~f x A~=\"foo\" />"));
             }
 
             //[Variation(id = 14, Desc = "Namespace string contains surrogates, reuse at different levels", Pri = 1)]
@@ -3710,7 +3710,7 @@ namespace System.Xml.Tests
                     w.WriteEndElement();
                 }
                 string strExpected = String.Format("<root xmlns:pre=\"{0}\"><pre:elt>text</pre:elt></root>", uri);
-                return CompareReader(strExpected) ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader(strExpected));
             }
 
             //[Variation(id = 15, Desc = "Namespace containing entities, use at multiple levels", Pri = 1)]
@@ -3725,7 +3725,7 @@ namespace System.Xml.Tests
                     w.WriteNode(xr, false);
                     xr.Dispose();
                 }
-                return CompareReader("<root xmlns:foo=\"urn:&lt;&gt;\"><foo:elt1 /><foo:elt2 /><foo:elt3 /></root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<root xmlns:foo=\"urn:&lt;&gt;\"><foo:elt1 /><foo:elt2 /><foo:elt3 /></root>"));
             }
 
             //[Variation(id = 16, Desc = "Verify it resets default namespace when redefined earlier in the stack", Pri = 1)]
@@ -3742,7 +3742,7 @@ namespace System.Xml.Tests
                     w.WriteEndElement();
                     w.WriteEndElement();
                 }
-                return CompareReader("<x xmlns=\"foo\"><y xmlns=\"\"><z xmlns=\"foo\" /></y></x>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<x xmlns=\"foo\"><y xmlns=\"\"><z xmlns=\"foo\" /></y></x>"));
             }
 
             //[Variation(id = 17, Desc = "The default namespace for an element can not be changed once it is written out", Pri = 1)]
@@ -3777,7 +3777,7 @@ namespace System.Xml.Tests
                     w.WriteStartElement("foo", "bar", "http://www.w3.org/XML/1998/namaespace");
                     w.WriteEndElement();
                 }
-                return CompareReader("<foo:bar xmlns:foo=\"http://www.w3.org/XML/1998/namaespace\" />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<foo:bar xmlns:foo=\"http://www.w3.org/XML/1998/namaespace\" />"));
             }
 
             //[Variation(id = 19, Desc = "Pass NULL as NS to WriteStartElement", Pri = 1)]
@@ -3791,7 +3791,7 @@ namespace System.Xml.Tests
                     w.WriteEndElement();
                     w.WriteEndElement();
                 }
-                return CompareReader("<foo:Root xmlns:foo=\"NS\"><bar /></foo:Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<foo:Root xmlns:foo=\"NS\"><bar /></foo:Root>"));
             }
 
             //[Variation(id = 20, Desc = "Write element in reserved XML namespace, should error", Pri = 1)]
@@ -3865,7 +3865,7 @@ namespace System.Xml.Tests
                     w.WriteStartElement(null, "Root", "ns");
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root xmlns='ns' />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root xmlns='ns' />"));
             }
 
             //[Variation(id = 24, Desc = "Pass String.Empty prefix to WriteStartElement()", Pri = 1)]
@@ -3877,7 +3877,7 @@ namespace System.Xml.Tests
                     w.WriteStartElement(String.Empty, "Root", "ns");
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root xmlns='ns' />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root xmlns='ns' />"));
             }
 
             //[Variation(id = 25, Desc = "Pass null ns to WriteStartElement()", Pri = 1)]
@@ -3889,7 +3889,7 @@ namespace System.Xml.Tests
                     w.WriteStartElement("Root", null);
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root />"));
             }
 
             //[Variation(id = 26, Desc = "Pass String.Empty ns to WriteStartElement()", Pri = 1)]
@@ -3901,7 +3901,7 @@ namespace System.Xml.Tests
                     w.WriteStartElement("Root", String.Empty);
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root />"));
             }
 
             //[Variation(id = 27, Desc = "Pass null prefix to WriteStartElement() when namespace is in scope", Pri = 1)]
@@ -3914,7 +3914,7 @@ namespace System.Xml.Tests
                     w.WriteElementString(null, "child", "ns", "test");
                     w.WriteEndElement();
                 }
-                return CompareReader("<pre:Root xmlns:pre='ns'><pre:child>test</pre:child></pre:Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<pre:Root xmlns:pre='ns'><pre:child>test</pre:child></pre:Root>"));
             }
 
             //[Variation(id = 28, Desc = "Pass String.Empty prefix to WriteStartElement() when namespace is in scope", Pri = 1)]
@@ -3927,7 +3927,7 @@ namespace System.Xml.Tests
                     w.WriteElementString(String.Empty, "child", "ns", "test");
                     w.WriteEndElement();
                 }
-                return CompareReader("<pre:Root xmlns:pre='ns'><child xmlns='ns'>test</child></pre:Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<pre:Root xmlns:pre='ns'><child xmlns='ns'>test</child></pre:Root>"));
             }
 
             //[Variation(id = 29, Desc = "Pass null ns to WriteStartElement() when prefix is in scope", Pri = 1)]
@@ -3940,7 +3940,7 @@ namespace System.Xml.Tests
                     w.WriteElementString("pre", "child", null, "test");
                     w.WriteEndElement();
                 }
-                return CompareReader("<pre:Root xmlns:pre='ns'><pre:child>test</pre:child></pre:Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<pre:Root xmlns:pre='ns'><pre:child>test</pre:child></pre:Root>"));
             }
 
             //[Variation(id = 30, Desc = "Pass String.Empty ns to WriteStartElement() when prefix is in scope", Pri = 1)]
@@ -4038,7 +4038,7 @@ namespace System.Xml.Tests
                     w.WriteEndElement();
                 }
                 string exp = (WriterType == WriterType.UnicodeWriter) ? "<Root />" : "<Root xmlns:xml=\"http://www.w3.org/XML/1998/namespace\" />";
-                return CompareReader(exp) ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader(exp));
             }
 
             //[Variation(id = 3, Desc = "Bind NS prefix 'xmlA' with namespace URI 'foo'", Pri = 1)]
@@ -4051,7 +4051,7 @@ namespace System.Xml.Tests
                     w.WriteAttributeString("xmlns", "xmlA", null, "foo");
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root xmlns:xmlA=\"foo\" />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root xmlns:xmlA=\"foo\" />"));
             }
 
             //[Variation(id = 4, Desc = "Write attribute xml:space with correct namespace", Pri = 1)]
@@ -4064,7 +4064,7 @@ namespace System.Xml.Tests
                     w.WriteAttributeString("xml", "space", "http://www.w3.org/XML/1998/namespace", "default");
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root xml:space=\"default\" />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root xml:space=\"default\" />"));
             }
 
             //[Variation(id = 5, Desc = "Write attribute xml:space with incorrect namespace", Pri = 1)]
@@ -4125,7 +4125,7 @@ namespace System.Xml.Tests
                     w.WriteAttributeString("a", "fo", "b");
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root xmlns:x=\"fo\" x:a=\"b\" />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root xmlns:x=\"fo\" x:a=\"b\" />"));
             }
 
             //[Variation(id = 8, Desc = "WriteAttribute, define namespace attribute after value attribute", Pri = 1)]
@@ -4139,7 +4139,7 @@ namespace System.Xml.Tests
                     w.WriteAttributeString("xmlns", "x", null, "fo");
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root x:a=\"b\" xmlns:x=\"fo\" />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root x:a=\"b\" xmlns:x=\"fo\" />"));
             }
 
             //[Variation(id = 9, Desc = "WriteAttribute, redefine prefix at different scope and use both of them", Pri = 1)]
@@ -4157,7 +4157,7 @@ namespace System.Xml.Tests
                     w.WriteEndElement();
                     w.WriteEndElement();
                 }
-                return CompareReader("<level1 xmlns:x=\"fo\" x:a=\"b\"><level2 xmlns:x=\"bar\" x:c=\"d\" /></level1>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<level1 xmlns:x=\"fo\" x:a=\"b\"><level2 xmlns:x=\"bar\" x:c=\"d\" /></level1>"));
             }
 
             //[Variation(id = 10, Desc = "WriteAttribute, redefine namespace at different scope and use both of them", Pri = 1)]
@@ -4175,7 +4175,7 @@ namespace System.Xml.Tests
                     w.WriteEndElement();
                     w.WriteEndElement();
                 }
-                return CompareReader("<level1 xmlns:x=\"fo\" x:a=\"b\"><level2 xmlns:y=\"fo\" y:c=\"d\" /></level1>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<level1 xmlns:x=\"fo\" x:a=\"b\"><level2 xmlns:y=\"fo\" y:c=\"d\" /></level1>"));
             }
 
             //[Variation(id = 11, Desc = "WriteAttribute with colliding prefix with element", Pri = 1)]
@@ -4188,7 +4188,7 @@ namespace System.Xml.Tests
                     w.WriteAttributeString("x", "a", "bar", "b");
                     w.WriteEndElement();
                 }
-                return CompareString("<~f x a~:Root ~a p1 a~:a=\"b\" xmlns:~a p1 A~=\"bar\" xmlns:~f x A~=\"fo\" />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareString("<~f x a~:Root ~a p1 a~:a=\"b\" xmlns:~a p1 A~=\"bar\" xmlns:~f x A~=\"fo\" />"));
             }
 
             //[Variation(id = 12, Desc = "WriteAttribute with colliding namespace with element", Pri = 1)]
@@ -4201,7 +4201,7 @@ namespace System.Xml.Tests
                     w.WriteAttributeString("y", "a", "fo", "b");
                     w.WriteEndElement();
                 }
-                return CompareReader("<x:Root y:a=\"b\" xmlns:y=\"fo\" xmlns:x=\"fo\" />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<x:Root y:a=\"b\" xmlns:y=\"fo\" xmlns:x=\"fo\" />"));
             }
 
             //[Variation(id = 13, Desc = "WriteAttribute with namespace but no prefix", Pri = 1)]
@@ -4214,7 +4214,7 @@ namespace System.Xml.Tests
                     w.WriteAttributeString("a", "fo", "b");
                     w.WriteEndElement();
                 }
-                return CompareString("<Root ~a p1 a~:a=\"b\" xmlns:~a p1 A~=\"fo\" />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareString("<Root ~a p1 a~:a=\"b\" xmlns:~a p1 A~=\"fo\" />"));
             }
 
             //[Variation(id = 14, Desc = "WriteAttribute for 2 attributes with same prefix but different namespace", Pri = 1)]
@@ -4228,7 +4228,7 @@ namespace System.Xml.Tests
                     w.WriteAttributeString("x", "c", "bar", "d");
                     w.WriteEndElement();
                 }
-                return CompareString("<Root ~f x a~:a=\"b\" ~a p2 a~:c=\"d\" xmlns:~a p2 A~=\"bar\" xmlns:~f x A~=\"fo\" />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareString("<Root ~f x a~:a=\"b\" ~a p2 a~:c=\"d\" xmlns:~a p2 A~=\"bar\" xmlns:~f x A~=\"fo\" />"));
             }
 
             //[Variation(id = 15, Desc = "WriteAttribute with String.Empty and null as namespace and prefix values", Pri = 1)]
@@ -4244,7 +4244,7 @@ namespace System.Xml.Tests
                     w.WriteAttributeString(String.Empty, "g", null, "h");
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root a=\"b\" c=\"d\" e=\"f\" g=\"h\" />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root a=\"b\" c=\"d\" e=\"f\" g=\"h\" />"));
             }
 
             //[Variation(id = 16, Desc = "WriteAttribute to manually create attribute of xmlns:x", Pri = 1)]
@@ -4259,7 +4259,7 @@ namespace System.Xml.Tests
                     w.WriteEndElement();
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root xmlns:x=\"test\"><x:level1 /></Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root xmlns:x=\"test\"><x:level1 /></Root>"));
             }
 
             //[Variation(id = 17, Desc = "WriteAttribute with namespace value = null while a prefix exists", Pri = 1)]
@@ -4272,7 +4272,7 @@ namespace System.Xml.Tests
                     w.WriteAttributeString("x", "a", null, "b");
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root a=\"b\" />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root a=\"b\" />"));
             }
 
             //[Variation(id = 18, Desc = "WriteAttribute with namespace value = String.Empty while a prefix exists", Pri = 1)]
@@ -4285,7 +4285,7 @@ namespace System.Xml.Tests
                     w.WriteAttributeString("x", "a", String.Empty, "b");
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root a=\"b\" />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root a=\"b\" />"));
             }
 
 
@@ -4308,7 +4308,7 @@ namespace System.Xml.Tests
                     w.WriteEndElement();
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root a:x=\"y\" xmlns:a=\"fo\"><level1 b:x=\"y\" xmlns:b=\"fo\"><level2 c:x=\"y\" xmlns:c=\"fo\" /></level1></Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root a:x=\"y\" xmlns:a=\"fo\"><level1 b:x=\"y\" xmlns:b=\"fo\"><level2 c:x=\"y\" xmlns:c=\"fo\" /></level1></Root>"));
             }
 
             //[Variation(id = 20, Desc = "WriteAttribute for x:a and xmlns:a diff namespace", Pri = 1)]
@@ -4322,7 +4322,7 @@ namespace System.Xml.Tests
                     w.WriteAttributeString("xmlns", "a", null, "foo");
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root x:a=\"b\" xmlns:a=\"foo\" xmlns:x=\"bar\" />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root x:a=\"b\" xmlns:a=\"foo\" xmlns:x=\"bar\" />"));
             }
 
             //[Variation(id = 21, Desc = "WriteAttribute for x:a and xmlns:a same namespace", Pri = 1)]
@@ -4336,7 +4336,7 @@ namespace System.Xml.Tests
                     w.WriteAttributeString("xmlns", "a", null, "foo");
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root x:a=\"b\" xmlns:a=\"foo\" xmlns:x=\"foo\" />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root x:a=\"b\" xmlns:a=\"foo\" xmlns:x=\"foo\" />"));
             }
 
             //[Variation(id = 22, Desc = "WriteAttribute with colliding NS and prefix for 2 attributes", Pri = 1)]
@@ -4351,7 +4351,7 @@ namespace System.Xml.Tests
                     w.WriteAttributeString("x", "c", "foo", "b");
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root xmlns:x=\"foo\" x:a=\"b\" x:c=\"b\" />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root xmlns:x=\"foo\" x:a=\"b\" x:c=\"b\" />"));
             }
 
             //[Variation(id = 23, Desc = "WriteAttribute with DQ in namespace", Pri = 2)]
@@ -4364,7 +4364,7 @@ namespace System.Xml.Tests
                     w.WriteAttributeString("a", "\"", "b");
                     w.WriteEndElement();
                 }
-                return CompareString("<Root ~a p1 a~:a=\"b\" xmlns:~a p1 A~=\"&quot;\" />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareString("<Root ~a p1 a~:a=\"b\" xmlns:~a p1 A~=\"&quot;\" />"));
             }
 
             //[Variation(id = 24, Desc = "Attach prefix with empty namespace", Pri = 1)]
@@ -4400,7 +4400,7 @@ namespace System.Xml.Tests
                     w.WriteAttributeString("xmlns", "foo", "", "http://www.w3.org/XML/1998/namaespace");
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root xmlns:foo=\"http://www.w3.org/XML/1998/namaespace\" />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root xmlns:foo=\"http://www.w3.org/XML/1998/namaespace\" />"));
             }
 
             //[Variation(id = 26, Desc = "Map XML NS 'http://www.w3.org/XML/1998/namaespace' to another prefix", Pri = 1)]
@@ -4413,7 +4413,7 @@ namespace System.Xml.Tests
                     w.WriteAttributeString("foo", "bar", "http://www.w3.org/XML/1998/namaespace", "test");
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root foo:bar=\"test\" xmlns:foo=\"http://www.w3.org/XML/1998/namaespace\" />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root foo:bar=\"test\" xmlns:foo=\"http://www.w3.org/XML/1998/namaespace\" />"));
             }
 
             //[Variation(id = 27, Desc = "Pass empty namespace to WriteAttributeString(prefix, name, ns, value)", Pri = 1)]
@@ -4426,7 +4426,7 @@ namespace System.Xml.Tests
                     w.WriteAttributeString("pre", "attr", "", "test");
                     w.WriteEndElement();
                 }
-                return CompareReader("<pre:Root attr=\"test\" xmlns:pre=\"urn:pre\" />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<pre:Root attr=\"test\" xmlns:pre=\"urn:pre\" />"));
             }
 
             //[Variation(id = 28, Desc = "Write attribute with prefix = xmlns", Pri = 1)]
@@ -4524,7 +4524,7 @@ namespace System.Xml.Tests
                     w.WriteAttributeString(null, "attr", "ns", "value");
                     w.WriteEndElement();
                 }
-                return CompareString("<Root ~a p1 a~:attr=\"value\" xmlns:~a p1 A~=\"ns\" />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareString("<Root ~a p1 a~:attr=\"value\" xmlns:~a p1 A~=\"ns\" />"));
             }
 
             //[Variation(id = 33, Desc = "Pass String.Empty prefix to WriteAttributeString()", Pri = 1)]
@@ -4537,7 +4537,7 @@ namespace System.Xml.Tests
                     w.WriteAttributeString(String.Empty, "attr", "ns", "value");
                     w.WriteEndElement();
                 }
-                return CompareString("<Root ~a p1 a~:attr=\"value\" xmlns:~a p1 A~=\"ns\" />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareString("<Root ~a p1 a~:attr=\"value\" xmlns:~a p1 A~=\"ns\" />"));
             }
 
             //[Variation(id = 34, Desc = "Pass null ns to WriteAttributeString()", Pri = 1)]
@@ -4550,7 +4550,7 @@ namespace System.Xml.Tests
                     w.WriteAttributeString("pre", "attr", null, "value");
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root attr='value' />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root attr='value' />"));
             }
 
             //[Variation(id = 35, Desc = "Pass String.Empty ns to WriteAttributeString()", Pri = 1)]
@@ -4563,7 +4563,7 @@ namespace System.Xml.Tests
                     w.WriteAttributeString("pre", "attr", String.Empty, "value");
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root attr='value' />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root attr='value' />"));
             }
 
             //[Variation(id = 36, Desc = "Pass null prefix to WriteAttributeString() when namespace is in scope", Pri = 1)]
@@ -4576,7 +4576,7 @@ namespace System.Xml.Tests
                     w.WriteAttributeString(null, "child", "ns", "test");
                     w.WriteEndElement();
                 }
-                return CompareReader("<pre:Root pre:child='test' xmlns:pre='ns' />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<pre:Root pre:child='test' xmlns:pre='ns' />"));
             }
 
             //[Variation(id = 37, Desc = "Pass String.Empty prefix to WriteAttributeString() when namespace is in scope", Pri = 1)]
@@ -4589,7 +4589,7 @@ namespace System.Xml.Tests
                     w.WriteAttributeString(String.Empty, "child", "ns", "test");
                     w.WriteEndElement();
                 }
-                return CompareReader("<pre:Root pre:child='test' xmlns:pre='ns' />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<pre:Root pre:child='test' xmlns:pre='ns' />"));
             }
 
             //[Variation(id = 38, Desc = "Pass null ns to WriteAttributeString() when prefix is in scope", Pri = 1)]
@@ -4602,7 +4602,7 @@ namespace System.Xml.Tests
                     w.WriteAttributeString("pre", "child", null, "test");
                     w.WriteEndElement();
                 }
-                return CompareReader("<pre:Root pre:child='test' xmlns:pre='ns' />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<pre:Root pre:child='test' xmlns:pre='ns' />"));
             }
 
             //[Variation(id = 39, Desc = "Pass String.Empty ns to WriteAttributeString() when prefix is in scope", Pri = 1)]
@@ -4615,7 +4615,7 @@ namespace System.Xml.Tests
                     w.WriteAttributeString("pre", "child", String.Empty, "test");
                     w.WriteEndElement();
                 }
-                return CompareReader("<pre:Root child='test' xmlns:pre='ns' />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<pre:Root child='test' xmlns:pre='ns' />"));
             }
 
             //[Variation(id = 40, Desc = "Mapping empty ns uri to a prefix should error", Pri = 1)]
@@ -4654,7 +4654,7 @@ namespace System.Xml.Tests
                     w.WriteAttributeString(null, "xmlns", "http://www.w3.org/2000/xmlns/", "ns");
                     w.WriteEndElement();
                 }
-                return CompareReader("<pre:foo xmlns='ns' xmlns:pre='ns1' />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<pre:foo xmlns='ns' xmlns:pre='ns1' />"));
             }
         }
 
@@ -4671,7 +4671,7 @@ namespace System.Xml.Tests
                     w.WriteCData(null);
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root><![CDATA[]]></Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root><![CDATA[]]></Root>"));
             }
 
             //[Variation(id = 2, Desc = "WriteCData with String.Empty", Pri = 1)]
@@ -4684,7 +4684,7 @@ namespace System.Xml.Tests
                     w.WriteCData(String.Empty);
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root><![CDATA[]]></Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root><![CDATA[]]></Root>"));
             }
 
             //[Variation(id = 3, Desc = "WriteCData Sanity test", Pri = 0)]
@@ -4697,7 +4697,7 @@ namespace System.Xml.Tests
                     w.WriteCData("This text is in a CDATA section");
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root><![CDATA[This text is in a CDATA section]]></Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root><![CDATA[This text is in a CDATA section]]></Root>"));
             }
 
             //[Variation(id = 4, Desc = "WriteCData with valid surrogate pair", Pri = 1)]
@@ -4710,7 +4710,7 @@ namespace System.Xml.Tests
                     w.WriteCData("\uD812\uDD12");
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root><![CDATA[\uD812\uDD12]]></Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root><![CDATA[\uD812\uDD12]]></Root>"));
             }
 
             //[Variation(id = 5, Desc = "WriteCData with ]]>", Pri = 1)]
@@ -4723,7 +4723,7 @@ namespace System.Xml.Tests
                     w.WriteCData("test ]]> test");
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root><![CDATA[test ]]]]><![CDATA[> test]]></Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root><![CDATA[test ]]]]><![CDATA[> test]]></Root>"));
             }
 
             //[Variation(id = 6, Desc = "WriteCData with & < > chars, they should not be escaped", Pri = 2)]
@@ -4736,7 +4736,7 @@ namespace System.Xml.Tests
                     w.WriteCData("<greeting>Hello World! & Hello XML</greeting>");
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root><![CDATA[<greeting>Hello World! & Hello XML</greeting>]]></Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root><![CDATA[<greeting>Hello World! & Hello XML</greeting>]]></Root>"));
             }
 
             //[Variation(id = 7, Desc = "WriteCData with <![CDATA[", Pri = 2)]
@@ -4749,7 +4749,7 @@ namespace System.Xml.Tests
                     w.WriteCData("<![CDATA[");
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root><![CDATA[<![CDATA[]]></Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root><![CDATA[<![CDATA[]]></Root>"));
             }
             //[Variation(id = 8, Desc = "CData state machine", Pri = 2)]
             [Fact]
@@ -4761,7 +4761,7 @@ namespace System.Xml.Tests
                     w.WriteCData("]x]>]]x> x]x]x> x]]x]]x>");
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root><![CDATA[]x]>]]x> x]x]x> x]]x]]x>]]></Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root><![CDATA[]x]>]]x> x]x]x> x]]x]]x>]]></Root>"));
             }
 
             //[Variation(id = 9, Desc = "WriteCData with invalid surrogate pair", Pri = 1)]
@@ -4820,7 +4820,7 @@ namespace System.Xml.Tests
                     w.WriteCData("bar");
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root><![CDATA[foo]]><![CDATA[bar]]></Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root><![CDATA[foo]]><![CDATA[bar]]></Root>"));
             }
 
             //[Variation(id = 12, Desc = "WriteCData with empty string at the buffer boundary", Pri = 1)]
@@ -4844,7 +4844,7 @@ namespace System.Xml.Tests
                     w.WriteEndElement();
                 }
 
-                return CompareReader(expXml) ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader(expXml));
             }
 
             //[Variation(id = 13, Desc = "WriteCData with 0x0D with NewLineHandling.Replace", Pri = 1, Params = new Object[] { 0x0d, NewLineHandling.Replace, "<r><![CDATA[\r\n]]></r>" })]
@@ -4870,7 +4870,7 @@ namespace System.Xml.Tests
                     w.WriteCData(new string(ch, 1));
                     w.WriteEndElement();
                 }
-                return CompareString(expXml) ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareString(expXml));
             }
         }
 
@@ -4887,7 +4887,7 @@ namespace System.Xml.Tests
                     w.WriteComment("This text is a comment");
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root><!--This text is a comment--></Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root><!--This text is a comment--></Root>"));
             }
 
             //[Variation(id = 2, Desc = "Comment value = String.Empty", Pri = 0)]
@@ -4900,7 +4900,7 @@ namespace System.Xml.Tests
                     w.WriteComment(String.Empty);
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root><!----></Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root><!----></Root>"));
             }
 
             //[Variation(id = 3, Desc = "Comment value = null", Pri = 0)]
@@ -4913,7 +4913,7 @@ namespace System.Xml.Tests
                     w.WriteComment(null);
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root><!----></Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root><!----></Root>"));
             }
 
             //[Variation(id = 4, Desc = "WriteComment with valid surrogate pair", Pri = 1)]
@@ -4926,7 +4926,7 @@ namespace System.Xml.Tests
                     w.WriteComment("\uD812\uDD12");
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root><!--\uD812\uDD12--></Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root><!--\uD812\uDD12--></Root>"));
             }
 
             //[Variation(id = 5, Desc = "WriteComment with invalid surrogate pair", Pri = 1)]
@@ -4962,7 +4962,7 @@ namespace System.Xml.Tests
                     w.WriteComment("test --");
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root><!--test - - --></Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root><!--test - - --></Root>"));
             }
         }
 
@@ -5032,7 +5032,7 @@ namespace System.Xml.Tests
                     w.WriteEntityRef("e");
                     w.WriteEndElement();
                 }
-                return CompareReader("<!DOCTYPE Root [<!ENTITY e \"test\">]><Root>&e;</Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<!DOCTYPE Root [<!ENTITY e \"test\">]><Root>&e;</Root>"));
             }
 
             //[Variation(id = 13, Desc = "WriteEntityRef in value for xml:lang attribute", Pri = 1)]
@@ -5049,7 +5049,7 @@ namespace System.Xml.Tests
                     w.WriteEndAttribute();
                     w.WriteEndElement();
                 }
-                return CompareReader("<!DOCTYPE root [<!ENTITY e \"en-us\">]><root xml:lang=\"&e;&lt;\" />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<!DOCTYPE root [<!ENTITY e \"en-us\">]><root xml:lang=\"&e;&lt;\" />"));
             }
 
             //[Variation(id = 14, Desc = "XmlWriter: Entity Refs are entitized twice in xml:lang attributes", Pri = 1)]
@@ -5065,7 +5065,7 @@ namespace System.Xml.Tests
                     w.WriteEndAttribute();
                     w.WriteEndElement();
                 }
-                return CompareReader("<!DOCTYPE root [<!ENTITY e \"en-us\">]><root xml:lang=\"&e;\" />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<!DOCTYPE root [<!ENTITY e \"en-us\">]><root xml:lang=\"&e;\" />"));
             }
         }
 
@@ -5086,7 +5086,7 @@ namespace System.Xml.Tests
                     w.WriteCharEntity('\uE000');
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root a=\"&#xD23E;\">&#xD7FF;&#xE000;</Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root a=\"&#xD23E;\">&#xD7FF;&#xE000;</Root>"));
             }
 
             //[Variation(id = 2, Desc = "Call WriteCharEntity after WriteStartElement/WriteEndElement", Pri = 0)]
@@ -5103,7 +5103,7 @@ namespace System.Xml.Tests
                     w.WriteCharEntity('\u0048');
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root>&#xD001;<elem>&#xF345;</elem>&#x48;</Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root>&#xD001;<elem>&#xF345;</elem>&#x48;</Root>"));
             }
 
             //[Variation(id = 3, Desc = "Call WriteCharEntity after WriteStartAttribute/WriteEndAttribute", Pri = 0)]
@@ -5119,7 +5119,7 @@ namespace System.Xml.Tests
                     w.WriteCharEntity('\u2584');
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root a=\"&#x1289;\">&#x2584;</Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root a=\"&#x1289;\">&#x2584;</Root>"));
             }
 
             //[Variation(id = 4, Desc = "Character from low surrogate range", Pri = 1)]
@@ -5177,7 +5177,7 @@ namespace System.Xml.Tests
                     w.WriteEndElement();
                 }
                 string strExp = "<root>&#x63;</root>";
-                return CompareReader(strExp) ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader(strExp));
             }
 
             //[Variation(id = 8, Desc = "WriteCharEntity for special attributes", Pri = 1)]
@@ -5193,7 +5193,7 @@ namespace System.Xml.Tests
                     w.WriteEndAttribute();
                     w.WriteEndElement();
                 }
-                return CompareReader("<root xml:lang=\"A&#xA;\" />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<root xml:lang=\"A&#xA;\" />"));
             }
 
             //[Variation(id = 9, Desc = "XmlWriter generates invalid XML", Pri = 1)]
@@ -5243,7 +5243,7 @@ namespace System.Xml.Tests
                     w.WriteSurrogateCharEntity('\uDC22', '\uD820');
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root>&#x58341;<Elem>&#xCFE44;</Elem>&#x18022;</Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root>&#x58341;<Elem>&#xCFE44;</Elem>&#x18022;</Root>"));
             }
 
             //[Variation(id = 2, Desc = "SurrogateCharEntity after WriteStartAttribute/WriteEndAttribute", Pri = 1)]
@@ -5259,7 +5259,7 @@ namespace System.Xml.Tests
                     w.WriteSurrogateCharEntity('\uDE44', '\uDAFF');
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root a=\"&#x58341;\">&#xCFE44;</Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root a=\"&#x58341;\">&#xCFE44;</Root>"));
             }
 
             //[Variation(id = 3, Desc = "Test with limits of surrogate range", Pri = 1)]
@@ -5277,7 +5277,7 @@ namespace System.Xml.Tests
                     w.WriteSurrogateCharEntity('\uDFFF', '\uDBFF');
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root a=\"&#x10000;\">&#x103FF;&#x10FC00;&#x10FFFF;</Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root a=\"&#x10000;\">&#x103FF;&#x10FC00;&#x10FFFF;</Root>"));
             }
 
             //[Variation(id = 4, Desc = "Middle surrogate character", Pri = 1)]
@@ -5290,7 +5290,7 @@ namespace System.Xml.Tests
                     w.WriteSurrogateCharEntity('\uDD12', '\uDA34');
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root>&#x9D112;</Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root>&#x9D112;</Root>"));
             }
 
             //[Variation(id = 5, Desc = "Invalid high surrogate character", Pri = 1)]
@@ -5372,7 +5372,7 @@ namespace System.Xml.Tests
                     w.WriteEndElement();
                 }
                 string strExp = "<root xml:lang=\"&#x10FC00;\" />";
-                return CompareReader(strExp) ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader(strExp));
             }
         }
 
@@ -5389,7 +5389,7 @@ namespace System.Xml.Tests
                     w.WriteProcessingInstruction("test", "This text is a PI");
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root><?test This text is a PI?></Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root><?test This text is a PI?></Root>"));
             }
 
             //[Variation(id = 2, Desc = "PI text value = null", Pri = 1)]
@@ -5402,7 +5402,7 @@ namespace System.Xml.Tests
                     w.WriteProcessingInstruction("test", null);
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root><?test?></Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root><?test?></Root>"));
             }
 
             //[Variation(id = 3, Desc = "PI text value = String.Empty", Pri = 1)]
@@ -5415,7 +5415,7 @@ namespace System.Xml.Tests
                     w.WriteProcessingInstruction("test", String.Empty);
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root><?test?></Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root><?test?></Root>"));
             }
 
             //[Variation(id = 4, Desc = "PI name = null should error", Pri = 1)]
@@ -5581,7 +5581,7 @@ namespace System.Xml.Tests
                     w.WriteProcessingInstruction("badpi", "text ?>");
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root><?badpi text ? >?></Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root><?badpi text ? >?></Root>"));
             }
 
             //[Variation(id = 12, Desc = "WriteProcessingInstruction with valid surrogate pair", Pri = 1)]
@@ -5594,7 +5594,7 @@ namespace System.Xml.Tests
                     w.WriteProcessingInstruction("pi", "\uD812\uDD12");
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root><?pi \uD812\uDD12?></Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root><?pi \uD812\uDD12?></Root>"));
             }
 
             //[Variation(id = 13, Desc = "WritePI with invalid surrogate pair", Pri = 1)]
@@ -5663,7 +5663,7 @@ namespace System.Xml.Tests
                     w.WriteNmToken("foo");
                     w.WriteEndElement();
                 }
-                return CompareReader("<root>foo</root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<root>foo</root>"));
             }
 
             //[Variation(id = 3, Desc = "Name contains letters, digits, . _ - : chars", Pri = 1)]
@@ -5676,7 +5676,7 @@ namespace System.Xml.Tests
                     w.WriteNmToken("_foo:1234.bar-");
                     w.WriteEndElement();
                 }
-                return CompareReader("<root>_foo:1234.bar-</root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<root>_foo:1234.bar-</root>"));
             }
 
             //[Variation(id = 4, Desc = "Name contains whitespace char", Param = "test test", Pri = 1)]
@@ -5754,7 +5754,7 @@ namespace System.Xml.Tests
                     w.WriteName("foo");
                     w.WriteEndElement();
                 }
-                return CompareReader("<root>foo</root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<root>foo</root>"));
             }
 
             //[Variation(id = 3, Desc = "Sanity test, Name = foo:bar", Pri = 1)]
@@ -5767,7 +5767,7 @@ namespace System.Xml.Tests
                     w.WriteName("foo:bar");
                     w.WriteEndElement();
                 }
-                return CompareReader("<root>foo:bar</root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<root>foo:bar</root>"));
             }
 
             //[Variation(id = 4, Desc = "Name starts with :", Param = ":bar", Pri = 1)]
@@ -5837,7 +5837,7 @@ namespace System.Xml.Tests
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return (WriterType == WriterType.CustomWriter) ? TEST_PASS : TEST_FAIL;
+                Assert.True((WriterType == WriterType.CustomWriter));
             }
 
             //[Variation(id = 3, Desc = "WriteQName with correct NS", Pri = 1)]
@@ -5851,7 +5851,7 @@ namespace System.Xml.Tests
                     w.WriteQualifiedName("bar", "test");
                     w.WriteEndElement();
                 }
-                return CompareReader("<root xmlns:foo=\"test\">foo:bar</root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<root xmlns:foo=\"test\">foo:bar</root>"));
             }
 
             //[Variation(id = 4, Desc = "WriteQName when NS is auto-generated", Pri = 1)]
@@ -5864,7 +5864,7 @@ namespace System.Xml.Tests
                     w.WriteQualifiedName("bar", "test");
                     w.WriteEndElement();
                 }
-                return CompareReader("<foo:root xmlns:foo=\"test\">foo:bar</foo:root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<foo:root xmlns:foo=\"test\">foo:bar</foo:root>"));
             }
 
             //[Variation(id = 5, Desc = "QName = foo:bar when foo is not in scope", Pri = 1)]
@@ -5919,7 +5919,7 @@ namespace System.Xml.Tests
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return (WriterType == WriterType.CustomWriter) ? TEST_PASS : TEST_FAIL;
+                Assert.True((WriterType == WriterType.CustomWriter));
             }
         }
 
@@ -5938,7 +5938,7 @@ namespace System.Xml.Tests
                     w.WriteChars(buf, 0, 4);
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root>test</Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root>test</Root>"));
             }
 
             //[Variation(id = 2, Desc = "WriteChars with & < >", Pri = 1)]
@@ -5954,7 +5954,7 @@ namespace System.Xml.Tests
                     w.WriteChars(buf, 0, 5);
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root>&amp;&lt;&gt;th</Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root>&amp;&lt;&gt;th</Root>"));
             }
 
             //[Variation(id = 3, Desc = "WriteChars following WriteStartAttribute", Pri = 1)]
@@ -5971,7 +5971,7 @@ namespace System.Xml.Tests
                     w.WriteChars(buf, 0, 5);
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root a=\"valid\" />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root a=\"valid\" />"));
             }
 
             //[Variation(id = 4, Desc = "WriteChars with entity ref included", Pri = 1)]
@@ -5987,7 +5987,7 @@ namespace System.Xml.Tests
                     w.WriteChars(buf, 0, buf.Length);
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root>this is an entity &amp;foo;</Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root>this is an entity &amp;foo;</Root>"));
             }
 
             //[Variation(id = 5, Desc = "WriteChars with buffer = null", Pri = 2)]
@@ -6061,7 +6061,7 @@ namespace System.Xml.Tests
                     w.WriteChars(buf, 0, 0);
                     w.WriteEndElement();
                 }
-                return CompareReader("<root xml:lang=\"\" />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<root xml:lang=\"\" />"));
             }
         }
 
@@ -6078,7 +6078,7 @@ namespace System.Xml.Tests
                     w.WriteString(null);
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root />"));
             }
 
             //[Variation(id = 2, Desc = "WriteString(String.Empty)", Pri = 1)]
@@ -6091,7 +6091,7 @@ namespace System.Xml.Tests
                     w.WriteString(String.Empty);
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root></Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root></Root>"));
             }
 
             //[Variation(id = 3, Desc = "WriteString with valid surrogate pair", Pri = 1)]
@@ -6104,7 +6104,7 @@ namespace System.Xml.Tests
                     w.WriteString("\uD812\uDD12");
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root>\uD812\uDD12</Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root>\uD812\uDD12</Root>"));
             }
 
             //[Variation(id = 4, Desc = "WriteString with invalid surrogate pair", Pri = 1)]
@@ -6140,7 +6140,7 @@ namespace System.Xml.Tests
                     w.WriteString("&test;");
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root>&amp;test;</Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root>&amp;test;</Root>"));
             }
 
             //[Variation(id = 6, Desc = "WriteString with single/double quote, &, <, >", Pri = 1)]
@@ -6153,7 +6153,7 @@ namespace System.Xml.Tests
                     w.WriteString("' & < > \"");
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root>&apos; &amp; &lt; &gt; \"</Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root>&apos; &amp; &lt; &gt; \"</Root>"));
             }
 
             //[Variation(id = 9, Desc = "WriteString for value greater than x1F", Pri = 1)]
@@ -6166,7 +6166,7 @@ namespace System.Xml.Tests
                     w.WriteString(XmlConvert.ToString('\x21'));
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root>!</Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root>!</Root>"));
             }
 
             //[Variation(id = 10, Desc = "WriteString with CR, LF, CR LF inside element", Pri = 1)]
@@ -6189,7 +6189,7 @@ namespace System.Xml.Tests
                     w.WriteEndElement();
                     w.WriteEndElement();
                 }
-                return CompareBaseline("writeStringWhiespaceInElem.txt") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareBaseline("writeStringWhiespaceInElem.txt"));
             }
 
             //[Variation(id = 11, Desc = "WriteString with CR, LF, CR LF inside attribute value", Pri = 1)]
@@ -6209,7 +6209,7 @@ namespace System.Xml.Tests
                     w.WriteString("\r\n");
                     w.WriteEndElement();
                 }
-                return CompareBaseline("writeStringWhiespaceInAttr.txt") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareBaseline("writeStringWhiespaceInAttr.txt"));
             }
 
             //[Variation(id = 12, Desc = "Call WriteString for LF inside attribute", Pri = 1)]
@@ -6223,7 +6223,7 @@ namespace System.Xml.Tests
                     w.WriteString("x\ny");
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root a1=\"x&#xA;y\" />") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root a1=\"x&#xA;y\" />"));
             }
 
             //[Variation(id = 13, Desc = "Surrogate characters in text nodes, range limits", Pri = 1)]
@@ -6239,7 +6239,7 @@ namespace System.Xml.Tests
                     w.WriteString(invXML);
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root>\uD800\uDC00\uD800\uDFFF\uDBFF\uDC00\uDBFF\uDFFF</Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root>\uD800\uDC00\uD800\uDFFF\uDBFF\uDC00\uDBFF\uDFFF</Root>"));
             }
 
             //[Variation(id = 14, Desc = "High surrogate on last position", Pri = 1)]
@@ -6339,7 +6339,7 @@ namespace System.Xml.Tests
                     w.WriteString("text");
                     w.WriteEndElement();
                 }
-                return CompareBaseline("whitespace1.txt") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareBaseline("whitespace1.txt"));
             }
 
             //[Variation(id = 2, Desc = "WriteWhitespace in the middle of text", Pri = 1)]
@@ -6354,7 +6354,7 @@ namespace System.Xml.Tests
                     w.WriteString("text");
                     w.WriteEndElement();
                 }
-                return CompareBaseline("whitespace2.txt") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareBaseline("whitespace2.txt"));
             }
 
             //[Variation(id = 3, Desc = "WriteWhitespace before and after root element", Pri = 1)]
@@ -6370,7 +6370,7 @@ namespace System.Xml.Tests
                     w.WriteWhitespace("\x20");
                     w.WriteEndDocument();
                 }
-                return CompareBaseline("whitespace3.txt") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareBaseline("whitespace3.txt"));
             }
 
             //[Variation(id = 4, Desc = "WriteWhitespace with null ", Param = "null", Pri = 1)]
@@ -6390,7 +6390,7 @@ namespace System.Xml.Tests
                     w.WriteWhitespace(temp);
                     w.WriteEndElement();
                 }
-                return CompareReader("<Root></Root>") ? TEST_PASS : TEST_FAIL;
+                Assert.True(CompareReader("<Root></Root>"));
             }
 
             //[Variation(id = 6, Desc = "WriteWhitespace with invalid char", Param = "a", Pri = 1)]
@@ -6435,7 +6435,7 @@ namespace System.Xml.Tests
                     w.WriteValue((double)3.14);
                     w.WriteEndElement();
                 }
-                return (CompareReader("<Root>2true3.14</Root>")) ? TEST_PASS : TEST_FAIL;
+                Assert.True((CompareReader("<Root>2true3.14</Root>")));
             }
 
             //[Variation(Desc = "Write multiple atomic values inside attribute", Pri = 1)]
@@ -6451,7 +6451,7 @@ namespace System.Xml.Tests
                     w.WriteValue((double)3.14);
                     w.WriteEndElement();
                 }
-                return (CompareReader("<Root attr=\"2true3.14\" />")) ? TEST_PASS : TEST_FAIL;
+                Assert.True((CompareReader("<Root attr=\"2true3.14\" />")));
             }
 
             //[Variation(Desc = "Write multiple atomic values inside element, separate by WriteWhitespace(' ')", Pri = 1)]
@@ -6469,7 +6469,7 @@ namespace System.Xml.Tests
                     w.WriteWhitespace(" ");
                     w.WriteEndElement();
                 }
-                return (CompareReader("<Root>2 true 3.14 </Root>")) ? TEST_PASS : TEST_FAIL;
+                Assert.True((CompareReader("<Root>2 true 3.14 </Root>")));
             }
 
             //[Variation(Desc = "Write multiple atomic values inside element, separate by WriteString(' ')", Pri = 1)]
@@ -6487,7 +6487,7 @@ namespace System.Xml.Tests
                     w.WriteString(" ");
                     w.WriteEndElement();
                 }
-                return (CompareReader("<Root>2 true 3.14 </Root>")) ? TEST_PASS : TEST_FAIL;
+                Assert.True((CompareReader("<Root>2 true 3.14 </Root>")));
             }
 
             //[Variation(Desc = "Write multiple atomic values inside attribute, separate by WriteWhitespace(' ')", Pri = 1)]
@@ -6514,7 +6514,7 @@ namespace System.Xml.Tests
                         Assert.True(false);
                     }
                 }
-                return (CompareReader("<Root attr=\"2 true 3.14 \" />")) ? TEST_PASS : TEST_FAIL;
+                Assert.True((CompareReader("<Root attr=\"2 true 3.14 \" />")));
             }
 
             //[Variation(Desc = "Write multiple atomic values inside attribute, separate by WriteString(' ')", Pri = 1)]
@@ -6533,7 +6533,7 @@ namespace System.Xml.Tests
                     w.WriteString(" ");
                     w.WriteEndElement();
                 }
-                return (CompareReader("<Root attr=\"2 true 3.14 \" />")) ? TEST_PASS : TEST_FAIL;
+                Assert.True((CompareReader("<Root attr=\"2 true 3.14 \" />")));
             }
 
             //[Variation(Desc = "WriteValue(long)", Pri = 1)]
@@ -6549,7 +6549,7 @@ namespace System.Xml.Tests
                     w.WriteEndElement();
                     w.WriteEndElement();
                 }
-                return (CompareReader("<Root>9223372036854775807<child>-9223372036854775808</child></Root>")) ? TEST_PASS : TEST_FAIL;
+                Assert.True((CompareReader("<Root>9223372036854775807<child>-9223372036854775808</child></Root>")));
             }
 
             //[Variation(Desc = "WriteValue((string)null)", Param = "string", Pri = 1)]
@@ -7492,7 +7492,7 @@ namespace System.Xml.Tests
                 {
                     CultureInfo.CurrentCulture = origCulture;
                 }
-                return (isValid) ? TEST_PASS : TEST_FAIL;
+                Assert.True((isValid));
             }
 
             //[Variation(Desc = "WriteValue(XmlException)", Pri = 2, Param = 1)]
@@ -7548,7 +7548,7 @@ namespace System.Xml.Tests
                         catch (InvalidCastException) { return; }
                     }
                 }
-                return (param == 3 && (WriterType == WriterType.CustomWriter)) ? TEST_PASS : TEST_FAIL;
+                Assert.True((param == 3 && (WriterType == WriterType.CustomWriter)));
             }
 
             //[Variation(Desc = "WriteValue(stringToXmlQualifiedName-invalid)", Pri = 1, Param = 1)]
@@ -7594,7 +7594,7 @@ namespace System.Xml.Tests
                     w.WriteValue(XmlConvert.ToDateTimeOffset(value));
                     w.WriteEndElement();
                 }
-                return (CompareReader(expectedValue)) ? TEST_PASS : TEST_FAIL;
+                Assert.True((CompareReader(expectedValue)));
             }
 
             //[Variation(Desc = "WriteValue(new DateTimeOffset) - valid", Pri = 2)]
@@ -7660,7 +7660,7 @@ namespace System.Xml.Tests
                         }
                     }
                 }
-                return (isPassed) ? TEST_PASS : TEST_FAIL;
+                Assert.True((isPassed));
             }
 
             //[TestCase(Name = "LookupPrefix")]
@@ -8206,7 +8206,7 @@ namespace System.Xml.Tests
                         w.WriteRaw(t.ToCharArray(), 0, 4);
                         w.WriteEndElement();
                     }
-                    return CompareReader("<Root a=\"Test Case\" b=\"Test\" />") ? TEST_PASS : TEST_FAIL;
+                    Assert.True(CompareReader("<Root a=\"Test Case\" b=\"Test\" />"));
                 }
 
                 //[Variation(id = 2, Desc = "WriteRaw with entites and entitized characters", Pri = 1)]
@@ -8224,7 +8224,7 @@ namespace System.Xml.Tests
 
                     string strExp = "<Root><node a=\"&'b\">\" c=\"'d\">&</node></Root>";
 
-                    return CompareString(strExp) ? TEST_PASS : TEST_FAIL;
+                    Assert.True(CompareString(strExp));
                 }
 
                 //[Variation(id = 3, Desc = "WriteRaw with entire Xml Document in string", Pri = 1)]
@@ -8237,7 +8237,7 @@ namespace System.Xml.Tests
                     w.WriteRaw(t);
 
                     w.Dispose();
-                    return CompareReader("<root><node1></node1><node2></node2></root>") ? TEST_PASS : TEST_FAIL;
+                    Assert.True(CompareReader("<root><node1></node1><node2></node2></root>"));
                 }
 
                 //[Variation(id = 4, Desc = "Call WriteRaw to write the value of xml:space")]
@@ -8252,7 +8252,7 @@ namespace System.Xml.Tests
                         w.WriteEndAttribute();
                         w.WriteEndElement();
                     }
-                    return CompareReader("<Root xml:space=\"default\" />") ? TEST_PASS : TEST_FAIL;
+                    Assert.True(CompareReader("<Root xml:space=\"default\" />"));
                 }
 
                 //[Variation(id = 5, Desc = "Call WriteRaw to write the value of xml:lang", Pri = 1)]
@@ -8271,7 +8271,7 @@ namespace System.Xml.Tests
                         w.WriteEndAttribute();
                         w.WriteEndElement();
                     }
-                    return CompareReader("<root xml:lang=\"bab\" />") ? TEST_PASS : TEST_FAIL;
+                    Assert.True(CompareReader("<root xml:lang=\"bab\" />"));
                 }
 
                 //[Variation(id = 6, Desc = "WriteRaw with count > buffer size", Pri = 1)]
@@ -8346,7 +8346,7 @@ namespace System.Xml.Tests
                         w.WriteEndElement();
                     }
                     string strExp = "<Root>\uD812\uDD12\uD812\uDD12</Root>";
-                    return CompareReader(strExp) ? TEST_PASS : TEST_FAIL;
+                    Assert.True(CompareReader(strExp));
                 }
 
                 //[Variation(id = 13, Desc = "WriteRaw with invalid surrogate pair", Pri = 1)]
@@ -8385,7 +8385,7 @@ namespace System.Xml.Tests
                         w.WriteRaw(buffer, 0, 0);
                         w.WriteEndElement();
                     }
-                    return CompareReader("<root xml:lang=\"\" />") ? TEST_PASS : TEST_FAIL;
+                    Assert.True(CompareReader("<root xml:lang=\"\" />"));
                 }
             }
 
@@ -8510,7 +8510,7 @@ namespace System.Xml.Tests
                         w.WriteBase64(buffer, 0, 0);
                         w.WriteEndElement();
                     }
-                    return CompareReader("<root foo=\"\" />") ? TEST_PASS : TEST_FAIL;
+                    Assert.True(CompareReader("<root foo=\"\" />"));
                 }
 
                 //[Variation(id = 90, Desc = "Base64 should not be allowed inside xml:lang value", Pri = 1, Param = "lang")]
@@ -8703,7 +8703,7 @@ namespace System.Xml.Tests
                     writer.WriteEndElement();
                     writer.Dispose();
 
-                    return CompareBaseline("bug364698.xml") ? TEST_PASS : TEST_FAIL;
+                    Assert.True(CompareBaseline("bug364698.xml"));
                 }
 
                 //[Variation(id = 96, Desc = "XmlWriter does not flush Base64 data on the Close", Pri = 1)]
@@ -8828,7 +8828,7 @@ namespace System.Xml.Tests
                         w.WriteBinHex(buffer, 0, 0);
                         w.WriteEndElement();
                     }
-                    return CompareReader("<root xml:lang=\"\" />") ? TEST_PASS : TEST_FAIL;
+                    Assert.True(CompareReader("<root xml:lang=\"\" />"));
                 }
 
                 //[Variation(id = 9, Desc = "Call WriteBinHex as an attribute value", Pri = 1)]
@@ -8850,7 +8850,7 @@ namespace System.Xml.Tests
                         w.WriteBinHex(Wbase64, 0, (int)Wbase64len);
                         w.WriteEndElement();
                     }
-                    return CompareReader("<root a='610062006300' />") ? TEST_PASS : TEST_FAIL;
+                    Assert.True(CompareReader("<root a='610062006300' />"));
                 }
 
                 //[Variation(id = 10, Desc = "Call WriteBinHex and verify results can be read as a string", Pri = 1)]
@@ -8871,7 +8871,7 @@ namespace System.Xml.Tests
                         w.WriteBinHex(Wbase64, 0, (int)Wbase64len);
                         w.WriteEndElement();
                     }
-                    return CompareReader("<root>610062006300</root>") ? TEST_PASS : TEST_FAIL;
+                    Assert.True(CompareReader("<root>610062006300</root>"));
                 }
             }
 
@@ -9251,7 +9251,7 @@ namespace System.Xml.Tests
                     {
                         w.WriteElementString("foo", "elem", "bar", "test");
                     }
-                    return CompareReader("<foo:elem xmlns:foo=\"bar\">test</foo:elem>") ? TEST_PASS : TEST_FAIL;
+                    Assert.True(CompareReader("<foo:elem xmlns:foo=\"bar\">test</foo:elem>"));
                 }
 
                 //[Variation(id = 2, Desc = "WriteElementString(prefix = xml, ns = XML namespace)", Pri = 1)]
@@ -9262,7 +9262,7 @@ namespace System.Xml.Tests
                     {
                         w.WriteElementString("xml", "elem", "http://www.w3.org/XML/1998/namespace", "test");
                     }
-                    return CompareReader("<xml:elem>test</xml:elem>") ? TEST_PASS : TEST_FAIL;
+                    Assert.True(CompareReader("<xml:elem>test</xml:elem>"));
                 }
 
                 //[Variation(id = 3, Desc = "WriteStartAttribute(string name) sanity test", Pri = 0)]
@@ -9275,7 +9275,7 @@ namespace System.Xml.Tests
                         w.WriteStartAttribute("attr");
                         w.WriteEndElement();
                     }
-                    return CompareReader("<elem attr=\"\" />") ? TEST_PASS : TEST_FAIL;
+                    Assert.True(CompareReader("<elem attr=\"\" />"));
                 }
 
                 //[Variation(id = 4, Desc = "WriteElementString followed by attribute should error", Pri = 1)]
@@ -9341,7 +9341,7 @@ namespace System.Xml.Tests
                         String.Format("<?xml version=\"1.0\" encoding=\"utf-{0}\" standalone=\"{1}\"?>" + nl + "<a />", enc, param) :
                         String.Format("<?xml version=\"1.0\" encoding=\"utf-{0}\" standalone=\"{1}\"?><a />", enc, param);
 
-                    return (CompareString(exp)) ? TEST_PASS : TEST_FAIL;
+                    Assert.True((CompareString(exp)));
                 }
 
                 //[Variation(id = 8, Desc = "Wrapped XmlWriter::WriteStartDocument(true) is missing standalone attribute", Pri = 1)]
@@ -9365,7 +9365,7 @@ namespace System.Xml.Tests
 
                     exp = (WriterType == WriterType.CustomWriter) ? "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?><a />" : exp;
 
-                    return (CompareString(exp)) ? TEST_PASS : TEST_FAIL;
+                    Assert.True((CompareString(exp)));
                 }
             }
 
@@ -9433,7 +9433,7 @@ namespace System.Xml.Tests
                         writer.WriteStartElement("Nesting");
                         writer.WriteStartElement("SomeDeep");
                     }
-                    return CompareReader("<Root><Nesting><SomeDeep /></Nesting></Root>") ? TEST_PASS : TEST_FAIL;
+                    Assert.True(CompareReader("<Root><Nesting><SomeDeep /></Nesting></Root>"));
                 }
 
                 //[Variation(id = 2, Desc = "Disposing an XmlWriter should close all opened elements", Pri = 1)]
@@ -9446,7 +9446,7 @@ namespace System.Xml.Tests
                         writer.WriteStartElement("Nesting");
                         writer.WriteStartElement("SomeDeep");
                     }
-                    return CompareReader("<Root><Nesting><SomeDeep /></Nesting></Root>") ? TEST_PASS : TEST_FAIL;
+                    Assert.True(CompareReader("<Root><Nesting><SomeDeep /></Nesting></Root>"));
                 }
 
                 //[Variation(id = 3, Desc = "Dispose() shouldn't throw when a tag is not closed and inner stream is closed", Pri = 1)]
@@ -9618,7 +9618,7 @@ namespace System.Xml.Tests
                     string two = reader.ReadInnerXml();
                     reader.Dispose();
 
-                    return (one == two) ? TEST_PASS : TEST_FAIL;
+                    Assert.True((one == two));
                 }
 
                 //[Variation("WriteState returns Content even though document element has been closed")]
