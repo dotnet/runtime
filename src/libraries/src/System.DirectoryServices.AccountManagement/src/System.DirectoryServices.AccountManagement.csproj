@@ -17,10 +17,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Compile Include="System\DirectoryServices\AccountManagement\externdll.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\ExternDll.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\interopt.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\PrincipalSearcher.cs" />
-    <Compile Include="System\DirectoryServices\AccountManagement\utils.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\Utils.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\constants.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\Context.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\StoreCtx.cs" />
@@ -67,7 +67,7 @@
     <Compile Include="System\DirectoryServices\AccountManagement\AD\QBEMatchType.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\AD\SidList.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\AD\ADDNConstraintLinkedAttrSet.cs" />
-    <Compile Include="System\DirectoryServices\AccountManagement\AD\dspropertycollection.cs" />
+    <Compile Include="System\DirectoryServices\AccountManagement\AD\DSPropertyCollection.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\AD\ADStoreCtx.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\AD\ADStoreCtx_Query.cs" />
     <Compile Include="System\DirectoryServices\AccountManagement\AD\ADStoreCtx_LoadStore.cs" />
