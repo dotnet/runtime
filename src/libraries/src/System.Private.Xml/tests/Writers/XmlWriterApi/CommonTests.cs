@@ -31,11 +31,11 @@ namespace System.Xml.Tests
                     CError.WriteLineIgnore("Exception: " + e.ToString());
                     CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
 
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 2, Desc = "EntityRef after Document should error - EPILOG", Pri = 1)]
@@ -55,11 +55,11 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
                     CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 3, Desc = "CharEntity after Document should error - PROLOG", Pri = 1)]
@@ -77,11 +77,11 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
                     CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 4, Desc = "CharEntity after Document should error - EPILOG", Pri = 1)]
@@ -101,11 +101,11 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
                     CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 5, Desc = "SurrogateCharEntity after Document should error - PROLOG", Pri = 1)]
@@ -123,11 +123,11 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
                     CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 6, Desc = "SurrogateCharEntity after Document should error - EPILOG", Pri = 1)]
@@ -147,11 +147,11 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
                     CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 7, Desc = "Attribute after Document should error - PROLOG", Pri = 1)]
@@ -169,11 +169,11 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
                     CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 8, Desc = "Attribute after Document should error - EPILOG", Pri = 1)]
@@ -193,11 +193,11 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
                     CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 9, Desc = "CDATA after Document should error - PROLOG", Pri = 1)]
@@ -215,11 +215,11 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
                     CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(id = 10, Desc = "CDATA after Document should error - EPILOG", Pri = 1)]
@@ -239,11 +239,11 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
                     CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 11, Desc = "Element followed by Document should error", Pri = 1)]
@@ -261,11 +261,11 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
                     CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 12, Desc = "Element followed by DocType should error", Pri = 1)]
@@ -283,11 +283,11 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
                     CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
 
@@ -377,17 +377,17 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
 
-                    return TEST_FAIL;
+                    Assert.True(false);
                 }
                 catch (InvalidOperationException e)
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
                     CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 5, Desc = "WriteEndElement without WriteStartElement", Pri = 1)]
@@ -406,11 +406,11 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
                     CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 6, Desc = "WriteFullEndElement without WriteStartElement", Pri = 1)]
@@ -429,11 +429,11 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
                     CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
     }
 
@@ -475,11 +475,11 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
                     CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 3, Desc = "Missing StartDocument should be fixed", Pri = 1)]
@@ -514,11 +514,11 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
                     CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 5, Desc = "Missing EndDocument should be fixed", Pri = 1)]
@@ -554,11 +554,11 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
                     CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 7, Desc = "Multiple root elements should error", Pri = 1)]
@@ -578,11 +578,11 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
                     CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 8, Desc = "Start-EndDocument without any element should error", Pri = 2)]
@@ -600,11 +600,11 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
                     CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 9, Desc = "Top level text should error - PROLOG", Pri = 1)]
@@ -622,11 +622,11 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
                     CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 10, Desc = "Top level text should error - EPILOG", Pri = 1)]
@@ -646,11 +646,11 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
                     CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
 
@@ -670,10 +670,10 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
                     CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 12, Desc = "Top level atomic value should error - EPILOG", Pri = 1)]
@@ -694,10 +694,10 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
                     CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
-            return TEST_FAIL;
+            Assert.True(false);
         }
     }
 
@@ -752,11 +752,11 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore(e.ToString());
                     CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 4, Desc = "WriteDocType with name value = String.Empty", Param = "String.Empty", Pri = 1)]
@@ -779,17 +779,17 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore(e.ToString());
                     CError.Compare(w.WriteState, (WriterType == WriterType.CharCheckingWriter) ? WriteState.Start : WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
                 catch (NullReferenceException e)
                 {
                     CError.WriteLineIgnore(e.ToString());
                     CError.Compare(w.WriteState, (WriterType == WriterType.CharCheckingWriter) ? WriteState.Start : WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 6, Desc = "WriteDocType with DocType end tag in the value", Pri = 1)]
@@ -824,11 +824,11 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore(e.ToString());
                     CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 8, Desc = "Call WriteDocType following root element", Pri = 1)]
@@ -847,11 +847,11 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore(e.ToString());
                     CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
     }
 
@@ -908,11 +908,11 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
                     CError.Compare(w.WriteState, (WriterType == WriterType.CharCheckingWriter) ? WriteState.Start : WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 5, Desc = "Element name = null should error", Pri = 1)]
@@ -929,11 +929,11 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
                     CError.Compare(w.WriteState, (WriterType == WriterType.CharCheckingWriter) ? WriteState.Start : WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 6, Desc = "Element NS = String.Empty", Pri = 1)]
@@ -1029,12 +1029,12 @@ namespace System.Xml.Tests
             {
                 w.WriteAttributeString("a", "n" + 199, "val");
             }
-            catch (XmlException) { return TEST_PASS; }
+            catch (XmlException) { return; }
             finally
             {
                 w.Dispose();
             }
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
 
@@ -1053,12 +1053,12 @@ namespace System.Xml.Tests
             {
                 w.WriteAttributeString("a" + 199, "val");
             }
-            catch (XmlException) { return TEST_PASS; }
+            catch (XmlException) { return; }
             finally
             {
                 w.Dispose();
             }
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(Desc = "Write many attributes and dup prefix")]
@@ -1076,12 +1076,12 @@ namespace System.Xml.Tests
             {
                 w.WriteAttributeString("p", "a", "n" + 199, "val");
             }
-            catch (XmlException) { return TEST_PASS; }
+            catch (XmlException) { return; }
             finally
             {
                 w.Dispose();
             }
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(Desc = "Write invalid DOCTYPE with many attributes with prefix")]
@@ -1103,10 +1103,10 @@ namespace System.Xml.Tests
                 catch (XmlException e)
                 {
                     CError.WriteLine(e);
-                    return TEST_FAIL;
+                    Assert.True(false);
                 }
             }
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "WriteEntityRef with XmlWellformedWriter for 'apos'", Param = 1)]
@@ -1194,7 +1194,7 @@ namespace System.Xml.Tests
             catch (InvalidOperationException e)
             {
                 CError.WriteLine(e);
-                return TEST_FAIL;
+                Assert.True(false);
             }
             return CompareString(exp) ? TEST_PASS : TEST_FAIL;
         }
@@ -1250,7 +1250,7 @@ namespace System.Xml.Tests
                     w.WriteNode(r, true);
                 }
             }
-            return TEST_PASS;
+            return;
         }
     }
 
@@ -1371,11 +1371,11 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
                     CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 9, Desc = "Duplicate attribute 'ns1:attr1'", Pri = 1)]
@@ -1394,11 +1394,11 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
                     CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 10, Desc = "Attribute name = String.Empty should error", Pri = 1)]
@@ -1416,11 +1416,11 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
                     CError.Compare(w.WriteState, (WriterType == WriterType.CharCheckingWriter) ? WriteState.Element : WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 11, Desc = "Attribute name = null", Pri = 1)]
@@ -1438,11 +1438,11 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
                     CError.Compare(w.WriteState, (WriterType == WriterType.CharCheckingWriter) ? WriteState.Element : WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 12, Desc = "WriteAttribute with names Foo, fOo, foO, FOO", Pri = 1)]
@@ -1477,11 +1477,11 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
                     CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 14, Desc = "SingleQuote in attribute value should be allowed")]
@@ -1664,11 +1664,11 @@ namespace System.Xml.Tests
                 catch (XmlException e)
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw error for duplicate attrs");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 26, Desc = "WriteStartAttribute(attr) when element has ns:attr")]
@@ -1732,10 +1732,10 @@ namespace System.Xml.Tests
                 catch (ArgumentException e)
                 {
                     CError.WriteLineIgnore(e.ToString());
-                    return TEST_PASS;
+                    return;
                 }
             }
-            return TEST_FAIL;
+            Assert.True(false);
         }
     }
 
@@ -1819,11 +1819,11 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
                     CError.Compare(w.WriteState, WriteState.Element, "WriteState should be Element");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 4, Desc = "Call WriteAttributes when reader is located on element", Pri = 1)]
@@ -1848,7 +1848,7 @@ namespace System.Xml.Tests
                         CError.WriteLine(xr.LocalName);
                         xr.Dispose();
                         w.Dispose();
-                        return TEST_FAIL;
+                        Assert.True(false);
                     }
                     w.WriteStartElement("Root");
                     w.WriteAttributes(xr, false);
@@ -1881,7 +1881,7 @@ namespace System.Xml.Tests
                         CError.WriteLine(xr.LocalName);
                         xr.Dispose();
                         w.Dispose();
-                        return TEST_FAIL;
+                        Assert.True(false);
                     }
                     w.WriteStartElement("Root");
                     w.WriteAttributes(xr, false);
@@ -1916,7 +1916,7 @@ namespace System.Xml.Tests
                         CError.WriteLine(xr.LocalName);
                         xr.Dispose();
                         w.Dispose();
-                        return TEST_FAIL;
+                        Assert.True(false);
                     }
                     w.WriteStartElement("Root");
                     w.WriteAttributes(xr, false);
@@ -1949,7 +1949,7 @@ namespace System.Xml.Tests
                         CError.WriteLine(xr.LocalName);
                         xr.Dispose();
                         w.Dispose();
-                        return TEST_FAIL;
+                        Assert.True(false);
                     }
                     w.WriteStartElement("Root");
                     w.WriteAttributes(xr, false);
@@ -1982,7 +1982,7 @@ namespace System.Xml.Tests
                         CError.WriteLine(xr.LocalName);
                         xr.Dispose();
                         w.Dispose();
-                        return TEST_FAIL;
+                        Assert.True(false);
                     }
                     w.WriteStartElement("Root");
                     w.WriteAttributes(xr, false);
@@ -2065,7 +2065,7 @@ namespace System.Xml.Tests
                 CError.WriteLine("Reader not positioned on correct node");
                 CError.WriteLine("ReadState: {0}", xr.ReadState);
                 CError.WriteLine("NodeType: {0}", xr.NodeType);
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             using (XmlWriter w = CreateWriter())
@@ -2080,7 +2080,7 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore(e.ToString());
                     CError.Compare(w.WriteState, (CurVariation.Param.ToString() == "DocumentType") ? WriteState.Start : WriteState.Element, "WriteState should be Element");
-                    return TEST_PASS;
+                    return;
                 }
                 finally
                 {
@@ -2088,7 +2088,7 @@ namespace System.Xml.Tests
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 17, Desc = "Call WriteAttribute with double quote char in the value", Pri = 1)]
@@ -2163,7 +2163,7 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLine("Reader positioned on {0}", xr.NodeType.ToString());
                         xr.Dispose();
-                        return TEST_FAIL;
+                        Assert.True(false);
                     }
                     w.WriteStartElement("OneHundredAttributes");
                     w.WriteAttributes(xr, false);
@@ -2187,7 +2187,7 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLine("Reader positioned on {0}", xr.NodeType.ToString());
                     xr.Dispose();
-                    return TEST_FAIL;
+                    Assert.True(false);
                 }
 
                 using (XmlWriter w = CreateWriter())
@@ -2213,7 +2213,7 @@ namespace System.Xml.Tests
             {
                 CError.WriteLine("Reader positioned on {0}", xr.NodeType.ToString());
                 xr.Dispose();
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             using (XmlWriter w = CreateWriter())
@@ -2229,7 +2229,7 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
                     CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
                 finally
                 {
@@ -2237,7 +2237,7 @@ namespace System.Xml.Tests
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
     }
 
@@ -2267,11 +2267,11 @@ namespace System.Xml.Tests
                 catch (ArgumentNullException)
                 {
                     CError.Compare(w.WriteState, WriteState.Element, "WriteState should be Element");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 2, Desc = "WriteNode with reader positioned on attribute, no operation", Pri = 1)]
@@ -2297,7 +2297,7 @@ namespace System.Xml.Tests
                         CError.WriteLine("Reader positioned on {0}", xr.NodeType.ToString());
                         xr.Dispose();
                         w.Dispose();
-                        return TEST_FAIL;
+                        Assert.True(false);
                     }
                     w.WriteStartElement("Root");
                     w.WriteNode(xr, false);
@@ -2703,11 +2703,11 @@ namespace System.Xml.Tests
                             CError.Compare(false, "Failed");
                         }
                     }
-                    catch (XmlException xe) { CError.WriteLine(xe.Message); return TEST_PASS; }
+                    catch (XmlException xe) { CError.WriteLine(xe.Message); return; }
                 }
             }
-            catch (ObjectDisposedException e) { CError.WriteLine(e.Message); return TEST_PASS; }
-            return TEST_FAIL;
+            catch (ObjectDisposedException e) { CError.WriteLine(e.Message); return; }
+            Assert.True(false);
         }
 
         //[Variation(Desc = "Call WriteNode with default NS from DTD.UnexpToken")]
@@ -2742,11 +2742,11 @@ namespace System.Xml.Tests
                             CError.Compare(false, "Failed");
                         }
                     }
-                    catch (XmlException xe) { CError.WriteLine(xe.Message); return TEST_PASS; }
+                    catch (XmlException xe) { CError.WriteLine(xe.Message); return; }
                 }
             }
-            catch (ObjectDisposedException e) { CError.WriteLine(e.Message); return TEST_PASS; }
-            return TEST_FAIL;
+            catch (ObjectDisposedException e) { CError.WriteLine(e.Message); return; }
+            Assert.True(false);
         }
 
         //[Variation(id = 22, Desc = "Call WriteNode with reader on element with 100 attributes", Pri = 1)]
@@ -2787,7 +2787,7 @@ namespace System.Xml.Tests
             {
                 CError.WriteLine("Reader positioned on {0}", xr.NodeType);
                 xr.Dispose();
-                return TEST_FAIL;
+                Assert.True(false);
             }
             using (XmlWriter w = CreateWriter())
             {
@@ -2822,7 +2822,7 @@ namespace System.Xml.Tests
             {
                 CError.WriteLine("Reader positioned on {0}", xr.NodeType);
                 xr.Dispose();
-                return TEST_FAIL;
+                Assert.True(false);
             }
             using (XmlWriter w = CreateWriter())
             {
@@ -2852,7 +2852,7 @@ namespace System.Xml.Tests
             {
                 CError.WriteLine("Reader positioned on {0}", xr.NodeType);
                 xr.Dispose();
-                return TEST_FAIL;
+                Assert.True(false);
             }
             using (XmlWriter w = CreateWriter())
             {
@@ -2881,7 +2881,7 @@ namespace System.Xml.Tests
             {
                 CError.WriteLine("Reader positioned on {0}", xr.NodeType);
                 xr.Dispose();
-                return TEST_FAIL;
+                Assert.True(false);
             }
             using (XmlWriter w = CreateWriter())
             {
@@ -3136,9 +3136,9 @@ namespace System.Xml.Tests
                     xr.Dispose();
                 }
             }
-            catch (FileNotFoundException e) { CError.WriteLine(e); return TEST_PASS; }
-            catch (XmlException e) { CError.WriteLine(e); return TEST_PASS; }
-            return TEST_FAIL;
+            catch (FileNotFoundException e) { CError.WriteLine(e); return; }
+            catch (XmlException e) { CError.WriteLine(e); return; }
+            Assert.True(false);
         }
 
         //[Variation(Desc = "WriteNode DTD SYSTEM with identifier", Param = true)]
@@ -3157,8 +3157,8 @@ namespace System.Xml.Tests
                     }
                 }
             }
-            catch (XmlException e) { CError.WriteLine(e); return TEST_PASS; }
-            return TEST_FAIL;
+            catch (XmlException e) { CError.WriteLine(e); return; }
+            Assert.True(false);
         }
 
         //[Variation(Desc = "WriteNode DTD SYSTEM with valid surrogate pair", Param = true)]
@@ -3178,13 +3178,13 @@ namespace System.Xml.Tests
                     }
                 }
             }
-            catch (XmlException e) { CError.WriteLine(e); return TEST_PASS; }
-            catch (FileNotFoundException e) { CError.WriteLine(e); return TEST_PASS; }
+            catch (XmlException e) { CError.WriteLine(e); return; }
+            catch (FileNotFoundException e) { CError.WriteLine(e); return; }
             if (WriterType == WriterType.CharCheckingWriter)
             {
                 return (CompareString(exp)) ? TEST_PASS : TEST_FAIL;
             }
-            return TEST_FAIL;
+            Assert.True(false);
         }
     }
 
@@ -3247,7 +3247,7 @@ namespace System.Xml.Tests
                     return CompareBaseline("textnode_4K_utf8.xml") ? TEST_PASS : TEST_FAIL;
             }
             CError.WriteLine("Error");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 6, Desc = "Input XML in unicode encoding, text node has 1K-1 chars", Pri = 0, Param = "1023")]
@@ -3284,7 +3284,7 @@ namespace System.Xml.Tests
                     return CompareBaseline("textnode_4K_unicode.xml") ? TEST_PASS : TEST_FAIL;
             }
             CError.WriteLine("Error");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
 
@@ -3400,11 +3400,11 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
                     CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 3, Desc = "Call WriteFullEndElement after WriteEndElement", Pri = 2)]
@@ -3423,11 +3423,11 @@ namespace System.Xml.Tests
                 {
                     CError.WriteLineIgnore("Exception: " + e.ToString());
                     CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                    return TEST_PASS;
+                    return;
                 }
             }
             CError.WriteLine("Did not throw exception");
-            return TEST_FAIL;
+            Assert.True(false);
         }
 
         //[Variation(id = 4, Desc = "Call WriteFullEndElement without closing attributes", Pri = 1)]
@@ -3494,11 +3494,11 @@ namespace System.Xml.Tests
                     catch (XmlException e)
                     {
                         CError.WriteLineIgnore("Exception: " + e.ToString());
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 2, Desc = "Multiple NS decl for same prefix (same NS value) on an element", Pri = 1)]
@@ -3518,11 +3518,11 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore("Exception: " + e.ToString());
                         CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 3, Desc = "Element and attribute have same prefix, but different namespace value", Pri = 2)]
@@ -3568,11 +3568,11 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore("Exception: " + e.ToString());
                         CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 6, Desc = "Mapping reserved prefix xml to correct namespace", Pri = 1)]
@@ -3635,11 +3635,11 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore("Exception: " + e.ToString());
                         CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw error");
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 10, Desc = "Create nested element without prefix but with namespace of parent element with a defined prefix", Pri = 2)]
@@ -3761,11 +3761,11 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore("Exception: " + e.ToString());
                         CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 18, Desc = "Map XML NS 'http://www.w3.org/XML/1998/namaespace' to another prefix", Pri = 1)]
@@ -3808,10 +3808,10 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore(e.ToString());
                         CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                        return TEST_PASS;
+                        return;
                     }
                 }
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 21, Desc = "Write element in reserved XMLNS namespace, should error", Pri = 1)]
@@ -3828,10 +3828,10 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore(e.ToString());
                         CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                        return TEST_PASS;
+                        return;
                     }
                 }
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 22, Desc = "Mapping a prefix to empty ns should error", Pri = 1)]
@@ -3849,11 +3849,11 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore("Exception: " + e.ToString());
                         CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 23, Desc = "Pass null prefix to WriteStartElement()", Pri = 1)]
@@ -3956,10 +3956,10 @@ namespace System.Xml.Tests
                     }
                     catch (ArgumentException)
                     {
-                        return TEST_PASS;
+                        return;
                     }
                 }
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 31, Desc = "Pass String.Empty ns to WriteStartElement() when prefix is in scope", Pri = 1)]
@@ -3975,10 +3975,10 @@ namespace System.Xml.Tests
                     }
                     catch (ArgumentException)
                     {
-                        return TEST_PASS;
+                        return;
                     }
                 }
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 31, Desc = "Mapping empty ns uri to a prefix should error", Pri = 1)]
@@ -3995,10 +3995,10 @@ namespace System.Xml.Tests
                     catch (ArgumentException e)
                     {
                         CError.WriteLineIgnore(e.ToString());
-                        return TEST_PASS;
+                        return;
                     }
                 }
-                return TEST_FAIL;
+                Assert.True(false);
             }
         }
 
@@ -4020,11 +4020,11 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore("Exception: " + e.ToString());
                         CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 2, Desc = "Bind NS prefix 'xml' with valid namespace URI", Pri = 1)]
@@ -4083,11 +4083,11 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore("Exception: " + e.ToString());
                         CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 6, Desc = "Write attribute xml:lang with incorrect namespace", Pri = 1)]
@@ -4106,11 +4106,11 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore("Exception: " + e.ToString());
                         CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
 
@@ -4383,11 +4383,11 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore(e.ToString());
                         CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 25, Desc = "Explicitly write namespace attribute that maps XML NS 'http://www.w3.org/XML/1998/namaespace' to another prefix", Pri = 1)]
@@ -4444,11 +4444,11 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore(e.ToString());
                         CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 29, Desc = "Write attribute in reserved XML namespace, should error", Pri = 1)]
@@ -4466,10 +4466,10 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore(e.ToString());
                         CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                        return TEST_PASS;
+                        return;
                     }
                 }
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 30, Desc = "Write attribute in reserved XMLNS namespace, should error", Pri = 1)]
@@ -4487,10 +4487,10 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore(e.ToString());
                         CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                        return TEST_PASS;
+                        return;
                     }
                 }
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 31, Desc = "WriteAttributeString with no namespace under element with empty prefix", Pri = 1)]
@@ -4633,15 +4633,15 @@ namespace System.Xml.Tests
                     catch (XmlException e)
                     {
                         CError.WriteLineIgnore(e.ToString());
-                        return TEST_PASS;
+                        return;
                     }
                     catch (ArgumentException e)
                     {
                         CError.WriteLineIgnore(e.ToString());
-                        return TEST_PASS;
+                        return;
                     }
                 }
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 42, Desc = "WriteStartAttribute with prefix = null, localName = xmlns - case 2", Pri = 1)]
@@ -4779,11 +4779,11 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore("Exception: " + e.ToString());
                         CheckErrorState(w.WriteState);
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 10, Desc = "WriteCData after root element")]
@@ -4802,11 +4802,11 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore("Exception: " + e.ToString());
                         CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 11, Desc = "Call WriteCData twice - that should write two CData blocks", Pri = 1)]
@@ -4945,11 +4945,11 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore("Exception: " + e.ToString());
                         CheckErrorState(w.WriteState);
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw error");
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 6, Desc = "WriteComment with -- in value", Pri = 1)]
@@ -5008,17 +5008,17 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore("Exception: " + e.ToString());
                         CError.Compare(w.WriteState, (WriterType == WriterType.CharCheckingWriter) ? WriteState.Element : WriteState.Error, "WriteState should be Error");
-                        return TEST_PASS;
+                        return;
                     }
                     catch (NullReferenceException e)
                     {
                         CError.WriteLineIgnore("Exception: " + e.ToString());
                         CError.Compare(w.WriteState, (WriterType == WriterType.CharCheckingWriter) ? WriteState.Element : WriteState.Error, "WriteState should be Error");
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw error");
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 12, Desc = "WriteEntityRef with entity defined in doctype", Pri = 1)]
@@ -5137,11 +5137,11 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore("Exception: " + e.ToString());
                         CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 5, Desc = "Character from high surrogate range", Pri = 1)]
@@ -5159,11 +5159,11 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore("Exception: " + e.ToString());
                         CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 7, Desc = "Sanity test, pass 'a'", Pri = 0)]
@@ -5222,7 +5222,7 @@ namespace System.Xml.Tests
                     reader.ReadToDescendant("end"); // should not throw here
                 }
 
-                return TEST_PASS;
+                return;
             }
         }
 
@@ -5308,11 +5308,11 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore("Exception: " + e.ToString());
                         CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 6, Desc = "Invalid low surrogate character", Pri = 1)]
@@ -5330,11 +5330,11 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore("Exception: " + e.ToString());
                         CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 7, Desc = "Swap high-low surrogate characters", Pri = 1)]
@@ -5352,11 +5352,11 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore("Exception: " + e.ToString());
                         CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 8, Desc = "WriteSurrogateCharEntity for special attributes", Pri = 1)]
@@ -5433,17 +5433,17 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore("Exception: " + e.ToString());
                         CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                        return TEST_PASS;
+                        return;
                     }
                     catch (NullReferenceException e)
                     {
                         CError.WriteLineIgnore("Exception: " + e.ToString());
                         CError.Compare(w.WriteState, WriteState.Element, "WriteState should be Element ");
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 5, Desc = "PI name = String.Empty should error", Pri = 1)]
@@ -5461,11 +5461,11 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore("Exception: " + e.ToString());
                         CError.Compare(w.WriteState, (WriterType == WriterType.CharCheckingWriter) ? WriteState.Element : WriteState.Error, "WriteState should be Error");
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 6, Desc = "WritePI with xmlns as the name value")]
@@ -5498,11 +5498,11 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore("Exception: " + e.ToString());
                         CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 8, Desc = "WritePI before XmlDecl", Pri = 1)]
@@ -5520,11 +5520,11 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore("Exception: " + e.ToString());
                         CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 9, Desc = "WritePI (after StartDocument) with name = 'xml' text = 'version = 1.0' should error", Pri = 1)]
@@ -5542,11 +5542,11 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore("Exception: " + e.ToString());
                         CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 10, Desc = "WritePI (before StartDocument) with name = 'xml' text = 'version = 1.0' should error", Pri = 1)]
@@ -5564,11 +5564,11 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore("Exception: " + e.ToString());
                         CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 11, Desc = "Include PI end tag ?> as part of the text value", Pri = 1)]
@@ -5613,11 +5613,11 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore("Exception: " + e.ToString());
                         CheckErrorState(w.WriteState);
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return TEST_FAIL;
+                Assert.True(false);
             }
         }
 
@@ -5646,11 +5646,11 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore(e.ToString());
                         CheckElementState(w.WriteState);//by design 396962 
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 2, Desc = "Sanity test, Name = foo", Pri = 1)]
@@ -5698,17 +5698,17 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore(e.ToString());
                         CheckElementState(w.WriteState);
-                        return TEST_PASS;
+                        return;
                     }
                     catch (XmlException e)
                     {
                         CError.WriteLineIgnore(e.ToString());
                         CheckElementState(w.WriteState);
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return TEST_FAIL;
+                Assert.True(false);
             }
         }
 
@@ -5737,11 +5737,11 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore(e.ToString());
                         CheckElementState(w.WriteState);
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 3, Desc = "Sanity test, Name = foo", Pri = 1)]
@@ -5787,17 +5787,17 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore(e.ToString());
                         CheckElementState(w.WriteState);
-                        return TEST_PASS;
+                        return;
                     }
                     catch (XmlException e)
                     {
                         CError.WriteLineIgnore(e.ToString());
                         CheckElementState(w.WriteState);
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return TEST_FAIL;
+                Assert.True(false);
             }
         }
 
@@ -5827,13 +5827,13 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore(e.ToString());
                         CError.Compare(w.WriteState, (WriterType == WriterType.CharCheckingWriter) ? WriteState.Element : WriteState.Error, "WriteState should be Error");
-                        return TEST_PASS;
+                        return;
                     }
                     catch (NullReferenceException e)
                     {
                         CError.WriteLineIgnore(e.ToString());
                         CError.Compare(w.WriteState, (WriterType == WriterType.CharCheckingWriter) ? WriteState.Element : WriteState.Error, "WriteState should be Error");
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
@@ -5890,11 +5890,11 @@ namespace System.Xml.Tests
                         {
                             CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
                         }
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 6, Desc = "Name starts with :", Param = ":bar", Pri = 1)]
@@ -5915,7 +5915,7 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore(e.ToString());
                         CError.Compare(w.WriteState, (WriterType == WriterType.CharCheckingWriter) ? WriteState.Element : WriteState.Error, "WriteState should be Error");
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
@@ -6005,11 +6005,11 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore("Exception: " + e.ToString());
                         CError.Compare(w.WriteState, WriteState.Error, WriteState.Element, "WriteState should be Error");
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 6, Desc = "WriteChars with count > buffer size", Pri = 1)]
@@ -6123,11 +6123,11 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore("Exception: " + e.ToString());
                         CheckErrorState(w.WriteState);
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 5, Desc = "WriteString with entity reference", Pri = 1)]
@@ -6260,11 +6260,11 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore("Exception: " + e.ToString());
                         CheckErrorState(w.WriteState);
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 15, Desc = "Low surrogate on first position", Pri = 1)]
@@ -6285,11 +6285,11 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore("Exception: " + e.ToString());
                         CheckErrorState(w.WriteState);
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return TEST_FAIL;
+                Assert.True(false);
             }
 
             //[Variation(id = 16, Desc = "Swap low-high surrogates", Pri = 1)]
@@ -6310,11 +6310,11 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore("Exception: " + e.ToString());
                         CheckErrorState(w.WriteState);
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return TEST_FAIL;
+                Assert.True(false);
             }
         }
 
@@ -6412,11 +6412,11 @@ namespace System.Xml.Tests
                     {
                         CError.WriteLineIgnore("Exception: " + e.ToString());
                         CError.Compare(w.WriteState, (WriterType == WriterType.CharCheckingWriter) ? WriteState.Element : WriteState.Error, "WriteState should be Error");
-                        return TEST_PASS;
+                        return;
                     }
                 }
                 CError.WriteLine("Did not throw exception");
-                return TEST_FAIL;
+                Assert.True(false);
             }
         }
 
@@ -6511,7 +6511,7 @@ namespace System.Xml.Tests
                     catch (InvalidOperationException e)
                     {
                         CError.WriteLine(e);
-                        return TEST_FAIL;
+                        Assert.True(false);
                     }
                 }
                 return (CompareReader("<Root attr=\"2 true 3.14 \" />")) ? TEST_PASS : TEST_FAIL;
@@ -6564,13 +6564,13 @@ namespace System.Xml.Tests
                     {
                         case "string":
                             w.WriteValue((string)null);
-                            return TEST_PASS;
+                            return;
                         case "object":
                             try
                             {
                                 w.WriteValue((object)null);
                             }
-                            catch (ArgumentNullException) { return TEST_PASS; }
+                            catch (ArgumentNullException) { return; }
                             break;
                     }
                     throw new CTestFailedException("Test failed.");
@@ -7465,27 +7465,27 @@ namespace System.Xml.Tests
                 }
                 catch (XmlException)
                 {
-                    if (!isValid || (WriterType == WriterType.CustomWriter) && sourceStr.Contains("XmlQualifiedName")) return TEST_PASS;
+                    if (!isValid || (WriterType == WriterType.CustomWriter) && sourceStr.Contains("XmlQualifiedName")) return;
                     CError.Compare(false, "XmlException");
                 }
                 catch (OverflowException)
                 {
-                    if (!isValid) return TEST_PASS;
+                    if (!isValid) return;
                     CError.Compare(false, "OverflowException");
                 }
                 catch (FormatException)
                 {
-                    if (!isValid) return TEST_PASS;
+                    if (!isValid) return;
                     CError.Compare(false, "FormatException");
                 }
                 catch (ArgumentOutOfRangeException)
                 {
-                    if (!isValid) return TEST_PASS;
+                    if (!isValid) return;
                     CError.Compare(false, "ArgumentOutOfRangeException");
                 }
                 catch (InvalidCastException)
                 {
-                    if (!isValid) return TEST_PASS;
+                    if (!isValid) return;
                     CError.Compare(false, "ArgumentException");
                 }
                 finally
@@ -7544,8 +7544,8 @@ namespace System.Xml.Tests
                                 case 9: w.WriteValue(t); break;
                             }
                         }
-                        catch (InvalidOperationException) { return TEST_PASS; }
-                        catch (InvalidCastException) { return TEST_PASS; }
+                        catch (InvalidOperationException) { return; }
+                        catch (InvalidCastException) { return; }
                     }
                 }
                 return (param == 3 && (WriterType == WriterType.CustomWriter)) ? TEST_PASS : TEST_FAIL;
@@ -7570,9 +7570,9 @@ namespace System.Xml.Tests
                 {
                     VerifyValue(typeof(XmlQualifiedName), "p:foo", param);
                 }
-                catch (XmlException) { return TEST_PASS; }
-                catch (InvalidOperationException) { return TEST_PASS; }
-                return TEST_FAIL;
+                catch (XmlException) { return; }
+                catch (InvalidOperationException) { return; }
+                Assert.True(false);
             }
 
             //[Variation(Desc = "1.WriteValue(DateTimeOffset) - valid", Params = new object[] { "2002-12-30T00:00:00-08:00", "<Root>2002-12-30T00:00:00-08:00</Root>" })]
@@ -7682,11 +7682,11 @@ namespace System.Xml.Tests
                         {
                             CError.WriteLineIgnore("Exception: " + e.ToString());
                             CheckErrorState(w.WriteState);
-                            return TEST_PASS;
+                            return;
                         }
                     }
                     CError.WriteLine("Did not throw exception");
-                    return TEST_FAIL;
+                    Assert.True(false);
                 }
 
                 //[Variation(id = 2, Desc = "LookupPrefix with String.Empty should return String.Empty", Pri = 1)]
@@ -7699,7 +7699,7 @@ namespace System.Xml.Tests
                         string s = w.LookupPrefix(String.Empty);
                         CError.Compare(s, String.Empty, "Error");
                     }
-                    return TEST_PASS;
+                    return;
                 }
 
                 //[Variation(id = 3, Desc = "LookupPrefix with generated namespace used for attributes", Pri = 1)]
@@ -7714,7 +7714,7 @@ namespace System.Xml.Tests
                         string exp = "p1";
                         CError.Compare(s, exp, "Error");
                     }
-                    return TEST_PASS;
+                    return;
                 }
 
                 //[Variation(id = 4, Desc = "LookupPrefix for namespace used with element", Pri = 0)]
@@ -7727,7 +7727,7 @@ namespace System.Xml.Tests
                         string s = w.LookupPrefix("foo");
                         CError.Compare(s, "ns1", "Error");
                     }
-                    return TEST_PASS;
+                    return;
                 }
 
                 //[Variation(id = 5, Desc = "LookupPrefix for namespace used with attribute", Pri = 0)]
@@ -7741,7 +7741,7 @@ namespace System.Xml.Tests
                         string s = w.LookupPrefix("foo");
                         CError.Compare(s, "ns1", "Error");
                     }
-                    return TEST_PASS;
+                    return;
                 }
 
                 //[Variation(id = 6, Desc = "Lookup prefix for a default namespace", Pri = 1)]
@@ -7755,7 +7755,7 @@ namespace System.Xml.Tests
                         string s = w.LookupPrefix("foo");
                         CError.Compare(s, String.Empty, "Error");
                     }
-                    return TEST_PASS;
+                    return;
                 }
 
                 //[Variation(id = 7, Desc = "Lookup prefix for nested element with same namespace but different prefix", Pri = 1)]
@@ -7784,7 +7784,7 @@ namespace System.Xml.Tests
 
                         w.WriteEndElement();
                     }
-                    return TEST_PASS;
+                    return;
                 }
 
                 //[Variation(id = 8, Desc = "Lookup prefix for multiple prefix associated with the same namespace", Pri = 1)]
@@ -7798,7 +7798,7 @@ namespace System.Xml.Tests
                         string s = w.LookupPrefix("foo");
                         CError.Compare(s, "y", "Error");
                     }
-                    return TEST_PASS;
+                    return;
                 }
 
                 //[Variation(id = 9, Desc = "Lookup prefix for namespace defined outside the scope of an empty element and also defined in its parent", Pri = 1)]
@@ -7814,7 +7814,7 @@ namespace System.Xml.Tests
                         CError.Compare(s, "x", "Error");
                         w.WriteEndElement();
                     }
-                    return TEST_PASS;
+                    return;
                 }
 
                 //[Variation(id = 10, Desc = "Bug 53940: Lookup prefix for namespace declared as default and also with a prefix", Pri = 1)]
@@ -7833,7 +7833,7 @@ namespace System.Xml.Tests
                         CError.Compare(s, String.Empty, "Error in root element");
                         w.WriteEndElement();
                     }
-                    return TEST_PASS;
+                    return;
                 }
             }
 
@@ -7850,7 +7850,7 @@ namespace System.Xml.Tests
                         w.WriteAttributeString("xml", "space", null, "preserve");
                         CError.Compare(w.XmlSpace, XmlSpace.Preserve, "Error");
                     }
-                    return TEST_PASS;
+                    return;
                 }
 
                 //[Variation(id = 2, Desc = "Verify XmlSpace as Default", Pri = 0)]
@@ -7863,7 +7863,7 @@ namespace System.Xml.Tests
                         w.WriteAttributeString("xml", "space", null, "default");
                         CError.Compare(w.XmlSpace, XmlSpace.Default, "Error");
                     }
-                    return TEST_PASS;
+                    return;
                 }
 
                 //[Variation(id = 3, Desc = "Verify XmlSpace as None", Pri = 0)]
@@ -7875,7 +7875,7 @@ namespace System.Xml.Tests
                         w.WriteStartElement("Root");
                         CError.Compare(w.XmlSpace, XmlSpace.None, "Error");
                     }
-                    return TEST_PASS;
+                    return;
                 }
 
                 //[Variation(id = 4, Desc = "Verify XmlSpace within an empty element", Pri = 1)]
@@ -7893,7 +7893,7 @@ namespace System.Xml.Tests
                         w.WriteEndElement();
                         w.WriteEndElement();
                     }
-                    return TEST_PASS;
+                    return;
                 }
 
                 //[Variation(id = 5, Desc = "Verify XmlSpace - scope with nested elements (both PROLOG and EPILOG)", Pri = 1)]
@@ -7926,7 +7926,7 @@ namespace System.Xml.Tests
                         w.WriteEndElement();
                     }
 
-                    return TEST_PASS;
+                    return;
                 }
 
                 //[Variation(id = 6, Desc = "Verify XmlSpace - outside defined scope", Pri = 1)]
@@ -7944,7 +7944,7 @@ namespace System.Xml.Tests
                         w.WriteEndElement();
                     }
 
-                    return TEST_PASS;
+                    return;
                 }
 
                 //[Variation(id = 7, Desc = "Verify XmlSpace with invalid space value", Pri = 0)]
@@ -7963,11 +7963,11 @@ namespace System.Xml.Tests
                         {
                             CError.WriteLineIgnore(e.ToString());
                             CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                            return TEST_PASS;
+                            return;
                         }
                     }
                     CError.WriteLine("Exception expected");
-                    return TEST_FAIL;
+                    Assert.True(false);
                 }
 
                 //[Variation(id = 8, Desc = "Duplicate xml:space attr should error", Pri = 1)]
@@ -7986,11 +7986,11 @@ namespace System.Xml.Tests
                         {
                             CError.WriteLineIgnore(e.ToString());
                             CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                            return TEST_PASS;
+                            return;
                         }
                     }
                     CError.WriteLine("Exception expected");
-                    return TEST_FAIL;
+                    Assert.True(false);
                 }
 
                 //[Variation(id = 9, Desc = "Verify XmlSpace value when received through WriteString", Pri = 1)]
@@ -8007,7 +8007,7 @@ namespace System.Xml.Tests
                         CError.Compare(w.XmlSpace, XmlSpace.Default, "Error");
                         w.WriteEndElement();
                     }
-                    return TEST_PASS;
+                    return;
                 }
             }
 
@@ -8029,7 +8029,7 @@ namespace System.Xml.Tests
                         w.WriteEndElement();
                         w.WriteEndElement();
                     }
-                    return TEST_PASS;
+                    return;
                 }
 
                 //[Variation(id = 2, Desc = "Verify that default value of XmlLang is NULL", Pri = 1)]
@@ -8044,10 +8044,10 @@ namespace System.Xml.Tests
                             w.Dispose();
                             CError.WriteLine("Default value if no xml:lang attributes are currently on the stack should be null");
                             CError.WriteLine("Actual value: {0}", w.XmlLang.ToString());
-                            return TEST_FAIL;
+                            Assert.True(false);
                         }
                     }
-                    return TEST_PASS;
+                    return;
                 }
 
                 //[Variation(id = 3, Desc = "Verify XmlLang scope inside nested elements (both PROLOG and EPILOG)", Pri = 1)]
@@ -8079,7 +8079,7 @@ namespace System.Xml.Tests
                         CError.Compare(w.XmlLang, null, "Error");
                         w.WriteEndElement();
                     }
-                    return TEST_PASS;
+                    return;
                 }
 
                 //[Variation(id = 4, Desc = "Duplicate xml:lang attr should error", Pri = 1)]
@@ -8101,11 +8101,11 @@ namespace System.Xml.Tests
                         {
                             CError.WriteLineIgnore(e.ToString());
                             CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                            return TEST_PASS;
+                            return;
                         }
                     }
                     CError.WriteLine("Exception expected");
-                    return TEST_FAIL;
+                    Assert.True(false);
                 }
 
                 //[Variation(id = 5, Desc = "Verify XmlLang value when received through WriteAttributes", Pri = 1)]
@@ -8134,7 +8134,7 @@ namespace System.Xml.Tests
                         CError.Compare(w.XmlLang, "fr", "Error");
                         w.WriteEndElement();
                     }
-                    return TEST_PASS;
+                    return;
                 }
 
                 //[Variation(id = 6, Desc = "Verify XmlLang value when received through WriteString")]
@@ -8151,7 +8151,7 @@ namespace System.Xml.Tests
                         CError.Compare(w.XmlLang, "en-US", "Error");
                         w.WriteEndElement();
                     }
-                    return TEST_PASS;
+                    return;
                 }
 
                 //[Variation(id = 7, Desc = "Should not check XmlLang value", Pri = 2)]
@@ -8171,9 +8171,9 @@ namespace System.Xml.Tests
 
                         string strExp = "<Root xml:lang=\"" + langs[i] + "\" />";
                         if (!CompareReader(strExp))
-                            return TEST_FAIL;
+                            Assert.True(false);
                     }
-                    return TEST_PASS;
+                    return;
                 }
 
                 //[Variation(id = 8, Desc = "More XmlLang with valid sequence", Pri = 1)]
@@ -8185,7 +8185,7 @@ namespace System.Xml.Tests
                         w.WriteStartElement("Root");
                         w.WriteAttributeString("xml", "lang", null, "U.S.A.");
                     }
-                    return TEST_PASS;
+                    return;
                 }
             }
 
@@ -8323,11 +8323,11 @@ namespace System.Xml.Tests
                         catch (ArgumentNullException)
                         {
                             CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                            return TEST_PASS;
+                            return;
                         }
                     }
                     CError.WriteLine("Did not throw exception");
-                    return TEST_FAIL;
+                    Assert.True(false);
                 }
 
                 //[Variation(id = 12, Desc = "WriteRaw with valid surrogate pair", Pri = 1)]
@@ -8364,11 +8364,11 @@ namespace System.Xml.Tests
                         {
                             CError.WriteLineIgnore(e.ToString());
                             CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                            return TEST_PASS;
+                            return;
                         }
                     }
                     CError.WriteLine("Did not throw exception");
-                    return TEST_FAIL;
+                    Assert.True(false);
                 }
 
                 //[Variation(id = 14, Desc = "Index = Count = 0", Pri = 1)]
@@ -8438,7 +8438,7 @@ namespace System.Xml.Tests
                     }
                     CError.Compare(strRes, strBase64, "Base64 value");
 
-                    return TEST_PASS;
+                    return;
                 }
 
                 //[Variation(id = 20, Desc = "WriteBase64 with count > buffer size", Pri = 1)]
@@ -8490,11 +8490,11 @@ namespace System.Xml.Tests
                         catch (ArgumentNullException)
                         {
                             CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
-                            return TEST_PASS;
+                            return;
                         }
                     }
                     CError.WriteLine("Did not throw exception");
-                    return TEST_FAIL;
+                    Assert.True(false);
                 }
 
                 //[Variation(id = 80, Desc = "Index = Count = 0", Pri = 1)]
@@ -8542,12 +8542,12 @@ namespace System.Xml.Tests
                         }
                         catch (InvalidOperationException)
                         {
-                            return TEST_PASS;
+                            return;
                         }
                     }
 
                     CError.WriteLine("Did not throw exception");
-                    return TEST_FAIL;
+                    Assert.True(false);
                 }
 
                 //[Variation(id = 94, Desc = "WriteBase64 should flush the buffer if WriteString is called", Pri = 1)]
@@ -8569,7 +8569,7 @@ namespace System.Xml.Tests
 
                     string strExp = "<fromname>=?gb2312?B?AQI=?=</fromname>";
                     CompareString(strExp);
-                    return TEST_PASS;
+                    return;
                 }
 
                 //[Variation(id = 95, Desc = "XmlWriter.WriteBase64 inserts new lines where they should not be...", Pri = 1)]
@@ -8726,10 +8726,10 @@ namespace System.Xml.Tests
                     if (String.Compare(s, "PEEvPg==") != 0)
                     {
                         CError.WriteLine("Unexpected output : {0}", s);
-                        return TEST_FAIL;
+                        Assert.True(false);
                     }
 
-                    return TEST_PASS;
+                    return;
                 }
             }
 
@@ -8749,7 +8749,7 @@ namespace System.Xml.Tests
                         w.WriteBinHex(buffer, 0, str.Length * 2);
                         w.WriteEndElement();
                     }
-                    return TEST_PASS;
+                    return;
                 }
 
                 //[Variation(id = 2, Desc = "WriteBinHex with count > buffer size", Pri = 1)]
@@ -8808,11 +8808,11 @@ namespace System.Xml.Tests
                             {
                                 CheckErrorState(w.WriteState);
                             }
-                            return TEST_PASS;
+                            return;
                         }
                     }
                     CError.WriteLine("Did not throw exception");
-                    return TEST_FAIL;
+                    Assert.True(false);
                 }
 
                 //[Variation(id = 8, Desc = "Index = Count = 0", Pri = 1)]
@@ -8890,9 +8890,9 @@ namespace System.Xml.Tests
                     }
                     catch (InvalidOperationException)
                     {
-                        return TEST_FAIL;
+                        Assert.True(false);
                     }
-                    return TEST_PASS;
+                    return;
                 }
 
                 //[Variation(id = 2, Desc = "Verify correct state when writing in Prolog", Pri = 1)]
@@ -8908,7 +8908,7 @@ namespace System.Xml.Tests
                         CError.Compare(w.WriteState, WriteState.Element, "Error");
                         w.WriteEndElement();
                     }
-                    return TEST_PASS;
+                    return;
                 }
 
                 //[Variation(id = 3, Desc = "Verify correct state when writing an attribute", Pri = 1)]
@@ -8924,7 +8924,7 @@ namespace System.Xml.Tests
                         w.WriteEndAttribute();
                         w.WriteEndElement();
                     }
-                    return TEST_PASS;
+                    return;
                 }
 
                 //[Variation(id = 4, Desc = "Verify correct state when writing element content", Pri = 1)]
@@ -8938,7 +8938,7 @@ namespace System.Xml.Tests
                         CError.Compare(w.WriteState, WriteState.Content, "Error");
                         w.WriteEndElement();
                     }
-                    return TEST_PASS;
+                    return;
                 }
 
                 //[Variation(id = 5, Desc = "Verify correct state after Close has been called", Pri = 1)]
@@ -8950,7 +8950,7 @@ namespace System.Xml.Tests
                     w.WriteEndElement();
                     w.Dispose();
                     CError.Compare(w.WriteState, WriteState.Closed, "Error");
-                    return TEST_PASS;
+                    return;
                 }
 
                 //[Variation(id = 6, Desc = "Verify WriteState = Error after an exception", Pri = 1)]
@@ -8970,7 +8970,7 @@ namespace System.Xml.Tests
                             CError.Compare(w.WriteState, WriteState.Error, "Error");
                         }
                     }
-                    return TEST_PASS;
+                    return;
                 }
 
                 //[Variation(id = 7, Desc = "Call WriteStartDocument after WriteState = Error", Pri = 1, Param = "WriteStartDocument")]
@@ -9025,7 +9025,7 @@ namespace System.Xml.Tests
                                 }
                                 catch (InvalidOperationException)
                                 {
-                                    return TEST_PASS;
+                                    return;
                                 }
                             }
                             catch (ArgumentException)
@@ -9039,16 +9039,16 @@ namespace System.Xml.Tests
                                     }
                                     catch (ArgumentException)
                                     {
-                                        return TEST_PASS;
+                                        return;
                                     }
                                 }
                             }
                             // Flush/LookupPrefix is a NOOP
                             if (CurVariation.Param.ToString() == "Flush" || CurVariation.Param.ToString() == "LookupPrefix")
-                                return TEST_PASS;
+                                return;
                         }
                     }
-                    return TEST_FAIL;
+                    Assert.True(false);
                 }
 
                 //[Variation(id = 33, Desc = "XmlSpace property after WriteState = Error", Pri = 1, Param = "XmlSpace")]
@@ -9077,7 +9077,7 @@ namespace System.Xml.Tests
                             }
                         }
                     }
-                    return TEST_PASS;
+                    return;
                 }
 
                 //[Variation(id = 6, Desc = "Call WriteStartDocument after Close()", Pri = 1, Param = "WriteStartDocument")]
@@ -9124,7 +9124,7 @@ namespace System.Xml.Tests
                         }
                         catch (InvalidOperationException)
                         {
-                            return TEST_PASS;
+                            return;
                         }
                     }
                     catch (ArgumentException)
@@ -9137,15 +9137,15 @@ namespace System.Xml.Tests
                             }
                             catch (ArgumentException)
                             {
-                                return TEST_PASS;
+                                return;
                             }
                         }
                     }
                     // Flush/LookupPrefix is a NOOP
                     if (CurVariation.Param.ToString() == "Flush" || CurVariation.Param.ToString() == "LookupPrefix")
-                        return TEST_PASS;
+                        return;
 
-                    return TEST_FAIL;
+                    Assert.True(false);
                 }
 
                 private void InvokeMethod(XmlWriter w, string methodName)
@@ -9291,11 +9291,11 @@ namespace System.Xml.Tests
                         }
                         catch (InvalidOperationException)
                         {
-                            return TEST_PASS;
+                            return;
                         }
                     }
 
-                    return TEST_FAIL;
+                    Assert.True(false);
                 }
 
                 //[Variation(id = 5, Desc = "XmlWellformedWriter wrapping another XmlWriter should check the duplicate attributes first", Pri = 1)]
@@ -9314,11 +9314,11 @@ namespace System.Xml.Tests
                             }
                             catch (XmlException)
                             {
-                                return TEST_PASS;
+                                return;
                             }
                         }
                     }
-                    return TEST_FAIL;
+                    Assert.True(false);
                 }
 
                 //[Variation(id = 6, Desc = "XmlWriter::WriteStartDocument(true)", Pri = 1, Param = true)]
@@ -9501,8 +9501,8 @@ namespace System.Xml.Tests
                     {
                         ((IDisposable)w).Dispose();
                     }
-                    catch (ObjectDisposedException e) { CError.WriteLine(e.Message); return TEST_PASS; }
-                    return TEST_FAIL;
+                    catch (ObjectDisposedException e) { CError.WriteLine(e.Message); return; }
+                    Assert.True(false);
                 }
 
                 //[Variation(id = 4, Desc = "Close() should be allowed when XML doesn't have content", Pri = 1)]
@@ -9521,11 +9521,11 @@ namespace System.Xml.Tests
                         CError.WriteLine(e.Message);
                         if (e.Message.EndsWith(".."))
                         {
-                            return TEST_FAIL;
+                            Assert.True(false);
                         }
-                        return TEST_FAIL;
+                        Assert.True(false);
                     }
-                    return TEST_PASS;
+                    return;
                 }
 
                 //[Variation(id = 5, Desc = "XmlRawTextWriters need to call steam.Close in a finally block", Pri = 1)]
@@ -9545,7 +9545,7 @@ namespace System.Xml.Tests
                             w.Dispose();
 
                             CError.WriteLine("expected exception wasn't thrown");
-                            return TEST_FAIL;
+                            Assert.True(false);
                         }
                         catch (Exception ex)
                         {
@@ -9581,11 +9581,11 @@ namespace System.Xml.Tests
                             catch (Exception Ex)
                             {
                                 Console.WriteLine(Ex.Message);
-                                return TEST_PASS;
+                                return;
                             }
                         }
                     }
-                    return TEST_FAIL;
+                    Assert.True(false);
                 }
 
                 //[Variation("XmlWriter: Setting Indenting to false still allows indending while writing base64 out")]
@@ -9639,9 +9639,9 @@ namespace System.Xml.Tests
                     }
                     catch (System.InvalidOperationException)
                     {
-                        return TEST_PASS;
+                        return;
                     }
-                    return TEST_FAIL;
+                    Assert.True(false);
                 }
             }
         }
