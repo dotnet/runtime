@@ -18718,15 +18718,14 @@ void Compiler::fgOrderBlockOps(GenTreePtr  tree,
         assert(srcPtrOrVal->OperIsIndir());
         srcPtrOrVal = srcPtrOrVal->AsIndir()->Addr();
     }
-    GenTreePtr sizeNode = (destBlk->gtOper == GT_DYN_BLK) ? destBlk->AsDynBlk()->gtDynamicSize : nullptr;
-    noway_assert((sizeNode != nullptr) || ((destBlk->gtFlags & GTF_REVERSE_OPS) == 0));
+
     assert(destAddr != nullptr);
     assert(srcPtrOrVal != nullptr);
 
     GenTreePtr ops[3] = {
         destAddr,    // Dest address
         srcPtrOrVal, // Val / Src address
-        sizeNode     // Size of block
+        nullptr      // Size of block
     };
 
     regMaskTP regs[3] = {reg0, reg1, reg2};
@@ -18741,7 +18740,16 @@ void Compiler::fgOrderBlockOps(GenTreePtr  tree,
             {2, 1, 0}  //          true            |       GTF_REVERSE_OPS
         };
 
-    int orderNum = ((destBlk->gtFlags & GTF_REVERSE_OPS) != 0) * 1 + ((tree->gtFlags & GTF_REVERSE_OPS) != 0) * 2;
+    int orderNum = ((tree->gtFlags & GTF_REVERSE_OPS) == 0) ? 0 : 2;
+    if (destBlk->OperIs(GT_DYN_BLK))
+    {
+        GenTreeDynBlk* const dynBlk = destBlk->AsDynBlk();
+        if (dynBlk->gtEvalSizeFirst)
+        {
+            orderNum++;
+        }
+        ops[2] = dynBlk->gtDynamicSize;
+    }
 
     assert(orderNum < 4);
 
