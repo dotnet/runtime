@@ -257,9 +257,8 @@ namespace System.Net.Http
                 await FlushAsync(cancellationToken).ConfigureAwait(false);
 
                 // Parse the response status line and headers
-                var responseContent = new HttpConnectionContent(CancellationToken.None);
-                var response = new HttpResponseMessage() { RequestMessage = request, Content = responseContent };
-                ParseStatusLine(response, await ReadNextLineAsync(cancellationToken).ConfigureAwait(false));
+                var response = new HttpResponseMessage() { RequestMessage = request, Content = new HttpConnectionContent(CancellationToken.None) };
+                ParseStatusLine(await ReadNextLineAsync(cancellationToken).ConfigureAwait(false), response);
                 while (true)
                 {
                     ArraySegment<byte> line = await ReadNextLineAsync(cancellationToken).ConfigureAwait(false);
@@ -282,9 +281,9 @@ namespace System.Net.Http
                 {
                     responseStream = EmptyReadStream.Instance;
                 }
-                else if (responseContent.Headers.ContentLength != null)
+                else if (response.Content.Headers.ContentLength != null)
                 {
-                    long contentLength = responseContent.Headers.ContentLength.GetValueOrDefault();
+                    long contentLength = response.Content.Headers.ContentLength.GetValueOrDefault();
                     responseStream = contentLength == 0 ?
                         (HttpContentReadStream)EmptyReadStream.Instance :
                         new ContentLengthReadStream(this, contentLength);
@@ -297,7 +296,7 @@ namespace System.Net.Http
                 {
                     responseStream = new ConnectionCloseReadStream(this);
                 }
-                responseContent.SetStream(responseStream);
+                ((HttpConnectionContent)response.Content).SetStream(responseStream);
 
                 return response;
             }
@@ -313,7 +312,7 @@ namespace System.Net.Http
             }
         }
 
-        private void ParseStatusLine(HttpResponseMessage response, Span<byte> line)
+        private void ParseStatusLine(Span<byte> line, HttpResponseMessage response)
         {
             if (line.Length < 14 || // "HTTP/1.1 123\r\n" with optional phrase before the crlf
                 line[0] != 'H' ||
