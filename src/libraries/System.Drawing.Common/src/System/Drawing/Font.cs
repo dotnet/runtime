@@ -105,7 +105,7 @@ namespace System.Drawing
         /// </summary>
         public Font(string familyName, float emSize, FontStyle style, GraphicsUnit unit, byte gdiCharSet, bool gdiVerticalFont)
         {
-            if (float.IsNaN(emSize) || float.IsInfinity(emSize) || emSize <= 0)
+            if (!float.IsFinite(emSize) || emSize <= 0)
             {
                 throw new ArgumentException(SR.Format(SR.InvalidBoundArgument, "emSize", emSize, 0, "System.Single.MaxValue"), "emSize");
             }
@@ -222,7 +222,7 @@ namespace System.Drawing
                 throw new ArgumentNullException(nameof(family));
             }
 
-            if (float.IsNaN(emSize) || float.IsInfinity(emSize) || emSize <= 0)
+            if (!float.IsFinite(emSize) || emSize <= 0)
             {
                 throw new ArgumentException(SR.Format(SR.InvalidBoundArgument, nameof(emSize), emSize, 0, "System.Single.MaxValue"), nameof(emSize));
             }
