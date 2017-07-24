@@ -53,17 +53,19 @@ goto :Arg_Loop
 :: is already configured to use that toolset. Otherwise, we will fallback to using the VS2015
 :: toolset if it is installed. Finally, we will fail the script if no supported VS instance
 :: can be found.
-if not defined VisualStudioVersion (
-    if defined VS150COMNTOOLS (
-        call "%VS150COMNTOOLS%VsDevCmd.bat"
-        goto :VS2017
-    ) else if defined VS140COMNTOOLS (
-        call "%VS140COMNTOOLS%VsDevCmd.bat"
-        goto :VS2015
-    )
-    goto :MissingVersion
-)
 
+if defined VisualStudioVersion goto :RunVCVars
+
+set _VSWHERE="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
+if exist %_VSWHERE% (
+  for /f "usebackq tokens=*" %%i in (`%_VSWHERE% -latest -property installationPath`) do set _VSCOMNTOOLS=%%i\Common7\Tools
+)
+if not exist "%_VSCOMNTOOLS%" set _VSCOMNTOOLS=%VS140COMNTOOLS%
+if not exist "%_VSCOMNTOOLS%" goto :MissingVersion
+
+call "%_VSCOMNTOOLS%\VsDevCmd.bat"
+
+:RunVCVars
 if "%VisualStudioVersion%"=="15.0" (
     goto :VS2017
 ) else if "%VisualStudioVersion%"=="14.0" (
@@ -72,7 +74,7 @@ if "%VisualStudioVersion%"=="15.0" (
 
 :MissingVersion
 :: Can't find VS 2015 or 2017
-echo Error: Visual Studio 2015 or 2017 required  
+echo Error: Visual Studio 2015 or 2017 required
 echo        Please see https://github.com/dotnet/corefx/tree/master/Documentation for build instructions.
 exit /b 1
 
