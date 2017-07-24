@@ -3,7 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics.Tracing;
-#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
+#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue https://github.com/dotnet/corefx/issues/4864 
 using Microsoft.Diagnostics.Tracing.Session;
 #endif
 using Xunit;
@@ -18,7 +18,6 @@ using System.Threading.Tasks;
 
 namespace BasicEventSourceTests
 {
-#if USE_ETW // TODO: Enable when TraceEvent is available on CoreCLR. GitHub issue #4864.
     public class TestEventCounter
     {
         private sealed class MyEventSource : EventSource
@@ -52,14 +51,17 @@ namespace BasicEventSourceTests
             }
         }
 
+#if USE_ETW
         [Fact]
         public void Test_Write_Metric_ETW()
         {
+
             using (var listener = new EtwListener())
             {
                 Test_Write_Metric(listener);
             }
         }
+#endif
 
         private void Test_Write_Metric(Listener listener)
         {
@@ -72,84 +74,164 @@ namespace BasicEventSourceTests
                 tests.Add(new SubTest("Log 1 event",
                     delegate ()
                     {
-                        listener.EnableTimer(logger, 1); /* Poll every 1 s */
-                        logger.Request(37);
-                        Thread.Sleep(1500); // Sleep for 1.5 seconds
+                        listener.EnableTimer(logger, 0.2); /* Poll every 200 msec */
+                        logger.Request(5);
+                        Sleep(280); // Sleep for 280 msec
                         listener.EnableTimer(logger, 0);
                     },
                     delegate (List<Event> evts)
                     {
-                        Assert.Equal(2, evts.Count);
-                        ValidateSingleEventCounter(evts[0], "Request", 1, 37, 0, 37, 37);
+                        // There will be two events (request and error) for time 0 and 2 more at 1 second and 2 more when we shut it off.  
+                        Assert.Equal(6, evts.Count);
+                        ValidateSingleEventCounter(evts[0], "Request", 0, 0, 0, 0, 0);
+                        ValidateSingleEventCounter(evts[1], "Error", 0, 0, 0, 0, 0);
+                        ValidateSingleEventCounter(evts[2], "Request", 1, 5, 0, 5, 5);
+                        ValidateSingleEventCounter(evts[3], "Error", 0, 0, 0, 0, 0);
+                        ValidateSingleEventCounter(evts[4], "Request", 0, 0, 0, 0, 0);
+                        ValidateSingleEventCounter(evts[5], "Error", 0, 0, 0, 0, 0);
                     }));
                 /*************************************************************************/
                 tests.Add(new SubTest("Log 2 event in single period",
                     delegate ()
                     {
-                        listener.EnableTimer(logger, 1); /* Poll every 1 s */
-                        logger.Request(37);
-                        logger.Request(25);
-                        Thread.Sleep(1500); // Sleep for 1.5 seconds
+                        listener.EnableTimer(logger, 0.2); /* Poll every .2 s */
+                        logger.Request(5);
+                        logger.Request(10);
+                        Sleep(280); // Sleep for .28 seconds
                         listener.EnableTimer(logger, 0);
                     },
                     delegate (List<Event> evts)
                     {
-                        Assert.Equal(2, evts.Count);
-                        ValidateSingleEventCounter(evts[0], "Request", 2, 31, 6, 25, 37);
+                        Assert.Equal(6, evts.Count);
+                        ValidateSingleEventCounter(evts[0], "Request", 0, 0, 0, 0, 0);
+                        ValidateSingleEventCounter(evts[1], "Error", 0, 0, 0, 0, 0);
+                        ValidateSingleEventCounter(evts[2], "Request", 2, 7.5f, 2.5f, 5, 10);
+                        ValidateSingleEventCounter(evts[3], "Error", 0, 0, 0, 0, 0);
+                        ValidateSingleEventCounter(evts[4], "Request", 0, 0, 0, 0, 0);
+                        ValidateSingleEventCounter(evts[5], "Error", 0, 0, 0, 0, 0);
                     }));
                 /*************************************************************************/
                 tests.Add(new SubTest("Log 2 event in two periods",
                     delegate ()
                     {
-                        listener.EnableTimer(logger, 1); /* Poll every 1 s */
-                        logger.Request(37);
-                        Thread.Sleep(1500); // Sleep for 1.5 seconds
-                        logger.Request(25);
-                        Thread.Sleep(1000); // Sleep for 1 seconds (at time = 2.5 second exactly two messages should be received)
+                        listener.EnableTimer(logger, .2); /* Poll every .2 s */
+                        logger.Request(5);
+                        Sleep(280); // Sleep for .28 seconds
+                        logger.Request(10);
+                        Sleep(220); // Sleep for .22 seconds (at time = .28 second exactly size messages should be received)
                         listener.EnableTimer(logger, 0);
                     },
                     delegate (List<Event> evts)
                     {
-                        Assert.Equal(4, evts.Count);
-                        ValidateSingleEventCounter(evts[0], "Request", 1, 37, 0, 37, 37);
-                        ValidateSingleEventCounter(evts[2], "Request", 1, 25, 0, 25, 25);
+                        Assert.Equal(8, evts.Count);
+                        ValidateSingleEventCounter(evts[0], "Request", 0, 0, 0, 0, 0);
+                        ValidateSingleEventCounter(evts[1], "Error", 0, 0, 0, 0, 0);
+                        ValidateSingleEventCounter(evts[2], "Request", 1, 5, 0, 5, 5);
+                        ValidateSingleEventCounter(evts[3], "Error", 0, 0, 0, 0, 0);
+                        ValidateSingleEventCounter(evts[4], "Request", 1, 10, 0, 10, 10);
+                        ValidateSingleEventCounter(evts[5], "Error", 0, 0, 0, 0, 0);
+                        ValidateSingleEventCounter(evts[6], "Request", 0, 0, 0, 0, 0);
+                        ValidateSingleEventCounter(evts[7], "Error", 0, 0, 0, 0, 0);
                     }));
                 /*************************************************************************/
                 tests.Add(new SubTest("Log 2 different events in a period",
                     delegate ()
                     {
-                        listener.EnableTimer(logger, 1); /* Poll every 1 s */
+                        listener.EnableTimer(logger, .2); /* Poll every .2 s */
                         logger.Request(25);
                         logger.Error();
-                        Thread.Sleep(1500); // Sleep for 1.5 seconds
+                        Sleep(280); // Sleep for .28 seconds
                         listener.EnableTimer(logger, 0);
                     },
                     delegate (List<Event> evts)
                     {
-                        Assert.Equal(2, evts.Count);
-                        ValidateSingleEventCounter(evts[0], "Request", 1, 25, 0, 25, 25);
-                        ValidateSingleEventCounter(evts[1], "Error", 1, 1, 0, 1, 1);
+                        Assert.Equal(6, evts.Count);
+                        ValidateSingleEventCounter(evts[0], "Request", 0, 0, 0, 0, 0);
+                        ValidateSingleEventCounter(evts[1], "Error", 0, 0, 0, 0, 0);
+                        ValidateSingleEventCounter(evts[2], "Request", 1, 25, 0, 25, 25);
+                        ValidateSingleEventCounter(evts[3], "Error", 1, 1, 0, 1, 1);
+                        ValidateSingleEventCounter(evts[4], "Request", 0, 0, 0, 0, 0);
+                        ValidateSingleEventCounter(evts[5], "Error", 0, 0, 0, 0, 0);
                     }));
+
+                /*************************************************************************/
+                tests.Add(new SubTest("Explicit polling ",
+                    delegate ()
+                    {
+                        listener.EnableTimer(logger, 0);  /* Turn off (but also poll once) */
+                        logger.Request(5);
+                        logger.Request(10);
+                        logger.Error();
+                        listener.EnableTimer(logger, 0);  /* Turn off (but also poll once) */
+                        logger.Request(8);
+                        logger.Error();
+                        logger.Error();
+                        listener.EnableTimer(logger, 0);  /* Turn off (but also poll once) */
+                    },
+                    delegate (List<Event> evts)
+                    {
+                        Assert.Equal(6, evts.Count);
+                        ValidateSingleEventCounter(evts[0], "Request", 0, 0, 0, 0, 0);
+                        ValidateSingleEventCounter(evts[1], "Error", 0, 0, 0, 0, 0);
+                        ValidateSingleEventCounter(evts[2], "Request", 2, 7.5f, 2.5f, 5, 10);
+                        ValidateSingleEventCounter(evts[3], "Error", 1, 1, 0, 1, 1);
+                        ValidateSingleEventCounter(evts[4], "Request", 1, 8, 0, 8, 8);
+                        ValidateSingleEventCounter(evts[5], "Error", 2, 1, 0, 1, 1);
+                    }));
+
+                /*************************************************************************/
+                // TODO expose Dispose() method and activate this test.  
+#if EventCounterDispose
+                tests.Add(new SubTest("EventCounter.Dispose()",
+                    delegate ()
+                    {
+                        // Creating and destroying 
+                        var myCounter = new EventCounter("counter for a transient object", logger);
+                        myCounter.WriteMetric(10);
+                        listener.EnableTimer(logger, 0);  /* Turn off (but also poll once) */
+                        myCounter.Dispose();
+                        listener.EnableTimer(logger, 0);  /* Turn off (but also poll once) */
+                    },
+                    delegate (List<Event> evts)
+                    {
+                        Assert.Equal(5, evts.Count);
+                        ValidateSingleEventCounter(evts[0], "Request", 0, 0, 0, 0, 0);
+                        ValidateSingleEventCounter(evts[1], "Error", 0, 0, 0, 0, 0);
+                        ValidateSingleEventCounter(evts[2], "counter for a transient object", 1, 10, 0, 10, 10);
+                        ValidateSingleEventCounter(evts[3], "Request", 0, 0, 0, 0, 0);
+                        ValidateSingleEventCounter(evts[4], "Error", 0, 0, 0, 0, 0);
+                    }));
+#endif 
                 /*************************************************************************/
                 EventTestHarness.RunTests(tests, listener, logger);
             }
             TestUtilities.CheckNoEventSourcesRunning("Stop");
         }
 
-        private static void ValidateSingleEventCounter(Event evt, string counterName, int count, float sum, float sumSquared, float min, float max)
+        // THread.Sleep has proven unreliable, sometime sleeping much shorter than it should. 
+        // This makes sure it at least sleeps 'msec' at a miniumum.  
+        private static void Sleep(int minMSec)
+        {
+            var startTime = DateTime.UtcNow;
+            while ((DateTime.UtcNow - startTime).TotalMilliseconds < minMSec)
+                Thread.Sleep(1);
+        }
+
+        private static void ValidateSingleEventCounter(Event evt, string counterName, int count, float mean, float standardDeviation, float min, float max)
         {
             object payload = ValidateEventHeaderAndGetPayload(evt);
             var payloadContent = payload as IDictionary<string, object>;
             Assert.NotNull(payloadContent);
-            ValidateEventCounter(counterName, count, sum, sumSquared, min, max, payloadContent);
+            ValidateEventCounter(counterName, count, mean, standardDeviation, min, max, payloadContent);
         }
 
         private static object ValidateEventHeaderAndGetPayload(Event evt)
         {
             Assert.Equal("EventCounters", evt.EventName);
-            List<string> payloadNames = evt.PayloadNames.ToList();
-            Assert.Equal(1, payloadNames.Count);
-            Assert.Equal("Payload", payloadNames[0]);
+            Assert.Equal(1, evt.PayloadCount);
+            Assert.NotNull(evt.PayloadNames);
+            Assert.Equal(1, evt.PayloadNames.Count);
+            Assert.Equal("Payload", evt.PayloadNames[0]);
             object rawPayload = evt.PayloadValue(0, "Payload");
             return rawPayload;
         }
@@ -164,8 +246,11 @@ namespace BasicEventSourceTests
 
             Assert.Equal(7, payloadContentValue.Count);
             ValidatePayloadEntry("Name", counterName, payloadContentValue[0]);
-            ValidatePayloadEntry("Mean", mean, payloadContentValue[1]);
-            ValidatePayloadEntry("StandardDeviation", standardDeviation, payloadContentValue[2]);
+            if (count != 0)
+            {
+                ValidatePayloadEntry("Mean", mean, payloadContentValue[1]);
+                ValidatePayloadEntry("StandardDeviation", standardDeviation, payloadContentValue[2]);
+            }
             ValidatePayloadEntry("Count", count, payloadContentValue[3]);
             ValidatePayloadEntry("Min", min, payloadContentValue[4]);
             ValidatePayloadEntry("Max", max, payloadContentValue[5]);
@@ -177,5 +262,4 @@ namespace BasicEventSourceTests
             Assert.Equal(value, payloadEntry.Value);
         }
     }
-#endif //USE_ETW
 }

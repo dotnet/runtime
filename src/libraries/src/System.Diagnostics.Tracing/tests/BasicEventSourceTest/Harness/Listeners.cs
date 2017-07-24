@@ -42,7 +42,7 @@ namespace BasicEventSourceTests
             }
         }
 
-        internal void EnableTimer(EventSource eventSource, int pollingTime)
+        internal void EnableTimer(EventSource eventSource, double pollingTime)
         {
             FilteringOptions options = new FilteringOptions();
             options.Args = new Dictionary<string, string>();
@@ -86,7 +86,7 @@ namespace BasicEventSourceTests
         {
             return PayloadValue(propertyIndex, propertyName).ToString();
         }
-        public abstract IEnumerable<string> PayloadNames { get; }
+        public abstract IList<string> PayloadNames { get; }
 
 #if DEBUG
         /// <summary>
@@ -240,7 +240,7 @@ namespace BasicEventSourceTests
                 return _data.PayloadString(propertyIndex);
             }
             public override int PayloadCount { get { return _data.PayloadNames.Length; } }
-            public override IEnumerable<string> PayloadNames { get { return _data.PayloadNames; } }
+            public override IList<string> PayloadNames { get { return _data.PayloadNames; } }
 
     #region private
             internal EtwEvent(TraceEvent data) { _data = data.Clone(); }
@@ -391,7 +391,7 @@ namespace BasicEventSourceTests
 
             public override string EventName { get { return _data.EventName; } }
 
-            public override IEnumerable<string> PayloadNames { get { return _data.PayloadNames; } }
+            public override IList<string> PayloadNames { get { return _data.PayloadNames; } }
 
             public override int PayloadCount
             {
