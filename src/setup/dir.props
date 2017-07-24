@@ -73,6 +73,7 @@
 
     <VersionSuffix Condition="'$(PreReleaseLabel)' != ''">$(PreReleaseLabel)-</VersionSuffix>
     <VersionSuffix>$(VersionSuffix)$(BuildNumberMajor)-$(BuildNumberMinor)</VersionSuffix>
+    <VersionSuffix Condition="'$(StabilizePackageVersion)' =='true'"></VersionSuffix>
     <ProductVersionSuffix Condition="'$(StabilizePackageVersion)' !='true'">-$(VersionSuffix)</ProductVersionSuffix>
     <ProductVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)$(ProductVersionSuffix)</ProductVersion>
     <ProductionVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion)</ProductionVersion>
@@ -140,7 +141,7 @@
     <SdkRestoreProjects Include="$(MSBuildThisFileDirectory)src\managed\Microsoft.DotNet.PlatformAbstractions\Microsoft.DotNet.PlatformAbstractions.csproj" />
     <SdkRestoreProjects Include="$(MSBuildThisFileDirectory)src\managed\Microsoft.Extensions.DependencyModel\Microsoft.Extensions.DependencyModel.csproj">
       <!-- Workaround https://github.com/NuGet/Home/issues/4337 -->
-      <ExtraRestoreArgs Condition="'$(StabilizePackageVersion)' != 'true'">/p:VersionSuffix=$(VersionSuffix)</ExtraRestoreArgs>
+      <ExtraRestoreArgs>/p:VersionSuffix=$(VersionSuffix)</ExtraRestoreArgs>
     </SdkRestoreProjects>
   </ItemGroup>
   <PropertyGroup>
