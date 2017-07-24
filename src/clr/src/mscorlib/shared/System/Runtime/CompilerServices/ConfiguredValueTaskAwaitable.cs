@@ -37,7 +37,7 @@ namespace System.Runtime.CompilerServices
         public struct ConfiguredValueTaskAwaiter : ICriticalNotifyCompletion
         {
             /// <summary>The value being awaited.</summary>
-            private readonly ValueTask<TResult> _value;
+            private ValueTask<TResult> _value; // Methods are called on this; avoid making it readonly so as to avoid unnecessary copies
             /// <summary>The value to pass to ConfigureAwait.</summary>
             private readonly bool _continueOnCapturedContext;
 

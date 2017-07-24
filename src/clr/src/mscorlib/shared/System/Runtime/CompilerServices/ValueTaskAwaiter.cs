@@ -11,7 +11,7 @@ namespace System.Runtime.CompilerServices
     public struct ValueTaskAwaiter<TResult> : ICriticalNotifyCompletion
     {
         /// <summary>The value being awaited.</summary>
-        private readonly ValueTask<TResult> _value;
+        private ValueTask<TResult> _value; // Methods are called on this; avoid making it readonly so as to avoid unnecessary copies
 
         /// <summary>Initializes the awaiter.</summary>
         /// <param name="value">The value to be awaited.</param>
