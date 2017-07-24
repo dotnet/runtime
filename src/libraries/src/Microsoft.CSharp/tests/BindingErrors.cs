@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Dynamic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using Xunit;
@@ -51,6 +52,27 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             public void DoNothing(long x, int y)
             {
             }
+        }
+
+        private class AmbiguousNumClass
+        {
+            private readonly int _num;
+
+            public AmbiguousNumClass(int num) => _num = num;
+
+            public static implicit operator double(AmbiguousNumClass nc) => nc._num;
+
+            public static implicit operator decimal(AmbiguousNumClass nc) => nc._num;
+        }
+
+        public static T ReturnRef<T>(T item) where T : class
+        {
+            return item;
+        }
+
+        public static T ReturnVal<T>(T item) where T : struct
+        {
+            return item;
         }
 
         [Fact]
@@ -153,6 +175,51 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             TypeWithOverloads target = new TypeWithOverloads();
             dynamic d = 2;
             Assert.Throws<RuntimeBinderException>(() => target.DoNothing(1, d));
+        }
+
+        [Fact]
+        public void RefConstraintMethod()
+        {
+            dynamic d = 3;
+            Assert.Throws<RuntimeBinderException>(() => ReturnRef(d));
+        }
+
+        [Fact]
+        public void ValConstraintMethod()
+        {
+            dynamic d = "abc";
+            dynamic dThis = this; // Or else the fact that d is really object means this can't compile
+            Assert.Throws<RuntimeBinderException>(() => dThis.ReturnVal(d));
+        }
+
+        [Fact]
+        public void ExplicitlyCallOperator()
+        {
+            dynamic d = 23m;
+            Assert.Throws<RuntimeBinderException>(() => d.op_Increment());
+        }
+
+        [Fact]
+        public void ExplicitlyCallPropertyAccessor()
+        {
+            dynamic d = "abc";
+            Assert.Throws<RuntimeBinderException>(() => d.get_Length());
+        }
+
+        [Fact]
+        public void CastToStatic()
+        {
+            CallSite<Func<CallSite, object, object>> site = CallSite<Func<CallSite, object, object>>.Create(
+                Binder.Convert(CSharpBinderFlags.ConvertExplicit, typeof(Binder), GetType()));
+            Func<CallSite, object, object> targ = site.Target;
+            Assert.Throws<RuntimeBinderException>(() => targ(site, "abc"));
+        }
+
+        [Fact]
+        public void AmbigousUnaryOp()
+        {
+            dynamic d = new AmbiguousNumClass(7);
+            Assert.Throws<RuntimeBinderException>(() => -d);
         }
     }
 }
