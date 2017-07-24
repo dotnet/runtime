@@ -8285,7 +8285,7 @@ void Compiler::optOptimizeBools()
                         B2: brtrue(t2, BX)
                         B3:
                    we will try to fold it to :
-                        B1: brtrue((!t1)&&t2, B3)
+                        B1: brtrue((!t1)&&t2, BX)
                         B3:
                 */
 
