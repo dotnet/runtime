@@ -143,7 +143,7 @@ BOOL PELoader::open(HMODULE hMod)
             if ((m_pNT32->Signature != VAL32(IMAGE_NT_SIGNATURE)) ||
                 (m_pNT32->FileHeader.SizeOfOptionalHeader != VAL16(sizeof(IMAGE_OPTIONAL_HEADER32))))
             {
-                // Make this appear uninitalized because for some reason this file is toasted.
+                // Make this appear uninitialized because for some reason this file is toasted.
                 m_pNT32 = NULL;
                 m_hMod = NULL;
                 return FALSE;
@@ -155,7 +155,7 @@ BOOL PELoader::open(HMODULE hMod)
             if ((m_pNT64->Signature != VAL32(IMAGE_NT_SIGNATURE)) ||
                 (m_pNT64->FileHeader.SizeOfOptionalHeader != VAL16(sizeof(IMAGE_OPTIONAL_HEADER64))))
             {
-                // Make this appear uninitalized because for some reason this file is toasted.
+                // Make this appear uninitialized because for some reason this file is toasted.
                 m_pNT64 = NULL;
                 m_hMod = NULL;
                 return FALSE;
@@ -166,7 +166,7 @@ BOOL PELoader::open(HMODULE hMod)
     }
     else
     {
-        // Make this appear uninitalized because for some reason this file is toasted.
+        // Make this appear uninitialized because for some reason this file is toasted.
         m_hMod = NULL;
         return FALSE;
     }
