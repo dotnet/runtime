@@ -327,7 +327,7 @@
             "HelixJobType": "test/functional/cli/",
             "TargetsWindows": "true",
             "Rid": "win-x64",
-            "TargetQueues": "windows.10.amd64",
+            "TargetQueues": "windows.10.amd64,Windows.10.Amd64.Core",
             "TestContainerSuffix": "windows",
           },
           "ReportingParameters": {
@@ -343,40 +343,7 @@
             "HelixJobType": "test/functional/r2r/cli/",
             "TargetsWindows": "true",
             "Rid": "win-x64",
-            "TargetQueues": "windows.10.amd64",
-            "TestContainerSuffix": "windows-r2r",
-            "CrossgenArg": "Crossgen "
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Windows",
-            "SubType":  "Build-Tests-R2R",
-            "Type": "build/product/",
-            "PB_BuildType": "Release"
-          }
-        },
-		{
-          "Name": "Dotnet-CoreClr-Trusted-BuildTests",
-          "Parameters": {
-            "HelixJobType": "test/functional/cli/",
-            "TargetsWindows": "true",
-            "Rid": "win-x64",
-            "TargetQueues": "Windows.10.Amd64.Core",
-            "TestContainerSuffix": "windows",
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Windows",
-            "SubType":  "Build-Tests",
-            "Type": "build/product/",
-            "PB_BuildType": "Release"
-          }
-        },
-        {
-          "Name": "Dotnet-CoreClr-Trusted-BuildTests",
-          "Parameters": {
-            "HelixJobType": "test/functional/r2r/cli/",
-            "TargetsWindows": "true",
-            "Rid": "win-x64",
-            "TargetQueues": "Windows.10.Amd64.Core",
+            "TargetQueues": "windows.10.amd64,Windows.10.Amd64.Core",
             "TestContainerSuffix": "windows-r2r",
             "CrossgenArg": "Crossgen "
           },
