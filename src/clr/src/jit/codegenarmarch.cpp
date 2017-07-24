@@ -654,6 +654,11 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             // only used when we have a multireg struct with a LclVar source
             unsigned varNumInp = BAD_VAR_NUM;
 
+#ifdef _TARGET_ARM_
+            // On ARM32, size of reference map can be larger than MAX_ARG_REG_COUNT
+            gcPtrs     = treeNode->gtGcPtrs;
+            gcPtrCount = treeNode->gtNumberReferenceSlots;
+#endif
             // Setup the structSize, isHFa, and gcPtrCount
             if (varNode != nullptr)
             {
@@ -680,9 +685,6 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 gcPtrCount = varDsc->lvStructGcCount;
                 for (unsigned i = 0; i < gcPtrCount; ++i)
                     gcPtrs[i]   = varDsc->lvGcLayout[i];
-#else  // _TARGET_ARM_
-                gcPtrs     = treeNode->gtGcPtrs;
-                gcPtrCount = treeNode->gtNumberReferenceSlots;
 #endif // _TARGET_ARM_
             }
             else // addrNode is used
@@ -707,7 +709,9 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
 
                 structSize = compiler->info.compCompHnd->getClassSize(objClass);
                 isHfa      = compiler->IsHfa(objClass);
+#ifdef _TARGET_ARM64_
                 gcPtrCount = compiler->info.compCompHnd->getClassGClayout(objClass, &gcPtrs[0]);
+#endif
             }
 
             // If we have an HFA we can't have any GC pointers,
