@@ -133,10 +133,17 @@ namespace System.Numerics
 
         public BigInteger(double value)
         {
-            if (double.IsInfinity(value))
-                throw new OverflowException(SR.Overflow_BigIntInfinity);
-            if (double.IsNaN(value))
-                throw new OverflowException(SR.Overflow_NotANumber);
+            if (!double.IsFinite(value))
+            {
+                if (double.IsInfinity(value))
+                {
+                    throw new OverflowException(SR.Overflow_BigIntInfinity);
+                }
+                else // NaN
+                {
+                    throw new OverflowException(SR.Overflow_NotANumber);
+                }
+            }
             Contract.EndContractBlock();
 
             _sign = 0;
