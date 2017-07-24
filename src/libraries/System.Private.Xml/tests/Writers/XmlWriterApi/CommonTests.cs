@@ -8,6 +8,7 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using XmlCoreTest.Common;
+using Xunit;
 
 namespace System.Xml.Tests
 {
@@ -15,7 +16,8 @@ namespace System.Xml.Tests
     public partial class TCErrorState : XmlWriterTestCaseBase
     {
         //[Variation(id = 1, Desc = "EntityRef after Document should error - PROLOG", Pri = 1)]
-        public int state_1()
+        [Fact]
+        public void state_1()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -37,7 +39,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 2, Desc = "EntityRef after Document should error - EPILOG", Pri = 1)]
-        public int state_2()
+        [Fact]
+        public void state_2()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -60,7 +63,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 3, Desc = "CharEntity after Document should error - PROLOG", Pri = 1)]
-        public int state_3()
+        [Fact]
+        public void state_3()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -81,7 +85,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 4, Desc = "CharEntity after Document should error - EPILOG", Pri = 1)]
-        public int state_4()
+        [Fact]
+        public void state_4()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -104,7 +109,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 5, Desc = "SurrogateCharEntity after Document should error - PROLOG", Pri = 1)]
-        public int state_5()
+        [Fact]
+        public void state_5()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -125,7 +131,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 6, Desc = "SurrogateCharEntity after Document should error - EPILOG", Pri = 1)]
-        public int state_6()
+        [Fact]
+        public void state_6()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -148,7 +155,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 7, Desc = "Attribute after Document should error - PROLOG", Pri = 1)]
-        public int state_7()
+        [Fact]
+        public void state_7()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -169,7 +177,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 8, Desc = "Attribute after Document should error - EPILOG", Pri = 1)]
-        public int state_8()
+        [Fact]
+        public void state_8()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -192,7 +201,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 9, Desc = "CDATA after Document should error - PROLOG", Pri = 1)]
-        public int state_9()
+        [Fact]
+        public void state_9()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -213,7 +223,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 10, Desc = "CDATA after Document should error - EPILOG", Pri = 1)]
-        public int state_10()
+        [Fact]
+        public void state_10()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -236,7 +247,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 11, Desc = "Element followed by Document should error", Pri = 1)]
-        public int state_11()
+        [Fact]
+        public void state_11()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -257,7 +269,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 12, Desc = "Element followed by DocType should error", Pri = 1)]
-        public int state_12()
+        [Fact]
+        public void state_12()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -280,7 +293,8 @@ namespace System.Xml.Tests
 
         //[Variation(Desc = "1.WriteNode with GB18030 encoding", Param = 1)]
         //[Variation(Desc = "2.WriteNode with GB18030 encoding", Param = 2)]
-        public int writeNode_XmlReader36a()
+        [Fact]
+        public void writeNode_XmlReader36a()
         {
             string path = FilePathUtil.GetStandardPath();
             int param = (int)this.CurVariation.Param;
@@ -307,7 +321,8 @@ namespace System.Xml.Tests
     public partial class TCAutoComplete : XmlWriterTestCaseBase
     {
         //[Variation(id = 1, Desc = "Missing EndAttr, followed by element", Pri = 1)]
-        public int var_1()
+        [Fact]
+        public void var_1()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -321,7 +336,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 2, Desc = "Missing EndAttr, followed by comment", Pri = 1)]
-        public int var_2()
+        [Fact]
+        public void var_2()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -334,7 +350,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 3, Desc = "Write EndDocument with unclosed element tag", Pri = 1)]
-        public int var_3()
+        [Fact]
+        public void var_3()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -346,7 +363,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 4, Desc = "WriteStartDocument - WriteEndDocument", Pri = 1)]
-        public int var_4()
+        [Fact]
+        public void var_4()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -373,7 +391,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 5, Desc = "WriteEndElement without WriteStartElement", Pri = 1)]
-        public int var_5()
+        [Fact]
+        public void var_5()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -395,7 +414,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 6, Desc = "WriteFullEndElement without WriteStartElement", Pri = 1)]
-        public int var_6()
+        [Fact]
+        public void var_6()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -427,7 +447,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 1, Desc = "StartDocument-EndDocument Sanity Test", Pri = 0)]
-        public int document_1()
+        [Fact]
+        public void document_1()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -440,7 +461,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 2, Desc = "Multiple StartDocument should error", Pri = 1)]
-        public int document_2()
+        [Fact]
+        public void document_2()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -461,7 +483,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 3, Desc = "Missing StartDocument should be fixed", Pri = 1)]
-        public int document_3()
+        [Fact]
+        public void document_3()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -474,7 +497,8 @@ namespace System.Xml.Tests
 
 
         //[Variation(id = 4, Desc = "Multiple EndDocument should error", Pri = 1)]
-        public int document_4()
+        [Fact]
+        public void document_4()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -498,7 +522,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 5, Desc = "Missing EndDocument should be fixed", Pri = 1)]
-        public int document_5()
+        [Fact]
+        public void document_5()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -510,7 +535,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 6, Desc = "Call Start-EndDocument multiple times, should error", Pri = 2)]
-        public int document_6()
+        [Fact]
+        public void document_6()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -536,7 +562,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 7, Desc = "Multiple root elements should error", Pri = 1)]
-        public int document_7()
+        [Fact]
+        public void document_7()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -559,7 +586,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 8, Desc = "Start-EndDocument without any element should error", Pri = 2)]
-        public int document_8()
+        [Fact]
+        public void document_8()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -580,7 +608,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 9, Desc = "Top level text should error - PROLOG", Pri = 1)]
-        public int document_9()
+        [Fact]
+        public void document_9()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -601,7 +630,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 10, Desc = "Top level text should error - EPILOG", Pri = 1)]
-        public int document_10()
+        [Fact]
+        public void document_10()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -625,7 +655,8 @@ namespace System.Xml.Tests
 
 
         //[Variation(id = 11, Desc = "Top level atomic value should error - PROLOG", Pri = 1)]
-        public int document_11()
+        [Fact]
+        public void document_11()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -646,7 +677,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 12, Desc = "Top level atomic value should error - EPILOG", Pri = 1)]
-        public int document_12()
+        [Fact]
+        public void document_12()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -673,7 +705,8 @@ namespace System.Xml.Tests
     public partial class TCDocType : XmlWriterTestCaseBase
     {
         //[Variation(id = 1, Desc = "Sanity test", Pri = 1)]
-        public int docType_1()
+        [Fact]
+        public void docType_1()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -689,7 +722,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 2, Desc = "WriteDocType pubid = null and sysid = null", Pri = 1)]
-        public int docType_2()
+        [Fact]
+        public void docType_2()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -704,7 +738,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 3, Desc = "Call WriteDocType twice", Pri = 1)]
-        public int docType_3()
+        [Fact]
+        public void docType_3()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -726,7 +761,8 @@ namespace System.Xml.Tests
 
         //[Variation(id = 4, Desc = "WriteDocType with name value = String.Empty", Param = "String.Empty", Pri = 1)]
         //[Variation(id = 5, Desc = "WriteDocType with name value = null", Param = "null", Pri = 1)]
-        public int docType_4()
+        [Fact]
+        public void docType_4()
         {
             String docName = "";
             if (CurVariation.Param.ToString() == "String.Empty")
@@ -757,7 +793,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 6, Desc = "WriteDocType with DocType end tag in the value", Pri = 1)]
-        public int docType_5()
+        [Fact]
+        public void docType_5()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -772,7 +809,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 7, Desc = "Call WriteDocType in the root element", Pri = 1)]
-        public int docType_6()
+        [Fact]
+        public void docType_6()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -794,7 +832,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 8, Desc = "Call WriteDocType following root element", Pri = 1)]
-        public int docType_7()
+        [Fact]
+        public void docType_7()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -820,7 +859,8 @@ namespace System.Xml.Tests
     public partial class TCElement : XmlWriterTestCaseBase
     {
         //[Variation(id = 1, Desc = "StartElement-EndElement Sanity Test", Pri = 0)]
-        public int element_1()
+        [Fact]
+        public void element_1()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -831,7 +871,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 2, Desc = "Sanity test for overload WriteStartElement(string prefix, string name, string ns)", Pri = 0)]
-        public int element_2()
+        [Fact]
+        public void element_2()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -842,7 +883,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 3, Desc = "Sanity test for overload WriteStartElement(string name, string ns)", Pri = 0)]
-        public int element_3()
+        [Fact]
+        public void element_3()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -853,7 +895,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 4, Desc = "Element name = String.Empty should error", Pri = 1)]
-        public int element_4()
+        [Fact]
+        public void element_4()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -873,7 +916,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 5, Desc = "Element name = null should error", Pri = 1)]
-        public int element_5()
+        [Fact]
+        public void element_5()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -893,7 +937,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 6, Desc = "Element NS = String.Empty", Pri = 1)]
-        public int element_6()
+        [Fact]
+        public void element_6()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -904,7 +949,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 7, Desc = "Element NS = null", Pri = 1)]
-        public int element_7()
+        [Fact]
+        public void element_7()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -915,7 +961,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "Write 100 nested elements")]
-        public int element_8()
+        [Fact]
+        public void element_8()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -934,7 +981,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 9, Desc = "WriteDecl with start element with prefix and namespace")]
-        public int element_9()
+        [Fact]
+        public void element_9()
         {
             string enc = (WriterType == WriterType.UnicodeWriter || WriterType == WriterType.UnicodeWriterIndent) ? "16" : "8";
             string exp = (WriterType == WriterType.UTF8WriterIndent || WriterType == WriterType.UnicodeWriterIndent) ?
@@ -953,7 +1001,8 @@ namespace System.Xml.Tests
 
         //[Variation(Desc = "Write many attributes with same names and diff.namespaces", Param = true)]
         //[Variation(Desc = "Write many attributes with same names and diff.namespaces", Param = false)]
-        public int element_10()
+        [Fact]
+        public void element_10()
         {
             string xml = "<a p1:a=\"\" p2:a=\"\" p3:a=\"\" p4:a=\"\" p5:a=\"\" p6:a=\"\" p7:a=\"\" p8:a=\"\" p9:a=\"\" p10:a=\"\" p11:a=\"\" p12:a=\"\" p13:a=\"\" p14:a=\"\" p15:a=\"\" p16:a=\"\" p17:a=\"\" p18:a=\"\" p19:a=\"\" p20:a=\"\" p21:a=\"\" p22:a=\"\" p23:a=\"\" p24:a=\"\" p25:a=\"\" p26:a=\"\" p27:a=\"\" p28:a=\"\" p29:a=\"\" p30:a=\"\" p31:a=\"\" p32:a=\"\" p33:a=\"\" p34:a=\"\" p35:a=\"\" p36:a=\"\" p37:a=\"\" p38:a=\"\" p39:a=\"\" p40:a=\"\" p41:a=\"\" p42:a=\"\" p43:a=\"\" p44:a=\"\" p45:a=\"\" p46:a=\"\" p47:a=\"\" p48:a=\"\" p49:a=\"\" p50:a=\"\" p51:a=\"\" p52:a=\"\" p53:a=\"\" p54:a=\"\" p55:a=\"\" p56:a=\"\" p57:a=\"\" p58:a=\"\" p59:a=\"\" p60:a=\"\" p61:a=\"\" p62:a=\"\" p63:a=\"\" p64:a=\"\" p65:a=\"\" p66:a=\"\" p67:a=\"\" p68:a=\"\" p69:a=\"\" p70:a=\"\" p71:a=\"\" p72:a=\"\" p73:a=\"\" p74:a=\"\" p75:a=\"\" p76:a=\"\" p77:a=\"\" p78:a=\"\" p79:a=\"\" p80:a=\"\" p81:a=\"\" p82:a=\"\" p83:a=\"\" p84:a=\"\" p85:a=\"\" p86:a=\"\" p87:a=\"\" p88:a=\"\" p89:a=\"\" p90:a=\"\" p91:a=\"\" p92:a=\"\" p93:a=\"\" p94:a=\"\" p95:a=\"\" p96:a=\"\" p97:a=\"\" p98:a=\"\" p99:a=\"\" p100:a=\"\" xmlns:p100=\"b99\" xmlns:p99=\"b98\" xmlns:p98=\"b97\" xmlns:p97=\"b96\" xmlns:p96=\"b95\" xmlns:p95=\"b94\" xmlns:p94=\"b93\" xmlns:p93=\"b92\" xmlns:p92=\"b91\" xmlns:p91=\"b90\" xmlns:p90=\"b89\" xmlns:p89=\"b88\" xmlns:p88=\"b87\" xmlns:p87=\"b86\" xmlns:p86=\"b85\" xmlns:p85=\"b84\" xmlns:p84=\"b83\" xmlns:p83=\"b82\" xmlns:p82=\"b81\" xmlns:p81=\"b80\" xmlns:p80=\"b79\" xmlns:p79=\"b78\" xmlns:p78=\"b77\" xmlns:p77=\"b76\" xmlns:p76=\"b75\" xmlns:p75=\"b74\" xmlns:p74=\"b73\" xmlns:p73=\"b72\" xmlns:p72=\"b71\" xmlns:p71=\"b70\" xmlns:p70=\"b69\" xmlns:p69=\"b68\" xmlns:p68=\"b67\" xmlns:p67=\"b66\" xmlns:p66=\"b65\" xmlns:p65=\"b64\" xmlns:p64=\"b63\" xmlns:p63=\"b62\" xmlns:p62=\"b61\" xmlns:p61=\"b60\" xmlns:p60=\"b59\" xmlns:p59=\"b58\" xmlns:p58=\"b57\" xmlns:p57=\"b56\" xmlns:p56=\"b55\" xmlns:p55=\"b54\" xmlns:p54=\"b53\" xmlns:p53=\"b52\" xmlns:p52=\"b51\" xmlns:p51=\"b50\" xmlns:p50=\"b49\" xmlns:p49=\"b48\" xmlns:p48=\"b47\" xmlns:p47=\"b46\" xmlns:p46=\"b45\" xmlns:p45=\"b44\" xmlns:p44=\"b43\" xmlns:p43=\"b42\" xmlns:p42=\"b41\" xmlns:p41=\"b40\" xmlns:p40=\"b39\" xmlns:p39=\"b38\" xmlns:p38=\"b37\" xmlns:p37=\"b36\" xmlns:p36=\"b35\" xmlns:p35=\"b34\" xmlns:p34=\"b33\" xmlns:p33=\"b32\" xmlns:p32=\"b31\" xmlns:p31=\"b30\" xmlns:p30=\"b29\" xmlns:p29=\"b28\" xmlns:p28=\"b27\" xmlns:p27=\"b26\" xmlns:p26=\"b25\" xmlns:p25=\"b24\" xmlns:p24=\"b23\" xmlns:p23=\"b22\" xmlns:p22=\"b21\" xmlns:p21=\"b20\" xmlns:p20=\"b19\" xmlns:p19=\"b18\" xmlns:p18=\"b17\" xmlns:p17=\"b16\" xmlns:p16=\"b15\" xmlns:p15=\"b14\" xmlns:p14=\"b13\" xmlns:p13=\"b12\" xmlns:p12=\"b11\" xmlns:p11=\"b10\" xmlns:p10=\"b9\" xmlns:p9=\"b8\" xmlns:p8=\"b7\" xmlns:p7=\"b6\" xmlns:p6=\"b5\" xmlns:p5=\"b4\" xmlns:p4=\"b3\" xmlns:p3=\"b2\" xmlns:p2=\"b1\" xmlns:p1=\"b0\" />";
             XmlReader r = ReaderHelper.Create(new StringReader(xml));
@@ -966,7 +1015,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "Write many attributes and dup namespace")]
-        public int element_10a()
+        [Fact]
+        public void element_10a()
         {
             XmlWriter w = CreateWriter();
             w.WriteDocType("a", null, null, "<!ATTLIST oot a CDATA #IMPLIED>");
@@ -989,7 +1039,8 @@ namespace System.Xml.Tests
 
 
         //[Variation(Desc = "Write many attributes and dup name")]
-        public int element_10b()
+        [Fact]
+        public void element_10b()
         {
             XmlWriter w = CreateWriter();
             w.WriteDocType("a", null, null, "<!ATTLIST Root a CDATA #FIXED \"val\">");
@@ -1011,7 +1062,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "Write many attributes and dup prefix")]
-        public int element_10c()
+        [Fact]
+        public void element_10c()
         {
             XmlWriter w = CreateWriter();
             w.WriteDocType("a", null, null, "<!ATTLIST Root a (val|value) \"val\">");
@@ -1033,7 +1085,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "Write invalid DOCTYPE with many attributes with prefix")]
-        public int element_10d()
+        [Fact]
+        public void element_10d()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -1059,7 +1112,8 @@ namespace System.Xml.Tests
         //[Variation(Desc = "WriteEntityRef with XmlWellformedWriter for 'apos'", Param = 1)]
         //[Variation(Desc = "WriteEntityRef with XmlWellformedWriter for 'lt'", Param = 2)]
         //[Variation(Desc = "WriteEntityRef with XmlWellformedWriter for 'quot'", Param = 3)]
-        public int element_11()
+        [Fact]
+        public void element_11()
         {
             string exp = "";
             int param = (int)CurVariation.Param;
@@ -1103,7 +1157,8 @@ namespace System.Xml.Tests
         //[Variation(Desc = "WriteValue & WriteWhitespace on a special attribute value – xmlns", Param = 4)]
         //[Variation(Desc = "WriteValue & WriteWhitespace on a special attribute value – space", Param = 5)]
         //[Variation(Desc = "WriteValue & WriteWhitespace on a special attribute value – lang", Param = 6)]
-        public int element_12()
+        [Fact]
+        public void element_12()
         {
             int param = (int)CurVariation.Param;
             XmlWriter w = CreateWriter();
@@ -1146,7 +1201,8 @@ namespace System.Xml.Tests
 
         //[Variation(Desc = "WriteValue element double value", Params = new object[] { false, "<Root>-0</Root>" })]
         //[Variation(Desc = "WriteValue attribute double value", Params = new object[] { true, "<Root b=\"-0\" />" })]
-        public int element_13()
+        [Fact]
+        public void element_13()
         {
             bool isAttr = (bool)CurVariation.Params[0];
             string exp = (string)CurVariation.Params[1];
@@ -1177,7 +1233,8 @@ namespace System.Xml.Tests
         //[Variation(Desc = "WriteNode with euc-jp encoding.weekly-shift_jis.xml", Param = "weekly-shift_jis.xml")]
         //[Variation(Desc = "WriteNode with euc-jp encoding.weekly-utf-8.xml", Param = "weekly-utf-8.xml")]
         //[Variation(Desc = "WriteNode with euc-jp encoding.weekly-utf-16.xml", Param = "weekly-utf-16.xml")]
-        public int element_bug480250()
+        [Fact]
+        public void element_bug480250()
         {
             string path = FilePathUtil.GetStandardPath();
             string xml = (string)CurVariation.Param;
@@ -1201,7 +1258,8 @@ namespace System.Xml.Tests
     public partial class TCAttribute : XmlWriterTestCaseBase
     {
         //[Variation(id = 1, Desc = "Sanity test for WriteAttribute", Pri = 0)]
-        public int attribute_1()
+        [Fact]
+        public void attribute_1()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -1215,7 +1273,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 2, Desc = "Missing EndAttribute should be fixed", Pri = 0)]
-        public int attribute_2()
+        [Fact]
+        public void attribute_2()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -1227,7 +1286,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 3, Desc = "WriteStartAttribute followed by WriteStartAttribute", Pri = 0)]
-        public int attribute_3()
+        [Fact]
+        public void attribute_3()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -1240,7 +1300,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 4, Desc = "Multiple WritetAttributeString", Pri = 0)]
-        public int attribute_4()
+        [Fact]
+        public void attribute_4()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -1253,7 +1314,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 5, Desc = "WriteStartAttribute followed by WriteString", Pri = 0)]
-        public int attribute_5()
+        [Fact]
+        public void attribute_5()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -1266,7 +1328,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 6, Desc = "Sanity test for overload WriteStartAttribute(name, ns)", Pri = 1)]
-        public int attribute_6()
+        [Fact]
+        public void attribute_6()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -1279,7 +1342,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 7, Desc = "Sanity test for overload WriteStartAttribute(prefix, name, ns)", Pri = 0)]
-        public int attribute_7()
+        [Fact]
+        public void attribute_7()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -1292,7 +1356,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 8, Desc = "DCR 64183: Duplicate attribute 'attr1'", Pri = 1)]
-        public int attribute_8()
+        [Fact]
+        public void attribute_8()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -1314,7 +1379,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 9, Desc = "Duplicate attribute 'ns1:attr1'", Pri = 1)]
-        public int attribute_9()
+        [Fact]
+        public void attribute_9()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -1336,7 +1402,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 10, Desc = "Attribute name = String.Empty should error", Pri = 1)]
-        public int attribute_10()
+        [Fact]
+        public void attribute_10()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -1357,7 +1424,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 11, Desc = "Attribute name = null", Pri = 1)]
-        public int attribute_11()
+        [Fact]
+        public void attribute_11()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -1378,7 +1446,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 12, Desc = "WriteAttribute with names Foo, fOo, foO, FOO", Pri = 1)]
-        public int attribute_12()
+        [Fact]
+        public void attribute_12()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -1394,7 +1463,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 13, Desc = "Invalid value of xml:space", Pri = 1)]
-        public int attribute_13()
+        [Fact]
+        public void attribute_13()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -1415,7 +1485,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 14, Desc = "SingleQuote in attribute value should be allowed")]
-        public int attribute_14()
+        [Fact]
+        public void attribute_14()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -1427,7 +1498,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 15, Desc = "DoubleQuote in attribute value should be escaped")]
-        public int attribute_15()
+        [Fact]
+        public void attribute_15()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -1439,7 +1511,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 16, Desc = "WriteAttribute with value = &, #65, #x20", Pri = 1)]
-        public int attribute_16()
+        [Fact]
+        public void attribute_16()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -1453,7 +1526,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 17, Desc = "WriteAttributeString followed by WriteString", Pri = 1)]
-        public int attribute_17()
+        [Fact]
+        public void attribute_17()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -1466,7 +1540,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 18, Desc = "WriteAttribute followed by WriteString", Pri = 1)]
-        public int attribute_18()
+        [Fact]
+        public void attribute_18()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -1479,7 +1554,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 19, Desc = "WriteAttribute with all whitespace characters", Pri = 1)]
-        public int attribute_19()
+        [Fact]
+        public void attribute_19()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -1492,7 +1568,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 20, Desc = "< > & chars should be escaped in attribute value", Pri = 1)]
-        public int attribute_20()
+        [Fact]
+        public void attribute_20()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -1504,7 +1581,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 21, Desc = "Redefine auto generated prefix n1")]
-        public int attribute_21()
+        [Fact]
+        public void attribute_21()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -1523,7 +1601,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 22, Desc = "Reuse and redefine existing prefix")]
-        public int attribute_22()
+        [Fact]
+        public void attribute_22()
         {
             string exp = "<test ~f p a~:a1=\"v\" xmlns:~f p A~=\"ns1\"><base ~f p b~:a2=\"v\" ~a p4 ab~:a3=\"v\" xmlns:~a p4 AB~=\"ns2\" /></test>";
 
@@ -1543,7 +1622,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 23, Desc = "WriteStartAttribute(attr) sanity test")]
-        public int attribute_23()
+        [Fact]
+        public void attribute_23()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -1556,7 +1636,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 24, Desc = "WriteStartAttribute(attr) inside an element with changed default namespace")]
-        public int attribute_24()
+        [Fact]
+        public void attribute_24()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -1569,7 +1650,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 25, Desc = "WriteStartAttribute(attr) and duplicate attrs")]
-        public int attribute_25()
+        [Fact]
+        public void attribute_25()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -1590,7 +1672,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 26, Desc = "WriteStartAttribute(attr) when element has ns:attr")]
-        public int attribute_26()
+        [Fact]
+        public void attribute_26()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -1603,7 +1686,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 27, Desc = "XmlCharCheckingWriter should not normalize newLines in attribute values when NewLinesHandling = Replace")]
-        public int attribute_27()
+        [Fact]
+        public void attribute_27()
         {
             XmlWriterSettings s = new XmlWriterSettings();
             s.NewLineHandling = NewLineHandling.Replace;
@@ -1618,7 +1702,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 28, Desc = "Wrapped XmlTextWriter: Invalid replacement of newline characters in text values")]
-        public int attribute_28()
+        [Fact]
+        public void attribute_28()
         {
             XmlWriterSettings s = new XmlWriterSettings();
             s.NewLineHandling = NewLineHandling.Replace;
@@ -1634,7 +1719,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 29, Desc = "WriteAttributeString doesn't fail on invalid surrogate pair sequences")]
-        public int attribute_29()
+        [Fact]
+        public void attribute_29()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -1665,7 +1751,8 @@ namespace System.Xml.Tests
     public partial class TCWriteAttributes : ReaderParamTestCase
     {
         //[Variation(id = 1, Desc = "Call WriteAttributes with default DTD attributes = true", Pri = 1)]
-        public int writeAttributes_1()
+        [Fact]
+        public void writeAttributes_1()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -1688,7 +1775,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 2, Desc = "Call WriteAttributes with default DTD attributes = false", Pri = 1)]
-        public int writeAttributes_2()
+        [Fact]
+        public void writeAttributes_2()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -1716,7 +1804,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 3, Desc = "Call WriteAttributes with XmlReader = null")]
-        public int writeAttributes_3()
+        [Fact]
+        public void writeAttributes_3()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -1738,7 +1827,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 4, Desc = "Call WriteAttributes when reader is located on element", Pri = 1)]
-        public int writeAttributes_4()
+        [Fact]
+        public void writeAttributes_4()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -1769,7 +1859,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 5, Desc = "Call WriteAttributes when reader is located in the middle attribute", Pri = 1)]
-        public int writeAttributes_5()
+        [Fact]
+        public void writeAttributes_5()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -1801,7 +1892,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 6, Desc = "Call WriteAttributes when reader is located in the last attribute", Pri = 1)]
-        public int writeAttributes_6()
+        [Fact]
+        public void writeAttributes_6()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -1835,7 +1927,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 7, Desc = "Call WriteAttributes when reader is located on an attribute with an entity reference in the value", Pri = 1)]
-        public int writeAttributes_7()
+        [Fact]
+        public void writeAttributes_7()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -1870,7 +1963,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 8, Desc = "Call WriteAttributes with reader on XmlDeclaration", Pri = 1)]
-        public int writeAttributes_8()
+        [Fact]
+        public void writeAttributes_8()
         {
             if (IsXPathDataModelReader())
             {
@@ -1906,7 +2000,8 @@ namespace System.Xml.Tests
         //[Variation(id = 14, Desc = "Call WriteAttributes with reader on EntityRef", Pri = 1, Param = "EntityReference")]
         //[Variation(id = 15, Desc = "Call WriteAttributes with reader on Whitespace", Pri = 1, Param = "Whitespace")]
         //[Variation(id = 16, Desc = "Call WriteAttributes with reader on SignificantWhitespace", Pri = 1, Param = "SignificantWhitespace")]
-        public int writeAttributes_9()
+        [Fact]
+        public void writeAttributes_9()
         {
             string strxml = "";
             switch (CurVariation.Param.ToString())
@@ -1997,7 +2092,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 17, Desc = "Call WriteAttribute with double quote char in the value", Pri = 1)]
-        public int writeAttributes_10()
+        [Fact]
+        public void writeAttributes_10()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -2021,7 +2117,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 18, Desc = "Call WriteAttribute with single quote char in the value", Pri = 1)]
-        public int writeAttributes_11()
+        [Fact]
+        public void writeAttributes_11()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -2046,7 +2143,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 19, Desc = "Call WriteAttributes with 100 attributes", Pri = 1)]
-        public int writeAttributes_12()
+        [Fact]
+        public void writeAttributes_12()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -2076,7 +2174,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 20, Desc = "WriteAttributes with different builtin entities in attribute value", Pri = 1)]
-        public int writeAttributes_13()
+        [Fact]
+        public void writeAttributes_13()
         {
             string strxml = "<E a=\"&gt;&lt;&quot;&apos;&amp;\" />";
             using (XmlReader xr = CreateReader(new StringReader(strxml)))
@@ -2102,7 +2201,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 21, Desc = "WriteAttributes tries to duplicate attribute", Pri = 1)]
-        public int writeAttributes_14()
+        [Fact]
+        public void writeAttributes_14()
         {
             string strxml = "<root attr='test' />";
             XmlReader xr = CreateReader(new StringReader(strxml));
@@ -2153,7 +2253,8 @@ namespace System.Xml.Tests
     public partial class TCWriteNode_XmlReader : ReaderParamTestCase
     {
         //[Variation(id = 1, Desc = "WriteNode with null reader", Pri = 1)]
-        public int writeNode_XmlReader1()
+        [Fact]
+        public void writeNode_XmlReader1()
         {
             XmlReader xr = null;
             using (XmlWriter w = CreateWriter())
@@ -2174,7 +2275,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 2, Desc = "WriteNode with reader positioned on attribute, no operation", Pri = 1)]
-        public int writeNode_XmlReader2()
+        [Fact]
+        public void writeNode_XmlReader2()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -2206,7 +2308,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 3, Desc = "WriteNode before reader.Read()", Pri = 1)]
-        public int writeNode_XmlReader3()
+        [Fact]
+        public void writeNode_XmlReader3()
         {
             using (XmlReader xr = CreateReader(new StringReader("<root />")))
             {
@@ -2220,7 +2323,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 4, Desc = "WriteNode after first reader.Read()", Pri = 1)]
-        public int writeNode_XmlReader4()
+        [Fact]
+        public void writeNode_XmlReader4()
         {
             using (XmlReader xr = CreateReader(new StringReader("<root />")))
             {
@@ -2235,7 +2339,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 5, Desc = "WriteNode when reader is positioned on middle of an element node", Pri = 1)]
-        public int writeNode_XmlReader5()
+        [Fact]
+        public void writeNode_XmlReader5()
         {
             using (XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml"))
             {
@@ -2258,7 +2363,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 6, Desc = "WriteNode when reader state is EOF", Pri = 1)]
-        public int writeNode_XmlReader6()
+        [Fact]
+        public void writeNode_XmlReader6()
         {
             using (XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml"))
             {
@@ -2275,7 +2381,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 7, Desc = "WriteNode when reader state is Closed", Pri = 1)]
-        public int writeNode_XmlReader7()
+        [Fact]
+        public void writeNode_XmlReader7()
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
             while (xr.Read()) { }
@@ -2291,7 +2398,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 8, Desc = "WriteNode with reader on empty element node", Pri = 1)]
-        public int writeNode_XmlReader8()
+        [Fact]
+        public void writeNode_XmlReader8()
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
             while (xr.Read())
@@ -2316,7 +2424,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 9, Desc = "WriteNode with reader on 100 Nodes", Pri = 1)]
-        public int writeNode_XmlReader9()
+        [Fact]
+        public void writeNode_XmlReader9()
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
             while (xr.Read())
@@ -2336,7 +2445,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 10, Desc = "WriteNode with reader on node with mixed content", Pri = 1)]
-        public int writeNode_XmlReader10()
+        [Fact]
+        public void writeNode_XmlReader10()
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
             while (xr.Read())
@@ -2366,7 +2476,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 11, Desc = "WriteNode with reader on node with declared namespace in parent", Pri = 1)]
-        public int writeNode_XmlReader11()
+        [Fact]
+        public void writeNode_XmlReader11()
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
             while (xr.Read())
@@ -2387,7 +2498,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 12, Desc = "WriteNode with reader on node with entity reference included in element", Pri = 1)]
-        public int writeNode_XmlReader12()
+        [Fact]
+        public void writeNode_XmlReader12()
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
             while (xr.Read())
@@ -2410,7 +2522,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 14, Desc = "WriteNode with element that has different prefix", Pri = 1)]
-        public int writeNode_XmlReader14()
+        [Fact]
+        public void writeNode_XmlReader14()
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
             while (xr.Read())
@@ -2435,7 +2548,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 15, Desc = "Call WriteNode with default attributes = true and DTD", Pri = 1)]
-        public int writeNode_XmlReader15()
+        [Fact]
+        public void writeNode_XmlReader15()
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
             while (xr.Read())
@@ -2460,7 +2574,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 16, Desc = "Call WriteNode with default attributes = false and DTD", Pri = 1)]
-        public int writeNode_XmlReader16()
+        [Fact]
+        public void writeNode_XmlReader16()
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
             while (xr.Read())
@@ -2485,7 +2600,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 17, Desc = "WriteNode with reader on empty element with attributes", Pri = 1)]
-        public int writeNode_XmlReader17()
+        [Fact]
+        public void writeNode_XmlReader17()
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
             while (xr.Read())
@@ -2504,7 +2620,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 18, Desc = "WriteNode with document containing just empty element with attributes", Pri = 1)]
-        public int writeNode_XmlReader18()
+        [Fact]
+        public void writeNode_XmlReader18()
         {
             string xml = "<Root a=\"foo\"/>";
             XmlReader xr = CreateReader(new StringReader(xml));
@@ -2519,7 +2636,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 19, Desc = "Call WriteNode with special entity references as attribute value", Pri = 1)]
-        public int writeNode_XmlReader19()
+        [Fact]
+        public void writeNode_XmlReader19()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -2534,7 +2652,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 20, Desc = "Call WriteNode with reader on doctype", Pri = 1)]
-        public int writeNode_XmlReader20()
+        [Fact]
+        public void writeNode_XmlReader20()
         {
             string strxml = "<!DOCTYPE ROOT []><ROOT/>";
             XmlReader xr = CreateReader(new StringReader(strxml));
@@ -2553,7 +2672,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 21, Desc = "Call WriteNode with full end element", Pri = 1)]
-        public int writeNode_XmlReader21()
+        [Fact]
+        public void writeNode_XmlReader21()
         {
             string strxml = "<root></root>";
             XmlReader xr = CreateReader(new StringReader(strxml));
@@ -2567,7 +2687,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "Call WriteNode with tag mismatch")]
-        public int writeNode_XmlReader21a()
+        [Fact]
+        public void writeNode_XmlReader21a()
         {
             string strxml = "<a xmlns=\"p1\"><b xmlns=\"p2\"><c xmlns=\"p1\" /></b><d xmlns=\"\"><e xmlns=\"p1\"><f xmlns=\"\" /></d></a>";
             try
@@ -2590,7 +2711,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "Call WriteNode with default NS from DTD.UnexpToken")]
-        public int writeNode_XmlReader21b()
+        [Fact]
+        public void writeNode_XmlReader21b()
         {
             string strxml = "<!DOCTYPE doc " +
 "[<!ELEMENT doc ANY>" +
@@ -2628,7 +2750,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 22, Desc = "Call WriteNode with reader on element with 100 attributes", Pri = 1)]
-        public int writeNode_XmlReader22()
+        [Fact]
+        public void writeNode_XmlReader22()
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
             while (xr.Read())
@@ -2647,7 +2770,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 23, Desc = "Call WriteNode with reader on text node", Pri = 1)]
-        public int writeNode_XmlReader23()
+        [Fact]
+        public void writeNode_XmlReader23()
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
             while (xr.Read())
@@ -2676,7 +2800,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 24, Desc = "Call WriteNode with reader on CDATA node", Pri = 1)]
-        public int writeNode_XmlReader24()
+        [Fact]
+        public void writeNode_XmlReader24()
         {
             if (IsXPathDataModelReader())
             {
@@ -2711,7 +2836,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 25, Desc = "Call WriteNode with reader on PI node", Pri = 1)]
-        public int writeNode_XmlReader25()
+        [Fact]
+        public void writeNode_XmlReader25()
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
             while (xr.Read())
@@ -2739,7 +2865,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 26, Desc = "Call WriteNode with reader on Comment node", Pri = 1)]
-        public int writeNode_XmlReader26()
+        [Fact]
+        public void writeNode_XmlReader26()
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
             while (xr.Read())
@@ -2767,7 +2894,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(Desc = "Call WriteNode with reader on XmlDecl (OmitXmlDecl false)", Pri = 1)]
-        public int writeNode_XmlReader28()
+        [Fact]
+        public void writeNode_XmlReader28()
         {
             string strxml = "<?xml version=\"1.0\" standalone=\"yes\"?><Root />";
             XmlReader xr = CreateReader(new StringReader(strxml));
@@ -2793,7 +2921,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 27, Desc = "WriteNode should only write required namespaces", Pri = 1)]
-        public int writeNode_XmlReader27()
+        [Fact]
+        public void writeNode_XmlReader27()
         {
             string strxml = @"<root xmlns:p1='p1'><p2:child xmlns:p2='p2' /></root>";
             XmlReader xr = CreateReader(new StringReader(strxml));
@@ -2811,7 +2940,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 28, Desc = "Reader.WriteNode should only write required namespaces, include xmlns:xml", Pri = 1)]
-        public int writeNode_XmlReader28b()
+        [Fact]
+        public void writeNode_XmlReader28b()
         {
             string strxml = @"<root xmlns:p1='p1'><p2:child xmlns:p2='p2' xmlns:xml='http://www.w3.org/XML/1998/namespace' /></root>";
             XmlReader xr = CreateReader(new StringReader(strxml));
@@ -2830,7 +2960,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 29, Desc = "WriteNode should only write required namespaces, exclude xmlns:xml", Pri = 1)]
-        public int writeNode_XmlReader29()
+        [Fact]
+        public void writeNode_XmlReader29()
         {
             string strxml = @"<root xmlns:p1='p1' xmlns:xml='http://www.w3.org/XML/1998/namespace'><p2:child xmlns:p2='p2' /></root>";
             XmlReader xr = CreateReader(new StringReader(strxml));
@@ -2849,7 +2980,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 30, Desc = "WriteNode should only write required namespaces, change default ns at top level", Pri = 1)]
-        public int writeNode_XmlReader30()
+        [Fact]
+        public void writeNode_XmlReader30()
         {
             string strxml = @"<root xmlns='p1'><child /></root>";
             XmlReader xr = CreateReader(new StringReader(strxml));
@@ -2867,7 +2999,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 31, Desc = "WriteNode should only write required namespaces, change default ns at same level", Pri = 1)]
-        public int writeNode_XmlReader31()
+        [Fact]
+        public void writeNode_XmlReader31()
         {
             string strxml = @"<root xmlns:p1='p1'><child xmlns='p2'/></root>";
             XmlReader xr = CreateReader(new StringReader(strxml));
@@ -2885,7 +3018,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 32, Desc = "WriteNode should only write required namespaces, change default ns at both levels", Pri = 1)]
-        public int writeNode_XmlReader32()
+        [Fact]
+        public void writeNode_XmlReader32()
         {
             string strxml = @"<root xmlns='p1'><child xmlns='p2'/></root>";
             XmlReader xr = CreateReader(new StringReader(strxml));
@@ -2904,7 +3038,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 33, Desc = "WriteNode should only write required namespaces, change ns uri for same prefix", Pri = 1)]
-        public int writeNode_XmlReader33()
+        [Fact]
+        public void writeNode_XmlReader33()
         {
             string strxml = @"<p1:root xmlns:p1='p1'><p1:child xmlns:p1='p2'/></p1:root>";
             XmlReader xr = CreateReader(new StringReader(strxml));
@@ -2922,7 +3057,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 34, Desc = "WriteNode should only write required namespaces, reuse prefix from top level", Pri = 1)]
-        public int writeNode_XmlReader34()
+        [Fact]
+        public void writeNode_XmlReader34()
         {
             string strxml = @"<root xmlns:p1='p1'><p1:child /></root>";
             XmlReader xr = CreateReader(new StringReader(strxml));
@@ -2941,7 +3077,8 @@ namespace System.Xml.Tests
 
         //[Variation(Desc = "1. XDocument does not format content while Saving", Param = @"<?xml version='1.0'?><?pi?><?pi?>  <shouldbeindented><a>text</a></shouldbeindented><?pi?>")]
         //[Variation(Desc = "2. XDocument does not format content while Saving", Param = @"<?xml version='1.0'?><?pi?><?pi?>  <shouldbeindented><a>text</a></shouldbeindented><?pi?>")]
-        public int writeNode_XmlReader35()
+        [Fact]
+        public void writeNode_XmlReader35()
         {
             string strxml = (string)CurVariation.Param;
             CError.WriteLine(strxml);
@@ -2958,7 +3095,8 @@ namespace System.Xml.Tests
 
         //[Variation(Desc = "1.WriteNode with ascii encoding", Param = true)]
         //[Variation(Desc = "2.WriteNode with ascii encoding", Param = false)]
-        public int writeNode_XmlReader36()
+        [Fact]
+        public void writeNode_XmlReader36()
         {
             string strxml = "<Ro\u00F6t \u00F6=\"\u00F6\" />";
             string exp = strxml;
@@ -2979,7 +3117,8 @@ namespace System.Xml.Tests
 
         //[Variation(Desc = "WriteNode DTD PUBLIC with identifier", Param = true)]
         //[Variation(Desc = "WriteNode DTD PUBLIC with identifier", Param = false)]
-        public int writeNode_XmlReader37()
+        [Fact]
+        public void writeNode_XmlReader37()
         {
             string strxml = "<!DOCTYPE root PUBLIC \"\" \"#\"><root/>";
             string exp = (WriterType == WriterType.UTF8WriterIndent || WriterType == WriterType.UnicodeWriterIndent) ?
@@ -3004,7 +3143,8 @@ namespace System.Xml.Tests
 
         //[Variation(Desc = "WriteNode DTD SYSTEM with identifier", Param = true)]
         //[Variation(Desc = "WriteNode DTD SYSTEM with identifier", Param = false)]
-        public int writeNode_XmlReader38()
+        [Fact]
+        public void writeNode_XmlReader38()
         {
             string strxml = "<!DOCTYPE root SYSTEM \"#\"><root/>";
             try
@@ -3023,7 +3163,8 @@ namespace System.Xml.Tests
 
         //[Variation(Desc = "WriteNode DTD SYSTEM with valid surrogate pair", Param = true)]
         //[Variation(Desc = "WriteNode DTD SYSTEM with valid surrogate pair", Param = false)]
-        public int writeNode_XmlReader39()
+        [Fact]
+        public void writeNode_XmlReader39()
         {
             string strxml = "<!DOCTYPE root SYSTEM \"\uD812\uDD12\"><root/>";
             string exp = "<!DOCTYPE root SYSTEM \"\uD812\uDD12\"[]><root />";
@@ -3077,7 +3218,8 @@ namespace System.Xml.Tests
         //[Variation(id = 3, Desc = "Input XML in utf8 encoding, text node has 1K+1 chars", Pri = 0, Param = "1025")]
         //[Variation(id = 4, Desc = "Input XML in utf8 encoding, text node has 2K chars", Pri = 0, Param = "2048")]
         //[Variation(id = 5, Desc = "Input XML in utf8 encoding, text node has 4K chars", Pri = 0, Param = "4096")]
-        public int writeNode_1()
+        [Fact]
+        public void writeNode_1()
         {
             int size = Int32.Parse(CurVariation.Param.ToString());
             using (XmlReader r = this.CreateReader(size))
@@ -3113,7 +3255,8 @@ namespace System.Xml.Tests
         //[Variation(id = 8, Desc = "Input XML in unicode encoding, text node has 1K+1 chars", Pri = 0, Param = "1025")]
         //[Variation(id = 9, Desc = "Input XML in unicode encoding, text node has 2K chars", Pri = 0, Param = "2048")]
         //[Variation(id = 10, Desc = "Input XML in unicode encoding, text node has 4K chars", Pri = 0, Param = "4096")]
-        public int writeNode_2()
+        [Fact]
+        public void writeNode_2()
         {
             int size = Int32.Parse(CurVariation.Param.ToString());
             using (XmlReader r = this.CreateReader(size))
@@ -3146,7 +3289,8 @@ namespace System.Xml.Tests
 
 
         //[Variation(id = 11, Desc = "Trailing surrogate pair", Pri = 1)]
-        public int writeNode_3()
+        [Fact]
+        public void writeNode_3()
         {
             StringBuilder sb = new StringBuilder();
             sb.Append("<root>");
@@ -3172,7 +3316,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 12, Desc = "Leading surrogate pair", Pri = 1)]
-        public int writeNode_4()
+        [Fact]
+        public void writeNode_4()
         {
             StringBuilder sb = new StringBuilder();
             sb.Append("<root>");
@@ -3198,7 +3343,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 13, Desc = "Split surrogate pair across 1K buffer boundary", Pri = 1)]
-        public int writeNode_5()
+        [Fact]
+        public void writeNode_5()
         {
             StringBuilder sb = new StringBuilder();
             sb.Append("<root>");
@@ -3229,7 +3375,8 @@ namespace System.Xml.Tests
     public partial class TCFullEndElement : XmlWriterTestCaseBase
     {
         //[Variation(id = 1, Desc = "Sanity test for WriteFullEndElement()", Pri = 0)]
-        public int fullEndElement_1()
+        [Fact]
+        public void fullEndElement_1()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -3240,7 +3387,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 2, Desc = "Call WriteFullEndElement before calling WriteStartElement", Pri = 2)]
-        public int fullEndElement_2()
+        [Fact]
+        public void fullEndElement_2()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -3260,7 +3408,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 3, Desc = "Call WriteFullEndElement after WriteEndElement", Pri = 2)]
-        public int fullEndElement_3()
+        [Fact]
+        public void fullEndElement_3()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -3282,7 +3431,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 4, Desc = "Call WriteFullEndElement without closing attributes", Pri = 1)]
-        public int fullEndElement_4()
+        [Fact]
+        public void fullEndElement_4()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -3295,7 +3445,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 5, Desc = "Call WriteFullEndElement after WriteStartAttribute", Pri = 1)]
-        public int fullEndElement_5()
+        [Fact]
+        public void fullEndElement_5()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -3307,7 +3458,8 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 6, Desc = "WriteFullEndElement for 100 nested elements", Pri = 1)]
-        public int fullEndElement_6()
+        [Fact]
+        public void fullEndElement_6()
         {
             using (XmlWriter w = CreateWriter())
             {
@@ -3328,7 +3480,8 @@ namespace System.Xml.Tests
         public partial class TCElemNamespace : XmlWriterTestCaseBase
         {
             //[Variation(id = 1, Desc = "Multiple NS decl for same prefix on an element", Pri = 1)]
-            public int elemNamespace_1()
+            [Fact]
+        public void elemNamespace_1()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3349,7 +3502,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 2, Desc = "Multiple NS decl for same prefix (same NS value) on an element", Pri = 1)]
-            public int elemNamespace_2()
+            [Fact]
+        public void elemNamespace_2()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3372,7 +3526,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 3, Desc = "Element and attribute have same prefix, but different namespace value", Pri = 2)]
-            public int elemNamespace_3()
+            [Fact]
+        public void elemNamespace_3()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3384,7 +3539,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 4, Desc = "Nested elements have same prefix, but different namespace", Pri = 1)]
-            public int elemNamespace_4()
+            [Fact]
+        public void elemNamespace_4()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3399,7 +3555,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 5, Desc = "Mapping reserved prefix xml to invalid namespace", Pri = 1)]
-            public int elemNamespace_5()
+            [Fact]
+        public void elemNamespace_5()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3419,7 +3576,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 6, Desc = "Mapping reserved prefix xml to correct namespace", Pri = 1)]
-            public int elemNamespace_6()
+            [Fact]
+        public void elemNamespace_6()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3431,7 +3589,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 7, Desc = "Write element with prefix beginning with xml", Pri = 1)]
-            public int elemNamespace_7()
+            [Fact]
+        public void elemNamespace_7()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3446,7 +3605,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 8, Desc = "Reuse prefix that refers the same as default namespace", Pri = 2)]
-            public int elemNamespace_8()
+            [Fact]
+        public void elemNamespace_8()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3461,7 +3621,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 9, Desc = "Should throw error for prefix=xmlns", Pri = 2)]
-            public int elemNamespace_9()
+            [Fact]
+        public void elemNamespace_9()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3482,7 +3643,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 10, Desc = "Create nested element without prefix but with namespace of parent element with a defined prefix", Pri = 2)]
-            public int elemNamespace_10()
+            [Fact]
+        public void elemNamespace_10()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3496,7 +3658,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 11, Desc = "Create different prefix for element and attribute that have same namespace", Pri = 2)]
-            public int elemNamespace_11()
+            [Fact]
+        public void elemNamespace_11()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3508,7 +3671,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 12, Desc = "Create same prefix for element and attribute that have same namespace", Pri = 2)]
-            public int elemNamespace_12()
+            [Fact]
+        public void elemNamespace_12()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3520,7 +3684,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 13, Desc = "Try to re-define NS prefix on attribute which is already defined on an element", Pri = 2)]
-            public int elemNamespace_13()
+            [Fact]
+        public void elemNamespace_13()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3532,7 +3697,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 14, Desc = "Namespace string contains surrogates, reuse at different levels", Pri = 1)]
-            public int elemNamespace_14()
+            [Fact]
+        public void elemNamespace_14()
             {
                 string uri = "urn:\uD800\uDC00";
 
@@ -3548,7 +3714,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 15, Desc = "Namespace containing entities, use at multiple levels", Pri = 1)]
-            public int elemNamespace_15()
+            [Fact]
+        public void elemNamespace_15()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3562,7 +3729,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 16, Desc = "Verify it resets default namespace when redefined earlier in the stack", Pri = 1)]
-            public int elemNamespace_16()
+            [Fact]
+        public void elemNamespace_16()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3578,7 +3746,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 17, Desc = "The default namespace for an element can not be changed once it is written out", Pri = 1)]
-            public int elemNamespace_17()
+            [Fact]
+        public void elemNamespace_17()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3600,7 +3769,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 18, Desc = "Map XML NS 'http://www.w3.org/XML/1998/namaespace' to another prefix", Pri = 1)]
-            public int elemNamespace_18()
+            [Fact]
+        public void elemNamespace_18()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3611,7 +3781,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 19, Desc = "Pass NULL as NS to WriteStartElement", Pri = 1)]
-            public int elemNamespace_19()
+            [Fact]
+        public void elemNamespace_19()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3624,7 +3795,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 20, Desc = "Write element in reserved XML namespace, should error", Pri = 1)]
-            public int elemNamespace_20()
+            [Fact]
+        public void elemNamespace_20()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3643,7 +3815,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 21, Desc = "Write element in reserved XMLNS namespace, should error", Pri = 1)]
-            public int elemNamespace_21()
+            [Fact]
+        public void elemNamespace_21()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3662,7 +3835,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 22, Desc = "Mapping a prefix to empty ns should error", Pri = 1)]
-            public int elemNamespace_22()
+            [Fact]
+        public void elemNamespace_22()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3683,7 +3857,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 23, Desc = "Pass null prefix to WriteStartElement()", Pri = 1)]
-            public int elemNamespace_23()
+            [Fact]
+        public void elemNamespace_23()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3694,7 +3869,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 24, Desc = "Pass String.Empty prefix to WriteStartElement()", Pri = 1)]
-            public int elemNamespace_24()
+            [Fact]
+        public void elemNamespace_24()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3705,7 +3881,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 25, Desc = "Pass null ns to WriteStartElement()", Pri = 1)]
-            public int elemNamespace_25()
+            [Fact]
+        public void elemNamespace_25()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3716,7 +3893,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 26, Desc = "Pass String.Empty ns to WriteStartElement()", Pri = 1)]
-            public int elemNamespace_26()
+            [Fact]
+        public void elemNamespace_26()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3727,7 +3905,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 27, Desc = "Pass null prefix to WriteStartElement() when namespace is in scope", Pri = 1)]
-            public int elemNamespace_27()
+            [Fact]
+        public void elemNamespace_27()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3739,7 +3918,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 28, Desc = "Pass String.Empty prefix to WriteStartElement() when namespace is in scope", Pri = 1)]
-            public int elemNamespace_28()
+            [Fact]
+        public void elemNamespace_28()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3751,7 +3931,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 29, Desc = "Pass null ns to WriteStartElement() when prefix is in scope", Pri = 1)]
-            public int elemNamespace_29()
+            [Fact]
+        public void elemNamespace_29()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3763,7 +3944,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 30, Desc = "Pass String.Empty ns to WriteStartElement() when prefix is in scope", Pri = 1)]
-            public int elemNamespace_30()
+            [Fact]
+        public void elemNamespace_30()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3781,7 +3963,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 31, Desc = "Pass String.Empty ns to WriteStartElement() when prefix is in scope", Pri = 1)]
-            public int elemNamespace_31()
+            [Fact]
+        public void elemNamespace_31()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3799,7 +3982,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 31, Desc = "Mapping empty ns uri to a prefix should error", Pri = 1)]
-            public int elemNamespace_32()
+            [Fact]
+        public void elemNamespace_32()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3822,7 +4006,8 @@ namespace System.Xml.Tests
         public partial class TCAttrNamespace : XmlWriterTestCaseBase
         {
             //[Variation(id = 1, Desc = "Define prefix 'xml' with invalid namespace URI 'foo'", Pri = 1)]
-            public int attrNamespace_1()
+            [Fact]
+        public void attrNamespace_1()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3843,7 +4028,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 2, Desc = "Bind NS prefix 'xml' with valid namespace URI", Pri = 1)]
-            public int attrNamespace_2()
+            [Fact]
+        public void attrNamespace_2()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3856,7 +4042,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 3, Desc = "Bind NS prefix 'xmlA' with namespace URI 'foo'", Pri = 1)]
-            public int attrNamespace_3()
+            [Fact]
+        public void attrNamespace_3()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3868,7 +4055,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 4, Desc = "Write attribute xml:space with correct namespace", Pri = 1)]
-            public int attrNamespace_4()
+            [Fact]
+        public void attrNamespace_4()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3880,7 +4068,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 5, Desc = "Write attribute xml:space with incorrect namespace", Pri = 1)]
-            public int attrNamespace_5()
+            [Fact]
+        public void attrNamespace_5()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3902,7 +4091,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 6, Desc = "Write attribute xml:lang with incorrect namespace", Pri = 1)]
-            public int attrNamespace_6()
+            [Fact]
+        public void attrNamespace_6()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3925,7 +4115,8 @@ namespace System.Xml.Tests
 
 
             //[Variation(id = 7, Desc = "WriteAttribute, define namespace attribute before value attribute", Pri = 1)]
-            public int attrNamespace_7()
+            [Fact]
+        public void attrNamespace_7()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3938,7 +4129,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 8, Desc = "WriteAttribute, define namespace attribute after value attribute", Pri = 1)]
-            public int attrNamespace_8()
+            [Fact]
+        public void attrNamespace_8()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3951,7 +4143,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 9, Desc = "WriteAttribute, redefine prefix at different scope and use both of them", Pri = 1)]
-            public int attrNamespace_9()
+            [Fact]
+        public void attrNamespace_9()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3968,7 +4161,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 10, Desc = "WriteAttribute, redefine namespace at different scope and use both of them", Pri = 1)]
-            public int attrNamespace_10()
+            [Fact]
+        public void attrNamespace_10()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3985,7 +4179,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 11, Desc = "WriteAttribute with colliding prefix with element", Pri = 1)]
-            public int attrNamespace_11()
+            [Fact]
+        public void attrNamespace_11()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -3997,7 +4192,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 12, Desc = "WriteAttribute with colliding namespace with element", Pri = 1)]
-            public int attrNamespace_12()
+            [Fact]
+        public void attrNamespace_12()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4009,7 +4205,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 13, Desc = "WriteAttribute with namespace but no prefix", Pri = 1)]
-            public int attrNamespace_13()
+            [Fact]
+        public void attrNamespace_13()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4021,7 +4218,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 14, Desc = "WriteAttribute for 2 attributes with same prefix but different namespace", Pri = 1)]
-            public int attrNamespace_14()
+            [Fact]
+        public void attrNamespace_14()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4034,7 +4232,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 15, Desc = "WriteAttribute with String.Empty and null as namespace and prefix values", Pri = 1)]
-            public int attrNamespace_15()
+            [Fact]
+        public void attrNamespace_15()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4049,7 +4248,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 16, Desc = "WriteAttribute to manually create attribute of xmlns:x", Pri = 1)]
-            public int attrNamespace_16()
+            [Fact]
+        public void attrNamespace_16()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4063,7 +4263,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 17, Desc = "WriteAttribute with namespace value = null while a prefix exists", Pri = 1)]
-            public int attrNamespace_17()
+            [Fact]
+        public void attrNamespace_17()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4075,7 +4276,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 18, Desc = "WriteAttribute with namespace value = String.Empty while a prefix exists", Pri = 1)]
-            public int attrNamespace_18()
+            [Fact]
+        public void attrNamespace_18()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4088,7 +4290,8 @@ namespace System.Xml.Tests
 
 
             //[Variation(id = 19, Desc = "WriteAttribe in nested elements with same namespace but different prefix", Pri = 1)]
-            public int attrNamespace_19()
+            [Fact]
+        public void attrNamespace_19()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4109,7 +4312,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 20, Desc = "WriteAttribute for x:a and xmlns:a diff namespace", Pri = 1)]
-            public int attrNamespace_20()
+            [Fact]
+        public void attrNamespace_20()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4122,7 +4326,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 21, Desc = "WriteAttribute for x:a and xmlns:a same namespace", Pri = 1)]
-            public int attrNamespace_21()
+            [Fact]
+        public void attrNamespace_21()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4135,7 +4340,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 22, Desc = "WriteAttribute with colliding NS and prefix for 2 attributes", Pri = 1)]
-            public int attrNamespace_22()
+            [Fact]
+        public void attrNamespace_22()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4149,7 +4355,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 23, Desc = "WriteAttribute with DQ in namespace", Pri = 2)]
-            public int attrNamespace_23()
+            [Fact]
+        public void attrNamespace_23()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4161,7 +4368,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 24, Desc = "Attach prefix with empty namespace", Pri = 1)]
-            public int attrNamespace_24()
+            [Fact]
+        public void attrNamespace_24()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4183,7 +4391,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 25, Desc = "Explicitly write namespace attribute that maps XML NS 'http://www.w3.org/XML/1998/namaespace' to another prefix", Pri = 1)]
-            public int attrNamespace_25()
+            [Fact]
+        public void attrNamespace_25()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4195,7 +4404,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 26, Desc = "Map XML NS 'http://www.w3.org/XML/1998/namaespace' to another prefix", Pri = 1)]
-            public int attrNamespace_26()
+            [Fact]
+        public void attrNamespace_26()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4207,7 +4417,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 27, Desc = "Pass empty namespace to WriteAttributeString(prefix, name, ns, value)", Pri = 1)]
-            public int attrNamespace_27()
+            [Fact]
+        public void attrNamespace_27()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4219,7 +4430,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 28, Desc = "Write attribute with prefix = xmlns", Pri = 1)]
-            public int attrNamespace_28()
+            [Fact]
+        public void attrNamespace_28()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4240,7 +4452,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 29, Desc = "Write attribute in reserved XML namespace, should error", Pri = 1)]
-            public int attrNamespace_29()
+            [Fact]
+        public void attrNamespace_29()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4260,7 +4473,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 30, Desc = "Write attribute in reserved XMLNS namespace, should error", Pri = 1)]
-            public int attrNamespace_30()
+            [Fact]
+        public void attrNamespace_30()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4280,7 +4494,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 31, Desc = "WriteAttributeString with no namespace under element with empty prefix", Pri = 1)]
-            public int attrNamespace_31()
+            [Fact]
+        public void attrNamespace_31()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4300,7 +4515,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 32, Desc = "Pass null prefix to WriteAttributeString()", Pri = 1)]
-            public int attrNamespace_32()
+            [Fact]
+        public void attrNamespace_32()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4312,7 +4528,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 33, Desc = "Pass String.Empty prefix to WriteAttributeString()", Pri = 1)]
-            public int attrNamespace_33()
+            [Fact]
+        public void attrNamespace_33()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4324,7 +4541,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 34, Desc = "Pass null ns to WriteAttributeString()", Pri = 1)]
-            public int attrNamespace_34()
+            [Fact]
+        public void attrNamespace_34()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4336,7 +4554,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 35, Desc = "Pass String.Empty ns to WriteAttributeString()", Pri = 1)]
-            public int attrNamespace_35()
+            [Fact]
+        public void attrNamespace_35()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4348,7 +4567,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 36, Desc = "Pass null prefix to WriteAttributeString() when namespace is in scope", Pri = 1)]
-            public int attrNamespace_36()
+            [Fact]
+        public void attrNamespace_36()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4360,7 +4580,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 37, Desc = "Pass String.Empty prefix to WriteAttributeString() when namespace is in scope", Pri = 1)]
-            public int attrNamespace_37()
+            [Fact]
+        public void attrNamespace_37()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4372,7 +4593,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 38, Desc = "Pass null ns to WriteAttributeString() when prefix is in scope", Pri = 1)]
-            public int attrNamespace_38()
+            [Fact]
+        public void attrNamespace_38()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4384,7 +4606,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 39, Desc = "Pass String.Empty ns to WriteAttributeString() when prefix is in scope", Pri = 1)]
-            public int attrNamespace_39()
+            [Fact]
+        public void attrNamespace_39()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4396,7 +4619,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 40, Desc = "Mapping empty ns uri to a prefix should error", Pri = 1)]
-            public int attrNamespace_40()
+            [Fact]
+        public void attrNamespace_40()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4421,7 +4645,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 42, Desc = "WriteStartAttribute with prefix = null, localName = xmlns - case 2", Pri = 1)]
-            public int attrNamespace_42()
+            [Fact]
+        public void attrNamespace_42()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4437,7 +4662,8 @@ namespace System.Xml.Tests
         public partial class TCCData : XmlWriterTestCaseBase
         {
             //[Variation(id = 1, Desc = "WriteCData with null", Pri = 1)]
-            public int CData_1()
+            [Fact]
+        public void CData_1()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4449,7 +4675,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 2, Desc = "WriteCData with String.Empty", Pri = 1)]
-            public int CData_2()
+            [Fact]
+        public void CData_2()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4461,7 +4688,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 3, Desc = "WriteCData Sanity test", Pri = 0)]
-            public int CData_3()
+            [Fact]
+        public void CData_3()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4473,7 +4701,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 4, Desc = "WriteCData with valid surrogate pair", Pri = 1)]
-            public int CData_4()
+            [Fact]
+        public void CData_4()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4485,7 +4714,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 5, Desc = "WriteCData with ]]>", Pri = 1)]
-            public int CData_5()
+            [Fact]
+        public void CData_5()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4497,7 +4727,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 6, Desc = "WriteCData with & < > chars, they should not be escaped", Pri = 2)]
-            public int CData_6()
+            [Fact]
+        public void CData_6()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4509,7 +4740,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 7, Desc = "WriteCData with <![CDATA[", Pri = 2)]
-            public int CData_7()
+            [Fact]
+        public void CData_7()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4520,7 +4752,8 @@ namespace System.Xml.Tests
                 return CompareReader("<Root><![CDATA[<![CDATA[]]></Root>") ? TEST_PASS : TEST_FAIL;
             }
             //[Variation(id = 8, Desc = "CData state machine", Pri = 2)]
-            public int CData_8()
+            [Fact]
+        public void CData_8()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4532,7 +4765,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 9, Desc = "WriteCData with invalid surrogate pair", Pri = 1)]
-            public int CData_9()
+            [Fact]
+        public void CData_9()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4553,7 +4787,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 10, Desc = "WriteCData after root element")]
-            public int CData_10()
+            [Fact]
+        public void CData_10()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4575,7 +4810,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 11, Desc = "Call WriteCData twice - that should write two CData blocks", Pri = 1)]
-            public int CData_11()
+            [Fact]
+        public void CData_11()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4588,7 +4824,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 12, Desc = "WriteCData with empty string at the buffer boundary", Pri = 1)]
-            public int CData_12()
+            [Fact]
+        public void CData_12()
             {
                 // WriteCData with empty string when the write buffer looks like
                 // <r>aaaaaaa....   (currently lenght is 2048 * 3 - len("<![CDATA[")
@@ -4616,7 +4853,8 @@ namespace System.Xml.Tests
             //[Variation(id = 16, Desc = "WriteCData with 0x0A with NewLineHandling.Replace", Pri = 1, Params = new Object[] { 0x0a, NewLineHandling.Replace, "<r><![CDATA[\r\n]]></r>" })]
             //[Variation(id = 17, Desc = "WriteCData with 0x0A with NewLineHandling.None", Pri = 1, Params = new Object[] { 0x0a, NewLineHandling.None, "<r><![CDATA[\n]]></r>" })]
             //[Variation(id = 18, Desc = "WriteCData with 0x0A with NewLineHandling.Entitize", Pri = 1, Params = new Object[] { 0x0a, NewLineHandling.Entitize, "<r><![CDATA[\n]]></r>" })]
-            public int CData_13()
+            [Fact]
+        public void CData_13()
             {
                 char ch = (char)(int)CurVariation.Params[0];
                 NewLineHandling nlh = (NewLineHandling)CurVariation.Params[1];
@@ -4640,7 +4878,8 @@ namespace System.Xml.Tests
         public partial class TCComment : XmlWriterTestCaseBase
         {
             //[Variation(id = 1, Desc = "Sanity test for WriteComment", Pri = 0)]
-            public int comment_1()
+            [Fact]
+        public void comment_1()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4652,7 +4891,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 2, Desc = "Comment value = String.Empty", Pri = 0)]
-            public int comment_2()
+            [Fact]
+        public void comment_2()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4664,7 +4904,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 3, Desc = "Comment value = null", Pri = 0)]
-            public int comment_3()
+            [Fact]
+        public void comment_3()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4676,7 +4917,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 4, Desc = "WriteComment with valid surrogate pair", Pri = 1)]
-            public int comment_4()
+            [Fact]
+        public void comment_4()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4688,7 +4930,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 5, Desc = "WriteComment with invalid surrogate pair", Pri = 1)]
-            public int comment_5()
+            [Fact]
+        public void comment_5()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4710,7 +4953,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 6, Desc = "WriteComment with -- in value", Pri = 1)]
-            public int comment_6()
+            [Fact]
+        public void comment_6()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4736,7 +4980,8 @@ namespace System.Xml.Tests
             //[Variation(id = 9, Desc = "WriteEntityRef with #xD", Param = "\xD", Pri = 1)]
             //[Variation(id = 10, Desc = "WriteEntityRef with #xA", Param = "\xD", Pri = 1)]
             //[Variation(id = 11, Desc = "WriteEntityRef with #xD#xA", Param = "\xD\xA", Pri = 1)]
-            public int entityRef_1()
+            [Fact]
+        public void entityRef_1()
             {
                 string temp = null;
                 switch (CurVariation.Param.ToString())
@@ -4777,7 +5022,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 12, Desc = "WriteEntityRef with entity defined in doctype", Pri = 1)]
-            public int entityRef_2()
+            [Fact]
+        public void entityRef_2()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4790,7 +5036,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 13, Desc = "WriteEntityRef in value for xml:lang attribute", Pri = 1)]
-            public int entityRef_3()
+            [Fact]
+        public void entityRef_3()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4806,7 +5053,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 14, Desc = "XmlWriter: Entity Refs are entitized twice in xml:lang attributes", Pri = 1)]
-            public int var_14()
+            [Fact]
+        public void var_14()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4825,7 +5073,8 @@ namespace System.Xml.Tests
         public partial class TCCharEntity : XmlWriterTestCaseBase
         {
             //[Variation(id = 1, Desc = "WriteCharEntity with valid Unicode character", Pri = 0)]
-            public int charEntity_1()
+            [Fact]
+        public void charEntity_1()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4841,7 +5090,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 2, Desc = "Call WriteCharEntity after WriteStartElement/WriteEndElement", Pri = 0)]
-            public int charEntity_2()
+            [Fact]
+        public void charEntity_2()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4857,7 +5107,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 3, Desc = "Call WriteCharEntity after WriteStartAttribute/WriteEndAttribute", Pri = 0)]
-            public int charEntity_3()
+            [Fact]
+        public void charEntity_3()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4872,7 +5123,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 4, Desc = "Character from low surrogate range", Pri = 1)]
-            public int charEntity_4()
+            [Fact]
+        public void charEntity_4()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4893,7 +5145,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 5, Desc = "Character from high surrogate range", Pri = 1)]
-            public int charEntity_5()
+            [Fact]
+        public void charEntity_5()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4914,7 +5167,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 7, Desc = "Sanity test, pass 'a'", Pri = 0)]
-            public int charEntity_7()
+            [Fact]
+        public void charEntity_7()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4927,7 +5181,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 8, Desc = "WriteCharEntity for special attributes", Pri = 1)]
-            public int charEntity_8()
+            [Fact]
+        public void charEntity_8()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4942,7 +5197,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 9, Desc = "XmlWriter generates invalid XML", Pri = 1)]
-            public int bug35637()
+            [Fact]
+        public void bug35637()
             {
                 XmlWriterSettings settings = new XmlWriterSettings
                 {
@@ -4974,7 +5230,8 @@ namespace System.Xml.Tests
         public partial class TCSurrogateCharEntity : XmlWriterTestCaseBase
         {
             //[Variation(id = 1, Desc = "SurrogateCharEntity after WriteStartElement/WriteEndElement", Pri = 1)]
-            public int surrogateEntity_1()
+            [Fact]
+        public void surrogateEntity_1()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -4990,7 +5247,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 2, Desc = "SurrogateCharEntity after WriteStartAttribute/WriteEndAttribute", Pri = 1)]
-            public int surrogateEntity_2()
+            [Fact]
+        public void surrogateEntity_2()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5005,7 +5263,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 3, Desc = "Test with limits of surrogate range", Pri = 1)]
-            public int surrogateEntity_3()
+            [Fact]
+        public void surrogateEntity_3()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5022,7 +5281,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 4, Desc = "Middle surrogate character", Pri = 1)]
-            public int surrogateEntity_4()
+            [Fact]
+        public void surrogateEntity_4()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5034,7 +5294,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 5, Desc = "Invalid high surrogate character", Pri = 1)]
-            public int surrogateEntity_5()
+            [Fact]
+        public void surrogateEntity_5()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5055,7 +5316,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 6, Desc = "Invalid low surrogate character", Pri = 1)]
-            public int surrogateEntity_6()
+            [Fact]
+        public void surrogateEntity_6()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5076,7 +5338,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 7, Desc = "Swap high-low surrogate characters", Pri = 1)]
-            public int surrogateEntity_7()
+            [Fact]
+        public void surrogateEntity_7()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5097,7 +5360,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 8, Desc = "WriteSurrogateCharEntity for special attributes", Pri = 1)]
-            public int surrogateEntity_8()
+            [Fact]
+        public void surrogateEntity_8()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5116,7 +5380,8 @@ namespace System.Xml.Tests
         public partial class TCPI : XmlWriterTestCaseBase
         {
             //[Variation(id = 1, Desc = "Sanity test for WritePI", Pri = 0)]
-            public int pi_1()
+            [Fact]
+        public void pi_1()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5128,7 +5393,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 2, Desc = "PI text value = null", Pri = 1)]
-            public int pi_2()
+            [Fact]
+        public void pi_2()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5140,7 +5406,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 3, Desc = "PI text value = String.Empty", Pri = 1)]
-            public int pi_3()
+            [Fact]
+        public void pi_3()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5152,7 +5419,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 4, Desc = "PI name = null should error", Pri = 1)]
-            public int pi_4()
+            [Fact]
+        public void pi_4()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5179,7 +5447,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 5, Desc = "PI name = String.Empty should error", Pri = 1)]
-            public int pi_5()
+            [Fact]
+        public void pi_5()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5200,7 +5469,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 6, Desc = "WritePI with xmlns as the name value")]
-            public int pi_6()
+            [Fact]
+        public void pi_6()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5212,7 +5482,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 7, Desc = "WritePI with XmL as the name value")]
-            public int pi_7()
+            [Fact]
+        public void pi_7()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5235,7 +5506,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 8, Desc = "WritePI before XmlDecl", Pri = 1)]
-            public int pi_8()
+            [Fact]
+        public void pi_8()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5256,7 +5528,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 9, Desc = "WritePI (after StartDocument) with name = 'xml' text = 'version = 1.0' should error", Pri = 1)]
-            public int pi_9()
+            [Fact]
+        public void pi_9()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5277,7 +5550,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 10, Desc = "WritePI (before StartDocument) with name = 'xml' text = 'version = 1.0' should error", Pri = 1)]
-            public int pi_10()
+            [Fact]
+        public void pi_10()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5298,7 +5572,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 11, Desc = "Include PI end tag ?> as part of the text value", Pri = 1)]
-            public int pi_11()
+            [Fact]
+        public void pi_11()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5310,7 +5585,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 12, Desc = "WriteProcessingInstruction with valid surrogate pair", Pri = 1)]
-            public int pi_12()
+            [Fact]
+        public void pi_12()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5322,7 +5598,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 13, Desc = "WritePI with invalid surrogate pair", Pri = 1)]
-            public int pi_13()
+            [Fact]
+        public void pi_13()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5349,7 +5626,8 @@ namespace System.Xml.Tests
         {
             //[Variation(id = 1, Desc = "Name = null", Param = "null", Pri = 1)]
             //[Variation(id = 2, Desc = "Name = String.Empty", Param = "String.Empty", Pri = 1)]
-            public int writeNmToken_1()
+            [Fact]
+        public void writeNmToken_1()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5376,7 +5654,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 2, Desc = "Sanity test, Name = foo", Pri = 1)]
-            public int writeNmToken_2()
+            [Fact]
+        public void writeNmToken_2()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5388,7 +5667,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 3, Desc = "Name contains letters, digits, . _ - : chars", Pri = 1)]
-            public int writeNmToken_3()
+            [Fact]
+        public void writeNmToken_3()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5403,7 +5683,8 @@ namespace System.Xml.Tests
             //[Variation(id = 5, Desc = "Name contains ? char", Param = "test?", Pri = 1)]
             //[Variation(id = 6, Desc = "Name contains SQ", Param = "test'", Pri = 1)]
             //[Variation(id = 7, Desc = "Name contains DQ", Param = "\"test", Pri = 1)]
-            public int writeNmToken_4()
+            [Fact]
+        public void writeNmToken_4()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5436,7 +5717,8 @@ namespace System.Xml.Tests
         {
             //[Variation(id = 1, Desc = "Name = null", Param = "null", Pri = 1)]
             //[Variation(id = 2, Desc = "Name = String.Empty", Param = "String.Empty", Pri = 1)]
-            public int writeName_1()
+            [Fact]
+        public void writeName_1()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5463,7 +5745,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 3, Desc = "Sanity test, Name = foo", Pri = 1)]
-            public int writeName_2()
+            [Fact]
+        public void writeName_2()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5475,7 +5758,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 3, Desc = "Sanity test, Name = foo:bar", Pri = 1)]
-            public int writeName_3()
+            [Fact]
+        public void writeName_3()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5488,7 +5772,8 @@ namespace System.Xml.Tests
 
             //[Variation(id = 4, Desc = "Name starts with :", Param = ":bar", Pri = 1)]
             //[Variation(id = 5, Desc = "Name contains whitespace char", Param = "foo bar", Pri = 1)]
-            public int writeName_4()
+            [Fact]
+        public void writeName_4()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5521,7 +5806,8 @@ namespace System.Xml.Tests
         {
             //[Variation(id = 1, Desc = "Name = null", Param = "null", Pri = 1)]
             //[Variation(id = 2, Desc = "Name = String.Empty", Param = "String.Empty", Pri = 1)]
-            public int writeQName_1()
+            [Fact]
+        public void writeQName_1()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5555,7 +5841,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 3, Desc = "WriteQName with correct NS", Pri = 1)]
-            public int writeQName_2()
+            [Fact]
+        public void writeQName_2()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5568,7 +5855,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 4, Desc = "WriteQName when NS is auto-generated", Pri = 1)]
-            public int writeQName_3()
+            [Fact]
+        public void writeQName_3()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5580,7 +5868,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 5, Desc = "QName = foo:bar when foo is not in scope", Pri = 1)]
-            public int writeQName_4()
+            [Fact]
+        public void writeQName_4()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5610,7 +5899,8 @@ namespace System.Xml.Tests
 
             //[Variation(id = 6, Desc = "Name starts with :", Param = ":bar", Pri = 1)]
             //[Variation(id = 7, Desc = "Name contains whitespace char", Param = "foo bar", Pri = 1)]
-            public int writeQName_5()
+            [Fact]
+        public void writeQName_5()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5637,7 +5927,8 @@ namespace System.Xml.Tests
         public partial class TCWriteChars : TCWriteBuffer
         {
             //[Variation(id = 1, Desc = "WriteChars with valid buffer, number, count", Pri = 0)]
-            public int writeChars_1()
+            [Fact]
+        public void writeChars_1()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5651,7 +5942,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 2, Desc = "WriteChars with & < >", Pri = 1)]
-            public int writeChars_2()
+            [Fact]
+        public void writeChars_2()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5666,7 +5958,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 3, Desc = "WriteChars following WriteStartAttribute", Pri = 1)]
-            public int writeChars_3()
+            [Fact]
+        public void writeChars_3()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5682,7 +5975,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 4, Desc = "WriteChars with entity ref included", Pri = 1)]
-            public int writeChars_4()
+            [Fact]
+        public void writeChars_4()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5697,7 +5991,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 5, Desc = "WriteChars with buffer = null", Pri = 2)]
-            public int writeChars_5()
+            [Fact]
+        public void writeChars_5()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5718,37 +6013,43 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 6, Desc = "WriteChars with count > buffer size", Pri = 1)]
-            public int writeChars_6()
+            [Fact]
+        public void writeChars_6()
             {
                 return VerifyInvalidWrite("WriteChars", 5, 0, 6, typeof(ArgumentOutOfRangeException));
             }
 
             //[Variation(id = 7, Desc = "WriteChars with count < 0", Pri = 1)]
-            public int writeChars_7()
+            [Fact]
+        public void writeChars_7()
             {
                 return VerifyInvalidWrite("WriteChars", 5, 2, -1, typeof(ArgumentOutOfRangeException));
             }
 
             //[Variation(id = 8, Desc = "WriteChars with index > buffer size", Pri = 1)]
-            public int writeChars_8()
+            [Fact]
+        public void writeChars_8()
             {
                 return VerifyInvalidWrite("WriteChars", 5, 6, 1, typeof(ArgumentOutOfRangeException));
             }
 
             //[Variation(id = 9, Desc = "WriteChars with index < 0", Pri = 1)]
-            public int writeChars_9()
+            [Fact]
+        public void writeChars_9()
             {
                 return VerifyInvalidWrite("WriteChars", 5, -1, 1, typeof(ArgumentOutOfRangeException));
             }
 
             //[Variation(id = 10, Desc = "WriteChars with index + count exceeds buffer", Pri = 1)]
-            public int writeChars_10()
+            [Fact]
+        public void writeChars_10()
             {
                 return VerifyInvalidWrite("WriteChars", 5, 2, 5, typeof(ArgumentOutOfRangeException));
             }
 
             //[Variation(id = 11, Desc = "WriteChars for xml:lang attribute, index = count = 0", Pri = 1)]
-            public int writeChars_11()
+            [Fact]
+        public void writeChars_11()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5768,7 +6069,8 @@ namespace System.Xml.Tests
         public partial class TCWriteString : XmlWriterTestCaseBase
         {
             //[Variation(id = 1, Desc = "WriteString(null)", Pri = 0)]
-            public int writeString_1()
+            [Fact]
+        public void writeString_1()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5780,7 +6082,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 2, Desc = "WriteString(String.Empty)", Pri = 1)]
-            public int writeString_2()
+            [Fact]
+        public void writeString_2()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5792,7 +6095,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 3, Desc = "WriteString with valid surrogate pair", Pri = 1)]
-            public int writeString_3()
+            [Fact]
+        public void writeString_3()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5804,7 +6108,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 4, Desc = "WriteString with invalid surrogate pair", Pri = 1)]
-            public int writeString_4()
+            [Fact]
+        public void writeString_4()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5826,7 +6131,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 5, Desc = "WriteString with entity reference", Pri = 1)]
-            public int writeString_5()
+            [Fact]
+        public void writeString_5()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5838,7 +6144,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 6, Desc = "WriteString with single/double quote, &, <, >", Pri = 1)]
-            public int writeString_6()
+            [Fact]
+        public void writeString_6()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5850,7 +6157,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 9, Desc = "WriteString for value greater than x1F", Pri = 1)]
-            public int writeString_9()
+            [Fact]
+        public void writeString_9()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5862,7 +6170,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 10, Desc = "WriteString with CR, LF, CR LF inside element", Pri = 1)]
-            public int writeString_10()
+            [Fact]
+        public void writeString_10()
             {
                 // By default NormalizeNewLines = false and NewLineChars = \r\n
                 // So \r, \n or \r\n gets replaces by \r\n in element content
@@ -5884,7 +6193,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 11, Desc = "WriteString with CR, LF, CR LF inside attribute value", Pri = 1)]
-            public int writeString_11()
+            [Fact]
+        public void writeString_11()
             {
                 // \r, \n and \r\n gets replaced by char entities &#xD; &#xA; and &#xD;&#xA; respectively
 
@@ -5903,7 +6213,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 12, Desc = "Call WriteString for LF inside attribute", Pri = 1)]
-            public int writeString_12()
+            [Fact]
+        public void writeString_12()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -5916,7 +6227,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 13, Desc = "Surrogate characters in text nodes, range limits", Pri = 1)]
-            public int writeString_13()
+            [Fact]
+        public void writeString_13()
             {
                 char[] invalidXML = { '\uD800', '\uDC00', '\uD800', '\uDFFF', '\uDBFF', '\uDC00', '\uDBFF', '\uDFFF' };
                 string invXML = new String(invalidXML);
@@ -5931,7 +6243,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 14, Desc = "High surrogate on last position", Pri = 1)]
-            public int writeString_14()
+            [Fact]
+        public void writeString_14()
             {
                 char[] invalidXML = { 'a', 'b', '\uDA34' };
                 string invXML = new String(invalidXML);
@@ -5955,7 +6268,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 15, Desc = "Low surrogate on first position", Pri = 1)]
-            public int writeString_15()
+            [Fact]
+        public void writeString_15()
             {
                 char[] invalidXML = { '\uDF20', 'b', 'c' };
                 string invXML = new String(invalidXML);
@@ -5979,7 +6293,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 16, Desc = "Swap low-high surrogates", Pri = 1)]
-            public int writeString_16()
+            [Fact]
+        public void writeString_16()
             {
                 char[] invalidXML = { 'a', '\uDE40', '\uDA72', 'c' };
                 string invXML = new String(invalidXML);
@@ -6007,7 +6322,8 @@ namespace System.Xml.Tests
         public partial class TCWhiteSpace : XmlWriterTestCaseBase
         {
             //[Variation(id = 1, Desc = "WriteWhitespace with values #x20 #x9 #xD #xA", Pri = 1)]
-            public int whitespace_1()
+            [Fact]
+        public void whitespace_1()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -6027,7 +6343,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 2, Desc = "WriteWhitespace in the middle of text", Pri = 1)]
-            public int whitespace_2()
+            [Fact]
+        public void whitespace_2()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -6041,7 +6358,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(id = 3, Desc = "WriteWhitespace before and after root element", Pri = 1)]
-            public int whitespace_3()
+            [Fact]
+        public void whitespace_3()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -6057,7 +6375,8 @@ namespace System.Xml.Tests
 
             //[Variation(id = 4, Desc = "WriteWhitespace with null ", Param = "null", Pri = 1)]
             //[Variation(id = 5, Desc = "WriteWhitespace with String.Empty ", Param = "String.Empty", Pri = 1)]
-            public int whitespace_4()
+            [Fact]
+        public void whitespace_4()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -6079,7 +6398,8 @@ namespace System.Xml.Tests
             //[Variation(id = 8, Desc = "WriteWhitespace with invalid char", Param = "\x0", Pri = 1)]
             //[Variation(id = 9, Desc = "WriteWhitespace with invalid char", Param = "\x10", Pri = 1)]
             //[Variation(id = 10, Desc = "WriteWhitespace with invalid char", Param = "\x1F", Pri = 1)]
-            public int whitespace_5()
+            [Fact]
+        public void whitespace_5()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -6104,7 +6424,8 @@ namespace System.Xml.Tests
         public partial class TCWriteValue : XmlWriterTestCaseBase
         {
             //[Variation(Desc = "Write multiple atomic values inside element", Pri = 1)]
-            public int writeValue_1()
+            [Fact]
+        public void writeValue_1()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -6118,7 +6439,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(Desc = "Write multiple atomic values inside attribute", Pri = 1)]
-            public int writeValue_2()
+            [Fact]
+        public void writeValue_2()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -6133,7 +6455,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(Desc = "Write multiple atomic values inside element, separate by WriteWhitespace(' ')", Pri = 1)]
-            public int writeValue_3()
+            [Fact]
+        public void writeValue_3()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -6150,7 +6473,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(Desc = "Write multiple atomic values inside element, separate by WriteString(' ')", Pri = 1)]
-            public int writeValue_4()
+            [Fact]
+        public void writeValue_4()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -6167,7 +6491,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(Desc = "Write multiple atomic values inside attribute, separate by WriteWhitespace(' ')", Pri = 1)]
-            public int writeValue_5()
+            [Fact]
+        public void writeValue_5()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -6193,7 +6518,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(Desc = "Write multiple atomic values inside attribute, separate by WriteString(' ')", Pri = 1)]
-            public int writeValue_6()
+            [Fact]
+        public void writeValue_6()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -6211,7 +6537,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(Desc = "WriteValue(long)", Pri = 1)]
-            public int writeValue_7()
+            [Fact]
+        public void writeValue_7()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -6227,7 +6554,8 @@ namespace System.Xml.Tests
 
             //[Variation(Desc = "WriteValue((string)null)", Param = "string", Pri = 1)]
             //[Variation(Desc = "WriteValue((object)null)", Param = "object", Pri = 1)]
-            public int writeValue_8()
+            [Fact]
+        public void writeValue_8()
             {
                 using (XmlWriter w = CreateWriter())
                 {
@@ -7094,7 +7422,8 @@ namespace System.Xml.Tests
             //[Variation(Desc = "attr.WriteValue(UriArrayToUriArray)", Params = new object[] { 2, "UriArray", "UriArray", true, null })]
             //[Variation(Desc = "attr.WriteValue(XmlQualifiedNameToXmlQualifiedName)", Params = new object[] { 2, "XmlQualifiedName", "XmlQualifiedName", true, null })]
 
-            public int writeValue_27()
+            [Fact]
+        public void writeValue_27()
             {
                 if (CurVariation.Desc.Equals("elem.WriteValue(new DateTimeOffset)"))
                 {
@@ -7176,7 +7505,8 @@ namespace System.Xml.Tests
             //[Variation(Desc = "TimeZone.CurrentTimeZone", Pri = 2, Param = 8)]
             //[Variation(Desc = "WriteValue(Tuple)", Pri = 2, Param = 9)]
             //[Variation(Desc = "WriteValue(DynamicObject)", Pri = 2, Param = 10)]
-            public int writeValue_28()
+            [Fact]
+        public void writeValue_28()
             {
                 int param = (int)CurVariation.Param;
 
@@ -7223,7 +7553,8 @@ namespace System.Xml.Tests
 
             //[Variation(Desc = "WriteValue(stringToXmlQualifiedName-invalid)", Pri = 1, Param = 1)]
             //[Variation(Desc = "WriteValue(stringToXmlQualifiedName-invalid attr)", Pri = 1, Param = 2)]
-            public int writeValue_30()
+            [Fact]
+        public void writeValue_30()
             {
                 int param = (int)CurVariation.Param;
                 using (XmlWriter w = CreateWriter())
@@ -7251,7 +7582,8 @@ namespace System.Xml.Tests
             //[Variation(Desc = "5.WriteValue(DateTimeOffset) - valid", Params = new object[] { "9999-12-31T12:59:59.9999999+14:00", "<Root>9999-12-31T12:59:59.9999999+14:00</Root>" })]
             //[Variation(Desc = "6.WriteValue(DateTimeOffset) - valid", Params = new object[] { "9999-12-31T12:59:59-11:00", "<Root>9999-12-31T12:59:59-11:00</Root>" })]
             //[Variation(Desc = "7.WriteValue(DateTimeOffset) - valid", Params = new object[] { "2000-02-29T23:59:59.999999999999+13:60", "<Root>2000-03-01T00:00:00+14:00</Root>" })]
-            public int writeValue_31()
+            [Fact]
+        public void writeValue_31()
             {
                 string value = (string)CurVariation.Params[0];
                 string expectedValue = (string)CurVariation.Params[1];
@@ -7266,7 +7598,8 @@ namespace System.Xml.Tests
             }
 
             //[Variation(Desc = "WriteValue(new DateTimeOffset) - valid", Pri = 2)]
-            public int writeValue_32()
+            [Fact]
+        public void writeValue_32()
             {
                 DateTimeOffset actual;
                 string expect;
@@ -7334,7 +7667,8 @@ namespace System.Xml.Tests
             public partial class TCLookUpPrefix : XmlWriterTestCaseBase
             {
                 //[Variation(id = 1, Desc = "LookupPrefix with null", Pri = 2)]
-                public int lookupPrefix_1()
+                [Fact]
+        public void lookupPrefix_1()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -7356,7 +7690,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 2, Desc = "LookupPrefix with String.Empty should return String.Empty", Pri = 1)]
-                public int lookupPrefix_2()
+                [Fact]
+        public void lookupPrefix_2()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -7368,7 +7703,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 3, Desc = "LookupPrefix with generated namespace used for attributes", Pri = 1)]
-                public int lookupPrefix_3()
+                [Fact]
+        public void lookupPrefix_3()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -7382,7 +7718,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 4, Desc = "LookupPrefix for namespace used with element", Pri = 0)]
-                public int lookupPrefix_4()
+                [Fact]
+        public void lookupPrefix_4()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -7394,7 +7731,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 5, Desc = "LookupPrefix for namespace used with attribute", Pri = 0)]
-                public int lookupPrefix_5()
+                [Fact]
+        public void lookupPrefix_5()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -7407,7 +7745,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 6, Desc = "Lookup prefix for a default namespace", Pri = 1)]
-                public int lookupPrefix_6()
+                [Fact]
+        public void lookupPrefix_6()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -7420,7 +7759,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 7, Desc = "Lookup prefix for nested element with same namespace but different prefix", Pri = 1)]
-                public int lookupPrefix_7()
+                [Fact]
+        public void lookupPrefix_7()
                 {
                     string s = "";
                     using (XmlWriter w = CreateWriter())
@@ -7448,7 +7788,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 8, Desc = "Lookup prefix for multiple prefix associated with the same namespace", Pri = 1)]
-                public int lookupPrefix_8()
+                [Fact]
+        public void lookupPrefix_8()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -7461,7 +7802,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 9, Desc = "Lookup prefix for namespace defined outside the scope of an empty element and also defined in its parent", Pri = 1)]
-                public int lookupPrefix_9()
+                [Fact]
+        public void lookupPrefix_9()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -7476,7 +7818,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 10, Desc = "Bug 53940: Lookup prefix for namespace declared as default and also with a prefix", Pri = 1)]
-                public int lookupPrefix_10()
+                [Fact]
+        public void lookupPrefix_10()
                 {
                     string s;
                     using (XmlWriter w = CreateWriter())
@@ -7498,7 +7841,8 @@ namespace System.Xml.Tests
             public partial class TCXmlSpace : XmlWriterTestCaseBase
             {
                 //[Variation(id = 1, Desc = "Verify XmlSpace as Preserve", Pri = 0)]
-                public int xmlSpace_1()
+                [Fact]
+        public void xmlSpace_1()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -7510,7 +7854,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 2, Desc = "Verify XmlSpace as Default", Pri = 0)]
-                public int xmlSpace_2()
+                [Fact]
+        public void xmlSpace_2()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -7522,7 +7867,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 3, Desc = "Verify XmlSpace as None", Pri = 0)]
-                public int xmlSpace_3()
+                [Fact]
+        public void xmlSpace_3()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -7533,7 +7879,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 4, Desc = "Verify XmlSpace within an empty element", Pri = 1)]
-                public int xmlSpace_4()
+                [Fact]
+        public void xmlSpace_4()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -7550,7 +7897,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 5, Desc = "Verify XmlSpace - scope with nested elements (both PROLOG and EPILOG)", Pri = 1)]
-                public int xmlSpace_5()
+                [Fact]
+        public void xmlSpace_5()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -7582,7 +7930,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 6, Desc = "Verify XmlSpace - outside defined scope", Pri = 1)]
-                public int xmlSpace_6()
+                [Fact]
+        public void xmlSpace_6()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -7599,7 +7948,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 7, Desc = "Verify XmlSpace with invalid space value", Pri = 0)]
-                public int xmlSpace_7()
+                [Fact]
+        public void xmlSpace_7()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -7621,7 +7971,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 8, Desc = "Duplicate xml:space attr should error", Pri = 1)]
-                public int xmlSpace_8()
+                [Fact]
+        public void xmlSpace_8()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -7643,7 +7994,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 9, Desc = "Verify XmlSpace value when received through WriteString", Pri = 1)]
-                public int xmlSpace_9()
+                [Fact]
+        public void xmlSpace_9()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -7663,7 +8015,8 @@ namespace System.Xml.Tests
             public partial class TCXmlLang : XmlWriterTestCaseBase
             {
                 //[Variation(id = 1, Desc = "Verify XmlLang sanity test", Pri = 0)]
-                public int XmlLang_1()
+                [Fact]
+        public void XmlLang_1()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -7680,7 +8033,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 2, Desc = "Verify that default value of XmlLang is NULL", Pri = 1)]
-                public int XmlLang_2()
+                [Fact]
+        public void XmlLang_2()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -7697,7 +8051,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 3, Desc = "Verify XmlLang scope inside nested elements (both PROLOG and EPILOG)", Pri = 1)]
-                public int XmlLang_3()
+                [Fact]
+        public void XmlLang_3()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -7728,7 +8083,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 4, Desc = "Duplicate xml:lang attr should error", Pri = 1)]
-                public int XmlLang_4()
+                [Fact]
+        public void XmlLang_4()
                 {
                     /*if (WriterType == WriterType.XmlTextWriter)
                         return TEST_SKIPPED;*/
@@ -7753,7 +8109,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 5, Desc = "Verify XmlLang value when received through WriteAttributes", Pri = 1)]
-                public int XmlLang_5()
+                [Fact]
+        public void XmlLang_5()
                 {
                     XmlReaderSettings xrs = new XmlReaderSettings();
                     xrs.IgnoreWhitespace = true;
@@ -7781,7 +8138,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 6, Desc = "Verify XmlLang value when received through WriteString")]
-                public int XmlLang_6()
+                [Fact]
+        public void XmlLang_6()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -7797,7 +8155,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 7, Desc = "Should not check XmlLang value", Pri = 2)]
-                public int XmlLang_7()
+                [Fact]
+        public void XmlLang_7()
                 {
                     string[] langs = new string[] { "en-", "e n", "en", "en-US", "e?", "en*US" };
 
@@ -7818,7 +8177,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 8, Desc = "More XmlLang with valid sequence", Pri = 1)]
-                public int XmlLang_8()
+                [Fact]
+        public void XmlLang_8()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -7833,7 +8193,8 @@ namespace System.Xml.Tests
             public partial class TCWriteRaw : TCWriteBuffer
             {
                 //[Variation(id = 1, Desc = "Call both WriteRaw Methods", Pri = 1)]
-                public int writeRaw_1()
+                [Fact]
+        public void writeRaw_1()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -7849,7 +8210,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 2, Desc = "WriteRaw with entites and entitized characters", Pri = 1)]
-                public int writeRaw_2()
+                [Fact]
+        public void writeRaw_2()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -7866,7 +8228,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 3, Desc = "WriteRaw with entire Xml Document in string", Pri = 1)]
-                public int writeRaw_3()
+                [Fact]
+        public void writeRaw_3()
                 {
                     XmlWriter w = CreateWriter();
                     String t = "<root><node1></node1><node2></node2></root>";
@@ -7878,7 +8241,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 4, Desc = "Call WriteRaw to write the value of xml:space")]
-                public int writeRaw_4()
+                [Fact]
+        public void writeRaw_4()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -7892,7 +8256,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 5, Desc = "Call WriteRaw to write the value of xml:lang", Pri = 1)]
-                public int writerRaw_5()
+                [Fact]
+        public void writerRaw_5()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -7910,37 +8275,43 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 6, Desc = "WriteRaw with count > buffer size", Pri = 1)]
-                public int writeRaw_6()
+                [Fact]
+        public void writeRaw_6()
                 {
                     return VerifyInvalidWrite("WriteRaw", 5, 0, 6, typeof(ArgumentOutOfRangeException/*ArgumentException*/));
                 }
 
                 //[Variation(id = 7, Desc = "WriteRaw with count < 0", Pri = 1)]
-                public int writeRaw_7()
+                [Fact]
+        public void writeRaw_7()
                 {
                     return VerifyInvalidWrite("WriteRaw", 5, 2, -1, typeof(ArgumentOutOfRangeException));
                 }
 
                 //[Variation(id = 8, Desc = "WriteRaw with index > buffer size", Pri = 1)]
-                public int writeRaw_8()
+                [Fact]
+        public void writeRaw_8()
                 {
                     return VerifyInvalidWrite("WriteRaw", 5, 6, 1, typeof(ArgumentOutOfRangeException/*ArgumentException*/));
                 }
 
                 //[Variation(id = 9, Desc = "WriteRaw with index < 0", Pri = 1)]
-                public int writeRaw_9()
+                [Fact]
+        public void writeRaw_9()
                 {
                     return VerifyInvalidWrite("WriteRaw", 5, -1, 1, typeof(ArgumentOutOfRangeException));
                 }
 
                 //[Variation(id = 10, Desc = "WriteRaw with index + count exceeds buffer", Pri = 1)]
-                public int writeRaw_10()
+                [Fact]
+        public void writeRaw_10()
                 {
                     return VerifyInvalidWrite("WriteRaw", 5, 2, 5, typeof(ArgumentOutOfRangeException/*ArgumentException*/));
                 }
 
                 //[Variation(id = 11, Desc = "WriteRaw with buffer = null", Pri = 1)]
-                public int writeRaw_11()
+                [Fact]
+        public void writeRaw_11()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -7960,7 +8331,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 12, Desc = "WriteRaw with valid surrogate pair", Pri = 1)]
-                public int writeRaw_12()
+                [Fact]
+        public void writeRaw_12()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -7978,7 +8350,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 13, Desc = "WriteRaw with invalid surrogate pair", Pri = 1)]
-                public int writeRaw_13()
+                [Fact]
+        public void writeRaw_13()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -7999,7 +8372,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 14, Desc = "Index = Count = 0", Pri = 1)]
-                public int writeRaw_14()
+                [Fact]
+        public void writeRaw_14()
                 {
                     string lang = new String('a', 1);
                     char[] buffer = lang.ToCharArray();
@@ -8024,7 +8398,8 @@ namespace System.Xml.Tests
                 //[Variation(id = 12, Desc = "Call WriteBase64 with 77 chars", Pri = 0, Param = "77")]
                 //[Variation(id = 13, Desc = "Call WriteBase64 with 1024 chars", Pri = 0, Param = "1024")]
                 //[Variation(id = 14, Desc = "Call WriteBase64 with 4*1024 chars", Pri = 0, Param = "4096")]
-                public int Base64_1()
+                [Fact]
+        public void Base64_1()
                 {
                     String strBase64 = String.Empty;
                     int strBase64Len = Int32.Parse(CurVariation.Param.ToString());
@@ -8067,37 +8442,43 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 20, Desc = "WriteBase64 with count > buffer size", Pri = 1)]
-                public int Base64_2()
+                [Fact]
+        public void Base64_2()
                 {
                     return VerifyInvalidWrite("WriteBase64", 5, 0, 6, typeof(ArgumentOutOfRangeException/*ArgumentException*/));
                 }
 
                 //[Variation(id = 30, Desc = "WriteBase64 with count < 0", Pri = 1)]
-                public int Base64_3()
+                [Fact]
+        public void Base64_3()
                 {
                     return VerifyInvalidWrite("WriteBase64", 5, 2, -1, typeof(ArgumentOutOfRangeException));
                 }
 
                 //[Variation(id = 40, Desc = "WriteBase64 with index > buffer size", Pri = 1)]
-                public int Base64_4()
+                [Fact]
+        public void Base64_4()
                 {
                     return VerifyInvalidWrite("WriteBase64", 5, 5, 1, typeof(ArgumentOutOfRangeException/*ArgumentException*/));
                 }
 
                 //[Variation(id = 50, Desc = "WriteBase64 with index < 0", Pri = 1)]
-                public int Base64_5()
+                [Fact]
+        public void Base64_5()
                 {
                     return VerifyInvalidWrite("WriteBase64", 5, -1, 1, typeof(ArgumentOutOfRangeException));
                 }
 
                 //[Variation(id = 60, Desc = "WriteBase64 with index + count exceeds buffer", Pri = 1)]
-                public int Base64_6()
+                [Fact]
+        public void Base64_6()
                 {
                     return VerifyInvalidWrite("WriteBase64", 5, 2, 5, typeof(ArgumentOutOfRangeException/*ArgumentException*/));
                 }
 
                 //[Variation(id = 70, Desc = "WriteBase64 with buffer = null", Pri = 1)]
-                public int Base64_7()
+                [Fact]
+        public void Base64_7()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -8117,7 +8498,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 80, Desc = "Index = Count = 0", Pri = 1)]
-                public int Base64_8()
+                [Fact]
+        public void Base64_8()
                 {
                     byte[] buffer = new byte[10];
 
@@ -8134,7 +8516,8 @@ namespace System.Xml.Tests
                 //[Variation(id = 90, Desc = "Base64 should not be allowed inside xml:lang value", Pri = 1, Param = "lang")]
                 //[Variation(id = 91, Desc = "Base64 should not be allowed inside xml:space value", Pri = 1, Param = "space")]
                 //[Variation(id = 92, Desc = "Base64 should not be allowed inside namespace decl", Pri = 1, Param = "ns")]
-                public int Base64_9()
+                [Fact]
+        public void Base64_9()
                 {
                     byte[] buffer = new byte[10];
 
@@ -8168,7 +8551,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 94, Desc = "WriteBase64 should flush the buffer if WriteString is called", Pri = 1)]
-                public int Base64_11()
+                [Fact]
+        public void Base64_11()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -8189,7 +8573,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 95, Desc = "XmlWriter.WriteBase64 inserts new lines where they should not be...", Pri = 1)]
-                public int Base64_12()
+                [Fact]
+        public void Base64_12()
                 {
                     byte[][] byteArrays = new byte[][]
                 {
@@ -8322,7 +8707,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 96, Desc = "XmlWriter does not flush Base64 data on the Close", Pri = 1)]
-                public int Base64_13()
+                [Fact]
+        public void Base64_13()
                 {
                     byte[] data = new byte[] { 60, 65, 47, 62 }; // <A/>
 
@@ -8351,7 +8737,8 @@ namespace System.Xml.Tests
             public partial class TCWriteBinHex : TCWriteBuffer
             {
                 //[Variation(id = 1, Desc = "Call WriteBinHex with correct byte, index, and count", Pri = 0)]
-                public int BinHex_1()
+                [Fact]
+        public void BinHex_1()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -8366,37 +8753,43 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 2, Desc = "WriteBinHex with count > buffer size", Pri = 1)]
-                public int BinHex_2()
+                [Fact]
+        public void BinHex_2()
                 {
                     return VerifyInvalidWrite("WriteBinHex", 5, 0, 6, typeof(ArgumentOutOfRangeException/*ArgumentException*/));
                 }
 
                 //[Variation(id = 3, Desc = "WriteBinHex with count < 0", Pri = 1)]
-                public int BinHex_3()
+                [Fact]
+        public void BinHex_3()
                 {
                     return VerifyInvalidWrite("WriteBinHex", 5, 2, -1, typeof(ArgumentOutOfRangeException));
                 }
 
                 //[Variation(id = 4, Desc = "WriteBinHex with index > buffer size", Pri = 1)]
-                public int BinHex_4()
+                [Fact]
+        public void BinHex_4()
                 {
                     return VerifyInvalidWrite("WriteBinHex", 5, 5, 1, typeof(ArgumentOutOfRangeException/*ArgumentException*/));
                 }
 
                 //[Variation(id = 5, Desc = "WriteBinHex with index < 0", Pri = 1)]
-                public int BinHex_5()
+                [Fact]
+        public void BinHex_5()
                 {
                     return VerifyInvalidWrite("WriteBinHex", 5, -1, 1, typeof(ArgumentOutOfRangeException));
                 }
 
                 //[Variation(id = 6, Desc = "WriteBinHex with index + count exceeds buffer", Pri = 1)]
-                public int BinHex_6()
+                [Fact]
+        public void BinHex_6()
                 {
                     return VerifyInvalidWrite("WriteBinHex", 5, 2, 5, typeof(ArgumentOutOfRangeException/*ArgumentException*/));
                 }
 
                 //[Variation(id = 7, Desc = "WriteBinHex with buffer = null", Pri = 1)]
-                public int BinHex_7()
+                [Fact]
+        public void BinHex_7()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -8423,7 +8816,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 8, Desc = "Index = Count = 0", Pri = 1)]
-                public int BinHex_8()
+                [Fact]
+        public void BinHex_8()
                 {
                     byte[] buffer = new byte[10];
 
@@ -8438,7 +8832,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 9, Desc = "Call WriteBinHex as an attribute value", Pri = 1)]
-                public int BinHex_9()
+                [Fact]
+        public void BinHex_9()
                 {
                     String strBinHex = "abc";
                     byte[] Wbase64 = new byte[2000];
@@ -8459,7 +8854,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 10, Desc = "Call WriteBinHex and verify results can be read as a string", Pri = 1)]
-                public int BinHex_10()
+                [Fact]
+        public void BinHex_10()
                 {
                     String strBinHex = "abc";
                     byte[] Wbase64 = new byte[2000];
@@ -8483,7 +8879,8 @@ namespace System.Xml.Tests
             public partial class TCWriteState : XmlWriterTestCaseBase
             {
                 //[Variation(id = 1, Desc = "Verify WriteState.Start when nothing has been written yet", Pri = 0)]
-                public int writeState_1()
+                [Fact]
+        public void writeState_1()
                 {
                     XmlWriter w = CreateWriter();
                     CError.Compare(w.WriteState, WriteState.Start, "Error");
@@ -8499,7 +8896,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 2, Desc = "Verify correct state when writing in Prolog", Pri = 1)]
-                public int writeState_2()
+                [Fact]
+        public void writeState_2()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -8514,7 +8912,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 3, Desc = "Verify correct state when writing an attribute", Pri = 1)]
-                public int writeState_3()
+                [Fact]
+        public void writeState_3()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -8529,7 +8928,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 4, Desc = "Verify correct state when writing element content", Pri = 1)]
-                public int writeState_4()
+                [Fact]
+        public void writeState_4()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -8542,7 +8942,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 5, Desc = "Verify correct state after Close has been called", Pri = 1)]
-                public int writeState_5()
+                [Fact]
+        public void writeState_5()
                 {
                     XmlWriter w = CreateWriter();
                     w.WriteStartElement("Root");
@@ -8553,7 +8954,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 6, Desc = "Verify WriteState = Error after an exception", Pri = 1)]
-                public int writeState_6()
+                [Fact]
+        public void writeState_6()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -8597,7 +8999,8 @@ namespace System.Xml.Tests
                 //[Variation(id = 30, Desc = "Call WriteNode(nav) after WriteState = Error", Pri = 1, Param = "WriteNodeNavigator")]
                 //[Variation(id = 31, Desc = "Call WriteNode(reader) after WriteState = Error", Pri = 1, Param = "WriteNodeReader")]
                 //[Variation(id = 32, Desc = "Call Flush after WriteState = Error", Pri = 1, Param = "Flush")]
-                public int writeState_7()
+                [Fact]
+        public void writeState_7()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -8650,7 +9053,8 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 33, Desc = "XmlSpace property after WriteState = Error", Pri = 1, Param = "XmlSpace")]
                 //[Variation(id = 34, Desc = "XmlLang property after WriteState = Error", Pri = 1, Param = "XmlSpace")]
-                public int writeState_8()
+                [Fact]
+        public void writeState_8()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -8702,7 +9106,8 @@ namespace System.Xml.Tests
                 //[Variation(id = 29, Desc = "Call WriteNode(nav) after Close()", Pri = 1, Param = "WriteNodeNavigator")]
                 //[Variation(id = 30, Desc = "Call WriteNode(reader) after Close()", Pri = 1, Param = "WriteNodeReader")]
                 //[Variation(id = 31, Desc = "Call Flush after Close()", Pri = 1, Param = "Flush")]
-                public int writeState_9()
+                [Fact]
+        public void writeState_9()
                 {
                     XmlWriter w = CreateWriter();
                     w.WriteElementString("root", "");
@@ -8839,7 +9244,8 @@ namespace System.Xml.Tests
             public partial class TC_NDP20_NewMethods : XmlWriterTestCaseBase
             {
                 //[Variation(id = 1, Desc = "WriteElementString(prefix, name, ns, value) sanity test", Pri = 0)]
-                public int var_1()
+                [Fact]
+        public void var_1()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -8849,7 +9255,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 2, Desc = "WriteElementString(prefix = xml, ns = XML namespace)", Pri = 1)]
-                public int var_2()
+                [Fact]
+        public void var_2()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -8859,7 +9266,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 3, Desc = "WriteStartAttribute(string name) sanity test", Pri = 0)]
-                public int var_3()
+                [Fact]
+        public void var_3()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -8871,7 +9279,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 4, Desc = "WriteElementString followed by attribute should error", Pri = 1)]
-                public int var_4()
+                [Fact]
+        public void var_4()
                 {
                     using (XmlWriter w = CreateWriter())
                     {
@@ -8890,7 +9299,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 5, Desc = "XmlWellformedWriter wrapping another XmlWriter should check the duplicate attributes first", Pri = 1)]
-                public int var_5()
+                [Fact]
+        public void var_5()
                 {
                     using (XmlWriter wf = CreateWriter())
                     {
@@ -8913,7 +9323,8 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 6, Desc = "XmlWriter::WriteStartDocument(true)", Pri = 1, Param = true)]
                 //[Variation(id = 7, Desc = "XmlWriter::WriteStartDocument(false)", Pri = 1, Param = false)]
-                public int var_6a()
+                [Fact]
+        public void var_6a()
                 {
                     bool standalone = (bool)CurVariation.Param;
                     XmlWriterSettings ws = new XmlWriterSettings();
@@ -8934,7 +9345,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 8, Desc = "Wrapped XmlWriter::WriteStartDocument(true) is missing standalone attribute", Pri = 1)]
-                public int var_6b()
+                [Fact]
+        public void var_6b()
                 {
                     XmlWriterSettings ws = new XmlWriterSettings();
                     ws.ConformanceLevel = ConformanceLevel.Auto;
@@ -8961,7 +9373,8 @@ namespace System.Xml.Tests
             public partial class TCGlobalization : XmlWriterTestCaseBase
             {
                 //[Variation(id = 1, Desc = "Characters between 0xdfff and 0xfffe are valid Unicode characters", Pri = 1)]
-                public int var_1()
+                [Fact]
+        public void var_1()
                 {
                     string UniStr = "";
                     using (XmlWriter w = CreateWriter())
@@ -8974,7 +9387,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 2, Desc = "XmlWriter using UTF-16BE encoding writes out wrong encoding name value in the xml decl", Pri = 1)]
-                public int var_2()
+                [Fact]
+        public void var_2()
                 {
                     if (WriterType != WriterType.UnicodeWriter)
                         return TEST_SKIPPED;
@@ -9010,7 +9424,8 @@ namespace System.Xml.Tests
             public partial class TCClose : XmlWriterTestCaseBase
             {
                 //[Variation(id = 1, Desc = "Closing an XmlWriter should close all opened elements", Pri = 1)]
-                public int var_1()
+                [Fact]
+        public void var_1()
                 {
                     using (XmlWriter writer = CreateWriter())
                     {
@@ -9022,7 +9437,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 2, Desc = "Disposing an XmlWriter should close all opened elements", Pri = 1)]
-                public int var_2()
+                [Fact]
+        public void var_2()
                 {
                     using (XmlWriter writer = CreateWriter())
                     {
@@ -9034,7 +9450,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 3, Desc = "Dispose() shouldn't throw when a tag is not closed and inner stream is closed", Pri = 1)]
-                public int var_3()
+                [Fact]
+        public void var_3()
                 {
                     XmlWriter w;
                     StringWriter sw = new StringWriter(CultureInfo.InvariantCulture);
@@ -9089,7 +9506,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 4, Desc = "Close() should be allowed when XML doesn't have content", Pri = 1)]
-                public int var_4()
+                [Fact]
+        public void var_4()
                 {
                     XmlWriter w = CreateWriter();
                     w.Dispose();
@@ -9111,7 +9529,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation(id = 5, Desc = "XmlRawTextWriters need to call steam.Close in a finally block", Pri = 1)]
-                public int var_5()
+                [Fact]
+        public void var_5()
                 {
                     int testResult = TEST_FAIL;
 
@@ -9139,7 +9558,8 @@ namespace System.Xml.Tests
 
                 //[Variation("Change Writer to entitize unencodable characters within raw text", Param = 1)]
                 //[Variation("Change Writer to entitize unencodable characters within CDATA", Param = 2)]
-                public int Bug384544()
+                [Fact]
+        public void Bug384544()
                 {
                     int param = (int)CurVariation.Param;
                     XmlWriterSettings settings = new XmlWriterSettings();
@@ -9169,7 +9589,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation("XmlWriter: Setting Indenting to false still allows indending while writing base64 out")]
-                public int SettingIndetingToFalseAllowsIndentingWhileWritingBase64()
+                [Fact]
+        public void SettingIndetingToFalseAllowsIndentingWhileWritingBase64()
                 {
                     string base64test = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz";
                     byte[] bytesToWrite = Encoding.Unicode.GetBytes(base64test.ToCharArray());
@@ -9201,7 +9622,8 @@ namespace System.Xml.Tests
                 }
 
                 //[Variation("WriteState returns Content even though document element has been closed")]
-                public int WriteStateReturnsContentAfterDocumentClosed()
+                [Fact]
+        public void WriteStateReturnsContentAfterDocumentClosed()
                 {
                     XmlWriter xw = CreateWriter();
                     xw.WriteStartDocument(false);
