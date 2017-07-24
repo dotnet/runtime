@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using Microsoft.DotNet.InternalAbstractions;
 using Xunit;
 
@@ -9,6 +10,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
 {
     public class GivenThatICareAboutMultilevelSDKLookup
     {
+        private static readonly Mutex id_mutex = new Mutex();
         private static IDictionary<string, string> s_DefaultEnvironment = new Dictionary<string, string>()
         {
             {"COREHOST_TRACE", "1" },
@@ -46,8 +48,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             string multilevelDir = CalculateMultilevelDirectory(baseMultilevelDir);
 
             // The three tested locations will be the cwd, the user folder and the exe dir. cwd and user are no longer supported.
-            // Both exe  and user dir will be placed inside the multilevel folder
-            
+            //     All dirs will be placed inside the multilevel folder
+
             _currentWorkingDir = Path.Combine(multilevelDir, "cwd");
             _userDir = Path.Combine(multilevelDir, "user");
             _executableDir = Path.Combine(multilevelDir, "exe");
@@ -120,6 +122,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .WorkingDirectory(_currentWorkingDir)
                 .WithUserProfile(_userDir)
                 .Environment(s_DefaultEnvironment)
+                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
@@ -140,6 +143,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .WorkingDirectory(_currentWorkingDir)
                 .WithUserProfile(_userDir)
                 .Environment(s_DefaultEnvironment)
+                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
@@ -160,6 +164,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .WorkingDirectory(_currentWorkingDir)
                 .WithUserProfile(_userDir)
                 .Environment(s_DefaultEnvironment)
+                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
@@ -180,6 +185,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .WorkingDirectory(_currentWorkingDir)
                 .WithUserProfile(_userDir)
                 .Environment(s_DefaultEnvironment)
+                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
                 .CaptureStdOut()
                 .CaptureStdErr()
                 .Execute()
@@ -200,6 +206,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             // Add a negative CLI version
             AddAvailableSdkVersions(_exeSdkBaseDir, "-1.-1.-1");
 
+            // Specified CLI version: none
             // CWD: empty
             // User: empty
             // Exe: -1.-1.-1
@@ -220,6 +227,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
             // Add specified CLI version
             AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.4");
 
+            // Specified CLI version: none
             // CWD: empty
             // User: empty
             // Exe: -1.-1.-1, 9999.0.4
@@ -308,7 +316,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 .And
                 .HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "10000.0.0-dummy", _dotnetSdkDllMessageTerminator));
 
-            // Add a dummy version in the user dir
+            // Add a dummy version in the exe dir
             AddAvailableSdkVersions(_exeSdkBaseDir, "10000.0.0");
 
             // Specified CLI version: none
@@ -438,6 +446,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
         // We must locate the first non existing id.
         private string CalculateMultilevelDirectory(string baseMultilevelDir)
         {
+            id_mutex.WaitOne();
+
             int count = 0;
             string multilevelDir;
 
@@ -447,6 +457,8 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.MultilevelSDKLookup
                 count++;
             } while (Directory.Exists(multilevelDir));
 
+            id_mutex.ReleaseMutex();
+        
             return multilevelDir;
         }
     }
