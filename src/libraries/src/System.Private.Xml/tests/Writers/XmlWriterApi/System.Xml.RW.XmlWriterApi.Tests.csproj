@@ -3,7 +3,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{E6DAD59F-7CB7-4E70-B4C5-FCCBC3376EDE}</ProjectGuid>
-    <!--<RuntimeProjectFile>$(ProjectDir)\external\test-runtime\XUnit.Runtime.depproj</RuntimeProjectFile>-->
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
@@ -11,21 +10,19 @@
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="CommonTests.cs" />
+    <ReferenceFromRuntime Include="xunit.execution.dotnet" />
+  </ItemGroup>
+  <ItemGroup>
+    <!--<Compile Include="CommonTests.cs" />
     <Compile Include="EndOfLineHandlingTests.cs" />
     <Compile Include="ErrorCondition.cs" />
     <Compile Include="NamespaceHandlingTests.cs" />
-    <Compile Include="ReaderParamTestCase.cs" />
+    <Compile Include="ReaderParamTestCase.cs" />-->
     <Compile Include="TestExtensions.cs" />
     <Compile Include="WriteEndDocumentOnCloseTest.cs" />
-    <Compile Include="XmlFactoryWriterTests.cs" />
+    <!--<Compile Include="XmlFactoryWriterTests.cs" />
     <Compile Include="XmlWriterTestCaseBase.cs" />
-    <Compile Include="XmlWriterTestModule.cs" />
-    <!--<ReferenceFromRuntime Include="xunit.core" />
-    <ReferenceFromRuntime Include="Xunit.NetCore.Extensions" />
-    <ReferenceFromRuntime Include="xunit.assert" />
-    <ReferenceFromRuntime Include="CoreFx.Private.TestUtilities" />-->
-    <ReferenceFromRuntime Include="xunit.execution.dotnet" />
+    <Compile Include="XmlWriterTestModule.cs" />-->
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\System\Xml\XmlDiff\XmlDiff.csproj" />
