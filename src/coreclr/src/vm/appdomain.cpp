@@ -7078,18 +7078,26 @@ EndTry2:;
                     }
                     else if (!fIsWellKnown)
                     {
-                        // Trigger the resolve event also for non-throw situation.
-                        // However, this code path will behave as if the resolve handler has thrown,
-                        // that is, not trigger an MDA.
                         _ASSERTE(fThrowOnFileNotFound == FALSE);
 
-                        AssemblySpec NewSpec(this);
-                        AssemblySpec *pFailedSpec = NULL;
+                        // Don't trigger the resolve event for the CoreLib satellite assembly. A misbehaving resolve event may
+                        // return an assembly that does not match, and this can cause recursive resource lookups during error
+                        // reporting. The CoreLib satellite assembly is loaded from relative locations based on the culture, see
+                        // AssemblySpec::Bind().
+                        if (!pSpec->IsMscorlibSatellite())
+                        {
+                            // Trigger the resolve event also for non-throw situation.
+                            // However, this code path will behave as if the resolve handler has thrown,
+                            // that is, not trigger an MDA.
 
-                        fForceReThrow = TRUE; // Managed resolve event handler can throw
+                            AssemblySpec NewSpec(this);
+                            AssemblySpec *pFailedSpec = NULL;
 
-                        // Purposly ignore return value
-                        PostBindResolveAssembly(pSpec, &NewSpec, hrBindResult, &pFailedSpec);
+                            fForceReThrow = TRUE; // Managed resolve event handler can throw
+
+                            // Purposly ignore return value
+                            PostBindResolveAssembly(pSpec, &NewSpec, hrBindResult, &pFailedSpec);
+                        }
                     }
                 }
             }
