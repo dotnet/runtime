@@ -1969,7 +1969,7 @@ namespace System.Xml.Tests
             if (IsXPathDataModelReader())
             {
                 CError.WriteLine("{0} does not support XmlDecl node", readerType);
-                return TEST_SKIPPED;
+                return;
             }
             using (XmlWriter w = CreateWriter())
             {
@@ -2010,7 +2010,7 @@ namespace System.Xml.Tests
                     if (IsXPathDataModelReader())
                     {
                         CError.WriteLine("{0} does not support DocumentType node", readerType);
-                        return TEST_SKIPPED;
+                        return;
                     }
                     strxml = "<!DOCTYPE Root[]><Root/>";
                     break;
@@ -2018,7 +2018,7 @@ namespace System.Xml.Tests
                     if (IsXPathDataModelReader())
                     {
                         CError.WriteLine("{0} does not support CDATA node", readerType);
-                        return TEST_SKIPPED;
+                        return;
                     }
                     strxml = "<root><![CDATA[Test]]></root>";
                     break;
@@ -2035,7 +2035,7 @@ namespace System.Xml.Tests
                     if (!ReaderSupportsEntityRef())
                     {
                         CError.WriteLine("{0} does not support EntityRef node", readerType);
-                        return TEST_SKIPPED;
+                        return;
                     }
                     strxml = "<!DOCTYPE root[<!ENTITY e \"Test Entity\"> ]><root>&e;</root>";
                     break;
@@ -2046,7 +2046,7 @@ namespace System.Xml.Tests
                     if (ReaderStripsWhitespace())
                     {
                         CError.WriteLine("{0} strips whitespace nodes by default", readerType);
-                        return TEST_SKIPPED;
+                        return;
                     }
                     strxml = "<root>			 </root>";
                     break;
@@ -2806,7 +2806,7 @@ namespace System.Xml.Tests
             if (IsXPathDataModelReader())
             {
                 CError.WriteLine("XPath data model does not have CDATA node type, so {0} can not be positioned on CDATA", readerType);
-                return TEST_SKIPPED;
+                return;
             }
 
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
@@ -2905,7 +2905,7 @@ namespace System.Xml.Tests
             {
                 CError.WriteLine("Reader positioned on {0}", xr.NodeType);
                 xr.Dispose();
-                return TEST_SKIPPED;
+                return;
             }
 
             XmlWriterSettings ws = new XmlWriterSettings();
@@ -3237,14 +3237,19 @@ namespace System.Xml.Tests
             {
                 case 1023:
                     Assert.True(CompareBaseline("textnode_1K-1_utf8.xml"));
+                    break;
                 case 1024:
                     Assert.True(CompareBaseline("textnode_1K_utf8.xml"));
+                    break;
                 case 1025:
-                    return CompareBaseline("textnode_1K+1_utf8.xml") ? TEST_PASS : TEST_FAIL;
+                    Assert.True(CompareBaseline("textnode_1K+1_utf8.xml"));
+                    break;
                 case 2048:
                     Assert.True(CompareBaseline("textnode_2K_utf8.xml"));
+                    break;
                 case 4096:
                     Assert.True(CompareBaseline("textnode_4K_utf8.xml"));
+                    break;
             }
             CError.WriteLine("Error");
             Assert.True(false);
@@ -3274,14 +3279,19 @@ namespace System.Xml.Tests
             {
                 case 1023:
                     Assert.True(CompareBaseline("textnode_1K-1_unicode.xml"));
+                    break;
                 case 1024:
                     Assert.True(CompareBaseline("textnode_1K_unicode.xml"));
+                    break;
                 case 1025:
-                    return CompareBaseline("textnode_1K+1_unicode.xml") ? TEST_PASS : TEST_FAIL;
+                    Assert.True(CompareBaseline("textnode_1K+1_unicode.xml"));
+                    break;
                 case 2048:
                     Assert.True(CompareBaseline("textnode_2K_unicode.xml"));
+                    break;
                 case 4096:
                     Assert.True(CompareBaseline("textnode_4K_unicode.xml"));
+                    break;
             }
             CError.WriteLine("Error");
             Assert.True(false);
@@ -4508,10 +4518,10 @@ namespace System.Xml.Tests
                     w.WriteEndElement();
                     w.WriteEndElement();
                 }
-                return CompareReader("<d:Data xmlns:d=\"http://example.org/data\">" +
+                Assert.True(CompareReader("<d:Data xmlns:d=\"http://example.org/data\">" +
                                     "<g:GoodStuff hello=\"world\" xmlns:g=\"http://example.org/data/good\" />" +
                                     "<BadStuff hello=\"world\" xmlns=\"http://example.org/data/bad\" />" +
-                                    "</d:Data>") ? TEST_PASS : TEST_FAIL;
+                                    "</d:Data>"));
             }
 
             //[Variation(id = 32, Desc = "Pass null prefix to WriteAttributeString()", Pri = 1)]
@@ -5478,7 +5488,7 @@ namespace System.Xml.Tests
                     w.WriteProcessingInstruction("xmlns", "text");
                     w.WriteEndElement();
                 }
-                return (CompareReader("<Root><?xmlns text?></Root>") ? TEST_PASS : TEST_FAIL);
+                Assert.True(CompareReader("<Root><?xmlns text?></Root>"));
             }
 
             //[Variation(id = 7, Desc = "WritePI with XmL as the name value")]
@@ -8087,7 +8097,7 @@ namespace System.Xml.Tests
         public void XmlLang_4()
                 {
                     /*if (WriterType == WriterType.XmlTextWriter)
-                        return TEST_SKIPPED;*/
+                        return;*/
 
                     using (XmlWriter w = CreateWriter())
                     {
@@ -9383,7 +9393,7 @@ namespace System.Xml.Tests
                         w.WriteElementString("root", UniStr);
                     }
 
-                    return CompareReader("<root>" + UniStr + "</root>") ? TEST_PASS : TEST_FAIL;
+                    Assert.True(CompareReader("<root>" + UniStr + "</root>"));
                 }
 
                 //[Variation(id = 2, Desc = "XmlWriter using UTF-16BE encoding writes out wrong encoding name value in the xml decl", Pri = 1)]
@@ -9391,7 +9401,7 @@ namespace System.Xml.Tests
         public void var_2()
                 {
                     if (WriterType != WriterType.UnicodeWriter)
-                        return TEST_SKIPPED;
+                        return;
 
                     Encoding enc = Encoding.GetEncoding("UTF-16BE");
 
@@ -9416,7 +9426,7 @@ namespace System.Xml.Tests
                     StreamReader sr = new StreamReader(s);
                     string str = sr.ReadToEnd();
                     CError.WriteLine(str);
-                    return (str.Equals("<?xml version=\"1.0\" encoding=\"utf-16BE\"?><A>value</A>", StringComparison.OrdinalIgnoreCase)) ? TEST_PASS : TEST_FAIL;
+                    Assert.True(str.Equals("<?xml version=\"1.0\" encoding=\"utf-16BE\"?><A>value</A>", StringComparison.OrdinalIgnoreCase));
                 }
             }
 
@@ -9490,7 +9500,7 @@ namespace System.Xml.Tests
                             w = WriterHelper.Create(sw, s);
                             break;
                         default:
-                            return TEST_SKIPPED;
+                            return;
                     }
 
                     w.WriteStartElement("root");
@@ -9553,7 +9563,7 @@ namespace System.Xml.Tests
                         }
                         testResult = TEST_PASS;
                     }
-                    return testResult;
+                    Assert.Equal(TEST_PASS, testResult);
                 }
 
                 //[Variation("Change Writer to entitize unencodable characters within raw text", Param = 1)]
