@@ -65,6 +65,9 @@ namespace BasicEventSourceTests
 
         private void Test_Write_Metric(Listener listener)
         {
+
+            Console.WriteLine("Version of Runtime {0}", Environment.Version);
+            Console.WriteLine("Version of OS {0}", Environment.OSVersion);
             TestUtilities.CheckNoEventSourcesRunning("Start");
 
             using (var logger = new MyEventSource())
@@ -114,11 +117,15 @@ namespace BasicEventSourceTests
                 tests.Add(new SubTest("Log 2 event in two periods",
                     delegate ()
                     {
-                        listener.EnableTimer(logger, .2); /* Poll every .2 s */
+                        listener.EnableTimer(logger, .4); /* Poll every .4 s */
+                                                          // logs at 0 seconds because of EnableTimer command
                         logger.Request(5);
-                        Sleep(280); // Sleep for .28 seconds
+                        // At .4 sec we log by timer 
+                        Sleep(600); // Sleep for .6 seconds 
                         logger.Request(10);
-                        Sleep(220); // Sleep for .22 seconds (at time = .28 second exactly size messages should be received)
+                        // at .8 sec we log by timer
+                        Sleep(400); // Sleep for .4 seconds (at time = 1.0 second exactly 6 messages should be received)
+                        // logs at 1.0 seconds because of EnableTimer command
                         listener.EnableTimer(logger, 0);
                     },
                     delegate (List<Event> evts)
@@ -238,28 +245,15 @@ namespace BasicEventSourceTests
 
         private static void ValidateEventCounter(string counterName, int count, float mean, float standardDeviation, float min, float max, IDictionary<string, object> payloadContent)
         {
-            var payloadContentValue = new List<KeyValuePair<string, object>>();
-            foreach (var payloadContentEntry in payloadContent)
-            {
-                payloadContentValue.Add(payloadContentEntry);
-            }
-
-            Assert.Equal(7, payloadContentValue.Count);
-            ValidatePayloadEntry("Name", counterName, payloadContentValue[0]);
+            Assert.Equal(counterName, (string)payloadContent["Name"]);
+            Assert.Equal(count, (int)payloadContent["Count"]);
             if (count != 0)
             {
-                ValidatePayloadEntry("Mean", mean, payloadContentValue[1]);
-                ValidatePayloadEntry("StandardDeviation", standardDeviation, payloadContentValue[2]);
+                Assert.Equal(mean, (float)payloadContent["Mean"]);
+                Assert.Equal(standardDeviation, (float)payloadContent["StandardDeviation"]);
             }
-            ValidatePayloadEntry("Count", count, payloadContentValue[3]);
-            ValidatePayloadEntry("Min", min, payloadContentValue[4]);
-            ValidatePayloadEntry("Max", max, payloadContentValue[5]);
-        }
-
-        private static void ValidatePayloadEntry(string name, object value, KeyValuePair<string, object> payloadEntry)
-        {
-            Assert.Equal(name, payloadEntry.Key);
-            Assert.Equal(value, payloadEntry.Value);
+            Assert.Equal(min, (float)payloadContent["Min"]);
+            Assert.Equal(max, (float)payloadContent["Max"]);
         }
     }
 }
