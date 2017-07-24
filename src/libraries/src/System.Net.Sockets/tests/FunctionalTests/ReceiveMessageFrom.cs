@@ -23,18 +23,12 @@ namespace System.Net.Sockets.Tests
                     int port = receiver.BindToAnonymousPort(IPAddress.Loopback);
                     receiver.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.PacketInformation, true);
 
-                    if (forceNonBlocking)
-                    {
-                        receiver.ForceNonBlocking();
-                    }
+                    receiver.ForceNonBlocking(forceNonBlocking);
 
                     Socket sender = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
                     sender.Bind(new IPEndPoint(IPAddress.Loopback, 0));
 
-                    if (forceNonBlocking)
-                    {
-                        sender.ForceNonBlocking();
-                    }
+                    sender.ForceNonBlocking(forceNonBlocking);
 
                     for (int i = 0; i < TestSettings.UDPRedundancy; i++)
                     {
@@ -69,18 +63,12 @@ namespace System.Net.Sockets.Tests
                     int port = receiver.BindToAnonymousPort(IPAddress.IPv6Loopback);
                     receiver.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.PacketInformation, true);
 
-                    if (forceNonBlocking)
-                    {
-                        receiver.ForceNonBlocking();
-                    }
+                    receiver.ForceNonBlocking(forceNonBlocking);
 
                     Socket sender = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
                     sender.Bind(new IPEndPoint(IPAddress.IPv6Loopback, 0));
 
-                    if (forceNonBlocking)
-                    {
-                        sender.ForceNonBlocking();
-                    }
+                    sender.ForceNonBlocking(forceNonBlocking);
 
                     for (int i = 0; i < TestSettings.UDPRedundancy; i++)
                     {
