@@ -17,26 +17,6 @@ namespace System.Xml.Tests
     {
         protected ReaderType readerType;
 
-        public override int Init(object o)
-        {
-            int i = base.Init(0);
-
-            if (this.Param != null)
-            {
-                switch (this.Param.ToString().ToUpperInvariant())
-                {
-                    case "COREREADER":
-                        readerType = ReaderType.CoreReader;
-                        break;
-                    default:
-                        CError.Compare(false, "Unknown reader type: " + readerType);
-                        break;
-                }
-            }
-
-            return i;
-        }
-
         public bool IsXPathDataModelReader()
         {
             return false;

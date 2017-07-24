@@ -108,28 +108,6 @@ namespace System.Xml.Tests
         }
     }
 
-    public abstract partial class XmlFactoryWriterTestCaseBase : XmlWriterTestCaseBase
-    {
-        public XmlFactoryWriterTestCaseBase() : base()
-        {
-        }
-
-        public virtual string GetString()
-        {
-            return this.XmlWriterTestModule.WriterFactory.GetString();
-        }
-
-        public virtual XmlWriter CreateWriter(ConformanceLevel cl)
-        {
-            return this.XmlWriterTestModule.WriterFactory.CreateWriter(cl);
-        }
-
-        public override XmlWriter CreateWriter(XmlWriterSettings wSettings)
-        {
-            return this.XmlWriterTestModule.WriterFactory.CreateWriter(wSettings);
-        }
-    }
-
     public abstract partial class TCWriteBuffer : XmlWriterTestCaseBase
     {
         public int VerifyInvalidWrite(string methodName, int iBufferSize, int iIndex, int iCount, Type exceptionType)

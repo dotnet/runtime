@@ -6,23 +6,13 @@ using OLEDB.Test.ModuleCore;
 using System.IO;
 using System.Text;
 using XmlCoreTest.Common;
+using Xunit;
 
 namespace System.Xml.Tests
 {
     //[TestCase(Name="XmlWriterSettings: NewLineHandling")]
-    public partial class TCEOFHandling : XmlFactoryWriterTestCaseBase
+    public partial class TCEOFHandling
     {
-        public override int Init(object o)
-        {
-            if (WriterType == WriterType.UnicodeWriter || WriterType == WriterType.UTF8Writer || WriterType == WriterType.WrappedWriter
-                 || WriterType == WriterType.CharCheckingWriter || WriterType == WriterType.UTF8WriterIndent || WriterType == WriterType.UnicodeWriterIndent)
-            {
-                int i = base.Init(0);
-                return i;
-            }
-            return TEST_SKIPPED;
-        }
-
         private static NewLineHandling[] s_nlHandlingMembers = { NewLineHandling.Entitize, NewLineHandling.Replace, NewLineHandling.None };
         private StringWriter _strWriter = null;
 
@@ -131,7 +121,8 @@ namespace System.Xml.Tests
         /*================== Constructors ==================*/
 
         //[Variation(Desc = "NewLineHandling Default value - NewLineHandling.Replace", id = 1, Pri = 0)]
-        public int EOF_Handling_01()
+        [Fact]
+        public void EOF_Handling_01()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             CError.Compare(wSettings.NewLineHandling, NewLineHandling.Replace, "Incorrect default value for XmlWriterSettings.NewLineHandling");
@@ -140,13 +131,14 @@ namespace System.Xml.Tests
             w.Dispose();
             CError.Compare(w.Settings.NewLineHandling, NewLineHandling.Replace, "Incorrect default value for XmlWriter.Settings.NewLineHandling");
 
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "XmlWriter creation with NewLineHandling.Entitize", Param = NewLineHandling.Entitize, id = 2, Pri = 0)]
         //[Variation(Desc = "XmlWriter creation with NewLineHandling.Replace", Param = NewLineHandling.Replace, id = 3, Pri = 0)]
         //[Variation(Desc = "XmlWriter creation with NewLineHandling.None", Param = NewLineHandling.None, id = 4, Pri = 0)]
-        public int EOF_Handling_02()
+        [Fact]
+        public void EOF_Handling_02()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
 
@@ -156,7 +148,7 @@ namespace System.Xml.Tests
             CError.Compare(w.Settings.NewLineHandling, (NewLineHandling)CurVariation.Param, "Invalid NewLineHandling assignment");
             w.Dispose();
 
-            return TEST_PASS;
+            return;
         }
 
         /*================== Verification in Text Nodes ==================*/
@@ -164,7 +156,8 @@ namespace System.Xml.Tests
         //[Variation(Desc = "Check for combinations of NewLine characters in element with 'Entitize'", Param = NewLineHandling.Entitize, id = 5, Pri = 0)]
         //[Variation(Desc = "Check for combinations of NewLine characters in element with 'Replace'", Param = NewLineHandling.Replace, id = 6, Pri = 0)]
         //[Variation(Desc = "Check for combinations of NewLine characters in element with 'None'", Param = NewLineHandling.None, id = 7, Pri = 0)]
-        public int EOF_Handling_03()
+        [Fact]
+        public void EOF_Handling_03()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             string NewLineCombinations = "\r \n \r\n \n\r \r\r \n\n \r\n\r \n\r\n";
@@ -176,13 +169,14 @@ namespace System.Xml.Tests
             w.Dispose();
             VerifyOutput("<root>" + ExpectedOutput(NewLineCombinations, (NewLineHandling)CurVariation.Param, false) + "</root>");
 
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "Check for combinations of entities in element with 'Entitize'", Param = NewLineHandling.Entitize, id = 8, Pri = 0)]
         //[Variation(Desc = "Check for combinations of entities in element with 'Replace'", Param = NewLineHandling.Replace, id = 9, Pri = 0)]
         //[Variation(Desc = "Check for combinations of entities in element with 'None'", Param = NewLineHandling.None, id = 10, Pri = 0)]
-        public int EOF_Handling_04()
+        [Fact]
+        public void EOF_Handling_04()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             string NewLineCombinations = "\r \n \r\n \n\r \r\r \n\n \r\n\r \n\r\n";
@@ -203,13 +197,14 @@ namespace System.Xml.Tests
             w.Dispose();
             VerifyOutput("<root>" + ExpectedOutput(NewLineEntities, (NewLineHandling)CurVariation.Param, false) + "</root>");
 
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "Check for combinations of NewLine characters and entities in element with 'Entitize'", Param = NewLineHandling.Entitize, id = 11, Pri = 0)]
         //[Variation(Desc = "Check for combinations of NewLine characters and entities in element with 'Replace'", Param = NewLineHandling.Replace, id = 12, Pri = 0)]
         //[Variation(Desc = "Check for combinations of NewLine characters and entities in element with 'None'", Param = NewLineHandling.None, id = 13, Pri = 0)]
-        public int EOF_Handling_05()
+        [Fact]
+        public void EOF_Handling_05()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             string NewLines = "\r&#xA; &#xD;\n &#xD;\r &#xA;\n \n&#xD; &#xA;\r";
@@ -249,14 +244,15 @@ namespace System.Xml.Tests
             w.Dispose();
             VerifyOutput("<root>" + ExpectedOutput(NewLines, (NewLineHandling)CurVariation.Param, false) + "</root>");
 
-            return TEST_PASS;
+            return;
         }
 
 
         //[Variation(Desc = "Check for tab character in element with 'Entitize'", Param = NewLineHandling.Entitize, id = 14, Pri = 0)]
         //[Variation(Desc = "Check for tab character in element with 'Replace'", Param = NewLineHandling.Replace, id = 15, Pri = 0)]
         //[Variation(Desc = "Check for tab character in element with 'None'", Param = NewLineHandling.None, id = 16, Pri = 0)]
-        public int EOF_Handling_06()
+        [Fact]
+        public void EOF_Handling_06()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             string Tabs = "foo\tbar&#x9;foo\n\tbar\t\n\t";
@@ -274,7 +270,7 @@ namespace System.Xml.Tests
             w.Dispose();
             VerifyOutput("<root>" + ExpectedOutput(Tabs, (NewLineHandling)CurVariation.Param, false) + "</root>");
 
-            return TEST_PASS;
+            return;
         }
 
 
@@ -283,7 +279,8 @@ namespace System.Xml.Tests
         //[Variation(Desc = "Check for combinations of NewLine characters in attribute with 'Entitize'", Param = NewLineHandling.Entitize, id = 17, Pri = 0)]
         //[Variation(Desc = "Check for combinations of NewLine characters in attribute with 'Replace'", Param = NewLineHandling.Replace, id = 18, Pri = 0)]
         //[Variation(Desc = "Check for combinations of NewLine characters in attribute with 'None'", Param = NewLineHandling.None, id = 19, Pri = 0)]
-        public int EOF_Handling_07()
+        [Fact]
+        public void EOF_Handling_07()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             string NewLineCombinations = "\r \n \r\n \n\r \r\r \n\n \r\n\r \n\r\n";
@@ -297,13 +294,14 @@ namespace System.Xml.Tests
             w.Dispose();
             VerifyOutput("<root foo=\"" + ExpectedOutput(NewLineCombinations, (NewLineHandling)CurVariation.Param, true) + "\" />");
 
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "Check for combinations of entities in attribute with 'Entitize'", Param = NewLineHandling.Entitize, id = 20, Pri = 0)]
         //[Variation(Desc = "Check for combinations of entities in attribute with 'Replace'", Param = NewLineHandling.Replace, id = 21, Pri = 0)]
         //[Variation(Desc = "Check for combinations of entities in attribute with 'None'", Param = NewLineHandling.None, id = 22, Pri = 0)]
-        public int EOF_Handling_08()
+        [Fact]
+        public void EOF_Handling_08()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             string NewLineCombinations = "\r \n \r\n \n\r \r\r \n\n \r\n\r \n\r\n";
@@ -326,13 +324,14 @@ namespace System.Xml.Tests
             w.Dispose();
             VerifyOutput("<root foo=\"" + ExpectedOutput(NewLineEntities, (NewLineHandling)CurVariation.Param, true) + "\" />");
 
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "Check for combinations of NewLine characters and entities in element with 'Entitize'", Param = NewLineHandling.Entitize, id = 23, Pri = 0)]
         //[Variation(Desc = "Check for combinations of NewLine characters and entities in element with 'Replace'", Param = NewLineHandling.Replace, id = 24, Pri = 0)]
         //[Variation(Desc = "Check for combinations of NewLine characters and entities in element with 'None'", Param = NewLineHandling.None, id = 25, Pri = 0)]
-        public int EOF_Handling_09()
+        [Fact]
+        public void EOF_Handling_09()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             string NewLines = "\r&#xA; &#xD;\n &#xD;\r &#xA;\n \n&#xD; &#xA;\r";
@@ -374,13 +373,14 @@ namespace System.Xml.Tests
             w.Dispose();
             VerifyOutput("<root foo=\"" + ExpectedOutput(NewLines, (NewLineHandling)CurVariation.Param, true) + "\" />");
 
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "Check for tab character in attribute with 'Entitize'", Param = NewLineHandling.Entitize, id = 26, Pri = 0)]
         //[Variation(Desc = "Check for tab character in attribute with 'Replace'", Param = NewLineHandling.Replace, id = 27, Pri = 0)]
         //[Variation(Desc = "Check for tab character in attribute with 'None'", Param = NewLineHandling.None, id = 28, Pri = 0)]
-        public int EOF_Handling_10()
+        [Fact]
+        public void EOF_Handling_10()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             string Tabs = "foo\tbar&#x9;foo\n\tbar\t\n\t";
@@ -400,7 +400,7 @@ namespace System.Xml.Tests
             w.Dispose();
             VerifyOutput("<root foo=\"" + ExpectedOutput(Tabs, (NewLineHandling)CurVariation.Param, true) + "\" />");
 
-            return TEST_PASS;
+            return;
         }
 
 
@@ -409,7 +409,8 @@ namespace System.Xml.Tests
         //[Variation(Desc = "NewLineChars and IndentChars Default values and test for proper indentation, Entitize", Param = NewLineHandling.Entitize, id = 29, Pri = 1)]
         //[Variation(Desc = "NewLineChars and IndentChars Default values and test for proper indentation, Replace", Param = NewLineHandling.Replace, id = 30, Pri = 1)]
         //[Variation(Desc = "NewLineChars and IndentChars Default values and test for proper indentation, None", Param = NewLineHandling.None, id = 31, Pri = 1)]
-        public int EOF_Handling_11()
+        [Fact]
+        public void EOF_Handling_11()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
 
@@ -429,7 +430,7 @@ namespace System.Xml.Tests
 
             VerifyOutput(string.Format("<root>{0}  <foo>{0}    <bar />{0}  </foo>{0}</root>", nl));
 
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "1.Test fo proper indentation and newline handling when Indent = true, with custom NewLineChars and IndentChars; Entitize, '\\r', '  '", Params = new object[] { NewLineHandling.Entitize, "\r", "  " }, id = 32, Pri = 2)]
@@ -441,7 +442,8 @@ namespace System.Xml.Tests
         //[Variation(Desc = "7.Test fo proper indentation and newline handling when Indent = true, with custom NewLineChars and IndentChars; Entitize, '\\r', '\\n'", Params = new object[] { NewLineHandling.Entitize, "\r", "\n" }, id = 38, Pri = 2)]
         //[Variation(Desc = "8.Test fo proper indentation and newline handling when Indent = true, with custom NewLineChars and IndentChars; Replace, '\\r', '\\n'", Params = new object[] { NewLineHandling.Replace, "\r", "\n" }, id = 39, Pri = 2)]
         //[Variation(Desc = "9.Test fo proper indentation and newline handling when Indent = true, with custom NewLineChars and IndentChars; None, '\\r', '\\n'", Params = new object[] { NewLineHandling.None, "\r", "\n" }, id = 40, Pri = 2)]
-        public int EOF_Handling_13()
+        [Fact]
+        public void EOF_Handling_13()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             string PrototypeOutput = "<root>&NewLine&Indent<foo>&NewLine&Indent&Indent<bar />&NewLine&Indent</foo>&NewLine</root>";
@@ -461,7 +463,7 @@ namespace System.Xml.Tests
 
             VerifyOutput(PrototypeOutput.Replace("&NewLine", CurVariation.Params[1].ToString()).Replace("&Indent", CurVariation.Params[2].ToString()));
 
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "NewLine handling in text node when Indent=true; Entitize, '\\r\\n'", Params = new object[] { NewLineHandling.Entitize, "\r\n" }, id = 41, Pri = 1)]
@@ -473,7 +475,8 @@ namespace System.Xml.Tests
         //[Variation(Desc = "NewLine handling in text node when Indent=true; Entitize, '---'", Params = new object[] { NewLineHandling.Entitize, "---" }, id = 47, Pri = 2)]
         //[Variation(Desc = "NewLine handling in text node when Indent=true; Replace, '---'", Params = new object[] { NewLineHandling.Replace, "---" }, id = 48, Pri = 2)]
         //[Variation(Desc = "NewLine handling in text node when Indent=true; None, '---'", Params = new object[] { NewLineHandling.None, "---" }, id = 49, Pri = 2)]
-        public int EOF_Handling_14()
+        [Fact]
+        public void EOF_Handling_14()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             string PrototypeOutput = "<root>foo&NewLinefoo&NewLinefoo&NewLinefoo\tfoo</root>";
@@ -491,7 +494,7 @@ namespace System.Xml.Tests
             else
                 VerifyOutput("<root>" + ExpectedOutput("foo\r\nfoo\nfoo\rfoo\tfoo", (NewLineHandling)CurVariation.Params[0], false) + "</root>");
 
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "NewLine handling in attribute when Indent=true; Entitize, '\\r\\n'", Params = new object[] { NewLineHandling.Entitize, "\r\n" }, id = 50, Pri = 1)]
@@ -503,7 +506,8 @@ namespace System.Xml.Tests
         //[Variation(Desc = "NewLine handling in attribute when Indent=true; Entitize, '---'", Params = new object[] { NewLineHandling.Entitize, "---" }, id = 54, Pri = 2)]
         //[Variation(Desc = "NewLine handling in attribute when Indent=true; Replace, '---'", Params = new object[] { NewLineHandling.Replace, "---" }, id = 55, Pri = 2)]
         //[Variation(Desc = "NewLine handling in attribute when Indent=true; None, '---'", Params = new object[] { NewLineHandling.None, "---" })]
-        public int EOF_Handling_15()
+        [Fact]
+        public void EOF_Handling_15()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
 
@@ -519,7 +523,7 @@ namespace System.Xml.Tests
 
             VerifyOutput("<root foo=\"" + ExpectedOutput("foo\r\nfoo\nfoo\rfoo\tfoo", (NewLineHandling)CurVariation.Params[0], true) + "\" />");
 
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "NewLine handling between attributes when NewLineOnAttributes=true; Entitize, '\\r\\n'", Params = new object[] { NewLineHandling.Entitize, "\r\n" }, id = 56, Pri = 1)]
@@ -531,7 +535,8 @@ namespace System.Xml.Tests
         //[Variation(Desc = "NewLine handling between attributes when NewLineOnAttributes=true; Entitize, '---'", Params = new object[] { NewLineHandling.Entitize, "---" }, id = 62, Pri = 2)]
         //[Variation(Desc = "NewLine handling between attributes when NewLineOnAttributes=true; Replace, '---'", Params = new object[] { NewLineHandling.Replace, "---" }, id = 63, Pri = 2)]
         //[Variation(Desc = "NewLine handling between attributes when NewLineOnAttributes=true; None, '---'", Params = new object[] { NewLineHandling.None, "---" }, id = 64, Pri = 2)]
-        public int EOF_Handling_16()
+        [Fact]
+        public void EOF_Handling_16()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             string PrototypeOutput = "<root&NewLine  foo=\"fooval\"&NewLine  bar=\"barval\" />";
@@ -550,7 +555,7 @@ namespace System.Xml.Tests
 
             VerifyOutput(PrototypeOutput.Replace("&NewLine", CurVariation.Params[1].ToString()));
 
-            return TEST_PASS;
+            return;
         }
 
 
@@ -559,7 +564,8 @@ namespace System.Xml.Tests
         //[Variation(Desc = "Sanity tests for various types of nodes with 'Entitize'", Param = NewLineHandling.Entitize, id = 65, Pri = 0)]
         //[Variation(Desc = "Sanity tests for various types of nodes with 'Replace'", Param = NewLineHandling.Replace, id = 66, Pri = 0)]
         //[Variation(Desc = "Sanity tests for various types of nodes with 'None'", Param = NewLineHandling.None, id = 67, Pri = 0)]
-        public int EOF_Handling_17()
+        [Fact]
+        public void EOF_Handling_17()
         {
             if (WriterType == WriterType.UTF8WriterIndent || WriterType == WriterType.UnicodeWriterIndent)
                 return TEST_SKIPPED;
@@ -588,7 +594,7 @@ namespace System.Xml.Tests
 
             VerifyOutput(expOut);
 
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "Custom NewLineChars inside CDATA & Comment when Indent=true; Entitize, '\\r\\n'", Params = new object[] { NewLineHandling.Entitize, "\r\n" }, id = 68, Pri = 1)]
@@ -600,7 +606,8 @@ namespace System.Xml.Tests
         //[Variation(Desc = "Custom NewLineChars inside CDATA & Comment when Indent=true; Entitize, '---'", Params = new object[] { NewLineHandling.Entitize, "---" }, id = 74, Pri = 2)]
         //[Variation(Desc = "Custom NewLineChars inside CDATA & Comment when Indent=true; Replace, '---'", Params = new object[] { NewLineHandling.Replace, "---" }, id = 75, Pri = 2)]
         //[Variation(Desc = "Custom NewLineChars inside CDATA & Comment when Indent=true; None, '---'", Params = new object[] { NewLineHandling.None, "---" }, id = 76, Pri = 2)]
-        public int EOF_Handling_18()
+        [Fact]
+        public void EOF_Handling_18()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             string PrototypeOutput = "<root><![CDATA[foo&NewLinefoo&NewLinefoo&NewLinefoo\tfoo]]></root>&NewLine<?pi foo&NewLinefoo&NewLinefoo&NewLinefoo\tfoo?>&NewLine<!--foo&NewLinefoo&NewLinefoo&NewLinefoo\tfoo-->";
@@ -622,14 +629,15 @@ namespace System.Xml.Tests
             else
                 VerifyOutput("<root><![CDATA[foo\r\nfoo\nfoo\rfoo\tfoo]]></root>&NewLine<?pi foo\r\nfoo\nfoo\rfoo\tfoo?>&NewLine<!--foo\r\nfoo\nfoo\rfoo\tfoo-->".Replace("&NewLine", CurVariation.Params[1].ToString()));
 
-            return TEST_PASS;
+            return;
         }
 
 
         //[Variation(Desc = "Wrapped writer tests for various types of nodes with 'Entitize'", Param = NewLineHandling.Entitize, Priority = 2)]
         //[Variation(Desc = "Wrapped writer tests for various types of nodes with 'Replace'", Param = NewLineHandling.Replace, Priority = 2)]
         //[Variation(Desc = "Wrapped writer tests for various types of nodes with 'None'", Param = NewLineHandling.None, Priority = 2)]
-        public int EOF_Handling_19()
+        [Fact]
+        public void EOF_Handling_19()
         {
             if (WriterType == WriterType.UTF8WriterIndent || WriterType == WriterType.UnicodeWriterIndent)
                 CError.Skip("skipped");
@@ -660,7 +668,7 @@ namespace System.Xml.Tests
                 expOut = ExpectedOutput("<root><![CDATA[" + NewLines + "]]>" + NewLines + "</root><?pi " + NewLines + "?>" + NewLines + "<!--" + NewLines + "-->", NewLineHandling.Replace, false);
 
             VerifyOutput(expOut);
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "XmlWriterSettings.IndentChars - valid values", Priority = 2, Param = 1)]
@@ -675,7 +683,8 @@ namespace System.Xml.Tests
         //[Variation(Desc = "XmlWriterSettings.NewLineChars - valid values", Priority = 2, Param = 10)]
         //[Variation(Desc = "XmlWriterSettings.Indent - valid values", Priority = 2, Param = 11)]
         //[Variation(Desc = "XmlWriterSettings.Indent - valid values", Priority = 2, Param = 12)]
-        public int EOF_Handling_20()
+        [Fact]
+        public void EOF_Handling_20()
         {
             XmlWriterSettings ws = new XmlWriterSettings();
             switch ((int)CurVariation.Param)
@@ -693,7 +702,7 @@ namespace System.Xml.Tests
                 case 11: ws.Indent = true; break;
                 case 12: ws.Indent = false; break;
             }
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "10.Test fo proper indentation and newline handling when Indent = true, with custom NewLineChars and IndentChars; Entitize, '\uD800\uDC00', '\uD800\uDC00'", Params = new object[] { NewLineHandling.Entitize, "\uD800\uDC00", "\uD800\uDC00" })]
@@ -702,7 +711,8 @@ namespace System.Xml.Tests
         //[Variation(Desc = "13.Test fo proper indentation and newline handling when Indent = true, with custom NewLineChars and IndentChars; Entitize, '&lt;&gt;', '&lt;&gt;'", Params = new object[] { NewLineHandling.Entitize, "&lt;&gt;", "&lt;&gt;" })]
         //[Variation(Desc = "14.Test fo proper indentation and newline handling when Indent = true, with custom NewLineChars and IndentChars; Replace, '&lt;&gt;', '&lt;&gt;'", Params = new object[] { NewLineHandling.Replace, "&lt;&gt;", "&lt;&gt;" })]
         //[Variation(Desc = "15.Test fo proper indentation and newline handling when Indent = true, with custom NewLineChars and IndentChars; None, '&lt;&gt;', '&lt;&gt;'", Params = new object[] { NewLineHandling.None, "&lt;&gt;", "&lt;&gt;" })]
-        public int EOF_Handling_21()
+        [Fact]
+        public void EOF_Handling_21()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             string PrototypeOutput = "<root>&NewLine&Indent<foo>&NewLine&Indent&Indent<bar />&NewLine&Indent</foo>&NewLine</root>";
@@ -721,13 +731,14 @@ namespace System.Xml.Tests
             w.Dispose();
 
             VerifyOutput(PrototypeOutput.Replace("&NewLine", CurVariation.Params[1].ToString()).Replace("&Indent", CurVariation.Params[2].ToString()));
-            return TEST_PASS;
+            return;
         }
 
         //[Variation(Desc = "16.Test fo proper indentation and newline handling when Indent = true, with custom NewLineChars and IndentChars; Entitize, '\uDE40\uDA72', '\uDE40\uDA72'", Params = new object[] { NewLineHandling.Entitize })]
         //[Variation(Desc = "17.Test fo proper indentation and newline handling when Indent = true, with custom NewLineChars and IndentChars; Replace, '\uDE40\uDA72', '\uDE40\uDA72'", Params = new object[] { NewLineHandling.Replace })]
         //[Variation(Desc = "18.Test fo proper indentation and newline handling when Indent = true, with custom NewLineChars and IndentChars; None, '\uDE40\uDA72', '\uDE40\uDA72'", Params = new object[] { NewLineHandling.None })]
-        public int EOF_Handling_22()
+        [Fact]
+        public void EOF_Handling_22()
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NewLineHandling = (NewLineHandling)CurVariation.Params[0];
@@ -742,8 +753,8 @@ namespace System.Xml.Tests
                 w.WriteStartElement("foo");
                 w.Dispose();
             }
-            catch (ArgumentException e) { CError.WriteLine(e.Message); return TEST_PASS; }
-            return TEST_FAIL;
+            catch (ArgumentException e) { CError.WriteLine(e.Message); return; }
+            Assert.True(false);
         }
     }
 }
