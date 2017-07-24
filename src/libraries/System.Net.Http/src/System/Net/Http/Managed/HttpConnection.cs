@@ -44,7 +44,7 @@ namespace System.Net.Http
         private int _readOffset;
         private int _readLength;
 
-        private bool _connectionClose;      // Connection: close was seen on last response
+        private bool _connectionClose; // Connection: close was seen on last response
 
         private bool _disposed;
 
@@ -178,8 +178,7 @@ namespace System.Net.Http
             return WriteAsciiStringAsync(value.ToString(CultureInfo.InvariantCulture), cancellationToken);
         }
 
-        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request,
-            CancellationToken cancellationToken)
+        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
             try
             {
@@ -264,7 +263,7 @@ namespace System.Net.Http
                 while (true)
                 {
                     ArraySegment<byte> line = await ReadNextLineAsync(cancellationToken).ConfigureAwait(false);
-                    if (line[0] == (byte)'\r')
+                    if (line[0] == '\r')
                     {
                         break;
                     }
@@ -314,9 +313,9 @@ namespace System.Net.Http
             }
         }
 
-        private void ParseStatusLine(HttpResponseMessage response, ArraySegment<byte> line)
+        private void ParseStatusLine(HttpResponseMessage response, Span<byte> line)
         {
-            if (line.Count < 14 || // "HTTP/1.1 123\r\n" with optional phrase before the crlf
+            if (line.Length < 14 || // "HTTP/1.1 123\r\n" with optional phrase before the crlf
                 line[0] != 'H' ||
                 line[1] != 'T' ||
                 line[2] != 'T' ||
@@ -324,57 +323,60 @@ namespace System.Net.Http
                 line[4] != '/' ||
                 line[8] != ' ')
             {
-                throw new HttpRequestException(SR.net_http_unix_invalid_response);
+                ThrowInvalidHttpResponse();
             }
 
-            // Set the response HttpVersion.
-            char majorVersion = (char)line[5], minorVersion = (char)line[7];
-            if (!char.IsDigit(majorVersion) || line[6] != (byte)'.' || !char.IsDigit(minorVersion))
+            // Set the response HttpVersion and status code
+            byte majorVersion = line[5], minorVersion = line[7];
+            byte status1 = line[9], status2 = line[10], status3 = line[11];
+            if (!IsDigit(majorVersion) || line[6] != (byte)'.' || !IsDigit(minorVersion) ||
+                !IsDigit(status1) || !IsDigit(status2) || !IsDigit(status3))
             {
-                throw new HttpRequestException("could not read response HTTP version");
+                ThrowInvalidHttpResponse();
             }
             response.Version =
                 (majorVersion == '1' && minorVersion == '1') ? HttpVersionInternal.Version11 :
                 (majorVersion == '1' && minorVersion == '0') ? HttpVersionInternal.Version10 :
                 (majorVersion == '2' && minorVersion == '0') ? HttpVersionInternal.Version20 :
                 HttpVersionInternal.Unknown;
-
-            char status1 = (char)line[9], status2 = (char)line[10], status3 = (char)line[11];
-            if (!char.IsDigit(status1) || !char.IsDigit(status2) || !char.IsDigit(status3))
-            {
-                throw new HttpRequestException("could not read response status code");
-            }
-
-            int status = 100 * (status1 - '0') + 10 * (status2 - '0') + (status3 - '0');
-            response.StatusCode = (HttpStatusCode)status;
+            response.StatusCode =
+                (HttpStatusCode)(100 * (status1 - '0') + 10 * (status2 - '0') + (status3 - '0'));
 
             // Parse (optional) reason phrase
-            _sb.Clear();
-            int pos = 12;
-            char c = (char)line[pos++];
-            if (c == ' ')
+            byte c = line[12];
+            if (c == '\r')
             {
-                c = (char)line[pos++];
+                response.ReasonPhrase = string.Empty;
             }
-            else if (c != '\r')
+            else if (c != ' ')
             {
-                throw new HttpRequestException("Invalid characters in response line");
+                ThrowInvalidHttpResponse();
             }
-
-            while (c != '\r')
+            else
             {
-                _sb.Append(c);
-                c = (char)line[pos++];
+                Span<byte> reasonBytes = line.Slice(13, line.Length - 13 - 2); // 2 == \r\n ending trimmed off
+                string knownReasonPhrase = HttpStatusDescription.Get(response.StatusCode);
+                if (knownReasonPhrase != null && EqualsOrdinal(knownReasonPhrase, reasonBytes))
+                {
+                    response.ReasonPhrase = knownReasonPhrase;
+                }
+                else
+                {
+                    unsafe
+                    {
+                        fixed (byte* reasonPtr = &reasonBytes.DangerousGetPinnableReference())
+                        {
+                            response.ReasonPhrase = Encoding.ASCII.GetString(reasonPtr, reasonBytes.Length);
+                        }
+                    }
+                }
             }
-
-            string knownReasonPhrase = HttpStatusDescription.Get(response.StatusCode);
-            response.ReasonPhrase = knownReasonPhrase != null && CharArrayHelpers.EqualsOrdinal(knownReasonPhrase, _sb.Chars, 0, _sb.Length) ?
-                knownReasonPhrase :
-                _sb.ToString();
         }
 
-        private void ParseHeaderNameValue(ArraySegment<byte> line, HttpResponseMessage response)
+        private void ParseHeaderNameValue(Span<byte> line, HttpResponseMessage response)
         {
+            // TODO: Use Span to get the header name and value rather than going through ValueStringBuilder
+
             _sb.Clear();
             int pos = 0;
 
@@ -407,6 +409,8 @@ namespace System.Net.Http
                 // Existing handlers ignore headers that couldn't be added.  Do the same here.
             }
         }
+
+        private static bool IsDigit(byte c) => (uint)(c - '0') <= '9' - '0';
 
         private void WriteToBuffer(byte[] buffer, int offset, int count)
         {
@@ -614,7 +618,7 @@ namespace System.Net.Http
                     searchOffset = length - 1;
                     await FillAsync(cancellationToken).ConfigureAwait(false);
                 }
-                else if (_readBuffer[crPos + 1] == (byte)'\n')
+                else if (_readBuffer[crPos + 1] == '\n')
                 {
                     // We found a \r\n.  Return the data up to and including it.
                     int lineLength = crPos - _readOffset + 2;
@@ -624,14 +628,48 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    throw new HttpRequestException("Found \\r without \\n");
+                    ThrowInvalidHttpResponse();
                 }
 
                 if (remaining == _readLength - _readOffset)
                 {
-                    throw new HttpRequestException("Response ended with invalid headers");
+                    ThrowInvalidHttpResponse();
                 }
             }
+        }
+
+        private async Task ReadCrLfAsync(CancellationToken cancellationToken)
+        {
+            int remaining = _readLength - _readOffset;
+            while (true)
+            {
+                // If there are at least two characters buffered, we expect them to be \r\n.
+                // If they are, consume them and we're done.  If they're not, it's an error.
+                if (remaining >= 2)
+                {
+                    byte[] readBuffer = _readBuffer;
+                    if (readBuffer[_readOffset++] == '\r' && readBuffer[_readOffset++] == '\n')
+                    {
+                        return;
+                    }
+                    break;
+                }
+
+                // We have fewer than 2 chars buffered.  Get more.
+                await FillAsync(cancellationToken).ConfigureAwait(false);
+
+                // If we were unable to get more, it's an error.
+                // Otherwise, loop around to look again.
+                int newRemaining = _readLength - _readOffset;
+                if (remaining == newRemaining)
+                {
+                    break;
+                }
+                remaining = newRemaining;
+            }
+
+            // Couldn't find the expect CrLf.
+            ThrowInvalidHttpResponse();
         }
 
         private Task FillAsync(CancellationToken cancellationToken)
@@ -796,7 +834,7 @@ namespace System.Net.Http
                 await FillAsync(cancellationToken).ConfigureAwait(false);
                 if (_readLength == 0)
                 {
-                    throw new HttpRequestException("unexpected end of stream");
+                    ThrowInvalidHttpResponse();
                 }
 
                 remaining = (int)Math.Min(_readLength, length);
@@ -842,5 +880,27 @@ namespace System.Net.Http
             // We're not putting the connection back in the pool. Dispose it.
             Dispose();
         }
+
+        private static bool EqualsOrdinal(string left, Span<byte> right)
+        {
+            Debug.Assert(left != null, "Expected non-null string");
+
+            if (left.Length != right.Length)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < left.Length; i++)
+            {
+                if (left[i] != right[i])
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static void ThrowInvalidHttpResponse() => throw new HttpRequestException(SR.net_http_invalid_response);
     }
 }

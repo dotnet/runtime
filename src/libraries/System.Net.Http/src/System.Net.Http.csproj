@@ -431,7 +431,6 @@
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.IO.Compression" />
-    <Reference Include="System.Memory" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Security" />
     <Reference Include="System.Net.Sockets" />

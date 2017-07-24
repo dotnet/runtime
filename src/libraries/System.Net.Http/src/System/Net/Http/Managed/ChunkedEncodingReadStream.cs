@@ -35,11 +35,7 @@ namespace System.Net.Http
                 }
 
                 // Indicates end of response body. We expect final CRLF after this.
-                if ((await _connection.ReadNextLineAsync(cancellationToken).ConfigureAwait(false)).Count != 2) // \r\n
-                {
-                    throw new IOException("missing final CRLF for chunked encoding");
-                }
-
+                await _connection.ReadCrLfAsync(cancellationToken).ConfigureAwait(false);
                 _connection.ReturnConnectionToPool();
                 _connection = null;
                 return false;
@@ -80,10 +76,9 @@ namespace System.Net.Http
             {
                 Debug.Assert(bytesConsumed <= _chunkBytesRemaining);
                 _chunkBytesRemaining -= bytesConsumed;
-                if (_chunkBytesRemaining == 0 &&
-                    (await _connection.ReadNextLineAsync(cancellationToken).ConfigureAwait(false)).Count != 2)
+                if (_chunkBytesRemaining == 0)
                 {
-                    throw new IOException("missing CRLF for end of chunk");
+                    await _connection.ReadCrLfAsync(cancellationToken).ConfigureAwait(false);
                 }
             }
 
