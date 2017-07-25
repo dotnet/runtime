@@ -9,7 +9,7 @@
     <NuGetTargetMoniker>.NETCoreApp,Version=v1.1</NuGetTargetMoniker>
     <NuGetTargetMonikerShort>netcoreapp1.1</NuGetTargetMonikerShort>
     <OutputPath>$(RefRootPath)SharedFrameworkValidation.LKG</OutputPath>
-    <NugetRuntimeIdentifier>$(_PublishRID)</NugetRuntimeIdentifier>
+    <NugetRuntimeIdentifier>$(_PackageRID)</NugetRuntimeIdentifier>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
   </PropertyGroup>
 

@@ -71,6 +71,7 @@ namespace System.Composition.Hosting.Core.Tests
         [InlineData(typeof(Lazy<int, ParameterlessConstructor>), new Type[] { typeof(int), typeof(Lazy<int, ParameterlessConstructor>) })]
         [InlineData(typeof(ExportFactory<>), new Type[] { typeof(ExportFactory<>) })]
         [InlineData(typeof(ExportFactory<int>), new Type[] { typeof(int), typeof(ExportFactory<int>) })]
+        [InlineData(typeof(ExportFactory<,>), new Type[] { typeof(ExportFactory<,>) })]
         [InlineData(typeof(ExportFactory<int, IDictionary<string, object>>), new Type[] { typeof(int), typeof(ExportFactory<int, IDictionary<string, object>>) })]
         public void GetExport_LazyOrExportFactoryContractType_ReturnsExpected(Type type, Type[] expectedContractTypes)
         {
@@ -114,15 +115,6 @@ namespace System.Composition.Hosting.Core.Tests
 
                 Assert.False(host.TryGetExport(contract, out object export));
                 Assert.Equal(expectedTypes, tracker.Contracts.Select(c => c.ContractType));
-            }
-        }
-
-        [Fact]
-        public void GetExport_OpenGenericExportFactoryWithMetadata_ThrowsIndexOutOfRangeException()
-        {
-            using (CompositionHost host = CompositionHost.CreateCompositionHost())
-            {
-                Assert.Throws<IndexOutOfRangeException>(() => host.TryGetExport(typeof(ExportFactory<,>), out object export));
             }
         }
 

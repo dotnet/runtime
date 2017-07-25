@@ -19,8 +19,7 @@ namespace System.Composition.Hosting.Providers.ExportFactory
 
         public override IEnumerable<ExportDescriptorPromise> GetExportDescriptors(CompositionContract contract, DependencyAccessor definitionAccessor)
         {
-            if (!contract.ContractType.GetTypeInfo().IsGenericType ||
-                        contract.ContractType.GetGenericTypeDefinition() != typeof(ExportFactory<,>))
+            if (!contract.ContractType.IsConstructedGenericType || contract.ContractType.GetGenericTypeDefinition() != typeof(ExportFactory<,>))
                 return NoExportDescriptors;
 
             var ga = contract.ContractType.GenericTypeArguments;

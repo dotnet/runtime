@@ -231,12 +231,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     // Also finds constructors on delegate types.
     internal sealed class PredefinedMembers
     {
-        private static void RETAILVERIFY(bool f)
-        {
-            if (!f)
-                Debug.Assert(false, "panic!");
-        }
-
         private readonly SymbolLoader _loader;
         internal SymbolTable RuntimeBinderSymbolTable;
         private readonly MethodSymbol[] _methods = new MethodSymbol[(int)PREDEFMETH.PM_COUNT];
@@ -295,7 +289,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // property specific helpers
         private PropertySymbol EnsureProperty(PREDEFPROP property)
         {
-            RETAILVERIFY((int)property > (int)PREDEFMETH.PM_FIRST && (int)property < (int)PREDEFMETH.PM_COUNT);
+            Debug.Assert((int)property > (int)PREDEFMETH.PM_FIRST && (int)property < (int)PREDEFMETH.PM_COUNT);
 
             if (_properties[(int)property] == null)
             {
@@ -551,7 +545,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private MethodSymbol EnsureMethod(PREDEFMETH method)
         {
-            RETAILVERIFY(method > PREDEFMETH.PM_FIRST && method < PREDEFMETH.PM_COUNT);
+            Debug.Assert(method > PREDEFMETH.PM_FIRST && method < PREDEFMETH.PM_COUNT);
             if (_methods[(int)method] == null)
             {
                 _methods[(int)method] = LoadMethod(method);
@@ -696,16 +690,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private static PredefinedPropertyInfo GetPropInfo(PREDEFPROP property)
         {
-            RETAILVERIFY(property > PREDEFPROP.PP_FIRST && property < PREDEFPROP.PP_COUNT);
-            RETAILVERIFY(s_predefinedProperties[(int)property].property == property);
+            Debug.Assert(property > PREDEFPROP.PP_FIRST && property < PREDEFPROP.PP_COUNT);
+            Debug.Assert(s_predefinedProperties[(int)property].property == property);
 
             return s_predefinedProperties[(int)property];
         }
 
         private static PredefinedMethodInfo GetMethInfo(PREDEFMETH method)
         {
-            RETAILVERIFY(method > PREDEFMETH.PM_FIRST && method < PREDEFMETH.PM_COUNT);
-            RETAILVERIFY(s_predefinedMethods[(int)method].method == method);
+            Debug.Assert(method > PREDEFMETH.PM_FIRST && method < PREDEFMETH.PM_COUNT);
+            Debug.Assert(s_predefinedMethods[(int)method].method == method);
 
             return s_predefinedMethods[(int)method];
         }

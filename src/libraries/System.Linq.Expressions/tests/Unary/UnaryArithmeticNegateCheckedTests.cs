@@ -208,5 +208,28 @@ namespace System.Linq.Expressions.Tests
         }
 
         #endregion
+
+#if FEATURE_COMPILE
+        [Fact]
+        public static void VerifyIL_ShortNegateChecked()
+        {
+            ParameterExpression param = Expression.Parameter(typeof(short));
+            Expression<Func<short, short>> f =
+                Expression.Lambda<Func<short, short>>(Expression.NegateChecked(param), param);
+
+            f.VerifyIL(
+                @".method int16 ::lambda_method(class [System.Linq.Expressions]System.Runtime.CompilerServices.Closure,int16)
+                {
+                    .maxstack 2
+
+                    IL_0000: ldc.i4.0
+                    IL_0001: ldarg.1
+                    IL_0002: sub.ovf
+                    IL_0003: conv.ovf.i2
+                    IL_0004: ret
+                }");
+        }
+#endif
+
     }
 }

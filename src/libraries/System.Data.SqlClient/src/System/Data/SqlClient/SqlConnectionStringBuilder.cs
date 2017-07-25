@@ -12,7 +12,7 @@ using System.Linq;
 
 namespace System.Data.SqlClient
 {
-    public sealed class SqlConnectionStringBuilder : DbConnectionStringBuilder
+    public sealed partial class SqlConnectionStringBuilder : DbConnectionStringBuilder
     {
         private enum Keywords
         { // specific ordering for ConnectionString output construction

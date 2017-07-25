@@ -904,7 +904,6 @@ namespace System.Linq.Expressions.Compiler
             Label labEnd;
             LocalBuilder locFrom = locals.GetLocal(typeFrom);
             il.Emit(OpCodes.Stloc, locFrom);
-            LocalBuilder locTo = locals.GetLocal(typeTo);
             // test for null
             il.Emit(OpCodes.Ldloca, locFrom);
             il.EmitHasValue(typeFrom);
@@ -919,16 +918,16 @@ namespace System.Linq.Expressions.Compiler
             // construct result type
             ConstructorInfo ci = typeTo.GetConstructor(new Type[] { nnTypeTo });
             il.Emit(OpCodes.Newobj, ci);
-            il.Emit(OpCodes.Stloc, locTo);
             labEnd = il.DefineLabel();
             il.Emit(OpCodes.Br_S, labEnd);
             // if null then create a default one
             il.MarkLabel(labIfNull);
+            LocalBuilder locTo = locals.GetLocal(typeTo);
             il.Emit(OpCodes.Ldloca, locTo);
             il.Emit(OpCodes.Initobj, typeTo);
-            il.MarkLabel(labEnd);
             il.Emit(OpCodes.Ldloc, locTo);
             locals.FreeLocal(locTo);
+            il.MarkLabel(labEnd);
         }
 
 
@@ -936,14 +935,10 @@ namespace System.Linq.Expressions.Compiler
         {
             Debug.Assert(!typeFrom.IsNullableType());
             Debug.Assert(typeTo.IsNullableType());
-            LocalBuilder locTo = locals.GetLocal(typeTo);
             Type nnTypeTo = typeTo.GetNonNullableType();
             il.EmitConvertToType(typeFrom, nnTypeTo, isChecked, locals);
             ConstructorInfo ci = typeTo.GetConstructor(new Type[] { nnTypeTo });
             il.Emit(OpCodes.Newobj, ci);
-            il.Emit(OpCodes.Stloc, locTo);
-            il.Emit(OpCodes.Ldloc, locTo);
-            locals.FreeLocal(locTo);
         }
 
 

@@ -172,37 +172,30 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void DirectoryEqualToMaxDirectory_CanBeCreated()
-        {
-            DirectoryInfo testDir = Create(GetTestFilePath());
-            PathInfo path = IOServices.GetPath(testDir.FullName, IOInputs.MaxDirectory, IOInputs.MaxComponent);
-            Assert.All(path.SubPaths, (subpath) =>
-            {
-                DirectoryInfo result = Create(subpath);
-
-                Assert.Equal(subpath, result.FullName);
-                Assert.True(Directory.Exists(result.FullName));
-            });
-        }
-
-        [Fact]
         public void DirectoryEqualToMaxDirectory_CanBeCreatedAllAtOnce()
         {
             DirectoryInfo testDir = Create(GetTestFilePath());
-            PathInfo path = IOServices.GetPath(testDir.FullName, IOInputs.MaxDirectory, maxComponent: 10);
-            DirectoryInfo result = Create(path.FullPath);
+            string path = IOServices.GetPath(testDir.FullName, IOInputs.MaxDirectory);
+            DirectoryInfo result = Create(path);
 
-            Assert.Equal(path.FullPath, result.FullName);
+            Assert.Equal(path, result.FullName);
             Assert.True(Directory.Exists(result.FullName));
         }
 
         [Theory,
             MemberData(nameof(PathsWithComponentLongerThanMaxComponent))]
-        public void DirectoryWithComponentLongerThanMaxComponentAsPath_ThrowsPathTooLongException(string path)
+        public void DirectoryWithComponentLongerThanMaxComponentAsPath_ThrowsException(string path)
         {
             // While paths themselves can be up to 260 characters including trailing null, file systems
-            // limit each components of the path to a total of 255 characters.
-             Assert.Throws<PathTooLongException>(() => Create(path));
+            // limit each components of the path to a total of 255 characters on Desktop.
+            if (PlatformDetection.IsFullFramework)
+            {
+                Assert.Throws<PathTooLongException>(() => Create(path));
+            }
+            else
+            {
+                AssertExtensions.ThrowsAny<IOException, DirectoryNotFoundException, PathTooLongException>(() => Create(path));
+            }
         }
 
         #endregion
@@ -296,9 +289,9 @@ namespace System.IO.Tests
         public void UnixPathLongerThan256_Allowed()
         {
             DirectoryInfo testDir = Create(GetTestFilePath());
-            PathInfo path = IOServices.GetPath(testDir.FullName, 257, IOInputs.MaxComponent);
-            DirectoryInfo result = Create(path.FullPath);
-            Assert.Equal(path.FullPath, result.FullName);
+            string path = IOServices.GetPath(testDir.FullName, 257);
+            DirectoryInfo result = Create(path);
+            Assert.Equal(path, result.FullName);
             Assert.True(Directory.Exists(result.FullName));
         }
 
@@ -333,11 +326,41 @@ namespace System.IO.Tests
         }
 
         [Theory,
-            MemberData(nameof(WhiteSpace))]
+            MemberData(nameof(ControlWhiteSpace))]
         [PlatformSpecific(TestPlatforms.Windows)]  // trailing whitespace in path is removed on Windows
-        public void WindowsTrailingWhiteSpace(string component)
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)] // e.g. NetFX only
+        public void TrailingWhiteSpace_Trimmed(string component)
         {
-            // Windows will remove all non-significant whitespace in a path
+            // On desktop, we trim a number of whitespace characters 
+            DirectoryInfo testDir = Create(GetTestFilePath());
+            string path = IOServices.RemoveTrailingSlash(testDir.FullName) + component;
+            DirectoryInfo result = Create(path);
+
+            Assert.True(Directory.Exists(result.FullName));
+            Assert.Equal(testDir.FullName, IOServices.RemoveTrailingSlash(result.FullName));
+        }
+
+        [Theory,
+            MemberData(nameof(NonControlWhiteSpace))]
+        [PlatformSpecific(TestPlatforms.Windows)]  // trailing whitespace in path is removed on Windows
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // Not NetFX
+        public void TrailingWhiteSpace_NotTrimmed(string component)
+        {
+            // In CoreFX we don't trim anything other than space (' ')
+            DirectoryInfo testDir = Create(GetTestFilePath() + component);
+            string path = IOServices.RemoveTrailingSlash(testDir.FullName);
+            DirectoryInfo result = Create(path);
+
+            Assert.True(Directory.Exists(result.FullName));
+            Assert.Equal(testDir.FullName, IOServices.RemoveTrailingSlash(result.FullName));
+        }
+
+        [Theory,
+            MemberData(nameof(SimpleWhiteSpace))] //*Just Spaces*
+        [PlatformSpecific(TestPlatforms.Windows)]  // trailing whitespace in path is removed on Windows
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // Not NetFX
+        public void TrailingSpace_NotTrimmed(string component)
+        {
             DirectoryInfo testDir = Create(GetTestFilePath());
             string path = IOServices.RemoveTrailingSlash(testDir.FullName) + component;
             DirectoryInfo result = Create(path);

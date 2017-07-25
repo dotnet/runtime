@@ -27,7 +27,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             _pController = pCtrl;
             GlobalSymbolContext globalSymbolContext = new GlobalSymbolContext(pNameMgr);
             _errorContext = new ErrorHandling(new UserStringBuilder(globalSymbolContext), this, pCtrl.GetErrorFactory());
-            _symbolLoader = new SymbolLoader(globalSymbolContext, null, _errorContext);
+            _symbolLoader = new SymbolLoader(globalSymbolContext, _errorContext);
         }
 
         private new ErrorHandling GetErrorContext()
@@ -53,13 +53,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // particular method.
         public void SubmitError(CParameterizedError error)
         {
-            CError pError = GetErrorContext().RealizeError(error);
-
-            if (pError == null)
-            {
-                return;
-            }
-            _pController.SubmitError(pError);
+            _pController.SubmitError(GetErrorContext().RealizeError(error));
         }
     }
 }

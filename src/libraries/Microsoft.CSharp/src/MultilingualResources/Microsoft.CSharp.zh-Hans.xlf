@@ -38,14 +38,6 @@
           <source>Cannot invoke a non-delegate type</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">无法调用非委托类型</target>
         </trans-unit>
-        <trans-unit id="BindImplicitConversionRequireOneArgument" translate="yes" xml:space="preserve">
-          <source>Implicit conversion takes exactly one argument</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">隐式转换采用一个且仅一个参数</target>
-        </trans-unit>
-        <trans-unit id="BindExplicitConversionRequireOneArgument" translate="yes" xml:space="preserve">
-          <source>Explicit conversion takes exactly one argument</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">显式转换采用一个且仅一个参数</target>
-        </trans-unit>
         <trans-unit id="BindBinaryAssignmentRequireTwoArguments" translate="yes" xml:space="preserve">
           <source>Binary operators cannot be invoked with one argument</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">无法使用一个参数调用二元运算符</target>
@@ -69,10 +61,6 @@
         <trans-unit id="BadBinaryOps" translate="yes" xml:space="preserve">
           <source>Operator '{0}' cannot be applied to operands of type '{1}' and '{2}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">运算符“{0}”无法应用于“{1}”和“{2}”类型的操作数</target>
-        </trans-unit>
-        <trans-unit id="IntDivByZero" translate="yes" xml:space="preserve">
-          <source>Division by constant zero</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">常数零做除数</target>
         </trans-unit>
         <trans-unit id="BadIndexLHS" translate="yes" xml:space="preserve">
           <source>Cannot apply indexing with [] to an expression of type '{0}'</source>
@@ -174,21 +162,9 @@
           <source>Property or indexer '{0}' cannot be assigned to -- it is read only</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">无法为属性或索引器“{0}”赋值 - 它是只读的</target>
         </trans-unit>
-        <trans-unit id="AbstractBaseCall" translate="yes" xml:space="preserve">
-          <source>Cannot call an abstract base member: '{0}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">无法调用抽象基成员:“{0}”</target>
-        </trans-unit>
         <trans-unit id="RefProperty" translate="yes" xml:space="preserve">
           <source>A property or indexer may not be passed as an out or ref parameter</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">属性或索引器不得作为 out 或 ref 参数传递</target>
-        </trans-unit>
-        <trans-unit id="ManagedAddr" translate="yes" xml:space="preserve">
-          <source>Cannot take the address of, get the size of, or declare a pointer to a managed type ('{0}')</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">无法获取托管类型(“{0}”)的地址和大小，或者声明指向它的指针</target>
-        </trans-unit>
-        <trans-unit id="FixedNotNeeded" translate="yes" xml:space="preserve">
-          <source>You cannot use the fixed statement to take the address of an already fixed expression</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">不能使用 fixed 语句来获取已固定的表达式的地址</target>
         </trans-unit>
         <trans-unit id="UnsafeNeeded" translate="yes" xml:space="preserve">
           <source>Dynamic calls cannot be used in conjunction with pointers</source>
@@ -202,10 +178,6 @@
           <source>The type ('{0}') must contain declarations of operator true and operator false</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">类型(“{0}”)必须包含运算符 True 和运算符 False 的声明</target>
         </trans-unit>
-        <trans-unit id="CheckedOverflow" translate="yes" xml:space="preserve">
-          <source>The operation overflows at compile time in checked mode</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">操作在检查模式下编译时溢出</target>
-        </trans-unit>
         <trans-unit id="ConstOutOfRangeChecked" translate="yes" xml:space="preserve">
           <source>Constant value '{0}' cannot be converted to a '{1}' (use 'unchecked' syntax to override)</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">常量值“{0}”无法转换为“{1}”(使用“unchecked”语法重写)</target>
@@ -218,10 +190,6 @@
           <source>'{0}' does not have a predefined size, therefore sizeof can only be used in an unsafe context (consider using System.Runtime.InteropServices.Marshal.SizeOf)</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">“{0}”没有预定义的大小，因此 sizeof 只能在不安全的上下文中使用(请考虑使用 System.Runtime.InteropServices.Marshal.SizeOf)</target>
         </trans-unit>
-        <trans-unit id="FieldInitRefNonstatic" translate="yes" xml:space="preserve">
-          <source>A field initializer cannot reference the non-static field, method, or property '{0}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">字段初始值设定项无法引用非静态字段、方法或属性“{0}”</target>
-        </trans-unit>
         <trans-unit id="CallingFinalizeDepracated" translate="yes" xml:space="preserve">
           <source>Destructors and object.Finalize cannot be called directly. Consider calling IDisposable.Dispose if available.</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">无法直接调用析构函数和 object.Finalize。如果可用，请考虑调用 IDisposable.Dispose。</target>
@@ -229,10 +197,6 @@
         <trans-unit id="CallingBaseFinalizeDeprecated" translate="yes" xml:space="preserve">
           <source>Do not directly call your base class Finalize method. It is called automatically from your destructor.</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">不要直接调用基类 Finalize 方法。它将从析构函数中自动调用。</target>
-        </trans-unit>
-        <trans-unit id="BadCastInFixed" translate="yes" xml:space="preserve">
-          <source>The right hand side of a fixed statement assignment may not be a cast expression</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">fixed 语句赋值的右边不能是强制转换表达式</target>
         </trans-unit>
         <trans-unit id="NoImplicitConvCast" translate="yes" xml:space="preserve">
           <source>Cannot implicitly convert type '{0}' to '{1}'. An explicit conversion exists (are you missing a cast?)</source>
@@ -310,18 +274,6 @@
           <source>The type '{2}' must be a non-nullable value type in order to use it as parameter '{1}' in the generic type or method '{0}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">类型“{2}”必须是不可以为 null 值的类型，才能用作泛型类型或方法“{0}”中的参数“{1}”</target>
         </trans-unit>
-        <trans-unit id="CircularConstraint" translate="yes" xml:space="preserve">
-          <source>Circular constraint dependency involving '{0}' and '{1}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">涉及“{0}”和“{1}”的循环约束依赖项</target>
-        </trans-unit>
-        <trans-unit id="BaseConstraintConflict" translate="yes" xml:space="preserve">
-          <source>Type parameter '{0}' inherits conflicting constraints '{1}' and '{2}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">类型参数“{0}”继承了彼此冲突的“{1}”和“{2}”约束</target>
-        </trans-unit>
-        <trans-unit id="ConWithValCon" translate="yes" xml:space="preserve">
-          <source>Type parameter '{1}' has the 'struct' constraint so '{1}' cannot be used as a constraint for '{0}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">类型参数“{1}”具有“struct”约束，因此“{1}”不能用作“{0}”的约束</target>
-        </trans-unit>
         <trans-unit id="AmbigUDConv" translate="yes" xml:space="preserve">
           <source>Ambiguous user defined conversions '{0}' and '{1}' when converting from '{2}' to '{3}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">从“{2}”转换为“{3}”时，用户定义的转换“{0}”和“{1}”具有二义性</target>
@@ -329,10 +281,6 @@
         <trans-unit id="PredefinedTypeNotFound" translate="yes" xml:space="preserve">
           <source>Predefined type '{0}' is not defined or imported</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">预定义类型“{0}”未定义或导入</target>
-        </trans-unit>
-        <trans-unit id="PredefinedTypeBadType" translate="yes" xml:space="preserve">
-          <source>Predefined type '{0}' is declared incorrectly</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">预定义类型“{0}”未正确声明</target>
         </trans-unit>
         <trans-unit id="BindToBogus" translate="yes" xml:space="preserve">
           <source>'{0}' is not supported by the language</source>
@@ -353,10 +301,6 @@
         <trans-unit id="LiteralDoubleCast" translate="yes" xml:space="preserve">
           <source>Literal of type double cannot be implicitly converted to type '{1}'; use an '{0}' suffix to create a literal of this type</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">无法将 Double 类型隐式转换为“{1}”类型；请使用“{0}”后缀创建此类型</target>
-        </trans-unit>
-        <trans-unit id="UnifyingInterfaceInstantiations" translate="yes" xml:space="preserve">
-          <source>'{0}' cannot implement both '{1}' and '{2}' because they may unify for some type parameter substitutions</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">“{0}”不能同时实现“{1}”和“{2}”，原因是它们可以统一以进行某些类型参数替换</target>
         </trans-unit>
         <trans-unit id="ConvertToStaticClass" translate="yes" xml:space="preserve">
           <source>Cannot convert to static type '{0}'</source>
@@ -461,10 +405,6 @@
         <trans-unit id="RefReadonlyLocalCause" translate="yes" xml:space="preserve">
           <source>Cannot pass '{0}' as a ref or out argument because it is a '{1}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">“{0}”是一个“{1}”，无法作为 ref 或 out 参数进行传递</target>
-        </trans-unit>
-        <trans-unit id="ThisStructNotInAnonMeth" translate="yes" xml:space="preserve">
-          <source>Anonymous methods, lambda expressions, and query expressions inside structs cannot access instance members of 'this'. Consider copying 'this' to a local variable outside the anonymous method, lambda expression or query expression and using the local instead.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">结构内部的匿名方法、lambda 表达式和查询表达式无法访问“this”的实例成员。请考虑将“this”复制到匿名方法、lambda 表达式或查询表达式外部的某个局部变量并改用该局部变量。</target>
         </trans-unit>
         <trans-unit id="DelegateOnNullable" translate="yes" xml:space="preserve">
           <source>Cannot bind delegate to '{0}' because it is a member of 'System.Nullable<it id="1" pos="open">&lt;T&gt;</it>'</source>

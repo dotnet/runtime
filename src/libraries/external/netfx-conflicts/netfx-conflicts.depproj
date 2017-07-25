@@ -8,7 +8,6 @@
     <NuGetTargetMoniker>.NETStandard,Version=v1.0</NuGetTargetMoniker>
     <PackageTargetFallback>netstandard1.1;netstandard1.2;netstandard1.3</PackageTargetFallback>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
-    <NugetRuntimeIdentifier>None</NugetRuntimeIdentifier>
     <EnableBinPlacing>false</EnableBinPlacing>
   </PropertyGroup>
 

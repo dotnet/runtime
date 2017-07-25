@@ -25,7 +25,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 using Xunit;
-using System;
+using System.Collections;
 using System.Data.Common;
 
 namespace System.Data.Tests.Common
@@ -472,7 +472,7 @@ namespace System.Data.Tests.Common
             Array array = null;
             DataColumnMappingCollection dataColumnMappingCollection = new DataColumnMappingCollection();
 
-            Assert.Throws<ArgumentNullException>(() => dataColumnMappingCollection.AddRange(array));
+            AssertExtensions.Throws<ArgumentNullException>("values", () => dataColumnMappingCollection.AddRange(array));
         }
 
         [Fact]
@@ -484,6 +484,69 @@ namespace System.Data.Tests.Common
             dataColumnMappingCollection["sourcePIN"] = new DataColumnMapping("sourcePIN", "dataSetPINSet");
             DataColumnMapping dataColumnMapping = dataColumnMappingCollection["sourcePIN"];
             Assert.Equal("dataSetPINSet", dataColumnMapping.DataSetColumn);
+        }
+
+        [Fact]
+        public void CopyTo_Array_Int_Success()
+        {
+            Array array = new DataColumnMapping[1];
+            DataColumnMappingCollection dataColumnMappingCollection = new DataColumnMappingCollection();
+            dataColumnMappingCollection.Add(new DataColumnMapping("sourcePIN", "dataSetPIN"));
+            IEnumerator enumerator = array.GetEnumerator();
+            enumerator.MoveNext();
+            Assert.Null(enumerator.Current);
+
+            dataColumnMappingCollection.CopyTo(array, 0);
+
+            enumerator = array.GetEnumerator();
+            enumerator.MoveNext();
+            Assert.Equal("dataSetPIN", ((DataColumnMapping)enumerator.Current).DataSetColumn);
+        }
+
+        [Fact]
+        public void GetEnumerator_Success()
+        {
+            DataColumnMappingCollection dataColumnMappingCollection = new DataColumnMappingCollection();
+            dataColumnMappingCollection.Add(new DataColumnMapping("a", "b"));
+
+            IEnumerator enumerator = dataColumnMappingCollection.GetEnumerator();
+
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal("b", ((DataColumnMapping)enumerator.Current).DataSetColumn);
+            Assert.False(enumerator.MoveNext());
+        }
+
+        [Fact]
+        public void Insert_Int_Object_Success()
+        {
+            DataColumnMappingCollection dataColumnMappingCollection = new DataColumnMappingCollection();
+            Assert.Equal(0, dataColumnMappingCollection.Count);
+
+            dataColumnMappingCollection.Insert(0, (object)new DataColumnMapping("sourcePIN", "dataSetPIN"));
+
+            Assert.Equal(1, dataColumnMappingCollection.Count);
+            Assert.Equal("dataSetPIN", dataColumnMappingCollection["sourcePIN"].DataSetColumn);
+        }
+
+        [Fact]
+        public void Remove_Object_Success()
+        {
+            DataColumnMapping dataColumnMapping = new DataColumnMapping("sourcePIN", "dataSetPIN");
+            DataColumnMappingCollection dataColumnMappingCollection = new DataColumnMappingCollection();
+            dataColumnMappingCollection.Add(dataColumnMapping);
+            Assert.Equal(1, dataColumnMappingCollection.Count);
+
+            dataColumnMappingCollection.Remove((object)dataColumnMapping);
+
+            Assert.Equal(0, dataColumnMappingCollection.Count);
+        }
+
+        [Fact]
+        public void Remove_Object_PassingNullThrowsException()
+        {
+            DataColumnMappingCollection dataColumnMappingCollection = new DataColumnMappingCollection();
+
+            AssertExtensions.Throws<ArgumentNullException>("value", () => dataColumnMappingCollection.Remove((object)null));
         }
     }
 }

@@ -72,13 +72,11 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\EXPRExtensions.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\ExprFactory.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\EXPRFLAG.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\FileRecord.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\FundamentalTypes.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\GlobalSymbolContext.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\GroupToArgsBinder.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\GroupToArgsBinderResult.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\ImplicitConversion.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\InputFile.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\LangCompiler.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\MemberLookup.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\MemberLookupResults.cs" />
@@ -149,10 +147,8 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\Return.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\Statement.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\Temporary.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\TypeArguments.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\TypeOf.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\UnaryOperator.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\UnboundAnonymousFunction.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\UserDefinedConversion.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\UserDefinedLogicalOperator.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\Visitors\ExpressionTreeRewriter.cs" />

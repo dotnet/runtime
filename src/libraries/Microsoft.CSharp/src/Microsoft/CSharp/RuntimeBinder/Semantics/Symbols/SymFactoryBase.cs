@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
@@ -13,23 +14,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal abstract class SymFactoryBase
     {
         // Members.
-        private SYMTBL m_pSymTable;
-        private Name m_pMissingNameNode;
-        private Name m_pMissingNameSym;
-
+        private readonly SYMTBL m_pSymTable;
         protected Symbol newBasicSym(
             SYMKIND kind,
             Name name,
             ParentSymbol parent)
         {
-            // The parser creates names with PN_MISSING when attempting to recover from errors
-            // To prevent spurious errors, we create SYMs with a different name (PN_MISSINGSYM)
-            // so that they are never found when doing lookup.
-            if (name == m_pMissingNameNode)
-            {
-                name = m_pMissingNameSym;
-            }
-
             Symbol sym;
             switch (kind)
             {
@@ -102,15 +92,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         // This class should never be created on its own.
-        protected SymFactoryBase(SYMTBL symtable, bool loadNames)
+        protected SymFactoryBase(SYMTBL symtable)
         {
             m_pSymTable = symtable;
-
-            if (loadNames)
-            {
-                m_pMissingNameNode = NameManager.GetPredefinedName(PredefinedName.PN_MISSING);
-                m_pMissingNameSym = NameManager.GetPredefinedName(PredefinedName.PN_MISSINGSYM);
-            }
         }
     }
 }

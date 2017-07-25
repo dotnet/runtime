@@ -21,7 +21,7 @@
             "PB_BuildArguments": "-buildArch=x64 -Release -stripSymbols",
             "PB_BuildTestsArguments": "-buildArch=x64 -Release -SkipTests -Outerloop -- /p:ArchiveTests=true /p:EnableDumpling=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x64",
-            "PB_TargetQueue": "Centos.73.Amd64+RedHat.72.Amd64+RedHat.73.Amd64+Debian.87.Amd64+Debian.90.Amd64+Ubuntu.1404.Amd64+Ubuntu.1604.Amd64+Ubuntu.1610.Amd64+Ubuntu.1704.Amd64+suse.422.amd64+SLES.12.Amd64+fedora.25.amd64+Fedora.26.Amd64",
+            "PB_TargetQueue": "Centos.73.Amd64+RedHat.72.Amd64+RedHat.73.Amd64+Debian.87.Amd64+Debian.90.Amd64+Ubuntu.1404.Amd64+Ubuntu.1604.Amd64+Ubuntu.1704.Amd64+suse.422.amd64+SLES.12.Amd64+fedora.25.amd64+Fedora.26.Amd64",
             "PB_CreateHelixArguments": "/p:ArchGroup=x64 /p:ConfigurationGroup=Release /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Linux"
           },
           "ReportingParameters": {
@@ -127,7 +127,7 @@
             "PB_BuildArguments": "-buildArch=x64 -Release -- /p:SignType=real /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-buildArch=x64 -Release -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10",
-            "PB_CreateHelixArguments": "/p:ArchGroup=x64 /p:ConfigurationGroup=Release /p:\"TargetQueues=Windows.10.Amd64,Windows.10.Nano.Amd64,Windows.7.Amd64,Windows.81.Amd64\" /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT"
+            "PB_CreateHelixArguments": "/p:ArchGroup=x64 /p:ConfigurationGroup=Release /p:\"TargetQueues=Windows.10.Amd64,Windows.10.Nano.Amd64,Windows.10.Amd64.Core,Windows.7.Amd64,Windows.81.Amd64\" /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT"
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
@@ -141,11 +141,10 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "x86",
-            "PB_TargetQueue": "Windows.10.Amd64",
             "PB_BuildArguments": "-buildArch=x86 -Release -- /p:SignType=real /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-buildArch=x86 -Release -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x86 /p:RuntimeOS=win10",
-            "PB_CreateHelixArguments": "/p:ArchGroup=x86 /p:ConfigurationGroup=Release /p:\"TargetQueues=Windows.10.Amd64,Windows.7.Amd64,Windows.81.Amd64\" /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT"
+            "PB_CreateHelixArguments": "/p:ArchGroup=x86 /p:ConfigurationGroup=Release /p:\"TargetQueues=Windows.10.Amd64,Windows.10.Amd64.Core,Windows.7.Amd64,Windows.81.Amd64\" /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT"
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
@@ -213,7 +212,7 @@
             "PB_BuildArguments": "-framework=uapaot -buildArch=arm -Release -- /p:SignType=real /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-framework=uapaot -buildArch=arm -Release -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=arm /p:RuntimeOS=win10 /p:TargetGroup=uapaot",
-            "PB_CreateHelixArguments": "/p:ArchGroup=arm /p:TargetGroup=uapaot /p:ConfigurationGroup=Release /p:TargetQueues=Windows.10.Amd64 /p:SecondaryQueue=Windows.10.Arm64 /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT /p:\"HelixJobType=test/functional/ilc/\""
+            "PB_CreateHelixArguments": "/p:ArchGroup=arm /p:TargetGroup=uapaot /p:ConfigurationGroup=Release /p:TargetQueues=Windows.10.Amd64,Windows.10.Amd64.Core /p:SecondaryQueue=Windows.10.Arm64 /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT /p:\"HelixJobType=test/functional/ilc/\""
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
@@ -277,9 +276,9 @@
           "Parameters": {
             "PB_Platform": "x64",
             "PB_BuildArguments": "-framework=netfx -buildArch=x64 -Release -- /p:SignType=real /p:RuntimeOS=win10",
-            "PB_BuildTestsArguments": "-framework=netfx -buildArch=x64 -Release -SkipTests -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
+            "PB_BuildTestsArguments": "-framework=netfx -buildArch=x64 -Release -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10 /p:TargetGroup=netfx",
-            "PB_CreateHelixArguments": "/p:EnableCloudTest=false /p:ArchGroup=x64 /p:TargetGroup=netfx /p:ConfigurationGroup=Release /p:\"TargetQueues=Windows.10.Amd64\" /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT /p:\"HelixJobType=test/functional/desktop/cli/\""
+            "PB_CreateHelixArguments": "/p:EnableCloudTest=false /p:ArchGroup=x64 /p:TargetGroup=netfx /p:ConfigurationGroup=Release /p:\"TargetQueues=Windows.10.Amd64,Windows.10.Amd64.Core\" /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT /p:\"HelixJobType=test/functional/desktop/cli/\""
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
@@ -294,9 +293,9 @@
           "Parameters": {
             "PB_Platform": "x86",
             "PB_BuildArguments": "-framework=netfx -buildArch=x86 -Release -- /p:SignType=real /p:RuntimeOS=win10",
-            "PB_BuildTestsArguments": "-framework=netfx -buildArch=x86 -Release -SkipTests -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
+            "PB_BuildTestsArguments": "-framework=netfx -buildArch=x86 -Release -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x86 /p:RuntimeOS=win10 /p:TargetGroup=netfx",
-            "PB_CreateHelixArguments": "/p:EnableCloudTest=false /p:ArchGroup=x86 /p:TargetGroup=netfx /p:ConfigurationGroup=Release /p:\"TargetQueues=Windows.10.Amd64\" /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT /p:\"HelixJobType=test/functional/desktop/cli/\""
+            "PB_CreateHelixArguments": "/p:EnableCloudTest=false /p:ArchGroup=x86 /p:TargetGroup=netfx /p:ConfigurationGroup=Release /p:\"TargetQueues=Windows.10.Amd64,Windows.10.Amd64.Core\" /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT /p:\"HelixJobType=test/functional/desktop/cli/\""
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
@@ -323,7 +322,7 @@
             "PB_BuildArguments": "-buildArch=x64 -Debug",
             "PB_BuildTestsArguments": "-buildArch=x64 -Debug -SkipTests -Outerloop -- /p:ArchiveTests=true /p:EnableDumpling=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x64",
-            "PB_TargetQueue": "Centos.73.Amd64+RedHat.72.Amd64+RedHat.73.Amd64+Debian.87.Amd64+Debian.90.Amd64+Ubuntu.1404.Amd64+Ubuntu.1604.Amd64+Ubuntu.1610.Amd64+Ubuntu.1704.Amd64+suse.422.amd64+SLES.12.Amd64+fedora.25.amd64+Fedora.26.Amd64",
+            "PB_TargetQueue": "Centos.73.Amd64+RedHat.72.Amd64+RedHat.73.Amd64+Debian.87.Amd64+Debian.90.Amd64+Ubuntu.1404.Amd64+Ubuntu.1604.Amd64+Ubuntu.1704.Amd64+suse.422.amd64+SLES.12.Amd64+fedora.25.amd64+Fedora.26.Amd64",
             "PB_CreateHelixArguments": "/p:ArchGroup=x64 /p:ConfigurationGroup=Debug /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Linux"
           },
           "ReportingParameters": {
@@ -441,7 +440,7 @@
             "PB_BuildArguments": "-framework=uapaot -buildArch=arm -Debug -- /p:SignType=real /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-framework=uapaot -buildArch=arm -Debug -SkipTests -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=arm /p:RuntimeOS=win10 /p:TargetGroup=uapaot",
-            "PB_CreateHelixArguments": "/p:ArchGroup=arm /p:TargetGroup=uapaot /p:ConfigurationGroup=Debug /p:TargetQueues=Windows.10.Amd64 /p:SecondaryQueue=Windows.10.Arm64 /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT /p:\"HelixJobType=test/functional/ilc/\""
+            "PB_CreateHelixArguments": "/p:ArchGroup=arm /p:TargetGroup=uapaot /p:ConfigurationGroup=Debug /p:\"TargetQueues=Windows.10.Amd64,Windows.10.Amd64\" /p:SecondaryQueue=Windows.10.Arm64 /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT /p:\"HelixJobType=test/functional/ilc/\""
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
@@ -506,9 +505,9 @@
           "Parameters": {
             "PB_Platform": "x64",
             "PB_BuildArguments": "-framework=netfx -buildArch=x64 -Debug -- /p:SignType=real /p:RuntimeOS=win10",
-            "PB_BuildTestsArguments": "-framework=netfx -buildArch=x64 -Debug -SkipTests -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
+            "PB_BuildTestsArguments": "-framework=netfx -buildArch=x64 -Debug -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x64 /p:RuntimeOS=win10 /p:TargetGroup=netfx",
-            "PB_CreateHelixArguments": "/p:ArchGroup=x64 /p:TargetGroup=netfx /p:ConfigurationGroup=Debug /p:\"TargetQueues=Windows.10.Amd64\" /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT /p:\"HelixJobType=test/functional/desktop/cli/\""
+            "PB_CreateHelixArguments": "/p:ArchGroup=x64 /p:TargetGroup=netfx /p:ConfigurationGroup=Debug /p:\"TargetQueues=Windows.10.Amd64,Windows.10.Amd64.Core\" /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT /p:\"HelixJobType=test/functional/desktop/cli/\""
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
@@ -523,9 +522,9 @@
           "Parameters": {
             "PB_Platform": "x86",
             "PB_BuildArguments": "-framework=netfx -buildArch=x86 -Debug -- /p:SignType=real /p:RuntimeOS=win10",
-            "PB_BuildTestsArguments": "-framework=netfx -buildArch=x86 -Debug -SkipTests -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
+            "PB_BuildTestsArguments": "-framework=netfx -buildArch=x86 -Debug -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x86 /p:RuntimeOS=win10 /p:TargetGroup=netfx",
-            "PB_CreateHelixArguments": "/p:ArchGroup=x86 /p:TargetGroup=netfx /p:ConfigurationGroup=Debug /p:\"TargetQueues=Windows.10.Amd64\" /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT /p:\"HelixJobType=test/functional/desktop/cli/\""
+            "PB_CreateHelixArguments": "/p:ArchGroup=x86 /p:TargetGroup=netfx /p:ConfigurationGroup=Debug /p:\"TargetQueues=Windows.10.Amd64,Windows.10.Amd64.Core\" /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT /p:\"HelixJobType=test/functional/desktop/cli/\""
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",

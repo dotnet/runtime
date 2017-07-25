@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Generic;
 using System.Transactions;
 using Xunit;
 
@@ -11,82 +10,201 @@ namespace System.Data.SqlClient.ManualTesting.Tests
     public class TransactionEnlistmentTest
     {
         [CheckConnStrSetupFact]
-        public static void TestAmbientTransaction_TxScopeComplete()
+        public static void TestAutoEnlistment_TxScopeComplete()
         {
-            const int inputCol1 = 1;
-            const string inputCol2 = "one";
-
-            SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr);
-            string connectionString = builder.ConnectionString;
-            string testTableName = GenerateTableName();
-
-            RunNonQuery(connectionString, $"create table {testTableName} (col1 int, col2 text)");
-
-            try
-            {
-                using (TransactionScope txScope = new TransactionScope(TransactionScopeOption.Required, TimeSpan.MaxValue))
-                {
-                    using (SqlConnection connection = new SqlConnection(connectionString))
-                    {
-                        connection.Open();
-                        using (SqlCommand command = connection.CreateCommand())
-                        {
-                            command.CommandText = $"INSERT INTO {testTableName} VALUES ({inputCol1}, '{inputCol2}')";
-                            command.ExecuteNonQuery();
-                        }
-                    }
-                    txScope.Complete();
-                }
-
-                DataTable result = RunQuery(connectionString, $"select col2 from {testTableName} where col1 = {inputCol1}");
-                Assert.True(result.Rows.Count > 0);
-                Assert.True(string.Equals(result.Rows[0][0], inputCol2));
-            }
-            finally
-            {
-                RunNonQuery(connectionString, $"drop table {testTableName}");
-            }
+            RunTestSet(TestCase_AutoEnlistment_TxScopeComplete);
         }
 
         [CheckConnStrSetupFact]
-        public static void TestAmbientTransaction_TxScopeNonComplete()
+        public static void TestAutoEnlistment_TxScopeNonComplete()
         {
-            const int inputCol1 = 2;
-            const string inputCol2 = "two";
+            RunTestSet(TestCase_AutoEnlistment_TxScopeNonComplete);
+        }
 
-            SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr);
-            string connectionString = builder.ConnectionString;
-            string testTableName = GenerateTableName();
+        [CheckConnStrSetupFact]
+        public static void TestManualEnlistment_Enlist()
+        {
+            RunTestSet(TestCase_ManualEnlistment_Enlist);
+        }
 
-            RunNonQuery(connectionString, $"create table {testTableName} (col1 int, col2 text)");
+        [CheckConnStrSetupFact]
+        public static void TestManualEnlistment_NonEnlist()
+        {
+            RunTestSet(TestCase_ManualEnlistment_NonEnlist);
+        }
 
-            try
+        [CheckConnStrSetupFact]
+        public static void TestManualEnlistment_Enlist_TxScopeComplete()
+        {
+            RunTestSet(TestCase_ManualEnlistment_Enlist_TxScopeComplete);
+        }
+
+        
+
+
+        private static void TestCase_AutoEnlistment_TxScopeComplete()
+        {
+            SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(ConnectionString);
+            builder.Enlist = true;
+            ConnectionString = builder.ConnectionString;
+
+            using (TransactionScope txScope = new TransactionScope(TransactionScopeOption.Required, TimeSpan.MaxValue))
             {
-                using (TransactionScope txScope = new TransactionScope(TransactionScopeOption.Required, TimeSpan.MaxValue))
+                using (SqlConnection connection = new SqlConnection(ConnectionString))
                 {
-                    using (SqlConnection connection = new SqlConnection(connectionString))
+                    connection.Open();
+                    using (SqlCommand command = connection.CreateCommand())
                     {
-                        connection.Open();
-                        using (SqlCommand command = connection.CreateCommand())
-                        {
-                            command.CommandText = $"INSERT INTO {testTableName} VALUES ({inputCol1}, '{inputCol2}')";
-                            command.ExecuteNonQuery();
-                        }
+                        command.CommandText = $"INSERT INTO {TestTableName} VALUES ({InputCol1}, '{InputCol2}')";
+                        command.ExecuteNonQuery();
                     }
                 }
+                txScope.Complete();
+            }
 
-                DataTable result = RunQuery(connectionString, $"select col2 from {testTableName} where col1 = {inputCol1}");
-                Assert.True(result.Rows.Count == 0);
+            DataTable result = RunQuery($"select col2 from {TestTableName} where col1 = {InputCol1}");
+            Assert.True(result.Rows.Count == 1);
+            Assert.True(string.Equals(result.Rows[0][0], InputCol2));
+        }
+
+        private static void TestCase_AutoEnlistment_TxScopeNonComplete()
+        {
+            SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(ConnectionString);
+            builder.Enlist = true;
+            ConnectionString = builder.ConnectionString;
+
+            using (TransactionScope txScope = new TransactionScope(TransactionScopeOption.Required, TimeSpan.MaxValue))
+            {
+                using (SqlConnection connection = new SqlConnection(ConnectionString))
+                {
+                    connection.Open();
+                    using (SqlCommand command = connection.CreateCommand())
+                    {
+                        command.CommandText = $"INSERT INTO {TestTableName} VALUES ({InputCol1}, '{InputCol2}')";
+                        command.ExecuteNonQuery();
+                    }
+                }
+            }
+
+            DataTable result = RunQuery($"select col2 from {TestTableName} where col1 = {InputCol1}");
+            Assert.True(result.Rows.Count == 0);
+        }
+
+        private static void TestCase_ManualEnlistment_Enlist()
+        {
+            SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(ConnectionString);
+            builder.Enlist = false;
+            ConnectionString = builder.ConnectionString;
+
+            using (SqlConnection connection = new SqlConnection(ConnectionString))
+            {
+                connection.Open();
+                using (TransactionScope txScope = new TransactionScope())
+                {
+                    connection.EnlistTransaction(Transactions.Transaction.Current);
+                    using (SqlCommand command = connection.CreateCommand())
+                    {
+                        command.CommandText = $"INSERT INTO {TestTableName} VALUES ({InputCol1}, '{InputCol2}')";
+                        command.ExecuteNonQuery();
+                    }
+                }
+            }
+
+            DataTable result = RunQuery($"select col2 from {TestTableName} where col1 = {InputCol1}");
+            Assert.True(result.Rows.Count == 0);
+        }
+
+        private static void TestCase_ManualEnlistment_NonEnlist()
+        {
+            SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(ConnectionString);
+            builder.Enlist = false;
+            ConnectionString = builder.ConnectionString;
+
+            using (SqlConnection connection = new SqlConnection(ConnectionString))
+            {
+                connection.Open();
+                using (TransactionScope txScope = new TransactionScope())
+                {
+                    using (SqlCommand command = connection.CreateCommand())
+                    {
+                        command.CommandText = $"INSERT INTO {TestTableName} VALUES ({InputCol1}, '{InputCol2}')";
+                        command.ExecuteNonQuery();
+                    }
+                }
+            }
+
+            DataTable result = RunQuery($"select col2 from {TestTableName} where col1 = {InputCol1}");
+            Assert.True(result.Rows.Count == 1);
+            Assert.True(string.Equals(result.Rows[0][0], InputCol2));
+        }
+
+        private static void TestCase_ManualEnlistment_Enlist_TxScopeComplete()
+        {
+            SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(ConnectionString);
+            builder.Enlist = false;
+            ConnectionString = builder.ConnectionString;
+
+            using (SqlConnection connection = new SqlConnection(ConnectionString))
+            {
+                connection.Open();
+                using (TransactionScope txScope = new TransactionScope())
+                {
+                    connection.EnlistTransaction(Transactions.Transaction.Current);
+                    using (SqlCommand command = connection.CreateCommand())
+                    {
+                        command.CommandText = $"INSERT INTO {TestTableName} VALUES ({InputCol1}, '{InputCol2}')";
+                        command.ExecuteNonQuery();
+                    }
+                    txScope.Complete();
+                }
+            }
+
+            DataTable result = RunQuery($"select col2 from {TestTableName} where col1 = {InputCol1}");
+            Assert.True(result.Rows.Count == 1);
+            Assert.True(string.Equals(result.Rows[0][0], InputCol2));
+        }
+
+
+
+
+        private static string TestTableName;
+        private static string ConnectionString;
+        private const int InputCol1 = 1;
+        private const string InputCol2 = "One";
+
+        private static void RunTestSet(Action TestCase)
+        {
+            SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(DataTestUtility.TcpConnStr);
+            builder.ConnectTimeout = 5;
+
+            builder.Pooling = true;
+            ConnectionString = builder.ConnectionString;
+
+            RunTestFormat(TestCase);
+
+            builder.Pooling = false;
+            ConnectionString = builder.ConnectionString;
+
+            RunTestFormat(TestCase);
+        }
+
+        private static void RunTestFormat(Action testCase)
+        {
+            TestTableName = GenerateTableName();
+            RunNonQuery($"create table {TestTableName} (col1 int, col2 text)");
+            try
+            {
+                testCase();
             }
             finally
             {
-                RunNonQuery(connectionString, $"drop table {testTableName}");
+                RunNonQuery($"drop table {TestTableName}");
             }
         }
 
-        private static void RunNonQuery(string connectionString, string sql)
+        private static void RunNonQuery(string sql)
         {
-            using (SqlConnection connection = new SqlConnection(connectionString))
+            using (SqlConnection connection = new SqlConnection(ConnectionString))
             {
                 connection.Open();
                 using (SqlCommand command = connection.CreateCommand())
@@ -97,10 +215,10 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             }
         }
 
-        private static DataTable RunQuery(string connectionString, string sql)
+        private static DataTable RunQuery(string sql)
         {
             DataTable result = null;
-            using (SqlConnection connection = new SqlConnection(connectionString))
+            using (SqlConnection connection = new SqlConnection(ConnectionString))
             {
                 connection.Open();
                 using (SqlCommand command = connection.CreateCommand())

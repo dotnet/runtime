@@ -31,27 +31,5 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
     internal sealed class NamespaceSymbol : NamespaceOrAggregateSymbol
     {
-        // Which assemblies and extern aliases contain this namespace.
-        private HashSet<KAID> _bsetFilter;
-
-        public NamespaceSymbol()
-        {
-            _bsetFilter = new HashSet<KAID>();
-        }
-
-        public bool InAlias(KAID aid)
-        {
-            Debug.Assert(0 <= aid);
-            return _bsetFilter.Contains(aid);
-        }
-
-        public void AddAid(KAID aid)
-        {
-            if (aid == KAID.kaidThisAssembly)
-            {
-                _bsetFilter.Add(KAID.kaidGlobal);
-            }
-            _bsetFilter.Add(aid);
-        }
     }
 }

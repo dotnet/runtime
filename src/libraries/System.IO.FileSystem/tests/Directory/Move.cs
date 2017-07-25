@@ -207,8 +207,8 @@ namespace System.IO.Tests
             Directory.CreateDirectory(testDir);
             Assert.All((IOInputs.GetPathsLongerThanMaxLongPath(GetTestFilePath())), (path) =>
             {
-                Assert.Throws<PathTooLongException>(() => Move(testDir, path));
-                Assert.Throws<PathTooLongException>(() => Move(path, testDir));
+                AssertExtensions.ThrowsAny<PathTooLongException, DirectoryNotFoundException>(() => Move(testDir, path));
+                AssertExtensions.ThrowsAny<PathTooLongException, DirectoryNotFoundException>(() => Move(path, testDir));
             });
         }
 
@@ -217,7 +217,6 @@ namespace System.IO.Tests
         #region PlatformSpecific
 
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
-        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
         [PlatformSpecific(TestPlatforms.Windows)]  // Long path succeeds
         public void Path_With_Longer_Than_MaxDirectory_Succeeds()
         {

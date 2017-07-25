@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Collections.Concurrent;
 using System.IO;
 using System.Net.Security;
 using System.Security.Authentication;
@@ -14,60 +13,44 @@ namespace System.Net.Http
 {
     internal sealed class HttpConnectionHandler : HttpMessageHandler
     {
-        private readonly X509CertificateCollection _clientCertificates;
-        private readonly Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> _serverCertificateCustomValidationCallback;
-        private readonly bool _checkCertificateRevocationList;
-        private readonly SslProtocols _sslProtocols;
+        private readonly HttpConnectionSettings _settings;
+        private readonly HttpConnectionPools _connectionPools;
 
-        private readonly ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool> _connectionPoolTable;
-        private bool _disposed;
-
-        public HttpConnectionHandler(
-            X509CertificateCollection clientCertificates,
-            Func<HttpRequestMessage, X509Certificate2, X509Chain, SslPolicyErrors, bool> serverCertificateCustomValidationCallback,
-            bool checkCertificateRevocationList,
-            SslProtocols sslProtocols)
+        public HttpConnectionHandler(HttpConnectionSettings settings)
         {
-            _clientCertificates = clientCertificates;
-            _serverCertificateCustomValidationCallback = serverCertificateCustomValidationCallback;
-            _checkCertificateRevocationList = checkCertificateRevocationList;
-            _sslProtocols = sslProtocols;
-
-            _connectionPoolTable = new ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool>();
+            _settings = settings;
+            _connectionPools = new HttpConnectionPools(settings._maxConnectionsPerServer);
         }
 
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            HttpConnection connection = null;
+            var key = new HttpConnectionKey(request.RequestUri);
 
-            // Try to get a connection from the connection pool
-            HttpConnectionKey key = new HttpConnectionKey(request.RequestUri);
-            if (_connectionPoolTable.TryGetValue(key, out HttpConnectionPool pool))
-            {
-                connection = pool.GetConnection();
-            }
+            HttpConnectionPool pool = _connectionPools.GetOrAddPool(key);
+            ValueTask<HttpConnection> connectionTask = pool.GetConnectionAsync(
+                state => state.handler.CreateConnection(state.request, state.key, state.pool),
+                (handler: this, request: request, key: key, pool: pool));
 
-            return connection != null ?
-                connection.SendAsync(request, cancellationToken) :
-                SendAsyncWithNewConnection(key, pool, request, cancellationToken);
+            return connectionTask.IsCompletedSuccessfully ?
+                connectionTask.Result.SendAsync(request, cancellationToken) :
+                SendAsyncWithAwaitedConnection(connectionTask, request, cancellationToken);
         }
 
-        private async Task<HttpResponseMessage> SendAsyncWithNewConnection(
-            HttpConnectionKey key, HttpConnectionPool pool,
-            HttpRequestMessage request, CancellationToken cancellationToken)
+        private async Task<HttpResponseMessage> SendAsyncWithAwaitedConnection(
+            ValueTask<HttpConnection> connectionTask, HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            var connection = await CreateConnection(request, key, pool).ConfigureAwait(false);
+            HttpConnection connection = await connectionTask.ConfigureAwait(false);
             return await connection.SendAsync(request, cancellationToken).ConfigureAwait(false);
         }
 
         private async ValueTask<SslStream> EstablishSslConnection(string host, HttpRequestMessage request, Stream stream)
         {
             RemoteCertificateValidationCallback callback = null;
-            if (_serverCertificateCustomValidationCallback != null)
+            if (_settings._serverCertificateCustomValidationCallback != null)
             {
                 callback = (object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors) =>
                 {
-                    return _serverCertificateCustomValidationCallback(request, certificate as X509Certificate2, chain, sslPolicyErrors);
+                    return _settings._serverCertificateCustomValidationCallback(request, certificate as X509Certificate2, chain, sslPolicyErrors);
                 };
             }
 
@@ -76,7 +59,7 @@ namespace System.Net.Http
             try
             {
                 // TODO #21452: No cancellationToken?
-                await sslStream.AuthenticateAsClientAsync(host, _clientCertificates, _sslProtocols, _checkCertificateRevocationList).ConfigureAwait(false);
+                await sslStream.AuthenticateAsClientAsync(host, _settings._clientCertificates, _settings._sslProtocols, _settings._checkCertificateRevocationList).ConfigureAwait(false);
             }
             catch (Exception e)
             {
@@ -103,34 +86,18 @@ namespace System.Net.Http
             if (uri.Scheme == UriScheme.Https)
             {
                 SslStream sslStream = await EstablishSslConnection(uri.IdnHost, request, stream).ConfigureAwait(false);
-
                 stream = sslStream;
                 transportContext = sslStream.TransportContext;
             }
 
-            if (pool == null)
-            {
-                pool = _connectionPoolTable.GetOrAdd(key, _ => new HttpConnectionPool());
-            }
-
-            var connection = new HttpConnection(pool, key, uri.IdnHost, stream, transportContext, false);
-
-            return connection;
+            return new HttpConnection(pool, key, uri.IdnHost, stream, transportContext, false);
         }
 
         protected override void Dispose(bool disposing)
         {
-            if (disposing && !_disposed)
+            if (disposing)
             {
-                _disposed = true;
-
-                // Close all open connections
-                // TODO #21452: There's a timing issue here
-                // Revisit when we improve the connection pooling implementation
-                foreach (HttpConnectionPool connectionPool in _connectionPoolTable.Values)
-                {
-                    connectionPool.Dispose();
-                }
+                _connectionPools.Dispose();
             }
 
             base.Dispose(disposing);

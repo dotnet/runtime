@@ -33,7 +33,6 @@
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.ComponentModel" />
     <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.Security.Permissions" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Thread" />
   </ItemGroup>

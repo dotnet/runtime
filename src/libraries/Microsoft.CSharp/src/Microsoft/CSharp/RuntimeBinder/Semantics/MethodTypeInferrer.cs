@@ -185,8 +185,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
 
                     Name pErrorTypeName = _pFixedResults[iParam].AsErrorType().nameText;
-                    if (pErrorTypeName != null &&
-                        pErrorTypeName != NameManager.GetPredefinedName(PredefinedName.PN_MISSING))
+                    if (pErrorTypeName != null)
                     {
                         continue;
                     }

@@ -66,21 +66,57 @@ namespace Resources {
         /// </summary>
         internal static string _ {
             get {
-                return ResourceManager.GetString("", resourceCulture);
+                return ResourceManager.GetString("_", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Value-One.
+        ///   Looks up a localized string similar to Default.
         /// </summary>
-        internal static string Object {
+        internal static string Default {
             get {
-                return ResourceManager.GetString("Object", resourceCulture);
+                return ResourceManager.GetString("Default", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Third.
+        ///   Looks up a localized string similar to DefaultGetOnlyProperty.
+        /// </summary>
+        internal static string Default_GetOnlyProperty {
+            get {
+                return ResourceManager.GetString("Default-GetOnlyProperty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to DefaultGetSetProperty.
+        /// </summary>
+        internal static string Default_GetSetProperty {
+            get {
+                return ResourceManager.GetString("Default-GetSetProperty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to DefaultNoSuchProperty.
+        /// </summary>
+        internal static string Default_NoSuchProperty {
+            get {
+                return ResourceManager.GetString("Default-NoSuchProperty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to DefaultPrivateProperty.
+        /// </summary>
+        internal static string Default_PrivateProperty {
+            get {
+                return ResourceManager.GetString("Default-PrivateProperty", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to ObjectGetOnlyProperty.
         /// </summary>
         internal static string Object_GetOnlyProperty {
             get {
@@ -89,7 +125,7 @@ namespace Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to One.
+        ///   Looks up a localized string similar to ObjectGetSetProperty.
         /// </summary>
         internal static string Object_GetSetProperty {
             get {
@@ -98,7 +134,7 @@ namespace Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Second.
+        ///   Looks up a localized string similar to ObjectNoSuchProperty.
         /// </summary>
         internal static string Object_NoSuchProperty {
             get {
@@ -107,7 +143,7 @@ namespace Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Third.
+        ///   Looks up a localized string similar to ObjectPrivateProperty.
         /// </summary>
         internal static string Object_PrivateProperty {
             get {

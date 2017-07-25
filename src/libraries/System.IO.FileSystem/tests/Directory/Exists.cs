@@ -174,7 +174,6 @@ namespace System.IO.Tests
 
         [ConditionalTheory(nameof(UsingNewNormalization)),
             MemberData(nameof(ValidPathComponentNames))]
-        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
         [PlatformSpecific(TestPlatforms.Windows)]  // Extended path exists
         public void ValidExtendedPathExists_ReturnsTrue(string component)
         {
@@ -184,7 +183,6 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(UsingNewNormalization))]
-        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
         [PlatformSpecific(TestPlatforms.Windows)]  // Extended path already exists as file
         public void ExtendedPathAlreadyExistsAsFile()
         {
@@ -197,7 +195,6 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(UsingNewNormalization))]
-        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
         [PlatformSpecific(TestPlatforms.Windows)]  // Extended path already exists as directory
         public void ExtendedPathAlreadyExistsAsDirectory()
         {
@@ -210,7 +207,6 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
-        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
         [PlatformSpecific(TestPlatforms.Windows)]  // Long directory path doesn't throw on Exists
         public void DirectoryLongerThanMaxDirectoryAsPath_DoesntThrow()
         {
@@ -252,7 +248,6 @@ namespace System.IO.Tests
 
         [ConditionalTheory(nameof(UsingNewNormalization)),
             MemberData(nameof(SimpleWhiteSpace))]
-        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
         [PlatformSpecific(TestPlatforms.Windows)] // In Windows, trailing whitespace in a path is trimmed appropriately
         public void TrailingWhitespaceExistence_SimpleWhiteSpace(string component)
         {
@@ -266,20 +261,40 @@ namespace System.IO.Tests
             Assert.True(Exists(testDir.FullName));
         }
 
-        [ConditionalTheory(nameof(UsingNewNormalization)),
-            MemberData(nameof(WhiteSpace))]
-        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
-        [PlatformSpecific(TestPlatforms.Windows)] // In Windows, trailing whitespace in a path is trimmed appropriately
-        public void TrailingWhitespaceExistence_WhiteSpace(string component)
+        [Theory,
+            MemberData(nameof(ControlWhiteSpace))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)] // e.g. NetFX only
+        public void ControlWhiteSpaceExists(string component)
         {
-            // This test relies on \\?\ support
-
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
 
             string path = testDir.FullName + component;
-            Assert.True(Exists(path), path); // string concat in case Path.Combine() trims whitespace before Exists gets to it
-            Assert.False(Exists(IOInputs.ExtendedPrefix + path), path);
+            Assert.True(Exists(path), "directory with control whitespace should exist");
+        }
 
+        [Theory,
+            MemberData(nameof(NonControlWhiteSpace))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // not NetFX
+        public void NonControlWhiteSpaceExists(string component)
+        {
+            DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath() + component);
+
+            string path = testDir.FullName;
+            Assert.True(Exists(path), "directory with non control whitespace should exist");
+        }
+
+        [Theory,
+            MemberData(nameof(SimpleWhiteSpace))] // *Just spaces*
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public void TrailingSpaceExists(string component)
+        {
+            // Windows trims spaces
+            string path = GetTestFilePath();
+            DirectoryInfo testDir = Directory.CreateDirectory(path + component);
+            Assert.True(Exists(path), "can find without space");
+            Assert.True(Exists(path + component), "can find with space");
         }
 
         [Theory,
@@ -313,9 +328,9 @@ namespace System.IO.Tests
         {
             // Creates directories up to the maximum directory length all at once
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            PathInfo path = IOServices.GetPath(testDir.FullName, IOInputs.MaxDirectory, maxComponent: 10);
-            Directory.CreateDirectory(path.FullPath);
-            Assert.True(Exists(path.FullPath));
+            string path = IOServices.GetPath(testDir.FullName, IOInputs.MaxDirectory);
+            Directory.CreateDirectory(path);
+            Assert.True(Exists(path));
         }
 
         [Theory,

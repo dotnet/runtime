@@ -35,13 +35,45 @@ namespace System.IO.Tests
             Assert.Equal(expected, Path.ChangeExtension(path, newExtension));
         }
 
-        [Theory]
-        [InlineData("")]
-        [InlineData(" ")]
-        [InlineData("\r\n")]
-        public static void GetDirectoryName_EmptyOrWhitespace_Throws(string path)
+        [Fact]
+        public static void GetDirectoryName_EmptyThrows()
         {
-            AssertExtensions.Throws<ArgumentException>("path", null, () => Path.GetDirectoryName(path));
+            AssertExtensions.Throws<ArgumentException>("path", null, () => Path.GetDirectoryName(string.Empty));
+        }
+
+        [Theory,
+            InlineData(" "),
+            InlineData("\r\n")]
+        public static void GetDirectoryName_SpaceOrControlCharsThrowOnWindows(string path)
+        {
+            Action action = () => Path.GetDirectoryName(path);
+            if (PlatformDetection.IsWindows)
+            {
+                AssertExtensions.Throws<ArgumentException>("path", null, () => Path.GetDirectoryName(path));
+            }
+            else
+            {
+                // These are valid paths on Unix
+                action();
+            }
+        }
+
+        [Theory]
+        [InlineData("\u00A0")] // Non-breaking Space
+        [InlineData("\u2028")] // Line separator
+        [InlineData("\u2029")] // Paragraph separator
+        public static void GetDirectoryName_NonControl(string path)
+        {
+            Assert.Equal(string.Empty, Path.GetDirectoryName(path));
+        }
+
+        [Theory]
+        [InlineData("\u00A0")] // Non-breaking Space
+        [InlineData("\u2028")] // Line separator
+        [InlineData("\u2029")] // Paragraph separator
+        public static void GetDirectoryName_NonControlWithSeparator(string path)
+        {
+            Assert.Equal(path, Path.GetDirectoryName(Path.Combine(path, path)));
         }
 
         [Theory]
@@ -181,12 +213,20 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public static void GetPathRoot()
+        public static void GetPathRoot_NullReturnsNull()
         {
             Assert.Null(Path.GetPathRoot(null));
-            AssertExtensions.Throws<ArgumentException>("path", null, () => Path.GetPathRoot(string.Empty));
-            AssertExtensions.Throws<ArgumentException>("path", null, () => Path.GetPathRoot("\r\n"));
+        }
 
+        [Fact]
+        public static void GetPathRoot_EmptyThrows()
+        {
+            AssertExtensions.Throws<ArgumentException>("path", null, () => Path.GetPathRoot(string.Empty));
+        }
+
+        [Fact]
+        public static void GetPathRoot_Basic()
+        {
             string cwd = Directory.GetCurrentDirectory();
             Assert.Equal(cwd.Substring(0, cwd.IndexOf(Path.DirectorySeparatorChar) + 1), Path.GetPathRoot(cwd));
             Assert.True(Path.IsPathRooted(cwd));
@@ -416,8 +456,32 @@ namespace System.IO.Tests
             }
         }
 
-        [Fact]
+        [Theory]
+        [InlineData("\u0085")] // Next line
+        [InlineData("\u00A0")] // Non breaking space
+        [InlineData("\u2028")] // Line separator
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // not NetFX
+        public static void GetFullPath_NonControlWhiteSpaceStays(string component)
+        {
+            // When not NetFX full path should not cut off component
+            string path = "C:\\Test" + component;
+            Assert.Equal(path, Path.GetFullPath(path));
+        }
 
+        [Theory]
+        [InlineData(" ")]
+        [InlineData("  ")]
+        [InlineData("   ")]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        public static void GetFullPath_TrailingSpaceCut(string component)
+        {
+            // Windows cuts off any simple white space added to a path
+            string path = "C:\\Test" + component;
+            Assert.Equal("C:\\Test", Path.GetFullPath(path));
+        }
+
+        [Fact]
         public static void GetFullPath_InvalidArgs()
         {
             Assert.Throws<ArgumentNullException>(() => Path.GetFullPath(null));
