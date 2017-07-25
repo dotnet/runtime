@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
-    internal abstract class HttpContentWriteStream : Stream
+    internal abstract class HttpContentWriteStream : HttpContentStream
     {
         protected HttpConnection _connection;
 
