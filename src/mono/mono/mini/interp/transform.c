@@ -1514,6 +1514,9 @@ generate (MonoMethod *method, InterpMethod *rtm, unsigned char *is_bb_start, Mon
 		}
 	}
 
+	if (rtm->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_PROLOGUE)
+		ADD_CODE (td, MINT_PROF_ENTER);
+
 	if (sym_seq_points) {
 		InterpBasicBlock *cbb = td->offset_to_bb [0];
 		g_assert (cbb);

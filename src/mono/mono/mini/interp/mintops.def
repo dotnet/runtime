@@ -526,3 +526,9 @@ OPDEF(MINT_JIT_CALL, "mono_jit_call", 2, MintOpNoArgs)
 OPDEF(MINT_SDB_INTR_LOC, "sdb_intr_loc", 1, MintOpNoArgs)
 OPDEF(MINT_SDB_SEQ_POINT, "sdb_seq_point", 1, MintOpNoArgs)
 OPDEF(MINT_SDB_BREAKPOINT, "sdb_breakpoint", 1, MintOpNoArgs)
+
+/*
+ * This needs to be an opcode because we need to trigger the enter event after
+ * the STINARG* opcodes have executed.
+ */
+OPDEF(MINT_PROF_ENTER, "prof_enter", 1, MintOpNoArgs)

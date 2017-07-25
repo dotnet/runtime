@@ -6419,6 +6419,11 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_GET_LAST_ERROR:
 			emit_get_last_error(code, ins->dreg);
 			break;
+		case OP_FILL_PROF_CALL_CTX:
+			for (int i = 0; i < AMD64_NREG; i++)
+				if (AMD64_IS_CALLEE_SAVED_REG (i) || i == AMD64_RSP)
+					amd64_mov_membase_reg (code, ins->sreg1, MONO_STRUCT_OFFSET (MonoContext, gregs) + i * sizeof (mgreg_t), i, sizeof (mgreg_t));
+			break;
 		default:
 			g_warning ("unknown opcode %s in %s()\n", mono_inst_name (ins->opcode), __FUNCTION__);
 			g_assert_not_reached ();

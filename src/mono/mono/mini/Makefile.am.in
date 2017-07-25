@@ -488,7 +488,8 @@ common_sources = \
 	type-checking.c \
 	lldb.h			\
 	lldb.c	\
-	memory-access.c
+	memory-access.c	\
+	mini-profiler.c
 
 test_sources = 			\
 	basic-calls.cs 		\

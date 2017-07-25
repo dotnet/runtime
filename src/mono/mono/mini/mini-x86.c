@@ -4927,6 +4927,13 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_SET_SP:
 			x86_mov_reg_reg (code, X86_ESP, ins->sreg1, sizeof (mgreg_t));
 			break;
+		case OP_FILL_PROF_CALL_CTX:
+			x86_mov_membase_reg (code, ins->sreg1, MONO_STRUCT_OFFSET (MonoContext, esp), X86_ESP, sizeof (mgreg_t));
+			x86_mov_membase_reg (code, ins->sreg1, MONO_STRUCT_OFFSET (MonoContext, ebp), X86_EBP, sizeof (mgreg_t));
+			x86_mov_membase_reg (code, ins->sreg1, MONO_STRUCT_OFFSET (MonoContext, ebx), X86_EBX, sizeof (mgreg_t));
+			x86_mov_membase_reg (code, ins->sreg1, MONO_STRUCT_OFFSET (MonoContext, esi), X86_ESI, sizeof (mgreg_t));
+			x86_mov_membase_reg (code, ins->sreg1, MONO_STRUCT_OFFSET (MonoContext, edi), X86_EDI, sizeof (mgreg_t));
+			break;
 		default:
 			g_warning ("unknown opcode %s\n", mono_inst_name (ins->opcode));
 			g_assert_not_reached ();

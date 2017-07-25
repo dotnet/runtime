@@ -3938,6 +3938,13 @@ mini_init (const char *filename, const char *runtime_version)
 	mono_install_get_class_from_name (mono_aot_get_class_from_name);
 	mono_install_jit_info_find_in_aot (mono_aot_find_jit_info);
 
+	mono_profiler_state.context_enable = mini_profiler_context_enable;
+	mono_profiler_state.context_get_this = mini_profiler_context_get_this;
+	mono_profiler_state.context_get_argument = mini_profiler_context_get_argument;
+	mono_profiler_state.context_get_local = mini_profiler_context_get_local;
+	mono_profiler_state.context_get_result = mini_profiler_context_get_result;
+	mono_profiler_state.context_free_buffer = mini_profiler_context_free_buffer;
+
 	if (profile_options)
 		for (guint i = 0; i < profile_options->len; i++)
 			mono_profiler_load ((const char *) g_ptr_array_index (profile_options, i));
@@ -4056,8 +4063,8 @@ register_icalls (void)
 	 * the wrapper would call the icall which would call the wrapper and
 	 * so on.
 	 */
-	register_icall (mono_profiler_raise_method_enter, "mono_profiler_raise_method_enter", "void ptr", TRUE);
-	register_icall (mono_profiler_raise_method_leave, "mono_profiler_raise_method_leave", "void ptr", TRUE);
+	register_icall (mono_profiler_raise_method_enter, "mono_profiler_raise_method_enter", "void ptr ptr", TRUE);
+	register_icall (mono_profiler_raise_method_leave, "mono_profiler_raise_method_leave", "void ptr ptr", TRUE);
 
 	register_icall (mono_trace_enter_method, "mono_trace_enter_method", NULL, TRUE);
 	register_icall (mono_trace_leave_method, "mono_trace_leave_method", NULL, TRUE);

@@ -138,6 +138,7 @@
     <ClCompile Include="..\mono\mini\type-checking.c" />
     <ClCompile Include="..\mono\mini\lldb.c" />
     <ClCompile Include="..\mono\mini\interp\interp-stubs.c" />
+    <ClCompile Include="..\mono\mini\mini-profiler.c" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{CB0D9E92-293C-439C-9AC7-C5F59B6E0772}</ProjectGuid>
