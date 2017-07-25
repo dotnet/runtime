@@ -106,18 +106,14 @@ namespace Microsoft.CSharp.RuntimeBinder
             {
                 callingType = callingType.GetGenericTypeDefinition();
             }
+
             if (name == SpecialNames.Indexer)
             {
-                // What about named indexers?
-                if (callingType == typeof(string))
-                {
-                    name = "Chars";
-                }
-                else
-                {
-                    name = "Item";
-                }
+                // If we don't find an indexer name for this type, use SpecialNames.Indexer as a key on the
+                // empty results we'll get, so that those empty results gets cached.
+                name = callingType.GetIndexerName() ?? SpecialNames.Indexer;
             }
+
             NameHashKey key = new NameHashKey(callingType, name);
 
             // If we've already populated this name/type pair, then just leave.

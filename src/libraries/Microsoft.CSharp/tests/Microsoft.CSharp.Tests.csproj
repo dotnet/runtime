@@ -17,6 +17,7 @@
     <Compile Include="BindingErrors.cs" />
     <Compile Include="CSharpArgumentInfoTests.cs" />
     <Compile Include="EnumArithmeticTests.cs" />
+    <Compile Include="IndexingTests.cs" />
     <Compile Include="IntegerBinaryOperationTests.cs" />
     <Compile Include="IntegerUnaryOperationTests.cs" />
     <Compile Include="RuntimeBinderExceptionTests.cs" />
