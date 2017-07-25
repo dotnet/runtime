@@ -67,7 +67,6 @@
 #include "typeequivalencehash.hpp"
 #endif
 
-#include "listlock.inl"
 #include "generics.h"
 #include "genericdict.h"
 #include "typestring.h"
@@ -593,7 +592,7 @@ void MethodTable::SetIsRestored()
     // for details on the race.
     // 
     {
-        ReJitPublishMethodTableHolder(this);
+        PublishMethodTableHolder(this);
         FastInterlockAnd(EnsureWritablePages(&(GetWriteableDataForWrite()->m_dwFlags)), ~MethodTableWriteableData::enum_flag_Unrestored);
     }
 #ifndef DACCESS_COMPILE
@@ -9371,11 +9370,8 @@ void MethodTable::SetSlot(UINT32 slotNumber, PCODE slotCode)
         if (fSharedVtableChunk)
         {
             MethodDesc* pMD = GetMethodDescForSlotAddress(slotCode);
-#ifndef FEATURE_INTERPRETER
-            // TBD: Make this take a "stable" debug arg, determining whether to make these assertions.
             _ASSERTE(pMD->HasStableEntryPoint());
             _ASSERTE(pMD->GetStableEntryPoint() == slotCode);
-#endif // FEATURE_INTERPRETER
         }
     }
 #endif

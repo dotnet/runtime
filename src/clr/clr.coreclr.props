@@ -5,6 +5,7 @@
     <DebuggingSupportedBuild>true</DebuggingSupportedBuild>
     <EnCSupported Condition="('$(TargetArch)' == 'i386') or ('$(TargetArch)' == 'amd64')">true</EnCSupported>
     <EnableDownlevelForNls Condition="'$(CrossTargetArchitecture)' != ''">true</EnableDownlevelForNls>
+    <FeatureCodeVersioning>true</FeatureCodeVersioning>
     <FeatureCominteropApartmentSupport>true</FeatureCominteropApartmentSupport>
     <FeatureDbiDebugging>true</FeatureDbiDebugging>
     <FeatureDbiOopDebugging_HostLocal>false</FeatureDbiOopDebugging_HostLocal>
