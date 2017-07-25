@@ -14672,7 +14672,7 @@ void CodeGen::genCodeForTreeLng(GenTreePtr tree, regMaskTP needReg, regMaskTP av
                             if (!genMaxOneBit(needReg))
                             {
                                 regPair = regSet.rsFindRegPairNo(needReg);
-                                if (needReg != genRegPairMask(regPair))
+                                if ((regPair == REG_PAIR_NONE) || (needReg != genRegPairMask(regPair)))
                                     goto ANY_FREE_REG_UNSIGNED;
                                 loRegMask = genRegMask(genRegPairLo(regPair));
                                 if ((loRegMask & regSet.rsRegMaskCanGrab()) == 0)
