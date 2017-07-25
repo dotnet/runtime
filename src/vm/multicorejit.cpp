@@ -17,7 +17,6 @@
 #include "dllimport.h"
 #include "comdelegate.h"
 #include "dbginterface.h"
-#include "listlock.inl"
 #include "stubgen.h"
 #include "eventtrace.h"
 #include "array.h"
@@ -993,7 +992,7 @@ PCODE MulticoreJitRecorder::RequestMethodCode(MethodDesc * pMethod, MulticoreJit
 
     PCODE pCode = NULL;
 
-    pCode = pManager->GetMulticoreJitCodeStorage().QueryMethodCode(pMethod);
+    pCode = pManager->GetMulticoreJitCodeStorage().QueryMethodCode(pMethod, TRUE);
 
     if ((pCode != NULL) && pManager->IsRecorderActive()) // recorder may be off when player is on (e.g. for Appx)
     {

@@ -25,6 +25,7 @@
 #include <stddef.h>
 #include "eeconfig.h"
 #include "precode.h"
+#include "codeversion.h"
 
 #ifndef FEATURE_PREJIT
 #include "fixuppointer.h"
@@ -42,6 +43,8 @@ class Dictionary;
 class GCCoverageInfo;
 class DynamicMethodDesc;
 class ReJitManager;
+class CodeVersionManager;
+class PrepareCodeConfig;
 
 typedef DPTR(FCallMethodDesc)        PTR_FCallMethodDesc;
 typedef DPTR(ArrayMethodDesc)        PTR_ArrayMethodDesc;
@@ -267,10 +270,6 @@ public:
     }
 
     BOOL SetStableEntryPointInterlocked(PCODE addr);
-
-#ifdef FEATURE_INTERPRETER
-    BOOL SetEntryPointInterlocked(PCODE addr);
-#endif // FEATURE_INTERPRETER
 
     BOOL HasTemporaryEntryPoint();
     PCODE GetTemporaryEntryPoint();
@@ -507,7 +506,12 @@ public:
 
     BaseDomain *GetDomain();
 
-    ReJitManager * GetReJitManager();
+#ifdef FEATURE_CODE_VERSIONING
+    CodeVersionManager* GetCodeVersionManager();
+#endif
+#ifdef FEATURE_TIERED_COMPILATION
+    CallCounter* GetCallCounter();
+#endif
 
     PTR_LoaderAllocator GetLoaderAllocator();
 
@@ -1278,11 +1282,72 @@ public:
     void SetChunkIndex(MethodDescChunk *pChunk);
 
     BOOL IsPointingToPrestub();
-#ifdef FEATURE_INTERPRETER
-    BOOL IsReallyPointingToPrestub();
-#endif // FEATURE_INTERPRETER
 
 public:
+
+    // TRUE iff it is possible to change the code this method will run using
+    // the CodeVersionManager.
+    // Note: EnC currently returns FALSE here because it uses its own seperate
+    // scheme to manage versionability. We will likely want to converge them
+    // at some point.
+    BOOL IsVersionable()
+    {
+#ifndef FEATURE_CODE_VERSIONING
+        return FALSE;
+#else
+        return IsVersionableWithPrecode() || IsVersionableWithJumpStamp();
+#endif
+    }
+
+    // If true, these methods version using the CodeVersionManager and
+    // switch between different code versions by updating the target of the precode.
+    // Note: EnC returns FALSE - even though it uses precode updates it does not
+    // use the CodeVersionManager right now
+    BOOL IsVersionableWithPrecode()
+    {
+#ifdef FEATURE_CODE_VERSIONING
+        return
+            // policy: which things do we want to version with a precode if possible
+            IsEligibleForTieredCompilation() &&
+
+            // functional requirements:
+            !IsZapped() &&        // NGEN directly invokes the pre-generated native code.
+                                  // without necessarily going through the prestub or
+                                  // precode
+            HasNativeCodeSlot();  // the stable entry point will need to point at our
+                                  // precode and not directly contain the native code.
+#else
+        return FALSE;
+#endif
+    }
+
+    // If true, these methods version using the CodeVersionManager and switch between
+    // different code versions by overwriting the first bytes of the method's initial
+    // native code with a jmp instruction.
+    BOOL IsVersionableWithJumpStamp()
+    {
+#if defined(FEATURE_CODE_VERSIONING) && defined(FEATURE_JUMPSTAMP)
+        return
+            // for native image code this is policy, but for jitted code it is a functional requirement
+            // to ensure the prolog is sufficiently large
+            ReJitManager::IsReJITEnabled() &&
+
+            // functional requirement - the runtime doesn't expect both options to be possible
+            !IsVersionableWithPrecode() &&
+
+            // functional requirement - we must be able to evacuate the prolog and the prolog must be big
+            // enough, both of which are only designed to work on jitted code
+            (IsIL() || IsNoMetadata()) &&
+            !IsUnboxingStub() &&
+            !IsInstantiatingStub() &&
+
+            // functional requirement - code version manager can't handle what would happen if the code
+            // was collected
+            !GetLoaderAllocator()->IsCollectible();
+#else
+        return FALSE;
+#endif
+    }
 
 #ifdef FEATURE_TIERED_COMPILATION
     // Is this method allowed to be recompiled and the entrypoint redirected so that we
@@ -1293,19 +1358,30 @@ public:
 
         // This policy will need to change some more before tiered compilation feature
         // can be properly supported across a broad range of scenarios. For instance it 
-        // wouldn't interact correctly debugging or profiling at the moment because we 
-        // enable it too aggresively and it conflicts with the operations of those features.
+        // wouldn't interact correctly with debugging at the moment because we enable
+        // it too aggresively and it conflicts with the operations of those features.
 
-        //Keep in-sync with MethodTableBuilder::NeedsNativeCodeSlot(bmtMDMethod * pMDMethod)
-        //In the future we might want mutable vtable slots too, but that would require
-        //more work around the runtime to prevent those mutable pointers from leaking
+        // Keep in-sync with MethodTableBuilder::NeedsNativeCodeSlot(bmtMDMethod * pMDMethod)
+        // to ensure native slots are available where needed.
         return g_pConfig->TieredCompilation() &&
-            !GetModule()->HasNativeOrReadyToRunImage() &&
+            !IsZapped() &&
             !IsEnCMethod() &&
-            HasNativeCodeSlot();
+            HasNativeCodeSlot() &&
+            !IsUnboxingStub() &&
+            !IsInstantiatingStub();
+
+        // We should add an exclusion for modules with debuggable code gen flags
 
     }
 #endif
+
+    // Returns a code version that represents the first (default)
+    // code body that this method would have.
+    NativeCodeVersion GetInitialCodeVersion()
+    {
+        LIMITED_METHOD_DAC_CONTRACT;
+        return NativeCodeVersion(dac_cast<PTR_MethodDesc>(this));
+    }
 
     // Does this method force the NativeCodeSlot to stay fixed after it
     // is first initialized to native code? Consumers of the native code
@@ -1369,11 +1445,7 @@ public:
         return GetNativeCode() != NULL;
     }
 
-#ifdef FEATURE_INTERPRETER
-    BOOL SetNativeCodeInterlocked(PCODE addr, PCODE pExpected, BOOL fStable);
-#else  // FEATURE_INTERPRETER
     BOOL SetNativeCodeInterlocked(PCODE addr, PCODE pExpected = NULL);
-#endif // FEATURE_INTERPRETER
 
     TADDR GetAddrOfNativeCodeSlot();
 
@@ -1688,8 +1760,6 @@ public:
 
     PCODE DoPrestub(MethodTable *pDispatchingMT);
 
-    PCODE MakeJitWorker(COR_ILMETHOD_DECODER* ILHeader, CORJIT_FLAGS flags);
-
     VOID GetMethodInfo(SString &namespaceOrClassName, SString &methodName, SString &methodSignature);
     VOID GetMethodInfoWithNewSig(SString &namespaceOrClassName, SString &methodName, SString &methodSignature);
     VOID GetMethodInfoNoSig(SString &namespaceOrClassName, SString &methodName);
@@ -1952,7 +2022,71 @@ public:
     REFLECTMETHODREF GetStubMethodInfo();
     
     PrecodeType GetPrecodeType();
+
+
+    // ---------------------------------------------------------------------------------
+    // IL based Code generation pipeline
+    // ---------------------------------------------------------------------------------
+
+#ifndef DACCESS_COMPILE
+public:
+    PCODE PrepareInitialCode();
+    PCODE PrepareCode(NativeCodeVersion codeVersion);
+    PCODE PrepareCode(PrepareCodeConfig* pConfig);
+
+private:
+    PCODE PrepareILBasedCode(PrepareCodeConfig* pConfig);
+    PCODE GetPrecompiledCode(PrepareCodeConfig* pConfig);
+    PCODE GetPrecompiledNgenCode();
+    PCODE GetPrecompiledR2RCode();
+    PCODE GetMulticoreJitCode();
+    COR_ILMETHOD_DECODER* GetAndVerifyILHeader(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pIlDecoderMemory);
+    COR_ILMETHOD_DECODER* GetAndVerifyMetadataILHeader(PrepareCodeConfig* pConfig, COR_ILMETHOD_DECODER* pIlDecoderMemory);
+    COR_ILMETHOD_DECODER* GetAndVerifyNoMetadataILHeader();
+    PCODE JitCompileCode(PrepareCodeConfig* pConfig);
+    PCODE JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, JitListLockEntry* pEntry);
+    PCODE JitCompileCodeLocked(PrepareCodeConfig* pConfig, JitListLockEntry* pLockEntry, ULONG* pSizeOfCode, CORJIT_FLAGS* pFlags);
+#endif // DACCESS_COMPILE
 };
+
+#ifndef DACCESS_COMPILE
+class PrepareCodeConfig
+{
+public:
+    PrepareCodeConfig();
+    PrepareCodeConfig(NativeCodeVersion nativeCodeVersion, BOOL needsMulticoreJitNotification, BOOL mayUsePrecompiledCode);
+    MethodDesc* GetMethodDesc();
+    NativeCodeVersion GetCodeVersion();
+    BOOL NeedsMulticoreJitNotification();
+    BOOL MayUsePrecompiledCode();
+    virtual PCODE IsJitCancellationRequested();
+    virtual BOOL SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse);
+    virtual COR_ILMETHOD* GetILHeader();
+    virtual CORJIT_FLAGS GetJitCompilationFlags();
+    
+protected:
+    MethodDesc* m_pMethodDesc;
+    NativeCodeVersion m_nativeCodeVersion;
+    BOOL m_needsMulticoreJitNotification;
+    BOOL m_mayUsePrecompiledCode;
+};
+
+#ifdef FEATURE_CODE_VERSIONING
+class VersionedPrepareCodeConfig : public PrepareCodeConfig
+{
+public:
+    VersionedPrepareCodeConfig();
+    VersionedPrepareCodeConfig(NativeCodeVersion codeVersion);
+    HRESULT FinishConfiguration();
+    virtual PCODE IsJitCancellationRequested();
+    virtual BOOL SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse);
+    virtual COR_ILMETHOD* GetILHeader();
+    virtual CORJIT_FLAGS GetJitCompilationFlags();
+private:
+    ILCodeVersion m_ilCodeVersion;
+};
+#endif // FEATURE_CODE_VERSIONING
+#endif // DACCESS_COMPILE
 
 /******************************************************************/
 

@@ -54,7 +54,6 @@
 #include "clrtocomcall.h"
 #include "runtimecallablewrapper.h"
 
-#include "listlock.inl"
 #include "generics.h"
 #include "contractimpl.h"
 

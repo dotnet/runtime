@@ -5413,8 +5413,7 @@ PCODE JitILStub(MethodDesc* pStubMD)
             // A dynamically generated IL stub
             //
             
-            CORJIT_FLAGS jitFlags = pStubMD->AsDynamicMethodDesc()->GetILStubResolver()->GetJitFlags();
-            pCode = pStubMD->MakeJitWorker(NULL, jitFlags);
+            pCode = pStubMD->PrepareInitialCode();
 
             _ASSERTE(pCode == pStubMD->GetNativeCode());            
         }
