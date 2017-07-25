@@ -282,24 +282,13 @@ void GCLog (const char *fmt, ... );
 #define ASSERT _ASSERTE
 #endif // FEATURE_REDHAWK
 
-#ifdef _DEBUG
-
 struct GCDebugSpinLock {
     VOLATILE(int32_t) lock;                   // -1 if free, 0 if held
+#ifdef _DEBUG
     VOLATILE(Thread *) holding_thread;     // -1 if no thread holds the lock.
     VOLATILE(BOOL) released_by_gc_p;       // a GC thread released the lock.
-
-    GCDebugSpinLock()
-        : lock(-1), holding_thread((Thread*) -1)
-    {
-    }
-};
-typedef GCDebugSpinLock GCSpinLock;
-
-#elif defined (SYNCHRONIZATION_STATS)
-
-struct GCSpinLockInstru {
-    VOLATILE(int32_t) lock;
+#endif
+#if defined (SYNCHRONIZATION_STATS)
     // number of times we went into SwitchToThread in enter_spin_lock.
     unsigned int num_switch_thread;
     // number of times we went into WaitLonger.
@@ -308,12 +297,20 @@ struct GCSpinLockInstru {
     unsigned int num_switch_thread_w;
     // number of times we went to calling DisablePreemptiveGC in WaitLonger.
     unsigned int num_disable_preemptive_w;
+#endif
 
-    GCSpinLockInstru()
-        : lock(-1), num_switch_thread(0), num_wait_longer(0), num_switch_thread_w(0), num_disable_preemptive_w(0)
+    GCDebugSpinLock()
+        : lock(-1)
+#ifdef _DEBUG
+        , holding_thread((Thread*) -1)
+#endif
+#if defined (SYNCHRONIZATION_STATS)
+        , num_switch_thread(0), num_wait_longer(0), num_switch_thread_w(0), num_disable_preemptive_w(0)
+#endif
     {
     }
 
+#if defined (SYNCHRONIZATION_STATS)
     void init()
     {
         num_switch_thread = 0;
@@ -321,23 +318,9 @@ struct GCSpinLockInstru {
         num_switch_thread_w = 0;
         num_disable_preemptive_w = 0;
     }
-};
-
-typedef GCSpinLockInstru GCSpinLock;
-
-#else
-
-struct GCDebugSpinLock {
-    VOLATILE(int32_t) lock;                   // -1 if free, 0 if held
-
-    GCDebugSpinLock()
-        : lock(-1)
-    {
-    }
+#endif
 };
 typedef GCDebugSpinLock GCSpinLock;
-
-#endif
 
 class mark;
 class heap_segment;
