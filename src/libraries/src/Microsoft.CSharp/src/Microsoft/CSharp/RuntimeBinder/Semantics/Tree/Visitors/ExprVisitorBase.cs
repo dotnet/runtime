@@ -114,8 +114,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return VisitARRAYINDEX(pExpr as ExprArrayIndex);
                 case ExpressionKind.Call:
                     return VisitCALL(pExpr as ExprCall);
-                case ExpressionKind.Event:
-                    return VisitEVENT(pExpr as ExprEvent);
                 case ExpressionKind.Field:
                     return VisitFIELD(pExpr as ExprField);
                 case ExpressionKind.Local:
@@ -393,11 +391,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     (pExpr as ExprField).OptionalObject = exprRet;
                     break;
 
-                case ExpressionKind.Event:
-                    exprRet = Visit((pExpr as ExprEvent).OptionalObject);
-                    (pExpr as ExprEvent).OptionalObject = exprRet;
-                    break;
-
                 case ExpressionKind.Return:
                     exprRet = Visit((pExpr as ExprReturn).OptionalObject);
                     (pExpr as ExprReturn).OptionalObject = exprRet;
@@ -565,10 +558,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return VisitEXPR(pExpr);
         }
         protected virtual Expr VisitFIELD(ExprField pExpr)
-        {
-            return VisitEXPR(pExpr);
-        }
-        protected virtual Expr VisitEVENT(ExprEvent pExpr)
         {
             return VisitEXPR(pExpr);
         }
