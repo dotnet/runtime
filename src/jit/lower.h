@@ -82,7 +82,7 @@ private:
 #ifdef DEBUG
     static void CheckCallArg(GenTree* arg);
     static void CheckCall(GenTreeCall* call);
-    static void CheckNode(GenTree* node);
+    static void CheckNode(Compiler* compiler, GenTree* node);
     static bool CheckBlock(Compiler* compiler, BasicBlock* block);
 #endif // DEBUG
 

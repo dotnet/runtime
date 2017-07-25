@@ -4775,9 +4775,10 @@ void Lowering::CheckCall(GenTreeCall* call)
 //                      after lowering.
 //
 // Arguments:
+//   compiler - the compiler context.
 //   node - the node to check.
 //
-void Lowering::CheckNode(GenTree* node)
+void Lowering::CheckNode(Compiler* compiler, GenTree* node)
 {
     switch (node->OperGet())
     {
@@ -4787,13 +4788,19 @@ void Lowering::CheckNode(GenTree* node)
 
 #ifdef FEATURE_SIMD
         case GT_SIMD:
+            assert(node->TypeGet() != TYP_SIMD12);
+            break;
 #ifdef _TARGET_64BIT_
         case GT_LCL_VAR:
         case GT_STORE_LCL_VAR:
+        {
+            unsigned   lclNum = node->AsLclVarCommon()->GetLclNum();
+            LclVarDsc* lclVar = &compiler->lvaTable[lclNum];
+            assert(node->TypeGet() != TYP_SIMD12 || compiler->lvaIsFieldOfDependentlyPromotedStruct(lclVar));
+        }
+        break;
 #endif // _TARGET_64BIT_
-            assert(node->TypeGet() != TYP_SIMD12);
-            break;
-#endif
+#endif // SIMD
 
         default:
             break;
@@ -4815,7 +4822,7 @@ bool Lowering::CheckBlock(Compiler* compiler, BasicBlock* block)
     LIR::Range& blockRange = LIR::AsRange(block);
     for (GenTree* node : blockRange)
     {
-        CheckNode(node);
+        CheckNode(compiler, node);
     }
 
     assert(blockRange.CheckLIR(compiler, true));
