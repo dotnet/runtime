@@ -3985,6 +3985,15 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
 #endif // DEBUG
 
             regMaskTP candidates = getUseCandidates(useNode);
+#ifdef ARM_SOFTFP
+            // If oper is GT_PUTARG_REG, set bits in useCandidates must be in sequential order.
+            if (useNode->OperGet() == GT_PUTARG_REG || useNode->OperGet() == GT_COPY)
+            {
+                regMaskTP candidate = genFindLowestReg(candidates);
+                useNode->gtLsraInfo.setSrcCandidates(this, candidates & ~candidate);
+                candidates = candidate;
+            }
+#endif // ARM_SOFTFP
             assert((candidates & allRegs(i->registerType)) != 0);
 
             // For non-localVar uses we record nothing, as nothing needs to be written back to the tree.
