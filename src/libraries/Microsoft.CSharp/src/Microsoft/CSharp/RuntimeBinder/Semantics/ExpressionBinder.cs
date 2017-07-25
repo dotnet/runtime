@@ -2306,21 +2306,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private void checkUnsafe(CType type)
         {
-            checkUnsafe(type, ErrorCode.ERR_UnsafeNeeded, null);
-        }
-
-        private void checkUnsafe(CType type, ErrorCode errCode, ErrArg pArg)
-        {
-            Debug.Assert((errCode != ErrorCode.ERR_SizeofUnsafe) || pArg != null);
             if (type == null || type.isUnsafe())
             {
                 if (ReportUnsafeErrors())
                 {
-                    if (pArg != null)
-                        ErrorContext.Error(errCode, pArg);
-                    else
-                        ErrorContext.Error(errCode);
+                    ErrorContext.Error(ErrorCode.ERR_UnsafeNeeded);
                 }
+
                 RecordUnsafeUsage();
             }
         }

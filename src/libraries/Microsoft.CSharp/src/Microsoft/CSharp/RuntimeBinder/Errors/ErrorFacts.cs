@@ -113,9 +113,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 case ErrorCode.ERR_AmbigMember:
                     codeStr = SR.AmbigMember;
                     break;
-                case ErrorCode.ERR_SizeofUnsafe:
-                    codeStr = SR.SizeofUnsafe;
-                    break;
                 case ErrorCode.ERR_CallingFinalizeDepracated:
                     codeStr = SR.CallingFinalizeDepracated;
                     break;
