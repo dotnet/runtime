@@ -29,6 +29,8 @@ namespace System.Diagnostics.Tracing
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="EventCounter"/> class.
+        /// EVentCounters live as long as the EventSource that they are attached to unless they are
+        /// explicitly Disposed.   
         /// </summary>
         /// <param name="name">The name.</param>
         /// <param name="eventSource">The event source.</param>
@@ -69,7 +71,12 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public void Dispose()
         {
-            _group.Remove(this);
+            var group = _group;
+            if (group != null)
+            {
+                group.Remove(this);
+                _group = null;
+            }
         }
 #endif
         public override string ToString()
@@ -79,7 +86,7 @@ namespace System.Diagnostics.Tracing
         #region private implementation
 
         private readonly string _name;
-        private readonly EventCounterGroup _group;
+        private EventCounterGroup _group;
 
         #region Buffer Management
 
@@ -284,20 +291,22 @@ namespace System.Diagnostics.Tracing
         private void RegisterCommandCallback()
         {
             // Old destktop runtimes don't have this 
-#if !NO_EVENTCOMMANDEXECUTED_SUPPORT
-            _eventSource.EventCommandExecuted += OnEventSourceCommand;
-#else
+#if NO_EVENTCOMMANDEXECUTED_SUPPORT
             // We could not build against the API that had the EventCommandExecuted but maybe it is there are runtime.  
             // use reflection to try to get it.  
-            var method = typeof(EventSource).GetMethod("add_EventCommandExecuted");
+            System.Reflection.MethodInfo method = typeof(EventSource).GetMethod("add_EventCommandExecuted");
             if (method != null)
+            {
                 method.Invoke(_eventSource, new object[] { (EventHandler<EventCommandEventArgs>)OnEventSourceCommand });
+            }
             else
             {
-                var msg = "EventCounterError: Old Runtime that does not support EventSource.EventCommandExecuted.  EventCounters not Supported";
+                string msg = "EventCounterError: Old Runtime that does not support EventSource.EventCommandExecuted.  EventCounters not Supported";
                 _eventSource.Write(msg);
                 Debug.WriteLine(msg);
             }
+#else 
+            _eventSource.EventCommandExecuted += OnEventSourceCommand;
 #endif
         }
 
@@ -315,7 +324,9 @@ namespace System.Diagnostics.Tracing
                     // because it mean this code might inadvertantly participate in a lock loop. 
                     // The scenario seems very unlikely so we ignore that problem for now.  
                     lock (this)      // Lock the EventCounterGroup
+                    {
                         EnableTimer(value);
+                    }
                 }
             }
         }
@@ -419,7 +430,9 @@ namespace System.Diagnostics.Tracing
                     _timeStampSinceCollectionStarted = now;
                 }
                 else
+                {
                     DisposeTimer();
+                }
             }
         }
 
