@@ -152,8 +152,10 @@ public:
 #if defined(_TARGET_ARM_)
         CORJIT_FLAG_RELATIVE_CODE_RELOCS    = 41, // JIT should generate PC-relative address computations instead of EE relocation records
 #else // !defined(_TARGET_ARM_)
-        CORJIT_FLAG_UNUSED11                = 41
+        CORJIT_FLAG_UNUSED11                = 41,
 #endif // !defined(_TARGET_ARM_)
+
+        CORJIT_FLAG_NO_INLINING             = 42 // JIT should not inline any called method into this method
     };
 
     CORJIT_FLAGS()

@@ -84,8 +84,10 @@ public:
 #if defined(_TARGET_ARM_)
         JIT_FLAG_RELATIVE_CODE_RELOCS    = 41, // JIT should generate PC-relative address computations instead of EE relocation records
 #else // !defined(_TARGET_ARM_)
-        JIT_FLAG_UNUSED11                = 41
+        JIT_FLAG_UNUSED11                = 41,
 #endif // !defined(_TARGET_ARM_)
+
+        JIT_FLAG_NO_INLINING             = 42, // JIT should not inline any called method into this method
     };
     // clang-format on
 
@@ -203,6 +205,8 @@ public:
         FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_RELATIVE_CODE_RELOCS, JIT_FLAG_RELATIVE_CODE_RELOCS);
 
 #endif // _TARGET_ARM_
+
+        FLAGS_EQUAL(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING, JIT_FLAG_NO_INLINING);
 
 #undef FLAGS_EQUAL
     }

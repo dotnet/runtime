@@ -45,7 +45,6 @@
 #include "virtualcallstub.h"
 #include "eeconfig.h"
 #include "contractimpl.h"
-#include "listlock.inl"
 #include "generics.h"
 #include "instmethhash.h"
 #include "typestring.h"
