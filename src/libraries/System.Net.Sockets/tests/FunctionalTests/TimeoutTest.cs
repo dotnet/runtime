@@ -42,7 +42,7 @@ namespace System.Net.Sockets.Tests
 
         // Use a Timeout large enough so that we can effectively detect when it's not accurate,
         // but also not so large that it takes too long to run.
-        const int Timeout = 500;
+        const int Timeout = 2000;
 
         [OuterLoop] // TODO: Issue #11345
         [Theory]
@@ -70,11 +70,11 @@ namespace System.Net.Sockets.Tests
 
                 SocketException sockEx = Assert.Throws<SocketException>(() =>
                 {
-                    start = DateTime.Now;
+                    start = DateTime.UtcNow;
                     acceptedSocket.Receive(new byte[1]);
                 });
 
-                double elapsed = (DateTime.Now - start).TotalMilliseconds;
+                double elapsed = (DateTime.UtcNow - start).TotalMilliseconds;
 
                 Assert.Equal(SocketError.TimedOut, sockEx.SocketErrorCode);
                 Assert.True(acceptedSocket.Connected);
@@ -114,12 +114,12 @@ namespace System.Net.Sockets.Tests
                 {
                     while (true)
                     {
-                        start = DateTime.Now;
+                        start = DateTime.UtcNow;
                         acceptedSocket.Send(sendBuffer);
                     }
                 }));
 
-                double elapsed = (DateTime.Now - start).TotalMilliseconds;
+                double elapsed = (DateTime.UtcNow - start).TotalMilliseconds;
 
                 Assert.Equal(SocketError.TimedOut, sockEx.SocketErrorCode);
                 Assert.True(acceptedSocket.Connected);
