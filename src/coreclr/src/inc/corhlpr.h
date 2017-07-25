@@ -633,6 +633,10 @@ extern "C" {
 class COR_ILMETHOD_DECODER : public COR_ILMETHOD_FAT
 {
 public:
+    // This returns an uninitialized decoder, suitable for placement new but nothing
+    // else. Use with caution.
+    COR_ILMETHOD_DECODER() {}
+
     // Typically the ONLY way you should access COR_ILMETHOD is through
     // this constructor so format changes are easier.
     COR_ILMETHOD_DECODER(const COR_ILMETHOD* header) 

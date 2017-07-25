@@ -47,6 +47,8 @@
 #include "readytoruninfo.h"
 #endif
 
+#include "ilinstrumentation.h"
+
 class PELoader;
 class Stub;
 class MethodDesc;
@@ -77,7 +79,9 @@ class CerNgenRootTable;
 struct MethodContextElement;
 class TypeHandleList;
 class ProfileEmitter;
-class ReJitManager;
+class CodeVersionManager;
+class CallCounter;
+class TieredCompilationManager;
 class TrackingMap;
 struct MethodInModule;
 class PersistentInlineTrackingMapNGen;
@@ -1085,104 +1089,6 @@ typedef SHash<DynamicILBlobTraits> DynamicILBlobTable;
 typedef DPTR(DynamicILBlobTable) PTR_DynamicILBlobTable;
 
 
-// declare an array type of COR_IL_MAP entries
-typedef ArrayDPTR(COR_IL_MAP) ARRAY_PTR_COR_IL_MAP;
-
-//---------------------------------------------------------------------------------------
-//
-// A profiler may instrument a method by changing the IL.  This is typically done when the profiler receives
-// a JITCompilationStarted notification.  The profiler also has the option to provide the runtime with 
-// a mapping between original IL offsets and instrumented IL offsets.  This struct is a simple container
-// for storing the mapping information.  We store the mapping information on the Module class, where it can
-// be accessed by the debugger from out-of-process.
-//
-
-class InstrumentedILOffsetMapping
-{
-public:
-    InstrumentedILOffsetMapping();
-
-    // Check whether there is any mapping information stored in this object.
-    BOOL IsNull();
-
-#if !defined(DACCESS_COMPILE)
-    // Release the memory used by the array of COR_IL_MAPs.
-    void Clear();
-
-    void SetMappingInfo(SIZE_T cMap, COR_IL_MAP * rgMap);
-#endif // !DACCESS_COMPILE
-
-    SIZE_T               GetCount()   const;
-    ARRAY_PTR_COR_IL_MAP GetOffsets() const;
-
-private:
-    SIZE_T               m_cMap;        // the number of elements in m_rgMap
-    ARRAY_PTR_COR_IL_MAP m_rgMap;       // an array of COR_IL_MAPs
-};
-
-//---------------------------------------------------------------------------------------
-//
-// Hash table entry for storing InstrumentedILOffsetMapping.  This is keyed by the MethodDef token.
-//
-
-struct ILOffsetMappingEntry
-{
-    ILOffsetMappingEntry()
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        m_methodToken = mdMethodDefNil; 
-        // No need to initialize m_mapping.  The default ctor of InstrumentedILOffsetMapping does the job.
-    }
-
-    ILOffsetMappingEntry(mdMethodDef token, InstrumentedILOffsetMapping mapping)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-
-        m_methodToken = token;
-        m_mapping     = mapping;
-    }
-
-    mdMethodDef                 m_methodToken;
-    InstrumentedILOffsetMapping m_mapping;
-};
-
-//---------------------------------------------------------------------------------------
-//
-// This class is used to create the hash table for the instrumented IL offset mapping.
-// It encapsulates the desired behaviour of the templated hash table and implements 
-// the various functions needed by the hash table.
-//
-
-class ILOffsetMappingTraits : public NoRemoveSHashTraits<DefaultSHashTraits<ILOffsetMappingEntry> >
-{
-public:
-    typedef mdMethodDef key_t;
-
-    static key_t GetKey(element_t e)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return e.m_methodToken;
-    }
-    static BOOL Equals(key_t k1, key_t k2)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return (k1 == k2);
-    }
-    static count_t Hash(key_t k)
-    {
-        LIMITED_METHOD_DAC_CONTRACT;
-        return (count_t)(size_t)k;
-    }
-    static const element_t Null() 
-    { 
-        LIMITED_METHOD_DAC_CONTRACT; 
-        ILOffsetMappingEntry e; 
-        return e; 
-    }
-    static bool IsNull(const element_t &e) { LIMITED_METHOD_DAC_CONTRACT; return e.m_methodToken == mdMethodDefNil; }
-};
-
 // ESymbolFormat specified the format used by a symbol stream
 typedef enum 
 {
@@ -1190,11 +1096,6 @@ typedef enum
     eSymbolFormatPDB,       /* PDB format from diasymreader.dll - only safe for trusted scenarios */
     eSymbolFormatILDB       /* ILDB format from ildbsymbols.dll */
 }ESymbolFormat;
-
-
-// Hash table of profiler-provided instrumented IL offset mapping, keyed by the MethodDef token
-typedef SHash<ILOffsetMappingTraits> ILOffsetMappingTable;
-typedef DPTR(ILOffsetMappingTable) PTR_ILOffsetMappingTable;
 
 
 #ifdef FEATURE_COMINTEROP
@@ -1885,7 +1786,12 @@ protected:
 
     ClassLoader *GetClassLoader();
     PTR_BaseDomain GetDomain();
-    ReJitManager * GetReJitManager();
+#ifdef FEATURE_CODE_VERSIONING
+    CodeVersionManager * GetCodeVersionManager();
+#endif
+#ifdef FEATURE_TIERED_COMPILATION
+    CallCounter * GetCallCounter();
+#endif
 
     mdFile GetModuleRef()
     {

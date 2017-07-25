@@ -26,19 +26,21 @@ public:
 
     void Init(ADID appDomainId);
     BOOL OnMethodCalled(MethodDesc* pMethodDesc, DWORD currentCallCount);
+    void AsyncPromoteMethodToTier1(MethodDesc* pMethodDesc);
     void OnAppDomainShutdown();
+    static CORJIT_FLAGS GetJitFlags(NativeCodeVersion nativeCodeVersion);
 
 private:
 
     static DWORD StaticOptimizeMethodsCallback(void* args);
     void OptimizeMethodsCallback();
-    void OptimizeMethod(MethodDesc* pMethod);
-    MethodDesc* GetNextMethodToOptimize();
-    PCODE CompileMethod(MethodDesc* pMethod);
-    void InstallMethodCode(MethodDesc* pMethod, PCODE pCode);
+    void OptimizeMethod(NativeCodeVersion nativeCodeVersion);
+    NativeCodeVersion GetNextMethodToOptimize();
+    BOOL CompileCodeVersion(NativeCodeVersion nativeCodeVersion);
+    void ActivateCodeVersion(NativeCodeVersion nativeCodeVersion);
 
     SpinLock m_lock;
-    SList<SListElem<MethodDesc*>> m_methodsToOptimize;
+    SList<SListElem<NativeCodeVersion>> m_methodsToOptimize;
     ADID m_domainId;
     BOOL m_isAppDomainShuttingDown;
     DWORD m_countOptimizationThreadsRunning;
