@@ -192,7 +192,7 @@ debug_enter (MonoInvocation *frame, int *tracing)
 		if (tracing == 3) global_tracing = 0; \
 	}	\
 	if (mono_profiler_should_instrument_method (frame->runtime_method->method, FALSE)) \
-		MONO_PROFILER_RAISE (method_enter, (frame->runtime_method->method));
+		MONO_PROFILER_RAISE (method_leave, (frame->runtime_method->method));
 
 #else
 
