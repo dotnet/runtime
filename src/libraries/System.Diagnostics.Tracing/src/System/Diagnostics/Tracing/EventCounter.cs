@@ -48,6 +48,8 @@ namespace System.Diagnostics.Tracing
             _name = name;
             _group = EventCounterGroup.GetEventCounterGroup(eventSource);
             _group.Add(this);
+            _min = float.PositiveInfinity;
+            _max = float.NegativeInfinity;
         }
 
         /// <summary>
@@ -157,15 +159,11 @@ namespace System.Diagnostics.Tracing
             Debug.Assert(Monitor.IsEntered(MyLock));
             _sum += value;
             _sumSquared += value * value;
-            if (_count == 0 || value > _max)
-            {
+            if (value > _max)
                 _max = value;
-            }
 
-            if (_count == 0 || value < _min)
-            {
+            if (value < _min)
                 _min = value;
-            }
 
             _count++;
         }
@@ -193,8 +191,8 @@ namespace System.Diagnostics.Tracing
             _count = 0;
             _sum = 0;
             _sumSquared = 0;
-            _min = 0;
-            _max = 0;
+            _min = float.PositiveInfinity;
+            _max = float.NegativeInfinity;
         }
 
         #endregion // Statistics Calculation
