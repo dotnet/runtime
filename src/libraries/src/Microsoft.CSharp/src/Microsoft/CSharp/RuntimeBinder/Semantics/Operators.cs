@@ -1243,7 +1243,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public Expr BindStandardUnaryOperator(OperatorKind op, Expr pArgument)
         {
-            RETAILVERIFY(pArgument != null);
+            Debug.Assert(pArgument != null);
 
             ExpressionKind ek;
             UnaOpKind unaryOpKind;
@@ -1340,7 +1340,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
             }
 
-            RETAILVERIFY(nBestSignature < pSignatures.Count);
+            Debug.Assert(nBestSignature < pSignatures.Count);
 
             UnaOpFullSig uofs = pSignatures[nBestSignature];
 
@@ -2413,7 +2413,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (ptOp == PredefinedType.PT_UINT && op.Type.fundType() == FUNDTYPE.FT_U4)
             {
-                ExprClass exprObj = GetExprFactory().MakeClass(GetReqPDT(PredefinedType.PT_LONG));
+                ExprClass exprObj = GetExprFactory().CreateClass(GetReqPDT(PredefinedType.PT_LONG));
                 op = mustConvertCore(op, exprObj, CONVERTTYPE.NOUDC);
             }
 
@@ -2471,7 +2471,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
          */
         private ExprOperator ambiguousOperatorError(ExpressionKind ek, Expr op1, Expr op2)
         {
-            RETAILVERIFY(op1 != null);
+            Debug.Assert(op1 != null);
 
             // This is exactly the same "hack" that BadOperatorError uses. The first operand contains the
             // name of the operator in its errorString.
@@ -2494,9 +2494,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private Expr BindUserBoolOp(ExpressionKind kind, ExprCall pCall)
         {
-            RETAILVERIFY(pCall != null);
-            RETAILVERIFY(pCall.MethWithInst.Meth() != null);
-            RETAILVERIFY(pCall.OptionalArguments != null);
+            Debug.Assert(pCall != null);
+            Debug.Assert(pCall.MethWithInst.Meth() != null);
+            Debug.Assert(pCall.OptionalArguments != null);
             Debug.Assert(kind == ExpressionKind.LogicalAnd || kind == ExpressionKind.LogicalOr);
 
             CType typeRet = pCall.Type;

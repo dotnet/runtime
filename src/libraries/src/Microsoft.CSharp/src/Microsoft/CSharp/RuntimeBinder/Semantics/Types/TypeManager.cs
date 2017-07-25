@@ -72,59 +72,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
         }
 
-        public static bool TypeContainsAnonymousTypes(CType type)
-        {
-            CType ctype = (CType)type;
-
-        LRecurse:  // Label used for "tail" recursion.
-            switch (ctype.GetTypeKind())
-            {
-                default:
-                    Debug.Assert(false, "Bad Symbol kind in TypeContainsAnonymousTypes");
-                    return false;
-
-                case TypeKind.TK_NullType:
-                case TypeKind.TK_VoidType:
-                case TypeKind.TK_NullableType:
-                case TypeKind.TK_TypeParameterType:
-                case TypeKind.TK_UnboundLambdaType:
-                case TypeKind.TK_MethodGroupType:
-                    return false;
-
-                case TypeKind.TK_ArrayType:
-                case TypeKind.TK_ParameterModifierType:
-                case TypeKind.TK_PointerType:
-                    ctype = (CType)ctype.GetBaseOrParameterOrElementType();
-                    goto LRecurse;
-
-                case TypeKind.TK_AggregateType:
-                    if (ctype.AsAggregateType().getAggregate().IsAnonymousType())
-                    {
-                        return true;
-                    }
-
-                    TypeArray typeArgsAll = ctype.AsAggregateType().GetTypeArgsAll();
-                    for (int i = 0; i < typeArgsAll.Count; i++)
-                    {
-                        CType typeArg = typeArgsAll[i];
-
-                        if (TypeContainsAnonymousTypes(typeArg))
-                        {
-                            return true;
-                        }
-                    }
-                    return false;
-
-                case TypeKind.TK_ErrorType:
-                    if (ctype.AsErrorType().HasTypeParent())
-                    {
-                        ctype = ctype.AsErrorType().GetTypeParent();
-                        goto LRecurse;
-                    }
-                    return false;
-            }
-        }
-
         private sealed class StdTypeVarColl
         {
             private readonly List<TypeParameterType> prgptvs;
@@ -208,7 +155,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             else
             {
                 Debug.Assert(pArray.HasErrors() == elementType.HasErrors());
-                Debug.Assert(pArray.IsUnresolved() == elementType.IsUnresolved());
             }
 
             Debug.Assert(pArray.rank == args);
@@ -324,7 +270,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             else
             {
                 Debug.Assert(pPointer.HasErrors() == baseType.HasErrors());
-                Debug.Assert(pPointer.IsUnresolved() == baseType.IsUnresolved());
             }
 
             Debug.Assert(pPointer.GetReferentType() == baseType);
@@ -334,6 +279,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public NullableType GetNullable(CType pUnderlyingType)
         {
+            if (pUnderlyingType is NullableType nt)
+            {
+                Debug.Fail("Attempt to make nullable of nullable");
+                return nt;
+            }
+
             NullableType pNullableType = _typeTable.LookupNullable(pUnderlyingType);
             if (pNullableType == null)
             {
@@ -371,7 +322,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             else
             {
                 Debug.Assert(pParamModifier.HasErrors() == paramType.HasErrors());
-                Debug.Assert(pParamModifier.IsUnresolved() == paramType.IsUnresolved());
             }
 
             Debug.Assert(pParamModifier.GetParameterType() == paramType);
@@ -390,7 +340,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (pParentType == null && pParentNS == null)
             {
                 // Use the root namespace as the parent.
-                pParentNS = _BSymmgr.GetRootNsAid(KAID.kaidGlobal);
+                pParentNS = _BSymmgr.GetRootNsAid();
             }
             if (typeArgs == null)
             {
@@ -431,7 +381,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Debug.Assert(pError.nameText == nameText);
                 Debug.Assert(pError.typeArgs == typeArgs);
             }
-            Debug.Assert(!pError.IsUnresolved());
 
             return pError;
         }
@@ -1281,6 +1230,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             return false;
         }
+
+        public AggregateType ObjectAggregateType => (AggregateType)_symbolTable.GetCTypeFromType(typeof(object));
 
         private readonly Dictionary<Tuple<Assembly, Assembly>, bool> _internalsVisibleToCalculated
             = new Dictionary<Tuple<Assembly, Assembly>, bool>();

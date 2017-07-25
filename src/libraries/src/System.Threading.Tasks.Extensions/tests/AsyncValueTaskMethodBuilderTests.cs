@@ -144,6 +144,7 @@ namespace System.Threading.Tasks.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/22506", TargetFrameworkMonikers.UapAot)]
         public void SetStateMachine_InvalidArgument_ThrowsException()
         {
             AsyncValueTaskMethodBuilder<int> b = ValueTask<int>.CreateAsyncMethodBuilder();

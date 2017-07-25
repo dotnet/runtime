@@ -3019,27 +3019,16 @@ namespace System.Xml.Tests
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.Writer, NavType.XPathDocument)]
         [InlineData(XslInputType.Navigator, ReaderType.XmlValidatingReader, OutputType.TextWriter, NavType.XPathDocument)]
         [Theory]
-        public void AddExtObject25(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
+        public void TC_ExtensionObj_Function_Mismatch_IncorrectCasing(XslInputType xslInputType, ReaderType readerType, OutputType outputType, NavType navType)
         {
             MyObject obj = new MyObject(25, _output);
             m_xsltArg = new XsltArgumentList();
 
             m_xsltArg.AddExtensionObject(szDefaultNS, obj);
-
-            if (LoadXSL("MyObject_CaseSensitive.xsl", xslInputType, readerType) == 1)
-            {
-                try
-                {
-                    Transform_ArgList("fruits.xml", outputType, navType);
-                    CheckResult(419.3031944636, outputType);
-                }
-                catch (System.Xml.Xsl.XsltException)
-                {
-                    return;
-                }
-            }
-            _output.WriteLine("Exception not thrown for wrong-case spelling of methods");
-            Assert.True(false);
+            LoadXSL("MyObject_CaseSensitive.xsl", xslInputType, readerType);
+            var e = Assert.ThrowsAny<XsltException>(() => Transform_ArgList("fruits.xml", outputType, navType));
+            var exceptionSourceAssembly = PlatformDetection.IsFullFramework ? "System.Data.SqlXml" : "System.Xml";
+            CheckExpectedError(e, exceptionSourceAssembly, "XmlIl_NoExtensionMethod", new[] { "urn:my-object", "FN3", "0" });
         }
 
         //[Variation("Object namespace System.Xml.Tests found")]

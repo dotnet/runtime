@@ -129,11 +129,21 @@ namespace System.Drawing.Text.Tests
         }
 
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
-        public void AddFontFile_LongFilePath_ThrowsPathTooLongException()
+        public void AddFontFile_LongFilePath_ThrowsException()
         {
             using (var fontCollection = new PrivateFontCollection())
             {
-                Assert.Throws<PathTooLongException>(() => fontCollection.AddFontFile(new string('a', 261)));
+                // Throws PathTooLongException on Desktop and FileNotFoundException elsewhere.
+                if (PlatformDetection.IsFullFramework)
+                {
+                    Assert.Throws<PathTooLongException>(
+                        () => fontCollection.AddFontFile(new string('a', 261)));
+                }
+                else
+                {
+                    Assert.Throws<FileNotFoundException>(
+                        () => fontCollection.AddFontFile(new string('a', 261)));
+                }
             }
         }
 

@@ -294,48 +294,6 @@
     <Compile Include="$(CommonPath)\System\Net\Http\HttpHandlerDefaults.cs">
       <Link>ProductionCode\System\Net\Http\HttpHandlerDefaults.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\System\Net\Http\Managed\AuthenticationHandler.cs">
-      <Link>ProductionCode\System\Net\Http\Managed\AuthenticationHandler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\Managed\AutoRedirectHandler.cs">
-      <Link>ProductionCode\System\Net\Http\Managed\AutoRedirectHandler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\Managed\BasicAuthenticationHelper.cs">
-      <Link>ProductionCode\System\Net\Http\Managed\BasicAuthenticationHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\Managed\ConnectHelper.cs">
-      <Link>ProductionCode\System\Net\Http\Managed\ConnectHelper.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\Managed\CookieHandler.cs">
-      <Link>ProductionCode\System\Net\Http\Managed\CookieHandler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\Managed\DecompressionHandler.cs">
-      <Link>ProductionCode\System\Net\Http\Managed\DecompressionHandler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\Managed\ManagedHandler.cs">
-      <Link>ProductionCode\System\Net\Http\Managed\ManagedHttpClientHandler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\Managed\HttpConnection.cs">
-      <Link>ProductionCode\System\Net\Http\Managed\HttpConnection.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\Managed\HttpConnectionHandler.cs">
-      <Link>ProductionCode\System\Net\Http\Managed\HttpConnectionHandler.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\Managed\HttpConnectionKey.cs">
-      <Link>ProductionCode\System\Net\Http\Managed\HttpConnectionKey.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\Managed\HttpConnectionPool.cs">
-      <Link>ProductionCode\System\Net\Http\Managed\HttpConnectionPool.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\Managed\HttpContentReadStream.cs">
-      <Link>ProductionCode\System\Net\Http\Managed\HttpContentReadStream.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\Managed\HttpContentWriteStream.cs">
-      <Link>ProductionCode\System\Net\Http\Managed\HttpContentWriteStream.cs</Link>
-    </Compile>
-    <Compile Include="..\..\src\System\Net\Http\Managed\HttpProxyConnectionHandler.cs">
-      <Link>ProductionCode\System\Net\Http\Managed\HttpProxyConnectionHandler.cs</Link>
-    </Compile>
     <Compile Include="Fakes\HttpClientHandler.cs" />
     <Compile Include="Headers\AuthenticationHeaderValueTest.cs" />
     <Compile Include="Headers\ByteArrayHeaderParserTest.cs" />

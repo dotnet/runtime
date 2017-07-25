@@ -214,11 +214,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         // If not, try user defined implicit conversions.
                         break;
                     case TypeKind.TK_AggregateType:
-                        // TypeReference and ArgIterator can't be boxed (or converted to anything else)
-                        if (_typeSrc.isSpecialByRefType())
-                        {
-                            return false;
-                        }
                         if (bindImplicitConversionFromAgg(_typeSrc.AsAggregateType()))
                         {
                             return true;
@@ -336,17 +331,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return true;
                 }
 
-                int cnubDst;
-                int cnubSrc;
-                CType typeDstBase = nubDst.StripNubs(out cnubDst);
-                ExprClass exprTypeDstBase = GetExprFactory().MakeClass(typeDstBase);
-                CType typeSrcBase = _typeSrc.StripNubs(out cnubSrc);
-
+                bool dstWasNullable;
+                bool srcWasNullable;
+                CType typeDstBase = nubDst.StripNubs(out dstWasNullable);
+                ExprClass exprTypeDstBase = GetExprFactory().CreateClass(typeDstBase);
+                CType typeSrcBase = _typeSrc.StripNubs(out srcWasNullable);
                 ConversionFunc pfn = (_flags & CONVERTTYPE.ISEXPLICIT) != 0 ?
                     (ConversionFunc)_binder.BindExplicitConversion :
                     (ConversionFunc)_binder.BindImplicitConversion;
 
-                if (cnubSrc == 0)
+                if (!srcWasNullable)
                 {
                     Debug.Assert(_typeSrc == typeSrcBase);
 
@@ -364,7 +358,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             }
                             else
                             {
-                                _exprDest = GetExprFactory().CreateCast(0x00, _typeDest, _exprSrc);
+                                _exprDest = GetExprFactory().CreateCast(_typeDest, _exprSrc);
                             }
                         }
                         return true;
@@ -383,20 +377,19 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                                 exprTmp = exprUDC.UserDefinedCall;
                             }
 
-                            // This logic is left over from the days when T?? was legal. However there are error/LAF cases that necessitates the loop.
-                            // typeSrc is not nullable so just wrap the required number of times. For legal code (cnubDst <= 0).
-
-                            for (int i = 0; i < cnubDst; i++)
+                            if (dstWasNullable)
                             {
                                 ExprCall call = _binder.BindNubNew(exprTmp);
                                 exprTmp = call;
                                 call.NullableCallLiftKind = NullableCallLiftKind.NullableConversionConstructor;
                             }
+
                             if (exprUDC != null)
                             {
                                 exprUDC.UserDefinedCall = exprTmp;
                                 exprTmp = exprUDC;
                             }
+
                             Debug.Assert(exprTmp.Type == nubDst);
                             _exprDest = exprTmp;
                         }
@@ -424,7 +417,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     // Here we want to first check whether or not the conversions work on the base types.
 
                     Expr arg1 = _binder.mustCast(_exprSrc, typeSrcBase);
-                    ExprClass arg2 = GetExprFactory().MakeClass(typeDstBase);
+                    ExprClass arg2 = GetExprFactory().CreateClass(typeDstBase);
 
                     bool convertible;
                     if (0 != (_flags & CONVERTTYPE.ISEXPLICIT))
@@ -474,7 +467,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
                     else
                     {
-                        _exprDest = GetExprFactory().CreateCast(0x00, _typeDest, _exprSrc);
+                        _exprDest = GetExprFactory().CreateCast(_typeDest, _exprSrc);
                     }
                 }
                 return true;
@@ -856,7 +849,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         {
                             // For a type var destination we need to cast to object then to the other type var.
                             Expr exprT;
-                            ExprClass exprObj = GetExprFactory().MakeClass(_binder.GetReqPDT(PredefinedType.PT_OBJECT));
+                            ExprClass exprObj = GetExprFactory().CreateClass(_binder.GetReqPDT(PredefinedType.PT_OBJECT));
                             _binder.bindSimpleCast(_exprSrc, exprObj, out exprT, EXPRFLAG.EXF_FORCE_BOX);
                             _binder.bindSimpleCast(exprT, _exprTypeDest, out _exprDest, EXPRFLAG.EXF_FORCE_UNBOX);
                         }

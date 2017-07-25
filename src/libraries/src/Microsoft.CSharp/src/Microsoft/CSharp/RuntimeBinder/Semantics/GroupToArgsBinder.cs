@@ -332,7 +332,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             }
 
                             // Mark object.
-                            AggregateType typeObject = GetSymbolLoader().GetReqPredefType(PredefinedType.PT_OBJECT, true);
+                            AggregateType typeObject = GetSymbolLoader().GetReqPredefType(PredefinedType.PT_OBJECT);
                             _HiddenTypes.Add(typeObject);
                         }
                     }
@@ -647,11 +647,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             Name name = NameManager.GetPredefinedName(PredefinedName.PN_CAP_VALUE);
                             FieldSymbol field = symbolLoader.LookupAggMember(name, agg, symbmask_t.MASK_FieldSymbol).AsFieldSymbol();
                             FieldWithType fwt = new FieldWithType(field, agg.getThisType());
-                            ExprField exprField = exprFactory.CreateField(0, agg.getThisType(), null, fwt);
+                            ExprField exprField = exprFactory.CreateField(agg.getThisType(), null, fwt, false);
 
                             if (agg.getThisType() != type)
                             {
-                                optionalArgument = exprFactory.CreateCast(0, type, exprField);
+                                optionalArgument = exprFactory.CreateCast(type, exprField);
                             }
                             else
                             {

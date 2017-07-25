@@ -18,7 +18,7 @@
     <Compile Include="FxCopBaseline.AnyOS.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Compile Include="System\DirectoryServices\externdll.cs" />
+    <Compile Include="System\DirectoryServices\ExternDll.cs" />
     <Compile Include="System\DirectoryServices\ActiveDirectorySecurity.cs" />
     <Compile Include="System\DirectoryServices\AdsVLV.cs" />
     <Compile Include="System\DirectoryServices\AuthenticationTypes.cs" />

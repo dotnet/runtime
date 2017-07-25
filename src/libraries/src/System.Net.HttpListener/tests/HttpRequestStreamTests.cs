@@ -379,7 +379,6 @@ namespace System.Net.Tests
             }
         }
 
-        [ActiveIssue(22066, TargetFrameworkMonikers.UapAot)]
         [Fact]
         public async Task CanWrite_Get_ReturnsFalse()
         {

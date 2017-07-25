@@ -8,7 +8,6 @@ namespace System.IO.Tests
 {
     public class DirectoryInfo_CreateSubDirectory : FileSystemTest
     {
-        public static TheoryData ControlWhiteSpace = IOInputs.GetControlWhiteSpace().ToTheoryData(); 
         #region UniversalTests
 
         [Fact]
@@ -190,7 +189,6 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(UsingNewNormalization))]
-        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
         [PlatformSpecific(TestPlatforms.Windows)]  // Extended windows path
         public void ExtendedPathSubdirectory()
         {

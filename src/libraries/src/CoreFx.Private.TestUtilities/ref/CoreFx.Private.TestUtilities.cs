@@ -10,6 +10,11 @@ using Xunit;
 
 namespace System
 {
+    public static class AdminHelpers
+    {
+        public static int RunAsSudo(string commandLine) => throw null;
+    }
+
     public static class AssertExtensions
     {
         public static void Throws<T>(System.Action action, string message) where T : System.Exception { }
@@ -29,6 +34,11 @@ namespace System
         public static void ThrowsAny<TFirstExceptionType, TSecondExceptionType>(System.Action action)
             where TFirstExceptionType : System.Exception
             where TSecondExceptionType : System.Exception
+        { }
+        public static void ThrowsAny<TFirstExceptionType, TSecondExceptionType, TThirdExceptionType>(Action action)
+            where TFirstExceptionType : Exception
+            where TSecondExceptionType : Exception
+            where TThirdExceptionType : Exception
         { }
         public static void ThrowsIf<T>(bool condition, System.Action action) where T : System.Exception { }
         public static void GreaterThan<T>(T actual, T greaterThan, string userMessage = null) where T : System.IComparable { }

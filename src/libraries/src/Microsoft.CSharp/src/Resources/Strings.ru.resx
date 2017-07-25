@@ -36,12 +36,6 @@
   <data name="BindInvokeFailedNonDelegate" xml:space="preserve">
     <value>Не удалось вызвать тип, не являющийся делегатом</value>
   </data>
-  <data name="BindImplicitConversionRequireOneArgument" xml:space="preserve">
-    <value>Для неявного преобразования нужен строго один аргумент</value>
-  </data>
-  <data name="BindExplicitConversionRequireOneArgument" xml:space="preserve">
-    <value>Для явного преобразования нужен строго один аргумент</value>
-  </data>
   <data name="BindBinaryAssignmentRequireTwoArguments" xml:space="preserve">
     <value>Невозможно вызвать бинарные операторы с использованием одного аргумента</value>
   </data>
@@ -59,9 +53,6 @@
   </data>
   <data name="BadBinaryOps" xml:space="preserve">
     <value>Не удается применить оператор "{0}" к операндам типа "{1}" и "{2}"</value>
-  </data>
-  <data name="IntDivByZero" xml:space="preserve">
-    <value>Деление на ноль постоянной</value>
   </data>
   <data name="BadIndexLHS" xml:space="preserve">
     <value>Невозможно применить индексирование через [] к выражению типа "{0}"</value>
@@ -144,12 +135,6 @@
   <data name="RefProperty" xml:space="preserve">
     <value>Свойства и индексаторы не могут передаваться как параметры с ключевыми словами out и ref</value>
   </data>
-  <data name="ManagedAddr" xml:space="preserve">
-    <value>Невозможно получить адрес, определить размер или объявить указатель на управляемый тип ("{0}")</value>
-  </data>
-  <data name="FixedNotNeeded" xml:space="preserve">
-    <value>Получить адрес фиксированного выражения с помощью оператора fixed невозможно</value>
-  </data>
   <data name="UnsafeNeeded" xml:space="preserve">
     <value>Динамические вызовы нельзя использовать в сопряжении с указателями</value>
   </data>
@@ -159,29 +144,17 @@
   <data name="MustHaveOpTF" xml:space="preserve">
     <value>Тип ("{0}") должен содержать объявления оператора true и оператора false</value>
   </data>
-  <data name="CheckedOverflow" xml:space="preserve">
-    <value>Операция вызывает переполнение во время компиляции в проверяемом режиме</value>
-  </data>
   <data name="ConstOutOfRangeChecked" xml:space="preserve">
     <value>Постоянное значение "{0}" не может быть преобразовано в "{1}" (для обхода используйте синтаксис "unchecked")</value>
   </data>
   <data name="AmbigMember" xml:space="preserve">
     <value>Неоднозначность между "{0}" и "{1}"</value>
   </data>
-  <data name="SizeofUnsafe" xml:space="preserve">
-    <value>"{0}" does not have a predefined size, therefore sizeof can only be used in an unsafe context (consider using System.Runtime.InteropServices.Marshal.SizeOf)</value>
-  </data>
-  <data name="FieldInitRefNonstatic" xml:space="preserve">
-    <value>Инициализатор поля не может обращаться к нестатическому полю, методу или свойству "{0}"</value>
-  </data>
   <data name="CallingFinalizeDepracated" xml:space="preserve">
     <value>Непосредственный вызов деструкторов и функций object.Finalize запрещен. Рекомендуется вызов IDisposable.Dispose, если она доступна.</value>
   </data>
   <data name="CallingBaseFinalizeDeprecated" xml:space="preserve">
     <value>Не вызывайте метод Finalize базового класса напрямую. Он вызывается автоматически из деструктора.</value>
-  </data>
-  <data name="BadCastInFixed" xml:space="preserve">
-    <value>Правая часть присваивания оператора fixed не может быть выражением приведения типа</value>
   </data>
   <data name="NoImplicitConvCast" xml:space="preserve">
     <value>Не удается неявно преобразовать тип "{0}" в "{1}". Существует явное преобразование (требуется приведение типа?)</value>
@@ -240,23 +213,11 @@
   <data name="ValConstraintNotSatisfied" xml:space="preserve">
     <value>Для использования в качестве параметра "{1}" в универсальном типе или методе "{0}" тип "{2}" должен быть типом значения, не допускающим значения NULL</value>
   </data>
-  <data name="CircularConstraint" xml:space="preserve">
-    <value>Циклическая зависимость ограничения, включающая "{0}" и "{1}"</value>
-  </data>
-  <data name="BaseConstraintConflict" xml:space="preserve">
-    <value>Параметр типа "{0}" наследует конфликтующие ограничения "{1}" и "{2}"</value>
-  </data>
-  <data name="ConWithValCon" xml:space="preserve">
-    <value>Параметр типа "{1}" имеет ограничение "struct", поэтому "{1}" не может использоваться в качестве ограничения для "{0}"</value>
-  </data>
   <data name="AmbigUDConv" xml:space="preserve">
     <value>Неоднозначные пользовательские преобразования "{0}" и "{1}" при преобразовании из "{2}" в "{3}"</value>
   </data>
   <data name="PredefinedTypeNotFound" xml:space="preserve">
     <value>Предопределенный тип "{0}" не определен и не импортирован</value>
-  </data>
-  <data name="PredefinedTypeBadType" xml:space="preserve">
-    <value>Предопределенный тип "{0}" объявлен неправильно</value>
   </data>
   <data name="BindToBogus" xml:space="preserve">
     <value>"{0}" не поддерживается языком</value>
@@ -272,9 +233,6 @@
   </data>
   <data name="LiteralDoubleCast" xml:space="preserve">
     <value>Литерал с типом double не может быть неявно преобразован к типу "{1}"; для создания литерала этого типа следует воспользоваться суффиксом "{0}"</value>
-  </data>
-  <data name="UnifyingInterfaceInstantiations" xml:space="preserve">
-    <value>"{0}" не в состоянии реализовать как "{1}", так и "{2}", поскольку они могут быть идентичными для некоторых подстановок параметров-типов</value>
   </data>
   <data name="ConvertToStaticClass" xml:space="preserve">
     <value>Не удается выполнить преобразование к статическому типу "{0}"</value>
@@ -353,9 +311,6 @@
   </data>
   <data name="RefReadonlyLocalCause" xml:space="preserve">
     <value>Не удалось передать "{0}" как ссылку или аргумент out, так как это "{1}"</value>
-  </data>
-  <data name="ThisStructNotInAnonMeth" xml:space="preserve">
-    <value>Анонимные методы, лямбда-выражения и выражения запроса внутри структуры не имеет доступа к членам экземпляра "this". Возможно, следует скопировать "this" в локальную переменную за пределами анонимного метода, лямбда-выражения или выражения запроса и использовать эту локальную переменную.</value>
   </data>
   <data name="DelegateOnNullable" xml:space="preserve">
     <value>Не удается привязать делегат '{0}', потому что он является членом «System.Nullable&lt;T&gt;»</value>
