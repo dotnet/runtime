@@ -1608,7 +1608,7 @@ void RegSet::rsSpillTree(regNumber reg, GenTreePtr tree, unsigned regIdx /* =0 *
 #endif // _TARGET_ARM_
     else
     {
-        assert(!varTypeIsMultiReg(tree));
+        assert(!varTypeIsMultiReg(tree) || (m_rsCompiler->opts.compUseSoftFP && treeType == TYP_LONG));
         tree->gtFlags &= ~GTF_SPILL;
     }
 #endif // !LEGACY_BACKEND
