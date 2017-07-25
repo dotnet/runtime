@@ -38,6 +38,10 @@
 #include "../debug/daccess/fntableaccess.h"
 #endif // _WIN64
 
+#ifdef FEATURE_PERFMAP
+#include "perfmap.h"
+#endif
+
 #define MAX_M_ALLOCATED         (16 * 1024)
 
 // Default number of jump stubs in a jump stub block
@@ -5053,6 +5057,10 @@ DONE:
 #endif
 
     emitBackToBackJump(jumpStub, (void*) target);
+
+#ifdef FEATURE_PERFMAP
+    PerfMap::LogStubs(__FUNCTION__, "emitBackToBackJump", (PCODE)jumpStub, BACK_TO_BACK_JUMP_ALLOCATE_SIZE);
+#endif
 
     // We always add the new jumpstub to the jumpStubCache 
     //
