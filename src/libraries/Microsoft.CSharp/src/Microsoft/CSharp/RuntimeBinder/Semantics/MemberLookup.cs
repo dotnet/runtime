@@ -539,9 +539,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             switch (swt.Sym.getKind())
             {
-                case SYMKIND.SK_EventSymbol:
-                    break;
-
                 case SYMKIND.SK_PropertySymbol:
                     if (swt.Prop().useMethInstead)
                     {
@@ -557,9 +554,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     {
                         swt.Set(swt.Meth().getClass(), swt.GetType());
                     }
-                    break;
-
-                default:
                     break;
             }
 

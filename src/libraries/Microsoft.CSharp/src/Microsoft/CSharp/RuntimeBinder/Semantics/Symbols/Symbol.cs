@@ -196,14 +196,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                  */
 
                 case SYMKIND.SK_TypeParameterSymbol:
-                /*
-            case SYMKIND.SK_TypeParameterType:
-            case SYMKIND.SK_VoidType:
-            case SYMKIND.SK_NullType:
-            case SYMKIND.SK_OpenTypePlaceholderType:
-            case SYMKIND.SK_ArgumentListType:
-            case SYMKIND.SK_NaturalIntegerType:
-                 */
                 case SYMKIND.SK_LocalVariableSymbol:
                     setBogus(false);
                     break;
@@ -212,9 +204,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     fBogus = hasBogus() && checkBogus();
                     break;
 
-                case SYMKIND.SK_Scope:
-                case SYMKIND.SK_LambdaScope:
-                case SYMKIND.SK_NamespaceSymbol:
                 default:
                     Debug.Assert(false, "CheckBogus with invalid Symbol kind");
                     setBogus(false);
@@ -309,8 +298,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return this.AsAggregateDeclaration().GetAssembly();
                 case SYMKIND.SK_AggregateSymbol:
                     return this.AsAggregateSymbol().AssociatedAssembly;
-                case SYMKIND.SK_NamespaceSymbol:
-                case SYMKIND.SK_AssemblyQualifiedNamespaceSymbol:
                 default:
                     // Should never call this with any other kind.
                     Debug.Assert(false, "GetAssemblyID called on bad sym kind");
@@ -336,9 +323,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return this.AsAggregateDeclaration().Agg().InternalsVisibleTo(assembly);
                 case SYMKIND.SK_AggregateSymbol:
                     return this.AsAggregateSymbol().InternalsVisibleTo(assembly);
-                case SYMKIND.SK_ExternalAliasDefinitionSymbol:
-                case SYMKIND.SK_NamespaceSymbol:
-                case SYMKIND.SK_AssemblyQualifiedNamespaceSymbol:
                 default:
                     // Should never call this with any other kind.
                     Debug.Assert(false, "InternalsVisibleTo called on bad sym kind");
@@ -405,7 +389,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case SYMKIND.SK_MethodSymbol:
                 case SYMKIND.SK_PropertySymbol:
                     return this.AsMethodOrPropertySymbol().swtSlot.Sym;
-                case SYMKIND.SK_EventSymbol:
                 default:
                     return null;
             }
