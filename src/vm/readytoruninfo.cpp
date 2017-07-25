@@ -348,7 +348,9 @@ BOOL ReadyToRunInfo::IsReadyToRunEnabled()
     WRAPPER_NO_CONTRACT;
 
     static ConfigDWORD configReadyToRun;
-    return configReadyToRun.val(CLRConfig::EXTERNAL_ReadyToRun);
+    return configReadyToRun.val(CLRConfig::EXTERNAL_ReadyToRun) && 
+            !(CORProfilerDisableAllNGenImages()) && 
+            !(CORProfilerUseProfileImages());
 }
 
 // A log file to record success/failure of R2R loads. s_r2rLogFile can have the following values:
