@@ -7,5 +7,11 @@
         <Version>[AppxVersion]</Version>
         <Publisher>'CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US'</Publisher>
     </AppxPackageRegistration>
+    <DesignTimeAppxPackageRegistration
+        Include="$(MSBuildThisFileDirectory)..\tools\Appx\[AppxDisplayName].appx">
+        <Architecture>[AppxBuildArch]</Architecture>
+        <Version>[AppxVersion]</Version>
+        <Publisher>'CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US'</Publisher>
+    </DesignTimeAppxPackageRegistration>
   </ItemGroup>
 </Project>
