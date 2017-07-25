@@ -53,16 +53,5 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 }
             }
         }
-
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.Uap)]
-        [Fact]
-        public static void LocalDBNotSupportedOnUapTest()
-        {
-            SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(@"server=(localdb)\MSSQLLocalDB");
-            builder.IntegratedSecurity = true;
-            builder.ConnectTimeout = 2;
-
-            DataTestUtility.AssertThrowsWrapper<PlatformNotSupportedException>(() => OpenConnection(builder.ConnectionString));
-        }
     }
 }
