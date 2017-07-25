@@ -413,8 +413,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 || op1 is ExprCall
                 || op1 is ExprProperty 
                 || op1 is ExprClass
-                || op1 is ExprField
-                || op1 is ExprEvent);
+                || op1 is ExprField);
 
             if (!checkLvalue(op1, CheckLvalueKind.Assignment))
             {

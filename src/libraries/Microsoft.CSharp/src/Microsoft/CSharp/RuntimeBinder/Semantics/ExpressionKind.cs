@@ -44,7 +44,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         //ArrayLength,
         //EK_ARGUMENTHANDLE,
         Call,
-        Event,
+        //Event,
         Field,
         Local,
         //EK_BASE,

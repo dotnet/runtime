@@ -21,7 +21,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         public Expr DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, LocalVariableSymbol[] locals)
         {
             Debug.Assert(arguments.Length == 1);
-            return runtimeBinder.BindProperty(this, arguments[0], locals[0], null, false);
+            return runtimeBinder.BindProperty(this, arguments[0], locals[0], null);
         }
 
         public void PopulateSymbolTableWithName(SymbolTable symbolTable, Type callingType, ArgumentObject[] arguments)
