@@ -280,13 +280,20 @@ namespace System.Net.Http
                 if (request.Method == HttpMethod.Head || (int)response.StatusCode == 204 || (int)response.StatusCode == 304)
                 {
                     responseStream = EmptyReadStream.Instance;
+                    ReturnConnectionToPool();
                 }
                 else if (response.Content.Headers.ContentLength != null)
                 {
                     long contentLength = response.Content.Headers.ContentLength.GetValueOrDefault();
-                    responseStream = contentLength == 0 ?
-                        (HttpContentReadStream)EmptyReadStream.Instance :
-                        new ContentLengthReadStream(this, contentLength);
+                    if (contentLength == 0)
+                    {
+                        responseStream = EmptyReadStream.Instance;
+                        ReturnConnectionToPool();
+                    }
+                    else
+                    {
+                        responseStream = new ContentLengthReadStream(this, contentLength);
+                    }
                 }
                 else if (response.Headers.TransferEncodingChunked == true)
                 {
@@ -303,7 +310,6 @@ namespace System.Net.Http
             catch (Exception inner)
             {
                 Dispose();
-
                 if (inner is InvalidOperationException || inner is IOException)
                 {
                     throw new HttpRequestException(SR.net_http_client_execution_error, inner);
@@ -644,7 +650,7 @@ namespace System.Net.Http
 
                 if (remaining == _readLength - _readOffset)
                 {
-                    ThrowInvalidHttpResponse();
+                    throw new IOException(SR.net_http_invalid_response);
                 }
             }
         }
@@ -680,7 +686,7 @@ namespace System.Net.Http
             }
 
             // Couldn't find the expect CrLf.
-            ThrowInvalidHttpResponse();
+            throw new IOException(SR.net_http_invalid_response);
         }
 
         private Task FillAsync(CancellationToken cancellationToken)
