@@ -150,9 +150,6 @@
   <data name="AmbigMember" xml:space="preserve">
     <value>'{0}' と '{1}' 間があいまいです</value>
   </data>
-  <data name="SizeofUnsafe" xml:space="preserve">
-    <value>'{0}' には定義済みのサイズが指定されていないため、sizeof は unsafe コンテキストでのみ使用できます (System.Runtime.InteropServices.Marshal.SizeOf の使用をお勧めします)</value>
-  </data>
   <data name="CallingFinalizeDepracated" xml:space="preserve">
     <value>デストラクター と object.Finalize を直接呼び出すことはできません。使用可能であれば IDisposable.Dispose を呼び出してください。</value>
   </data>

@@ -190,10 +190,6 @@
           <source>Ambiguity between '{0}' and '{1}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}' と '{1}' 間があいまいです</target>
         </trans-unit>
-        <trans-unit id="SizeofUnsafe" translate="yes" xml:space="preserve">
-          <source>'{0}' does not have a predefined size, therefore sizeof can only be used in an unsafe context (consider using System.Runtime.InteropServices.Marshal.SizeOf)</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}' には定義済みのサイズが指定されていないため、sizeof は unsafe コンテキストでのみ使用できます (System.Runtime.InteropServices.Marshal.SizeOf の使用をお勧めします)</target>
-        </trans-unit>
         <trans-unit id="CallingFinalizeDepracated" translate="yes" xml:space="preserve">
           <source>Destructors and object.Finalize cannot be called directly. Consider calling IDisposable.Dispose if available.</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">デストラクター と object.Finalize を直接呼び出すことはできません。使用可能であれば IDisposable.Dispose を呼び出してください。</target>

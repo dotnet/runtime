@@ -39,7 +39,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         ERR_MustHaveOpTF = 218,
         ERR_ConstOutOfRangeChecked = 221,
         ERR_AmbigMember = 229,
-        ERR_SizeofUnsafe = 233,
         ERR_CallingFinalizeDepracated = 245,
         ERR_CallingBaseFinalizeDeprecated = 250,
         ERR_NoImplicitConvCast = 266,
