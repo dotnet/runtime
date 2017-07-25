@@ -327,7 +327,7 @@
             "HelixJobType": "test/functional/cli/",
             "TargetsWindows": "true",
             "Rid": "win-x64",
-            "TargetQueues": "windows.10.amd64,Windows.10.Amd64.Core",
+            "TargetQueues": "Windows.10.Amd64,Windows.10.Nano.Amd64,Windows.10.Amd64.Core,Windows.7.Amd64,Windows.81.Amd64",
             "TestContainerSuffix": "windows",
           },
           "ReportingParameters": {
@@ -343,7 +343,7 @@
             "HelixJobType": "test/functional/r2r/cli/",
             "TargetsWindows": "true",
             "Rid": "win-x64",
-            "TargetQueues": "windows.10.amd64,Windows.10.Amd64.Core",
+            "TargetQueues": "Windows.10.Amd64,Windows.10.Nano.Amd64,Windows.10.Amd64.Core,Windows.7.Amd64,Windows.81.Amd64",
             "TestContainerSuffix": "windows-r2r",
             "CrossgenArg": "Crossgen "
           },
