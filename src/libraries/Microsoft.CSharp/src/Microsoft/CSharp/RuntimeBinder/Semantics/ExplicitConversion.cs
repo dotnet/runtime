@@ -297,7 +297,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     {
                         // Need to box first before unboxing.
                         Expr exprT;
-                        ExprClass exprObj = GetExprFactory().MakeClass(_binder.GetReqPDT(PredefinedType.PT_OBJECT));
+                        ExprClass exprObj = GetExprFactory().CreateClass(_binder.GetReqPDT(PredefinedType.PT_OBJECT));
                         _binder.bindSimpleCast(_exprSrc, exprObj, out exprT, EXPRFLAG.EXF_FORCE_BOX);
                         _exprSrc = exprT;
                     }
@@ -543,7 +543,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
                 else
                 {
-                    ExprClass underlyingExpr = GetExprFactory().MakeClass(underlyingType);
+                    ExprClass underlyingExpr = GetExprFactory().CreateClass(underlyingType);
                     _binder.bindSimpleCast(_exprSrc, underlyingExpr, out exprCast);
                 }
 
@@ -789,12 +789,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 Debug.Assert(_typeSrc != null);
                 Debug.Assert(aggTypeDest != null);
-
-                // TypeReference and ArgIterator can't be boxed (or converted to anything else)
-                if (_typeSrc.isSpecialByRefType())
-                {
-                    return AggCastResult.Abort;
-                }
 
                 AggCastResult result = bindExplicitConversionFromEnumToAggregate(aggTypeDest);
                 if (result != AggCastResult.Failure)

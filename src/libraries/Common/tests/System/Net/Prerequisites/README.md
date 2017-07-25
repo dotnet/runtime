@@ -12,6 +12,9 @@ Note: the `config.ps1` file has been added to .gitignore to prevent it being upd
 
 ### Build the server applications 
 
+Prepare the $COREFX_NET_CLIENT_Machine as any Dev station following the instructions at https://github.com/dotnet/corefx/blob/master/Documentation/building/windows-instructions.md. Ensure that you can build and test CoreFX on this machine.
+In addition, you will also need to install the _Azure development_ workload for Visual Studio 2017.
+
 From a Visual Studio command prompt:
 
 ```
@@ -33,7 +36,7 @@ This will join all machines to a test Active Directory and enable Windows Remoti
 
 ### Install or Update the environment
 
-Running as the Active Directory Administrator, run .\setup.ps1 from the client machine's enlistment. 
+Running as the Active Directory Administrator, run .\setup.ps1 from any of the machines within the environment.
 The script will use WinRM to connect and update all other roles.
 
 ## Deployment Instructions to update the Azure-based environment

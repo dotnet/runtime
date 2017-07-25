@@ -126,7 +126,7 @@ namespace System.Net.Http
                 {
                     _connection = null;
                     _contentBytesRemaining = 0;
-                    connection.PutConnectionInPool();
+                    connection.ReturnConnectionToPool();
                 }
                 else
                 {
@@ -175,7 +175,7 @@ namespace System.Net.Http
                 if (_contentBytesRemaining == 0)
                 {
                     // End of response body
-                    _connection.PutConnectionInPool();
+                    _connection.ReturnConnectionToPool();
                     _connection = null;
                 }
 
@@ -198,7 +198,7 @@ namespace System.Net.Http
                 await _connection.CopyChunkToAsync(destination, _contentBytesRemaining, cancellationToken).ConfigureAwait(false);
 
                 _contentBytesRemaining = 0;
-                _connection.PutConnectionInPool();
+                _connection.ReturnConnectionToPool();
                 _connection = null;
             }
         }
@@ -264,7 +264,7 @@ namespace System.Net.Http
                         throw new IOException("missing final CRLF for chunked encoding");
                     }
 
-                    _connection.PutConnectionInPool();
+                    _connection.ReturnConnectionToPool();
                     _connection = null;
                     return false;
                 }
@@ -543,6 +543,9 @@ namespace System.Net.Http
             TransportContext transportContext, 
             bool usingProxy)
         {
+            Debug.Assert(pool != null);
+            Debug.Assert(stream != null);
+
             _pool = pool;
             _key = key;
             _stream = stream;
@@ -565,24 +568,25 @@ namespace System.Net.Http
 
             _connectionClose = false;
             _disposed = false;
-
-            _pool.AddConnection(this);
-        }
-
-        public HttpConnectionKey Key
-        {
-            get { return _key; }
         }
 
         public void Dispose()
         {
+#if DEBUG
+            GC.SuppressFinalize(this);
+#endif
             if (!_disposed)
             {
                 _disposed = true;
-
+                _pool.DecrementConnectionCount();
                 _stream.Dispose();
             }
         }
+
+#if DEBUG
+        private readonly string _debugCreationStackTrace = Environment.StackTrace;
+        ~HttpConnection() => Environment.FailFast($"Dropped HttpConnection without disposing it, created at: {_debugCreationStackTrace}");
+#endif
 
         public bool ReadAheadCompleted
         {
@@ -909,9 +913,15 @@ namespace System.Net.Http
                 response.Content = responseContent;
                 return response;
             }
-            catch (Exception inner) when (inner is InvalidOperationException || inner is IOException)
+            catch (Exception inner)
             {
-                throw new HttpRequestException(SR.net_http_client_execution_error, inner);
+                Dispose();
+
+                if (inner is InvalidOperationException || inner is IOException)
+                {
+                    throw new HttpRequestException(SR.net_http_client_execution_error, inner);
+                }
+                throw;
             }
         }
 
@@ -1303,38 +1313,37 @@ namespace System.Net.Http
             }
         }
 
-        private void PutConnectionInPool()
+        private void ReturnConnectionToPool()
         {
-            // Make sure there's nothing in the write buffer that should have been flushed
-            Debug.Assert(_writeOffset == 0);
+            Debug.Assert(_writeOffset == 0, "Everything in write buffer should have been flushed.");
+            Debug.Assert(_readAheadTask == null, "Expected a previous initial read to already be consumed.");
 
-            if (_connectionClose)
+            // If server told us it's closing the connection, don't put this back in the pool.
+            if (!_connectionClose)
             {
-                // Server told us it's closing the connection, so don't put this back in the pool.
-                Dispose();
-                return;
+                try
+                {
+                    // When putting a connection back into the pool, we initiate a pre-emptive
+                    // read on the stream.  When the connection is subsequently taken out of the
+                    // pool, this can be used in place of the first read on the stream that would
+                    // otherwise be done.  But by doing it now, we can check the status of the read
+                    // at any point to understand if the connection has been closed or if errant data
+                    // has been sent on the connection by the server, either of which would mean we
+                    // should close the connection and not use it for subsequent requests.
+                    _readAheadTask = _stream.ReadAsync(_readBuffer, 0, _readBuffer.Length);
+
+                    // Put connection back in the pool.
+                    _pool.ReturnConnection(this);
+                    return;
+                }
+                catch
+                {
+                    // If reading throws, eat the error and don't pool the connection.
+                }
             }
 
-            try
-            {
-                // When putting a connection back into the pool, we initiate a pre-emptive
-                // read on the stream.  When the connection is subsequently taken out of the
-                // pool, this can be used in place of the first read on the stream that would
-                // otherwise be done.  But by doing it now, we can check the status of the read
-                // at any point to understand if the connection has been closed or if errant data
-                // has been sent on the connection by the server, either of which would mean we
-                // should close the connection and not use it for subsequent requests.
-                Debug.Assert(_readAheadTask == null, $"Expected a previous initial read to already be consumed");
-                _readAheadTask = _stream.ReadAsync(_readBuffer, 0, _readBuffer.Length);
-            }
-            catch
-            {
-                // If reading throws, eat the error but don't pool the connection.
-                Dispose();
-                return;
-            }
-
-            _pool.PutConnection(this);
+            // We're not putting the connection back in the pool. Dispose it.
+            Dispose();
         }
 
         private struct ValueStringBuilder

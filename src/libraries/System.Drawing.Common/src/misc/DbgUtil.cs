@@ -11,11 +11,6 @@ using System.Threading;
 
 namespace System.Drawing.Internal
 {
-    [ReflectionPermission(SecurityAction.Assert, MemberAccess = true)]
-    [EnvironmentPermission(SecurityAction.Assert, Unrestricted = true)]
-    [FileIOPermission(SecurityAction.Assert, Unrestricted = true)]
-    [SecurityPermission(SecurityAction.Assert, Flags = SecurityPermissionFlag.UnmanagedCode)]
-    [UIPermission(SecurityAction.Assert, Unrestricted = true)]
     internal sealed class DbgUtil
     {
         public const int

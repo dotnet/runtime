@@ -58,7 +58,13 @@ namespace System
 
         public event EventHandler<FirstChanceExceptionEventArgs> FirstChanceException
         {
-            add { AppContext.FirstChanceException += value; }
+            add 
+            { 
+#if uapaot
+                AppContext.SetAppDomain(this);
+#endif
+                AppContext.FirstChanceException += value; 
+            }
             remove { AppContext.FirstChanceException -= value; }
         }
 

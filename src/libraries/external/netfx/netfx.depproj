@@ -5,7 +5,6 @@
   <PropertyGroup>
     <BinPlaceRef>true</BinPlaceRef>
     <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
-    <NugetRuntimeIdentifier>None</NugetRuntimeIdentifier>
     <RefOutputPath>$(RefPath)</RefOutputPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(NuGetTargetMoniker)' == '.NETFramework,Version=v4.6.3'">

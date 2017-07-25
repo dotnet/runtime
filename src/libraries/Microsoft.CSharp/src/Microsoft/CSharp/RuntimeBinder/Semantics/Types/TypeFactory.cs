@@ -32,7 +32,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             TypeParameterType type = new TypeParameterType();
             type.SetTypeParameterSymbol(pSymbol);
-            type.SetUnresolved(pSymbol.parent != null && pSymbol.parent.IsAggregateSymbol() && pSymbol.parent.AsAggregateSymbol().IsUnresolved());
             type.SetName(pSymbol.name);
             Debug.Assert(pSymbol.GetTypeParameterType() == null);
             pSymbol.SetTypeParameterType(type);

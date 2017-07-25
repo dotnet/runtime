@@ -629,7 +629,6 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
-        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
         public void SearchPatternLongPath()
         {
             // Create a destination path longer than the traditional Windows limit of 256 characters

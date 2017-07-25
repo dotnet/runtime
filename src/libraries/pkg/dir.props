@@ -2,20 +2,13 @@
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="..\dir.props" />
 
-  <PropertyGroup>
-    <_runtimeOSVersionIndex>$(RuntimeOS.IndexOfAny(".-0123456789"))</_runtimeOSVersionIndex>
-    <_runtimeOSFamily Condition="'$(_runtimeOSVersionIndex)' != '-1'">$(RuntimeOS.SubString(0, $(_runtimeOSVersionIndex)))</_runtimeOSFamily>
-  </PropertyGroup>
-
   <!-- Packages opt-in to automatic RID-specific builds by placing a *.RID.props next to their project
-       that defines the following:
-       PackageRID property: the RID which we should be building for
-       OfficialBuildRID item: all RIDs targeted by the package -->
+       that defines the OfficialBuildRID item: all RIDs targeted by the package -->
   <Import Project="$(MSBuildProjectDirectory)\*.rids.props" />
 
   <!-- create the "BuildRID" item which is the set of all supported RIDs, with metadata.
        We'll add a RID for the current platform even if it isn't in the officially supported set -->
-  <ItemGroup>
+  <ItemGroup Condition="'@(OfficialBuildRID)' != ''">
     <BuildRID Include="@(OfficialBuildRID)" Exclude="$(PackageRID)"/>
     <BuildRID Include="$(PackageRID)">
       <Platform Condition="'$(ArchGroup)' == 'x64'">amd64</Platform>

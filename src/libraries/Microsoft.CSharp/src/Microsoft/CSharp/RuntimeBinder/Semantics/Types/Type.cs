@@ -16,7 +16,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private Name _pName;
 
         private bool _fHasErrors;  // Whether anyituents have errors. This is immutable.
-        private bool _fUnres;      // Whether anyituents are unresolved. This is immutable.
         private bool _isBogus;     // can't be used in our language -- unsupported type(s)
         private bool _checkedBogus; // Have we checked a method args/return for bogus types
 
@@ -300,7 +299,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             _fHasErrors = typePar.HasErrors();
-            _fUnres = typePar.IsUnresolved();
         }
 
         public bool HasErrors()
@@ -310,14 +308,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public void SetErrors(bool fHasErrors)
         {
             _fHasErrors = fHasErrors;
-        }
-        public bool IsUnresolved()
-        {
-            return _fUnres;
-        }
-        public void SetUnresolved(bool fUnres)
-        {
-            _fUnres = fUnres;
         }
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -462,20 +452,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return AsAggregateType().GetOwningAggregate();
         }
 
-        public CType StripNubs()
+        public virtual CType StripNubs() => this;
+
+        public virtual CType StripNubs(out bool wasNullable)
         {
-            CType type;
-            for (type = this; type.IsNullableType(); type = type.AsNullableType().GetUnderlyingType())
-                ;
-            return type;
-        }
-        public CType StripNubs(out int pcnub)
-        {
-            pcnub = 0;
-            CType type;
-            for (type = this; type.IsNullableType(); type = type.AsNullableType().GetUnderlyingType())
-                (pcnub)++;
-            return type;
+            wasNullable = false;
+            return this;
         }
 
         public bool isDelegateType()
@@ -583,16 +565,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             //ASSERT(isPredefined());
             return getAggregate().GetPredefType();
-        }
-
-        ////////////////////////////////////////////////////////////////////////////////
-        // Is this type System.TypedReference or System.ArgIterator?
-        // (used for errors because these types can't go certain places)
-
-        public bool isSpecialByRefType()
-        {
-            // ArgIterator, TypedReference and RuntimeArgumentHandle are not supported.
-            return false;
         }
 
         public bool isStaticClass()

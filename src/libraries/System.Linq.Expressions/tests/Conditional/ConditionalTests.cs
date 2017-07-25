@@ -169,6 +169,41 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(expected, func());
         }
 
+        [Theory, PerCompilationType(nameof(ConditionalValues))]
+        public void InvertedConditionalSelectsCorrectExpression(bool test, object ifTrue, object ifFalse, object expected, bool useInterpreter)
+        {
+            Func<object> func = Expression.Lambda<Func<object>>(
+                Expression.Convert(
+                    Expression.Condition(
+                        Expression.Not(Expression.Constant(test)),
+                        Expression.Constant(ifFalse),
+                        Expression.Constant(ifTrue)
+                    ),
+                    typeof(object)
+                )
+            ).Compile(useInterpreter);
+
+            Assert.Equal(expected, func());
+        }
+
+
+        [Theory, PerCompilationType(nameof(ConditionalValues))]
+        public void ConditionalWithMethodSelectsCorrectExpression(bool test, object ifTrue, object ifFalse, object expected, bool useInterpreter)
+        {
+            Func<object> func = Expression.Lambda<Func<object>>(
+                Expression.Convert(
+                    Expression.Condition(
+                        Expression.Not(Expression.Constant(test), GetType().GetMethod(nameof(NotNot))),
+                        Expression.Constant(ifTrue),
+                        Expression.Constant(ifFalse)
+                    ),
+                    typeof(object)
+                )
+            ).Compile(useInterpreter);
+
+            Assert.Equal(expected, func());
+        }
+
         [Theory, PerCompilationType(nameof(ConditionalValuesWithTypes))]
         public void ConditionalSelectsCorrectExpressionWithType(bool test, object ifTrue, object ifFalse, object expected, Type type, bool useInterpreter)
         {
@@ -270,5 +305,7 @@ namespace System.Linq.Expressions.Tests
         private class Visitor : ExpressionVisitor
         {
         }
+
+        public static bool NotNot(bool value) => value;
     }
 }

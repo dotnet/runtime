@@ -36,12 +36,6 @@
   <data name="BindInvokeFailedNonDelegate" xml:space="preserve">
     <value>无法调用非委托类型</value>
   </data>
-  <data name="BindImplicitConversionRequireOneArgument" xml:space="preserve">
-    <value>隐式转换采用一个且仅一个参数</value>
-  </data>
-  <data name="BindExplicitConversionRequireOneArgument" xml:space="preserve">
-    <value>显式转换采用一个且仅一个参数</value>
-  </data>
   <data name="BindBinaryAssignmentRequireTwoArguments" xml:space="preserve">
     <value>无法使用一个参数调用二元运算符</value>
   </data>
@@ -59,9 +53,6 @@
   </data>
   <data name="BadBinaryOps" xml:space="preserve">
     <value>运算符“{0}”无法应用于“{1}”和“{2}”类型的操作数</value>
-  </data>
-  <data name="IntDivByZero" xml:space="preserve">
-    <value>常数零做除数</value>
   </data>
   <data name="BadIndexLHS" xml:space="preserve">
     <value>无法将带 [] 的索引应用于“{0}”类型的表达式</value>
@@ -144,12 +135,6 @@
   <data name="RefProperty" xml:space="preserve">
     <value>属性或索引器不得作为 out 或 ref 参数传递</value>
   </data>
-  <data name="ManagedAddr" xml:space="preserve">
-    <value>无法获取托管类型(“{0}”)的地址和大小，或者声明指向它的指针</value>
-  </data>
-  <data name="FixedNotNeeded" xml:space="preserve">
-    <value>不能使用 fixed 语句来获取已固定的表达式的地址</value>
-  </data>
   <data name="UnsafeNeeded" xml:space="preserve">
     <value>动态调用不能与指针一起使用</value>
   </data>
@@ -159,29 +144,17 @@
   <data name="MustHaveOpTF" xml:space="preserve">
     <value>类型(“{0}”)必须包含运算符 True 和运算符 False 的声明</value>
   </data>
-  <data name="CheckedOverflow" xml:space="preserve">
-    <value>操作在检查模式下编译时溢出</value>
-  </data>
   <data name="ConstOutOfRangeChecked" xml:space="preserve">
     <value>常量值“{0}”无法转换为“{1}”(使用“unchecked”语法重写)</value>
   </data>
   <data name="AmbigMember" xml:space="preserve">
     <value>在“{0}”和“{1}”之间具有二义性</value>
   </data>
-  <data name="SizeofUnsafe" xml:space="preserve">
-    <value>“{0}”没有预定义的大小，因此 sizeof 只能在不安全的上下文中使用(请考虑使用 System.Runtime.InteropServices.Marshal.SizeOf)</value>
-  </data>
-  <data name="FieldInitRefNonstatic" xml:space="preserve">
-    <value>字段初始值设定项无法引用非静态字段、方法或属性“{0}”</value>
-  </data>
   <data name="CallingFinalizeDepracated" xml:space="preserve">
     <value>无法直接调用析构函数和 object.Finalize。如果可用，请考虑调用 IDisposable.Dispose。</value>
   </data>
   <data name="CallingBaseFinalizeDeprecated" xml:space="preserve">
     <value>不要直接调用基类 Finalize 方法。它将从析构函数中自动调用。</value>
-  </data>
-  <data name="BadCastInFixed" xml:space="preserve">
-    <value>fixed 语句赋值的右边不能是强制转换表达式</value>
   </data>
   <data name="NoImplicitConvCast" xml:space="preserve">
     <value>无法将类型“{0}”隐式转换为“{1}”。存在一个显式转换(是否缺少强制转换?)</value>
@@ -240,23 +213,11 @@
   <data name="ValConstraintNotSatisfied" xml:space="preserve">
     <value>类型“{2}”必须是不可以为 null 值的类型，才能用作泛型类型或方法“{0}”中的参数“{1}”</value>
   </data>
-  <data name="CircularConstraint" xml:space="preserve">
-    <value>涉及“{0}”和“{1}”的循环约束依赖项</value>
-  </data>
-  <data name="BaseConstraintConflict" xml:space="preserve">
-    <value>类型参数“{0}”继承了彼此冲突的“{1}”和“{2}”约束</value>
-  </data>
-  <data name="ConWithValCon" xml:space="preserve">
-    <value>类型参数“{1}”具有“struct”约束，因此“{1}”不能用作“{0}”的约束</value>
-  </data>
   <data name="AmbigUDConv" xml:space="preserve">
     <value>从“{2}”转换为“{3}”时，用户定义的转换“{0}”和“{1}”具有二义性</value>
   </data>
   <data name="PredefinedTypeNotFound" xml:space="preserve">
     <value>预定义类型“{0}”未定义或导入</value>
-  </data>
-  <data name="PredefinedTypeBadType" xml:space="preserve">
-    <value>预定义类型“{0}”未正确声明</value>
   </data>
   <data name="BindToBogus" xml:space="preserve">
     <value>现用语言不支持“{0}”</value>
@@ -272,9 +233,6 @@
   </data>
   <data name="LiteralDoubleCast" xml:space="preserve">
     <value>无法将 Double 类型隐式转换为“{1}”类型；请使用“{0}”后缀创建此类型</value>
-  </data>
-  <data name="UnifyingInterfaceInstantiations" xml:space="preserve">
-    <value>“{0}”不能同时实现“{1}”和“{2}”，原因是它们可以统一以进行某些类型参数替换</value>
   </data>
   <data name="ConvertToStaticClass" xml:space="preserve">
     <value>无法转换为静态类型“{0}”</value>
@@ -353,9 +311,6 @@
   </data>
   <data name="RefReadonlyLocalCause" xml:space="preserve">
     <value>“{0}”是一个“{1}”，无法作为 ref 或 out 参数进行传递</value>
-  </data>
-  <data name="ThisStructNotInAnonMeth" xml:space="preserve">
-    <value>结构内部的匿名方法、lambda 表达式和查询表达式无法访问“this”的实例成员。请考虑将“this”复制到匿名方法、lambda 表达式或查询表达式外部的某个局部变量并改用该局部变量。</value>
   </data>
   <data name="DelegateOnNullable" xml:space="preserve">
     <value>不能将委托绑定到 '{0}'，因为它是 'System.Nullable&lt;T&gt;' 成员</value>

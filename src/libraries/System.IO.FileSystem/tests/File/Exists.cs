@@ -190,16 +190,45 @@ namespace System.IO.Tests
         }
 
         [Theory,
-            MemberData(nameof(WhiteSpace))]
+            MemberData(nameof(ControlWhiteSpace))]
         [PlatformSpecific(TestPlatforms.Windows)] // In Windows, trailing whitespace in a path is trimmed
-        public void TrimTrailingWhitespacePath(string component)
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.NetFramework)] // e.g. NetFX only
+        public void TrailingWhiteSpace_Trimmed(string component)
+        {
+            // On desktop, we trim a number of whitespace characters 
+            FileInfo testFile = new FileInfo(GetTestFilePath());
+            testFile.Create().Dispose();
+
+            // Exists calls GetFullPath() which trims trailing white space
+            Assert.True(Exists(testFile.FullName + component)); 
+        }
+
+        [Theory,
+           MemberData(nameof(NonControlWhiteSpace))]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework)] // Not NetFX
+        public void TrailingWhiteSpace_NotTrimmed(string component)
+        {
+            // In CoreFX we don't trim anything other than space (' ')
+            string path = GetTestFilePath() + component;
+            FileInfo testFile = new FileInfo(path);
+            testFile.Create().Dispose();
+
+            Assert.True(Exists(path));
+        }
+
+        [Theory,
+           MemberData(nameof(SimpleWhiteSpace))] //*Just* spaces
+        [PlatformSpecific(TestPlatforms.Windows)] // In Windows, trailing whitespace in a path is trimmed
+        public void TrailingSpace_Trimmed(string component)
         {
             FileInfo testFile = new FileInfo(GetTestFilePath());
             testFile.Create().Dispose();
 
-            Assert.True(Exists(testFile.FullName + component)); // string concat in case Path.Combine() trims whitespace before Exists gets to it
-
+            // Windows will trim trailing spaces
+            Assert.True(Exists(testFile.FullName + component));
         }
+
 
         [Theory,
             MemberData(nameof(PathsWithAlternativeDataStreams))]

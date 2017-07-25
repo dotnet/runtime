@@ -51,6 +51,17 @@ internal static class IOInputs
         yield return "V1.0.0.0000";
     }
 
+    // These are the WhiteSpace characters we used to trim for paths:
+    //
+    //  (char)0x9,          // Horizontal tab     '\t'
+    //  (char)0xA,          // Line feed          '\n'
+    //  (char)0xB,          // Vertical tab       '\v'
+    //  (char)0xC,          // Form feed          '\f'
+    //  (char)0xD,          // Carriage return    '\r'
+    //  (char)0x20,         // Space              ' '
+    //  (char)0x85,         // Next line          '\u0085'
+    //  (char)0xA0          // Non breaking space '\u00A0'
+
     public static IEnumerable<string> GetControlWhiteSpace()
     {
         yield return "\t";
@@ -63,6 +74,8 @@ internal static class IOInputs
         yield return "\t\n\t\n";
         yield return "\n\t\n";
         yield return "\n\t\n\t";
+        // Add other control chars
+        yield return "\v\f\r";
     }
 
     public static IEnumerable<string> GetSimpleWhiteSpace()
@@ -74,6 +87,32 @@ internal static class IOInputs
         yield return "     ";
     }
 
+    /// <summary>
+    /// Whitespace characters that arent in the traditional control set (e.g. less than 0x20)
+    /// and aren't space (e.g. 0x20).
+    /// </summary>
+    public static IEnumerable<string> GetNonControlWhiteSpace()
+    {
+        yield return "\u0085"; // Next Line (.NET used to trim)
+        yield return "\u00A0"; // Non breaking space (.NET used to trim)
+        yield return "\u2028"; // Line separator
+        yield return "\u2029"; // Paragraph separator
+        yield return "\u2003"; // EM space
+        yield return "\u2008"; // Punctuation space
+    }
+
+    /// <summary>
+    /// Whitespace characters other than space (includes some Unicode whitespace characters we
+    /// did not traditionally trim.
+    /// </summary>
+    public static IEnumerable<string> GetNonSpaceWhiteSpace()
+    {
+        return GetControlWhiteSpace().Concat(GetNonControlWhiteSpace());
+    }
+
+    /// <summary>
+    /// This is the Whitespace we used to trim from paths
+    /// </summary>
     public static IEnumerable<string> GetWhiteSpace()
     {
         return GetControlWhiteSpace().Concat(GetSimpleWhiteSpace());
@@ -179,7 +218,7 @@ internal static class IOInputs
 
     private static string GetLongPath(string rootPath, int characterCount, bool extended = false)
     {
-        return IOServices.GetPath(rootPath, characterCount, extended).FullPath;
+        return IOServices.GetPath(rootPath, characterCount, extended);
     }
 
     public static IEnumerable<string> GetReservedDeviceNames()

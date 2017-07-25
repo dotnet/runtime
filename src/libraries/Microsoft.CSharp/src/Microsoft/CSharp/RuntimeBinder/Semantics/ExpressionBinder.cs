@@ -366,7 +366,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private static AggregateType GetReqPDT(PredefinedType pt, SymbolLoader symbolLoader)
         {
             Debug.Assert(pt != PredefinedType.PT_VOID);  // use getVoidType()
-            return symbolLoader.GetReqPredefType(pt, true);
+            return symbolLoader.GetReqPredefType(pt);
         }
 
         private AggregateType GetOptPDT(PredefinedType pt)
@@ -379,11 +379,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(pt != PredefinedType.PT_VOID);  // use getVoidType()
             if (WarnIfNotFound)
             {
-                return GetSymbolLoader().GetOptPredefTypeErr(pt, true);
+                return GetSymbolLoader().GetOptPredefTypeErr(pt);
             }
             else
             {
-                return GetSymbolLoader().GetOptPredefType(pt, true);
+                return GetSymbolLoader().GetOptPredefType(pt);
             }
         }
 
@@ -395,11 +395,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             if (allowExplicit)
             {
-                return mustCastCore(op2, GetExprFactory().MakeClass(op1.Type), 0);
+                return mustCastCore(op2, GetExprFactory().CreateClass(op1.Type), 0);
             }
             else
             {
-                return mustConvertCore(op2, GetExprFactory().MakeClass(op1.Type));
+                return mustConvertCore(op2, GetExprFactory().CreateClass(op1.Type));
             }
         }
 
@@ -472,7 +472,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     Expr pTemp = mustConvert(x, pDestType);
                     if (pDestType == pIntType)
                         return pTemp;
-                    ExprClass exprType = GetExprFactory().MakeClass(pDestType);
+                    ExprClass exprType = GetExprFactory().CreateClass(pDestType);
                     return GetExprFactory().CreateCast(EXPRFLAG.EXF_INDEXEXPR, exprType, pTemp);
                 });
 
@@ -697,7 +697,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             CType pFieldType = GetTypes().SubstType(fwt.Field().GetType(), fwt.GetType());
             if (pOptionalObject != null && !pOptionalObject.IsOK)
             {
-                ExprField pField = GetExprFactory().CreateField(0, pFieldType, pOptionalObject, fwt);
+                ExprField pField = GetExprFactory().CreateField(pFieldType, pOptionalObject, fwt, false);
                 pField.SetError();
                 return pField;
             }
@@ -738,7 +738,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             ExprField pResult = GetExprFactory()
-                .CreateField(isLValue ? EXPRFLAG.EXF_LVALUE : 0, pFieldType, pOptionalObject, fwt);
+                .CreateField(pFieldType, pOptionalObject, fwt, isLValue);
             if (!bIsMatchingStatic)
             {
                 pResult.SetMismatchedStaticBit();
@@ -848,7 +848,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (pObject != null && !pObject.IsOK)
             {
-                ExprProperty pResult = GetExprFactory().CreateProperty(pReturnType, pObjectThrough, args, pMemGroup, pwt, null, null);
+                ExprProperty pResult = GetExprFactory().CreateProperty(pReturnType, pObjectThrough, args, pMemGroup, pwt, null);
                 if (!bIsMatchingStatic)
                 {
                     pResult.SetMismatchedStaticBit();
@@ -866,7 +866,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 {
                     if (pOtherType != null)
                     {
-                        return GetExprFactory().MakeClass(pOtherType);
+                        return GetExprFactory().CreateClass(pOtherType);
                     }
                     ErrorContext.ErrorRef(ErrorCode.ERR_PropertyLacksGet, pwt);
                 }
@@ -875,7 +875,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     // if the get exists, but is abstract, forbid the call as well...
                     if (pOtherType != null)
                     {
-                        return GetExprFactory().MakeClass(pOtherType);
+                        return GetExprFactory().CreateClass(pOtherType);
                     }
                     ErrorContext.Error(ErrorCode.ERR_AbstractBaseCall, pwt);
                 }
@@ -893,7 +893,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         // if the get exists, but is not accessible, give an error.
                         if (pOtherType != null)
                         {
-                            return GetExprFactory().MakeClass(pOtherType);
+                            return GetExprFactory().CreateClass(pOtherType);
                         }
 
                         if (error == ACCESSERROR.ACCESSERROR_NOACCESSTHRU)
@@ -908,7 +908,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
             }
 
-            ExprProperty result = GetExprFactory().CreateProperty(pReturnType, pObjectThrough, args, pMemGroup, pwt, mwtGet, mwtSet);
+            ExprProperty result = GetExprFactory().CreateProperty(pReturnType, pObjectThrough, args, pMemGroup, pwt, mwtSet);
             if (!bIsMatchingStatic)
             {
                 result.SetMismatchedStaticBit();
@@ -1394,7 +1394,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     break;
 
                 case ExpressionKind.BoundLambda:
-                case ExpressionKind.UnboundLambda:
                 case ExpressionKind.Constant:
                     ErrorContext.Error(GetStandardLvalueError(kind));
                     return false;
@@ -1417,7 +1416,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             // If it is virtual, find a remap of the method to something more specific.  This
             // may alter where the method is found.
-            if (pObject != null && (fBaseCall || pObject.Type.isSimpleType() || pObject.Type.isSpecialByRefType()))
+            if (pObject != null && (fBaseCall || pObject.Type.isSimpleType()))
             {
                 RemapToOverride(GetSymbolLoader(), pMWI, pObject.Type);
             }
@@ -1594,15 +1593,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // WE don't give a great message for this, but it'll do.
                 if (objNew == null)
                 {
-                    if (!pObject.Type.isSpecialByRefType())
-                    {
-                        ErrorContext.Error(ErrorCode.ERR_WrongNestedThis, swt.GetType(), pObject.Type);
-                    }
-                    else
-                    {
-                        ErrorContext.Error(ErrorCode.ERR_NoImplicitConv, pObject.Type, swt.GetType());
-                    }
+                    ErrorContext.Error(ErrorCode.ERR_WrongNestedThis, swt.GetType(), pObject.Type);
                 }
+
                 pObject = objNew;
             }
 
@@ -1817,10 +1810,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             CType elemType = arrayType.AsArrayType().GetElementType();
 
                             // Use an EK_ARRINIT even in the empty case so empty param arrays in attributes work.
-                            ExprArrayInit arrayInit = GetExprFactory().CreateArrayInit(0, arrayType, null, null, null);
+                            ExprArrayInit arrayInit = GetExprFactory().CreateArrayInit(arrayType, null, null, new[] { 0 }, 1);
                             arrayInit.GeneratedForParamArray = true;
-                            arrayInit.DimensionSizes = new[] {arrayInit.DimensionSize};
-                            arrayInit.DimensionSize = 1;
                             arrayInit.OptionalArguments = named.Value;
 
                             named.Value = arrayInit;
@@ -1897,9 +1888,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             CType elementType = substitutedArrayType.AsArrayType().GetElementType();
 
             // Use an EK_ARRINIT even in the empty case so empty param arrays in attributes work.
-            ExprArrayInit exprArrayInit = GetExprFactory().CreateArrayInit(0, substitutedArrayType, null, null, null);
+            ExprArrayInit exprArrayInit = GetExprFactory().CreateArrayInit(substitutedArrayType, null, null, new[] { 0 }, 1);
             exprArrayInit.GeneratedForParamArray = true;
-            exprArrayInit.DimensionSizes = new int[] { exprArrayInit.DimensionSize };
 
             if (it.AtEnd())
             {
@@ -2316,21 +2306,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private void checkUnsafe(CType type)
         {
-            checkUnsafe(type, ErrorCode.ERR_UnsafeNeeded, null);
-        }
-
-        private void checkUnsafe(CType type, ErrorCode errCode, ErrArg pArg)
-        {
-            Debug.Assert((errCode != ErrorCode.ERR_SizeofUnsafe) || pArg != null);
             if (type == null || type.isUnsafe())
             {
                 if (ReportUnsafeErrors())
                 {
-                    if (pArg != null)
-                        ErrorContext.Error(errCode, pArg);
-                    else
-                        ErrorContext.Error(errCode);
+                    ErrorContext.Error(ErrorCode.ERR_UnsafeNeeded);
                 }
+
                 RecordUnsafeUsage();
             }
         }
@@ -2353,7 +2335,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private ExprWrap WrapShortLivedExpression(Expr expr)
         {
-            return GetExprFactory().CreateWrap(null, expr);
+            return GetExprFactory().CreateWrap(expr);
         }
 
         private ExprAssignment GenerateOptimizedAssignment(Expr op1, Expr op2)

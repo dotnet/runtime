@@ -103,7 +103,7 @@ namespace System.Runtime.Serialization
             {
                 if (s_ienumeratorGetCurrentMethod == null)
                 {
-                    s_ienumeratorGetCurrentMethod = typeof(IEnumerator).GetProperty("Current").GetMethod;
+                    s_ienumeratorGetCurrentMethod = typeof(IEnumerator).GetProperty("Current").GetGetMethod();
                     Debug.Assert(s_ienumeratorGetCurrentMethod != null);
                 }
                 return s_ienumeratorGetCurrentMethod;

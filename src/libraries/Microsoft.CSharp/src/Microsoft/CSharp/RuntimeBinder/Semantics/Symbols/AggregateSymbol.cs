@@ -20,10 +20,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public Type AssociatedSystemType;
         public Assembly AssociatedAssembly;
 
-        // This InputFile is some infile for the assembly containing this AggregateSymbol.
-        // It is used for fast access to the filter BitSet and assembly ID.
-        private InputFile _infile;
-
         // The instance type. Created when first needed.
         private AggregateType _atsInst;
 
@@ -74,7 +70,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private bool _isSkipUDOps; // Never check for user defined operators on this type (eg, decimal, string, delegate).
 
-        private bool _isAnonymousType;    // true if the class is an anonymous type
         // When this is unset we don't know if we have conversions.  When this 
         // is set it indicates if this type or any base type has user defined 
         // conversion operators
@@ -104,11 +99,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return _atsInst;
         }
 
-        public void InitFromInfile(InputFile infile)
-        {
-            _infile = infile;
-        }
-
         public bool FindBaseAgg(AggregateSymbol agg)
         {
             for (AggregateSymbol aggT = this; aggT != null; aggT = aggT.GetBaseAgg())
@@ -122,33 +112,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public NamespaceOrAggregateSymbol Parent
         {
             get { return parent.AsNamespaceOrAggregateSymbol(); }
-        }
-
-        public bool InAlias(KAID aid)
-        {
-            Debug.Assert(_infile != null);
-            //Debug.Assert(DeclFirst() == null || DeclFirst().GetAssemblyID() == infile.GetAssemblyID());
-            Debug.Assert(0 <= aid);
-            if (aid < KAID.kaidMinModule)
-                return _infile.InAlias(aid);
-            return (aid == GetModuleID());
-        }
-
-        private KAID GetModuleID()
-        {
-            return 0;
-        }
-
-        public KAID GetAssemblyID()
-        {
-            Debug.Assert(_infile != null);
-            //Debug.Assert(DeclFirst() == null || DeclFirst().GetAssemblyID() == infile.GetAssemblyID());
-            return _infile.GetAssemblyID();
-        }
-
-        public bool IsUnresolved()
-        {
-            return _infile != null && _infile.GetAssemblyID() == KAID.kaidUnresolved;
         }
 
         public bool isNested()
@@ -228,18 +191,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public bool IsStatic()
         {
             return (_isAbstract && _isSealed);
-        }
-
-
-
-        public bool IsAnonymousType()
-        {
-            return _isAnonymousType;
-        }
-
-        public void SetAnonymousType(bool isAnonymousType)
-        {
-            _isAnonymousType = isAnonymousType;
         }
 
         public bool IsAbstract()

@@ -24,5 +24,8 @@
       <Name>PerfRunner</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetsOSX)'=='true'">
+    <TestCommandLines Include="ulimit -Sn 2048" />
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

@@ -58,7 +58,6 @@ namespace System.IO.Tests
 
         [ConditionalFact(nameof(UsingNewNormalization))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Valid Windows path extended prefix
-        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
         public void ValidCreation_ExtendedSyntax()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(IOInputs.ExtendedPrefix + GetTestFilePath());
@@ -74,10 +73,9 @@ namespace System.IO.Tests
 
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Valid Windows path extended prefix, long path
-        [ActiveIssue(20117, TargetFrameworkMonikers.Uap)]
         public void ValidCreation_LongPathExtendedSyntax()
         {
-            DirectoryInfo testDir = Directory.CreateDirectory(IOServices.GetPath(IOInputs.ExtendedPrefix + TestDirectory, characterCount: 500).FullPath);
+            DirectoryInfo testDir = Directory.CreateDirectory(IOServices.GetPath(IOInputs.ExtendedPrefix + TestDirectory, characterCount: 500));
             Assert.StartsWith(IOInputs.ExtendedPrefix, testDir.FullName);
             string testFile = Path.Combine(testDir.FullName, GetTestFileName());
             using (FileStream stream = Create(testFile))
@@ -152,16 +150,22 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        public void LongPath()
+        public void LongPathSegment()
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
-            Assert.Throws<PathTooLongException>(() => Create(Path.Combine(testDir.FullName, new string('a', 300))));
 
-            //TODO #645: File creation does not yet have long path support on Unix or Windows
-            //using (Create(Path.Combine(testDir.FullName, new string('k', 257))))
-            //{
-            //    Assert.True(File.Exists(Path.Combine(testDir.FullName, new string('k', 257))));
-            //}
+            // Long path should throw PathTooLongException on Desktop and IOException
+            // elsewhere.
+            if (PlatformDetection.IsFullFramework)
+            {
+                Assert.Throws<PathTooLongException>(
+                    () => Create(Path.Combine(testDir.FullName, new string('a', 300))));
+            }
+            else
+            {
+                AssertExtensions.ThrowsAny<IOException, DirectoryNotFoundException, PathTooLongException>(
+                    () => Create(Path.Combine(testDir.FullName, new string('a', 300))));
+            }
         }
 
         #endregion

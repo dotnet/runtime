@@ -131,6 +131,7 @@
     <Compile Include="Dynamic\CallSiteBinderDefaultBehaviourTests.cs" />
     <Compile Include="Dynamic\CallSiteTests.cs" />
     <Compile Include="Dynamic\ConvertBinderTests.cs" />
+    <Compile Include="Dynamic\DynamicAttributeTests.cs" />
     <Compile Include="Dynamic\DynamicObjectTests.cs" />
     <Compile Include="Dynamic\DynamicObjectDefaultBehaviorTests.cs" />
     <Compile Include="Dynamic\ExpandoObjectTests.cs" />

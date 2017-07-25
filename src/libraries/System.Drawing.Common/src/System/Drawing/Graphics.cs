@@ -3447,7 +3447,6 @@ namespace System.Drawing
         /// translate transform matrix.
         /// WARNING: This method is for internal FX support only.
         /// </summary>
-        [StrongNameIdentityPermission(SecurityAction.LinkDemand, Name = "System.Windows.Forms", PublicKey = "0x00000000000000000400000000000000")]
         [EditorBrowsable(EditorBrowsableState.Never)]
         public object GetContextInfo()
         {

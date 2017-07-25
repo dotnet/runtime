@@ -45,12 +45,25 @@ namespace System.Drawing.Tests
         }
 
         [Fact]
-        public void FromFile_LongFile_ThrowsPathTooLongException()
+        public void FromFile_LongSegment_ThrowsException()
         {
-            string fileName = new string('a', 261);
+            // Throws PathTooLongException on Desktop and FileNotFoundException elsewhere.
+            if (PlatformDetection.IsFullFramework)
+            {
+                string fileName = new string('a', 261);
 
-            Assert.Throws<PathTooLongException>(() => Image.FromFile(fileName));
-            Assert.Throws<PathTooLongException>(() => Image.FromFile(fileName, useEmbeddedColorManagement: true));
+                Assert.Throws<PathTooLongException>(() => Image.FromFile(fileName));
+                Assert.Throws<PathTooLongException>(() => Image.FromFile(fileName,
+                    useEmbeddedColorManagement: true));
+            }
+            else
+            {
+                string fileName = new string('a', 261);
+
+                Assert.Throws<FileNotFoundException>(() => Image.FromFile(fileName));
+                Assert.Throws<FileNotFoundException>(() => Image.FromFile(fileName,
+                    useEmbeddedColorManagement: true));
+            }
         }
 
         [Fact]
