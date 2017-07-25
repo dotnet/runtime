@@ -836,21 +836,11 @@ mono_metadata_compute_size (MonoImage *meta, int tableindex, guint32 *result_bit
 			break;
 
 			/*
-			 * CustomAttributeType: TypeDef, TypeRef, MethodDef, 
-			 * MemberRef and String.  
+			 * CustomAttributeType: MethodDef, MemberRef.
 			 */
 		case MONO_MT_CAT_IDX:
-			/* String is a heap, if it is wide, we know the size */
-			/* See above, nope. 
-			if (meta->idx_string_wide){
-				field_size = 4;
-				break;
-			}*/
-			
-			n = MAX (get_nrows (meta, MONO_TABLE_TYPEREF),
-				 get_nrows (meta, MONO_TABLE_TYPEDEF));
-			n = MAX (n, get_nrows (meta, MONO_TABLE_METHOD));
-			n = MAX (n, get_nrows (meta, MONO_TABLE_MEMBERREF));
+			n = MAX (get_nrows (meta, MONO_TABLE_METHOD),
+					 get_nrows (meta, MONO_TABLE_MEMBERREF));
 
 			/* 3 bits to encode */
 			field_size = rtsize (meta, n, 16-3);
