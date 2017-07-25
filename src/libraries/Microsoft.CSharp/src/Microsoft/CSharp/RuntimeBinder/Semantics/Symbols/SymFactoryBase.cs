@@ -67,10 +67,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     sym = new Scope();
                     sym.name = name;
                     break;
-                case SYMKIND.SK_UnresolvedAggregateSymbol:
-                    sym = new UnresolvedAggregateSymbol();
-                    sym.name = name;
-                    break;
                 case SYMKIND.SK_IndexerSymbol:
                     sym = new IndexerSymbol();
                     sym.name = name;

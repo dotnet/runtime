@@ -45,8 +45,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             switch (symCheck.getKind())
             {
-                default:
-                    break;
                 case SYMKIND.SK_MethodSymbol:
                 case SYMKIND.SK_PropertySymbol:
                 case SYMKIND.SK_FieldSymbol:

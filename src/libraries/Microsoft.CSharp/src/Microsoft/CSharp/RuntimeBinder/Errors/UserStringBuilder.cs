@@ -68,10 +68,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 case SYMKIND.SK_TypeParameterSymbol:
                     id = MessageID.SK_TYVAR;
                     break;
-                case SYMKIND.SK_AssemblyQualifiedNamespaceSymbol:
-                    Debug.Assert(false, "Illegal sk");
-                    id = MessageID.SK_ALIAS;
-                    break;
                 default:
                     Debug.Assert(false, "impossible sk");
                     id = MessageID.SK_UNKNOWN;
@@ -487,8 +483,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                     ErrAppendName(sym.name);
                     break;
 
-                case SYMKIND.SK_Scope:
-                case SYMKIND.SK_LambdaScope:
                 default:
                     // Shouldn't happen.
                     Debug.Assert(false, $"Bad symbol kind: {sym.getKind()}");
