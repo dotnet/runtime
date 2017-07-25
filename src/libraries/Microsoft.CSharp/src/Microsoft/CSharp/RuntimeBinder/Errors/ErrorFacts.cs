@@ -203,9 +203,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 case ErrorCode.ERR_GenericArgIsStaticClass:
                     codeStr = SR.GenericArgIsStaticClass;
                     break;
-                case ErrorCode.ERR_PartialMethodToDelegate:
-                    codeStr = SR.PartialMethodToDelegate;
-                    break;
                 case ErrorCode.ERR_IncrementLvalueExpected:
                     codeStr = SR.IncrementLvalueExpected;
                     break;

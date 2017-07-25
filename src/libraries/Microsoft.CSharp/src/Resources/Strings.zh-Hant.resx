@@ -240,9 +240,6 @@
   <data name="GenericArgIsStaticClass" xml:space="preserve">
     <value>'{0}': 靜態型別不能當做型別引數使用</value>
   </data>
-  <data name="PartialMethodToDelegate" xml:space="preserve">
-    <value>無法從方法 '{0}' 建立委派，因為它是沒有實作宣告的部分方法</value>
-  </data>
   <data name="IncrementLvalueExpected" xml:space="preserve">
     <value>遞增或遞減運算子的運算元必須是變數、屬性或索引子。</value>
   </data>

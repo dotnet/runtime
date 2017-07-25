@@ -240,9 +240,6 @@
   <data name="GenericArgIsStaticClass" xml:space="preserve">
     <value>"{0}": нельзя использовать статические типы в качестве аргументов-типов</value>
   </data>
-  <data name="PartialMethodToDelegate" xml:space="preserve">
-    <value>Невозможно создать делегат на основе метода "{0}", поскольку он является разделяемым методом без реализующего объявления</value>
-  </data>
   <data name="IncrementLvalueExpected" xml:space="preserve">
     <value>Операндом оператора инкремента или декремента должна быть переменная, свойство или индексатор</value>
   </data>
