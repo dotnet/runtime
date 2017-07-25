@@ -7,6 +7,7 @@ namespace System.Drawing.Text.Tests
 {
     public class InstalledFontCollectionTests
     {
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_Default()
         {
@@ -16,6 +17,7 @@ namespace System.Drawing.Text.Tests
             }
         }
 
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Families_GetWhenDisposed_ReturnsNonEmpty()
         {
