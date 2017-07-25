@@ -68,6 +68,10 @@
 #include "interpreter.h"
 #endif // FEATURE_INTERPRETER
 
+#ifdef FEATURE_PERFMAP
+#include "perfmap.h"
+#endif
+
 // The Stack Overflow probe takes place in the COOPERATIVE_TRANSITION_BEGIN() macro
 //
 
@@ -12767,6 +12771,10 @@ void Module::LoadHelperTable()
 
     BYTE * curEntry   = table;
     BYTE * tableEnd   = table + tableSize;
+
+#ifdef FEATURE_PERFMAP
+    PerfMap::LogStubs(__FUNCTION__, GetSimpleName(), (PCODE)table, tableSize);
+#endif
 
 #ifdef LOGGING
     int iEntryNumber = 0;
