@@ -6320,10 +6320,28 @@ namespace System.Runtime.CompilerServices
         public AccessedThroughPropertyAttribute(string propertyName) { }
         public string PropertyName { get { throw null; } }
     }
+    [System.AttributeUsageAttribute((System.AttributeTargets)(5148), Inherited = false, AllowMultiple = false)]
+    public sealed partial class AsyncMethodBuilderAttribute : System.Attribute
+    {
+        public AsyncMethodBuilderAttribute(System.Type builderType) { }
+        public System.Type BuilderType { get { throw null; } }
+    }
     [System.AttributeUsageAttribute((System.AttributeTargets)(64), Inherited = false, AllowMultiple = false)]
     public sealed partial class AsyncStateMachineAttribute : System.Runtime.CompilerServices.StateMachineAttribute
     {
         public AsyncStateMachineAttribute(System.Type stateMachineType) : base(default(System.Type)) { }
+    }
+    public partial struct AsyncValueTaskMethodBuilder<TResult>
+    {
+        public System.Threading.Tasks.ValueTask<TResult> Task { get { throw null; } }
+        public void AwaitOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.INotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
+        [System.Security.SecuritySafeCriticalAttribute]
+        public void AwaitUnsafeOnCompleted<TAwaiter, TStateMachine>(ref TAwaiter awaiter, ref TStateMachine stateMachine) where TAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
+        public static System.Runtime.CompilerServices.AsyncValueTaskMethodBuilder<TResult> Create() { throw null; }
+        public void SetException(System.Exception exception) { }
+        public void SetResult(TResult result) { }
+        public void SetStateMachine(System.Runtime.CompilerServices.IAsyncStateMachine stateMachine) { }
+        public void Start<TStateMachine>(ref TStateMachine stateMachine) where TStateMachine : System.Runtime.CompilerServices.IAsyncStateMachine { }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(2048), Inherited = false)]
     public sealed partial class CallerFilePathAttribute : System.Attribute
@@ -6367,6 +6385,17 @@ namespace System.Runtime.CompilerServices
         public bool TryGetValue(TKey key, out TValue value) { throw null; }
         public delegate TValue CreateValueCallback(TKey key);
     }
+    public partial struct ConfiguredValueTaskAwaitable<TResult>
+    {
+        public System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable<TResult>.ConfiguredValueTaskAwaiter GetAwaiter() { throw null; }
+        public partial struct ConfiguredValueTaskAwaiter : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
+        {
+            public bool IsCompleted { get { throw null; } }
+            public TResult GetResult() { throw null; }
+            public void OnCompleted(System.Action continuation) { }
+            public void UnsafeOnCompleted(System.Action continuation) { }
+        }
+    }
     [System.AttributeUsageAttribute((System.AttributeTargets)(2304), Inherited = false)]
     public abstract partial class CustomConstantAttribute : System.Attribute
     {
@@ -6407,6 +6436,11 @@ namespace System.Runtime.CompilerServices
     public static partial class FormattableStringFactory
     {
         public static System.FormattableString Create(string format, params object[] arguments) { throw null; }
+    }
+    public partial interface IAsyncStateMachine
+    {
+        void MoveNext();
+        void SetStateMachine(System.Runtime.CompilerServices.IAsyncStateMachine stateMachine);
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(128), Inherited = true)]
     public sealed partial class IndexerNameAttribute : System.Attribute
@@ -6536,6 +6570,14 @@ namespace System.Runtime.CompilerServices
     public sealed partial class UnsafeValueTypeAttribute : System.Attribute
     {
         public UnsafeValueTypeAttribute() { }
+    }
+    [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
+    public partial struct ValueTaskAwaiter<TResult> : System.Runtime.CompilerServices.ICriticalNotifyCompletion, System.Runtime.CompilerServices.INotifyCompletion
+    {
+        public bool IsCompleted { get { throw null; } }
+        public TResult GetResult() { throw null; }
+        public void OnCompleted(System.Action continuation) { }
+        public void UnsafeOnCompleted(System.Action continuation) { }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(4))]
     public partial class CompilerGlobalScopeAttribute : System.Attribute
@@ -7728,5 +7770,27 @@ namespace System.Threading.Tasks
         public System.AggregateException Exception { get { throw null; } }
         public bool Observed { get { throw null; } }
         public void SetObserved() { }
+    }
+    [System.Runtime.CompilerServices.AsyncMethodBuilderAttribute(typeof(System.Runtime.CompilerServices.AsyncValueTaskMethodBuilder<>))]
+    public partial struct ValueTask<TResult> : System.IEquatable<System.Threading.Tasks.ValueTask<TResult>>
+    {
+        public ValueTask(System.Threading.Tasks.Task<TResult> task) { throw null; }
+        public ValueTask(TResult result) { throw null; }
+        public bool IsCanceled { get { throw null; } }
+        public bool IsCompleted { get { throw null; } }
+        public bool IsCompletedSuccessfully { get { throw null; } }
+        public bool IsFaulted { get { throw null; } }
+        public TResult Result { get { throw null; } }
+        public System.Threading.Tasks.Task<TResult> AsTask() { throw null; }
+        public System.Runtime.CompilerServices.ConfiguredValueTaskAwaitable<TResult> ConfigureAwait(bool continueOnCapturedContext) { throw null; }
+        [System.ComponentModel.EditorBrowsableAttribute((System.ComponentModel.EditorBrowsableState)(1))]
+        public static System.Runtime.CompilerServices.AsyncValueTaskMethodBuilder<TResult> CreateAsyncMethodBuilder() { throw null; }
+        public override bool Equals(object obj) { throw null; }
+        public bool Equals(System.Threading.Tasks.ValueTask<TResult> other) { throw null; }
+        public System.Runtime.CompilerServices.ValueTaskAwaiter<TResult> GetAwaiter() { throw null; }
+        public override int GetHashCode() { throw null; }
+        public static bool operator ==(System.Threading.Tasks.ValueTask<TResult> left, System.Threading.Tasks.ValueTask<TResult> right) { throw null; }
+        public static bool operator !=(System.Threading.Tasks.ValueTask<TResult> left, System.Threading.Tasks.ValueTask<TResult> right) { throw null; }
+        public override string ToString() { throw null; }
     }
 }
