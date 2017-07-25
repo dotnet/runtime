@@ -137,7 +137,6 @@ namespace System.Net.Tests
             }
         }
 
-        [ActiveIssue(22110, TargetFrameworkMonikers.UapAot)]
         [Fact]
         public async Task SimpleRequest_WriteSynchronouslyInParts_Succeeds()
         {
@@ -167,7 +166,6 @@ namespace System.Net.Tests
             }
         }
 
-        [ActiveIssue(22110, TargetFrameworkMonikers.UapAot)]
         [Fact]
         public async Task SimpleRequest_WriteAynchronouslyEmpty_Succeeds()
         {
@@ -232,7 +230,6 @@ namespace System.Net.Tests
             }
         }
 
-        [ActiveIssue(22066, TargetFrameworkMonikers.UapAot)]
         [Fact]
         public async Task CanRead_Get_ReturnsFalse()
         {
@@ -285,7 +282,6 @@ namespace System.Net.Tests
             }
         }
 
-        [ActiveIssue(22110, TargetFrameworkMonikers.UapAot)]
         [Theory]
         [InlineData(0, 3)]
         [InlineData(1, 2)]
@@ -539,7 +535,6 @@ namespace System.Net.Tests
             }
         }
 
-        [ActiveIssue(22110, TargetFrameworkMonikers.UapAot)]
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
@@ -553,7 +548,6 @@ namespace System.Net.Tests
             }
         }
 
-        [ActiveIssue(22110, TargetFrameworkMonikers.UapAot)]
         [Fact]
         public async Task EndWrite_InvalidAsyncResult_ThrowsArgumentException()
         {
