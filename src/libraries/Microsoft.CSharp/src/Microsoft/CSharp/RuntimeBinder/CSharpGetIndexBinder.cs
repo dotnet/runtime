@@ -22,7 +22,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         public Expr DispatchPayload(RuntimeBinder runtimeBinder, ArgumentObject[] arguments, LocalVariableSymbol[] locals)
         {
             Expr indexerArguments = runtimeBinder.CreateArgumentListEXPR(arguments, locals, 1, arguments.Length);
-            return runtimeBinder.BindProperty(this, arguments[0], locals[0], indexerArguments, false);
+            return runtimeBinder.BindProperty(this, arguments[0], locals[0], indexerArguments);
         }
 
         public void PopulateSymbolTableWithName(SymbolTable symbolTable, Type callingType, ArgumentObject[] arguments)

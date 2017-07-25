@@ -790,14 +790,6 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private ExprEvent CreateEvent(
-            SymWithType swt,
-            Expr callingObject)
-        {
-            EventSymbol eventSymbol = swt.Event();
-            ExprEvent e = _exprFactory.CreateEvent(eventSymbol.type, callingObject, new EventWithType(eventSymbol, swt.GetType()));
-            return e;
-        }
         #endregion
 
         #endregion
@@ -1339,8 +1331,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             ICSharpBinder payload,
             ArgumentObject argument,
             LocalVariableSymbol local,
-            Expr optionalIndexerArguments,
-            bool fEventsPermitted)
+            Expr optionalIndexerArguments)
         {
             // If our argument is a static type, then we're calling a static property.
             Expr callingObject = argument.Info.IsStaticType ?
@@ -1405,14 +1396,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     return CreateField(swt, callingObject);
 
                 case SYMKIND.SK_EventSymbol:
-                    if (fEventsPermitted)
-                    {
-                        return CreateEvent(swt, callingObject);
-                    }
-                    else
-                    {
-                        throw Error.BindPropertyFailedEvent(name);
-                    }
+                    throw Error.BindPropertyFailedEvent(name);
 
                 default:
                     Debug.Assert(false, "Unexpected type returned from lookup");
@@ -1516,7 +1500,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 bIsCompound = (payload as CSharpSetMemberBinder).IsCompoundAssignment;
             }
             _symbolTable.PopulateSymbolTableWithName(name, null, arguments[0].Type);
-            Expr lhs = BindProperty(payload, arguments[0], locals[0], indexerArguments, false);
+            Expr lhs = BindProperty(payload, arguments[0], locals[0], indexerArguments);
 
             int indexOfLast = arguments.Length - 1;
             Expr rhs = CreateArgumentEXPR(arguments[indexOfLast], locals[indexOfLast]);
