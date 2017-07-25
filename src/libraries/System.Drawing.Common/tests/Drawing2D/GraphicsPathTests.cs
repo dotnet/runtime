@@ -1140,6 +1140,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void AddString_Point_Success()
         {
@@ -1154,6 +1155,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void AddString_Rectangle_Success()
         {
@@ -1168,6 +1170,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void AddString_NegativeSize_Success()
         {
@@ -1209,6 +1212,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void AddString_EmptyString_Success()
         {
@@ -1223,6 +1227,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void AddString_StringNull_ThrowsNullReferenceException()
         {

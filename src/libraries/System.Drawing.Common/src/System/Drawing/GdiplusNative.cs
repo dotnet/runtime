@@ -19,7 +19,11 @@ namespace System.Drawing
 
             private static FunctionWrapper<T> LoadFunction<T>(string name) where T : class
             {
-                Debug.Assert(s_gdipModule != IntPtr.Zero);
+                if (s_gdipModule == IntPtr.Zero)
+                {
+                    throw new DllNotFoundException();
+                }
+
                 Lazy<T> lazyDelegate = new Lazy<T>(() =>
                 {
                     IntPtr funcPtr = LoadFunctionPointer(s_gdipModule, name);
