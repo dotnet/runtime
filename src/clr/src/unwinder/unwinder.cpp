@@ -34,7 +34,7 @@ HRESULT OOPStackUnwinder::GetModuleBase(      DWORD64  address,
 
 //---------------------------------------------------------------------------------------
 //
-// Given a control PC, return the function entry of the functoin it is in.
+// Given a control PC, return the function entry of the function it is in.
 //
 // Arguments:
 //    address  - the specified IP
