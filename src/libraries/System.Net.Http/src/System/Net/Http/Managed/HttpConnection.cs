@@ -85,9 +85,9 @@ namespace System.Net.Http
 
         public void Dispose()
         {
-#if DEBUG
-            GC.SuppressFinalize(this);
-#endif
+//#if DEBUG
+//            GC.SuppressFinalize(this);
+//#endif
             if (!_disposed)
             {
                 _disposed = true;
@@ -96,10 +96,10 @@ namespace System.Net.Http
             }
         }
 
-#if DEBUG
-        private readonly string _debugCreationStackTrace = Environment.StackTrace;
-        ~HttpConnection() => Environment.FailFast($"Dropped HttpConnection without disposing it, created at: {_debugCreationStackTrace}");
-#endif
+//#if DEBUG
+//        private readonly string _debugCreationStackTrace = Environment.StackTrace;
+//        ~HttpConnection() => Environment.FailFast($"Dropped HttpConnection without disposing it, created at: {_debugCreationStackTrace}");
+//#endif
 
         public bool ReadAheadCompleted
         {
@@ -312,6 +312,12 @@ namespace System.Net.Http
             }
         }
 
+        // TODO: Remove this overload once https://github.com/dotnet/roslyn/issues/17287 is addressed
+        // and the compiler doesn't lift the span temporary from the call site into the async state
+        // machine in debug builds.
+        private void ParseStatusLine(ArraySegment<byte> line, HttpResponseMessage response) =>
+            ParseStatusLine((Span<byte>)line, response);
+
         private void ParseStatusLine(Span<byte> line, HttpResponseMessage response)
         {
             if (line.Length < 14 || // "HTTP/1.1 123\r\n" with optional phrase before the crlf
@@ -371,6 +377,12 @@ namespace System.Net.Http
                 }
             }
         }
+
+        // TODO: Remove this overload once https://github.com/dotnet/roslyn/issues/17287 is addressed
+        // and the compiler doesn't lift the span temporary from the call site into the async state
+        // machine in debug builds.
+        private void ParseHeaderNameValue(ArraySegment<byte> line, HttpResponseMessage response) =>
+            ParseHeaderNameValue((Span<byte>)line, response);
 
         private void ParseHeaderNameValue(Span<byte> line, HttpResponseMessage response)
         {
