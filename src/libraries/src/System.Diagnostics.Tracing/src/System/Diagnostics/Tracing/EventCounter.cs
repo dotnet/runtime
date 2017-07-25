@@ -91,7 +91,7 @@ namespace System.Diagnostics.Tracing
         private volatile int _bufferedValuesIndex;
 
         // arbitrarily we use _bufferfValues as the lock object.  
-        private object MyLock { get { return _bufferedValues; } }  
+        private object MyLock { get { return _bufferedValues; } }
 
         private void InitializeBuffer()
         {
@@ -176,8 +176,16 @@ namespace System.Diagnostics.Tracing
                 EventCounterPayload result = new EventCounterPayload();
                 result.Name = _name;
                 result.Count = _count;
-                result.Mean = _sum / _count;
-                result.StandardDeviation = (float)Math.Sqrt(_sumSquared / _count - _sum * _sum / _count / _count);
+                if (0 < _count)
+                {
+                    result.Mean = _sum / _count;
+                    result.StandardDeviation = (float)Math.Sqrt(_sumSquared / _count - _sum * _sum / _count / _count);
+                }
+                else
+                {
+                    result.Mean = 0;
+                    result.StandardDeviation = 0;
+                }
                 result.Min = _min;
                 result.Max = _max;
                 ResetStatistics();
