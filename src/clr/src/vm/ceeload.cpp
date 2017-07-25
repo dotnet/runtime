@@ -99,85 +99,6 @@
 
 #define NGEN_STATICS_ALLCLASSES_WERE_LOADED -1
 
-
-//---------------------------------------------------------------------------------------
-InstrumentedILOffsetMapping::InstrumentedILOffsetMapping()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    m_cMap  = 0;
-    m_rgMap = NULL;
-    _ASSERTE(IsNull());
-}
-
-//---------------------------------------------------------------------------------------
-//
-// Check whether there is any mapping information stored in this object.
-//
-// Notes:
-//    The memory should be alive throughout the process lifetime until 
-//    the Module containing the instrumented method is destructed.
-//
-
-BOOL InstrumentedILOffsetMapping::IsNull()
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    _ASSERTE((m_cMap == 0) == (m_rgMap == NULL));
-    return (m_cMap == 0);
-}
-
-#if !defined(DACCESS_COMPILE)
-//---------------------------------------------------------------------------------------
-//
-// Release the memory used by the array of COR_IL_MAPs.
-//
-// Notes:
-//    * The memory should be alive throughout the process lifetime until the Module containing 
-//      the instrumented method is destructed.
-//    * This struct should be read-only in DAC builds.
-//
-
-void InstrumentedILOffsetMapping::Clear()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    if (m_rgMap != NULL)
-    {
-        delete [] m_rgMap;
-    }
-
-    m_cMap  = 0;
-    m_rgMap = NULL;
-}
-#endif // !DACCESS_COMPILE
-
-#if !defined(DACCESS_COMPILE)
-void InstrumentedILOffsetMapping::SetMappingInfo(SIZE_T cMap, COR_IL_MAP * rgMap)
-{
-    WRAPPER_NO_CONTRACT;
-    _ASSERTE((cMap == 0) == (rgMap == NULL));
-    m_cMap = cMap;
-    m_rgMap = ARRAY_PTR_COR_IL_MAP(rgMap);
-}
-#endif // !DACCESS_COMPILE
-
-SIZE_T InstrumentedILOffsetMapping::GetCount() const
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    _ASSERTE((m_cMap == 0) == (m_rgMap == NULL));
-    return m_cMap;
-}
-
-ARRAY_PTR_COR_IL_MAP InstrumentedILOffsetMapping::GetOffsets() const
-{
-    LIMITED_METHOD_DAC_CONTRACT;
-
-    _ASSERTE((m_cMap == 0) == (m_rgMap == NULL));
-    return m_rgMap;
-}
-
 BOOL Module::HasInlineTrackingMap()
 {
     LIMITED_METHOD_DAC_CONTRACT;
@@ -14235,16 +14156,7 @@ void Module::ExpandAll()
                     || pMD->HasClassInstantiation())
                 && (pMD->MayHaveNativeCode() && !pMD->IsFCallOrIntrinsic()))
             {
-                COR_ILMETHOD * ilHeader = pMD->GetILHeader();
-                COR_ILMETHOD_DECODER::DecoderStatus ignored;
-                NewHolder<COR_ILMETHOD_DECODER> pHeader(new COR_ILMETHOD_DECODER(ilHeader,
-                                                                                 pMD->GetMDImport(),
-                                                                                 &ignored));
-#ifdef FEATURE_INTERPRETER
-                pMD->MakeJitWorker(pHeader, CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE));
-#else
-                pMD->MakeJitWorker(pHeader, CORJIT_FLAGS());
-#endif
+                pMD->PrepareInitialCode();
             }
         }
         static void CompileMethodsForMethodTable(MethodTable * pMT)

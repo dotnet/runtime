@@ -3391,15 +3391,15 @@ mdSignature CordbILCode::GetLocalVarSigToken()
     return m_localVarSigToken;
 }
 
-CordbReJitILCode::CordbReJitILCode(CordbFunction *pFunction, SIZE_T encVersion, VMPTR_SharedReJitInfo vmSharedReJitInfo) :
-CordbILCode(pFunction, TargetBuffer(), encVersion, mdSignatureNil, VmPtrToCookie(vmSharedReJitInfo)),
+CordbReJitILCode::CordbReJitILCode(CordbFunction *pFunction, SIZE_T encVersion, VMPTR_ILCodeVersionNode vmILCodeVersionNode) :
+CordbILCode(pFunction, TargetBuffer(), encVersion, mdSignatureNil, VmPtrToCookie(vmILCodeVersionNode)),
 m_cClauses(0),
 m_cbLocalIL(0),
 m_cILMap(0)
 {
-    _ASSERTE(!vmSharedReJitInfo.IsNull());
+    _ASSERTE(!vmILCodeVersionNode.IsNull());
     DacSharedReJitInfo data = { 0 };
-    IfFailThrow(GetProcess()->GetDAC()->GetSharedReJitInfoData(vmSharedReJitInfo, &data));
+    IfFailThrow(GetProcess()->GetDAC()->GetILCodeVersionNodeData(vmILCodeVersionNode, &data));
     IfFailThrow(Init(&data));
 }
 

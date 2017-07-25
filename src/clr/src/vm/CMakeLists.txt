@@ -48,6 +48,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     classhash.cpp
     clsload.cpp
     codeman.cpp
+    codeversion.cpp
     comdelegate.cpp
     contractimpl.cpp
     coreassemblyspec.cpp
@@ -79,6 +80,7 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     generics.cpp
     hash.cpp
     hillclimbing.cpp
+    ilinstrumentation.cpp
     ilstubcache.cpp
     ilstubresolver.cpp
     inlinetracking.cpp
@@ -211,7 +213,6 @@ set(VM_SOURCES_WKS
     interpreter.cpp
     invokeutil.cpp
     jithelpers.cpp
-    listlock.cpp
     managedmdimport.cpp
     marshalnative.cpp
     marvin32.cpp
