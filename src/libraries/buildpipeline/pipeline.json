@@ -141,29 +141,10 @@
           "Name": "DotNet-CoreFx-Trusted-Windows",
           "Parameters": {
             "PB_Platform": "x86",
-            "PB_TargetQueue": "Windows.10.Amd64",
             "PB_BuildArguments": "-buildArch=x86 -Release -- /p:SignType=real /p:RuntimeOS=win10",
             "PB_BuildTestsArguments": "-buildArch=x86 -Release -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
             "PB_SyncArguments": "-p -- /p:ArchGroup=x86 /p:RuntimeOS=win10",
-            "PB_CreateHelixArguments": "/p:ArchGroup=x86 /p:ConfigurationGroup=Release /p:\"TargetQueues=Windows.10.Amd64,Windows.7.Amd64,Windows.81.Amd64\" /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Windows",
-            "Type": "build/product/",
-            "Platform": "x86",
-            "ConfigurationGroup": "Release",
-            "SubType": "netcoreapp"
-          }
-        },
-		{
-          "Name": "DotNet-CoreFx-Trusted-Windows",
-          "Parameters": {
-            "PB_Platform": "x86",
-            "PB_TargetQueue": "Windows.10.Amd64.Core",
-            "PB_BuildArguments": "-buildArch=x86 -Release -- /p:SignType=real /p:RuntimeOS=win10",
-            "PB_BuildTestsArguments": "-buildArch=x86 -Release -SkipTests -Outerloop -- /p:RuntimeOS=win10 /p:ArchiveTests=true",
-            "PB_SyncArguments": "-p -- /p:ArchGroup=x86 /p:RuntimeOS=win10",
-            "PB_CreateHelixArguments": "/p:ArchGroup=x86 /p:ConfigurationGroup=Release /p:\"TargetQueues=Windows.10.Amd64.Core\" /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT"
+            "PB_CreateHelixArguments": "/p:ArchGroup=x86 /p:ConfigurationGroup=Release /p:\"TargetQueues=Windows.10.Amd64,Windows.10.Amd64.Core,Windows.7.Amd64,Windows.81.Amd64\" /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Windows_NT"
           },
           "ReportingParameters": {
             "OperatingSystem": "Windows",
