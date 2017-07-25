@@ -8527,8 +8527,8 @@ void Compiler::impImportLeave(BasicBlock* block)
                 if (verbose)
                 {
                     printf("impImportLeave - jumping out of a finally-protected try, convert block to BBJ_CALLFINALLY "
-                           "block BB%02u [%08p]\n",
-                           callBlock->bbNum, dspPtr(callBlock));
+                           "block %s\n",
+                           callBlock->dspToString());
                 }
 #endif
             }
@@ -8550,9 +8550,8 @@ void Compiler::impImportLeave(BasicBlock* block)
 #ifdef DEBUG
                 if (verbose)
                 {
-                    printf("impImportLeave - jumping out of a finally-protected try, new BBJ_CALLFINALLY block BB%02u "
-                           "[%08p]\n",
-                           callBlock->bbNum, dspPtr(callBlock));
+                    printf("impImportLeave - jumping out of a finally-protected try, new BBJ_CALLFINALLY block %s\n",
+                           callBlock->dspToString());
                 }
 #endif
 
@@ -8581,9 +8580,8 @@ void Compiler::impImportLeave(BasicBlock* block)
 #ifdef DEBUG
             if (verbose)
             {
-                printf("impImportLeave - jumping out of a finally-protected try, created step (BBJ_ALWAYS) block "
-                       "BB%02u [%08p]\n",
-                       step->bbNum, dspPtr(step));
+                printf("impImportLeave - jumping out of a finally-protected try, created step (BBJ_ALWAYS) block %s\n",
+                       step->dspToString());
             }
 #endif
 
@@ -8617,8 +8615,8 @@ void Compiler::impImportLeave(BasicBlock* block)
         if (verbose)
         {
             printf("impImportLeave - no enclosing finally-protected try blocks; convert CEE_LEAVE block to BBJ_ALWAYS "
-                   "block BB%02u [%08p]\n",
-                   block->bbNum, dspPtr(block));
+                   "block %s\n",
+                   block->dspToString());
         }
 #endif
     }
@@ -8643,8 +8641,8 @@ void Compiler::impImportLeave(BasicBlock* block)
 #ifdef DEBUG
         if (verbose)
         {
-            printf("impImportLeave - finalStep block required (encFinallies(%d) > 0), new block BB%02u [%08p]\n",
-                   encFinallies, finalStep->bbNum, dspPtr(finalStep));
+            printf("impImportLeave - finalStep block required (encFinallies(%d) > 0), new block %s\n", encFinallies,
+                   finalStep->dspToString());
         }
 #endif
 
