@@ -501,6 +501,11 @@ PAL_InitializeDebug(
     void);
 
 PALIMPORT
+void
+PALAPI
+PAL_IgnoreProfileSignal(int signalNum);
+
+PALIMPORT
 HINSTANCE
 PALAPI
 PAL_RegisterModule(
