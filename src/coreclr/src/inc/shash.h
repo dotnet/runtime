@@ -327,6 +327,7 @@ class SHash : public TRAITS
         count_t m_tableSize;
         count_t m_index;
 
+
         Index(const SHash *hash, BOOL begin)
         : m_table(hash->m_table),
             m_tableSize(hash->m_tableSize),

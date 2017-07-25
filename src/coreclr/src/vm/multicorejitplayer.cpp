@@ -17,7 +17,6 @@
 #include "dllimport.h"
 #include "comdelegate.h"
 #include "dbginterface.h"
-#include "listlock.inl"
 #include "stubgen.h"
 #include "eventtrace.h"
 #include "array.h"
@@ -103,7 +102,7 @@ void MulticoreJitCodeStorage::StoreMethodCode(MethodDesc * pMD, PCODE pCode)
 
 
 // Query from MakeJitWorker: Lookup stored JITted methods
-PCODE MulticoreJitCodeStorage::QueryMethodCode(MethodDesc * pMethod)
+PCODE MulticoreJitCodeStorage::QueryMethodCode(MethodDesc * pMethod, BOOL shouldRemoveCode)
 {
     STANDARD_VM_CONTRACT;
 
@@ -113,7 +112,7 @@ PCODE MulticoreJitCodeStorage::QueryMethodCode(MethodDesc * pMethod)
     {
         CrstHolder holder(& m_crstCodeMap);
     
-        if (m_nativeCodeMap.Lookup(pMethod, & code))
+        if (m_nativeCodeMap.Lookup(pMethod, & code) && shouldRemoveCode)
         {
             m_nReturned ++;
 
@@ -507,6 +506,23 @@ HRESULT MulticoreJitProfilePlayer::HandleModuleRecord(const ModuleRecord * pMod)
 }
 
 
+#ifndef DACCESS_COMPILE
+class MulticoreJitPrepareCodeConfig : public PrepareCodeConfig
+{
+public:
+    MulticoreJitPrepareCodeConfig(MethodDesc* pMethod) :
+        PrepareCodeConfig(NativeCodeVersion(pMethod), FALSE, FALSE)
+    {}
+    
+    virtual BOOL SetNativeCode(PCODE pCode, PCODE * ppAlternateCodeToUse)
+    {
+        MulticoreJitManager & mcJitManager = GetAppDomain()->GetMulticoreJitManager();
+        mcJitManager.GetMulticoreJitCodeStorage().StoreMethodCode(GetMethodDesc(), pCode);
+        return TRUE;
+    }
+};
+#endif
+
 // Call JIT to compile a method
 
 bool MulticoreJitProfilePlayer::CompileMethodDesc(Module * pModule, MethodDesc * pMD)
@@ -529,8 +545,9 @@ bool MulticoreJitProfilePlayer::CompileMethodDesc(Module * pModule, MethodDesc *
         // Reset the flag to allow managed code to be called in multicore JIT background thread from this routine
         ThreadStateNCStackHolder holder(-1, Thread::TSNC_CallingManagedCodeDisabled);
 
-        // MakeJitWorker calls back to MulticoreJitCodeStorage::StoreMethodCode under MethodDesc lock
-        pMD->MakeJitWorker(& header, CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_MCJIT_BACKGROUND));
+        // PrepareCode calls back to MulticoreJitCodeStorage::StoreMethodCode under MethodDesc lock
+        MulticoreJitPrepareCodeConfig config(pMD);
+        pMD->PrepareCode(&config);
 
         return true;
     }
