@@ -85,30 +85,41 @@ namespace BasicEventSourceTests
             };
 
             // Run the tests. collecting and validating the results. 
-            using (TestHarnessEventSource testHarnessEventSource = new TestHarnessEventSource())
+            try
             {
-                // Turn on the test EventSource.  
-                listener.EventSourceSynchronousEnable(source, options);
-                // And the harnesses's EventSource. 
-                listener.EventSourceSynchronousEnable(testHarnessEventSource);
 
-                // Generate events for all the tests, surrounded by events that tell us we are starting a test.  
-                int testNumber = 0;
-                foreach (var test in tests)
+                using (TestHarnessEventSource testHarnessEventSource = new TestHarnessEventSource())
                 {
-                    Console.WriteLine("Starting Sub-Test {0}  thread {1}", test.Name, System.Threading.Thread.CurrentThread.ManagedThreadId);
-                    testHarnessEventSource.StartTest(test.Name, testNumber);
-                    test.EventGenerator();
-                    testNumber++;
+                    // Turn on the test EventSource.  
+                    listener.EventSourceSynchronousEnable(source, options);
+                    // And the harnesses's EventSource. 
+                    listener.EventSourceSynchronousEnable(testHarnessEventSource);
+
+                    // Generate events for all the tests, surrounded by events that tell us we are starting a test.  
+                    int testNumber = 0;
+                    foreach (var test in tests)
+                    {
+                        Console.WriteLine("Starting Sub-Test {0}  thread: {1} time: {2:mm:ss.fff}",
+                            test.Name, System.Threading.Thread.CurrentThread.ManagedThreadId, DateTime.UtcNow);
+                        testHarnessEventSource.StartTest(test.Name, testNumber);
+                        test.EventGenerator();
+                        testNumber++;
+                    }
+                    testHarnessEventSource.StartTest("", testNumber);        // Empty test marks the end of testing. 
+
+                    // Disable the listeners.  
+                    listener.EventSourceCommand(source.Name, EventCommand.Disable);
+                    listener.EventSourceCommand(testHarnessEventSource.Name, EventCommand.Disable);
+
+                    // Send something that should be ignored.  
+                    testHarnessEventSource.IgnoreEvent();
                 }
-                testHarnessEventSource.StartTest("", testNumber);        // Empty test marks the end of testing. 
-
-                // Disable the listeners.  
-                listener.EventSourceCommand(source.Name, EventCommand.Disable);
-                listener.EventSourceCommand(testHarnessEventSource.Name, EventCommand.Disable);
-
-                // Send something that should be ignored.  
-                testHarnessEventSource.IgnoreEvent();
+            }
+            finally
+            {
+                // Run the tests. collecting and validating the results. 
+                Console.WriteLine("Stopped running tests thread: {0} time: {1:mm:ss.fff}",
+                    System.Threading.Thread.CurrentThread.ManagedThreadId, DateTime.UtcNow);
             }
 
             listener.Dispose();         // Indicate we are done listening.  For the ETW file based cases, we do all the processing here
