@@ -105,19 +105,19 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return true;
                 }
 
-                if (_typeSrc == null || _typeDest == null || _typeSrc.IsErrorType() ||
-                    _typeDest.IsErrorType() || _typeDest.IsNeverSameType())
+                if (_typeSrc == null || _typeDest == null || _typeSrc is ErrorType ||
+                    _typeDest is ErrorType || _typeDest.IsNeverSameType())
                 {
                     return false;
                 }
 
-                if (_typeDest.IsNullableType())
+                if (_typeDest is NullableType)
                 {
                     // This is handled completely by BindImplicitConversion.
                     return false;
                 }
 
-                if (_typeSrc.IsNullableType())
+                if (_typeSrc is NullableType)
                 {
                     return bindExplicitConversionFromNub();
                 }
@@ -148,7 +148,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         }
                         break;
                     case TypeKind.TK_ArrayType:
-                        if (bindExplicitConversionToArray(_typeDest.AsArrayType()))
+                        if (bindExplicitConversionToArray((ArrayType)_typeDest))
                         {
                             return true;
                         }
@@ -161,7 +161,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         break;
                     case TypeKind.TK_AggregateType:
                         {
-                            AggCastResult result = bindExplicitConversionToAggregate(_typeDest.AsAggregateType());
+                            AggCastResult result = bindExplicitConversionToAggregate(_typeDest as AggregateType);
 
                             if (result == AggCastResult.Success)
                             {
@@ -197,7 +197,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         Expr valueSrc = _exprSrc;
                         // This is a holdover from the days when you could have nullable of nullable.
                         // Can we remove this loop?
-                        while (valueSrc.Type.IsNullableType())
+                        while (valueSrc.Type is NullableType)
                         {
                             valueSrc = _binder.BindNubValue(valueSrc);
                         }
@@ -234,8 +234,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Debug.Assert(_typeSrc != null);
                 Debug.Assert(_typeDest != null);
 
-                if (!_typeSrc.IsArrayType() || !_typeSrc.AsArrayType().IsSZArray ||
-                    !_typeDest.isInterfaceType() || _typeDest.AsAggregateType().GetTypeArgsAll().Count != 1)
+                if (!(_typeSrc is ArrayType arrSrc) || !arrSrc.IsSZArray || !(_typeDest is AggregateType aggDest)
+                    || !aggDest.isInterfaceType() || aggDest.GetTypeArgsAll().Count != 1)
                 {
                     return false;
                 }
@@ -244,15 +244,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 AggregateSymbol aggIReadOnlyList = GetSymbolLoader().GetOptPredefAgg(PredefinedType.PT_G_IREADONLYLIST);
 
                 if ((aggIList == null ||
-                    !GetSymbolLoader().IsBaseAggregate(aggIList, _typeDest.AsAggregateType().getAggregate())) &&
+                    !GetSymbolLoader().IsBaseAggregate(aggIList, aggDest.getAggregate())) &&
                     (aggIReadOnlyList == null ||
-                    !GetSymbolLoader().IsBaseAggregate(aggIReadOnlyList, _typeDest.AsAggregateType().getAggregate())))
+                    !GetSymbolLoader().IsBaseAggregate(aggIReadOnlyList, aggDest.getAggregate())))
                 {
                     return false;
                 }
 
-                CType typeArr = _typeSrc.AsArrayType().GetElementType();
-                CType typeLst = _typeDest.AsAggregateType().GetTypeArgsAll()[0];
+                CType typeArr = arrSrc.GetElementType();
+                CType typeLst = aggDest.GetTypeArgsAll()[0];
 
                 if (!CConversions.FExpRefConv(GetSymbolLoader(), typeArr, typeLst))
                 {
@@ -293,7 +293,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     // a type variable. This will involve a type check and possibly an unbox.
                     // There is an explicit conversion from non-interface X to the type var iff there is an
                     // implicit conversion from the type var to X.
-                    if (_typeSrc.IsTypeParameterType())
+                    if (_typeSrc is TypeParameterType)
                     {
                         // Need to box first before unboxing.
                         Expr exprT;
@@ -319,8 +319,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 //   S[] to System.Collections.Generic.IList<T> or System.Collections.Generic.IReadOnlyList<T>. This is precisely when either S and T
                 //   are the same type or there is an implicit or explicit reference conversion from S to T.
 
-                if (!arrayDest.IsSZArray || !_typeSrc.isInterfaceType() ||
-                    _typeSrc.AsAggregateType().GetTypeArgsAll().Count != 1)
+                if (!arrayDest.IsSZArray || !(_typeSrc is AggregateType aggSrc) || !aggSrc.isInterfaceType() ||
+                    aggSrc.GetTypeArgsAll().Count != 1)
                 {
                     return false;
                 }
@@ -329,15 +329,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 AggregateSymbol aggIReadOnlyList = GetSymbolLoader().GetOptPredefAgg(PredefinedType.PT_G_IREADONLYLIST);
 
                 if ((aggIList == null ||
-                    !GetSymbolLoader().IsBaseAggregate(aggIList, _typeSrc.AsAggregateType().getAggregate())) &&
+                    !GetSymbolLoader().IsBaseAggregate(aggIList, aggSrc.getAggregate())) &&
                     (aggIReadOnlyList == null ||
-                    !GetSymbolLoader().IsBaseAggregate(aggIReadOnlyList, _typeSrc.AsAggregateType().getAggregate())))
+                    !GetSymbolLoader().IsBaseAggregate(aggIReadOnlyList, aggSrc.getAggregate())))
                 {
                     return false;
                 }
 
                 CType typeArr = arrayDest.GetElementType();
-                CType typeLst = _typeSrc.AsAggregateType().GetTypeArgsAll()[0];
+                CType typeLst = aggSrc.GetTypeArgsAll()[0];
 
                 Debug.Assert(!typeArr.IsNeverSameType());
                 if (typeArr != typeLst && !CConversions.FExpRefConv(GetSymbolLoader(), typeArr, typeLst))
@@ -383,9 +383,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Debug.Assert(_typeSrc != null);
                 Debug.Assert(arrayDest != null);
 
-                if (_typeSrc.IsArrayType())
+                if (_typeSrc is ArrayType arrSrc)
                 {
-                    return bindExplicitConversionFromArrayToArray(_typeSrc.AsArrayType(), arrayDest);
+                    return bindExplicitConversionFromArrayToArray(arrSrc, arrayDest);
                 }
 
                 if (bindExplicitConversionFromIListToArray(arrayDest))
@@ -418,7 +418,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // * From any pointer-type to any other pointer-type.
                 // * From sbyte, byte, short, ushort, int, uint, long, or ulong to any pointer-type.
 
-                if (_typeSrc.IsPointerType() || _typeSrc.fundType() <= FUNDTYPE.FT_LASTINTEGRAL && _typeSrc.isNumericType())
+                if (_typeSrc is PointerType || _typeSrc.fundType() <= FUNDTYPE.FT_LASTINTEGRAL && _typeSrc.isNumericType())
                 {
                     if (_needsExprDest)
                         _binder.bindSimpleCast(_exprSrc, _exprTypeDest, out _exprDest);
@@ -531,7 +531,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Debug.Assert(aggTypeDest != null);
                 Debug.Assert(aggTypeDest.isPredefType(PredefinedType.PT_DECIMAL));
 
-                AggregateType underlyingType = _typeSrc.underlyingType().AsAggregateType();
+                AggregateType underlyingType = _typeSrc.underlyingType() as AggregateType;
 
                 // Need to first cast the source expr to its underlying type.
 
@@ -708,15 +708,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Debug.Assert(_typeSrc != null);
                 Debug.Assert(aggTypeDest != null);
 
-                if (!_typeSrc.IsAggregateType())
+                if (!(_typeSrc is AggregateType atSrc))
                 {
                     return AggCastResult.Failure;
                 }
 
-                AggregateSymbol aggSrc = _typeSrc.AsAggregateType().getAggregate();
+                AggregateSymbol aggSrc = atSrc.getAggregate();
                 AggregateSymbol aggDest = aggTypeDest.getAggregate();
 
-                if (GetSymbolLoader().HasBaseConversion(aggTypeDest, _typeSrc.AsAggregateType()))
+                if (GetSymbolLoader().HasBaseConversion(aggTypeDest, atSrc))
                 {
                     if (_needsExprDest)
                     {
@@ -752,7 +752,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 //
                 // * From any pointer-type to sbyte, byte, short, ushort, int, uint, long, or ulong.
 
-                if (!_typeSrc.IsPointerType() || aggTypeDest.fundType() > FUNDTYPE.FT_LASTINTEGRAL || !aggTypeDest.isNumericType())
+                if (!(_typeSrc is PointerType) || aggTypeDest.fundType() > FUNDTYPE.FT_LASTINTEGRAL || !aggTypeDest.isNumericType())
                 {
                     return AggCastResult.Failure;
                 }
@@ -771,7 +771,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // * From T to any interface-type I provided there isn't already an implicit reference
                 //   conversion from T to I.
 
-                if (!_typeSrc.IsTypeParameterType())
+                if (!(_typeSrc is TypeParameterType))
                 {
                     return AggCastResult.Failure;
                 }
@@ -820,7 +820,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return result;
                 }
 
-                if (_typeSrc.IsVoidType())
+                if (_typeSrc is VoidType)
                 {
                     // No conversion is allowed to or from a void type (user defined or otherwise)
                     // This is most likely the result of a failed anonymous method or member group conversion

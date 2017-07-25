@@ -111,7 +111,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public bool IsNonNullableValueType()
         {
-            return (_constraints & SpecCons.Val) > 0 || _bHasValBound && !_pDeducedBaseClass.IsNullableType();
+            return (_constraints & SpecCons.Val) > 0 || _bHasValBound && !(_pDeducedBaseClass is NullableType);
         }
 
         public bool HasNewConstraint()
