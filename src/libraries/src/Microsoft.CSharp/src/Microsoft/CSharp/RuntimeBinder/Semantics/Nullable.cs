@@ -57,7 +57,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // Value
         public Expr BindValue(Expr exprSrc)
         {
-            Debug.Assert(exprSrc != null && exprSrc.Type.IsNullableType());
+            Debug.Assert(exprSrc != null && exprSrc.Type is NullableType);
 
             // For new T?(x), the answer is x.
             if (IsNullableConstructor(exprSrc, out ExprCall call))
@@ -67,8 +67,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return args;
             }
 
-            CType typeBase = exprSrc.Type.AsNullableType().GetUnderlyingType();
-            AggregateType ats = exprSrc.Type.AsNullableType().GetAts(GetErrorContext());
+            NullableType nubSrc = (NullableType)exprSrc.Type;
+            CType typeBase = nubSrc.GetUnderlyingType();
+            AggregateType ats = nubSrc.GetAts(GetErrorContext());
             if (ats == null)
             {
                 ExprProperty rval = GetExprFactory().CreateProperty(typeBase, exprSrc);

@@ -116,11 +116,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             LAgain:
                 if (type1.GetTypeKind() != type2.GetTypeKind())
                 {
-                    if (type1.IsTypeParameterType())
+                    if (type1 is TypeParameterType)
                     {
                         nParam = BetterType.Right;
                     }
-                    else if (type2.IsTypeParameterType())
+                    else if (type2 is TypeParameterType)
                     {
                         nParam = BetterType.Left;
                     }
@@ -145,7 +145,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             goto LAgain;
 
                         case TypeKind.TK_AggregateType:
-                            nParam = CompareTypes(type1.AsAggregateType().GetTypeArgsAll(), type2.AsAggregateType().GetTypeArgsAll());
+                            nParam = CompareTypes(((AggregateType)type1).GetTypeArgsAll(), ((AggregateType)type2).GetTypeArgsAll());
                             break;
                     }
                 }

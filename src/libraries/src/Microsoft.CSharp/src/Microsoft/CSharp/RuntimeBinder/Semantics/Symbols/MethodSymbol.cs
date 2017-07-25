@@ -46,7 +46,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             _checkedInfMustFail = true;
             for (int ivar = 0; ivar < typeVars.Count; ivar++)
             {
-                TypeParameterType var = typeVars.ItemAsTypeParameterType(ivar);
+                TypeParameterType var = (TypeParameterType)typeVars[ivar];
                 // See if type var is used in a parameter.
                 for (int ipar = 0; ; ipar++)
                 {
@@ -85,7 +85,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             return getClass().isPredefAgg(PredefinedType.PT_G_OPTIONAL) &&
                 Params.Count == 1 &&
-                Params[0].IsGenericParameter &&
+                Params[0] is TypeParameterType &&
                 IsConstructor();
         }
 

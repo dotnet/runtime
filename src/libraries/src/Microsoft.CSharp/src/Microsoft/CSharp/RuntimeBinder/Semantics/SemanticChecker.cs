@@ -35,11 +35,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(symCheck != null);
             Debug.Assert(atsCheck == null || symCheck.parent == atsCheck.getAggregate());
             Debug.Assert(typeThru == null ||
-                   typeThru.IsAggregateType() ||
-                   typeThru.IsTypeParameterType() ||
-                   typeThru.IsArrayType() ||
-                   typeThru.IsNullableType() ||
-                   typeThru.IsErrorType());
+                   typeThru is AggregateType ||
+                   typeThru is TypeParameterType ||
+                   typeThru is ArrayType ||
+                   typeThru is NullableType ||
+                   typeThru is ErrorType);
 
 #if DEBUG
 
@@ -88,21 +88,23 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // Array, Ptr, Nub, etc don't matter.
             type = type.GetNakedType(true);
 
-            if (!type.IsAggregateType())
+            if (!(type is AggregateType ats))
             {
-                Debug.Assert(type.IsVoidType() || type.IsErrorType() || type.IsTypeParameterType());
+                Debug.Assert(type is VoidType || type is ErrorType || type is TypeParameterType);
                 return true;
             }
 
-            for (AggregateType ats = type.AsAggregateType(); ats != null; ats = ats.outerType)
+            do
             {
                 if (ACCESSERROR.ACCESSERROR_NOERROR != CheckAccessCore(ats.GetOwningAggregate(), ats.outerType, symWhere, null))
                 {
                     return false;
                 }
-            }
 
-            TypeArray typeArgs = type.AsAggregateType().GetTypeArgsAll();
+                ats = ats.outerType;
+            } while(ats != null);
+
+            TypeArray typeArgs = ((AggregateType)type).GetTypeArgsAll();
             for (int i = 0; i < typeArgs.Count; i++)
             {
                 if (!CheckTypeAccess(typeArgs[i], symWhere))
@@ -158,11 +160,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(symCheck != null);
             Debug.Assert(atsCheck == null || symCheck.parent == atsCheck.getAggregate());
             Debug.Assert(typeThru == null ||
-                   typeThru.IsAggregateType() ||
-                   typeThru.IsTypeParameterType() ||
-                   typeThru.IsArrayType() ||
-                   typeThru.IsNullableType() ||
-                   typeThru.IsErrorType());
+                   typeThru is AggregateType ||
+                   typeThru is TypeParameterType ||
+                   typeThru is ArrayType ||
+                   typeThru is NullableType ||
+                   typeThru is ErrorType);
 
             switch (symCheck.GetAccess())
             {

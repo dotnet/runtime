@@ -414,12 +414,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 CType typeBool = GetReqPDT(PredefinedType.PT_BOOL);
                 ExprBinOp exprRes = null;
-                if (info.type1.IsNullableType() && info.type2.IsNullType())
+                if (info.type1 is NullableType && info.type2 is NullType)
                 {
                     arg2 = GetExprFactory().CreateZeroInit(info.type1);
                     exprRes = GetExprFactory().CreateBinop(ek, typeBool, arg1, arg2);
                 }
-                if (info.type1.IsNullType() && info.type2.IsNullableType())
+                if (info.type1 is NullType && info.type2 is NullableType)
                 {
                     arg1 = GetExprFactory().CreateZeroInit(info.type2);
                     exprRes = GetExprFactory().CreateBinop(ek, typeBool, arg1, arg2);
@@ -558,7 +558,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private ExprBinOp BindLiftedStandardBinOp(BinOpArgInfo info, BinOpFullSig bofs, ExpressionKind ek, EXPRFLAG flags)
         {
-            Debug.Assert(bofs.Type1().IsNullableType() || bofs.Type2().IsNullableType());
+            Debug.Assert(bofs.Type1() is NullableType || bofs.Type2() is NullableType);
 
             Expr arg1 = info.arg1;
             Expr arg2 = info.arg2;
@@ -601,7 +601,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 {
                     resultType = pArgument1.Type;
                 }
-                resultType = resultType.IsNullableType() ? resultType : GetSymbolLoader().GetTypeManager().GetNullable(resultType);
+                resultType = resultType is NullableType ? resultType : GetSymbolLoader().GetTypeManager().GetNullable(resultType);
             }
 
             ExprBinOp exprRes = GetExprFactory().CreateBinop(ek, resultType, pArgument1, pArgument2);
@@ -625,13 +625,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             Expr pNonLiftedArgument = pArgument;
-            if (pParameterType.IsNullableType())
+            if (pParameterType is NullableType paramNub)
             {
                 if (pNonLiftedArgument.isNull())
                 {
                     pNonLiftedArgument = mustCast(pNonLiftedArgument, pParameterType);
                 }
-                pNonLiftedArgument = mustCast(pNonLiftedArgument, pParameterType.AsNullableType().GetUnderlyingType());
+                pNonLiftedArgument = mustCast(pNonLiftedArgument, paramNub.GetUnderlyingType());
                 if (bConvertBeforeLift)
                 {
                     MarkAsIntermediateConversion(pNonLiftedArgument);
@@ -661,7 +661,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             // Don't allow comparison with an anonymous method or lambda. It's just too weird.
-            if (((info.mask & BinOpMask.Equal) != 0) && (info.type1.IsBoundLambdaType() || info.type2.IsBoundLambdaType()))
+            if (((info.mask & BinOpMask.Equal) != 0) && (info.type1 is BoundLambdaType || info.type2 is BoundLambdaType))
                 return false;
 
             // No conversions needed. Determine the lifting. This is the common case.
@@ -701,7 +701,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             ptypeSig1 = null;
             ptypeSig2 = null;
-            Debug.Assert(!typeDst.IsNullableType());
+            Debug.Assert(!(typeDst is NullableType));
 
             if (canConvert(info.arg1, typeDst))
                 pgrflt = LiftFlags.None;
@@ -717,7 +717,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
             ptypeSig1 = typeDst;
 
-            if (info.type2.IsNullableType())
+            if (info.type2 is NullableType)
             {
                 pgrflt = pgrflt | LiftFlags.Lift2;
                 ptypeSig2 = GetSymbolLoader().GetTypeManager().GetNullable(info.typeRaw2);
@@ -735,7 +735,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private bool CanConvertArg2(BinOpArgInfo info, CType typeDst, out LiftFlags pgrflt,
                                       out CType ptypeSig1, out CType ptypeSig2)
         {
-            Debug.Assert(!typeDst.IsNullableType());
+            Debug.Assert(!(typeDst is NullableType));
             ptypeSig1 = null;
             ptypeSig2 = null;
 
@@ -753,7 +753,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
             ptypeSig2 = typeDst;
 
-            if (info.type1.IsNullableType())
+            if (info.type1 is NullableType)
             {
                 pgrflt = pgrflt | LiftFlags.Lift1;
                 ptypeSig1 = GetSymbolLoader().GetTypeManager().GetNullable(info.typeRaw1);
@@ -777,7 +777,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (info.type1 != info.typeRaw1)
             {
-                Debug.Assert(info.type1.IsNullableType());
+                Debug.Assert(info.type1 is NullableType);
                 grflt = grflt | LiftFlags.Lift1;
                 typeSig1 = GetSymbolLoader().GetTypeManager().GetNullable(info.typeRaw1);
             }
@@ -786,7 +786,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (info.type2 != info.typeRaw2)
             {
-                Debug.Assert(info.type2.IsNullableType());
+                Debug.Assert(info.type2 is NullableType);
                 grflt = grflt | LiftFlags.Lift2;
                 typeSig2 = GetSymbolLoader().GetTypeManager().GetNullable(info.typeRaw2);
             }
@@ -886,7 +886,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         */
         private bool GetPtrBinOpSigs(List<BinOpFullSig> prgbofs, BinOpArgInfo info)
         {
-            if (!info.type1.IsPointerType() && !info.type2.IsPointerType())
+            if (!(info.type1 is PointerType) && !(info.type2 is PointerType))
             {
                 return false;
             }
@@ -903,7 +903,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // (void,     void)      :                   == != < > <= >=
 
             // Check the common case first.
-            if (info.type1.IsPointerType() && info.type2.IsPointerType())
+            if (info.type1 is PointerType && info.type2 is PointerType)
             {
                 if (info.ValidForVoidPointer())
                 {
@@ -920,9 +920,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             CType typeT;
 
-            if (info.type1.IsPointerType())
+            if (info.type1 is PointerType)
             {
-                if (info.type2.IsNullType())
+                if (info.type2 is NullType)
                 {
                     if (!info.ValidForVoidPointer())
                     {
@@ -947,8 +947,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return false;
             }
 
-            Debug.Assert(info.type2.IsPointerType());
-            if (info.type1.IsNullType())
+            Debug.Assert(info.type2 is PointerType);
+            if (info.type1 is NullType)
             {
                 if (!info.ValidForVoidPointer())
                 {
@@ -997,7 +997,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             CType typeObj = GetReqPDT(PredefinedType.PT_OBJECT);
             CType typeCls = null;
 
-            if (type1.IsNullType() && type2.IsNullType())
+            if (type1 is NullType && type2 is NullType)
             {
                 typeCls = typeObj;
                 fRet = true;
@@ -1024,12 +1024,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case FUNDTYPE.FT_REF:
                     break;
                 case FUNDTYPE.FT_VAR:
-                    if (type1.AsTypeParameterType().IsValueType() || (!type1.AsTypeParameterType().IsReferenceType() && !type2.IsNullType()))
+                    TypeParameterType parameterType1 = (TypeParameterType)type1;
+                    if (parameterType1.IsValueType() || (!parameterType1.IsReferenceType() && !(type2 is NullType)))
                         return false;
-                    type1 = type1.AsTypeParameterType().GetEffectiveBaseClass();
+                    type1 = parameterType1.GetEffectiveBaseClass();
                     break;
             }
-            if (type2.IsNullType())
+            if (type2 is NullType)
             {
                 fRet = true;
                 // We don't need to determine the actual best type since we're
@@ -1045,12 +1046,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case FUNDTYPE.FT_REF:
                     break;
                 case FUNDTYPE.FT_VAR:
-                    if (type2.AsTypeParameterType().IsValueType() || (!type2.AsTypeParameterType().IsReferenceType() && !type1.IsNullType()))
+                    TypeParameterType typeParam2 = (TypeParameterType)type2;
+                    if (typeParam2.IsValueType() || (!typeParam2.IsReferenceType() && !(type1 is NullType)))
                         return false;
-                    type2 = type2.AsTypeParameterType().GetEffectiveBaseClass();
+                    type2 = typeParam2.GetEffectiveBaseClass();
                     break;
             }
-            if (type1.IsNullType())
+            if (type1 is NullType)
             {
                 fRet = true;
                 // We don't need to determine the actual best type since we're
@@ -1064,14 +1066,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (type1.isInterfaceType() || type1.isPredefType(PredefinedType.PT_STRING) || GetSymbolLoader().HasBaseConversion(type1, typeDel))
                 type1 = typeObj;
-            else if (type1.IsArrayType())
+            else if (type1 is ArrayType)
                 type1 = GetReqPDT(PredefinedType.PT_ARRAY);
             else if (!type1.isClassType())
                 return false;
 
             if (type2.isInterfaceType() || type2.isPredefType(PredefinedType.PT_STRING) || GetSymbolLoader().HasBaseConversion(type2, typeDel))
                 type2 = typeObj;
-            else if (type2.IsArrayType())
+            else if (type2 is ArrayType)
                 type2 = GetReqPDT(PredefinedType.PT_ARRAY);
             else if (!type2.isClassType())
                 return false;
@@ -1394,9 +1396,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         LiftFlags liftFlags = LiftFlags.None;
                         CType typeSig = pArgumentType;
 
-                        if (typeSig.IsNullableType())
+                        if (typeSig is NullableType nubTypeSig)
                         {
-                            if (typeSig.AsNullableType().GetUnderlyingType() != pRawType)
+                            if (nubTypeSig.GetUnderlyingType() != pRawType)
                             {
                                 typeSig = GetSymbolLoader().GetTypeManager().GetNullable(pRawType);
                             }
@@ -1426,7 +1428,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 else if (unaryOpKind == UnaOpKind.IncDec)
                 {
                     // Check for pointers
-                    if (pArgumentType.IsPointerType())
+                    if (pArgumentType is PointerType)
                     {
                         pSignatures.Add(new UnaOpFullSig(
                                 pArgumentType,
@@ -1442,7 +1444,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     Expr exprVal = bindUDUnop((ExpressionKind)(exprKind - ExpressionKind.Add + ExpressionKind.Inc), exprGet);
                     if (exprVal != null)
                     {
-                        if (exprVal.Type != null && !exprVal.Type.IsErrorType() && exprVal.Type != pArgumentType)
+                        if (exprVal.Type != null && !(exprVal.Type is ErrorType) && exprVal.Type != pArgumentType)
                         {
                             exprVal = mustConvert(exprVal, pArgumentType);
                         }
@@ -1570,7 +1572,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         break;
                 }
 
-                if (typeSig != null && typeSig.IsNullableType())
+                if (typeSig is NullableType)
                 {
                     // Need to use a lifted signature.
                     LiftFlags grflt = LiftFlags.None;
@@ -1609,9 +1611,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private ExprOperator BindLiftedStandardUnop(ExpressionKind ek, EXPRFLAG flags, Expr arg, UnaOpFullSig uofs)
         {
-            NullableType type = uofs.GetType().AsNullableType();
+            NullableType type = uofs.GetType() as NullableType;
             Debug.Assert(arg?.Type != null);
-            if (arg.Type.IsNullType())
+            if (arg.Type is NullType)
             {
                 return BadOperatorTypesError(ek, arg, null, type);
             }
@@ -1789,7 +1791,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     break;
             }
             Debug.Assert(pExprResult != null);
-            Debug.Assert(!pExprResult.Type.IsNullableType());
+            Debug.Assert(!(pExprResult.Type is NullableType));
             return pExprResult;
         }
 
@@ -1818,7 +1820,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             ExprMultiGet exprGet = GetExprFactory().CreateMultiGet(EXPRFLAG.EXF_ASSGOP, arg.Type, null);
             Expr exprVal = exprGet;
             CType type = uofs.GetType();
-            Debug.Assert(!type.IsNullableType());
+            Debug.Assert(!(type is NullableType));
 
             // These used to be converts, but we're making them casts now - this is because
             // we need to remove the ability to call inc(sbyte) etc for all types smaller than int. 
@@ -1840,7 +1842,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(ek == ExpressionKind.Add || ek == ExpressionKind.Subtract);
             Debug.Assert(uofs.isLifted());
 
-            NullableType type = uofs.GetType().AsNullableType();
+            NullableType type = uofs.GetType() as NullableType;
             Debug.Assert(arg != null);
 
             ExprMultiGet exprGet = GetExprFactory().CreateMultiGet(EXPRFLAG.EXF_ASSGOP, arg.Type, null);
@@ -1958,8 +1960,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(arg1 != null);
             Debug.Assert(arg2 != null);
-            Debug.Assert(arg1.Type.isPredefType(PredefinedType.PT_BOOL) || (arg1.Type.IsNullableType() && arg2.Type.AsNullableType().GetUnderlyingType().isPredefType(PredefinedType.PT_BOOL)));
-            Debug.Assert(arg2.Type.isPredefType(PredefinedType.PT_BOOL) || (arg2.Type.IsNullableType() && arg2.Type.AsNullableType().GetUnderlyingType().isPredefType(PredefinedType.PT_BOOL)));
+            Debug.Assert(arg1.Type.isPredefType(PredefinedType.PT_BOOL) || (arg1.Type is NullableType argNubType1 && argNubType1.GetUnderlyingType().isPredefType(PredefinedType.PT_BOOL)));
+            Debug.Assert(arg2.Type.isPredefType(PredefinedType.PT_BOOL) || (arg2.Type is NullableType argNubType2 && argNubType2.GetUnderlyingType().isPredefType(PredefinedType.PT_BOOL)));
 
             return GetExprFactory().CreateBinop(ek, GetReqPDT(PredefinedType.PT_BOOL), arg1, arg2);
         }
@@ -1967,10 +1969,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private ExprOperator BindBoolBitwiseOp(ExpressionKind ek, EXPRFLAG flags, Expr expr1, Expr expr2, BinOpFullSig bofs)
         {
             Debug.Assert(ek == ExpressionKind.BitwiseAnd || ek == ExpressionKind.BitwiseOr);
-            Debug.Assert(expr1.Type.isPredefType(PredefinedType.PT_BOOL) || expr1.Type.IsNullableType() && expr1.Type.AsNullableType().GetUnderlyingType().isPredefType(PredefinedType.PT_BOOL));
-            Debug.Assert(expr2.Type.isPredefType(PredefinedType.PT_BOOL) || expr2.Type.IsNullableType() && expr2.Type.AsNullableType().GetUnderlyingType().isPredefType(PredefinedType.PT_BOOL));
+            Debug.Assert(expr1.Type.isPredefType(PredefinedType.PT_BOOL) || expr1.Type is NullableType expNubType1 && expNubType1.GetUnderlyingType().isPredefType(PredefinedType.PT_BOOL));
+            Debug.Assert(expr2.Type.isPredefType(PredefinedType.PT_BOOL) || expr2.Type is NullableType expNubType2 && expNubType2.GetUnderlyingType().isPredefType(PredefinedType.PT_BOOL));
 
-            if (expr1.Type.IsNullableType() || expr2.Type.IsNullableType())
+            if (expr1.Type is NullableType || expr2.Type is NullableType)
             {
                 CType typeBool = GetReqPDT(PredefinedType.PT_BOOL);
                 CType typeRes = GetSymbolLoader().GetTypeManager().GetNullable(typeBool);
@@ -1980,7 +1982,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 Expr nonLiftedArg2 = CNullable.StripNullableConstructor(expr2);
                 Expr nonLiftedResult = null;
 
-                if (!nonLiftedArg1.Type.IsNullableType() && !nonLiftedArg2.Type.IsNullableType())
+                if (!(nonLiftedArg1.Type is NullableType) && !(nonLiftedArg2.Type is NullableType))
                 {
                     nonLiftedResult = BindBoolBinOp(ek, flags, nonLiftedArg1, nonLiftedArg2);
                 }
@@ -2152,13 +2154,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private Expr BindLiftedEnumArithmeticBinOp(ExpressionKind ek, EXPRFLAG flags, Expr arg1, Expr arg2)
         {
             Debug.Assert(ek == ExpressionKind.Add || ek == ExpressionKind.Subtract);
-            CType nonNullableType1 = arg1.Type.IsNullableType() ? arg1.Type.AsNullableType().UnderlyingType : arg1.Type;
-            CType nonNullableType2 = arg2.Type.IsNullableType() ? arg2.Type.AsNullableType().UnderlyingType : arg2.Type;
-            if (nonNullableType1.IsNullType())
+            CType nonNullableType1 = arg1.Type is NullableType arg1NubType ? arg1NubType.UnderlyingType : arg1.Type;
+            CType nonNullableType2 = arg2.Type is NullableType arg2NubType ? arg2NubType.UnderlyingType : arg2.Type;
+            if (nonNullableType1 is NullType)
             {
                 nonNullableType1 = nonNullableType2.underlyingEnumType();
             }
-            else if (nonNullableType2.IsNullType())
+            else if (nonNullableType2 is NullType)
             {
                 nonNullableType2 = nonNullableType1.underlyingEnumType();
             }
@@ -2555,12 +2557,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         type = type.StripNubs();
                         break;
                     case TypeKind.TK_TypeParameterType:
-                        type = type.AsTypeParameterType().GetEffectiveBaseClass();
+                        type = (type as TypeParameterType).GetEffectiveBaseClass();
                         break;
                     case TypeKind.TK_AggregateType:
-                        if ((type.isClassType() || type.isStructType()) && !type.AsAggregateType().getAggregate().IsSkipUDOps())
+                        AggregateType ats = (AggregateType)type;
+                        if ((ats.isClassType() || ats.isStructType()) && !ats.getAggregate().IsSkipUDOps())
                         {
-                            return type.AsAggregateType();
+                            return ats;
                         }
                         return null;
                     default:
@@ -2885,8 +2888,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(argType1.isEnumType() || argType2.isEnumType());
 
-            AggregateType type1 = argType1.AsAggregateType();
-            AggregateType type2 = argType2.AsAggregateType();
+            AggregateType type1 = argType1 as AggregateType;
+            AggregateType type2 = argType2 as AggregateType;
 
             AggregateType typeEnum = type1.isEnumType() ? type1 : type2;
 

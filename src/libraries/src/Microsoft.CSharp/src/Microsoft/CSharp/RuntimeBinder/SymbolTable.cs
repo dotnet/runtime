@@ -174,13 +174,13 @@ namespace Microsoft.CSharp.RuntimeBinder
         {
             CType type = callingObject.Type;
 
-            if (type.IsArrayType())
+            if (type is ArrayType)
             {
                 type = _semanticChecker.GetSymbolLoader().GetReqPredefType(PredefinedType.PT_ARRAY);
             }
-            if (type.IsNullableType())
+            if (type is NullableType nub)
             {
-                type = type.AsNullableType().GetAts(_semanticChecker.GetSymbolLoader().GetErrorContext());
+                type = nub.GetAts(_semanticChecker.GetSymbolLoader().GetErrorContext());
             }
 
             if (!mem.Lookup(
@@ -343,7 +343,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             CType ctype = GetCTypeFromType(type);
             if (ctype.IsWindowsRuntimeType())
             {
-                TypeArray collectioniFaces = ctype.AsAggregateType().GetWinRTCollectionIfacesAll(_semanticChecker.GetSymbolLoader());
+                TypeArray collectioniFaces = ((AggregateType)ctype).GetWinRTCollectionIfacesAll(_semanticChecker.GetSymbolLoader());
 
                 for (int i = 0; i < collectioniFaces.Count; i++)
                 {
@@ -404,7 +404,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 for (int i = 0; i < genericArguments.Length; i++)
                 {
                     Type t = genericArguments[i];
-                    ctypes[i].AsTypeParameterType().GetTypeParameterSymbol().SetBounds(
+                    ((TypeParameterType)ctypes[i]).GetTypeParameterSymbol().SetBounds(
                         _bsymmgr.AllocParams(
                         GetCTypeArrayFromTypes(t.GetGenericParameterConstraints())));
                 }
@@ -458,7 +458,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
                     // We check to make sure we own the type parameter - this is because we're
                     // currently calculating TypeArgsThis, NOT TypeArgsAll.
-                    if (ctype.AsTypeParameterType().GetOwningSymbol() == agg)
+                    if (((TypeParameterType)ctype).GetOwningSymbol() == agg)
                     {
                         ctypes.Add(ctype);
                     }
@@ -743,9 +743,9 @@ namespace Microsoft.CSharp.RuntimeBinder
                         {
                             // If we had an aggregate type, its possible we're not at the end.
                             // This will happen for nullable<T> for instance.
-                            if (ctype.IsAggregateType())
+                            if (ctype is AggregateType cat)
                             {
-                                next = ctype.AsAggregateType().GetOwningAggregate();
+                                next = cat.GetOwningAggregate();
                             }
                             else
                             {
@@ -1036,7 +1036,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             else if (type.IsEnum)
             {
                 kind = AggKindEnum.Enum;
-                agg.SetUnderlyingType(GetCTypeFromType(Enum.GetUnderlyingType(type)).AsAggregateType());
+                agg.SetUnderlyingType((AggregateType)GetCTypeFromType(Enum.GetUnderlyingType(type)));
             }
             else if (type.IsValueType)
             {
@@ -1115,9 +1115,9 @@ namespace Microsoft.CSharp.RuntimeBinder
                 for (int i = 0; i < agg.GetTypeVars().Count; i++)
                 {
                     Type t = genericArguments[i];
-                    if (agg.GetTypeVars()[i].IsTypeParameterType())
+                    if (agg.GetTypeVars()[i] is TypeParameterType typeVar)
                     {
-                        agg.GetTypeVars()[i].AsTypeParameterType().GetTypeParameterSymbol().SetBounds(
+                        typeVar.GetTypeParameterSymbol().SetBounds(
                             _bsymmgr.AllocParams(
                             GetCTypeArrayFromTypes(t.GetGenericParameterConstraints())));
                     }
@@ -1150,7 +1150,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 {
                     t = t.GetGenericTypeDefinition();
                 }
-                agg.SetBaseClass(GetCTypeFromType(t).AsAggregateType());
+                agg.SetBaseClass((AggregateType)GetCTypeFromType(t));
             }
             agg.SetTypeManager(_typeManager);
             agg.SetFirstUDConversion(null);
@@ -1939,9 +1939,9 @@ namespace Microsoft.CSharp.RuntimeBinder
             }
 
             // Check if we have an out parameter.
-            if (ctype.IsParameterModifierType() && p.IsOut && !p.IsIn)
+            if (ctype is ParameterModifierType mod && p.IsOut && !p.IsIn)
             {
-                CType parameterType = ctype.AsParameterModifierType().GetParameterType();
+                CType parameterType = mod.GetParameterType();
                 ctype = _typeManager.GetParameterModifier(parameterType, true);
             }
 
@@ -2008,7 +2008,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         private MethodSymbol FindMethodFromMemberInfo(MemberInfo baseMemberInfo)
         {
             CType t = GetCTypeFromType(baseMemberInfo.DeclaringType);
-            Debug.Assert(t.IsAggregateType());
+            Debug.Assert(t is AggregateType);
             AggregateSymbol aggregate = t.getAggregate();
             Debug.Assert(aggregate != null);
 
@@ -2065,7 +2065,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             // there are any conversions.
             CType t = GetCTypeFromType(type);
 
-            if (!t.IsAggregateType())
+            if (!(t is AggregateType))
             {
                 CType endT;
                 while ((endT = t.GetBaseOrParameterOrElementType()) != null)
@@ -2074,10 +2074,10 @@ namespace Microsoft.CSharp.RuntimeBinder
                 }
             }
 
-            if (t.IsTypeParameterType())
+            if (t is TypeParameterType paramType)
             {
                 // Add conversions for the bounds.
-                foreach (CType bound in t.AsTypeParameterType().GetBounds().Items)
+                foreach (CType bound in paramType.GetBounds().Items)
                 {
                     AddConversionsForType(bound.AssociatedSystemType);
                 }
@@ -2085,7 +2085,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             }
 
             Debug.Assert(t is AggregateType);
-            AggregateSymbol aggregate = t.AsAggregateType().getAggregate();
+            AggregateSymbol aggregate = ((AggregateType)t).getAggregate();
 
             // Now find all the conversions and make them.
             IEnumerable<MethodInfo> conversions = Enumerable.Where(type.GetRuntimeMethods(),
