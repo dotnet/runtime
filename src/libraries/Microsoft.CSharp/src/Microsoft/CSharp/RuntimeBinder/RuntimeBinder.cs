@@ -270,7 +270,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             if (t != null)
             {
-                AggregateSymbol agg = _symbolTable.GetCTypeFromType(t).AsAggregateType().GetOwningAggregate();
+                AggregateSymbol agg = ((AggregateType)_symbolTable.GetCTypeFromType(t)).GetOwningAggregate();
                 bindingContext.ContextForMemberLookup = _semanticChecker.GetGlobalSymbolFactory().CreateAggregateDecl(agg, null);
             }
             else
@@ -475,7 +475,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         {
             // We don't actually need the real delegate type here - we just need SOME delegate type.
             // This is because we never attempt any conversions on the lambda itself.
-            AggregateType delegateType = _symbolTable.GetCTypeFromType(typeof(Func<>)).AsAggregateType();
+            AggregateType delegateType = _symbolTable.GetCTypeFromType(typeof(Func<>)) as AggregateType;
             LocalVariableSymbol thisLocal = _semanticChecker.GetGlobalSymbolFactory().CreateLocalVar(_semanticChecker.GetNameManager().Add("this"), pScope, _symbolTable.GetCTypeFromType(typeof(object)));
             thisLocal.isThis = true;
             ExprBoundLambda boundLambda = _exprFactory.CreateAnonymousMethod(delegateType, pScope);
@@ -494,10 +494,9 @@ namespace Microsoft.CSharp.RuntimeBinder
             CType ctype = _symbolTable.GetCTypeFromType(type);
             if (bIsOut)
             {
-                Debug.Assert(ctype.IsParameterModifierType());
-                ctype = _semanticChecker.GetTypeManager().GetParameterModifier(
-                    ctype.AsParameterModifierType().GetParameterType(),
-                    true);
+                Debug.Assert(ctype is ParameterModifierType);
+                ctype = _semanticChecker.GetTypeManager()
+                    .GetParameterModifier(((ParameterModifierType)ctype).GetParameterType(), true);
             }
 
             // If we can convert, do that. If not, cast it.
@@ -624,22 +623,18 @@ namespace Microsoft.CSharp.RuntimeBinder
             Name name = _semanticChecker.GetNameManager().Add(Name);
             AggregateType callingType;
 
-            if (callingObject.Type.IsArrayType())
+            CType callingObjectType = callingObject.Type;
+            if (callingObjectType is ArrayType)
             {
                 callingType = _semanticChecker.GetSymbolLoader().GetReqPredefType(PredefinedType.PT_ARRAY);
             }
-            else if (callingObject.Type.IsNullableType())
+            else if (callingObjectType is NullableType callingNub)
             {
-                callingType = callingObject.Type.AsNullableType().GetAts(_semanticChecker.GetSymbolLoader().GetErrorContext());
-            }
-            else if (callingObject.Type.IsAggregateType())
-            {
-                callingType = callingObject.Type.AsAggregateType();
+                callingType = callingNub.GetAts(_semanticChecker.GetSymbolLoader().GetErrorContext());
             }
             else
             {
-                callingType = null;
-                Debug.Assert(false, "MemberGroup on non-array, non-aggregate");
+                callingType = (AggregateType)callingObjectType;
             }
 
             List<CType> callingTypes = new List<CType>();
@@ -689,13 +684,9 @@ namespace Microsoft.CSharp.RuntimeBinder
             {
                 TypeArray collectioniFaces = callingType.GetWinRTCollectionIfacesAll(SymbolLoader);
 
-                for (int i = 0; i < collectioniFaces.Count; i++)
+                foreach (AggregateType t in callingType.GetWinRTCollectionIfacesAll(SymbolLoader).Items)
                 {
-                    CType t = collectioniFaces[i];
-                    // Collection interfaces will be aggregates.
-                    Debug.Assert(t.IsAggregateType());
-
-                    if (_symbolTable.AggregateContainsMethod(t.AsAggregateType().GetOwningAggregate(), Name, mask))
+                    if (_symbolTable.AggregateContainsMethod(t.GetOwningAggregate(), Name, mask))
                     {
                         callingTypes.Add(t);
                     }

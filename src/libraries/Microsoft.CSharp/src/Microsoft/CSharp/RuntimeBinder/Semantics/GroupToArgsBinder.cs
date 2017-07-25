@@ -325,7 +325,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             TypeArray ifaces = _pCurrentType.GetIfacesAll();
                             for (int i = 0; i < ifaces.Count; i++)
                             {
-                                AggregateType type = ifaces[i].AsAggregateType();
+                                AggregateType type = ifaces[i] as AggregateType;
 
                                 Debug.Assert(type.isInterfaceType());
                                 _HiddenTypes.Add(type);
@@ -575,7 +575,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     int index)
             {
                 CType pParamType = type;
-                CType pRawParamType = type.IsNullableType() ? type.AsNullableType().GetUnderlyingType() : type;
+                CType pRawParamType = type.StripNubs();
 
                 Expr optionalArgument = null;
                 if (methprop.HasDefaultParameterValue(index))
@@ -610,7 +610,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             optionalArgument = exprFactory.CreateConstant(pConstValType, cv);
                         }
                     }
-                    else if ((pParamType.IsRefType() || pParamType.IsNullableType()) && cv.IsNullRef)
+                    else if ((pParamType.IsRefType() || pParamType is NullableType) && cv.IsNullRef)
                     {
                         // We have an "= null" default value with a reference type or a nullable type.
 
@@ -725,14 +725,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     method = slotMethod;
                 }
 
-                if (!pType.IsAggregateType())
+                if (!(pType is AggregateType agg))
                 {
                     // Not something that can have overrides anyway.
                     return method;
                 }
 
-                for (AggregateSymbol pAggregate = pType.AsAggregateType().GetOwningAggregate();
-                        pAggregate != null && pAggregate.GetBaseAgg() != null;
+                for (AggregateSymbol pAggregate = agg.GetOwningAggregate();
+                        pAggregate?.GetBaseAgg() != null;
                         pAggregate = pAggregate.GetBaseAgg())
                 {
                     for (MethodOrPropertySymbol meth = symbolLoader.LookupAggMember(method.name, pAggregate, symbmask_t.MASK_MethodSymbol | symbmask_t.MASK_PropertySymbol).AsMethodOrPropertySymbol();
@@ -1111,9 +1111,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                                 // this is to eliminate the paranoid case of types that are equal but can't convert 
                                 // (think ErrorType != ErrorType)
                                 // See if they just differ in out / ref.
-                                CType argStripped = _pArguments.types[ivar].IsParameterModifierType() ?
-                                    _pArguments.types[ivar].AsParameterModifierType().GetParameterType() : _pArguments.types[ivar];
-                                CType varStripped = var.IsParameterModifierType() ? var.AsParameterModifierType().GetParameterType() : var;
+                                CType argStripped = _pArguments.types[ivar] is ParameterModifierType modArg ?
+                                    modArg.GetParameterType() : _pArguments.types[ivar];
+                                CType varStripped = var is ParameterModifierType modVar ? modVar.GetParameterType() : var;
 
                                 if (argStripped == varStripped)
                                 {
@@ -1237,20 +1237,20 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             private bool DoesTypeArgumentsContainErrorSym(CType var)
             {
-                if (!var.IsAggregateType())
+                if (!(var is AggregateType varAgg))
                 {
                     return false;
                 }
 
-                TypeArray typeVars = var.AsAggregateType().GetTypeArgsAll();
+                TypeArray typeVars = varAgg.GetTypeArgsAll();
                 for (int i = 0; i < typeVars.Count; i++)
                 {
                     CType type = typeVars[i];
-                    if (type.IsErrorType())
+                    if (type is ErrorType)
                     {
                         return true;
                     }
-                    else if (type.IsAggregateType())
+                    else if (type is AggregateType)
                     {
                         // If we have an agg type sym, check if its type args have errors.
                         if (DoesTypeArgumentsContainErrorSym(type))
@@ -1259,6 +1259,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         }
                     }
                 }
+
                 return false;
             }
 
@@ -1385,10 +1386,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 {
                     // Give a better message for delegate invoke.
                     if (_pGroup.OptionalObject != null &&
-                            _pGroup.OptionalObject.Type.IsAggregateType() &&
-                            _pGroup.OptionalObject.Type.AsAggregateType().GetOwningAggregate().IsDelegate())
+                            _pGroup.OptionalObject.Type is AggregateType agg &&
+                            agg.GetOwningAggregate().IsDelegate())
                     {
-                        GetErrorContext().Error(ErrorCode.ERR_BadNamedArgumentForDelegateInvoke, _pGroup.OptionalObject.Type.AsAggregateType().GetOwningAggregate().name, _pInvalidSpecifiedName);
+                        GetErrorContext().Error(ErrorCode.ERR_BadNamedArgumentForDelegateInvoke, agg.GetOwningAggregate().name, _pInvalidSpecifiedName);
                     }
                     else
                     {
@@ -1425,7 +1426,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         {
                             if (0 != (_pGroup.Flags & EXPRFLAG.EXF_CTOR))
                             {
-                                Debug.Assert(!_pGroup.ParentType.IsTypeParameterType());
+                                Debug.Assert(!(_pGroup.ParentType is TypeParameterType));
                                 GetErrorContext().MakeError(out error, ErrorCode.ERR_BadCtorArgCount, _pGroup.ParentType, _pArguments.carg);
                             }
                             else
@@ -1496,22 +1497,21 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     if (!_pExprBinder.canConvert(_pArguments.prgexpr[ivar], var))
                     {
                         // See if they just differ in out / ref.
-                        CType argStripped = _pArguments.types[ivar].IsParameterModifierType() ?
-                            _pArguments.types[ivar].AsParameterModifierType().GetParameterType() : _pArguments.types[ivar];
-                        CType varStripped = var.IsParameterModifierType() ? var.AsParameterModifierType().GetParameterType() : var;
+                        CType argStripped = _pArguments.types[ivar] is ParameterModifierType modArg ? modArg.GetParameterType() : _pArguments.types[ivar];
+                        CType varStripped = var is ParameterModifierType modVar ? modVar.GetParameterType() : var;
                         if (argStripped == varStripped)
                         {
                             if (varStripped != var)
                             {
                                 // The argument is wrong in ref / out-ness.
-                                GetErrorContext().Error(ErrorCode.ERR_BadArgRef, ivar + 1, (var.IsParameterModifierType() && var.AsParameterModifierType().isOut) ? "out" : "ref");
+                                GetErrorContext().Error(ErrorCode.ERR_BadArgRef, ivar + 1, var is ParameterModifierType mod && mod.isOut ? "out" : "ref");
                             }
                             else
                             {
                                 CType argument = _pArguments.types[ivar];
 
                                 // the argument is decorated, but doesn't needs a 'ref' or 'out'
-                                GetErrorContext().Error(ErrorCode.ERR_BadArgExtraRef, ivar + 1, (argument.IsParameterModifierType() && argument.AsParameterModifierType().isOut) ? "out" : "ref");
+                                GetErrorContext().Error(ErrorCode.ERR_BadArgExtraRef, ivar + 1, argument is ParameterModifierType mod && mod.isOut ? "out" : "ref");
                             }
                         }
                         else
@@ -1541,7 +1541,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 for (int ivar = 0; ivar < _pArguments.carg; ivar++)
                 {
                     CType var = _pBestParameters[ivar];
-                    if (var.IsParameterModifierType())
+                    if (var is ParameterModifierType)
                     {
                         GetErrorContext().ErrorRef(ErrorCode.ERR_InitializerAddHasParamModifiers, _results.GetBestResult());
                         return true;

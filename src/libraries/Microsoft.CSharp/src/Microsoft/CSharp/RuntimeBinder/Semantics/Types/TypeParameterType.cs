@@ -33,8 +33,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 {
                     return true;
                 }
-                if (pConstraint.IsTypeParameterType() &&
-                    pConstraint.AsTypeParameterType().DependsOn(pType))
+                if (pConstraint is TypeParameterType typeConstraint && typeConstraint.DependsOn(pType))
                 {
                     return true;
                 }

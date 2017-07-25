@@ -269,7 +269,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
                     else
                     {
-                        _pCurrentType = _pContainingTypes[_nCurrentTypeCount++].AsAggregateType();
+                        _pCurrentType = _pContainingTypes[_nCurrentTypeCount++] as AggregateType;
                     }
                 }
                 else
