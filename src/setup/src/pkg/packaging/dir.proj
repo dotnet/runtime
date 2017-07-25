@@ -2,7 +2,7 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="dir.props" />
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
-  
+
   <PropertyGroup>
     <PackageTargets>
         GenerateVersionBadge;
@@ -26,7 +26,7 @@
     <RemoveDir Directories="@(OutDirs)" />
 
     <!-- copy shared host layout -->
-    <Copy SourceFiles="$(SharedFrameworkPublishDir)dotnet$(ExeSuffix)" 
+    <Copy SourceFiles="$(SharedFrameworkPublishDir)dotnet$(ExeSuffix)"
           DestinationFolder="$(SharedHostPublishRoot)" />
 
     <Copy SourceFiles="$(ProjectDir)resources/ThirdPartyNotices.txt"
@@ -57,22 +57,22 @@
     <!-- Fix file permits -->
     <!-- Reset everything to user readable/writeable and group and world readable. -->
     <Exec Condition="'$(OSGroup)' != 'Windows_NT'"
-          Command='find %(OutDirs.Identity) -type f -name "*" -exec chmod 644 {} \;' />   
-    <!-- Generally, dylibs and sos have 'x' --> 
+          Command='find %(OutDirs.Identity) -type f -name "*" -exec chmod 644 {} \;' />
+    <!-- Generally, dylibs and sos have 'x' -->
     <Exec Condition="'$(OSGroup)' != 'Windows_NT'"
           Command='find %(OutDirs.Identity) -type f -name "*.dylib" -exec chmod 755 {} \;' />
     <Exec Condition="'$(OSGroup)' != 'Windows_NT'"
-          Command='find %(OutDirs.Identity) -type f -name "*.so" -exec chmod 755 {} \;' />  
+          Command='find %(OutDirs.Identity) -type f -name "*.so" -exec chmod 755 {} \;' />
     <!-- Executables (those without dots) are executable -->
     <Exec Condition="'$(OSGroup)' != 'Windows_NT'"
-          Command='find %(OutDirs.Identity) -type f ! -name "*.*" -exec chmod 755 {} \;' />   
-    
-    
+          Command='find %(OutDirs.Identity) -type f ! -name "*.*" -exec chmod 755 {} \;' />
+
+
     <!-- Copy all to combined directory -->
     <ItemGroup>
       <CombinedFiles Include="$(SharedHostPublishRoot)\**\*" />
       <CombinedFiles Include="$(HostFxrPublishRoot)/**\*" />
-      <CombinedFiles Include="$(SharedFrameworkPublishRoot)/**\*" />      
+      <CombinedFiles Include="$(SharedFrameworkPublishRoot)/**\*" />
     </ItemGroup>
     <RemoveDir Directories="@(CombinedPublishRoot)" />
     <Copy SourceFiles="@(CombinedFiles)"
@@ -89,14 +89,14 @@
     </PropertyGroup>
 
     <MakeDir  Condition="!Exists('$(BaseOutputRootPath)')" Directories="$(BaseOutputRootPath)" />
-    
+
     <WriteLinesToFile
       File="$(OutputVersionBadge)"
       Lines="$([System.IO.File]::ReadAllText('$(templateSvg)').Replace('ver_number', '$(ProductVersion)'))"
       Overwrite="true"
                       />
   </Target>
-  
+
   <Target Name="GenerateCompressedFiles" DependsOnTargets="InitPackage;GenerateZip;GenerateTarBall" Condition="'$(UsePrebuiltPortableBinariesForInstallers)' == 'false'"/>
 
   <UsingTask TaskName="ZipFileCreateFromDirectory" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
@@ -129,10 +129,10 @@
 
     <!-- tar command will throw 'file changed as we read it' on some distros.  ignore that error.
          we use -C so that we get a relative folder structure which is compressed rather than the full path -->
-    <Exec Command="tar -C $(CombinedPublishRoot) -czf $(PackagesOutDir)$(CombinedCompressedFile) ." 
+    <Exec Command="tar -C $(CombinedPublishRoot) -czf $(PackagesOutDir)$(CombinedCompressedFile) ."
           IgnoreExitCode="true"
           IgnoreStandardErrorWarningFormat="true" />
-    <Exec Command="tar -C $(HostFxrPublishRoot) -czf $(PackagesOutDir)$(HostFxrCompressedFile) ." 
+    <Exec Command="tar -C $(HostFxrPublishRoot) -czf $(PackagesOutDir)$(HostFxrCompressedFile) ."
           IgnoreExitCode="true"
           IgnoreStandardErrorWarningFormat="true" />
     <Exec Command="tar -C $(SharedFrameworkPublishRoot) -czf $(PackagesOutDir)$(SharedFrameworkCompressedFile) ."
@@ -146,7 +146,7 @@
     <Error Condition="!Exists('$(PackagesOutDir)$(SharedFrameworkCompressedFile)')" Message="Unable to create $(PackagesOutDir)$(SharedFrameworkCompressedFile)" />
     <Error Condition="!Exists('$(PackagesOutDir)$(SharedFrameworkSymbolsCompressedFile)')" Message="Unable to create $(PackagesOutDir)$(SharedFrameworkSymbolsCompressedFile)" />
   </Target>
-  
+
   <Import Project="windows\package.targets" />
   <Import Project="osx\package.targets" />
   <Import Project="deb\package.targets" />
@@ -173,11 +173,11 @@
     <PropertyGroup>
       <OutputArg>--output $(PackagesOutDir)</OutputArg>
       <ConfigArg>--configuration $(ConfigurationGroup)</ConfigArg>
-      <VersionSuffixArg Condition="'$(StabilizePackageVersion)' != 'true'">--version-suffix $(VersionSuffix)</VersionSuffixArg>
+      <VersionSuffixArg Condition="'$(VersionSuffix)' != ''">--version-suffix $(VersionSuffix)</VersionSuffixArg>
     </PropertyGroup>
 
     <Exec Command="$(DotnetToolCommand) pack %(PackageProjects.Identity) --no-build $(OutputArg) $(ConfigArg) $(VersionSuffixArg) /p:BaseOutputPath=$(IntermediateOutputForPackaging)"
           Condition="'@(PackageProjects)' != ''" />
   </Target>
-  
+
 </Project>
