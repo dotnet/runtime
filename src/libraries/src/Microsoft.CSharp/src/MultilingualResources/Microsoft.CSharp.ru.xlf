@@ -310,10 +310,6 @@
           <source>'{0}': static types cannot be used as type arguments</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">"{0}": нельзя использовать статические типы в качестве аргументов-типов</target>
         </trans-unit>
-        <trans-unit id="PartialMethodToDelegate" translate="yes" xml:space="preserve">
-          <source>Cannot create delegate from method '{0}' because it is a partial method without an implementing declaration</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Невозможно создать делегат на основе метода "{0}", поскольку он является разделяемым методом без реализующего объявления</target>
-        </trans-unit>
         <trans-unit id="IncrementLvalueExpected" translate="yes" xml:space="preserve">
           <source>The operand of an increment or decrement operator must be a variable, property or indexer</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Операндом оператора инкремента или декремента должна быть переменная, свойство или индексатор</target>

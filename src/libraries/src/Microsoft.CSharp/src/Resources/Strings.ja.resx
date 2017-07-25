@@ -240,9 +240,6 @@
   <data name="GenericArgIsStaticClass" xml:space="preserve">
     <value>'{0}': スタティック型を型引数として使用することはできません</value>
   </data>
-  <data name="PartialMethodToDelegate" xml:space="preserve">
-    <value>メソッド '{0}' は実装宣言がない部分メソッドであるため、このメソッドからデリゲートを作成できません</value>
-  </data>
   <data name="IncrementLvalueExpected" xml:space="preserve">
     <value>インクリメント演算子またはデクリメント演算子のオペランドには、変数、プロパティ、またはインデクサーを指定してください。</value>
   </data>

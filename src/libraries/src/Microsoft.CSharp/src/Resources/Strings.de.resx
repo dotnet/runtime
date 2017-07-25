@@ -240,9 +240,6 @@
   <data name="GenericArgIsStaticClass" xml:space="preserve">
     <value>{0}: Statische Typen können nicht als Typargumente verwendet werden.</value>
   </data>
-  <data name="PartialMethodToDelegate" xml:space="preserve">
-    <value>Aus der {0}-Methode kann kein Delegat erstellt werden, da es sich um eine partielle Methode ohne implementierende Deklaration handelt.</value>
-  </data>
   <data name="IncrementLvalueExpected" xml:space="preserve">
     <value>Der Operand eines Inkrement- oder Dekrementoperators muss eine Variable, eine Eigenschaft oder ein Indexer sein.</value>
   </data>

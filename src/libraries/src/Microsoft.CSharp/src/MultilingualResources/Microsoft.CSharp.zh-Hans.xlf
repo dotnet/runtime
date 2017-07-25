@@ -310,10 +310,6 @@
           <source>'{0}': static types cannot be used as type arguments</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">“{0}”: 静态类型不能用作类型参数</target>
         </trans-unit>
-        <trans-unit id="PartialMethodToDelegate" translate="yes" xml:space="preserve">
-          <source>Cannot create delegate from method '{0}' because it is a partial method without an implementing declaration</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">无法通过方法“{0}”创建委托，因为该方法是没有实现声明的分部方法</target>
-        </trans-unit>
         <trans-unit id="IncrementLvalueExpected" translate="yes" xml:space="preserve">
           <source>The operand of an increment or decrement operator must be a variable, property or indexer</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">递增或递减运算符的操作数必须是变量、属性或索引器</target>
