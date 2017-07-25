@@ -11,8 +11,10 @@ namespace System.Net.Sockets.Tests
     public class ReceiveMessageFrom
     {
         [OuterLoop] // TODO: Issue #11345
-        [Fact]
-        public void Success()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Success(bool forceNonBlocking)
         {
             if (Socket.OSSupportsIPv4)
             {
@@ -21,8 +23,12 @@ namespace System.Net.Sockets.Tests
                     int port = receiver.BindToAnonymousPort(IPAddress.Loopback);
                     receiver.SetSocketOption(SocketOptionLevel.IP, SocketOptionName.PacketInformation, true);
 
+                    receiver.ForceNonBlocking(forceNonBlocking);
+
                     Socket sender = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
                     sender.Bind(new IPEndPoint(IPAddress.Loopback, 0));
+
+                    sender.ForceNonBlocking(forceNonBlocking);
 
                     for (int i = 0; i < TestSettings.UDPRedundancy; i++)
                     {
@@ -45,8 +51,10 @@ namespace System.Net.Sockets.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [Fact]
-        public void Success_IPv6()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Success_IPv6(bool forceNonBlocking)
         {
             if (Socket.OSSupportsIPv6)
             {
@@ -55,8 +63,12 @@ namespace System.Net.Sockets.Tests
                     int port = receiver.BindToAnonymousPort(IPAddress.IPv6Loopback);
                     receiver.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.PacketInformation, true);
 
+                    receiver.ForceNonBlocking(forceNonBlocking);
+
                     Socket sender = new Socket(AddressFamily.InterNetworkV6, SocketType.Dgram, ProtocolType.Udp);
                     sender.Bind(new IPEndPoint(IPAddress.IPv6Loopback, 0));
+
+                    sender.ForceNonBlocking(forceNonBlocking);
 
                     for (int i = 0; i < TestSettings.UDPRedundancy; i++)
                     {
