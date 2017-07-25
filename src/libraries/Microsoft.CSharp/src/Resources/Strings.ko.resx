@@ -240,9 +240,6 @@
   <data name="GenericArgIsStaticClass" xml:space="preserve">
     <value>'{0}': 정적 형식은 형식 인수로 사용할 수 없습니다.</value>
   </data>
-  <data name="PartialMethodToDelegate" xml:space="preserve">
-    <value>'{0}'은(는) 구현 선언이 없는 부분 메서드(Partial Method)이므로 이 메서드로부터 대리자를 만들 수 없습니다.</value>
-  </data>
   <data name="IncrementLvalueExpected" xml:space="preserve">
     <value>증가 연산자 또는 감소 연산자의 피연산자는 변수, 속성 또는 인덱서여야 합니다.</value>
   </data>

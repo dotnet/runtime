@@ -240,9 +240,6 @@
   <data name="GenericArgIsStaticClass" xml:space="preserve">
     <value>'{0}': los tipos estáticos no se pueden usar como argumentos de tipo</value>
   </data>
-  <data name="PartialMethodToDelegate" xml:space="preserve">
-    <value>No se puede crear un delegado a partir del método '{0}' porque es un método parcial sin una declaración de implementación.</value>
-  </data>
   <data name="IncrementLvalueExpected" xml:space="preserve">
     <value>El operando de un operador de incremento o decremento debe ser una variable, una propiedad o un indizador</value>
   </data>

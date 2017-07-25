@@ -286,9 +286,6 @@
   <data name="GenericArgIsStaticClass" xml:space="preserve">
     <value>'{0}': static types cannot be used as type arguments</value>
   </data>
-  <data name="PartialMethodToDelegate" xml:space="preserve">
-    <value>Cannot create delegate from method '{0}' because it is a partial method without an implementing declaration</value>
-  </data>
   <data name="IncrementLvalueExpected" xml:space="preserve">
     <value>The operand of an increment or decrement operator must be a variable, property or indexer</value>
   </data>

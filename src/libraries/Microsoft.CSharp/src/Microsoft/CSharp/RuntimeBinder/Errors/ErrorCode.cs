@@ -69,7 +69,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         ERR_LiteralDoubleCast = 664,
         ERR_ConvertToStaticClass = 716,
         ERR_GenericArgIsStaticClass = 718,
-        ERR_PartialMethodToDelegate = 762,
         ERR_IncrementLvalueExpected = 1059,
         ERR_NoSuchMemberOrExtension = 1061,
         ERR_ValueTypeExtDelegate = 1113,
