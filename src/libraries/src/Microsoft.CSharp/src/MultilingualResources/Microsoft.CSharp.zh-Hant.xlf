@@ -170,10 +170,6 @@
           <source>A property or indexer may not be passed as an out or ref parameter</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">無法將屬性或索引子當做 out 或 ref 參數傳遞</target>
         </trans-unit>
-        <trans-unit id="UnsafeNeeded" translate="yes" xml:space="preserve">
-          <source>Dynamic calls cannot be used in conjunction with pointers</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">動態呼叫不能與指標一起使用</target>
-        </trans-unit>
         <trans-unit id="BadBoolOp" translate="yes" xml:space="preserve">
           <source>In order to be applicable as a short circuit operator a user-defined logical operator ('{0}') must have the same return type as the type of its 2 parameters</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">為了可以當成最少運算 (Short Circuit) 運算子使用，使用者定義的邏輯運算子 ('{0}') 其傳回型別必須與其 2 個參數的型別相同</target>

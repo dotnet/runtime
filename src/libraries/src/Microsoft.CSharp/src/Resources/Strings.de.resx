@@ -150,9 +150,6 @@
   <data name="AmbigMember" xml:space="preserve">
     <value>Mehrdeutigkeit zwischen {0} und {1}</value>
   </data>
-  <data name="SizeofUnsafe" xml:space="preserve">
-    <value>{0} enthält keine vordefinierte Größe, sizeof kann daher nur in einem ungeschützten Kontext verwendet werden (verwenden Sie ggf. System.Runtime.InteropServices.Marshal.SizeOf).</value>
-  </data>
   <data name="CallingFinalizeDepracated" xml:space="preserve">
     <value>Destruktoren und object.Finalize können nicht direkt aufgerufen werden. Rufen Sie IDisposable.Dispose auf, sofern verfügbar.</value>
   </data>

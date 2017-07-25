@@ -150,9 +150,6 @@
   <data name="AmbigMember" xml:space="preserve">
     <value>Ambigüedad entre '{0}' y '{1}'</value>
   </data>
-  <data name="SizeofUnsafe" xml:space="preserve">
-    <value>'{0}' no tiene un tamaño predefinido; por tanto, sizeof sólo se puede usar en un contexto no seguro (use System.Runtime.InteropServices.Marshal.SizeOf).</value>
-  </data>
   <data name="CallingFinalizeDepracated" xml:space="preserve">
     <value>Los destructores y object.Finalize no se pueden llamar directamente. Llame a IDisposable.Dispose si está disponible.</value>
   </data>
