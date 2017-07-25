@@ -19,8 +19,8 @@ namespace Microsoft.CSharp.RuntimeBinder
     {
         /////////////////////////////////////////////////////////////////////////////////
         // Members
-        private HashSet<Type> _typesWithConversionsLoaded;
-        private HashSet<NameHashKey> _namesLoadedForEachType;
+        private readonly HashSet<Type> _typesWithConversionsLoaded = new HashSet<Type>();
+        private readonly HashSet<NameHashKey> _namesLoadedForEachType = new HashSet<NameHashKey>();
 
         // Members from the managed binder.
         private readonly SYMTBL _symbolTable;
@@ -78,16 +78,6 @@ namespace Microsoft.CSharp.RuntimeBinder
             _typeManager = typeManager;
             _bsymmgr = bsymmgr;
             _semanticChecker = semanticChecker;
-
-            ClearCache();
-        }
-
-        /////////////////////////////////////////////////////////////////////////////////
-
-        private void ClearCache()
-        {
-            _typesWithConversionsLoaded = new HashSet<Type>();
-            _namesLoadedForEachType = new HashSet<NameHashKey>();
             _rootNamespace = _bsymmgr.GetRootNS();
 
             // Now populate object.
@@ -123,29 +113,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             }
 
             // Add the names.
-            IEnumerable<MemberInfo> members = AddNamesOnType(key);
-
-            // Take each member and load each type's conversions into the symbol table.
-            if (members != null)
-            {
-                foreach (MemberInfo member in members)
-                {
-                    if (member is MethodInfo)
-                    {
-                        foreach (ParameterInfo param in (member as MethodInfo).GetParameters())
-                        {
-                            AddConversionsForType(param.ParameterType);
-                        }
-                    }
-                    else if (member is ConstructorInfo)
-                    {
-                        foreach (ParameterInfo param in (member as ConstructorInfo).GetParameters())
-                        {
-                            AddConversionsForType(param.ParameterType);
-                        }
-                    }
-                }
-            }
+            AddNamesOnType(key);
 
             // Take each type argument and load its conversions into the symbol table.
             if (typeArguments != null)
@@ -197,10 +165,16 @@ namespace Microsoft.CSharp.RuntimeBinder
             return mem.SwtFirst();
         }
 
-        /////////////////////////////////////////////////////////////////////////////////
+        private void AddParameterConversions(MethodBase method)
+        {
+            foreach (ParameterInfo param in method.GetParameters())
+            {
+                AddConversionsForType(param.ParameterType);
+            }
+        }
 
         #region InheritanceHierarchy
-        private IEnumerable<MemberInfo> AddNamesOnType(NameHashKey key)
+        private void AddNamesOnType(NameHashKey key)
         {
             Debug.Assert(!_namesLoadedForEachType.Contains(key));
 
@@ -208,15 +182,13 @@ namespace Microsoft.CSharp.RuntimeBinder
             List<Type> inheritance = CreateInheritanceHierarchyList(key.type);
 
             // Now add every method as it appears in the inheritance hierarchy.
-            return AddNamesInInheritanceHierarchy(key.name, inheritance);
+            AddNamesInInheritanceHierarchy(key.name, inheritance);
         }
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private IEnumerable<MemberInfo> AddNamesInInheritanceHierarchy(string name, List<Type> inheritance)
+        private void AddNamesInInheritanceHierarchy(string name, List<Type> inheritance)
         {
-            IEnumerable<MemberInfo> result = Array.Empty<MemberInfo>();
-
             for (int i = inheritance.Count - 1; i >= 0; --i)
             {
                 Type type = inheritance[i];
@@ -224,77 +196,88 @@ namespace Microsoft.CSharp.RuntimeBinder
                 {
                     type = type.GetGenericTypeDefinition();
                 }
-                NameHashKey key = new NameHashKey(type, name);
+
+                if (!_namesLoadedForEachType.Add(new NameHashKey(type, name)))
+                {
+                    continue;
+                }
 
                 // Now loop over all methods and add them.
-                IEnumerable<MemberInfo> members = Enumerable.Where(type.GetMembers(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static),
-                                                                   member => member.Name == name && member.DeclaringType == type);
-                IEnumerable<MemberInfo> events = Enumerable.Where(type.GetRuntimeEvents(),
-                                                                  member => member.Name == name && member.DeclaringType == type);
-
-                if (members.Any())
+                IEnumerator<MemberInfo> memberEn = type
+                    .GetMembers(
+                        BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static)
+                    .Where(member => member.DeclaringType == type && member.Name == name).GetEnumerator();
+                if (memberEn.MoveNext())
                 {
+                    List<EventInfo> events = null;
                     CType cType = GetCTypeFromType(type);
-                    if (!(cType is AggregateType))
+                    if (!(cType is AggregateType aggType))
                         continue;
-                    AggregateSymbol aggregate = (cType as AggregateType).getAggregate();
+                    AggregateSymbol aggregate = aggType.getAggregate();
                     FieldSymbol addedField = null;
 
                     // We need to add fields before the actual events, so do the first iteration
-                    // excludint events.
-                    foreach (MemberInfo member in members)
+                    // excluding events.
+                    do
                     {
-                        if (member is MethodInfo)
+                        MemberInfo member = memberEn.Current;
+                        if (member is MethodInfo method)
                         {
-                            MethodKindEnum kind = MethodKindEnum.Actual;
-                            if (member.Name == SpecialNames.Invoke)
+                            MethodKindEnum kind;
+                            switch (member.Name)
                             {
-                                kind = MethodKindEnum.Invoke;
+                                case SpecialNames.Invoke:
+                                    kind = MethodKindEnum.Invoke;
+                                    break;
+
+                                case SpecialNames.ImplicitConversion:
+                                    kind = MethodKindEnum.ImplicitConv;
+                                    break;
+
+                                case SpecialNames.ExplicitConversion:
+                                    kind = MethodKindEnum.ExplicitConv;
+                                    break;
+
+                                default:
+                                    kind = MethodKindEnum.Actual;
+                                    break;
                             }
-                            else if (member.Name == SpecialNames.ImplicitConversion)
-                            {
-                                kind = MethodKindEnum.ImplicitConv;
-                            }
-                            else if (member.Name == SpecialNames.ExplicitConversion)
-                            {
-                                kind = MethodKindEnum.ExplicitConv;
-                            }
-                            AddMethodToSymbolTable(
-                                member,
-                                aggregate,
-                                kind);
+
+                            AddMethodToSymbolTable(member, aggregate, kind);
+                            AddParameterConversions(method);
                         }
-                        else if (member is ConstructorInfo)
+                        else if (member is ConstructorInfo ctor)
                         {
-                            AddMethodToSymbolTable(
-                                member,
-                                aggregate,
-                                MethodKindEnum.Constructor);
+                            AddMethodToSymbolTable(member, aggregate, MethodKindEnum.Constructor);
+                            AddParameterConversions(ctor);
                         }
-                        else if (member is PropertyInfo)
+                        else if (member is PropertyInfo prop)
                         {
-                            AddPropertyToSymbolTable(member as PropertyInfo, aggregate);
+                            AddPropertyToSymbolTable(prop, aggregate);
                         }
-                        else if (member is FieldInfo)
+                        else if (member is FieldInfo field)
                         {
                             // Store this field so that if we also find an event, we can
                             // mark it as the backing field of the event.
                             Debug.Assert(addedField == null);
-                            addedField = AddFieldToSymbolTable(member as FieldInfo, aggregate);
+                            addedField = AddFieldToSymbolTable(field, aggregate);
+                        }
+                        else if (member is EventInfo e)
+                        {
+                            // Store events until after all fields
+                            (events = events ?? new List<EventInfo>()).Add(e);
+                        }
+                    } while (memberEn.MoveNext());
+
+                    if (events != null)
+                    {
+                        foreach (EventInfo e in events)
+                        {
+                            AddEventToSymbolTable(e, aggregate, addedField);
                         }
                     }
-                    foreach (EventInfo e in events)
-                    {
-                        AddEventToSymbolTable(e, aggregate, addedField);
-                    }
-
-                    result = result.Concat(members);
                 }
-
-                _namesLoadedForEachType.Add(key);
             }
-
-            return result;
         }
 
         /////////////////////////////////////////////////////////////////////////////////
@@ -1279,7 +1262,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             return cachedResult;
         }
 
-        private EventSymbol AddEventToSymbolTable(EventInfo eventInfo, AggregateSymbol aggregate, FieldSymbol addedField)
+        private void AddEventToSymbolTable(EventInfo eventInfo, AggregateSymbol aggregate, FieldSymbol addedField)
         {
             EventSymbol ev = _symbolTable.LookupSym(
                 GetName(eventInfo.Name),
@@ -1288,7 +1271,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             if (ev != null)
             {
                 Debug.Assert(ev.AssociatedEventInfo == eventInfo);
-                return ev;
+                return;
             }
 
             ev = _symFactory.CreateEvent(GetName(eventInfo.Name), aggregate);
@@ -1350,8 +1333,6 @@ namespace Microsoft.CSharp.RuntimeBinder
                     }
                 }
             }
-
-            return ev;
         }
         #endregion
 
@@ -1373,7 +1354,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private PropertySymbol AddPropertyToSymbolTable(PropertyInfo property, AggregateSymbol aggregate)
+        private void AddPropertyToSymbolTable(PropertyInfo property, AggregateSymbol aggregate)
         {
             Name name;
             bool isIndexer = property.GetIndexParameters() != null && property.GetIndexParameters().Length != 0;
@@ -1403,7 +1384,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 {
                     if (prop.AssociatedPropertyInfo.IsEquivalentTo(property))
                     {
-                        return prop;
+                        return;
                     }
 
                     prevProp = prop;
@@ -1513,8 +1494,6 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             // The access of the property is the least restrictive access of its getter/setter.
             prop.SetAccess(access);
-
-            return prop;
         }
 
         #endregion
@@ -2084,21 +2063,26 @@ namespace Microsoft.CSharp.RuntimeBinder
             AggregateSymbol aggregate = ((AggregateType)t).getAggregate();
 
             // Now find all the conversions and make them.
-            IEnumerable<MethodInfo> conversions = Enumerable.Where(type.GetRuntimeMethods(),
-                                                    conversion => (conversion.IsPublic && conversion.IsStatic)
-                                                      && (conversion.Name == SpecialNames.ImplicitConversion || conversion.Name == SpecialNames.ExplicitConversion)
-                                                      && conversion.DeclaringType == type
-                                                      && conversion.IsSpecialName
-                                                      && !conversion.IsGenericMethod);
-
-            foreach (MethodInfo conversion in conversions)
+            foreach (MethodInfo conversion in type.GetRuntimeMethods())
             {
-                MethodSymbol method = AddMethodToSymbolTable(
-                    conversion,
-                    aggregate,
-                    conversion.Name == SpecialNames.ImplicitConversion ?
-                        MethodKindEnum.ImplicitConv :
-                        MethodKindEnum.ExplicitConv);
+                if (conversion.IsPublic && conversion.IsStatic && conversion.DeclaringType == type
+                    && conversion.IsSpecialName && !conversion.IsGenericMethod)
+                {
+                    MethodKindEnum methodKind;
+                    switch (conversion.Name)
+                    {
+                        case SpecialNames.ImplicitConversion:
+                            methodKind = MethodKindEnum.ImplicitConv;
+                            break;
+                        case SpecialNames.ExplicitConversion:
+                            methodKind = MethodKindEnum.ExplicitConv;
+                            break;
+                        default:
+                            continue;
+                    }
+
+                    AddMethodToSymbolTable(conversion, aggregate, methodKind);
+                }
             }
         }
         #endregion
@@ -2106,56 +2090,45 @@ namespace Microsoft.CSharp.RuntimeBinder
         #region Operators
         /////////////////////////////////////////////////////////////////////////////////
 
-        private bool IsOperator(MethodInfo method)
+        private static bool IsOperator(MethodInfo method)
         {
-            return method.IsSpecialName &&
-                method.IsStatic &&
-                (method.Name == SpecialNames.ImplicitConversion ||
-                method.Name == SpecialNames.ExplicitConversion ||
+            if (method.IsSpecialName && method.IsStatic)
+            {
+                switch (method.Name)
+                {
+                    case SpecialNames.ImplicitConversion:
+                    case SpecialNames.ExplicitConversion:
+                    case SpecialNames.CLR_Add:
+                    case SpecialNames.CLR_Subtract:
+                    case SpecialNames.CLR_Multiply:
+                    case SpecialNames.CLR_Division:
+                    case SpecialNames.CLR_Modulus:
+                    case SpecialNames.CLR_LShift:
+                    case SpecialNames.CLR_RShift:
+                    case SpecialNames.CLR_LT:
+                    case SpecialNames.CLR_GT:
+                    case SpecialNames.CLR_LTE:
+                    case SpecialNames.CLR_GTE:
+                    case SpecialNames.CLR_Equality:
+                    case SpecialNames.CLR_Inequality:
+                    case SpecialNames.CLR_BitwiseAnd:
+                    case SpecialNames.CLR_ExclusiveOr:
+                    case SpecialNames.CLR_BitwiseOr:
+                    case SpecialNames.CLR_LogicalNot:
+                    case SpecialNames.CLR_UnaryNegation:
+                    case SpecialNames.CLR_UnaryPlus:
+                    case SpecialNames.CLR_OnesComplement:
+                    case SpecialNames.CLR_True:
+                    case SpecialNames.CLR_False:
+                    case SpecialNames.CLR_PreIncrement:
+                    case SpecialNames.CLR_PreDecrement:
+                        return true;
+                }
+            }
 
-                // Binary Operators
-                method.Name == SpecialNames.CLR_Add ||
-                method.Name == SpecialNames.CLR_Subtract ||
-                method.Name == SpecialNames.CLR_Multiply ||
-                method.Name == SpecialNames.CLR_Division ||
-                method.Name == SpecialNames.CLR_Modulus ||
-                method.Name == SpecialNames.CLR_LShift ||
-                method.Name == SpecialNames.CLR_RShift ||
-                method.Name == SpecialNames.CLR_LT ||
-                method.Name == SpecialNames.CLR_GT ||
-                method.Name == SpecialNames.CLR_LTE ||
-                method.Name == SpecialNames.CLR_GTE ||
-                method.Name == SpecialNames.CLR_Equality ||
-                method.Name == SpecialNames.CLR_Inequality ||
-                method.Name == SpecialNames.CLR_BitwiseAnd ||
-                method.Name == SpecialNames.CLR_ExclusiveOr ||
-                method.Name == SpecialNames.CLR_BitwiseOr ||
-                method.Name == SpecialNames.CLR_LogicalNot ||
-
-                // Binary inplace operators.
-                method.Name == SpecialNames.CLR_InPlaceAdd ||
-                method.Name == SpecialNames.CLR_InPlaceSubtract ||
-                method.Name == SpecialNames.CLR_InPlaceMultiply ||
-                method.Name == SpecialNames.CLR_InPlaceDivide ||
-                method.Name == SpecialNames.CLR_InPlaceModulus ||
-                method.Name == SpecialNames.CLR_InPlaceBitwiseAnd ||
-                method.Name == SpecialNames.CLR_InPlaceExclusiveOr ||
-                method.Name == SpecialNames.CLR_InPlaceBitwiseOr ||
-                method.Name == SpecialNames.CLR_InPlaceLShift ||
-                method.Name == SpecialNames.CLR_InPlaceRShift ||
-
-                // Unary Operators
-                method.Name == SpecialNames.CLR_UnaryNegation ||
-                method.Name == SpecialNames.CLR_UnaryPlus ||
-                method.Name == SpecialNames.CLR_OnesComplement ||
-                method.Name == SpecialNames.CLR_True ||
-                method.Name == SpecialNames.CLR_False ||
-
-                method.Name == SpecialNames.CLR_PreIncrement ||
-                method.Name == SpecialNames.CLR_PostIncrement ||
-                method.Name == SpecialNames.CLR_PreDecrement ||
-                method.Name == SpecialNames.CLR_PostDecrement);
+            return false;
         }
+
         #endregion
     }
 }
