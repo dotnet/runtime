@@ -16,12 +16,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         SK_MethodSymbol,
         SK_PropertySymbol,
         SK_EventSymbol,
-        SK_ExternalAliasDefinitionSymbol,
         SK_Scope,
-        SK_CachedNameSymbol,
-        SK_LambdaScope,
-        SK_UnresolvedAggregateSymbol,
-        SK_IndexerSymbol,
-        SK_LIM
+        SK_IndexerSymbol
     }
 }
