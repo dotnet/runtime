@@ -215,13 +215,22 @@ namespace BasicEventSourceTests
             TestUtilities.CheckNoEventSourcesRunning("Stop");
         }
 
-        // THread.Sleep has proven unreliable, sometime sleeping much shorter than it should. 
+        // Thread.Sleep has proven unreliable, sometime sleeping much shorter than it should. 
         // This makes sure it at least sleeps 'msec' at a miniumum.  
         private static void Sleep(int minMSec)
         {
             var startTime = DateTime.UtcNow;
-            while ((DateTime.UtcNow - startTime).TotalMilliseconds < minMSec)
+            for(;;)
+            {
+                DateTime endTime = DateTime.UtcNow;
+                double delta = (endTime - startTime).TotalMilliseconds;
+                if (delta >= minMSec)
+                {
+                    Console.WriteLine("Sleep asked to wait {0} msec, actually waited {1:n2} msec Start: {2:mm:ss.fff} End: {3:mm:ss.fff} ", minMSec, delta, startTime, endTime);
+                    break;
+                }
                 Thread.Sleep(1);
+            }
         }
 
         private static void ValidateSingleEventCounter(Event evt, string counterName, int count, float mean, float standardDeviation, float min, float max)
