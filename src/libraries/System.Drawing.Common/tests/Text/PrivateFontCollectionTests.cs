@@ -58,7 +58,7 @@ namespace System.Drawing.Text.Tests
                 Assert.Equal("Code New Roman", fontFamily.Name);
             }
         }
-        
+
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void AddFontFile_SamePathMultipleTimes_FamiliesContainsOnlyOneFont()
         {
@@ -239,7 +239,7 @@ namespace System.Drawing.Text.Tests
 
             AssertExtensions.Throws<ArgumentException>(null, () => fontCollection.AddMemoryFont((IntPtr)10, 100));
         }
-        
+
         [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
         public void Families_GetWhenDisposed_ThrowsArgumentException()
         {
