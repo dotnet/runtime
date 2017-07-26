@@ -522,7 +522,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 if (mem.SwtInaccessible().Sym != null)
                 {
-                    Debug.Assert(mem.SwtInaccessible().Sym.IsMethodOrPropertySymbol());
+                    Debug.Assert(mem.SwtInaccessible().Sym is MethodOrPropertySymbol);
                     type = mem.SwtInaccessible().MethProp().RetType;
                     pSymbol = mem.SwtInaccessible().Sym;
                 }
@@ -546,7 +546,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return rval;
             }
 
-            Debug.Assert(mem.SymFirst().IsPropertySymbol() && mem.SymFirst().AsPropertySymbol().isIndexer());
+            Debug.Assert(mem.SymFirst() is PropertySymbol prop && prop.isIndexer());
 
             ExprMemberGroup grp = GetExprFactory().CreateMemGroup((EXPRFLAG)mem.GetFlags(),
                 pName, BSYMMGR.EmptyTypeArray(), mem.SymFirst().getKind(), mem.GetSourceType(), null/*pMPS*/, mem.GetObject(), mem.GetResults());
@@ -625,7 +625,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private ExprCall BindToMethod(MethWithInst mwi, Expr pArguments, ExprMemberGroup pMemGroup, MemLookFlags flags)
         {
-            Debug.Assert(mwi.Sym != null && mwi.Sym.IsMethodSymbol() && (!mwi.Meth().isOverride || mwi.Meth().isHideByName));
+            Debug.Assert(mwi.Sym is MethodSymbol && (!mwi.Meth().isOverride || mwi.Meth().isHideByName));
             Debug.Assert(pMemGroup != null);
 
             bool fConstrained;
@@ -757,7 +757,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 MethodSymbol getOrCreateMethod =
                     GetSymbolLoader()
                         .LookupAggMember(getOrCreateMethodName, fieldType.getAggregate(), symbmask_t.MASK_MethodSymbol)
-                        .AsMethodSymbol();
+                         as MethodSymbol;
 
                 MethPropWithInst getOrCreatempwi = new MethPropWithInst(getOrCreateMethod, fieldType);
                 ExprMemberGroup getOrCreateGrp = GetExprFactory().CreateMemGroup(null, getOrCreatempwi);
@@ -775,7 +775,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 PropertySymbol invocationList =
                     GetSymbolLoader()
                         .LookupAggMember(invocationListName, fieldTypeSymbol, symbmask_t.MASK_PropertySymbol)
-                        .AsPropertySymbol();
+                         as PropertySymbol;
 
                 MethPropWithInst mpwi = new MethPropWithInst(invocationList, fieldType);
                 ExprMemberGroup memGroup = GetExprFactory().CreateMemGroup(getOrCreateCall, mpwi);
@@ -793,7 +793,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         internal Expr BindToProperty(Expr pObject, PropWithType pwt, BindingFlag bindFlags, Expr args, AggregateType pOtherType, ExprMemberGroup pMemGroup)
         {
             Debug.Assert(pwt.Sym != null &&
-                    pwt.Sym.IsPropertySymbol() &&
+                    pwt.Sym is PropertySymbol &&
                     pwt.GetType() != null &&
                     pwt.Prop().getClass() == pwt.GetType().getAggregate());
             Debug.Assert(pwt.Prop().Params.Count == 0 || pwt.Prop().isIndexer());
@@ -973,9 +973,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             for (; ;)
             {
                 // Find the next operator.
-                methCur = (methCur == null) ?
-                          GetSymbolLoader().LookupAggMember(pName, atsCur.getAggregate(), symbmask_t.MASK_MethodSymbol).AsMethodSymbol() :
-                          GetSymbolLoader().LookupNextSym(methCur, atsCur.getAggregate(), symbmask_t.MASK_MethodSymbol).AsMethodSymbol();
+                methCur = methCur == null
+                    ? GetSymbolLoader().LookupAggMember(pName, atsCur.getAggregate(), symbmask_t.MASK_MethodSymbol) as MethodSymbol
+                    : GetSymbolLoader().LookupNextSym(methCur, atsCur.getAggregate(), symbmask_t.MASK_MethodSymbol) as MethodSymbol;
 
                 if (methCur == null)
                 {
@@ -1498,7 +1498,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private Expr AdjustMemberObject(SymWithType swt, Expr pObject, out bool pfConstrained, out bool pIsMatchingStatic)
         {
             // Assert that the type is present and is an instantiation of the member's parent.
-            Debug.Assert(swt.GetType() != null && swt.GetType().getAggregate() == swt.Sym.parent.AsAggregateSymbol());
+            Debug.Assert(swt.GetType() != null && swt.GetType().getAggregate() == swt.Sym.parent as AggregateSymbol);
             bool bIsMatchingStatic = IsMatchingStatic(swt, pObject);
             pIsMatchingStatic = bIsMatchingStatic;
             pfConstrained = false;
@@ -1539,7 +1539,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             // If we're in a constructor, then bail.
-            if (swt.Sym.IsMethodSymbol() && swt.Meth().IsConstructor())
+            if ((swt.Sym is MethodSymbol) && swt.Meth().IsConstructor())
             {
                 return pObject;
             }
@@ -1559,12 +1559,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (typeObj is TypeParameterType || typeObj is AggregateType)
             {
-                AggregateSymbol aggCalled = swt.Sym.parent.AsAggregateSymbol();
+                AggregateSymbol aggCalled = swt.Sym.parent as AggregateSymbol;
                 Debug.Assert(swt.GetType().getAggregate() == aggCalled);
 
                 // If we're invoking code on a struct-valued field, mark the struct as assigned (to
                 // avoid warning CS0649).
-                if (pObject is ExprField field && !field.FieldWithType.Field().isAssigned && !swt.Sym.IsFieldSymbol() &&
+                if (pObject is ExprField field && !field.FieldWithType.Field().isAssigned && !(swt.Sym is FieldSymbol) &&
                     typeObj.isStructType() && !typeObj.isPredefined())
                 {
                     field.FieldWithType.Field().isAssigned = true;
@@ -1602,9 +1602,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Symbol pSym = swt.Sym;
 
             // Instance constructors are always ok, static constructors are never ok.
-            if (pSym.IsMethodSymbol() && pSym.AsMethodSymbol().IsConstructor())
+            if (pSym is MethodSymbol meth && meth.IsConstructor())
             {
-                return !pSym.AsMethodSymbol().isStatic;
+                return !meth.isStatic;
             }
 
             bool isStatic = swt.Sym.isStatic;
@@ -1666,7 +1666,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             // For a property/indexer we remap the accessors, not the property/indexer.
             // Since every event has both accessors we remap the event instead of the accessors.
-            Debug.Assert(pswt && (pswt.Sym.IsMethodSymbol() || pswt.Sym.IsEventSymbol() || pswt.Sym.IsMethodOrPropertySymbol()));
+            Debug.Assert(pswt && (pswt.Sym is MethodSymbol || pswt.Sym is EventSymbol || pswt.Sym is MethodOrPropertySymbol));
             Debug.Assert(typeObj != null);
 
             // Don't remap static or interface methods.
@@ -1710,7 +1710,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(call != null);
             Expr argsPtr = call.OptionalArguments;
             SymWithType swt = call.GetSymWithType();
-            MethodOrPropertySymbol mp = swt.Sym.AsMethodOrPropertySymbol();
+            MethodOrPropertySymbol mp = swt.Sym as MethodOrPropertySymbol;
             TypeArray pTypeArgs = (call as ExprCall)?.MethWithInst.TypeArgs;
             Expr newArgs;
             AdjustCallArgumentsForParams(callingObjectType, swt.GetType(), mp, pTypeArgs, argsPtr, out newArgs);
@@ -1729,10 +1729,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             int paramCount = mp.Params.Count;
             TypeArray @params = mp.Params;
             int iDst = 0;
-            bool markTypeFromExternCall = mp.IsFMETHSYM() && mp.AsFMETHSYM().isExternal;
+            MethodSymbol m = mp as MethodSymbol;
+            bool markTypeFromExternCall = m != null && m.isExternal;
             int argCount = ExpressionIterator.Count(argsPtr);
 
-            if (mp.IsFMETHSYM() && mp.AsFMETHSYM().isVarargs)
+            if (m != null && m.isVarargs)
             {
                 paramCount--; // we don't care about the vararg sentinel
             }
@@ -1952,10 +1953,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return;
 
             agg.SetHasExternReference(true);
-            foreach (Symbol sym in agg.Children())
+            for (Symbol sym = agg.firstChild; sym != null; sym = sym.nextChild)
             {
-                if (sym.IsFieldSymbol())
-                    SetExternalRef(sym.AsFieldSymbol().GetType());
+                if (sym is FieldSymbol field)
+                    SetExternalRef(field.GetType());
             }
         }
 

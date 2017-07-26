@@ -46,9 +46,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                  pSym != null;
                  pSym = LookupNextSym(pSym, pAggDel, symbmask_t.MASK_ALL))
             {
-                if (pSym.IsMethodSymbol() && pSym.AsMethodSymbol().isInvoke())
+                if (pSym is MethodSymbol meth && meth.isInvoke())
                 {
-                    return pSym.AsMethodSymbol();
+                    return meth;
                 }
             }
             return null;

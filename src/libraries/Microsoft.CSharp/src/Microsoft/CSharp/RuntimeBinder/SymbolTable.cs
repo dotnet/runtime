@@ -451,7 +451,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private TypeParameterType LoadClassTypeParameter(AggregateSymbol parent, Type t)
         {
-            for (AggregateSymbol p = parent; p != null; p = p.parent.IsAggregateSymbol() ? p.parent.AsAggregateSymbol() : null)
+            for (AggregateSymbol p = parent; p != null; p = p.parent as AggregateSymbol)
             {
                 for (TypeParameterSymbol typeParam = _bsymmgr.LookupAggMember(
                         GetName(t), p, symbmask_t.MASK_TypeParameterSymbol) as TypeParameterSymbol;
@@ -568,16 +568,18 @@ namespace Microsoft.CSharp.RuntimeBinder
         {
             for (Symbol sym = parent.firstChild; sym != null; sym = sym.nextChild)
             {
-                if (!sym.IsTypeParameterSymbol())
+                if (!(sym is TypeParameterSymbol parSym))
                 {
                     continue;
                 }
 
-                if (AreTypeParametersEquivalent(sym.AsTypeParameterSymbol().GetTypeParameterType().AssociatedSystemType, t))
+                TypeParameterType type = parSym.GetTypeParameterType();
+                if (AreTypeParametersEquivalent(type.AssociatedSystemType, t))
                 {
-                    return sym.AsTypeParameterSymbol().GetTypeParameterType();
+                    return type;
                 }
             }
+
             return AddTypeParameterToSymbolTable(null, parent, t, false);
         }
 
@@ -670,7 +672,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     Type t = o as Type;
                     Name name = null;
                     name = GetName(t);
-                    next = _symbolTable.LookupSym(name, current, symbmask_t.MASK_AggregateSymbol).AsAggregateSymbol();
+                    next = _symbolTable.LookupSym(name, current, symbmask_t.MASK_AggregateSymbol) as AggregateSymbol;
 
                     // Make sure we match arity as well when we find an aggregate.
                     if (next != null)
@@ -741,7 +743,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
                     if (t == type)
                     {
-                        ret = GetConstructedType(type, next.AsAggregateSymbol());
+                        ret = GetConstructedType(type, next as AggregateSymbol);
                         break;
                     }
                 }
@@ -849,7 +851,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     // If the generic argument for nullable is our child, then we're
                     // declaring the initial Nullable<T>.
                     AggregateSymbol agg = _symbolTable.LookupSym(
-                        GetName(t), parent, symbmask_t.MASK_AggregateSymbol).AsAggregateSymbol();
+                        GetName(t), parent, symbmask_t.MASK_AggregateSymbol) as AggregateSymbol;
                     if (agg != null)
                     {
                         agg = FindSymWithMatchingArity(agg, t);
@@ -954,13 +956,8 @@ namespace Microsoft.CSharp.RuntimeBinder
         private NamespaceSymbol AddNamespaceToSymbolTable(NamespaceOrAggregateSymbol parent, string sz)
         {
             Name name = GetName(sz);
-            NamespaceSymbol ns = _symbolTable.LookupSym(name, parent, symbmask_t.MASK_NamespaceSymbol).AsNamespaceSymbol();
-            if (ns == null)
-            {
-                ns = _symFactory.CreateNamespace(name, parent as NamespaceSymbol);
-            }
-
-            return ns;
+            return _symbolTable.LookupSym(name, parent, symbmask_t.MASK_NamespaceSymbol) as NamespaceSymbol
+                ?? _symFactory.CreateNamespace(name, parent as NamespaceSymbol);
         }
         #endregion
 
@@ -1388,7 +1385,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     }
 
                     prevProp = prop;
-                    prop = _semanticChecker.SymbolLoader.LookupNextSym(prop, prop.parent, symbmask_t.MASK_PropertySymbol).AsPropertySymbol();
+                    prop = _semanticChecker.SymbolLoader.LookupNextSym(prop, prop.parent, symbmask_t.MASK_PropertySymbol) as PropertySymbol;
                 }
 
                 prop = prevProp;
@@ -1847,14 +1844,14 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private MethodSymbol FindMatchingMethod(MemberInfo method, AggregateSymbol callingAggregate)
         {
-            MethodSymbol meth = _bsymmgr.LookupAggMember(GetName(method.Name), callingAggregate, symbmask_t.MASK_MethodSymbol).AsMethodSymbol();
+            MethodSymbol meth = _bsymmgr.LookupAggMember(GetName(method.Name), callingAggregate, symbmask_t.MASK_MethodSymbol) as MethodSymbol;
             while (meth != null)
             {
                 if (meth.AssociatedMemberInfo.IsEquivalentTo(method))
                 {
                     return meth;
                 }
-                meth = BSYMMGR.LookupNextSym(meth, callingAggregate, symbmask_t.MASK_MethodSymbol).AsMethodSymbol();
+                meth = BSYMMGR.LookupNextSym(meth, callingAggregate, symbmask_t.MASK_MethodSymbol) as MethodSymbol;
             }
             return null;
         }
@@ -1990,10 +1987,10 @@ namespace Microsoft.CSharp.RuntimeBinder
             MethodSymbol meth = _semanticChecker.SymbolLoader.LookupAggMember(
                 GetName(baseMemberInfo.Name),
                 aggregate,
-                symbmask_t.MASK_MethodSymbol).AsMethodSymbol();
+                symbmask_t.MASK_MethodSymbol) as MethodSymbol;
             for (;
                     meth != null && !meth.AssociatedMemberInfo.IsEquivalentTo(baseMemberInfo);
-                    meth = _semanticChecker.SymbolLoader.LookupNextSym(meth, aggregate, symbmask_t.MASK_MethodSymbol).AsMethodSymbol())
+                    meth = _semanticChecker.SymbolLoader.LookupNextSym(meth, aggregate, symbmask_t.MASK_MethodSymbol) as MethodSymbol)
                 ;
 
             return meth;

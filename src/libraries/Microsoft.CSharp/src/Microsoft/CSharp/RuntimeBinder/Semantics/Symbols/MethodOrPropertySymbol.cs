@@ -169,10 +169,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return marshalAsType == UnmanagedType.Interface || marshalAsType == UnmanagedType.IUnknown;
         }
 
-        public AggregateSymbol getClass()
-        {
-            return parent.AsAggregateSymbol();
-        }
+        public AggregateSymbol getClass() => parent as AggregateSymbol;
 
         public bool IsExpImpl()
         {

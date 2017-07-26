@@ -97,12 +97,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     TypeParameterType t = (TypeParameterType)src;
                     if (t.IsMethodTypeParameter())
                     {
-                        MethodInfo meth = t.GetOwningSymbol().AsMethodSymbol().AssociatedMemberInfo as MethodInfo;
+                        MethodInfo meth = ((MethodSymbol)t.GetOwningSymbol()).AssociatedMemberInfo as MethodInfo;
                         result = meth.GetGenericArguments()[t.GetIndexInOwnParameters()];
                     }
                     else
                     {
-                        Type parentType = t.GetOwningSymbol().AsAggregateSymbol().AssociatedSystemType;
+                        Type parentType = ((AggregateSymbol)t.GetOwningSymbol()).AssociatedSystemType;
                         result = parentType.GetGenericArguments()[t.GetIndexInOwnParameters()];
                     }
                     break;
