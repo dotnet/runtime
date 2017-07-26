@@ -14,7 +14,8 @@ namespace System.Drawing.Tests
             yield return new object[] { Color.PapayaWhip, Color.PapayaWhip };
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(Colors_TestData))]
         public void Ctor_Color(Color color, Color expectedColor)
         {
@@ -22,7 +23,7 @@ namespace System.Drawing.Tests
             Assert.Equal(expectedColor, brush.Color);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Clone_Color_ReturnsClone()
         {
             var brush = new SolidBrush(Color.PeachPuff);
@@ -39,7 +40,7 @@ namespace System.Drawing.Tests
             Assert.NotEqual(Color.PapayaWhip, clone.Color);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Clone_ImmutableColor_ReturnsMutableClone()
         {
             SolidBrush brush = Assert.IsType<SolidBrush>(Brushes.Bisque);
@@ -50,7 +51,7 @@ namespace System.Drawing.Tests
             Assert.Equal(Color.Bisque, brush.Color);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Clone_Disposed_ThrowsArgumentException()
         {
             var brush = new SolidBrush(Color.LavenderBlush);
@@ -59,7 +60,8 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => brush.Clone());
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Color_EmptyAndGetDisposed_ThrowsArgumentException()
         {
             var brush = new SolidBrush(new Color());
@@ -68,7 +70,7 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => brush.Color);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Color_NonEmptyAndGetDisposed_ReturnsExpected()
         {
             var brush = new SolidBrush(Color.Aquamarine);
@@ -77,14 +79,14 @@ namespace System.Drawing.Tests
             Assert.Equal(Color.Aquamarine, brush.Color);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Color_SetValid_GetReturnsExpected()
         {
             var brush = new SolidBrush(Color.Goldenrod) { Color = Color.GhostWhite };
             Assert.Equal(Color.GhostWhite, brush.Color);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Color_SetDisposed_ThrowsArgumentException()
         {
             var brush = new SolidBrush(new Color());
@@ -93,14 +95,14 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => brush.Color = Color.WhiteSmoke);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Color_SetImmutable_ThrowsArgumentException()
         {
             SolidBrush brush = Assert.IsType<SolidBrush>(SystemBrushes.ActiveBorder);
             AssertExtensions.Throws<ArgumentException>(null, () => brush.Color = Color.AntiqueWhite);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Dispose_MultipleTimes_Success()
         {
             var brush = new SolidBrush(Color.Plum);
@@ -108,7 +110,7 @@ namespace System.Drawing.Tests
             brush.Dispose();
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Dispose_SetImmutable_ThrowsArgumentException()
         {
             SolidBrush brush = Assert.IsType<SolidBrush>(SystemBrushes.ActiveBorder);

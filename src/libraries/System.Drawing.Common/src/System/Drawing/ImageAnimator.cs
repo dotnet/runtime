@@ -75,7 +75,7 @@ namespace System.Drawing
         ///     a reader lock while pumping message, the thread is blocked forever.
         ///     This TLS variable is used to flag the above situation and avoid the deadlock, it is ThreadStatic so each
         ///     thread calling into ImageAnimator is garded against this problem.
-		/// </summary>
+        /// </summary>
 
 
 

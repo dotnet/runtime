@@ -9,7 +9,7 @@ namespace System.Drawing.Imaging.Tests
 {
     public class EncoderParametersTests
     {
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_Default()
         {
             EncoderParameters ep = new EncoderParameters();
@@ -17,7 +17,7 @@ namespace System.Drawing.Imaging.Tests
             Assert.Equal(new EncoderParameter[1], ep.Param);
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(1)]
         public void Ctor_Count_Default(int count)
         {
@@ -36,7 +36,7 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(Param_TestData))]
         public void Param_Success(EncoderParameter[] param)
         {
@@ -45,7 +45,7 @@ namespace System.Drawing.Imaging.Tests
             Assert.Equal(param, ep.Param);
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(Param_TestData))]
         public void Dispose_Success(EncoderParameter[] param)
         {

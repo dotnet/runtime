@@ -57,6 +57,7 @@ namespace System.Drawing.Printing.Tests
             Assert.Equal(kind, pr.Kind);
         }
 
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [Theory]
         [InlineData(PrinterResolutionKind.Custom + 1)]
         [InlineData(PrinterResolutionKind.High - 1)]

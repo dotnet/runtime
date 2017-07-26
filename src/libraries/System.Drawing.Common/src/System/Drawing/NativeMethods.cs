@@ -72,15 +72,13 @@ namespace System.Drawing
             public byte peFlags;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
         internal struct RGBQUAD
         {
             public byte rgbBlue;
             public byte rgbGreen;
             public byte rgbRed;
-            // disable csharp compiler warning #0414: field assigned unused value
-#pragma warning disable 0414
             public byte rgbReserved;
-#pragma warning restore 0414
         }
 
         [StructLayout(LayoutKind.Sequential)]
