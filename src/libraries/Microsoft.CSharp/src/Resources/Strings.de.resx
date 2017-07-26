@@ -321,12 +321,6 @@
   <data name="BadInstanceArgType" xml:space="preserve">
     <value>Instanzenargument: Konvertierung von {0} in {1} ist nicht möglich.</value>
   </data>
-  <data name="BadArgTypesForCollectionAdd" xml:space="preserve">
-    <value>Die beste Übereinstimmung für die überladene {0}-Methode für den Auflistungsinitialisierer enthält einige ungültige Argumente.</value>
-  </data>
-  <data name="InitializerAddHasParamModifiers" xml:space="preserve">
-    <value>Die beste Übereinstimmung für die überladene {0}-Methode für das Auflistungsinitialisiererelement kann nicht verwendet werden. Die Add-Methoden von Auflistungsinitialisierern dürfen keine ref- oder out-Parameter enthalten.</value>
-  </data>
   <data name="NonInvocableMemberCalled" xml:space="preserve">
     <value>Der nicht aufrufbare Member "{0}" kann nicht wie eine Methode verwendet werden.</value>
   </data>

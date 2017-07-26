@@ -321,12 +321,6 @@
   <data name="BadInstanceArgType" xml:space="preserve">
     <value>インスタンス引数: '{0}' から '{1}' へ変換できません</value>
   </data>
-  <data name="BadArgTypesForCollectionAdd" xml:space="preserve">
-    <value>コレクション初期化子に最も適しているオーバーロード Add メソッド '{0}' には無効な引数がいくつか含まれています</value>
-  </data>
-  <data name="InitializerAddHasParamModifiers" xml:space="preserve">
-    <value>コレクション初期化子要素の '{0}' に最も適しているオーバーロード メソッドは使用できません。コレクション初期化子 'Add' メソッドには、ref パラメーターまたは out パラメーターを使用できません。</value>
-  </data>
   <data name="NonInvocableMemberCalled" xml:space="preserve">
     <value>実行不可能なメンバー '{0}' をメソッドのように使用することはできません。</value>
   </data>

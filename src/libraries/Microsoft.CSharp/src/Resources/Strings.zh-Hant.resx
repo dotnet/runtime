@@ -321,12 +321,6 @@
   <data name="BadInstanceArgType" xml:space="preserve">
     <value>執行個體引數: 無法從 '{0}' 轉換為 '{1}'</value>
   </data>
-  <data name="BadArgTypesForCollectionAdd" xml:space="preserve">
-    <value>集合初始設定式的最佳多載 Add 方法 '{0}' 有一些無效的引數</value>
-  </data>
-  <data name="InitializerAddHasParamModifiers" xml:space="preserve">
-    <value>無法使用集合初始設定式項目之最符合的多載方法 '{0}'。集合初始設定式 'Add' 方法不能具有 ref 或 out 參數。</value>
-  </data>
   <data name="NonInvocableMemberCalled" xml:space="preserve">
     <value>非可叫用 (Non-invocable) 成員 '{0}' 不能做為方法使用。</value>
   </data>

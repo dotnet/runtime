@@ -321,12 +321,6 @@
   <data name="BadInstanceArgType" xml:space="preserve">
     <value>Argomento dell'istanza: impossibile eseguire la conversione da '{0}' a '{1}'</value>
   </data>
-  <data name="BadArgTypesForCollectionAdd" xml:space="preserve">
-    <value>Il miglior metodo Add di overload '{0}' per l'inizializzatore di raccolta presenta alcuni argomenti non validi</value>
-  </data>
-  <data name="InitializerAddHasParamModifiers" xml:space="preserve">
-    <value>Impossibile utilizzare la corrispondenza migliore del metodo di overload '{0}' per l'elemento inizializzatore della raccolta. I metodi 'Add' dell'inizializzatore di raccolta non possono includere parametri ref o out.</value>
-  </data>
   <data name="NonInvocableMemberCalled" xml:space="preserve">
     <value>Impossibile utilizzare il membro non richiamabile '{0}' come metodo.</value>
   </data>

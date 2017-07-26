@@ -367,12 +367,6 @@
   <data name="BadInstanceArgType" xml:space="preserve">
     <value>Instance argument: cannot convert from '{0}' to '{1}'</value>
   </data>
-  <data name="BadArgTypesForCollectionAdd" xml:space="preserve">
-    <value>The best overloaded Add method '{0}' for the collection initializer has some invalid arguments</value>
-  </data>
-  <data name="InitializerAddHasParamModifiers" xml:space="preserve">
-    <value>The best overloaded method match '{0}' for the collection initializer element cannot be used. Collection initializer 'Add' methods cannot have ref or out parameters.</value>
-  </data>
   <data name="NonInvocableMemberCalled" xml:space="preserve">
     <value>Non-invocable member '{0}' cannot be used like a method.</value>
   </data>

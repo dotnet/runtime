@@ -321,12 +321,6 @@
   <data name="BadInstanceArgType" xml:space="preserve">
     <value>Argumento de instancia: no se puede convertir de '{0}' a '{1}'</value>
   </data>
-  <data name="BadArgTypesForCollectionAdd" xml:space="preserve">
-    <value>El mejor método Add sobrecargado '{0}' del inicializador de colección tiene algunos argumentos no válidos</value>
-  </data>
-  <data name="InitializerAddHasParamModifiers" xml:space="preserve">
-    <value>La mejor coincidencia de método sobrecargado '{0}' para el elemento inicializador de la colección no se puede usar. Los métodos 'Add' inicializadores de colección no pueden tener parámetros out o ref.</value>
-  </data>
   <data name="NonInvocableMemberCalled" xml:space="preserve">
     <value>No se puede usar como método el miembro '{0}' no invocable.</value>
   </data>
