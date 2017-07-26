@@ -626,15 +626,13 @@ namespace System.Tests
             options.TimeOut = TimeoutMilliseconds;
             RemoteInvoke(() =>
             {
-                // 40kb budget, see below comment
-                Assert.True(GC.TryStartNoGCRegion(40 * 1024, true));
-                Assert.Equal(GCSettings.LatencyMode, GCLatencyMode.NoGCRegion);
-
-                // PLEASE NOTE: the xunit Assert.Throws combinator allocates a lot and you should measure
-                // how large the GC budget should be *manually* if you use it while in a no GC region.
+                // The budget for this test is 4mb, because the act of throwing an exception with a message
+                // contained in a resource file has to potential to allocate a lot on CoreRT. In particular, when compiling
+                // in multi-file mode, this will trigger a resource lookup in System.Private.CoreLib.
                 //
-                // In this case, this particular one allocates 23720 bytes, so a budget of 40k should be
-                // large enough to keep us in a no GC region.
+                // In addition to this, the Assert.Throws xunit combinator tends to also allocate a lot.
+                Assert.True(GC.TryStartNoGCRegion(4000 * 1024, true));
+                Assert.Equal(GCSettings.LatencyMode, GCLatencyMode.NoGCRegion);
                 Assert.Throws<InvalidOperationException>(() => GCSettings.LatencyMode = GCLatencyMode.LowLatency);
 
                 GC.EndNoGCRegion();
