@@ -2385,6 +2385,16 @@ FOUND_AM:
 
         /* Special case: constant array index (that is range-checked) */
 
+#if defined(LEGACY_BACKEND)
+        // If we've already placed rv2 in a register, we were probably planning to use it in this addressing mode.
+        // Because the folding below may in fact result in no address mode (e.g. if we had "[mul * rv2 + cns]" that
+        // happens to fold to "[cns2]"), do not fold during code gen.
+        if (mode == -1 && rv2->InReg())
+        {
+            fold = false;
+        }
+#endif
+
         if (fold)
         {
             ssize_t    tmpMul;
