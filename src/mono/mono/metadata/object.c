@@ -742,14 +742,12 @@ compute_class_bitmap (MonoClass *klass, gsize *bitmap, int size, int offset, int
 		size = max_size;
 	}
 
-#ifdef HAVE_SGEN_GC
-	/*An Ephemeron cannot be marked by sgen*/
-	if (!static_fields && klass->image == mono_defaults.corlib && !strcmp ("Ephemeron", klass->name)) {
+	/* An Ephemeron cannot be marked by sgen */
+	if (mono_gc_is_moving () && !static_fields && klass->image == mono_defaults.corlib && !strcmp ("Ephemeron", klass->name)) {
 		*max_set = 0;
 		memset (bitmap, 0, size / 8);
 		return bitmap;
 	}
-#endif
 
 	for (p = klass; p != NULL; p = p->parent) {
 		gpointer iter = NULL;
@@ -1932,23 +1930,22 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 	vt->domain = domain;
 
 	mono_class_compute_gc_descriptor (klass);
-		/*
-		 * We can't use typed allocation in the non-root domains, since the
-		 * collector needs the GC descriptor stored in the vtable even after
-		 * the mempool containing the vtable is destroyed when the domain is
-		 * unloaded. An alternative might be to allocate vtables in the GC
-		 * heap, but this does not seem to work (it leads to crashes inside
-		 * libgc). If that approach is tried, two gc descriptors need to be
-		 * allocated for each class: one for the root domain, and one for all
-		 * other domains. The second descriptor should contain a bit for the
-		 * vtable field in MonoObject, since we can no longer assume the 
-		 * vtable is reachable by other roots after the appdomain is unloaded.
-		 */
-#ifdef HAVE_BOEHM_GC
-	if (domain != mono_get_root_domain () && !mono_dont_free_domains)
+	/*
+	 * For Boehm:
+	 * We can't use typed allocation in the non-root domains, since the
+	 * collector needs the GC descriptor stored in the vtable even after
+	 * the mempool containing the vtable is destroyed when the domain is
+	 * unloaded. An alternative might be to allocate vtables in the GC
+	 * heap, but this does not seem to work (it leads to crashes inside
+	 * libgc). If that approach is tried, two gc descriptors need to be
+	 * allocated for each class: one for the root domain, and one for all
+	 * other domains. The second descriptor should contain a bit for the
+	 * vtable field in MonoObject, since we can no longer assume the
+	 * vtable is reachable by other roots after the appdomain is unloaded.
+	 */
+	if (!mono_gc_is_moving () && domain != mono_get_root_domain () && !mono_dont_free_domains)
 		vt->gc_descr = MONO_GC_DESCRIPTOR_NULL;
 	else
-#endif
 		vt->gc_descr = klass->gc_descr;
 
 	gc_bits = mono_gc_get_vtable_bits (klass);
@@ -5620,18 +5617,18 @@ mono_array_full_copy (MonoArray *src, MonoArray *dest)
 static void
 array_full_copy_unchecked_size (MonoArray *src, MonoArray *dest, MonoClass *klass, uintptr_t size)
 {
-#ifdef HAVE_SGEN_GC
-	if (klass->element_class->valuetype) {
-		if (klass->element_class->has_references)
-			mono_value_copy_array (dest, 0, mono_array_addr_with_size_fast (src, 0, 0), mono_array_length (src));
-		else
-			mono_gc_memmove_atomic (&dest->vector, &src->vector, size);
+	if (mono_gc_is_moving ()) {
+		if (klass->element_class->valuetype) {
+			if (klass->element_class->has_references)
+				mono_value_copy_array (dest, 0, mono_array_addr_with_size_fast (src, 0, 0), mono_array_length (src));
+			else
+				mono_gc_memmove_atomic (&dest->vector, &src->vector, size);
+		} else {
+			mono_array_memcpy_refs (dest, 0, src, 0, mono_array_length (src));
+		}
 	} else {
-		mono_array_memcpy_refs (dest, 0, src, 0, mono_array_length (src));
+		mono_gc_memmove_atomic (&dest->vector, &src->vector, size);
 	}
-#else
-	mono_gc_memmove_atomic (&dest->vector, &src->vector, size);
-#endif
 }
 
 /**
@@ -6361,31 +6358,31 @@ mono_value_box_checked (MonoDomain *domain, MonoClass *klass, gpointer value, Mo
 
 	size = size - sizeof (MonoObject);
 
-#ifdef HAVE_SGEN_GC
-	g_assert (size == mono_class_value_size (klass, NULL));
-	mono_gc_wbarrier_value_copy ((char *)res + sizeof (MonoObject), value, 1, klass);
-#else
+	if (mono_gc_is_moving ()) {
+		g_assert (size == mono_class_value_size (klass, NULL));
+		mono_gc_wbarrier_value_copy ((char *)res + sizeof (MonoObject), value, 1, klass);
+	} else {
 #if NO_UNALIGNED_ACCESS
-	mono_gc_memmove_atomic ((char *)res + sizeof (MonoObject), value, size);
-#else
-	switch (size) {
-	case 1:
-		*((guint8 *) res + sizeof (MonoObject)) = *(guint8 *) value;
-		break;
-	case 2:
-		*(guint16 *)((guint8 *) res + sizeof (MonoObject)) = *(guint16 *) value;
-		break;
-	case 4:
-		*(guint32 *)((guint8 *) res + sizeof (MonoObject)) = *(guint32 *) value;
-		break;
-	case 8:
-		*(guint64 *)((guint8 *) res + sizeof (MonoObject)) = *(guint64 *) value;
-		break;
-	default:
 		mono_gc_memmove_atomic ((char *)res + sizeof (MonoObject), value, size);
+#else
+		switch (size) {
+		case 1:
+			*((guint8 *) res + sizeof (MonoObject)) = *(guint8 *) value;
+			break;
+		case 2:
+			*(guint16 *)((guint8 *) res + sizeof (MonoObject)) = *(guint16 *) value;
+			break;
+		case 4:
+			*(guint32 *)((guint8 *) res + sizeof (MonoObject)) = *(guint32 *) value;
+			break;
+		case 8:
+			*(guint64 *)((guint8 *) res + sizeof (MonoObject)) = *(guint64 *) value;
+			break;
+		default:
+			mono_gc_memmove_atomic ((char *)res + sizeof (MonoObject), value, size);
+		}
+#endif
 	}
-#endif
-#endif
 	if (klass->has_finalize) {
 		mono_object_register_finalizer (res);
 		return_val_if_nok (error, NULL);
