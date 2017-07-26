@@ -193,17 +193,32 @@ dynamic_image_unlock (MonoDynamicImage *image)
  * the Module.ResolveXXXToken () methods to work.
  */
 void
-mono_dynamic_image_register_token (MonoDynamicImage *assembly, guint32 token, MonoObjectHandle obj)
+mono_dynamic_image_register_token (MonoDynamicImage *assembly, guint32 token, MonoObjectHandle obj, int how_collide)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
+	g_assert (!MONO_HANDLE_IS_NULL (obj));
 	dynamic_image_lock (assembly);
+	MonoObject *prev = (MonoObject *)mono_g_hash_table_lookup (assembly->tokens, GUINT_TO_POINTER (token));
+	if (prev) {
+		switch (how_collide) {
+		case MONO_DYN_IMAGE_TOK_NEW:
+			g_assert_not_reached ();
+		case MONO_DYN_IMAGE_TOK_SAME_OK:
+			g_assert (prev == MONO_HANDLE_RAW (obj));
+			break;
+		case MONO_DYN_IMAGE_TOK_REPLACE:
+			break;
+		default:
+			g_assert_not_reached ();
+		}
+	}
 	mono_g_hash_table_insert (assembly->tokens, GUINT_TO_POINTER (token), MONO_HANDLE_RAW (obj));
 	dynamic_image_unlock (assembly);
 }
 #else
 void
-mono_dynamic_image_register_token (MonoDynamicImage *assembly, guint32 token, MonoObjectHandle obj)
+mono_dynamic_image_register_token (MonoDynamicImage *assembly, guint32 token, MonoObjectHandle obj, int how_collide)
 {
 }
 #endif
