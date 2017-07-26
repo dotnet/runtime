@@ -41,7 +41,8 @@ namespace System.Drawing.Drawing2D.Tests
             yield return new object[] { fillPath, null, LineCap.Flat, 0f, LineCap.Flat };
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(Ctor_Path_Path_LineCap_Float_TestData))]
         public void Ctor_Path_Path_LineCap_Float(GraphicsPath fillPath, GraphicsPath strokePath, LineCap baseCap, float baseInset, LineCap expectedCap)
         {
@@ -56,7 +57,8 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         // These values are outside the valid range of the LineCap enum.
         [InlineData(LineCap.Flat - 1)]
         [InlineData(LineCap.Custom + 1)]
@@ -70,7 +72,8 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_FillPath_Incomplete_ThrowsArgumentException()
         {
             using (GraphicsPath fillPath = new GraphicsPath())
@@ -80,7 +83,8 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_FillPath_DoesNotCrossYAxis_ThrowsNotImplementedException()
         {
             // Closed fillPath, but does not cross the Y-axis.
@@ -93,7 +97,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(LineCap.Square, LineCap.Square)]
         [InlineData(LineCap.Round, LineCap.Round)]
         [InlineData(LineCap.Triangle, LineCap.Triangle)]
@@ -110,7 +114,8 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(LineCap.SquareAnchor, LineCap.SquareAnchor)]
         [InlineData(LineCap.Custom, LineCap.Custom)]
         [InlineData(LineCap.Square, LineCap.Custom)]
@@ -131,7 +136,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(LineJoin.Miter)] // Default value
         [InlineData(LineJoin.Bevel)]
         [InlineData(LineJoin.Round)]
@@ -149,7 +154,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(LineCap.Flat)] // Default value
         [InlineData(LineCap.Square)]
         [InlineData(LineCap.Round)]
@@ -181,7 +186,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(0f)]
         [InlineData(1f)]
         [InlineData(10f)]
@@ -204,7 +209,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(0f)]
         [InlineData(1f)]
         [InlineData(10f)]
@@ -227,7 +232,7 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Disposed_MembersThrow()
         {
             using (GraphicsPath strokePath = new GraphicsPath())
