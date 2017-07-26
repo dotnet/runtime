@@ -12836,6 +12836,10 @@ void Compiler::fgComputeEdgeWeights()
         if (fgFirstBBisScratch())
         {
             fgFirstBB->setBBProfileWeight(fgCalledCount);
+            if (fgFirstBB->bbWeight == 0)
+            {
+                fgFirstBB->bbFlags |= BBF_RUN_RARELY;
+            }
         }
 
 #if DEBUG
