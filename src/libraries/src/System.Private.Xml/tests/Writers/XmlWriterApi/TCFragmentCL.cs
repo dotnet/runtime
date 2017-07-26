@@ -12,7 +12,7 @@ namespace System.Xml.Tests
         //[Variation(id=1, Desc="Multiple root elements should be allowed", Pri=1)]
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
-        public void frag_1(XmlWriterTestCaseBase utils)
+        public void frag_1(XmlWriterUtils utils)
         {
             XmlWriter w = utils.CreateWriter(ConformanceLevel.Fragment);
             w.WriteStartElement("Root");
@@ -26,7 +26,7 @@ namespace System.Xml.Tests
         //[Variation(id=2, Desc="Top level text should be allowed - PROLOG", Pri=1)]
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
-        public void frag_2(XmlWriterTestCaseBase utils)
+        public void frag_2(XmlWriterUtils utils)
         {
             XmlWriter w = utils.CreateWriter(ConformanceLevel.Fragment);
             w.WriteString("Top level text");
@@ -39,7 +39,7 @@ namespace System.Xml.Tests
         //[Variation(id=3, Desc="Top level text should be allowed - EPILOG", Pri=1)]
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
-        public void frag_3(XmlWriterTestCaseBase utils)
+        public void frag_3(XmlWriterUtils utils)
         {
             XmlWriter w = utils.CreateWriter(ConformanceLevel.Fragment);
             w.WriteStartElement("Root");
@@ -52,7 +52,7 @@ namespace System.Xml.Tests
         //[Variation(id=4, Desc="Top level atomic value should be allowed - PROLOG", Pri=1)]
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
-        public void frag_4(XmlWriterTestCaseBase utils)
+        public void frag_4(XmlWriterUtils utils)
         {
             XmlWriter w = utils.CreateWriter(ConformanceLevel.Fragment);
             int i = 1;
@@ -65,7 +65,7 @@ namespace System.Xml.Tests
         //[Variation(id=5, Desc="Top level atomic value should be allowed - EPILOG", Pri=1)]
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
-        public void frag_5(XmlWriterTestCaseBase utils)
+        public void frag_5(XmlWriterUtils utils)
         {
             XmlWriter w = utils.CreateWriter(ConformanceLevel.Fragment);
             w.WriteElementString("Root", "test");
@@ -78,7 +78,7 @@ namespace System.Xml.Tests
         //[Variation(id=6, Desc="Multiple top level atomic values", Pri=1)]
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
-        public void frag_6(XmlWriterTestCaseBase utils)
+        public void frag_6(XmlWriterUtils utils)
         {
             XmlWriter w = utils.CreateWriter(ConformanceLevel.Fragment);
             int i = 1;
@@ -93,7 +93,7 @@ namespace System.Xml.Tests
         //[Variation(id=7, Desc="WriteDocType should error when CL=fragment", Pri=1)]
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
-        public void frag_7(XmlWriterTestCaseBase utils)
+        public void frag_7(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter(ConformanceLevel.Fragment))
             {
@@ -115,7 +115,7 @@ namespace System.Xml.Tests
         //[Variation(id=8, Desc="WriteStartDocument() should error when CL=fragment", Pri=1)]
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
-        public void frag_8(XmlWriterTestCaseBase utils)
+        public void frag_8(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter(ConformanceLevel.Fragment))
             {

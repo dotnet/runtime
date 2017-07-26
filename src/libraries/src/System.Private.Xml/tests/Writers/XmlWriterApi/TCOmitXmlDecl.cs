@@ -13,7 +13,7 @@ namespace System.Xml.Tests
     {
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
-        public void XmlDecl_1(XmlWriterTestCaseBase utils)
+        public void XmlDecl_1(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.ConformanceLevel = ConformanceLevel.Document;
@@ -47,7 +47,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
-        public void XmlDecl_2(XmlWriterTestCaseBase utils)
+        public void XmlDecl_2(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.ConformanceLevel = ConformanceLevel.Document;
@@ -77,7 +77,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
-        public void XmlDecl_3(XmlWriterTestCaseBase utils)
+        public void XmlDecl_3(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.ConformanceLevel = ConformanceLevel.Document;
@@ -108,7 +108,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
-        public void XmlDecl_4(XmlWriterTestCaseBase utils)
+        public void XmlDecl_4(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.ConformanceLevel = ConformanceLevel.Fragment;
@@ -127,7 +127,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
-        public void XmlDecl_5(XmlWriterTestCaseBase utils)
+        public void XmlDecl_5(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.CloseOutput = false;
@@ -145,7 +145,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
-        public void XmlDecl_6(XmlWriterTestCaseBase utils)
+        public void XmlDecl_6(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.CloseOutput = false;
@@ -169,7 +169,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
-        public void XmlDecl_7(XmlWriterTestCaseBase utils)
+        public void XmlDecl_7(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.CloseOutput = false;

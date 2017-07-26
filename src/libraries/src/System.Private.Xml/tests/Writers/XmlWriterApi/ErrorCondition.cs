@@ -24,7 +24,7 @@ namespace System.Xml.Tests
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 6)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 7)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 8)]
-        public void var_01(XmlWriterTestCaseBase utils, int param)
+        public void var_01(XmlWriterUtils utils, int param)
         {
             XmlWriterSettings ws = new XmlWriterSettings();
             try
@@ -48,7 +48,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, true)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, false)]
-        public void var_02(XmlWriterTestCaseBase utils, bool param)
+        public void var_02(XmlWriterUtils utils, bool param)
         {
             bool result = false;
 
@@ -75,7 +75,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, true)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, false)]
-        public void var_03(XmlWriterTestCaseBase utils, bool param)
+        public void var_03(XmlWriterUtils utils, bool param)
         {
             bool result = false;
 
@@ -120,7 +120,7 @@ namespace System.Xml.Tests
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 18)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 19)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 20)]
-        public void var_04(XmlWriterTestCaseBase utils, int param)
+        public void var_04(XmlWriterUtils utils, int param)
         {
             bool result = false;
 
@@ -212,7 +212,7 @@ namespace System.Xml.Tests
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 4)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 5)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 6)]
-        public void var_05(XmlWriterTestCaseBase utils, int param)
+        public void var_05(XmlWriterUtils utils, int param)
         {
             bool result = false;
 
@@ -291,7 +291,7 @@ namespace System.Xml.Tests
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 34)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 35)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 36)]
-        public void var_07(XmlWriterTestCaseBase utils, int param)
+        public void var_07(XmlWriterUtils utils, int param)
         {
             bool result = false;
             int[] skipParams = new int[] { 14, 20, 21 };
@@ -434,7 +434,7 @@ namespace System.Xml.Tests
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 3)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 4)]
-        public void var_10(XmlWriterTestCaseBase utils, int param)
+        public void var_10(XmlWriterUtils utils, int param)
         {
             int iBufferSize = 5;
             int iIndex = 0;
@@ -496,7 +496,7 @@ namespace System.Xml.Tests
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 3)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 4)]
-        public void var_11(XmlWriterTestCaseBase utils, int param)
+        public void var_11(XmlWriterUtils utils, int param)
         {
             XmlWriterSettings ws = new XmlWriterSettings();
             try
@@ -535,7 +535,7 @@ namespace System.Xml.Tests
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 6)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 7)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 8)]
-        public void var_12(XmlWriterTestCaseBase utils, int param)
+        public void var_12(XmlWriterUtils utils, int param)
         {
             XmlWriterSettings ws = new XmlWriterSettings();
             TextWriter stringWriter = new StringWriter();
@@ -582,7 +582,7 @@ namespace System.Xml.Tests
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 25)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 26)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 27)]
-        public void var_13(XmlWriterTestCaseBase utils, int param)
+        public void var_13(XmlWriterUtils utils, int param)
         {
             XmlWriterSettings ws = new XmlWriterSettings();
             ws.ConformanceLevel = ConformanceLevel.Document;
@@ -667,7 +667,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2)]
-        public void var_14(XmlWriterTestCaseBase utils, int param)
+        public void var_14(XmlWriterUtils utils, int param)
         {
             XmlWriterSettings ws = new XmlWriterSettings();
             try
@@ -695,7 +695,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
-        public void var_15(XmlWriterTestCaseBase utils)
+        public void var_15(XmlWriterUtils utils)
         {
             XmlWriter w = utils.CreateWriter();
             bool isUnicode = (utils.WriterType == WriterType.UnicodeWriter || utils.WriterType == WriterType.UnicodeWriterIndent) ? true : false;
@@ -727,7 +727,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
-        public void var_16(XmlWriterTestCaseBase utils)
+        public void var_16(XmlWriterUtils utils)
         {
             XmlWriter w = utils.CreateWriter();
             bool isUnicode = (utils.WriterType == WriterType.UnicodeWriter || utils.WriterType == WriterType.UnicodeWriterIndent) ? true : false;
@@ -764,7 +764,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.All & ~WriterType.Async)]
-        public void bug601305(XmlWriterTestCaseBase utils)
+        public void bug601305(XmlWriterUtils utils)
         {
             CError.WriteLine("expected:");
             CError.WriteLine("<p:root xmlns:p='uri' />");
@@ -793,7 +793,7 @@ namespace System.Xml.Tests
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 8)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 9)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 10)]
-        public void var17(XmlWriterTestCaseBase utils, int param)
+        public void var17(XmlWriterUtils utils, int param)
         {
             if (utils.WriterType == WriterType.CustomWriter) return;
             XmlWriter writer = utils.CreateWriter();
@@ -866,7 +866,7 @@ namespace System.Xml.Tests
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 27)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 28)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 29)]
-        public void var_18(XmlWriterTestCaseBase utils, int param)
+        public void var_18(XmlWriterUtils utils, int param)
         {
             XmlReader r = ReaderHelper.Create(new StringReader("<xmlns/>"));
             byte[] buffer = new byte[10];
@@ -1003,7 +1003,7 @@ namespace System.Xml.Tests
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 27)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 28)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 29)]
-        public void var_19(XmlWriterTestCaseBase utils, int param)
+        public void var_19(XmlWriterUtils utils, int param)
         {
             XmlReader r = ReaderHelper.Create(new StringReader("<xmlns/>"));
             byte[] buffer = new byte[10];
@@ -1118,7 +1118,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
-        public void var_20(XmlWriterTestCaseBase utils)
+        public void var_20(XmlWriterUtils utils)
         {
             XmlWriter w = utils.CreateWriter();
             w.WriteStartElement("root");
@@ -1180,7 +1180,7 @@ namespace System.Xml.Tests
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 32)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 33)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 34)]
-        public void var_21(XmlWriterTestCaseBase utils, int param)
+        public void var_21(XmlWriterUtils utils, int param)
         {
             bool result = false;
             string val = "\uDE34\uD9A2";
@@ -1308,7 +1308,7 @@ namespace System.Xml.Tests
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 3)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 4)]
-        public void bug600541(XmlWriterTestCaseBase utils, int param)
+        public void bug600541(XmlWriterUtils utils, int param)
         {
             string xml = "<root a=\"a\" b=\"b\" c=\"c\" d=\"d\" />";
             switch (param)
@@ -1342,7 +1342,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
-        public void bug630890(XmlWriterTestCaseBase utils)
+        public void bug630890(XmlWriterUtils utils)
         {
             object obj = (object)1;
             for (int i = 0; i < 100000; i++)
@@ -1375,7 +1375,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
-        public void PassingArrayWithNullOrEmptyItemsCausesWriteValueToFail(XmlWriterTestCaseBase utils)
+        public void PassingArrayWithNullOrEmptyItemsCausesWriteValueToFail(XmlWriterUtils utils)
         {
             string[] a = new string[5];
             string exp = "<b>a a1 </b>";

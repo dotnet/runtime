@@ -9,23 +9,14 @@ using Xunit;
 
 namespace System.Xml.Tests
 {
-    //[TestCase(Name = "WriteNode(XmlTextReader)", Param = "XMLTEXTREADER")]
-    //[TestCase(Name = "WriteNode(XmlDocument NodeReader)", Param = "XMLDOCNODEREADER")]
-    //[TestCase(Name = "WriteNode(XmlDataDocument NodeReader)", Param = "XMLDATADOCNODEREADER")]
-    //[TestCase(Name = "WriteNode(XsltReader)", Param = "XSLTREADER")]
-    //[TestCase(Name = "WriteNode(CoreReader)", Param = "COREREADER")]
-    //[TestCase(Name = "WriteNode(XPathdocument NavigatorReader)", Param = "XPATHDOCNAVIGATORREADER")]
-    //[TestCase(Name = "WriteNode(XmlDocument NavigatorReader)", Param = "XMLDOCNAVIGATORREADER")]
-    //[TestCase(Name = "WriteNode(XmlDataDocument NavigatorReader)", Param = "XMLDATADOCNAVIGATORREADER")]
-    //[TestCase(Name = "WriteNode(XmlBinaryReader)", Param = "XMLBINARYREADER")]
     public class TCWriteNode_XmlReader : ReaderParamTestCase
     {
-        //[Variation(id = 1, Desc = "WriteNode with null reader", Pri = 1)]
-        [Fact]
-        public void writeNode_XmlReader1()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader1(XmlWriterUtils utils)
         {
             XmlReader xr = null;
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 try
                 {
@@ -42,11 +33,11 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(id = 2, Desc = "WriteNode with reader positioned on attribute, no operation", Pri = 1)]
-        [Fact]
-        public void writeNode_XmlReader2()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader2(XmlWriterUtils utils)
         {
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 using (XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml"))
                 {
@@ -72,43 +63,43 @@ namespace System.Xml.Tests
                     w.WriteEndElement();
                 }
             }
-            Assert.True(CompareReader("<Root />"));
+            Assert.True(utils.CompareReader("<Root />"));
         }
 
-        //[Variation(id = 3, Desc = "WriteNode before reader.Read()", Pri = 1)]
-        [Fact]
-        public void writeNode_XmlReader3()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader3(XmlWriterUtils utils)
         {
             using (XmlReader xr = CreateReader(new StringReader("<root />")))
             {
-                using (XmlWriter w = CreateWriter())
+                using (XmlWriter w = utils.CreateWriter())
                 {
                     w.WriteNode(xr, false);
                 }
             }
 
-            Assert.True(CompareReader("<root />"));
+            Assert.True(utils.CompareReader("<root />"));
         }
 
-        //[Variation(id = 4, Desc = "WriteNode after first reader.Read()", Pri = 1)]
-        [Fact]
-        public void writeNode_XmlReader4()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader4(XmlWriterUtils utils)
         {
             using (XmlReader xr = CreateReader(new StringReader("<root />")))
             {
                 xr.Read();
-                using (XmlWriter w = CreateWriter())
+                using (XmlWriter w = utils.CreateWriter())
                 {
                     w.WriteNode(xr, false);
                 }
             }
 
-            Assert.True(CompareReader("<root />"));
+            Assert.True(utils.CompareReader("<root />"));
         }
 
-        //[Variation(id = 5, Desc = "WriteNode when reader is positioned on middle of an element node", Pri = 1)]
-        [Fact]
-        public void writeNode_XmlReader5()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader5(XmlWriterUtils utils)
         {
             using (XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml"))
             {
@@ -120,56 +111,56 @@ namespace System.Xml.Tests
                         break;
                     }
                 }
-                using (XmlWriter w = CreateWriter())
+                using (XmlWriter w = utils.CreateWriter())
                 {
                     w.WriteNode(xr, false);
                 }
                 CError.Compare(xr.NodeType, XmlNodeType.Comment, "Error");
                 CError.Compare(xr.Value, "WriteComment", "Error");
             }
-            Assert.True(CompareReader("<node2>Node Text<node3></node3><?name Instruction?></node2>"));
+            Assert.True(utils.CompareReader("<node2>Node Text<node3></node3><?name Instruction?></node2>"));
         }
 
-        //[Variation(id = 6, Desc = "WriteNode when reader state is EOF", Pri = 1)]
-        [Fact]
-        public void writeNode_XmlReader6()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader6(XmlWriterUtils utils)
         {
             using (XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml"))
             {
                 while (xr.Read())
                 { }
 
-                using (XmlWriter w = CreateWriter())
+                using (XmlWriter w = utils.CreateWriter())
                 {
                     w.WriteStartElement("Root");
                     w.WriteNode(xr, false);
                     w.WriteEndElement();
                 }
             }
-            Assert.True(CompareReader("<Root />"));
+            Assert.True(utils.CompareReader("<Root />"));
         }
 
-        //[Variation(id = 7, Desc = "WriteNode when reader state is Closed", Pri = 1)]
-        [Fact]
-        public void writeNode_XmlReader7()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader7(XmlWriterUtils utils)
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
             while (xr.Read())
             { }
             xr.Dispose();
 
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 w.WriteStartElement("Root");
                 w.WriteNode(xr, false);
                 w.WriteEndElement();
             }
-            Assert.True(CompareReader("<Root />"));
+            Assert.True(utils.CompareReader("<Root />"));
         }
 
-        //[Variation(id = 8, Desc = "WriteNode with reader on empty element node", Pri = 1)]
-        [Fact]
-        public void writeNode_XmlReader8()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader8(XmlWriterUtils utils)
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
             while (xr.Read())
@@ -180,7 +171,7 @@ namespace System.Xml.Tests
                     break;
                 }
             }
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 w.WriteNode(xr, false);
             }
@@ -190,12 +181,12 @@ namespace System.Xml.Tests
             CError.Compare(xr.Name, "EmptyElement", "Error");
             xr.Dispose();
 
-            Assert.True(CompareReader("<node1 />"));
+            Assert.True(utils.CompareReader("<node1 />"));
         }
 
-        //[Variation(id = 9, Desc = "WriteNode with reader on 100 Nodes", Pri = 1)]
-        [Fact]
-        public void writeNode_XmlReader9()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader9(XmlWriterUtils utils)
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
             while (xr.Read())
@@ -206,17 +197,17 @@ namespace System.Xml.Tests
                     break;
                 }
             }
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 w.WriteNode(xr, false);
             }
             xr.Dispose();
-            Assert.True(CompareBaseline("100Nodes.txt"));
+            Assert.True(utils.CompareBaseline("100Nodes.txt"));
         }
 
-        //[Variation(id = 10, Desc = "WriteNode with reader on node with mixed content", Pri = 1)]
-        [Fact]
-        public void writeNode_XmlReader10()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader10(XmlWriterUtils utils)
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
             while (xr.Read())
@@ -227,7 +218,7 @@ namespace System.Xml.Tests
                     break;
                 }
             }
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 w.WriteNode(xr, false);
             }
@@ -239,15 +230,15 @@ namespace System.Xml.Tests
 
             if (IsXPathDataModelReader())
             {
-                Assert.True(CompareReader("<node1><?PI Instruction?><!--Comment-->Textcdata</node1>"));
+                Assert.True(utils.CompareReader("<node1><?PI Instruction?><!--Comment-->Textcdata</node1>"));
             }
 
-            Assert.True(CompareReader("<node1><?PI Instruction?><!--Comment-->Text<![CDATA[cdata]]></node1>"));
+            Assert.True(utils.CompareReader("<node1><?PI Instruction?><!--Comment-->Text<![CDATA[cdata]]></node1>"));
         }
 
-        //[Variation(id = 11, Desc = "WriteNode with reader on node with declared namespace in parent", Pri = 1)]
-        [Fact]
-        public void writeNode_XmlReader11()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader11(XmlWriterUtils utils)
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
             while (xr.Read())
@@ -259,41 +250,44 @@ namespace System.Xml.Tests
                     break;
                 }
             }
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 w.WriteNode(xr, false);
             }
             xr.Dispose();
-            Assert.True(CompareReader("<node1 xmlns=\"foo\"></node1>"));
+            Assert.True(utils.CompareReader("<node1 xmlns=\"foo\"></node1>"));
         }
 
-        //[Variation(id = 12, Desc = "WriteNode with reader on node with entity reference included in element", Pri = 1)]
-        [Fact]
-        public void writeNode_XmlReader12()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader12(XmlWriterUtils utils)
         {
-            XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
-            while (xr.Read())
+            using (XmlReader xr = CreateReaderIgnoreWSFromString("<!DOCTYPE node [ <!ENTITY test \"Test Entity\"> ]><node>&test;</node>"))
             {
-                if (xr.LocalName == "EntityRef")
+                bool sanityCheck = false;
+                while (xr.Read())
                 {
-                    xr.Read();
-                    break;
+                    if (xr.NodeType == XmlNodeType.Element && xr.LocalName == "node")
+                    {
+                        sanityCheck = true;
+                        break;
+                    }
+                }
+
+                Assert.True(sanityCheck, "error in input doc");
+
+                using (XmlWriter w = utils.CreateWriter())
+                {
+                    w.WriteNode(xr, false);
                 }
             }
-            using (XmlWriter w = CreateWriter())
-            {
-                w.WriteNode(xr, false);
-            }
-            xr.Dispose();
-            if (!ReaderExpandsEntityRef())
-                Assert.True(CompareString("<node>&e;</node>"));
-            else
-                Assert.True(CompareReader("<node>Test Entity</node>"));
+
+            Assert.Equal("<node>Test Entity</node>", utils.GetString());
         }
 
-        //[Variation(id = 14, Desc = "WriteNode with element that has different prefix", Pri = 1)]
-        [Fact]
-        public void writeNode_XmlReader14()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader14(XmlWriterUtils utils)
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
             while (xr.Read())
@@ -304,7 +298,7 @@ namespace System.Xml.Tests
                     break;
                 }
             }
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 w.WriteStartElement("x", "bar", "foo");
                 w.WriteNode(xr, true);
@@ -314,12 +308,12 @@ namespace System.Xml.Tests
             }
             xr.Dispose();
 
-            Assert.True(CompareReader("<x:bar xmlns:x=\"foo\"><z:node xmlns:z=\"foo\" /><x:blah /></x:bar>"));
+            Assert.True(utils.CompareReader("<x:bar xmlns:x=\"foo\"><z:node xmlns:z=\"foo\" /><x:blah /></x:bar>"));
         }
 
-        //[Variation(id = 15, Desc = "Call WriteNode with default attributes = true and DTD", Pri = 1)]
-        [Fact]
-        public void writeNode_XmlReader15()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader15(XmlWriterUtils utils)
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
             while (xr.Read())
@@ -330,7 +324,7 @@ namespace System.Xml.Tests
                     break;
                 }
             }
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 w.WriteStartElement("Root");
                 w.WriteNode(xr, true);
@@ -338,14 +332,14 @@ namespace System.Xml.Tests
             }
             xr.Dispose();
             if (!ReaderParsesDTD())
-                Assert.True(CompareReader("<Root><name a='b' /></Root>"));
+                Assert.True(utils.CompareReader("<Root><name a='b' /></Root>"));
             else
-                Assert.True(CompareReader("<Root><name a='b' FIRST='KEVIN' LAST='WHITE'/></Root>"));
+                Assert.True(utils.CompareReader("<Root><name a='b' FIRST='KEVIN' LAST='WHITE'/></Root>"));
         }
 
-        //[Variation(id = 16, Desc = "Call WriteNode with default attributes = false and DTD", Pri = 1)]
-        [Fact]
-        public void writeNode_XmlReader16()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader16(XmlWriterUtils utils)
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
             while (xr.Read())
@@ -356,7 +350,7 @@ namespace System.Xml.Tests
                     break;
                 }
             }
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 w.WriteStartElement("Root");
                 w.WriteNode(xr, false);
@@ -364,14 +358,14 @@ namespace System.Xml.Tests
             }
             xr.Dispose();
             if (ReaderLoosesDefaultAttrInfo())
-                Assert.True(CompareReader("<Root><name a='b' FIRST='KEVIN' LAST='WHITE'/></Root>"));
+                Assert.True(utils.CompareReader("<Root><name a='b' FIRST='KEVIN' LAST='WHITE'/></Root>"));
             else
-                Assert.True(CompareReader("<Root><name a='b' /></Root>"));
+                Assert.True(utils.CompareReader("<Root><name a='b' /></Root>"));
         }
 
-        //[Variation(id = 17, Desc = "WriteNode with reader on empty element with attributes", Pri = 1)]
-        [Fact]
-        public void writeNode_XmlReader17()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader17(XmlWriterUtils utils)
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
             while (xr.Read())
@@ -382,34 +376,34 @@ namespace System.Xml.Tests
                     break;
                 }
             }
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 w.WriteNode(xr, false);
             }
-            Assert.True(CompareReader("<node1 a='foo' />"));
+            Assert.True(utils.CompareReader("<node1 a='foo' />"));
         }
 
-        //[Variation(id = 18, Desc = "WriteNode with document containing just empty element with attributes", Pri = 1)]
-        [Fact]
-        public void writeNode_XmlReader18()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader18(XmlWriterUtils utils)
         {
             string xml = "<Root a=\"foo\"/>";
             XmlReader xr = CreateReader(new StringReader(xml));
             xr.Read();
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 w.WriteNode(xr, false);
             }
 
             xr.Dispose();
-            Assert.True(CompareReader("<Root a=\"foo\" />"));
+            Assert.True(utils.CompareReader("<Root a=\"foo\" />"));
         }
 
-        //[Variation(id = 19, Desc = "Call WriteNode with special entity references as attribute value", Pri = 1)]
-        [Fact]
-        public void writeNode_XmlReader19()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader19(XmlWriterUtils utils)
         {
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 string xml = "<Root foo='&amp; &lt; &gt; &quot; &apos; &#65;'/>";
                 using (XmlReader xr = CreateReader(new StringReader(xml)))
@@ -418,16 +412,21 @@ namespace System.Xml.Tests
                         w.WriteNode(xr, true);
                 }
             }
-            Assert.True(CompareReader("<Root foo='&amp; &lt; &gt; &quot; &apos; &#65;'/>"));
+            Assert.True(utils.CompareReader("<Root foo='&amp; &lt; &gt; &quot; &apos; &#65;'/>"));
         }
 
-        //[Variation(id = 20, Desc = "Call WriteNode with reader on doctype", Pri = 1)]
-        [Fact]
-        public void writeNode_XmlReader20()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader20(XmlWriterUtils utils)
         {
             string strxml = "<!DOCTYPE ROOT []><ROOT/>";
-            XmlReader xr = CreateReader(new StringReader(strxml));
-            using (XmlWriter w = CreateWriter())
+
+            string exp = utils.IsIndent() ?
+                "<!DOCTYPE ROOT []>" + Environment.NewLine + "<ROOT />" :
+                "<!DOCTYPE ROOT []><ROOT />";
+
+            using (XmlReader xr = CreateReader(new StringReader(strxml)))
+            using (XmlWriter w = utils.CreateWriter())
             {
                 while (xr.NodeType != XmlNodeType.DocumentType)
                     xr.Read();
@@ -436,34 +435,33 @@ namespace System.Xml.Tests
                 w.WriteStartElement("ROOT");
                 w.WriteEndElement();
             }
-            xr.Dispose();
 
-            Assert.True(CompareReader("<!DOCTYPE ROOT[]><ROOT />"));
+            Assert.Equal(exp, utils.GetString());
         }
 
-        //[Variation(id = 21, Desc = "Call WriteNode with full end element", Pri = 1)]
-        [Fact]
-        public void writeNode_XmlReader21()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader21(XmlWriterUtils utils)
         {
             string strxml = "<root></root>";
             XmlReader xr = CreateReader(new StringReader(strxml));
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 w.WriteNode(xr, false);
             }
 
             xr.Dispose();
-            Assert.True(CompareReader("<root></root>"));
+            Assert.True(utils.CompareReader("<root></root>"));
         }
 
-        //[Variation(Desc = "Call WriteNode with tag mismatch")]
-        [Fact]
-        public void writeNode_XmlReader21a()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader21a(XmlWriterUtils utils)
         {
             string strxml = "<a xmlns=\"p1\"><b xmlns=\"p2\"><c xmlns=\"p1\" /></b><d xmlns=\"\"><e xmlns=\"p1\"><f xmlns=\"\" /></d></a>";
             try
             {
-                using (XmlWriter w = CreateWriter())
+                using (XmlWriter w = utils.CreateWriter())
                 {
                     try
                     {
@@ -480,9 +478,9 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(Desc = "Call WriteNode with default NS from DTD.UnexpToken")]
-        [Fact]
-        public void writeNode_XmlReader21b()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader21b(XmlWriterUtils utils)
         {
             string strxml = "<!DOCTYPE doc " +
 "[<!ELEMENT doc ANY>" +
@@ -502,7 +500,7 @@ namespace System.Xml.Tests
 "</doc>";
             try
             {
-                using (XmlWriter w = CreateWriter())
+                using (XmlWriter w = utils.CreateWriter())
                 {
                     try
                     {
@@ -519,9 +517,9 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(id = 22, Desc = "Call WriteNode with reader on element with 100 attributes", Pri = 1)]
-        [Fact]
-        public void writeNode_XmlReader22()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader22(XmlWriterUtils utils)
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
             while (xr.Read())
@@ -531,17 +529,17 @@ namespace System.Xml.Tests
                     break;
                 }
             }
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 w.WriteNode(xr, false);
             }
             xr.Dispose();
-            Assert.True(CompareBaseline("OneHundredAttributes.xml"));
+            Assert.True(utils.CompareBaseline("OneHundredAttributes.xml"));
         }
 
-        //[Variation(id = 23, Desc = "Call WriteNode with reader on text node", Pri = 1)]
-        [Fact]
-        public void writeNode_XmlReader23()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader23(XmlWriterUtils utils)
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
             while (xr.Read())
@@ -559,19 +557,19 @@ namespace System.Xml.Tests
                 xr.Dispose();
                 Assert.True(false);
             }
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 w.WriteStartElement("root");
                 w.WriteNode(xr, false);
                 w.WriteEndElement();
             }
             xr.Dispose();
-            Assert.True(CompareReader("<root>Node Text</root>"));
+            Assert.True(utils.CompareReader("<root>Node Text</root>"));
         }
 
-        //[Variation(id = 24, Desc = "Call WriteNode with reader on CDATA node", Pri = 1)]
-        [Fact]
-        public void writeNode_XmlReader24()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader24(XmlWriterUtils utils)
         {
             if (IsXPathDataModelReader())
             {
@@ -594,7 +592,7 @@ namespace System.Xml.Tests
                 xr.Dispose();
                 Assert.True(false);
             }
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 w.WriteStartElement("root");
                 w.WriteNode(xr, false);
@@ -602,12 +600,12 @@ namespace System.Xml.Tests
             }
             xr.Dispose();
 
-            Assert.True(CompareReader("<root><![CDATA[cdata content]]></root>"));
+            Assert.True(utils.CompareReader("<root><![CDATA[cdata content]]></root>"));
         }
 
-        //[Variation(id = 25, Desc = "Call WriteNode with reader on PI node", Pri = 1)]
-        [Fact]
-        public void writeNode_XmlReader25()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader25(XmlWriterUtils utils)
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
             while (xr.Read())
@@ -624,19 +622,19 @@ namespace System.Xml.Tests
                 xr.Dispose();
                 Assert.True(false);
             }
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 w.WriteStartElement("root");
                 w.WriteNode(xr, false);
                 w.WriteEndElement();
             }
             xr.Dispose();
-            Assert.True(CompareReader("<root><?PI Text?></root>"));
+            Assert.True(utils.CompareReader("<root><?PI Text?></root>"));
         }
 
-        //[Variation(id = 26, Desc = "Call WriteNode with reader on Comment node", Pri = 1)]
-        [Fact]
-        public void writeNode_XmlReader26()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader26(XmlWriterUtils utils)
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
             while (xr.Read())
@@ -653,19 +651,19 @@ namespace System.Xml.Tests
                 xr.Dispose();
                 Assert.True(false);
             }
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 w.WriteStartElement("root");
                 w.WriteNode(xr, false);
                 w.WriteEndElement();
             }
             xr.Dispose();
-            Assert.True(CompareReader("<root><!--Comment--></root>"));
+            Assert.True(utils.CompareReader("<root><!--Comment--></root>"));
         }
 
-        //[Variation(Desc = "Call WriteNode with reader on XmlDecl (OmitXmlDecl false)", Pri = 1)]
-        [Fact]
-        public void writeNode_XmlReader28()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader28(XmlWriterUtils utils)
         {
             string strxml = "<?xml version=\"1.0\" standalone=\"yes\"?><Root />";
             XmlReader xr = CreateReader(new StringReader(strxml));
@@ -680,19 +678,19 @@ namespace System.Xml.Tests
 
             XmlWriterSettings ws = new XmlWriterSettings();
             ws.OmitXmlDeclaration = false;
-            XmlWriter w = CreateWriter(ws);
+            XmlWriter w = utils.CreateWriter(ws);
             w.WriteNode(xr, false);
             w.WriteStartElement("Root");
             w.WriteEndElement();
             xr.Dispose();
             w.Dispose();
-            strxml = IsIndent() ? "<?xml version=\"1.0\" standalone=\"yes\"?>" + Environment.NewLine + "<Root />" : strxml;
-            Assert.True(CompareString(strxml));
+            strxml = utils.IsIndent() ? "<?xml version=\"1.0\" standalone=\"yes\"?>" + Environment.NewLine + "<Root />" : strxml;
+            Assert.True(utils.CompareString(strxml));
         }
 
-        //[Variation(id = 27, Desc = "WriteNode should only write required namespaces", Pri = 1)]
-        [Fact]
-        public void writeNode_XmlReader27()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader27(XmlWriterUtils utils)
         {
             string strxml = @"<root xmlns:p1='p1'><p2:child xmlns:p2='p2' /></root>";
             XmlReader xr = CreateReader(new StringReader(strxml));
@@ -701,17 +699,17 @@ namespace System.Xml.Tests
                 if (xr.LocalName == "child")
                     break;
             }
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 w.WriteNode(xr, false);
                 xr.Dispose();
             }
-            Assert.True(CompareReader("<p2:child xmlns:p2='p2' />"));
+            Assert.True(utils.CompareReader("<p2:child xmlns:p2='p2' />"));
         }
 
-        //[Variation(id = 28, Desc = "Reader.WriteNode should only write required namespaces, include xmlns:xml", Pri = 1)]
-        [Fact]
-        public void writeNode_XmlReader28b()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader28b(XmlWriterUtils utils)
         {
             string strxml = @"<root xmlns:p1='p1'><p2:child xmlns:p2='p2' xmlns:xml='http://www.w3.org/XML/1998/namespace' /></root>";
             XmlReader xr = CreateReader(new StringReader(strxml));
@@ -720,18 +718,18 @@ namespace System.Xml.Tests
                 if (xr.LocalName == "child")
                     break;
             }
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 w.WriteNode(xr, false);
                 xr.Dispose();
             }
-            string exp = (WriterType == WriterType.UnicodeWriter) ? "<p2:child xmlns:p2=\"p2\" />" : "<p2:child xmlns:p2=\"p2\" xmlns:xml='http://www.w3.org/XML/1998/namespace' />";
-            Assert.True(CompareReader(exp));
+            string exp = (utils.WriterType == WriterType.UnicodeWriter) ? "<p2:child xmlns:p2=\"p2\" />" : "<p2:child xmlns:p2=\"p2\" xmlns:xml='http://www.w3.org/XML/1998/namespace' />";
+            Assert.True(utils.CompareReader(exp));
         }
 
-        //[Variation(id = 29, Desc = "WriteNode should only write required namespaces, exclude xmlns:xml", Pri = 1)]
-        [Fact]
-        public void writeNode_XmlReader29()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader29(XmlWriterUtils utils)
         {
             string strxml = @"<root xmlns:p1='p1' xmlns:xml='http://www.w3.org/XML/1998/namespace'><p2:child xmlns:p2='p2' /></root>";
             XmlReader xr = CreateReader(new StringReader(strxml));
@@ -740,18 +738,18 @@ namespace System.Xml.Tests
                 if (xr.LocalName == "child")
                     break;
             }
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 w.WriteNode(xr, false);
 
                 xr.Dispose();
             }
-            Assert.True(CompareReader("<p2:child xmlns:p2=\"p2\" />"));
+            Assert.True(utils.CompareReader("<p2:child xmlns:p2=\"p2\" />"));
         }
 
-        //[Variation(id = 30, Desc = "WriteNode should only write required namespaces, change default ns at top level", Pri = 1)]
-        [Fact]
-        public void writeNode_XmlReader30()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader30(XmlWriterUtils utils)
         {
             string strxml = @"<root xmlns='p1'><child /></root>";
             XmlReader xr = CreateReader(new StringReader(strxml));
@@ -760,17 +758,17 @@ namespace System.Xml.Tests
                 if (xr.LocalName == "child")
                     break;
             }
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 w.WriteNode(xr, false);
                 xr.Dispose();
             }
-            Assert.True(CompareReader("<child xmlns='p1' />"));
+            Assert.True(utils.CompareReader("<child xmlns='p1' />"));
         }
 
-        //[Variation(id = 31, Desc = "WriteNode should only write required namespaces, change default ns at same level", Pri = 1)]
-        [Fact]
-        public void writeNode_XmlReader31()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader31(XmlWriterUtils utils)
         {
             string strxml = @"<root xmlns:p1='p1'><child xmlns='p2'/></root>";
             XmlReader xr = CreateReader(new StringReader(strxml));
@@ -779,17 +777,17 @@ namespace System.Xml.Tests
                 if (xr.LocalName == "child")
                     break;
             }
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 w.WriteNode(xr, false);
                 xr.Dispose();
             }
-            Assert.True(CompareReader("<child xmlns='p2' />"));
+            Assert.True(utils.CompareReader("<child xmlns='p2' />"));
         }
 
-        //[Variation(id = 32, Desc = "WriteNode should only write required namespaces, change default ns at both levels", Pri = 1)]
-        [Fact]
-        public void writeNode_XmlReader32()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader32(XmlWriterUtils utils)
         {
             string strxml = @"<root xmlns='p1'><child xmlns='p2'/></root>";
             XmlReader xr = CreateReader(new StringReader(strxml));
@@ -798,18 +796,18 @@ namespace System.Xml.Tests
                 if (xr.LocalName == "child")
                     break;
             }
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 w.WriteNode(xr, false);
 
                 xr.Dispose();
             }
-            Assert.True(CompareReader("<child xmlns='p2' />"));
+            Assert.True(utils.CompareReader("<child xmlns='p2' />"));
         }
 
-        //[Variation(id = 33, Desc = "WriteNode should only write required namespaces, change ns uri for same prefix", Pri = 1)]
-        [Fact]
-        public void writeNode_XmlReader33()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader33(XmlWriterUtils utils)
         {
             string strxml = @"<p1:root xmlns:p1='p1'><p1:child xmlns:p1='p2'/></p1:root>";
             XmlReader xr = CreateReader(new StringReader(strxml));
@@ -818,17 +816,17 @@ namespace System.Xml.Tests
                 if (xr.LocalName == "child")
                     break;
             }
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 w.WriteNode(xr, false);
                 xr.Dispose();
             }
-            Assert.True(CompareReader("<p1:child xmlns:p1='p2' />"));
+            Assert.True(utils.CompareReader("<p1:child xmlns:p1='p2' />"));
         }
 
-        //[Variation(id = 34, Desc = "WriteNode should only write required namespaces, reuse prefix from top level", Pri = 1)]
-        [Fact]
-        public void writeNode_XmlReader34()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void writeNode_XmlReader34(XmlWriterUtils utils)
         {
             string strxml = @"<root xmlns:p1='p1'><p1:child /></root>";
             XmlReader xr = CreateReader(new StringReader(strxml));
@@ -837,36 +835,36 @@ namespace System.Xml.Tests
                 if (xr.LocalName == "child")
                     break;
             }
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 w.WriteNode(xr, false);
                 xr.Dispose();
             }
-            Assert.True(CompareReader("<p1:child xmlns:p1='p1' />"));
+            Assert.True(utils.CompareReader("<p1:child xmlns:p1='p1' />"));
         }
 
-        //[Variation(Desc = "1. XDocument does not format content while Saving", Param = @"<?xml version='1.0'?><?pi?><?pi?>  <shouldbeindented><a>text</a></shouldbeindented><?pi?>")]
-        //[Variation(Desc = "2. XDocument does not format content while Saving", Param = @"<?xml version='1.0'?><?pi?><?pi?>  <shouldbeindented><a>text</a></shouldbeindented><?pi?>")]
-        [Fact]
-        public void writeNode_XmlReader35()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ConformanceLevel.Document)]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ConformanceLevel.Auto)]
+        public void writeNode_XmlReader35(XmlWriterUtils utils, ConformanceLevel conformanceLevel)
         {
-            string strxml = (string)CurVariation.Param;
+            string strxml = @"<?xml version='1.0'?><?pi?><?pi?>  <shouldbeindented><a>text</a></shouldbeindented><?pi?>";
             CError.WriteLine(strxml);
             XmlReader xr = CreateReader(new StringReader(strxml));
             XmlWriterSettings ws = new XmlWriterSettings();
-            ws.ConformanceLevel = (CurVariation.Desc.Contains("1.")) ? ConformanceLevel.Document : ConformanceLevel.Auto;
+            ws.ConformanceLevel = conformanceLevel;
             ws.Indent = true;
-            XmlWriter w = CreateWriter(ws);
+            XmlWriter w = utils.CreateWriter(ws);
             w.WriteNode(xr, false);
             xr.Dispose();
             w.Dispose();
-            Assert.True(CompareReader(strxml));
+            Assert.True(utils.CompareReader(strxml));
         }
 
-        //[Variation(Desc = "1.WriteNode with ascii encoding", Param = true)]
-        //[Variation(Desc = "2.WriteNode with ascii encoding", Param = false)]
-        [Fact]
-        public void writeNode_XmlReader36()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, true)]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, false)]
+        public void writeNode_XmlReader36(XmlWriterUtils utils, bool defattr)
         {
             string strxml = "<Ro\u00F6t \u00F6=\"\u00F6\" />";
             string exp = strxml;
@@ -875,55 +873,51 @@ namespace System.Xml.Tests
 
             XmlWriterSettings ws = new XmlWriterSettings();
             ws.OmitXmlDeclaration = true;
-            XmlWriter w = CreateWriter(ws);
+            XmlWriter w = utils.CreateWriter(ws);
             while (!xr.EOF)
             {
-                w.WriteNode(xr, (bool)CurVariation.Param);
+                w.WriteNode(xr, defattr);
             }
             xr.Dispose();
             w.Dispose();
-            Assert.True((CompareString(exp)));
+            Assert.True(utils.CompareString(exp));
         }
 
-        //[Variation(Desc = "WriteNode DTD PUBLIC with identifier", Param = true)]
-        //[Variation(Desc = "WriteNode DTD PUBLIC with identifier", Param = false)]
-        [Fact]
-        public void writeNode_XmlReader37()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, true)]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, false)]
+        public void writeNode_XmlReader37(XmlWriterUtils utils, bool defattr)
         {
             string strxml = "<!DOCTYPE root PUBLIC \"\" \"#\"><root/>";
-            string exp = (WriterType == WriterType.UTF8WriterIndent || WriterType == WriterType.UnicodeWriterIndent) ?
-               "<!DOCTYPE root PUBLIC \"\" \"#\"[]>" + nl + "<root />" :
+            string exp = utils.IsIndent() ?
+               "<!DOCTYPE root PUBLIC \"\" \"#\"[]>" + Environment.NewLine + "<root />" :
                "<!DOCTYPE root PUBLIC \"\" \"#\"[]><root />";
-            try
+
+            using (XmlReader xr = CreateReader(new StringReader(strxml)))
+            using (XmlWriter w = utils.CreateWriter())
             {
-                XmlReader xr = CreateReader(new StringReader(strxml));
-                using (XmlWriter w = CreateWriter())
+                while (!xr.EOF)
                 {
-                    while (!xr.EOF)
-                    {
-                        w.WriteNode(xr, (bool)CurVariation.Param);
-                    }
-                    xr.Dispose();
+                    w.WriteNode(xr, defattr);
                 }
             }
-            catch (FileNotFoundException e) { CError.WriteLine(e); return; }
-            catch (XmlException e) { CError.WriteLine(e); return; }
-            Assert.True(false);
+
+            Assert.True(utils.CompareString(exp));
         }
 
-        //[Variation(Desc = "WriteNode DTD SYSTEM with identifier", Param = true)]
-        //[Variation(Desc = "WriteNode DTD SYSTEM with identifier", Param = false)]
-        [Fact]
-        public void writeNode_XmlReader38()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, true)]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, false)]
+        public void writeNode_XmlReader38(XmlWriterUtils utils, bool defattr)
         {
             string strxml = "<!DOCTYPE root SYSTEM \"#\"><root/>";
             try
             {
                 using (XmlReader xr = CreateReader(new StringReader(strxml)))
                 {
-                    using (XmlWriter w = CreateWriter())
+                    using (XmlWriter w = utils.CreateWriter())
                     {
-                        w.WriteNode(xr, (bool)CurVariation.Param);
+                        w.WriteNode(xr, defattr);
                     }
                 }
             }
@@ -931,30 +925,25 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(Desc = "WriteNode DTD SYSTEM with valid surrogate pair", Param = true)]
-        //[Variation(Desc = "WriteNode DTD SYSTEM with valid surrogate pair", Param = false)]
-        [Fact]
-        public void writeNode_XmlReader39()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, true)]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, false)]
+        public void writeNode_XmlReader39(XmlWriterUtils utils, bool defattr)
         {
             string strxml = "<!DOCTYPE root SYSTEM \"\uD812\uDD12\"><root/>";
-            string exp = "<!DOCTYPE root SYSTEM \"\uD812\uDD12\"[]><root />";
-            try
+            string exp = utils.IsIndent() ?
+                "<!DOCTYPE root SYSTEM \"\uD812\uDD12\"[]>" + Environment.NewLine + "<root />" :
+                "<!DOCTYPE root SYSTEM \"\uD812\uDD12\"[]><root />";
+
+            using (XmlReader xr = CreateReader(new StringReader(strxml)))
             {
-                using (XmlReader xr = CreateReader(new StringReader(strxml)))
+                using (XmlWriter w = utils.CreateWriter())
                 {
-                    using (XmlWriter w = CreateWriter())
-                    {
-                        w.WriteNode(xr, (bool)CurVariation.Param);
-                    }
+                    w.WriteNode(xr, defattr);
                 }
             }
-            catch (XmlException e) { CError.WriteLine(e); return; }
-            catch (FileNotFoundException e) { CError.WriteLine(e); return; }
-            if (WriterType == WriterType.CharCheckingWriter)
-            {
-                Assert.True((CompareString(exp)));
-            }
-            Assert.True(false);
+
+            Assert.Equal(exp, utils.GetString());
         }
     }
 }

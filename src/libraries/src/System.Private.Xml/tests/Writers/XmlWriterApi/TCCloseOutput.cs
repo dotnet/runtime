@@ -15,7 +15,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.UTF8Writer | WriterType.UnicodeWriter, "Stream")]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.UTF8Writer | WriterType.UnicodeWriter, "Textwriter")]
-        public void CloseOutput_1(XmlWriterTestCaseBase utils, string outputType)
+        public void CloseOutput_1(XmlWriterUtils utils, string outputType)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             XmlWriter w = null;
@@ -56,7 +56,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.UTF8Writer | WriterType.UnicodeWriter, true)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.UTF8Writer | WriterType.UnicodeWriter, false)]
-        public void CloseOutput_2(XmlWriterTestCaseBase utils, bool closeOutput)
+        public void CloseOutput_2(XmlWriterUtils utils, bool closeOutput)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             switch (utils.WriterType)
@@ -97,7 +97,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.NoAsync | WriterType.UTF8Writer | WriterType.UnicodeWriter, "Stream")]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.NoAsync | WriterType.UTF8Writer | WriterType.UnicodeWriter, "Textwriter")]
-        public void CloseOutput_3(XmlWriterTestCaseBase utils, string outputType)
+        public void CloseOutput_3(XmlWriterUtils utils, string outputType)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.CloseOutput = true;
@@ -139,7 +139,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.UTF8Writer | WriterType.UnicodeWriter, "Stream")]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.UTF8Writer | WriterType.UnicodeWriter, "Textwriter")]
-        public void CloseOutput_4(XmlWriterTestCaseBase utils, string outputType)
+        public void CloseOutput_4(XmlWriterUtils utils, string outputType)
         {
             Stream writerStream = FilePathUtil.getStream("writer.out");
             XmlWriterSettings wSettings = new XmlWriterSettings();

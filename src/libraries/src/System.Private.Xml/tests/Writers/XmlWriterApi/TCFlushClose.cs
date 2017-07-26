@@ -15,7 +15,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom, true)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom, false)]
-        public void flush_1(XmlWriterTestCaseBase utils, bool closeOutput)
+        public void flush_1(XmlWriterUtils utils, bool closeOutput)
         {
             Stream writerStream = new MemoryStream();
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -103,7 +103,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.NoAsync | WriterType.UTF8Writer | WriterType.UnicodeWriter)]
-        public void close_1(XmlWriterTestCaseBase utils)
+        public void close_1(XmlWriterUtils utils)
         {
             Stream writerStream = new MemoryStream();
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -179,7 +179,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
-        public void close_2(XmlWriterTestCaseBase utils)
+        public void close_2(XmlWriterUtils utils)
         {
             XmlWriter w = utils.CreateWriter();
             w.Dispose();
