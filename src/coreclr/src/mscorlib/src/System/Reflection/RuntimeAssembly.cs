@@ -821,7 +821,7 @@ namespace System.Reflection
                     if (type == null)
                         continue;  // mdtExternalType was not a forwarder entry.
                 }
-                catch (Exception e) when (IsLoaderException(e))
+                catch (Exception e)
                 {
                     type = null;
                     exception = e;
@@ -859,7 +859,7 @@ namespace System.Reflection
             {
                 nestedTypes = type.GetNestedTypes(BindingFlags.Public);
             }
-            catch (Exception e) when (IsLoaderException(e))
+            catch (Exception e)
             {
                 exceptions.Add(e);
                 return;
@@ -871,13 +871,8 @@ namespace System.Reflection
             }
         }
 
-        private static bool IsLoaderException(Exception e)
-        {
-            return e is FileLoadException || e is FileNotFoundException || e is TypeLoadException || e is IOException || e is UnauthorizedAccessException; 
-        }
-
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
-        private static unsafe extern void GetForwardedType(RuntimeAssembly assembly, MetadataToken mdtExternalType, ObjectHandleOnStack type);
+        private static extern void GetForwardedType(RuntimeAssembly assembly, MetadataToken mdtExternalType, ObjectHandleOnStack type);
     }
 }
