@@ -10,7 +10,7 @@ namespace System.Xml.Tests
     public class TCStandAlone
     {
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void standalone_1(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -35,7 +35,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void standalone_2(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();

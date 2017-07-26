@@ -16,14 +16,14 @@ namespace System.Xml.Tests
         public static string file = "writerErr.out";
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 3)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 4)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 5)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 6)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 7)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 8)]
+        [XmlWriterInlineData(1)]
+        [XmlWriterInlineData(2)]
+        [XmlWriterInlineData(3)]
+        [XmlWriterInlineData(4)]
+        [XmlWriterInlineData(5)]
+        [XmlWriterInlineData(6)]
+        [XmlWriterInlineData(7)]
+        [XmlWriterInlineData(8)]
         public void var_01(XmlWriterUtils utils, int param)
         {
             XmlWriterSettings ws = new XmlWriterSettings();
@@ -46,8 +46,8 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, true)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, false)]
+        [XmlWriterInlineData(true)]
+        [XmlWriterInlineData(false)]
         public void var_02(XmlWriterUtils utils, bool param)
         {
             bool result = false;
@@ -73,8 +73,8 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, true)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, false)]
+        [XmlWriterInlineData(true)]
+        [XmlWriterInlineData(false)]
         public void var_03(XmlWriterUtils utils, bool param)
         {
             bool result = false;
@@ -100,26 +100,26 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 3)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 4)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 5)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 6)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 7)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 8)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 9)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 10)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 11)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 12)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 13)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 14)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 15)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 16)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 17)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 18)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 19)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 20)]
+        [XmlWriterInlineData(1)]
+        [XmlWriterInlineData(2)]
+        [XmlWriterInlineData(3)]
+        [XmlWriterInlineData(4)]
+        [XmlWriterInlineData(5)]
+        [XmlWriterInlineData(6)]
+        [XmlWriterInlineData(7)]
+        [XmlWriterInlineData(8)]
+        [XmlWriterInlineData(9)]
+        [XmlWriterInlineData(10)]
+        [XmlWriterInlineData(11)]
+        [XmlWriterInlineData(12)]
+        [XmlWriterInlineData(13)]
+        [XmlWriterInlineData(14)]
+        [XmlWriterInlineData(15)]
+        [XmlWriterInlineData(16)]
+        [XmlWriterInlineData(17)]
+        [XmlWriterInlineData(18)]
+        [XmlWriterInlineData(19)]
+        [XmlWriterInlineData(20)]
         public void var_04(XmlWriterUtils utils, int param)
         {
             bool result = false;
@@ -206,12 +206,12 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 3)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 4)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 5)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 6)]
+        [XmlWriterInlineData(1)]
+        [XmlWriterInlineData(2)]
+        [XmlWriterInlineData(3)]
+        [XmlWriterInlineData(4)]
+        [XmlWriterInlineData(5)]
+        [XmlWriterInlineData(6)]
         public void var_05(XmlWriterUtils utils, int param)
         {
             bool result = false;
@@ -255,42 +255,42 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 3)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 4)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 5)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 6)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 7)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 8)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 9)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 10)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 11)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 12)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 13)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 14)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 15)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 16)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 17)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 18)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 19)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 20)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 21)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 22)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 23)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 24)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 25)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 26)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 27)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 28)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 29)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 30)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 31)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 32)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 33)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 34)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 35)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 36)]
+        [XmlWriterInlineData(1)]
+        [XmlWriterInlineData(2)]
+        [XmlWriterInlineData(3)]
+        [XmlWriterInlineData(4)]
+        [XmlWriterInlineData(5)]
+        [XmlWriterInlineData(6)]
+        [XmlWriterInlineData(7)]
+        [XmlWriterInlineData(8)]
+        [XmlWriterInlineData(9)]
+        [XmlWriterInlineData(10)]
+        [XmlWriterInlineData(11)]
+        [XmlWriterInlineData(12)]
+        [XmlWriterInlineData(13)]
+        [XmlWriterInlineData(14)]
+        [XmlWriterInlineData(15)]
+        [XmlWriterInlineData(16)]
+        [XmlWriterInlineData(17)]
+        [XmlWriterInlineData(18)]
+        [XmlWriterInlineData(19)]
+        [XmlWriterInlineData(20)]
+        [XmlWriterInlineData(21)]
+        [XmlWriterInlineData(22)]
+        [XmlWriterInlineData(23)]
+        [XmlWriterInlineData(24)]
+        [XmlWriterInlineData(25)]
+        [XmlWriterInlineData(26)]
+        [XmlWriterInlineData(27)]
+        [XmlWriterInlineData(28)]
+        [XmlWriterInlineData(29)]
+        [XmlWriterInlineData(30)]
+        [XmlWriterInlineData(31)]
+        [XmlWriterInlineData(32)]
+        [XmlWriterInlineData(33)]
+        [XmlWriterInlineData(34)]
+        [XmlWriterInlineData(35)]
+        [XmlWriterInlineData(36)]
         public void var_07(XmlWriterUtils utils, int param)
         {
             bool result = false;
@@ -430,10 +430,10 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 3)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 4)]
+        [XmlWriterInlineData(1)]
+        [XmlWriterInlineData(2)]
+        [XmlWriterInlineData(3)]
+        [XmlWriterInlineData(4)]
         public void var_10(XmlWriterUtils utils, int param)
         {
             int iBufferSize = 5;
@@ -492,10 +492,10 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 3)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 4)]
+        [XmlWriterInlineData(1)]
+        [XmlWriterInlineData(2)]
+        [XmlWriterInlineData(3)]
+        [XmlWriterInlineData(4)]
         public void var_11(XmlWriterUtils utils, int param)
         {
             XmlWriterSettings ws = new XmlWriterSettings();
@@ -527,14 +527,14 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 3)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 4)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 5)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 6)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 7)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 8)]
+        [XmlWriterInlineData(1)]
+        [XmlWriterInlineData(2)]
+        [XmlWriterInlineData(3)]
+        [XmlWriterInlineData(4)]
+        [XmlWriterInlineData(5)]
+        [XmlWriterInlineData(6)]
+        [XmlWriterInlineData(7)]
+        [XmlWriterInlineData(8)]
         public void var_12(XmlWriterUtils utils, int param)
         {
             XmlWriterSettings ws = new XmlWriterSettings();
@@ -555,33 +555,33 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 3)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 4)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 5)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 6)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 7)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 8)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 9)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 10)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 11)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 12)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 13)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 14)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 15)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 16)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 17)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 18)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 19)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 20)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 21)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 22)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 23)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 24)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 25)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 26)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 27)]
+        [XmlWriterInlineData(1)]
+        [XmlWriterInlineData(2)]
+        [XmlWriterInlineData(3)]
+        [XmlWriterInlineData(4)]
+        [XmlWriterInlineData(5)]
+        [XmlWriterInlineData(6)]
+        [XmlWriterInlineData(7)]
+        [XmlWriterInlineData(8)]
+        [XmlWriterInlineData(9)]
+        [XmlWriterInlineData(10)]
+        [XmlWriterInlineData(11)]
+        [XmlWriterInlineData(12)]
+        [XmlWriterInlineData(13)]
+        [XmlWriterInlineData(14)]
+        [XmlWriterInlineData(15)]
+        [XmlWriterInlineData(16)]
+        [XmlWriterInlineData(17)]
+        [XmlWriterInlineData(18)]
+        [XmlWriterInlineData(19)]
+        [XmlWriterInlineData(20)]
+        [XmlWriterInlineData(21)]
+        [XmlWriterInlineData(22)]
+        [XmlWriterInlineData(23)]
+        [XmlWriterInlineData(24)]
+        [XmlWriterInlineData(25)]
+        [XmlWriterInlineData(26)]
+        [XmlWriterInlineData(27)]
         public void var_13(XmlWriterUtils utils, int param)
         {
             XmlWriterSettings ws = new XmlWriterSettings();
@@ -665,8 +665,8 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2)]
+        [XmlWriterInlineData(1)]
+        [XmlWriterInlineData(2)]
         public void var_14(XmlWriterUtils utils, int param)
         {
             XmlWriterSettings ws = new XmlWriterSettings();
@@ -694,7 +694,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void var_15(XmlWriterUtils utils)
         {
             XmlWriter w = utils.CreateWriter();
@@ -726,7 +726,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void var_16(XmlWriterUtils utils)
         {
             XmlWriter w = utils.CreateWriter();
@@ -763,7 +763,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.All & ~WriterType.Async)]
+        [XmlWriterInlineData(WriterType.All & ~WriterType.Async)]
         public void bug601305(XmlWriterUtils utils)
         {
             CError.WriteLine("expected:");
@@ -783,16 +783,16 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 3)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 4)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 5)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 6)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 7)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 8)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 9)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 10)]
+        [XmlWriterInlineData(1)]
+        [XmlWriterInlineData(2)]
+        [XmlWriterInlineData(3)]
+        [XmlWriterInlineData(4)]
+        [XmlWriterInlineData(5)]
+        [XmlWriterInlineData(6)]
+        [XmlWriterInlineData(7)]
+        [XmlWriterInlineData(8)]
+        [XmlWriterInlineData(9)]
+        [XmlWriterInlineData(10)]
         public void var17(XmlWriterUtils utils, int param)
         {
             if (utils.WriterType == WriterType.CustomWriter) return;
@@ -837,35 +837,35 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 3)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 4)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 5)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 6)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 7)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 8)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 9)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 10)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 11)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 12)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 13)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 14)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 15)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 16)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 17)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 18)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 19)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 20)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 21)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 22)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 23)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 24)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 25)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 26)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 27)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 28)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 29)]
+        [XmlWriterInlineData(1)]
+        [XmlWriterInlineData(2)]
+        [XmlWriterInlineData(3)]
+        [XmlWriterInlineData(4)]
+        [XmlWriterInlineData(5)]
+        [XmlWriterInlineData(6)]
+        [XmlWriterInlineData(7)]
+        [XmlWriterInlineData(8)]
+        [XmlWriterInlineData(9)]
+        [XmlWriterInlineData(10)]
+        [XmlWriterInlineData(11)]
+        [XmlWriterInlineData(12)]
+        [XmlWriterInlineData(13)]
+        [XmlWriterInlineData(14)]
+        [XmlWriterInlineData(15)]
+        [XmlWriterInlineData(16)]
+        [XmlWriterInlineData(17)]
+        [XmlWriterInlineData(18)]
+        [XmlWriterInlineData(19)]
+        [XmlWriterInlineData(20)]
+        [XmlWriterInlineData(21)]
+        [XmlWriterInlineData(22)]
+        [XmlWriterInlineData(23)]
+        [XmlWriterInlineData(24)]
+        [XmlWriterInlineData(25)]
+        [XmlWriterInlineData(26)]
+        [XmlWriterInlineData(27)]
+        [XmlWriterInlineData(28)]
+        [XmlWriterInlineData(29)]
         public void var_18(XmlWriterUtils utils, int param)
         {
             XmlReader r = ReaderHelper.Create(new StringReader("<xmlns/>"));
@@ -974,35 +974,35 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 3)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 4)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 5)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 6)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 7)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 8)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 9)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 10)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 11)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 12)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 13)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 14)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 15)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 16)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 17)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 18)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 19)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 20)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 21)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 22)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 23)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 24)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 25)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 26)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 27)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 28)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 29)]
+        [XmlWriterInlineData(1)]
+        [XmlWriterInlineData(2)]
+        [XmlWriterInlineData(3)]
+        [XmlWriterInlineData(4)]
+        [XmlWriterInlineData(5)]
+        [XmlWriterInlineData(6)]
+        [XmlWriterInlineData(7)]
+        [XmlWriterInlineData(8)]
+        [XmlWriterInlineData(9)]
+        [XmlWriterInlineData(10)]
+        [XmlWriterInlineData(11)]
+        [XmlWriterInlineData(12)]
+        [XmlWriterInlineData(13)]
+        [XmlWriterInlineData(14)]
+        [XmlWriterInlineData(15)]
+        [XmlWriterInlineData(16)]
+        [XmlWriterInlineData(17)]
+        [XmlWriterInlineData(18)]
+        [XmlWriterInlineData(19)]
+        [XmlWriterInlineData(20)]
+        [XmlWriterInlineData(21)]
+        [XmlWriterInlineData(22)]
+        [XmlWriterInlineData(23)]
+        [XmlWriterInlineData(24)]
+        [XmlWriterInlineData(25)]
+        [XmlWriterInlineData(26)]
+        [XmlWriterInlineData(27)]
+        [XmlWriterInlineData(28)]
+        [XmlWriterInlineData(29)]
         public void var_19(XmlWriterUtils utils, int param)
         {
             XmlReader r = ReaderHelper.Create(new StringReader("<xmlns/>"));
@@ -1117,7 +1117,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void var_20(XmlWriterUtils utils)
         {
             XmlWriter w = utils.CreateWriter();
@@ -1146,40 +1146,40 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 3)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 4)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 5)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 6)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 7)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 8)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 9)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 10)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 11)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 12)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 13)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 14)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 15)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 16)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 17)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 18)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 19)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 20)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 21)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 22)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 23)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 24)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 25)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 26)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 27)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 28)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 29)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 30)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 31)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 32)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 33)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 34)]
+        [XmlWriterInlineData(1)]
+        [XmlWriterInlineData(2)]
+        [XmlWriterInlineData(3)]
+        [XmlWriterInlineData(4)]
+        [XmlWriterInlineData(5)]
+        [XmlWriterInlineData(6)]
+        [XmlWriterInlineData(7)]
+        [XmlWriterInlineData(8)]
+        [XmlWriterInlineData(9)]
+        [XmlWriterInlineData(10)]
+        [XmlWriterInlineData(11)]
+        [XmlWriterInlineData(12)]
+        [XmlWriterInlineData(13)]
+        [XmlWriterInlineData(14)]
+        [XmlWriterInlineData(15)]
+        [XmlWriterInlineData(16)]
+        [XmlWriterInlineData(17)]
+        [XmlWriterInlineData(18)]
+        [XmlWriterInlineData(19)]
+        [XmlWriterInlineData(20)]
+        [XmlWriterInlineData(21)]
+        [XmlWriterInlineData(22)]
+        [XmlWriterInlineData(23)]
+        [XmlWriterInlineData(24)]
+        [XmlWriterInlineData(25)]
+        [XmlWriterInlineData(26)]
+        [XmlWriterInlineData(27)]
+        [XmlWriterInlineData(28)]
+        [XmlWriterInlineData(29)]
+        [XmlWriterInlineData(30)]
+        [XmlWriterInlineData(31)]
+        [XmlWriterInlineData(32)]
+        [XmlWriterInlineData(33)]
+        [XmlWriterInlineData(34)]
         public void var_21(XmlWriterUtils utils, int param)
         {
             bool result = false;
@@ -1304,10 +1304,10 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 3)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 4)]
+        [XmlWriterInlineData(1)]
+        [XmlWriterInlineData(2)]
+        [XmlWriterInlineData(3)]
+        [XmlWriterInlineData(4)]
         public void bug600541(XmlWriterUtils utils, int param)
         {
             string xml = "<root a=\"a\" b=\"b\" c=\"c\" d=\"d\" />";
@@ -1341,7 +1341,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void bug630890(XmlWriterUtils utils)
         {
             object obj = (object)1;
@@ -1374,7 +1374,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void PassingArrayWithNullOrEmptyItemsCausesWriteValueToFail(XmlWriterUtils utils)
         {
             string[] a = new string[5];

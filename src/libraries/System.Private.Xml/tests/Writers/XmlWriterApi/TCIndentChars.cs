@@ -11,7 +11,7 @@ namespace System.Xml.Tests
     public class TCIndentChars
     {
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
+        [XmlWriterInlineData(WriterType.AllButCustom)]
         public void IndentChars_1(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -31,7 +31,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
+        [XmlWriterInlineData(WriterType.AllButCustom)]
         public void IndentChars_2(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -51,7 +51,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
+        [XmlWriterInlineData(WriterType.AllButCustom)]
         public void IndentChars_3(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -71,7 +71,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
+        [XmlWriterInlineData(WriterType.AllButCustom)]
         public void IndentChars_4(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -91,7 +91,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
+        [XmlWriterInlineData(WriterType.AllButCustom)]
         public void IndentChars_5(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -111,9 +111,9 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "<")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "&")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "<!--")]
+        [XmlWriterInlineData("<")]
+        [XmlWriterInlineData("&")]
+        [XmlWriterInlineData("<!--")]
         public void IndentChars_6(XmlWriterUtils utils, string indentChars)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();

@@ -12,7 +12,7 @@ namespace System.Xml.Tests
     public class TCWriteNode_XmlReader : ReaderParamTestCase
     {
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader1(XmlWriterUtils utils)
         {
             XmlReader xr = null;
@@ -34,7 +34,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader2(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -67,7 +67,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader3(XmlWriterUtils utils)
         {
             using (XmlReader xr = CreateReader(new StringReader("<root />")))
@@ -82,7 +82,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader4(XmlWriterUtils utils)
         {
             using (XmlReader xr = CreateReader(new StringReader("<root />")))
@@ -98,7 +98,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader5(XmlWriterUtils utils)
         {
             using (XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml"))
@@ -122,7 +122,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader6(XmlWriterUtils utils)
         {
             using (XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml"))
@@ -141,7 +141,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader7(XmlWriterUtils utils)
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
@@ -159,7 +159,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader8(XmlWriterUtils utils)
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
@@ -185,7 +185,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader9(XmlWriterUtils utils)
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
@@ -206,7 +206,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader10(XmlWriterUtils utils)
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
@@ -237,7 +237,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader11(XmlWriterUtils utils)
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
@@ -259,7 +259,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader12(XmlWriterUtils utils)
         {
             using (XmlReader xr = CreateReaderIgnoreWSFromString("<!DOCTYPE node [ <!ENTITY test \"Test Entity\"> ]><node>&test;</node>"))
@@ -286,7 +286,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader14(XmlWriterUtils utils)
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
@@ -312,7 +312,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader15(XmlWriterUtils utils)
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
@@ -338,7 +338,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader16(XmlWriterUtils utils)
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
@@ -364,7 +364,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader17(XmlWriterUtils utils)
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
@@ -384,7 +384,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader18(XmlWriterUtils utils)
         {
             string xml = "<Root a=\"foo\"/>";
@@ -400,7 +400,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader19(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -416,7 +416,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader20(XmlWriterUtils utils)
         {
             string strxml = "<!DOCTYPE ROOT []><ROOT/>";
@@ -440,7 +440,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader21(XmlWriterUtils utils)
         {
             string strxml = "<root></root>";
@@ -455,7 +455,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader21a(XmlWriterUtils utils)
         {
             string strxml = "<a xmlns=\"p1\"><b xmlns=\"p2\"><c xmlns=\"p1\" /></b><d xmlns=\"\"><e xmlns=\"p1\"><f xmlns=\"\" /></d></a>";
@@ -479,7 +479,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader21b(XmlWriterUtils utils)
         {
             string strxml = "<!DOCTYPE doc " +
@@ -518,7 +518,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader22(XmlWriterUtils utils)
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
@@ -538,7 +538,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader23(XmlWriterUtils utils)
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
@@ -568,7 +568,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader24(XmlWriterUtils utils)
         {
             if (IsXPathDataModelReader())
@@ -604,7 +604,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader25(XmlWriterUtils utils)
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
@@ -633,7 +633,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader26(XmlWriterUtils utils)
         {
             XmlReader xr = CreateReaderIgnoreWS("XmlReader.xml");
@@ -662,7 +662,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader28(XmlWriterUtils utils)
         {
             string strxml = "<?xml version=\"1.0\" standalone=\"yes\"?><Root />";
@@ -689,7 +689,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader27(XmlWriterUtils utils)
         {
             string strxml = @"<root xmlns:p1='p1'><p2:child xmlns:p2='p2' /></root>";
@@ -708,7 +708,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader28b(XmlWriterUtils utils)
         {
             string strxml = @"<root xmlns:p1='p1'><p2:child xmlns:p2='p2' xmlns:xml='http://www.w3.org/XML/1998/namespace' /></root>";
@@ -728,7 +728,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader29(XmlWriterUtils utils)
         {
             string strxml = @"<root xmlns:p1='p1' xmlns:xml='http://www.w3.org/XML/1998/namespace'><p2:child xmlns:p2='p2' /></root>";
@@ -748,7 +748,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader30(XmlWriterUtils utils)
         {
             string strxml = @"<root xmlns='p1'><child /></root>";
@@ -767,7 +767,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader31(XmlWriterUtils utils)
         {
             string strxml = @"<root xmlns:p1='p1'><child xmlns='p2'/></root>";
@@ -786,7 +786,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader32(XmlWriterUtils utils)
         {
             string strxml = @"<root xmlns='p1'><child xmlns='p2'/></root>";
@@ -806,7 +806,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader33(XmlWriterUtils utils)
         {
             string strxml = @"<p1:root xmlns:p1='p1'><p1:child xmlns:p1='p2'/></p1:root>";
@@ -825,7 +825,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeNode_XmlReader34(XmlWriterUtils utils)
         {
             string strxml = @"<root xmlns:p1='p1'><p1:child /></root>";
@@ -844,8 +844,8 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ConformanceLevel.Document)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ConformanceLevel.Auto)]
+        [XmlWriterInlineData(ConformanceLevel.Document)]
+        [XmlWriterInlineData(ConformanceLevel.Auto)]
         public void writeNode_XmlReader35(XmlWriterUtils utils, ConformanceLevel conformanceLevel)
         {
             string strxml = @"<?xml version='1.0'?><?pi?><?pi?>  <shouldbeindented><a>text</a></shouldbeindented><?pi?>";
@@ -862,8 +862,8 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, true)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, false)]
+        [XmlWriterInlineData(true)]
+        [XmlWriterInlineData(false)]
         public void writeNode_XmlReader36(XmlWriterUtils utils, bool defattr)
         {
             string strxml = "<Ro\u00F6t \u00F6=\"\u00F6\" />";
@@ -884,8 +884,8 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, true)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, false)]
+        [XmlWriterInlineData(true)]
+        [XmlWriterInlineData(false)]
         public void writeNode_XmlReader37(XmlWriterUtils utils, bool defattr)
         {
             string strxml = "<!DOCTYPE root PUBLIC \"\" \"#\"><root/>";
@@ -906,8 +906,8 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, true)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, false)]
+        [XmlWriterInlineData(true)]
+        [XmlWriterInlineData(false)]
         public void writeNode_XmlReader38(XmlWriterUtils utils, bool defattr)
         {
             string strxml = "<!DOCTYPE root SYSTEM \"#\"><root/>";
@@ -926,8 +926,8 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, true)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, false)]
+        [XmlWriterInlineData(true)]
+        [XmlWriterInlineData(false)]
         public void writeNode_XmlReader39(XmlWriterUtils utils, bool defattr)
         {
             string strxml = "<!DOCTYPE root SYSTEM \"\uD812\uDD12\"><root/>";

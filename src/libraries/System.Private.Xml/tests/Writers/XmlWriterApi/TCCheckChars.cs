@@ -12,21 +12,21 @@ namespace System.Xml.Tests
     public class TCCheckChars
     {
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "String")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "CData")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "Comment")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "CharEntity")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "EntityRef")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "SurrogateCharEntity")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "PI")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "Whitespace")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "Chars")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "RawString")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "RawChars")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "WriteValue")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "WriteDocTypeName")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "WriteDocTypeSysid")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "WriteDocTypePubid")]
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "String")]
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "CData")]
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "Comment")]
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "CharEntity")]
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "EntityRef")]
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "SurrogateCharEntity")]
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "PI")]
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "Whitespace")]
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "Chars")]
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "RawString")]
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "RawChars")]
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "WriteValue")]
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "WriteDocTypeName")]
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "WriteDocTypeSysid")]
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "WriteDocTypePubid")]
         public void checkChars_1(XmlWriterUtils utils, string tokenType)
         {
             char[] invalidXML = { '\u0000', '\u0008', '\u000B', '\u000C', '\u000E', '\u001F', '\uFFFE', '\uFFFF' };
@@ -122,10 +122,10 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "String")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "CharEntity")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "Chars")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "WriteValue")]
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "String")]
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "CharEntity")]
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "Chars")]
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "WriteValue")]
         public void checkChars_2(XmlWriterUtils utils, string tokenType)
         {
             char[] invalidXML = { '\u0000', '\u0008', '\u000B', '\u000C', '\u000E', '\u001F', '\uFFFE', '\uFFFF' };
@@ -184,11 +184,11 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "Comment")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "PI")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "CData")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "RawString")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "RawChars")]
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "Comment")]
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "PI")]
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "CData")]
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "RawString")]
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "RawChars")]
         public void checkChars_3(XmlWriterUtils utils, string tokenType)
         {
             char[] invalidXML = { '\u0000', '\u0008', '\u000B', '\u000C', '\u000E', '\u001F', '\uFFFE', '\uFFFF' };
@@ -243,18 +243,18 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "Whitespace", false)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "Surrogate", false)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "EntityRef", false)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "Name", false)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "NmToken", false)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "QName", false)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "Whitespace", true)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "Surrogate", true)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "EntityRef", true)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "Name", true)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "NmToken", true)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "QName", true)]		
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "Whitespace", false)]
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "Surrogate", false)]
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "EntityRef", false)]
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "Name", false)]
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "NmToken", false)]
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "QName", false)]
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "Whitespace", true)]
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "Surrogate", true)]
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "EntityRef", true)]
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "Name", true)]
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "NmToken", true)]
+        [XmlWriterInlineData(WriterType.AllButCustom & ~WriterType.CharCheckingWriter, "QName", true)]		
         public void checkChars_4(XmlWriterUtils utils, string tokenType, bool checkCharacters)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -322,10 +322,10 @@ namespace System.Xml.Tests
         ===============================================================================*/
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "<")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "&")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "]]>")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "~surogate~")]
+        [XmlWriterInlineData("<")]
+        [XmlWriterInlineData("&")]
+        [XmlWriterInlineData("]]>")]
+        [XmlWriterInlineData("~surogate~")]
         public void checkChars_7(XmlWriterUtils utils, string indentChars)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -357,10 +357,10 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "<")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "&")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "]]>")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "~surogate~")]
+        [XmlWriterInlineData("<")]
+        [XmlWriterInlineData("&")]
+        [XmlWriterInlineData("]]>")]
+        [XmlWriterInlineData("~surogate~")]
         public void checkChars_8(XmlWriterUtils utils, string newLineChars)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -392,7 +392,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void checkChars_9(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();

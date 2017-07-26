@@ -13,8 +13,8 @@ namespace System.Xml.Tests
     public class TCFlushClose
     {
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom, true)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom, false)]
+        [XmlWriterInlineData(WriterType.AllButCustom, true)]
+        [XmlWriterInlineData(WriterType.AllButCustom, false)]
         public void flush_1(XmlWriterUtils utils, bool closeOutput)
         {
             Stream writerStream = new MemoryStream();
@@ -102,7 +102,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.NoAsync | WriterType.UTF8Writer | WriterType.UnicodeWriter)]
+        [XmlWriterInlineData(WriterType.NoAsync | WriterType.UTF8Writer | WriterType.UnicodeWriter)]
         public void close_1(XmlWriterUtils utils)
         {
             Stream writerStream = new MemoryStream();
@@ -178,7 +178,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
+        [XmlWriterInlineData(WriterType.AllButCustom)]
         public void close_2(XmlWriterUtils utils)
         {
             XmlWriter w = utils.CreateWriter();
