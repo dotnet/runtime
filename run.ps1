@@ -8,5 +8,6 @@ $initTools = Join-Path $PSScriptRoot "init-tools.cmd"
 # execute the tool using the dotnet.exe host
 $dotNetExe = Join-Path $toolsLocalPath "dotnetcli\dotnet.exe"
 $runExe = Join-Path $toolsLocalPath "run.exe"
-& $dotNetExe $runExe $args
+$runConfig = Join-Path $PSScriptRoot "config.json"
+& $dotNetExe $runExe $runConfig $args
 exit $LastExitCode
