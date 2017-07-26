@@ -17,7 +17,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // Namespace
         public NamespaceSymbol CreateNamespace(Name name, NamespaceSymbol parent)
         {
-            NamespaceSymbol sym = newBasicSym(SYMKIND.SK_NamespaceSymbol, name, parent).AsNamespaceSymbol();
+            NamespaceSymbol sym = (NamespaceSymbol)newBasicSym(SYMKIND.SK_NamespaceSymbol, name, parent);
             sym.SetAccess(ACCESS.ACC_PUBLIC);
 
             return (sym);
@@ -27,7 +27,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(name != null);
 
-            AssemblyQualifiedNamespaceSymbol sym = newBasicSym(SYMKIND.SK_AssemblyQualifiedNamespaceSymbol, name, parent).AsAssemblyQualifiedNamespaceSymbol();
+            AssemblyQualifiedNamespaceSymbol sym = newBasicSym(SYMKIND.SK_AssemblyQualifiedNamespaceSymbol, name, parent) as AssemblyQualifiedNamespaceSymbol;
 
             Debug.Assert(sym != null);
             return sym;
@@ -41,7 +41,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 throw Error.InternalCompilerError();
             }
 
-            AggregateSymbol sym = newBasicSym(SYMKIND.SK_AggregateSymbol, name, parent).AsAggregateSymbol();
+            AggregateSymbol sym = (AggregateSymbol)newBasicSym(SYMKIND.SK_AggregateSymbol, name, parent);
             sym.name = name;
             sym.SetTypeManager(typeManager);
             sym.SetSealed(false);
@@ -60,7 +60,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             //Debug.Assert(declOuter == null || declOuter.Bag() == agg.Parent);
 
             // DECLSYMs are not parented like named symbols.
-            AggregateDeclaration sym = newBasicSym(SYMKIND.SK_AggregateDeclaration, agg.name, null).AsAggregateDeclaration();
+            AggregateDeclaration sym = newBasicSym(SYMKIND.SK_AggregateDeclaration, agg.name, null) as AggregateDeclaration;
 
             declOuter?.AddToChildList(sym);
             agg.AddDecl(sym);
@@ -74,7 +74,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(name != null);
 
-            FieldSymbol sym = newBasicSym(SYMKIND.SK_FieldSymbol, name, parent).AsFieldSymbol();
+            FieldSymbol sym = newBasicSym(SYMKIND.SK_FieldSymbol, name, parent) as FieldSymbol;
 
             Debug.Assert(sym != null);
             return (sym);
@@ -82,7 +82,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public LocalVariableSymbol CreateLocalVar(Name name, ParentSymbol parent, CType type)
         {
-            LocalVariableSymbol sym = newBasicSym(SYMKIND.SK_LocalVariableSymbol, name, parent).AsLocalVariableSymbol();
+            LocalVariableSymbol sym = (LocalVariableSymbol)newBasicSym(SYMKIND.SK_LocalVariableSymbol, name, parent);
             sym.SetType(type);
             sym.SetAccess(ACCESS.ACC_UNKNOWN);    // required for Symbol::hasExternalAccess which is used by refactoring
             sym.wrap = null;
@@ -90,23 +90,19 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return sym;
         }
 
-        public MethodSymbol CreateMethod(Name name, ParentSymbol parent)
-        {
-            MethodSymbol sym = newBasicSym(SYMKIND.SK_MethodSymbol, name, parent).AsMethodSymbol();
-
-            return sym;
-        }
+        public MethodSymbol CreateMethod(Name name, ParentSymbol parent) => 
+            newBasicSym(SYMKIND.SK_MethodSymbol, name, parent) as MethodSymbol;
 
         public PropertySymbol CreateProperty(Name name, ParentSymbol parent)
         {
-            PropertySymbol sym = newBasicSym(SYMKIND.SK_PropertySymbol, name, parent).AsPropertySymbol();
+            PropertySymbol sym = newBasicSym(SYMKIND.SK_PropertySymbol, name, parent) as PropertySymbol;
             Debug.Assert(sym != null);
             return (sym);
         }
 
         public EventSymbol CreateEvent(Name name, ParentSymbol parent)
         {
-            EventSymbol sym = newBasicSym(SYMKIND.SK_EventSymbol, name, parent).AsEventSymbol();
+            EventSymbol sym = newBasicSym(SYMKIND.SK_EventSymbol, name, parent) as EventSymbol;
 
             Debug.Assert(sym != null);
             return (sym);
@@ -114,7 +110,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public TypeParameterSymbol CreateMethodTypeParameter(Name pName, MethodSymbol pParent, int index, int indexTotal)
         {
-            TypeParameterSymbol pResult = newBasicSym(SYMKIND.SK_TypeParameterSymbol, pName, pParent).AsTypeParameterSymbol();
+            TypeParameterSymbol pResult = (TypeParameterSymbol)newBasicSym(SYMKIND.SK_TypeParameterSymbol, pName, pParent);
             pResult.SetIndexInOwnParameters(index);
             pResult.SetIndexInTotalParameters(indexTotal);
 
@@ -126,7 +122,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public TypeParameterSymbol CreateClassTypeParameter(Name pName, AggregateSymbol pParent, int index, int indexTotal)
         {
-            TypeParameterSymbol pResult = newBasicSym(SYMKIND.SK_TypeParameterSymbol, pName, pParent).AsTypeParameterSymbol();
+            TypeParameterSymbol pResult = (TypeParameterSymbol)newBasicSym(SYMKIND.SK_TypeParameterSymbol, pName, pParent);
             pResult.SetIndexInOwnParameters(index);
             pResult.SetIndexInTotalParameters(indexTotal);
 

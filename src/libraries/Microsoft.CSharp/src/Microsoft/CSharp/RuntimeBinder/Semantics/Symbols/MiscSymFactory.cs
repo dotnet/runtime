@@ -18,7 +18,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public Scope CreateScope(Scope parent)
         {
-            Scope sym = newBasicSym(SYMKIND.SK_Scope, null, parent).AsScope();
+            Scope sym = (Scope)newBasicSym(SYMKIND.SK_Scope, null, parent);
             if (parent != null)
             {
                 sym.nestingOrder = parent.nestingOrder + 1;

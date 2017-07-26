@@ -732,11 +732,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             for (Symbol sym = anonmeth.ArgumentScope; sym != null; sym = sym.nextChild)
             {
-                if (!sym.IsLocalVariableSymbol())
+                if (!(sym is LocalVariableSymbol local))
                 {
                     continue;
                 }
-                LocalVariableSymbol local = sym.AsLocalVariableSymbol();
+
                 if (local.isThis)
                 {
                     continue;
@@ -886,11 +886,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Expr sequence = null;
             for (Symbol sym = anonmeth.ArgumentScope.firstChild; sym != null; sym = sym.nextChild)
             {
-                if (!sym.IsLocalVariableSymbol())
+                if (!(sym is LocalVariableSymbol local))
                 {
                     continue;
                 }
-                LocalVariableSymbol local = sym.AsLocalVariableSymbol();
+
                 if (local.isThis)
                 {
                     continue;
@@ -916,11 +916,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             for (Symbol sym = anonmeth.ArgumentScope; sym != null; sym = sym.nextChild)
             {
-                if (!sym.IsLocalVariableSymbol())
+                if (!(sym is LocalVariableSymbol local))
                 {
                     continue;
                 }
-                LocalVariableSymbol local = sym.AsLocalVariableSymbol();
+
                 if (local.isThis)
                 {
                     continue;

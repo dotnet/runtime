@@ -602,9 +602,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                  sym != null;
                  sym = GetSymbolLoader().LookupNextSym(sym, type, symbmask_t.MASK_ALL))
             {
-                if (sym.IsMethodSymbol())
+                if (sym is MethodSymbol methsym)
                 {
-                    MethodSymbol methsym = sym.AsMethodSymbol();
                     if ((methsym.GetAccess() == methodAccess || methodAccess == ACCESS.ACC_UNKNOWN) &&
                         methsym.isStatic == isStatic &&
                         methsym.isVirtual == isVirtual &&

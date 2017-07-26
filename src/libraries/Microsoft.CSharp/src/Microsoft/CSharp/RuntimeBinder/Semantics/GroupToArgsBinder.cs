@@ -645,7 +645,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                             AggregateSymbol agg = symbolLoader.GetOptPredefAgg(PredefinedType.PT_MISSING);
                             Name name = NameManager.GetPredefinedName(PredefinedName.PN_CAP_VALUE);
-                            FieldSymbol field = symbolLoader.LookupAggMember(name, agg, symbmask_t.MASK_FieldSymbol).AsFieldSymbol();
+                            FieldSymbol field = symbolLoader.LookupAggMember(name, agg, symbmask_t.MASK_FieldSymbol) as FieldSymbol;
                             FieldWithType fwt = new FieldWithType(field, agg.getThisType());
                             ExprField exprField = exprFactory.CreateField(agg.getThisType(), null, fwt, false);
 
@@ -689,32 +689,23 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     MethodOrPropertySymbol pMethProp,
                     CType pType)
             {
-                MethodSymbol method;
                 bool bIsIndexer = false;
 
-                if (pMethProp.IsMethodSymbol())
+                if (!(pMethProp is MethodSymbol method))
                 {
-                    method = pMethProp.AsMethodSymbol();
-                }
-                else
-                {
-                    PropertySymbol prop = pMethProp.AsPropertySymbol();
-                    method = prop.methGet != null ? prop.methGet : prop.methSet;
+                    PropertySymbol prop = (PropertySymbol)pMethProp;
+                    method = prop.methGet ?? prop.methSet;
                     if (method == null)
                     {
                         return null;
                     }
+
                     bIsIndexer = prop.isIndexer();
                 }
 
-                if (!method.isVirtual)
+                if (!method.isVirtual || pType == null)
                 {
-                    return method;
-                }
-
-                if (pType == null)
-                {
-                    // This must be a static call.
+                    // if pType is null, this must be a static call.
                     return method;
                 }
 
@@ -735,9 +726,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         pAggregate?.GetBaseAgg() != null;
                         pAggregate = pAggregate.GetBaseAgg())
                 {
-                    for (MethodOrPropertySymbol meth = symbolLoader.LookupAggMember(method.name, pAggregate, symbmask_t.MASK_MethodSymbol | symbmask_t.MASK_PropertySymbol).AsMethodOrPropertySymbol();
+                    for (MethodOrPropertySymbol meth = symbolLoader.LookupAggMember(method.name, pAggregate, symbmask_t.MASK_MethodSymbol | symbmask_t.MASK_PropertySymbol) as MethodOrPropertySymbol;
                             meth != null;
-                            meth = symbolLoader.LookupNextSym(meth, pAggregate, symbmask_t.MASK_MethodSymbol | symbmask_t.MASK_PropertySymbol).AsMethodOrPropertySymbol())
+                            meth = symbolLoader.LookupNextSym(meth, pAggregate, symbmask_t.MASK_MethodSymbol | symbmask_t.MASK_PropertySymbol) as MethodOrPropertySymbol)
                     {
                         if (!meth.isOverride)
                         {
@@ -747,8 +738,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         {
                             if (bIsIndexer)
                             {
-                                Debug.Assert(meth.IsMethodSymbol());
-                                return meth.AsMethodSymbol().getProperty();
+                                Debug.Assert(meth is MethodSymbol);
+                                return ((MethodSymbol)meth).getProperty();
                             }
                             else
                             {
@@ -763,7 +754,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // an override, but we won't have the slots set up correctly, and will 
                 // not find the base type in the inheritance hierarchy. The second is that
                 // we're calling off of the base itself.
-                Debug.Assert(method.parent.IsAggregateSymbol());
+                Debug.Assert(method.parent is AggregateSymbol);
                 return method;
             }
 
@@ -920,7 +911,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         _pCurrentType != null &&
                         !_methList.IsEmpty() &&
                         !_methList.Head().mpwi.GetType().isInterfaceType() &&
-                        (!_methList.Head().mpwi.Sym.IsMethodSymbol() || !_methList.Head().mpwi.Meth().IsExtension()))
+                        (!(_methList.Head().mpwi.Sym is MethodSymbol) || !_methList.Head().mpwi.Meth().IsExtension()))
                 {
                     return false;
                 }
@@ -928,7 +919,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         _pCurrentType != null &&
                         !_methList.IsEmpty() &&
                         !_methList.Head().mpwi.GetType().isInterfaceType() &&
-                        _methList.Head().mpwi.Sym.IsMethodSymbol() &&
+                        _methList.Head().mpwi.Sym is MethodSymbol &&
                         _methList.Head().mpwi.Meth().IsExtension())
                 {
                     // we have found a applicable method that is an extension now we must move to the end of the NS list before quiting
@@ -1001,9 +992,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 TypeArray typeArgs = _pGroup.TypeArgs;
 
                 // Get the type args.
-                if (_pCurrentSym.IsMethodSymbol() && _pCurrentSym.AsMethodSymbol().typeVars.Count != typeArgs.Count)
+                if (_pCurrentSym is MethodSymbol methSym && methSym.typeVars.Count != typeArgs.Count)
                 {
-                    MethodSymbol methSym = _pCurrentSym.AsMethodSymbol();
                     // Can't infer if some type args are specified.
                     if (typeArgs.Count > 0)
                     {
@@ -1034,11 +1024,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             TypeArray pTypeVars = methSym.typeVars;
                             if (pTypeVars != null && _pCurrentTypeArgs != null && pTypeVars.Count == _pCurrentTypeArgs.Count)
                             {
-                                _mpwiCantInferInstArg.Set(_pCurrentSym.AsMethodSymbol(), _pCurrentType, _pCurrentTypeArgs);
+                                _mpwiCantInferInstArg.Set(methSym, _pCurrentType, _pCurrentTypeArgs);
                             }
                             else
                             {
-                                _mpwiCantInferInstArg.Set(_pCurrentSym.AsMethodSymbol(), _pCurrentType, pTypeVars);
+                                _mpwiCantInferInstArg.Set(methSym, _pCurrentType, pTypeVars);
                             }
                         }
                         return Result.Failure_SearchForExpanded;
@@ -1126,15 +1116,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                                 }
                             }
 
-                            if (_pCurrentSym.IsMethodSymbol())
+                            if (_pCurrentSym is MethodSymbol meth)
                             {
                                 // Do not store the result if we have an extension method and the instance 
                                 // parameter isn't convertible.
 
-                                if (!_pCurrentSym.AsMethodSymbol().IsExtension() || bIsInstanceParameterConvertible)
+                                if (!meth.IsExtension() || bIsInstanceParameterConvertible)
                                 {
                                     _results.AddInconvertibleResult(
-                                        _pCurrentSym.AsMethodSymbol(),
+                                        meth,
                                         _pCurrentType,
                                         _pCurrentTypeArgs);
                                 }
@@ -1146,23 +1136,23 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 if (containsErrorSym)
                 {
-                    if (_results.IsBetterUninferableResult(_pCurrentTypeArgs) && _pCurrentSym.IsMethodSymbol())
+                    if (_results.IsBetterUninferableResult(_pCurrentTypeArgs) && _pCurrentSym is MethodSymbol meth)
                     {
                         // If we're an instance method or we're an extension that has an inferable instance argument,
                         // then mark us down. Note that the extension may not need to infer type args,
                         // so check if we have any type variables at all to begin with.
-                        if (!_pCurrentSym.AsMethodSymbol().IsExtension() ||
-                            _pCurrentSym.AsMethodSymbol().typeVars.Count == 0 ||
+                        if (!meth.IsExtension() ||
+                            meth.typeVars.Count == 0 ||
                                 MethodTypeInferrer.CanObjectOfExtensionBeInferred(
                                     _pExprBinder,
                                     GetSymbolLoader(),
-                                    _pCurrentSym.AsMethodSymbol(),
+                                    meth,
                                     _pCurrentType.GetTypeArgsAll(),
-                                    _pCurrentSym.AsMethodSymbol().Params,
+                                    meth.Params,
                                     _pArguments))
                         {
                             _results.GetUninferableResult().Set(
-                                    _pCurrentSym.AsMethodSymbol(),
+                                    meth,
                                     _pCurrentType,
                                     _pCurrentTypeArgs);
                         }
@@ -1170,15 +1160,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
                 else
                 {
-                    if (_pCurrentSym.IsMethodSymbol())
+                    if (_pCurrentSym is MethodSymbol meth)
                     {
                         // Do not store the result if we have an extension method and the instance 
                         // parameter isn't convertible.
 
-                        if (!_pCurrentSym.AsMethodSymbol().IsExtension() || bIsInstanceParameterConvertible)
+                        if (!meth.IsExtension() || bIsInstanceParameterConvertible)
                         {
                             _results.AddInconvertibleResult(
-                                    _pCurrentSym.AsMethodSymbol(),
+                                    meth,
                                     _pCurrentType,
                                     _pCurrentTypeArgs);
                         }
@@ -1289,7 +1279,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 if (_pGroup.SymKind == SYMKIND.SK_MethodSymbol)
                 {
-                    Debug.Assert(_results.GetBestResult().MethProp().IsMethodSymbol());
+                    Debug.Assert(_results.GetBestResult().MethProp() is MethodSymbol);
 
                     if (_results.GetBestResult().TypeArgs.Count > 0)
                     {
@@ -1350,9 +1340,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     if (!_results.GetUninferableResult())
                     {
                         //copy the extension method for which instance argument type inference failed
-                        _results.GetUninferableResult().Set(_mpwiCantInferInstArg.Sym.AsMethodSymbol(), _mpwiCantInferInstArg.GetType(), _mpwiCantInferInstArg.TypeArgs);
+                        _results.GetUninferableResult().Set(_mpwiCantInferInstArg.Sym as MethodSymbol, _mpwiCantInferInstArg.GetType(), _mpwiCantInferInstArg.TypeArgs);
                     }
-                    Debug.Assert(_results.GetUninferableResult().Sym.IsMethodSymbol());
+                    Debug.Assert(_results.GetUninferableResult().Sym is MethodSymbol);
 
                     MethodSymbol sym = _results.GetUninferableResult().Meth();
                     TypeArray pCurrentParameters = sym.Params;
@@ -1475,7 +1465,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
                 else
                 {
-                    if (_results.GetBestResult().Sym.IsMethodSymbol() && _results.GetBestResult().Sym.AsMethodSymbol().IsExtension() && _pGroup.OptionalObject != null)
+                    if (_results.GetBestResult().Sym is MethodSymbol methSym && methSym.IsExtension() && _pGroup.OptionalObject != null)
                     {
                         GetErrorContext().Error(ErrorCode.ERR_BadExtensionArgTypes, _pGroup.OptionalObject.Type, _pGroup.Name, _results.GetBestResult().Sym);
                     }
@@ -1519,8 +1509,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             // if we tried to bind to an extensionmethod and the instance argument conversion failed then the method does not exist
                             // on the type at all. 
                             Symbol sym = _results.GetBestResult().Sym;
-                            if (ivar == 0 && sym.IsMethodSymbol() && sym.AsMethodSymbol().IsExtension() && _pGroup.OptionalObject != null &&
-                                !_pExprBinder.canConvertInstanceParamForExtension(_pGroup.OptionalObject, sym.AsMethodSymbol().Params[0]))
+                            if (ivar == 0 && sym is MethodSymbol meth && meth.IsExtension() && _pGroup.OptionalObject != null &&
+                                !_pExprBinder.canConvertInstanceParamForExtension(_pGroup.OptionalObject, meth.Params[0]))
                             {
                                 if (!_pGroup.OptionalObject.Type.getBogus())
                                 {
