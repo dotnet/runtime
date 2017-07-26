@@ -13,5 +13,6 @@ internal static partial class Interop
         internal const string CryptoNative = "System.Security.Cryptography.Native.OpenSsl";
         internal const string GlobalizationNative = "System.Globalization.Native";
         internal const string CompressionNative = "System.IO.Compression.Native";
+        internal const string Libdl = "libdl";
     }
 }

@@ -75,7 +75,38 @@ namespace System.Drawing
             private static IntPtr s_initToken;
             private const string ThreadDataSlotName = "system.drawing.threaddata";
 
-            static Gdip() => Initialize();
+            static Gdip()
+            {
+                Debug.Assert(s_initToken == IntPtr.Zero, "GdiplusInitialization: Initialize should not be called more than once in the same domain!");
+                Debug.WriteLineIf(s_gdiPlusInitialization.TraceVerbose, "Initialize GDI+ [" + AppDomain.CurrentDomain.FriendlyName + "]");
+                Debug.Indent();
+
+                s_gdipModule = LoadNativeLibrary();
+                LoadSharedFunctionPointers();
+                LoadPlatformFunctionPointers(); // This should be combined with the above call when Windows/Unix implementations are unified.
+
+                StartupInput input = StartupInput.GetDefault();
+                StartupOutput output;
+
+                // GDI+ ref counts multiple calls to Startup in the same process, so calls from multiple
+                // domains are ok, just make sure to pair each w/GdiplusShutdown
+                int status = GdiplusStartup(out s_initToken, ref input, out output);
+                CheckStatus(status);
+
+                Debug.Unindent();
+
+                // Sync to event for handling shutdown
+                AppDomain currentDomain = AppDomain.CurrentDomain;
+                currentDomain.ProcessExit += new EventHandler(OnProcessExit);
+
+                // Also sync to DomainUnload for non-default domains since they will not get a ProcessExit if
+                // they are unloaded prior to ProcessExit (and this object's static fields are scoped to AppDomains, 
+                // so we must cleanup on AppDomain shutdown)
+                if (!currentDomain.IsDefaultAppDomain())
+                {
+                    currentDomain.DomainUnload += new EventHandler(OnProcessExit);
+                }
+            }
 
             /// <summary>
             /// Returns true if GDI+ has been started, but not shut down
@@ -110,44 +141,6 @@ namespace System.Drawing
                 Debug.WriteLineIf(s_gdiPlusInitialization.TraceVerbose, "Releasing TLS data");
                 LocalDataStoreSlot slot = Thread.GetNamedDataSlot(ThreadDataSlotName);
                 Thread.SetData(slot, null);
-            }
-
-            /// <summary>
-            /// Initializes GDI+
-            /// This should only be called by our constructor (static), we do not expect multiple calls per domain
-            /// </summary>
-            [SuppressMessage("Microsoft.Performance", "CA1804:RemoveUnusedLocals")]
-            private static void Initialize()
-            {
-                Debug.Assert(s_initToken == IntPtr.Zero, "GdiplusInitialization: Initialize should not be called more than once in the same domain!");
-                Debug.WriteLineIf(s_gdiPlusInitialization.TraceVerbose, "Initialize GDI+ [" + AppDomain.CurrentDomain.FriendlyName + "]");
-                Debug.Indent();
-
-                s_gdipModule = LoadNativeLibrary();
-                LoadSharedFunctionPointers();
-                LoadPlatformFunctionPointers(); // This should be combined with the above call when Windows/Unix implementations are unified.
-
-                StartupInput input = StartupInput.GetDefault();
-                StartupOutput output;
-
-                // GDI+ ref counts multiple calls to Startup in the same process, so calls from multiple
-                // domains are ok, just make sure to pair each w/GdiplusShutdown
-                int status = GdiplusStartup(out s_initToken, ref input, out output);
-                CheckStatus(status);
-
-                Debug.Unindent();
-
-                // Sync to event for handling shutdown
-                AppDomain currentDomain = AppDomain.CurrentDomain;
-                currentDomain.ProcessExit += new EventHandler(OnProcessExit);
-
-                // Also sync to DomainUnload for non-default domains since they will not get a ProcessExit if
-                // they are unloaded prior to ProcessExit (and this object's static fields are scoped to AppDomains, 
-                // so we must cleanup on AppDomain shutdown)
-                if (!currentDomain.IsDefaultAppDomain())
-                {
-                    currentDomain.DomainUnload += new EventHandler(OnProcessExit);
-                }
             }
 
             /// <summary>
