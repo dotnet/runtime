@@ -64,7 +64,7 @@ typedef struct
 {
 	MonoMethod *method;
 	MonoMethodHeader *header;
-	RuntimeMethod *rtm;
+	InterpMethod *rtm;
 	const unsigned char *il_code;
 	const unsigned char *ip;
 	const unsigned char *last_ip;
@@ -948,7 +948,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		}
 	} else if (!calli && !virtual && jit_call_supported (target_method, csignature)) {
 		ADD_CODE(td, MINT_JIT_CALL);
-		ADD_CODE(td, get_data_item_index (td, (void *)mono_interp_get_runtime_method (domain, target_method, &error)));
+		ADD_CODE(td, get_data_item_index (td, (void *)mono_interp_get_imethod (domain, target_method, &error)));
 		mono_error_assert_ok (&error);
 	} else {
 		if (calli)
@@ -961,7 +961,7 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 		if (calli) {
 			ADD_CODE(td, get_data_item_index (td, (void *)csignature));
 		} else {
-			ADD_CODE(td, get_data_item_index (td, (void *)mono_interp_get_runtime_method (domain, target_method, &error)));
+			ADD_CODE(td, get_data_item_index (td, (void *)mono_interp_get_imethod (domain, target_method, &error)));
 			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 		}
 	}
@@ -1094,7 +1094,7 @@ get_basic_blocks (TransformData *td)
 }
 
 static void
-interp_save_debug_info (RuntimeMethod *rtm, MonoMethodHeader *header, TransformData *td, GArray *line_numbers)
+interp_save_debug_info (InterpMethod *rtm, MonoMethodHeader *header, TransformData *td, GArray *line_numbers)
 {
 	MonoDebugMethodJitInfo *dinfo;
 	int i;
@@ -1224,7 +1224,7 @@ collect_pred_seq_points (TransformData *td, InterpBasicBlock *bb, SeqPoint *seqp
 static void
 save_seq_points (TransformData *td)
 {
-	RuntimeMethod *rtm = td->rtm;
+	InterpMethod *rtm = td->rtm;
 	GByteArray *array;
 	int i, seq_info_size;
 	MonoSeqPointInfo *info;
@@ -1338,7 +1338,7 @@ emit_seq_point (TransformData *td, int il_offset, InterpBasicBlock *cbb, gboolea
 	} while (0)
 
 static void
-generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, MonoGenericContext *generic_context)
+generate (MonoMethod *method, InterpMethod *rtm, unsigned char *is_bb_start, MonoGenericContext *generic_context)
 {
 	MonoMethodHeader *header = mono_method_get_header (method);
 	MonoMethodSignature *signature = mono_method_signature (method);
@@ -1750,7 +1750,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 			token = read32 (td.ip + 1);
 			m = mono_get_method_full (image, token, NULL, generic_context);
 			ADD_CODE (&td, MINT_JMP);
-			ADD_CODE (&td, get_data_item_index (&td, mono_interp_get_runtime_method (domain, m, &error)));
+			ADD_CODE (&td, get_data_item_index (&td, mono_interp_get_imethod (domain, m, &error)));
 			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 			td.ip += 5;
 			break;
@@ -2453,7 +2453,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 			klass = m->klass;
 			td.sp -= csignature->param_count;
 			ADD_CODE(&td, MINT_NEWOBJ);
-			ADD_CODE(&td, get_data_item_index (&td, mono_interp_get_runtime_method (domain, m, &error)));
+			ADD_CODE(&td, get_data_item_index (&td, mono_interp_get_imethod (domain, m, &error)));
 			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 
 			if (mint_type (&klass->byval_arg) == MINT_TYPE_VT) {
@@ -3682,7 +3682,7 @@ generate (MonoMethod *method, RuntimeMethod *rtm, unsigned char *is_bb_start, Mo
 					m = mono_marshal_get_synchronized_wrapper (m);
 
 				ADD_CODE(&td, *td.ip == CEE_LDFTN ? MINT_LDFTN : MINT_LDVIRTFTN);
-				ADD_CODE(&td, get_data_item_index (&td, mono_interp_get_runtime_method (domain, m, &error)));
+				ADD_CODE(&td, get_data_item_index (&td, mono_interp_get_imethod (domain, m, &error)));
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 				td.ip += 5;
 				PUSH_SIMPLE_TYPE (&td, STACK_TYPE_F);
@@ -3968,10 +3968,10 @@ mono_interp_transform_init (void)
 }
 
 MonoException *
-mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *context)
+mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context)
 {
 	int i, align, size, offset;
-	MonoMethod *method = runtime_method->method;
+	MonoMethod *method = imethod->method;
 	MonoImage *image = method->klass->image;
 	MonoMethodHeader *header = mono_method_get_header (method);
 	MonoMethodSignature *signature = mono_method_signature (method);
@@ -3984,14 +3984,14 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 	MonoVTable *method_class_vt;
 	int backwards;
 	MonoGenericContext *generic_context = NULL;
-	MonoDomain *domain = runtime_method->domain;
+	MonoDomain *domain = imethod->domain;
 
 	// g_printerr ("TRANSFORM(0x%016lx): begin %s::%s\n", mono_thread_current (), method->klass->name, method->name);
-	method_class_vt = mono_class_vtable (domain, runtime_method->method->klass);
+	method_class_vt = mono_class_vtable (domain, imethod->method->klass);
 	if (!method_class_vt->initialized) {
 		MonoError error;
 		jmp_buf env;
-		MonoInvocation *last_env_frame = context->env_frame;
+		InterpFrame *last_env_frame = context->env_frame;
 		jmp_buf *old_env = context->current_env;
 		error_init (&error);
 
@@ -4025,9 +4025,9 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 	if (method->iflags & (METHOD_IMPL_ATTRIBUTE_INTERNAL_CALL | METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
 		MonoMethod *nm = NULL;
 		mono_os_mutex_lock(&calc_section);
-		if (runtime_method->transformed) {
+		if (imethod->transformed) {
 			mono_os_mutex_unlock(&calc_section);
-			MONO_PROFILER_RAISE (jit_done, (method, runtime_method->jinfo));
+			MONO_PROFILER_RAISE (jit_done, (method, imethod->jinfo));
 			return NULL;
 		}
 
@@ -4052,14 +4052,14 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 				}
 			}
 			if (nm == NULL) {
-				runtime_method->code = g_malloc(sizeof(short));
-				runtime_method->code[0] = MINT_CALLRUN;
+				imethod->code = g_malloc(sizeof(short));
+				imethod->code[0] = MINT_CALLRUN;
 			}
 		}
 		if (nm == NULL) {
-			runtime_method->stack_size = sizeof (stackval); /* for tracing */
-			runtime_method->alloca_size = runtime_method->stack_size;
-			runtime_method->transformed = TRUE;
+			imethod->stack_size = sizeof (stackval); /* for tracing */
+			imethod->alloca_size = imethod->stack_size;
+			imethod->transformed = TRUE;
 			mono_os_mutex_unlock(&calc_section);
 			MONO_PROFILER_RAISE (jit_done, (method, NULL));
 			return NULL;
@@ -4070,12 +4070,12 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 	} else if (method->klass == mono_defaults.array_class) {
 		if (!strcmp (method->name, "UnsafeMov") || !strcmp (method->name, "UnsafeLoad")) {
 			mono_os_mutex_lock (&calc_section);
-			if (!runtime_method->transformed) {
-				runtime_method->code = g_malloc (sizeof (short));
-				runtime_method->code[0] = MINT_CALLRUN;
-				runtime_method->stack_size = sizeof (stackval); /* for tracing */
-				runtime_method->alloca_size = runtime_method->stack_size;
-				runtime_method->transformed = TRUE;
+			if (!imethod->transformed) {
+				imethod->code = g_malloc (sizeof (short));
+				imethod->code[0] = MINT_CALLRUN;
+				imethod->stack_size = sizeof (stackval); /* for tracing */
+				imethod->alloca_size = imethod->stack_size;
+				imethod->transformed = TRUE;
 			}
 			mono_os_mutex_unlock(&calc_section);
 			MONO_PROFILER_RAISE (jit_done, (method, NULL));
@@ -4199,44 +4199,44 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 
 	/* the rest needs to be locked so it is only done once */
 	mono_os_mutex_lock(&calc_section);
-	if (runtime_method->transformed) {
+	if (imethod->transformed) {
 		mono_os_mutex_unlock(&calc_section);
 		g_free (is_bb_start);
-		MONO_PROFILER_RAISE (jit_done, (method, runtime_method->jinfo));
+		MONO_PROFILER_RAISE (jit_done, (method, imethod->jinfo));
 		return NULL;
 	}
 
-	runtime_method->local_offsets = g_malloc (header->num_locals * sizeof(guint32));
-	runtime_method->stack_size = (sizeof (stackval)) * (header->max_stack + 2); /* + 1 for returns of called functions  + 1 for 0-ing in trace*/
-	runtime_method->stack_size = (runtime_method->stack_size + 7) & ~7;
+	imethod->local_offsets = g_malloc (header->num_locals * sizeof(guint32));
+	imethod->stack_size = (sizeof (stackval)) * (header->max_stack + 2); /* + 1 for returns of called functions  + 1 for 0-ing in trace*/
+	imethod->stack_size = (imethod->stack_size + 7) & ~7;
 	offset = 0;
 	for (i = 0; i < header->num_locals; ++i) {
 		size = mono_type_size (header->locals [i], &align);
 		offset += align - 1;
 		offset &= ~(align - 1);
-		runtime_method->local_offsets [i] = offset;
+		imethod->local_offsets [i] = offset;
 		offset += size;
 	}
 	offset = (offset + 7) & ~7;
 
-	runtime_method->exvar_offsets = g_malloc (header->num_clauses * sizeof (guint32));
+	imethod->exvar_offsets = g_malloc (header->num_clauses * sizeof (guint32));
 	for (i = 0; i < header->num_clauses; i++) {
 		offset += sizeof (MonoObject*);
-		runtime_method->exvar_offsets [i] = offset;
+		imethod->exvar_offsets [i] = offset;
 	}
 	offset = (offset + 7) & ~7;
 
-	runtime_method->locals_size = offset;
-	g_assert (runtime_method->locals_size < 65536);
+	imethod->locals_size = offset;
+	g_assert (imethod->locals_size < 65536);
 	offset = 0;
-	runtime_method->arg_offsets = g_malloc ((!!signature->hasthis + signature->param_count) * sizeof(guint32));
+	imethod->arg_offsets = g_malloc ((!!signature->hasthis + signature->param_count) * sizeof(guint32));
 
 	if (signature->hasthis) {
 		g_assert (!signature->pinvoke);
 		size = mono_type_stack_size (&method->klass->byval_arg, &align);
 		offset += align - 1;
 		offset &= ~(align - 1);
-		runtime_method->arg_offsets [0] = offset;
+		imethod->arg_offsets [0] = offset;
 		offset += size;
 	}
 
@@ -4250,20 +4250,20 @@ mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *cont
 			size = mono_type_stack_size (signature->params [i], &align);
 		offset += align - 1;
 		offset &= ~(align - 1);
-		runtime_method->arg_offsets [i + !!signature->hasthis] = offset;
+		imethod->arg_offsets [i + !!signature->hasthis] = offset;
 		offset += size;
 	}
 	offset = (offset + 7) & ~7;
-	runtime_method->args_size = offset;
-	g_assert (runtime_method->args_size < 10000);
+	imethod->args_size = offset;
+	g_assert (imethod->args_size < 10000);
 
-	generate (method, runtime_method, is_bb_start, generic_context);
+	generate (method, imethod, is_bb_start, generic_context);
 
 	g_free (is_bb_start);
 
 	// FIXME: Add a different callback ?
-	MONO_PROFILER_RAISE (jit_done, (method, runtime_method->jinfo));
-	runtime_method->transformed = TRUE;
+	MONO_PROFILER_RAISE (jit_done, (method, imethod->jinfo));
+	imethod->transformed = TRUE;
 	mono_os_mutex_unlock(&calc_section);
 
 	return NULL;

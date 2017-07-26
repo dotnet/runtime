@@ -54,7 +54,7 @@ typedef struct {
 #endif
 } stackval;
 
-typedef struct _MonoInvocation MonoInvocation;
+typedef struct _InterpFrame InterpFrame;
 
 typedef void (*MonoFuncV) (void);
 typedef void (*MonoPIFunc) (MonoFuncV callme, void *margs);
@@ -63,14 +63,14 @@ typedef void (*MonoPIFunc) (MonoFuncV callme, void *margs);
  * Structure representing a method transformed for the interpreter 
  * This is domain specific
  */
-typedef struct _RuntimeMethod
+typedef struct _InterpMethod
 {
 	/* NOTE: These first two elements (method and
 	   next_jit_code_hash) must be in the same order and at the
 	   same offset as in MonoJitInfo, because of the jit_code_hash
 	   internal hash table in MonoDomain. */
 	MonoMethod *method;
-	struct _RuntimeMethod *next_jit_code_hash;
+	struct _InterpMethod *next_jit_code_hash;
 	guint32 locals_size;
 	guint32 args_size;
 	guint32 stack_size;
@@ -96,11 +96,11 @@ typedef struct _RuntimeMethod
 	MonoType **param_types;
 	MonoJitInfo *jinfo;
 	MonoDomain *domain;
-} RuntimeMethod;
+} InterpMethod;
 
-struct _MonoInvocation {
-	MonoInvocation *parent; /* parent */
-	RuntimeMethod  *runtime_method; /* parent */
+struct _InterpFrame {
+	InterpFrame *parent; /* parent */
+	InterpMethod  *imethod; /* parent */
 	MonoMethod     *method; /* parent */
 	stackval       *retval; /* parent */
 	char           *args;
@@ -117,9 +117,9 @@ struct _MonoInvocation {
 
 typedef struct {
 	MonoDomain *original_domain;
-	MonoInvocation *base_frame;
-	MonoInvocation *current_frame;
-	MonoInvocation *env_frame;
+	InterpFrame *base_frame;
+	InterpFrame *current_frame;
+	InterpFrame *env_frame;
 	jmp_buf *current_env;
 	unsigned char search_for_handler;
 	unsigned char managed_code;
@@ -127,7 +127,7 @@ typedef struct {
 	/* Resume state for resuming execution in mixed mode */
 	gboolean       has_resume_state;
 	/* Frame to resume execution at */
-	MonoInvocation *handler_frame;
+	InterpFrame *handler_frame;
 	/* IP to resume execution at */
 	gpointer handler_ip;
 } ThreadContext;
@@ -136,12 +136,12 @@ extern int mono_interp_traceopt;
 extern GSList *jit_classes;
 
 MonoException *
-mono_interp_transform_method (RuntimeMethod *runtime_method, ThreadContext *context);
+mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context);
 
 void
 mono_interp_transform_init (void);
 
-RuntimeMethod *
-mono_interp_get_runtime_method (MonoDomain *domain, MonoMethod *method, MonoError *error);
+InterpMethod *
+mono_interp_get_imethod (MonoDomain *domain, MonoMethod *method, MonoError *error);
 
 #endif /* __MONO_MINI_INTERPRETER_INTERNALS_H__ */
