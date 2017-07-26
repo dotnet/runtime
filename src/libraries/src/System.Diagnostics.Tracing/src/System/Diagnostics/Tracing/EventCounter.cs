@@ -25,7 +25,7 @@ namespace System.Diagnostics.Tracing
     /// See https://github.com/dotnet/corefx/blob/master/src/System.Diagnostics.Tracing/tests/BasicEventSourceTest/TestEventCounter.cs
     /// which shows tests, which are also useful in seeing actual use.  
     /// </summary>
-    public class EventCounter
+    public class EventCounter : IDisposable
     {
         /// <summary>
         /// Initializes a new instance of the <see cref="EventCounter"/> class.
@@ -63,11 +63,10 @@ namespace System.Diagnostics.Tracing
         {
             Enqueue(value);
         }
-
-#if EventCounterDispose
-        // TODO Go through API review and expose this.  
+ 
         /// <summary>
-        /// Removes the counter from set that the EventSource will report on.
+        /// Removes the counter from set that the EventSource will report on.  After being disposed, this
+        /// counter will do nothing and its resource will be reclaimed if all references to it are removed.
         /// </summary>
         public void Dispose()
         {
@@ -78,7 +77,7 @@ namespace System.Diagnostics.Tracing
                 _group = null;
             }
         }
-#endif
+
         public override string ToString()
         {
             return "EventCounter '" + _name + "' Count " + _count + " Mean " + (((double)_sum) / _count).ToString("n3");

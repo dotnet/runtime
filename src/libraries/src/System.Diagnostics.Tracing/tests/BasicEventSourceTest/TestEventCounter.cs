@@ -74,7 +74,7 @@ namespace BasicEventSourceTests
             {
                 var tests = new List<SubTest>();
                 /*************************************************************************/
-                tests.Add(new SubTest("Log 1 event, explicit poll at end",
+                tests.Add(new SubTest("EventCounter: Log 1 event, explicit poll at end",
                     delegate ()
                     {
                         listener.EnableTimer(logger, 1);        // Set to poll every second, but we dont actually care because the test ends before that.   
@@ -91,7 +91,7 @@ namespace BasicEventSourceTests
                         ValidateSingleEventCounter(evts[3], "Error", 0, 0, 0, float.PositiveInfinity, float.NegativeInfinity);
                     }));
                 /*************************************************************************/
-                tests.Add(new SubTest("Log 2 events, explicit poll at end",
+                tests.Add(new SubTest("EventCounter: Log 2 events, explicit poll at end",
                     delegate ()
                     {
                         listener.EnableTimer(logger, 1);        // Set to poll every second, but we dont actually care because the test ends before that.   
@@ -109,7 +109,7 @@ namespace BasicEventSourceTests
                     }));
 
                 /*************************************************************************/
-                tests.Add(new SubTest("Log 3 events in two polling periods (explicit polling)",
+                tests.Add(new SubTest("EventCounter: Log 3 events in two polling periods (explicit polling)",
                     delegate ()
                     {
                         listener.EnableTimer(logger, 0);  /* Turn off (but also poll once) */
@@ -135,7 +135,7 @@ namespace BasicEventSourceTests
 
 
                 /*************************************************************************/
-                tests.Add(new SubTest("Log multiple events in",
+                tests.Add(new SubTest("EventCounter: Log multiple events in multiple periods",
                     delegate ()
                     {
                         listener.EnableTimer(logger, .1); /* Poll every .1 s */
@@ -223,8 +223,7 @@ namespace BasicEventSourceTests
 
                 /*************************************************************************/
                 // TODO expose Dispose() method and activate this test.  
-#if EventCounterDispose
-                tests.Add(new SubTest("EventCounter.Dispose()",
+                tests.Add(new SubTest("EventCounter: Dispose()",
                     delegate ()
                     {
                         // Creating and destroying 
@@ -236,14 +235,15 @@ namespace BasicEventSourceTests
                     },
                     delegate (List<Event> evts)
                     {
+                        // The static counters (Request and Error), should not log any counts and stay at zero.
+                        // The new counter will exist for the first poll but will not exist for the second.  
                         Assert.Equal(5, evts.Count);
-                        ValidateSingleEventCounter(evts[0], "Request", 0, 0, 0, 0, 0);
-                        ValidateSingleEventCounter(evts[1], "Error", 0, 0, 0, 0, 0);
+                        ValidateSingleEventCounter(evts[0], "Request", 0, 0, 0, float.PositiveInfinity, float.NegativeInfinity);
+                        ValidateSingleEventCounter(evts[1], "Error", 0, 0, 0, float.PositiveInfinity, float.NegativeInfinity);
                         ValidateSingleEventCounter(evts[2], "counter for a transient object", 1, 10, 0, 10, 10);
-                        ValidateSingleEventCounter(evts[3], "Request", 0, 0, 0, 0, 0);
-                        ValidateSingleEventCounter(evts[4], "Error", 0, 0, 0, 0, 0);
+                        ValidateSingleEventCounter(evts[3], "Request", 0, 0, 0, float.PositiveInfinity, float.NegativeInfinity);
+                        ValidateSingleEventCounter(evts[4], "Error", 0, 0, 0, float.PositiveInfinity, float.NegativeInfinity);
                     }));
-#endif 
                 /*************************************************************************/
                 EventTestHarness.RunTests(tests, listener, logger);
             }
