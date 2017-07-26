@@ -17,7 +17,7 @@ namespace System.Xml.Tests
     {
         //[Variation(id = 1, Desc = "Sanity test for WriteFullEndElement()", Pri = 0)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void fullEndElement_1(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -30,7 +30,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 2, Desc = "Call WriteFullEndElement before calling WriteStartElement", Pri = 2)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void fullEndElement_2(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -52,7 +52,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 3, Desc = "Call WriteFullEndElement after WriteEndElement", Pri = 2)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void fullEndElement_3(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -76,7 +76,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 4, Desc = "Call WriteFullEndElement without closing attributes", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void fullEndElement_4(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -91,7 +91,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 5, Desc = "Call WriteFullEndElement after WriteStartAttribute", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void fullEndElement_5(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -105,7 +105,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 6, Desc = "WriteFullEndElement for 100 nested elements", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void fullEndElement_6(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -128,7 +128,7 @@ namespace System.Xml.Tests
         {
             //[Variation(id = 1, Desc = "Multiple NS decl for same prefix on an element", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void elemNamespace_1(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -151,7 +151,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 2, Desc = "Multiple NS decl for same prefix (same NS value) on an element", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void elemNamespace_2(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -176,7 +176,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 3, Desc = "Element and attribute have same prefix, but different namespace value", Pri = 2)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void elemNamespace_3(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -190,7 +190,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 4, Desc = "Nested elements have same prefix, but different namespace", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void elemNamespace_4(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -207,7 +207,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 5, Desc = "Mapping reserved prefix xml to invalid namespace", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void elemNamespace_5(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -229,7 +229,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 6, Desc = "Mapping reserved prefix xml to correct namespace", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void elemNamespace_6(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -243,7 +243,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 7, Desc = "Write element with prefix beginning with xml", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void elemNamespace_7(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -260,7 +260,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 8, Desc = "Reuse prefix that refers the same as default namespace", Pri = 2)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void elemNamespace_8(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -277,7 +277,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 9, Desc = "Should throw error for prefix=xmlns", Pri = 2)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void elemNamespace_9(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -300,7 +300,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 10, Desc = "Create nested element without prefix but with namespace of parent element with a defined prefix", Pri = 2)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void elemNamespace_10(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -316,7 +316,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 11, Desc = "Create different prefix for element and attribute that have same namespace", Pri = 2)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void elemNamespace_11(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -330,7 +330,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 12, Desc = "Create same prefix for element and attribute that have same namespace", Pri = 2)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void elemNamespace_12(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -344,7 +344,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 13, Desc = "Try to re-define NS prefix on attribute which is already defined on an element", Pri = 2)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void elemNamespace_13(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -358,7 +358,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 14, Desc = "Namespace string contains surrogates, reuse at different levels", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void elemNamespace_14(XmlWriterUtils utils)
             {
                 string uri = "urn:\uD800\uDC00";
@@ -376,7 +376,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 15, Desc = "Namespace containing entities, use at multiple levels", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void elemNamespace_15(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -392,7 +392,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 16, Desc = "Verify it resets default namespace when redefined earlier in the stack", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void elemNamespace_16(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -410,7 +410,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 17, Desc = "The default namespace for an element can not be changed once it is written out", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void elemNamespace_17(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -434,7 +434,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 18, Desc = "Map XML NS 'http://www.w3.org/XML/1998/namaespace' to another prefix", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void elemNamespace_18(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -447,7 +447,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 19, Desc = "Pass NULL as NS to WriteStartElement", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void elemNamespace_19(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -462,7 +462,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 20, Desc = "Write element in reserved XML namespace, should error", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void elemNamespace_20(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -483,7 +483,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 21, Desc = "Write element in reserved XMLNS namespace, should error", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void elemNamespace_21(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -504,7 +504,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 22, Desc = "Mapping a prefix to empty ns should error", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void elemNamespace_22(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -527,7 +527,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 23, Desc = "Pass null prefix to WriteStartElement()", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void elemNamespace_23(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -540,7 +540,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 24, Desc = "Pass String.Empty prefix to WriteStartElement()", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void elemNamespace_24(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -553,7 +553,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 25, Desc = "Pass null ns to WriteStartElement()", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void elemNamespace_25(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -566,7 +566,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 26, Desc = "Pass String.Empty ns to WriteStartElement()", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void elemNamespace_26(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -579,7 +579,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 27, Desc = "Pass null prefix to WriteStartElement() when namespace is in scope", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void elemNamespace_27(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -593,7 +593,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 28, Desc = "Pass String.Empty prefix to WriteStartElement() when namespace is in scope", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void elemNamespace_28(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -607,7 +607,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 29, Desc = "Pass null ns to WriteStartElement() when prefix is in scope", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void elemNamespace_29(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -621,7 +621,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 30, Desc = "Pass String.Empty ns to WriteStartElement() when prefix is in scope", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void elemNamespace_30(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -641,7 +641,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 31, Desc = "Pass String.Empty ns to WriteStartElement() when prefix is in scope", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void elemNamespace_31(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -661,7 +661,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 31, Desc = "Mapping empty ns uri to a prefix should error", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void elemNamespace_32(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -686,7 +686,7 @@ namespace System.Xml.Tests
         {
             //[Variation(id = 1, Desc = "Define prefix 'xml' with invalid namespace URI 'foo'", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_1(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -709,7 +709,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 2, Desc = "Bind NS prefix 'xml' with valid namespace URI", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_2(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -724,7 +724,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 3, Desc = "Bind NS prefix 'xmlA' with namespace URI 'foo'", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_3(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -738,7 +738,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 4, Desc = "Write attribute xml:space with correct namespace", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_4(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -752,7 +752,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 5, Desc = "Write attribute xml:space with incorrect namespace", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_5(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -776,7 +776,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 6, Desc = "Write attribute xml:lang with incorrect namespace", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_6(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -801,7 +801,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 7, Desc = "WriteAttribute, define namespace attribute before value attribute", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_7(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -816,7 +816,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 8, Desc = "WriteAttribute, define namespace attribute after value attribute", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_8(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -831,7 +831,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 9, Desc = "WriteAttribute, redefine prefix at different scope and use both of them", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_9(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -850,7 +850,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 10, Desc = "WriteAttribute, redefine namespace at different scope and use both of them", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_10(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -869,7 +869,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 11, Desc = "WriteAttribute with colliding prefix with element", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_11(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -883,7 +883,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 12, Desc = "WriteAttribute with colliding namespace with element", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_12(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -897,7 +897,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 13, Desc = "WriteAttribute with namespace but no prefix", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_13(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -911,7 +911,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 14, Desc = "WriteAttribute for 2 attributes with same prefix but different namespace", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_14(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -926,7 +926,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 15, Desc = "WriteAttribute with String.Empty and null as namespace and prefix values", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_15(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -943,7 +943,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 16, Desc = "WriteAttribute to manually create attribute of xmlns:x", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_16(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -959,7 +959,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 17, Desc = "WriteAttribute with namespace value = null while a prefix exists", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_17(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -973,7 +973,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 18, Desc = "WriteAttribute with namespace value = String.Empty while a prefix exists", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_18(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -988,7 +988,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 19, Desc = "WriteAttribe in nested elements with same namespace but different prefix", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_19(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1011,7 +1011,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 20, Desc = "WriteAttribute for x:a and xmlns:a diff namespace", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_20(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1026,7 +1026,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 21, Desc = "WriteAttribute for x:a and xmlns:a same namespace", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_21(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1041,7 +1041,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 22, Desc = "WriteAttribute with colliding NS and prefix for 2 attributes", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_22(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1057,7 +1057,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 23, Desc = "WriteAttribute with DQ in namespace", Pri = 2)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_23(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1071,7 +1071,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 24, Desc = "Attach prefix with empty namespace", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_24(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1095,7 +1095,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 25, Desc = "Explicitly write namespace attribute that maps XML NS 'http://www.w3.org/XML/1998/namaespace' to another prefix", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_25(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1109,7 +1109,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 26, Desc = "Map XML NS 'http://www.w3.org/XML/1998/namaespace' to another prefix", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_26(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1123,7 +1123,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 27, Desc = "Pass empty namespace to WriteAttributeString(prefix, name, ns, value)", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_27(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1137,7 +1137,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 28, Desc = "Write attribute with prefix = xmlns", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_28(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1160,7 +1160,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 29, Desc = "Write attribute in reserved XML namespace, should error", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_29(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1182,7 +1182,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 30, Desc = "Write attribute in reserved XMLNS namespace, should error", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_30(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1204,7 +1204,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 31, Desc = "WriteAttributeString with no namespace under element with empty prefix", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_31(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1226,7 +1226,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 32, Desc = "Pass null prefix to WriteAttributeString()", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_32(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1240,7 +1240,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 33, Desc = "Pass String.Empty prefix to WriteAttributeString()", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_33(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1254,7 +1254,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 34, Desc = "Pass null ns to WriteAttributeString()", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_34(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1268,7 +1268,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 35, Desc = "Pass String.Empty ns to WriteAttributeString()", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_35(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1282,7 +1282,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 36, Desc = "Pass null prefix to WriteAttributeString() when namespace is in scope", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_36(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1296,7 +1296,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 37, Desc = "Pass String.Empty prefix to WriteAttributeString() when namespace is in scope", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_37(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1310,7 +1310,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 38, Desc = "Pass null ns to WriteAttributeString() when prefix is in scope", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_38(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1324,7 +1324,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 39, Desc = "Pass String.Empty ns to WriteAttributeString() when prefix is in scope", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_39(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1338,7 +1338,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 40, Desc = "Mapping empty ns uri to a prefix should error", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_40(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1365,7 +1365,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 42, Desc = "WriteStartAttribute with prefix = null, localName = xmlns - case 2", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void attrNamespace_42(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1383,7 +1383,7 @@ namespace System.Xml.Tests
         {
             //[Variation(id = 1, Desc = "WriteCData with null", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void CData_1(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1397,7 +1397,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 2, Desc = "WriteCData with String.Empty", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void CData_2(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1411,7 +1411,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 3, Desc = "WriteCData Sanity test", Pri = 0)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void CData_3(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1425,7 +1425,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 4, Desc = "WriteCData with valid surrogate pair", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void CData_4(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1439,7 +1439,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 5, Desc = "WriteCData with ]]>", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void CData_5(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1453,7 +1453,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 6, Desc = "WriteCData with & < > chars, they should not be escaped", Pri = 2)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void CData_6(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1467,7 +1467,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 7, Desc = "WriteCData with <![CDATA[", Pri = 2)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void CData_7(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1480,7 +1480,7 @@ namespace System.Xml.Tests
             }
             //[Variation(id = 8, Desc = "CData state machine", Pri = 2)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void CData_8(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1494,7 +1494,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 9, Desc = "WriteCData with invalid surrogate pair", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void CData_9(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1517,7 +1517,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 10, Desc = "WriteCData after root element")]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void CData_10(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1541,7 +1541,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 11, Desc = "Call WriteCData twice - that should write two CData blocks", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void CData_11(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1556,7 +1556,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 12, Desc = "WriteCData with empty string at the buffer boundary", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void CData_12(XmlWriterUtils utils)
             {
                 // WriteCData with empty string when the write buffer looks like
@@ -1580,12 +1580,12 @@ namespace System.Xml.Tests
             }
 
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 0x0d, NewLineHandling.Replace, "<r><![CDATA[\r\n]]></r>" )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 0x0d, NewLineHandling.None, "<r><![CDATA[\r]]></r>" )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 0x0d, NewLineHandling.Entitize, "<r><![CDATA[\r]]></r>" )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 0x0a, NewLineHandling.Replace, "<r><![CDATA[\r\n]]></r>" )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 0x0a, NewLineHandling.None, "<r><![CDATA[\n]]></r>" )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 0x0a, NewLineHandling.Entitize, "<r><![CDATA[\n]]></r>" )]
+            [XmlWriterInlineData(0x0d, NewLineHandling.Replace, "<r><![CDATA[\r\n]]></r>" )]
+            [XmlWriterInlineData(0x0d, NewLineHandling.None, "<r><![CDATA[\r]]></r>" )]
+            [XmlWriterInlineData(0x0d, NewLineHandling.Entitize, "<r><![CDATA[\r]]></r>" )]
+            [XmlWriterInlineData(0x0a, NewLineHandling.Replace, "<r><![CDATA[\r\n]]></r>" )]
+            [XmlWriterInlineData(0x0a, NewLineHandling.None, "<r><![CDATA[\n]]></r>" )]
+            [XmlWriterInlineData(0x0a, NewLineHandling.Entitize, "<r><![CDATA[\n]]></r>" )]
             public void CData_13(XmlWriterUtils utils, char ch, NewLineHandling nlh, string expXml)
             {
                 XmlWriterSettings xws = new XmlWriterSettings();
@@ -1607,7 +1607,7 @@ namespace System.Xml.Tests
         {
             //[Variation(id = 1, Desc = "Sanity test for WriteComment", Pri = 0)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void comment_1(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1621,7 +1621,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 2, Desc = "Comment value = String.Empty", Pri = 0)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void comment_2(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1635,7 +1635,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 3, Desc = "Comment value = null", Pri = 0)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void comment_3(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1649,7 +1649,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 4, Desc = "WriteComment with valid surrogate pair", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void comment_4(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1663,7 +1663,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 5, Desc = "WriteComment with invalid surrogate pair", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void comment_5(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1687,7 +1687,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 6, Desc = "WriteComment with -- in value", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void comment_6(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1704,17 +1704,17 @@ namespace System.Xml.Tests
         public partial class TCEntityRef
         {
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "null")]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "String.Empty")]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "test<test")]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "test>test")]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "test&test")]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "&test;")]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "test'test")]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "test\"test")]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "\xD")]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "\xD")]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "\xD\xA")]
+            [XmlWriterInlineData("null")]
+            [XmlWriterInlineData("String.Empty")]
+            [XmlWriterInlineData("test<test")]
+            [XmlWriterInlineData("test>test")]
+            [XmlWriterInlineData("test&test")]
+            [XmlWriterInlineData("&test;")]
+            [XmlWriterInlineData("test'test")]
+            [XmlWriterInlineData("test\"test")]
+            [XmlWriterInlineData("\xD")]
+            [XmlWriterInlineData("\xD")]
+            [XmlWriterInlineData("\xD\xA")]
             public void entityRef_1(XmlWriterUtils utils, string param)
             {
                 string temp = null;
@@ -1757,7 +1757,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 12, Desc = "WriteEntityRef with entity defined in doctype", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void entityRef_2(XmlWriterUtils utils)
             {
                 string exp = utils.IsIndent() ?
@@ -1777,7 +1777,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 13, Desc = "WriteEntityRef in value for xml:lang attribute", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void entityRef_3(XmlWriterUtils utils)
             {
                 string exp = utils.IsIndent() ?
@@ -1800,7 +1800,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 14, Desc = "XmlWriter: Entity Refs are entitized twice in xml:lang attributes", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void var_14(XmlWriterUtils utils)
             {
                 string exp = utils.IsIndent() ?
@@ -1826,7 +1826,7 @@ namespace System.Xml.Tests
         {
             //[Variation(id = 1, Desc = "WriteCharEntity with valid Unicode character", Pri = 0)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void charEntity_1(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1844,7 +1844,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 2, Desc = "Call WriteCharEntity after WriteStartElement/WriteEndElement", Pri = 0)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void charEntity_2(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1862,7 +1862,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 3, Desc = "Call WriteCharEntity after WriteStartAttribute/WriteEndAttribute", Pri = 0)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void charEntity_3(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1879,7 +1879,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 4, Desc = "Character from low surrogate range", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void charEntity_4(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1902,7 +1902,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 5, Desc = "Character from high surrogate range", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void charEntity_5(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1925,7 +1925,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 7, Desc = "Sanity test, pass 'a'", Pri = 0)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void charEntity_7(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1940,7 +1940,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 8, Desc = "WriteCharEntity for special attributes", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void charEntity_8(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -1957,7 +1957,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 9, Desc = "XmlWriter generates invalid XML", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void bug35637(XmlWriterUtils utils)
             {
                 XmlWriterSettings settings = new XmlWriterSettings
@@ -1991,7 +1991,7 @@ namespace System.Xml.Tests
         {
             //[Variation(id = 1, Desc = "SurrogateCharEntity after WriteStartElement/WriteEndElement", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void surrogateEntity_1(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2009,7 +2009,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 2, Desc = "SurrogateCharEntity after WriteStartAttribute/WriteEndAttribute", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void surrogateEntity_2(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2026,7 +2026,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 3, Desc = "Test with limits of surrogate range", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void surrogateEntity_3(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2045,7 +2045,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 4, Desc = "Middle surrogate character", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void surrogateEntity_4(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2059,7 +2059,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 5, Desc = "Invalid high surrogate character", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void surrogateEntity_5(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2082,7 +2082,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 6, Desc = "Invalid low surrogate character", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void surrogateEntity_6(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2105,7 +2105,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 7, Desc = "Swap high-low surrogate characters", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void surrogateEntity_7(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2128,7 +2128,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 8, Desc = "WriteSurrogateCharEntity for special attributes", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void surrogateEntity_8(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2149,7 +2149,7 @@ namespace System.Xml.Tests
         {
             //[Variation(id = 1, Desc = "Sanity test for WritePI", Pri = 0)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void pi_1(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2163,7 +2163,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 2, Desc = "PI text value = null", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void pi_2(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2177,7 +2177,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 3, Desc = "PI text value = String.Empty", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void pi_3(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2191,7 +2191,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 4, Desc = "PI name = null should error", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void pi_4(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2220,7 +2220,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 5, Desc = "PI name = String.Empty should error", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void pi_5(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2243,7 +2243,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 6, Desc = "WritePI with xmlns as the name value")]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void pi_6(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2257,7 +2257,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 7, Desc = "WritePI with XmL as the name value")]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void pi_7(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2282,7 +2282,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 8, Desc = "WritePI before XmlDecl", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void pi_8(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2305,7 +2305,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 9, Desc = "WritePI (after StartDocument) with name = 'xml' text = 'version = 1.0' should error", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void pi_9(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2328,7 +2328,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 10, Desc = "WritePI (before StartDocument) with name = 'xml' text = 'version = 1.0' should error", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void pi_10(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2351,7 +2351,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 11, Desc = "Include PI end tag ?> as part of the text value", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void pi_11(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2365,7 +2365,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 12, Desc = "WriteProcessingInstruction with valid surrogate pair", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void pi_12(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2379,7 +2379,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 13, Desc = "WritePI with invalid surrogate pair", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void pi_13(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2406,8 +2406,8 @@ namespace System.Xml.Tests
         public partial class TCWriteNmToken
         {
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "null")]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "String.Empty")]
+            [XmlWriterInlineData("null")]
+            [XmlWriterInlineData("String.Empty")]
             public void writeNmToken_1(XmlWriterUtils utils, string param)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2436,7 +2436,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 2, Desc = "Sanity test, Name = foo", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeNmToken_2(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2450,7 +2450,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 3, Desc = "Name contains letters, digits, . _ - : chars", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeNmToken_3(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2463,10 +2463,10 @@ namespace System.Xml.Tests
             }
 
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "test test")]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "test?")]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "test'")]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "\"test")]
+            [XmlWriterInlineData("test test")]
+            [XmlWriterInlineData("test?")]
+            [XmlWriterInlineData("test'")]
+            [XmlWriterInlineData("\"test")]
             public void writeNmToken_4(XmlWriterUtils utils, string param)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2499,8 +2499,8 @@ namespace System.Xml.Tests
         public partial class TCWriteName
         {
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "null")]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "String.Empty")]
+            [XmlWriterInlineData("null")]
+            [XmlWriterInlineData("String.Empty")]
             public void writeName_1(XmlWriterUtils utils, string param)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2529,7 +2529,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 3, Desc = "Sanity test, Name = foo", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeName_2(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2543,7 +2543,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 3, Desc = "Sanity test, Name = foo:bar", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeName_3(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2556,8 +2556,8 @@ namespace System.Xml.Tests
             }
 
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ":bar")]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "foo bar")]
+            [XmlWriterInlineData(":bar")]
+            [XmlWriterInlineData("foo bar")]
             public void writeName_4(XmlWriterUtils utils, string param)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2590,8 +2590,8 @@ namespace System.Xml.Tests
         public partial class TCWriteQName
         {
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "null")]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "String.Empty")]
+            [XmlWriterInlineData("null")]
+            [XmlWriterInlineData("String.Empty")]
             public void writeQName_1(XmlWriterUtils utils, string param)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2627,7 +2627,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 3, Desc = "WriteQName with correct NS", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeQName_2(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2642,7 +2642,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 4, Desc = "WriteQName when NS is auto-generated", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeQName_3(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2656,7 +2656,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 5, Desc = "QName = foo:bar when foo is not in scope", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeQName_4(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2686,8 +2686,8 @@ namespace System.Xml.Tests
             }
 
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ":bar")]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "foo bar")]
+            [XmlWriterInlineData(":bar")]
+            [XmlWriterInlineData("foo bar")]
             public void writeQName_5(XmlWriterUtils utils, string param)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2716,7 +2716,7 @@ namespace System.Xml.Tests
         {
             //[Variation(id = 1, Desc = "WriteChars with valid buffer, number, count", Pri = 0)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeChars_1(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2732,7 +2732,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 2, Desc = "WriteChars with & < >", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeChars_2(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2749,7 +2749,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 3, Desc = "WriteChars following WriteStartAttribute", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeChars_3(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2767,7 +2767,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 4, Desc = "WriteChars with entity ref included", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeChars_4(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2784,7 +2784,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 5, Desc = "WriteChars with buffer = null", Pri = 2)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeChars_5(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2807,7 +2807,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 6, Desc = "WriteChars with count > buffer size", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeChars_6(XmlWriterUtils utils)
             {
                 VerifyInvalidWrite(utils, "WriteChars", 5, 0, 6, typeof(ArgumentOutOfRangeException));
@@ -2815,7 +2815,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 7, Desc = "WriteChars with count < 0", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeChars_7(XmlWriterUtils utils)
             {
                 VerifyInvalidWrite(utils, "WriteChars", 5, 2, -1, typeof(ArgumentOutOfRangeException));
@@ -2823,7 +2823,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 8, Desc = "WriteChars with index > buffer size", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeChars_8(XmlWriterUtils utils)
             {
                 VerifyInvalidWrite(utils, "WriteChars", 5, 6, 1, typeof(ArgumentOutOfRangeException));
@@ -2831,7 +2831,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 9, Desc = "WriteChars with index < 0", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeChars_9(XmlWriterUtils utils)
             {
                 VerifyInvalidWrite(utils, "WriteChars", 5, -1, 1, typeof(ArgumentOutOfRangeException));
@@ -2839,7 +2839,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 10, Desc = "WriteChars with index + count exceeds buffer", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeChars_10(XmlWriterUtils utils)
             {
                 VerifyInvalidWrite(utils, "WriteChars", 5, 2, 5, typeof(ArgumentOutOfRangeException));
@@ -2847,7 +2847,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 11, Desc = "WriteChars for xml:lang attribute, index = count = 0", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeChars_11(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2869,7 +2869,7 @@ namespace System.Xml.Tests
         {
             //[Variation(id = 1, Desc = "WriteString(null)", Pri = 0)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeString_1(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2883,7 +2883,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 2, Desc = "WriteString(String.Empty)", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeString_2(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2897,7 +2897,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 3, Desc = "WriteString with valid surrogate pair", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeString_3(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2911,7 +2911,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 4, Desc = "WriteString with invalid surrogate pair", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeString_4(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2935,7 +2935,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 5, Desc = "WriteString with entity reference", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeString_5(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2949,7 +2949,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 6, Desc = "WriteString with single/double quote, &, <, >", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeString_6(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2963,7 +2963,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 9, Desc = "WriteString for value greater than x1F", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeString_9(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -2977,7 +2977,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 10, Desc = "WriteString with CR, LF, CR LF inside element", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeString_10(XmlWriterUtils utils)
             {
                 // By default NormalizeNewLines = false and NewLineChars = \r\n
@@ -3001,7 +3001,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 11, Desc = "WriteString with CR, LF, CR LF inside attribute value", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeString_11(XmlWriterUtils utils)
             {
                 // \r, \n and \r\n gets replaced by char entities &#xD; &#xA; and &#xD;&#xA; respectively
@@ -3022,7 +3022,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 12, Desc = "Call WriteString for LF inside attribute", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeString_12(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -3037,7 +3037,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 13, Desc = "Surrogate characters in text nodes, range limits", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeString_13(XmlWriterUtils utils)
             {
                 char[] invalidXML = { '\uD800', '\uDC00', '\uD800', '\uDFFF', '\uDBFF', '\uDC00', '\uDBFF', '\uDFFF' };
@@ -3054,7 +3054,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 14, Desc = "High surrogate on last position", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeString_14(XmlWriterUtils utils)
             {
                 char[] invalidXML = { 'a', 'b', '\uDA34' };
@@ -3080,7 +3080,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 15, Desc = "Low surrogate on first position", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeString_15(XmlWriterUtils utils)
             {
                 char[] invalidXML = { '\uDF20', 'b', 'c' };
@@ -3106,7 +3106,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 16, Desc = "Swap low-high surrogates", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeString_16(XmlWriterUtils utils)
             {
                 char[] invalidXML = { 'a', '\uDE40', '\uDA72', 'c' };
@@ -3136,7 +3136,7 @@ namespace System.Xml.Tests
         {
             //[Variation(id = 1, Desc = "WriteWhitespace with values #x20 #x9 #xD #xA", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void whitespace_1(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -3158,7 +3158,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 2, Desc = "WriteWhitespace in the middle of text", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void whitespace_2(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -3174,7 +3174,7 @@ namespace System.Xml.Tests
 
             //[Variation(id = 3, Desc = "WriteWhitespace before and after root element", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void whitespace_3(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -3190,8 +3190,8 @@ namespace System.Xml.Tests
             }
 
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "null")]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "String.Empty")]
+            [XmlWriterInlineData("null")]
+            [XmlWriterInlineData("String.Empty")]
             public void whitespace_4(XmlWriterUtils utils, string param)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -3210,11 +3210,11 @@ namespace System.Xml.Tests
             }
 
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "a")]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "\xE")]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "\x0")]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "\x10")]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "\x1F")]
+            [XmlWriterInlineData("a")]
+            [XmlWriterInlineData("\xE")]
+            [XmlWriterInlineData("\x0")]
+            [XmlWriterInlineData("\x10")]
+            [XmlWriterInlineData("\x1F")]
             public void whitespace_5(XmlWriterUtils utils, string param)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -3241,7 +3241,7 @@ namespace System.Xml.Tests
         {
             //[Variation(Desc = "Write multiple atomic values inside element", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeValue_1(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -3257,7 +3257,7 @@ namespace System.Xml.Tests
 
             //[Variation(Desc = "Write multiple atomic values inside attribute", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeValue_2(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -3274,7 +3274,7 @@ namespace System.Xml.Tests
 
             //[Variation(Desc = "Write multiple atomic values inside element, separate by WriteWhitespace(' ')", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeValue_3(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -3293,7 +3293,7 @@ namespace System.Xml.Tests
 
             //[Variation(Desc = "Write multiple atomic values inside element, separate by WriteString(' ')", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeValue_4(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -3312,7 +3312,7 @@ namespace System.Xml.Tests
 
             //[Variation(Desc = "Write multiple atomic values inside attribute, separate by WriteWhitespace(' ')", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeValue_5(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -3340,7 +3340,7 @@ namespace System.Xml.Tests
 
             //[Variation(Desc = "Write multiple atomic values inside attribute, separate by WriteString(' ')", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeValue_6(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -3360,7 +3360,7 @@ namespace System.Xml.Tests
 
             //[Variation(Desc = "WriteValue(long)", Pri = 1)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+            [XmlWriterInlineData]
             public void writeValue_7(XmlWriterUtils utils)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -3376,8 +3376,8 @@ namespace System.Xml.Tests
             }
 
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "string")]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "object")]
+            [XmlWriterInlineData("string")]
+            [XmlWriterInlineData("object")]
             public void writeValue_8(XmlWriterUtils utils, string param)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -3535,718 +3535,718 @@ namespace System.Xml.Tests
             };
 
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt64", "string", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt32", "string", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt16", "string", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int64", "string", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int32", "string", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int16", "string", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Byte", "string", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "SByte", "string", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Decimal", "string", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "float", "string", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "object", "string", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "bool", "string", true, "false" )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTime", "string", true, 1 )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTimeOffset", "string", true, 2 )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "ByteArray", "string", true, "2H4=" )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "List", "string", true, "" )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "TimeSpan", "string", true, "PT0S" )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Uri", "string", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Double", "string", true, "1.7976931348623157E+308" )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Single", "string", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "XmlQualifiedName", "string", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "string", "string", true, null )]
+            [XmlWriterInlineData(1, "UInt64", "string", true, null )]
+            [XmlWriterInlineData(1, "UInt32", "string", true, null )]
+            [XmlWriterInlineData(1, "UInt16", "string", true, null )]
+            [XmlWriterInlineData(1, "Int64", "string", true, null )]
+            [XmlWriterInlineData(1, "Int32", "string", true, null )]
+            [XmlWriterInlineData(1, "Int16", "string", true, null )]
+            [XmlWriterInlineData(1, "Byte", "string", true, null )]
+            [XmlWriterInlineData(1, "SByte", "string", true, null )]
+            [XmlWriterInlineData(1, "Decimal", "string", true, null )]
+            [XmlWriterInlineData(1, "float", "string", true, null )]
+            [XmlWriterInlineData(1, "object", "string", true, null )]
+            [XmlWriterInlineData(1, "bool", "string", true, "false" )]
+            [XmlWriterInlineData(1, "DateTime", "string", true, 1 )]
+            [XmlWriterInlineData(1, "DateTimeOffset", "string", true, 2 )]
+            [XmlWriterInlineData(1, "ByteArray", "string", true, "2H4=" )]
+            [XmlWriterInlineData(1, "List", "string", true, "" )]
+            [XmlWriterInlineData(1, "TimeSpan", "string", true, "PT0S" )]
+            [XmlWriterInlineData(1, "Uri", "string", true, null )]
+            [XmlWriterInlineData(1, "Double", "string", true, "1.7976931348623157E+308" )]
+            [XmlWriterInlineData(1, "Single", "string", true, null )]
+            [XmlWriterInlineData(1, "XmlQualifiedName", "string", true, null )]
+            [XmlWriterInlineData(1, "string", "string", true, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt64", "UInt64", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt32", "UInt64", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt16", "UInt64", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int64", "UInt64", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int32", "UInt64", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int16", "UInt64", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Byte", "UInt64", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "SByte", "UInt64", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Decimal", "UInt64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "float", "UInt64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "object", "UInt64", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "bool", "UInt64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTime", "UInt64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTimeOffset", "UInt64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "ByteArray", "UInt64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "List", "UInt64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "TimeSpan", "UInt64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Uri", "UInt64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Double", "UInt64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Single", "UInt64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "XmlQualifiedName", "UInt64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "string", "UInt64", true, null )]
+            [XmlWriterInlineData(1, "UInt64", "UInt64", true, null )]
+            [XmlWriterInlineData(1, "UInt32", "UInt64", true, null )]
+            [XmlWriterInlineData(1, "UInt16", "UInt64", true, null )]
+            [XmlWriterInlineData(1, "Int64", "UInt64", true, null )]
+            [XmlWriterInlineData(1, "Int32", "UInt64", true, null )]
+            [XmlWriterInlineData(1, "Int16", "UInt64", true, null )]
+            [XmlWriterInlineData(1, "Byte", "UInt64", true, null )]
+            [XmlWriterInlineData(1, "SByte", "UInt64", true, null )]
+            [XmlWriterInlineData(1, "Decimal", "UInt64", false, null )]
+            [XmlWriterInlineData(1, "float", "UInt64", false, null )]
+            [XmlWriterInlineData(1, "object", "UInt64", true, null )]
+            [XmlWriterInlineData(1, "bool", "UInt64", false, null )]
+            [XmlWriterInlineData(1, "DateTime", "UInt64", false, null )]
+            [XmlWriterInlineData(1, "DateTimeOffset", "UInt64", false, null )]
+            [XmlWriterInlineData(1, "ByteArray", "UInt64", false, null )]
+            [XmlWriterInlineData(1, "List", "UInt64", false, null )]
+            [XmlWriterInlineData(1, "TimeSpan", "UInt64", false, null )]
+            [XmlWriterInlineData(1, "Uri", "UInt64", false, null )]
+            [XmlWriterInlineData(1, "Double", "UInt64", false, null )]
+            [XmlWriterInlineData(1, "Single", "UInt64", false, null )]
+            [XmlWriterInlineData(1, "XmlQualifiedName", "UInt64", false, null )]
+            [XmlWriterInlineData(1, "string", "UInt64", true, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt64", "Int64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt32", "Int64", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt16", "Int64", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int64", "Int64", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int32", "Int64", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int16", "Int64", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Byte", "Int64", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "SByte", "Int64", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Decimal", "Int64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "float", "Int64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "object", "Int64", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "bool", "Int64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTime", "Int64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTimeOffset", "Int64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "ByteArray", "Int64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "List", "Int64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "TimeSpan", "Int64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Uri", "Int64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Double", "Int64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Single", "Int64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "XmlQualifiedName", "Int64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "string", "Int64", true, null )]
+            [XmlWriterInlineData(1, "UInt64", "Int64", false, null )]
+            [XmlWriterInlineData(1, "UInt32", "Int64", true, null )]
+            [XmlWriterInlineData(1, "UInt16", "Int64", true, null )]
+            [XmlWriterInlineData(1, "Int64", "Int64", true, null )]
+            [XmlWriterInlineData(1, "Int32", "Int64", true, null )]
+            [XmlWriterInlineData(1, "Int16", "Int64", true, null )]
+            [XmlWriterInlineData(1, "Byte", "Int64", true, null )]
+            [XmlWriterInlineData(1, "SByte", "Int64", true, null )]
+            [XmlWriterInlineData(1, "Decimal", "Int64", false, null )]
+            [XmlWriterInlineData(1, "float", "Int64", false, null )]
+            [XmlWriterInlineData(1, "object", "Int64", true, null )]
+            [XmlWriterInlineData(1, "bool", "Int64", false, null )]
+            [XmlWriterInlineData(1, "DateTime", "Int64", false, null )]
+            [XmlWriterInlineData(1, "DateTimeOffset", "Int64", false, null )]
+            [XmlWriterInlineData(1, "ByteArray", "Int64", false, null )]
+            [XmlWriterInlineData(1, "List", "Int64", false, null )]
+            [XmlWriterInlineData(1, "TimeSpan", "Int64", false, null )]
+            [XmlWriterInlineData(1, "Uri", "Int64", false, null )]
+            [XmlWriterInlineData(1, "Double", "Int64", false, null )]
+            [XmlWriterInlineData(1, "Single", "Int64", false, null )]
+            [XmlWriterInlineData(1, "XmlQualifiedName", "Int64", false, null )]
+            [XmlWriterInlineData(1, "string", "Int64", true, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt64", "UInt32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt32", "UInt32", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt16", "UInt32", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int64", "UInt32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int32", "UInt32", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int16", "UInt32", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Byte", "UInt32", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "SByte", "UInt32", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Decimal", "UInt32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "float", "UInt32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "object", "UInt32", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "bool", "UInt32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTime", "UInt32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTimeOffset", "UInt32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "ByteArray", "UInt32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "List", "UInt32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "TimeSpan", "UInt32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Uri", "UInt32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Double", "UInt32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Single", "UInt32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "XmlQualifiedName", "UInt32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "string", "UInt32", true, null )]
+            [XmlWriterInlineData(1, "UInt64", "UInt32", false, null )]
+            [XmlWriterInlineData(1, "UInt32", "UInt32", true, null )]
+            [XmlWriterInlineData(1, "UInt16", "UInt32", true, null )]
+            [XmlWriterInlineData(1, "Int64", "UInt32", false, null )]
+            [XmlWriterInlineData(1, "Int32", "UInt32", true, null )]
+            [XmlWriterInlineData(1, "Int16", "UInt32", true, null )]
+            [XmlWriterInlineData(1, "Byte", "UInt32", true, null )]
+            [XmlWriterInlineData(1, "SByte", "UInt32", true, null )]
+            [XmlWriterInlineData(1, "Decimal", "UInt32", false, null )]
+            [XmlWriterInlineData(1, "float", "UInt32", false, null )]
+            [XmlWriterInlineData(1, "object", "UInt32", true, null )]
+            [XmlWriterInlineData(1, "bool", "UInt32", false, null )]
+            [XmlWriterInlineData(1, "DateTime", "UInt32", false, null )]
+            [XmlWriterInlineData(1, "DateTimeOffset", "UInt32", false, null )]
+            [XmlWriterInlineData(1, "ByteArray", "UInt32", false, null )]
+            [XmlWriterInlineData(1, "List", "UInt32", false, null )]
+            [XmlWriterInlineData(1, "TimeSpan", "UInt32", false, null )]
+            [XmlWriterInlineData(1, "Uri", "UInt32", false, null )]
+            [XmlWriterInlineData(1, "Double", "UInt32", false, null )]
+            [XmlWriterInlineData(1, "Single", "UInt32", false, null )]
+            [XmlWriterInlineData(1, "XmlQualifiedName", "UInt32", false, null )]
+            [XmlWriterInlineData(1, "string", "UInt32", true, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt64", "Int32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt32", "Int32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt16", "Int32", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int64", "Int32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int32", "Int32", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int16", "Int32", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Byte", "Int32", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "SByte", "Int32", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Decimal", "Int32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "float", "Int32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "object", "Int32", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "bool", "Int32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTime", "Int32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTimeOffset", "Int32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "ByteArray", "Int32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "List", "Int32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "TimeSpan", "Int32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Uri", "Int32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Double", "Int32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Single", "Int32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "XmlQualifiedName", "Int32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "string", "Int32", true, null )]
+            [XmlWriterInlineData(1, "UInt64", "Int32", false, null )]
+            [XmlWriterInlineData(1, "UInt32", "Int32", false, null )]
+            [XmlWriterInlineData(1, "UInt16", "Int32", true, null )]
+            [XmlWriterInlineData(1, "Int64", "Int32", false, null )]
+            [XmlWriterInlineData(1, "Int32", "Int32", true, null )]
+            [XmlWriterInlineData(1, "Int16", "Int32", true, null )]
+            [XmlWriterInlineData(1, "Byte", "Int32", true, null )]
+            [XmlWriterInlineData(1, "SByte", "Int32", true, null )]
+            [XmlWriterInlineData(1, "Decimal", "Int32", false, null )]
+            [XmlWriterInlineData(1, "float", "Int32", false, null )]
+            [XmlWriterInlineData(1, "object", "Int32", true, null )]
+            [XmlWriterInlineData(1, "bool", "Int32", false, null )]
+            [XmlWriterInlineData(1, "DateTime", "Int32", false, null )]
+            [XmlWriterInlineData(1, "DateTimeOffset", "Int32", false, null )]
+            [XmlWriterInlineData(1, "ByteArray", "Int32", false, null )]
+            [XmlWriterInlineData(1, "List", "Int32", false, null )]
+            [XmlWriterInlineData(1, "TimeSpan", "Int32", false, null )]
+            [XmlWriterInlineData(1, "Uri", "Int32", false, null )]
+            [XmlWriterInlineData(1, "Double", "Int32", false, null )]
+            [XmlWriterInlineData(1, "Single", "Int32", false, null )]
+            [XmlWriterInlineData(1, "XmlQualifiedName", "Int32", false, null )]
+            [XmlWriterInlineData(1, "string", "Int32", true, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt64", "UInt16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt32", "UInt16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt16", "UInt16", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int64", "UInt16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int32", "UInt16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int16", "UInt16", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Byte", "UInt16", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "SByte", "UInt16", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Decimal", "UInt16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "float", "UInt16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "object", "UInt16", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "bool", "UInt16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTime", "UInt16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTimeOffset", "UInt16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "ByteArray", "UInt16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "List", "UInt16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "TimeSpan", "UInt16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Uri", "UInt16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Double", "UInt16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Single", "UInt16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "XmlQualifiedName", "UInt16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "string", "UInt16", true, null )]
+            [XmlWriterInlineData(1, "UInt64", "UInt16", false, null )]
+            [XmlWriterInlineData(1, "UInt32", "UInt16", false, null )]
+            [XmlWriterInlineData(1, "UInt16", "UInt16", true, null )]
+            [XmlWriterInlineData(1, "Int64", "UInt16", false, null )]
+            [XmlWriterInlineData(1, "Int32", "UInt16", false, null )]
+            [XmlWriterInlineData(1, "Int16", "UInt16", true, null )]
+            [XmlWriterInlineData(1, "Byte", "UInt16", true, null )]
+            [XmlWriterInlineData(1, "SByte", "UInt16", true, null )]
+            [XmlWriterInlineData(1, "Decimal", "UInt16", false, null )]
+            [XmlWriterInlineData(1, "float", "UInt16", false, null )]
+            [XmlWriterInlineData(1, "object", "UInt16", true, null )]
+            [XmlWriterInlineData(1, "bool", "UInt16", false, null )]
+            [XmlWriterInlineData(1, "DateTime", "UInt16", false, null )]
+            [XmlWriterInlineData(1, "DateTimeOffset", "UInt16", false, null )]
+            [XmlWriterInlineData(1, "ByteArray", "UInt16", false, null )]
+            [XmlWriterInlineData(1, "List", "UInt16", false, null )]
+            [XmlWriterInlineData(1, "TimeSpan", "UInt16", false, null )]
+            [XmlWriterInlineData(1, "Uri", "UInt16", false, null )]
+            [XmlWriterInlineData(1, "Double", "UInt16", false, null )]
+            [XmlWriterInlineData(1, "Single", "UInt16", false, null )]
+            [XmlWriterInlineData(1, "XmlQualifiedName", "UInt16", false, null )]
+            [XmlWriterInlineData(1, "string", "UInt16", true, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt64", "Int16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt32", "Int16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt16", "Int16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int64", "Int16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int32", "Int16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int16", "Int16", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Byte", "Int16", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "SByte", "Int16", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Decimal", "Int16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "float", "Int16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "object", "Int16", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "bool", "Int16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTime", "Int16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTimeOffset", "Int16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "ByteArray", "Int16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "List", "Int16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "TimeSpan", "Int16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Uri", "Int16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Double", "Int16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Single", "Int16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "XmlQualifiedName", "Int16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "string", "Int16", true, null )]
+            [XmlWriterInlineData(1, "UInt64", "Int16", false, null )]
+            [XmlWriterInlineData(1, "UInt32", "Int16", false, null )]
+            [XmlWriterInlineData(1, "UInt16", "Int16", false, null )]
+            [XmlWriterInlineData(1, "Int64", "Int16", false, null )]
+            [XmlWriterInlineData(1, "Int32", "Int16", false, null )]
+            [XmlWriterInlineData(1, "Int16", "Int16", true, null )]
+            [XmlWriterInlineData(1, "Byte", "Int16", true, null )]
+            [XmlWriterInlineData(1, "SByte", "Int16", true, null )]
+            [XmlWriterInlineData(1, "Decimal", "Int16", false, null )]
+            [XmlWriterInlineData(1, "float", "Int16", false, null )]
+            [XmlWriterInlineData(1, "object", "Int16", true, null )]
+            [XmlWriterInlineData(1, "bool", "Int16", false, null )]
+            [XmlWriterInlineData(1, "DateTime", "Int16", false, null )]
+            [XmlWriterInlineData(1, "DateTimeOffset", "Int16", false, null )]
+            [XmlWriterInlineData(1, "ByteArray", "Int16", false, null )]
+            [XmlWriterInlineData(1, "List", "Int16", false, null )]
+            [XmlWriterInlineData(1, "TimeSpan", "Int16", false, null )]
+            [XmlWriterInlineData(1, "Uri", "Int16", false, null )]
+            [XmlWriterInlineData(1, "Double", "Int16", false, null )]
+            [XmlWriterInlineData(1, "Single", "Int16", false, null )]
+            [XmlWriterInlineData(1, "XmlQualifiedName", "Int16", false, null )]
+            [XmlWriterInlineData(1, "string", "Int16", true, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt64", "Byte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt32", "Byte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt16", "Byte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int64", "Byte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int32", "Byte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int16", "Byte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Byte", "Byte", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "SByte", "Byte", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Decimal", "Byte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "float", "Byte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "object", "Byte", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "bool", "Byte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTime", "Byte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTimeOffset", "Byte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "ByteArray", "Byte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "List", "Byte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "TimeSpan", "Byte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Uri", "Byte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Double", "Byte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Single", "Byte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "XmlQualifiedName", "Byte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "string", "Byte", true, null )]
+            [XmlWriterInlineData(1, "UInt64", "Byte", false, null )]
+            [XmlWriterInlineData(1, "UInt32", "Byte", false, null )]
+            [XmlWriterInlineData(1, "UInt16", "Byte", false, null )]
+            [XmlWriterInlineData(1, "Int64", "Byte", false, null )]
+            [XmlWriterInlineData(1, "Int32", "Byte", false, null )]
+            [XmlWriterInlineData(1, "Int16", "Byte", false, null )]
+            [XmlWriterInlineData(1, "Byte", "Byte", true, null )]
+            [XmlWriterInlineData(1, "SByte", "Byte", true, null )]
+            [XmlWriterInlineData(1, "Decimal", "Byte", false, null )]
+            [XmlWriterInlineData(1, "float", "Byte", false, null )]
+            [XmlWriterInlineData(1, "object", "Byte", true, null )]
+            [XmlWriterInlineData(1, "bool", "Byte", false, null )]
+            [XmlWriterInlineData(1, "DateTime", "Byte", false, null )]
+            [XmlWriterInlineData(1, "DateTimeOffset", "Byte", false, null )]
+            [XmlWriterInlineData(1, "ByteArray", "Byte", false, null )]
+            [XmlWriterInlineData(1, "List", "Byte", false, null )]
+            [XmlWriterInlineData(1, "TimeSpan", "Byte", false, null )]
+            [XmlWriterInlineData(1, "Uri", "Byte", false, null )]
+            [XmlWriterInlineData(1, "Double", "Byte", false, null )]
+            [XmlWriterInlineData(1, "Single", "Byte", false, null )]
+            [XmlWriterInlineData(1, "XmlQualifiedName", "Byte", false, null )]
+            [XmlWriterInlineData(1, "string", "Byte", true, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt64", "SByte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt32", "SByte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt16", "SByte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int64", "SByte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int32", "SByte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int16", "SByte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Byte", "SByte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "SByte", "SByte", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Decimal", "SByte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "float", "SByte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "object", "SByte", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "bool", "SByte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTime", "SByte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTimeOffset", "SByte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "ByteArray", "SByte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "List", "SByte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "TimeSpan", "SByte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Uri", "SByte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Double", "SByte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Single", "SByte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "XmlQualifiedName", "SByte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "string", "SByte", true, null )]
+            [XmlWriterInlineData(1, "UInt64", "SByte", false, null )]
+            [XmlWriterInlineData(1, "UInt32", "SByte", false, null )]
+            [XmlWriterInlineData(1, "UInt16", "SByte", false, null )]
+            [XmlWriterInlineData(1, "Int64", "SByte", false, null )]
+            [XmlWriterInlineData(1, "Int32", "SByte", false, null )]
+            [XmlWriterInlineData(1, "Int16", "SByte", false, null )]
+            [XmlWriterInlineData(1, "Byte", "SByte", false, null )]
+            [XmlWriterInlineData(1, "SByte", "SByte", true, null )]
+            [XmlWriterInlineData(1, "Decimal", "SByte", false, null )]
+            [XmlWriterInlineData(1, "float", "SByte", false, null )]
+            [XmlWriterInlineData(1, "object", "SByte", true, null )]
+            [XmlWriterInlineData(1, "bool", "SByte", false, null )]
+            [XmlWriterInlineData(1, "DateTime", "SByte", false, null )]
+            [XmlWriterInlineData(1, "DateTimeOffset", "SByte", false, null )]
+            [XmlWriterInlineData(1, "ByteArray", "SByte", false, null )]
+            [XmlWriterInlineData(1, "List", "SByte", false, null )]
+            [XmlWriterInlineData(1, "TimeSpan", "SByte", false, null )]
+            [XmlWriterInlineData(1, "Uri", "SByte", false, null )]
+            [XmlWriterInlineData(1, "Double", "SByte", false, null )]
+            [XmlWriterInlineData(1, "Single", "SByte", false, null )]
+            [XmlWriterInlineData(1, "XmlQualifiedName", "SByte", false, null )]
+            [XmlWriterInlineData(1, "string", "SByte", true, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt64", "Decimal", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt32", "Decimal", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt16", "Decimal", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int64", "Decimal", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int32", "Decimal", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int16", "Decimal", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Byte", "Decimal", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "SByte", "Decimal", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Decimal", "Decimal", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "float", "Decimal", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "object", "Decimal", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "bool", "Decimal", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTime", "Decimal", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTimeOffset", "Decimal", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "ByteArray", "Decimal", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "List", "Decimal", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "TimeSpan", "Decimal", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Uri", "Decimal", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Double", "Decimal", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Single", "Decimal", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "XmlQualifiedName", "Decimal", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "string", "Decimal", true, null )]
+            [XmlWriterInlineData(1, "UInt64", "Decimal", true, null )]
+            [XmlWriterInlineData(1, "UInt32", "Decimal", true, null )]
+            [XmlWriterInlineData(1, "UInt16", "Decimal", true, null )]
+            [XmlWriterInlineData(1, "Int64", "Decimal", true, null )]
+            [XmlWriterInlineData(1, "Int32", "Decimal", true, null )]
+            [XmlWriterInlineData(1, "Int16", "Decimal", true, null )]
+            [XmlWriterInlineData(1, "Byte", "Decimal", true, null )]
+            [XmlWriterInlineData(1, "SByte", "Decimal", true, null )]
+            [XmlWriterInlineData(1, "Decimal", "Decimal", true, null )]
+            [XmlWriterInlineData(1, "float", "Decimal", true, null )]
+            [XmlWriterInlineData(1, "object", "Decimal", true, null )]
+            [XmlWriterInlineData(1, "bool", "Decimal", false, null )]
+            [XmlWriterInlineData(1, "DateTime", "Decimal", false, null )]
+            [XmlWriterInlineData(1, "DateTimeOffset", "Decimal", false, null )]
+            [XmlWriterInlineData(1, "ByteArray", "Decimal", false, null )]
+            [XmlWriterInlineData(1, "List", "Decimal", false, null )]
+            [XmlWriterInlineData(1, "TimeSpan", "Decimal", false, null )]
+            [XmlWriterInlineData(1, "Uri", "Decimal", false, null )]
+            [XmlWriterInlineData(1, "Double", "Decimal", false, null )]
+            [XmlWriterInlineData(1, "Single", "Decimal", true, null )]
+            [XmlWriterInlineData(1, "XmlQualifiedName", "Decimal", false, null )]
+            [XmlWriterInlineData(1, "string", "Decimal", true, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt64", "float", true, 1.844674E+19F )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt32", "float", true, 4.294967E+09F )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt16", "float", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int64", "float", true, 9.223372E+18F )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int32", "float", true, 2.147484E+09F )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int16", "float", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Byte", "float", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "SByte", "float", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Decimal", "float", true, 7.922816E+28F )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "float", "float", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "object", "float", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "bool", "float", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTime", "float", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTimeOffset", "float", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "ByteArray", "float", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "List", "float", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "TimeSpan", "float", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Uri", "float", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Double", "float", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Single", "float", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "XmlQualifiedName", "float", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "string", "float", true, null )]
+            [XmlWriterInlineData(1, "UInt64", "float", true, 1.844674E+19F )]
+            [XmlWriterInlineData(1, "UInt32", "float", true, 4.294967E+09F )]
+            [XmlWriterInlineData(1, "UInt16", "float", true, null )]
+            [XmlWriterInlineData(1, "Int64", "float", true, 9.223372E+18F )]
+            [XmlWriterInlineData(1, "Int32", "float", true, 2.147484E+09F )]
+            [XmlWriterInlineData(1, "Int16", "float", true, null )]
+            [XmlWriterInlineData(1, "Byte", "float", true, null )]
+            [XmlWriterInlineData(1, "SByte", "float", true, null )]
+            [XmlWriterInlineData(1, "Decimal", "float", true, 7.922816E+28F )]
+            [XmlWriterInlineData(1, "float", "float", true, null )]
+            [XmlWriterInlineData(1, "object", "float", true, null )]
+            [XmlWriterInlineData(1, "bool", "float", false, null )]
+            [XmlWriterInlineData(1, "DateTime", "float", false, null )]
+            [XmlWriterInlineData(1, "DateTimeOffset", "float", false, null )]
+            [XmlWriterInlineData(1, "ByteArray", "float", false, null )]
+            [XmlWriterInlineData(1, "List", "float", false, null )]
+            [XmlWriterInlineData(1, "TimeSpan", "float", false, null )]
+            [XmlWriterInlineData(1, "Uri", "float", false, null )]
+            [XmlWriterInlineData(1, "Double", "float", false, null )]
+            [XmlWriterInlineData(1, "Single", "float", true, null )]
+            [XmlWriterInlineData(1, "XmlQualifiedName", "float", false, null )]
+            [XmlWriterInlineData(1, "string", "float", true, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt64", "bool", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt32", "bool", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt16", "bool", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int64", "bool", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int32", "bool", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int16", "bool", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Byte", "bool", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "SByte", "bool", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Decimal", "bool", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "float", "bool", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "object", "bool", true, false )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "bool", "bool", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTime", "bool", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTimeOffset", "bool", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "ByteArray", "bool", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "List", "bool", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "TimeSpan", "bool", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Uri", "bool", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Double", "bool", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Single", "bool", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "XmlQualifiedName", "bool", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "string", "bool", false, null )]
+            [XmlWriterInlineData(1, "UInt64", "bool", false, null )]
+            [XmlWriterInlineData(1, "UInt32", "bool", false, null )]
+            [XmlWriterInlineData(1, "UInt16", "bool", false, null )]
+            [XmlWriterInlineData(1, "Int64", "bool", false, null )]
+            [XmlWriterInlineData(1, "Int32", "bool", false, null )]
+            [XmlWriterInlineData(1, "Int16", "bool", false, null )]
+            [XmlWriterInlineData(1, "Byte", "bool", false, null )]
+            [XmlWriterInlineData(1, "SByte", "bool", false, null )]
+            [XmlWriterInlineData(1, "Decimal", "bool", false, null )]
+            [XmlWriterInlineData(1, "float", "bool", false, null )]
+            [XmlWriterInlineData(1, "object", "bool", true, false )]
+            [XmlWriterInlineData(1, "bool", "bool", true, null )]
+            [XmlWriterInlineData(1, "DateTime", "bool", false, null )]
+            [XmlWriterInlineData(1, "DateTimeOffset", "bool", false, null )]
+            [XmlWriterInlineData(1, "ByteArray", "bool", false, null )]
+            [XmlWriterInlineData(1, "List", "bool", false, null )]
+            [XmlWriterInlineData(1, "TimeSpan", "bool", false, null )]
+            [XmlWriterInlineData(1, "Uri", "bool", false, null )]
+            [XmlWriterInlineData(1, "Double", "bool", false, null )]
+            [XmlWriterInlineData(1, "Single", "bool", false, null )]
+            [XmlWriterInlineData(1, "XmlQualifiedName", "bool", false, null )]
+            [XmlWriterInlineData(1, "string", "bool", false, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt64", "DateTime", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt32", "DateTime", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt16", "DateTime", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int64", "DateTime", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int32", "DateTime", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int16", "DateTime", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Byte", "DateTime", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "SByte", "DateTime", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Decimal", "DateTime", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "float", "DateTime", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "object", "DateTime", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "bool", "DateTime", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTime", "DateTime", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTimeOffset", "DateTime", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "ByteArray", "DateTime", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "List", "DateTime", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "TimeSpan", "DateTime", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Uri", "DateTime", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Double", "DateTime", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Single", "DateTime", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "XmlQualifiedName", "DateTime", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "string", "DateTime", false, null )]
+            [XmlWriterInlineData(1, "UInt64", "DateTime", false, null )]
+            [XmlWriterInlineData(1, "UInt32", "DateTime", false, null )]
+            [XmlWriterInlineData(1, "UInt16", "DateTime", false, null )]
+            [XmlWriterInlineData(1, "Int64", "DateTime", false, null )]
+            [XmlWriterInlineData(1, "Int32", "DateTime", false, null )]
+            [XmlWriterInlineData(1, "Int16", "DateTime", false, null )]
+            [XmlWriterInlineData(1, "Byte", "DateTime", false, null )]
+            [XmlWriterInlineData(1, "SByte", "DateTime", false, null )]
+            [XmlWriterInlineData(1, "Decimal", "DateTime", false, null )]
+            [XmlWriterInlineData(1, "float", "DateTime", false, null )]
+            [XmlWriterInlineData(1, "object", "DateTime", false, null )]
+            [XmlWriterInlineData(1, "bool", "DateTime", false, null )]
+            [XmlWriterInlineData(1, "DateTime", "DateTime", true, null )]
+            [XmlWriterInlineData(1, "DateTimeOffset", "DateTime", true, null )]
+            [XmlWriterInlineData(1, "ByteArray", "DateTime", false, null )]
+            [XmlWriterInlineData(1, "List", "DateTime", false, null )]
+            [XmlWriterInlineData(1, "TimeSpan", "DateTime", false, null )]
+            [XmlWriterInlineData(1, "Uri", "DateTime", false, null )]
+            [XmlWriterInlineData(1, "Double", "DateTime", false, null )]
+            [XmlWriterInlineData(1, "Single", "DateTime", false, null )]
+            [XmlWriterInlineData(1, "XmlQualifiedName", "DateTime", false, null )]
+            [XmlWriterInlineData(1, "string", "DateTime", false, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt64", "DateTimeOffset", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt32", "DateTimeOffset", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt16", "DateTimeOffset", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int64", "DateTimeOffset", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int32", "DateTimeOffset", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int16", "DateTimeOffset", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Byte", "DateTimeOffset", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "SByte", "DateTimeOffset", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Decimal", "DateTimeOffset", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "float", "DateTimeOffset", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "object", "DateTimeOffset", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "bool", "DateTimeOffset", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTime", "DateTimeOffset", true, 0 )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTimeOffset", "DateTimeOffset", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "ByteArray", "DateTimeOffset", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "List", "DateTimeOffset", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "TimeSpan", "DateTimeOffset", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Uri", "DateTimeOffset", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Double", "DateTimeOffset", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Single", "DateTimeOffset", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "XmlQualifiedName", "DateTimeOffset", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "string", "DateTimeOffset", false, null )]
+            [XmlWriterInlineData(1, "UInt64", "DateTimeOffset", false, null )]
+            [XmlWriterInlineData(1, "UInt32", "DateTimeOffset", false, null )]
+            [XmlWriterInlineData(1, "UInt16", "DateTimeOffset", false, null )]
+            [XmlWriterInlineData(1, "Int64", "DateTimeOffset", false, null )]
+            [XmlWriterInlineData(1, "Int32", "DateTimeOffset", false, null )]
+            [XmlWriterInlineData(1, "Int16", "DateTimeOffset", false, null )]
+            [XmlWriterInlineData(1, "Byte", "DateTimeOffset", false, null )]
+            [XmlWriterInlineData(1, "SByte", "DateTimeOffset", false, null )]
+            [XmlWriterInlineData(1, "Decimal", "DateTimeOffset", false, null )]
+            [XmlWriterInlineData(1, "float", "DateTimeOffset", false, null )]
+            [XmlWriterInlineData(1, "object", "DateTimeOffset", false, null )]
+            [XmlWriterInlineData(1, "bool", "DateTimeOffset", false, null )]
+            [XmlWriterInlineData(1, "DateTime", "DateTimeOffset", true, 0 )]
+            [XmlWriterInlineData(1, "DateTimeOffset", "DateTimeOffset", true, null )]
+            [XmlWriterInlineData(1, "ByteArray", "DateTimeOffset", false, null )]
+            [XmlWriterInlineData(1, "List", "DateTimeOffset", false, null )]
+            [XmlWriterInlineData(1, "TimeSpan", "DateTimeOffset", false, null )]
+            [XmlWriterInlineData(1, "Uri", "DateTimeOffset", false, null )]
+            [XmlWriterInlineData(1, "Double", "DateTimeOffset", false, null )]
+            [XmlWriterInlineData(1, "Single", "DateTimeOffset", false, null )]
+            [XmlWriterInlineData(1, "XmlQualifiedName", "DateTimeOffset", false, null )]
+            [XmlWriterInlineData(1, "string", "DateTimeOffset", false, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt64", "List", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt32", "List", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt16", "List", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int64", "List", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int32", "List", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int16", "List", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Byte", "List", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "SByte", "List", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Decimal", "List", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "float", "List", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "object", "List", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "bool", "List", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTime", "List", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTimeOffset", "List", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "ByteArray", "List", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "List", "List", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "TimeSpan", "List", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Uri", "List", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Double", "List", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Single", "List", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "XmlQualifiedName", "List", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "string", "List", false, null )]
+            [XmlWriterInlineData(1, "UInt64", "List", false, null )]
+            [XmlWriterInlineData(1, "UInt32", "List", false, null )]
+            [XmlWriterInlineData(1, "UInt16", "List", false, null )]
+            [XmlWriterInlineData(1, "Int64", "List", false, null )]
+            [XmlWriterInlineData(1, "Int32", "List", false, null )]
+            [XmlWriterInlineData(1, "Int16", "List", false, null )]
+            [XmlWriterInlineData(1, "Byte", "List", false, null )]
+            [XmlWriterInlineData(1, "SByte", "List", false, null )]
+            [XmlWriterInlineData(1, "Decimal", "List", false, null )]
+            [XmlWriterInlineData(1, "float", "List", false, null )]
+            [XmlWriterInlineData(1, "object", "List", false, null )]
+            [XmlWriterInlineData(1, "bool", "List", false, null )]
+            [XmlWriterInlineData(1, "DateTime", "List", false, null )]
+            [XmlWriterInlineData(1, "DateTimeOffset", "List", false, null )]
+            [XmlWriterInlineData(1, "ByteArray", "List", false, null )]
+            [XmlWriterInlineData(1, "List", "List", false, null )]
+            [XmlWriterInlineData(1, "TimeSpan", "List", false, null )]
+            [XmlWriterInlineData(1, "Uri", "List", false, null )]
+            [XmlWriterInlineData(1, "Double", "List", false, null )]
+            [XmlWriterInlineData(1, "Single", "List", false, null )]
+            [XmlWriterInlineData(1, "XmlQualifiedName", "List", false, null )]
+            [XmlWriterInlineData(1, "string", "List", false, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt64", "Uri", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt32", "Uri", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt16", "Uri", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int64", "Uri", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int32", "Uri", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int16", "Uri", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Byte", "Uri", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "SByte", "Uri", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Decimal", "Uri", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "float", "Uri", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "object", "Uri", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "bool", "Uri", true, "false" )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTime", "Uri", true, 1 )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTimeOffset", "Uri", true, 2 )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "ByteArray", "Uri", true, "2H4=" )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "List", "Uri", true, "" )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "TimeSpan", "Uri", true, "PT0S" )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Uri", "Uri", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Double", "Uri", true, "1.7976931348623157E+308" )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Single", "Uri", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "XmlQualifiedName", "Uri", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "string", "Uri", true, null )]
+            [XmlWriterInlineData(1, "UInt64", "Uri", true, null )]
+            [XmlWriterInlineData(1, "UInt32", "Uri", true, null )]
+            [XmlWriterInlineData(1, "UInt16", "Uri", true, null )]
+            [XmlWriterInlineData(1, "Int64", "Uri", true, null )]
+            [XmlWriterInlineData(1, "Int32", "Uri", true, null )]
+            [XmlWriterInlineData(1, "Int16", "Uri", true, null )]
+            [XmlWriterInlineData(1, "Byte", "Uri", true, null )]
+            [XmlWriterInlineData(1, "SByte", "Uri", true, null )]
+            [XmlWriterInlineData(1, "Decimal", "Uri", true, null )]
+            [XmlWriterInlineData(1, "float", "Uri", true, null )]
+            [XmlWriterInlineData(1, "object", "Uri", true, null )]
+            [XmlWriterInlineData(1, "bool", "Uri", true, "false" )]
+            [XmlWriterInlineData(1, "DateTime", "Uri", true, 1 )]
+            [XmlWriterInlineData(1, "DateTimeOffset", "Uri", true, 2 )]
+            [XmlWriterInlineData(1, "ByteArray", "Uri", true, "2H4=" )]
+            [XmlWriterInlineData(1, "List", "Uri", true, "" )]
+            [XmlWriterInlineData(1, "TimeSpan", "Uri", true, "PT0S" )]
+            [XmlWriterInlineData(1, "Uri", "Uri", true, null )]
+            [XmlWriterInlineData(1, "Double", "Uri", true, "1.7976931348623157E+308" )]
+            [XmlWriterInlineData(1, "Single", "Uri", true, null )]
+            [XmlWriterInlineData(1, "XmlQualifiedName", "Uri", true, null )]
+            [XmlWriterInlineData(1, "string", "Uri", true, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt64", "Double", true, 1.84467440737096E+19D )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt32", "Double", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt16", "Double", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int64", "Double", true, 9.22337203685478E+18D )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int32", "Double", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int16", "Double", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Byte", "Double", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "SByte", "Double", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Decimal", "Double", true, 7.92281625142643E+28D )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "float", "Double", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "object", "Double", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "bool", "Double", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTime", "Double", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTimeOffset", "Double", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "ByteArray", "Double", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "List", "Double", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "TimeSpan", "Double", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Uri", "Double", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Double", "Double", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Single", "Double", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "XmlQualifiedName", "Double", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "string", "Double", true, null )]
+            [XmlWriterInlineData(1, "UInt64", "Double", true, 1.84467440737096E+19D )]
+            [XmlWriterInlineData(1, "UInt32", "Double", true, null )]
+            [XmlWriterInlineData(1, "UInt16", "Double", true, null )]
+            [XmlWriterInlineData(1, "Int64", "Double", true, 9.22337203685478E+18D )]
+            [XmlWriterInlineData(1, "Int32", "Double", true, null )]
+            [XmlWriterInlineData(1, "Int16", "Double", true, null )]
+            [XmlWriterInlineData(1, "Byte", "Double", true, null )]
+            [XmlWriterInlineData(1, "SByte", "Double", true, null )]
+            [XmlWriterInlineData(1, "Decimal", "Double", true, 7.92281625142643E+28D )]
+            [XmlWriterInlineData(1, "float", "Double", true, null )]
+            [XmlWriterInlineData(1, "object", "Double", true, null )]
+            [XmlWriterInlineData(1, "bool", "Double", false, null )]
+            [XmlWriterInlineData(1, "DateTime", "Double", false, null )]
+            [XmlWriterInlineData(1, "DateTimeOffset", "Double", false, null )]
+            [XmlWriterInlineData(1, "ByteArray", "Double", false, null )]
+            [XmlWriterInlineData(1, "List", "Double", false, null )]
+            [XmlWriterInlineData(1, "TimeSpan", "Double", false, null )]
+            [XmlWriterInlineData(1, "Uri", "Double", false, null )]
+            [XmlWriterInlineData(1, "Double", "Double", true, null )]
+            [XmlWriterInlineData(1, "Single", "Double", true, null )]
+            [XmlWriterInlineData(1, "XmlQualifiedName", "Double", false, null )]
+            [XmlWriterInlineData(1, "string", "Double", true, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt64", "Single", true, 1.844674E+19F )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt32", "Single", true, 4.294967E+09F )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt16", "Single", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int64", "Single", true, 9.223372E+18F )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int32", "Single", true, 2.147484E+09F )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int16", "Single", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Byte", "Single", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "SByte", "Single", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Decimal", "Single", true, 7.922816E+28F )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "float", "Single", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "object", "Single", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "bool", "Single", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTime", "Single", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTimeOffset", "Single", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "ByteArray", "Single", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "List", "Single", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "TimeSpan", "Single", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Uri", "Single", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Double", "Single", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Single", "Single", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "XmlQualifiedName", "Single", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "string", "Single", true, null )]
+            [XmlWriterInlineData(1, "UInt64", "Single", true, 1.844674E+19F )]
+            [XmlWriterInlineData(1, "UInt32", "Single", true, 4.294967E+09F )]
+            [XmlWriterInlineData(1, "UInt16", "Single", true, null )]
+            [XmlWriterInlineData(1, "Int64", "Single", true, 9.223372E+18F )]
+            [XmlWriterInlineData(1, "Int32", "Single", true, 2.147484E+09F )]
+            [XmlWriterInlineData(1, "Int16", "Single", true, null )]
+            [XmlWriterInlineData(1, "Byte", "Single", true, null )]
+            [XmlWriterInlineData(1, "SByte", "Single", true, null )]
+            [XmlWriterInlineData(1, "Decimal", "Single", true, 7.922816E+28F )]
+            [XmlWriterInlineData(1, "float", "Single", true, null )]
+            [XmlWriterInlineData(1, "object", "Single", true, null )]
+            [XmlWriterInlineData(1, "bool", "Single", false, null )]
+            [XmlWriterInlineData(1, "DateTime", "Single", false, null )]
+            [XmlWriterInlineData(1, "DateTimeOffset", "Single", false, null )]
+            [XmlWriterInlineData(1, "ByteArray", "Single", false, null )]
+            [XmlWriterInlineData(1, "List", "Single", false, null )]
+            [XmlWriterInlineData(1, "TimeSpan", "Single", false, null )]
+            [XmlWriterInlineData(1, "Uri", "Single", false, null )]
+            [XmlWriterInlineData(1, "Double", "Single", false, null )]
+            [XmlWriterInlineData(1, "Single", "Single", true, null )]
+            [XmlWriterInlineData(1, "XmlQualifiedName", "Single", false, null )]
+            [XmlWriterInlineData(1, "string", "Single", true, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt64", "object", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt32", "object", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt16", "object", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int64", "object", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int32", "object", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int16", "object", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Byte", "object", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "SByte", "object", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Decimal", "object", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "float", "object", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "object", "object", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "bool", "object", true, "false" )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTime", "object", true, 1 )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTimeOffset", "object", true, 2 )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "ByteArray", "object", true, "2H4=" )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "List", "object", true, "" )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "TimeSpan", "object", true, "PT0S" )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Uri", "object", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Double", "object", true, "1.7976931348623157E+308" )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Single", "object", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "XmlQualifiedName", "object", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "string", "object", true, null )]
+            [XmlWriterInlineData(1, "UInt64", "object", true, null )]
+            [XmlWriterInlineData(1, "UInt32", "object", true, null )]
+            [XmlWriterInlineData(1, "UInt16", "object", true, null )]
+            [XmlWriterInlineData(1, "Int64", "object", true, null )]
+            [XmlWriterInlineData(1, "Int32", "object", true, null )]
+            [XmlWriterInlineData(1, "Int16", "object", true, null )]
+            [XmlWriterInlineData(1, "Byte", "object", true, null )]
+            [XmlWriterInlineData(1, "SByte", "object", true, null )]
+            [XmlWriterInlineData(1, "Decimal", "object", true, null )]
+            [XmlWriterInlineData(1, "float", "object", true, null )]
+            [XmlWriterInlineData(1, "object", "object", true, null )]
+            [XmlWriterInlineData(1, "bool", "object", true, "false" )]
+            [XmlWriterInlineData(1, "DateTime", "object", true, 1 )]
+            [XmlWriterInlineData(1, "DateTimeOffset", "object", true, 2 )]
+            [XmlWriterInlineData(1, "ByteArray", "object", true, "2H4=" )]
+            [XmlWriterInlineData(1, "List", "object", true, "" )]
+            [XmlWriterInlineData(1, "TimeSpan", "object", true, "PT0S" )]
+            [XmlWriterInlineData(1, "Uri", "object", true, null )]
+            [XmlWriterInlineData(1, "Double", "object", true, "1.7976931348623157E+308" )]
+            [XmlWriterInlineData(1, "Single", "object", true, null )]
+            [XmlWriterInlineData(1, "XmlQualifiedName", "object", true, null )]
+            [XmlWriterInlineData(1, "string", "object", true, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "ByteArray", "ByteArray", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "BoolArray", "BoolArray", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "ObjectArray", "ObjectArray", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTimeArray", "DateTimeArray", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DateTimeOffsetArray", "DateTimeOffsetArray", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DecimalArray", "DecimalArray", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "DoubleArray", "DoubleArray", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int16Array", "Int16Array", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int32Array", "Int32Array", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "Int64Array", "Int64Array", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "SByteArray", "SByteArray", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "SingleArray", "SingleArray", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "StringArray", "StringArray", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "TimeSpanArray", "TimeSpanArray", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt16Array", "UInt16Array", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt32Array", "UInt32Array", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UInt64Array", "UInt64Array", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "UriArray", "UriArray", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "XmlQualifiedNameArray", "XmlQualifiedNameArray", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "TimeSpan", "TimeSpan", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1, "XmlQualifiedName", "XmlQualifiedName", true, null )]
+            [XmlWriterInlineData(1, "ByteArray", "ByteArray", true, null )]
+            [XmlWriterInlineData(1, "BoolArray", "BoolArray", true, null )]
+            [XmlWriterInlineData(1, "ObjectArray", "ObjectArray", true, null )]
+            [XmlWriterInlineData(1, "DateTimeArray", "DateTimeArray", true, null )]
+            [XmlWriterInlineData(1, "DateTimeOffsetArray", "DateTimeOffsetArray", true, null )]
+            [XmlWriterInlineData(1, "DecimalArray", "DecimalArray", true, null )]
+            [XmlWriterInlineData(1, "DoubleArray", "DoubleArray", true, null )]
+            [XmlWriterInlineData(1, "Int16Array", "Int16Array", true, null )]
+            [XmlWriterInlineData(1, "Int32Array", "Int32Array", true, null )]
+            [XmlWriterInlineData(1, "Int64Array", "Int64Array", true, null )]
+            [XmlWriterInlineData(1, "SByteArray", "SByteArray", true, null )]
+            [XmlWriterInlineData(1, "SingleArray", "SingleArray", true, null )]
+            [XmlWriterInlineData(1, "StringArray", "StringArray", true, null )]
+            [XmlWriterInlineData(1, "TimeSpanArray", "TimeSpanArray", true, null )]
+            [XmlWriterInlineData(1, "UInt16Array", "UInt16Array", true, null )]
+            [XmlWriterInlineData(1, "UInt32Array", "UInt32Array", true, null )]
+            [XmlWriterInlineData(1, "UInt64Array", "UInt64Array", true, null )]
+            [XmlWriterInlineData(1, "UriArray", "UriArray", true, null )]
+            [XmlWriterInlineData(1, "XmlQualifiedNameArray", "XmlQualifiedNameArray", true, null )]
+            [XmlWriterInlineData(1, "TimeSpan", "TimeSpan", true, null )]
+            [XmlWriterInlineData(1, "XmlQualifiedName", "XmlQualifiedName", true, null )]
 
             //////////attr         
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int16", "string", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Byte", "string", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "SByte", "string", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Decimal", "string", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "float", "string", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "object", "string", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "bool", "string", true, "False" )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Uri", "string", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Double", "string", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Single", "string", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "XmlQualifiedName", "string", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "string", "string", true, null )]
+            [XmlWriterInlineData(2, "Int16", "string", true, null )]
+            [XmlWriterInlineData(2, "Byte", "string", true, null )]
+            [XmlWriterInlineData(2, "SByte", "string", true, null )]
+            [XmlWriterInlineData(2, "Decimal", "string", true, null )]
+            [XmlWriterInlineData(2, "float", "string", true, null )]
+            [XmlWriterInlineData(2, "object", "string", true, null )]
+            [XmlWriterInlineData(2, "bool", "string", true, "False" )]
+            [XmlWriterInlineData(2, "Uri", "string", true, null )]
+            [XmlWriterInlineData(2, "Double", "string", true, null )]
+            [XmlWriterInlineData(2, "Single", "string", true, null )]
+            [XmlWriterInlineData(2, "XmlQualifiedName", "string", true, null )]
+            [XmlWriterInlineData(2, "string", "string", true, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt64", "UInt64", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt32", "UInt64", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt16", "UInt64", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int64", "UInt64", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int32", "UInt64", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int16", "UInt64", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "List", "UInt64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "TimeSpan", "UInt64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Uri", "UInt64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Double", "UInt64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Single", "UInt64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "XmlQualifiedName", "UInt64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "string", "UInt64", true, null )]
+            [XmlWriterInlineData(2, "UInt64", "UInt64", true, null )]
+            [XmlWriterInlineData(2, "UInt32", "UInt64", true, null )]
+            [XmlWriterInlineData(2, "UInt16", "UInt64", true, null )]
+            [XmlWriterInlineData(2, "Int64", "UInt64", true, null )]
+            [XmlWriterInlineData(2, "Int32", "UInt64", true, null )]
+            [XmlWriterInlineData(2, "Int16", "UInt64", true, null )]
+            [XmlWriterInlineData(2, "List", "UInt64", false, null )]
+            [XmlWriterInlineData(2, "TimeSpan", "UInt64", false, null )]
+            [XmlWriterInlineData(2, "Uri", "UInt64", false, null )]
+            [XmlWriterInlineData(2, "Double", "UInt64", false, null )]
+            [XmlWriterInlineData(2, "Single", "UInt64", false, null )]
+            [XmlWriterInlineData(2, "XmlQualifiedName", "UInt64", false, null )]
+            [XmlWriterInlineData(2, "string", "UInt64", true, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt64", "Int64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt32", "Int64", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt16", "Int64", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int64", "Int64", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int32", "Int64", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int16", "Int64", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Byte", "Int64", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "TimeSpan", "Int64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Uri", "Int64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Double", "Int64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Single", "Int64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "XmlQualifiedName", "Int64", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "string", "Int64", true, null )]
+            [XmlWriterInlineData(2, "UInt64", "Int64", false, null )]
+            [XmlWriterInlineData(2, "UInt32", "Int64", true, null )]
+            [XmlWriterInlineData(2, "UInt16", "Int64", true, null )]
+            [XmlWriterInlineData(2, "Int64", "Int64", true, null )]
+            [XmlWriterInlineData(2, "Int32", "Int64", true, null )]
+            [XmlWriterInlineData(2, "Int16", "Int64", true, null )]
+            [XmlWriterInlineData(2, "Byte", "Int64", true, null )]
+            [XmlWriterInlineData(2, "TimeSpan", "Int64", false, null )]
+            [XmlWriterInlineData(2, "Uri", "Int64", false, null )]
+            [XmlWriterInlineData(2, "Double", "Int64", false, null )]
+            [XmlWriterInlineData(2, "Single", "Int64", false, null )]
+            [XmlWriterInlineData(2, "XmlQualifiedName", "Int64", false, null )]
+            [XmlWriterInlineData(2, "string", "Int64", true, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt64", "UInt32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt32", "UInt32", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt16", "UInt32", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int64", "UInt32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int32", "UInt32", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int16", "UInt32", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Byte", "UInt32", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "SByte", "UInt32", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "string", "UInt32", true, null )]
+            [XmlWriterInlineData(2, "UInt64", "UInt32", false, null )]
+            [XmlWriterInlineData(2, "UInt32", "UInt32", true, null )]
+            [XmlWriterInlineData(2, "UInt16", "UInt32", true, null )]
+            [XmlWriterInlineData(2, "Int64", "UInt32", false, null )]
+            [XmlWriterInlineData(2, "Int32", "UInt32", true, null )]
+            [XmlWriterInlineData(2, "Int16", "UInt32", true, null )]
+            [XmlWriterInlineData(2, "Byte", "UInt32", true, null )]
+            [XmlWriterInlineData(2, "SByte", "UInt32", true, null )]
+            [XmlWriterInlineData(2, "string", "UInt32", true, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt64", "Int32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt32", "Int32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt16", "Int32", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int64", "Int32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int32", "Int32", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int16", "Int32", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Byte", "Int32", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "SByte", "Int32", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Single", "Int32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "XmlQualifiedName", "Int32", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "string", "Int32", true, null )]
+            [XmlWriterInlineData(2, "UInt64", "Int32", false, null )]
+            [XmlWriterInlineData(2, "UInt32", "Int32", false, null )]
+            [XmlWriterInlineData(2, "UInt16", "Int32", true, null )]
+            [XmlWriterInlineData(2, "Int64", "Int32", false, null )]
+            [XmlWriterInlineData(2, "Int32", "Int32", true, null )]
+            [XmlWriterInlineData(2, "Int16", "Int32", true, null )]
+            [XmlWriterInlineData(2, "Byte", "Int32", true, null )]
+            [XmlWriterInlineData(2, "SByte", "Int32", true, null )]
+            [XmlWriterInlineData(2, "Single", "Int32", false, null )]
+            [XmlWriterInlineData(2, "XmlQualifiedName", "Int32", false, null )]
+            [XmlWriterInlineData(2, "string", "Int32", true, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt64", "UInt16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt32", "UInt16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt16", "UInt16", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int64", "UInt16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int32", "UInt16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int16", "UInt16", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Byte", "UInt16", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "SByte", "UInt16", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Decimal", "UInt16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "float", "UInt16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "object", "UInt16", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "bool", "UInt16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "string", "UInt16", true, null )]
+            [XmlWriterInlineData(2, "UInt64", "UInt16", false, null )]
+            [XmlWriterInlineData(2, "UInt32", "UInt16", false, null )]
+            [XmlWriterInlineData(2, "UInt16", "UInt16", true, null )]
+            [XmlWriterInlineData(2, "Int64", "UInt16", false, null )]
+            [XmlWriterInlineData(2, "Int32", "UInt16", false, null )]
+            [XmlWriterInlineData(2, "Int16", "UInt16", true, null )]
+            [XmlWriterInlineData(2, "Byte", "UInt16", true, null )]
+            [XmlWriterInlineData(2, "SByte", "UInt16", true, null )]
+            [XmlWriterInlineData(2, "Decimal", "UInt16", false, null )]
+            [XmlWriterInlineData(2, "float", "UInt16", false, null )]
+            [XmlWriterInlineData(2, "object", "UInt16", true, null )]
+            [XmlWriterInlineData(2, "bool", "UInt16", false, null )]
+            [XmlWriterInlineData(2, "string", "UInt16", true, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt64", "Int16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt32", "Int16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt16", "Int16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int64", "Int16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int32", "Int16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int16", "Int16", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Byte", "Int16", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "SByte", "Int16", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Decimal", "Int16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "float", "Int16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "object", "Int16", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "bool", "Int16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "DateTime", "Int16", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "string", "Int16", true, null )]
+            [XmlWriterInlineData(2, "UInt64", "Int16", false, null )]
+            [XmlWriterInlineData(2, "UInt32", "Int16", false, null )]
+            [XmlWriterInlineData(2, "UInt16", "Int16", false, null )]
+            [XmlWriterInlineData(2, "Int64", "Int16", false, null )]
+            [XmlWriterInlineData(2, "Int32", "Int16", false, null )]
+            [XmlWriterInlineData(2, "Int16", "Int16", true, null )]
+            [XmlWriterInlineData(2, "Byte", "Int16", true, null )]
+            [XmlWriterInlineData(2, "SByte", "Int16", true, null )]
+            [XmlWriterInlineData(2, "Decimal", "Int16", false, null )]
+            [XmlWriterInlineData(2, "float", "Int16", false, null )]
+            [XmlWriterInlineData(2, "object", "Int16", true, null )]
+            [XmlWriterInlineData(2, "bool", "Int16", false, null )]
+            [XmlWriterInlineData(2, "DateTime", "Int16", false, null )]
+            [XmlWriterInlineData(2, "string", "Int16", true, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt64", "Byte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt32", "Byte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt16", "Byte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int64", "Byte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int32", "Byte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int16", "Byte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Byte", "Byte", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "SByte", "Byte", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "string", "Byte", true, null )]
+            [XmlWriterInlineData(2, "UInt64", "Byte", false, null )]
+            [XmlWriterInlineData(2, "UInt32", "Byte", false, null )]
+            [XmlWriterInlineData(2, "UInt16", "Byte", false, null )]
+            [XmlWriterInlineData(2, "Int64", "Byte", false, null )]
+            [XmlWriterInlineData(2, "Int32", "Byte", false, null )]
+            [XmlWriterInlineData(2, "Int16", "Byte", false, null )]
+            [XmlWriterInlineData(2, "Byte", "Byte", true, null )]
+            [XmlWriterInlineData(2, "SByte", "Byte", true, null )]
+            [XmlWriterInlineData(2, "string", "Byte", true, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt64", "SByte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt32", "SByte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt16", "SByte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int64", "SByte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int32", "SByte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Uri", "SByte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Double", "SByte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Single", "SByte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "XmlQualifiedName", "SByte", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "string", "SByte", true, null )]
+            [XmlWriterInlineData(2, "UInt64", "SByte", false, null )]
+            [XmlWriterInlineData(2, "UInt32", "SByte", false, null )]
+            [XmlWriterInlineData(2, "UInt16", "SByte", false, null )]
+            [XmlWriterInlineData(2, "Int64", "SByte", false, null )]
+            [XmlWriterInlineData(2, "Int32", "SByte", false, null )]
+            [XmlWriterInlineData(2, "Uri", "SByte", false, null )]
+            [XmlWriterInlineData(2, "Double", "SByte", false, null )]
+            [XmlWriterInlineData(2, "Single", "SByte", false, null )]
+            [XmlWriterInlineData(2, "XmlQualifiedName", "SByte", false, null )]
+            [XmlWriterInlineData(2, "string", "SByte", true, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt64", "Decimal", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt32", "Decimal", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt16", "Decimal", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int64", "Decimal", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int32", "Decimal", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int16", "Decimal", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Byte", "Decimal", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "SByte", "Decimal", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Decimal", "Decimal", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "float", "Decimal", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "object", "Decimal", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 21, "XmlQualifiedName", "Decimal", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "string", "Decimal", true, null )]
+            [XmlWriterInlineData(2, "UInt64", "Decimal", true, null )]
+            [XmlWriterInlineData(2, "UInt32", "Decimal", true, null )]
+            [XmlWriterInlineData(2, "UInt16", "Decimal", true, null )]
+            [XmlWriterInlineData(2, "Int64", "Decimal", true, null )]
+            [XmlWriterInlineData(2, "Int32", "Decimal", true, null )]
+            [XmlWriterInlineData(2, "Int16", "Decimal", true, null )]
+            [XmlWriterInlineData(2, "Byte", "Decimal", true, null )]
+            [XmlWriterInlineData(2, "SByte", "Decimal", true, null )]
+            [XmlWriterInlineData(2, "Decimal", "Decimal", true, null )]
+            [XmlWriterInlineData(2, "float", "Decimal", true, null )]
+            [XmlWriterInlineData(2, "object", "Decimal", true, null )]
+            [XmlWriterInlineData(21, "XmlQualifiedName", "Decimal", false, null )]
+            [XmlWriterInlineData(2, "string", "Decimal", true, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt64", "float", true, 1.844674E+19F )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt32", "float", true, 4.294967E+09F )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt16", "float", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int64", "float", true, 9.223372E+18F )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int32", "float", true, 2.147484E+09F )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int16", "float", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Byte", "float", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "SByte", "float", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Decimal", "float", true, 7.922816E+28F )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "float", "float", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "object", "float", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "bool", "float", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Single", "float", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "XmlQualifiedName", "float", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "string", "float", true, null )]
+            [XmlWriterInlineData(2, "UInt64", "float", true, 1.844674E+19F )]
+            [XmlWriterInlineData(2, "UInt32", "float", true, 4.294967E+09F )]
+            [XmlWriterInlineData(2, "UInt16", "float", true, null )]
+            [XmlWriterInlineData(2, "Int64", "float", true, 9.223372E+18F )]
+            [XmlWriterInlineData(2, "Int32", "float", true, 2.147484E+09F )]
+            [XmlWriterInlineData(2, "Int16", "float", true, null )]
+            [XmlWriterInlineData(2, "Byte", "float", true, null )]
+            [XmlWriterInlineData(2, "SByte", "float", true, null )]
+            [XmlWriterInlineData(2, "Decimal", "float", true, 7.922816E+28F )]
+            [XmlWriterInlineData(2, "float", "float", true, null )]
+            [XmlWriterInlineData(2, "object", "float", true, null )]
+            [XmlWriterInlineData(2, "bool", "float", false, null )]
+            [XmlWriterInlineData(2, "Single", "float", true, null )]
+            [XmlWriterInlineData(2, "XmlQualifiedName", "float", false, null )]
+            [XmlWriterInlineData(2, "string", "float", true, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt64", "bool", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt32", "bool", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "object", "bool", true, false )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "DateTime", "bool", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "DateTimeOffset", "bool", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "ByteArray", "bool", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "List", "bool", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "TimeSpan", "bool", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Uri", "bool", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Double", "bool", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Single", "bool", false, null )]
+            [XmlWriterInlineData(2, "UInt64", "bool", false, null )]
+            [XmlWriterInlineData(2, "UInt32", "bool", false, null )]
+            [XmlWriterInlineData(2, "object", "bool", true, false )]
+            [XmlWriterInlineData(2, "DateTime", "bool", false, null )]
+            [XmlWriterInlineData(2, "DateTimeOffset", "bool", false, null )]
+            [XmlWriterInlineData(2, "ByteArray", "bool", false, null )]
+            [XmlWriterInlineData(2, "List", "bool", false, null )]
+            [XmlWriterInlineData(2, "TimeSpan", "bool", false, null )]
+            [XmlWriterInlineData(2, "Uri", "bool", false, null )]
+            [XmlWriterInlineData(2, "Double", "bool", false, null )]
+            [XmlWriterInlineData(2, "Single", "bool", false, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "float", "DateTime", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "object", "DateTime", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "bool", "DateTime", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "ByteArray", "DateTime", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "List", "DateTime", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Uri", "DateTime", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Double", "DateTime", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Single", "DateTime", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "XmlQualifiedName", "DateTime", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "string", "DateTime", false, null )]
+            [XmlWriterInlineData(2, "float", "DateTime", false, null )]
+            [XmlWriterInlineData(2, "object", "DateTime", false, null )]
+            [XmlWriterInlineData(2, "bool", "DateTime", false, null )]
+            [XmlWriterInlineData(2, "ByteArray", "DateTime", false, null )]
+            [XmlWriterInlineData(2, "List", "DateTime", false, null )]
+            [XmlWriterInlineData(2, "Uri", "DateTime", false, null )]
+            [XmlWriterInlineData(2, "Double", "DateTime", false, null )]
+            [XmlWriterInlineData(2, "Single", "DateTime", false, null )]
+            [XmlWriterInlineData(2, "XmlQualifiedName", "DateTime", false, null )]
+            [XmlWriterInlineData(2, "string", "DateTime", false, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt64", "DateTimeOffset", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt32", "DateTimeOffset", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt16", "DateTimeOffset", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int64", "DateTimeOffset", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int32", "DateTimeOffset", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int16", "DateTimeOffset", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Byte", "DateTimeOffset", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "SByte", "DateTimeOffset", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Decimal", "DateTimeOffset", false, null )]
+            [XmlWriterInlineData(2, "UInt64", "DateTimeOffset", false, null )]
+            [XmlWriterInlineData(2, "UInt32", "DateTimeOffset", false, null )]
+            [XmlWriterInlineData(2, "UInt16", "DateTimeOffset", false, null )]
+            [XmlWriterInlineData(2, "Int64", "DateTimeOffset", false, null )]
+            [XmlWriterInlineData(2, "Int32", "DateTimeOffset", false, null )]
+            [XmlWriterInlineData(2, "Int16", "DateTimeOffset", false, null )]
+            [XmlWriterInlineData(2, "Byte", "DateTimeOffset", false, null )]
+            [XmlWriterInlineData(2, "SByte", "DateTimeOffset", false, null )]
+            [XmlWriterInlineData(2, "Decimal", "DateTimeOffset", false, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt64", "List", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt32", "List", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt16", "List", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int64", "List", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int32", "List", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int16", "List", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Byte", "List", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "SByte", "List", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Decimal", "List", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "float", "List", false, null )]
+            [XmlWriterInlineData(2, "UInt64", "List", false, null )]
+            [XmlWriterInlineData(2, "UInt32", "List", false, null )]
+            [XmlWriterInlineData(2, "UInt16", "List", false, null )]
+            [XmlWriterInlineData(2, "Int64", "List", false, null )]
+            [XmlWriterInlineData(2, "Int32", "List", false, null )]
+            [XmlWriterInlineData(2, "Int16", "List", false, null )]
+            [XmlWriterInlineData(2, "Byte", "List", false, null )]
+            [XmlWriterInlineData(2, "SByte", "List", false, null )]
+            [XmlWriterInlineData(2, "Decimal", "List", false, null )]
+            [XmlWriterInlineData(2, "float", "List", false, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt64", "Uri", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt32", "Uri", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt16", "Uri", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int64", "Uri", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int32", "Uri", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int16", "Uri", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Byte", "Uri", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "SByte", "Uri", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Decimal", "Uri", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "float", "Uri", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "object", "Uri", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "bool", "Uri", true, "False" )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Uri", "Uri", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Double", "Uri", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Single", "Uri", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "XmlQualifiedName", "Uri", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "string", "Uri", true, null )]
+            [XmlWriterInlineData(2, "UInt64", "Uri", true, null )]
+            [XmlWriterInlineData(2, "UInt32", "Uri", true, null )]
+            [XmlWriterInlineData(2, "UInt16", "Uri", true, null )]
+            [XmlWriterInlineData(2, "Int64", "Uri", true, null )]
+            [XmlWriterInlineData(2, "Int32", "Uri", true, null )]
+            [XmlWriterInlineData(2, "Int16", "Uri", true, null )]
+            [XmlWriterInlineData(2, "Byte", "Uri", true, null )]
+            [XmlWriterInlineData(2, "SByte", "Uri", true, null )]
+            [XmlWriterInlineData(2, "Decimal", "Uri", true, null )]
+            [XmlWriterInlineData(2, "float", "Uri", true, null )]
+            [XmlWriterInlineData(2, "object", "Uri", true, null )]
+            [XmlWriterInlineData(2, "bool", "Uri", true, "False" )]
+            [XmlWriterInlineData(2, "Uri", "Uri", true, null )]
+            [XmlWriterInlineData(2, "Double", "Uri", true, null )]
+            [XmlWriterInlineData(2, "Single", "Uri", true, null )]
+            [XmlWriterInlineData(2, "XmlQualifiedName", "Uri", true, null )]
+            [XmlWriterInlineData(2, "string", "Uri", true, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt64", "Double", true, 1.84467440737096E+19D )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt32", "Double", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt16", "Double", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int64", "Double", true, 9.22337203685478E+18D )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int32", "Double", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int16", "Double", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Byte", "Double", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "SByte", "Double", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Decimal", "Double", true, 7.92281625142643E+28D )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "float", "Double", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "object", "Double", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "bool", "Double", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Double", "Double", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Single", "Double", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "string", "Double", true, null )]
+            [XmlWriterInlineData(2, "UInt64", "Double", true, 1.84467440737096E+19D )]
+            [XmlWriterInlineData(2, "UInt32", "Double", true, null )]
+            [XmlWriterInlineData(2, "UInt16", "Double", true, null )]
+            [XmlWriterInlineData(2, "Int64", "Double", true, 9.22337203685478E+18D )]
+            [XmlWriterInlineData(2, "Int32", "Double", true, null )]
+            [XmlWriterInlineData(2, "Int16", "Double", true, null )]
+            [XmlWriterInlineData(2, "Byte", "Double", true, null )]
+            [XmlWriterInlineData(2, "SByte", "Double", true, null )]
+            [XmlWriterInlineData(2, "Decimal", "Double", true, 7.92281625142643E+28D )]
+            [XmlWriterInlineData(2, "float", "Double", true, null )]
+            [XmlWriterInlineData(2, "object", "Double", true, null )]
+            [XmlWriterInlineData(2, "bool", "Double", false, null )]
+            [XmlWriterInlineData(2, "Double", "Double", false, null )]
+            [XmlWriterInlineData(2, "Single", "Double", true, null )]
+            [XmlWriterInlineData(2, "string", "Double", true, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt64", "Single", true, 1.844674E+19F )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt32", "Single", true, 4.294967E+09F )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt16", "Single", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int64", "Single", true, 9.223372E+18F )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int32", "Single", true, 2.147484E+09F )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int16", "Single", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Byte", "Single", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "SByte", "Single", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Decimal", "Single", true, 7.922816E+28F )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "float", "Single", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "object", "Single", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "bool", "Single", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "DateTimeOffset", "Single", false, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Single", "Single", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "string", "Single", true, null )]
+            [XmlWriterInlineData(2, "UInt64", "Single", true, 1.844674E+19F )]
+            [XmlWriterInlineData(2, "UInt32", "Single", true, 4.294967E+09F )]
+            [XmlWriterInlineData(2, "UInt16", "Single", true, null )]
+            [XmlWriterInlineData(2, "Int64", "Single", true, 9.223372E+18F )]
+            [XmlWriterInlineData(2, "Int32", "Single", true, 2.147484E+09F )]
+            [XmlWriterInlineData(2, "Int16", "Single", true, null )]
+            [XmlWriterInlineData(2, "Byte", "Single", true, null )]
+            [XmlWriterInlineData(2, "SByte", "Single", true, null )]
+            [XmlWriterInlineData(2, "Decimal", "Single", true, 7.922816E+28F )]
+            [XmlWriterInlineData(2, "float", "Single", true, null )]
+            [XmlWriterInlineData(2, "object", "Single", true, null )]
+            [XmlWriterInlineData(2, "bool", "Single", false, null )]
+            [XmlWriterInlineData(2, "DateTimeOffset", "Single", false, null )]
+            [XmlWriterInlineData(2, "Single", "Single", true, null )]
+            [XmlWriterInlineData(2, "string", "Single", true, null )]
 
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UInt64", "object", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int32", "object", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Int16", "object", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Byte", "object", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "SByte", "object", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "Decimal", "object", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "float", "object", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "object", "object", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "bool", "object", true, "False" )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "XmlQualifiedName", "object", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "string", "object", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "ObjectArray", "ObjectArray", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "StringArray", "StringArray", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "UriArray", "UriArray", true, null )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2, "XmlQualifiedName", "XmlQualifiedName", true, null )]
+            [XmlWriterInlineData(2, "UInt64", "object", true, null )]
+            [XmlWriterInlineData(2, "Int32", "object", true, null )]
+            [XmlWriterInlineData(2, "Int16", "object", true, null )]
+            [XmlWriterInlineData(2, "Byte", "object", true, null )]
+            [XmlWriterInlineData(2, "SByte", "object", true, null )]
+            [XmlWriterInlineData(2, "Decimal", "object", true, null )]
+            [XmlWriterInlineData(2, "float", "object", true, null )]
+            [XmlWriterInlineData(2, "object", "object", true, null )]
+            [XmlWriterInlineData(2, "bool", "object", true, "False" )]
+            [XmlWriterInlineData(2, "XmlQualifiedName", "object", true, null )]
+            [XmlWriterInlineData(2, "string", "object", true, null )]
+            [XmlWriterInlineData(2, "ObjectArray", "ObjectArray", true, null )]
+            [XmlWriterInlineData(2, "StringArray", "StringArray", true, null )]
+            [XmlWriterInlineData(2, "UriArray", "UriArray", true, null )]
+            [XmlWriterInlineData(2, "XmlQualifiedName", "XmlQualifiedName", true, null )]
             public void writeValue_27(XmlWriterUtils utils, int param, string sourceStr, string destStr, bool isValid, object expVal)
             {
                 Type source = typeMapper[sourceStr];
@@ -4315,13 +4315,13 @@ namespace System.Xml.Tests
             }
 
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1)]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2)]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 3)]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 4)]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 6)]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 7)]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 9)]
+            [XmlWriterInlineData(1)]
+            [XmlWriterInlineData(2)]
+            [XmlWriterInlineData(3)]
+            [XmlWriterInlineData(4)]
+            [XmlWriterInlineData(6)]
+            [XmlWriterInlineData(7)]
+            [XmlWriterInlineData(9)]
             public void writeValue_28(XmlWriterUtils utils, int param)
             {
                 Tuple<Int32, String, Double> t = Tuple.Create(1, "Melitta", 7.5);
@@ -4397,8 +4397,8 @@ namespace System.Xml.Tests
             }
 
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1)]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 2)]
+            [XmlWriterInlineData(1)]
+            [XmlWriterInlineData(2)]
             public void writeValue_30(XmlWriterUtils utils, int param)
             {
                 using (XmlWriter w = utils.CreateWriter())
@@ -4420,13 +4420,13 @@ namespace System.Xml.Tests
             }
 
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom, "2002-12-30T00:00:00-08:00", "<Root>2002-12-30T00:00:00-08:00</Root>" )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom, "2000-02-29T23:59:59.999999999999-13:60", "<Root>2000-03-01T00:00:00-14:00</Root>" )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom, "0001-01-01T00:00:00+00:00", "<Root>0001-01-01T00:00:00Z</Root>" )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom, "0001-01-01T00:00:00.9999999-14:00", "<Root>0001-01-01T00:00:00.9999999-14:00</Root>" )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom, "9999-12-31T12:59:59.9999999+14:00", "<Root>9999-12-31T12:59:59.9999999+14:00</Root>" )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom, "9999-12-31T12:59:59-11:00", "<Root>9999-12-31T12:59:59-11:00</Root>" )]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom, "2000-02-29T23:59:59.999999999999+13:60", "<Root>2000-03-01T00:00:00+14:00</Root>" )]
+            [XmlWriterInlineData(WriterType.AllButCustom, "2002-12-30T00:00:00-08:00", "<Root>2002-12-30T00:00:00-08:00</Root>" )]
+            [XmlWriterInlineData(WriterType.AllButCustom, "2000-02-29T23:59:59.999999999999-13:60", "<Root>2000-03-01T00:00:00-14:00</Root>" )]
+            [XmlWriterInlineData(WriterType.AllButCustom, "0001-01-01T00:00:00+00:00", "<Root>0001-01-01T00:00:00Z</Root>" )]
+            [XmlWriterInlineData(WriterType.AllButCustom, "0001-01-01T00:00:00.9999999-14:00", "<Root>0001-01-01T00:00:00.9999999-14:00</Root>" )]
+            [XmlWriterInlineData(WriterType.AllButCustom, "9999-12-31T12:59:59.9999999+14:00", "<Root>9999-12-31T12:59:59.9999999+14:00</Root>" )]
+            [XmlWriterInlineData(WriterType.AllButCustom, "9999-12-31T12:59:59-11:00", "<Root>9999-12-31T12:59:59-11:00</Root>" )]
+            [XmlWriterInlineData(WriterType.AllButCustom, "2000-02-29T23:59:59.999999999999+13:60", "<Root>2000-03-01T00:00:00+14:00</Root>" )]
             public void writeValue_31(XmlWriterUtils utils, string value, string expectedValue)
             {
                 DateTimeOffset a = XmlConvert.ToDateTimeOffset(value);
@@ -4441,7 +4441,7 @@ namespace System.Xml.Tests
 
             //[Variation(Desc = "WriteValue(new DateTimeOffset) - valid", Pri = 2)]
             [Theory]
-            [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
+            [XmlWriterInlineData(WriterType.AllButCustom)]
             public void writeValue_32(XmlWriterUtils utils)
             {
                 DateTimeOffset actual;
@@ -4511,7 +4511,7 @@ namespace System.Xml.Tests
             {
                 //[Variation(id = 1, Desc = "LookupPrefix with null", Pri = 2)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void lookupPrefix_1(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -4535,7 +4535,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 2, Desc = "LookupPrefix with String.Empty should return String.Empty", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void lookupPrefix_2(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -4549,7 +4549,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 3, Desc = "LookupPrefix with generated namespace used for attributes", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void lookupPrefix_3(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -4565,7 +4565,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 4, Desc = "LookupPrefix for namespace used with element", Pri = 0)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void lookupPrefix_4(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -4579,7 +4579,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 5, Desc = "LookupPrefix for namespace used with attribute", Pri = 0)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void lookupPrefix_5(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -4594,7 +4594,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 6, Desc = "Lookup prefix for a default namespace", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void lookupPrefix_6(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -4609,7 +4609,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 7, Desc = "Lookup prefix for nested element with same namespace but different prefix", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void lookupPrefix_7(XmlWriterUtils utils)
                 {
                     string s = "";
@@ -4639,7 +4639,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 8, Desc = "Lookup prefix for multiple prefix associated with the same namespace", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void lookupPrefix_8(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -4654,7 +4654,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 9, Desc = "Lookup prefix for namespace defined outside the scope of an empty element and also defined in its parent", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void lookupPrefix_9(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -4671,7 +4671,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 10, Desc = "Bug 53940: Lookup prefix for namespace declared as default and also with a prefix", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void lookupPrefix_10(XmlWriterUtils utils)
                 {
                     string s;
@@ -4695,7 +4695,7 @@ namespace System.Xml.Tests
             {
                 //[Variation(id = 1, Desc = "Verify XmlSpace as Preserve", Pri = 0)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void xmlSpace_1(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -4709,7 +4709,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 2, Desc = "Verify XmlSpace as Default", Pri = 0)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void xmlSpace_2(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -4723,7 +4723,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 3, Desc = "Verify XmlSpace as None", Pri = 0)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void xmlSpace_3(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -4736,7 +4736,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 4, Desc = "Verify XmlSpace within an empty element", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void xmlSpace_4(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -4755,7 +4755,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 5, Desc = "Verify XmlSpace - scope with nested elements (both PROLOG and EPILOG)", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void xmlSpace_5(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -4789,7 +4789,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 6, Desc = "Verify XmlSpace - outside defined scope", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void xmlSpace_6(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -4808,7 +4808,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 7, Desc = "Verify XmlSpace with invalid space value", Pri = 0)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void xmlSpace_7(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -4832,7 +4832,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 8, Desc = "Duplicate xml:space attr should error", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void xmlSpace_8(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -4856,7 +4856,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 9, Desc = "Verify XmlSpace value when received through WriteString", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void xmlSpace_9(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -4878,7 +4878,7 @@ namespace System.Xml.Tests
             {
                 //[Variation(id = 1, Desc = "Verify XmlLang sanity test", Pri = 0)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void XmlLang_1(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -4897,7 +4897,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 2, Desc = "Verify that default value of XmlLang is NULL", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void XmlLang_2(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -4916,7 +4916,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 3, Desc = "Verify XmlLang scope inside nested elements (both PROLOG and EPILOG)", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void XmlLang_3(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -4949,7 +4949,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 4, Desc = "Duplicate xml:lang attr should error", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void XmlLang_4(XmlWriterUtils utils)
                 {
                     /*if (WriterType == WriterType.XmlTextWriter)
@@ -4976,7 +4976,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 5, Desc = "Verify XmlLang value when received through WriteAttributes", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void XmlLang_5(XmlWriterUtils utils)
                 {
                     XmlReaderSettings xrs = new XmlReaderSettings();
@@ -5006,7 +5006,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 6, Desc = "Verify XmlLang value when received through WriteString")]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void XmlLang_6(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -5024,7 +5024,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 7, Desc = "Should not check XmlLang value", Pri = 2)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void XmlLang_7(XmlWriterUtils utils)
                 {
                     string[] langs = new string[] { "en-", "e n", "en", "en-US", "e?", "en*US" };
@@ -5047,7 +5047,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 8, Desc = "More XmlLang with valid sequence", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void XmlLang_8(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -5064,7 +5064,7 @@ namespace System.Xml.Tests
             {
                 //[Variation(id = 1, Desc = "Call both WriteRaw Methods", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void writeRaw_1(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -5082,7 +5082,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 2, Desc = "WriteRaw with entites and entitized characters", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void writeRaw_2(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -5101,7 +5101,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 3, Desc = "WriteRaw with entire Xml Document in string", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void writeRaw_3(XmlWriterUtils utils)
                 {
                     XmlWriter w = utils.CreateWriter();
@@ -5115,7 +5115,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 4, Desc = "Call WriteRaw to write the value of xml:space")]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void writeRaw_4(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -5131,7 +5131,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 5, Desc = "Call WriteRaw to write the value of xml:lang", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void writerRaw_5(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -5151,7 +5151,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 6, Desc = "WriteRaw with count > buffer size", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void writeRaw_6(XmlWriterUtils utils)
                 {
                     VerifyInvalidWrite(utils, "WriteRaw", 5, 0, 6, typeof(ArgumentOutOfRangeException/*ArgumentException*/));
@@ -5159,7 +5159,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 7, Desc = "WriteRaw with count < 0", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void writeRaw_7(XmlWriterUtils utils)
                 {
                     VerifyInvalidWrite(utils, "WriteRaw", 5, 2, -1, typeof(ArgumentOutOfRangeException));
@@ -5167,7 +5167,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 8, Desc = "WriteRaw with index > buffer size", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void writeRaw_8(XmlWriterUtils utils)
                 {
                     VerifyInvalidWrite(utils, "WriteRaw", 5, 6, 1, typeof(ArgumentOutOfRangeException/*ArgumentException*/));
@@ -5175,7 +5175,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 9, Desc = "WriteRaw with index < 0", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void writeRaw_9(XmlWriterUtils utils)
                 {
                     VerifyInvalidWrite(utils, "WriteRaw", 5, -1, 1, typeof(ArgumentOutOfRangeException));
@@ -5183,7 +5183,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 10, Desc = "WriteRaw with index + count exceeds buffer", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void writeRaw_10(XmlWriterUtils utils)
                 {
                     VerifyInvalidWrite(utils, "WriteRaw", 5, 2, 5, typeof(ArgumentOutOfRangeException/*ArgumentException*/));
@@ -5191,7 +5191,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 11, Desc = "WriteRaw with buffer = null", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void writeRaw_11(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -5213,7 +5213,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 12, Desc = "WriteRaw with valid surrogate pair", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void writeRaw_12(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -5233,7 +5233,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 13, Desc = "WriteRaw with invalid surrogate pair", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void writeRaw_13(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -5256,7 +5256,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 14, Desc = "Index = Count = 0", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void writeRaw_14(XmlWriterUtils utils)
                 {
                     string lang = new String('a', 1);
@@ -5278,11 +5278,11 @@ namespace System.Xml.Tests
             {
                 // Base64LineSize = 76, test around this boundary size
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 75)]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 76)]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 77)]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 1024)]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, 4096)]
+                [XmlWriterInlineData(75)]
+                [XmlWriterInlineData(76)]
+                [XmlWriterInlineData(77)]
+                [XmlWriterInlineData(1024)]
+                [XmlWriterInlineData(4096)]
                 public void Base64_1(XmlWriterUtils utils, int strBase64Len)
                 {
                     String strBase64 = String.Empty;
@@ -5326,7 +5326,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 20, Desc = "WriteBase64 with count > buffer size", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void Base64_2(XmlWriterUtils utils)
                 {
                     VerifyInvalidWrite(utils, "WriteBase64", 5, 0, 6, typeof(ArgumentOutOfRangeException/*ArgumentException*/));
@@ -5334,7 +5334,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 30, Desc = "WriteBase64 with count < 0", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void Base64_3(XmlWriterUtils utils)
                 {
                     VerifyInvalidWrite(utils, "WriteBase64", 5, 2, -1, typeof(ArgumentOutOfRangeException));
@@ -5342,7 +5342,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 40, Desc = "WriteBase64 with index > buffer size", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void Base64_4(XmlWriterUtils utils)
                 {
                     VerifyInvalidWrite(utils, "WriteBase64", 5, 5, 1, typeof(ArgumentOutOfRangeException/*ArgumentException*/));
@@ -5350,7 +5350,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 50, Desc = "WriteBase64 with index < 0", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void Base64_5(XmlWriterUtils utils)
                 {
                     VerifyInvalidWrite(utils, "WriteBase64", 5, -1, 1, typeof(ArgumentOutOfRangeException));
@@ -5358,7 +5358,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 60, Desc = "WriteBase64 with index + count exceeds buffer", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void Base64_6(XmlWriterUtils utils)
                 {
                     VerifyInvalidWrite(utils, "WriteBase64", 5, 2, 5, typeof(ArgumentOutOfRangeException/*ArgumentException*/));
@@ -5366,7 +5366,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 70, Desc = "WriteBase64 with buffer = null", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void Base64_7(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -5388,7 +5388,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 80, Desc = "Index = Count = 0", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void Base64_8(XmlWriterUtils utils)
                 {
                     byte[] buffer = new byte[10];
@@ -5404,9 +5404,9 @@ namespace System.Xml.Tests
                 }
 
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "lang")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "space")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "ns")]
+                [XmlWriterInlineData("lang")]
+                [XmlWriterInlineData("space")]
+                [XmlWriterInlineData("ns")]
                 public void Base64_9(XmlWriterUtils utils, string param)
                 {
                     byte[] buffer = new byte[10];
@@ -5442,7 +5442,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 94, Desc = "WriteBase64 should flush the buffer if WriteString is called", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void Base64_11(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -5465,7 +5465,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 95, Desc = "XmlWriter.WriteBase64 inserts new lines where they should not be...", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void Base64_12(XmlWriterUtils utils)
                 {
                     byte[][] byteArrays = new byte[][]
@@ -5600,7 +5600,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 96, Desc = "XmlWriter does not flush Base64 data on the Close", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.All & ~WriterType.Async)]
+                [XmlWriterInlineData(WriterType.All & ~WriterType.Async)]
                 public void Base64_13(XmlWriterUtils utils)
                 {
                     byte[] data = new byte[] { 60, 65, 47, 62 }; // <A/>
@@ -5623,7 +5623,7 @@ namespace System.Xml.Tests
             {
                 //[Variation(id = 1, Desc = "Call WriteBinHex with correct byte, index, and count", Pri = 0)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void BinHex_1(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -5640,7 +5640,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 2, Desc = "WriteBinHex with count > buffer size", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void BinHex_2(XmlWriterUtils utils)
                 {
                     VerifyInvalidWrite(utils, "WriteBinHex", 5, 0, 6, typeof(ArgumentOutOfRangeException/*ArgumentException*/));
@@ -5648,7 +5648,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 3, Desc = "WriteBinHex with count < 0", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void BinHex_3(XmlWriterUtils utils)
                 {
                     VerifyInvalidWrite(utils, "WriteBinHex", 5, 2, -1, typeof(ArgumentOutOfRangeException));
@@ -5656,7 +5656,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 4, Desc = "WriteBinHex with index > buffer size", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void BinHex_4(XmlWriterUtils utils)
                 {
                     VerifyInvalidWrite(utils, "WriteBinHex", 5, 5, 1, typeof(ArgumentOutOfRangeException/*ArgumentException*/));
@@ -5664,7 +5664,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 5, Desc = "WriteBinHex with index < 0", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void BinHex_5(XmlWriterUtils utils)
                 {
                     VerifyInvalidWrite(utils, "WriteBinHex", 5, -1, 1, typeof(ArgumentOutOfRangeException));
@@ -5672,7 +5672,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 6, Desc = "WriteBinHex with index + count exceeds buffer", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void BinHex_6(XmlWriterUtils utils)
                 {
                     VerifyInvalidWrite(utils, "WriteBinHex", 5, 2, 5, typeof(ArgumentOutOfRangeException/*ArgumentException*/));
@@ -5680,7 +5680,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 7, Desc = "WriteBinHex with buffer = null", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void BinHex_7(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -5709,7 +5709,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 8, Desc = "Index = Count = 0", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void BinHex_8(XmlWriterUtils utils)
                 {
                     byte[] buffer = new byte[10];
@@ -5726,7 +5726,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 9, Desc = "Call WriteBinHex as an attribute value", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void BinHex_9(XmlWriterUtils utils)
                 {
                     String strBinHex = "abc";
@@ -5749,7 +5749,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 10, Desc = "Call WriteBinHex and verify results can be read as a string", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void BinHex_10(XmlWriterUtils utils)
                 {
                     String strBinHex = "abc";
@@ -5775,7 +5775,7 @@ namespace System.Xml.Tests
             {
                 //[Variation(id = 1, Desc = "Verify WriteState.Start when nothing has been written yet", Pri = 0)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void writeState_1(XmlWriterUtils utils)
                 {
                     XmlWriter w = utils.CreateWriter();
@@ -5793,7 +5793,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 2, Desc = "Verify correct state when writing in Prolog", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void writeState_2(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -5810,7 +5810,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 3, Desc = "Verify correct state when writing an attribute", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void writeState_3(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -5827,7 +5827,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 4, Desc = "Verify correct state when writing element content", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void writeState_4(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -5842,7 +5842,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 5, Desc = "Verify correct state after Close has been called", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void writeState_5(XmlWriterUtils utils)
                 {
                     XmlWriter w = utils.CreateWriter();
@@ -5855,7 +5855,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 6, Desc = "Verify WriteState = Error after an exception", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void writeState_6(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -5875,31 +5875,31 @@ namespace System.Xml.Tests
                 }
 
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteStartDocument")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteStartElement")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteEndElement")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteStartAttribute")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteEndAttribute")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteCData")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteComment")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WritePI")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteEntityRef")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteCharEntity")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteSurrogateCharEntity")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteWhitespace")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteString")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteChars")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteRaw")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteBase64")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteBinHex")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "LookupPrefix")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteNmToken")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteName")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteQualifiedName")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteValue")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteAttributes")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteNodeReader")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "Flush")]
+                [XmlWriterInlineData("WriteStartDocument")]
+                [XmlWriterInlineData("WriteStartElement")]
+                [XmlWriterInlineData("WriteEndElement")]
+                [XmlWriterInlineData("WriteStartAttribute")]
+                [XmlWriterInlineData("WriteEndAttribute")]
+                [XmlWriterInlineData("WriteCData")]
+                [XmlWriterInlineData("WriteComment")]
+                [XmlWriterInlineData("WritePI")]
+                [XmlWriterInlineData("WriteEntityRef")]
+                [XmlWriterInlineData("WriteCharEntity")]
+                [XmlWriterInlineData("WriteSurrogateCharEntity")]
+                [XmlWriterInlineData("WriteWhitespace")]
+                [XmlWriterInlineData("WriteString")]
+                [XmlWriterInlineData("WriteChars")]
+                [XmlWriterInlineData("WriteRaw")]
+                [XmlWriterInlineData("WriteBase64")]
+                [XmlWriterInlineData("WriteBinHex")]
+                [XmlWriterInlineData("LookupPrefix")]
+                [XmlWriterInlineData("WriteNmToken")]
+                [XmlWriterInlineData("WriteName")]
+                [XmlWriterInlineData("WriteQualifiedName")]
+                [XmlWriterInlineData("WriteValue")]
+                [XmlWriterInlineData("WriteAttributes")]
+                [XmlWriterInlineData("WriteNodeReader")]
+                [XmlWriterInlineData("Flush")]
                 public void writeState_7(XmlWriterUtils utils, string methodName)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -5952,8 +5952,8 @@ namespace System.Xml.Tests
                 }
 
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "XmlSpace")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "XmlLang")]
+                [XmlWriterInlineData("XmlSpace")]
+                [XmlWriterInlineData("XmlLang")]
                 public void writeState_8(XmlWriterUtils utils, string what)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -5981,31 +5981,31 @@ namespace System.Xml.Tests
                 }
 
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteStartDocument")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteStartElement")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteEndElement")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteStartAttribute")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteEndAttribute")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteCData")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteComment")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WritePI")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteEntityRef")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteCharEntity")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteSurrogateCharEntity")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteWhitespace")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteString")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteChars")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteRaw")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteBase64")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteBinHex")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "LookupPrefix")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteNmToken")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteName")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteQualifiedName")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteValue")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteAttributes")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "WriteNodeReader")]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "Flush")]
+                [XmlWriterInlineData("WriteStartDocument")]
+                [XmlWriterInlineData("WriteStartElement")]
+                [XmlWriterInlineData("WriteEndElement")]
+                [XmlWriterInlineData("WriteStartAttribute")]
+                [XmlWriterInlineData("WriteEndAttribute")]
+                [XmlWriterInlineData("WriteCData")]
+                [XmlWriterInlineData("WriteComment")]
+                [XmlWriterInlineData("WritePI")]
+                [XmlWriterInlineData("WriteEntityRef")]
+                [XmlWriterInlineData("WriteCharEntity")]
+                [XmlWriterInlineData("WriteSurrogateCharEntity")]
+                [XmlWriterInlineData("WriteWhitespace")]
+                [XmlWriterInlineData("WriteString")]
+                [XmlWriterInlineData("WriteChars")]
+                [XmlWriterInlineData("WriteRaw")]
+                [XmlWriterInlineData("WriteBase64")]
+                [XmlWriterInlineData("WriteBinHex")]
+                [XmlWriterInlineData("LookupPrefix")]
+                [XmlWriterInlineData("WriteNmToken")]
+                [XmlWriterInlineData("WriteName")]
+                [XmlWriterInlineData("WriteQualifiedName")]
+                [XmlWriterInlineData("WriteValue")]
+                [XmlWriterInlineData("WriteAttributes")]
+                [XmlWriterInlineData("WriteNodeReader")]
+                [XmlWriterInlineData("Flush")]
                 public void writeState_9(XmlWriterUtils utils, string methodName)
                 {
                     XmlWriter w = utils.CreateWriter();
@@ -6144,7 +6144,7 @@ namespace System.Xml.Tests
             {
                 //[Variation(id = 1, Desc = "WriteElementString(prefix, name, ns, value) sanity test", Pri = 0)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void var_1(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -6156,7 +6156,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 2, Desc = "WriteElementString(prefix = xml, ns = XML namespace)", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void var_2(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -6168,7 +6168,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 3, Desc = "WriteStartAttribute(string name) sanity test", Pri = 0)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void var_3(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -6182,7 +6182,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 4, Desc = "WriteElementString followed by attribute should error", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void var_4(XmlWriterUtils utils)
                 {
                     using (XmlWriter w = utils.CreateWriter())
@@ -6203,7 +6203,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 5, Desc = "XmlWellformedWriter wrapping another XmlWriter should check the duplicate attributes first", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.All & ~WriterType.Async)]
+                [XmlWriterInlineData(WriterType.All & ~WriterType.Async)]
                 public void var_5(XmlWriterUtils utils)
                 {
                     using (XmlWriter wf = utils.CreateWriter())
@@ -6226,8 +6226,8 @@ namespace System.Xml.Tests
                 }
 
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, true)]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, false)]
+                [XmlWriterInlineData(true)]
+                [XmlWriterInlineData(false)]
                 public void var_6a(XmlWriterUtils utils, bool standalone)
                 {
                     XmlWriterSettings ws = new XmlWriterSettings();
@@ -6249,7 +6249,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 8, Desc = "Wrapped XmlWriter::WriteStartDocument(true) is missing standalone attribute", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.All & ~WriterType.Async)]
+                [XmlWriterInlineData(WriterType.All & ~WriterType.Async)]
                 public void var_6b(XmlWriterUtils utils)
                 {
                     XmlWriterSettings ws = new XmlWriterSettings();
@@ -6278,7 +6278,7 @@ namespace System.Xml.Tests
             {
                 //[Variation(id = 1, Desc = "Characters between 0xdfff and 0xfffe are valid Unicode characters", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void var_1(XmlWriterUtils utils)
                 {
                     string UniStr = "";
@@ -6324,7 +6324,7 @@ namespace System.Xml.Tests
             {
                 //[Variation(id = 1, Desc = "Closing an XmlWriter should close all opened elements", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void var_1(XmlWriterUtils utils)
                 {
                     using (XmlWriter writer = utils.CreateWriter())
@@ -6338,7 +6338,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 2, Desc = "Disposing an XmlWriter should close all opened elements", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void var_2(XmlWriterUtils utils)
                 {
                     using (XmlWriter writer = utils.CreateWriter())
@@ -6352,7 +6352,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 3, Desc = "Dispose() shouldn't throw when a tag is not closed and inner stream is closed", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.All & ~WriterType.Async)]
+                [XmlWriterInlineData(WriterType.All & ~WriterType.Async)]
                 public void var_3(XmlWriterUtils utils)
                 {
                     XmlWriter w;
@@ -6409,7 +6409,7 @@ namespace System.Xml.Tests
 
                 //[Variation(id = 4, Desc = "Close() should be allowed when XML doesn't have content", Pri = 1)]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void var_4(XmlWriterUtils utils)
                 {
                     XmlWriter w = utils.CreateWriter();
@@ -6432,7 +6432,7 @@ namespace System.Xml.Tests
                 }
 
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.UnicodeWriterIndent | WriterType.UTF8WriterIndent)]
+                [XmlWriterInlineData(WriterType.UnicodeWriterIndent | WriterType.UTF8WriterIndent)]
                 public void SettingIndetingAllowsIndentingWhileWritingBase64(XmlWriterUtils utils)
                 {
                     string base64test = "abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyz";
@@ -6479,7 +6479,7 @@ namespace System.Xml.Tests
 
                 //[Variation("WriteState returns Content even though document element has been closed")]
                 [Theory]
-                [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+                [XmlWriterInlineData]
                 public void WriteStateReturnsContentAfterDocumentClosed(XmlWriterUtils utils)
                 {
                     XmlWriter xw = utils.CreateWriter();

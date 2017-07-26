@@ -120,7 +120,7 @@ namespace System.Xml.Tests
         /*================== Constructors ==================*/
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom)]
         public void EOF_Handling_01(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -132,9 +132,9 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None)]
         public void EOF_Handling_02(XmlWriterUtils utils, NewLineHandling nlHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -151,9 +151,9 @@ namespace System.Xml.Tests
         /*================== Verification in Text Nodes ==================*/
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None)]
         public void EOF_Handling_03(XmlWriterUtils utils, NewLineHandling nlHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -170,9 +170,9 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None)]
         public void EOF_Handling_04(XmlWriterUtils utils, NewLineHandling nlHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -198,9 +198,9 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None)]
         public void EOF_Handling_05(XmlWriterUtils utils, NewLineHandling nlHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -245,9 +245,9 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None)]
         public void EOF_Handling_06(XmlWriterUtils utils, NewLineHandling nlHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -273,9 +273,9 @@ namespace System.Xml.Tests
         /*================== Verification in Attributes ==================*/
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None)]
         public void EOF_Handling_07(XmlWriterUtils utils, NewLineHandling nlHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -294,9 +294,9 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None)]
         public void EOF_Handling_08(XmlWriterUtils utils, NewLineHandling nlHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -324,9 +324,9 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None)]
         public void EOF_Handling_09(XmlWriterUtils utils, NewLineHandling nlHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -373,9 +373,9 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None)]
         public void EOF_Handling_10(XmlWriterUtils utils, NewLineHandling nlHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -403,9 +403,9 @@ namespace System.Xml.Tests
         /*================== NewLineChars, IndentChars ==================*/
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None)]
         public void EOF_Handling_11(XmlWriterUtils utils, NewLineHandling nlHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -428,15 +428,15 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize, "\r", "  " )]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace, "\r", "  " )]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None, "\r", "  " )]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize, "&#xA;", "  " )]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace, "&#xA;", "  " )]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None, "&#xA;", "  " )]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize, "\r", "\n" )]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace, "\r", "\n" )]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None, "\r", "\n" )]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize, "\r", "  " )]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace, "\r", "  " )]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None, "\r", "  " )]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize, "&#xA;", "  " )]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace, "&#xA;", "  " )]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None, "&#xA;", "  " )]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize, "\r", "\n" )]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace, "\r", "\n" )]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None, "\r", "\n" )]
         public void EOF_Handling_13(XmlWriterUtils utils, NewLineHandling nlHandling, string newLineChars, string indentChars)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -461,15 +461,15 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize, "\r\n" )]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace, "\r\n" )]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None, "\r\n" )]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize, "\r" )]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace, "\r" )]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None, "\r" )]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize, "---" )]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace, "---" )]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None, "---" )]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize, "\r\n" )]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace, "\r\n" )]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None, "\r\n" )]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize, "\r" )]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace, "\r" )]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None, "\r" )]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize, "---" )]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace, "---" )]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None, "---" )]
         public void EOF_Handling_14(XmlWriterUtils utils, NewLineHandling nlHandling, string newLineChars)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -490,15 +490,15 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize, "\r\n" )]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace, "\r\n" )]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None, "\r\n" )]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize, "\r" )]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace, "\r" )]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None, "\r" )]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize, "---" )]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace, "---" )]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None, "---" )]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize, "\r\n" )]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace, "\r\n" )]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None, "\r\n" )]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize, "\r" )]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace, "\r" )]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None, "\r" )]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize, "---" )]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace, "---" )]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None, "---" )]
         public void EOF_Handling_15(XmlWriterUtils utils, NewLineHandling nlHandling, string newLineChars)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -517,15 +517,15 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize, "\r\n")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace, "\r\n")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None, "\r\n")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize, "\r")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace, "\r")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None, "\r")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize, "---")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace, "---")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None, "---")]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize, "\r\n")]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace, "\r\n")]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None, "\r\n")]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize, "\r")]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace, "\r")]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None, "\r")]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize, "---")]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace, "---")]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None, "---")]
         public void EOF_Handling_16(XmlWriterUtils utils, NewLineHandling nlHandling, string newLineChars)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -550,9 +550,9 @@ namespace System.Xml.Tests
         /*================== Other types of nodes ==================*/
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NewLineHandling.Entitize)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NewLineHandling.Replace)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NewLineHandling.None)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NewLineHandling.Entitize)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NewLineHandling.Replace)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NewLineHandling.None)]
         public void EOF_Handling_17(XmlWriterUtils utils, NewLineHandling nlHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -581,15 +581,15 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize, "\r\n")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace, "\r\n")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None, "\r\n")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize, "\r")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace, "\r")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None, "\r")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize, "---")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace, "---")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None, "---")]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize, "\r\n")]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace, "\r\n")]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None, "\r\n")]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize, "\r")]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace, "\r")]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None, "\r")]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize, "---")]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace, "---")]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None, "---")]
         public void EOF_Handling_18(XmlWriterUtils utils, NewLineHandling nlHandling, string newLineChars)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -616,9 +616,9 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NewLineHandling.Entitize)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NewLineHandling.Replace)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NewLineHandling.None)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NewLineHandling.Entitize)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NewLineHandling.Replace)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NewLineHandling.None)]
         public void EOF_Handling_19(XmlWriterUtils utils, NewLineHandling nlHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -652,18 +652,18 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, 1)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, 2)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, 3)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, 4)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, 5)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, 6)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, 7)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, 8)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, 9)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, 10)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, 11)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, 12)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, 1)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, 2)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, 3)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, 4)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, 5)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, 6)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, 7)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, 8)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, 9)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, 10)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, 11)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, 12)]
         public void EOF_Handling_20(XmlWriterUtils utils, int param)
         {
             XmlWriterSettings ws = new XmlWriterSettings();
@@ -686,12 +686,12 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize, "\uD800\uDC00", "\uD800\uDC00" )]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace, "\uD800\uDC00", "\uD800\uDC00" )]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None, "\uD800\uDC00", "\uD800\uDC00" )]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize, "&lt;&gt;", "&lt;&gt;" )]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace, "&lt;&gt;", "&lt;&gt;" )]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None, "&lt;&gt;", "&lt;&gt;" )]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize, "\uD800\uDC00", "\uD800\uDC00" )]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace, "\uD800\uDC00", "\uD800\uDC00" )]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None, "\uD800\uDC00", "\uD800\uDC00" )]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize, "&lt;&gt;", "&lt;&gt;" )]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace, "&lt;&gt;", "&lt;&gt;" )]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None, "&lt;&gt;", "&lt;&gt;" )]
         public void EOF_Handling_21(XmlWriterUtils utils, NewLineHandling nlHandling, string newLineChars, string indentChars)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -715,9 +715,9 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Entitize)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.Replace)]
+        [XmlWriterInlineData(~WriterType.Async & WriterType.AllButCustom, NewLineHandling.None)]
         public void EOF_Handling_22(XmlWriterUtils utils, NewLineHandling nlHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();

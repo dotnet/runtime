@@ -12,7 +12,7 @@ namespace System.Xml.Tests
     {
         //[Variation(id = 1, Desc = "Sanity test for WriteAttribute", Pri = 0)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void attribute_1(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -28,7 +28,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 2, Desc = "Missing EndAttribute should be fixed", Pri = 0)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void attribute_2(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -42,7 +42,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 3, Desc = "WriteStartAttribute followed by WriteStartAttribute", Pri = 0)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void attribute_3(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -57,7 +57,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 4, Desc = "Multiple WritetAttributeString", Pri = 0)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void attribute_4(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -72,7 +72,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 5, Desc = "WriteStartAttribute followed by WriteString", Pri = 0)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void attribute_5(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -87,7 +87,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 6, Desc = "Sanity test for overload WriteStartAttribute(name, ns)", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void attribute_6(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -102,7 +102,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 7, Desc = "Sanity test for overload WriteStartAttribute(prefix, name, ns)", Pri = 0)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void attribute_7(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -117,7 +117,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 8, Desc = "DCR 64183: Duplicate attribute 'attr1'", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void attribute_8(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -141,7 +141,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 9, Desc = "Duplicate attribute 'ns1:attr1'", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void attribute_9(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -165,7 +165,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 10, Desc = "Attribute name = String.Empty should error", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void attribute_10(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -188,7 +188,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 11, Desc = "Attribute name = null", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void attribute_11(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -211,7 +211,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 12, Desc = "WriteAttribute with names Foo, fOo, foO, FOO", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void attribute_12(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -229,7 +229,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 13, Desc = "Invalid value of xml:space", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void attribute_13(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -252,7 +252,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 14, Desc = "SingleQuote in attribute value should be allowed")]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void attribute_14(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -266,7 +266,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 15, Desc = "DoubleQuote in attribute value should be escaped")]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void attribute_15(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -280,7 +280,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 16, Desc = "WriteAttribute with value = &, #65, #x20", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void attribute_16(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -296,7 +296,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 17, Desc = "WriteAttributeString followed by WriteString", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void attribute_17(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -311,7 +311,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 18, Desc = "WriteAttribute followed by WriteString", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void attribute_18(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -326,7 +326,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 19, Desc = "WriteAttribute with all whitespace characters", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void attribute_19(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -341,7 +341,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 20, Desc = "< > & chars should be escaped in attribute value", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void attribute_20(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -355,7 +355,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 21, Desc = "Redefine auto generated prefix n1")]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void attribute_21(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -376,7 +376,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 22, Desc = "Reuse and redefine existing prefix")]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void attribute_22(XmlWriterUtils utils)
         {
             string exp = "<test ~f p a~:a1=\"v\" xmlns:~f p A~=\"ns1\"><base ~f p b~:a2=\"v\" ~a p4 ab~:a3=\"v\" xmlns:~a p4 AB~=\"ns2\" /></test>";
@@ -398,7 +398,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 23, Desc = "WriteStartAttribute(attr) sanity test")]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void attribute_23(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -413,7 +413,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 24, Desc = "WriteStartAttribute(attr) inside an element with changed default namespace")]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void attribute_24(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -428,7 +428,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 25, Desc = "WriteStartAttribute(attr) and duplicate attrs")]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void attribute_25(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -451,7 +451,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 26, Desc = "WriteStartAttribute(attr) when element has ns:attr")]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void attribute_26(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -466,7 +466,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 27, Desc = "XmlCharCheckingWriter should not normalize newLines in attribute values when NewLinesHandling = Replace")]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void attribute_27(XmlWriterUtils utils)
         {
             XmlWriterSettings s = new XmlWriterSettings();
@@ -483,7 +483,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 28, Desc = "Wrapped XmlTextWriter: Invalid replacement of newline characters in text values")]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void attribute_28(XmlWriterUtils utils)
         {
             XmlWriterSettings s = new XmlWriterSettings();
@@ -501,7 +501,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 29, Desc = "WriteAttributeString doesn't fail on invalid surrogate pair sequences")]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void attribute_29(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
