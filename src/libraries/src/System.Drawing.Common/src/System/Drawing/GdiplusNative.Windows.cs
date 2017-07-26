@@ -1,4 +1,9 @@
-﻿using System.Drawing.Drawing2D;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using Microsoft.Win32.SafeHandles;
+using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Internal;
 using System.Drawing.Text;
@@ -11,13 +16,15 @@ namespace System.Drawing
     {
         internal partial class Gdip
         {
-            [DllImport("kernel32")]
-            private static extern IntPtr LoadLibrary(string fileName);
-            [DllImport("kernel32")]
-            private static extern IntPtr GetProcAddress(IntPtr module, string procName);
+            private static SafeLibraryHandle s_gdipHandle;
 
-            private static IntPtr LoadNativeLibrary() => LoadLibrary("gdiplus.dll");
-            private static IntPtr LoadFunctionPointer(IntPtr nativeLibraryHandle, string functionName) => GetProcAddress(nativeLibraryHandle, functionName);
+            private static IntPtr LoadNativeLibrary()
+            {
+                s_gdipHandle = Interop.Kernel32.LoadLibraryExW("gdiplus.dll", IntPtr.Zero, 0);
+                return s_gdipHandle.DangerousGetHandle();
+            }
+
+            private static IntPtr LoadFunctionPointer(IntPtr nativeLibraryHandle, string functionName) => Interop.Kernel32.GetProcAddress(nativeLibraryHandle, functionName);
 
             private static void LoadPlatformFunctionPointers()
             {
