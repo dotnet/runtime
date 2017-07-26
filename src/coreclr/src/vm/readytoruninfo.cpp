@@ -348,9 +348,7 @@ BOOL ReadyToRunInfo::IsReadyToRunEnabled()
     WRAPPER_NO_CONTRACT;
 
     static ConfigDWORD configReadyToRun;
-    return configReadyToRun.val(CLRConfig::EXTERNAL_ReadyToRun) && 
-            !(CORProfilerDisableAllNGenImages()) && 
-            !(CORProfilerUseProfileImages());
+    return configReadyToRun.val(CLRConfig::EXTERNAL_ReadyToRun);
 }
 
 // A log file to record success/failure of R2R loads. s_r2rLogFile can have the following values:
@@ -482,6 +480,12 @@ PTR_ReadyToRunInfo ReadyToRunInfo::Initialize(Module * pModule, AllocMemTracker 
     {
         // Log message is ignored in this case.
         DoLog(NULL);
+        return NULL;
+    }
+
+    if (CORProfilerDisableAllNGenImages() || CORProfilerUseProfileImages())
+    {
+        DoLog("Ready to Run disabled - profiler disabled native images");
         return NULL;
     }
 
