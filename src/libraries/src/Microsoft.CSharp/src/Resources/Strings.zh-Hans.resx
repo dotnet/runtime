@@ -321,12 +321,6 @@
   <data name="BadInstanceArgType" xml:space="preserve">
     <value>实例参数: 无法从“{0}”转换为“{1}”</value>
   </data>
-  <data name="BadArgTypesForCollectionAdd" xml:space="preserve">
-    <value>集合初始值设定项的最佳重载 Add 方法“{0}”具有一些无效参数</value>
-  </data>
-  <data name="InitializerAddHasParamModifiers" xml:space="preserve">
-    <value>无法使用集合初始值设定项元素的最佳重载方法匹配项“{0}”。集合初始值设定项“Add”方法不能具有 ref 或 out 参数。</value>
-  </data>
   <data name="NonInvocableMemberCalled" xml:space="preserve">
     <value>不可调用的成员“{0}”不能像方法一样使用。</value>
   </data>

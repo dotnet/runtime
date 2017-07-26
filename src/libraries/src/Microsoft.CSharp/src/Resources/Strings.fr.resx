@@ -321,12 +321,6 @@
   <data name="BadInstanceArgType" xml:space="preserve">
     <value>Argument d'instance : impossible de convertir '{0}' en '{1}'</value>
   </data>
-  <data name="BadArgTypesForCollectionAdd" xml:space="preserve">
-    <value>La méthode Add surchargée '{0}' correspondant le mieux à l'initialiseur de collection a des arguments non valides</value>
-  </data>
-  <data name="InitializerAddHasParamModifiers" xml:space="preserve">
-    <value>La méthode surchargée '{0}' correspondant le mieux à l'élément de l'initialiseur de collection ne peut pas être utilisée. Les méthodes 'Add' de l'initialiseur de collection ne peuvent pas avoir de paramètres ref ou out.</value>
-  </data>
   <data name="NonInvocableMemberCalled" xml:space="preserve">
     <value>Impossible d'utiliser un membre '{0}' ne pouvant pas être appelé comme une méthode.</value>
   </data>

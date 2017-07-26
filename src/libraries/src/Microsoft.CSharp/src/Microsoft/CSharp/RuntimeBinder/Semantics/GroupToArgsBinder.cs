@@ -45,7 +45,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             private int _nWrongCount;
             private bool _bIterateToEndOfNsList;               // we have found an appliacable extension method only itereate to 
             // end of current namespaces extension method list
-            private bool _bBindingCollectionAddArgs;           // Report parameter modifiers as error 
             private readonly GroupToArgsBinderResult _results;
             private readonly List<CandidateFunctionMember> _methList;
             private readonly MethPropWithInst _mpwiParamTypeConstraints;
@@ -84,7 +83,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 _nArgBest = -1;
                 _nWrongCount = 0;
                 _bIterateToEndOfNsList = false;
-                _bBindingCollectionAddArgs = false;
                 _results = new GroupToArgsBinderResult();
                 _methList = new List<CandidateFunctionMember>();
                 _mpwiParamTypeConstraints = new MethPropWithInst();
@@ -122,11 +120,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return _results;
             }
 
-            public bool BindCollectionAddArgs()
-            {
-                _bBindingCollectionAddArgs = true;
-                return Bind(true /* bReportErrors */);
-            }
             private SymbolLoader GetSymbolLoader()
             {
                 return _pExprBinder.GetSymbolLoader();
@@ -1450,14 +1443,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return;
                 }
 
-                if (_bBindingCollectionAddArgs)
-                {
-                    if (ReportErrorsForCollectionAdd())
-                    {
-                        return;
-                    }
-                }
-
                 if (bUseDelegateErrors)
                 {
                     // Point to the Delegate, not the Invoke method
@@ -1468,10 +1453,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     if (_results.GetBestResult().Sym is MethodSymbol methSym && methSym.IsExtension() && _pGroup.OptionalObject != null)
                     {
                         GetErrorContext().Error(ErrorCode.ERR_BadExtensionArgTypes, _pGroup.OptionalObject.Type, _pGroup.Name, _results.GetBestResult().Sym);
-                    }
-                    else if (_bBindingCollectionAddArgs)
-                    {
-                        GetErrorContext().Error(ErrorCode.ERR_BadArgTypesForCollectionAdd, _results.GetBestResult());
                     }
                     else
                     {
@@ -1524,20 +1505,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         }
                     }
                 }
-            }
-
-            private bool ReportErrorsForCollectionAdd()
-            {
-                for (int ivar = 0; ivar < _pArguments.carg; ivar++)
-                {
-                    CType var = _pBestParameters[ivar];
-                    if (var is ParameterModifierType)
-                    {
-                        GetErrorContext().ErrorRef(ErrorCode.ERR_InitializerAddHasParamModifiers, _results.GetBestResult());
-                        return true;
-                    }
-                }
-                return false;
             }
         }
     }

@@ -418,14 +418,6 @@
           <source>Instance argument: cannot convert from '{0}' to '{1}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">인스턴스 인수: '{0}'에서 '{1}'(으)로 변환할 수 없습니다.</target>
         </trans-unit>
-        <trans-unit id="BadArgTypesForCollectionAdd" translate="yes" xml:space="preserve">
-          <source>The best overloaded Add method '{0}' for the collection initializer has some invalid arguments</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">오버로드된 Add 메서드 중 해당 컬렉션 이니셜라이저에 가장 적합한 '{0}'에 잘못된 인수가 있습니다.</target>
-        </trans-unit>
-        <trans-unit id="InitializerAddHasParamModifiers" translate="yes" xml:space="preserve">
-          <source>The best overloaded method match '{0}' for the collection initializer element cannot be used. Collection initializer 'Add' methods cannot have ref or out parameters.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">컬렉션 이니셜라이저에 대해 '{0}'에 가장 일치하는 오버로드된 메서드를 사용할 수 없습니다. 컬렉션 이니셜라이저 'Add' 메서드에는 ref 또는 out 매개 변수를 사용할 수 없습니다.</target>
-        </trans-unit>
         <trans-unit id="NonInvocableMemberCalled" translate="yes" xml:space="preserve">
           <source>Non-invocable member '{0}' cannot be used like a method.</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">호출할 수 없는 멤버인 '{0}'은(는) 메서드처럼 사용할 수 없습니다.</target>
