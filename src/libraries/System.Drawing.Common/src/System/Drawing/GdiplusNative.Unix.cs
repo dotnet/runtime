@@ -1,4 +1,8 @@
-﻿using System.Drawing.Drawing2D;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
+using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
 using System.Runtime.InteropServices;
@@ -11,38 +15,26 @@ namespace System.Drawing
     {
         internal unsafe partial class Gdip
         {
-            private const string LibName = "libdl";
-
-            public const int RTLD_NOW = 0x002;
-
-            [DllImport(LibName)]
-            public static extern IntPtr dlopen(string fileName, int flags);
-
-            [DllImport(LibName)]
-            public static extern IntPtr dlsym(IntPtr handle, string name);
-
-            [DllImport(LibName)]
-            public static extern int dlclose(IntPtr handle);
-
-            [DllImport(LibName)]
-            public static extern string dlerror();
-
             private static IntPtr LoadNativeLibrary()
             {
-                IntPtr lib = dlopen("libgdiplus.so", RTLD_NOW);
+                // Various Unix package managers have chosen different names for the "libgdiplus" shared library.
+                // The mono project, where libgdiplus originated, allowed both of the names below to be used, via
+                // a global configuration setting. We prefer the "unversioned" shared object name, and fallback to
+                // the name suffixed with ".0".
+                IntPtr lib = Interop.Libdl.dlopen("libgdiplus.so", Interop.Libdl.RTLD_NOW);
                 if (lib == IntPtr.Zero)
                 {
-                    lib = dlopen("libgdiplus.so.0", RTLD_NOW);
+                    lib = Interop.Libdl.dlopen("libgdiplus.so.0", Interop.Libdl.RTLD_NOW);
                     if (lib == IntPtr.Zero)
                     {
-                        throw new DllNotFoundException("libgdiplus could not be loaded.");
+                        throw new DllNotFoundException(SR.LibgdiplusNotFound);
                     }
                 }
 
                 return lib;
             }
 
-            private static IntPtr LoadFunctionPointer(IntPtr nativeLibraryHandle, string functionName) => dlsym(nativeLibraryHandle, functionName);
+            private static IntPtr LoadFunctionPointer(IntPtr nativeLibraryHandle, string functionName) => Interop.Libdl.dlsym(nativeLibraryHandle, functionName);
 
             internal static void CheckStatus(Status status) => GDIPlus.CheckStatus(status);
 
