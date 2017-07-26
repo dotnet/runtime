@@ -1193,11 +1193,6 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObjectHandle obj,
 		MonoReflectionSigHelperHandle s = MONO_HANDLE_CAST (MonoReflectionSigHelper, obj);
 		token = MONO_TOKEN_SIGNATURE | mono_image_get_sighelper_token (assembly, s, error);
 		return_val_if_nok (error, 0);
-	} else if (strcmp (klass->name, "EnumBuilder") == 0) {
-		MonoType *type = mono_reflection_type_handle_mono_type (MONO_HANDLE_CAST (MonoReflectionType, obj), error);
-		return_val_if_nok (error, 0);
-		token = mono_metadata_token_from_dor (
-			mono_image_typedef_or_ref (assembly, type));
 	} else {
 		g_error ("requested token for %s\n", klass->name);
 	}

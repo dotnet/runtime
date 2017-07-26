@@ -198,6 +198,7 @@ mono_dynamic_image_register_token (MonoDynamicImage *assembly, guint32 token, Mo
 	MONO_REQ_GC_UNSAFE_MODE;
 
 	g_assert (!MONO_HANDLE_IS_NULL (obj));
+	g_assert (strcmp (mono_handle_class (obj)->name, "EnumBuilder"));
 	dynamic_image_lock (assembly);
 	MonoObject *prev = (MonoObject *)mono_g_hash_table_lookup (assembly->tokens, GUINT_TO_POINTER (token));
 	if (prev) {
