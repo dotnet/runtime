@@ -54,6 +54,7 @@ namespace System.Drawing.Printing.Tests
             Assert.Equal(bottom, m.Bottom);
         }
 
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [Theory]
         [InlineData(-1, 0, 0, 0)]
         [InlineData(0, -1, 0, 0)]
@@ -116,6 +117,7 @@ namespace System.Drawing.Printing.Tests
             Assert.Equal(boundValue, m.Top);
         }
 
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [Fact]
         public void Bounds_BadValues_ThrowsArgumentException()
         {

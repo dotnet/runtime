@@ -13,7 +13,8 @@ namespace System.Drawing.Tests
 {
     public class GraphicsTests
     {
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void GetHdc_FromHdc_Roundtrips()
         {
             using (var bitmap = new Bitmap(10, 10))
@@ -36,7 +37,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void GetHdc_SameImage_ReturnsSame()
         {
             using (var bitmap = new Bitmap(10, 10))
@@ -55,7 +57,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void GetHdc_NotReleased_ThrowsInvalidOperationException()
         {
             using (var bitmap = new Bitmap(10, 10))
@@ -73,7 +76,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void GetHdc_Disposed_ThrowsObjectDisposedException()
         {
             using (var bitmap = new Bitmap(10, 10))
@@ -94,7 +98,8 @@ namespace System.Drawing.Tests
             yield return new object[] { Helpers.GetDC(foregroundWindow) };
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(FromHdc_TestData))]
         public void FromHdc_ValidHdc_ReturnsExpected(IntPtr hdc)
         {
@@ -105,7 +110,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(FromHdc_TestData))]
         public void FromHdc_ValidHdcWithContext_ReturnsExpected(IntPtr hdc)
         {
@@ -116,7 +122,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(FromHdc_TestData))]
         public void FromHdcInternal_GetDC_ReturnsExpected(IntPtr hdc)
         {
@@ -127,32 +134,37 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void FromHdc_ZeroHdc_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("hdc", () => Graphics.FromHdc(IntPtr.Zero));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void FromHdcInternal_ZeroHdc_ThrowsOutOfMemoryException()
         {
             Assert.Throws<OutOfMemoryException>(() => Graphics.FromHdcInternal(IntPtr.Zero));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void FromHdc_ZeroHdc_ThrowsOutOfMemoryException()
         {
             Assert.Throws<OutOfMemoryException>(() => Graphics.FromHdc(IntPtr.Zero, (IntPtr)10));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void FromHdc_InvalidHdc_ThrowsOutOfMemoryException()
         {
             Assert.Throws<OutOfMemoryException>(() => Graphics.FromHwnd((IntPtr)10));
             Assert.Throws<OutOfMemoryException>(() => Graphics.FromHwndInternal((IntPtr)10));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void ReleaseHdc_ValidHdc_ResetsHdc()
         {
             using (var bitmap = new Bitmap(10, 10))
@@ -175,7 +187,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void ReleaseHdc_NoSuchHdc_ResetsHdc()
         {
             using (var bitmap = new Bitmap(10, 10))
@@ -191,7 +204,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void ReleaseHdc_OtherGraphicsHdc_Success()
         {
             using (var bitmap1 = new Bitmap(10, 10))
@@ -211,7 +225,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void ReleaseHdc_NoHdc_ThrowsArgumentException()
         {
             using (var bitmap = new Bitmap(10, 10))
@@ -223,7 +237,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void ReleaseHdc_Disposed_ThrowsObjectDisposedException()
         {
             using (var bitmap = new Bitmap(10, 10))
@@ -243,7 +258,8 @@ namespace System.Drawing.Tests
             yield return new object[] { Helpers.GetForegroundWindow() };
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(Hwnd_TestData))]
         public void FromHwnd_ValidHwnd_ReturnsExpected(IntPtr hWnd)
         {
@@ -254,7 +270,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(Hwnd_TestData))]
         public void FromHwndInternal_ValidHwnd_ReturnsExpected(IntPtr hWnd)
         {
@@ -265,14 +282,16 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void FromHwnd_InvalidHwnd_ThrowsOutOfMemoryException()
         {
             Assert.Throws<OutOfMemoryException>(() => Graphics.FromHdc((IntPtr)10));
             Assert.Throws<OutOfMemoryException>(() => Graphics.FromHdcInternal((IntPtr)10));
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(PixelFormat.Format16bppRgb555)]
         [InlineData(PixelFormat.Format16bppRgb565)]
         [InlineData(PixelFormat.Format24bppRgb)]
@@ -291,13 +310,14 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void FromImage_NullImage_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("image", () => Graphics.FromImage(null));
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(PixelFormat.Format1bppIndexed)]
         [InlineData(PixelFormat.Format4bppIndexed)]
         [InlineData(PixelFormat.Format8bppIndexed)]
@@ -309,7 +329,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void FromImage_DisposedImage_ThrowsArgumentException()
         {
             var image = new Bitmap(10, 10);
@@ -318,7 +338,7 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => Graphics.FromImage(image));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void FromImage_Metafile_ThrowsOutOfMemoryException()
         {
             using (var image = new Metafile(Helpers.GetTestBitmapPath("telescope_01.wmf")))
@@ -327,7 +347,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(PixelFormat.Format16bppArgb1555)]
         [InlineData(PixelFormat.Format16bppGrayScale)]
         public void FromImage_Invalid16BitFormat_ThrowsOutOfMemoryException(PixelFormat format)
@@ -344,7 +365,8 @@ namespace System.Drawing.Tests
             yield return new object[] { CompositingMode.SourceOver, Color.FromArgb(220, 185, 185, 185) };
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(CompositingMode_TestData))]
         public void CompositingMode_Set_GetReturnsExpected(CompositingMode mode, Color expectedOverlap)
         {
@@ -374,7 +396,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(CompositingMode.SourceOver - 1)]
         [InlineData(CompositingMode.SourceCopy + 1)]
         public void CompositingMode_SetInvalid_ThrowsInvalidEnumArgumentException(CompositingMode compositingMode)
@@ -386,7 +409,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void CompositingMode_GetSetWhenBusy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -405,7 +429,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void CompositingMode_GetSetWhenDisposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -444,7 +468,8 @@ namespace System.Drawing.Tests
             yield return new object[] { CompositingQuality.HighQuality, gammaCorrectedColors };
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(CompositingQuality_TestData))]
         public void CompositingQuality_Set_GetReturnsExpected(CompositingQuality quality, Color[][] expectedIntersectionColor)
         {
@@ -466,7 +491,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(CompositingQuality.Invalid - 1)]
         [InlineData(CompositingQuality.AssumeLinear + 1)]
         public void CompositingQuality_SetInvalid_ThrowsInvalidEnumArgumentException(CompositingQuality compositingQuality)
@@ -478,7 +504,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void CompositingQuality_GetSetWhenBusy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -497,7 +524,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void CompositingQuality_GetSetWhenDisposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -510,7 +537,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Dispose_MultipleTimesWithoutHdc_Success()
         {
             using (var bitmap = new Bitmap(10, 10))
@@ -524,7 +551,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Dispose_MultipleTimesWithHdc_Success()
         {
             using (var bitmap = new Bitmap(10, 10))
@@ -540,7 +567,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DpiX_GetWhenBusy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -558,7 +586,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DpiX_GetWhenDisposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -570,7 +598,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DpiY_GetWhenBusy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -588,7 +617,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DpiY_GetWhenDisposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -600,7 +629,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(FlushIntention.Flush)]
         [InlineData(FlushIntention.Sync)]
         [InlineData(FlushIntention.Flush - 1)] // Not in the range of valid values of FlushIntention.
@@ -621,7 +650,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Flush_Busy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -640,7 +670,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Flush_Disposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -653,7 +684,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(InterpolationMode.Bicubic, InterpolationMode.Bicubic)]
         [InlineData(InterpolationMode.Bilinear, InterpolationMode.Bilinear)]
         [InlineData(InterpolationMode.Default, InterpolationMode.Bilinear)]
@@ -672,7 +704,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(InterpolationMode.Invalid - 1)]
         [InlineData(InterpolationMode.HighQualityBicubic + 1)]
         public void InterpolationMode_SetInvalid_ThrowsInvalidEnumArgumentException(InterpolationMode interpolationMode)
@@ -684,7 +717,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void InterpolationMode_SetToInvalid_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -694,7 +728,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void InterpolationMode_GetSetWhenBusy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -713,7 +748,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void InterpolationMode_GetSetWhenDisposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -726,7 +761,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(1)]
         [InlineData(1000000032)]
         [InlineData(float.NaN)]
@@ -740,7 +775,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(-1)]
         [InlineData(0)]
         [InlineData(1000000033)]
@@ -755,7 +791,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void PageScale_GetSetWhenBusy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -774,7 +811,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void PageScale_GetSetWhenDisposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -787,7 +824,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(GraphicsUnit.Display)]
         [InlineData(GraphicsUnit.Document)]
         [InlineData(GraphicsUnit.Inch)]
@@ -804,7 +841,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(GraphicsUnit.World - 1)]
         [InlineData(GraphicsUnit.Millimeter + 1)]
         public void PageUnit_SetInvalid_ThrowsInvalidEnumArgumentException(GraphicsUnit pageUnit)
@@ -816,7 +854,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void PageUnit_SetWorld_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -826,7 +865,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void PageUnit_GetSetWhenBusy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -845,7 +885,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void PageUnit_GetSetWhenDisposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -858,7 +898,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(PixelOffsetMode.Default)]
         [InlineData(PixelOffsetMode.Half)]
         [InlineData(PixelOffsetMode.HighQuality)]
@@ -874,7 +914,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(PixelOffsetMode.Invalid - 1)]
         [InlineData(PixelOffsetMode.Half + 1)]
         public void PixelOffsetMode_SetInvalid_ThrowsInvalidEnumArgumentException(PixelOffsetMode pixelOffsetMode)
@@ -886,7 +927,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void PixelOffsetMode_SetToInvalid_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -896,7 +937,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void PixelOffsetMode_GetSetWhenBusy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -915,7 +957,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void PixelOffsetMode_GetSetWhenDisposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -966,7 +1008,8 @@ namespace System.Drawing.Tests
             yield return new object[] { new Point(3, 3), allEmpty };
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(RenderingOrigin_TestData))]
         public void RenderingOrigin_SetToCustom_RendersExpected(Point renderingOrigin, Color[][] expectedRendering)
         {
@@ -985,7 +1028,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void RenderingOrigin_GetSetWhenBusy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1004,7 +1048,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void RenderingOrigin_GetSetWhenDisposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1017,7 +1061,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(SmoothingMode.AntiAlias, SmoothingMode.AntiAlias)]
         [InlineData(SmoothingMode.Default, SmoothingMode.None)]
         [InlineData(SmoothingMode.HighQuality, SmoothingMode.AntiAlias)]
@@ -1033,7 +1078,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(SmoothingMode.Invalid - 1)]
         [InlineData(SmoothingMode.AntiAlias + 1)]
         public void SmoothingMode_SetInvalid_ThrowsInvalidEnumArgumentException(SmoothingMode smoothingMode)
@@ -1045,7 +1091,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void SmoothingMode_SetToInvalid_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1055,7 +1102,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void SmoothingMode_GetSetWhenBusy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1074,7 +1122,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void SmoothingMode_GetSetWhenDisposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1087,7 +1135,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(12)]
@@ -1101,7 +1149,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(-1)]
         [InlineData(13)]
         public void TextContrast_SetInvalid_ThrowsArgumentException(int textContrast)
@@ -1113,7 +1161,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void TextContrast_GetSetWhenBusy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1132,7 +1181,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void TextContrast_GetSetWhenDisposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1145,7 +1194,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(TextRenderingHint.AntiAlias)]
         [InlineData(TextRenderingHint.AntiAliasGridFit)]
         [InlineData(TextRenderingHint.ClearTypeGridFit)]
@@ -1162,7 +1211,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(TextRenderingHint.SystemDefault - 1)]
         [InlineData(TextRenderingHint.ClearTypeGridFit + 1)]
         public void TextRenderingHint_SetInvalid_ThrowsInvalidEnumArgumentException(TextRenderingHint textRenderingHint)
@@ -1174,7 +1224,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void TextRenderingHint_GetSetWhenBusy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1193,7 +1244,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void TextRenderingHint_GetSetWhenDisposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1206,7 +1257,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Transform_SetValid_GetReturnsExpected()
         {
             Color empty = Helpers.EmptyColor;
@@ -1234,7 +1286,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Transform_SetNull_ThrowsNullReferenceException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1244,7 +1297,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Transform_SetDisposedMatrix_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1257,7 +1310,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Transform_SetNonInvertibleMatrix_ThrowsArgumentException()
         {
             using (var image = new Bitmap(5, 5))
@@ -1268,7 +1321,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Transform_GetSetWhenBusy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1288,7 +1342,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Transform_GetSetWhenDisposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1302,7 +1356,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void ResetTransform_Invoke_SetsTransformToIdentity()
         {
             using (var image = new Bitmap(10, 10))
@@ -1317,7 +1371,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void ResetTransform_Busy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1335,7 +1390,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void ResetTransform_Disposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1347,7 +1402,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void MultiplyTransform_NoOrder_Success()
         {
             using (var image = new Bitmap(10, 10))
@@ -1364,7 +1419,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(MatrixOrder.Prepend)]
         [InlineData(MatrixOrder.Append)]
         public void MultiplyTransform_Order_Success(MatrixOrder order)
@@ -1383,7 +1438,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void MultiplyTransform_NullMatrix_ThrowsArgumentNullException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1394,7 +1449,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void MultiplyTransform_DisposedMatrix_Nop()
         {
             var brush = new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Plum, Color.Red, 45, true);
@@ -1409,7 +1465,7 @@ namespace System.Drawing.Tests
             Assert.Equal(transform, brush.Transform);
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void MultiplyTransform_NonInvertibleMatrix_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1421,7 +1477,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(MatrixOrder.Prepend - 1)]
         [InlineData(MatrixOrder.Append + 1)]
         public void MultiplyTransform_InvalidOrder_ThrowsArgumentException(MatrixOrder order)
@@ -1434,7 +1490,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void MultiplyTransform_Busy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1454,7 +1511,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void MultiplyTransform_Disposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1468,7 +1525,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(-1, -2)]
         [InlineData(0, 0)]
         [InlineData(1, 2)]
@@ -1487,7 +1544,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(1, 1, MatrixOrder.Prepend)]
         [InlineData(1, 1, MatrixOrder.Append)]
         [InlineData(0, 0, MatrixOrder.Prepend)]
@@ -1509,7 +1566,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(MatrixOrder.Prepend - 1)]
         [InlineData(MatrixOrder.Append + 1)]
         public void TranslateTransform_InvalidOrder_ThrowsArgumentException(MatrixOrder order)
@@ -1521,7 +1578,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void TranslateTransform_Busy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1540,7 +1598,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void TranslateTransform_Disposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1553,7 +1611,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(-1, -2)]
         [InlineData(1, 2)]
         public void ScaleTransform_NoOrder_Success(float sx, float sy)
@@ -1571,7 +1629,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(1, 1, MatrixOrder.Prepend)]
         [InlineData(1, 1, MatrixOrder.Append)]
         [InlineData(-1, -1, MatrixOrder.Prepend)]
@@ -1591,7 +1649,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         public void ScaleTransform_ZeroZero_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1602,7 +1660,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(MatrixOrder.Prepend - 1)]
         [InlineData(MatrixOrder.Append + 1)]
         public void ScaleTransform_InvalidOrder_ThrowsArgumentException(MatrixOrder order)
@@ -1614,7 +1672,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void ScaleTransform_Busy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1633,7 +1692,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void ScaleTransform_Disposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1646,7 +1705,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(-1)]
         [InlineData(0)]
         [InlineData(1)]
@@ -1666,7 +1725,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(1, MatrixOrder.Prepend)]
         [InlineData(1, MatrixOrder.Append)]
         [InlineData(0, MatrixOrder.Prepend)]
@@ -1688,7 +1747,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(MatrixOrder.Prepend - 1)]
         [InlineData(MatrixOrder.Append + 1)]
         public void RotateTransform_InvalidOrder_ThrowsArgumentException(MatrixOrder order)
@@ -1700,7 +1759,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void RotateTransform_Busy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1719,7 +1779,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void RotateTransform_Disposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1743,7 +1803,8 @@ namespace System.Drawing.Tests
             yield return new object[] { 0, 0, 0, 0, new Size(-1, -1) };
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(CopyFromScreen_TestData))]
         public void CopyFromScreen_OutOfRange_DoesNotAffectGraphics(int sourceX, int sourceY, int destinationX, int destinationY, Size size)
         {
@@ -1759,7 +1820,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(0, 0, 0, 0, 10, 10)]
         [InlineData(0, 0, 0, 0, int.MaxValue, int.MaxValue)]
         [InlineData(1, 1, 2, 2, 3, 3)]
@@ -1817,7 +1879,8 @@ namespace System.Drawing.Tests
             yield return new object[] { CopyPixelOperation.CaptureBlt };
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(CopyPixelOperation_TestData))]
         public void CopyFromScreen_IntsAndValidCopyPixelOperation_Success(CopyPixelOperation copyPixelOperation)
         {
@@ -1830,7 +1893,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(CopyPixelOperation_TestData))]
         public void CopyFromScreen_PointsAndValidCopyPixelOperation_Success(CopyPixelOperation copyPixelOperation)
         {
@@ -1843,7 +1907,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(CopyPixelOperation.NoMirrorBitmap + 1)]
         [InlineData(CopyPixelOperation.Blackness - 1)]
         [InlineData(CopyPixelOperation.NotSourceErase - 1)]
@@ -1871,7 +1936,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void CopyFromScreen_Busy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1892,7 +1958,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void CopyFromScreen_Disposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -1958,7 +2025,8 @@ namespace System.Drawing.Tests
             };
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(TransformPoints_TestData))]
         public void TransformPoints_Points_Success(CoordinateSpace destSpace, CoordinateSpace srcSpace, Point[] points, Point[] expected)
         {
@@ -2025,7 +2093,8 @@ namespace System.Drawing.Tests
             };
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(TransformPointFs_TestData))]
         public void TransformPoints_PointFs_Success(CoordinateSpace destSpace, CoordinateSpace srcSpace, PointF[] points, PointF[] expected)
         {
@@ -2041,7 +2110,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(CoordinateSpace.Device)]
         [InlineData(CoordinateSpace.World)]
         [InlineData(CoordinateSpace.Page)]
@@ -2059,7 +2128,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(CoordinateSpace.Device)]
         [InlineData(CoordinateSpace.World)]
         [InlineData(CoordinateSpace.Page)]
@@ -2077,7 +2146,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(CoordinateSpace.World - 1)]
         [InlineData(CoordinateSpace.Device + 1)]
         public void TransformPoints_InvalidDestSpace_ThrowsArgumentException(CoordinateSpace destSpace)
@@ -2090,7 +2160,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(CoordinateSpace.World - 1)]
         [InlineData(CoordinateSpace.Device + 1)]
         public void TransformPoints_InvalidSourceSpace_ThrowsArgumentException(CoordinateSpace srcSpace)
@@ -2103,7 +2174,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void TransformPoints_NullPoints_ThrowsArgumentNullException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2114,7 +2185,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void TransformPoints_EmptyPoints_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2125,7 +2197,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void TransformPoints_Busy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2144,7 +2217,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void TransformPoints_Disposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2163,7 +2237,8 @@ namespace System.Drawing.Tests
             yield return new object[] { PixelFormat.Format16bppRgb555, Color.Red, Color.FromArgb(255, 248, 0, 0) };
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(GetNearestColor_TestData))]
         public void GetNearestColor_Color_ReturnsExpected(PixelFormat pixelFormat, Color color, Color expected)
         {
@@ -2174,7 +2249,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void GetNearestColor_Busy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2192,7 +2268,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void GetNearestColor_Disposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2204,7 +2281,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawLine_NullPen_ThrowsArgumentNullException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2217,7 +2294,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawLine_DisposedPen_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2233,7 +2310,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawLine_Busy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2255,7 +2333,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawLine_Disposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2271,7 +2349,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawLines_NullPen_ThrowsArgumentNullException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2282,7 +2360,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawLines_DisposedPen_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2296,7 +2374,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawLines_NullPoints_ThrowsArgumentNullException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2308,7 +2386,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(0)]
         [InlineData(1)]
         public void DrawLines_InvalidPointsLength_ThrowsArgumentException(int length)
@@ -2322,7 +2400,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawLines_Busy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2342,7 +2421,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawLines_Disposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2356,7 +2435,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawArc_NullPen_ThrowsArgumentNullException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2369,7 +2448,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawArc_DisposedPen_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2385,7 +2464,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawArc_ZeroWidth_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2399,7 +2479,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawArc_ZeroHeight_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2413,7 +2494,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawArc_Busy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2435,7 +2517,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawArc_Disposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2451,7 +2533,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawBezier_NullPen_ThrowsArgumentNullException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2463,7 +2545,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawBezier_DisposedPen_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2478,7 +2560,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawBezier_Busy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2499,7 +2582,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawBezier_Disposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2515,7 +2598,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawBeziers_NullPen_ThrowsArgumentNullException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2526,7 +2609,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawBeziers_DisposedPen_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2540,7 +2624,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawBeziers_NullPoints_ThrowsArgumentNullException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2552,7 +2636,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawBeziers_EmptyPoints_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2564,7 +2649,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawBeziers_Busy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2584,7 +2670,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawBeziers_Disposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2598,7 +2685,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawRectangle_NullPen_ThrowsArgumentNullException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2610,7 +2697,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawRectangle_DisposedPen_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2626,7 +2713,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawRectangle_Busy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2647,7 +2735,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawRectangle_Disposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2662,7 +2750,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawRectangles_NullPen_ThrowsArgumentNullException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2673,7 +2762,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawRectangles_DisposedPen_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2687,7 +2776,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawRectangles_NullRectangles_ThrowsArgumentNullException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2699,7 +2788,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawRectangles_EmptyRectangles_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2711,7 +2800,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawRectangles_Busy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2731,7 +2821,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawRectangles_Disposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2745,7 +2835,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawEllipse_NullPen_ThrowsArgumentNullException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2758,7 +2848,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawEllipse_DisposedPen_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2775,7 +2865,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawEllipse_Busy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2797,7 +2888,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawEllipse_Disposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2813,7 +2904,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawPie_NullPen_ThrowsArgumentNullException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2826,7 +2917,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawPie_DisposedPen_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2842,7 +2933,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawPie_ZeroWidth_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2856,7 +2948,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawPie_ZeroHeight_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2870,7 +2963,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawPie_Busy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2892,7 +2986,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawPie_Disposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2908,7 +3002,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawPolygon_NullPen_ThrowsArgumentNullException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2919,7 +3013,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawPolygon_DisposedPen_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2933,7 +3027,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawPolygon_NullPoints_ThrowsArgumentNullException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2945,7 +3039,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(0)]
         [InlineData(1)]
         public void DrawPolygon_InvalidPointsLength_ThrowsArgumentException(int length)
@@ -2959,7 +3053,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawPolygon_Busy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2979,7 +3074,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawPolygon_Disposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -2993,7 +3088,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawPath_NullPen_ThrowsArgumentNullException()
         {
             using (var image = new Bitmap(10, 10))
@@ -3004,7 +3099,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawPath_DisposedPen_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -3018,7 +3113,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawPath_NullPath_ThrowsArgumentNullException()
         {
             using (var image = new Bitmap(10, 10))
@@ -3029,7 +3124,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawPath_DisposedPath_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -3043,7 +3138,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawPath_Busy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -3063,7 +3159,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawPath_Disposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -3077,7 +3173,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawCurve_NullPen_ThrowsArgumentNullException()
         {
             using (var image = new Bitmap(10, 10))
@@ -3093,7 +3189,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawCurve_DisposedPen_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -3112,7 +3208,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawCurve_NullPoints_ThrowsArgumentNullException()
         {
             using (var image = new Bitmap(10, 10))
@@ -3129,7 +3225,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(0)]
         [InlineData(1)]
         public void DrawCurve_InvalidPointsLength_ThrowsArgumentException(int length)
@@ -3148,7 +3244,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(4, -1, 4)]
         [InlineData(4, 0, -1)]
         [InlineData(4, 4, 0)]
@@ -3166,7 +3263,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawCurve_Busy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -3191,7 +3289,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawCurve_Disposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -3210,7 +3308,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawClosedCurve_NullPen_ThrowsArgumentNullException()
         {
             using (var image = new Bitmap(10, 10))
@@ -3223,7 +3321,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawClosedCurve_DisposedPen_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -3239,7 +3337,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawClosedCurve_NullPoints_ThrowsArgumentNullException()
         {
             using (var image = new Bitmap(10, 10))
@@ -3253,7 +3351,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(0)]
         [InlineData(1)]
         [InlineData(2)]
@@ -3270,7 +3368,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawClosedCurve_Busy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -3292,7 +3391,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawClosedCurve_Disposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
@@ -3308,7 +3407,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Clear_Color_Success()
         {
             Color color = Color.FromArgb(Color.Plum.ToArgb());
@@ -3328,7 +3427,8 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Clear_Busy_ThrowsInvalidOperationException()
         {
             using (var image = new Bitmap(10, 10))
@@ -3347,7 +3447,7 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Clear_Disposed_ThrowsArgumentException()
         {
             using (var image = new Bitmap(10, 10))
