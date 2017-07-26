@@ -13,9 +13,9 @@ namespace System.Xml.Tests
         CoreReader
     }
 
-    public partial class ReaderParamTestCase : XmlWriterTestCaseBase
+    public partial class ReaderParamTestCase
     {
-        protected ReaderType readerType;
+        internal const ReaderType readerType = ReaderType.CoreReader;
 
         public bool IsXPathDataModelReader()
         {
@@ -25,14 +25,6 @@ namespace System.Xml.Tests
         public bool ReaderExpandsEntityRef()
         {
             return true;
-        }
-
-        public bool ReaderSupportsEntityRef()
-        {
-            if (readerType == ReaderType.CoreReader)
-                return false;
-            else
-                return true;
         }
 
         public bool ReaderStripsWhitespace()
@@ -55,21 +47,38 @@ namespace System.Xml.Tests
             fileName = Path.GetFileNameWithoutExtension(fileName);
 
             StreamReader sr = null;
-            sr = new StreamReader(FilePathUtil.getStream(FullPath(fileName + ".xml")));
+            sr = new StreamReader(FilePathUtil.getStream(XmlWriterUtils.FullPath(fileName + ".xml")));
             return CreateReader(sr);
         }
 
         public XmlReader CreateReaderIgnoreWS(string fileName)
         {
             StreamReader sr = null;
-            sr = new StreamReader(FilePathUtil.getStream(FullPath(fileName)));
+            sr = new StreamReader(FilePathUtil.getStream(XmlWriterUtils.FullPath(fileName)));
             return CreateReaderIgnoreWS(sr);
+        }
+
+        public XmlReader CreateReaderIgnoreWSFromString(string xml)
+        {
+            StringReader sr = null;
+            sr = new StringReader(xml);
+            return CreateReaderIgnoreWS(sr);
+        }
+
+#pragma warning disable CS0162 // Unreachable code
+        public bool ReaderSupportsEntityRef()
+        {
+            if (readerType == ReaderType.CoreReader)
+                return false;
+            else
+                return true;
         }
 
         public XmlReader CreateReader(TextReader sr)
         {
             XmlReader xr = null;
             XmlReaderSettings readerSettings = new XmlReaderSettings();
+            readerSettings.DtdProcessing = DtdProcessing.Parse;
             readerSettings.CloseInput = true;
 
             switch (readerType)
@@ -88,6 +97,7 @@ namespace System.Xml.Tests
         {
             XmlReader xr = null;
             XmlReaderSettings readerSettings = new XmlReaderSettings();
+            readerSettings.DtdProcessing = DtdProcessing.Parse;
             readerSettings.CloseInput = true;
             readerSettings.IgnoreWhitespace = true;
 
@@ -102,5 +112,6 @@ namespace System.Xml.Tests
             }
             return xr;
         }
+#pragma warning restore CS0162
     }
 }

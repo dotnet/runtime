@@ -13,7 +13,7 @@ namespace System.Xml.Tests
     {
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
-        public void auto_1(XmlWriterTestCaseBase utils)
+        public void auto_1(XmlWriterUtils utils)
         {
             XmlWriter w = utils.CreateWriter(ConformanceLevel.Auto);
 
@@ -45,7 +45,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom, true)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom, false)]
-        public void auto_2(XmlWriterTestCaseBase utils, bool writeStartDocument)
+        public void auto_2(XmlWriterUtils utils, bool writeStartDocument)
         {
             XmlWriter w = utils.CreateWriter(ConformanceLevel.Auto);
             CError.Compare(w.Settings.ConformanceLevel, ConformanceLevel.Auto, "Error");
@@ -80,7 +80,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
-        public void auto_3(XmlWriterTestCaseBase utils)
+        public void auto_3(XmlWriterUtils utils)
         {
             XmlWriter w = utils.CreateWriter(ConformanceLevel.Auto);
             w.WriteDocType("ROOT", "publicid", "sysid", "<!ENTITY e 'abc'>");
@@ -108,7 +108,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
-        public void auto_4(XmlWriterTestCaseBase utils)
+        public void auto_4(XmlWriterUtils utils)
         {
             XmlWriter w = utils.CreateWriter(ConformanceLevel.Auto);
             w.WriteStartElement("root");
@@ -131,7 +131,7 @@ namespace System.Xml.Tests
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom, "Raw")]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom, "Base64")]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom, "BinHex")]
-        public void auto_5(XmlWriterTestCaseBase utils, string tokenType)
+        public void auto_5(XmlWriterUtils utils, string tokenType)
         {
             XmlWriter w = utils.CreateWriter(ConformanceLevel.Auto);
             byte[] buffer = new byte[10];
@@ -180,7 +180,7 @@ namespace System.Xml.Tests
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom, "PI")]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom, "Comment")]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom, "WS")]
-        public void auto_6(XmlWriterTestCaseBase utils, string tokenType)
+        public void auto_6(XmlWriterUtils utils, string tokenType)
         {
             XmlWriter w = utils.CreateWriter(ConformanceLevel.Auto);
             switch (tokenType)
@@ -207,7 +207,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
-        public void auto_7(XmlWriterTestCaseBase utils)
+        public void auto_7(XmlWriterUtils utils)
         {
             XmlWriter w = utils.CreateWriter(ConformanceLevel.Auto);
             w.WriteProcessingInstruction("pi", "text");
@@ -220,7 +220,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
-        public void auto_8(XmlWriterTestCaseBase utils)
+        public void auto_8(XmlWriterUtils utils)
         {
             XmlWriter w = utils.CreateWriter(ConformanceLevel.Auto);
 
@@ -242,7 +242,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
-        public void auto_10(XmlWriterTestCaseBase utils)
+        public void auto_10(XmlWriterUtils utils)
         {
             XmlWriter w = utils.CreateWriter(ConformanceLevel.Auto);
 

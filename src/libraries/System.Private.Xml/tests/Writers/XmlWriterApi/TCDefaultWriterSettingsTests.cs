@@ -13,7 +13,7 @@ namespace System.Xml.Tests
     {
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
-        public void default_1(XmlWriterTestCaseBase utils)
+        public void default_1(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             CError.Compare(wSettings.Encoding, Encoding.UTF8, "Incorrect default value of Encoding");
@@ -38,7 +38,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
-        public void default_2(XmlWriterTestCaseBase utils)
+        public void default_2(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             CError.Compare(wSettings.OmitXmlDeclaration, false, "Incorrect default value of OmitXmlDeclaration");
@@ -48,7 +48,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
-        public void default_3(XmlWriterTestCaseBase utils)
+        public void default_3(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             CError.Compare(wSettings.NewLineHandling, NewLineHandling.Replace, "Incorrect default value of NewLineHandling");
@@ -67,7 +67,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
-        public void default_4(XmlWriterTestCaseBase utils)
+        public void default_4(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             CError.Equals(wSettings.NewLineChars, Environment.NewLine, "Incorrect default value of NewLineChars");
@@ -81,7 +81,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
-        public void default_5(XmlWriterTestCaseBase utils)
+        public void default_5(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             CError.Equals(wSettings.Indent, false, "Incorrect default value of wSettings.Indent");
@@ -94,7 +94,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
-        public void default_6(XmlWriterTestCaseBase utils)
+        public void default_6(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             CError.Equals(wSettings.IndentChars, "  ", "Incorrect default value of IndentChars");
@@ -107,7 +107,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
-        public void default_7(XmlWriterTestCaseBase utils)
+        public void default_7(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             CError.Equals(wSettings.NewLineOnAttributes, false, "Incorrect default value of NewLineOnAttributes");
@@ -120,7 +120,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
-        public void default_8(XmlWriterTestCaseBase utils)
+        public void default_8(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             CError.Compare(wSettings.CloseOutput, false, "Incorrect default value of CloseOutput");
@@ -130,7 +130,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
-        public void default_10(XmlWriterTestCaseBase utils)
+        public void default_10(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             CError.Equals(wSettings.CheckCharacters, true, "Incorrect default value of CheckCharacters");
@@ -144,7 +144,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
-        public void default_11(XmlWriterTestCaseBase utils)
+        public void default_11(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             CError.Equals(wSettings.ConformanceLevel, ConformanceLevel.Document, "Incorrect default value of ConformanceLevel");
@@ -158,7 +158,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
-        public void default_13(XmlWriterTestCaseBase utils)
+        public void default_13(XmlWriterUtils utils)
         {
             XmlWriterSettings ws = new XmlWriterSettings();
             CError.Equals(ws.WriteEndDocumentOnClose, true, "Incorrect default value of WriteEndDocumentOnClose");

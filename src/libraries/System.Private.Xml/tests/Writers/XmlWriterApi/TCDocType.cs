@@ -9,46 +9,49 @@ using Xunit;
 namespace System.Xml.Tests
 {
     //[TestCase(Name = "WriteDocType")]
-    public class TCDocType : XmlWriterTestCaseBase
+    public class TCDocType
     {
         //[Variation(id = 1, Desc = "Sanity test", Pri = 1)]
-        [Fact]
-        public void docType_1()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void docType_1(XmlWriterUtils utils)
         {
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 w.WriteDocType("ROOT", "publicid", "sysid", "<!ENTITY e 'abc'>");
                 w.WriteStartElement("ROOT");
                 w.WriteEndElement();
             }
 
-            string exp = IsIndent() ?
+            string exp = utils.IsIndent() ?
                 "<!DOCTYPE ROOT PUBLIC \"publicid\" \"sysid\"[<!ENTITY e 'abc'>]>" + Environment.NewLine + "<ROOT />" :
                 "<!DOCTYPE ROOT PUBLIC \"publicid\" \"sysid\"[<!ENTITY e 'abc'>]><ROOT />";
-            Assert.True(CompareString(exp));
+            Assert.True(utils.CompareString(exp));
         }
 
         //[Variation(id = 2, Desc = "WriteDocType pubid = null and sysid = null", Pri = 1)]
-        [Fact]
-        public void docType_2()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void docType_2(XmlWriterUtils utils)
         {
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 w.WriteDocType("test", null, null, "<!ENTITY e 'abc'>");
                 w.WriteStartElement("Root");
                 w.WriteEndElement();
             }
-            string exp = IsIndent() ?
+            string exp = utils.IsIndent() ?
                 "<!DOCTYPE test [<!ENTITY e 'abc'>]>" + Environment.NewLine + "<Root />" :
                 "<!DOCTYPE test [<!ENTITY e 'abc'>]><Root />";
-            Assert.True(CompareString(exp));
+            Assert.True(utils.CompareString(exp));
         }
 
         //[Variation(id = 3, Desc = "Call WriteDocType twice", Pri = 1)]
-        [Fact]
-        public void docType_3()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void docType_3(XmlWriterUtils utils)
         {
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 try
                 {
@@ -66,17 +69,17 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(id = 4, Desc = "WriteDocType with name value = String.Empty", Param = "String.Empty", Pri = 1)]
-        //[Variation(id = 5, Desc = "WriteDocType with name value = null", Param = "null", Pri = 1)]
-        [Fact]
-        public void docType_4()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "String.Empty")]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "null")]
+        public void docType_4(XmlWriterUtils utils, string param)
         {
             String docName = "";
-            if (CurVariation.Param.ToString() == "String.Empty")
+            if (param == "String.Empty")
                 docName = String.Empty;
-            else if (CurVariation.Param.ToString() == "null")
+            else if (param == "null")
                 docName = null;
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 try
                 {
@@ -85,13 +88,13 @@ namespace System.Xml.Tests
                 catch (ArgumentException e)
                 {
                     CError.WriteLineIgnore(e.ToString());
-                    CError.Compare(w.WriteState, (WriterType == WriterType.CharCheckingWriter) ? WriteState.Start : WriteState.Error, "WriteState should be Error");
+                    CError.Compare(w.WriteState, (utils.WriterType == WriterType.CharCheckingWriter) ? WriteState.Start : WriteState.Error, "WriteState should be Error");
                     return;
                 }
                 catch (NullReferenceException e)
                 {
                     CError.WriteLineIgnore(e.ToString());
-                    CError.Compare(w.WriteState, (WriterType == WriterType.CharCheckingWriter) ? WriteState.Start : WriteState.Error, "WriteState should be Error");
+                    CError.Compare(w.WriteState, (utils.WriterType == WriterType.CharCheckingWriter) ? WriteState.Start : WriteState.Error, "WriteState should be Error");
                     return;
                 }
             }
@@ -100,10 +103,11 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 6, Desc = "WriteDocType with DocType end tag in the value", Pri = 1)]
-        [Fact]
-        public void docType_5()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void docType_5(XmlWriterUtils utils)
         {
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 String docName = "Root";
                 String docValue = "]>";
@@ -111,15 +115,16 @@ namespace System.Xml.Tests
                 w.WriteStartElement("Root");
                 w.WriteEndElement();
             }
-            string exp = IsIndent() ? "<!DOCTYPE Root []>]>" + Environment.NewLine + "<Root />" : "<!DOCTYPE Root []>]><Root />";
-            Assert.True(CompareString(exp));
+            string exp = utils.IsIndent() ? "<!DOCTYPE Root []>]>" + Environment.NewLine + "<Root />" : "<!DOCTYPE Root []>]><Root />";
+            Assert.True(utils.CompareString(exp));
         }
 
         //[Variation(id = 7, Desc = "Call WriteDocType in the root element", Pri = 1)]
-        [Fact]
-        public void docType_6()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void docType_6(XmlWriterUtils utils)
         {
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 try
                 {
@@ -139,10 +144,11 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 8, Desc = "Call WriteDocType following root element", Pri = 1)]
-        [Fact]
-        public void docType_7()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void docType_7(XmlWriterUtils utils)
         {
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 try
                 {

@@ -8,13 +8,14 @@ using Xunit;
 namespace System.Xml.Tests
 {
     ////[TestCase(Name = "Auto-completion of tokens")]
-    public class TCAutoComplete : XmlWriterTestCaseBase
+    public class TCAutoComplete
     {
         //[Variation(id = 1, Desc = "Missing EndAttr, followed by element", Pri = 1)]
-        [Fact]
-        public void var_1()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void var_1(XmlWriterUtils utils)
         {
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 w.WriteStartElement("Root");
                 w.WriteStartAttribute("attr");
@@ -22,41 +23,44 @@ namespace System.Xml.Tests
                 w.WriteEndElement();
                 w.WriteEndElement();
             }
-            Assert.True(CompareReader("<Root attr=''><child /></Root>"));
+            Assert.True(utils.CompareReader("<Root attr=''><child /></Root>"));
         }
 
         //[Variation(id = 2, Desc = "Missing EndAttr, followed by comment", Pri = 1)]
-        [Fact]
-        public void var_2()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void var_2(XmlWriterUtils utils)
         {
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 w.WriteStartElement("Root");
                 w.WriteStartAttribute("attr");
                 w.WriteComment("This text is a comment");
                 w.WriteEndElement();
             }
-            Assert.True(CompareReader("<Root attr=''><!--This text is a comment--></Root>"));
+            Assert.True(utils.CompareReader("<Root attr=''><!--This text is a comment--></Root>"));
         }
 
         //[Variation(id = 3, Desc = "Write EndDocument with unclosed element tag", Pri = 1)]
-        [Fact]
-        public void var_3()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void var_3(XmlWriterUtils utils)
         {
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 w.WriteStartDocument();
                 w.WriteStartElement("Root");
                 w.WriteEndDocument();
             }
-            Assert.True(CompareReader("<Root />"));
+            Assert.True(utils.CompareReader("<Root />"));
         }
 
         //[Variation(id = 4, Desc = "WriteStartDocument - WriteEndDocument", Pri = 1)]
-        [Fact]
-        public void var_4()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void var_4(XmlWriterUtils utils)
         {
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 try
                 {
@@ -81,10 +85,11 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 5, Desc = "WriteEndElement without WriteStartElement", Pri = 1)]
-        [Fact]
-        public void var_5()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void var_5(XmlWriterUtils utils)
         {
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 try
                 {
@@ -104,10 +109,11 @@ namespace System.Xml.Tests
         }
 
         //[Variation(id = 6, Desc = "WriteFullEndElement without WriteStartElement", Pri = 1)]
-        [Fact]
-        public void var_6()
+        [Theory]
+        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        public void var_6(XmlWriterUtils utils)
         {
-            using (XmlWriter w = CreateWriter())
+            using (XmlWriter w = utils.CreateWriter())
             {
                 try
                 {

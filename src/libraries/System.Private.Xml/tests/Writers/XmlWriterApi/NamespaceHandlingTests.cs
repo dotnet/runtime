@@ -16,7 +16,7 @@ namespace System.Xml.Tests
         private static NamespaceHandling[] s_nlHandlingMembers = { NamespaceHandling.Default, NamespaceHandling.OmitDuplicates };
         private StringWriter _strWriter = null;
 
-        private XmlWriter CreateMemWriter(XmlWriterTestCaseBase utils, XmlWriterSettings settings)
+        private XmlWriter CreateMemWriter(XmlWriterUtils utils, XmlWriterSettings settings)
         {
             XmlWriterSettings wSettings = settings.Clone();
             wSettings.CloseOutput = false;
@@ -72,7 +72,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & WriterType.AllButIndenting)]
-        public void NS_Handling_1(XmlWriterTestCaseBase utils)
+        public void NS_Handling_1(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             CError.Compare(wSettings.NamespaceHandling, NamespaceHandling.Default, "Incorrect default value for XmlWriterSettings.NamespaceHandling");
@@ -87,7 +87,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates)]
-        public void NS_Handling_2(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling)
+        public void NS_Handling_2(XmlWriterUtils utils, NamespaceHandling nsHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
@@ -102,7 +102,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & WriterType.AllButIndenting)]
-        public void NS_Handling_2a(XmlWriterTestCaseBase utils)
+        public void NS_Handling_2a(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = NamespaceHandling.Default | NamespaceHandling.OmitDuplicates;
@@ -117,7 +117,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates)]
-        public void NS_Handling_3(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling)
+        public void NS_Handling_3(XmlWriterUtils utils, NamespaceHandling nsHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = NamespaceHandling.OmitDuplicates;
@@ -135,7 +135,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates)]
-        public void NS_Handling_3a(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling)
+        public void NS_Handling_3a(XmlWriterUtils utils, NamespaceHandling nsHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
@@ -187,7 +187,7 @@ namespace System.Xml.Tests
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates, "<a xmlns:p=\"p1\"><b xmlns:p=\"p2\"><c xmlns:p=\"p3\" /></b></a>", null)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default, "<a xmlns:p=\"p1\"><b xmlns:p=\"p2\"><c xmlns:p=\"p1\" /></b></a>", null)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates, "<a xmlns:p=\"p1\"><b xmlns:p=\"p2\"><c xmlns:p=\"p1\" /></b></a>", null)]
-        public void NS_Handling_3b(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling, string xml, string exp)
+        public void NS_Handling_3b(XmlWriterUtils utils, NamespaceHandling nsHandling, string xml, string exp)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
@@ -207,7 +207,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates)]
-        public void NS_Handling_4a(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling)
+        public void NS_Handling_4a(XmlWriterUtils utils, NamespaceHandling nsHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
@@ -228,7 +228,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates)]
-        public void NS_Handling_4b(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling)
+        public void NS_Handling_4b(XmlWriterUtils utils, NamespaceHandling nsHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
@@ -249,7 +249,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates)]
-        public void NS_Handling_5(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling)
+        public void NS_Handling_5(XmlWriterUtils utils, NamespaceHandling nsHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
@@ -267,7 +267,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates)]
-        public void NS_Handling_6(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling)
+        public void NS_Handling_6(XmlWriterUtils utils, NamespaceHandling nsHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
@@ -285,7 +285,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates)]
-        public void NS_Handling_7(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling)
+        public void NS_Handling_7(XmlWriterUtils utils, NamespaceHandling nsHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
@@ -303,7 +303,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates)]
-        public void NS_Handling_8(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling)
+        public void NS_Handling_8(XmlWriterUtils utils, NamespaceHandling nsHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
@@ -321,7 +321,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates)]
-        public void NS_Handling_9(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling)
+        public void NS_Handling_9(XmlWriterUtils utils, NamespaceHandling nsHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
@@ -339,7 +339,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates)]
-        public void NS_Handling_10(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling)
+        public void NS_Handling_10(XmlWriterUtils utils, NamespaceHandling nsHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
@@ -357,7 +357,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates)]
-        public void NS_Handling_11(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling)
+        public void NS_Handling_11(XmlWriterUtils utils, NamespaceHandling nsHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
@@ -375,7 +375,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates)]
-        public void NS_Handling_12(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling)
+        public void NS_Handling_12(XmlWriterUtils utils, NamespaceHandling nsHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
@@ -393,7 +393,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates)]
-        public void NS_Handling_16(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling)
+        public void NS_Handling_16(XmlWriterUtils utils, NamespaceHandling nsHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
@@ -413,7 +413,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates)]
-        public void NS_Handling_17(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling)
+        public void NS_Handling_17(XmlWriterUtils utils, NamespaceHandling nsHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
@@ -440,7 +440,7 @@ namespace System.Xml.Tests
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates, true)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default, false)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates, false)]
-        public void NS_Handling_17a(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling, bool isAttr)
+        public void NS_Handling_17a(XmlWriterUtils utils, NamespaceHandling nsHandling, bool isAttr)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
@@ -469,7 +469,7 @@ namespace System.Xml.Tests
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates, true)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default, false)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates, false)]
-        public void NS_Handling_17b(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling, bool isAttr)
+        public void NS_Handling_17b(XmlWriterUtils utils, NamespaceHandling nsHandling, bool isAttr)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
@@ -497,7 +497,7 @@ namespace System.Xml.Tests
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates, true)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default, false)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates, false)]
-        public void NS_Handling_17c(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling, bool isAttr)
+        public void NS_Handling_17c(XmlWriterUtils utils, NamespaceHandling nsHandling, bool isAttr)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
@@ -538,7 +538,7 @@ namespace System.Xml.Tests
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates, true)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default, false)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates, false)]
-        public void NS_Handling_17d(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling, bool isAttr)
+        public void NS_Handling_17d(XmlWriterUtils utils, NamespaceHandling nsHandling, bool isAttr)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
@@ -571,7 +571,7 @@ namespace System.Xml.Tests
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates, true)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default, false)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates, false)]
-        public void NS_Handling_17e(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling, bool isAttr)
+        public void NS_Handling_17e(XmlWriterUtils utils, NamespaceHandling nsHandling, bool isAttr)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
@@ -597,7 +597,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates)]
-        public void NS_Handling_18(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling)
+        public void NS_Handling_18(XmlWriterUtils utils, NamespaceHandling nsHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
@@ -620,7 +620,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates)]
-        public void NS_Handling_19(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling)
+        public void NS_Handling_19(XmlWriterUtils utils, NamespaceHandling nsHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
@@ -657,7 +657,7 @@ namespace System.Xml.Tests
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates, "xmlns", "lang", true)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default, "xmlns", "lang", false)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates, "xmlns", "lang", false)]
-        public void NS_Handling_19a(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling, string prefix, string name, bool isAttr)
+        public void NS_Handling_19a(XmlWriterUtils utils, NamespaceHandling nsHandling, string prefix, string name, bool isAttr)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
@@ -685,7 +685,7 @@ namespace System.Xml.Tests
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates, true)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default, false)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates, false)]
-        public void NS_Handling_19b(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling, bool isAttr)
+        public void NS_Handling_19b(XmlWriterUtils utils, NamespaceHandling nsHandling, bool isAttr)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
@@ -710,7 +710,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates)]
-        public void NS_Handling_20(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling)
+        public void NS_Handling_20(XmlWriterUtils utils, NamespaceHandling nsHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
@@ -732,7 +732,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates)]
-        public void NS_Handling_21(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling)
+        public void NS_Handling_21(XmlWriterUtils utils, NamespaceHandling nsHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
@@ -755,7 +755,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates)]
-        public void NS_Handling_22(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling)
+        public void NS_Handling_22(XmlWriterUtils utils, NamespaceHandling nsHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
@@ -777,7 +777,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates)]
-        public void NS_Handling_23(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling)
+        public void NS_Handling_23(XmlWriterUtils utils, NamespaceHandling nsHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
@@ -799,7 +799,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates)]
-        public void NS_Handling_24(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling)
+        public void NS_Handling_24(XmlWriterUtils utils, NamespaceHandling nsHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
@@ -827,7 +827,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates)]
-        public void NS_Handling_25(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling)
+        public void NS_Handling_25(XmlWriterUtils utils, NamespaceHandling nsHandling)
         {
             string xml = "<employees xmlns:email=\"http://www.w3c.org/some-spec-3.2\">" +
     "<employee><name>Bob Worker</name><address xmlns=\"http://postal.ie/spec-1.0\"><street>Nassau Street</street>" +
@@ -850,7 +850,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates)]
-        public void NS_Handling_25a(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling)
+        public void NS_Handling_25a(XmlWriterUtils utils, NamespaceHandling nsHandling)
         {
             string xml = "<root><elem1 xmlns=\"urn:URN1\" xmlns:ns1=\"urn:URN2\"><ns1:childElem1><grandChild1 /></ns1:childElem1><childElem2><grandChild2 /></childElem2></elem1></root>";
 
@@ -870,7 +870,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates)]
-        public void NS_Handling_26(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling)
+        public void NS_Handling_26(XmlWriterUtils utils, NamespaceHandling nsHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
@@ -889,7 +889,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates)]
-        public void NS_Handling_27(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling)
+        public void NS_Handling_27(XmlWriterUtils utils, NamespaceHandling nsHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
@@ -908,7 +908,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates)]
-        public void NS_Handling_29(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling)
+        public void NS_Handling_29(XmlWriterUtils utils, NamespaceHandling nsHandling)
         {
             string xml = "<!DOCTYPE root [ <!ELEMENT root ANY > <!ELEMENT ns1:elem1 ANY >" +
 "<!ATTLIST ns1:elem1 xmlns CDATA #FIXED \"urn:URN2\">  <!ATTLIST ns1:elem1 xmlns:ns1 CDATA #FIXED \"urn:URN1\">" +
@@ -934,7 +934,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates)]
-        public void NS_Handling_30(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling)
+        public void NS_Handling_30(XmlWriterUtils utils, NamespaceHandling nsHandling)
         {
             string xml = "<!DOCTYPE doc " +
 "[<!ELEMENT doc ANY>" +
@@ -974,7 +974,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates)]
-        public void NS_Handling_30a(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling)
+        public void NS_Handling_30a(XmlWriterUtils utils, NamespaceHandling nsHandling)
         {
             string xml = "<!DOCTYPE doc " +
 "[<!ELEMENT doc ANY>" +
@@ -1014,7 +1014,7 @@ namespace System.Xml.Tests
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.Default)]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ~WriterType.Async & WriterType.AllButCustom & WriterType.AllButIndenting, NamespaceHandling.OmitDuplicates)]
-        public void NS_Handling_31(XmlWriterTestCaseBase utils, NamespaceHandling nsHandling)
+        public void NS_Handling_31(XmlWriterUtils utils, NamespaceHandling nsHandling)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.NamespaceHandling = nsHandling;
