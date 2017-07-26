@@ -14,7 +14,7 @@ Runtime-specific library code ([mscorlib](https://github.com/dotnet/coreclr/tree
 
 ## .NET Core
 
-Great starting page: http://dotnet.github.io
+Official Starting Page: http://dotnet.github.io
 
 * [How to use .NET Core](https://github.com/dotnet/core/#get-started) (with VS, VS Code, command-line CLI)
   * [Install official releases](https://www.microsoft.com/net/core)
