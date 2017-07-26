@@ -18,6 +18,12 @@ namespace System.Net.WebSockets.Client.Tests
 {
     public partial class ClientWebSocketOptionsTests : ClientWebSocketTestBase
     {
+        // Reacreate the minimum WebSocket buffer size values from the Framework version of WebSocket.
+        // We need these values to test when the minimums are violated, but the values set in Framework
+        // are internal to the WebSocketBuffer class.
+        private const int MinSendBufferSize = 16;
+        private const int MinReceiveBufferSize = 256;
+
         public static bool CanTestCertificates =>
             Capability.IsTrustedRootCertificateInstalled() &&
             (BackendSupportsCustomCertificateHandling || Capability.AreHostsFileNamesInstalled());
@@ -43,19 +49,25 @@ namespace System.Net.WebSockets.Client.Tests
             Assert.False(cws.Options.UseDefaultCredentials);
         }
 
-        [ActiveIssue(20358, TargetFrameworkMonikers.NetFramework)]
         [ConditionalFact(nameof(WebSocketsSupported))]
         public static void SetBuffer_InvalidArgs_Throws()
         {
             var cws = new ClientWebSocket();
             AssertExtensions.Throws<ArgumentOutOfRangeException>("receiveBufferSize", () => cws.Options.SetBuffer(0, 0));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("receiveBufferSize", () => cws.Options.SetBuffer(0, 1));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("sendBufferSize", () => cws.Options.SetBuffer(1, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("receiveBufferSize", () => cws.Options.SetBuffer(0, MinSendBufferSize));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("sendBufferSize", () => cws.Options.SetBuffer(MinReceiveBufferSize, 0));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("receiveBufferSize", () => cws.Options.SetBuffer(0, 0, new ArraySegment<byte>(new byte[1])));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("receiveBufferSize", () => cws.Options.SetBuffer(0, 1, new ArraySegment<byte>(new byte[1])));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("sendBufferSize", () => cws.Options.SetBuffer(1, 0, new ArraySegment<byte>(new byte[1])));
-            AssertExtensions.Throws<ArgumentNullException>("buffer.Array", () => cws.Options.SetBuffer(1, 1, default(ArraySegment<byte>)));
-            AssertExtensions.Throws<ArgumentOutOfRangeException>("buffer", () => cws.Options.SetBuffer(1, 1, new ArraySegment<byte>(new byte[0])));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("receiveBufferSize", () => cws.Options.SetBuffer(0, MinSendBufferSize, new ArraySegment<byte>(new byte[1])));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("sendBufferSize", () => cws.Options.SetBuffer(MinReceiveBufferSize, 0, new ArraySegment<byte>(new byte[1])));
+            AssertExtensions.Throws<ArgumentNullException>("buffer.Array", () => cws.Options.SetBuffer(MinReceiveBufferSize, MinSendBufferSize, default(ArraySegment<byte>)));
+            if (PlatformDetection.IsFullFramework)
+            {
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("internalBuffer", () => cws.Options.SetBuffer(MinReceiveBufferSize, MinSendBufferSize, new ArraySegment<byte>(new byte[0])));
+            }
+            else
+            {
+                AssertExtensions.Throws<ArgumentOutOfRangeException>("buffer", () => cws.Options.SetBuffer(MinReceiveBufferSize, MinSendBufferSize, new ArraySegment<byte>(new byte[0])));
+            }
         }
 
         [ConditionalFact(nameof(WebSocketsSupported))]
