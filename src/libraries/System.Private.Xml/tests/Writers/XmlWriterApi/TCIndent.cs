@@ -12,7 +12,7 @@ namespace System.Xml.Tests
     public class TCIndent
     {
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButIndenting & WriterType.AllButCustom)]
+        [XmlWriterInlineData(WriterType.AllButIndenting & WriterType.AllButCustom)]
         public void indent_1(XmlWriterUtils utils)
         {
             XmlWriter w = utils.CreateWriter();
@@ -26,7 +26,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void indent_2(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -43,7 +43,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void indent_3(XmlWriterUtils utils)
         {
             XmlWriter w = utils.CreateWriter();
@@ -55,7 +55,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
+        [XmlWriterInlineData(WriterType.AllButCustom)]
         public void indent_4(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -72,7 +72,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void indent_5(XmlWriterUtils utils)
         {
             XmlWriter w = utils.CreateWriter();
@@ -84,7 +84,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void indent_6(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -100,7 +100,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void indent_7(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -118,7 +118,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void indent_8(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -136,7 +136,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void indent_9(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -157,7 +157,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 10, Desc = "Mixed content after child", Priority = 0)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void indent_10(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -180,7 +180,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void indent_11(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -198,7 +198,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void indent_12(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -216,7 +216,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void indent_13(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -234,7 +234,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void indent_14(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -252,7 +252,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void indent_15(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -271,7 +271,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void indent_16(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -293,7 +293,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void indent_17(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -315,7 +315,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void indent_18(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -335,7 +335,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void indent_19(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -354,7 +354,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void indent_20(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -371,7 +371,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void indent_21(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -388,8 +388,8 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ConformanceLevel.Document)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ConformanceLevel.Auto)]
+        [XmlWriterInlineData(ConformanceLevel.Document)]
+        [XmlWriterInlineData(ConformanceLevel.Auto)]
         public void indent_22(XmlWriterUtils utils, ConformanceLevel conformanceLevel)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -409,8 +409,8 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ConformanceLevel.Document)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ConformanceLevel.Auto)]
+        [XmlWriterInlineData(ConformanceLevel.Document)]
+        [XmlWriterInlineData(ConformanceLevel.Auto)]
         public void indent_24(XmlWriterUtils utils, ConformanceLevel conformanceLevel)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -430,8 +430,8 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ConformanceLevel.Document)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ConformanceLevel.Auto)]
+        [XmlWriterInlineData(ConformanceLevel.Document)]
+        [XmlWriterInlineData(ConformanceLevel.Auto)]
         public void indent_26(XmlWriterUtils utils, ConformanceLevel conformanceLevel)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -453,7 +453,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void indent_28(XmlWriterUtils utils)
         {
             // The output should be the same for ConformanceLevel.Document/Auto
@@ -487,7 +487,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 29, Desc = "First element - with decl", Priority = 1, Param = true)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
+        [XmlWriterInlineData(WriterType.AllButCustom)]
         public void indent_29(XmlWriterUtils utils)
         {
             // The output should be the same for ConformanceLevel.Document/Auto
@@ -519,9 +519,9 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ConformanceLevel.Document)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ConformanceLevel.Auto)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ConformanceLevel.Fragment)]
+        [XmlWriterInlineData(ConformanceLevel.Document)]
+        [XmlWriterInlineData(ConformanceLevel.Auto)]
+        [XmlWriterInlineData(ConformanceLevel.Fragment)]
         public void indent_30(XmlWriterUtils utils, ConformanceLevel conformanceLevel)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -544,8 +544,8 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ConformanceLevel.Document)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ConformanceLevel.Auto)]
+        [XmlWriterInlineData(ConformanceLevel.Document)]
+        [XmlWriterInlineData(ConformanceLevel.Auto)]
         public void indent_33(XmlWriterUtils utils, ConformanceLevel conformanceLevel)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -565,8 +565,8 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ConformanceLevel.Document)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ConformanceLevel.Auto)]
+        [XmlWriterInlineData(ConformanceLevel.Document)]
+        [XmlWriterInlineData(ConformanceLevel.Auto)]
         public void indent_36(XmlWriterUtils utils, ConformanceLevel conformanceLevel)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
@@ -586,9 +586,9 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ConformanceLevel.Document)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ConformanceLevel.Auto)]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, ConformanceLevel.Fragment)]
+        [XmlWriterInlineData(ConformanceLevel.Document)]
+        [XmlWriterInlineData(ConformanceLevel.Auto)]
+        [XmlWriterInlineData(ConformanceLevel.Fragment)]
         public void indent_39(XmlWriterUtils utils, ConformanceLevel conformanceLevel)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();

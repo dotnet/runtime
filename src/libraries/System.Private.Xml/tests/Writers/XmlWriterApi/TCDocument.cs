@@ -12,7 +12,7 @@ namespace System.Xml.Tests
     {
         //[Variation(id = 1, Desc = "StartDocument-EndDocument Sanity Test", Pri = 0)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void document_1(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -27,7 +27,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 2, Desc = "Multiple StartDocument should error", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void document_2(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -50,7 +50,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 3, Desc = "Missing StartDocument should be fixed", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void document_3(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -65,7 +65,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 4, Desc = "Multiple EndDocument should error", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void document_4(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -91,7 +91,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 5, Desc = "Missing EndDocument should be fixed", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void document_5(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -105,7 +105,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 6, Desc = "Call Start-EndDocument multiple times, should error", Pri = 2)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void document_6(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -133,7 +133,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 7, Desc = "Multiple root elements should error", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void document_7(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -158,7 +158,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 8, Desc = "Start-EndDocument without any element should error", Pri = 2)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void document_8(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -181,7 +181,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 9, Desc = "Top level text should error - PROLOG", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void document_9(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -204,7 +204,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 10, Desc = "Top level text should error - EPILOG", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void document_10(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -230,7 +230,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 11, Desc = "Top level atomic value should error - PROLOG", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void document_11(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -253,7 +253,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 12, Desc = "Top level atomic value should error - EPILOG", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void document_12(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())

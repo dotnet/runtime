@@ -13,7 +13,7 @@ namespace System.Xml.Tests
     {
         //[Variation(id = 1, Desc = "Sanity test", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void docType_1(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -31,7 +31,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 2, Desc = "WriteDocType pubid = null and sysid = null", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void docType_2(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -48,7 +48,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 3, Desc = "Call WriteDocType twice", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void docType_3(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -70,8 +70,8 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "String.Empty")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "null")]
+        [XmlWriterInlineData("String.Empty")]
+        [XmlWriterInlineData("null")]
         public void docType_4(XmlWriterUtils utils, string param)
         {
             String docName = "";
@@ -104,7 +104,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 6, Desc = "WriteDocType with DocType end tag in the value", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void docType_5(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -121,7 +121,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 7, Desc = "Call WriteDocType in the root element", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void docType_6(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -145,7 +145,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 8, Desc = "Call WriteDocType following root element", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void docType_7(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())

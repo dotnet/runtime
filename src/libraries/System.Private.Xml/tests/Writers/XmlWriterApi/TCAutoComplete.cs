@@ -12,7 +12,7 @@ namespace System.Xml.Tests
     {
         //[Variation(id = 1, Desc = "Missing EndAttr, followed by element", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void var_1(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -28,7 +28,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 2, Desc = "Missing EndAttr, followed by comment", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void var_2(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -43,7 +43,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 3, Desc = "Write EndDocument with unclosed element tag", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void var_3(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -57,7 +57,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 4, Desc = "WriteStartDocument - WriteEndDocument", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void var_4(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -86,7 +86,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 5, Desc = "WriteEndElement without WriteStartElement", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void var_5(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -110,7 +110,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 6, Desc = "WriteFullEndElement without WriteStartElement", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void var_6(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())

@@ -12,7 +12,7 @@ namespace System.Xml.Tests
     {
         //[Variation(id = 2, Desc = "Call WriteAttributes with default DTD attributes = false", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeAttributes_2(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -42,7 +42,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 3, Desc = "Call WriteAttributes with XmlReader = null")]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeAttributes_3(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -66,7 +66,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 4, Desc = "Call WriteAttributes when reader is located on element", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeAttributes_4(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -100,7 +100,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 5, Desc = "Call WriteAttributes when reader is located in the middle attribute", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeAttributes_5(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -135,7 +135,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 6, Desc = "Call WriteAttributes when reader is located in the last attribute", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeAttributes_6(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -172,7 +172,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 8, Desc = "Call WriteAttributes with reader on XmlDeclaration", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeAttributes_8(XmlWriterUtils utils)
         {
             if (IsXPathDataModelReader())
@@ -202,14 +202,14 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "DocumentType")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "CDATA")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "Text")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "ProcessingInstruction")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "Comment")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "EntityReference")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "Whitespace")]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "SignificantWhitespace")]
+        [XmlWriterInlineData("DocumentType")]
+        [XmlWriterInlineData("CDATA")]
+        [XmlWriterInlineData("Text")]
+        [XmlWriterInlineData("ProcessingInstruction")]
+        [XmlWriterInlineData("Comment")]
+        [XmlWriterInlineData("EntityReference")]
+        [XmlWriterInlineData("Whitespace")]
+        [XmlWriterInlineData("SignificantWhitespace")]
         public void writeAttributes_9(XmlWriterUtils utils, string tokenType)
         {
             string strxml = "";
@@ -302,7 +302,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 17, Desc = "Call WriteAttribute with double quote char in the value", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeAttributes_10(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -329,7 +329,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 18, Desc = "Call WriteAttribute with single quote char in the value", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeAttributes_11(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -358,7 +358,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 19, Desc = "Call WriteAttributes with 100 attributes", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeAttributes_12(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -390,7 +390,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 20, Desc = "WriteAttributes with different builtin entities in attribute value", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeAttributes_13(XmlWriterUtils utils)
         {
             string strxml = "<E a=\"&gt;&lt;&quot;&apos;&amp;\" />";
@@ -418,7 +418,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 21, Desc = "WriteAttributes tries to duplicate attribute", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void writeAttributes_14(XmlWriterUtils utils)
         {
             string strxml = "<root attr='test' />";

@@ -13,7 +13,7 @@ namespace System.Xml.Tests
     {
         //[Variation(id = 1, Desc = "EntityRef after Document should error - PROLOG", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void state_1(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -37,7 +37,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 2, Desc = "EntityRef after Document should error - EPILOG", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void state_2(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -62,7 +62,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 3, Desc = "CharEntity after Document should error - PROLOG", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void state_3(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -85,7 +85,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 4, Desc = "CharEntity after Document should error - EPILOG", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void state_4(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -110,7 +110,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 5, Desc = "SurrogateCharEntity after Document should error - PROLOG", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void state_5(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -133,7 +133,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 6, Desc = "SurrogateCharEntity after Document should error - EPILOG", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void state_6(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -158,7 +158,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 7, Desc = "Attribute after Document should error - PROLOG", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void state_7(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -181,7 +181,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 8, Desc = "Attribute after Document should error - EPILOG", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void state_8(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -206,7 +206,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 9, Desc = "CDATA after Document should error - PROLOG", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void state_9(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -229,7 +229,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 10, Desc = "CDATA after Document should error - EPILOG", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void state_10(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -254,7 +254,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 11, Desc = "Element followed by Document should error", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void state_11(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())
@@ -277,7 +277,7 @@ namespace System.Xml.Tests
 
         //[Variation(id = 12, Desc = "Element followed by DocType should error", Pri = 1)]
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void state_12(XmlWriterUtils utils)
         {
             using (XmlWriter w = utils.CreateWriter())

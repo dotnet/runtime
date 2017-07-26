@@ -61,7 +61,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void XmlWellFormedWriterDoesNotThrowIndexOutOfRange0(XmlWriterUtils utils)
         {
             XmlWriterSettings ws = new XmlWriterSettings();
@@ -80,7 +80,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void XmlWellFormedWriterDoesNotThrowIndexOutOfRange1(XmlWriterUtils utils)
         {
             XmlWriterSettings ws = new XmlWriterSettings();
@@ -102,7 +102,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void XmlWellFormedWriterDoesNotThrowIndexOutOfRange2(XmlWriterUtils utils)
         {
             XmlWriterSettings ws = new XmlWriterSettings();
@@ -127,7 +127,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void DisposedFileStreamDoesNotCauseCrash0(XmlWriterUtils utils)
         {
             XmlWriterSettings ws = new XmlWriterSettings();
@@ -159,7 +159,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void DisposedFileStreamDoesNotCauseCrash1(XmlWriterUtils utils)
         {
             XmlWriterSettings ws = new XmlWriterSettings();
@@ -191,7 +191,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void DisposedFileStreamDoesNotCauseCrash2(XmlWriterUtils utils)
         {
             XmlWriterSettings ws = new XmlWriterSettings();
@@ -226,7 +226,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void DisposedFileStreamDoesNotCauseCrash3(XmlWriterUtils utils)
         {
             XmlWriterSettings ws = new XmlWriterSettings();
@@ -261,7 +261,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void DisposedFileStreamDoesNotCauseCrash4(XmlWriterUtils utils)
         {
             XmlWriterSettings ws = new XmlWriterSettings();
@@ -298,7 +298,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
+        [XmlWriterInlineData]
         public void DisposedFileStreamDoesNotCauseCrash5(XmlWriterUtils utils)
         {
             XmlWriterSettings ws = new XmlWriterSettings();
@@ -333,7 +333,7 @@ namespace System.Xml.Tests
         }
 
         [Theory]
-        [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.All & ~WriterType.Async)]
+        [XmlWriterInlineData(WriterType.All & ~WriterType.Async)]
         public void DisposedFileStreamDoesNotCauseCrash6(XmlWriterUtils utils)
         {
             XmlWriterSettings ws = new XmlWriterSettings();
