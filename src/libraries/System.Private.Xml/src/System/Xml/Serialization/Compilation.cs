@@ -172,9 +172,10 @@ namespace System.Xml.Serialization
                 name.Name = serializerName;
                 name.CodeBase = null;
                 name.CultureInfo = CultureInfo.InvariantCulture;
+                string serializerPath = Path.Combine(Path.GetDirectoryName(type.Assembly.Location), serializerName + ".dll");
                 try
                 {
-                    serializer = Assembly.LoadFile(Path.GetFullPath(serializerName) + ".dll");
+                    serializer = Assembly.LoadFile(serializerPath);
                 }
                 catch (Exception e)
                 {
