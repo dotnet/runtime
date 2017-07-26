@@ -438,7 +438,7 @@ namespace XmlCoreTest.Common
             return overrideAsync ? async : AsyncUtil.IsAsyncEnabled;
         }
 
-        public static XmlWriter Create(string outputFileName, bool overrideAsync, bool async)
+        public static XmlWriter Create(string outputFileName, bool overrideAsync = false, bool async = false)
         {
             FilePathUtil.addStream(outputFileName, new MemoryStream());
             if (ShouldEnableAsync(overrideAsync, async))
@@ -451,7 +451,7 @@ namespace XmlCoreTest.Common
             }
         }
 
-        public static XmlWriter Create(string outputFileName, XmlWriterSettings settings, bool overrideAsync, bool async)
+        public static XmlWriter Create(string outputFileName, XmlWriterSettings settings, bool overrideAsync = false, bool async = false)
         {
             FilePathUtil.addStream(outputFileName, new MemoryStream());
             if (ShouldEnableAsync(overrideAsync, async))
@@ -464,7 +464,7 @@ namespace XmlCoreTest.Common
             }
         }
 
-        public static XmlWriter Create(Stream output, bool overrideAsync, bool async)
+        public static XmlWriter Create(Stream output, bool overrideAsync = false, bool async = false)
         {
             if (ShouldEnableAsync(overrideAsync, async))
             {
@@ -476,7 +476,7 @@ namespace XmlCoreTest.Common
             }
         }
 
-        public static XmlWriter Create(Stream output, XmlWriterSettings settings, bool overrideAsync, bool async)
+        public static XmlWriter Create(Stream output, XmlWriterSettings settings, bool overrideAsync = false, bool async = false)
         {
             if (ShouldEnableAsync(overrideAsync, async))
             {
@@ -488,7 +488,7 @@ namespace XmlCoreTest.Common
             }
         }
 
-        public static XmlWriter Create(TextWriter output, bool overrideAsync, bool async)
+        public static XmlWriter Create(TextWriter output, bool overrideAsync = false, bool async = false)
         {
             if (ShouldEnableAsync(overrideAsync, async))
             {
@@ -500,7 +500,7 @@ namespace XmlCoreTest.Common
             }
         }
 
-        public static XmlWriter Create(TextWriter output, XmlWriterSettings settings, bool overrideAsync, bool async)
+        public static XmlWriter Create(TextWriter output, XmlWriterSettings settings, bool overrideAsync = false, bool async = false)
         {
             if (ShouldEnableAsync(overrideAsync, async))
             {
@@ -512,7 +512,7 @@ namespace XmlCoreTest.Common
             }
         }
 
-        public static XmlWriter Create(StringBuilder output, bool overrideAsync, bool async)
+        public static XmlWriter Create(StringBuilder output, bool overrideAsync = false, bool async = false)
         {
             if (ShouldEnableAsync(overrideAsync, async))
             {
@@ -524,7 +524,7 @@ namespace XmlCoreTest.Common
             }
         }
 
-        public static XmlWriter Create(StringBuilder output, XmlWriterSettings settings, bool overrideAsync, bool async)
+        public static XmlWriter Create(StringBuilder output, XmlWriterSettings settings, bool overrideAsync = false, bool async = false)
         {
             if (ShouldEnableAsync(overrideAsync, async))
             {
@@ -536,7 +536,7 @@ namespace XmlCoreTest.Common
             }
         }
 
-        public static XmlWriter Create(XmlWriter output, bool overrideAsync, bool async)
+        public static XmlWriter Create(XmlWriter output, bool overrideAsync = false, bool async = false)
         {
             if (ShouldEnableAsync(overrideAsync, async))
             {
@@ -548,7 +548,7 @@ namespace XmlCoreTest.Common
             }
         }
 
-        public static XmlWriter Create(XmlWriter output, XmlWriterSettings settings, bool overrideAsync, bool async)
+        public static XmlWriter Create(XmlWriter output, XmlWriterSettings settings, bool overrideAsync = false, bool async = false)
         {
             if (ShouldEnableAsync(overrideAsync, async))
             {
