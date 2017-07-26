@@ -15398,10 +15398,16 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTreePtr* pObj, GenTreePtr* pStatic,
     }
     else if (OperGet() == GT_ADD)
     {
-        // op1 should never be a field sequence (or any other kind of handle)
-        assert((gtOp.gtOp1->gtOper != GT_CNS_INT) || !gtOp.gtOp1->IsIconHandle());
-        if (gtOp.gtOp2->OperGet() == GT_CNS_INT)
+        // If one operator is a field sequence/handle, the other operator must not also be a field sequence/handle.
+        if ((gtOp.gtOp1->OperGet() == GT_CNS_INT) && gtOp.gtOp1->IsIconHandle())
         {
+            assert((gtOp.gtOp2->gtOper != GT_CNS_INT) || !gtOp.gtOp2->IsIconHandle());
+            newFldSeq = gtOp.gtOp1->AsIntCon()->gtFieldSeq;
+            baseAddr  = gtOp.gtOp2;
+        }
+        else if (gtOp.gtOp2->OperGet() == GT_CNS_INT)
+        {
+            assert((gtOp.gtOp1->gtOper != GT_CNS_INT) || !gtOp.gtOp1->IsIconHandle());
             newFldSeq = gtOp.gtOp2->AsIntCon()->gtFieldSeq;
             baseAddr  = gtOp.gtOp1;
         }
