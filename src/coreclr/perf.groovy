@@ -30,115 +30,137 @@ def static getOSGroup(def os) {
     ['Windows_NT'].each { os ->
         ['x64', 'x86'].each { arch ->
             [true, false].each { isSmoketest ->
-                def architecture = arch
-                def jobName = isSmoketest ? "perf_perflab_${os}_${arch}_smoketest" : "perf_perflab_${os}_${arch}"
+                ['ryujit', 'legacy_backend'].each { jit ->
 
-                if (arch == 'x86') {
-                    testEnv = '-testEnv %WORKSPACE%\\tests\\x86\\ryujit_x86_testenv.cmd'
-                }
+                    if (arch == 'x64' && jit == 'legacy_backend')
+                    {
+                        return
+                    }
 
-                def newJob = job(Utilities.getFullJobName(project, jobName, isPR)) {
-                    // Set the label.
-                    label('windows_clr_perf')
-                    wrappers {
-                        credentialsBinding {
-                            string('BV_UPLOAD_SAS_TOKEN', 'CoreCLR Perf BenchView Sas')
+                    ['full_opt', 'min_opt'].each { opt_level ->
+                        def architecture = arch
+                        def jobName = isSmoketest ? "perf_perflab_${os}_${arch}_${opt_level}_${jit}_smoketest" : "perf_perflab_${os}_${arch}_${opt_level}_${jit}"
+                        def testEnv = ""
+
+                        if (jit == 'legacy_backend')
+                        {
+                            testEnv = '-testEnv %WORKSPACE%\\tests\\legacyjit_x86_testenv.cmd'
                         }
-                    }
 
-                    if (isPR) {
-                        parameters {
-                            stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
+                        def newJob = job(Utilities.getFullJobName(project, jobName, isPR)) {
+                            // Set the label.
+                            label('windows_clr_perf')
+                            wrappers {
+                                credentialsBinding {
+                                    string('BV_UPLOAD_SAS_TOKEN', 'CoreCLR Perf BenchView Sas')
+                                }
+                            }
+
+                            if (isPR) {
+                                parameters {
+                                    stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
+                                }
+                            }
+                            if (isSmoketest) {
+                                parameters {
+                                    stringParam('XUNIT_PERFORMANCE_MAX_ITERATION', '2', 'Sets the number of iterations to two.  We want to do this so that we can run as fast as possible as this is just for smoke testing')
+                                    stringParam('XUNIT_PERFORMANCE_MAX_ITERATION_INNER_SPECIFIED', '2', 'Sets the number of iterations to two.  We want to do this so that we can run as fast as possible as this is just for smoke testing')
+                                }
+                            }
+                            else {
+                                parameters {
+                                    stringParam('XUNIT_PERFORMANCE_MAX_ITERATION', '21', 'Sets the number of iterations to twenty one.  We are doing this to limit the amount of data that we upload as 20 iterations is enought to get a good sample')
+                                    stringParam('XUNIT_PERFORMANCE_MAX_ITERATION_INNER_SPECIFIED', '21', 'Sets the number of iterations to twenty one.  We are doing this to limit the amount of data that we upload as 20 iterations is enought to get a good sample')
+                                }
+                            }
+
+                            def configuration = 'Release'
+                            def runType = isPR ? 'private' : 'rolling'
+                            def benchViewName = isPR ? 'coreclr private %BenchviewCommitName%' : 'coreclr rolling %GIT_BRANCH_WITHOUT_ORIGIN% %GIT_COMMIT%'
+                            def uploadString = isSmoketest ? '' : '-uploadToBenchview'
+
+                            steps {
+                                // Batch
+
+                                batchFile("powershell wget https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile \"%WORKSPACE%\\nuget.exe\"")
+                                batchFile("if exist \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\" rmdir /s /q \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\"")
+                                batchFile("\"%WORKSPACE%\\nuget.exe\" install Microsoft.BenchView.JSONFormat -Source http://benchviewtestfeed.azurewebsites.net/nuget -OutputDirectory \"%WORKSPACE%\" -Prerelease -ExcludeVersion")
+                                //Do this here to remove the origin but at the front of the branch name as this is a problem for BenchView
+                                //we have to do it all as one statement because cmd is called each time and we lose the set environment variable
+                                batchFile("if \"%GIT_BRANCH:~0,7%\" == \"origin/\" (set \"GIT_BRANCH_WITHOUT_ORIGIN=%GIT_BRANCH:origin/=%\") else (set \"GIT_BRANCH_WITHOUT_ORIGIN=%GIT_BRANCH%\")\n" +
+                                "set \"BENCHVIEWNAME=${benchViewName}\"\n" +
+                                "set \"BENCHVIEWNAME=%BENCHVIEWNAME:\"=%\"\n" +
+                                "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\submission-metadata.py\" --name \"%BENCHVIEWNAME%\" --user \"dotnet-bot@microsoft.com\"\n" +
+                                "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\build.py\" git --branch %GIT_BRANCH_WITHOUT_ORIGIN% --type ${runType}")
+                                batchFile("py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\machinedata.py\"")
+                                batchFile("set __TestIntermediateDir=int&&build.cmd ${configuration} ${architecture}")
+
+                                batchFile("tests\\runtest.cmd ${configuration} ${architecture} GenerateLayoutOnly")
+
+                                def runXUnitPerfCommonArgs = "-arch ${arch} -configuration ${configuration} -generateBenchviewData \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" ${uploadString} -runtype ${runType} ${testEnv} -optLevel ${opt_level} -jitName ${jit} -stabilityPrefix \"START \"CORECLR_PERF_RUN\" /B /WAIT /HIGH /AFFINITY 0x2\""
+
+                                // Run with just stopwatch: Profile=Off
+                                batchFile("tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\perflab\\Perflab -library")
+                                batchFile("tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\Jit\\Performance\\CodeQuality")
+
+                                // Run with the full set of counters enabled: Profile=On
+                                batchFile("tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\perflab\\Perflab -library -collectionFlags default+BranchMispredictions+CacheMisses+InstructionRetired+gcapi")
+                                batchFile("tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\Jit\\Performance\\CodeQuality -collectionFlags default+BranchMispredictions+CacheMisses+InstructionRetired+gcapi")
+                            }
                         }
-                    }
 
-                    if (isSmoketest) {
-                        parameters {
-                            stringParam('XUNIT_PERFORMANCE_MAX_ITERATION', '2', 'Sets the number of iterations to two.  We want to do this so that we can run as fast as possible as this is just for smoke testing')
-                            stringParam('XUNIT_PERFORMANCE_MAX_ITERATION_INNER_SPECIFIED', '2', 'Sets the number of iterations to two.  We want to do this so that we can run as fast as possible as this is just for smoke testing')
+                        if (isSmoketest) {
+                            Utilities.setMachineAffinity(newJob, "Windows_NT", '20170427-elevated')
                         }
-                    }
-                    else {
-                        parameters {
-                            stringParam('XUNIT_PERFORMANCE_MAX_ITERATION', '21', 'Sets the number of iterations to twenty one.  We are doing this to limit the amount of data that we upload as 20 iterations is enought to get a good sample')
-                            stringParam('XUNIT_PERFORMANCE_MAX_ITERATION_INNER_SPECIFIED', '21', 'Sets the number of iterations to twenty one.  We are doing this to limit the amount of data that we upload as 20 iterations is enought to get a good sample')
-                        }
-                    }
 
-                    def configuration = 'Release'
-                    def runType = isPR ? 'private' : 'rolling'
-                    def benchViewName = isPR ? 'coreclr private %BenchviewCommitName%' : 'coreclr rolling %GIT_BRANCH_WITHOUT_ORIGIN% %GIT_COMMIT%'
-                    def uploadString = isSmoketest ? '' : '-uploadToBenchview'
-
-                    steps {
-                        // Batch
-
-                        batchFile("powershell wget https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile \"%WORKSPACE%\\nuget.exe\"")
-                        batchFile("if exist \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\" rmdir /s /q \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\"")
-                        batchFile("\"%WORKSPACE%\\nuget.exe\" install Microsoft.BenchView.JSONFormat -Source http://benchviewtestfeed.azurewebsites.net/nuget -OutputDirectory \"%WORKSPACE%\" -Prerelease -ExcludeVersion")
-                        //Do this here to remove the origin but at the front of the branch name as this is a problem for BenchView
-                        //we have to do it all as one statement because cmd is called each time and we lose the set environment variable
-                        batchFile("if \"%GIT_BRANCH:~0,7%\" == \"origin/\" (set \"GIT_BRANCH_WITHOUT_ORIGIN=%GIT_BRANCH:origin/=%\") else (set \"GIT_BRANCH_WITHOUT_ORIGIN=%GIT_BRANCH%\")\n" +
-                        "set \"BENCHVIEWNAME=${benchViewName}\"\n" +
-                        "set \"BENCHVIEWNAME=%BENCHVIEWNAME:\"=%\"\n" +
-                        "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\submission-metadata.py\" --name \"%BENCHVIEWNAME%\" --user \"dotnet-bot@microsoft.com\"\n" +
-                        "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\build.py\" git --branch %GIT_BRANCH_WITHOUT_ORIGIN% --type ${runType}")
-                        batchFile("py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\machinedata.py\"")
-                        batchFile("set __TestIntermediateDir=int&&build.cmd ${configuration} ${architecture}")
-
-                        batchFile("tests\\runtest.cmd ${configuration} ${architecture} GenerateLayoutOnly")
-
-                        def runXUnitPerfCommonArgs = "-arch ${arch} -configuration ${configuration} -generateBenchviewData \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" ${uploadString} -runtype ${runType} -stabilityPrefix \"START \"CORECLR_PERF_RUN\" /B /WAIT /HIGH /AFFINITY 0x2\""
-
-                        // Run with just stopwatch: Profile=Off
-                        batchFile("tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\perflab\\Perflab -library")
-                        batchFile("tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\Jit\\Performance\\CodeQuality")
-
-                        // Run with the full set of counters enabled: Profile=On
-                        batchFile("tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\perflab\\Perflab -library -collectionFlags default+BranchMispredictions+CacheMisses+InstructionRetired+gcapi")
-                        batchFile("tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\Jit\\Performance\\CodeQuality -collectionFlags default+BranchMispredictions+CacheMisses+InstructionRetired+gcapi")
-                    }
-                }
-
-                if (isSmoketest) {
-                    Utilities.setMachineAffinity(newJob, "Windows_NT", '20170427-elevated')
-                }
-
-                // Save machinedata.json to /artifact/bin/ Jenkins dir
-                def archiveSettings = new ArchivalSettings()
+                        // Save machinedata.json to /artifact/bin/ Jenkins dir
+                        def archiveSettings = new ArchivalSettings()
                 archiveSettings.addFiles('bin/sandbox/Logs/Perf-*.*')
-                archiveSettings.addFiles('machinedata.json')
-                Utilities.addArchival(newJob, archiveSettings)
+                        archiveSettings.addFiles('machinedata.json')
+                        Utilities.addArchival(newJob, archiveSettings)
 
-                Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
+                        Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
 
-                newJob.with {
-                    wrappers {
-                        timeout {
-                            absolute(240)
+                        newJob.with {
+                            wrappers {
+                                timeout {
+                                    absolute(240)
+                                }
+                            }
+                        }
+
+                        if (isPR) {
+                            TriggerBuilder builder = TriggerBuilder.triggerOnPullRequest()
+                            if (isSmoketest)
+                            {
+                                builder.setGithubContext("${os} ${arch} ${opt_level} ${jit} CoreCLR Perf Tests Correctness")
+                            }
+                            else
+                            {
+                                builder.setGithubContext("${os} ${arch} ${opt_level} ${jit} CoreCLR Perf Tests")
+                                def opts = ""
+                                if (opt_level == 'min_opts')
+                                {
+                                    opts = '\\W+min_opts'
+                                }
+                                def jitt = ""
+                                if (jit != 'ryujit')
+                                {
+                                    jitt = '\\W+${jit}'
+                                }
+
+                                builder.triggerOnlyOnComment()
+                                builder.setCustomTriggerPhrase("(?i).*test\\W+${os}\\W+${arch}${opts}${jitt}\\W+perf.*")
+                            }
+                            builder.triggerForBranch(branch)
+                            builder.emitTrigger(newJob)
+                        }
+                        else {
+                            // Set a push trigger
+                            TriggerBuilder builder = TriggerBuilder.triggerOnCommit()
+                            builder.emitTrigger(newJob)
                         }
                     }
-                }
-
-                if (isPR) {
-                    TriggerBuilder builder = TriggerBuilder.triggerOnPullRequest()
-                    if (isSmoketest)
-                    {
-                        builder.setGithubContext("${os} ${arch} CoreCLR Perf Tests Correctness")
-                    }
-                    else
-                    {
-                        builder.setGithubContext("${os} ${arch} CoreCLR Perf Tests")
-                        builder.triggerOnlyOnComment()
-                        builder.setCustomTriggerPhrase("(?i).*test\\W+${os}\\W+${arch}\\W+perf.*")
-                    }
-                    builder.triggerForBranch(branch)
-                    builder.emitTrigger(newJob)
-                }
-                else {
-                    // Set a push trigger
-                    TriggerBuilder builder = TriggerBuilder.triggerOnCommit()
-                    builder.emitTrigger(newJob)
                 }
             }
         }
@@ -149,72 +171,86 @@ def static getOSGroup(def os) {
 [true, false].each { isPR ->
     ['Windows_NT'].each { os ->
         ['x64', 'x86'].each { arch ->
-            ['full_opt', 'min_opt'].each { opt_level ->
-                def architecture = arch
+            ['ryujit', 'legacy_backend'].each { jit ->
 
-                def newJob = job(Utilities.getFullJobName(project, "perf_throughput_perflab_${os}_${arch}_${opt_level}", isPR)) {
-                    // Set the label.
-                    label('windows_clr_perf')
-                    wrappers {
-                        credentialsBinding {
-                            string('BV_UPLOAD_SAS_TOKEN', 'CoreCLR Perf BenchView Sas')
+                if (arch == 'x64' && jit == 'legacy_backend')
+                {
+                    return
+                }
+
+                ['full_opt', 'min_opt'].each { opt_level ->
+                    def architecture = arch
+
+                    def newJob = job(Utilities.getFullJobName(project, "perf_throughput_perflab_${os}_${arch}_${opt_level}_${jit}", isPR)) {
+                        // Set the label.
+                        label('windows_clr_perf')
+                        wrappers {
+                            credentialsBinding {
+                                string('BV_UPLOAD_SAS_TOKEN', 'CoreCLR Perf BenchView Sas')
+                            }
+                        }
+
+                        if (isPR) {
+                            parameters {
+                                stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that will be used to build the full title of a run in Benchview.')
+                            }
+                        }
+
+                        def configuration = 'Release'
+                        def runType = isPR ? 'private' : 'rolling'
+                        def benchViewName = isPR ? 'coreclr-throughput private %BenchviewCommitName%' : 'coreclr-throughput rolling %GIT_BRANCH_WITHOUT_ORIGIN% %GIT_COMMIT%'
+
+                        steps {
+                            // Batch
+                            batchFile("if exist \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\" rmdir /s /q \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\"")
+                            batchFile("if exist \"%WORKSPACE%\\Microsoft.BenchView.ThroughputBenchmarks.${architecture}.${os}\" rmdir /s /q \"%WORKSPACE%\\Microsoft.BenchView.ThroughputBenchmarks.${architecture}.${os}\"")
+                            batchFile("C:\\Tools\\nuget.exe install Microsoft.BenchView.JSONFormat -Source http://benchviewtestfeed.azurewebsites.net/nuget -OutputDirectory \"%WORKSPACE%\" -Prerelease -ExcludeVersion")
+                            batchFile("C:\\Tools\\nuget.exe install Microsoft.BenchView.ThroughputBenchmarks.${architecture}.${os} -Source https://dotnet.myget.org/F/dotnet-core -OutputDirectory \"%WORKSPACE%\" -Prerelease -ExcludeVersion")
+                            //Do this here to remove the origin but at the front of the branch name as this is a problem for BenchView
+                            //we have to do it all as one statement because cmd is called each time and we lose the set environment variable
+                            batchFile("if \"%GIT_BRANCH:~0,7%\" == \"origin/\" (set \"GIT_BRANCH_WITHOUT_ORIGIN=%GIT_BRANCH:origin/=%\") else (set \"GIT_BRANCH_WITHOUT_ORIGIN=%GIT_BRANCH%\")\n" +
+                            "set \"BENCHVIEWNAME=${benchViewName}\"\n" +
+                            "set \"BENCHVIEWNAME=%BENCHVIEWNAME:\"=%\"\n" +
+                            "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\submission-metadata.py\" --name \"${benchViewName}\" --user \"dotnet-bot@microsoft.com\"\n" +
+                            "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\build.py\" git --branch %GIT_BRANCH_WITHOUT_ORIGIN% --type ${runType}")
+                            batchFile("py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\machinedata.py\"")
+                            batchFile("set __TestIntermediateDir=int&&build.cmd ${configuration} ${architecture} skiptests")
+                            batchFile("tests\\runtest.cmd ${configuration} ${architecture} GenerateLayoutOnly")
+                            batchFile("py -u tests\\scripts\\run-throughput-perf.py -arch ${arch} -os ${os} -configuration ${configuration} -opt_level ${opt_level} -jit_name ${jit} -clr_root \"%WORKSPACE%\" -assembly_root \"%WORKSPACE%\\Microsoft.BenchView.ThroughputBenchmarks.${architecture}.${os}\\lib\" -benchview_path \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" -run_type ${runType}")
                         }
                     }
+
+                    // Save machinedata.json to /artifact/bin/ Jenkins dir
+                    def archiveSettings = new ArchivalSettings()
+                    archiveSettings.addFiles('throughput-*.csv')
+                    Utilities.addArchival(newJob, archiveSettings)
+
+                    Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
 
                     if (isPR) {
-                        parameters {
-                            stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that will be used to build the full title of a run in Benchview.')
+                        def opts = ""
+                        if (opt_level == 'min_opts')
+                        {
+                            opts = '\\W+min_opts'
                         }
+                        def jitt = ""
+                        if (jit != 'ryujit')
+                        {
+                            jitt = '\\W+${jit}'
+                        }
+
+                        TriggerBuilder builder = TriggerBuilder.triggerOnPullRequest()
+                        builder.setGithubContext("${os} ${arch} ${opt_level} ${jit} CoreCLR Throughput Perf Tests")
+                        builder.triggerOnlyOnComment()
+                        builder.setCustomTriggerPhrase("(?i).*test\\W+${os}\\W+${arch}${opts}${jitt}\\W+throughput.*")
+                        builder.triggerForBranch(branch)
+                        builder.emitTrigger(newJob)
                     }
-
-                    def configuration = 'Release'
-                    def runType = isPR ? 'private' : 'rolling'
-                    def benchViewName = isPR ? 'coreclr-throughput private %BenchviewCommitName%' : 'coreclr-throughput rolling %GIT_BRANCH_WITHOUT_ORIGIN% %GIT_COMMIT%'
-
-                    steps {
-                        // Batch
-                        batchFile("if exist \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\" rmdir /s /q \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\"")
-                        batchFile("if exist \"%WORKSPACE%\\Microsoft.BenchView.ThroughputBenchmarks.${architecture}.${os}\" rmdir /s /q \"%WORKSPACE%\\Microsoft.BenchView.ThroughputBenchmarks.${architecture}.${os}\"")
-                        batchFile("C:\\Tools\\nuget.exe install Microsoft.BenchView.JSONFormat -Source http://benchviewtestfeed.azurewebsites.net/nuget -OutputDirectory \"%WORKSPACE%\" -Prerelease -ExcludeVersion")
-                        batchFile("C:\\Tools\\nuget.exe install Microsoft.BenchView.ThroughputBenchmarks.${architecture}.${os} -Source https://dotnet.myget.org/F/dotnet-core -OutputDirectory \"%WORKSPACE%\" -Prerelease -ExcludeVersion")
-                        //Do this here to remove the origin but at the front of the branch name as this is a problem for BenchView
-                        //we have to do it all as one statement because cmd is called each time and we lose the set environment variable
-                        batchFile("if \"%GIT_BRANCH:~0,7%\" == \"origin/\" (set \"GIT_BRANCH_WITHOUT_ORIGIN=%GIT_BRANCH:origin/=%\") else (set \"GIT_BRANCH_WITHOUT_ORIGIN=%GIT_BRANCH%\")\n" +
-                        "set \"BENCHVIEWNAME=${benchViewName}\"\n" +
-                        "set \"BENCHVIEWNAME=%BENCHVIEWNAME:\"=%\"\n" +
-                        "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\submission-metadata.py\" --name \"${benchViewName}\" --user \"dotnet-bot@microsoft.com\"\n" +
-                        "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\build.py\" git --branch %GIT_BRANCH_WITHOUT_ORIGIN% --type ${runType}")
-                        batchFile("py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\machinedata.py\"")
-                        batchFile("set __TestIntermediateDir=int&&build.cmd ${configuration} ${architecture} skiptests")
-                        batchFile("tests\\runtest.cmd ${configuration} ${architecture} GenerateLayoutOnly")
-                        batchFile("py -u tests\\scripts\\run-throughput-perf.py -arch ${arch} -os ${os} -configuration ${configuration} -opt_level ${opt_level} -clr_root \"%WORKSPACE%\" -assembly_root \"%WORKSPACE%\\Microsoft.BenchView.ThroughputBenchmarks.${architecture}.${os}\\lib\" -benchview_path \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" -run_type ${runType}")
+                    else {
+                        // Set a push trigger
+                        TriggerBuilder builder = TriggerBuilder.triggerOnCommit()
+                        builder.emitTrigger(newJob)
                     }
-                }
-
-                // Save machinedata.json to /artifact/bin/ Jenkins dir
-                def archiveSettings = new ArchivalSettings()
-                archiveSettings.addFiles('throughput-*.csv')
-                Utilities.addArchival(newJob, archiveSettings)
-
-                Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
-
-                if (isPR) {
-                    def opts = ""
-                    if (opt_level == 'min_opts')
-                    {
-                        opts = '\\W+min_opts'
-                    }
-                    TriggerBuilder builder = TriggerBuilder.triggerOnPullRequest()
-                    builder.setGithubContext("${os} ${arch} ${opt_level} CoreCLR Throughput Perf Tests")
-                    builder.triggerOnlyOnComment()
-                    builder.setCustomTriggerPhrase("(?i).*test\\W+${os}\\W+${arch}${opts}\\W+throughput.*")
-                    builder.triggerForBranch(branch)
-                    builder.emitTrigger(newJob)
-                }
-                else {
-                    // Set a push trigger
-                    TriggerBuilder builder = TriggerBuilder.triggerOnCommit()
-                    builder.emitTrigger(newJob)
                 }
             }
         }
@@ -507,97 +543,125 @@ parallel(
 [true, false].each { isPR ->
     ['Windows_NT'].each { os ->
         ['x64', 'x86'].each { arch ->
-            def architecture = arch
-            def newJob = job(Utilities.getFullJobName(project, "perf_scenarios_${os}_${arch}", isPR)) {
-                // Set the label.
-                label('windows_clr_perf')
-                wrappers {
-                    credentialsBinding {
-                        string('BV_UPLOAD_SAS_TOKEN', 'CoreCLR Perf BenchView Sas')
-                    }
+            ['ryujit', 'legacy_backend'].each { jit ->
+
+                if (arch == 'x64' && jit == 'legacy_backend')
+                {
+                    return
                 }
 
-                if (isPR) {
-                    parameters {
-                        stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
-                    }
-                }
+                ['full_opt', 'min_opt'].each { opt_level ->
+                    def architecture = arch
+                    def newJob = job(Utilities.getFullJobName(project, "perf_scenarios_${os}_${arch}_${opt_level}_${jit}", isPR)) {
 
-                parameters {
-                    stringParam('XUNIT_PERFORMANCE_MAX_ITERATION', '1', 'Size test, one iteration is sufficient')
-                    stringParam('XUNIT_PERFORMANCE_MAX_ITERATION_INNER_SPECIFIED', '1', 'Size test, one iteration is sufficient')
-                }
+                        def testEnv = ""
+                        if (jit == 'legacy_backend')
+                        {
+                            testEnv = '-testEnv %WORKSPACE%\\tests\\legacyjit_x86_testenv.cmd'
+                        }
 
-                def configuration = 'Release'
-                def runType = isPR ? 'private' : 'rolling'
-                def benchViewName = isPR ? 'CoreCLR-Scenarios private %BenchviewCommitName%' : 'CoreCLR-Scenarios rolling %GIT_BRANCH_WITHOUT_ORIGIN% %GIT_COMMIT%'
-                def uploadString = '-uploadToBenchview'
+                        // Set the label.
+                        label('windows_clr_perf')
+                        wrappers {
+                            credentialsBinding {
+                                string('BV_UPLOAD_SAS_TOKEN', 'CoreCLR Perf BenchView Sas')
+                            }
+                        }
 
-                steps {
-                    // Batch
-                    batchFile("powershell wget https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile \"%WORKSPACE%\\nuget.exe\"")
-                    batchFile("if exist \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\" rmdir /s /q \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\"")
-                    batchFile("\"%WORKSPACE%\\nuget.exe\" install Microsoft.BenchView.JSONFormat -Source http://benchviewtestfeed.azurewebsites.net/nuget -OutputDirectory \"%WORKSPACE%\" -Prerelease -ExcludeVersion")
+                        if (isPR) {
+                            parameters {
+                                stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
+                            }
+                        }
 
-                    //Do this here to remove the origin but at the front of the branch name as this is a problem for BenchView
-                    //we have to do it all as one statement because cmd is called each time and we lose the set environment variable
-                    batchFile("if \"%GIT_BRANCH:~0,7%\" == \"origin/\" (set \"GIT_BRANCH_WITHOUT_ORIGIN=%GIT_BRANCH:origin/=%\") else (set \"GIT_BRANCH_WITHOUT_ORIGIN=%GIT_BRANCH%\")\n" +
-                    "set \"BENCHVIEWNAME=${benchViewName}\"\n" +
-                    "set \"BENCHVIEWNAME=%BENCHVIEWNAME:\"=%\"\n" +
-                    "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\submission-metadata.py\" --name \"%BENCHVIEWNAME%\" --user \"dotnet-bot@microsoft.com\"\n" +
-                    "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\build.py\" git --branch %GIT_BRANCH_WITHOUT_ORIGIN% --type ${runType}")
-                    batchFile("py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\machinedata.py\"")
-                    batchFile("set __TestIntermediateDir=int&&build.cmd ${configuration} ${architecture}")
+                        parameters {
+                            stringParam('XUNIT_PERFORMANCE_MAX_ITERATION', '1', 'Size test, one iteration is sufficient')
+                            stringParam('XUNIT_PERFORMANCE_MAX_ITERATION_INNER_SPECIFIED', '1', 'Size test, one iteration is sufficient')
+                        }
 
-                    batchFile("tests\\runtest.cmd ${configuration} ${architecture} GenerateLayoutOnly")
+                        def configuration = 'Release'
+                        def runType = isPR ? 'private' : 'rolling'
+                        def benchViewName = isPR ? 'CoreCLR-Scenarios private %BenchviewCommitName%' : 'CoreCLR-Scenarios rolling %GIT_BRANCH_WITHOUT_ORIGIN% %GIT_COMMIT%'
+                        def uploadString = '-uploadToBenchview'
 
-                    def runXUnitPerfCommonArgs = "-arch ${arch} -configuration ${configuration} -generateBenchviewData \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" ${uploadString} -runtype ${runType} -scenarioTest"
-                    def failedOutputLogFilename = "run-xunit-perf-scenario.log"
+                        steps {
+                            // Batch
+                            batchFile("powershell wget https://dist.nuget.org/win-x86-commandline/latest/nuget.exe -OutFile \"%WORKSPACE%\\nuget.exe\"")
+                            batchFile("if exist \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\" rmdir /s /q \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\"")
+                            batchFile("\"%WORKSPACE%\\nuget.exe\" install Microsoft.BenchView.JSONFormat -Source http://benchviewtestfeed.azurewebsites.net/nuget -OutputDirectory \"%WORKSPACE%\" -Prerelease -ExcludeVersion")
 
-                    // Using a sentinel file to
-                    batchFile("if exist \"${failedOutputLogFilename}\" del /q /f \"${failedOutputLogFilename}\"")
-                    batchFile("if exist \"${failedOutputLogFilename}\" (echo [ERROR] Failed to delete previously created \"${failedOutputLogFilename}\" file.& exit /b 1)")
+                            //Do this here to remove the origin but at the front of the branch name as this is a problem for BenchView
+                            //we have to do it all as one statement because cmd is called each time and we lose the set environment variable
+                            batchFile("if \"%GIT_BRANCH:~0,7%\" == \"origin/\" (set \"GIT_BRANCH_WITHOUT_ORIGIN=%GIT_BRANCH:origin/=%\") else (set \"GIT_BRANCH_WITHOUT_ORIGIN=%GIT_BRANCH%\")\n" +
+                            "set \"BENCHVIEWNAME=${benchViewName}\"\n" +
+                            "set \"BENCHVIEWNAME=%BENCHVIEWNAME:\"=%\"\n" +
+                            "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\submission-metadata.py\" --name \"%BENCHVIEWNAME%\" --user \"dotnet-bot@microsoft.com\"\n" +
+                            "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\build.py\" git --branch %GIT_BRANCH_WITHOUT_ORIGIN% --type ${runType}")
+                            batchFile("py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\machinedata.py\"")
+                            batchFile("set __TestIntermediateDir=int&&build.cmd ${configuration} ${architecture}")
 
-                    // Scenario: JitBench
-                    batchFile("tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\Scenario\\JitBench -group CoreCLR-Scenarios || (echo [ERROR] JitBench failed. 1>>\"${failedOutputLogFilename}\"& exit /b 0)")
+                            batchFile("tests\\runtest.cmd ${configuration} ${architecture} GenerateLayoutOnly")
 
-                    // Scenario: ILLink
-                    if (arch == 'x64') {
-                        batchFile("tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\linkbench\\linkbench -group ILLink -nowarmup || (echo [ERROR] IlLink failed. 1>>\"${failedOutputLogFilename}\"& exit /b 0)")
-                    }
+                            def runXUnitPerfCommonArgs = "-arch ${arch} -configuration ${configuration} -generateBenchviewData \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" ${uploadString} -runtype ${runType} ${testEnv} -optLevel ${opt_level} -jitName ${jit} -scenarioTest"
+                            def failedOutputLogFilename = "run-xunit-perf-scenario.log"
 
-                    batchFile("if exist \"${failedOutputLogFilename}\" (type \"${failedOutputLogFilename}\"& exit /b 1)")
-                }
-            }
+                            // Using a sentinel file to
+                            batchFile("if exist \"${failedOutputLogFilename}\" del /q /f \"${failedOutputLogFilename}\"")
+                            batchFile("if exist \"${failedOutputLogFilename}\" (echo [ERROR] Failed to delete previously created \"${failedOutputLogFilename}\" file.& exit /b 1)")
 
-             // Save machinedata.json to /artifact/bin/ Jenkins dir
-            def archiveSettings = new ArchivalSettings()
+                            // Scenario: JitBench
+                            batchFile("tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\Scenario\\JitBench -group CoreCLR-Scenarios || (echo [ERROR] JitBench failed. 1>>\"${failedOutputLogFilename}\"& exit /b 0)")
+
+                            // Scenario: ILLink
+                            if (arch == 'x64' && opt_level == 'full_opt') {
+                                batchFile("tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\linkbench\\linkbench -group ILLink -nowarmup || (echo [ERROR] IlLink failed. 1>>\"${failedOutputLogFilename}\"& exit /b 0)")
+                            }
+
+                            batchFile("if exist \"${failedOutputLogFilename}\" (type \"${failedOutputLogFilename}\"& exit /b 1)")
+                        }
+                     }
+
+                     // Save machinedata.json to /artifact/bin/ Jenkins dir
+                    def archiveSettings = new ArchivalSettings()
             archiveSettings.addFiles('bin/sandbox/Perf-*.*')
-            archiveSettings.addFiles('machinedata.json')
-            Utilities.addArchival(newJob, archiveSettings)
+                    archiveSettings.addFiles('machinedata.json')
+                    Utilities.addArchival(newJob, archiveSettings)
 
-            Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
+                    Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
 
-            newJob.with {
-                wrappers {
-                    timeout {
-                        absolute(240)
+                    newJob.with {
+                        wrappers {
+                            timeout {
+                                absolute(240)
+                            }
+                        }
+                    }
+
+                    if (isPR) {
+                        def opts = ""
+                        if (opt_level == 'min_opts')
+                        {
+                            opts = '\\W+min_opts'
+                        }
+                        def jitt = ""
+                        if (jit != 'ryujit')
+                        {
+                            jitt = '\\W+${jit}'
+                        }
+
+                        TriggerBuilder builder = TriggerBuilder.triggerOnPullRequest()
+                        builder.setGithubContext("${os} ${arch} ${opt_level} ${jit} Performance Scenarios Tests")
+                        builder.triggerOnlyOnComment()
+                        builder.setCustomTriggerPhrase("(?i).*test\\W+${os}\\W+${arch}{$opts}${jitt}\\W+perf\\W+scenarios.*")
+                        builder.triggerForBranch(branch)
+                        builder.emitTrigger(newJob)
+                    }
+                    else {
+                        // Set a push trigger
+                        TriggerBuilder builder = TriggerBuilder.triggerOnCommit()
+                        builder.emitTrigger(newJob)
                     }
                 }
-            }
-
-            if (isPR) {
-                TriggerBuilder builder = TriggerBuilder.triggerOnPullRequest()
-                builder.setGithubContext("${os} ${arch} Performance Scenarios Tests")
-                builder.triggerOnlyOnComment()
-                builder.setCustomTriggerPhrase("(?i).*test\\W+${os}\\W+${arch}\\W+perf\\W+scenarios.*")
-                builder.triggerForBranch(branch)
-                builder.emitTrigger(newJob)
-            }
-            else {
-                // Set a push trigger
-                TriggerBuilder builder = TriggerBuilder.triggerOnCommit()
-                builder.emitTrigger(newJob)
             }
         }
     }
