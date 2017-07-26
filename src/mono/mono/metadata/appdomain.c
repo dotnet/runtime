@@ -2587,7 +2587,6 @@ unload_thread_main (void *arg)
 
 	mono_loader_lock (); //FIXME why do we need the loader lock here?
 	mono_domain_lock (domain);
-#ifdef HAVE_SGEN_GC
 	/*
 	 * We need to make sure that we don't have any remsets
 	 * pointing into static data of the to-be-freed domain because
@@ -2600,7 +2599,6 @@ unload_thread_main (void *arg)
 	for (i = 0; i < domain->class_vtable_array->len; ++i)
 		zero_static_data ((MonoVTable *)g_ptr_array_index (domain->class_vtable_array, i));
 	mono_gc_collect (0);
-#endif
 	for (i = 0; i < domain->class_vtable_array->len; ++i)
 		clear_cached_vtable ((MonoVTable *)g_ptr_array_index (domain->class_vtable_array, i));
 	deregister_reflection_info_roots (domain);

@@ -127,6 +127,8 @@ null_gc_sources = \
 
 common_sources = \
 	$(platform_sources)	\
+	appdomain.c	\
+	domain.c	\
 	appdomain-icalls.h	\
 	assembly.c		\
 	assembly-internals.h	\
@@ -278,8 +280,6 @@ common_sources = \
 
 # These source files have compile time dependencies on GC code
 gc_dependent_sources = \
-	appdomain.c	\
-	domain.c	\
 	gc-stats.c	\
 	gc.c		\
 	monitor.c	\
