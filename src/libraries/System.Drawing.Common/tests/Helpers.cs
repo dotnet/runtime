@@ -13,6 +13,7 @@ namespace System.Drawing.Tests
     {
         public static string GetTestBitmapPath(string fileName) => GetTestPath("bitmaps", fileName);
         public static string GetTestFontPath(string fileName) => GetTestPath("fonts", fileName);
+        public static string GetTestColorProfilePath(string fileName) => GetTestPath("colorProfiles", fileName);
 
         private static string GetTestPath(string directoryName, string fileName) => Path.Combine(AppContext.BaseDirectory, directoryName, fileName);
 
