@@ -17693,7 +17693,16 @@ void CodeGen::SetupLateArgs(GenTreeCall* call)
 
                     getEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, regSrc, varNum, 0);
                     regTracker.rsTrackRegTrash(regSrc);
-                    gcLayout = compiler->lvaGetGcLayout(varNum);
+
+                    if (varDsc->lvExactSize >= TARGET_POINTER_SIZE)
+                    {
+                        gcLayout = compiler->lvaGetGcLayout(varNum);
+                    }
+                    else
+                    {
+                        gcLayout = new (compiler, CMK_Codegen) BYTE[1];
+                        gcLayout[0] = TYPE_GC_NONE;
+                    }
                 }
             }
             else if (arg->gtOper == GT_MKREFANY)
