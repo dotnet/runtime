@@ -26,10 +26,10 @@ namespace System.Xml.Tests
             foreach (WriterType writerType in GetWriterTypes(writerTypeFlags))
             {
                 if (noAsyncFlag)
-                    yield return args.Prepend(CreateTestUtils(implementation, writerType, async: false)).ToArray();
+                    yield return args.Prepend(new XmlWriterUtils(writerType, async: false)).ToArray();
 
                 if (asyncFlag)
-                    yield return args.Prepend(CreateTestUtils(implementation, writerType, async: true)).ToArray();
+                    yield return args.Prepend(new XmlWriterUtils(writerType, async: true)).ToArray();
             }
         }
 
@@ -55,17 +55,6 @@ namespace System.Xml.Tests
 
             if (writerTypeFlags.HasFlag(WriterType.WrappedWriter))
                 yield return WriterType.WrappedWriter;
-        }
-
-        private static object CreateTestUtils(TestCaseUtilsImplementation implementation, WriterType writerType, bool async)
-        {
-            switch (implementation)
-            {
-                case TestCaseUtilsImplementation.XmlFactoryWriter:
-                    return new XmlFactoryWriterTestCaseUtils(writerType, async: async);
-            }
-
-            throw new Exception("Invalid implementation");
         }
 
         public virtual IEnumerable<object[]> GetData(IAttributeInfo dataAttribute, IMethodInfo testMethod)

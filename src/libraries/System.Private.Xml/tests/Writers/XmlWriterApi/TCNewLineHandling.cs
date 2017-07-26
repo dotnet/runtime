@@ -12,7 +12,7 @@ namespace System.Xml.Tests
     {
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
-        public void NewLineHandling_1(XmlWriterTestCaseBase utils)
+        public void NewLineHandling_1(XmlWriterUtils utils)
         {
             XmlWriter w = utils.CreateWriter();
             w.WriteStartElement("root");
@@ -24,7 +24,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
-        public void NewLineHandling_2(XmlWriterTestCaseBase utils)
+        public void NewLineHandling_2(XmlWriterUtils utils)
         {
             XmlWriter w = utils.CreateWriter();
             w.WriteStartElement("root");
@@ -36,7 +36,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
-        public void NewLineHandling_3(XmlWriterTestCaseBase utils)
+        public void NewLineHandling_3(XmlWriterUtils utils)
         {
             XmlWriter w = utils.CreateWriter();
             w.WriteStartElement("root");
@@ -48,7 +48,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
-        public void NewLineHandling_4(XmlWriterTestCaseBase utils)
+        public void NewLineHandling_4(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.OmitXmlDeclaration = true;
@@ -66,7 +66,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
-        public void NewLineHandling_5(XmlWriterTestCaseBase utils)
+        public void NewLineHandling_5(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.OmitXmlDeclaration = true;
@@ -83,7 +83,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
-        public void NewLineHandling_6(XmlWriterTestCaseBase utils)
+        public void NewLineHandling_6(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.OmitXmlDeclaration = true;
@@ -100,7 +100,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
-        public void NewLineHandling_7(XmlWriterTestCaseBase utils)
+        public void NewLineHandling_7(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.OmitXmlDeclaration = true;
@@ -115,7 +115,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
-        public void NewLineHandling_8(XmlWriterTestCaseBase utils)
+        public void NewLineHandling_8(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.OmitXmlDeclaration = true;
@@ -131,7 +131,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
-        public void NewLineHandling_9(XmlWriterTestCaseBase utils)
+        public void NewLineHandling_9(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.OmitXmlDeclaration = true;
@@ -147,7 +147,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
-        public void NewLineHandling_10(XmlWriterTestCaseBase utils)
+        public void NewLineHandling_10(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.OmitXmlDeclaration = true;
@@ -164,7 +164,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
-        public void NewLineHandling_11(XmlWriterTestCaseBase utils)
+        public void NewLineHandling_11(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.OmitXmlDeclaration = true;
@@ -181,7 +181,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
-        public void NewLineHandling_12(XmlWriterTestCaseBase utils)
+        public void NewLineHandling_12(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.OmitXmlDeclaration = true;
@@ -198,7 +198,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
-        public void NewLineHandling_13(XmlWriterTestCaseBase utils)
+        public void NewLineHandling_13(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.OmitXmlDeclaration = true;

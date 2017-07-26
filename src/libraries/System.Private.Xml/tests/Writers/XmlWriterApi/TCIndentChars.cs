@@ -12,7 +12,7 @@ namespace System.Xml.Tests
     {
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
-        public void IndentChars_1(XmlWriterTestCaseBase utils)
+        public void IndentChars_1(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.OmitXmlDeclaration = true;
@@ -32,7 +32,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
-        public void IndentChars_2(XmlWriterTestCaseBase utils)
+        public void IndentChars_2(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.OmitXmlDeclaration = true;
@@ -52,7 +52,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
-        public void IndentChars_3(XmlWriterTestCaseBase utils)
+        public void IndentChars_3(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.OmitXmlDeclaration = true;
@@ -72,7 +72,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
-        public void IndentChars_4(XmlWriterTestCaseBase utils)
+        public void IndentChars_4(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.OmitXmlDeclaration = true;
@@ -92,7 +92,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, WriterType.AllButCustom)]
-        public void IndentChars_5(XmlWriterTestCaseBase utils)
+        public void IndentChars_5(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.OmitXmlDeclaration = true;
@@ -114,7 +114,7 @@ namespace System.Xml.Tests
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "<")]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "&")]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter, "<!--")]
-        public void IndentChars_6(XmlWriterTestCaseBase utils, string indentChars)
+        public void IndentChars_6(XmlWriterUtils utils, string indentChars)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.OmitXmlDeclaration = true;

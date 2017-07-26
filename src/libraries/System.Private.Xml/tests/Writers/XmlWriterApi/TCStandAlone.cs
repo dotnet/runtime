@@ -11,7 +11,7 @@ namespace System.Xml.Tests
     {
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
-        public void standalone_1(XmlWriterTestCaseBase utils)
+        public void standalone_1(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.ConformanceLevel = ConformanceLevel.Document;
@@ -36,7 +36,7 @@ namespace System.Xml.Tests
 
         [Theory]
         [XmlWriterInlineData(TestCaseUtilsImplementation.XmlFactoryWriter)]
-        public void standalone_2(XmlWriterTestCaseBase utils)
+        public void standalone_2(XmlWriterUtils utils)
         {
             XmlWriterSettings wSettings = new XmlWriterSettings();
             wSettings.ConformanceLevel = ConformanceLevel.Document;
