@@ -26,7 +26,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public AggregateSymbol Agg()
         {
-            return bag.AsAggregateSymbol();
+            return bag as AggregateSymbol;
         }
 
         public Assembly GetAssembly()
