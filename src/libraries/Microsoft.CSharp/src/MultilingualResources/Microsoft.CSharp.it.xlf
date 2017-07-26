@@ -418,14 +418,6 @@
           <source>Instance argument: cannot convert from '{0}' to '{1}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Argomento dell'istanza: impossibile eseguire la conversione da '{0}' a '{1}'</target>
         </trans-unit>
-        <trans-unit id="BadArgTypesForCollectionAdd" translate="yes" xml:space="preserve">
-          <source>The best overloaded Add method '{0}' for the collection initializer has some invalid arguments</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Il miglior metodo Add di overload '{0}' per l'inizializzatore di raccolta presenta alcuni argomenti non validi</target>
-        </trans-unit>
-        <trans-unit id="InitializerAddHasParamModifiers" translate="yes" xml:space="preserve">
-          <source>The best overloaded method match '{0}' for the collection initializer element cannot be used. Collection initializer 'Add' methods cannot have ref or out parameters.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Impossibile utilizzare la corrispondenza migliore del metodo di overload '{0}' per l'elemento inizializzatore della raccolta. I metodi 'Add' dell'inizializzatore di raccolta non possono includere parametri ref o out.</target>
-        </trans-unit>
         <trans-unit id="NonInvocableMemberCalled" translate="yes" xml:space="preserve">
           <source>Non-invocable member '{0}' cannot be used like a method.</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Impossibile utilizzare il membro non richiamabile '{0}' come metodo.</target>

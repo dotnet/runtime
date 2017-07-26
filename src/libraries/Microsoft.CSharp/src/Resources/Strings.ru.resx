@@ -321,12 +321,6 @@
   <data name="BadInstanceArgType" xml:space="preserve">
     <value>Instance argument: невозможно преобразовать из "{0}" в "{1}"</value>
   </data>
-  <data name="BadArgTypesForCollectionAdd" xml:space="preserve">
-    <value>Наиболее подходящий перегруженный метод Add "{0}" для инициализатора коллекции содержит недопустимые аргументы</value>
-  </data>
-  <data name="InitializerAddHasParamModifiers" xml:space="preserve">
-    <value>Наиболее подходящий перегруженный метод, соответствующий "{0}" для элемента инициализации коллекции не может быть использован. Методы инициализации коллекции "Add" не имеют ссылочных и выходных параметров.</value>
-  </data>
   <data name="NonInvocableMemberCalled" xml:space="preserve">
     <value>Невызываемый член "{0}" не может использоваться как метод.</value>
   </data>

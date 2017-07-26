@@ -284,12 +284,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 case ErrorCode.ERR_BadInstanceArgType:
                     codeStr = SR.BadInstanceArgType;
                     break;
-                case ErrorCode.ERR_BadArgTypesForCollectionAdd:
-                    codeStr = SR.BadArgTypesForCollectionAdd;
-                    break;
-                case ErrorCode.ERR_InitializerAddHasParamModifiers:
-                    codeStr = SR.InitializerAddHasParamModifiers;
-                    break;
                 case ErrorCode.ERR_NonInvocableMemberCalled:
                     codeStr = SR.NonInvocableMemberCalled;
                     break;

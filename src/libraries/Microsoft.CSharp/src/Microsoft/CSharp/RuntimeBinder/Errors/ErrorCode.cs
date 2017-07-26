@@ -96,8 +96,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         ERR_BadCtorArgCount = 1729,
         ERR_BadExtensionArgTypes = 1928,
         ERR_BadInstanceArgType = 1929,
-        ERR_BadArgTypesForCollectionAdd = 1950,
-        ERR_InitializerAddHasParamModifiers = 1954,
         ERR_NonInvocableMemberCalled = 1955,
         ERR_NamedArgumentSpecificationBeforeFixedArgument = 5002,
         ERR_BadNamedArgument = 5003,

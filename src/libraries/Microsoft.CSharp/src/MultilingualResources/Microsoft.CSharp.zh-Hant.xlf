@@ -418,14 +418,6 @@
           <source>Instance argument: cannot convert from '{0}' to '{1}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">執行個體引數: 無法從 '{0}' 轉換為 '{1}'</target>
         </trans-unit>
-        <trans-unit id="BadArgTypesForCollectionAdd" translate="yes" xml:space="preserve">
-          <source>The best overloaded Add method '{0}' for the collection initializer has some invalid arguments</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">集合初始設定式的最佳多載 Add 方法 '{0}' 有一些無效的引數</target>
-        </trans-unit>
-        <trans-unit id="InitializerAddHasParamModifiers" translate="yes" xml:space="preserve">
-          <source>The best overloaded method match '{0}' for the collection initializer element cannot be used. Collection initializer 'Add' methods cannot have ref or out parameters.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">無法使用集合初始設定式項目之最符合的多載方法 '{0}'。集合初始設定式 'Add' 方法不能具有 ref 或 out 參數。</target>
-        </trans-unit>
         <trans-unit id="NonInvocableMemberCalled" translate="yes" xml:space="preserve">
           <source>Non-invocable member '{0}' cannot be used like a method.</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">非可叫用 (Non-invocable) 成員 '{0}' 不能做為方法使用。</target>

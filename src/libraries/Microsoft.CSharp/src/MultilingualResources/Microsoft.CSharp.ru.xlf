@@ -418,14 +418,6 @@
           <source>Instance argument: cannot convert from '{0}' to '{1}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Instance argument: невозможно преобразовать из "{0}" в "{1}"</target>
         </trans-unit>
-        <trans-unit id="BadArgTypesForCollectionAdd" translate="yes" xml:space="preserve">
-          <source>The best overloaded Add method '{0}' for the collection initializer has some invalid arguments</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Наиболее подходящий перегруженный метод Add "{0}" для инициализатора коллекции содержит недопустимые аргументы</target>
-        </trans-unit>
-        <trans-unit id="InitializerAddHasParamModifiers" translate="yes" xml:space="preserve">
-          <source>The best overloaded method match '{0}' for the collection initializer element cannot be used. Collection initializer 'Add' methods cannot have ref or out parameters.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Наиболее подходящий перегруженный метод, соответствующий "{0}" для элемента инициализации коллекции не может быть использован. Методы инициализации коллекции "Add" не имеют ссылочных и выходных параметров.</target>
-        </trans-unit>
         <trans-unit id="NonInvocableMemberCalled" translate="yes" xml:space="preserve">
           <source>Non-invocable member '{0}' cannot be used like a method.</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Невызываемый член "{0}" не может использоваться как метод.</target>
