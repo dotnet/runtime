@@ -30,11 +30,19 @@ namespace System.Xml.Tests
             foreach (WriterType writerType in GetWriterTypes(writerTypeFlags))
             {
                 if (noAsyncFlag)
-                    yield return args.Prepend(new XmlWriterUtils(writerType, async: false)).ToArray();
+                    yield return Prepend(args, new XmlWriterUtils(writerType, async: false)).ToArray();
 
                 if (asyncFlag)
-                    yield return args.Prepend(new XmlWriterUtils(writerType, async: true)).ToArray();
+                    yield return Prepend(args, new XmlWriterUtils(writerType, async: true)).ToArray();
             }
+        }
+
+        private static object[] Prepend(object[] arr, object o)
+        {
+            List<object> list = new List<object>();
+            list.Add(o);
+            list.AddRange(arr);
+            return list.ToArray();
         }
 
         private static IEnumerable<WriterType> GetWriterTypes(WriterType writerTypeFlags)
