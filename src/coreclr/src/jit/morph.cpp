@@ -9053,13 +9053,14 @@ GenTreePtr Compiler::fgMorphOneAsgBlockOp(GenTreePtr tree)
                     }
                 }
             }
-            // If we have no information about the src, we have to assume it could
-            // live anywhere (not just in the GC heap).
-            // Mark the GT_IND node so that we use the correct write barrier helper in case
-            // the field is a GC ref.
 
-            if (!fgIsIndirOfAddrOfLocal(src))
+            if (src->OperIsIndir() && !fgIsIndirOfAddrOfLocal(src))
             {
+                // If we have no information about the src, we have to assume it could
+                // live anywhere (not just in the GC heap).
+                // Mark the GT_IND node so that we use the correct write barrier helper in case
+                // the field is a GC ref.
+
                 src->gtFlags |= (GTF_EXCEPT | GTF_GLOB_REF | GTF_IND_TGTANYWHERE);
             }
         }
