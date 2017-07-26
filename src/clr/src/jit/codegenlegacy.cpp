@@ -207,6 +207,12 @@ bool CodeGenInterface::genMarkLclVar(GenTreePtr tree)
     assert(varNum < compiler->lvaCount);
     varDsc = compiler->lvaTable + varNum;
 
+    // Retype byref-typed appearances of intptr-typed lclVars as type intptr.
+    if ((varDsc->TypeGet() == TYP_I_IMPL) && (tree->TypeGet() == TYP_BYREF))
+    {
+        tree->gtType = TYP_I_IMPL;
+    }
+
     if (varDsc->lvRegister)
     {
         genBashLclVar(tree, varNum, varDsc);
