@@ -251,12 +251,13 @@ namespace System.Numerics
         /// </summary>
         /// <param name="value"></param>
         [CLSCompliant(false)]
-        public BigInteger(byte[] value)
+        public BigInteger(byte[] value) :
+            this(new ReadOnlySpan<byte>(value ?? throw new ArgumentNullException(nameof(value))))
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
-            Contract.EndContractBlock();
+        }
 
+        public BigInteger(ReadOnlySpan<byte> value)
+        {
             int byteCount = value.Length;
             bool isNegative = byteCount > 0 && ((value[byteCount - 1] & 0x80) == 0x80);
 
@@ -601,6 +602,16 @@ namespace System.Numerics
         }
 
         public static bool TryParse(string value, NumberStyles style, IFormatProvider provider, out BigInteger result)
+        {
+            return BigNumber.TryParseBigInteger(value, style, NumberFormatInfo.GetInstance(provider), out result);
+        }
+
+        public static BigInteger Parse(ReadOnlySpan<char> value, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)
+        {
+            return BigNumber.ParseBigInteger(value, style, NumberFormatInfo.GetInstance(provider));
+        }
+
+        public static bool TryParse(ReadOnlySpan<char> value, out BigInteger result, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)
         {
             return BigNumber.TryParseBigInteger(value, style, NumberFormatInfo.GetInstance(provider), out result);
         }
@@ -1024,10 +1035,75 @@ namespace System.Numerics
         /// <returns></returns>
         public byte[] ToByteArray()
         {
+            bool success = TryGetBytes(GetBytesMode.AllocateArray, default(Span<byte>), out byte[] array, out int bytesWritten);
+            Debug.Assert(success, "ToByteArray should always succeed");
+            Debug.Assert(array != null, "Expected non-null array");
+            Debug.Assert(bytesWritten == array.Length);
+            return array;
+        }
+
+        /// <summary>
+        /// Copies the value of this BigInteger as little-endian twos-complement
+        /// bytes, using the fewest number of bytes possible. If the value is zero,
+        /// outputs one byte whose element is 0x00.
+        /// </summary>
+        /// <param name="destination">The destination span to which the resulting bytes should be written.</param>
+        /// <param name="bytesWritten">The number of bytes written to <paramref name="destination"/>.</param>
+        /// <returns>true if the bytes fit in <see cref="destination"/>; false if not all bytes could be written due to lack of space.</returns>
+        public bool TryWriteBytes(Span<byte> destination, out int bytesWritten) =>
+            TryGetBytes(GetBytesMode.Span, destination, out byte[] _, out bytesWritten);
+
+        /// <summary>Gets the number of bytes that will be output by <see cref="ToByteArray"/> and <see cref="TryWriteBytes(Span{byte}, out int)"/>.</summary>
+        /// <returns>The number of bytes.</returns>
+        public int GetByteCount()
+        {
+            bool success = TryGetBytes(GetBytesMode.Count, default(Span<byte>), out byte[] _, out int count);
+            Debug.Assert(success);
+            return count;
+        }
+
+        /// <summary>Mode used to enable sharing <see cref="TryGetBytes(GetBytesMode, Span{byte}, out byte[], out int)"/> for multiple purposes.</summary>
+        private enum GetBytesMode { Count, AllocateArray, Span }
+
+        /// <summary>Shared logic for <see cref="ToByteArray"/>, <see cref="TryWriteBytes(Span{byte}, out int)"/>, and <see cref="GetByteCount"/>.</summary>
+        /// <param name="mode">Which entry point is being used.</param>
+        /// <param name="destination">The destination span, if mode is <see cref="GetBytesMode.Span"/>.</param>
+        /// <param name="array">The output array, if mode is <see cref="GetBytesMode.AllocateArray"/>.</param>
+        /// <param name="bytesWritten">
+        /// The number of bytes written to <paramref name="destination"/> or <paramref name="array"/>,
+        /// or if counting, the number of bytes that would have been written.
+        /// </param>
+        /// <returns>false if in <see cref="GetBytesMode.Span"/> mode and the destination isn't large enough; otherwise, true.</returns>
+        private bool TryGetBytes(GetBytesMode mode, Span<byte> destination, out byte[] array, out int bytesWritten)
+        {
+            Debug.Assert(mode == GetBytesMode.AllocateArray || mode == GetBytesMode.Count || mode == GetBytesMode.Span,
+                $"Unexpected mode {mode}.");
+            Debug.Assert(mode == GetBytesMode.Span || destination.IsEmpty,
+                $"If we're not in span mode, we shouldn't have been passed a destination.");
+            array = null;
+            bytesWritten = 0;
+
             int sign = _sign;
             if (sign == 0)
             {
-                return new byte[] { 0 };
+                switch (mode)
+                {
+                    case GetBytesMode.Count:
+                        bytesWritten = 1;
+                        return true;
+                    case GetBytesMode.AllocateArray:
+                        array = new byte[] { 0 };
+                        bytesWritten = 1;
+                        return true;
+                    default: // case GetBytesMode.Span:
+                        if (destination.Length < 1)
+                        {
+                            return false;
+                        }
+                        destination[0] = 0;
+                        bytesWritten = 1;
+                        return true;
+                }
             }
 
             byte highByte;
@@ -1096,17 +1172,29 @@ namespace System.Numerics
 
             // Ensure high bit is 0 if positive, 1 if negative
             bool needExtraByte = (msb & 0x80) != (highByte & 0x80);
-            byte[] bytes;
-            int curByte = 0;
-            if (bits == null)
+            int length = bits == null ?
+                msbIndex + 1 + (needExtraByte ? 1 : 0) :
+                checked(4 * (bits.Length - 1) + msbIndex + 1 + (needExtraByte ? 1 : 0));
+            switch (mode)
             {
-                bytes = new byte[msbIndex + 1 + (needExtraByte ? 1 : 0)];
-                Debug.Assert(bytes.Length <= 4);
+                case GetBytesMode.Count:
+                    bytesWritten = length;
+                    return true;
+                case GetBytesMode.AllocateArray:
+                    destination = array = new byte[length];
+                    break;
+                default: // case GetBytesMode.Span:
+                    if (destination.Length < length)
+                    {
+                        bytesWritten = 0;
+                        return false;
+                    }
+                    break;
             }
-            else
-            {
-                bytes = new byte[checked(4 * (bits.Length - 1) + msbIndex + 1 + (needExtraByte ? 1 : 0))];
 
+            int curByte = 0;
+            if (bits != null)
+            {
                 for (int i = 0; i < bits.Length - 1; i++)
                 {
                     uint dword = bits[i];
@@ -1120,21 +1208,24 @@ namespace System.Numerics
                     }
                     for (int j = 0; j < 4; j++)
                     {
-                        bytes[curByte++] = unchecked((byte)dword);
+                        destination[curByte++] = unchecked((byte)dword);
                         dword >>= 8;
                     }
                 }
             }
+
             for (int j = 0; j <= msbIndex; j++)
             {
-                bytes[curByte++] = unchecked((byte)highDword);
+                destination[curByte++] = unchecked((byte)highDword);
                 highDword >>= 8;
             }
             if (needExtraByte)
             {
-                bytes[bytes.Length - 1] = highByte;
+                destination[length - 1] = highByte;
             }
-            return bytes;
+
+            bytesWritten = length;
+            return true;
         }
 
         /// <summary>

@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Numerics.Tests
 {
-    public class parseTest
+    public partial class parseTest
     {
         private readonly static int s_samples = 10;
         private readonly static Random s_random = new Random(100);
@@ -403,6 +403,8 @@ namespace System.Numerics.Tests
             VerifyParseToString(num1, ns, failureNotExpected, Fix(num1.Trim(), ((ns & NumberStyles.AllowHexSpecifier) != 0), failureNotExpected));
         }
 
+        static partial void VerifyParseSpanToString(string num1, NumberStyles ns, bool failureNotExpected, string expected);
+
         private static void VerifyParseToString(string num1, NumberStyles ns, bool failureNotExpected, string expected)
         {
             BigInteger test;
@@ -425,7 +427,14 @@ namespace System.Numerics.Tests
                 }
                 Assert.False(BigInteger.TryParse(num1, ns, null, out test), String.Format("Expected TryParse to fail on {0}", num1));
             }
+
+            if (num1 != null)
+            {
+                VerifyParseSpanToString(num1, ns, failureNotExpected, expected);
+            }
         }
+
+        static partial void VerifySimpleFormatParseSpan(string num1, NumberFormatInfo nfi, BigInteger expected, bool failureExpected);
 
         private static void VerifySimpleFormatParse(string num1, NumberFormatInfo nfi, BigInteger expected, bool failureExpected = false)
         {
@@ -442,8 +451,15 @@ namespace System.Numerics.Tests
                 Assert.Throws<FormatException>(() => { BigInteger.Parse(num1, nfi); });
                 Assert.False(BigInteger.TryParse(num1, NumberStyles.Any, nfi, out test), String.Format("Expected TryParse to fail on {0}", num1));
             }
+
+            if (num1 != null)
+            {
+                VerifySimpleFormatParseSpan(num1, nfi, expected, failureExpected);
+            }
         }
-        
+
+        static partial void VerifyFormatParseSpan(string s, NumberStyles ns, NumberFormatInfo nfi, BigInteger expected, bool failureExpected);
+
         private static void VerifyFormatParse(string num1, NumberStyles ns, NumberFormatInfo nfi, BigInteger expected, bool failureExpected = false)
         {
             BigInteger test;
@@ -458,6 +474,11 @@ namespace System.Numerics.Tests
             {
                 Assert.Throws<FormatException>(() => { BigInteger.Parse(num1, ns, nfi); });                
                 Assert.False(BigInteger.TryParse(num1, ns, nfi, out test), String.Format("Expected TryParse to fail on {0}", num1));
+            }
+
+            if (num1 != null)
+            {
+                VerifyFormatParseSpan(num1, ns, nfi, expected, failureExpected);
             }
         }
 
