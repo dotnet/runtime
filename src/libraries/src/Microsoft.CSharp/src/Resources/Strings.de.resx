@@ -129,9 +129,6 @@
   <data name="AssgReadonlyProp" xml:space="preserve">
     <value>Für die Eigenschaft oder den Indexer "{0}" ist eine Zuweisung nicht möglich -- sie sind schreibgeschützt.</value>
   </data>
-  <data name="AbstractBaseCall" xml:space="preserve">
-    <value>Ein abstrakter Basismember kann nicht aufgerufen werden: '{0}'</value>
-  </data>
   <data name="RefProperty" xml:space="preserve">
     <value>Eine Eigenschaft oder ein Indexer kann nicht als out- oder ref-Parameter übergeben werden.</value>
   </data>
@@ -149,12 +146,6 @@
   </data>
   <data name="AmbigMember" xml:space="preserve">
     <value>Mehrdeutigkeit zwischen {0} und {1}</value>
-  </data>
-  <data name="CallingFinalizeDepracated" xml:space="preserve">
-    <value>Destruktoren und object.Finalize können nicht direkt aufgerufen werden. Rufen Sie IDisposable.Dispose auf, sofern verfügbar.</value>
-  </data>
-  <data name="CallingBaseFinalizeDeprecated" xml:space="preserve">
-    <value>Rufen Sie die Finalize-Methode Ihrer Basisklasse nicht direkt auf, da sie automatisch vom Destruktor aufgerufen wird.</value>
   </data>
   <data name="NoImplicitConvCast" xml:space="preserve">
     <value>Der {0}-Typ kann nicht implizit in {1} konvertiert werden. Es ist bereits eine explizite Konvertierung vorhanden (möglicherweise fehlt eine Umwandlung).</value>

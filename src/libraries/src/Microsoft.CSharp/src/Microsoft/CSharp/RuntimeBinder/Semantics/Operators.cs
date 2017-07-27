@@ -1724,7 +1724,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             FUNDTYPE ft = typeRaw.fundType();
             if (ft == FUNDTYPE.FT_R8 || ft == FUNDTYPE.FT_R4)
             {
-                flags = ~EXPRFLAG.EXF_CHECKOVERFLOW;
+                flags &= ~EXPRFLAG.EXF_CHECKOVERFLOW;
             }
 
             if (uofs.isLifted())
@@ -2440,7 +2440,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             ExprOperator exprRes = GetExprFactory().CreateOperator(kind, typeDest, op1, op2);
             flags = ~EXPRFLAG.EXF_CHECKOVERFLOW;
-            exprRes.Flags |= flags;
+            exprRes.Flags &= flags;
 
             return exprRes;
         }
