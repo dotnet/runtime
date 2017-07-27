@@ -11,7 +11,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public ExprFuncPtr(CType type, EXPRFLAG flags, Expr optionalObject, MethWithInst method) 
             : base(ExpressionKind.FunctionPointer, type)
         {
-            Debug.Assert((flags & ~EXPRFLAG.EXF_BASECALL) == 0);
+            Debug.Assert(flags == 0);
             Flags = flags;
             OptionalObject = optionalObject;
             MethWithInst = new MethWithInst(method);

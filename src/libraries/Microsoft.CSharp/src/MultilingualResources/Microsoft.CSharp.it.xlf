@@ -162,10 +162,6 @@
           <source>Property or indexer '{0}' cannot be assigned to -- it is read only</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Impossibile assegnare un valore alla proprietà o all'indicizzatore '{0}' perché è di sola lettura</target>
         </trans-unit>
-        <trans-unit id="AbstractBaseCall" translate="yes" xml:space="preserve">
-          <source>Cannot call an abstract base member: '{0}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Impossibile chiamare un membro di base astratto: '{0}'</target>
-        </trans-unit>
         <trans-unit id="RefProperty" translate="yes" xml:space="preserve">
           <source>A property or indexer may not be passed as an out or ref parameter</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Una proprietà o un indicizzatore non può essere passato come parametro out o ref</target>
@@ -189,14 +185,6 @@
         <trans-unit id="AmbigMember" translate="yes" xml:space="preserve">
           <source>Ambiguity between '{0}' and '{1}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Ambiguità tra '{0}' e '{1}'</target>
-        </trans-unit>
-        <trans-unit id="CallingFinalizeDepracated" translate="yes" xml:space="preserve">
-          <source>Destructors and object.Finalize cannot be called directly. Consider calling IDisposable.Dispose if available.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Impossibile chiamare direttamente i distruttori e object.Finalize. Provare a chiamare IDisposable.Dispose se disponibile.</target>
-        </trans-unit>
-        <trans-unit id="CallingBaseFinalizeDeprecated" translate="yes" xml:space="preserve">
-          <source>Do not directly call your base class Finalize method. It is called automatically from your destructor.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Non chiamare direttamente il metodo Finalize della classe base. Viene chiamato automaticamente dal distruttore.</target>
         </trans-unit>
         <trans-unit id="NoImplicitConvCast" translate="yes" xml:space="preserve">
           <source>Cannot implicitly convert type '{0}' to '{1}'. An explicit conversion exists (are you missing a cast?)</source>

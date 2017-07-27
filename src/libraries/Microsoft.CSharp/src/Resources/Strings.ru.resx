@@ -129,9 +129,6 @@
   <data name="AssgReadonlyProp" xml:space="preserve">
     <value>Невозможно присвоить значение свойству или индексатору "{0}" -- доступ только для чтения</value>
   </data>
-  <data name="AbstractBaseCall" xml:space="preserve">
-    <value>Не удается вызвать абстрактный член базового класса: "{0}"</value>
-  </data>
   <data name="RefProperty" xml:space="preserve">
     <value>Свойства и индексаторы не могут передаваться как параметры с ключевыми словами out и ref</value>
   </data>
@@ -149,12 +146,6 @@
   </data>
   <data name="AmbigMember" xml:space="preserve">
     <value>Неоднозначность между "{0}" и "{1}"</value>
-  </data>
-  <data name="CallingFinalizeDepracated" xml:space="preserve">
-    <value>Непосредственный вызов деструкторов и функций object.Finalize запрещен. Рекомендуется вызов IDisposable.Dispose, если она доступна.</value>
-  </data>
-  <data name="CallingBaseFinalizeDeprecated" xml:space="preserve">
-    <value>Не вызывайте метод Finalize базового класса напрямую. Он вызывается автоматически из деструктора.</value>
   </data>
   <data name="NoImplicitConvCast" xml:space="preserve">
     <value>Не удается неявно преобразовать тип "{0}" в "{1}". Существует явное преобразование (требуется приведение типа?)</value>

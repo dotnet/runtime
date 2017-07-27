@@ -129,9 +129,6 @@
   <data name="AssgReadonlyProp" xml:space="preserve">
     <value>無法指派屬性或索引子 '{0}' -- 其為唯讀</value>
   </data>
-  <data name="AbstractBaseCall" xml:space="preserve">
-    <value>無法呼叫抽象基底成員: '{0}'</value>
-  </data>
   <data name="RefProperty" xml:space="preserve">
     <value>無法將屬性或索引子當做 out 或 ref 參數傳遞</value>
   </data>
@@ -149,12 +146,6 @@
   </data>
   <data name="AmbigMember" xml:space="preserve">
     <value>'{0}' 和 '{1}' 之間模稜兩可</value>
-  </data>
-  <data name="CallingFinalizeDepracated" xml:space="preserve">
-    <value>不能直接呼叫解構函式和 object.Finalize。請考慮呼叫 IDisposable.Dispose (如果有)。</value>
-  </data>
-  <data name="CallingBaseFinalizeDeprecated" xml:space="preserve">
-    <value>不要直接呼叫您的基底類別 Finalize 方法。會從您的解構函式自動呼叫它。</value>
   </data>
   <data name="NoImplicitConvCast" xml:space="preserve">
     <value>無法將型別 '{0}' 隱含轉換為 '{1}'。已有明確轉換存在 (您是否漏掉了轉型?)</value>

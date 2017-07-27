@@ -12,7 +12,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             : base(ExpressionKind.Call, type)
         {
             Debug.Assert(
-                (flags & ~(EXPRFLAG.EXF_NEWOBJCALL | EXPRFLAG.EXF_CONSTRAINED | EXPRFLAG.EXF_BASECALL
+                (flags & ~(EXPRFLAG.EXF_NEWOBJCALL | EXPRFLAG.EXF_CONSTRAINED
                            | EXPRFLAG.EXF_NEWSTRUCTASSG | EXPRFLAG.EXF_IMPLICITSTRUCTASSG | EXPRFLAG.EXF_MASK_ANY)) == 0);
             Flags = flags;
             OptionalArguments = arguments;

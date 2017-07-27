@@ -129,9 +129,6 @@
   <data name="AssgReadonlyProp" xml:space="preserve">
     <value>No se puede asignar a la propiedad o el indizador '{0}' porque es de solo lectura</value>
   </data>
-  <data name="AbstractBaseCall" xml:space="preserve">
-    <value>No se puede llamar a un miembro base abstracto: '{0}'</value>
-  </data>
   <data name="RefProperty" xml:space="preserve">
     <value>Una propiedad o un indizador no se puede pasar como parámetro out o ref</value>
   </data>
@@ -149,12 +146,6 @@
   </data>
   <data name="AmbigMember" xml:space="preserve">
     <value>Ambigüedad entre '{0}' y '{1}'</value>
-  </data>
-  <data name="CallingFinalizeDepracated" xml:space="preserve">
-    <value>Los destructores y object.Finalize no se pueden llamar directamente. Llame a IDisposable.Dispose si está disponible.</value>
-  </data>
-  <data name="CallingBaseFinalizeDeprecated" xml:space="preserve">
-    <value>No llame directamente al método Finalize de la clase base. Se llama automáticamente desde el destructor.</value>
   </data>
   <data name="NoImplicitConvCast" xml:space="preserve">
     <value>No se puede convertir implícitamente el tipo '{0}' en '{1}'. Ya existe una conversión explícita (compruebe si le falta una conversión).</value>

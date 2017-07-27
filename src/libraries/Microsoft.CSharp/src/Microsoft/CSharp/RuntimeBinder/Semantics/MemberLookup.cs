@@ -635,14 +635,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             _arity = arity;
             _flags = flags;
 
-            if ((_flags & MemLookFlags.BaseCall) != 0)
-                _typeQual = null;
-            else if ((_flags & MemLookFlags.Ctor) != 0)
-                _typeQual = _typeSrc;
-            else if (obj != null)
-                _typeQual = (CType)obj.Type;
-            else
-                _typeQual = null;
+            _typeQual = (_flags & MemLookFlags.Ctor) != 0 ? _typeSrc : obj?.Type;
 
             // Determine what to search.
             AggregateType typeCls1 = null;

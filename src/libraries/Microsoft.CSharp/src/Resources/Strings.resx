@@ -175,9 +175,6 @@
   <data name="AssgReadonlyProp" xml:space="preserve">
     <value>Property or indexer '{0}' cannot be assigned to -- it is read only</value>
   </data>
-  <data name="AbstractBaseCall" xml:space="preserve">
-    <value>Cannot call an abstract base member: '{0}'</value>
-  </data>
   <data name="RefProperty" xml:space="preserve">
     <value>A property or indexer may not be passed as an out or ref parameter</value>
   </data>
@@ -195,12 +192,6 @@
   </data>
   <data name="AmbigMember" xml:space="preserve">
     <value>Ambiguity between '{0}' and '{1}'</value>
-  </data>
-  <data name="CallingFinalizeDepracated" xml:space="preserve">
-    <value>Destructors and object.Finalize cannot be called directly. Consider calling IDisposable.Dispose if available.</value>
-  </data>
-  <data name="CallingBaseFinalizeDeprecated" xml:space="preserve">
-    <value>Do not directly call your base class Finalize method. It is called automatically from your destructor.</value>
   </data>
   <data name="NoImplicitConvCast" xml:space="preserve">
     <value>Cannot implicitly convert type '{0}' to '{1}'. An explicit conversion exists (are you missing a cast?)</value>

@@ -136,25 +136,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 Debug.Assert(pGroup != null);
 
-                CType rval = null;
 
-                if (0 != (pGroup.Flags & EXPRFLAG.EXF_BASECALL))
-                {
-                    rval = null;
-                }
-                else if (0 != (pGroup.Flags & EXPRFLAG.EXF_CTOR))
-                {
-                    rval = pGroup.ParentType;
-                }
-                else if (pGroup.OptionalObject != null)
-                {
-                    rval = pGroup.OptionalObject.Type;
-                }
-                else
-                {
-                    rval = null;
-                }
-                return rval;
+                return (pGroup.Flags & EXPRFLAG.EXF_CTOR) != 0 ? pGroup.ParentType : pGroup.OptionalObject?.Type;
             }
 
             private void LookForCandidates()
@@ -1253,21 +1236,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // used for Methods and Indexers
                 Debug.Assert(_pGroup.SymKind == SYMKIND.SK_MethodSymbol || _pGroup.SymKind == SYMKIND.SK_PropertySymbol && 0 != (_pGroup.Flags & EXPRFLAG.EXF_INDEXER));
                 Debug.Assert(_pGroup.TypeArgs.Count == 0 || _pGroup.SymKind == SYMKIND.SK_MethodSymbol);
-
-                // if this is a binding to finalize on object, then complain:
-                if (_results.GetBestResult().MethProp().name == NameManager.GetPredefinedName(PredefinedName.PN_DTOR) &&
-                    _results.GetBestResult().MethProp().getClass().isPredefAgg(PredefinedType.PT_OBJECT))
-                {
-                    if (0 != (_pGroup.Flags & EXPRFLAG.EXF_BASECALL))
-                    {
-                        GetErrorContext().Error(ErrorCode.ERR_CallingBaseFinalizeDeprecated);
-                    }
-                    else
-                    {
-                        GetErrorContext().Error(ErrorCode.ERR_CallingFinalizeDepracated);
-                    }
-                }
-
                 Debug.Assert(0 == (_pGroup.Flags & EXPRFLAG.EXF_USERCALLABLE) || _results.GetBestResult().MethProp().isUserCallable());
 
                 if (_pGroup.SymKind == SYMKIND.SK_MethodSymbol)
