@@ -5150,6 +5150,7 @@ namespace System.Reflection
         public virtual System.IO.FileStream GetFile(string name) { throw null; }
         public virtual System.IO.FileStream[] GetFiles() { throw null; }
         public virtual System.IO.FileStream[] GetFiles(bool getResourceModules) { throw null; }
+        public virtual System.Type[] GetForwardedTypes() { throw null; }
         public override int GetHashCode() { throw null; }
         public virtual System.Reflection.ManifestResourceInfo GetManifestResourceInfo(string resourceName) { throw null; }
         public virtual string[] GetManifestResourceNames() { throw null; }
