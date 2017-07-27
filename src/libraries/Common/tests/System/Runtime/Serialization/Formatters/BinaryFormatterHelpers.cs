@@ -15,10 +15,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
     {
         internal static T Clone<T>(T obj)
         {
-            // https://github.com/dotnet/corefx/issues/18942 - Binary serialization still WIP on AOT platforms.
-            if (RuntimeInformation.FrameworkDescription.StartsWith(".NET Native"))
-                return obj;
-
             var f = new BinaryFormatter();
             using (var s = new MemoryStream())
             {
@@ -30,13 +26,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
         internal static Lazy<T> Clone<T>(Lazy<T> lazy)
         {
-            // https://github.com/dotnet/corefx/issues/18942 - Binary serialization still WIP on AOT platforms.
-            if (RuntimeInformation.FrameworkDescription.StartsWith(".NET Native"))
-            {
-                T ignore = lazy.Value;
-                return lazy;
-            }
-
             return Clone<Lazy<T>>(lazy);
         }
 
