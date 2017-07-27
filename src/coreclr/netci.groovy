@@ -1624,7 +1624,21 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                     }
                     break
                 case 'arm':
-                    assert (scenario == 'default') || (scenario == 'pri1r2r') || (scenario == 'gcstress0x3') || (scenario == 'gcstress0xc')
+                    def validArmWindowsScenarios = [ "default",
+                                                     "pri1r2r",
+                                                     "zapdisable",
+                                                     "minopts",
+                                                     "tailcallstress",
+                                                     "jitstress1",
+                                                     "jitstress2",
+                                                     "gcstress0x3",
+                                                     "gcstress0xc",
+                                                     "jitstressregs1",
+                                                     "jitstressregs2",
+                                                     "gcstress0xc_jitstress1",
+                                                     "gcstress0xc_jitstress2"]
+
+                    assert validArmWindowsScenarios.contains(scenario)
 
                     // Set time out
                     setTestJobTimeOut(newJob, scenario)
@@ -1929,6 +1943,20 @@ combinedScenarios.each { scenario ->
 
                         switch (architecture) {
                             case 'arm':
+                                if ((scenario != 'gcstress0x3') &&
+                                    (scenario != 'gcstress0xc') &&
+                                    (scenario != 'jitstress1') &&
+                                    (scenario != 'jitstress2') &&
+                                    (scenario != 'jitstressregs1') &&
+                                    (scenario != 'jitstressregs2') &&
+                                    (scenario != 'gcstress0xc_jitstress1') &&
+                                    (scenario != 'gcstress0xc_jitstress2') &&
+                                    (scenario != 'minopts') &&
+                                    (scenario != 'tailcallstress') &&
+                                    (scenario != 'zapdisable')) {
+                                        return
+                                    }
+                                    break
                             case 'arm64':
                                 if ((scenario != 'gcstress0x3') && (scenario != 'gcstress0xc')) {
                                     return
