@@ -211,6 +211,7 @@ common_sources = \
 	number-formatter.h	\
 	number-ms.c		\
 	number-ms.h		\
+	object.c	\
 	object-internals.h	\
 	opcodes.c		\
 	property-bag.h	\
@@ -290,8 +291,7 @@ gc_dependent_sources = \
 	gc.c		\
 	monitor.c	\
 	mono-hash.c	\
-	mono-conc-hash.c	\
-	object.c
+	mono-conc-hash.c
 
 boehm_sources = \
 	boehm-gc.c
