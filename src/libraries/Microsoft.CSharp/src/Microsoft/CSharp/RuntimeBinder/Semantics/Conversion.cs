@@ -395,16 +395,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         exprResult.SetError();
                         return exprResult;
                     }
-                    else if (ftSrc == FUNDTYPE.FT_R8 && (0 != (expr.Flags & EXPRFLAG.EXF_LITERALCONST)) &&
-                             (dest.isPredefType(PredefinedType.PT_FLOAT) || dest.isPredefType(PredefinedType.PT_DECIMAL)))
-                    {
-                        // Tried to assign a literal of type double (the default) to a float or decimal. Suggest use
-                        // of a 'F' or 'M' suffix.
-                        ErrorContext.Error(ErrorCode.ERR_LiteralDoubleCast, dest.isPredefType(PredefinedType.PT_DECIMAL) ? "M" : "F", dest);
-                        exprResult = ExprFactory.CreateCast(0, destExpr, expr);
-                        exprResult.SetError();
-                        return exprResult;
-                    }
                 }
 
                 if (expr.Type is NullType && dest.fundType() != FUNDTYPE.FT_REF)

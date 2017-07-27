@@ -1561,15 +1561,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (isStatic)
             {
-                // If we're static and we don't have an object, or we have an implicit this, 
-                // then we're ok. The reason implicit this is ok is because if the user is
-                // just typing something like:
-                //
-                //      Equals(
-                //
-                // then the implicit this can bind to statics.
-
-                if (pObject == null || ((pObject.Flags & EXPRFLAG.EXF_IMPLICITTHIS) != 0))
+                // If we're static and we don't have an object then we're ok.
+                if (pObject == null)
                 {
                     return true;
                 }

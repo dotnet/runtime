@@ -222,9 +222,6 @@
   <data name="MissingPredefinedMember" xml:space="preserve">
     <value>缺少编译器要求的成员“{0}.{1}”</value>
   </data>
-  <data name="LiteralDoubleCast" xml:space="preserve">
-    <value>无法将 Double 类型隐式转换为“{1}”类型；请使用“{0}”后缀创建此类型</value>
-  </data>
   <data name="ConvertToStaticClass" xml:space="preserve">
     <value>无法转换为静态类型“{0}”</value>
   </data>
