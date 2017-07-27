@@ -192,6 +192,7 @@
     <Compile Include="System\TypedReferenceTests.cs" />
     <Compile Include="System\UIntPtrTests.netcoreapp.cs" />
     <Compile Include="System\ComponentModel\DefaultValueAttributeTests.netcoreapp.cs" />
+    <Compile Include="System\Reflection\AssemblyTests.netcoreapp.cs" />
     <Compile Include="System\Reflection\MethodBaseTests.netcoreapp.cs" />
     <Compile Include="System\Reflection\MemberInfoTests.netcoreapp.cs" />
     <Compile Include="System\Reflection\TypeDelegatorTests.netcoreapp.cs" />
@@ -230,6 +231,14 @@
     <ProjectReference Include="TestLoadAssembly\TestLoadAssembly.csproj">
       <Project>{9F312D76-9AF1-4E90-B3B0-815A1EC6C346}</Project>
       <Name>TestLoadAssembly</Name>
+    </ProjectReference>
+    <ProjectReference Include="ForwardedTypesAssembly\ForwardedTypesAssembly.csproj">
+      <Project>{3A3DE9F8-6295-4B68-BAAB-406F1CA0CD9C}</Project>
+      <Name>ForwardedTypesAssembly</Name>
+    </ProjectReference>
+    <ProjectReference Include="UnloadableAssembly\UnloadableAssembly.csproj">
+      <Project>{CA43AAD6-59A6-4BEB-AC9E-52DC9FD04B8B}</Project>
+      <Name>UnloadableAssembly</Name>
     </ProjectReference>
     <Reference Include="TestModule\System.Reflection.TestModule.dll">
     </Reference>
