@@ -282,10 +282,6 @@
           <source>'{0}': cannot explicitly call operator or accessor</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">“{0}”: 无法显式调用运算符或访问器</target>
         </trans-unit>
-        <trans-unit id="BogusType" translate="yes" xml:space="preserve">
-          <source>'{0}' is a type not supported by the language</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">“{0}”不是现用语言支持的类型</target>
-        </trans-unit>
         <trans-unit id="MissingPredefinedMember" translate="yes" xml:space="preserve">
           <source>Missing compiler required member '{0}.{1}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">缺少编译器要求的成员“{0}.{1}”</target>

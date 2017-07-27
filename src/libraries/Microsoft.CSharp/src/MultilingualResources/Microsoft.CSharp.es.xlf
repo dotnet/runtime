@@ -278,10 +278,6 @@
           <source>'{0}': cannot explicitly call operator or accessor</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}': no se puede llamar explícitamente al operador o al descriptor de acceso</target>
         </trans-unit>
-        <trans-unit id="BogusType" translate="yes" xml:space="preserve">
-          <source>'{0}' is a type not supported by the language</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">No se admite el tipo '{0}' para este lenguaje</target>
-        </trans-unit>
         <trans-unit id="MissingPredefinedMember" translate="yes" xml:space="preserve">
           <source>Missing compiler required member '{0}.{1}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Falta el miembro '{0}.{1}' que requiere el compilador.</target>

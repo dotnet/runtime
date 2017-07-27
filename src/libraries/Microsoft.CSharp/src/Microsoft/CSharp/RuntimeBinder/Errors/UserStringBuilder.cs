@@ -236,13 +236,13 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 ErrAppendSym(prop, pctx);
 
                 // add accessor name
-                if (prop.methGet == meth)
+                if (prop.GetterMethod == meth)
                 {
                     ErrAppendString(".get");
                 }
                 else
                 {
-                    Debug.Assert(meth == prop.methSet);
+                    Debug.Assert(meth == prop.SetterMethod);
                     ErrAppendString(".set");
                 }
 
@@ -347,14 +347,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 // append argument types
                 ErrAppendChar('(');
 
-                if (!meth.computeCurrentBogusState())
-                {
-                    ErrAppendParamList(GetTypeManager().SubstTypeArray(meth.Params, pctx), meth.isVarargs, meth.isParamArray);
-                }
+                ErrAppendParamList(GetTypeManager().SubstTypeArray(meth.Params, pctx), meth.isVarargs, meth.isParamArray);
 
                 ErrAppendChar(')');
             }
         }
+
         private void ErrAppendIndexer(IndexerSymbol indexer, SubstContext pctx)
         {
             ErrAppendString("this[");
@@ -373,15 +371,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
             {
                 if (prop.errExpImpl != null)
                     ErrAppendType(prop.errExpImpl, pctx, false);
-                if (prop.isIndexer())
+                if (prop is IndexerSymbol indexer)
                 {
                     ErrAppendChar('.');
-                    ErrAppendIndexer(prop.AsIndexerSymbol(), pctx);
+                    ErrAppendIndexer(indexer, pctx);
                 }
             }
-            else if (prop.isIndexer())
+            else if (prop is IndexerSymbol indexer)
             {
-                ErrAppendIndexer(prop.AsIndexerSymbol(), pctx);
+                ErrAppendIndexer(indexer, pctx);
             }
             else
             {

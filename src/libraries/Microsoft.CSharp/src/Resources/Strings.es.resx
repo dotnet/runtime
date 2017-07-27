@@ -216,9 +216,6 @@
   <data name="CantCallSpecialMethod" xml:space="preserve">
     <value>'{0}': no se puede llamar explícitamente al operador o al descriptor de acceso</value>
   </data>
-  <data name="BogusType" xml:space="preserve">
-    <value>No se admite el tipo '{0}' para este lenguaje</value>
-  </data>
   <data name="MissingPredefinedMember" xml:space="preserve">
     <value>Falta el miembro '{0}.{1}' que requiere el compilador.</value>
   </data>

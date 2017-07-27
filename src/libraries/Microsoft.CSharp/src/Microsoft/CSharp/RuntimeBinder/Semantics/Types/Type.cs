@@ -16,8 +16,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private Name _pName;
 
         private bool _fHasErrors;  // Whether anyituents have errors. This is immutable.
-        private bool _isBogus;     // can't be used in our language -- unsupported type(s)
-        private bool _checkedBogus; // Have we checked a method args/return for bogus types
 
         public bool IsWindowsRuntimeType()
         {
@@ -166,72 +164,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public Name GetName() { return _pName; }
         public void SetName(Name pName) { _pName = pName; }
-
-        public bool checkBogus() { return _isBogus; }
-        public bool getBogus() { return _isBogus; }
-        public bool hasBogus() { return _checkedBogus; }
-        public void setBogus(bool isBogus)
-        {
-            _isBogus = isBogus;
-            _checkedBogus = true;
-        }
-        public bool computeCurrentBogusState()
-        {
-            if (hasBogus())
-            {
-                return checkBogus();
-            }
-
-            bool fBogus = false;
-
-            switch (GetTypeKind())
-            {
-                case TypeKind.TK_ParameterModifierType:
-                case TypeKind.TK_PointerType:
-                case TypeKind.TK_ArrayType:
-                case TypeKind.TK_NullableType:
-                    if (GetBaseOrParameterOrElementType() != null)
-                    {
-                        fBogus = GetBaseOrParameterOrElementType().computeCurrentBogusState();
-                    }
-                    break;
-
-                case TypeKind.TK_ErrorType:
-                    setBogus(false);
-                    break;
-
-                case TypeKind.TK_AggregateType:
-                    AggregateType aggThis = (AggregateType)this;
-                    fBogus = aggThis.getAggregate().computeCurrentBogusState();
-                    for (int i = 0; !fBogus && i < aggThis.GetTypeArgsAll().Count; i++)
-                    {
-                        fBogus |= aggThis.GetTypeArgsAll()[i].computeCurrentBogusState();
-                    }
-                    break;
-
-                case TypeKind.TK_TypeParameterType:
-                case TypeKind.TK_VoidType:
-                case TypeKind.TK_NullType:
-                case TypeKind.TK_OpenTypePlaceholderType:
-                case TypeKind.TK_ArgumentListType:
-                case TypeKind.TK_NaturalIntegerType:
-                    setBogus(false);
-                    break;
-
-                default:
-                    throw Error.InternalCompilerError();
-                    //setBogus(false);
-                    //break;
-            }
-
-            if (fBogus)
-            {
-                // Only set this if at least 1 declared thing is bogus
-                setBogus(fBogus);
-            }
-
-            return hasBogus() && checkBogus();
-        }
 
         // This call switches on the kind and dispatches accordingly. This should really only be 
         // used when dereferencing TypeArrays. We should consider refactoring our code to not 

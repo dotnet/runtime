@@ -56,8 +56,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     internal abstract class Symbol
     {
         private SYMKIND _kind;     // the symbol kind
-        private bool _isBogus;     // can't be used in our language -- unsupported type(s)
-        private bool _checkedBogus; // Have we checked a method args/return for bogus types
         private ACCESS _access;    // access level
 
         // If this is true, then we had an error the first time so do not give an error the second time.
@@ -92,132 +90,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public symbmask_t mask()
         {
             return (symbmask_t)(1 << (int)_kind);
-        }
-
-        public bool checkBogus()
-        {
-            Debug.Assert(_checkedBogus);
-            return _isBogus;
-        } // if this Debug.Assert fires then call COMPILER_BASE::CheckBogus() instead
-
-        public bool getBogus()
-        {
-            return _isBogus;
-        }
-
-        public bool hasBogus()
-        {
-            return _checkedBogus;
-        }
-
-        public void setBogus(bool isBogus)
-        {
-            _isBogus = isBogus;
-            _checkedBogus = true;
-        }
-
-        public void initBogus()
-        {
-            _isBogus = false;
-            _checkedBogus = false;
-        }
-
-        public bool computeCurrentBogusState()
-        {
-            if (hasBogus())
-            {
-                return checkBogus();
-            }
-
-            bool fBogus = false;
-
-            switch (getKind())
-            {
-                case SYMKIND.SK_PropertySymbol:
-                case SYMKIND.SK_MethodSymbol:
-                    {
-                        MethodOrPropertySymbol meth = (MethodOrPropertySymbol)this;
-
-                        if (meth.RetType != null)
-                        {
-                            fBogus = meth.RetType.computeCurrentBogusState();
-                        }
-                        if (meth.Params != null)
-                        {
-                            for (int i = 0; !fBogus && i < meth.Params.Count; i++)
-                            {
-                                fBogus |= meth.Params[i].computeCurrentBogusState();
-                            }
-                        }
-                    }
-                    break;
-
-                /*
-                case SYMKIND.SK_ParameterModifierType:
-                case SYMKIND.SK_OptionalModifierType:
-                case SYMKIND.SK_PointerType:
-                case SYMKIND.SK_ArrayType:
-                case SYMKIND.SK_NullableType:
-                case SYMKIND.SK_PinnedType:
-                    if (this.AsType().GetBaseOrParameterOrElementType() != null)
-                    {
-                        fBogus = this.AsType().GetBaseOrParameterOrElementType().computeCurrentBogusState();
-                    }
-                    break;
-                    */
-
-                case SYMKIND.SK_EventSymbol:
-                    CType evType = ((EventSymbol)this).type;
-                    if (evType != null)
-                    {
-                        fBogus = evType.computeCurrentBogusState();
-                    }
-                    break;
-
-                case SYMKIND.SK_FieldSymbol:
-                    var fiType = ((FieldSymbol)this).GetType();
-                    if (fiType != null)
-                    {
-                        fBogus = fiType.computeCurrentBogusState();
-                    }
-                    break;
-
-                /*
-                case SYMKIND.SK_ErrorType:
-                    this.setBogus(false);
-                    break;
-
-                case SYMKIND.SK_AggregateType:
-                    fBogus = this.AsAggregateType().getAggregate().computeCurrentBogusState();
-                    for (int i = 0; !fBogus && i < this.AsAggregateType().GetTypeArgsAll().size; i++)
-                    {
-                        fBogus |= this.AsAggregateType().GetTypeArgsAll()[i].computeCurrentBogusState();
-                    }
-                    break;
-                 */
-
-                case SYMKIND.SK_TypeParameterSymbol:
-                case SYMKIND.SK_LocalVariableSymbol:
-                    setBogus(false);
-                    break;
-
-                case SYMKIND.SK_AggregateSymbol:
-                    fBogus = hasBogus() && checkBogus();
-                    break;
-
-                default:
-                    Debug.Assert(false, "CheckBogus with invalid Symbol kind");
-                    setBogus(false);
-                    break;
-            }
-
-            if (fBogus)
-            {
-                // Only set this if at least 1 declared thing is bogus
-                setBogus(fBogus);
-            }
-
-            return hasBogus() && checkBogus();
         }
 
         public CType getType()
@@ -330,7 +202,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 case SYMKIND.SK_PropertySymbol:
                     PropertySymbol prop = ((PropertySymbol)this);
-                    MethodSymbol meth = prop.methGet ?? prop.methSet;
+                    MethodSymbol meth = prop.GetterMethod ?? prop.SetterMethod;
                     return meth != null && meth.isVirtual;
 
                 default:
