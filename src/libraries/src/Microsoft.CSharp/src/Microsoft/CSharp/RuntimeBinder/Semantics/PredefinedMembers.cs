@@ -353,13 +353,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 property = getter.getProperty();
                 Debug.Assert(property != null);
 
-                if (property.name != propertyName ||
-                    (propertySetter != PREDEFMETH.PM_COUNT &&
-                        (setter == null ||
-                         !setter.isPropertyAccessor() ||
-                         setter.getProperty() != property)) ||
-                    property.getBogus())
+                if (property.name != propertyName || propertySetter != PREDEFMETH.PM_COUNT
+                    && (setter == null || !setter.isPropertyAccessor() || setter.getProperty() != property))
                 {
+                    Debug.Assert(!property.Bogus);
                     property = null;
                 }
             }
@@ -610,8 +607,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         methsym.typeVars.Count == cMethodTyVars &&
                         GetTypeManager().SubstEqualTypes(methsym.RetType, returnType, null, methsym.typeVars, SubstTypeFlags.DenormMeth) &&
                         GetTypeManager().SubstEqualTypeArrays(methsym.Params, argumentTypes, (TypeArray)null,
-                            methsym.typeVars, SubstTypeFlags.DenormMeth) &&
-                        !methsym.getBogus())
+                            methsym.typeVars, SubstTypeFlags.DenormMeth))
                     {
                         return methsym;
                     }

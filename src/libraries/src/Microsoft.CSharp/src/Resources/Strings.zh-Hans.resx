@@ -216,9 +216,6 @@
   <data name="CantCallSpecialMethod" xml:space="preserve">
     <value>“{0}”: 无法显式调用运算符或访问器</value>
   </data>
-  <data name="BogusType" xml:space="preserve">
-    <value>“{0}”不是现用语言支持的类型</value>
-  </data>
   <data name="MissingPredefinedMember" xml:space="preserve">
     <value>缺少编译器要求的成员“{0}.{1}”</value>
   </data>

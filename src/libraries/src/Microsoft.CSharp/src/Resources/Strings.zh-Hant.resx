@@ -216,9 +216,6 @@
   <data name="CantCallSpecialMethod" xml:space="preserve">
     <value>'{0}': 無法明確呼叫運算子或存取子</value>
   </data>
-  <data name="BogusType" xml:space="preserve">
-    <value>此語言不支援型別 '{0}'</value>
-  </data>
   <data name="MissingPredefinedMember" xml:space="preserve">
     <value>遺漏編譯器所需的成員 '{0}.{1}'</value>
   </data>

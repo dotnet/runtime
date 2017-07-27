@@ -216,9 +216,6 @@
   <data name="CantCallSpecialMethod" xml:space="preserve">
     <value>'{0}': impossibile chiamare in modo esplicito l'operatore o la funzione di accesso</value>
   </data>
-  <data name="BogusType" xml:space="preserve">
-    <value>'{0}' è un tipo non supportato dal linguaggio</value>
-  </data>
   <data name="MissingPredefinedMember" xml:space="preserve">
     <value>Manca il membro '{0}.{1}', necessario per il compilatore.</value>
   </data>

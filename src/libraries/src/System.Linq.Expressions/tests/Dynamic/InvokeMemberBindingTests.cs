@@ -3,6 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Reflection;
+using System.Reflection.Emit;
 using Microsoft.CSharp.RuntimeBinder;
 using Xunit;
 
@@ -182,5 +184,94 @@ namespace System.Dynamic.Tests
             CallInfo info = new CallInfo(0);
             Assert.Same(info, new MinimumOverrideInvokeMemberBinding("name", false, info).CallInfo);
         }
+
+#if FEATURE_COMPILE // We're not testing compilation, but we do need Reflection.Emit for the test
+
+        private static dynamic GetObjectWithNonIndexerParameterProperty(bool hasGetter, bool hasSetter)
+        {
+            TypeBuilder typeBuild = AssemblyBuilder.DefineDynamicAssembly(new AssemblyName("TestAssembly"), AssemblyBuilderAccess.Run)
+                .DefineDynamicModule("TestModule")
+                .DefineType("TestType", TypeAttributes.Public);
+            FieldBuilder field = typeBuild.DefineField("_value", typeof(int), FieldAttributes.Private);
+
+            PropertyBuilder property = typeBuild.DefineProperty(
+                "ItemProp", PropertyAttributes.None, typeof(int), new[] { typeof(int) });
+
+            if (hasGetter)
+            {
+                MethodBuilder getter = typeBuild.DefineMethod(
+                    "get_ItemProp",
+                    MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig
+                    | MethodAttributes.PrivateScope, typeof(int), new[] { typeof(int) });
+
+                ILGenerator ilGen = getter.GetILGenerator();
+                ilGen.Emit(OpCodes.Ldarg_0);
+                ilGen.Emit(OpCodes.Ldfld, field);
+                ilGen.Emit(OpCodes.Ret);
+
+                property.SetGetMethod(getter);
+            }
+
+            if (hasSetter)
+            {
+
+                MethodBuilder setter = typeBuild.DefineMethod(
+                    "set_ItemProp",
+                    MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.HideBySig
+                    | MethodAttributes.PrivateScope, typeof(void), new[] { typeof(int), typeof(int) });
+
+                ILGenerator ilGen = setter.GetILGenerator();
+                ilGen.Emit(OpCodes.Ldarg_0);
+                ilGen.Emit(OpCodes.Ldarg_2);
+                ilGen.Emit(OpCodes.Stfld, field);
+                ilGen.Emit(OpCodes.Ret);
+
+                property.SetSetMethod(setter);
+            }
+
+            return Activator.CreateInstance(typeBuild.CreateType());
+        }
+
+        [Fact]
+        public void NonIndexerParameterizedDirectAccess()
+        {
+            // If a paramterized property isn't the type's indexer, we should be allowed to use the
+            // getter or setter directly.
+            dynamic d = GetObjectWithNonIndexerParameterProperty(true, true);
+            d.set_ItemProp(2, 19);
+            int value = d.get_ItemProp(2);
+            Assert.Equal(19, value);
+        }
+
+        [Fact]
+        public void NonIndexerParamterizedGetterAndSetterIndexAccess()
+        {
+            dynamic d = GetObjectWithNonIndexerParameterProperty(true, true);
+            RuntimeBinderException ex = Assert.Throws<RuntimeBinderException>(() => d.ItemProp[2] = 3);
+            // Similar message to CS1545 advises about getter and setter methods.
+            Assert.Contains("get_ItemProp", ex.Message);
+            Assert.Contains("set_ItemProp", ex.Message);
+        }
+
+        [Fact]
+        public void NonIndexerParamterizedGetterOnlyIndexAccess()
+        {
+            dynamic d = GetObjectWithNonIndexerParameterProperty(true, false);
+            int dump;
+            RuntimeBinderException ex = Assert.Throws<RuntimeBinderException>(() => dump = d.ItemProp[2]);
+            // Similar message to CS1546 advises about getter method.
+            Assert.Contains("get_ItemProp", ex.Message);
+        }
+
+        [Fact]
+        public void NonIndexerParamterizedSetterOnlyIndexAccess()
+        {
+            dynamic d = GetObjectWithNonIndexerParameterProperty(false, true);
+            RuntimeBinderException ex = Assert.Throws<RuntimeBinderException>(() => d.ItemProp[2] = 9);
+            // Similar message to CS1546 advises about setter method.
+            Assert.Contains("set_ItemProp", ex.Message);
+        }
+
+#endif
     }
 }
