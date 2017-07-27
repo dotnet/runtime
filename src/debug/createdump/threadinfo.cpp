@@ -5,6 +5,10 @@
 #include "createdump.h"
 #include <asm/ptrace.h>
 
+#ifndef __GLIBC__
+typedef int __ptrace_request;
+#endif
+
 #define FPREG_ErrorOffset(fpregs) *(DWORD*)&((fpregs).rip)
 #define FPREG_ErrorSelector(fpregs) *(((WORD*)&((fpregs).rip)) + 2)
 #define FPREG_DataOffset(fpregs) *(DWORD*)&((fpregs).rdp)
