@@ -1035,6 +1035,10 @@ static SLOT getTargetOfCall(SLOT instrPtr, PCONTEXT regs, SLOT*nextInstr) {
         unsigned int regnum = (instrPtr[0] & 0x78) >> 3;
         return (BYTE *)getRegVal(regnum, regs);
     }
+    else
+    {
+        return 0; // Not a call.
+    }
 #elif defined(_TARGET_ARM64_)
    if (((*reinterpret_cast<DWORD*>(instrPtr)) & 0xFC000000) == 0x94000000)
    {
