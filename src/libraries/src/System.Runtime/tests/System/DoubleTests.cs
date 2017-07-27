@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.Tests
 {
-    public class DoubleTests : RemoteExecutorTestBase
+    public partial class DoubleTests : RemoteExecutorTestBase
     {
         [Fact]
         public static void Ctor_Empty()
@@ -47,10 +47,19 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(double.PositiveInfinity, true)]
-        [InlineData(double.NegativeInfinity, true)]
-        [InlineData(double.NaN, false)]
-        [InlineData(0.0, false)]
+        [InlineData(double.NegativeInfinity, true)]     // Negative Infinity
+        [InlineData(double.MinValue, false)]            // Min Negative Normal
+        [InlineData(-2.2250738585072014E-308, false)]   // Max Negative Normal
+        [InlineData(-2.2250738585072009E-308, false)]   // Min Negative Subnormal
+        [InlineData(-4.94065645841247E-324, false)]     // Max Negative Subnormal
+        [InlineData(-0.0, false)]                       // Negative Zero
+        [InlineData(double.NaN, false)]                 // NaN
+        [InlineData(0.0, false)]                        // Positive Zero
+        [InlineData(4.94065645841247E-324, false)]      // Min Positive Subnormal
+        [InlineData(2.2250738585072009E-308, false)]    // Max Positive Subnormal
+        [InlineData(2.2250738585072014E-308, false)]    // Min Positive Normal
+        [InlineData(double.MaxValue, false)]            // Max Positive Normal
+        [InlineData(double.PositiveInfinity, true)]     // Positive Infinity
         public static void IsInfinity(double d, bool expected)
         {
             Assert.Equal(expected, double.IsInfinity(d));
@@ -63,10 +72,19 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(double.PositiveInfinity, false)]
-        [InlineData(double.NegativeInfinity, false)]
-        [InlineData(double.NaN, true)]
-        [InlineData(0.0, false)]
+        [InlineData(double.NegativeInfinity, false)]    // Negative Infinity
+        [InlineData(double.MinValue, false)]            // Min Negative Normal
+        [InlineData(-2.2250738585072014E-308, false)]   // Max Negative Normal
+        [InlineData(-2.2250738585072009E-308, false)]   // Min Negative Subnormal
+        [InlineData(-4.94065645841247E-324, false)]     // Max Negative Subnormal
+        [InlineData(-0.0, false)]                       // Negative Zero
+        [InlineData(double.NaN, true)]                  // NaN
+        [InlineData(0.0, false)]                        // Positive Zero
+        [InlineData(4.94065645841247E-324, false)]      // Min Positive Subnormal
+        [InlineData(2.2250738585072009E-308, false)]    // Max Positive Subnormal
+        [InlineData(2.2250738585072014E-308, false)]    // Min Positive Normal
+        [InlineData(double.MaxValue, false)]            // Max Positive Normal
+        [InlineData(double.PositiveInfinity, false)]    // Positive Infinity
         public static void IsNaN(double d, bool expected)
         {
             Assert.Equal(expected, double.IsNaN(d));
@@ -79,10 +97,19 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(double.NegativeInfinity, true)]
-        [InlineData(double.PositiveInfinity, false)]
-        [InlineData(double.NaN, false)]
-        [InlineData(0.0, false)]
+        [InlineData(double.NegativeInfinity, true)]     // Negative Infinity
+        [InlineData(double.MinValue, false)]            // Min Negative Normal
+        [InlineData(-2.2250738585072014E-308, false)]   // Max Negative Normal
+        [InlineData(-2.2250738585072009E-308, false)]   // Min Negative Subnormal
+        [InlineData(-4.94065645841247E-324, false)]     // Max Negative Subnormal
+        [InlineData(-0.0, false)]                       // Negative Zero
+        [InlineData(double.NaN, false)]                 // NaN
+        [InlineData(0.0, false)]                        // Positive Zero
+        [InlineData(4.94065645841247E-324, false)]      // Min Positive Subnormal
+        [InlineData(2.2250738585072009E-308, false)]    // Max Positive Subnormal
+        [InlineData(2.2250738585072014E-308, false)]    // Min Positive Normal
+        [InlineData(double.MaxValue, false)]            // Max Positive Normal
+        [InlineData(double.PositiveInfinity, false)]    // Positive Infinity
         public static void IsNegativeInfinity(double d, bool expected)
         {
             Assert.Equal(expected, double.IsNegativeInfinity(d));
@@ -95,10 +122,19 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(double.PositiveInfinity, true)]
-        [InlineData(double.NegativeInfinity, false)]
-        [InlineData(double.NaN, false)]
-        [InlineData(0.0, false)]
+        [InlineData(double.NegativeInfinity, false)]    // Negative Infinity
+        [InlineData(double.MinValue, false)]            // Min Negative Normal
+        [InlineData(-2.2250738585072014E-308, false)]   // Max Negative Normal
+        [InlineData(-2.2250738585072009E-308, false)]   // Min Negative Subnormal
+        [InlineData(-4.94065645841247E-324, false)]     // Max Negative Subnormal
+        [InlineData(-0.0, false)]                       // Negative Zero
+        [InlineData(double.NaN, false)]                 // NaN
+        [InlineData(0.0, false)]                        // Positive Zero
+        [InlineData(4.94065645841247E-324, false)]      // Min Positive Subnormal
+        [InlineData(2.2250738585072009E-308, false)]    // Max Positive Subnormal
+        [InlineData(2.2250738585072014E-308, false)]    // Min Positive Normal
+        [InlineData(double.MaxValue, false)]            // Max Positive Normal
+        [InlineData(double.PositiveInfinity, true)]     // Positive Infinity
         public static void IsPositiveInfinity(double d, bool expected)
         {
             Assert.Equal(expected, double.IsPositiveInfinity(d));
