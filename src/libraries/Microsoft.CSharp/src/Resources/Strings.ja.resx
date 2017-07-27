@@ -129,9 +129,6 @@
   <data name="AssgReadonlyProp" xml:space="preserve">
     <value>プロパティまたはインデクサー '{0}' は読み取り専用であるため、割り当てることはできません</value>
   </data>
-  <data name="AbstractBaseCall" xml:space="preserve">
-    <value>抽象基本メンバーを呼び出すことはできません: '{0}'</value>
-  </data>
   <data name="RefProperty" xml:space="preserve">
     <value>プロパティまたはインデクサーを out か ref のパラメーターとして渡すことはできません。</value>
   </data>
@@ -149,12 +146,6 @@
   </data>
   <data name="AmbigMember" xml:space="preserve">
     <value>'{0}' と '{1}' 間があいまいです</value>
-  </data>
-  <data name="CallingFinalizeDepracated" xml:space="preserve">
-    <value>デストラクター と object.Finalize を直接呼び出すことはできません。使用可能であれば IDisposable.Dispose を呼び出してください。</value>
-  </data>
-  <data name="CallingBaseFinalizeDeprecated" xml:space="preserve">
-    <value>基本クラスの Finalize メソッドを直接呼び出さないでください。デストラクターから自動的に呼び出されます。</value>
   </data>
   <data name="NoImplicitConvCast" xml:space="preserve">
     <value>型 '{0}' を '{1}' に暗黙的に変換できません。明示的な変換が存在します (cast が不足していないかどうかを確認してください)</value>

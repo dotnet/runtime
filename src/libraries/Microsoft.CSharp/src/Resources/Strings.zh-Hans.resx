@@ -129,9 +129,6 @@
   <data name="AssgReadonlyProp" xml:space="preserve">
     <value>无法为属性或索引器“{0}”赋值 - 它是只读的</value>
   </data>
-  <data name="AbstractBaseCall" xml:space="preserve">
-    <value>无法调用抽象基成员:“{0}”</value>
-  </data>
   <data name="RefProperty" xml:space="preserve">
     <value>属性或索引器不得作为 out 或 ref 参数传递</value>
   </data>
@@ -149,12 +146,6 @@
   </data>
   <data name="AmbigMember" xml:space="preserve">
     <value>在“{0}”和“{1}”之间具有二义性</value>
-  </data>
-  <data name="CallingFinalizeDepracated" xml:space="preserve">
-    <value>无法直接调用析构函数和 object.Finalize。如果可用，请考虑调用 IDisposable.Dispose。</value>
-  </data>
-  <data name="CallingBaseFinalizeDeprecated" xml:space="preserve">
-    <value>不要直接调用基类 Finalize 方法。它将从析构函数中自动调用。</value>
   </data>
   <data name="NoImplicitConvCast" xml:space="preserve">
     <value>无法将类型“{0}”隐式转换为“{1}”。存在一个显式转换(是否缺少强制转换?)</value>

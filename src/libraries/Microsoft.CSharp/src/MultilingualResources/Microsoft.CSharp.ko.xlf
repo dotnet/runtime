@@ -162,10 +162,6 @@
           <source>Property or indexer '{0}' cannot be assigned to -- it is read only</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}' 속성 또는 인덱서는 읽기 전용이므로 할당할 수 없습니다.</target>
         </trans-unit>
-        <trans-unit id="AbstractBaseCall" translate="yes" xml:space="preserve">
-          <source>Cannot call an abstract base member: '{0}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">추상 기본 멤버를 호출할 수 없습니다. '{0}'</target>
-        </trans-unit>
         <trans-unit id="RefProperty" translate="yes" xml:space="preserve">
           <source>A property or indexer may not be passed as an out or ref parameter</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">속성 또는 인덱서는 out 또는 ref 매개 변수로 전달할 수 없습니다.</target>
@@ -189,14 +185,6 @@
         <trans-unit id="AmbigMember" translate="yes" xml:space="preserve">
           <source>Ambiguity between '{0}' and '{1}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}'과(와) '{1}' 사이에 모호성이 있습니다.</target>
-        </trans-unit>
-        <trans-unit id="CallingFinalizeDepracated" translate="yes" xml:space="preserve">
-          <source>Destructors and object.Finalize cannot be called directly. Consider calling IDisposable.Dispose if available.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">소멸자 및 object.Finalize는 직접 호출할 수 없습니다. 가능한 경우 IDisposable.Dispose를 호출하십시오.</target>
-        </trans-unit>
-        <trans-unit id="CallingBaseFinalizeDeprecated" translate="yes" xml:space="preserve">
-          <source>Do not directly call your base class Finalize method. It is called automatically from your destructor.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">기본 클래스 Finalize 메서드를 직접 호출하지 마십시오. 이 메서드는 소멸자에서 자동으로 호출됩니다.</target>
         </trans-unit>
         <trans-unit id="NoImplicitConvCast" translate="yes" xml:space="preserve">
           <source>Cannot implicitly convert type '{0}' to '{1}'. An explicit conversion exists (are you missing a cast?)</source>

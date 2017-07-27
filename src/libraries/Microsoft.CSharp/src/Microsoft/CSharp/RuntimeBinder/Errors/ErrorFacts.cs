@@ -92,9 +92,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 case ErrorCode.ERR_AssgReadonlyProp:
                     codeStr = SR.AssgReadonlyProp;
                     break;
-                case ErrorCode.ERR_AbstractBaseCall:
-                    codeStr = SR.AbstractBaseCall;
-                    break;
                 case ErrorCode.ERR_RefProperty:
                     codeStr = SR.RefProperty;
                     break;
@@ -112,12 +109,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                     break;
                 case ErrorCode.ERR_AmbigMember:
                     codeStr = SR.AmbigMember;
-                    break;
-                case ErrorCode.ERR_CallingFinalizeDepracated:
-                    codeStr = SR.CallingFinalizeDepracated;
-                    break;
-                case ErrorCode.ERR_CallingBaseFinalizeDeprecated:
-                    codeStr = SR.CallingBaseFinalizeDeprecated;
                     break;
                 case ErrorCode.ERR_NoImplicitConvCast:
                     codeStr = SR.NoImplicitConvCast;

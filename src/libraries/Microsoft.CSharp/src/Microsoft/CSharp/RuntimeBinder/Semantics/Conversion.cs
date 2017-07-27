@@ -738,7 +738,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Expr obj = !isExtensionMethod ? grp.OptionalObject: null;
             bool bIsMatchingStatic;
             bool constrained;
-            PostBindMethod(0 != (grp.Flags & EXPRFLAG.EXF_BASECALL), ref mwiWrap, obj);
+            PostBindMethod(ref mwiWrap, obj);
             obj = AdjustMemberObject(mwiWrap, obj, out constrained, out bIsMatchingStatic);
             if (!bIsMatchingStatic)
             {
@@ -755,7 +755,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (!needDest)
                 return true;
 
-            ExprFuncPtr funcPtr = ExprFactory.CreateFunctionPointer(grp.Flags & EXPRFLAG.EXF_BASECALL, getVoidType(), null, mwiWrap);
+            ExprFuncPtr funcPtr = ExprFactory.CreateFunctionPointer(0, getVoidType(), null, mwiWrap);
             if (!mwiWrap.Meth().isStatic || isExtensionMethod)
             {
                 if (mwiWrap.Meth().getClass().isPredefAgg(PredefinedType.PT_G_OPTIONAL))

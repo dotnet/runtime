@@ -162,10 +162,6 @@
           <source>Property or indexer '{0}' cannot be assigned to -- it is read only</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">プロパティまたはインデクサー '{0}' は読み取り専用であるため、割り当てることはできません</target>
         </trans-unit>
-        <trans-unit id="AbstractBaseCall" translate="yes" xml:space="preserve">
-          <source>Cannot call an abstract base member: '{0}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">抽象基本メンバーを呼び出すことはできません: '{0}'</target>
-        </trans-unit>
         <trans-unit id="RefProperty" translate="yes" xml:space="preserve">
           <source>A property or indexer may not be passed as an out or ref parameter</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">プロパティまたはインデクサーを out か ref のパラメーターとして渡すことはできません。</target>
@@ -189,14 +185,6 @@
         <trans-unit id="AmbigMember" translate="yes" xml:space="preserve">
           <source>Ambiguity between '{0}' and '{1}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}' と '{1}' 間があいまいです</target>
-        </trans-unit>
-        <trans-unit id="CallingFinalizeDepracated" translate="yes" xml:space="preserve">
-          <source>Destructors and object.Finalize cannot be called directly. Consider calling IDisposable.Dispose if available.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">デストラクター と object.Finalize を直接呼び出すことはできません。使用可能であれば IDisposable.Dispose を呼び出してください。</target>
-        </trans-unit>
-        <trans-unit id="CallingBaseFinalizeDeprecated" translate="yes" xml:space="preserve">
-          <source>Do not directly call your base class Finalize method. It is called automatically from your destructor.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">基本クラスの Finalize メソッドを直接呼び出さないでください。デストラクターから自動的に呼び出されます。</target>
         </trans-unit>
         <trans-unit id="NoImplicitConvCast" translate="yes" xml:space="preserve">
           <source>Cannot implicitly convert type '{0}' to '{1}'. An explicit conversion exists (are you missing a cast?)</source>
