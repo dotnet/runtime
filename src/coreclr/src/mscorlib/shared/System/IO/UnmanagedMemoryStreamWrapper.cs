@@ -114,6 +114,11 @@ namespace System.IO
             return _unmanagedStream.Read(buffer, offset, count);
         }
 
+        public override int Read(Span<byte> destination)
+        {
+            return _unmanagedStream.Read(destination);
+        }
+
         public override int ReadByte()
         {
             return _unmanagedStream.ReadByte();
@@ -134,6 +139,11 @@ namespace System.IO
         public override void Write(byte[] buffer, int offset, int count)
         {
             _unmanagedStream.Write(buffer, offset, count);
+        }
+
+        public override void Write(ReadOnlySpan<byte> source)
+        {
+            _unmanagedStream.Write(source);
         }
 
         public override void WriteByte(byte value)

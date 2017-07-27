@@ -46,6 +46,10 @@ namespace System.IO
                 Initialize(ptr, len, len, FileAccess.Read);
         }
 
+        public override int Read(Span<byte> destination) => ReadCore(destination);
+
+        public override void Write(ReadOnlySpan<byte> source) => WriteCore(source);
+
         ~PinnedBufferMemoryStream()
         {
             Dispose(false);
