@@ -222,9 +222,6 @@
   <data name="MissingPredefinedMember" xml:space="preserve">
     <value>コンパイラが必要とするメンバー '{0}.{1}' がありません</value>
   </data>
-  <data name="LiteralDoubleCast" xml:space="preserve">
-    <value>型 double のリテラルを暗黙的に型 '{1}' に変換することはできません。'{0}' サフィックスを使用して、この型のリテラルを作成してください</value>
-  </data>
   <data name="ConvertToStaticClass" xml:space="preserve">
     <value>スタティック型 '{0}' へ変換できません</value>
   </data>

@@ -222,9 +222,6 @@
   <data name="MissingPredefinedMember" xml:space="preserve">
     <value>遺漏編譯器所需的成員 '{0}.{1}'</value>
   </data>
-  <data name="LiteralDoubleCast" xml:space="preserve">
-    <value>不能隱含將型別 double 的常值轉換為型別 '{1}'; 請使用 '{0}' 後置字元來建立此型別的常值</value>
-  </data>
   <data name="ConvertToStaticClass" xml:space="preserve">
     <value>無法轉換為靜態型別 '{0}'</value>
   </data>

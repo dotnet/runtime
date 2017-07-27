@@ -222,9 +222,6 @@
   <data name="MissingPredefinedMember" xml:space="preserve">
     <value>Der vom Compiler angeforderte Member "{0}.{1}" fehlt.</value>
   </data>
-  <data name="LiteralDoubleCast" xml:space="preserve">
-    <value>Literale vom Typ "double" können nicht implizit in den {1}-Typ konvertiert werden. Verwenden Sie ein {0}-Suffix, um ein Literal mit diesem Typ zu erstellen.</value>
-  </data>
   <data name="ConvertToStaticClass" xml:space="preserve">
     <value>Die Konvertierung in den statischen {0}-Typ ist nicht möglich.</value>
   </data>

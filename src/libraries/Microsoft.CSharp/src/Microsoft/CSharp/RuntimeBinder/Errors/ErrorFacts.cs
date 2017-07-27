@@ -185,9 +185,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 case ErrorCode.ERR_MissingPredefinedMember:
                     codeStr = SR.MissingPredefinedMember;
                     break;
-                case ErrorCode.ERR_LiteralDoubleCast:
-                    codeStr = SR.LiteralDoubleCast;
-                    break;
                 case ErrorCode.ERR_ConvertToStaticClass:
                     codeStr = SR.ConvertToStaticClass;
                     break;

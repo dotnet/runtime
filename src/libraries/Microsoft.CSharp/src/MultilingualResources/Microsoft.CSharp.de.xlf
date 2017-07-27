@@ -286,10 +286,6 @@
           <source>Missing compiler required member '{0}.{1}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Der vom Compiler angeforderte Member "{0}.{1}" fehlt.</target>
         </trans-unit>
-        <trans-unit id="LiteralDoubleCast" translate="yes" xml:space="preserve">
-          <source>Literal of type double cannot be implicitly converted to type '{1}'; use an '{0}' suffix to create a literal of this type</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Literale vom Typ "double" können nicht implizit in den {1}-Typ konvertiert werden. Verwenden Sie ein {0}-Suffix, um ein Literal mit diesem Typ zu erstellen.</target>
-        </trans-unit>
         <trans-unit id="ConvertToStaticClass" translate="yes" xml:space="preserve">
           <source>Cannot convert to static type '{0}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Die Konvertierung in den statischen {0}-Typ ist nicht möglich.</target>
