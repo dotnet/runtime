@@ -361,8 +361,27 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock();  // Keep this in sync with contract validation in ReadAsync
 
+            return ReadCore(new Span<byte>(buffer, offset, count));
+        }
+
+        public override int Read(Span<byte> destination)
+        {
+            if (GetType() == typeof(UnmanagedMemoryStream))
+            {
+                return ReadCore(destination);
+            }
+            else
+            {
+                // UnmanagedMemoryStream is not sealed, and a derived type may have overridden Read(byte[], int, int) prior
+                // to this Read(Span<byte>) overload being introduced.  In that case, this Read(Span<byte>) overload
+                // should use the behavior of Read(byte[],int,int) overload.
+                return base.Read(destination);
+            }
+        }
+
+        internal int ReadCore(Span<byte> destination)
+        {
             if (!_isOpen) throw Error.GetStreamIsClosed();
             if (!CanRead) throw Error.GetReadNotSupported();
 
@@ -370,20 +389,22 @@ namespace System.IO
             // changes our position after we decide we can read some bytes.
             long pos = Interlocked.Read(ref _position);
             long len = Interlocked.Read(ref _length);
-            long n = len - pos;
-            if (n > count)
-                n = count;
+            long n = Math.Min(len - pos, destination.Length);
             if (n <= 0)
+            {
                 return 0;
+            }
 
             int nInt = (int)n; // Safe because n <= count, which is an Int32
             if (nInt < 0)
+            {
                 return 0;  // _position could be beyond EOF
+            }
             Debug.Assert(pos + nInt >= 0, "_position + n >= 0");  // len is less than 2^63 -1.
 
             unsafe
             {
-                fixed (byte* pBuffer = buffer)
+                fixed (byte* pBuffer = &destination.DangerousGetPinnableReference())
                 {
                     if (_buffer != null)
                     {
@@ -393,7 +414,7 @@ namespace System.IO
                         try
                         {
                             _buffer.AcquirePointer(ref pointer);
-                            Buffer.Memcpy(pBuffer + offset, pointer + pos + _offset, nInt);
+                            Buffer.Memcpy(pBuffer, pointer + pos + _offset, nInt);
                         }
                         finally
                         {
@@ -405,7 +426,7 @@ namespace System.IO
                     }
                     else
                     {
-                        Buffer.Memcpy(pBuffer + offset, _mem + pos, nInt);
+                        Buffer.Memcpy(pBuffer, _mem + pos, nInt);
                     }
                 }
             }
@@ -583,17 +604,38 @@ namespace System.IO
                 throw new ArgumentOutOfRangeException(nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
-            Contract.EndContractBlock();  // Keep contract validation in sync with WriteAsync(..)
 
+            WriteCore(new Span<byte>(buffer, offset, count));
+        }
+
+        public override void Write(ReadOnlySpan<byte> source)
+        {
+            if (GetType() == typeof(UnmanagedMemoryStream))
+            {
+                WriteCore(source);
+            }
+            else
+            {
+                // UnmanagedMemoryStream is not sealed, and a derived type may have overridden Write(byte[], int, int) prior
+                // to this Write(Span<byte>) overload being introduced.  In that case, this Write(Span<byte>) overload
+                // should use the behavior of Write(byte[],int,int) overload.
+                base.Write(source);
+            }
+        }
+
+        internal unsafe void WriteCore(ReadOnlySpan<byte> source)
+        {
             if (!_isOpen) throw Error.GetStreamIsClosed();
             if (!CanWrite) throw Error.GetWriteNotSupported();
 
             long pos = Interlocked.Read(ref _position);  // Use a local to avoid a race condition
             long len = Interlocked.Read(ref _length);
-            long n = pos + count;
+            long n = pos + source.Length;
             // Check for overflow
             if (n < 0)
+            {
                 throw new IOException(SR.IO_StreamTooLong);
+            }
 
             if (n > _capacity)
             {
@@ -606,10 +648,7 @@ namespace System.IO
                 // zero any memory in the middle.
                 if (pos > len)
                 {
-                    unsafe
-                    {
-                        Buffer.ZeroMemory(_mem + len, pos - len);
-                    }
+                    Buffer.ZeroMemory(_mem + len, pos - len);
                 }
 
                 // set length after zeroing memory to avoid race condition of accessing unzeroed memory
@@ -619,39 +658,37 @@ namespace System.IO
                 }
             }
 
-            unsafe
+            fixed (byte* pBuffer = &source.DangerousGetPinnableReference())
             {
-                fixed (byte* pBuffer = buffer)
+                if (_buffer != null)
                 {
-                    if (_buffer != null)
+                    long bytesLeft = _capacity - pos;
+                    if (bytesLeft < source.Length)
                     {
-                        long bytesLeft = _capacity - pos;
-                        if (bytesLeft < count)
-                        {
-                            throw new ArgumentException(SR.Arg_BufferTooSmall);
-                        }
-
-                        byte* pointer = null;
-                        RuntimeHelpers.PrepareConstrainedRegions();
-                        try
-                        {
-                            _buffer.AcquirePointer(ref pointer);
-                            Buffer.Memcpy(pointer + pos + _offset, pBuffer + offset, count);
-                        }
-                        finally
-                        {
-                            if (pointer != null)
-                            {
-                                _buffer.ReleasePointer();
-                            }
-                        }
+                        throw new ArgumentException(SR.Arg_BufferTooSmall);
                     }
-                    else
+
+                    byte* pointer = null;
+                    RuntimeHelpers.PrepareConstrainedRegions();
+                    try
                     {
-                        Buffer.Memcpy(_mem + pos, pBuffer + offset, count);
+                        _buffer.AcquirePointer(ref pointer);
+                        Buffer.Memcpy(pointer + pos + _offset, pBuffer, source.Length);
+                    }
+                    finally
+                    {
+                        if (pointer != null)
+                        {
+                            _buffer.ReleasePointer();
+                        }
                     }
                 }
+                else
+                {
+                    Buffer.Memcpy(_mem + pos, pBuffer, source.Length);
+                }
             }
+
             Interlocked.Exchange(ref _position, n);
             return;
         }
