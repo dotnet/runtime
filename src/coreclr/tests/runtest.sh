@@ -1200,7 +1200,7 @@ precompile_overlay_assemblies
 
 if [ "$buildOverlayOnly" == "ON" ];
 then
-    echo "Build overlay directory \'$coreOverlayDir\' complete."
+    echo "Build overlay directory '$coreOverlayDir' complete."
     exit 0
 fi
 
