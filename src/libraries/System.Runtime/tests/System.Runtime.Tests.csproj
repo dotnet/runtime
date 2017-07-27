@@ -202,6 +202,10 @@
     <Compile Include="System\Runtime\ExceptionServices\ExceptionDispatchInfoTests.netcoreapp.cs" />
     <Compile Include="System\Text\StringBuilderTests.netcoreapp.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netcoreapp'">
+    <Compile Include="System\DoubleTests.netcoreapp.cs" />
+    <Compile Include="System\SingleTests.netcoreapp.cs" />
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'netcoreapp'">
     <Compile Include="System\StringSplitExtensions.cs" />
   </ItemGroup>

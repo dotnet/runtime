@@ -1055,10 +1055,14 @@ namespace System
         public bool Equals(double obj) { throw null; }
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
+        public static bool IsFinite(double d) { throw null; }
         public static bool IsInfinity(double d) { throw null; }
         public static bool IsNaN(double d) { throw null; }
+        public static bool IsNegative(double d) { throw null; }
         public static bool IsNegativeInfinity(double d) { throw null; }
+        public static bool IsNormal(double d) { throw null; }
         public static bool IsPositiveInfinity(double d) { throw null; }
+        public static bool IsSubnormal(double d) { throw null; }
         public static bool operator ==(double left, double right) { throw null; }
         public static bool operator >(double left, double right) { throw null; }
         public static bool operator >=(double left, double right) { throw null; }
@@ -1951,10 +1955,14 @@ namespace System
         public override bool Equals(object obj) { throw null; }
         public bool Equals(float obj) { throw null; }
         public override int GetHashCode() { throw null; }
+        public static bool IsFinite(float f) { throw null; }
         public static bool IsInfinity(float f) { throw null; }
         public static bool IsNaN(float f) { throw null; }
+        public static bool IsNegative(float f) { throw null; }
         public static bool IsNegativeInfinity(float f) { throw null; }
+        public static bool IsNormal(float f) { throw null; }
         public static bool IsPositiveInfinity(float f) { throw null; }
+        public static bool IsSubnormal(float f) { throw null; }
         public static bool operator ==(float left, float right) { throw null; }
         public static bool operator >(float left, float right) { throw null; }
         public static bool operator >=(float left, float right) { throw null; }
