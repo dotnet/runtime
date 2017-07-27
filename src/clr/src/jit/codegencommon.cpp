@@ -2384,11 +2384,12 @@ FOUND_AM:
         }
 
         /* Special case: constant array index (that is range-checked) */
+        CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if defined(LEGACY_BACKEND)
-        // If we've already placed rv2 in a register, we were probably planning to use it in this addressing mode.
-        // Because the folding below may in fact result in no address mode (e.g. if we had "[mul * rv2 + cns]" that
-        // happens to fold to "[cns2]"), do not fold during code gen.
+        // If we've already placed rv2 in a register, we are probably being called in a context that has already
+        // presumed that an addressing mode will be created, even if rv2 is constant, and if we fold we may not find a
+        // useful addressing mode (e.g. if we had [mul * rv2 + cns] it might happen to fold to [cns2].
         if (mode == -1 && rv2->InReg())
         {
             fold = false;
