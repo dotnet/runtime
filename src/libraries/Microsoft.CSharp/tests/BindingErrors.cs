@@ -54,6 +54,18 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             }
         }
 
+        // So the static binder can't decide some cases are/are not static at compilation stage
+        class StaticAndInstanceSameName
+        {
+            public void DoSomething(double d)
+            {
+            }
+
+            public static void DoSomething(int i)
+            {
+            }
+        }
+
         private class AmbiguousNumClass
         {
             private readonly int _num;
@@ -220,6 +232,27 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         {
             dynamic d = new AmbiguousNumClass(7);
             Assert.Throws<RuntimeBinderException>(() => -d);
+        }
+
+        [Fact]
+        public void StaticCallOnInstance()
+        {
+            dynamic d = new StaticAndInstanceSameName();
+            d.DoSomething(2.0); // No exception
+            Assert.Throws<RuntimeBinderException>(() => d.DoSomething(2));
+            d = 2.0;
+            new StaticAndInstanceSameName().DoSomething(d); // No exception
+            d = 2;
+            Assert.Throws<RuntimeBinderException>(() => new StaticAndInstanceSameName().DoSomething(d));
+        }
+
+        [Fact]
+        public void InstanceCallOnType()
+        {
+            dynamic d = 2;
+            StaticAndInstanceSameName.DoSomething(d); // No exception
+            d = 2.0;
+            Assert.Throws<RuntimeBinderException>(() => StaticAndInstanceSameName.DoSomething(d));
         }
     }
 }
