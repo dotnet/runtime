@@ -13,10 +13,9 @@ echo %2
 echo %3
 echo %4
 echo %5
-echo %6
 
 setlocal
-set __sourceDir=%~dp0..
+set __sourceDir=%1
 :: VS 2015 is the minimum supported toolset
 set __VSString=14 2015
 
@@ -35,19 +34,19 @@ if defined CMakePath goto DoGen
 
 :: Eval the output from probe-win1.ps1
 pushd "%__sourceDir%"
-for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& .\Windows\probe-win.ps1"') do %%a
+for /f "delims=" %%a in ('powershell -NoProfile -ExecutionPolicy ByPass "& %~dp0\probe-win.ps1"') do %%a
 popd
 
 :DoGen
-echo "%CMakePath%" %__sourceDir% %__SDKVersion% "-DCLI_CMAKE_PKG_RID:STRING=%cm_BaseRid%" "-DCLI_CMAKE_PLATFORM_ARCH_%cm_Arch%=1" "-DCMAKE_INSTALL_PREFIX=%__OutputDir%" "-DCLI_CMAKE_RESOURCE_DIR:STRING=%__ResourcesDir%" -G "Visual Studio %__VSString%"
+echo "%CMakePath%" %__sourceDir% %__SDKVersion% %__CMAKE_SYSTEM% %__CMAKE_CUSTOM_DEFINES% "-DCLI_CMAKE_PKG_RID:STRING=%cm_BaseRid%" "-DCLI_CMAKE_PLATFORM_ARCH_%cm_Arch%=1" "-DCMAKE_INSTALL_PREFIX=%__OutputDir%" "-DCLI_CMAKE_RESOURCE_DIR:STRING=%__ResourcesDir%" -G "Visual Studio %__VSString%"
 
-"%CMakePath%" %__sourceDir% %__SDKVersion% "-DCLI_CMAKE_PKG_RID:STRING=%cm_BaseRid%" "-DCLI_CMAKE_PLATFORM_ARCH_%cm_Arch%=1" "-DCMAKE_INSTALL_PREFIX=%__OutputDir%" "-DCLI_CMAKE_RESOURCE_DIR:STRING=%__ResourcesDir%" -G "Visual Studio %__VSString%"
+"%CMakePath%" %__sourceDir% %__SDKVersion% %__CMAKE_SYSTEM% %__CMAKE_CUSTOM_DEFINES% "-DCLI_CMAKE_PKG_RID:STRING=%cm_BaseRid%" "-DCLI_CMAKE_PLATFORM_ARCH_%cm_Arch%=1" "-DCMAKE_INSTALL_PREFIX=%__OutputDir%" "-DCLI_CMAKE_RESOURCE_DIR:STRING=%__ResourcesDir%" -G "Visual Studio %__VSString%"
 endlocal
 GOTO :DONE
 
 :USAGE
   echo "Usage..."
-  echo "gen-buildsys-win.bat <path to top level CMakeLists.txt> <VSVersion> <Target Architecture> <Commit Hash> <NativeResourceDir> <OutputDir>"
+  echo "gen-buildsys-win.bat <path to top level CMakeLists.txt> <Target Architecture> <Commit Hash> <NativeResourceDir> <OutputDir>"
   EXIT /B 1
 
 :DONE
