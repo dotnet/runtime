@@ -286,10 +286,6 @@
           <source>Missing compiler required member '{0}.{1}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}.{1}' 멤버를 필요로 하는 컴파일러가 없습니다.</target>
         </trans-unit>
-        <trans-unit id="LiteralDoubleCast" translate="yes" xml:space="preserve">
-          <source>Literal of type double cannot be implicitly converted to type '{1}'; use an '{0}' suffix to create a literal of this type</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">double 형식의 리터럴을 암시적으로 '{1}' 형식으로 변환할 수 없습니다. 이 형식의 리터럴을 만들려면 '{0}' 접미사를 사용하십시오.</target>
-        </trans-unit>
         <trans-unit id="ConvertToStaticClass" translate="yes" xml:space="preserve">
           <source>Cannot convert to static type '{0}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}' 정적 형식으로 변환할 수 없습니다.</target>
