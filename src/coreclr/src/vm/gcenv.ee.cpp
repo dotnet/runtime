@@ -1031,7 +1031,7 @@ bool GCToEEInterface::GetBooleanConfigValue(const char* key, bool* value)
 
     if (strcmp(key, "gcConcurrent") == 0)
     {
-        *value = g_IGCconcurrent != 0;
+        *value = !!g_pConfig->GetGCconcurrent();
         return true;
     }
 
