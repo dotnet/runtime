@@ -30,16 +30,21 @@ reflected_equal (gconstpointer a, gconstpointer b);
 guint
 reflected_hash (gconstpointer a);
 
-#ifdef HAVE_BOEHM_GC
-/* ReflectedEntry doesn't need to be GC tracked */
-#define ALLOC_REFENTRY g_new0 (ReflectedEntry, 1)
-#define FREE_REFENTRY(entry) g_free ((entry))
-#define REFENTRY_REQUIRES_CLEANUP
-#else
-#define ALLOC_REFENTRY (ReflectedEntry *)mono_mempool_alloc (domain->mp, sizeof (ReflectedEntry))
-/* FIXME: */
-#define FREE_REFENTRY(entry)
-#endif
+static inline ReflectedEntry*
+alloc_reflected_entry (MonoDomain *domain)
+{
+	if (!mono_gc_is_moving ())
+		return g_new0 (ReflectedEntry, 1);
+	else
+		return (ReflectedEntry *)mono_mempool_alloc (domain->mp, sizeof (ReflectedEntry));
+}
+
+static void
+free_reflected_entry (ReflectedEntry *entry)
+{
+	if (!mono_gc_is_moving ())
+		g_free (entry);
+}
 
 static inline MonoObject*
 cache_object (MonoDomain *domain, MonoClass *klass, gpointer item, MonoObject* o)
@@ -55,7 +60,7 @@ cache_object (MonoDomain *domain, MonoClass *klass, gpointer item, MonoObject* o
 
 	obj = (MonoObject*) mono_conc_g_hash_table_lookup (domain->refobject_hash, &pe);
 	if (obj == NULL) {
-		ReflectedEntry *e = ALLOC_REFENTRY;
+		ReflectedEntry *e = alloc_reflected_entry (domain);
 		e->item = item;
 		e->refclass = klass;
 		mono_conc_g_hash_table_insert (domain->refobject_hash, e, o);
@@ -79,7 +84,7 @@ cache_object_handle (MonoDomain *domain, MonoClass *klass, gpointer item, MonoOb
 
 	MonoObjectHandle obj = MONO_HANDLE_NEW (MonoObject, mono_conc_g_hash_table_lookup (domain->refobject_hash, &pe));
 	if (MONO_HANDLE_IS_NULL (obj)) {
-		ReflectedEntry *e = ALLOC_REFENTRY;
+		ReflectedEntry *e = alloc_reflected_entry (domain);
 		e->item = item;
 		e->refclass = klass;
 		mono_conc_g_hash_table_insert (domain->refobject_hash, e, MONO_HANDLE_RAW (o));

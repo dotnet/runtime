@@ -143,7 +143,6 @@ mono_class_free_ref_info (MonoClass *klass)
 	}
 }
 
-
 /**
  * mono_custom_attrs_free:
  */
@@ -155,7 +154,6 @@ mono_custom_attrs_free (MonoCustomAttrInfo *ainfo)
 	if (ainfo && !ainfo->cached)
 		g_free (ainfo);
 }
-
 
 gboolean
 reflected_equal (gconstpointer a, gconstpointer b)
@@ -175,7 +173,6 @@ reflected_hash (gconstpointer a) {
 	return seed;
 }
 
-
 static void
 clear_cached_object (MonoDomain *domain, gpointer o, MonoClass *klass)
 {
@@ -189,33 +186,27 @@ clear_cached_object (MonoDomain *domain, gpointer o, MonoClass *klass)
 
 		if (mono_conc_g_hash_table_lookup_extended (domain->refobject_hash, &pe, &orig_pe, &orig_value)) {
 			mono_conc_g_hash_table_remove (domain->refobject_hash, &pe);
-			FREE_REFENTRY (orig_pe);
+			free_reflected_entry (orig_pe);
 		}
 	}
 	mono_domain_unlock (domain);
 }
 
-#ifdef REFENTRY_REQUIRES_CLEANUP
 static void
 cleanup_refobject_hash (gpointer key, gpointer value, gpointer user_data)
 {
-	FREE_REFENTRY (key);
+	free_reflected_entry (key);
 }
-#endif
 
 void
 mono_reflection_cleanup_domain (MonoDomain *domain)
 {
 	if (domain->refobject_hash) {
-/*let's avoid scanning the whole hashtable if not needed*/
-#ifdef REFENTRY_REQUIRES_CLEANUP
 		mono_conc_g_hash_table_foreach (domain->refobject_hash, cleanup_refobject_hash, NULL);
-#endif
 		mono_conc_g_hash_table_destroy (domain->refobject_hash);
 		domain->refobject_hash = NULL;
 	}
 }
-
 
 /**
  * mono_assembly_get_object:
