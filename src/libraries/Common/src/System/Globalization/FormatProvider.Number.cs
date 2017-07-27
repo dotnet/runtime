@@ -542,7 +542,7 @@ namespace System.Globalization
                 return false;
             }
 
-            private static bool TrailingZeros(string s, int index)
+            private static bool TrailingZeros(ReadOnlySpan<char> s, int index)
             {
                 // For compatibility, we need to allow trailing zeros at the end of a number string
                 for (int i = index; i < s.Length; i++)
@@ -555,15 +555,11 @@ namespace System.Globalization
                 return true;
             }
 
-            internal static unsafe bool TryStringToNumber(string str, NumberStyles options, ref NumberBuffer number, StringBuilder sb, NumberFormatInfo numfmt, bool parseDecimal)
+            internal static unsafe bool TryStringToNumber(ReadOnlySpan<char> str, NumberStyles options, ref NumberBuffer number, StringBuilder sb, NumberFormatInfo numfmt, bool parseDecimal)
             {
-                if (str == null)
-                {
-                    return false;
-                }
                 Debug.Assert(numfmt != null);
 
-                fixed (char* stringPointer = str)
+                fixed (char* stringPointer = &str.DangerousGetPinnableReference())
                 {
                     char* p = stringPointer;
                     if (!ParseNumber(ref p, options, ref number, sb, numfmt, parseDecimal)
