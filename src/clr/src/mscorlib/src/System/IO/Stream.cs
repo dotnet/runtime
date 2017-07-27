@@ -734,6 +734,27 @@ namespace System.IO
 
         public abstract int Read([In, Out] byte[] buffer, int offset, int count);
 
+        public virtual int Read(Span<byte> destination)
+        {
+            if (destination.Length == 0)
+            {
+                return 0;
+            }
+
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(destination.Length);
+            try
+            {
+                int numRead = Read(buffer, 0, destination.Length);
+                if ((uint)numRead > destination.Length)
+                {
+                    throw new IOException(SR.IO_StreamTooLong);
+                }
+                new Span<byte>(buffer, 0, numRead).CopyTo(destination);
+                return numRead;
+            }
+            finally { ArrayPool<byte>.Shared.Return(buffer); }
+        }
+
         // Reads one byte from the stream by calling Read(byte[], int, int). 
         // Will return an unsigned byte cast to an int or -1 on end of stream.
         // This implementation does not perform well because it allocates a new
@@ -753,6 +774,22 @@ namespace System.IO
         }
 
         public abstract void Write(byte[] buffer, int offset, int count);
+
+        public virtual void Write(ReadOnlySpan<byte> source)
+        {
+            if (source.Length == 0)
+            {
+                return;
+            }
+
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(source.Length);
+            try
+            {
+                source.CopyTo(buffer);
+                Write(buffer, 0, source.Length);
+            }
+            finally { ArrayPool<byte>.Shared.Return(buffer); }
+        }
 
         // Writes one byte from the stream by calling Write(byte[], int, int).
         // This implementation does not perform well because it allocates a new
@@ -957,6 +994,11 @@ namespace System.IO
                 return 0;
             }
 
+            public override int Read(Span<byte> destination)
+            {
+                return 0;
+            }
+
             public override Task<int> ReadAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
                 var nullReadTask = s_nullReadTask;
@@ -972,6 +1014,10 @@ namespace System.IO
             }
 
             public override void Write(byte[] buffer, int offset, int count)
+            {
+            }
+
+            public override void Write(ReadOnlySpan<byte> source)
             {
             }
 
@@ -1229,6 +1275,12 @@ namespace System.IO
                     return _stream.Read(bytes, offset, count);
             }
 
+            public override int Read(Span<byte> destination)
+            {
+                lock (_stream)
+                    return _stream.Read(destination);
+            }
+
             public override int ReadByte()
             {
                 lock (_stream)
@@ -1280,6 +1332,12 @@ namespace System.IO
             {
                 lock (_stream)
                     _stream.Write(bytes, offset, count);
+            }
+
+            public override void Write(ReadOnlySpan<byte> source)
+            {
+                lock (_stream)
+                    _stream.Write(source);
             }
 
             public override void WriteByte(byte b)
