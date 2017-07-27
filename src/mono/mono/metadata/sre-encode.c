@@ -793,7 +793,8 @@ mono_dynimage_encode_typedef_or_ref_full (MonoDynamicImage *assembly, MonoType *
 	if ((klass->image == &assembly->image) && (type->type != MONO_TYPE_VAR) && 
 			(type->type != MONO_TYPE_MVAR)) {
 		token = MONO_TYPEDEFORREF_TYPEDEF | (MONO_HANDLE_GETVAL (tb, table_idx) << MONO_TYPEDEFORREF_BITS);
-		mono_dynamic_image_register_token (assembly, token, MONO_HANDLE_CAST (MonoObject, tb));
+		/* This function is called multiple times from sre and sre-save, so same object is okay */
+		mono_dynamic_image_register_token (assembly, token, MONO_HANDLE_CAST (MonoObject, tb), MONO_DYN_IMAGE_TOK_SAME_OK);
 		goto leave;
 	}
 
@@ -816,7 +817,13 @@ mono_dynimage_encode_typedef_or_ref_full (MonoDynamicImage *assembly, MonoType *
 	token = MONO_TYPEDEFORREF_TYPEREF | (table->next_idx << MONO_TYPEDEFORREF_BITS); /* typeref */
 	g_hash_table_insert (assembly->typeref, type, GUINT_TO_POINTER(token));
 	table->next_idx ++;
-	mono_dynamic_image_register_token (assembly, token, MONO_HANDLE_CAST (MonoObject, tb));
+
+
+	if (!MONO_HANDLE_IS_NULL (tb)) {
+		/* This function is called multiple times from sre and sre-save, so same object is okay */
+		mono_dynamic_image_register_token (assembly, token, MONO_HANDLE_CAST (MonoObject, tb), MONO_DYN_IMAGE_TOK_SAME_OK);
+	}
+
 leave:
 	HANDLE_FUNCTION_RETURN_VAL (token);
 }

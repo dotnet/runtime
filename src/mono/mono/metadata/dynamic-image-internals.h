@@ -24,11 +24,17 @@ typedef struct {
 } MonoILT;
 
 
+typedef enum {
+	MONO_DYN_IMAGE_TOK_NEW, /* assert if same token is registered already */
+	MONO_DYN_IMAGE_TOK_SAME_OK, /* allow collision only with the same object */
+	MONO_DYN_IMAGE_TOK_REPLACE, /* keep the new object, always */
+} MonoDynamicImageTokCollision;
+
 void
 mono_dynamic_images_init (void);
 
 void
-mono_dynamic_image_register_token (MonoDynamicImage *assembly, guint32 token, MonoObjectHandle obj);
+mono_dynamic_image_register_token (MonoDynamicImage *assembly, guint32 token, MonoObjectHandle obj, int tok_collision);
 
 gboolean
 mono_dynamic_image_is_valid_token (MonoDynamicImage *image, guint32 token);

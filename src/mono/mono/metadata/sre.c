@@ -1022,7 +1022,7 @@ mono_image_insert_string (MonoReflectionModuleBuilderHandle ref_module, MonoStri
 	}
 
 	token = MONO_TOKEN_STRING | idx;
-	mono_dynamic_image_register_token (assembly, token, MONO_HANDLE_CAST (MonoObject, str));
+	mono_dynamic_image_register_token (assembly, token, MONO_HANDLE_CAST (MonoObject, str), MONO_DYN_IMAGE_TOK_NEW);
 
 leave:
 	HANDLE_FUNCTION_RETURN_VAL (token);
@@ -1092,7 +1092,7 @@ mono_image_create_method_token (MonoDynamicImage *assembly, MonoObjectHandle obj
 		g_error ("requested method token for %s\n", klass->name);
 	}
 
-	mono_dynamic_image_register_token (assembly, token, obj);
+	mono_dynamic_image_register_token (assembly, token, obj, MONO_DYN_IMAGE_TOK_NEW);
 	return token;
 fail:
 	g_assert (!mono_error_ok (error));
@@ -1128,12 +1128,18 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObjectHandle obj,
 		return 0;
 	}
 
+	/* This function is called from ModuleBuilder:getToken multiple times for the same objects */
+	int how_collide = MONO_DYN_IMAGE_TOK_SAME_OK;
+
 	if (strcmp (klass->name, "RuntimeType") == 0) {
 		MonoType *type = mono_reflection_type_handle_mono_type (MONO_HANDLE_CAST (MonoReflectionType, obj), error);
 		return_val_if_nok (error, 0);
 		MonoClass *mc = mono_class_from_mono_type (type);
 		token = mono_metadata_token_from_dor (
 			mono_dynimage_encode_typedef_or_ref_full (assembly, type, !mono_class_is_gtd (mc) || create_open_instance));
+		/* If it's a RuntimeType now, we could have registered a
+		 * TypeBuilder for it before, so replacing is okay. */
+		how_collide = MONO_DYN_IMAGE_TOK_REPLACE;
 	} else if (strcmp (klass->name, "MonoCMethod") == 0 ||
 			   strcmp (klass->name, "MonoMethod") == 0) {
 		MonoReflectionMethodHandle m = MONO_HANDLE_CAST (MonoReflectionMethod, obj);
@@ -1152,6 +1158,7 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObjectHandle obj,
 				 * FIXME: do the equivalent for Fields.
 				 */
 				token = method->token;
+				how_collide = MONO_DYN_IMAGE_TOK_REPLACE;
 			} else {
 				/*
 				 * Each token should have a unique index, but the indexes are
@@ -1160,6 +1167,7 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObjectHandle obj,
 				 */
 				method_table_idx --;
 				token = MONO_TOKEN_METHOD_DEF | method_table_idx;
+				how_collide = MONO_DYN_IMAGE_TOK_NEW;
 			}
 		} else {
 			token = mono_image_get_methodref_token (assembly, method, create_open_instance);
@@ -1172,6 +1180,7 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObjectHandle obj,
 			static guint32 field_table_idx = 0xffffff;
 			field_table_idx --;
 			token = MONO_TOKEN_FIELD_DEF | field_table_idx;
+			how_collide = MONO_DYN_IMAGE_TOK_NEW;
 		} else {
 			token = mono_image_get_fieldref_token (assembly, obj, field);
 		}
@@ -1184,17 +1193,12 @@ mono_image_create_token (MonoDynamicImage *assembly, MonoObjectHandle obj,
 		MonoReflectionSigHelperHandle s = MONO_HANDLE_CAST (MonoReflectionSigHelper, obj);
 		token = MONO_TOKEN_SIGNATURE | mono_image_get_sighelper_token (assembly, s, error);
 		return_val_if_nok (error, 0);
-	} else if (strcmp (klass->name, "EnumBuilder") == 0) {
-		MonoType *type = mono_reflection_type_handle_mono_type (MONO_HANDLE_CAST (MonoReflectionType, obj), error);
-		return_val_if_nok (error, 0);
-		token = mono_metadata_token_from_dor (
-			mono_image_typedef_or_ref (assembly, type));
 	} else {
 		g_error ("requested token for %s\n", klass->name);
 	}
 
 	if (register_token)
-		mono_dynamic_image_register_token (assembly, token, obj);
+		mono_dynamic_image_register_token (assembly, token, obj, how_collide);
 
 	return token;
 }
@@ -2474,7 +2478,7 @@ reflection_setup_internal_class_internal (MonoReflectionTypeBuilderHandle ref_tb
 	*/
 	mono_image_append_class_to_reflection_info_set (klass);
 
-	mono_dynamic_image_register_token (dynamic_image, MONO_TOKEN_TYPE_DEF | table_idx, MONO_HANDLE_CAST (MonoObject, ref_tb));
+	mono_dynamic_image_register_token (dynamic_image, MONO_TOKEN_TYPE_DEF | table_idx, MONO_HANDLE_CAST (MonoObject, ref_tb), MONO_DYN_IMAGE_TOK_NEW);
 
 	if ((!strcmp (klass->name, "ValueType") && !strcmp (klass->name_space, "System")) ||
 			(!strcmp (klass->name, "Object") && !strcmp (klass->name_space, "System")) ||
@@ -4337,7 +4341,9 @@ void
 ves_icall_ModuleBuilder_RegisterToken (MonoReflectionModuleBuilderHandle mb, MonoObjectHandle obj, guint32 token, MonoError *error)
 {
 	error_init (error);
-	mono_dynamic_image_register_token (MONO_HANDLE_GETVAL (mb, dynamic_image), token, obj);
+	/* This function may be called by ModuleBuilder.FixupTokens to update
+	 * an existing token, so replace is okay here. */
+	mono_dynamic_image_register_token (MONO_HANDLE_GETVAL (mb, dynamic_image), token, obj, MONO_DYN_IMAGE_TOK_REPLACE);
 }
 
 MonoObjectHandle
