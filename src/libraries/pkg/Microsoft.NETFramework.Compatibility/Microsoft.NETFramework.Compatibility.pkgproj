@@ -1,0 +1,47 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <PropertyGroup>
+    <PackageVersion>2.1.0</PackageVersion>
+  </PropertyGroup>
+
+  <ItemDefinitionGroup>
+    <LibraryPackage>
+      <Version>4.5.0</Version>
+    </LibraryPackage>
+  </ItemDefinitionGroup>
+
+  <ItemGroup>
+    <LibraryPackage Include="System.CodeDom" />
+    <LibraryPackage Include="System.ComponentModel.Annotations" />
+    <LibraryPackage Include="System.Configuration.ConfigurationManager" />
+    <LibraryPackage Include="System.Data.SqlClient" />
+    <LibraryPackage Include="System.DirectoryServices" />
+    <LibraryPackage Include="System.DirectoryServices.AccountManagement" />
+    <LibraryPackage Include="System.DirectoryServices.Protocols" />
+    <LibraryPackage Include="System.Drawing.Common" />
+    <LibraryPackage Include="System.IO.FileSystem.AccessControl" />
+    <LibraryPackage Include="System.IO.Packaging" />
+    <LibraryPackage Include="System.IO.Pipes.AccessControl" />
+    <LibraryPackage Include="System.IO.Ports" />
+    <LibraryPackage Include="System.Numerics.Vectors" />
+    <LibraryPackage Include="System.Reflection.TypeExtensions" />
+    <LibraryPackage Include="System.Security.AccessControl" />
+    <LibraryPackage Include="System.Security.Cryptography.Cng" />
+    <LibraryPackage Include="System.Security.Cryptography.Pkcs" />
+    <LibraryPackage Include="System.Security.Cryptography.ProtectedData" />
+    <LibraryPackage Include="System.Security.Cryptography.Xml" />
+    <LibraryPackage Include="System.Security.Permissions" />
+    <LibraryPackage Include="System.Security.Principal.Windows" />
+    <LibraryPackage Include="System.ServiceProcess.ServiceController" />
+    <LibraryPackage Include="System.Text.Encoding.CodePages" />
+    <LibraryPackage Include="System.Threading.AccessControl" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Dependency Include="@(LibraryPackage)" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>
