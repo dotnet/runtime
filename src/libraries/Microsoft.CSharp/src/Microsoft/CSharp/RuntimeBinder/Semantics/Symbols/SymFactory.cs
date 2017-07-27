@@ -46,7 +46,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             sym.SetTypeManager(typeManager);
             sym.SetSealed(false);
             sym.SetAccess(ACCESS.ACC_UNKNOWN);
-            sym.initBogus();
             sym.SetIfaces(null);
             sym.SetIfacesAll(null);
             sym.SetTypeVars(null);

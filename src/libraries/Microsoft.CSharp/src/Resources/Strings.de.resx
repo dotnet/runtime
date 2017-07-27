@@ -216,9 +216,6 @@
   <data name="CantCallSpecialMethod" xml:space="preserve">
     <value>{0}: Der Operator oder Accessor kann nicht explizit aufgerufen werden.</value>
   </data>
-  <data name="BogusType" xml:space="preserve">
-    <value>{0} ist ein Typ, der von der Sprache nicht unterstützt wird.</value>
-  </data>
   <data name="MissingPredefinedMember" xml:space="preserve">
     <value>Der vom Compiler angeforderte Member "{0}.{1}" fehlt.</value>
   </data>

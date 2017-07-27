@@ -145,7 +145,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 if (_mask == symbmask_t.MASK_MethodSymbol && (
                         0 == (_flags & EXPRFLAG.EXF_CTOR) != !((MethodSymbol)_pCurrentSym).IsConstructor() ||
                         0 == (_flags & EXPRFLAG.EXF_OPERATOR) != !((MethodSymbol)_pCurrentSym).isOperator) ||
-                    _mask == symbmask_t.MASK_PropertySymbol && !((PropertySymbol)_pCurrentSym).isIndexer())
+                    _mask == symbmask_t.MASK_PropertySymbol && !(_pCurrentSym is IndexerSymbol))
                 {
                     // Get the next symbol.
                     return false;
@@ -181,7 +181,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
 
                 // Check bogus.
-                if (GetSemanticChecker().CheckBogus(_pCurrentSym))
+                if (CSemanticChecker.CheckBogus(_pCurrentSym))
                 {
                     // Sym is bogus, but if we're allow it, then let it through and mark it.
                     if (_bAllowBogusAndInaccessible)

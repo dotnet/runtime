@@ -216,9 +216,6 @@
   <data name="CantCallSpecialMethod" xml:space="preserve">
     <value>'{0}': 연산자나 접근자를 명시적으로 호출할 수 없습니다.</value>
   </data>
-  <data name="BogusType" xml:space="preserve">
-    <value>'{0}'은(는) 언어에서 지원하는 형식이 아닙니다.</value>
-  </data>
   <data name="MissingPredefinedMember" xml:space="preserve">
     <value>'{0}.{1}' 멤버를 필요로 하는 컴파일러가 없습니다.</value>
   </data>

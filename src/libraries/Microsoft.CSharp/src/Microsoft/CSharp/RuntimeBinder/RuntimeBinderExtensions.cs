@@ -331,7 +331,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         private static string GetTypeIndexerName(Type type)
         {
             Debug.Assert(type != null);
-            string name = (type.GetCustomAttribute(typeof(DefaultMemberAttribute)) as DefaultMemberAttribute)?.MemberName;
+            string name = type.GetCustomAttribute<DefaultMemberAttribute>()?.MemberName;
             if (name != null)
             {
                 if (type.GetProperties(

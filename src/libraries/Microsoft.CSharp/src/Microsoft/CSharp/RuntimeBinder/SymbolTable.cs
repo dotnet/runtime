@@ -1354,7 +1354,9 @@ namespace Microsoft.CSharp.RuntimeBinder
         private void AddPropertyToSymbolTable(PropertyInfo property, AggregateSymbol aggregate)
         {
             Name name;
-            bool isIndexer = property.GetIndexParameters() != null && property.GetIndexParameters().Length != 0;
+            bool isIndexer = property.GetIndexParameters().Length != 0
+                             && property.DeclaringType?.GetCustomAttribute<DefaultMemberAttribute>()
+                             ?.MemberName == property.Name;
 
             if (isIndexer)
             {
@@ -1448,44 +1450,44 @@ namespace Microsoft.CSharp.RuntimeBinder
             ACCESS access = ACCESS.ACC_PRIVATE;
             if (methGet != null)
             {
-                prop.methGet = AddMethodToSymbolTable(methGet, aggregate, MethodKindEnum.PropAccessor);
+                prop.GetterMethod = AddMethodToSymbolTable(methGet, aggregate, MethodKindEnum.PropAccessor);
 
                 // If we have an indexed property, leave the method as a method we can call,
                 // and mark the property as bogus.
-                if (isIndexer || prop.methGet.Params.Count == 0)
+                if (isIndexer || prop.GetterMethod.Params.Count == 0)
                 {
-                    prop.methGet.SetProperty(prop);
+                    prop.GetterMethod.SetProperty(prop);
                 }
                 else
                 {
-                    prop.setBogus(true);
-                    prop.methGet.SetMethKind(MethodKindEnum.Actual);
+                    prop.Bogus = true;
+                    prop.GetterMethod.SetMethKind(MethodKindEnum.Actual);
                 }
 
-                if (prop.methGet.GetAccess() > access)
+                if (prop.GetterMethod.GetAccess() > access)
                 {
-                    access = prop.methGet.GetAccess();
+                    access = prop.GetterMethod.GetAccess();
                 }
             }
             if (methSet != null)
             {
-                prop.methSet = AddMethodToSymbolTable(methSet, aggregate, MethodKindEnum.PropAccessor);
+                prop.SetterMethod = AddMethodToSymbolTable(methSet, aggregate, MethodKindEnum.PropAccessor);
 
                 // If we have an indexed property, leave the method as a method we can call,
                 // and mark the property as bogus.
-                if (isIndexer || prop.methSet.Params.Count == 1)
+                if (isIndexer || prop.SetterMethod.Params.Count == 1)
                 {
-                    prop.methSet.SetProperty(prop);
+                    prop.SetterMethod.SetProperty(prop);
                 }
                 else
                 {
-                    prop.setBogus(true);
-                    prop.methSet.SetMethKind(MethodKindEnum.Actual);
+                    prop.Bogus = true;
+                    prop.SetterMethod.SetMethKind(MethodKindEnum.Actual);
                 }
 
-                if (prop.methSet.GetAccess() > access)
+                if (prop.SetterMethod.GetAccess() > access)
                 {
-                    access = prop.methSet.GetAccess();
+                    access = prop.SetterMethod.GetAccess();
                 }
             }
 
@@ -1653,7 +1655,6 @@ namespace Microsoft.CSharp.RuntimeBinder
             }
             methodSymbol.modOptCount = GetCountOfModOpts(parameters);
 
-            methodSymbol.useMethInstead = false;
             methodSymbol.isParamArray = DoesMethodHaveParameterArray(parameters);
             methodSymbol.isHideByName = false;
 

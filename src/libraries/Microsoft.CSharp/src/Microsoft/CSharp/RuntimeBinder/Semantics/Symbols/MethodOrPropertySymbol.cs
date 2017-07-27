@@ -28,9 +28,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public new bool isStatic;               // Static member?
         public bool isOverride;             // Overrides an inherited member. Only valid if isVirtual is set.
-        // false implies that a new vtable slot is required for this method.
-        public bool useMethInstead;         // Only valid iff isBogus == TRUE && IsPropertySymbol().
-        // If this is true then tell the user to call the accessors directly.
+                                            // false implies that a new vtable slot is required for this method.
         public bool isOperator;             // a user defined operator (or default indexed property)
         public bool isParamArray;           // new style varargs
         public bool isHideByName;           // this property hides all below it regardless of signature

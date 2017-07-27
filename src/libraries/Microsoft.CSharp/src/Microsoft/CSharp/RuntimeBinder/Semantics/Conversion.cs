@@ -1022,8 +1022,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                         if (fImplicitOnly && !convCur.isImplicit())
                             continue;
-                        if (GetSemanticChecker().CheckBogus(convCur))
-                            continue;
 
                         // Get the substituted src and dst types.
                         typeFrom = GetTypes().SubstType(convCur.Params[0], atsCur);

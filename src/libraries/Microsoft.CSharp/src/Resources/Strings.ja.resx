@@ -216,9 +216,6 @@
   <data name="CantCallSpecialMethod" xml:space="preserve">
     <value>'{0}': 演算子またはアクセサーを明示的に呼び出すことはできません</value>
   </data>
-  <data name="BogusType" xml:space="preserve">
-    <value>'{0}' はこの言語でサポートされていない型です</value>
-  </data>
   <data name="MissingPredefinedMember" xml:space="preserve">
     <value>コンパイラが必要とするメンバー '{0}.{1}' がありません</value>
   </data>

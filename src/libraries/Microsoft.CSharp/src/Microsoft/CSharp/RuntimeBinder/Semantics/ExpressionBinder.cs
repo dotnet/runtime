@@ -546,7 +546,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return rval;
             }
 
-            Debug.Assert(mem.SymFirst() is PropertySymbol prop && prop.isIndexer());
+            Debug.Assert(mem.SymFirst() is IndexerSymbol);
 
             ExprMemberGroup grp = GetExprFactory().CreateMemGroup((EXPRFLAG)mem.GetFlags(),
                 pName, BSYMMGR.EmptyTypeArray(), mem.SymFirst().getKind(), mem.GetSourceType(), null/*pMPS*/, mem.GetObject(), mem.GetResults());
@@ -792,9 +792,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     pwt.Sym is PropertySymbol &&
                     pwt.GetType() != null &&
                     pwt.Prop().getClass() == pwt.GetType().getAggregate());
-            Debug.Assert(pwt.Prop().Params.Count == 0 || pwt.Prop().isIndexer());
+            Debug.Assert(pwt.Prop().Params.Count == 0 || pwt.Prop() is IndexerSymbol);
             Debug.Assert(pOtherType == null ||
-                    !pwt.Prop().isIndexer() &&
+                    !(pwt.Prop() is IndexerSymbol) &&
                     pOtherType.getAggregate() == pwt.Prop().RetType.getAggregate());
 
             bool fConstrained;
@@ -1008,16 +1008,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 ErrorContext.Error(ErrorCode.ERR_AmbigCall, pmethAmbig1.mpwi, pmethAmbig2.mpwi);
 
                 ExprMemberGroup pMemGroup = GetExprFactory().CreateMemGroup(null, pmethAmbig1.mpwi);
-                ExprCall rval = GetExprFactory().CreateCall(0, null, arg, pMemGroup, null);
-                rval.SetError();
-                return rval;
-            }
-
-            if (SemanticChecker.CheckBogus(pmethBest.mpwi.Meth()))
-            {
-                ErrorContext.ErrorRef(ErrorCode.ERR_BindToBogus, pmethBest.mpwi);
-
-                ExprMemberGroup pMemGroup = GetExprFactory().CreateMemGroup(null, pmethBest.mpwi);
                 ExprCall rval = GetExprFactory().CreateCall(0, null, arg, pMemGroup, null);
                 rval.SetError();
                 return rval;
@@ -1421,18 +1411,18 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             pmwtGet = new MethWithType();
             pmwtSet = new MethWithType();
             // Get the accessors.
-            if (pwt.Prop().methGet != null)
+            if (pwt.Prop().GetterMethod != null)
             {
-                pmwtGet.Set(pwt.Prop().methGet, pwt.GetType());
+                pmwtGet.Set(pwt.Prop().GetterMethod, pwt.GetType());
             }
             else
             {
                 pmwtGet.Clear();
             }
 
-            if (pwt.Prop().methSet != null)
+            if (pwt.Prop().SetterMethod != null)
             {
-                pmwtSet.Set(pwt.Prop().methSet, pwt.GetType());
+                pmwtSet.Set(pwt.Prop().SetterMethod, pwt.GetType());
             }
             else
             {

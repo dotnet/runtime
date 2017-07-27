@@ -194,7 +194,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return false;
             }
 
-            return (this == property.methSet);
+            return (this == property.SetterMethod);
         }
     }
 }

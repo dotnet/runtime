@@ -157,16 +157,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return false;
             }
 
-            if (checker.CheckBogus(arg))
-            {
-                if (fReportErrors)
-                {
-                    errHandling.ErrorRef(ErrorCode.ERR_BogusType, arg);
-                }
-
-                return false;
-            }
-
             if (arg is PointerType)
             {
                 if (fReportErrors)
