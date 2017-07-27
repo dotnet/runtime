@@ -18,7 +18,6 @@ namespace System.Net.WebSockets.Client.Tests
 {
     public partial class ClientWebSocketOptionsTests : ClientWebSocketTestBase
     {
-
         public static bool CanTestCertificates =>
             Capability.IsTrustedRootCertificateInstalled() &&
             (BackendSupportsCustomCertificateHandling || Capability.AreHostsFileNamesInstalled());
@@ -47,7 +46,7 @@ namespace System.Net.WebSockets.Client.Tests
         [ConditionalFact(nameof(WebSocketsSupported))]
         public static void SetBuffer_InvalidArgs_Throws()
         {
-            // Recreate the minimum WebSocket buffer size values from the Framework version of WebSocket,
+            // Recreate the minimum WebSocket buffer size values from the .NET Framework version of WebSocket,
             // and pick the correct name of the buffer used when throwing an ArgumentOutOfRangeException.
             int minSendBufferSize = PlatformDetection.IsFullFramework ? 16 : 1;
             int minReceiveBufferSize = PlatformDetection.IsFullFramework ? 256 : 1;
@@ -63,7 +62,6 @@ namespace System.Net.WebSockets.Client.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("sendBufferSize", () => cws.Options.SetBuffer(minReceiveBufferSize, 0, new ArraySegment<byte>(new byte[1])));
             AssertExtensions.Throws<ArgumentNullException>("buffer.Array", () => cws.Options.SetBuffer(minReceiveBufferSize, minSendBufferSize, default(ArraySegment<byte>)));
             AssertExtensions.Throws<ArgumentOutOfRangeException>(bufferName, () => cws.Options.SetBuffer(minReceiveBufferSize, minSendBufferSize, new ArraySegment<byte>(new byte[0])));
-            
         }
 
         [ConditionalFact(nameof(WebSocketsSupported))]
