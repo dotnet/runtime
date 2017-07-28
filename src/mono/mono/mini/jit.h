@@ -63,6 +63,13 @@ typedef enum {
 MONO_API void
 mono_jit_set_aot_mode      (MonoAotMode mode);
 
+/*
+ * Returns whether the runtime was invoked for the purpose of AOT-compiling an
+ * assembly, i.e. no managed code will run.
+ */
+MONO_API mono_bool
+mono_jit_aot_compiling (void);
+
 /* Allow embedders to decide wherther to actually obey breakpoint instructions
  * in specific methods (works for both break IL instructions and Debugger.Break ()
  * method calls).
