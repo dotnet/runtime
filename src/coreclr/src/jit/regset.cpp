@@ -2666,17 +2666,24 @@ void RegSet::rsUnspillRegPair(GenTreePtr tree, regMaskTP needReg, KeepReg keepRe
 
         if (rsIsTreeInReg(regHi, tree))
         {
-            /* Temporarily lock the high part */
-
-            rsLockUsedReg(genRegMask(regHi));
+            // Temporarily lock the high part if necessary. If this register is a multi-use register that is shared
+            // with another tree, the register may already be locked.
+            const regMaskTP regHiMask = genRegMask(regHi);
+            const bool lockReg = (rsMaskLock & regHiMask) == 0;
+            if (lockReg)
+            {
+                rsLockUsedReg(regHiMask);
+            }
 
             /* Pick a new home for the lower half */
 
             regLo = rsUnspillOneReg(tree, regLo, keepReg, needReg);
 
             /* We can unlock the high part now */
-
-            rsUnlockUsedReg(genRegMask(regHi));
+            if (lockReg)
+            {
+                rsUnlockUsedReg(regHiMask);
+            }
         }
         else
         {
@@ -2700,17 +2707,24 @@ void RegSet::rsUnspillRegPair(GenTreePtr tree, regMaskTP needReg, KeepReg keepRe
         {
             regMaskTP regLoUsed;
 
-            /* Temporarily lock the low part so it doesnt get spilled */
-
-            rsLockReg(genRegMask(regLo), &regLoUsed);
+            // Temporarily lock the low part if necessary. If this register is a multi-use register that is shared
+            // with another tree, the register may already be locked.
+            const regMaskTP regLoMask = genRegMask(regLo);
+            const bool lockReg = (rsMaskLock & regLoMask) == 0;
+            if (lockReg)
+            {
+                rsLockReg(regLoMask, &regLoUsed);
+            }
 
             /* Pick a new home for the upper half */
 
             regHi = rsUnspillOneReg(tree, regHi, keepReg, needReg);
 
             /* We can unlock the low register now */
-
-            rsUnlockReg(genRegMask(regLo), regLoUsed);
+            if (lockReg)
+            {
+                rsUnlockReg(regLoMask, regLoUsed);
+            }
         }
         else
         {
