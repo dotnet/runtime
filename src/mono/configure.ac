@@ -67,8 +67,6 @@ libgc_configure_args=
 # libgc should inherit the original CFLAGS/CPPFLAGS passed to configure, i.e. -O0
 CPPFLAGS_FOR_LIBGC=$CPPFLAGS
 CFLAGS_FOR_LIBGC=$CFLAGS
-CPPFLAGS_FOR_EGLIB=$CPPFLAGS
-CFLAGS_FOR_EGLIB=$CFLAGS
 CPPFLAGS_FOR_BTLS=$CPPFLAGS
 CFLAGS_FOR_BTLS=$CFLAGS
 
@@ -323,8 +321,6 @@ case "$host" in
 				CCASFLAGS="$CCASFLAGS $BROKEN_DARWIN_FLAGS"
 				CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC $BROKEN_DARWIN_CPPFLAGS"
 				CFLAGS_FOR_LIBGC="$CFLAGS_FOR_LIBGC $BROKEN_DARWIN_FLAGS"
-				CPPFLAGS_FOR_EGLIB="$CPPFLAGS_FOR_EGLIB $BROKEN_DARWIN_CPPFLAGS"
-				CFLAGS_FOR_EGLIB="$CFLAGS_FOR_EGLIB $BROKEN_DARWIN_FLAGS"
 				with_sgen_default_concurrent=yes
 				;;
 			x*64-*-darwin*)
@@ -571,7 +567,6 @@ if test x"$GCC" = xyes; then
 		if test x"$disable_visibility_hidden" = xno; then
 		   # Don't export any symbols by default
 		   SHARED_CFLAGS="-fvisibility=hidden"
-		   CFLAGS_FOR_EGLIB="$CFLAGS_FOR_EGLIB -fvisibility=hidden"
 		   CXXFLAGS="$CXXFLAGS -fvisibility=hidden"
 		fi
 
@@ -697,9 +692,6 @@ if test x$werror_flag = xyes; then
 fi
 AC_SUBST([WERROR_CFLAGS])
 AC_SUBST([SHARED_CFLAGS])
-
-ac_configure_args="$ac_configure_args \"CPPFLAGS_FOR_EGLIB=$EGLIB_CPPFLAGS\" \"CFLAGS_FOR_EGLIB=$CFLAGS_FOR_EGLIB\""
-AC_CONFIG_SUBDIRS(eglib)
 
 GLIB_CFLAGS='-I$(top_srcdir)/eglib/src -I$(top_builddir)/eglib/src'
 GLIB_LIBS='-L$(top_builddir)/eglib/src -leglib -lm'
@@ -3517,6 +3509,7 @@ if test "x$target_mach" = "xyes"; then
           CPPFLAGS_FOR_LIBGC="$CPPFLAGS_FOR_LIBGC -DTARGET_IOS"
           CFLAGS_FOR_LIBGC="$CFLAGS_FOR_LIBGC -DTARGET_IOS"
           BTLS_SUPPORTED=no
+		  target_ios=yes
        ])
 	fi
    AC_DEFINE(TARGET_MACH,1,[The JIT/AOT targets Apple platforms])
@@ -3641,8 +3634,181 @@ case "$host" in
 	;;
 esac
 
-
 AC_SUBST(libsuffix)
+
+######################################
+# EGLIB CHECKS
+######################################
+
+GNUC_PRETTY=
+GNUC_UNUSED=
+BREAKPOINT="G_STMT_START { raise (SIGTRAP); } G_STMT_END"
+if test x$GCC = xyes; then
+   GNUC_UNUSED='__attribute__((__unused__))'
+   GNUC_NORETURN='__attribute__((__noreturn__))'
+   case $host_cpu in
+     i*86|x86_64) BREAKPOINT="G_STMT_START { __asm__ (\"int \$03\"); } G_STMT_END" ;;
+   esac
+fi
+AC_SUBST(GNUC_PRETTY)
+AC_SUBST(GNUC_UNUSED)
+AC_SUBST(GNUC_NORETURN)
+AC_SUBST(BREAKPOINT)
+
+AC_C_BIGENDIAN([ORDER=G_BIG_ENDIAN],[ORDER=G_LITTLE_ENDIAN])
+
+case $host in
+*-*-msdos* | *-*-go32* | *-*-mingw32* | *-*-cygwin* | *-*-windows*)
+    PATHSEP='\\'
+    SEARCHSEP=';'
+    OS="WIN32"
+    PIDTYPE='void *'
+    ;;
+*)
+    PATHSEP='/'
+    SEARCHSEP=':'
+    OS="UNIX"
+    PIDTYPE='int'
+    ;;
+esac
+
+case $host in
+	*-*-solaris*)
+	CFLAGS="$CFLAGS -D_POSIX_PTHREAD_SEMANTICS"
+	;;
+esac
+
+case $target in
+arm*-darwin*|aarch64*-*)
+    CFLAGS="$CFLAGS -U_FORTIFY_SOURCE"
+    ;;
+i*86-*-darwin*)
+    ORDER=G_LITTLE_ENDIAN
+    ;;
+*-*-haiku*)
+    LDFLAGS="$LDFLAGS -ltextencoding"
+    ;;
+*-*-openbsd*)
+    CFLAGS="$CFLAGS -pthread"
+    LDFLAGS="$LDFLAGS -pthread"
+    ;;
+esac
+
+AC_SUBST(ORDER)
+AC_SUBST(CFLAGS)
+AC_SUBST(PATHSEP)
+AC_SUBST(SEARCHSEP)
+AC_SUBST(OS)
+AC_SUBST(PIDTYPE)
+
+# Defined for all targets/platforms using classic Windows API support.
+AC_DEFINE(HAVE_CLASSIC_WINAPI_SUPPORT, 1, [Use classic Windows API support])
+AC_DEFINE(HAVE_UWP_WINAPI_SUPPORT, 0, [Don't use UWP Windows API support])
+
+AC_CHECK_SIZEOF(int)
+AC_CHECK_SIZEOF(void *)
+AC_CHECK_SIZEOF(long)
+AC_CHECK_SIZEOF(long long)
+AC_CHECK_FUNCS(strlcpy stpcpy strtok_r rewinddir vasprintf strerror_r)
+AC_CHECK_FUNCS(getrlimit)
+AC_CHECK_FUNCS(fork execv execve)
+
+AC_ARG_WITH([overridable-allocators], [  --with-overridable-allocators	allow g_*alloc/g_free to call custom allocators set via g_mem_set_vtable])
+
+if test x$with_overridable_allocators = xyes; then
+	AC_DEFINE(ENABLE_OVERRIDABLE_ALLOCATORS,1,[Overridable allocator support enabled])
+  AC_MSG_NOTICE([Overridable allocator support enabled])
+else
+  AC_MSG_NOTICE([Overridable allocator support disabled])
+fi
+
+#
+# Mono currently supports 10.6, but strndup is not available prior to 10.7; avoiding
+# the detection of strndup on OS X so Mono built on 10.7+ still runs on 10.6. This can be
+# removed once support for 10.6 is dropped.
+#
+# iOS detection of strndup and getpwuid_r is faulty for some reason so let's simply avoid it
+#
+if test x$target_osx = xyes; then
+AC_CHECK_FUNCS(getpwuid_r)
+elif test x$target_ios = xno; then
+AC_CHECK_FUNCS(strndup getpwuid_r)
+fi
+
+AM_CONDITIONAL(NEED_VASPRINTF, test x$ac_cv_func_vasprintf = xno || test x$with_overridable_allocators = xyes)
+AM_ICONV()
+AC_SEARCH_LIBS(sqrtf, m)
+
+# nanosleep may not be part of libc, also search it in other libraries
+AC_SEARCH_LIBS(nanosleep, rt)
+
+AC_SEARCH_LIBS(dlopen, dl)
+old_ldflags="${LDFLAGS}"
+LDFLAGS="${LDFLAGS} -Wl,-export-dynamic"
+AC_TRY_LINK(, [int i;], found_export_dynamic=yes, found_export_dynamic=no)
+if test $found_export_dynamic = no; then
+	LDFLAGS="${old_ldflags}"
+fi
+
+AC_MSG_CHECKING(for varargs macros)
+AC_TRY_COMPILE([],[
+int foo (int i, int j);
+#define bar(...) foo (1, __VA_ARGS__)
+void main () {
+	 bar (2);
+}
+],have_iso_varargs=yes,have_iso_varargs=no)
+AC_MSG_RESULT($have_iso_varargs)
+G_HAVE_ISO_VARARGS=0
+if test "x$have_iso_varargs" = "xyes"; then
+   G_HAVE_ISO_VARARGS=1
+fi
+AC_SUBST(G_HAVE_ISO_VARARGS)
+
+AC_CHECK_HEADERS(getopt.h sys/select.h sys/time.h sys/wait.h pwd.h iconv.h localcharset.h sys/types.h sys/resource.h)
+AC_CHECK_LIB([iconv], [locale_charset],[],[AC_CHECK_LIB([charset], [locale_charset],[LIBS+="-liconv -lcharset"])])
+AC_CHECK_HEADER(alloca.h, [HAVE_ALLOCA_H=1], [HAVE_ALLOCA_H=0])
+AC_SUBST(HAVE_ALLOCA_H)
+
+if test $ac_cv_sizeof_void_p = $ac_cv_sizeof_int; then
+   GPOINTER_TO_INT="((gint) (ptr))"
+   GPOINTER_TO_UINT="((guint) (ptr))"
+   GINT_TO_POINTER="((gpointer) (v))"
+   GUINT_TO_POINTER="((gpointer) (v))"
+   GSIZE="int"
+   GSIZE_FORMAT='"u"'
+elif test $ac_cv_sizeof_void_p = $ac_cv_sizeof_long; then
+   GPOINTER_TO_INT="((gint)(long) (ptr))"
+   GPOINTER_TO_UINT="((guint)(long) (ptr))"
+   GINT_TO_POINTER="((gpointer)(glong) (v))"
+   GUINT_TO_POINTER="((gpointer)(gulong) (v))"
+   GSIZE="long"
+   GSIZE_FORMAT='"lu"'
+elif test $ac_cv_sizeof_void_p = $ac_cv_sizeof_long_long; then
+   GPOINTER_TO_INT="((gint)(long long) (ptr))"
+   GPOINTER_TO_UINT="((guint)(unsigned long long) (ptr))"
+   GINT_TO_POINTER="((gpointer)(long long) (v))"
+   GUINT_TO_POINTER="((gpointer)(unsigned long long) (v))"
+   GSIZE="long long"
+   GSIZE_FORMAT='"I64u"'
+else
+   AC_MSG_ERROR([unsupported pointer size])
+fi
+
+AC_SUBST(GPOINTER_TO_INT)
+AC_SUBST(GPOINTER_TO_UINT)
+AC_SUBST(GINT_TO_POINTER)
+AC_SUBST(GUINT_TO_POINTER)
+AC_SUBST(GSIZE)
+AC_SUBST(GSIZE_FORMAT)
+AC_SUBST(G_GUINT64_FORMAT)
+AC_SUBST(G_GINT64_FORMAT)
+AC_SUBST(G_GUINT32_FORMAT)
+AC_SUBST(G_GINT32_FORMAT)
+
+#
+# END OF EGLIB CHECKS
+#
 
 AC_ARG_WITH([libgdiplus],
 	[  --with-libgdiplus=installed|sibling|<path>	Override the libgdiplus used for System.Drawing tests (defaults to installed)],
@@ -4375,6 +4541,9 @@ mono/unit-tests/Makefile
 mono/benchmark/Makefile
 mono/mini/Makefile
 mono/profiler/Makefile
+eglib/Makefile
+eglib/src/Makefile
+eglib/src/eglib-config.h
 m4/Makefile
 ikvm-native/Makefile
 scripts/Makefile

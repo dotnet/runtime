@@ -154,12 +154,6 @@ if test -d $srcdir/libgc; then
   echo Done running libgc/autogen.sh ...
 fi
 
-if test -d $srcdir/eglib; then
-  echo Running eglib/autogen.sh ...
-  (cd $srcdir/eglib ; NOCONFIGURE=1 ./autogen.sh "$@")
-  echo Done running eglib/autogen.sh ...
-fi
-
 if test x$MONO_EXTRA_CONFIGURE_FLAGS != x; then
 	echo "MONO_EXTRA_CONFIGURE_FLAGS is $MONO_EXTRA_CONFIGURE_FLAGS"
 fi
