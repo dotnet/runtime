@@ -110,6 +110,7 @@ class ECall
     DYNAMICALLY_ASSIGNED_FCALL_IMPL(CtorCharCountManaged,              NULL) \
     DYNAMICALLY_ASSIGNED_FCALL_IMPL(CtorCharPtrManaged,                NULL) \
     DYNAMICALLY_ASSIGNED_FCALL_IMPL(CtorCharPtrStartLengthManaged,     NULL) \
+    DYNAMICALLY_ASSIGNED_FCALL_IMPL(CtorReadOnlySpanOfCharManaged,     NULL) \
     DYNAMICALLY_ASSIGNED_FCALL_IMPL(InternalGetCurrentThread,          NULL) \
 
         enum
