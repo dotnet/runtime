@@ -51,7 +51,7 @@ namespace System.Diagnostics
             }
 
             // If we need the host (if it exists), use it, otherwise target the console app directly.
-            string metadataArgs = PasteArguments.Paste(new string[] { a.FullName, t.FullName, method.Name }, pasteFirstArgumentUsingArgV0Rules: false);
+            string metadataArgs = PasteArguments.Paste(new string[] { a.FullName, t.FullName, method.Name, options.ExceptionFile }, pasteFirstArgumentUsingArgV0Rules: false);
             string passedArgs = pasteArguments ? PasteArguments.Paste(args, pasteFirstArgumentUsingArgV0Rules: false) : string.Join(" ", args);
             string testConsoleAppArgs = ExtraParameter + " " + metadataArgs + " " + passedArgs;
 
