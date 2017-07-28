@@ -1,209 +1,627 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
 using OLEDB.Test.ModuleCore;
+using System.Text;
+using Xunit;
 using XmlCoreTest.Common;
 
 namespace System.Xml.Tests
 {
-    public partial class TCIndent : XmlFactoryWriterTestCaseBase
+    public class TCIndent
     {
-        // Type is System.Xml.Tests.TCIndent
-        // Test Case
-        public override void AddChildren()
+        [Theory]
+        [XmlWriterInlineData(WriterType.AllButIndenting & WriterType.AllButCustom)]
+        public void indent_1(XmlWriterUtils utils)
         {
-            if (WriterType == WriterType.CustomWriter)
+            XmlWriter w = utils.CreateWriter();
+            CError.Compare(w.Settings.Indent, false, "Mismatch in Indent");
+            w.WriteStartElement("Root");
+            w.WriteStartElement("child");
+            w.WriteEndElement();
+            w.WriteEndElement();
+            w.Dispose();
+            Assert.True(utils.CompareString("<Root><child /></Root>"));
+        }
+
+        [Theory]
+        [XmlWriterInlineData]
+        public void indent_2(XmlWriterUtils utils)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.OmitXmlDeclaration = true;
+            wSettings.Indent = true;
+
+            XmlWriter w = utils.CreateWriter(wSettings);
+            w.WriteStartElement("Root");
+            w.WriteStartElement("child");
+            w.WriteEndElement();
+            w.WriteEndElement();
+            w.Dispose();
+            Assert.True(utils.CompareString("<Root>" + wSettings.NewLineChars + "  <child />" + wSettings.NewLineChars + "</Root>"));
+        }
+
+        [Theory]
+        [XmlWriterInlineData]
+        public void indent_3(XmlWriterUtils utils)
+        {
+            XmlWriter w = utils.CreateWriter();
+            w.WriteStartElement("Root");
+            w.WriteString("");
+            w.WriteEndElement();
+            w.Dispose();
+            Assert.True(utils.CompareString("<Root></Root>"));
+        }
+
+        [Theory]
+        [XmlWriterInlineData(WriterType.AllButCustom)]
+        public void indent_4(XmlWriterUtils utils)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.OmitXmlDeclaration = true;
+            wSettings.Indent = true;
+
+            XmlWriter w = utils.CreateWriter(wSettings);
+            CError.Compare(w.Settings.Indent, true, "Mismatch in Indent");
+            w.WriteStartElement("Root");
+            w.WriteString("");
+            w.WriteEndElement();
+            w.Dispose();
+            Assert.True(utils.CompareString("<Root></Root>"));
+        }
+
+        [Theory]
+        [XmlWriterInlineData]
+        public void indent_5(XmlWriterUtils utils)
+        {
+            XmlWriter w = utils.CreateWriter();
+            w.WriteStartElement("Root");
+            w.WriteString("");
+            w.WriteFullEndElement();
+            w.Dispose();
+            Assert.True(utils.CompareString("<Root></Root>"));
+        }
+
+        [Theory]
+        [XmlWriterInlineData]
+        public void indent_6(XmlWriterUtils utils)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.OmitXmlDeclaration = true;
+            wSettings.Indent = true;
+
+            XmlWriter w = utils.CreateWriter(wSettings);
+            w.WriteStartElement("Root");
+            w.WriteString("");
+            w.WriteFullEndElement();
+            w.Dispose();
+            Assert.True(utils.CompareString("<Root></Root>"));
+        }
+
+        [Theory]
+        [XmlWriterInlineData]
+        public void indent_7(XmlWriterUtils utils)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.OmitXmlDeclaration = true;
+            wSettings.Indent = true;
+
+            XmlWriter w = utils.CreateWriter(wSettings);
+            w.WriteStartElement("Root");
+            w.WriteString("test");
+            w.WriteStartElement("child");
+            w.WriteEndElement();
+            w.WriteEndElement();
+            w.Dispose();
+            Assert.True(utils.CompareString("<Root>test<child /></Root>"));
+        }
+
+        [Theory]
+        [XmlWriterInlineData]
+        public void indent_8(XmlWriterUtils utils)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.OmitXmlDeclaration = true;
+            wSettings.Indent = true;
+
+            XmlWriter w = utils.CreateWriter(wSettings);
+            w.WriteStartElement("Root");
+            w.WriteString("test");
+            w.WriteStartElement("child");
+            w.WriteFullEndElement();
+            w.WriteFullEndElement();
+            w.Dispose();
+            Assert.True(utils.CompareString("<Root>test<child></child></Root>"));
+        }
+
+        [Theory]
+        [XmlWriterInlineData]
+        public void indent_9(XmlWriterUtils utils)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.Indent = true;
+
+            XmlWriter w = utils.CreateWriter(wSettings);
+            w.WriteProcessingInstruction("xml", "version=\"1.0\"");
+            w.WriteDocType("root", null, null, "foo");
+            w.WriteStartElement("root");
+            w.WriteProcessingInstruction("pi", "pi");
+            w.WriteComment("comment");
+            w.WriteElementString("foo", "");
+            w.WriteEndElement();
+            w.Dispose();
+            CError.Compare(utils.CompareString("<?xml version=\"1.0\"?>" + wSettings.NewLineChars + "<!DOCTYPE root [foo]>" + wSettings.NewLineChars + "<root>" + wSettings.NewLineChars + "  <?pi pi?>" + wSettings.NewLineChars + "  <!--comment-->" + wSettings.NewLineChars + "  <foo />" + wSettings.NewLineChars + "</root>"), "");
+            return;
+        }
+
+        // Mixed content after child
+        [Theory]
+        [XmlWriterInlineData]
+        public void indent_10(XmlWriterUtils utils)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.OmitXmlDeclaration = true;
+            wSettings.Indent = true;
+
+            XmlWriter w = utils.CreateWriter(wSettings);
+            w.WriteStartElement("master");
+            w.WriteStartElement("root");
+            w.WriteStartElement("foo");
+            w.WriteString("text");
+            w.WriteEndElement();
+            w.WriteEndElement();
+            w.WriteString("text");
+            w.WriteStartElement("foo");
+            w.WriteElementString("bar", "text2");
+            w.Dispose();
+            CError.Compare(utils.CompareString("<master>" + wSettings.NewLineChars + "  <root>" + wSettings.NewLineChars + "    <foo>text</foo>" + wSettings.NewLineChars + "  </root>text<foo><bar>text2</bar></foo></master>"), "");
+            return;
+        }
+
+        [Theory]
+        [XmlWriterInlineData]
+        public void indent_11(XmlWriterUtils utils)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.OmitXmlDeclaration = true;
+            wSettings.Indent = true;
+
+            XmlWriter w = utils.CreateWriter(wSettings);
+            w.WriteStartElement("root");
+            w.WriteCData("text");
+            w.WriteElementString("foo", "");
+            w.WriteEndElement();
+            w.Dispose();
+            CError.Compare(utils.CompareString("<root><![CDATA[text]]><foo /></root>"), "");
+            return;
+        }
+
+        [Theory]
+        [XmlWriterInlineData]
+        public void indent_12(XmlWriterUtils utils)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.OmitXmlDeclaration = true;
+            wSettings.Indent = true;
+
+            XmlWriter w = utils.CreateWriter(wSettings);
+            w.WriteStartElement("root");
+            w.WriteWhitespace("  ");
+            w.WriteElementString("foo", "");
+            w.WriteEndElement();
+            w.Dispose();
+            CError.Compare(utils.CompareString("<root>  <foo /></root>"), "");
+            return;
+        }
+
+        [Theory]
+        [XmlWriterInlineData]
+        public void indent_13(XmlWriterUtils utils)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.OmitXmlDeclaration = true;
+            wSettings.Indent = true;
+
+            XmlWriter w = utils.CreateWriter(wSettings);
+            w.WriteStartElement("root");
+            w.WriteRaw("text");
+            w.WriteElementString("foo", "");
+            w.WriteEndElement();
+            w.Dispose();
+            CError.Compare(utils.CompareString("<root>text<foo /></root>"), "");
+            return;
+        }
+
+        [Theory]
+        [XmlWriterInlineData]
+        public void indent_14(XmlWriterUtils utils)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.OmitXmlDeclaration = true;
+            wSettings.Indent = true;
+
+            XmlWriter w = utils.CreateWriter(wSettings);
+            w.WriteStartElement("root");
+            w.WriteEntityRef("e");
+            w.WriteElementString("foo", "");
+            w.WriteEndElement();
+            w.Dispose();
+            CError.Compare(utils.CompareString("<root>&e;<foo /></root>"), "");
+            return;
+        }
+
+        [Theory]
+        [XmlWriterInlineData]
+        public void indent_15(XmlWriterUtils utils)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.OmitXmlDeclaration = true;
+            wSettings.Indent = true;
+
+            XmlWriter w = utils.CreateWriter(wSettings);
+            w.WriteStartElement("e1");
+            w.WriteStartElement("e2");
+            w.WriteStartElement("e3");
+            w.WriteStartElement("e4");
+            w.WriteEndDocument();
+            w.Dispose();
+            CError.Compare(utils.CompareString("<e1>" + wSettings.NewLineChars + "  <e2>" + wSettings.NewLineChars + "    <e3>" + wSettings.NewLineChars + "      <e4 />" + wSettings.NewLineChars + "    </e3>" + wSettings.NewLineChars + "  </e2>" + wSettings.NewLineChars + "</e1>"), "");
+            return;
+        }
+
+        [Theory]
+        [XmlWriterInlineData]
+        public void indent_16(XmlWriterUtils utils)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.OmitXmlDeclaration = true;
+            wSettings.Indent = true;
+
+            XmlWriter w = utils.CreateWriter(wSettings);
+            w.WriteStartElement("e1");
+            w.WriteStartElement("e2");
+            w.WriteStartElement("e3");
+            w.WriteStartElement("e4");
+            w.WriteEndElement();
+            w.WriteEndElement();
+            w.WriteEndElement();
+            w.WriteEndElement();
+            w.Dispose();
+            CError.Compare(utils.CompareString("<e1>" + wSettings.NewLineChars + "  <e2>" + wSettings.NewLineChars + "    <e3>" + wSettings.NewLineChars + "      <e4 />" + wSettings.NewLineChars + "    </e3>" + wSettings.NewLineChars + "  </e2>" + wSettings.NewLineChars + "</e1>"), "");
+            return;
+        }
+
+        [Theory]
+        [XmlWriterInlineData]
+        public void indent_17(XmlWriterUtils utils)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.OmitXmlDeclaration = true;
+            wSettings.Indent = true;
+
+            XmlWriter w = utils.CreateWriter(wSettings);
+            w.WriteStartElement("e1");
+            w.WriteStartElement("e2");
+            w.WriteStartElement("e3");
+            w.WriteStartElement("e4");
+            w.WriteFullEndElement();
+            w.WriteFullEndElement();
+            w.WriteFullEndElement();
+            w.WriteFullEndElement();
+            w.Dispose();
+            CError.Compare(utils.CompareString("<e1>" + wSettings.NewLineChars + "  <e2>" + wSettings.NewLineChars + "    <e3>" + wSettings.NewLineChars + "      <e4></e4>" + wSettings.NewLineChars + "    </e3>" + wSettings.NewLineChars + "  </e2>" + wSettings.NewLineChars + "</e1>"), "");
+            return;
+        }
+
+        [Theory]
+        [XmlWriterInlineData]
+        public void indent_18(XmlWriterUtils utils)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.OmitXmlDeclaration = true;
+            wSettings.Indent = true;
+
+            XmlWriter w = utils.CreateWriter(wSettings);
+            w.WriteElementString("root", "");
+            w.WriteComment("c");
+            w.WriteProcessingInstruction("pi", "pi");
+            w.WriteWhitespace("  ");
+            w.WriteComment("c");
+            w.WriteProcessingInstruction("pi", "pi");
+            w.Dispose();
+            CError.Compare(utils.CompareString("<root />" + wSettings.NewLineChars + "<!--c-->" + wSettings.NewLineChars + "<?pi pi?>  <!--c--><?pi pi?>"), "");
+            return;
+        }
+
+        [Theory]
+        [XmlWriterInlineData]
+        public void indent_19(XmlWriterUtils utils)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.OmitXmlDeclaration = true;
+            wSettings.Indent = true;
+
+            XmlWriter w = utils.CreateWriter(wSettings);
+            w.WriteStartElement("root");
+            w.WriteAttributeString("a1", "value");
+            w.WriteStartElement("foo");
+            w.WriteAttributeString("a2", "value");
+            w.WriteEndDocument();
+            w.Dispose();
+            CError.Compare(utils.CompareString("<root a1=\"value\">" + wSettings.NewLineChars + "  <foo a2=\"value\" />" + wSettings.NewLineChars + "</root>"), "");
+            return;
+        }
+
+        [Theory]
+        [XmlWriterInlineData]
+        public void indent_20(XmlWriterUtils utils)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.OmitXmlDeclaration = true;
+            wSettings.Indent = true;
+
+            XmlWriter w = utils.CreateWriter(wSettings);
+            w.WriteStartDocument();
+            w.WriteProcessingInstruction("pi", "value");
+            w.WriteStartElement("root");
+            w.Dispose();
+            CError.Compare(utils.CompareString("<?pi value?>" + wSettings.NewLineChars + "<root />"), "");
+            return;
+        }
+
+        [Theory]
+        [XmlWriterInlineData]
+        public void indent_21(XmlWriterUtils utils)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.OmitXmlDeclaration = true;
+            wSettings.Indent = true;
+
+            XmlWriter w = utils.CreateWriter(wSettings);
+            w.WriteStartDocument();
+            w.WriteComment("value");
+            w.WriteStartElement("root");
+            w.Dispose();
+            CError.Compare(utils.CompareString("<!--value-->" + wSettings.NewLineChars + "<root />"), "");
+            return;
+        }
+
+        [Theory]
+        [XmlWriterInlineData(ConformanceLevel.Document)]
+        [XmlWriterInlineData(ConformanceLevel.Auto)]
+        public void indent_22(XmlWriterUtils utils, ConformanceLevel conformanceLevel)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.OmitXmlDeclaration = true;
+            wSettings.Indent = true;
+            wSettings.ConformanceLevel = conformanceLevel;
+
+            using (XmlWriter w = utils.CreateWriter(wSettings))
             {
-                return;
+                w.WriteStartElement("root");
+                w.WriteString("text");
+                w.WriteStartElement("child");
+                w.WriteProcessingInstruction("pi", "value");
             }
-            // for function indent_1
+            CError.Compare(utils.CompareString("<root>text<child><?pi value?></child></root>"), "");
+            return;
+        }
+
+        [Theory]
+        [XmlWriterInlineData(ConformanceLevel.Document)]
+        [XmlWriterInlineData(ConformanceLevel.Auto)]
+        public void indent_24(XmlWriterUtils utils, ConformanceLevel conformanceLevel)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.OmitXmlDeclaration = true;
+            wSettings.Indent = true;
+            wSettings.ConformanceLevel = conformanceLevel;
+
+            using (XmlWriter w = utils.CreateWriter(wSettings))
             {
-                this.AddChild(new CVariation(indent_1) { Attribute = new Variation("Simple test when false") { id = 1, Pri = 0 } });
+                w.WriteStartElement("root");
+                w.WriteString("text");
+                w.WriteStartElement("child");
+                w.WriteComment("value");
             }
+            CError.Compare(utils.CompareString("<root>text<child><!--value--></child></root>"), "");
+            return;
+        }
 
+        [Theory]
+        [XmlWriterInlineData(ConformanceLevel.Document)]
+        [XmlWriterInlineData(ConformanceLevel.Auto)]
+        public void indent_26(XmlWriterUtils utils, ConformanceLevel conformanceLevel)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.OmitXmlDeclaration = true;
+            wSettings.Indent = true;
+            wSettings.ConformanceLevel = conformanceLevel;
 
-            // for function indent_2
+            using (XmlWriter w = utils.CreateWriter(wSettings))
             {
-                this.AddChild(new CVariation(indent_2) { Attribute = new Variation("Simple test when true") { id = 2, Pri = 0 } });
+                w.WriteStartElement("root");
+                w.WriteStartElement("child");
+                w.WriteStartElement("a");
+                w.WriteEndElement();
+                w.WriteString("text");
+                w.WriteStartElement("a");
             }
+            CError.Compare(utils.CompareString("<root>" + wSettings.NewLineChars + "  <child>" + wSettings.NewLineChars + "    <a />text<a /></child>" + wSettings.NewLineChars + "</root>"), "");
+            return;
+        }
 
-
-            // for function indent_3
+        [Theory]
+        [XmlWriterInlineData]
+        public void indent_28(XmlWriterUtils utils)
+        {
+            // The output should be the same for ConformanceLevel.Document/Auto
+            //   and with WriteStartDocument called or not
+            int i;
+            for (i = 0; i < 4; i++)
             {
-                this.AddChild(new CVariation(indent_3) { Attribute = new Variation("Indent = false, element content is empty") { id = 3, Pri = 0 } });
+                XmlWriterSettings wSettings = new XmlWriterSettings();
+                wSettings.OmitXmlDeclaration = true;
+                wSettings.Indent = true;
+                wSettings.ConformanceLevel = (i % 2) == 0 ? ConformanceLevel.Auto : ConformanceLevel.Document;
+                CError.WriteLine("ConformanceLevel: {0}", wSettings.ConformanceLevel.ToString());
+
+                using (XmlWriter w = utils.CreateWriter(wSettings))
+                {
+                    if (i > 1)
+                    {
+                        CError.WriteLine("WriteStartDocument called.");
+                        w.WriteStartDocument();
+                    }
+                    else
+                    {
+                        CError.WriteLine("WriteStartDocument not called.");
+                    }
+                    w.WriteStartElement("root");
+                }
+                CError.Compare(utils.CompareString("<root />"), "");
             }
+            return;
+        }
 
-
-            // for function indent_4
+        // First element - with decl
+        [Theory]
+        [XmlWriterInlineData(WriterType.AllButCustom)]
+        public void indent_29(XmlWriterUtils utils)
+        {
+            // The output should be the same for ConformanceLevel.Document/Auto
+            int i;
+            for (i = 0; i < 2; i++)
             {
-                this.AddChild(new CVariation(indent_4) { Attribute = new Variation("Indent = true, element content is empty") { id = 4, Pri = 0 } });
+                XmlWriterSettings wSettings = new XmlWriterSettings();
+                wSettings.OmitXmlDeclaration = false;
+                wSettings.Indent = true;
+                wSettings.ConformanceLevel = (i % 2) == 0 ? ConformanceLevel.Auto : ConformanceLevel.Document;
+                CError.WriteLine("ConformanceLevel: {0}", wSettings.ConformanceLevel.ToString());
+
+                XmlWriter w = utils.CreateWriter(wSettings);
+                Encoding encoding = w.Settings.Encoding;
+                if (wSettings.ConformanceLevel == ConformanceLevel.Auto)
+                {
+                    // Write the decl as PI - since WriteStartDocument would switch to Document mode
+                    w.WriteProcessingInstruction("xml", string.Format("version=\"1.0\" encoding=\"{0}\"", encoding.WebName));
+                }
+                else
+                {
+                    w.WriteStartDocument();
+                }
+                w.WriteStartElement("root");
+                w.Dispose();
+                string expectedResult = string.Format("<?xml version=\"1.0\" encoding=\"{0}\"?>" + wSettings.NewLineChars + "<root />", encoding.WebName);
+                CError.Compare(utils.CompareString(expectedResult), "");
             }
+        }
 
+        [Theory]
+        [XmlWriterInlineData(ConformanceLevel.Document)]
+        [XmlWriterInlineData(ConformanceLevel.Auto)]
+        [XmlWriterInlineData(ConformanceLevel.Fragment)]
+        public void indent_30(XmlWriterUtils utils, ConformanceLevel conformanceLevel)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.OmitXmlDeclaration = true;
+            wSettings.Indent = true;
+            wSettings.ConformanceLevel = conformanceLevel;
 
-            // for function indent_5
+            using (XmlWriter w = utils.CreateWriter(wSettings))
             {
-                this.AddChild(new CVariation(indent_5) { Attribute = new Variation("Indent = false, element content is empty, FullEndElement") { id = 5, Pri = 0 } });
+                w.WriteStartElement("root");
+                w.WriteStartElement("e1");
+                w.WriteStartElement("e2");
+                w.WriteEndElement();
+                w.WriteString("text");
+                w.WriteEndElement();
+                w.WriteEndElement();
             }
+            CError.Compare(utils.CompareString("<root>" + wSettings.NewLineChars + "  <e1>" + wSettings.NewLineChars + "    <e2 />text</e1>" + wSettings.NewLineChars + "</root>"), "");
+            return;
+        }
 
+        [Theory]
+        [XmlWriterInlineData(ConformanceLevel.Document)]
+        [XmlWriterInlineData(ConformanceLevel.Auto)]
+        public void indent_33(XmlWriterUtils utils, ConformanceLevel conformanceLevel)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.Indent = true;
+            wSettings.ConformanceLevel = conformanceLevel;
 
-            // for function indent_6
+            using (XmlWriter w = utils.CreateWriter(wSettings))
             {
-                this.AddChild(new CVariation(indent_6) { Attribute = new Variation("Indent = true, element content is empty, FullEndElement") { id = 6, Pri = 0 } });
+                w.WriteProcessingInstruction("xml", "version=\"1.0\" encoding=\"UTF-8\"");
+                w.WriteProcessingInstruction("piname1", "pitext1");
+                w.WriteProcessingInstruction("piname2", "pitext2");
+                w.WriteStartElement("root");
+                w.WriteEndElement();
             }
+            CError.Compare(utils.CompareString("<?xml version=\"1.0\" encoding=\"UTF-8\"?>" + wSettings.NewLineChars + "<?piname1 pitext1?>" + wSettings.NewLineChars + "<?piname2 pitext2?>" + wSettings.NewLineChars + "<root />"), "");
+            return;
+        }
 
+        [Theory]
+        [XmlWriterInlineData(ConformanceLevel.Document)]
+        [XmlWriterInlineData(ConformanceLevel.Auto)]
+        public void indent_36(XmlWriterUtils utils, ConformanceLevel conformanceLevel)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.Indent = true;
+            wSettings.ConformanceLevel = conformanceLevel;
 
-            // for function indent_7
+            using (XmlWriter w = utils.CreateWriter(wSettings))
             {
-                this.AddChild(new CVariation(indent_7) { Attribute = new Variation("Indent = true, mixed content") { id = 7, Pri = 0 } });
+                w.WriteProcessingInstruction("xml", "version=\"1.0\" encoding=\"UTF-8\"");
+                w.WriteDocType("name", "publicid", "systemid", "subset");
+                w.WriteProcessingInstruction("piname1", "pitext1");
+                w.WriteProcessingInstruction("piname2", "pitext2");
+                w.WriteStartElement("root");
             }
+            CError.Compare(utils.CompareString("<?xml version=\"1.0\" encoding=\"UTF-8\"?>" + wSettings.NewLineChars + "<!DOCTYPE name PUBLIC \"publicid\" \"systemid\"[subset]>" + wSettings.NewLineChars + "<?piname1 pitext1?>" + wSettings.NewLineChars + "<?piname2 pitext2?>" + wSettings.NewLineChars + "<root />"), "");
+            return;
+        }
 
+        [Theory]
+        [XmlWriterInlineData(ConformanceLevel.Document)]
+        [XmlWriterInlineData(ConformanceLevel.Auto)]
+        [XmlWriterInlineData(ConformanceLevel.Fragment)]
+        public void indent_39(XmlWriterUtils utils, ConformanceLevel conformanceLevel)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.OmitXmlDeclaration = true;
+            wSettings.Indent = true;
+            wSettings.ConformanceLevel = conformanceLevel;
 
-            // for function indent_8
+            using (XmlWriter w = utils.CreateWriter(wSettings))
             {
-                this.AddChild(new CVariation(indent_8) { Attribute = new Variation("Indent = true, mixed content, FullEndElement") { id = 8, Pri = 0 } });
+                w.WriteProcessingInstruction("piname1", "pitext1");
+                w.WriteComment("comment1");
+                w.WriteProcessingInstruction("piname2", "pitext2");
+                w.WriteStartElement("root");
+                w.WriteStartElement("e1");
+                w.WriteStartElement("e2");
+                w.WriteStartElement("e3");
+                w.WriteStartElement("e4");
+                w.WriteEndElement();
+                w.WriteString("text1");
+                w.WriteProcessingInstruction("piname3", "pitext3");
+                w.WriteEndElement();
+                w.WriteComment("comment2");
+                w.WriteCData("cdata1");
+                w.WriteString("text2");
+                w.WriteProcessingInstruction("piname4", "pitext4");
+                w.WriteCData("cdata2");
+                w.WriteComment("comment3");
+                w.WriteProcessingInstruction("piname5", "pitext5");
+                w.WriteEndElement();
+                w.WriteEndElement();
             }
-
-
-            // for function indent_9
-            {
-                this.AddChild(new CVariation(indent_9) { Attribute = new Variation("Other types of non-text nodes") { id = 9, Priority = 0 } });
-            }
-
-
-            // for function indent_10
-            {
-                this.AddChild(new CVariation(indent_10) { Attribute = new Variation("Mixed content after child") { id = 10, Priority = 0 } });
-            }
-
-
-            // for function indent_11
-            {
-                this.AddChild(new CVariation(indent_11) { Attribute = new Variation("Mixed content - CData") { id = 11, Priority = 0 } });
-            }
-
-
-            // for function indent_12
-            {
-                this.AddChild(new CVariation(indent_12) { Attribute = new Variation("Mixed content - Whitespace") { id = 12, Priority = 0 } });
-            }
-
-
-            // for function indent_13
-            {
-                this.AddChild(new CVariation(indent_13) { Attribute = new Variation("Mixed content - Raw") { id = 13, Priority = 0 } });
-            }
-
-
-            // for function indent_14
-            {
-                this.AddChild(new CVariation(indent_14) { Attribute = new Variation("Mixed content - EntityRef") { id = 14, Priority = 0 } });
-            }
-
-
-            // for function indent_15
-            {
-                this.AddChild(new CVariation(indent_15) { Attribute = new Variation("Nested Elements - with EndDocument") { id = 15, Priority = 0 } });
-            }
-
-
-            // for function indent_16
-            {
-                this.AddChild(new CVariation(indent_16) { Attribute = new Variation("Nested Elements - with EndElement") { id = 16, Priority = 0 } });
-            }
-
-
-            // for function indent_17
-            {
-                this.AddChild(new CVariation(indent_17) { Attribute = new Variation("Nested Elements - with FullEndElement") { id = 17, Priority = 0 } });
-            }
-
-
-            // for function indent_18
-            {
-                this.AddChild(new CVariation(indent_18) { Attribute = new Variation("NewLines after root element") { id = 18, Priority = 0 } });
-            }
-
-
-            // for function indent_19
-            {
-                this.AddChild(new CVariation(indent_19) { Attribute = new Variation("Elements with attributes") { id = 19, Priority = 0 } });
-            }
-
-
-            // for function indent_20
-            {
-                this.AddChild(new CVariation(indent_20) { Attribute = new Variation("First PI with start document no xmldecl") { id = 20, Priority = 1 } });
-            }
-
-
-            // for function indent_21
-            {
-                this.AddChild(new CVariation(indent_21) { Attribute = new Variation("First comment with start document no xmldecl") { id = 21, Priority = 1 } });
-            }
-
-
-            // for function indent_22
-            {
-                this.AddChild(new CVariation(indent_22) { Attribute = new Variation("PI in mixed content - Auto") { Param = 0, id = 23, Priority = 1 } });
-                this.AddChild(new CVariation(indent_22) { Attribute = new Variation("PI in mixed content - Document") { Param = 2, id = 22, Priority = 1 } });
-            }
-
-
-            // for function indent_24
-            {
-                this.AddChild(new CVariation(indent_24) { Attribute = new Variation("Comment in mixed content - Document") { Param = 2, id = 24, Priority = 1 } });
-                this.AddChild(new CVariation(indent_24) { Attribute = new Variation("Comment in mixed content - Auto") { Param = 0, id = 25, Priority = 1 } });
-            }
-
-
-            // for function indent_26
-            {
-                this.AddChild(new CVariation(indent_26) { Attribute = new Variation("Mixed content after end element - Auto") { Param = 0, id = 27, Priority = 1 } });
-                this.AddChild(new CVariation(indent_26) { Attribute = new Variation("Mixed content after end element - Document") { Param = 2, id = 26, Priority = 1 } });
-            }
-
-
-            // for function indent_28
-            {
-                this.AddChild(new CVariation(indent_28) { Attribute = new Variation("First element - no decl") { id = 28, Priority = 1 } });
-            }
-
-
-            // for function indent_29
-            {
-                this.AddChild(new CVariation(indent_29) { Attribute = new Variation("First element - with decl") { Param = true, id = 29, Priority = 1 } });
-            }
-
-
-            // for function indent_30
-            {
-                this.AddChild(new CVariation(indent_30) { Attribute = new Variation("Bad indentation of elements with mixed content data - Fragment") { Param = 1, id = 32, Priority = 1 } });
-                this.AddChild(new CVariation(indent_30) { Attribute = new Variation("Bad indentation of elements with mixed content data - Document") { Param = 2, id = 30, Priority = 1 } });
-                this.AddChild(new CVariation(indent_30) { Attribute = new Variation("Bad indentation of elements with mixed content data - Auto") { Param = 0, id = 31, Priority = 1 } });
-            }
-
-
-            // for function indent_33
-            {
-                this.AddChild(new CVariation(indent_33) { Attribute = new Variation("Indentation error - no new line after PI only if document contains no DocType node - Document") { Param = 2, id = 33, Priority = 1 } });
-                this.AddChild(new CVariation(indent_33) { Attribute = new Variation("Indentation error - no new line after PI only if document contains no DocType node - Auto") { Param = 0, id = 34, Priority = 1 } });
-            }
-
-
-            // for function indent_36
-            {
-                this.AddChild(new CVariation(indent_36) { Attribute = new Variation("Indentation error - no new line after PI only if document contains DocType node - Document") { Param = 2, id = 36, Priority = 1 } });
-                this.AddChild(new CVariation(indent_36) { Attribute = new Variation("Indentation error - no new line after PI only if document contains DocType node - Auto") { Param = 0, id = 37, Priority = 1 } });
-            }
-
-
-            // for function indent_39
-            {
-                this.AddChild(new CVariation(indent_39) { Attribute = new Variation("Auto") { Param = 0, id = 40, Priority = 1 } });
-                this.AddChild(new CVariation(indent_39) { Attribute = new Variation("Fragment") { Param = 1, id = 41, Priority = 1 } });
-                this.AddChild(new CVariation(indent_39) { Attribute = new Variation("Document") { Param = 2, id = 39, Priority = 1 } });
-            }
+            CError.Compare(utils.CompareString("<?piname1 pitext1?>" + wSettings.NewLineChars + "<!--comment1-->" + wSettings.NewLineChars + "<?piname2 pitext2?>" + wSettings.NewLineChars + "<root>" + wSettings.NewLineChars + "  <e1>" + wSettings.NewLineChars + "    <e2>" + wSettings.NewLineChars + "      <e3>" + wSettings.NewLineChars + "        <e4 />text1<?piname3 pitext3?></e3>" + wSettings.NewLineChars + "      <!--comment2--><![CDATA[cdata1]]>text2<?piname4 pitext4?><![CDATA[cdata2]]><!--comment3--><?piname5 pitext5?></e2>" + wSettings.NewLineChars + "  </e1>" + wSettings.NewLineChars + "</root>"), "");
+            return;
         }
     }
 }

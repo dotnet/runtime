@@ -1,38 +1,77 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
 using OLEDB.Test.ModuleCore;
 using XmlCoreTest.Common;
+using Xunit;
 
 namespace System.Xml.Tests
 {
-    public partial class TCNewLineOnAttributes : XmlFactoryWriterTestCaseBase
+    public class TCNewLineOnAttributes
     {
-        // Type is System.Xml.Tests.TCNewLineOnAttributes
-        // Test Case
-        public override void AddChildren()
+        [Theory]
+        [XmlWriterInlineData(WriterType.AllButCustom & WriterType.AllButIndenting)]
+        public void NewLineOnAttributes_1(XmlWriterUtils utils)
         {
-            if (WriterType == WriterType.CustomWriter)
-            {
-                return;
-            }
-            // for function NewLineOnAttributes_1
-            {
-                this.AddChild(new CVariation(NewLineOnAttributes_1) { Attribute = new Variation("Make sure the setting has no effect when Indent is false") { id = 1, Pri = 0 } });
-            }
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.OmitXmlDeclaration = true;
+            wSettings.NewLineOnAttributes = true;
 
+            XmlWriter w = utils.CreateWriter(wSettings);
+            CError.Compare(w.Settings.NewLineOnAttributes, false, "Mismatch in NewLineOnAttributes");
 
-            // for function NewLineOnAttributes_2
-            {
-                this.AddChild(new CVariation(NewLineOnAttributes_2) { Attribute = new Variation("Sanity test when Indent is true") { id = 2, Pri = 1 } });
-            }
+            w.WriteStartElement("root");
+            w.WriteAttributeString("attr1", "value1");
+            w.WriteAttributeString("attr2", "value2");
+            w.WriteEndElement();
+            w.Dispose();
 
+            Assert.True(utils.CompareString("<root attr1=\"value1\" attr2=\"value2\" />"));
+        }
 
-            // for function NewLineOnAttributes_3
-            {
-                this.AddChild(new CVariation(NewLineOnAttributes_3) { Attribute = new Variation("Attributes of nested elements") { id = 3, Pri = 1 } });
-            }
+        [Theory]
+        [XmlWriterInlineData(WriterType.AllButCustom)]
+        public void NewLineOnAttributes_2(XmlWriterUtils utils)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.OmitXmlDeclaration = true;
+            wSettings.Indent = true;
+            wSettings.NewLineOnAttributes = true;
+
+            XmlWriter w = utils.CreateWriter(wSettings);
+            CError.Compare(w.Settings.NewLineOnAttributes, true, "Mismatch in NewLineOnAttributes");
+
+            w.WriteStartElement("root");
+            w.WriteAttributeString("attr1", "value1");
+            w.WriteAttributeString("attr2", "value2");
+            w.WriteEndElement();
+            w.Dispose();
+
+            Assert.True(utils.CompareString("<root" + wSettings.NewLineChars + "  attr1=\"value1\"" + wSettings.NewLineChars + "  attr2=\"value2\" />"));
+        }
+
+        [Theory]
+        [XmlWriterInlineData]
+        public void NewLineOnAttributes_3(XmlWriterUtils utils)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.OmitXmlDeclaration = true;
+            wSettings.Indent = true;
+            wSettings.NewLineOnAttributes = true;
+
+            XmlWriter w = utils.CreateWriter(wSettings);
+            w.WriteStartElement("level1");
+            w.WriteAttributeString("attr1", "value1");
+            w.WriteAttributeString("attr2", "value2");
+            w.WriteStartElement("level2");
+            w.WriteAttributeString("attr1", "value1");
+            w.WriteAttributeString("attr2", "value2");
+            w.WriteEndElement();
+            w.WriteEndElement();
+            w.Dispose();
+
+            Assert.True(utils.CompareBaseline("NewLineOnAttributes3.txt"));
         }
     }
 }

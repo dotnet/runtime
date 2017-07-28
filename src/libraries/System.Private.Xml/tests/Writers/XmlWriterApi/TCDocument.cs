@@ -1,87 +1,279 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
 using OLEDB.Test.ModuleCore;
+using Xunit;
 
 namespace System.Xml.Tests
 {
-    public partial class TCDocument : XmlWriterTestCaseBase
+    //[TestCase(Name = "WriteStart/EndDocument")]
+    public class TCDocument
     {
-        // Type is System.Xml.Tests.TCDocument
-        // Test Case
-        public override void AddChildren()
+        // StartDocument-EndDocument Sanity Test
+        [Theory]
+        [XmlWriterInlineData]
+        public void document_1(XmlWriterUtils utils)
         {
-            // for function document_1
+            using (XmlWriter w = utils.CreateWriter())
             {
-                this.AddChild(new CVariation(document_1) { Attribute = new Variation("StartDocument-EndDocument Sanity Test") { id = 1, Pri = 0 } });
+                w.WriteStartDocument();
+                w.WriteStartElement("Root");
+                w.WriteEndElement();
+                w.WriteEndDocument();
             }
+            Assert.True(utils.CompareReader("<Root />"));
+        }
 
-
-            // for function document_2
+        // Multiple StartDocument should error
+        [Theory]
+        [XmlWriterInlineData]
+        public void document_2(XmlWriterUtils utils)
+        {
+            using (XmlWriter w = utils.CreateWriter())
             {
-                this.AddChild(new CVariation(document_2) { Attribute = new Variation("Multiple StartDocument should error") { id = 2, Pri = 1 } });
+                try
+                {
+                    w.WriteStartDocument();
+                    w.WriteStartDocument();
+                }
+                catch (InvalidOperationException e)
+                {
+                    CError.WriteLineIgnore("Exception: " + e.ToString());
+                    CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
+                    return;
+                }
             }
+            CError.WriteLine("Did not throw exception");
+            Assert.True(false);
+        }
 
-
-            // for function document_3
+        // Missing StartDocument should be fixed
+        [Theory]
+        [XmlWriterInlineData]
+        public void document_3(XmlWriterUtils utils)
+        {
+            using (XmlWriter w = utils.CreateWriter())
             {
-                this.AddChild(new CVariation(document_3) { Attribute = new Variation("Missing StartDocument should be fixed") { id = 3, Pri = 1 } });
+                w.WriteStartElement("Root");
+                w.WriteEndElement();
+                w.WriteEndDocument();
             }
+            Assert.True(utils.CompareReader("<Root />"));
+        }
 
 
-            // for function document_4
+        // Multiple EndDocument should error
+        [Theory]
+        [XmlWriterInlineData]
+        public void document_4(XmlWriterUtils utils)
+        {
+            using (XmlWriter w = utils.CreateWriter())
             {
-                this.AddChild(new CVariation(document_4) { Attribute = new Variation("Multiple EndDocument should error") { id = 4, Pri = 1 } });
+                try
+                {
+                    w.WriteStartDocument();
+                    w.WriteStartElement("Root");
+                    w.WriteEndElement();
+                    w.WriteEndDocument();
+                    w.WriteEndDocument();
+                }
+                catch (InvalidOperationException e)
+                {
+                    CError.WriteLineIgnore("Exception: " + e.ToString());
+                    CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
+                    return;
+                }
             }
+            CError.WriteLine("Did not throw exception");
+            Assert.True(false);
+        }
 
-
-            // for function document_5
+        // Missing EndDocument should be fixed
+        [Theory]
+        [XmlWriterInlineData]
+        public void document_5(XmlWriterUtils utils)
+        {
+            using (XmlWriter w = utils.CreateWriter())
             {
-                this.AddChild(new CVariation(document_5) { Attribute = new Variation("Missing EndDocument should be fixed") { id = 5, Pri = 1 } });
+                w.WriteStartDocument();
+                w.WriteStartElement("Root");
+                w.WriteEndElement();
             }
+            Assert.True(utils.CompareReader("<Root />"));
+        }
 
-
-            // for function document_6
+        // Call Start-EndDocument multiple times, should error
+        [Theory]
+        [XmlWriterInlineData]
+        public void document_6(XmlWriterUtils utils)
+        {
+            using (XmlWriter w = utils.CreateWriter())
             {
-                this.AddChild(new CVariation(document_6) { Attribute = new Variation("Call Start-EndDocument multiple times, should error") { id = 6, Pri = 2 } });
+                try
+                {
+                    w.WriteStartDocument();
+                    w.WriteStartElement("Root");
+                    w.WriteEndElement();
+                    w.WriteEndDocument();
+
+                    w.WriteStartDocument();
+                    w.WriteEndDocument();
+                }
+                catch (InvalidOperationException e)
+                {
+                    CError.WriteLineIgnore("Exception: " + e.ToString());
+                    CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
+                    return;
+                }
             }
+            CError.WriteLine("Did not throw exception");
+            Assert.True(false);
+        }
 
-
-            // for function document_7
+        // Multiple root elements should error
+        [Theory]
+        [XmlWriterInlineData]
+        public void document_7(XmlWriterUtils utils)
+        {
+            using (XmlWriter w = utils.CreateWriter())
             {
-                this.AddChild(new CVariation(document_7) { Attribute = new Variation("Multiple root elements should error") { id = 7, Pri = 1 } });
+                try
+                {
+                    w.WriteStartDocument();
+                    w.WriteStartElement("Root");
+                    w.WriteEndElement();
+                    w.WriteStartElement("Root");
+                }
+                catch (InvalidOperationException e)
+                {
+                    CError.WriteLineIgnore("Exception: " + e.ToString());
+                    CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
+                    return;
+                }
             }
+            CError.WriteLine("Did not throw exception");
+            Assert.True(false);
+        }
 
-
-            // for function document_8
+        // Start-EndDocument without any element should error
+        [Theory]
+        [XmlWriterInlineData]
+        public void document_8(XmlWriterUtils utils)
+        {
+            using (XmlWriter w = utils.CreateWriter())
             {
-                this.AddChild(new CVariation(document_8) { Attribute = new Variation("Start-EndDocument without any element should error") { id = 8, Pri = 2 } });
+                try
+                {
+                    w.WriteStartDocument();
+                    w.WriteEndDocument();
+                }
+                catch (InvalidOperationException e)
+                {
+                    CError.WriteLineIgnore("Exception: " + e.ToString());
+                    CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
+                    return;
+                }
             }
+            CError.WriteLine("Did not throw exception");
+            Assert.True(false);
+        }
 
-
-            // for function document_9
+        // Top level text should error - PROLOG
+        [Theory]
+        [XmlWriterInlineData]
+        public void document_9(XmlWriterUtils utils)
+        {
+            using (XmlWriter w = utils.CreateWriter())
             {
-                this.AddChild(new CVariation(document_9) { Attribute = new Variation("Top level text should error - PROLOG") { id = 9, Pri = 1 } });
+                try
+                {
+                    w.WriteStartDocument();
+                    w.WriteString("Top level text");
+                }
+                catch (InvalidOperationException e)
+                {
+                    CError.WriteLineIgnore("Exception: " + e.ToString());
+                    CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
+                    return;
+                }
             }
+            CError.WriteLine("Did not throw exception");
+            Assert.True(false);
+        }
 
-
-            // for function document_10
+        // Top level text should error - EPILOG
+        [Theory]
+        [XmlWriterInlineData]
+        public void document_10(XmlWriterUtils utils)
+        {
+            using (XmlWriter w = utils.CreateWriter())
             {
-                this.AddChild(new CVariation(document_10) { Attribute = new Variation("Top level text should error - EPILOG") { id = 10, Pri = 1 } });
+                try
+                {
+                    w.WriteStartDocument();
+                    w.WriteStartElement("Root");
+                    w.WriteEndElement();
+                    w.WriteString("Top level text");
+                }
+                catch (InvalidOperationException e)
+                {
+                    CError.WriteLineIgnore("Exception: " + e.ToString());
+                    CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
+                    return;
+                }
             }
+            CError.WriteLine("Did not throw exception");
+            Assert.True(false);
+        }
 
 
-            // for function document_11
+        // Top level atomic value should error - PROLOG
+        [Theory]
+        [XmlWriterInlineData]
+        public void document_11(XmlWriterUtils utils)
+        {
+            using (XmlWriter w = utils.CreateWriter())
             {
-                this.AddChild(new CVariation(document_11) { Attribute = new Variation("Top level atomic value should error - PROLOG") { id = 11, Pri = 1 } });
+                try
+                {
+                    w.WriteStartDocument();
+                    int i = 1;
+                    w.WriteValue(i);
+                }
+                catch (InvalidOperationException e)
+                {
+                    CError.WriteLineIgnore("Exception: " + e.ToString());
+                    CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
+                    return;
+                }
             }
+            Assert.True(false);
+        }
 
-
-            // for function document_12
+        // Top level atomic value should error - EPILOG
+        [Theory]
+        [XmlWriterInlineData]
+        public void document_12(XmlWriterUtils utils)
+        {
+            using (XmlWriter w = utils.CreateWriter())
             {
-                this.AddChild(new CVariation(document_12) { Attribute = new Variation("Top level atomic value should error - EPILOG") { id = 12, Pri = 1 } });
+                try
+                {
+                    w.WriteStartDocument();
+                    w.WriteStartElement("Root");
+                    w.WriteEndElement();
+                    int i = 1;
+                    w.WriteValue(i);
+                }
+                catch (InvalidOperationException e)
+                {
+                    CError.WriteLineIgnore("Exception: " + e.ToString());
+                    CError.Compare(w.WriteState, WriteState.Error, "WriteState should be Error");
+                    return;
+                }
             }
+            Assert.True(false);
         }
     }
 }
