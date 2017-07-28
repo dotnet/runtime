@@ -58,7 +58,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         ERR_RefConstraintNotSatisfied = 452,
         ERR_ValConstraintNotSatisfied = 453,
         ERR_AmbigUDConv = 457,
-        ERR_PredefinedTypeNotFound = 518,
         ERR_BindToBogus = 570,
         ERR_CantCallSpecialMethod = 571,
         ERR_ConvertToStaticClass = 716,

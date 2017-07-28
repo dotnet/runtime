@@ -226,10 +226,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         (s_simpleTypeBetter[i][j] == right && s_simpleTypeBetter[j][i] == left) ||
                         (s_simpleTypeBetter[i][j] == neither && s_simpleTypeBetter[j][i] == neither));
                     Debug.Assert(
-                        GetOptPDT((PredefinedType)i) == null ||
-                        GetOptPDT((PredefinedType)j) == null ||
-                        (!canConvert(GetOptPDT((PredefinedType)i), GetOptPDT((PredefinedType)j), CONVERTTYPE.NOUDC) || s_simpleTypeBetter[i][j] == left) &&
-                        (!canConvert(GetOptPDT((PredefinedType)j), GetOptPDT((PredefinedType)i), CONVERTTYPE.NOUDC) || s_simpleTypeBetter[j][i] == left));
+                        GetPredefindType((PredefinedType)i) == null ||
+                        GetPredefindType((PredefinedType)j) == null ||
+                        (!canConvert(GetPredefindType((PredefinedType)i), GetPredefindType((PredefinedType)j), CONVERTTYPE.NOUDC) || s_simpleTypeBetter[i][j] == left) &&
+                        (!canConvert(GetPredefindType((PredefinedType)j), GetPredefindType((PredefinedType)i), CONVERTTYPE.NOUDC) || s_simpleTypeBetter[j][i] == left));
                 }
             }
             s_fCheckedBetter = true;
@@ -279,7 +279,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 return BetterType.Right;
             }
-            return WhichTypeIsBetter(GetOptPDT(pt1), GetOptPDT(pt2), typeGiven);
+            return WhichTypeIsBetter(GetPredefindType(pt1), GetPredefindType(pt2), typeGiven);
         }
 
 
@@ -756,7 +756,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 if (obj != null && obj.Type.fundType() != FUNDTYPE.FT_REF)
                 {
                     // Must box the object before creating a delegate to it.
-                    obj = mustConvert(obj, GetReqPDT(PredefinedType.PT_OBJECT));
+                    obj = mustConvert(obj, GetPredefindType(PredefinedType.PT_OBJECT));
                 }
             }
             else
@@ -1681,7 +1681,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private Expr bindDecimalConstCast(ExprClass exprDestType, CType srcType, ExprConstant src)
         {
             CType destType = exprDestType.Type;
-            CType typeDecimal = SymbolLoader.GetOptPredefType(PredefinedType.PT_DECIMAL);
+            CType typeDecimal = SymbolLoader.GetPredefindType(PredefinedType.PT_DECIMAL);
             ConstVal cv;
 
             if (typeDecimal == null)

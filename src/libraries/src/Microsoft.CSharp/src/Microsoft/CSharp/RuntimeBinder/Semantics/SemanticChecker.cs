@@ -145,7 +145,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         //protected CompilerPhase GetCompPhase() { return SymbolLoader.CompPhase(); }
         //protected void SetCompPhase(CompilerPhase compPhase) { SymbolLoader.compPhase = compPhase; }
-        public PredefinedTypes getPredefTypes() { return SymbolLoader.getPredefTypes(); }
+        public PredefinedTypes getPredefTypes() { return SymbolLoader.GetPredefindTypes(); }
         //
         // SymbolLoader forwarders (end)
         /////////////////////////////////////////////////////////////////////////////////

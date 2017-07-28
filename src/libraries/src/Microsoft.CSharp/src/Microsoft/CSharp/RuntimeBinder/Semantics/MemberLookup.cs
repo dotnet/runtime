@@ -647,7 +647,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             if (typeIface != null || ifaces.Count > 0)
-                typeCls2 = GetSymbolLoader().GetReqPredefType(PredefinedType.PT_OBJECT);
+                typeCls2 = GetSymbolLoader().GetPredefindType(PredefinedType.PT_OBJECT);
 
             // Search the class first (except possibly object).
             if (typeCls1 == null || LookupInClass(typeCls1, ref typeCls2))

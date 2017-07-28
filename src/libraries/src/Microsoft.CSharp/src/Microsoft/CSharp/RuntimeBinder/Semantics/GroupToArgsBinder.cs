@@ -308,7 +308,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             }
 
                             // Mark object.
-                            AggregateType typeObject = GetSymbolLoader().GetReqPredefType(PredefinedType.PT_OBJECT);
+                            AggregateType typeObject = GetSymbolLoader().GetPredefindType(PredefinedType.PT_OBJECT);
                             _HiddenTypes.Add(typeObject);
                         }
                     }
@@ -565,7 +565,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         // This is the specific case where we want to create a DateTime
                         // but the constval that stores it is a long.
 
-                        AggregateType dateTimeType = symbolLoader.GetReqPredefType(PredefinedType.PT_DATETIME);
+                        AggregateType dateTimeType = symbolLoader.GetPredefindType(PredefinedType.PT_DATETIME);
                         optionalArgument = exprFactory.CreateConstant(dateTimeType, ConstVal.Get(DateTime.FromBinary(cv.Int64Val)));
                     }
                     else if (pConstValType.isSimpleOrEnumOrString())
@@ -619,7 +619,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         {
                             // Otherwise, we generate Type.Missing
 
-                            AggregateSymbol agg = symbolLoader.GetOptPredefAgg(PredefinedType.PT_MISSING);
+                            AggregateSymbol agg = symbolLoader.GetPredefAgg(PredefinedType.PT_MISSING);
                             Name name = NameManager.GetPredefinedName(PredefinedName.PN_CAP_VALUE);
                             FieldSymbol field = symbolLoader.LookupAggMember(name, agg, symbmask_t.MASK_FieldSymbol) as FieldSymbol;
                             FieldWithType fwt = new FieldWithType(field, agg.getThisType());

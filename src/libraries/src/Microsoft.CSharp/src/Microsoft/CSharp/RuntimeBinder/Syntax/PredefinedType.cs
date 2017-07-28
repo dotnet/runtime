@@ -26,8 +26,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Syntax
         PT_ULONG,
 
         // The special "pointer-sized int" types. Note that this are not considered numeric types from the compiler's point of view --
-        // they are special only in that they have special signature encodings.  
-        PT_INTPTR,
+        // they are special only in that they have special signature encodings.
+        FirstNonSimpleType,
+        PT_INTPTR = FirstNonSimpleType,
         PT_UINTPTR,
 
         PT_OBJECT,

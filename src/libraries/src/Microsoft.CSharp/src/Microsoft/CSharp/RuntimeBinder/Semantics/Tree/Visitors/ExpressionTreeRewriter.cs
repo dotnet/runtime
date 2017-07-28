@@ -104,7 +104,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             CType delegateType = anonmeth.DelegateType;
             TypeArray lambdaTypeParams = GetSymbolLoader().getBSymmgr().AllocParams(1, new CType[] { delegateType });
-            AggregateType expressionType = GetSymbolLoader().GetOptPredefTypeErr(PredefinedType.PT_EXPRESSION);
+            AggregateType expressionType = GetSymbolLoader().GetPredefindType(PredefinedType.PT_EXPRESSION);
             MethWithInst mwi = new MethWithInst(lambdaMethod, expressionType, lambdaTypeParams);
             Expr createParameters = CreateWraps(anonmeth);
             Expr body = RewriteLambdaBody(anonmeth);
@@ -215,7 +215,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Expr p1 = Visit(expr.FirstArgument);
             Expr p2 = Visit(expr.SecondArgument);
             MethodSymbol method = GetPreDefMethod(pdm);
-            Expr methodInfo = GetExprFactory().CreateMethodInfo(method, GetSymbolLoader().GetReqPredefType(PredefinedType.PT_STRING), null);
+            Expr methodInfo = GetExprFactory().CreateMethodInfo(method, GetSymbolLoader().GetPredefindType(PredefinedType.PT_STRING), null);
             return GenerateCall(PREDEFMETH.PM_EXPRESSION_ADD_USER_DEFINED, p1, p2, methodInfo);
         }
         protected override Expr VisitBINOP(ExprBinOp expr)
@@ -865,7 +865,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private Expr GenerateParameter(string name, CType CType)
         {
-            GetSymbolLoader().GetReqPredefType(PredefinedType.PT_STRING);  // force an ensure state
+            GetSymbolLoader().GetPredefindType(PredefinedType.PT_STRING);  // force an ensure state
             ExprConstant nameString = GetExprFactory().CreateStringConstant(name);
             ExprTypeOf pTypeOf = CreateTypeOf(CType);
             return GenerateCall(PREDEFMETH.PM_EXPRESSION_PARAMETER, pTypeOf, nameString);
@@ -981,7 +981,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             ExprFuncPtr funcptr = (ExprFuncPtr)origArgs.OptionalNextListNode;
             Debug.Assert(funcptr != null);
             MethodSymbol createDelegateMethod = GetPreDefMethod(PREDEFMETH.PM_METHODINFO_CREATEDELEGATE_TYPE_OBJECT);
-            AggregateType delegateType = GetSymbolLoader().GetOptPredefTypeErr(PredefinedType.PT_DELEGATE);
+            AggregateType delegateType = GetSymbolLoader().GetPredefindType(PredefinedType.PT_DELEGATE);
             MethWithInst mwi = new MethWithInst(createDelegateMethod, delegateType);
 
             Expr instance = GenerateConstant(GetExprFactory().CreateMethodInfo(funcptr.MethWithInst));
@@ -1009,7 +1009,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private Expr GenerateIndexList(Expr oldIndices)
         {
-            CType intType = symbolLoader.GetReqPredefType(PredefinedType.PT_INT);
+            CType intType = symbolLoader.GetPredefindType(PredefinedType.PT_INT);
 
             Expr newIndices = null;
             Expr newIndicesTail = newIndices;
@@ -1032,7 +1032,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             EXPRFLAG flags = 0;
 
-            AggregateType pObject = GetSymbolLoader().GetReqPredefType(PredefinedType.PT_OBJECT);
+            AggregateType pObject = GetSymbolLoader().GetPredefindType(PredefinedType.PT_OBJECT);
 
             if (expr.Type is NullType)
             {
@@ -1040,7 +1040,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return GenerateCall(PREDEFMETH.PM_EXPRESSION_CONSTANT_OBJECT_TYPE, expr, pTypeOf);
             }
 
-            AggregateType stringType = GetSymbolLoader().GetReqPredefType(PredefinedType.PT_STRING);
+            AggregateType stringType = GetSymbolLoader().GetPredefindType(PredefinedType.PT_STRING);
             if (expr.Type != stringType)
             {
                 flags = EXPRFLAG.EXF_BOX;
@@ -1060,7 +1060,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // be handling this error
             if (method == null)
                 return null;
-            AggregateType expressionType = GetSymbolLoader().GetOptPredefTypeErr(PredefinedType.PT_EXPRESSION);
+            AggregateType expressionType = GetSymbolLoader().GetPredefindType(PredefinedType.PT_EXPRESSION);
             MethWithInst mwi = new MethWithInst(method, expressionType);
             ExprMemberGroup pMemGroup = GetExprFactory().CreateMemGroup(null, mwi);
             ExprCall call = GetExprFactory().CreateCall(0, mwi.Meth().RetType, arg1, pMemGroup, mwi);
@@ -1073,7 +1073,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             MethodSymbol method = GetPreDefMethod(pdm);
             if (method == null)
                 return null;
-            AggregateType expressionType = GetSymbolLoader().GetOptPredefTypeErr(PredefinedType.PT_EXPRESSION);
+            AggregateType expressionType = GetSymbolLoader().GetPredefindType(PredefinedType.PT_EXPRESSION);
             Expr args = GetExprFactory().CreateList(arg1, arg2);
             MethWithInst mwi = new MethWithInst(method, expressionType);
             ExprMemberGroup pMemGroup = GetExprFactory().CreateMemGroup(null, mwi);
@@ -1087,7 +1087,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             MethodSymbol method = GetPreDefMethod(pdm);
             if (method == null)
                 return null;
-            AggregateType expressionType = GetSymbolLoader().GetOptPredefTypeErr(PredefinedType.PT_EXPRESSION);
+            AggregateType expressionType = GetSymbolLoader().GetPredefindType(PredefinedType.PT_EXPRESSION);
             Expr args = GetExprFactory().CreateList(arg1, arg2, arg3);
             MethWithInst mwi = new MethWithInst(method, expressionType);
             ExprMemberGroup pMemGroup = GetExprFactory().CreateMemGroup(null, mwi);
@@ -1101,7 +1101,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             MethodSymbol method = GetPreDefMethod(pdm);
             if (method == null)
                 return null;
-            AggregateType expressionType = GetSymbolLoader().GetOptPredefTypeErr(PredefinedType.PT_EXPRESSION);
+            AggregateType expressionType = GetSymbolLoader().GetPredefindType(PredefinedType.PT_EXPRESSION);
             Expr args = GetExprFactory().CreateList(arg1, arg2, arg3, arg4);
             MethWithInst mwi = new MethWithInst(method, expressionType);
             ExprMemberGroup pMemGroup = GetExprFactory().CreateMemGroup(null, mwi);
@@ -1113,7 +1113,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private ExprArrayInit GenerateParamsArray(Expr args, PredefinedType pt)
         {
             int parameterCount = ExpressionIterator.Count(args);
-            AggregateType paramsArrayElementType = GetSymbolLoader().GetOptPredefTypeErr(pt);
+            AggregateType paramsArrayElementType = GetSymbolLoader().GetPredefindType(pt);
             ArrayType paramsArrayType = GetSymbolLoader().GetTypeManager().GetArray(paramsArrayElementType, 1, true);
             ExprConstant paramsArrayArg = GetExprFactory().CreateIntegerConstant(parameterCount);
             return GetExprFactory().CreateArrayInit(paramsArrayType, args, paramsArrayArg, new int[] { parameterCount }, parameterCount);

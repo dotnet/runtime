@@ -170,9 +170,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 case ErrorCode.ERR_AmbigUDConv:
                     codeStr = SR.AmbigUDConv;
                     break;
-                case ErrorCode.ERR_PredefinedTypeNotFound:
-                    codeStr = SR.PredefinedTypeNotFound;
-                    break;
                 case ErrorCode.ERR_BindToBogus:
                     codeStr = SR.BindToBogus;
                     break;

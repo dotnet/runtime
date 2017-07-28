@@ -69,7 +69,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             new ExprBoundLambda(delegateType, argumentScope);
 
         public ExprHoistedLocalExpr CreateHoistedLocalInExpression() => 
-            new ExprHoistedLocalExpr(Types.GetOptPredefAgg(PredefinedType.PT_EXPRESSION).getThisType());
+            new ExprHoistedLocalExpr(Types.GetPredefAgg(PredefinedType.PT_EXPRESSION).getThisType());
 
         public ExprMethodInfo CreateMethodInfo(MethPropWithInst mwi) => 
             CreateMethodInfo(mwi.Meth(), mwi.GetType(), mwi.TypeArgs);
@@ -77,18 +77,18 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public ExprMethodInfo CreateMethodInfo(MethodSymbol method, AggregateType methodType, TypeArray methodParameters)
         {
             return new ExprMethodInfo(
-                Types.GetOptPredefAgg(method.IsConstructor() ? PredefinedType.PT_CONSTRUCTORINFO : PredefinedType.PT_METHODINFO).getThisType(),
+                Types.GetPredefAgg(method.IsConstructor() ? PredefinedType.PT_CONSTRUCTORINFO : PredefinedType.PT_METHODINFO).getThisType(),
                 method, methodType, methodParameters);
         }
 
         public ExprPropertyInfo CreatePropertyInfo(PropertySymbol prop, AggregateType propertyType) => 
-            new ExprPropertyInfo(Types.GetOptPredefAgg(PredefinedType.PT_PROPERTYINFO).getThisType(), prop, propertyType);
+            new ExprPropertyInfo(Types.GetPredefAgg(PredefinedType.PT_PROPERTYINFO).getThisType(), prop, propertyType);
 
         public ExprFieldInfo CreateFieldInfo(FieldSymbol field, AggregateType fieldType) => 
-            new ExprFieldInfo(field, fieldType, Types.GetOptPredefAgg(PredefinedType.PT_FIELDINFO).getThisType());
+            new ExprFieldInfo(field, fieldType, Types.GetPredefAgg(PredefinedType.PT_FIELDINFO).getThisType());
 
         private ExprTypeOf CreateTypeOf(ExprClass sourceType) => 
-            new ExprTypeOf(Types.GetReqPredefAgg(PredefinedType.PT_TYPE).getThisType(), sourceType);
+            new ExprTypeOf(Types.GetPredefAgg(PredefinedType.PT_TYPE).getThisType(), sourceType);
 
         public ExprTypeOf CreateTypeOf(CType sourceType) => CreateTypeOf(CreateClass(sourceType));
 
@@ -105,7 +105,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public ExprConcat CreateConcat(Expr first, Expr second) => new ExprConcat(first, second);
 
         public ExprConstant CreateStringConstant(string str) => 
-            CreateConstant(Types.GetReqPredefAgg(PredefinedType.PT_STRING).getThisType(), ConstVal.Get(str));
+            CreateConstant(Types.GetPredefAgg(PredefinedType.PT_STRING).getThisType(), ConstVal.Get(str));
 
         public ExprMultiGet CreateMultiGet(EXPRFLAG flags, CType type, ExprMulti multi) => 
             new ExprMultiGet(type, flags, multi);
@@ -187,10 +187,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public ExprConstant CreateConstant(CType type, ConstVal constVal) => new ExprConstant(type, constVal);
 
         public ExprConstant CreateIntegerConstant(int x) =>
-            CreateConstant(Types.GetReqPredefAgg(PredefinedType.PT_INT).getThisType(), ConstVal.Get(x));
+            CreateConstant(Types.GetPredefAgg(PredefinedType.PT_INT).getThisType(), ConstVal.Get(x));
 
         public ExprConstant CreateBoolConstant(bool b) => 
-            CreateConstant(Types.GetReqPredefAgg(PredefinedType.PT_BOOL).getThisType(), ConstVal.Get(b));
+            CreateConstant(Types.GetPredefAgg(PredefinedType.PT_BOOL).getThisType(), ConstVal.Get(b));
 
         public ExprBlock CreateBlock(ExprStatement pOptionalStatements) => new ExprBlock(pOptionalStatements);
 
@@ -203,7 +203,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
             else if (type == null)
             {
-                type = Types.GetReqPredefAgg(PredefinedType.PT_INT).getThisType();
+                type = Types.GetPredefAgg(PredefinedType.PT_INT).getThisType();
             }
 
             return new ExprArrayIndex(type, array, index);

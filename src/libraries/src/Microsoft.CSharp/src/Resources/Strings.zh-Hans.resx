@@ -207,9 +207,6 @@
   <data name="AmbigUDConv" xml:space="preserve">
     <value>从“{2}”转换为“{3}”时，用户定义的转换“{0}”和“{1}”具有二义性</value>
   </data>
-  <data name="PredefinedTypeNotFound" xml:space="preserve">
-    <value>预定义类型“{0}”未定义或导入</value>
-  </data>
   <data name="BindToBogus" xml:space="preserve">
     <value>现用语言不支持“{0}”</value>
   </data>
