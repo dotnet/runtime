@@ -1,48 +1,191 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
 using OLEDB.Test.ModuleCore;
+using System.IO;
+using System.Text;
 using XmlCoreTest.Common;
+using Xunit;
 
 namespace System.Xml.Tests
 {
-    public partial class TCCloseOutput : XmlFactoryWriterTestCaseBase
+    public class TCCloseOutput
     {
-        // Type is System.Xml.Tests.TCCloseOutput
-        // Test Case
-        public override void AddChildren()
+        [Theory]
+        [XmlWriterInlineData(WriterType.UTF8Writer | WriterType.UnicodeWriter, "Stream")]
+        [XmlWriterInlineData(WriterType.UTF8Writer | WriterType.UnicodeWriter, "Textwriter")]
+        public void CloseOutput_1(XmlWriterUtils utils, string outputType)
         {
-            if (WriterType == WriterType.CustomWriter)
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            XmlWriter w = null;
+            switch (utils.WriterType)
             {
+                case WriterType.UTF8Writer:
+                    wSettings.Encoding = Encoding.UTF8;
+                    break;
+                case WriterType.UnicodeWriter:
+                    wSettings.Encoding = Encoding.Unicode;
+                    break;
+            }
+            Stream writerStream = new MemoryStream();
+            switch (outputType)
+            {
+                case "Stream":
+                    w = WriterHelper.Create(writerStream, wSettings, overrideAsync: true, async: utils.Async);
+                    break;
+                case "Textwriter":
+                    StreamWriter tw = new StreamWriter(writerStream, wSettings.Encoding);
+                    w = WriterHelper.Create(tw, wSettings, overrideAsync: true, async: utils.Async);
+                    break;
+            }
+
+            w.WriteStartElement("root");
+            w.WriteEndElement();
+            w.Dispose();
+
+            if (writerStream.CanWrite)
+            {
+                writerStream.Dispose();
                 return;
             }
-            // for function CloseOutput_1
+            CError.WriteLine("Error: XmlWriter closed the stream when CloseOutput = false");
+            Assert.True(false);
+        }
+
+        [Theory]
+        [XmlWriterInlineData(WriterType.UTF8Writer | WriterType.UnicodeWriter, true)]
+        [XmlWriterInlineData(WriterType.UTF8Writer | WriterType.UnicodeWriter, false)]
+        public void CloseOutput_2(XmlWriterUtils utils, bool closeOutput)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            switch (utils.WriterType)
             {
-                this.AddChild(new CVariation(CloseOutput_1) { Attribute = new Variation("Check that underlying stream is NOT CLOSED when CloseOutput = FALSE and Create(TextWriter)") { Param = "Textwriter", id = 2, Pri = 0 } });
-                this.AddChild(new CVariation(CloseOutput_1) { Attribute = new Variation("Check that underlying stream is NOT CLOSED when CloseOutput = FALSE and Create(Stream)") { Param = "Stream", id = 1, Pri = 0 } });
+                case WriterType.UTF8Writer:
+                    wSettings.Encoding = Encoding.UTF8;
+                    break;
+                case WriterType.UnicodeWriter:
+                    wSettings.Encoding = Encoding.Unicode;
+                    break;
+            }
+            wSettings.CloseOutput = closeOutput;
+
+            XmlWriter w = WriterHelper.Create("writer.out", wSettings, overrideAsync: true, async: utils.Async);
+            w.WriteStartElement("root");
+            w.WriteEndElement();
+            w.Dispose();
+
+            // Check if you can open the file in ReadWrite mode
+            Stream fs = null;
+            try
+            {
+                fs = FilePathUtil.getStream("writer.out");/*new FileStream("writer.out", FileMode.Open, FileAccess.ReadWrite);*/
+            }
+            catch (Exception e)
+            {
+                CError.WriteLineIgnore("Exception: " + e.ToString());
+                CError.WriteLine("Uri stream is not closed by writer");
+                Assert.True(false);
+            }
+            finally
+            {
+                fs.Dispose();
+            }
+            return;
+        }
+
+        [Theory]
+        [XmlWriterInlineData(WriterType.NoAsync | WriterType.UTF8Writer | WriterType.UnicodeWriter, "Stream")]
+        [XmlWriterInlineData(WriterType.NoAsync | WriterType.UTF8Writer | WriterType.UnicodeWriter, "Textwriter")]
+        public void CloseOutput_3(XmlWriterUtils utils, string outputType)
+        {
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.CloseOutput = true;
+            XmlWriter w = null;
+
+            switch (utils.WriterType)
+            {
+                case WriterType.UTF8Writer:
+                    wSettings.Encoding = Encoding.UTF8;
+                    break;
+                case WriterType.UnicodeWriter:
+                    wSettings.Encoding = Encoding.Unicode;
+                    break;
             }
 
-
-            // for function CloseOutput_2
+            Stream writerStream = FilePathUtil.getStream("writer.out");
+            switch (outputType)
             {
-                this.AddChild(new CVariation(CloseOutput_2) { Attribute = new Variation("Check that underlying stream is CLOSED when CloseOutput = FALSE and Create(Uri)") { Param = "false", id = 3, Pri = 0 } });
-                this.AddChild(new CVariation(CloseOutput_2) { Attribute = new Variation("Check that underlying stream is CLOSED when CloseOutput = TRUE and Create(Uri)") { Param = "true", id = 4, Pri = 0 } });
+                case "Stream":
+                    w = WriterHelper.Create(writerStream, wSettings, overrideAsync: true, async: utils.Async);
+                    break;
+                case "Textwriter":
+                    StreamWriter tw = new StreamWriter(writerStream, wSettings.Encoding);
+                    w = WriterHelper.Create(tw, wSettings, overrideAsync: true, async: utils.Async);
+                    break;
             }
 
+            w.WriteStartElement("root");
+            w.WriteEndElement();
+            w.Dispose();
 
-            // for function CloseOutput_3
+            if (writerStream.CanWrite)
             {
-                this.AddChild(new CVariation(CloseOutput_3) { Attribute = new Variation("Check that underlying stream is CLOSED when CloseOutput = TRUE and Create(Textwriter)") { Param = "Textwriter", id = 6, Pri = 0 } });
-                this.AddChild(new CVariation(CloseOutput_3) { Attribute = new Variation("Check that underlying stream is CLOSED when CloseOutput = TRUE and Create(Stream)") { Param = "Stream", id = 5, Pri = 0 } });
+                writerStream.Dispose();
+                Assert.True(false);
+            }
+        }
+
+        [Theory]
+        [XmlWriterInlineData(WriterType.UTF8Writer | WriterType.UnicodeWriter, "Stream")]
+        [XmlWriterInlineData(WriterType.UTF8Writer | WriterType.UnicodeWriter, "Textwriter")]
+        public void CloseOutput_4(XmlWriterUtils utils, string outputType)
+        {
+            Stream writerStream = FilePathUtil.getStream("writer.out");
+            XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.CloseOutput = true;
+            XmlWriter w = null;
+
+            switch (utils.WriterType)
+            {
+                case WriterType.UTF8Writer:
+                    wSettings.Encoding = Encoding.UTF8;
+                    break;
+                case WriterType.UnicodeWriter:
+                    wSettings.Encoding = Encoding.Unicode;
+                    break;
             }
 
-
-            // for function CloseOutput_4
+            switch (outputType)
             {
-                this.AddChild(new CVariation(CloseOutput_4) { Attribute = new Variation("Writer should not close underlying stream when an exception is thrown before Close (Textwriter)") { Param = "Textwriter", id = 8, Pri = 1 } });
-                this.AddChild(new CVariation(CloseOutput_4) { Attribute = new Variation("Writer should not close underlying stream when an exception is thrown before Close (Stream)") { Param = "Stream", id = 7, Pri = 1 } });
+                case "Stream":
+                    w = WriterHelper.Create(writerStream, wSettings, overrideAsync: true, async: utils.Async);
+                    break;
+                case "Textwriter":
+                    StreamWriter tw = new StreamWriter(writerStream, wSettings.Encoding);
+                    w = WriterHelper.Create(tw, wSettings, overrideAsync: true, async: utils.Async);
+                    break;
             }
+
+            bool bResult = false;
+            try
+            {
+                w.WriteStartDocument();
+                w.WriteStartDocument();
+            }
+            catch (Exception e)
+            {
+                CError.WriteLineIgnore("Exception: " + e.ToString());
+                if (writerStream != null && writerStream.CanWrite)
+                    bResult = true;
+                else
+                    bResult = false;
+            }
+            finally
+            {
+                writerStream.Dispose();
+            }
+            Assert.True(bResult);
         }
     }
 }
