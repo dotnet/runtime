@@ -8,7 +8,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Microsoft.CSharp.RuntimeBinder.Errors;
 using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
@@ -420,10 +419,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return _errorType;
         }
 
-        public AggregateSymbol GetNullable()
-        {
-            return this.GetOptPredefAgg(PredefinedType.PT_G_OPTIONAL);
-        }
+        public AggregateSymbol GetNullable() => GetPredefAgg(PredefinedType.PT_G_OPTIONAL);
 
         private CType SubstType(CType typeSrc, TypeArray typeArgsCls, TypeArray typeArgsMeth, SubstTypeFlags grfst)
         {
@@ -923,15 +919,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return false;
         }
 
-        public AggregateSymbol GetReqPredefAgg(PredefinedType pt)
-        {
-            return _predefTypes.GetReqPredefAgg(pt);
-        }
-
-        public AggregateSymbol GetOptPredefAgg(PredefinedType pt)
-        {
-            return _predefTypes.GetOptPredefAgg(pt);
-        }
+        public AggregateSymbol GetPredefAgg(PredefinedType pt) => _predefTypes.GetPredefinedAggregate(pt);
 
         public TypeArray CreateArrayOfUnitTypes(int cSize)
         {
@@ -1096,7 +1084,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (typeSrc is NullableType)
             {
                 // We have an inaccessible nullable type, which means that the best we can do is System.ValueType.
-                typeDst = this.GetOptPredefAgg(PredefinedType.PT_VALUE).getThisType();
+                typeDst = GetPredefAgg(PredefinedType.PT_VALUE).getThisType();
 
                 Debug.Assert(semanticChecker.CheckTypeAccess(typeDst, bindingContext.ContextForMemberLookup));
                 return true;
@@ -1106,7 +1094,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 // We have an inaccessible array type for which we could not earlier find a better array type
                 // with a covariant conversion, so the best we can do is System.Array.
-                typeDst = this.GetReqPredefAgg(PredefinedType.PT_ARRAY).getThisType();
+                typeDst = GetPredefAgg(PredefinedType.PT_ARRAY).getThisType();
 
                 Debug.Assert(semanticChecker.CheckTypeAccess(typeDst, bindingContext.ContextForMemberLookup));
                 return true;
@@ -1124,7 +1112,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     // This happens with interfaces, for instance. But in that case, the
                     // conversion to object does exist, is an implicit reference conversion,
                     // and so we will use it.
-                    baseType = this.GetReqPredefAgg(PredefinedType.PT_OBJECT).getThisType();
+                    baseType = GetPredefAgg(PredefinedType.PT_OBJECT).getThisType();
                 }
 
                 return GetBestAccessibleType(semanticChecker, bindingContext, baseType, out typeDst);

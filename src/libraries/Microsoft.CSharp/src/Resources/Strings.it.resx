@@ -207,9 +207,6 @@
   <data name="AmbigUDConv" xml:space="preserve">
     <value>Conversioni '{0}' e '{1}' ambigue definite dall'utente durante la conversione da '{2}' a '{3}'</value>
   </data>
-  <data name="PredefinedTypeNotFound" xml:space="preserve">
-    <value>Il tipo predefinito '{0}' non è definito né importato</value>
-  </data>
   <data name="BindToBogus" xml:space="preserve">
     <value>'{0}' non è supportato dal linguaggio</value>
   </data>

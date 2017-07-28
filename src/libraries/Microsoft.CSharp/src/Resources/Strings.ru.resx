@@ -207,9 +207,6 @@
   <data name="AmbigUDConv" xml:space="preserve">
     <value>Неоднозначные пользовательские преобразования "{0}" и "{1}" при преобразовании из "{2}" в "{3}"</value>
   </data>
-  <data name="PredefinedTypeNotFound" xml:space="preserve">
-    <value>Предопределенный тип "{0}" не определен и не импортирован</value>
-  </data>
   <data name="BindToBogus" xml:space="preserve">
     <value>"{0}" не поддерживается языком</value>
   </data>
