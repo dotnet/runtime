@@ -61,7 +61,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         ERR_PredefinedTypeNotFound = 518,
         ERR_BindToBogus = 570,
         ERR_CantCallSpecialMethod = 571,
-        ERR_MissingPredefinedMember = 656,
         ERR_ConvertToStaticClass = 716,
         ERR_GenericArgIsStaticClass = 718,
         ERR_IncrementLvalueExpected = 1059,

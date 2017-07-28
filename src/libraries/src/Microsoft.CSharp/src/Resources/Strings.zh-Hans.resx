@@ -216,9 +216,6 @@
   <data name="CantCallSpecialMethod" xml:space="preserve">
     <value>“{0}”: 无法显式调用运算符或访问器</value>
   </data>
-  <data name="MissingPredefinedMember" xml:space="preserve">
-    <value>缺少编译器要求的成员“{0}.{1}”</value>
-  </data>
   <data name="ConvertToStaticClass" xml:space="preserve">
     <value>无法转换为静态类型“{0}”</value>
   </data>

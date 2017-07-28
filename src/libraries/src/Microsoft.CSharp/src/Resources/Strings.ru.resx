@@ -216,9 +216,6 @@
   <data name="CantCallSpecialMethod" xml:space="preserve">
     <value>"{0}": явный вызов оператора или метода доступа невозможен</value>
   </data>
-  <data name="MissingPredefinedMember" xml:space="preserve">
-    <value>Отсутствует обязательный для компилятора член "{0}.{1}"</value>
-  </data>
   <data name="ConvertToStaticClass" xml:space="preserve">
     <value>Не удается выполнить преобразование к статическому типу "{0}"</value>
   </data>
