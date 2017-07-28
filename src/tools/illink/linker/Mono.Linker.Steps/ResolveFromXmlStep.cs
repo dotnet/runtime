@@ -29,7 +29,7 @@
 //
 
 using System;
-using SR = System.Reflection;
+using System.Collections.Generic;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.XPath;
@@ -51,7 +51,11 @@ namespace Mono.Linker.Steps {
 		static readonly string _fullname = "fullname";
 		static readonly string _required = "required";
 		static readonly string _preserve = "preserve";
+		static readonly string _accessors = "accessors";
 		static readonly string _ns = string.Empty;
+
+		static readonly string[] _accessorsAll = new string[] { "all" };
+		static readonly char[] _accessorsSep = new char[] { ';' };
 
 		XPathDocument _document;
 		string _xmlDocumentLocation;
@@ -161,7 +165,7 @@ namespace Mono.Linker.Steps {
 
 		static Regex CreateRegexFromPattern (string pattern)
 		{
-			return new Regex (pattern.Replace(".", @"\.").Replace("*", "(.*)"));
+			return new Regex (pattern.Replace (".", @"\.").Replace ("*", "(.*)"));
 		}
 
 		void MatchType (TypeDefinition type, Regex regex, XPathNavigator nav)
@@ -204,7 +208,7 @@ namespace Mono.Linker.Steps {
 
 			if (assembly.MainModule.HasExportedTypes) {
 				foreach (var exported in assembly.MainModule.ExportedTypes) {
-					MatchExportedType(exported, assembly.MainModule, regex, nav);
+					MatchExportedType (exported, assembly.MainModule, regex, nav);
 				}
 			}
 		}
@@ -234,6 +238,8 @@ namespace Mono.Linker.Steps {
 			if (nav.HasChildren) {
 				MarkSelectedFields (nav, type);
 				MarkSelectedMethods (nav, type);
+				MarkSelectedEvents (nav, type);
+				MarkSelectedProperties (nav, type);
 			}
 		}
 
@@ -253,6 +259,24 @@ namespace Mono.Linker.Steps {
 				return;
 
 			ProcessMethods (type, methods);
+		}
+
+		void MarkSelectedEvents (XPathNavigator nav, TypeDefinition type)
+		{
+			XPathNodeIterator events = nav.SelectChildren ("event", _ns);
+			if (events.Count == 0)
+				return;
+
+			ProcessEvents (type, events);
+		}
+
+		void MarkSelectedProperties (XPathNavigator nav, TypeDefinition type)
+		{
+			XPathNodeIterator properties = nav.SelectChildren ("property", _ns);
+			if (properties.Count == 0)
+				return;
+
+			ProcessProperties (type, properties);
 		}
 
 		static TypePreserve GetTypePreserve (XPathNavigator nav)
@@ -324,7 +348,7 @@ namespace Mono.Linker.Steps {
 
 		void ProcessMethods (TypeDefinition type, XPathNodeIterator iterator)
 		{
-			while (iterator.MoveNext()) {
+			while (iterator.MoveNext ()) {
 				string value = GetSignature (iterator.Current);
 				if (!String.IsNullOrEmpty (value))
 					ProcessMethodSignature (type, value);
@@ -344,10 +368,23 @@ namespace Mono.Linker.Steps {
 		void MarkMethod (TypeDefinition type, MethodDefinition method, string signature)
 		{
 			if (method != null) {
-				Annotations.Mark (method);
-				Annotations.SetAction (method, MethodAction.Parse);
+				MarkMethod (method);
 			} else
 				AddUnresolveMarker (string.Format ("T: {0}; M: {1}", type, signature));
+		}
+
+		void MarkMethod (MethodDefinition method)
+		{
+			Annotations.Mark (method);
+			Annotations.SetAction (method, MethodAction.Parse);
+		}
+
+		void MarkMethodIfNotNull (MethodDefinition method)
+		{
+			if (method == null)
+				return;
+
+			MarkMethod (method);
 		}
 
 		void ProcessMethodName (TypeDefinition type, string name)
@@ -387,6 +424,141 @@ namespace Mono.Linker.Steps {
 			}
 			sb.Append (")");
 			return sb.ToString ();
+		}
+
+		void ProcessEvents (TypeDefinition type, XPathNodeIterator iterator)
+		{
+			while (iterator.MoveNext ()) {
+				string value = GetSignature (iterator.Current);
+				if (!String.IsNullOrEmpty (value))
+					ProcessEventSignature (type, value);
+
+				value = GetAttribute (iterator.Current, "name");
+				if (!String.IsNullOrEmpty (value))
+					ProcessEventName (type, value);
+			}
+		}
+
+		void ProcessEventSignature (TypeDefinition type, string signature)
+		{
+			EventDefinition @event = GetEvent (type, signature);
+			MarkEvent (type, @event, signature);
+		}
+
+		void MarkEvent (TypeDefinition type, EventDefinition @event, string signature)
+		{
+			if (@event != null) {
+				Annotations.Mark (@event);
+
+				MarkMethod (@event.AddMethod);
+				MarkMethod (@event.RemoveMethod);
+				MarkMethodIfNotNull (@event.InvokeMethod);
+			} else
+				AddUnresolveMarker (string.Format ("T: {0}; E: {1}", type, signature));
+		}
+
+		void ProcessEventName (TypeDefinition type, string name)
+		{
+			if (!type.HasEvents)
+				return;
+
+			foreach (EventDefinition @event in type.Events)
+				if (@event.Name == name)
+					MarkEvent (type, @event, name);
+		}
+
+		static EventDefinition GetEvent (TypeDefinition type, string signature)
+		{
+			if (!type.HasEvents)
+				return null;
+
+			foreach (EventDefinition @event in type.Events)
+				if (signature == GetEventSignature (@event))
+					return @event;
+
+			return null;
+		}
+
+		static string GetEventSignature (EventDefinition @event)
+		{
+			return @event.EventType.FullName + " " + @event.Name;
+		}
+
+		void ProcessProperties (TypeDefinition type, XPathNodeIterator iterator)
+		{
+			while (iterator.MoveNext ()) {
+				string value = GetSignature (iterator.Current);
+				if (!String.IsNullOrEmpty (value))
+					ProcessPropertySignature (type, value, GetAccessors (iterator.Current));
+
+				value = GetAttribute (iterator.Current, "name");
+				if (!String.IsNullOrEmpty (value))
+					ProcessPropertyName (type, value, _accessorsAll);
+			}
+		}
+
+		void ProcessPropertySignature (TypeDefinition type, string signature, string[] accessors)
+		{
+			PropertyDefinition property = GetProperty (type, signature);
+			MarkProperty (type, property, signature, accessors);
+		}
+
+		void MarkProperty (TypeDefinition type, PropertyDefinition property, string signature, string[] accessors)
+		{
+			if (property != null) {
+				Annotations.Mark (property);
+
+				MarkPropertyAccessors (type, property, accessors);
+			} else
+				AddUnresolveMarker (string.Format ("T: {0}; P: {1}", type, signature));
+		}
+
+		void MarkPropertyAccessors (TypeDefinition type, PropertyDefinition property, string[] accessors)
+		{
+			if (Array.IndexOf (accessors, "all") >= 0) {
+				MarkMethodIfNotNull (property.GetMethod);
+				MarkMethodIfNotNull (property.SetMethod);
+
+				return;
+			}
+			if (property.GetMethod != null 
+					&& Array.IndexOf (accessors, "get") >= 0)
+				MarkMethod (property.GetMethod);
+			else if (property.GetMethod == null)
+				AddUnresolveMarker (string.Format ("T: {0}' M: {1} get_{2}", type, property.PropertyType, property.Name));
+			
+			if (property.SetMethod != null 
+					&& Array.IndexOf (accessors, "set") >= 0)
+				MarkMethod (property.SetMethod);
+			else if (property.SetMethod == null)
+				AddUnresolveMarker (string.Format ("T: {0}' M: System.Void set_{2} ({1})", type, property.PropertyType, property.Name));
+		}
+
+		void ProcessPropertyName (TypeDefinition type, string name, string[] accessors)
+		{
+			if (!type.HasProperties)
+				return;
+
+			foreach (PropertyDefinition property in type.Properties)
+				if (property.Name == name)
+					MarkProperty (type, property, name, accessors);
+		}
+
+		static PropertyDefinition GetProperty (TypeDefinition type, string signature)
+		{
+			if (!type.HasProperties)
+				return null;
+
+			foreach (PropertyDefinition property in type.Properties)
+				if (signature == GetPropertySignature (property))
+					return property;
+
+			return null;
+		}
+
+		static string GetPropertySignature (PropertyDefinition property)
+		{
+			return property.PropertyType.FullName + " " + property.Name;
 		}
 
 		static AssemblyDefinition GetAssembly (LinkContext context, string assemblyName)
@@ -431,6 +603,24 @@ namespace Mono.Linker.Steps {
 		static string GetFullName (XPathNavigator nav)
 		{
 			return GetAttribute (nav, _fullname);
+		}
+
+		static string[] GetAccessors (XPathNavigator nav)
+		{
+			string accessorsValue = GetAttribute (nav, _accessors);
+
+			if (accessorsValue != null)	{
+				string[] accessors = accessorsValue.Split (
+					_accessorsSep, StringSplitOptions.RemoveEmptyEntries);
+
+				if (accessors.Length > 0) {
+					for (int i = 0; i < accessors.Length; ++i)
+						accessors[i] = accessors[i].ToLower ();
+
+					return accessors;
+				}
+			}
+			return _accessorsAll;
 		}
 
 		static string GetAttribute (XPathNavigator nav, string attribute)

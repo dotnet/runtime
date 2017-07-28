@@ -9,8 +9,7 @@ using Mono.Linker.Tests.Extensions;
 using NUnit.Framework;
 
 namespace Mono.Linker.Tests.TestCasesRunner {
-	public class PeVerifier
-	{
+	public class PeVerifier {
 		private readonly string _peExecutable;
 
 		public PeVerifier ()
@@ -66,11 +65,11 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 							skipCheckEntirely = true;
 					}
 					else
-						throw new ArgumentException($"Unhandled platform and toolchain values of {Environment.OSVersion.Platform} and {skipToolchain}");
+						throw new ArgumentException ($"Unhandled platform and toolchain values of {Environment.OSVersion.Platform} and {skipToolchain}");
 				} else if (ctorArg.Type.Name == nameof (String)) {
 					assembliesToSkip.Add ((string)ctorArg.Value);
 				} else {
-					throw new ArgumentException($"Unhandled constructor argument type of {ctorArg.Type} on {nameof (SkipPeVerifyAttribute)}");
+					throw new ArgumentException ($"Unhandled constructor argument type of {ctorArg.Type} on {nameof (SkipPeVerifyAttribute)}");
 				}
 			}
 		}
@@ -101,28 +100,39 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			if (Environment.OSVersion.Platform != PlatformID.Win32NT)
 				throw new InvalidOperationException ("This method should only be called on windows");
 
-			var key = Registry.LocalMachine.OpenSubKey (@"SOFTWARE\Wow6432Node\Microsoft\Microsoft SDKs\Windows");
+			NPath result;
+			if (TryFindPeExecutableFromRegustrySubfolder ("NETFXSDK", out result))
+				return result;
+			if (TryFindPeExecutableFromRegustrySubfolder ("Windows", out result))
+				return result;
+
+			throw new InvalidOperationException ("Could not locate a peverify.exe executable");
+		}
+
+		private static bool TryFindPeExecutableFromRegustrySubfolder (string subfolder, out NPath peVerifyPath)
+		{
+			var keyPath = $"SOFTWARE\\Wow6432Node\\Microsoft\\Microsoft SDKs\\{subfolder}";
+			var key = Registry.LocalMachine.OpenSubKey (keyPath);
+
 			foreach (var sdkKeyName in key.GetSubKeyNames ().OrderBy (name => new Version (name.TrimStart ('v').TrimEnd ('A'))).Reverse ()) {
-				var sdkKey = Registry.LocalMachine.OpenSubKey ($"SOFTWARE\\Wow6432Node\\Microsoft\\Microsoft SDKs\\Windows\\{sdkKeyName}");
+				var sdkKey = Registry.LocalMachine.OpenSubKey ($"{keyPath}\\{sdkKeyName}");
 
 				var sdkDir = (string)sdkKey.GetValue ("InstallationFolder");
 				if (string.IsNullOrEmpty (sdkDir))
 					continue;
 
 				var binDir = sdkDir.ToNPath ().Combine ("bin");
-
 				if (!binDir.Exists ())
 					continue;
 
 				foreach (var netSdkDirs in binDir.Directories ().OrderBy (dir => dir.FileName)) {
-					var peVerifyPath = netSdkDirs.Combine ("PEVerify.exe");
-
+					peVerifyPath = netSdkDirs.Combine ("PEVerify.exe");
 					if (peVerifyPath.FileExists ())
-						return peVerifyPath;
+						return true;
 				}
 			}
-
-			throw new InvalidOperationException ("Could not locate a peverify.exe executable");
+			peVerifyPath = null;
+			return false;
 		}
 	}
 }
