@@ -87,14 +87,6 @@ mono_jit_parse_options     (int argc, char * argv[]);
 
 MONO_API char*       mono_get_runtime_build_info    (void);
 
-/* The following APIs are not stable. Avoid if possible. */
-
-MONO_API MonoJitInfo *
-mono_get_jit_info_from_method (MonoDomain *domain, MonoMethod *method);
-
-MONO_API MONO_RT_EXTERNAL_ONLY void *
-mono_aot_get_method (MonoDomain *domain, MonoMethod *method);
-
 MONO_END_DECLS
 
 #endif
