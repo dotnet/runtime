@@ -63,11 +63,11 @@ namespace System.Diagnostics.Tracing
         {
             Enqueue(value);
         }
- 
+
         /// <summary>
         /// Removes the counter from set that the EventSource will report on.  After being disposed, this
         /// counter will do nothing and its resource will be reclaimed if all references to it are removed.
-        /// If an EventCounter is not explicitely disposed it will be cleaned up automatically when the
+        /// If an EventCounter is not explicitly disposed it will be cleaned up automatically when the
         /// EventSource it is attached to dies.  
         /// </summary>
         public void Dispose()
