@@ -260,11 +260,13 @@ namespace System.Data.SqlClient
         public System.Data.SqlClient.SqlBulkCopyColumnMapping Add(int sourceColumnIndex, string destinationColumn) { throw null; }
         public System.Data.SqlClient.SqlBulkCopyColumnMapping Add(string sourceColumn, int destinationColumnIndex) { throw null; }
         public System.Data.SqlClient.SqlBulkCopyColumnMapping Add(string sourceColumn, string destinationColumn) { throw null; }
+        public new void Clear() { }
         public bool Contains(System.Data.SqlClient.SqlBulkCopyColumnMapping value) { throw null; }
         public void CopyTo(System.Data.SqlClient.SqlBulkCopyColumnMapping[] array, int index) { }
         public int IndexOf(System.Data.SqlClient.SqlBulkCopyColumnMapping value) { throw null; }
         public void Insert(int index, System.Data.SqlClient.SqlBulkCopyColumnMapping value) { }
         public void Remove(System.Data.SqlClient.SqlBulkCopyColumnMapping value) { }
+        public new void RemoveAt(int index) { }
     }
     [System.FlagsAttribute]
     public enum SqlBulkCopyOptions
@@ -344,6 +346,7 @@ namespace System.Data.SqlClient
         public System.Threading.Tasks.Task<System.Xml.XmlReader> ExecuteXmlReaderAsync(System.Threading.CancellationToken cancellationToken) { throw null; }
         public override void Prepare() { }
         public System.Data.Sql.SqlNotificationRequest Notification { get { throw null; } set { } }
+        public void ResetCommandTimeout() { }
     }
     public sealed class SqlCommandBuilder : System.Data.Common.DbCommandBuilder
     {
@@ -709,6 +712,7 @@ namespace System.Data.SqlClient
         public override int Add(object value) { throw null; }
         public System.Data.SqlClient.SqlParameter Add(string parameterName, System.Data.SqlDbType sqlDbType) { throw null; }
         public System.Data.SqlClient.SqlParameter Add(string parameterName, System.Data.SqlDbType sqlDbType, int size) { throw null; }
+        public System.Data.SqlClient.SqlParameter Add(string parameterName, System.Data.SqlDbType sqlDbType, int size, string sourceColumn) { throw null; }
         public override void AddRange(System.Array values) { }
         public void AddRange(System.Data.SqlClient.SqlParameter[] values) { }
         public System.Data.SqlClient.SqlParameter AddWithValue(string parameterName, object value) { throw null; }

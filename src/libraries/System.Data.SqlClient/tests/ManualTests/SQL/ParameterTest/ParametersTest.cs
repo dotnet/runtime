@@ -42,7 +42,7 @@ namespace System.Data.SqlClient.ManualTesting.Tests
             DataTestUtility.AssertEqualsWithDescription("Parameter2", opc[1].ParameterName, "FAILED: Incorrect ParameterName");
 
             opc.Add(new SqlParameter(null, null));
-            opc.Add(new SqlParameter(null, SqlDbType.Int));
+            opc.Add(null, SqlDbType.Int, 0, null);
             DataTestUtility.AssertEqualsWithDescription("Parameter4", opc["Parameter4"].ParameterName, "FAILED: Incorrect ParameterName");
 
             opc.Add(new SqlParameter("Parameter5", SqlDbType.NVarChar, 20));
