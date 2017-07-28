@@ -19,6 +19,7 @@ namespace System.Xml.Tests
         {
             Stream writerStream = new MemoryStream();
             XmlWriterSettings wSettings = new XmlWriterSettings();
+            wSettings.NewLineChars = "\r\n";
             XmlWriter w = null;
             long expectedLength = 0;
             wSettings.CloseOutput = closeOutput;
@@ -81,24 +82,17 @@ namespace System.Xml.Tests
                 w.WriteEndElement();
                 w.WriteEndElement();
 
-                CError.WriteLine("File Size Before Flush: {0}", writerStream.Length);
-                CError.Compare(writerStream.Length, beginning, "Before Flush");
+                Assert.Equal(writerStream.Length, beginning);
 
                 w.Flush();
 
-                CError.WriteLine("File Size After Flush: {0}", writerStream.Length);
-                CError.Compare(writerStream.Length, expectedLength, "After Flush");
-            }
-            catch (Exception)
-            {
-                Assert.True(false);
+                Assert.Equal(expectedLength, writerStream.Length);
             }
             finally
             {
                 w.Dispose();
                 writerStream.Dispose();
             }
-            return;
         }
 
         [Theory]
