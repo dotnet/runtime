@@ -56,6 +56,7 @@
 //   T  -- TypedReference -- TypedReference 
 //   G  --      -- Generic type variable
 //   M  --      -- Generic method variable
+//   GI --      -- Generic type instantiation
 //
 
 //#DEFINE_METASIG
@@ -128,6 +129,8 @@
 #define G(n) METASIG_ATOM(ELEMENT_TYPE_VAR) METASIG_ATOM(n)
 #define M(n) METASIG_ATOM(ELEMENT_TYPE_MVAR) METASIG_ATOM(n)
 
+#define GI(type, n, x) METASIG_ATOM(ELEMENT_TYPE_GENERICINST) type METASIG_ATOM(n) x
+
 // The references to other types have special definition in some cases
 #ifndef C
 #define C(x) METASIG_ATOM(ELEMENT_TYPE_CLASS) METASIG_ATOM(CLASS__ ## x % 0x100) METASIG_ATOM(CLASS__ ## x / 0x100)
@@ -144,6 +147,8 @@
 
 #define G(n) METASIG_ATOM(ELEMENT_TYPE_VAR)
 #define M(n) METASIG_ATOM(ELEMENT_TYPE_MVAR)
+
+#define GI(type, n, x) METASIG_ATOM(ELEMENT_TYPE_GENERICINST)
 
 // The references to other types have special definition in some cases
 #ifndef C
@@ -382,6 +387,7 @@ DEFINE_METASIG(IM(Bool_Bool_RetStr, F F, s))
 
 DEFINE_METASIG(IM(PtrChar_RetVoid, P(u), v))
 DEFINE_METASIG(IM(PtrChar_Int_Int_RetVoid, P(u) i i, v))
+DEFINE_METASIG_T(IM(ReadOnlySpanOfChar_RetVoid, GI(g(READONLY_SPAN), 1, u), v))
 DEFINE_METASIG(IM(PtrSByt_RetVoid, P(B), v))
 DEFINE_METASIG(IM(PtrSByt_Int_Int_RetVoid, P(B) i i, v))
 DEFINE_METASIG_T(IM(PtrSByt_Int_Int_Encoding_RetVoid, P(B) i i C(ENCODING), v))
@@ -393,6 +399,7 @@ DEFINE_METASIG(IM(ArrChar_Int_Int_RetStr, a(u) i i, s))
 DEFINE_METASIG(IM(Char_Int_RetStr, u i, s))
 DEFINE_METASIG(IM(PtrChar_RetStr, P(u), s))
 DEFINE_METASIG(IM(PtrChar_Int_Int_RetStr, P(u) i i, s))
+DEFINE_METASIG_T(IM(ReadOnlySpanOfChar_RetStr, GI(g(READONLY_SPAN), 1, u), s))
 DEFINE_METASIG(IM(Obj_Int_RetIntPtr, j i, I))
 
 DEFINE_METASIG(IM(Char_Char_RetStr, u u, s))
@@ -608,6 +615,7 @@ DEFINE_METASIG_T(IM(IAsyncResult_RetVoid, C(IASYNCRESULT), v))
 #undef T
 #undef G
 #undef M
+#undef GI
 
 #undef _
 

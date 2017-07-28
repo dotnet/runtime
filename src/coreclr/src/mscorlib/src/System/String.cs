@@ -666,6 +666,23 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         public extern String(char c, int count);
 
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        public extern String(ReadOnlySpan<char> value);
+
+        private unsafe string CtorReadOnlySpanOfChar(ReadOnlySpan<char> value)
+        {
+            if (value.Length == 0)
+            {
+                return Empty;
+            }
+
+            string result = FastAllocateString(value.Length);
+            fixed (char* dest = &result._firstChar, src = &value.DangerousGetPinnableReference())
+            {
+                wstrcpy(dest, src, value.Length);
+            }
+            return result;
+        }
 
         // Returns this string.
         public override String ToString()
