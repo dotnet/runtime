@@ -262,9 +262,6 @@
   <data name="CantCallSpecialMethod" xml:space="preserve">
     <value>'{0}': cannot explicitly call operator or accessor</value>
   </data>
-  <data name="MissingPredefinedMember" xml:space="preserve">
-    <value>Missing compiler required member '{0}.{1}'</value>
-  </data>
   <data name="ConvertToStaticClass" xml:space="preserve">
     <value>Cannot convert to static type '{0}'</value>
   </data>

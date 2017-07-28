@@ -278,10 +278,6 @@
           <source>'{0}': cannot explicitly call operator or accessor</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}': no se puede llamar explícitamente al operador o al descriptor de acceso</target>
         </trans-unit>
-        <trans-unit id="MissingPredefinedMember" translate="yes" xml:space="preserve">
-          <source>Missing compiler required member '{0}.{1}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Falta el miembro '{0}.{1}' que requiere el compilador.</target>
-        </trans-unit>
         <trans-unit id="ConvertToStaticClass" translate="yes" xml:space="preserve">
           <source>Cannot convert to static type '{0}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">No se puede convertir en el tipo estático '{0}'</target>
