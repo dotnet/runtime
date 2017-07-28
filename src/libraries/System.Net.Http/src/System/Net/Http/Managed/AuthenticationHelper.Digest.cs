@@ -29,6 +29,7 @@ namespace System.Net.Http
         private const string Sha256 = "SHA-256";
         private const string Md5 = "MD5";
         private const string Sha256Sess = "SHA-256-sess";
+        private const string MD5Sess = "MD5-sess";
         private const string CNonce = "cnonce";
         private const string Opaque = "opaque";
         private const string Response = "response";
@@ -62,12 +63,12 @@ namespace System.Net.Http
         {
             StringBuilder sb = StringBuilderCache.Acquire();
 
-            // It is mandatory for servers to implement sha-256
+            // It is mandatory for servers to implement sha-256 per RFC 7616
             // Keep MD5 for backward compatibility.
             string algorithm;
             if (digestResponse.Parameters.TryGetValue(Algorithm, out algorithm))
             {
-                if (algorithm != Sha256 && algorithm != Md5)
+                if (algorithm != Sha256 && algorithm != Md5 && algorithm != Sha256Sess && algorithm != MD5Sess)
                     return null;
             }
             else
@@ -78,6 +79,12 @@ namespace System.Net.Http
             // Check if nonce is there in challenge
             string nonce;
             if (!digestResponse.Parameters.TryGetValue(Nonce, out nonce))
+            {
+                return null;
+            }
+
+            string opaque;
+            if (!digestResponse.Parameters.TryGetValue(Opaque, out opaque))
             {
                 return null;
             }
@@ -141,15 +148,16 @@ namespace System.Net.Http
 
             // Calculate response
             string a1 = credential.UserName + ":" + realm + ":" + credential.Password;
-            if (digestResponse.Parameters[Algorithm].Contains(Sha256Sess))
+            if (algorithm == Sha256Sess || algorithm == MD5Sess)
             {
+                algorithm = algorithm == Sha256Sess ? Sha256 : Md5;
                 a1 = ComputeHash(a1, algorithm) + ":" + nonce + ":" + cnonce;
             }
 
             string a2 = request.Method.Method + ":" + request.RequestUri.PathAndQuery;
             if (qop == AuthInt)
             {
-                string content = await request.Content.ReadAsStringAsync();
+                string content = request.Content == null ? string.Empty : await request.Content.ReadAsStringAsync();
                 a2 = a2 + ":" + ComputeHash(content, algorithm);
             }
 
@@ -167,7 +175,7 @@ namespace System.Net.Http
             sb.AppendKeyValue(Algorithm, algorithm, includeQuotes: false);
 
             // Add opaque
-            sb.AppendKeyValue(Opaque, digestResponse.Parameters[Opaque]);
+            sb.AppendKeyValue(Opaque, opaque);
 
             // Add qop
             sb.AppendKeyValue(Qop, qop, includeQuotes: false);
