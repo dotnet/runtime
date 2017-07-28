@@ -988,12 +988,16 @@ CORJIT_FLAGS PrepareCodeConfig::GetJitCompilationFlags()
 {
     STANDARD_VM_CONTRACT;
 
+    CORJIT_FLAGS flags;
     if (m_pMethodDesc->IsILStub())
     {
         ILStubResolver* pResolver = m_pMethodDesc->AsDynamicMethodDesc()->GetILStubResolver();
-        return pResolver->GetJitFlags();
+        flags = pResolver->GetJitFlags();
     }
-    return CORJIT_FLAGS();
+#ifdef FEATURE_TIERED_COMPILATION
+    flags.Add(TieredCompilationManager::GetJitFlags(m_nativeCodeVersion));
+#endif
+    return flags;
 }
 
 BOOL PrepareCodeConfig::MayUsePrecompiledCode()
