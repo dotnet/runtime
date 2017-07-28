@@ -666,17 +666,10 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                 assert(varNumInp < compiler->lvaCount);
                 LclVarDsc* varDsc = &compiler->lvaTable[varNumInp];
 
+                // This struct also must live in the stack frame
+                // And it can't live in a register (SIMD)
                 assert(varDsc->lvType == TYP_STRUCT);
-#ifdef _TARGET_ARM_
-                if (varDsc->lvPromoted)
-                {
-                    NYI_ARM("CodeGen::genPutArgStk - promoted struct");
-                }
-                else
-#endif // _TARGET_ARM_
-                    // This struct also must live in the stack frame
-                    // And it can't live in a register (SIMD)
-                    assert(varDsc->lvOnFrame && !varDsc->lvRegister);
+                assert(varDsc->lvOnFrame && !varDsc->lvRegister);
 
                 structSize = varDsc->lvSize(); // This yields the roundUp size, but that is fine
                                                // as that is how much stack is allocated for this LclVar
@@ -1015,10 +1008,11 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
 
             // handle promote situation
             LclVarDsc* varDsc = compiler->lvaTable + srcVarNum;
-            if (varDsc->lvPromoted)
-            {
-                NYI_ARM("CodeGen::genPutArgSplit - promoted struct");
-            }
+
+            // This struct also must live in the stack frame
+            // And it can't live in a register (SIMD)
+            assert(varDsc->lvType == TYP_STRUCT);
+            assert(varDsc->lvOnFrame && !varDsc->lvRegister);
 
             // We don't split HFA struct
             assert(!varDsc->lvIsHfa());
