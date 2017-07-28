@@ -5,6 +5,11 @@
       <method signature="System.Void set_PreservedProperty1(System.Int32)" />
       <method signature="System.Int32 get_PreservedProperty2()" />
       <method signature="System.Void set_PreservedProperty3(System.Int32)" />
+
+      <property signature="System.Int32 PreservedProperty4" />
+      <property signature="System.Int32 PreservedProperty5" accessors="all" />
+      <property signature="System.Int32 PreservedProperty6" accessors="get" />
+      <property signature="System.Int32 PreservedProperty7" accessors="set" />
     </type>
   </assembly>
 </linker>

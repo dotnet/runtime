@@ -58,6 +58,7 @@
     <Compile Include="Basic\UsedPropertyIsKept.cs" />
     <Compile Include="Basic\UsedStructIsKept.cs" />
     <Compile Include="LinkXml\UnusedAssemblyWithNoDefinedPreserveHasAllTypesPreserved.cs" />
+    <Compile Include="LinkXml\UnusedEventPreservedByLinkXmlIsKept.cs" />
     <Compile Include="LinkXml\UnusedTypeWithNoDefinedPreserveHasAllMembersPreserved.cs" />
     <Compile Include="VirtualMethods\ClassUsedFromConcreteTypeHasInterfaceMethodRemoved.cs" />
     <Compile Include="VirtualMethods\ClassUsedFromInterfaceHasInterfaceMethodKept.cs" />
@@ -133,6 +134,7 @@
   <ItemGroup>
     <Content Include="LinkXml\TypeWithPreserveFieldsHasBackingFieldsOfPropertiesRemoved.xml" />
     <Content Include="LinkXml\UnusedAssemblyWithNoDefinedPreserveHasAllTypesPreserved.xml" />
+    <Content Include="LinkXml\UnusedEventPreservedByLinkXmlIsKept.xml" />
     <Content Include="LinkXml\UnusedFieldPreservedByLinkXmlIsKept.xml" />
     <Content Include="LinkXml\UnusedMethodPreservedByLinkXmlIsKept.xml" />
     <Content Include="LinkXml\UnusedNestedTypePreservedByLinkXmlIsKept.xml" />
