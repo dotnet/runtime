@@ -11,7 +11,7 @@ namespace System.Xml.Tests
     //[TestCase(Name = "Invalid State Combinations", Pri = 1)]
     public class TCErrorState
     {
-        //[Variation(id = 1, Desc = "EntityRef after Document should error - PROLOG", Pri = 1)]
+        // EntityRef after Document should error - PROLOG
         [Theory]
         [XmlWriterInlineData]
         public void state_1(XmlWriterUtils utils)
@@ -35,7 +35,7 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(id = 2, Desc = "EntityRef after Document should error - EPILOG", Pri = 1)]
+        // EntityRef after Document should error - EPILOG
         [Theory]
         [XmlWriterInlineData]
         public void state_2(XmlWriterUtils utils)
@@ -60,7 +60,7 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(id = 3, Desc = "CharEntity after Document should error - PROLOG", Pri = 1)]
+        // CharEntity after Document should error - PROLOG
         [Theory]
         [XmlWriterInlineData]
         public void state_3(XmlWriterUtils utils)
@@ -83,7 +83,7 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(id = 4, Desc = "CharEntity after Document should error - EPILOG", Pri = 1)]
+        // CharEntity after Document should error - EPILOG
         [Theory]
         [XmlWriterInlineData]
         public void state_4(XmlWriterUtils utils)
@@ -108,7 +108,7 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(id = 5, Desc = "SurrogateCharEntity after Document should error - PROLOG", Pri = 1)]
+        // SurrogateCharEntity after Document should error - PROLOG
         [Theory]
         [XmlWriterInlineData]
         public void state_5(XmlWriterUtils utils)
@@ -131,7 +131,7 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(id = 6, Desc = "SurrogateCharEntity after Document should error - EPILOG", Pri = 1)]
+        // SurrogateCharEntity after Document should error - EPILOG
         [Theory]
         [XmlWriterInlineData]
         public void state_6(XmlWriterUtils utils)
@@ -156,7 +156,7 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(id = 7, Desc = "Attribute after Document should error - PROLOG", Pri = 1)]
+        // Attribute after Document should error - PROLOG
         [Theory]
         [XmlWriterInlineData]
         public void state_7(XmlWriterUtils utils)
@@ -179,7 +179,7 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(id = 8, Desc = "Attribute after Document should error - EPILOG", Pri = 1)]
+        // Attribute after Document should error - EPILOG
         [Theory]
         [XmlWriterInlineData]
         public void state_8(XmlWriterUtils utils)
@@ -204,7 +204,7 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(id = 9, Desc = "CDATA after Document should error - PROLOG", Pri = 1)]
+        // CDATA after Document should error - PROLOG
         [Theory]
         [XmlWriterInlineData]
         public void state_9(XmlWriterUtils utils)
@@ -227,7 +227,7 @@ namespace System.Xml.Tests
             return;
         }
 
-        //[Variation(id = 10, Desc = "CDATA after Document should error - EPILOG", Pri = 1)]
+        // CDATA after Document should error - EPILOG
         [Theory]
         [XmlWriterInlineData]
         public void state_10(XmlWriterUtils utils)
@@ -252,7 +252,7 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(id = 11, Desc = "Element followed by Document should error", Pri = 1)]
+        // Element followed by Document should error
         [Theory]
         [XmlWriterInlineData]
         public void state_11(XmlWriterUtils utils)
@@ -275,7 +275,7 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(id = 12, Desc = "Element followed by DocType should error", Pri = 1)]
+        // Element followed by DocType should error
         [Theory]
         [XmlWriterInlineData]
         public void state_12(XmlWriterUtils utils)

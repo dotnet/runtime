@@ -12,7 +12,7 @@ namespace System.Xml.Tests
     //[TestCase(Name = "WriteStart/EndElement")]
     public class TCElement
     {
-        //[Variation(id = 1, Desc = "StartElement-EndElement Sanity Test", Pri = 0)]
+        // StartElement-EndElement Sanity Test
         [Theory]
         [XmlWriterInlineData]
         public void element_1(XmlWriterUtils utils)
@@ -25,7 +25,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("<Root />"));
         }
 
-        //[Variation(id = 2, Desc = "Sanity test for overload WriteStartElement(string prefix, string name, string ns)", Pri = 0)]
+        // Sanity test for overload WriteStartElement(string prefix, string name, string ns)
         [Theory]
         [XmlWriterInlineData]
         public void element_2(XmlWriterUtils utils)
@@ -38,7 +38,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("<pre1:Root xmlns:pre1=\"http://my.com\" />"));
         }
 
-        //[Variation(id = 3, Desc = "Sanity test for overload WriteStartElement(string name, string ns)", Pri = 0)]
+        // Sanity test for overload WriteStartElement(string name, string ns)
         [Theory]
         [XmlWriterInlineData]
         public void element_3(XmlWriterUtils utils)
@@ -51,7 +51,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("<Root xmlns=\"http://my.com\" />"));
         }
 
-        //[Variation(id = 4, Desc = "Element name = String.Empty should error", Pri = 1)]
+        // Element name = String.Empty should error
         [Theory]
         [XmlWriterInlineData]
         public void element_4(XmlWriterUtils utils)
@@ -73,7 +73,7 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(id = 5, Desc = "Element name = null should error", Pri = 1)]
+        // Element name = null should error
         [Theory]
         [XmlWriterInlineData]
         public void element_5(XmlWriterUtils utils)
@@ -95,7 +95,7 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(id = 6, Desc = "Element NS = String.Empty", Pri = 1)]
+        // Element NS = String.Empty
         [Theory]
         [XmlWriterInlineData]
         public void element_6(XmlWriterUtils utils)
@@ -108,7 +108,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("<Root />"));
         }
 
-        //[Variation(id = 7, Desc = "Element NS = null", Pri = 1)]
+        // Element NS = null
         [Theory]
         [XmlWriterInlineData]
         public void element_7(XmlWriterUtils utils)
@@ -121,7 +121,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("<Root />"));
         }
 
-        //[Variation(Desc = "Write 100 nested elements")]
+        // Write 100 nested elements
         [Theory]
         [XmlWriterInlineData]
         public void element_8(XmlWriterUtils utils)
@@ -142,7 +142,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareBaseline(exp));
         }
 
-        //[Variation(id = 9, Desc = "WriteDecl with start element with prefix and namespace")]
+        // WriteDecl with start element with prefix and namespace
         [Theory]
         [XmlWriterInlineData]
         public void element_9(XmlWriterUtils utils)
@@ -177,7 +177,7 @@ namespace System.Xml.Tests
             Assert.True((utils.CompareString(xml)));
         }
 
-        //[Variation(Desc = "Write many attributes and dup namespace")]
+        // Write many attributes and dup namespace
         [Theory]
         [XmlWriterInlineData]
         public void element_10a(XmlWriterUtils utils)
@@ -202,7 +202,7 @@ namespace System.Xml.Tests
         }
 
 
-        //[Variation(Desc = "Write many attributes and dup name")]
+        // Write many attributes and dup name
         [Theory]
         [XmlWriterInlineData]
         public void element_10b(XmlWriterUtils utils)
@@ -226,7 +226,7 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(Desc = "Write many attributes and dup prefix")]
+        // Write many attributes and dup prefix
         [Theory]
         [XmlWriterInlineData]
         public void element_10c(XmlWriterUtils utils)
@@ -250,7 +250,7 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(Desc = "Write invalid DOCTYPE with many attributes with prefix")]
+        // Write invalid DOCTYPE with many attributes with prefix
         [Theory]
         [XmlWriterInlineData]
         public void element_10d(XmlWriterUtils utils)

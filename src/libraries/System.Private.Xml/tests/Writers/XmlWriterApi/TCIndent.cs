@@ -155,7 +155,7 @@ namespace System.Xml.Tests
             return;
         }
 
-        //[Variation(id = 10, Desc = "Mixed content after child", Priority = 0)]
+        // Mixed content after child
         [Theory]
         [XmlWriterInlineData]
         public void indent_10(XmlWriterUtils utils)
@@ -485,7 +485,7 @@ namespace System.Xml.Tests
             return;
         }
 
-        //[Variation(id = 29, Desc = "First element - with decl", Priority = 1, Param = true)]
+        // First element - with decl
         [Theory]
         [XmlWriterInlineData(WriterType.AllButCustom)]
         public void indent_29(XmlWriterUtils utils)
