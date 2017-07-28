@@ -4477,7 +4477,7 @@ unsigned Compiler::lvaGetMaxSpillTempSize()
 
 void Compiler::lvaAssignFrameOffsets(FrameLayoutState curState)
 {
-    noway_assert(lvaDoneFrameLayout < curState);
+    noway_assert((lvaDoneFrameLayout < curState) || (curState == REGALLOC_FRAME_LAYOUT));
 
     lvaDoneFrameLayout = curState;
 
