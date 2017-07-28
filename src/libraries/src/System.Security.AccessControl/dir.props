@@ -6,5 +6,6 @@
     <AssemblyKey>MSFT</AssemblyKey>
     <IsNETCoreApp>true</IsNETCoreApp>
     <IsNETCoreAppRef>false</IsNETCoreAppRef>
+    <IsUAP>true</IsUAP>
   </PropertyGroup>
 </Project>

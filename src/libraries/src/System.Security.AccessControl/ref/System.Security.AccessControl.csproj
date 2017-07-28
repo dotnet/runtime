@@ -3,8 +3,6 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{F80C478C-48EE-46A5-89C4-EE0CFB23A14F}</ProjectGuid>
-    <!-- UAPvNext is not yet mapped to netstandard2.0, manually duplicate this ref -->
-    <PackageTargetFramework Condition="'$(TargetGroup)' == 'netstandard'">netstandard2.0;$(UAPvNextTFM)</PackageTargetFramework>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx'">true</IsPartialFacadeAssembly>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Debug|AnyCPU'" />
