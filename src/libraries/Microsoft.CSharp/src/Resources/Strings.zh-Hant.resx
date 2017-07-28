@@ -216,9 +216,6 @@
   <data name="CantCallSpecialMethod" xml:space="preserve">
     <value>'{0}': 無法明確呼叫運算子或存取子</value>
   </data>
-  <data name="MissingPredefinedMember" xml:space="preserve">
-    <value>遺漏編譯器所需的成員 '{0}.{1}'</value>
-  </data>
   <data name="ConvertToStaticClass" xml:space="preserve">
     <value>無法轉換為靜態型別 '{0}'</value>
   </data>

@@ -33,7 +33,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public MethWithInst MethWithInst { get; set; }
 
-        public PREDEFMETH PredefinedMethod { get; set; }
+        public PREDEFMETH PredefinedMethod { get; set; } = PREDEFMETH.PM_COUNT;
 
         public NullableCallLiftKind NullableCallLiftKind { get; set; }
 

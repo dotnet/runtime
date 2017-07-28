@@ -216,9 +216,6 @@
   <data name="CantCallSpecialMethod" xml:space="preserve">
     <value>'{0}': no se puede llamar explícitamente al operador o al descriptor de acceso</value>
   </data>
-  <data name="MissingPredefinedMember" xml:space="preserve">
-    <value>Falta el miembro '{0}.{1}' que requiere el compilador.</value>
-  </data>
   <data name="ConvertToStaticClass" xml:space="preserve">
     <value>No se puede convertir en el tipo estático '{0}'</value>
   </data>

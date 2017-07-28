@@ -179,9 +179,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 case ErrorCode.ERR_CantCallSpecialMethod:
                     codeStr = SR.CantCallSpecialMethod;
                     break;
-                case ErrorCode.ERR_MissingPredefinedMember:
-                    codeStr = SR.MissingPredefinedMember;
-                    break;
                 case ErrorCode.ERR_ConvertToStaticClass:
                     codeStr = SR.ConvertToStaticClass;
                     break;

@@ -90,7 +90,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         protected override Expr VisitCALL(ExprCall pExpr)
         {
-            if (pExpr.PredefinedMethod == PREDEFMETH.PM_FIRST)
+            if (pExpr.PredefinedMethod == PREDEFMETH.PM_COUNT)
             {
                 return pExpr;
             }
