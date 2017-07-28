@@ -7,6 +7,7 @@ using System.IO;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace System.Net.Http
 {
@@ -31,13 +32,15 @@ namespace System.Net.Http
         private const string CNonce = "cnonce";
         private const string Opaque = "opaque";
         private const string Response = "response";
-        private const string Colon = ":";
 
         // Define alphanumeric characters for cnonce
         // 48='0', 65='A', 97='a'
-        private static int[] AlphaNumChooser = new int[] { 48, 65, 97 };
+        private static int[] s_alphaNumChooser = new int[] { 48, 65, 97 };
 
-        public static bool TrySetDigestAuthToken(HttpRequestMessage request, ICredentials credentials, DigestResponse digestResponse)
+        // Define a random number generator for cnonce
+        private static RandomNumberGenerator s_rng = RandomNumberGenerator.Create();
+
+        public async static Task<bool> TrySetDigestAuthToken(HttpRequestMessage request, ICredentials credentials, DigestResponse digestResponse)
         {
             NetworkCredential credential = credentials.GetCredential(request.RequestUri, Digest);
             if (credential == null)
@@ -45,36 +48,47 @@ namespace System.Net.Http
                 return false;
             }
 
-            try
-            {
-                request.Headers.Authorization = new AuthenticationHeaderValue(Digest, GetDigestTokenForCredential(credential, request, digestResponse));
-                return true;
-            }
-            catch
-            {
-                // Return false in case of any digest header calculation errors.
+            string parameter = await GetDigestTokenForCredential(credential, request, digestResponse);
+
+            // Any errors in obtaining parameter return false
+            if (string.IsNullOrEmpty(parameter))
                 return false;
-            }
+
+            request.Headers.Authorization = new AuthenticationHeaderValue(Digest, parameter);
+            return true;
         }
 
-        public static string GetDigestTokenForCredential(NetworkCredential credential, HttpRequestMessage request, DigestResponse digestResponse)
+        public static async Task<string> GetDigestTokenForCredential(NetworkCredential credential, HttpRequestMessage request, DigestResponse digestResponse)
         {
             StringBuilder sb = StringBuilderCache.Acquire();
 
             // It is mandatory for servers to implement sha-256
             // Keep MD5 for backward compatibility.
-            string algorithm = Md5;
-            if (digestResponse.Parameters[Algorithm].Contains(Sha256))
+            string algorithm;
+            if (digestResponse.Parameters.TryGetValue(Algorithm, out algorithm))
             {
-                algorithm = Sha256;
+                if (algorithm != Sha256 && algorithm != Md5)
+                    return null;
+            }
+            else
+            {
+                algorithm = Md5;
+            }
+
+            // Check if nonce is there in challenge
+            string nonce;
+            if (!digestResponse.Parameters.TryGetValue(Nonce, out nonce))
+            {
+                return null;
             }
 
             string realm = digestResponse.Parameters.ContainsKey(Realm) ? digestResponse.Parameters[Realm] : string.Empty;
 
             // Add username
-            if (digestResponse.Parameters.ContainsKey(UserHash) && digestResponse.Parameters[UserHash] == "true")
+            string userhash;
+            if (digestResponse.Parameters.TryGetValue(UserHash, out userhash) && userhash == "true")
             {
-                sb.AppendKeyValue(Username, ComputeHash(digestResponse.Parameters[Username] + Colon + realm, algorithm));
+                sb.AppendKeyValue(Username, ComputeHash(credential.UserName + ":" + realm, algorithm));
             }
             else
             {
@@ -86,14 +100,14 @@ namespace System.Net.Http
                 sb.AppendKeyValue(Realm, realm);
 
             // If nonce is same as previous request, update nonce count.
-            if (digestResponse.Parameters[Nonce] == digestResponse.Nonce)
+            if (nonce == digestResponse.Nonce)
             {
                 digestResponse.NonceCount++;
             }
 
             // Add nonce
-            sb.AppendKeyValue(Nonce, digestResponse.Parameters[Nonce]);
-            digestResponse.Nonce = digestResponse.Parameters[Nonce];
+            sb.AppendKeyValue(Nonce, nonce);
+            digestResponse.Nonce = nonce;
 
             // Add uri
             sb.AppendKeyValue(Uri, request.RequestUri.PathAndQuery);
@@ -126,23 +140,24 @@ namespace System.Net.Http
             string cnonce = GetRandomAlphaNumericString();
 
             // Calculate response
-            string a1 = credential.UserName + Colon + realm + Colon + credential.Password;
+            string a1 = credential.UserName + ":" + realm + ":" + credential.Password;
             if (digestResponse.Parameters[Algorithm].Contains(Sha256Sess))
             {
-                a1 = ComputeHash(a1, algorithm) + Colon + digestResponse.Parameters[Nonce] + Colon + cnonce;
+                a1 = ComputeHash(a1, algorithm) + ":" + nonce + ":" + cnonce;
             }
 
-            string a2 = request.Method.Method + Colon + request.RequestUri.PathAndQuery;
+            string a2 = request.Method.Method + ":" + request.RequestUri.PathAndQuery;
             if (qop == AuthInt)
             {
-                a2 = a2 + Colon + ComputeHash(request.Content.ReadAsStringAsync().Result, algorithm);
+                string content = await request.Content.ReadAsStringAsync();
+                a2 = a2 + ":" + ComputeHash(content, algorithm);
             }
 
-            string response = ComputeHash(ComputeHash(a1, algorithm) + Colon +
-                                        digestResponse.Parameters[Nonce] + Colon +
-                                        digestResponse.NonceCount.ToString("x8") + Colon +
-                                        cnonce + Colon +
-                                        qop + Colon +
+            string response = ComputeHash(ComputeHash(a1, algorithm) + ":" +
+                                        nonce + ":" +
+                                        digestResponse.NonceCount.ToString("x8") + ":" +
+                                        cnonce + ":" +
+                                        qop + ":" +
                                         ComputeHash(a2, algorithm), algorithm);
 
             // Add response
@@ -168,171 +183,162 @@ namespace System.Net.Http
 
         private static string GetRandomAlphaNumericString()
         {
-            using (RNGCryptoServiceProvider rng = new RNGCryptoServiceProvider())
+            const int Length = 16;
+            StringBuilder sb = StringBuilderCache.Acquire(Length);
+            for (int i = 0; i < Length; i++)
             {
-                const int length = 16;
-                StringBuilder sb = StringBuilderCache.Acquire(length);
-                for (int i = 0; i < length; i++)
+                byte[] randomNumber = new byte[1];
+                s_rng.GetBytes(randomNumber);
+
+                int rangeIndex = (randomNumber[0] % 3);
+                s_rng.GetBytes(randomNumber);
+
+                if (rangeIndex == 0)
                 {
-                    byte[] randomNumber = new byte[1];
-                    rng.GetBytes(randomNumber);
-
-                    int rangeIndex = (randomNumber[0] % 3);
-                    rng.GetBytes(randomNumber);
-
-                    if (rangeIndex == 0)
-                    {
-                        // Get a random digit 0-9
-                        sb.Append((char)(AlphaNumChooser[rangeIndex] + randomNumber[0] % 10));
-                    }
-                    else
-                    {
-                        // Get a random alphabet in a-z, A-Z
-                        sb.Append((char)(AlphaNumChooser[rangeIndex] + randomNumber[0] % 26));
-                    }
+                    // Get a random digit 0-9
+                    sb.Append((char)(s_alphaNumChooser[rangeIndex] + randomNumber[0] % 10));
                 }
+                else
+                {
+                    // Get a random alphabet in a-z, A-Z
+                    sb.Append((char)(s_alphaNumChooser[rangeIndex] + randomNumber[0] % 26));
+                }
+            }
+
+            return StringBuilderCache.GetStringAndRelease(sb);
+        }
+
+        private static string ComputeHash(string data, string algorithm)
+        {
+            // Disable MD5 insecure warning.
+#pragma warning disable CA5351
+            using (HashAlgorithm hash = algorithm == Sha256 ? SHA256.Create() : (HashAlgorithm)MD5.Create())
+#pragma warning restore CA5351
+            {
+                Encoding enc = Encoding.UTF8;
+                byte[] result = hash.ComputeHash(enc.GetBytes(data));
+
+                StringBuilder sb = StringBuilderCache.Acquire(result.Length * 2);
+                foreach (byte b in result)
+                    sb.Append(b.ToString("x2"));
 
                 return StringBuilderCache.GetStringAndRelease(sb);
             }
         }
 
-        private static string ComputeHash(string data, string algorithm)
-        {
-            if (algorithm == Sha256)
-            {
-                using (HashAlgorithm hash = SHA256.Create())
-                {
-                    return ComputeHash(data, hash);
-                }
-            }
-            else
-            {
-// Disable MD5 insecure warning.
-#pragma warning disable CA5351
-                using (HashAlgorithm hash = MD5.Create())
-                {
-                    return ComputeHash(data, hash);
-                }
-#pragma warning restore CA5351
-            }
-        }
-
-        private static string ComputeHash(string data, HashAlgorithm hash)
-        {
-            Encoding enc = Encoding.UTF8;
-            byte[] result = hash.ComputeHash(enc.GetBytes(data));
-
-            StringBuilder sb = StringBuilderCache.Acquire(result.Length * 2);
-            foreach (byte b in result)
-                sb.Append(b.ToString("x2"));
-
-            return StringBuilderCache.GetStringAndRelease(sb);
-        }
-
         public class DigestResponse
         {
-            public string Value => _value;
-            public Dictionary<string, string> Parameters => _parameters;
+            public readonly Dictionary<string, string> Parameters = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
             // Keep track of request values for this response.
             public string Nonce;
             public uint NonceCount;
 
-            private string _value;
-            private Dictionary<string, string> _parameters = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-
-            public DigestResponse(string value)
+            public DigestResponse(string challenge)
             {
                 Nonce = null;
                 NonceCount = 1;
 
-                _value = value;
-                Parse();
+                Parse(challenge);
             }
 
             private unsafe string GetNextKey(ref char* p)
             {
+                // It is generally cheaper to change a local and then write back to ref at the end
+                // rather than updating the ref on each operation.
+                char* temp = p;
+
                 StringBuilder sb = StringBuilderCache.Acquire();
 
                 // Skip leading whitespace
-                while (*p == ' ')
+                while (*temp == ' ')
                 {
-                    p++;
+                    temp++;
                 }
 
                 // Start parsing key
-                while (*p != '=')
+                while (*temp != '=')
                 {
                     // Key cannot have whitespace
-                    if (*p == ' ')
+                    if (*temp == ' ')
                         break;
 
-                    sb.Append(*p);
-                    p++;
+                    sb.Append(*temp);
+                    temp++;
                 }
 
                 // Skip trailing whitespace and '='
-                while (*p == ' ' || *p == '=')
+                while (*temp == ' ' || *temp == '=')
                 {
-                    p++;
+                    temp++;
                 }
+
+                // Set the ref p to temp
+                p = temp;
 
                 return StringBuilderCache.GetStringAndRelease(sb);
             }
 
             private unsafe string GetNextValue(ref char* p)
             {
+                // It is generally cheaper to change a local and then write back to ref at the end
+                // rather than updating the ref on each operation.
+                char* temp = p;
+
                 StringBuilder sb = StringBuilderCache.Acquire();
 
                 // Skip leading whitespace
-                while (*p == ' ')
+                while (*temp == ' ')
                 {
-                    p++;
+                    temp++;
                 }
 
                 // If quoted value, skip first quote.
                 bool quotedValue = false;
-                if (*p == '"')
+                if (*temp == '"')
                 {
                     quotedValue = true;
-                    p++;
+                    temp++;
                 }
 
-                while ((quotedValue && *p != '"') || (!quotedValue && *p != ',' && *p != '\0'))
+                while ((quotedValue && *temp != '"') || (!quotedValue && *temp != ',' && *temp != '\0'))
                 {
-                    sb.Append(*p);
-                    p++;
+                    sb.Append(*temp);
+                    temp++;
 
-                    if (!quotedValue && *p == ' ')
+                    if (!quotedValue && *temp == ' ')
                         break;
 
-                    if (quotedValue && *p == '"' && *(p - 1) == '\\')
+                    if (quotedValue && *temp == '"' && *(temp - 1) == '\\')
                     {
                         // Include the escaped quote.
-                        sb.Append(*p);
-                        p++;
+                        sb.Append(*temp);
+                        temp++;
                     }
                 }
 
                 // Return if this is last value.
-                if (*p == '\0')
+                if (*temp == '\0')
                     return sb.ToString();
 
                 // Skip the end quote or ',' or whitespace
-                p++;
+                temp++;
 
                 // Skip whitespace and ,
-                while (*p == ' ' || *p == ',')
+                while (*temp == ' ' || *temp == ',')
                 {
-                    p++;
+                    temp++;
                 }
+
+                // Set ref p to temp
+                p = temp;
 
                 return StringBuilderCache.GetStringAndRelease(sb);
             }
 
-            private unsafe void Parse()
+            private unsafe void Parse(string challenge)
             {
-                fixed (char* p = _value)
+                fixed (char* p = challenge)
                 {
                     char* counter = p;
                     while (*counter != '\0')
@@ -340,7 +346,7 @@ namespace System.Net.Http
                         string key = GetNextKey(ref counter);
                         string value = GetNextValue(ref counter);
 
-                        _parameters.Add(key, value);
+                        Parameters.Add(key, value);
                     }
                 }
             }
