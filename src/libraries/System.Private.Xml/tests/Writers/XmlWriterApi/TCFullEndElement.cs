@@ -1591,6 +1591,7 @@ namespace System.Xml.Tests
                 XmlWriterSettings xws = new XmlWriterSettings();
                 xws.OmitXmlDeclaration = true;
                 xws.NewLineHandling = nlh;
+                xws.NewLineChars = "\r\n";
 
                 using (XmlWriter w = utils.CreateWriter(xws))
                 {
@@ -1598,7 +1599,7 @@ namespace System.Xml.Tests
                     w.WriteCData(new string(ch, 1));
                     w.WriteEndElement();
                 }
-                Assert.True(utils.CompareString(expXml));
+                Assert.Equal(expXml, utils.GetString());
             }
         }
 
