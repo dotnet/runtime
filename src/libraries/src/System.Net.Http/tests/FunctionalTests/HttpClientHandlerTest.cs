@@ -67,6 +67,28 @@ namespace System.Net.Http.Functional.Tests
             new object[] { 307 }
         };
 
+        public static readonly object[][] RedirectStatusCodesOldMethodsNewMethods = {
+            new object[] { 300, "GET", "GET" },
+            new object[] { 300, "POST", "GET" },
+            new object[] { 300, "HEAD", "HEAD" },
+
+            new object[] { 301, "GET", "GET" },
+            new object[] { 301, "POST", "GET" },
+            new object[] { 301, "HEAD", "HEAD" },
+
+            new object[] { 302, "GET", "GET" },
+            new object[] { 302, "POST", "GET" },
+            new object[] { 302, "HEAD", "HEAD" },
+
+            new object[] { 303, "GET", "GET" },
+            new object[] { 303, "POST", "GET" },
+            new object[] { 303, "HEAD", "HEAD" },
+
+            new object[] { 307, "GET", "GET" },
+            new object[] { 307, "POST", "POST" },
+            new object[] { 307, "HEAD", "HEAD" },
+        };
+
         // Standard HTTP methods defined in RFC7231: http://tools.ietf.org/html/rfc7231#section-4.3
         //     "GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS", "TRACE"
         public static readonly IEnumerable<object[]> HttpMethods =
@@ -114,6 +136,7 @@ namespace System.Net.Http.Functional.Tests
                 Assert.NotNull(cookies);
                 Assert.Equal(0, cookies.Count);
                 Assert.Null(handler.Credentials);
+                Assert.Equal(50, handler.MaxAutomaticRedirections);
                 Assert.NotNull(handler.Properties);
                 Assert.Equal(null, handler.Proxy);
                 Assert.True(handler.SupportsAutomaticDecompression);
@@ -130,7 +153,6 @@ namespace System.Net.Http.Functional.Tests
             using (var handler = new HttpClientHandler())
             {
                 // Same as .NET Framework (Desktop).
-                Assert.Equal(50, handler.MaxAutomaticRedirections);
                 Assert.Equal(64, handler.MaxResponseHeadersLength);
                 Assert.False(handler.PreAuthenticate);
                 Assert.True(handler.SupportsProxy);
@@ -152,7 +174,6 @@ namespace System.Net.Http.Functional.Tests
             using (var handler = new HttpClientHandler())
             {
                 Assert.True(handler.CheckCertificateRevocationList);
-                Assert.Equal(10, handler.MaxAutomaticRedirections);
                 Assert.Equal(0, handler.MaxRequestContentBufferSize);
                 Assert.Equal(-1, handler.MaxResponseHeadersLength);
                 Assert.True(handler.PreAuthenticate);
@@ -177,6 +198,17 @@ namespace System.Net.Http.Functional.Tests
 
                 handler.Credentials = CredentialCache.DefaultCredentials;
                 Assert.Same(CredentialCache.DefaultCredentials, handler.Credentials);
+            }
+        }
+
+        [Theory]
+        [InlineData(-1)]
+        [InlineData(0)]
+        public void MaxAutomaticRedirections_InvalidValue_Throws(int redirects)
+        {
+            using (var handler = new HttpClientHandler())
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => handler.MaxAutomaticRedirections = redirects);
             }
         }
 
@@ -494,6 +526,47 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ActiveIssue(22707, TestPlatforms.AnyUnix)]
+        [OuterLoop] // TODO: Issue #11345
+        [Theory, MemberData(nameof(RedirectStatusCodesOldMethodsNewMethods))]
+        public async Task AllowAutoRedirect_True_ValidateNewMethodUsedOnRedirection(
+            int statusCode, string oldMethod, string newMethod)
+        {
+            if (ManagedHandlerTestHelpers.IsEnabled)
+            {
+                // TODO #22700: Managed handler not following RFC rules for method rewrites.
+                return;
+            }
+
+            var handler = new HttpClientHandler() { AllowAutoRedirect = true };
+            using (var client = new HttpClient(handler))
+            {
+                await LoopbackServer.CreateServerAsync(async (origServer, origUrl) =>
+                {
+                    var request = new HttpRequestMessage(new HttpMethod(oldMethod), origUrl);
+                    Task<HttpResponseMessage> getResponse = client.SendAsync(request);
+
+                    await LoopbackServer.ReadRequestAndSendResponseAsync(origServer,
+                            $"HTTP/1.1 {statusCode} OK\r\n" +
+                            $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
+                            $"Location: {origUrl}\r\n" +
+                            "\r\n");
+
+                    List<string> receivedRequest = await LoopbackServer.ReadRequestAndSendResponseAsync(origServer,
+                            $"HTTP/1.1 200 OK\r\n" +
+                            $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
+                            "\r\n");
+                    string[] statusLineParts = receivedRequest[0].Split(' ');
+
+                    using (HttpResponseMessage response = await getResponse)
+                    {
+                        Assert.Equal(200, (int)response.StatusCode);
+                        Assert.Equal(newMethod, statusLineParts[0]);
+                    }
+                });
+            }
+        }
+
         [OuterLoop] // TODO: Issue #11345
         [Theory, MemberData(nameof(RedirectStatusCodes))]
         public async Task GetAsync_AllowAutoRedirectTrue_RedirectFromHttpToHttp_StatusCodeOK(int statusCode)
@@ -553,23 +626,11 @@ namespace System.Net.Http.Functional.Tests
                     destinationUri: Configuration.Http.RemoteEchoServer,
                     hops: 1);
                 _output.WriteLine("Uri: {0}", uri);
-                
-                if (PlatformDetection.IsUap)
+
+                using (HttpResponseMessage response = await client.GetAsync(uri))
                 {
-                    // UAP platform does not allow redirecting from HTTPS to HTTP (same as .NET Core).
-                    // But in addition, it will throw an exception
-                    //
-                    // HttpRequestException: "An error occurred while sending the request."
-                    //  COMException: "A redirect request will change a secure to a non-secure connection"
-                    await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(uri));
-                }
-                else
-                {
-                    using (HttpResponseMessage response = await client.GetAsync(uri))
-                    {
-                        Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
-                        Assert.Equal(uri, response.RequestMessage.RequestUri);
-                    }
+                    Assert.Equal(HttpStatusCode.Redirect, response.StatusCode);
+                    Assert.Equal(uri, response.RequestMessage.RequestUri);
                 }
             }
         }
@@ -841,7 +902,6 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [ActiveIssue(9003, TargetFrameworkMonikers.Uap)]
         [OuterLoop] // TODO: Issue #11345
         [Theory]
         [InlineData("cookieName1", "cookieValue1")]
@@ -1814,6 +1874,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ActiveIssue(22735)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Specifying Version(2,0) throws exception on netfx")]
         [OuterLoop] // TODO: Issue #11345
         [ConditionalTheory(nameof(IsWindows10Version1607OrGreater)), MemberData(nameof(Http2NoPushServers))]
