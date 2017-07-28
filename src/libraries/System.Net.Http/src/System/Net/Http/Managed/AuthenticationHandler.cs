@@ -33,7 +33,7 @@ namespace System.Net.Http
                 // Try using previous digest response WWWAuthenticate header
                 if (_digestResponse != null)
                 {
-                    AuthenticationHelper.TrySetDigestAuthToken(request, _credentials, _digestResponse);
+                    await AuthenticationHelper.TrySetDigestAuthToken(request, _credentials, _digestResponse);
                 }
                 else
                 {
@@ -63,10 +63,32 @@ namespace System.Net.Http
                     {
                         // Update digest response with new parameter from WWWAuthenticate
                         _digestResponse = new AuthenticationHelper.DigestResponse(h.Parameter);
-                        if (AuthenticationHelper.TrySetDigestAuthToken(request, _credentials, _digestResponse))
+                        if (await AuthenticationHelper.TrySetDigestAuthToken(request, _credentials, _digestResponse))
                         {
                             response.Dispose();
                             response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
+
+                            // Retry in case of nonce timeout in server.
+                            if (response.StatusCode == HttpStatusCode.Unauthorized)
+                            {
+                                foreach (AuthenticationHeaderValue ahv in response.Headers.WwwAuthenticate)
+                                {
+                                    if (ahv.Scheme == AuthenticationHelper.Digest)
+                                    {
+                                        _digestResponse = new AuthenticationHelper.DigestResponse(ahv.Parameter);
+                                        string stale;
+                                        if (_digestResponse.Parameters.TryGetValue("stale", out stale) && stale == "true" &&
+                                            await AuthenticationHelper.TrySetDigestAuthToken(request, _credentials, _digestResponse))
+                                        {
+                                            response.Dispose();
+                                            response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                                        }
+
+                                        break;
+                                    }
+                                }
+                            }
+
                             break;
                         }
                     }
