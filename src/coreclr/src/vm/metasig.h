@@ -56,6 +56,7 @@
 //   T  -- TypedReference -- TypedReference 
 //   G  --      -- Generic type variable
 //   M  --      -- Generic method variable
+//   GI --      -- Generic type instantiation
 //
 
 //#DEFINE_METASIG
@@ -128,6 +129,8 @@
 #define G(n) METASIG_ATOM(ELEMENT_TYPE_VAR) METASIG_ATOM(n)
 #define M(n) METASIG_ATOM(ELEMENT_TYPE_MVAR) METASIG_ATOM(n)
 
+#define GI(type, n, x) METASIG_ATOM(ELEMENT_TYPE_GENERICINST) type METASIG_ATOM(n) x
+
 // The references to other types have special definition in some cases
 #ifndef C
 #define C(x) METASIG_ATOM(ELEMENT_TYPE_CLASS) METASIG_ATOM(CLASS__ ## x % 0x100) METASIG_ATOM(CLASS__ ## x / 0x100)
@@ -144,6 +147,8 @@
 
 #define G(n) METASIG_ATOM(ELEMENT_TYPE_VAR)
 #define M(n) METASIG_ATOM(ELEMENT_TYPE_MVAR)
+
+#define GI(type, n, x) METASIG_ATOM(ELEMENT_TYPE_GENERICINST)
 
 // The references to other types have special definition in some cases
 #ifndef C
@@ -608,6 +613,7 @@ DEFINE_METASIG_T(IM(IAsyncResult_RetVoid, C(IASYNCRESULT), v))
 #undef T
 #undef G
 #undef M
+#undef GI
 
 #undef _
 
