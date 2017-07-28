@@ -6257,7 +6257,8 @@ void Compiler::rpPredictRegUse()
 
 #ifdef _TARGET_ARM_
         // See if we previously reserved REG_R10 and try to make it available if we have a small frame now
-        if ((rpPasses == 0) && ((codeGen->regSet.rsMaskResvd & RBM_OPT_RSVD) != 0) && !compRsvdRegCheck(REGALLOC_FRAME_LAYOUT))
+        if ((rpPasses == 0) && ((codeGen->regSet.rsMaskResvd & RBM_OPT_RSVD) != 0) &&
+            !compRsvdRegCheck(REGALLOC_FRAME_LAYOUT))
         {
             // We can release our reservation on R10 and use it to color registers
             codeGen->regSet.rsMaskResvd &= ~RBM_OPT_RSVD;
@@ -6461,7 +6462,7 @@ void Compiler::rpPredictRegUse()
 
 #ifdef _TARGET_ARM_
         // The spill count may be now high enough that we now need to reserve r10. If this is the case, we'll need to
-        // reservation r10 and if it was used repredict.
+        // reserve r10, and if it was used, repredict.
         if (((codeGen->regSet.rsMaskResvd & RBM_OPT_RSVD) == 0) && compRsvdRegCheck(REGALLOC_FRAME_LAYOUT))
         {
             codeGen->regSet.rsMaskResvd |= RBM_OPT_RSVD;
