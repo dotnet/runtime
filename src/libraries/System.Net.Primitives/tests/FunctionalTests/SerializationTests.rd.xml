@@ -1,0 +1,6 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library Name="System.Runtime.Serialization.Formatters.Tests">
+    <Assembly Name="System.Net.Primitives" BinaryFormatter="All" Dynamic="Required Public" />
+  </Library>
+</Directives>
