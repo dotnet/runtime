@@ -1273,68 +1273,6 @@ mono_delegate_trampoline (mgreg_t *regs, guint8 *code, gpointer *arg, guint8* tr
 	return code;
 }
 
-#ifdef MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD
-static gpointer
-mono_handler_block_guard_trampoline (mgreg_t *regs, guint8 *code, gpointer *tramp_info, guint8* tramp)
-{
-	MONO_REQ_GC_UNSAFE_MODE;
-
-	MonoContext ctx;
-	MonoException *exc;
-	MonoJitTlsData *jit_tls = (MonoJitTlsData *)mono_tls_get_jit_tls ();
-	gpointer resume_ip = jit_tls->handler_block_return_address;
-
-	memcpy (&ctx, &jit_tls->handler_block_context, sizeof (MonoContext));
-	MONO_CONTEXT_SET_IP (&ctx, jit_tls->handler_block_return_address);
-
-	jit_tls->handler_block_return_address = NULL;
-	jit_tls->handler_block = NULL;
-
-	if (!resume_ip) /*this should not happen, but we should avoid crashing */
-		exc = mono_get_exception_execution_engine ("Invalid internal state, resuming abort after handler block but no resume ip found");
-	else
-		exc = mono_thread_resume_interruption (TRUE);
-
-	if (exc) {
-		mono_handle_exception (&ctx, (MonoObject *)exc);
-		mono_restore_context (&ctx);
-	}
-
-	return resume_ip;
-}
-
-gpointer
-mono_create_handler_block_trampoline (void)
-{
-	static gpointer code;
-
-	if (code)
-		return code;
-
-	if (mono_aot_only) {
-		gpointer tmp = mono_aot_get_trampoline ("handler_block_trampoline");
-		g_assert (tmp);
-		mono_memory_barrier ();
-		code = tmp;
-		return code;
-	}
-
-	mono_trampolines_lock ();
-	if (!code) {
-		MonoTrampInfo *info;
-		gpointer tmp;
-
-		tmp = mono_arch_create_handler_block_trampoline (&info, FALSE);
-		mono_tramp_info_register (info, NULL);
-		mono_memory_barrier ();
-		code = tmp;
-	}
-	mono_trampolines_unlock ();
-
-	return code;
-}
-#endif
-
 /*
  * mono_get_trampoline_func:
  *
@@ -1366,10 +1304,6 @@ mono_get_trampoline_func (MonoTrampolineType tramp_type)
 #endif
 	case MONO_TRAMPOLINE_VCALL:
 		return mono_vcall_trampoline;
-#ifdef MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD
-	case MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD:
-		return mono_handler_block_guard_trampoline;
-#endif
 	default:
 		g_assert_not_reached ();
 		return NULL;
@@ -1409,10 +1343,6 @@ mono_trampolines_init (void)
 	mono_trampoline_code [MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING] = create_trampoline_code (MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING);
 #endif
 	mono_trampoline_code [MONO_TRAMPOLINE_VCALL] = create_trampoline_code (MONO_TRAMPOLINE_VCALL);
-#ifdef MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD
-	mono_trampoline_code [MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD] = create_trampoline_code (MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD);
-	mono_create_handler_block_trampoline ();
-#endif
 
 	mono_counters_register ("Calls to trampolines", MONO_COUNTER_JIT | MONO_COUNTER_INT, &trampoline_calls);
 	mono_counters_register ("JIT trampolines", MONO_COUNTER_JIT | MONO_COUNTER_INT, &jit_trampolines);
@@ -1740,8 +1670,7 @@ static const char*tramp_names [MONO_TRAMPOLINE_NUM] = {
 	"delegate",
 	"restore_stack_prot",
 	"generic_virtual_remoting",
-	"vcall",
-	"handler_block_guard"
+	"vcall"
 };
 
 /*

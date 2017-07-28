@@ -755,6 +755,9 @@ struct MonoBasicBlock {
 	/* List of call sites in this bblock sorted by pc_offset */
 	GSList *gc_callsites;
 
+	/* If this is not null, the basic block is a try hole for this clause */
+	MonoExceptionClause *clause_hole;
+
 	/*
 	 * The region encodes whether the basic block is inside
 	 * a finally, catch, filter or none of these.
@@ -1167,10 +1170,6 @@ typedef struct {
 	MonoContext     ex_ctx;
 	ResumeState resume_state;
 
-	/*Variabled use to implement handler blocks (finally/catch/etc) guards during interruption*/
-	/* handler block return address */
-	gpointer handler_block_return_address;
-
 	/* handler block been guarded. It's safe to store this even for dynamic methods since there
 	is an activation on stack making sure it will remain alive.*/
 	MonoJitExceptionInfo *handler_block;
@@ -1486,7 +1485,6 @@ typedef enum {
 	MONO_TRAMPOLINE_RESTORE_STACK_PROT,
 	MONO_TRAMPOLINE_GENERIC_VIRTUAL_REMOTING,
 	MONO_TRAMPOLINE_VCALL,
-	MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD,
 	MONO_TRAMPOLINE_NUM
 } MonoTrampolineType;
 
@@ -1497,7 +1495,7 @@ typedef enum {
 
 /* These trampolines receive an argument directly in a register */
 #define MONO_TRAMPOLINE_TYPE_HAS_ARG(t)		\
-	((t) == MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD)
+	(FALSE)
 
 /* optimization flags */
 #define OPTFLAG(id,shift,name,descr) MONO_OPT_ ## id = 1 << shift,
@@ -1635,10 +1633,18 @@ typedef struct {
 
 	/* A hashtable of region ID-> SP var mappings */
 	/* An SP var is a place to store the stack pointer (used by handlers)*/
+	/*
+	 * FIXME We can potentially get rid of this, since it was mainly used
+	 * for hijacking return address for handler.
+	 */
 	GHashTable      *spvars;
 
-	/* A hashtable of region ID -> EX var mappings */
-	/* An EX var stores the exception object passed to catch/filter blocks */
+	/*
+	 * A hashtable of region ID -> EX var mappings
+	 * An EX var stores the exception object passed to catch/filter blocks
+	 * For finally blocks, it is set to TRUE if we should throw an abort
+	 * once the execution of the finally block is over.
+	 */
 	GHashTable      *exvars;
 
 	GList           *ldstr_list; /* used by AOT */
@@ -2852,12 +2858,6 @@ guint8* mono_arch_get_call_target               (guint8 *code);
 guint32 mono_arch_get_plt_info_offset           (guint8 *plt_entry, mgreg_t *regs, guint8 *code);
 GSList *mono_arch_get_trampolines               (gboolean aot);
 gpointer mono_arch_get_enter_icall_trampoline   (MonoTrampInfo **info);
-
-/* Handle block guard */
-gpointer mono_arch_install_handler_block_guard (MonoJitInfo *ji, MonoJitExceptionInfo *clause, MonoContext *ctx, gpointer new_value);
-gpointer mono_arch_create_handler_block_trampoline (MonoTrampInfo **info, gboolean aot);
-gpointer mono_create_handler_block_trampoline (void);
-gboolean mono_install_handler_block_guard (MonoThreadUnwindState *ctx);
 
 /*New interruption machinery */
 void

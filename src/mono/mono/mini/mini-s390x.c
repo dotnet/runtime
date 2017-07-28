@@ -6415,39 +6415,6 @@ mono_arch_get_this_arg_from_call (mgreg_t *regs, guint8 *code)
  
 /*------------------------------------------------------------------*/
 /*                                                                  */
-/* Name		- mono_arch_install_handler_block_guard             */
-/*                                                                  */
-/* Function	- 						    */
-/*		                               			    */
-/*------------------------------------------------------------------*/
-
-gpointer
-mono_arch_install_handler_block_guard (MonoJitInfo *ji, MonoJitExceptionInfo *clause, 
-				       MonoContext *ctx, gpointer new_value)
-{
-	int offset;
-	gpointer *sp, old_value;
-	char *bp;
-
-	offset = clause->exvar_offset;
-
-	/*Load the spvar*/
-	bp = MONO_CONTEXT_GET_BP (ctx);
-	sp = *(gpointer*)(bp + offset);
-
-	old_value = *sp;
-	if (old_value < ji->code_start || (char*)old_value > ((char*)ji->code_start + ji->code_size))
-		return old_value;
-
-	*sp = new_value;
-
-	return old_value;
-}
-
-/*========================= End of Function ========================*/
- 
-/*------------------------------------------------------------------*/
-/*                                                                  */
 /* Name		- get_delegate_invoke_impl.                         */
 /*                                                                  */
 /* Function	- 						    */

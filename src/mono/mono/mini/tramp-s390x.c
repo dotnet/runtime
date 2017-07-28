@@ -190,8 +190,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 		
 	code = buf = mono_global_codeman_reserve(512);
 		
-	if ((tramp_type == MONO_TRAMPOLINE_JUMP) ||
-	    (tramp_type == MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD)) 
+	if (tramp_type == MONO_TRAMPOLINE_JUMP) 
 		has_caller = 0;
 	else
 		has_caller = 1;
@@ -585,66 +584,5 @@ mono_arch_get_static_rgctx_trampoline (gpointer arg,
 
 	return(start);
 }	
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- handler_block_trampoline_helper                   */
-/*                                                                  */
-/* Function	- 						    */
-/*                                                                  */
-/*------------------------------------------------------------------*/
-
-static void
-handler_block_trampoline_helper (gpointer *ptr)
-{
-	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
-	*ptr = jit_tls->handler_block_return_address;
-}
-
-/*========================= End of Function ========================*/
-
-/*------------------------------------------------------------------*/
-/*                                                                  */
-/* Name		- mono_arch_create_handler_block_trampoline         */
-/*                                                                  */
-/* Function	- 						    */
-/*                                                                  */
-/*------------------------------------------------------------------*/
-
-gpointer
-mono_arch_create_handler_block_trampoline (MonoTrampInfo **info, gboolean aot)
-{
-	guint8 *tramp = mono_get_trampoline_code (MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD);
-	guint8 *code, *buf;
-	int tramp_size = 64;
-	MonoJumpInfo *ji = NULL;
-	GSList *unwind_ops = NULL;
-
-	g_assert (!aot);
-
-	code = buf = mono_global_codeman_reserve (tramp_size);
-
-	/*
-	 * This trampoline restore the call chain of the handler block 
-	 * then jumps into the code that deals with it.
-	 */
-
-	/*
-	 * Slow path uses a C helper
-	 */
-	S390_SET  (code, s390_r2, tramp);
-	S390_SET  (code, s390_r1, handler_block_trampoline_helper);
-	s390_br	  (code, s390_r1);
-
-	mono_arch_flush_icache (buf, code - buf);
-	MONO_PROFILER_RAISE (jit_code_buffer, (buf, code - buf, MONO_PROFILER_CODE_BUFFER_HELPER, NULL));
-	g_assert (code - buf <= tramp_size);
-
-	*info = mono_tramp_info_create ("handler_block_trampoline", buf, code - buf, ji, unwind_ops);
-
-	return buf;
-}
 
 /*========================= End of Function ========================*/

@@ -414,16 +414,7 @@ mono_arch_create_generic_trampoline (MonoTrampolineType tramp_type, MonoTrampInf
 		mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, cfa_offset);
 		x86_ret (code);
 	} else {
-		/* The trampoline argument is at the top of the stack, and it contains the address we need to branch to */
-		if (tramp_type == MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD) {
-			x86_pop_reg (code, X86_EAX);
-			cfa_offset -= sizeof (mgreg_t);
-			mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, cfa_offset);
-			x86_alu_reg_imm (code, X86_ADD, X86_ESP, 0x8);
-			x86_jump_reg (code, X86_EAX);
-		} else {
-			x86_ret (code);
-		}
+		x86_ret (code);
 	}
 
 	g_assert ((code - buf) <= 256);
@@ -606,65 +597,6 @@ mono_arch_invalidate_method (MonoJitInfo *ji, void *func, gpointer func_arg)
 
 	x86_push_imm (code, func_arg);
 	x86_call_code (code, (guint8*)func);
-}
-
-static gpointer
-handler_block_trampoline_helper (void)
-{
-	MonoJitTlsData *jit_tls = mono_tls_get_jit_tls ();
-	return jit_tls->handler_block_return_address;
-}
-
-gpointer
-mono_arch_create_handler_block_trampoline (MonoTrampInfo **info, gboolean aot)
-{
-	guint8 *tramp = mono_get_trampoline_code (MONO_TRAMPOLINE_HANDLER_BLOCK_GUARD);
-	guint8 *code, *buf;
-	int tramp_size = 64;
-	MonoJumpInfo *ji = NULL;
-	int cfa_offset;
-	GSList *unwind_ops = NULL;
-
-	g_assert (!aot);
-
-	code = buf = mono_global_codeman_reserve (tramp_size);
-
-	unwind_ops = mono_arch_get_cie_program ();
-	cfa_offset = sizeof (mgreg_t);
-	/*
-	This trampoline restore the call chain of the handler block then jumps into the code that deals with it.
-	*/
-
-	/*
-	 * We are in a method frame after the call emitted by OP_CALL_HANDLER.
-	 */
-
-	/*Slow path uses a c helper*/
-	x86_call_code (code, handler_block_trampoline_helper);
-	/* Simulate a call */
-	/*Fix stack alignment*/
-	x86_alu_reg_imm (code, X86_SUB, X86_ESP, 0x4);
-	cfa_offset += sizeof (mgreg_t);
-	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, cfa_offset);
-
-	/* This is the address the trampoline will return to */
-	x86_push_reg (code, X86_EAX);
-	cfa_offset += sizeof (mgreg_t);
-	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, cfa_offset);
-
-	/* Dummy trampoline argument, since we call the generic trampoline directly */
-	x86_push_imm (code, 0);
-	cfa_offset += sizeof (mgreg_t);
-	mono_add_unwind_op_def_cfa_offset (unwind_ops, code, buf, cfa_offset);
-	x86_jump_code (code, tramp);
-
-	mono_arch_flush_icache (buf, code - buf);
-	MONO_PROFILER_RAISE (jit_code_buffer, (buf, code - buf, MONO_PROFILER_CODE_BUFFER_HELPER, NULL));
-	g_assert (code - buf <= tramp_size);
-
-	*info = mono_tramp_info_create ("handler_block_trampoline", buf, code - buf, ji, unwind_ops);
-
-	return buf;
 }
 
 guint8*

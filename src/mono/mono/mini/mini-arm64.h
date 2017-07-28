@@ -154,11 +154,7 @@ typedef struct {
 #define MONO_ARCH_HAVE_OP_GENERIC_CLASS_INIT 1
 #define MONO_ARCH_HAVE_OPCODE_NEEDS_EMULATION 1
 #define MONO_ARCH_HAVE_DECOMPOSE_LONG_OPTS 1
-#define MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD 1
 #define MONO_ARCH_HAVE_INIT_LMF_EXT 1
-#ifndef TARGET_IOS
-#define MONO_ARCH_HAVE_HANDLER_BLOCK_GUARD_AOT 1
-#endif
 
 #ifdef TARGET_IOS
 
@@ -259,8 +255,6 @@ void mono_arm_gsharedvt_init (void);
 GSList* mono_arm_get_exception_trampolines (gboolean aot);
 
 void mono_arm_resume_unwind (gpointer arg, mgreg_t pc, mgreg_t *int_regs, gdouble *fp_regs, gboolean corlib, gboolean rethrow);
-
-gpointer mono_arm_handler_block_trampoline_helper (gpointer *ptr);
 
 CallInfo* mono_arch_get_call_info (MonoMemPool *mp, MonoMethodSignature *sig);
 
