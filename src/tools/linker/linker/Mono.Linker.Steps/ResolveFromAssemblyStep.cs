@@ -123,6 +123,19 @@ namespace Mono.Linker.Steps
 					} catch (AssemblyResolutionException) {
 						continue;
 					}
+					if (resolvedExportedType == null) {
+						// we ignore the nested forwarders here as a workaround for older csc bug,
+						// where it was adding nested forwarders to exported types, even when the nested type was not public
+						// see https://bugzilla.xamarin.com/show_bug.cgi?id=57645#c13
+						if (exported.DeclaringType != null) {
+							if (context.LogInternalExceptions)
+								System.Console.WriteLine ($"warning: unable to resolve exported nested type: {exported} (declaring type: {exported.DeclaringType}) from the assembly: {assembly}");
+
+							continue;
+						}
+						throw new LoadException ($"unable to resolve exported forwarded type: {exported} from the assembly: {assembly}");
+					}
+
 					context.Resolve (resolvedExportedType.Scope);
 					MarkType (context, resolvedExportedType, rootVisibility);
 					context.Annotations.Mark (exported);
