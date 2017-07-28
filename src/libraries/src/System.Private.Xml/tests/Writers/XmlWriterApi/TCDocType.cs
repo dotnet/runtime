@@ -11,7 +11,7 @@ namespace System.Xml.Tests
     //[TestCase(Name = "WriteDocType")]
     public class TCDocType
     {
-        //[Variation(id = 1, Desc = "Sanity test", Pri = 1)]
+        // Sanity test
         [Theory]
         [XmlWriterInlineData]
         public void docType_1(XmlWriterUtils utils)
@@ -29,7 +29,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareString(exp));
         }
 
-        //[Variation(id = 2, Desc = "WriteDocType pubid = null and sysid = null", Pri = 1)]
+        // WriteDocType pubid = null and sysid = null
         [Theory]
         [XmlWriterInlineData]
         public void docType_2(XmlWriterUtils utils)
@@ -46,7 +46,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareString(exp));
         }
 
-        //[Variation(id = 3, Desc = "Call WriteDocType twice", Pri = 1)]
+        // Call WriteDocType twice
         [Theory]
         [XmlWriterInlineData]
         public void docType_3(XmlWriterUtils utils)
@@ -102,7 +102,7 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(id = 6, Desc = "WriteDocType with DocType end tag in the value", Pri = 1)]
+        // WriteDocType with DocType end tag in the value
         [Theory]
         [XmlWriterInlineData]
         public void docType_5(XmlWriterUtils utils)
@@ -119,7 +119,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareString(exp));
         }
 
-        //[Variation(id = 7, Desc = "Call WriteDocType in the root element", Pri = 1)]
+        // Call WriteDocType in the root element
         [Theory]
         [XmlWriterInlineData]
         public void docType_6(XmlWriterUtils utils)
@@ -143,7 +143,7 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(id = 8, Desc = "Call WriteDocType following root element", Pri = 1)]
+        // Call WriteDocType following root element
         [Theory]
         [XmlWriterInlineData]
         public void docType_7(XmlWriterUtils utils)

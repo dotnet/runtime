@@ -10,7 +10,7 @@ namespace System.Xml.Tests
 {
     public class TCAttribute
     {
-        //[Variation(id = 1, Desc = "Sanity test for WriteAttribute", Pri = 0)]
+        // Sanity test for WriteAttribute
         [Theory]
         [XmlWriterInlineData]
         public void attribute_1(XmlWriterUtils utils)
@@ -26,7 +26,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("<Root attr1=\"\" attr2=\"val2\" />"));
         }
 
-        //[Variation(id = 2, Desc = "Missing EndAttribute should be fixed", Pri = 0)]
+        // Missing EndAttribute should be fixed
         [Theory]
         [XmlWriterInlineData]
         public void attribute_2(XmlWriterUtils utils)
@@ -40,7 +40,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("<Root attr1=\"\" />"));
         }
 
-        //[Variation(id = 3, Desc = "WriteStartAttribute followed by WriteStartAttribute", Pri = 0)]
+        // WriteStartAttribute followed by WriteStartAttribute
         [Theory]
         [XmlWriterInlineData]
         public void attribute_3(XmlWriterUtils utils)
@@ -55,7 +55,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("<Root attr1=\"\" attr2=\"\" />"));
         }
 
-        //[Variation(id = 4, Desc = "Multiple WritetAttributeString", Pri = 0)]
+        // Multiple WritetAttributeString
         [Theory]
         [XmlWriterInlineData]
         public void attribute_4(XmlWriterUtils utils)
@@ -70,7 +70,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("<Root attr1=\"val1\" attr2=\"val2\" />"));
         }
 
-        //[Variation(id = 5, Desc = "WriteStartAttribute followed by WriteString", Pri = 0)]
+        // WriteStartAttribute followed by WriteString
         [Theory]
         [XmlWriterInlineData]
         public void attribute_5(XmlWriterUtils utils)
@@ -85,7 +85,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("<Root attr1=\"test\" />"));
         }
 
-        //[Variation(id = 6, Desc = "Sanity test for overload WriteStartAttribute(name, ns)", Pri = 1)]
+        // Sanity test for overload WriteStartAttribute(name, ns)
         [Theory]
         [XmlWriterInlineData]
         public void attribute_6(XmlWriterUtils utils)
@@ -100,7 +100,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareString("<Root ~a p1 a~:attr1=\"\" xmlns:~a p1 A~=\"http://my.com\" />"));
         }
 
-        //[Variation(id = 7, Desc = "Sanity test for overload WriteStartAttribute(prefix, name, ns)", Pri = 0)]
+        // Sanity test for overload WriteStartAttribute(prefix, name, ns)
         [Theory]
         [XmlWriterInlineData]
         public void attribute_7(XmlWriterUtils utils)
@@ -115,7 +115,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("<Root pre1:attr1=\"\" xmlns:pre1=\"http://my.com\" />"));
         }
 
-        //[Variation(id = 8, Desc = "DCR 64183: Duplicate attribute 'attr1'", Pri = 1)]
+        // DCR 64183: Duplicate attribute 'attr1'
         [Theory]
         [XmlWriterInlineData]
         public void attribute_8(XmlWriterUtils utils)
@@ -139,7 +139,7 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(id = 9, Desc = "Duplicate attribute 'ns1:attr1'", Pri = 1)]
+        // Duplicate attribute 'ns1:attr1'
         [Theory]
         [XmlWriterInlineData]
         public void attribute_9(XmlWriterUtils utils)
@@ -163,7 +163,7 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(id = 10, Desc = "Attribute name = String.Empty should error", Pri = 1)]
+        // Attribute name = String.Empty should error
         [Theory]
         [XmlWriterInlineData]
         public void attribute_10(XmlWriterUtils utils)
@@ -186,7 +186,7 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(id = 11, Desc = "Attribute name = null", Pri = 1)]
+        // Attribute name = null
         [Theory]
         [XmlWriterInlineData]
         public void attribute_11(XmlWriterUtils utils)
@@ -209,7 +209,7 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(id = 12, Desc = "WriteAttribute with names Foo, fOo, foO, FOO", Pri = 1)]
+        // WriteAttribute with names Foo, fOo, foO, FOO
         [Theory]
         [XmlWriterInlineData]
         public void attribute_12(XmlWriterUtils utils)
@@ -227,7 +227,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("<Root Foo=\"x\" fOo=\"x\" foO=\"x\" FOO=\"x\" />"));
         }
 
-        //[Variation(id = 13, Desc = "Invalid value of xml:space", Pri = 1)]
+        // Invalid value of xml:space
         [Theory]
         [XmlWriterInlineData]
         public void attribute_13(XmlWriterUtils utils)
@@ -250,7 +250,7 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(id = 14, Desc = "SingleQuote in attribute value should be allowed")]
+        // SingleQuote in attribute value should be allowed
         [Theory]
         [XmlWriterInlineData]
         public void attribute_14(XmlWriterUtils utils)
@@ -264,7 +264,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("<Root a=\"b'c\" />"));
         }
 
-        //[Variation(id = 15, Desc = "DoubleQuote in attribute value should be escaped")]
+        // DoubleQuote in attribute value should be escaped
         [Theory]
         [XmlWriterInlineData]
         public void attribute_15(XmlWriterUtils utils)
@@ -278,7 +278,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("<Root a=\"b&quot;c\" />"));
         }
 
-        //[Variation(id = 16, Desc = "WriteAttribute with value = &, #65, #x20", Pri = 1)]
+        // WriteAttribute with value = &, #65, #x20
         [Theory]
         [XmlWriterInlineData]
         public void attribute_16(XmlWriterUtils utils)
@@ -294,7 +294,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("<Root a=\"&amp;\" b=\"&amp;#65;\" c=\"&amp;#x43;\" />"));
         }
 
-        //[Variation(id = 17, Desc = "WriteAttributeString followed by WriteString", Pri = 1)]
+        // WriteAttributeString followed by WriteString
         [Theory]
         [XmlWriterInlineData]
         public void attribute_17(XmlWriterUtils utils)
@@ -309,7 +309,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("<Root a=\"b\">test</Root>"));
         }
 
-        //[Variation(id = 18, Desc = "WriteAttribute followed by WriteString", Pri = 1)]
+        // WriteAttribute followed by WriteString
         [Theory]
         [XmlWriterInlineData]
         public void attribute_18(XmlWriterUtils utils)
@@ -324,7 +324,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("<Root a=\"test\" />"));
         }
 
-        //[Variation(id = 19, Desc = "WriteAttribute with all whitespace characters", Pri = 1)]
+        // WriteAttribute with all whitespace characters
         [Theory]
         [XmlWriterInlineData]
         public void attribute_19(XmlWriterUtils utils)
@@ -339,7 +339,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("<Root a=\" &#x9;&#xD;&#xA;\" />"));
         }
 
-        //[Variation(id = 20, Desc = "< > & chars should be escaped in attribute value", Pri = 1)]
+        // < > & chars should be escaped in attribute value
         [Theory]
         [XmlWriterInlineData]
         public void attribute_20(XmlWriterUtils utils)
@@ -353,7 +353,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("<Root a=\"&lt; &gt; &amp;\" />"));
         }
 
-        //[Variation(id = 21, Desc = "Redefine auto generated prefix n1")]
+        // Redefine auto generated prefix n1
         [Theory]
         [XmlWriterInlineData]
         public void attribute_21(XmlWriterUtils utils)
@@ -374,7 +374,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareString(exp));
         }
 
-        //[Variation(id = 22, Desc = "Reuse and redefine existing prefix")]
+        // Reuse and redefine existing prefix
         [Theory]
         [XmlWriterInlineData]
         public void attribute_22(XmlWriterUtils utils)
@@ -396,7 +396,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareString(exp));
         }
 
-        //[Variation(id = 23, Desc = "WriteStartAttribute(attr) sanity test")]
+        // WriteStartAttribute(attr) sanity test
         [Theory]
         [XmlWriterInlineData]
         public void attribute_23(XmlWriterUtils utils)
@@ -411,7 +411,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("<test attr=\"\" />"));
         }
 
-        //[Variation(id = 24, Desc = "WriteStartAttribute(attr) inside an element with changed default namespace")]
+        // WriteStartAttribute(attr) inside an element with changed default namespace
         [Theory]
         [XmlWriterInlineData]
         public void attribute_24(XmlWriterUtils utils)
@@ -426,7 +426,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("<test attr=\"\" xmlns=\"ns\" />"));
         }
 
-        //[Variation(id = 25, Desc = "WriteStartAttribute(attr) and duplicate attrs")]
+        // WriteStartAttribute(attr) and duplicate attrs
         [Theory]
         [XmlWriterInlineData]
         public void attribute_25(XmlWriterUtils utils)
@@ -449,7 +449,7 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(id = 26, Desc = "WriteStartAttribute(attr) when element has ns:attr")]
+        // WriteStartAttribute(attr) when element has ns:attr
         [Theory]
         [XmlWriterInlineData]
         public void attribute_26(XmlWriterUtils utils)
@@ -464,7 +464,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("<pre:test pre:attr=\"\" attr=\"\" xmlns:pre=\"ns\" />"));
         }
 
-        //[Variation(id = 27, Desc = "XmlCharCheckingWriter should not normalize newLines in attribute values when NewLinesHandling = Replace")]
+        // XmlCharCheckingWriter should not normalize newLines in attribute values when NewLinesHandling = Replace
         [Theory]
         [XmlWriterInlineData]
         public void attribute_27(XmlWriterUtils utils)
@@ -481,7 +481,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("<root a=\"|&#xD;|&#xA;|&#xD;&#xA;|\" />"));
         }
 
-        //[Variation(id = 28, Desc = "Wrapped XmlTextWriter: Invalid replacement of newline characters in text values")]
+        // Wrapped XmlTextWriter: Invalid replacement of newline characters in text values
         [Theory]
         [XmlWriterInlineData]
         public void attribute_28(XmlWriterUtils utils)
@@ -499,7 +499,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("<root a=\"|&#xD;&#xA;|\"><foo>|\x0D\x0A|</foo></root>"));
         }
 
-        //[Variation(id = 29, Desc = "WriteAttributeString doesn't fail on invalid surrogate pair sequences")]
+        // WriteAttributeString doesn't fail on invalid surrogate pair sequences
         [Theory]
         [XmlWriterInlineData]
         public void attribute_29(XmlWriterUtils utils)

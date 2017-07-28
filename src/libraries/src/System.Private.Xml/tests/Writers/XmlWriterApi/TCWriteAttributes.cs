@@ -10,7 +10,7 @@ namespace System.Xml.Tests
 {
     public class TCWriteAttributes : ReaderParamTestCase
     {
-        //[Variation(id = 2, Desc = "Call WriteAttributes with default DTD attributes = false", Pri = 1)]
+        // Call WriteAttributes with default DTD attributes = false
         [Theory]
         [XmlWriterInlineData]
         public void writeAttributes_2(XmlWriterUtils utils)
@@ -40,7 +40,7 @@ namespace System.Xml.Tests
                 Assert.True(utils.CompareReader("<Root a=\"b\" />"));
         }
 
-        //[Variation(id = 3, Desc = "Call WriteAttributes with XmlReader = null")]
+        // Call WriteAttributes with XmlReader = null
         [Theory]
         [XmlWriterInlineData]
         public void writeAttributes_3(XmlWriterUtils utils)
@@ -64,7 +64,7 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(id = 4, Desc = "Call WriteAttributes when reader is located on element", Pri = 1)]
+        // Call WriteAttributes when reader is located on element
         [Theory]
         [XmlWriterInlineData]
         public void writeAttributes_4(XmlWriterUtils utils)
@@ -98,7 +98,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("<Root a=\"b\" c=\"d\" e=\"f\" />"));
         }
 
-        //[Variation(id = 5, Desc = "Call WriteAttributes when reader is located in the middle attribute", Pri = 1)]
+        // Call WriteAttributes when reader is located in the middle attribute
         [Theory]
         [XmlWriterInlineData]
         public void writeAttributes_5(XmlWriterUtils utils)
@@ -133,7 +133,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("<Root c=\"d\" e=\"f\" />"));
         }
 
-        //[Variation(id = 6, Desc = "Call WriteAttributes when reader is located in the last attribute", Pri = 1)]
+        // Call WriteAttributes when reader is located in the last attribute
         [Theory]
         [XmlWriterInlineData]
         public void writeAttributes_6(XmlWriterUtils utils)
@@ -170,7 +170,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("<Root e=\"f\" />"));
         }
 
-        //[Variation(id = 8, Desc = "Call WriteAttributes with reader on XmlDeclaration", Pri = 1)]
+        // Call WriteAttributes with reader on XmlDeclaration
         [Theory]
         [XmlWriterInlineData]
         public void writeAttributes_8(XmlWriterUtils utils)
@@ -300,7 +300,7 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(id = 17, Desc = "Call WriteAttribute with double quote char in the value", Pri = 1)]
+        // Call WriteAttribute with double quote char in the value
         [Theory]
         [XmlWriterInlineData]
         public void writeAttributes_10(XmlWriterUtils utils)
@@ -327,7 +327,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("<Root a=\"b&quot;c\" />"));
         }
 
-        //[Variation(id = 18, Desc = "Call WriteAttribute with single quote char in the value", Pri = 1)]
+        // Call WriteAttribute with single quote char in the value
         [Theory]
         [XmlWriterInlineData]
         public void writeAttributes_11(XmlWriterUtils utils)
@@ -356,7 +356,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("<Root a=\"b'c\" />"));
         }
 
-        //[Variation(id = 19, Desc = "Call WriteAttributes with 100 attributes", Pri = 1)]
+        // Call WriteAttributes with 100 attributes
         [Theory]
         [XmlWriterInlineData]
         public void writeAttributes_12(XmlWriterUtils utils)
@@ -388,7 +388,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareBaseline("OneHundredAttributes.xml"));
         }
 
-        //[Variation(id = 20, Desc = "WriteAttributes with different builtin entities in attribute value", Pri = 1)]
+        // WriteAttributes with different builtin entities in attribute value
         [Theory]
         [XmlWriterInlineData]
         public void writeAttributes_13(XmlWriterUtils utils)
@@ -416,7 +416,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("<Root a=\"&gt;&lt;&quot;&apos;&amp;\" />"));
         }
 
-        //[Variation(id = 21, Desc = "WriteAttributes tries to duplicate attribute", Pri = 1)]
+        // WriteAttributes tries to duplicate attribute
         [Theory]
         [XmlWriterInlineData]
         public void writeAttributes_14(XmlWriterUtils utils)

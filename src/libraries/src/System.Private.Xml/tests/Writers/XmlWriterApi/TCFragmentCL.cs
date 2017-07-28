@@ -9,7 +9,7 @@ namespace System.Xml.Tests
 {
     public class TCFragmentCL
     {
-        //[Variation(id=1, Desc="Multiple root elements should be allowed", Pri=1)]
+        // Multiple root elements should be allowed
         [Theory]
         [XmlWriterInlineData]
         public void frag_1(XmlWriterUtils utils)
@@ -23,7 +23,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("<Root /><Root />"));
         }
 
-        //[Variation(id=2, Desc="Top level text should be allowed - PROLOG", Pri=1)]
+        // Top level text should be allowed - PROLOG
         [Theory]
         [XmlWriterInlineData]
         public void frag_2(XmlWriterUtils utils)
@@ -36,7 +36,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("Top level text<Root />"));
         }
 
-        //[Variation(id=3, Desc="Top level text should be allowed - EPILOG", Pri=1)]
+        // Top level text should be allowed - EPILOG
         [Theory]
         [XmlWriterInlineData]
         public void frag_3(XmlWriterUtils utils)
@@ -49,7 +49,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("<Root />Top level text"));
         }
 
-        //[Variation(id=4, Desc="Top level atomic value should be allowed - PROLOG", Pri=1)]
+        // Top level atomic value should be allowed - PROLOG
         [Theory]
         [XmlWriterInlineData]
         public void frag_4(XmlWriterUtils utils)
@@ -62,7 +62,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("1<Root>test</Root>"));
         }
 
-        //[Variation(id=5, Desc="Top level atomic value should be allowed - EPILOG", Pri=1)]
+        // Top level atomic value should be allowed - EPILOG
         [Theory]
         [XmlWriterInlineData]
         public void frag_5(XmlWriterUtils utils)
@@ -75,7 +75,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("<Root>test</Root>1"));
         }
 
-        //[Variation(id=6, Desc="Multiple top level atomic values", Pri=1)]
+        // Multiple top level atomic values
         [Theory]
         [XmlWriterInlineData]
         public void frag_6(XmlWriterUtils utils)
@@ -90,7 +90,7 @@ namespace System.Xml.Tests
             Assert.True(utils.CompareReader("1111<Root />1111"));
         }
 
-        //[Variation(id=7, Desc="WriteDocType should error when CL=fragment", Pri=1)]
+        // WriteDocType should error when CL=fragment
         [Theory]
         [XmlWriterInlineData]
         public void frag_7(XmlWriterUtils utils)
@@ -112,7 +112,7 @@ namespace System.Xml.Tests
             Assert.True(false);
         }
 
-        //[Variation(id=8, Desc="WriteStartDocument() should error when CL=fragment", Pri=1)]
+        // WriteStartDocument() should error when CL=fragment
         [Theory]
         [XmlWriterInlineData]
         public void frag_8(XmlWriterUtils utils)
