@@ -207,9 +207,6 @@
   <data name="AmbigUDConv" xml:space="preserve">
     <value>'{2}'에서 '{3}(으)로 변환하는 동안 모호한 사용자 정의 변환 '{0}' 및 '{1}'이(가) 발생했습니다.</value>
   </data>
-  <data name="PredefinedTypeNotFound" xml:space="preserve">
-    <value>미리 정의된 형식 '{0}'을(를) 정의하지 않았거나 가져오지 않았습니다.</value>
-  </data>
   <data name="BindToBogus" xml:space="preserve">
     <value>'{0}'은(는) 언어에서 지원되지 않습니다.</value>
   </data>

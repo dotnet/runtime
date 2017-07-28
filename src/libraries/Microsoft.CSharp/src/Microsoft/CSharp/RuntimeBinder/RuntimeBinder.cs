@@ -626,7 +626,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             CType callingObjectType = callingObject.Type;
             if (callingObjectType is ArrayType)
             {
-                callingType = _semanticChecker.GetSymbolLoader().GetReqPredefType(PredefinedType.PT_ARRAY);
+                callingType = _semanticChecker.GetSymbolLoader().GetPredefindType(PredefinedType.PT_ARRAY);
             }
             else if (callingObjectType is NullableType callingNub)
             {
@@ -1173,7 +1173,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             {
                 // For true and false, we try to convert to bool first. If that
                 // doesn't work, then we look for user defined operators.
-                Expr result = _binder.tryConvert(arg1, SymbolLoader.GetReqPredefType(PredefinedType.PT_BOOL));
+                Expr result = _binder.tryConvert(arg1, SymbolLoader.GetPredefindType(PredefinedType.PT_BOOL));
                 if (result != null && op == OperatorKind.OP_FALSE)
                 {
                     // If we can convert to bool, we need to negate the thing if we're looking for false.
@@ -1190,7 +1190,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 // the error.
                 if (result == null)
                 {
-                    result = _binder.mustConvert(arg1, SymbolLoader.GetReqPredefType(PredefinedType.PT_BOOL));
+                    result = _binder.mustConvert(arg1, SymbolLoader.GetPredefindType(PredefinedType.PT_BOOL));
                 }
                 return result;
             }
@@ -1438,7 +1438,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 CType pDestType = _binder.chooseArrayIndexType(argument);
                 if (null == pDestType)
                 {
-                    pDestType = SymbolLoader.GetReqPredefType(PredefinedType.PT_INT);
+                    pDestType = SymbolLoader.GetPredefindType(PredefinedType.PT_INT);
                 }
 
                 return _binder.mustCast(
@@ -1527,7 +1527,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
             Expr callingObject = CreateLocal(arguments[0].Type, false, locals[0]);
             MemberLookup mem = new MemberLookup();
-            CType boolType = SymbolLoader.GetReqPredefType(PredefinedType.PT_BOOL);
+            CType boolType = SymbolLoader.GetPredefindType(PredefinedType.PT_BOOL);
             bool result = false;
 
             if (arguments[0].Value == null)

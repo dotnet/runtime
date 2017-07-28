@@ -266,10 +266,6 @@
           <source>Ambiguous user defined conversions '{0}' and '{1}' when converting from '{2}' to '{3}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">從 '{2}' 轉換為 '{3}' 時，發現模稜兩可的使用者定義轉換 '{0}' 和 '{1}'</target>
         </trans-unit>
-        <trans-unit id="PredefinedTypeNotFound" translate="yes" xml:space="preserve">
-          <source>Predefined type '{0}' is not defined or imported</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">未定義或匯入預先定義的型別 '{0}'</target>
-        </trans-unit>
         <trans-unit id="BindToBogus" translate="yes" xml:space="preserve">
           <source>'{0}' is not supported by the language</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">此語言不支援 '{0}'</target>

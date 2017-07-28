@@ -207,9 +207,6 @@
   <data name="AmbigUDConv" xml:space="preserve">
     <value>從 '{2}' 轉換為 '{3}' 時，發現模稜兩可的使用者定義轉換 '{0}' 和 '{1}'</value>
   </data>
-  <data name="PredefinedTypeNotFound" xml:space="preserve">
-    <value>未定義或匯入預先定義的型別 '{0}'</value>
-  </data>
   <data name="BindToBogus" xml:space="preserve">
     <value>此語言不支援 '{0}'</value>
   </data>

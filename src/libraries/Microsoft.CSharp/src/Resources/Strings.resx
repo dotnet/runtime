@@ -253,9 +253,6 @@
   <data name="AmbigUDConv" xml:space="preserve">
     <value>Ambiguous user defined conversions '{0}' and '{1}' when converting from '{2}' to '{3}'</value>
   </data>
-  <data name="PredefinedTypeNotFound" xml:space="preserve">
-    <value>Predefined type '{0}' is not defined or imported</value>
-  </data>
   <data name="BindToBogus" xml:space="preserve">
     <value>'{0}' is not supported by the language</value>
   </data>

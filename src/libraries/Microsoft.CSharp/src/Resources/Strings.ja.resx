@@ -207,9 +207,6 @@
   <data name="AmbigUDConv" xml:space="preserve">
     <value>'{2}' から '{3}' へ変換するときの、あいまいなユーザー定義の変換 '{0}' および '{1}' です</value>
   </data>
-  <data name="PredefinedTypeNotFound" xml:space="preserve">
-    <value>定義済みの型 '{0}' は定義、またはインポートされていません</value>
-  </data>
   <data name="BindToBogus" xml:space="preserve">
     <value>'{0}' はこの言語でサポートされていません</value>
   </data>

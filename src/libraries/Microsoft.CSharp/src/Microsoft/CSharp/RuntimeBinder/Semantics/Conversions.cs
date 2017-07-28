@@ -143,8 +143,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         return false;
                     }
 
-                    AggregateSymbol aggIList = loader.GetOptPredefAgg(PredefinedType.PT_G_ILIST);
-                    AggregateSymbol aggIReadOnlyList = loader.GetOptPredefAgg(PredefinedType.PT_G_IREADONLYLIST);
+                    AggregateSymbol aggIList = loader.GetPredefAgg(PredefinedType.PT_G_ILIST);
+                    AggregateSymbol aggIReadOnlyList = loader.GetPredefAgg(PredefinedType.PT_G_IREADONLYLIST);
 
                     if ((aggIList == null ||
                         !loader.IsBaseAggregate(aggIList, aggDst.getAggregate())) &&
@@ -160,7 +160,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 if (typeDst is ArrayType arrayDest && typeSrc is AggregateType aggtypeSrc)
                 {
                     // * From System.Array and the interfaces it implements, to any array-type.
-                    if (loader.HasIdentityOrImplicitReferenceConversion(loader.GetReqPredefType(PredefinedType.PT_ARRAY), typeSrc))
+                    if (loader.HasIdentityOrImplicitReferenceConversion(loader.GetPredefindType(PredefinedType.PT_ARRAY), typeSrc))
                     {
                         return true;
                     }
@@ -175,8 +175,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         return false;
                     }
 
-                    AggregateSymbol aggIList = loader.GetOptPredefAgg(PredefinedType.PT_G_ILIST);
-                    AggregateSymbol aggIReadOnlyList = loader.GetOptPredefAgg(PredefinedType.PT_G_IREADONLYLIST);
+                    AggregateSymbol aggIList = loader.GetPredefAgg(PredefinedType.PT_G_ILIST);
+                    AggregateSymbol aggIReadOnlyList = loader.GetPredefAgg(PredefinedType.PT_G_IREADONLYLIST);
 
                     if ((aggIList == null ||
                         !loader.IsBaseAggregate(aggIList, aggtypeSrc.getAggregate())) &&

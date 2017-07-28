@@ -59,7 +59,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return _nameManager;
         }
 
-        public PredefinedTypes getPredefTypes()
+        public PredefinedTypes GetPredefindTypes()
         {
             return GlobalSymbolContext.GetPredefTypes();
         }
@@ -94,44 +94,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return GlobalSymbolContext.GetGlobalMiscSymFactory();
         }
 
-        public AggregateType GetReqPredefType(PredefinedType pt)
-        {
-            AggregateSymbol agg = GetTypeManager().GetReqPredefAgg(pt);
-            if (agg == null)
-            {
-                Debug.Assert(false, "Required predef type missing");
-                return null;
-            }
-            AggregateType ats = agg.getThisType();
-            return ats;
-        }
+        public AggregateSymbol GetPredefAgg(PredefinedType pt) => GetTypeManager().GetPredefAgg(pt);
 
-        public AggregateSymbol GetOptPredefAgg(PredefinedType pt)
-        {
-            return GetTypeManager().GetOptPredefAgg(pt);
-        }
-
-        public AggregateType GetOptPredefType(PredefinedType pt)
-        {
-            AggregateSymbol agg = GetTypeManager().GetOptPredefAgg(pt);
-            if (agg == null)
-                return null;
-            AggregateType ats = agg.getThisType();
-            return ats;
-        }
-
-        public AggregateType GetOptPredefTypeErr(PredefinedType pt)
-        {
-            AggregateSymbol agg = GetTypeManager().GetOptPredefAgg(pt);
-            if (agg == null)
-            {
-                getPredefTypes().ReportMissingPredefTypeError(ErrorContext, pt);
-                return null;
-            }
-
-            AggregateType ats = agg.getThisType();
-            return ats;
-        }
+        public AggregateType GetPredefindType(PredefinedType pt) => GetPredefAgg(pt).getThisType();
 
         public Symbol LookupAggMember(Name name, AggregateSymbol agg, symbmask_t mask)
         {
@@ -157,7 +122,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case TypeKind.TK_AggregateType:
                     return (AggregateType)typeSym;
                 case TypeKind.TK_ArrayType:
-                    return GetReqPredefType(PredefinedType.PT_ARRAY);
+                    return GetPredefindType(PredefinedType.PT_ARRAY);
                 case TypeKind.TK_TypeParameterType:
                     return ((TypeParameterType)typeSym).GetEffectiveBaseClass();
                 case TypeKind.TK_NullableType:
@@ -384,7 +349,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
 
                 // * From any array type to System.Array or any interface implemented by System.Array.
-                if (pDest.isPredefType(PredefinedType.PT_ARRAY) || IsBaseInterface(GetReqPredefType(PredefinedType.PT_ARRAY), pDest))
+                if (pDest.isPredefType(PredefinedType.PT_ARRAY) || IsBaseInterface(GetPredefindType(PredefinedType.PT_ARRAY), pDest))
                 {
                     return true;
                 }
@@ -410,7 +375,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (pSource.isDelegateType() &&
                 (pDest.isPredefType(PredefinedType.PT_MULTIDEL) ||
                 pDest.isPredefType(PredefinedType.PT_DELEGATE) ||
-                IsBaseInterface(GetReqPredefType(PredefinedType.PT_MULTIDEL), pDest)))
+                IsBaseInterface(GetPredefindType(PredefinedType.PT_MULTIDEL), pDest)))
             {
                 return true;
             }
@@ -767,7 +732,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public bool FCanLift()
         {
-            return null != GetOptPredefAgg(PredefinedType.PT_G_OPTIONAL);
+            return null != GetPredefAgg(PredefinedType.PT_G_OPTIONAL);
         }
 
         public bool IsBaseAggregate(AggregateSymbol derived, AggregateSymbol @base)
