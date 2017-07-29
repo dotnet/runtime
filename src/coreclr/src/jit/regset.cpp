@@ -2669,7 +2669,7 @@ void RegSet::rsUnspillRegPair(GenTreePtr tree, regMaskTP needReg, KeepReg keepRe
             // Temporarily lock the high part if necessary. If this register is a multi-use register that is shared
             // with another tree, the register may already be locked.
             const regMaskTP regHiMask = genRegMask(regHi);
-            const bool lockReg = (rsMaskLock & regHiMask) == 0;
+            const bool      lockReg   = (rsMaskLock & regHiMask) == 0;
             if (lockReg)
             {
                 rsLockUsedReg(regHiMask);
@@ -2710,7 +2710,7 @@ void RegSet::rsUnspillRegPair(GenTreePtr tree, regMaskTP needReg, KeepReg keepRe
             // Temporarily lock the low part if necessary. If this register is a multi-use register that is shared
             // with another tree, the register may already be locked.
             const regMaskTP regLoMask = genRegMask(regLo);
-            const bool lockReg = (rsMaskLock & regLoMask) == 0;
+            const bool      lockReg   = (rsMaskLock & regLoMask) == 0;
             if (lockReg)
             {
                 rsLockReg(regLoMask, &regLoUsed);
