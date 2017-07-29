@@ -1,5 +1,9 @@
+<?xml version="1.0" encoding="utf-8" ?>
 <Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
-  <Library>
+  <Library Name="System.Collections.Tests">
+    <Assembly Name="*Application*" DoNotInline="true" DoNotOptimize="true" />
+    <Assembly Name="System.Collections" DoNotInline="true" DoNotOptimize="true" />
+
     <!-- Needed because test code calls IsSerializable on these types  -->
     <Type Name="System.Collections.Generic.SortedList`2" Browse="Required Public" />
     <Type Name="System.Collections.Generic.SortedDictionary`2" Browse="Required Public" />
