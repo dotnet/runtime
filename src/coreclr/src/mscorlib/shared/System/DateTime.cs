@@ -129,7 +129,7 @@ namespace System
         private const String TicksField = "ticks"; // Do not rename (binary serialization)
         private const String DateDataField = "dateData"; // Do not rename (binary serialization)
 
-        // The data is stored as an unsigned 64-bit integeter
+        // The data is stored as an unsigned 64-bit integer
         //   Bits 01-62: The value of 100-nanosecond ticks where 0 represents 1/1/0001 12:00am, up until the value
         //               12/31/9999 23:59:59.9999999
         //   Bits 63-64: A four-state value that describes the DateTimeKind value of the date time, with a 2nd
