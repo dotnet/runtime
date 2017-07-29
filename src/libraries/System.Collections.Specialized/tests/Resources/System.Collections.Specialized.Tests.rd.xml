@@ -1,0 +1,6 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
+  <Library Name="System.Collections.Specialized.Tests">
+    <Assembly Name="System.Collections.Specialized" BinaryFormatter="All" Dynamic="Required Public" />
+  </Library>
+</Directives>
