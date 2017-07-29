@@ -24405,13 +24405,49 @@ void Compiler::fgUpdateFinallyTargetFlags()
 
     JITDUMP("In fgUpdateFinallyTargetFlags, updating finally target flag bits\n");
 
+    fgClearAllFinallyTargetBits();
+    fgAddFinallyTargetFlags();
+
+#endif // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+}
+
+//------------------------------------------------------------------------
+// fgClearAllFinallyTargetBits: Clear all BBF_FINALLY_TARGET bits; these will need to be
+// recomputed later.
+//
+void Compiler::fgClearAllFinallyTargetBits()
+{
+#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+
+    JITDUMP("*************** In fgClearAllFinallyTargetBits()\n");
+
+    // Note that we clear the flags even if there are no EH clauses (compHndBBtabCount == 0)
+    // in case bits are left over from EH clauses being deleted.
+
     // Walk all blocks, and reset the target bits.
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
         block->bbFlags &= ~BBF_FINALLY_TARGET;
     }
 
-    // Walk all blocks again, and set the target bits.
+#endif // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+}
+
+//------------------------------------------------------------------------
+// fgAddFinallyTargetFlags: Add BBF_FINALLY_TARGET bits to all finally targets.
+//
+void Compiler::fgAddFinallyTargetFlags()
+{
+#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+
+    JITDUMP("*************** In fgAddFinallyTargetFlags()\n");
+
+    if (compHndBBtabCount == 0)
+    {
+        JITDUMP("No EH in this method, no flags to set.\n");
+        return;
+    }
+
     for (BasicBlock* block = fgFirstBB; block != nullptr; block = block->bbNext)
     {
         if (block->isBBCallAlwaysPair())
