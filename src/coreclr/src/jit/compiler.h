@@ -3652,6 +3652,16 @@ public:
 
     void fgUpdateFinallyTargetFlags();
 
+    void fgClearAllFinallyTargetBits();
+
+    void fgAddFinallyTargetFlags();
+
+#if FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+    // Sometimes we need to defer updating the BBF_FINALLY_TARGET bit. fgNeedToAddFinallyTargetBits signals
+    // when this is necessary.
+    bool fgNeedToAddFinallyTargetBits;
+#endif // FEATURE_EH_FUNCLETS && defined(_TARGET_ARM_)
+
     bool fgRetargetBranchesToCanonicalCallFinally(BasicBlock*      block,
                                                   BasicBlock*      handler,
                                                   BlockToBlockMap& continuationMap);
