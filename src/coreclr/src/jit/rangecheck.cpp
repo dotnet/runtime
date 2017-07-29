@@ -1117,15 +1117,6 @@ bool RangeCheck::ComputeDoesOverflow(BasicBlock* block, GenTreePtr stmt, GenTree
     return overflows;
 }
 
-struct Node
-{
-    Range range;
-    Node* next;
-    Node() : range(Limit(Limit::keUndef)), next(nullptr)
-    {
-    }
-};
-
 // Compute the range recursively by asking for the range of each variable in the dependency chain.
 // eg.: c = a + b; ask range of "a" and "b" and add the results.
 // If the result cannot be determined i.e., the dependency chain does not terminate in a value,
@@ -1195,40 +1186,24 @@ Range RangeCheck::ComputeRange(
     // If phi, then compute the range for arguments, calling the result "dependent" when looping begins.
     else if (expr->OperGet() == GT_PHI)
     {
-        Node* cur  = nullptr;
-        Node* head = nullptr;
+        Range argRange = Range(Limit(Limit::keUndef));
         for (GenTreeArgList* args = expr->gtOp.gtOp1->AsArgList(); args != nullptr; args = args->Rest())
         {
-            // Collect the range for each phi argument in a linked list.
-            Node* node = new (m_pCompiler->getAllocator()) Node();
-            if (cur != nullptr)
-            {
-                cur->next = node;
-                cur       = cur->next;
-            }
-            else
-            {
-                head = node;
-                cur  = head;
-            }
             if (path->Lookup(args->Current()))
             {
                 JITDUMP("PhiArg [%06d] is already being computed\n", Compiler::dspTreeID(args->Current()));
-                cur->range = Range(Limit(Limit::keDependent));
-                MergeAssertion(block, stmt, args->Current(), path, &cur->range DEBUGARG(indent + 1));
-                continue;
+                argRange = Range(Limit(Limit::keDependent));
             }
-            cur->range = GetRange(block, stmt, args->Current(), path, monotonic DEBUGARG(indent + 1));
-            MergeAssertion(block, stmt, args->Current(), path, &cur->range DEBUGARG(indent + 1));
-        }
-        // Walk the linked list and merge the ranges.
-        for (cur = head; cur; cur = cur->next)
-        {
-            assert(!cur->range.LowerLimit().IsUndef());
-            assert(!cur->range.UpperLimit().IsUndef());
+            else
+            {
+                argRange = GetRange(block, stmt, args->Current(), path, monotonic DEBUGARG(indent + 1));
+            }
+            assert(!argRange.LowerLimit().IsUndef());
+            assert(!argRange.UpperLimit().IsUndef());
+            MergeAssertion(block, stmt, args->Current(), path, &argRange DEBUGARG(indent + 1));
             JITDUMP("Merging ranges %s %s:", range.ToString(m_pCompiler->getAllocatorDebugOnly()),
-                    cur->range.ToString(m_pCompiler->getAllocatorDebugOnly()));
-            range = RangeOps::Merge(range, cur->range, monotonic);
+                    argRange.ToString(m_pCompiler->getAllocatorDebugOnly()));
+            range = RangeOps::Merge(range, argRange, monotonic);
             JITDUMP("%s\n", range.ToString(m_pCompiler->getAllocatorDebugOnly()));
         }
     }
