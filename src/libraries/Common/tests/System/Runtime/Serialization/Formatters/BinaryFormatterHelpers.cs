@@ -24,11 +24,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
             }
         }
 
-        internal static Lazy<T> Clone<T>(Lazy<T> lazy)
-        {
-            return Clone<Lazy<T>>(lazy);
-        }
-
         public static void AssertRoundtrips<T>(T expected, params Func<T, object>[] additionalGetters)
             where T : Exception
         {
