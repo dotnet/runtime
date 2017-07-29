@@ -13,7 +13,7 @@ namespace System.Net.Primitives.Functional.Tests
         public static IEnumerable<object[]> SerializeDeserialize_Roundtrip_MemberData()
         {
             yield return new object[] { new Cookie("somekey", "somevalue") };
-            yield return new object[] { new CookieCollection() { new Cookie("somekey", "somevalue") } };
+            // yield return new object[] { new CookieCollection() { new Cookie("somekey", "somevalue") } };
         }
 
         [Theory]
