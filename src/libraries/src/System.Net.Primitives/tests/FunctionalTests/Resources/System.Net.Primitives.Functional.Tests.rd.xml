@@ -1,6 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
   <Library Name="System.Net.Primitives.Functional.Tests">
-    <Assembly Name="System.Net.Primitives" BinaryFormatter="All" Dynamic="Required Public" />
+    <Type Name="System.Net.CookieVariant" BinaryFormatter="All" Dynamic="Required Public" />
+    <Type Name="System.Net.CookieCollection">
+      <Field Name="m_list" Dynamic="Required" />
+    </Type>
   </Library>
 </Directives>
