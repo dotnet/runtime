@@ -13,7 +13,6 @@
     <Compile Include="DisconnectTest.cs" />
     <Compile Include="HandleTest.cs" />
     <Compile Include="ConnectAsync.cs" />
-    <Compile Include="ConnectExTest.cs" />
     <Compile Include="Close.cs" />
     <Compile Include="CreateSocketTests.cs" />
     <Compile Include="DisposedSocketTests.cs" />
