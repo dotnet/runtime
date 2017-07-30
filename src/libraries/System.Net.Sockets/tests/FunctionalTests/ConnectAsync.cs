@@ -2,98 +2,62 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-using System.Net.Test.Common;
-using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Net.Sockets.Tests
 {
-    public class ConnectAsync
+    public abstract class Connect<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
     {
-        private readonly ITestOutputHelper _log;
-
-        public ConnectAsync(ITestOutputHelper output)
-        {
-            _log = TestLogging.GetInstance();
-            Assert.True(Capability.IPv4Support() || Capability.IPv6Support());
-        }
-
-        public void OnConnectCompleted(object sender, SocketAsyncEventArgs args)
-        {
-            EventWaitHandle handle = (EventWaitHandle)args.UserToken;
-            handle.Set();
-        }
-
         [OuterLoop] // TODO: Issue #11345
         [Theory]
-        [InlineData(SocketImplementationType.APM)]
-        [InlineData(SocketImplementationType.Async)]
-        [Trait("IPv4", "true")]
-        public void ConnectAsync_IPv4_Success(SocketImplementationType type)
+        [MemberData(nameof(Loopbacks))]
+        public void Connect_Success(IPAddress listenAt)
         {
-            Assert.True(Capability.IPv4Support());
-
-            AutoResetEvent completed = new AutoResetEvent(false);
-
             int port;
-            using (SocketTestServer.SocketTestServerFactory(type, IPAddress.Loopback, out port))
+            using (SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, listenAt, out port))
             {
-                SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-                args.RemoteEndPoint = new IPEndPoint(IPAddress.Loopback, port);
-                args.Completed += OnConnectCompleted;
-                args.UserToken = completed;
-
-                using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                using (Socket client = new Socket(listenAt.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
                 {
-                    Assert.True(client.ConnectAsync(args));
-                    Assert.True(completed.WaitOne(TestSettings.PassingTestTimeout), "IPv4: Timed out while waiting for connection");
-                    Assert.Equal<SocketError>(SocketError.Success, args.SocketError);
+                    Task connectTask = ConnectAsync(client, new IPEndPoint(listenAt, port));
+                    Assert.True(connectTask.Wait(TestSettings.PassingTestTimeout), "IPv4: Timed out while waiting for connection");
+                    Assert.True(client.Connected);
                 }
             }
         }
 
         [OuterLoop] // TODO: Issue #11345
         [Theory]
-        [InlineData(SocketImplementationType.APM)]
-        [InlineData(SocketImplementationType.Async)]
-        [Trait("IPv6", "true")]
-        public void ConnectAsync_IPv6_Success(SocketImplementationType type)
+        [MemberData(nameof(Loopbacks))]
+        public void Connect_MultipleIPAddresses_Success(IPAddress listenAt)
         {
-            Assert.True(Capability.IPv6Support());
-
-            AutoResetEvent completed = new AutoResetEvent(false);
+            if (!SupportsMultiConnect)
+                return;
 
             int port;
-            using (SocketTestServer.SocketTestServerFactory(type, IPAddress.IPv6Loopback, out port))
+            using (SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, listenAt, out port))
+            using (Socket client = new Socket(listenAt.AddressFamily, SocketType.Stream, ProtocolType.Tcp))
             {
-                SocketAsyncEventArgs args = new SocketAsyncEventArgs();
-                args.RemoteEndPoint = new IPEndPoint(IPAddress.IPv6Loopback, port);
-                args.Completed += OnConnectCompleted;
-                args.UserToken = completed;
-
-                using (Socket client = new Socket(AddressFamily.InterNetworkV6, SocketType.Stream, ProtocolType.Tcp))
-                {
-                    Assert.True(client.ConnectAsync(args));
-                    Assert.True(completed.WaitOne(TestSettings.PassingTestTimeout), "IPv6: Timed out while waiting for connection");
-                    Assert.Equal<SocketError>(SocketError.Success, args.SocketError);
-                }
-            }
-        }
-
-        [OuterLoop] // TODO: Issue #11345
-        [Theory]
-        [InlineData(AddressFamily.InterNetwork)]
-        [InlineData(AddressFamily.InterNetworkV6)]
-        public async Task ConnectTaskAsync_IPAddresss_Success(AddressFamily family)
-        {
-            int port;
-            using (SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, family == AddressFamily.InterNetwork ? IPAddress.Loopback : IPAddress.IPv6Loopback, out port))
-            using (Socket client = new Socket(family, SocketType.Stream, ProtocolType.Tcp))
-            {
-                await client.ConnectAsync(new IPAddress[] { IPAddress.Loopback, IPAddress.IPv6Loopback }, port);
+                Task connectTask = MultiConnectAsync(client, new IPAddress[] { IPAddress.Loopback, IPAddress.IPv6Loopback }, port);
+                Assert.True(connectTask.Wait(TestSettings.PassingTestTimeout), "Timed out while waiting for connection");
                 Assert.True(client.Connected);
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Fact]
+        [ActiveIssue(22765, TestPlatforms.AnyUnix)]
+        public async Task Connect_OnConnectedSocket_Fails()
+        {
+            int port;
+            using (SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, IPAddress.Loopback, out port))
+            using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                await ConnectAsync(client, new IPEndPoint(IPAddress.Loopback, port));
+
+                // In the sync case, we throw a derived exception here, so need to use ThrowsAnyAsync
+                SocketException se = await Assert.ThrowsAnyAsync<SocketException>(() => ConnectAsync(client, new IPEndPoint(IPAddress.Loopback, port)));
+                Assert.Equal(SocketError.IsConnected, se.SocketErrorCode);
             }
         }
 
@@ -106,11 +70,25 @@ namespace System.Net.Sockets.Tests
             using (SocketTestServer.SocketTestServerFactory(SocketImplementationType.Async, IPAddress.Loopback, out port))
             using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
             {
-                await client.ConnectAsync(IPAddress.Loopback, port);
+                await ConnectAsync(client, new IPEndPoint(IPAddress.Loopback, port));
                 client.Disconnect(reuseSocket: false);
-                Assert.Throws<InvalidOperationException>(() => client.Connect(IPAddress.Loopback, port));
-                Assert.Throws<InvalidOperationException>(() => client.Connect(new IPEndPoint(IPAddress.Loopback, port)));
+
+                if (ConnectAfterDisconnectResultsInInvalidOperationException)
+                {
+                    await Assert.ThrowsAsync<InvalidOperationException>(() => ConnectAsync(client, new IPEndPoint(IPAddress.Loopback, port)));
+                }
+                else
+                {
+                    SocketException se = await Assert.ThrowsAsync<SocketException>(() => ConnectAsync(client, new IPEndPoint(IPAddress.Loopback, port)));
+                    Assert.Equal(SocketError.IsConnected, se.SocketErrorCode);
+                }
             }
         }
     }
+
+    public sealed class ConnectSync : Connect<SocketHelperSync> { }
+    public sealed class ConnectSyncForceNonBlocking : Connect<SocketHelperSyncForceNonBlocking> { }
+    public sealed class ConnectApm : Connect<SocketHelperApm> { }
+    public sealed class ConnectTask : Connect<SocketHelperTask> { }
+    public sealed class ConnectEap : Connect<SocketHelperEap> { }
 }

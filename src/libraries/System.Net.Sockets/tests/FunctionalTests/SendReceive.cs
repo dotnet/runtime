@@ -7,33 +7,11 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Net.Sockets.Tests
 {
-    public abstract class SendReceive : MemberDatas
+    public abstract class SendReceive<T> : SocketTestHelperBase<T> where T : SocketHelperBase, new()
     {
-        private readonly ITestOutputHelper _log;
-
-        public SendReceive(ITestOutputHelper output)
-        {
-            _log = output;
-        }
-
-        public abstract Task<Socket> AcceptAsync(Socket s);
-        public abstract Task ConnectAsync(Socket s, EndPoint endPoint);
-        public abstract Task<int> ReceiveAsync(Socket s, ArraySegment<byte> buffer);
-        public abstract Task<SocketReceiveFromResult> ReceiveFromAsync(
-            Socket s, ArraySegment<byte> buffer, EndPoint endPoint);
-        public abstract Task<int> ReceiveAsync(Socket s, IList<ArraySegment<byte>> bufferList);
-        public abstract Task<int> SendAsync(Socket s, ArraySegment<byte> buffer);
-        public abstract Task<int> SendAsync(Socket s, IList<ArraySegment<byte>> bufferList);
-        public abstract Task<int> SendToAsync(Socket s, ArraySegment<byte> buffer, EndPoint endpoint);
-        public virtual bool GuaranteedSendOrdering => true;
-        public virtual bool ValidatesArrayArguments => true;
-        public virtual bool UsesSync => false;
-        public virtual bool DisposeDuringOperationResultsInDisposedException => false;
-
         [Theory]
         [InlineData(null, 0, 0)] // null array
         [InlineData(1, -1, 0)] // offset low
@@ -1014,13 +992,45 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    public class SendReceiveSync : SendReceive
+    public sealed class SendReceiveSync : SendReceive<SocketHelperSync> { }
+    public sealed class SendReceiveSyncForceNonBlocking : SendReceive<SocketHelperSyncForceNonBlocking> { }
+    public sealed class SendReceiveApm : SendReceive<SocketHelperApm> { }
+    public sealed class SendReceiveTask : SendReceive<SocketHelperTask> { }
+    public sealed class SendReceiveEap : SendReceive<SocketHelperEap> { }
+
+    // Abstract base class for various different socket "modes" (sync, async, etc)
+    // See SendReceive.cs for usage
+    public abstract class SocketHelperBase
     {
-        public SendReceiveSync(ITestOutputHelper output) : base(output) { }
+        public abstract Task<Socket> AcceptAsync(Socket s);
+        public abstract Task<Socket> AcceptAsync(Socket s, Socket acceptSocket);
+        public abstract Task ConnectAsync(Socket s, EndPoint endPoint);
+        public abstract Task MultiConnectAsync(Socket s, IPAddress[] addresses, int port);
+        public abstract Task<int> ReceiveAsync(Socket s, ArraySegment<byte> buffer);
+        public abstract Task<SocketReceiveFromResult> ReceiveFromAsync(
+            Socket s, ArraySegment<byte> buffer, EndPoint endPoint);
+        public abstract Task<int> ReceiveAsync(Socket s, IList<ArraySegment<byte>> bufferList);
+        public abstract Task<int> SendAsync(Socket s, ArraySegment<byte> buffer);
+        public abstract Task<int> SendAsync(Socket s, IList<ArraySegment<byte>> bufferList);
+        public abstract Task<int> SendToAsync(Socket s, ArraySegment<byte> buffer, EndPoint endpoint);
+        public virtual bool GuaranteedSendOrdering => true;
+        public virtual bool ValidatesArrayArguments => true;
+        public virtual bool UsesSync => false;
+        public virtual bool DisposeDuringOperationResultsInDisposedException => false;
+        public virtual bool ConnectAfterDisconnectResultsInInvalidOperationException => false;
+        public virtual bool SupportsMultiConnect => true;
+        public virtual bool SupportsAcceptIntoExistingSocket => true;
+    }
+
+    public class SocketHelperSync : SocketHelperBase
+    {
         public override Task<Socket> AcceptAsync(Socket s) =>
             Task.Run(() => s.Accept());
+        public override Task<Socket> AcceptAsync(Socket s, Socket acceptSocket) => throw new NotSupportedException();
         public override Task ConnectAsync(Socket s, EndPoint endPoint) =>
             Task.Run(() => s.Connect(endPoint));
+        public override Task MultiConnectAsync(Socket s, IPAddress[] addresses, int port) =>
+            Task.Run(() => s.Connect(addresses, port));
         public override Task<int> ReceiveAsync(Socket s, ArraySegment<byte> buffer) =>
             Task.Run(() => s.Receive(buffer.Array, buffer.Offset, buffer.Count, SocketFlags.None));
         public override Task<int> ReceiveAsync(Socket s, IList<ArraySegment<byte>> bufferList) =>
@@ -1044,25 +1054,29 @@ namespace System.Net.Sockets.Tests
 
         public override bool GuaranteedSendOrdering => false;
         public override bool UsesSync => true;
+        public override bool ConnectAfterDisconnectResultsInInvalidOperationException => true;
+        public override bool SupportsAcceptIntoExistingSocket => false;
     }
 
-    public sealed class SendReceiveSyncForceNonBlocking : SendReceiveSync
+    public sealed class SocketHelperSyncForceNonBlocking : SocketHelperSync
     {
-        public SendReceiveSyncForceNonBlocking(ITestOutputHelper output) : base(output) { }
         public override Task<Socket> AcceptAsync(Socket s) =>
             Task.Run(() => { s.ForceNonBlocking(true); Socket accepted = s.Accept(); accepted.ForceNonBlocking(true); return accepted; });
         public override Task ConnectAsync(Socket s, EndPoint endPoint) =>
             Task.Run(() => { s.ForceNonBlocking(true); s.Connect(endPoint); });
     }
 
-    public sealed class SendReceiveApm : SendReceive
+    public sealed class SocketHelperApm : SocketHelperBase
     {
-        public SendReceiveApm(ITestOutputHelper output) : base(output) { }
         public override bool DisposeDuringOperationResultsInDisposedException => true;
         public override Task<Socket> AcceptAsync(Socket s) =>
             Task.Factory.FromAsync(s.BeginAccept, s.EndAccept, null);
+        public override Task<Socket> AcceptAsync(Socket s, Socket acceptSocket) =>
+            Task.Factory.FromAsync(s.BeginAccept, s.EndAccept, acceptSocket, 0, null);
         public override Task ConnectAsync(Socket s, EndPoint endPoint) =>
             Task.Factory.FromAsync(s.BeginConnect, s.EndConnect, endPoint, null);
+        public override Task MultiConnectAsync(Socket s, IPAddress[] addresses, int port) =>
+            Task.Factory.FromAsync(s.BeginConnect, s.EndConnect, addresses, port, null);
         public override Task<int> ReceiveAsync(Socket s, ArraySegment<byte> buffer) =>
             Task.Factory.FromAsync((callback, state) =>
                 s.BeginReceive(buffer.Array, buffer.Offset, buffer.Count, SocketFlags.None, callback, state),
@@ -1099,15 +1113,18 @@ namespace System.Net.Sockets.Tests
                 s.EndSendTo, null);
     }
 
-    public sealed class SendReceiveTask : SendReceive
+    public sealed class SocketHelperTask : SocketHelperBase
     {
-        public SendReceiveTask(ITestOutputHelper output) : base(output) { }
         public override bool DisposeDuringOperationResultsInDisposedException =>
             PlatformDetection.IsFullFramework; // due to SocketTaskExtensions.netfx implementation wrapping APM rather than EAP
         public override Task<Socket> AcceptAsync(Socket s) =>
             s.AcceptAsync();
+        public override Task<Socket> AcceptAsync(Socket s, Socket acceptSocket) =>
+            s.AcceptAsync(acceptSocket);
         public override Task ConnectAsync(Socket s, EndPoint endPoint) =>
             s.ConnectAsync(endPoint);
+        public override Task MultiConnectAsync(Socket s, IPAddress[] addresses, int port) =>
+            s.ConnectAsync(addresses, port);
         public override Task<int> ReceiveAsync(Socket s, ArraySegment<byte> buffer) =>
             s.ReceiveAsync(buffer, SocketFlags.None);
         public override Task<int> ReceiveAsync(Socket s, IList<ArraySegment<byte>> bufferList) =>
@@ -1122,20 +1139,25 @@ namespace System.Net.Sockets.Tests
             s.SendToAsync(buffer, SocketFlags.None, endPoint);
     }
 
-    public sealed class SendReceiveEap : SendReceive
+    public sealed class SocketHelperEap : SocketHelperBase
     {
-        public SendReceiveEap(ITestOutputHelper output) : base(output) { }
-
         public override bool ValidatesArrayArguments => false;
 
         public override Task<Socket> AcceptAsync(Socket s) =>
             InvokeAsync(s, e => e.AcceptSocket, e => s.AcceptAsync(e));
+        public override Task<Socket> AcceptAsync(Socket s, Socket acceptSocket) =>
+            InvokeAsync(s, e => e.AcceptSocket, e =>
+            {
+                e.AcceptSocket = acceptSocket;
+                return s.AcceptAsync(e);
+            });
         public override Task ConnectAsync(Socket s, EndPoint endPoint) =>
             InvokeAsync(s, e => true, e =>
             {
                 e.RemoteEndPoint = endPoint;
                 return s.ConnectAsync(e);
             });
+        public override Task MultiConnectAsync(Socket s, IPAddress[] addresses, int port) => throw new NotSupportedException();
         public override Task<int> ReceiveAsync(Socket s, ArraySegment<byte> buffer) =>
             InvokeAsync(s, e => e.BytesTransferred, e =>
             {
@@ -1184,37 +1206,63 @@ namespace System.Net.Sockets.Tests
             var saea = new SocketAsyncEventArgs();
             EventHandler<SocketAsyncEventArgs> handler = (_, e) =>
             {
-                if (e.SocketError == SocketError.Success) tcs.SetResult(getResult(e));
-                else tcs.SetException(new SocketException((int)e.SocketError));
+                if (e.SocketError == SocketError.Success)
+                    tcs.SetResult(getResult(e));
+                else
+                    tcs.SetException(new SocketException((int)e.SocketError));
                 saea.Dispose();
             };
             saea.Completed += handler;
-            if (!invoke(saea)) handler(s, saea);
+            if (!invoke(saea))
+                handler(s, saea);
             return tcs.Task;
         }
 
-        [Theory]
-        [InlineData(1, -1, 0)] // offset low
-        [InlineData(1, 2, 0)] // offset high
-        [InlineData(1, 0, -1)] // count low
-        [InlineData(1, 1, 2)] // count high
-        public void BufferList_InvalidArguments_Throws(int length, int offset, int count)
-        {
-            using (var e = new SocketAsyncEventArgs())
-            {
-                ArraySegment<byte> invalidBuffer = new FakeArraySegment { Array = new byte[length], Offset = offset, Count = count }.ToActual();
-                Assert.Throws<ArgumentOutOfRangeException>(() => e.BufferList = new List<ArraySegment<byte>> { invalidBuffer });
-
-                ArraySegment<byte> validBuffer = new ArraySegment<byte>(new byte[1]);
-                Assert.Throws<ArgumentOutOfRangeException>(() => e.BufferList = new List<ArraySegment<byte>> { validBuffer, invalidBuffer });
-            }
-        }
+        public override bool SupportsMultiConnect => false;
     }
+
+    public abstract class SocketTestHelperBase<T> : MemberDatas
+        where T : SocketHelperBase, new()
+    {
+        private readonly T _socketHelper;
+
+        public SocketTestHelperBase()
+        {
+            _socketHelper = new T();
+        }
+
+        //
+        // Methods that delegate to SocketHelper implementation
+        //
+
+        public Task<Socket> AcceptAsync(Socket s) => _socketHelper.AcceptAsync(s);
+        public Task<Socket> AcceptAsync(Socket s, Socket acceptSocket) => _socketHelper.AcceptAsync(s, acceptSocket);
+        public Task ConnectAsync(Socket s, EndPoint endPoint) => _socketHelper.ConnectAsync(s, endPoint);
+        public Task MultiConnectAsync(Socket s, IPAddress[] addresses, int port) => _socketHelper.MultiConnectAsync(s, addresses, port);
+        public Task<int> ReceiveAsync(Socket s, ArraySegment<byte> buffer) => _socketHelper.ReceiveAsync(s, buffer);
+        public Task<SocketReceiveFromResult> ReceiveFromAsync(
+            Socket s, ArraySegment<byte> buffer, EndPoint endPoint) => _socketHelper.ReceiveFromAsync(s, buffer, endPoint);
+        public Task<int> ReceiveAsync(Socket s, IList<ArraySegment<byte>> bufferList) => _socketHelper.ReceiveAsync(s, bufferList);
+        public Task<int> SendAsync(Socket s, ArraySegment<byte> buffer) => _socketHelper.SendAsync(s, buffer);
+        public Task<int> SendAsync(Socket s, IList<ArraySegment<byte>> bufferList) => _socketHelper.SendAsync(s, bufferList);
+        public Task<int> SendToAsync(Socket s, ArraySegment<byte> buffer, EndPoint endpoint) => _socketHelper.SendToAsync(s, buffer, endpoint);
+        public bool GuaranteedSendOrdering => _socketHelper.GuaranteedSendOrdering;
+        public bool ValidatesArrayArguments => _socketHelper.ValidatesArrayArguments;
+        public bool UsesSync => _socketHelper.UsesSync;
+        public bool DisposeDuringOperationResultsInDisposedException => _socketHelper.DisposeDuringOperationResultsInDisposedException;
+        public bool ConnectAfterDisconnectResultsInInvalidOperationException => _socketHelper.ConnectAfterDisconnectResultsInInvalidOperationException;
+        public bool SupportsMultiConnect => _socketHelper.SupportsMultiConnect;
+        public bool SupportsAcceptIntoExistingSocket => _socketHelper.SupportsAcceptIntoExistingSocket;
+    }
+
+    //
+    // MemberDatas that are generally useful
+    //
 
     public abstract class MemberDatas
     {
         public static readonly object[][] Loopbacks = new[]
-        {
+    {
             new object[] { IPAddress.Loopback },
             new object[] { IPAddress.IPv6Loopback },
         };
@@ -1227,6 +1275,10 @@ namespace System.Net.Sockets.Tests
             new object[] { IPAddress.Loopback, false },
         };
     }
+
+    //
+    // Utility stuff
+    //
 
     internal struct FakeArraySegment
     {
