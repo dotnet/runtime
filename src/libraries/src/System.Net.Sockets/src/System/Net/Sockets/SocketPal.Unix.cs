@@ -1044,15 +1044,17 @@ namespace System.Net.Sockets
             {
                 if (optionName == SocketOptionName.ReceiveTimeout)
                 {
+                    // Note, setting a non-infinite timeout will force the handle into nonblocking mode
                     handle.ReceiveTimeout = optionValue == 0 ? -1 : optionValue;
-                    err = Interop.Sys.SetReceiveTimeout(handle, optionValue);
-                    return GetErrorAndTrackSetting(handle, optionLevel, optionName, err);
+                    handle.TrackOption(optionLevel, optionName);
+                    return SocketError.Success;
                 }
                 else if (optionName == SocketOptionName.SendTimeout)
                 {
+                    // Note, setting a non-infinite timeout will force the handle into nonblocking mode
                     handle.SendTimeout = optionValue == 0 ? -1 : optionValue;
-                    err = Interop.Sys.SetSendTimeout(handle, optionValue);
-                    return GetErrorAndTrackSetting(handle, optionLevel, optionName, err);
+                    handle.TrackOption(optionLevel, optionName);
+                    return SocketError.Success;
                 }
             }
             else if (optionLevel == SocketOptionLevel.IP)
