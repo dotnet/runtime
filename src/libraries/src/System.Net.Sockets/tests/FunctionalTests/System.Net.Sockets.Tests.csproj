@@ -7,12 +7,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="AcceptAsync.cs" />
+    <Compile Include="Accept.cs" />
     <Compile Include="AgnosticListenerTest.cs" />
     <Compile Include="ArgumentValidationTests.cs" />
     <Compile Include="DisconnectTest.cs" />
     <Compile Include="HandleTest.cs" />
-    <Compile Include="ConnectAsync.cs" />
+    <Compile Include="Connect.cs" />
     <Compile Include="Close.cs" />
     <Compile Include="CreateSocketTests.cs" />
     <Compile Include="DisposedSocketTests.cs" />
@@ -29,6 +29,7 @@
     <Compile Include="SendPacketsElementTest.cs" />
     <Compile Include="SendFile.cs" />
     <Compile Include="OSSupport.cs" />
+    <Compile Include="SocketTestHelper.cs" />
     <Compile Include="SendReceive.cs" />
     <Compile Include="SelectAndPollTests.cs" />
     <Compile Include="SocketInformationTest.cs" />
