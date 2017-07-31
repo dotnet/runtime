@@ -11,6 +11,7 @@ using Microsoft.CSharp.RuntimeBinder.Syntax;
 
 namespace Microsoft.CSharp.RuntimeBinder.Semantics
 {
+    [Flags]
     internal enum MemLookFlags : uint
     {
         None = 0,

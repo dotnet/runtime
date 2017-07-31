@@ -21,6 +21,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
     }
 
     // Flags for bindImplicitConversion/bindExplicitConversion
+    [Flags]
     internal enum CONVERTTYPE
     {
         NOUDC = 0x01,  // Do not consider user defined conversions.
