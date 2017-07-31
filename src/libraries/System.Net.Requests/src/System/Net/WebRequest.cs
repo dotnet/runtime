@@ -573,6 +573,7 @@ namespace System.Net
                 lock (s_internalSyncObject)
                 {
                     s_DefaultWebProxy = value;
+                    s_DefaultWebProxyInitialized = true;
                 }
             }
         }
