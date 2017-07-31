@@ -2965,9 +2965,16 @@ struct GenTreeBox : public GenTreeUnOp
     // This is the statement that contains the assignment tree when the node is an inlined GT_BOX on a value
     // type
     GenTreePtr gtAsgStmtWhenInlinedBoxValue;
+    // And this is the statement that copies from the value being boxed to the box payload
+    GenTreePtr gtCopyStmtWhenInlinedBoxValue;
 
-    GenTreeBox(var_types type, GenTreePtr boxOp, GenTreePtr asgStmtWhenInlinedBoxValue)
-        : GenTreeUnOp(GT_BOX, type, boxOp), gtAsgStmtWhenInlinedBoxValue(asgStmtWhenInlinedBoxValue)
+    GenTreeBox(var_types  type,
+               GenTreePtr boxOp,
+               GenTreePtr asgStmtWhenInlinedBoxValue,
+               GenTreePtr copyStmtWhenInlinedBoxValue)
+        : GenTreeUnOp(GT_BOX, type, boxOp)
+        , gtAsgStmtWhenInlinedBoxValue(asgStmtWhenInlinedBoxValue)
+        , gtCopyStmtWhenInlinedBoxValue(copyStmtWhenInlinedBoxValue)
     {
     }
 #if DEBUGGABLE_GENTREE
