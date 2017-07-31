@@ -4,7 +4,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.Serialization;
 using System.Threading;
 
 namespace System.Collections.Concurrent
@@ -33,13 +32,9 @@ namespace System.Collections.Concurrent
     public class ConcurrentBag<T> : IProducerConsumerCollection<T>, IReadOnlyCollection<T>
     {
         /// <summary>The per-bag, per-thread work-stealing queues.</summary>
-        [NonSerialized]
         private ThreadLocal<WorkStealingQueue> _locals;
         /// <summary>The head work stealing queue in a linked list of queues.</summary>
-        [NonSerialized]
         private volatile WorkStealingQueue _workStealingQueues;
-        /// <summary>Temporary storage of the bag's contents used during serialization.</summary>
-        private T[] _serializationArray;
 
         /// <summary>Initializes a new instance of the <see cref="ConcurrentBag{T}"/> class.</summary>
         public ConcurrentBag()
@@ -69,38 +64,6 @@ namespace System.Collections.Concurrent
             {
                 queue.LocalPush(item);
             }
-        }
-
-        /// <summary>Get the data array to be serialized.</summary>
-        [OnSerializing]
-        private void OnSerializing(StreamingContext context)
-        {
-            // save the data into the serialization array to be saved
-            _serializationArray = ToArray();
-        }
-
-        /// <summary>Clear the serialized array.</summary>
-        [OnSerialized]
-        private void OnSerialized(StreamingContext context)
-        {
-            _serializationArray = null;
-        }
-
-        /// <summary>Construct the stack from a previously serialized one.</summary>
-        [OnDeserialized]
-        private void OnDeserialized(StreamingContext context)
-        {
-            Debug.Assert(_locals == null);
-            _locals = new ThreadLocal<WorkStealingQueue>();
-
-            WorkStealingQueue queue = GetCurrentThreadWorkStealingQueue(forceCreate: true);
-            foreach (T item in _serializationArray)
-            {
-                queue.LocalPush(item);
-            }
-            _serializationArray = null;
-
-            _workStealingQueues = queue;
         }
 
         /// <summary>
