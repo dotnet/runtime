@@ -287,7 +287,7 @@ namespace System.Drawing.Tests
         {
             using (var format = new StringFormat())
             {
-                AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => format.Alignment = alignment);
+                Assert.ThrowsAny<ArgumentException>(() => format.Alignment = alignment);
             }
         }
 
@@ -363,7 +363,7 @@ namespace System.Drawing.Tests
         {
             using (var format = new StringFormat())
             {
-                AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => format.LineAlignment = alignment);
+                Assert.ThrowsAny<ArgumentException>(() => format.LineAlignment = alignment);
             }
         }
 
@@ -397,7 +397,7 @@ namespace System.Drawing.Tests
         {
             using (var format = new StringFormat())
             {
-                AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => format.HotkeyPrefix = prefix);
+                Assert.ThrowsAny<ArgumentException>(() => format.HotkeyPrefix = prefix);
             }
         }
 
@@ -429,7 +429,7 @@ namespace System.Drawing.Tests
         {
             using (var format = new StringFormat())
             {
-                AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => format.Trimming = trimming);
+                Assert.ThrowsAny<ArgumentException>(() => format.Trimming = trimming);
             }
         }
 
