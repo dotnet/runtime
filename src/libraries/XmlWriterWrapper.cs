@@ -11,14 +11,10 @@ namespace Microsoft.ServiceModel.Syndication
 
         private Func<XmlWriterWrapper, string, Task> writeStringFunc;
         private Func<XmlWriterWrapper, string, string, Task> writeStartElementFunc2;
-        private Func<XmlWriterWrapper, string, Task> writeStartElementFunc1;
         private Func<XmlWriterWrapper, Task> writeEndElementFunc;
-        private Func<XmlWriterWrapper, string, string, Task> writeElementStringFunc1;
-        private Func<XmlWriterWrapper, string, string, string, Task> writeElementStringFunc2;
         private Func<XmlWriterWrapper, string, string, Task> writeAttributeStringFunc2;
         private Func<XmlWriterWrapper, string, string, string, Task> writeAttributeStringFunc3;
         private Func<XmlWriterWrapper, string, string, string, string, Task> writeAttributeStringFunc4;
-
         private Func<XmlWriterWrapper, XmlReader, bool, Task> WriteNodeFunc;
 
 
@@ -30,7 +26,6 @@ namespace Microsoft.ServiceModel.Syndication
             this.writeAttributeStringFunc2 = new Func<XmlWriterWrapper, string, string, Task>((thisPtr, localname, value) => { return thisPtr.writer.WriteAttributeStringAsync("", localname, "", value); });
             this.writeAttributeStringFunc3 = new Func<XmlWriterWrapper, string, string, string, Task>((thisPtr, localName, ns, value) => { return thisPtr.writer.WriteAttributeStringAsync("", localName, ns, value); });
             this.writeAttributeStringFunc4 = new Func<XmlWriterWrapper, string, string, string, string, Task>((thisPtr, prefix, localName, ns, value) => { return thisPtr.writer.WriteAttributeStringAsync(prefix, localName, ns, value); });
-
             this.WriteNodeFunc = new Func<XmlWriterWrapper, XmlReader, bool, Task>((thisPtr, reader, defattr) => { return thisPtr.writer.WriteNodeAsync(reader, defattr); });
         }
 
@@ -42,7 +37,6 @@ namespace Microsoft.ServiceModel.Syndication
             this.writeAttributeStringFunc2 = new Func<XmlWriterWrapper, string, string, Task>((thisPtr, localname, value) => { thisPtr.writer.WriteAttributeString("", localname, "", value); return Task.CompletedTask; });
             this.writeAttributeStringFunc3 = new Func<XmlWriterWrapper, string, string, string, Task>((thisPtr, localName, ns, value) => { thisPtr.writer.WriteAttributeString(localName, ns, value); return Task.CompletedTask; });
             this.writeAttributeStringFunc4 = new Func<XmlWriterWrapper, string, string, string, string, Task>((thisPtr, prefix, localName, ns, value) => { thisPtr.writer.WriteAttributeString(prefix, localName, ns, value); return Task.CompletedTask; });
-
             this.WriteNodeFunc = new Func<XmlWriterWrapper, XmlReader, bool, Task>((thisPtr, reader, defattr) => { thisPtr.writer.WriteNode(reader, defattr); return Task.CompletedTask; });
         }
 
