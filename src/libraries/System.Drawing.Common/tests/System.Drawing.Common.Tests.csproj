@@ -29,6 +29,7 @@
     <Compile Include="IconTests.cs" />
     <Compile Include="ImageTests.cs" />
     <Compile Include="Imaging\ImageAttributesTests.cs" />
+    <Compile Include="Imaging\MetafileTests.cs" />
     <Compile Include="PenTests.cs" />
     <Compile Include="PensTests.cs" />
     <Compile Include="Imaging\BitmapDataTests.cs" />
