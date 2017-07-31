@@ -20,6 +20,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AllowedCharsBitmapTests.cs" />
+    <Compile Include="TextEncoderTests.cs" />
+    <Compile Include="ScalarTestEncoder.cs" />
     <Compile Include="CommonTestEncoder.cs" />
     <Compile Include="BufferInternalTests.cs" />
     <Compile Include="EncoderCommon.cs" />
