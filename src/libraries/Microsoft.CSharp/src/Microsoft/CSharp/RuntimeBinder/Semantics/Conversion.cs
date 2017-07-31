@@ -727,14 +727,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             Expr obj = !isExtensionMethod ? grp.OptionalObject: null;
-            bool bIsMatchingStatic;
             bool constrained;
             PostBindMethod(ref mwiWrap, obj);
-            obj = AdjustMemberObject(mwiWrap, obj, out constrained, out bIsMatchingStatic);
-            if (!bIsMatchingStatic)
-            {
-                grp.SetMismatchedStaticBit();
-            }
+            obj = AdjustMemberObject(mwiWrap, obj, out constrained);
             obj = isExtensionMethod ? grp.OptionalObject: obj;
             Debug.Assert(mwiWrap.Meth().getKind() == SYMKIND.SK_MethodSymbol);
             if (mwiWrap.TypeArgs.Count > 0)
