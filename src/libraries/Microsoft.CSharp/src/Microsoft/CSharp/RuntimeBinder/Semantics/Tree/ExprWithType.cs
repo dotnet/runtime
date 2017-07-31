@@ -11,7 +11,5 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Type = type;
         }
-
-        public override CType Type { get; }
     }
 }
