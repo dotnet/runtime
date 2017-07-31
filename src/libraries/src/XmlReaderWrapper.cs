@@ -11,12 +11,7 @@ namespace Microsoft.ServiceModel.Syndication
         private XmlReader reader;
 
         private Func<XmlReaderWrapper, Task<string>> getValueFunc;
-        //private Func<XmlReaderWrapper, Task<string>> readElementStringFunc;
-        //private Func<XmlReaderWrapper, Task<string>> readStringFunc;
-        private Func<XmlReaderWrapper, Task> readEndElementFunc;
         private Func<XmlReaderWrapper, Task<XmlNodeType>> moveToContentFunc;
-        private Func<XmlReaderWrapper, string, string, Task> readStartElementFunc2;
-        private Func<XmlReaderWrapper, Task<bool>> isStartElementFunc;
         private Func<XmlReaderWrapper, string, string, Task<bool>> isStartElementFunc2;
         private Func<XmlReaderWrapper, Task> skipFunc;
         private Func<XmlReaderWrapper, Task<bool>> readFunc;
@@ -51,7 +46,6 @@ namespace Microsoft.ServiceModel.Syndication
         {
             this.getValueFunc = new Func<XmlReaderWrapper, Task<string>>((thisPtr) => { return thisPtr.reader.GetValueAsync(); });
             this.moveToContentFunc = new Func<XmlReaderWrapper, Task<XmlNodeType>>((thisPtr) => { return thisPtr.reader.MoveToContentAsync(); });
-            this.isStartElementFunc2 = new Func<XmlReaderWrapper, string, string, Task<bool>>((thisPtr, localname, ns) => { return IsStartElementAsync(thisPtr.reader, localname, ns); });
             this.skipFunc = new Func<XmlReaderWrapper, Task>((thisPtr) => { return thisPtr.reader.SkipAsync(); });
             this.readFunc = new Func<XmlReaderWrapper, Task<bool>>((thisPtr) => { return thisPtr.reader.ReadAsync(); });
             this.readInnerXmlFunc = new Func<XmlReaderWrapper, Task<string>>((thisPtr) => { return thisPtr.reader.ReadInnerXmlAsync(); });
@@ -61,7 +55,6 @@ namespace Microsoft.ServiceModel.Syndication
         {
             this.getValueFunc = new Func<XmlReaderWrapper, Task<string>>((thisPtr) => { return Task.FromResult<string>(thisPtr.reader.Value); });
             this.moveToContentFunc = new Func<XmlReaderWrapper, Task<XmlNodeType>>((thisPtr) => { return Task.FromResult<XmlNodeType>(this.reader.MoveToContent()); });
-            this.isStartElementFunc2 = new Func<XmlReaderWrapper, string, string, Task<bool>>((thisPtr, localname, ns) => { return Task.FromResult<bool>(this.reader.IsStartElement(localname, ns)); });
             this.skipFunc = new Func<XmlReaderWrapper, Task>((thisPtr) => { this.reader.Skip(); return Task.CompletedTask; });
             this.readFunc = new Func<XmlReaderWrapper, Task<bool>>((thisPtr) => { return Task.FromResult<bool>(this.reader.Read()); });
             this.readInnerXmlFunc = new Func<XmlReaderWrapper, Task<string>>((thisPtr) => { return Task.FromResult<string>(this.reader.ReadInnerXml()); });
@@ -246,201 +239,6 @@ namespace Microsoft.ServiceModel.Syndication
         public override Task<string> ReadInnerXmlAsync()
         {
             return readInnerXmlFunc(this);
-        }
-
-        private static async Task ReadStartElementAsync(XmlReader reader)
-        {
-            if (await reader.MoveToContentAsync() != XmlNodeType.Element)
-            {
-                throw new InvalidOperationException(reader.NodeType.ToString() + " is an invalid XmlNodeType");
-            }
-
-            await reader.ReadAsync();
-        }
-
-        private static async Task ReadStartElementAsync(XmlReader reader, string name)
-        {
-            if (await reader.MoveToContentAsync() != XmlNodeType.Element)
-            {
-                throw new InvalidOperationException(reader.NodeType.ToString() + " is an invalid XmlNodeType");
-            }
-            if (reader.Name == name)
-            {
-                await reader.ReadAsync();
-            }
-            else
-            {
-                throw new InvalidOperationException("name doesn’t match");
-            }
-        }
-
-        private static async Task ReadStartElementAsync(XmlReader reader, string localname, string ns)
-        {
-            if (await reader.MoveToContentAsync() != XmlNodeType.Element)
-            {
-                throw new InvalidOperationException(reader.NodeType.ToString() + " is an invalid XmlNodeType");
-            }
-            if ((reader.LocalName == localname) && (reader.NamespaceURI == ns))
-            {
-                await reader.ReadAsync();
-            }
-            else
-            {
-                throw new InvalidOperationException("localName or namespace doesn’t match");
-            }
-        }
-
-        private static async Task ReadEndElementAsync(XmlReader reader)
-        {
-            if (await reader.MoveToContentAsync() != XmlNodeType.EndElement)
-            {
-                throw new InvalidOperationException();
-            }
-            await reader.ReadAsync();
-        }
-
-        private static async Task<bool> IsStartElementAsync(XmlReader reader)
-        {
-            return await reader.MoveToContentAsync() == XmlNodeType.Element;
-        }
-
-        private static async Task<bool> IsStartElementAsync(XmlReader reader, string name)
-        {
-            return await reader.MoveToContentAsync() == XmlNodeType.Element && reader.Name == name;
-        }
-
-        private static async Task<bool> IsStartElementAsync(XmlReader reader, string localname, string ns)
-        {
-            return await reader.MoveToContentAsync() == XmlNodeType.Element && reader.LocalName == localname && reader.NamespaceURI == ns;
-        }
-
-        private static async Task<string> ReadStringAsync(XmlReader reader)
-        {
-            if (reader.ReadState != ReadState.Interactive)
-            {
-                return string.Empty;
-            }
-            reader.MoveToElement();
-            if (reader.NodeType == XmlNodeType.Element)
-            {
-                if (reader.IsEmptyElement)
-                {
-                    return string.Empty;
-                }
-                else if (!await reader.ReadAsync())
-                {
-                    throw new InvalidOperationException("Invalid operation");
-                }
-                if (reader.NodeType == XmlNodeType.EndElement)
-                {
-                    return string.Empty;
-                }
-            }
-            string result = string.Empty;
-            while (MyIsTextualNode(reader, reader.NodeType))
-            {
-                result += await reader.GetValueAsync();
-                if (!await reader.ReadAsync())
-                {
-                    break;
-                }
-            }
-
-            return result;
-        }
-
-        private static bool MyIsTextualNode(XmlReader reader, XmlNodeType nodeType)
-        {
-            const uint isTextualNodeBitmap = 0x6018;
-            return 0 != (isTextualNodeBitmap & (1 << (int)nodeType));
-        }
-
-        private static async Task<string> ReadElementStringAsync(XmlReader reader)
-        {
-            string result = string.Empty;
-
-            if (await reader.MoveToContentAsync() != XmlNodeType.Element)
-            {
-                throw new XmlException(SR.XmlNodeIsNotAnElement);
-            }
-
-            if (!reader.IsEmptyElement)
-            {
-                await reader.ReadAsync();
-                result = await ReadStringAsync(reader);
-                if (reader.NodeType != XmlNodeType.EndElement)
-                {
-                    throw new XmlException("InvalidNodeType");
-                }
-                await reader.ReadAsync();
-            }
-            else
-            {
-                await reader.ReadAsync();
-            }
-
-            return result;
-        }
-
-        private static async Task<string> ReadElementStringAsync(XmlReader reader, string name)
-        {
-            string result = string.Empty;
-
-            if (await reader.MoveToContentAsync() != XmlNodeType.Element)
-            {
-                throw new XmlException("InvalidNodeType");
-            }
-            if (reader.Name != name)
-            {
-                throw new XmlException("ElementNotFound");
-            }
-
-            if (!reader.IsEmptyElement)
-            {
-                result = await ReadStringAsync(reader);
-
-                if (reader.NodeType != XmlNodeType.EndElement)
-                {
-                    throw new XmlException("InvalidNodeType");
-                }
-                await reader.ReadAsync();
-            }
-            else
-            {
-                await reader.ReadAsync();
-            }
-            return result;
-        }
-
-        private static async Task<string> ReadElementStringAsync(XmlReader reader, string localname, string ns)
-        {
-            string result = string.Empty;
-
-            if (await reader.MoveToContentAsync() != XmlNodeType.Element)
-            {
-                throw new XmlException("InvalidNodeType");
-            }
-
-            if (reader.LocalName != localname || reader.NamespaceURI != ns)
-            {
-                throw new XmlException("ElementNotFound");
-            }
-
-            if (!reader.IsEmptyElement)
-            {
-                result = await ReadStringAsync(reader);
-
-                if (reader.NodeType != XmlNodeType.EndElement)
-                {
-                    throw new XmlException("InvalidNodeType");
-                }
-                await reader.ReadAsync();
-            }
-            else
-            {
-                await reader.ReadAsync();
-            }
-            return result;
         }
 
         public static async Task WriteNodeAsync(XmlDictionaryWriter writer, XmlReader reader, bool defattr)
@@ -664,6 +462,88 @@ namespace Microsoft.ServiceModel.Syndication
         public static async Task<bool> IsStartElementAsync(this XmlReader reader, string localname, string ns)
         {
             return (await reader.MoveToContentAsync() == XmlNodeType.Element) && (reader.LocalName == localname && reader.NamespaceURI == ns);
+        }
+
+        private static async Task ReadStartElementAsync(this XmlReader reader, string name)
+        {
+            if (await reader.MoveToContentAsync() != XmlNodeType.Element)
+            {
+                throw new InvalidOperationException(reader.NodeType.ToString() + " is an invalid XmlNodeType");
+            }
+            if (reader.Name == name)
+            {
+                await reader.ReadAsync();
+            }
+            else
+            {
+                throw new InvalidOperationException("name doesn’t match");
+            }
+        }
+
+        private static async Task<bool> IsStartElementAsync(this XmlReader reader, string name)
+        {
+            return await reader.MoveToContentAsync() == XmlNodeType.Element && reader.Name == name;
+        }
+
+        private static async Task<string> ReadElementStringAsync(this XmlReader reader, string name)
+        {
+            string result = string.Empty;
+
+            if (await reader.MoveToContentAsync() != XmlNodeType.Element)
+            {
+                throw new XmlException("InvalidNodeType");
+            }
+            if (reader.Name != name)
+            {
+                throw new XmlException("ElementNotFound");
+            }
+
+            if (!reader.IsEmptyElement)
+            {
+                result = await ReadStringAsync(reader);
+
+                if (reader.NodeType != XmlNodeType.EndElement)
+                {
+                    throw new XmlException("InvalidNodeType");
+                }
+                await reader.ReadAsync();
+            }
+            else
+            {
+                await reader.ReadAsync();
+            }
+            return result;
+        }
+
+        private static async Task<string> ReadElementStringAsync(XmlReader reader, string localname, string ns)
+        {
+            string result = string.Empty;
+
+            if (await reader.MoveToContentAsync() != XmlNodeType.Element)
+            {
+                throw new XmlException("InvalidNodeType");
+            }
+
+            if (reader.LocalName != localname || reader.NamespaceURI != ns)
+            {
+                throw new XmlException("ElementNotFound");
+            }
+
+            if (!reader.IsEmptyElement)
+            {
+                result = await ReadStringAsync(reader);
+
+                if (reader.NodeType != XmlNodeType.EndElement)
+                {
+                    throw new XmlException("InvalidNodeType");
+                }
+                await reader.ReadAsync();
+            }
+            else
+            {
+                await reader.ReadAsync();
+            }
+            return result;
         }
 
     }
