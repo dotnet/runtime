@@ -42,11 +42,5 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public Expr CastOfNonLiftedResultToLiftedType { get; set; }
 
         SymWithType IExprWithArgs.GetSymWithType() => MethWithInst;
-
-        public override void SetMismatchedStaticBit()
-        {
-            MemberGroup?.SetMismatchedStaticBit();
-            base.SetMismatchedStaticBit();
-        }
     }
 }

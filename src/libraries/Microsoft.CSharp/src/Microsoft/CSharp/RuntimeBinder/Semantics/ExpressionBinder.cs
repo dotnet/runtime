@@ -611,11 +611,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(pMemGroup != null);
 
             bool fConstrained;
-            bool bIsMatchingStatic;
             Expr pObject = pMemGroup.OptionalObject;
             CType callingObjectType = pObject?.Type;
             PostBindMethod(ref mwi, pObject);
-            pObject = AdjustMemberObject(mwi, pObject, out fConstrained, out bIsMatchingStatic);
+            pObject = AdjustMemberObject(mwi, pObject, out fConstrained);
             pMemGroup.OptionalObject = pObject;
 
             CType pReturnType = null;
@@ -629,10 +628,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             ExprCall pResult = GetExprFactory().CreateCall(0, pReturnType, pArguments, pMemGroup, mwi);
-            if (!bIsMatchingStatic)
-            {
-                pResult.SetMismatchedStaticBit();
-            }
 
             if (!pResult.IsOK)
             {
@@ -679,9 +674,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return pField;
             }
 
-            bool bIsMatchingStatic;
             bool pfConstrained;
-            pOptionalObject = AdjustMemberObject(fwt, pOptionalObject, out pfConstrained, out bIsMatchingStatic);
+            pOptionalObject = AdjustMemberObject(fwt, pOptionalObject, out pfConstrained);
 
             checkUnsafe(pFieldType); // added to the binder so we don't bind to pointer ops
 
@@ -712,10 +706,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             ExprField pResult = GetExprFactory()
                 .CreateField(pFieldType, pOptionalObject, fwt, isLValue);
-            if (!bIsMatchingStatic)
-            {
-                pResult.SetMismatchedStaticBit();
-            }
 
             if (pFieldType is ErrorType)
             {
@@ -789,7 +779,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // the setter is actually an lvalue.
             pObjectThrough = pObject;
 
-            bool bIsMatchingStatic;
             PostBindProperty(pwt, pObject, out mwtGet, out mwtSet);
 
             if (mwtGet &&
@@ -799,15 +788,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                      )
                 )
             {
-                pObject = AdjustMemberObject(mwtGet, pObject, out fConstrained, out bIsMatchingStatic);
+                pObject = AdjustMemberObject(mwtGet, pObject, out fConstrained);
             }
             else if (mwtSet)
             {
-                pObject = AdjustMemberObject(mwtSet, pObject, out fConstrained, out bIsMatchingStatic);
+                pObject = AdjustMemberObject(mwtSet, pObject, out fConstrained);
             }
             else
             {
-                pObject = AdjustMemberObject(pwt, pObject, out fConstrained, out bIsMatchingStatic);
+                pObject = AdjustMemberObject(pwt, pObject, out fConstrained);
             }
             pMemGroup.OptionalObject = pObject;
 
@@ -817,10 +806,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (pObject != null && !pObject.IsOK)
             {
                 ExprProperty pResult = GetExprFactory().CreateProperty(pReturnType, pObjectThrough, args, pMemGroup, pwt, null);
-                if (!bIsMatchingStatic)
-                {
-                    pResult.SetMismatchedStaticBit();
-                }
                 pResult.SetError();
                 return pResult;
             }
@@ -868,11 +853,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             ExprProperty result = GetExprFactory().CreateProperty(pReturnType, pObjectThrough, args, pMemGroup, pwt, mwtSet);
-            if (!bIsMatchingStatic)
-            {
-                result.SetMismatchedStaticBit();
-            }
-
             if (fConstrained && pObject != null)
             {
                 // Use the constrained prefix.
@@ -1417,12 +1397,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
         }
 
-        private Expr AdjustMemberObject(SymWithType swt, Expr pObject, out bool pfConstrained, out bool pIsMatchingStatic)
+        private Expr AdjustMemberObject(SymWithType swt, Expr pObject, out bool pfConstrained)
         {
             // Assert that the type is present and is an instantiation of the member's parent.
             Debug.Assert(swt.GetType() != null && swt.GetType().getAggregate() == swt.Sym.parent as AggregateSymbol);
             bool bIsMatchingStatic = IsMatchingStatic(swt, pObject);
-            pIsMatchingStatic = bIsMatchingStatic;
             pfConstrained = false;
 
             bool isStatic = swt.Sym.isStatic;
@@ -1437,7 +1416,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     if ((pObject.Flags & EXPRFLAG.EXF_SIMPLENAME) != 0)
                     {
                         // We've made the static match now.
-                        pIsMatchingStatic = true;
                         return null;
                     }
                     else
