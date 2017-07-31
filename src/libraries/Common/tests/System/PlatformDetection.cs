@@ -48,7 +48,7 @@ namespace System
             }
         }
         public static bool IsNotWindowsIoTCore => !IsWindowsIoTCore;
-        public static bool IsDrawingSupported => (IsNotWindowsNanoServer && IsNotWindowsNanoServer);
+        public static bool IsDrawingSupported => (IsNotWindowsNanoServer && IsNotWindowsIoTCore);
         public static bool IsWindows10Version1607OrGreater => IsWindows &&
             GetWindowsVersion() == 10 && GetWindowsMinorVersion() == 0 && GetWindowsBuildNumber() >= 14393;
         public static bool IsWindows10Version1703OrGreater => IsWindows &&
