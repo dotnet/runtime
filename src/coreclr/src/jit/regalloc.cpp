@@ -4835,6 +4835,17 @@ regMaskTP Compiler::rpPredictTreeRegUse(GenTreePtr   tree,
             }
             assert(list == NULL);
 
+#ifdef LEGACY_BACKEND
+#if CPU_LOAD_STORE_ARCH
+#ifdef FEATURE_READYTORUN_COMPILER
+            if (tree->gtCall.IsR2RRelativeIndir())
+            {
+                tree->gtUsedRegs |= RBM_R2R_INDIRECT_PARAM;
+            }
+#endif // FEATURE_READYTORUN_COMPILER
+#endif // CPU_LOAD_STORE_ARCH
+#endif // LEGACY_BACKEND
+
             regMaskTP callAddrMask;
             callAddrMask = RBM_NONE;
 #if CPU_LOAD_STORE_ARCH
