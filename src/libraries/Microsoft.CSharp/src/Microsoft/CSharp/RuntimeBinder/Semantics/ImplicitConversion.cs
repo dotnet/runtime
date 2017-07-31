@@ -117,7 +117,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     case TypeKind.TK_MethodGroupType:
                         VSFAIL("Something is wrong with Type.IsNeverSameType()");
                         return false;
-                    case TypeKind.TK_NaturalIntegerType:
                     case TypeKind.TK_ArgumentListType:
                         return _typeSrc == _typeDest;
                     case TypeKind.TK_VoidType:

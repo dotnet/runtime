@@ -62,13 +62,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return type;
         }
 
-        public BoundLambdaType CreateAnonMethod()
-        {
-            BoundLambdaType type = new BoundLambdaType();
-            type.SetTypeKind(TypeKind.TK_BoundLambdaType);
-            return type;
-        }
-
         public MethodGroupType CreateMethodGroup()
         {
             MethodGroupType type = new MethodGroupType();
