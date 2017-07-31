@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Net.Test.Common;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -249,6 +250,23 @@ namespace System.Net.Sockets.Tests
             }
         }
 
+        [Theory]
+        [InlineData(1, -1, 0)] // offset low
+        [InlineData(1, 2, 0)] // offset high
+        [InlineData(1, 0, -1)] // count low
+        [InlineData(1, 1, 2)] // count high
+        public void BufferList_InvalidArguments_Throws(int length, int offset, int count)
+        {
+            using (var e = new SocketAsyncEventArgs())
+            {
+                ArraySegment<byte> invalidBuffer = new FakeArraySegment { Array = new byte[length], Offset = offset, Count = count }.ToActual();
+                Assert.Throws<ArgumentOutOfRangeException>(() => e.BufferList = new List<ArraySegment<byte>> { invalidBuffer });
+
+                ArraySegment<byte> validBuffer = new ArraySegment<byte>(new byte[1]);
+                Assert.Throws<ArgumentOutOfRangeException>(() => e.BufferList = new List<ArraySegment<byte>> { validBuffer, invalidBuffer });
+            }
+        }
+
         [Fact]
         public async Task Completed_RegisterThenInvoked_UnregisterThenNotInvoked()
         {
@@ -452,6 +470,106 @@ namespace System.Net.Sockets.Tests
                         recvBufferList.Add(new ArraySegment<byte>(recvBuffer, i * 2, 1));
                     }
                 }
+            }
+        }
+
+        public void OnAcceptCompleted(object sender, SocketAsyncEventArgs args)
+        {
+            EventWaitHandle handle = (EventWaitHandle)args.UserToken;
+            handle.Set();
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Unix platforms don't yet support receiving data with AcceptAsync.
+        public void AcceptAsync_WithReceiveBuffer_Success()
+        {
+            Assert.True(Capability.IPv4Support());
+
+            AutoResetEvent accepted = new AutoResetEvent(false);
+
+            using (Socket server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                int port = server.BindToAnonymousPort(IPAddress.Loopback);
+                server.Listen(1);
+
+                const int acceptBufferOverheadSize = 288; // see https://msdn.microsoft.com/en-us/library/system.net.sockets.socket.acceptasync(v=vs.110).aspx
+                const int acceptBufferDataSize = 256;
+                const int acceptBufferSize = acceptBufferOverheadSize + acceptBufferDataSize;
+
+                byte[] sendBuffer = new byte[acceptBufferDataSize];
+                new Random().NextBytes(sendBuffer);
+
+                SocketAsyncEventArgs acceptArgs = new SocketAsyncEventArgs();
+                acceptArgs.Completed += OnAcceptCompleted;
+                acceptArgs.UserToken = accepted;
+                acceptArgs.SetBuffer(new byte[acceptBufferSize], 0, acceptBufferSize);
+
+                Assert.True(server.AcceptAsync(acceptArgs));
+ 
+                using (Socket client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    client.Connect(IPAddress.Loopback, port);
+                    client.Send(sendBuffer);
+                    client.Shutdown(SocketShutdown.Both);
+                }
+
+                Assert.True(
+                    accepted.WaitOne(TestSettings.PassingTestTimeout), "Test completed in alotted time");
+
+                Assert.Equal(
+                    SocketError.Success, acceptArgs.SocketError);
+
+                Assert.Equal(
+                    acceptBufferDataSize, acceptArgs.BytesTransferred);
+
+                Assert.Equal(
+                    new ArraySegment<byte>(sendBuffer),
+                    new ArraySegment<byte>(acceptArgs.Buffer, 0, acceptArgs.BytesTransferred));
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Unix platforms don't yet support receiving data with AcceptAsync.
+        public void AcceptAsync_WithTooSmallReceiveBuffer_Failure()
+        {
+            using (Socket server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                int port = server.BindToAnonymousPort(IPAddress.Loopback);
+                server.Listen(1);
+
+                SocketAsyncEventArgs acceptArgs = new SocketAsyncEventArgs();
+                acceptArgs.Completed += OnAcceptCompleted;
+                acceptArgs.UserToken = new ManualResetEvent(false);
+
+                byte[] buffer = new byte[1];
+                acceptArgs.SetBuffer(buffer, 0, buffer.Length);
+
+                AssertExtensions.Throws<ArgumentException>(null, () => server.AcceptAsync(acceptArgs));
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Fact]
+        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Unix platforms don't yet support receiving data with AcceptAsync.
+        public void AcceptAsync_WithReceiveBuffer_Failure()
+        {
+            Assert.True(Capability.IPv4Support());
+
+            using (Socket server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                int port = server.BindToAnonymousPort(IPAddress.Loopback);
+                server.Listen(1);
+
+                SocketAsyncEventArgs acceptArgs = new SocketAsyncEventArgs();
+                acceptArgs.Completed += OnAcceptCompleted;
+                acceptArgs.UserToken = new ManualResetEvent(false);
+
+                byte[] buffer = new byte[1024];
+                acceptArgs.SetBuffer(buffer, 0, buffer.Length);
+
+                Assert.Throws<PlatformNotSupportedException>(() => server.AcceptAsync(acceptArgs));
             }
         }
     }
