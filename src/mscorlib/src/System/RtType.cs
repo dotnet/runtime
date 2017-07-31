@@ -3447,6 +3447,8 @@ namespace System
             return RuntimeTypeHandle.IsComObject(this, false);
         }
 
+        public sealed override bool IsByRefLike => RuntimeTypeHandle.IsByRefLike(this);
+
 #if FEATURE_COMINTEROP
         internal override bool IsWindowsRuntimeObjectImpl()
         {

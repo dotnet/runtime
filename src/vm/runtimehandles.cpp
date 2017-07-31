@@ -970,6 +970,24 @@ FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsInterface, ReflectClassBaseObject *pTy
 }
 FCIMPLEND;
 
+
+FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::IsByRefLike, ReflectClassBaseObject *pTypeUNSAFE)
+{
+    CONTRACTL {
+        FCALL_CHECK;
+    }
+    CONTRACTL_END;
+    
+    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
+
+    _ASSERTE(refType != NULL);
+
+    TypeHandle typeHandle = refType->GetType();
+
+    FC_RETURN_BOOL(typeHandle.IsByRefLike());
+}
+FCIMPLEND
+
 BOOL 
 QCALLTYPE 
 RuntimeTypeHandle::IsVisible(
@@ -3115,3 +3133,4 @@ void QCALLTYPE RuntimeMethodHandle::GetCallerType(QCall::StackCrawlMarkHandle pS
 
     return;
 }
+
