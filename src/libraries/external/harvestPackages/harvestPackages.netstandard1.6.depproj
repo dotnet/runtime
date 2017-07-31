@@ -4,7 +4,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.6</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
   </PropertyGroup>
 
   <ItemGroup>
@@ -23,8 +23,14 @@
     <PackageReference Include="System.Buffers">
       <Version>4.4.0</Version>
     </PackageReference>
+    <PackageReference Include="System.CodeDom">
+      <Version>4.4.0</Version>
+    </PackageReference>
     <PackageReference Include="System.Collections.Immutable">
       <Version>1.4.0</Version>
+    </PackageReference>
+    <PackageReference Include="System.ComponentModel.Annotations">
+      <Version>4.4.0</Version>
     </PackageReference>
     <PackageReference Include="System.Composition">
       <Version>1.1.0</Version>
@@ -44,6 +50,9 @@
     <PackageReference Include="System.Composition.TypedParts">
       <Version>1.1.0</Version>
     </PackageReference>
+    <PackageReference Include="System.Configuration.ConfigurationManager">
+      <Version>4.4.0</Version>
+    </PackageReference>
     <PackageReference Include="System.Data.SqlClient">
       <Version>4.4.0</Version>
     </PackageReference>
@@ -60,6 +69,12 @@
       <Version>4.4.0</Version>
     </PackageReference>
     <PackageReference Include="System.IO.Pipes.AccessControl">
+      <Version>4.4.0</Version>
+    </PackageReference>
+    <PackageReference Include="System.IO.Ports">
+      <Version>4.4.0</Version>
+    </PackageReference>
+    <PackageReference Include="System.Json">
       <Version>4.4.0</Version>
     </PackageReference>
     <PackageReference Include="System.Net.Http">
@@ -82,6 +97,9 @@
     </PackageReference>
     <PackageReference Include="System.Reflection.Metadata">
       <Version>1.5.0</Version>
+    </PackageReference>
+    <PackageReference Include="System.Reflection.TypeExtensions">
+      <Version>4.4.0</Version>
     </PackageReference>
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe">
       <Version>4.4.0</Version>
@@ -112,6 +130,12 @@
     </PackageReference>
     <PackageReference Include="System.Security.Cryptography.X509Certificates">
       <Version>4.3.0</Version>
+    </PackageReference>
+    <PackageReference Include="System.Security.Cryptography.Xml">
+      <Version>4.4.0</Version>
+    </PackageReference>
+    <PackageReference Include="System.Security.Permissions">
+      <Version>4.4.0</Version>
     </PackageReference>
     <PackageReference Include="System.Security.Principal.Windows">
       <Version>4.4.0</Version>
