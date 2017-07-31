@@ -12,7 +12,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.Serialization;
 using System.Threading;
 
 namespace System.Collections.Concurrent
@@ -58,12 +57,8 @@ namespace System.Collections.Concurrent
             }
         }
 
-        [NonSerialized]
         private volatile Node _head; // The stack is a singly linked list, and only remembers the head.
-
         private const int BACKOFF_MAX_YIELDS = 8; // Arbitrary number to cap backoff.
-
-        private T[] _serializationArray; // Used for custom serialization
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ConcurrentStack{T}"/>
@@ -88,45 +83,6 @@ namespace System.Collections.Concurrent
                 throw new ArgumentNullException(nameof(collection));
             }
             InitializeFromCollection(collection);
-        }
-
-        /// <summary>Get the data array to be serialized.</summary>
-        [OnSerializing]
-        private void OnSerializing(StreamingContext context)
-        {
-            // save the data into the serialization array to be saved
-            _serializationArray = ToArray();
-        }
-
-        /// <summary>
-        /// Construct the stack from a previously seiralized one
-        /// </summary>
-        [OnDeserialized]
-        private void OnDeserialized(StreamingContext context)
-        {
-            Debug.Assert(_serializationArray != null);
-
-            // Add the elements to our stack.  We need to add them from head-to-tail, to
-            // preserve the original ordering of the stack before serialization.
-            Node prevNode = null, head = null;
-            for (int i = 0; i < _serializationArray.Length; i++)
-            {
-                Node currNode = new Node(_serializationArray[i]);
-
-                if (prevNode == null)
-                {
-                    head = currNode;
-                }
-                else
-                {
-                    prevNode._next = currNode;
-                }
-
-                prevNode = currNode;
-            }
-
-            _head = head;
-            _serializationArray = null;
         }
 
         /// <summary>
