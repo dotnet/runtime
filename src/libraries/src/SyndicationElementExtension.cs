@@ -126,12 +126,12 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        public TExtension GetObject<TExtension>()
+        public Task<TExtension> GetObject<TExtension>()
         {
             return GetObject<TExtension>(new DataContractSerializer(typeof(TExtension)));
         }
 
-        public TExtension GetObject<TExtension>(XmlObjectSerializer serializer)
+        public async Task<TExtension> GetObject<TExtension>(XmlObjectSerializer serializer)
         {
             if (serializer == null)
             {
@@ -142,13 +142,13 @@ namespace Microsoft.ServiceModel.Syndication
                 return (TExtension)_extensionData;
             }
 
-            using (XmlReader reader = GetReader())
+            using (XmlReader reader = await GetReaderAsync())
             {
                 return (TExtension)serializer.ReadObject(reader, false);
             }
         }
 
-        public TExtension GetObject<TExtension>(XmlSerializer serializer)
+        public async Task<TExtension> GetObject<TExtension>(XmlSerializer serializer)
         {
             if (serializer == null)
             {
@@ -159,7 +159,7 @@ namespace Microsoft.ServiceModel.Syndication
                 return (TExtension)_extensionData;
             }
 
-            using (XmlReader reader = GetReader())
+            using (XmlReader reader = await GetReaderAsync())
             {
                 return (TExtension)serializer.Deserialize(reader);
             }
@@ -185,10 +185,10 @@ namespace Microsoft.ServiceModel.Syndication
             return reader;
         }
 
-        public XmlReader GetReader()
-        {
-            return GetReaderAsync().GetAwaiter().GetResult();
-        }
+        //public Task<XmlReader> GetReader()
+        //{
+        //    return GetReaderAsync();
+        //}
 
         public async Task WriteToAsync(XmlWriter writer)
         {
@@ -203,7 +203,7 @@ namespace Microsoft.ServiceModel.Syndication
             else
             {
                 writer = XmlWriterWrapper.CreateFromWriter(writer);
-                using (XmlReader reader = GetReader())
+                using (XmlReader reader = await GetReaderAsync())
                 {
                     await writer.WriteNodeAsync(reader, false);
                 }
