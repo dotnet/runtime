@@ -299,32 +299,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 // handle user defined operators
                 // map from CLS predefined names to "operator <X>"
                 ErrAppendString("operator ");
-
-                //
-                // This is kinda slow, but the alternative is to add bits to methsym.
-                //
-                string operatorName;
-                OperatorKind op = Operators.OperatorOfMethodName(meth.name);
-                if (Operators.HasDisplayName(op))
-                {
-                    operatorName = Operators.GetDisplayName(op);
-                }
-                else
-                {
-                    //
-                    // either equals or compare
-                    //
-                    if (meth.name == NameManager.GetPredefinedName(PredefinedName.PN_OPEQUALS))
-                    {
-                        operatorName = "equals";
-                    }
-                    else
-                    {
-                        Debug.Assert(meth.name == NameManager.GetPredefinedName(PredefinedName.PN_OPCOMPARE));
-                        operatorName = "compare";
-                    }
-                }
-                ErrAppendString(operatorName);
+                ErrAppendString(Operators.OperatorOfMethodName(meth.name));
             }
             else if (meth.IsExpImpl())
             {
