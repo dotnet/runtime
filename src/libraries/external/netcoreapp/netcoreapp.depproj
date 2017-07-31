@@ -1,0 +1,29 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <BinPlaceRef>true</BinPlaceRef>
+    <NuGetDeploySourceItem>Reference</NuGetDeploySourceItem>
+    <NETCoreAppPackageVersion>2.0.0-preview2-25407-01</NETCoreAppPackageVersion>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETCore.App">
+      <Version>$(NETCoreAppPackageVersion)</Version>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- for all configurations this project provides refs for that configuration -->
+    <BinPlaceConfiguration Include="$(Configuration)">
+      <RefPath>$(RefPath)</RefPath>
+    </BinPlaceConfiguration>
+    <BinPlaceConfiguration Include="$(Configuration)">
+      <!-- copy shims to the testhost as well in order to be able to run the netfx tests -->
+      <RuntimePath>$(TestHostRootPath)</RuntimePath>
+    </BinPlaceConfiguration>
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

@@ -12,16 +12,15 @@
     <DefineConstants Condition="'$(TargetsWindows)' == 'true'">$(DefineConstants);FEATURE_WINDOWS_SYSTEM_COLORS</DefineConstants>
     <DefineConstants Condition="'$(TargetsUnix)' == 'true'">$(DefineConstants);CORECLR;NETCORE</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp2.0-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp2.0-Unix-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp2.0-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp2.0-Windows_NT-Release|AnyCPU'" />
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Collections.Specialized" />
-    <Reference Include="System.Configuration.ConfigurationManager" />
     <Reference Include="System.Diagnostics.Contracts" />
     <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.StackTrace" />
@@ -41,6 +40,7 @@
   </ItemGroup>
   <ItemGroup>
     <!-- Shared source code, all configurations -->
+    <Compile Include="misc\InvalidEnumArgumentException.cs" />
     <Compile Include="System\Drawing\BitmapSuffixInSameAssemblyAttribute.cs" />
     <Compile Include="System\Drawing\BitmapSuffixInSatelliteAssemblyAttribute.cs" />
     <Compile Include="System\Drawing\IDeviceContext.cs" />
@@ -166,6 +166,12 @@
     <Compile Include="$(CommonPath)\System\Drawing\ColorTable.cs">
       <Link>System\Drawing\ColorTable.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Drawing\ColorUtil.netcoreapp20.cs">
+      <Link>System\Drawing\ColorUtil.netcoreapp20.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\System\Drawing\KnownColor.cs">
+      <Link>System\Drawing\KnownColor.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Drawing\KnownColorTable.cs">
       <Link>System\Drawing\KnownColorTable.cs</Link>
     </Compile>
@@ -212,7 +218,9 @@
     <Compile Include="System\Drawing\Printing\PageSettings.cs" />
     <Compile Include="System\Drawing\Printing\PreviewPrintController.cs" />
     <Compile Include="System\Drawing\Printing\PrintController.cs" />
-    <Compile Include="System\Drawing\Printing\PrintDocument.cs" />
+    <Compile Include="System\Drawing\Printing\PrintDocument.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="System\Drawing\Printing\PrinterSettings.cs" />
     <Compile Include="System\Drawing\Printing\PrintEvent.cs" />
     <Compile Include="System\Drawing\Printing\PrintPageEvent.cs" />
@@ -241,6 +249,9 @@
     <Compile Include="misc\GDI\WindowsRegion.cs" />
     <Compile Include="misc\GDI\WindowsRegionCombineMode.cs" />
     <Compile Include="$(CommonPath)\System\LocalAppContext.cs" />
+    <Compile Include="$(CommonPath)\System\Numerics\Hashing\HashHelpers.cs">
+      <Link>Common\System\Numerics\Hashing\HashHelpers.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\Interop.Libraries.cs">
       <Link>Common\Interop\Windows\Interop.Libraries.cs</Link>
     </Compile>

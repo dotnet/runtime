@@ -64,7 +64,7 @@ namespace System.Drawing.Printing.Tests
         public void Kind_InvalidEnum_ThrowsInvalidEnumArgumentException(PrinterResolutionKind overflowKind)
         {
             PrinterResolution pr = new PrinterResolution();
-            Assert.Throws<InvalidEnumArgumentException>(() => pr.Kind = overflowKind);
+            Assert.ThrowsAny<ArgumentException>(() => pr.Kind = overflowKind);
         }
     }
 }
