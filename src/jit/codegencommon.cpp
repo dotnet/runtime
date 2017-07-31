@@ -1587,7 +1587,11 @@ BasicBlock* CodeGen::genCreateTempLabel()
     block->bbFlags |= (compiler->compCurBB->bbFlags & BBF_COLD);
 
 #ifdef DEBUG
+#ifdef UNIX_X86_ABI
+    block->bbTgtStkDepth = (genStackLevel - curNestedAlignment) / sizeof(int);
+#else
     block->bbTgtStkDepth = genStackLevel / sizeof(int);
+#endif
 #endif
     return block;
 }
