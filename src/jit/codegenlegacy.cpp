@@ -19440,6 +19440,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreeCall* call, bool valUsed)
                         break;
 
                         case IAT_PVALUE:
+                        {
                             //------------------------------------------------------
                             // Non-virtual direct calls to addresses accessed by
                             // a single indirection.
@@ -19448,10 +19449,28 @@ regMaskTP CodeGen::genCodeForCall(GenTreeCall* call, bool valUsed)
                             // Load the address into a register, load indirect and call  through a register
                             CLANG_FORMAT_COMMENT_ANCHOR;
 #if CPU_LOAD_STORE_ARCH
-                            indCallReg = regSet.rsGrabReg(RBM_ALLINT); // Grab an available register to use for the CALL
-                                                                       // indirection
+                            regMaskTP indCallMask = RBM_ALLINT;
+
+#ifdef FEATURE_READYTORUN_COMPILER
+                            if (call->IsR2RRelativeIndir())
+                            {
+                                indCallMask &= ~RBM_R2R_INDIRECT_PARAM;
+                            }
+#endif // FEATURE_READYTORUN_COMPILER
+
+                            // Grab an available register to use for the CALL indirection
+                            indCallReg = regSet.rsGrabReg(indCallMask);
 
                             instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, indCallReg, (ssize_t)addr);
+
+#ifdef FEATURE_READYTORUN_COMPILER
+                            if (call->IsR2RRelativeIndir())
+                            {
+                                noway_assert(regSet.rsRegMaskCanGrab() & RBM_R2R_INDIRECT_PARAM);
+                                getEmitter()->emitIns_R_R(INS_mov, EA_PTRSIZE, REG_R2R_INDIRECT_PARAM, indCallReg);
+                            }
+#endif // FEATURE_READYTORUN_COMPILER
+
                             getEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, indCallReg, indCallReg, 0);
                             regTracker.rsTrackRegTrash(indCallReg);
 
@@ -19471,7 +19490,8 @@ regMaskTP CodeGen::genCodeForCall(GenTreeCall* call, bool valUsed)
                                                        REG_NA, 0, 0, // xreg, xmul, disp
                                                        false,        /* isJump */
                                                        emitter::emitNoGChelper(helperNum));
-                            break;
+                        }
+                        break;
 
                         case IAT_PPVALUE:
                         {
