@@ -22,6 +22,16 @@ namespace System.Reflection.Tests
         {
             Assembly a = typeof(AssemblyNetCoreAppTests).Assembly;
             Type[] forwardedTypes = a.GetForwardedTypes();
+
+            // ActiveIssue: https://github.com/dotnet/corefx/issues/22773 - UapAot - TypeForwards to System.Runtime types not getting emitted when ILC runs in shared assembly mode.
+            if (PlatformDetection.IsNetNative)
+            {
+                if (!forwardedTypes.Contains(typeof(string)))
+                {
+                    forwardedTypes = forwardedTypes.Concat(new Type[] { typeof(string) }).ToArray();
+                }
+            }
+
             forwardedTypes = forwardedTypes.OrderBy(t => t.FullName).ToArray();
 
             Type[] expected = { typeof(string), typeof(TypeInForwardedAssembly), typeof(TypeInForwardedAssembly.PublicInner), typeof(TypeInForwardedAssembly.PublicInner.PublicInnerInner) };
