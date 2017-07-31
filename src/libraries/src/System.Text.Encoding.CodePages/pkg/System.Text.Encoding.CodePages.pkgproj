@@ -7,11 +7,7 @@
     </ProjectReference>
     <ProjectReference Include="..\src\System.Text.Encoding.CodePages.csproj" />
     <HarvestIncludePaths Include="lib/net46" />
-    <HarvestIncludePaths Include="ref/netstandard1.3;runtimes/win/lib/netstandard1.3" />
-    <HarvestIncludePaths Include="runtimes/unix/lib/netstandard1.3">
-      <!-- package unix impl (which is actually platform agnostic) as RID agnostic -->
-      <TargetPath>lib/netstandard1.3</TargetPath>
-    </HarvestIncludePaths>
+    <HarvestIncludePaths Include="ref/netstandard1.3;runtimes/win/lib/netstandard1.3;lib/netstandard1.3" />
   </ItemGroup>
   <ItemGroup>
     <InboxOnTargetFramework Include="$(UAPvNextTFM)">
