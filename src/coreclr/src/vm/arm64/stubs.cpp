@@ -1244,6 +1244,10 @@ void UMEntryThunkCode::Encode(BYTE* pTargetCode, void* pvSecretParam)
     FlushInstructionCache(GetCurrentProcess(),&m_code,sizeof(m_code));
 }
 
+void UMEntryThunkCode::Poison()
+{
+
+}
 
 #ifdef PROFILING_SUPPORTED
 #include "proftoeeinterfaceimpl.h"
