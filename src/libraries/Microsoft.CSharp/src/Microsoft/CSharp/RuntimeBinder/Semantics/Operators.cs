@@ -660,10 +660,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return false;
             }
 
-            // Don't allow comparison with an anonymous method or lambda. It's just too weird.
-            if (((info.mask & BinOpMask.Equal) != 0) && (info.type1 is BoundLambdaType || info.type2 is BoundLambdaType))
-                return false;
-
             // No conversions needed. Determine the lifting. This is the common case.
             if (info.type1 == info.type2)
             {
