@@ -114,12 +114,12 @@ namespace Microsoft.ServiceModel.Syndication
             return _contentBuffer.GetReader(0);
         }
 
-        public TContent ReadContent<TContent>()
+        public Task<TContent> ReadContent<TContent>()
         {
             return ReadContent<TContent>((DataContractSerializer)null);
         }
 
-        public TContent ReadContent<TContent>(XmlObjectSerializer dataContractSerializer)
+        public async Task<TContent> ReadContent<TContent>(XmlObjectSerializer dataContractSerializer)
         {
             if (dataContractSerializer == null)
             {
@@ -127,7 +127,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
             if (_extension != null)
             {
-                return _extension.GetObject<TContent>(dataContractSerializer);
+                return await _extension.GetObject<TContent>(dataContractSerializer);
             }
             else
             {
@@ -141,7 +141,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        public TContent ReadContent<TContent>(XmlSerializer serializer)
+        public Task<TContent> ReadContent<TContent>(XmlSerializer serializer)
         {
             if (serializer == null)
             {
@@ -158,7 +158,8 @@ namespace Microsoft.ServiceModel.Syndication
                 {
                     // skip past the content element
                     reader.ReadStartElement();
-                    return (TContent)serializer.Deserialize(reader);
+                    return Task.FromResult((TContent)serializer.Deserialize(reader));
+                    //return (TContent)serializer.Deserialize(reader);
                 }
             }
         }

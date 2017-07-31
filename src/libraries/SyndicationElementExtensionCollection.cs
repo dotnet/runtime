@@ -112,12 +112,12 @@ namespace Microsoft.ServiceModel.Syndication
             return reader;
         }
 
-        public Collection<TExtension> ReadElementExtensions<TExtension>(string extensionName, string extensionNamespace)
+        public Task<Collection<TExtension>> ReadElementExtensions<TExtension>(string extensionName, string extensionNamespace)
         {
             return ReadElementExtensions<TExtension>(extensionName, extensionNamespace, new DataContractSerializer(typeof(TExtension)));
         }
 
-        public Collection<TExtension> ReadElementExtensions<TExtension>(string extensionName, string extensionNamespace, XmlObjectSerializer serializer)
+        public Task<Collection<TExtension>> ReadElementExtensions<TExtension>(string extensionName, string extensionNamespace, XmlObjectSerializer serializer)
         {
             if (serializer == null)
             {
@@ -126,7 +126,7 @@ namespace Microsoft.ServiceModel.Syndication
             return ReadExtensions<TExtension>(extensionName, extensionNamespace, serializer, null);
         }
 
-        public Collection<TExtension> ReadElementExtensions<TExtension>(string extensionName, string extensionNamespace, XmlSerializer serializer)
+        public Task<Collection<TExtension>> ReadElementExtensions<TExtension>(string extensionName, string extensionNamespace, XmlSerializer serializer)
         {
             if (serializer == null)
             {
@@ -242,7 +242,7 @@ namespace Microsoft.ServiceModel.Syndication
             }
         }
 
-        private Collection<TExtension> ReadExtensions<TExtension>(string extensionName, string extensionNamespace, XmlObjectSerializer dcSerializer, XmlSerializer xmlSerializer)
+        private async Task<Collection<TExtension>> ReadExtensions<TExtension>(string extensionName, string extensionNamespace, XmlObjectSerializer dcSerializer, XmlSerializer xmlSerializer)
         {
             if (string.IsNullOrEmpty(extensionName))
             {
@@ -265,11 +265,11 @@ namespace Microsoft.ServiceModel.Syndication
 
                 if (dcSerializer != null)
                 {
-                    results.Add(this[i].GetObject<TExtension>(dcSerializer));
+                    results.Add(await this[i].GetObject<TExtension>(dcSerializer));
                 }
                 else
                 {
-                    results.Add(this[i].GetObject<TExtension>(xmlSerializer));
+                    results.Add(await this[i].GetObject<TExtension>(xmlSerializer));
                 }
             }
             return results;
