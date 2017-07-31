@@ -59,9 +59,6 @@
     <PackageReference Include="System.Diagnostics.DiagnosticSource">
       <Version>4.4.1</Version>
     </PackageReference>
-    <PackageReference Include="System.IO.Compression">
-      <Version>4.3.0</Version>
-    </PackageReference>
     <PackageReference Include="System.IO.FileSystem.AccessControl">
       <Version>4.4.0</Version>
     </PackageReference>
@@ -77,20 +74,11 @@
     <PackageReference Include="System.Json">
       <Version>4.4.0</Version>
     </PackageReference>
-    <PackageReference Include="System.Net.Http">
-      <Version>4.3.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Net.Http.Rtc">
-      <Version>4.3.0</Version>
-    </PackageReference>
     <PackageReference Include="System.Net.Http.WinHttpHandler">
       <Version>4.4.0</Version>
     </PackageReference>
     <PackageReference Include="System.Numerics.Vectors">
       <Version>4.4.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Reflection.Context">
-      <Version>4.3.0</Version>
     </PackageReference>
     <PackageReference Include="System.Reflection.DispatchProxy">
       <Version>4.4.0</Version>
@@ -103,15 +91,6 @@
     </PackageReference>
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe">
       <Version>4.4.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Runtime.InteropServices.RuntimeInformation">
-      <Version>4.3.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Runtime.WindowsRuntime">
-      <Version>4.3.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Runtime.WindowsRuntime.UI.Xaml">
-      <Version>4.3.0</Version>
     </PackageReference>
     <PackageReference Include="System.Security.AccessControl">
       <Version>4.4.0</Version>
@@ -127,9 +106,6 @@
     </PackageReference>
     <PackageReference Include="System.Security.Cryptography.ProtectedData">
       <Version>4.4.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Security.Cryptography.X509Certificates">
-      <Version>4.3.0</Version>
     </PackageReference>
     <PackageReference Include="System.Security.Cryptography.Xml">
       <Version>4.4.0</Version>
