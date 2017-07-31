@@ -377,6 +377,9 @@ namespace System
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern static bool IsInterface(RuntimeType type);
 
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal extern static bool IsByRefLike(RuntimeType type);
+
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]
         [return: MarshalAs(UnmanagedType.Bool)]
