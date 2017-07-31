@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.CSharp.RuntimeBinder.Errors;
@@ -63,6 +64,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         Lim
     }
 
+    [Flags]
     internal enum UnaOpMask
     {
         None = 0,
@@ -78,6 +80,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         Bool = Bang,
     }
 
+    [Flags]
     internal enum OpSigFlags
     {
         None = 0,
@@ -90,6 +93,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         BoolBit = Convert | CanLift,
     }
 
+    [Flags]
     internal enum LiftFlags
     {
         None = 0,
