@@ -557,14 +557,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                     // Leave blank.
                     break;
 
-                case TypeKind.TK_BoundLambdaType:
-                    ErrAppendId(MessageID.AnonMethod);
-                    break;
-
-                case TypeKind.TK_UnboundLambdaType:
-                    ErrAppendId(MessageID.Lambda);
-                    break;
-
                 case TypeKind.TK_MethodGroupType:
                     ErrAppendId(MessageID.MethodGroup);
                     break;
@@ -642,7 +634,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                     ErrAppendChar('?');
                     break;
 
-                case TypeKind.TK_NaturalIntegerType:
                 default:
                     // Shouldn't happen.
                     Debug.Assert(false, "Bad type kind");

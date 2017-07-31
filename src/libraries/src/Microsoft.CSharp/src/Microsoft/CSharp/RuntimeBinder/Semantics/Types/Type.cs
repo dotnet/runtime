@@ -104,19 +104,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         result = parentType.GetGenericArguments()[t.GetIndexInOwnParameters()];
                     }
                     break;
-
-                case TypeKind.TK_ArgumentListType:
-                case TypeKind.TK_BoundLambdaType:
-                case TypeKind.TK_ErrorType:
-                case TypeKind.TK_MethodGroupType:
-                case TypeKind.TK_NaturalIntegerType:
-                case TypeKind.TK_NullType:
-                case TypeKind.TK_OpenTypePlaceholderType:
-                case TypeKind.TK_UnboundLambdaType:
-                case TypeKind.TK_VoidType:
-
-                default:
-                    break;
             }
 
             Debug.Assert(result != null || src.GetTypeKind() == TypeKind.TK_AggregateType);
@@ -527,7 +514,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // be equivalent or convertible (like ANONMETHSYMs)
         public bool IsNeverSameType()
         {
-            return this is BoundLambdaType || this is MethodGroupType || this is ErrorType err && !err.HasParent();
+            return this is MethodGroupType || this is ErrorType err && !err.HasParent();
         }
     }
 }
