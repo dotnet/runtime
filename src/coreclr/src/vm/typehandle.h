@@ -513,6 +513,9 @@ public:
     // BYREF
     BOOL IsByRef() const;
 
+    // BYREFLIKE (does not return TRUE for IsByRef types)
+    BOOL IsByRefLike() const;
+
     // PTR
     BOOL IsPointer() const;
 
