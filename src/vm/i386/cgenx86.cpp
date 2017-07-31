@@ -1588,6 +1588,13 @@ void UMEntryThunkCode::Encode(BYTE* pTargetCode, void* pvSecretParam)
     FlushInstructionCache(GetCurrentProcess(),GetEntryPoint(),sizeof(UMEntryThunkCode));
 }
 
+void UMEntryThunkCode::Poison()
+{
+    LIMITED_METHOD_CONTRACT;
+
+    m_movEAX = X86_INSTR_INT3;
+}
+
 UMEntryThunk* UMEntryThunk::Decode(LPVOID pCallback)
 {
     LIMITED_METHOD_CONTRACT;
