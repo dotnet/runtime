@@ -12,7 +12,6 @@ namespace Microsoft.ServiceModel.Syndication
 
         private Func<XmlReaderWrapper, Task<string>> getValueFunc;
         private Func<XmlReaderWrapper, Task<XmlNodeType>> moveToContentFunc;
-        private Func<XmlReaderWrapper, string, string, Task<bool>> isStartElementFunc2;
         private Func<XmlReaderWrapper, Task> skipFunc;
         private Func<XmlReaderWrapper, Task<bool>> readFunc;
         private Func<XmlReaderWrapper, Task<string>> readInnerXmlFunc;
