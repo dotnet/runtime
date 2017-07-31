@@ -7,159 +7,40 @@
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Microsoft.CSharp">
-      <Version>4.4.0</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.VisualBasic">
-      <Version>10.2.0</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Win32.Registry">
-      <Version>4.4.0</Version>
-    </PackageReference>
-    <PackageReference Include="Microsoft.Win32.Registry.AccessControl">
-      <Version>4.4.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Buffers">
-      <Version>4.4.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.CodeDom">
-      <Version>4.4.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Collections.Immutable">
-      <Version>1.4.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.ComponentModel.Annotations">
-      <Version>4.4.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Composition">
-      <Version>1.1.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Composition.AttributedModel">
-      <Version>1.1.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Composition.Convention">
-      <Version>1.1.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Composition.Hosting">
-      <Version>1.1.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Composition.Runtime">
-      <Version>1.1.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Composition.TypedParts">
-      <Version>1.1.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Configuration.ConfigurationManager">
-      <Version>4.4.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Data.SqlClient">
-      <Version>4.4.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Diagnostics.DiagnosticSource">
-      <Version>4.4.1</Version>
-    </PackageReference>
-    <PackageReference Include="System.IO.FileSystem.AccessControl">
-      <Version>4.4.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.IO.Packaging">
-      <Version>4.4.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.IO.Pipes.AccessControl">
-      <Version>4.4.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.IO.Ports">
-      <Version>4.4.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Json">
-      <Version>4.4.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Net.Http.WinHttpHandler">
-      <Version>4.4.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Numerics.Vectors">
-      <Version>4.4.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Reflection.DispatchProxy">
-      <Version>4.4.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Reflection.Metadata">
-      <Version>1.5.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Reflection.TypeExtensions">
-      <Version>4.4.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Runtime.CompilerServices.Unsafe">
-      <Version>4.4.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Security.AccessControl">
-      <Version>4.4.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Security.Cryptography.Cng">
-      <Version>4.4.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Security.Cryptography.OpenSsl">
-      <Version>4.4.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Security.Cryptography.Pkcs">
-      <Version>4.4.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Security.Cryptography.ProtectedData">
-      <Version>4.4.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Security.Cryptography.Xml">
-      <Version>4.4.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Security.Permissions">
-      <Version>4.4.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Security.Principal.Windows">
-      <Version>4.4.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.ServiceProcess.ServiceController">
-      <Version>4.4.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Text.Encoding.CodePages">
-      <Version>4.4.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Text.Encodings.Web">
-      <Version>4.4.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Threading.AccessControl">
-      <Version>4.4.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Threading.Tasks.Dataflow">
-      <Version>4.8.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.Threading.Tasks.Extensions">
-      <Version>4.4.0</Version>
-    </PackageReference>
-    <PackageReference Include="System.ValueTuple">
-      <Version>4.4.0</Version>
-    </PackageReference>
-  </ItemGroup>
+  <Import Project="harvestPackages.props" />
 
   <Import Project="$(ProjectDir)pkg/baseline/baseline.props" />
 
   <!--
     Custom target to update the stable versions. Ideally we would just run this target as part of the build but
     currently the restore step happens in CLI which doesn't have matching dependencies for the package task. Currently
-    they have different versions of nuget libraries. We can look at fixing that in the future but for now this can be
-    ran once and the values can be copy/pasted into this project to update as needed.
+    they have different versions of nuget libraries. We can look at fixing that in the future but for now this will need
+    to be manually run to update the harvestPackages.props file.
   -->
-  <Target Name="OutputLatestStablePackages">
+  <Target Name="UpdateToLatestStablePackages">
     <ItemGroup>
       <PackageReference>
+        <!-- Set version to highest version possible to ensure we get the highest stable package version -->
         <Version>255.255.255</Version>
       </PackageReference>
     </ItemGroup>
-     <GetLastStablePackage
+    <GetLastStablePackage
         LatestPackages="@(PackageReference)"
         PackageIndexes="$(PackageIndexFile)">
         <Output  TaskParameter="LastStablePackages" ItemName="_NewPackageReferences" />
     </GetLastStablePackage>
 
-    <Message Importance="High" Text="  &lt;PackageReference Include=&quot;%(_NewPackageReferences.Identity)&quot;&gt;&#10;    &lt;Version&gt;%(_NewPackageReferences.Version)&lt;/Version&gt;&#10;  &lt;/PackageReference&gt;" />
+    <ItemGroup>
+      <_Lines Include="&lt;Project xmlns=&quot;http://schemas.microsoft.com/developer/msbuild/2003&quot;&gt;" />
+      <_Lines Include="&lt;!-- The versions can be updated by running UpdateToLatestStablePackages target in harvestPackages.depproj --&gt;" />
+      <_Lines Include="&lt;ItemGroup&gt;" />
+      <_Lines Include="&lt;PackageReference Include=&quot;%(_NewPackageReferences.Identity)&quot;&gt;&#13;  &lt;Version&gt;%(_NewPackageReferences.Version)&lt;/Version&gt;&#13;&lt;/PackageReference&gt;" />
+      <_Lines Include="&lt;/ItemGroup&gt;" />
+      <_Lines Include="&lt;/Project&gt;" />
+    </ItemGroup>
+
+    <WriteLinesToFile Lines="@(_Lines)" File="harvestPackages.props" Overwrite="true" />
+
   </Target>
 
   <!-- only restore this project during the build, don't copy any of it's packages
