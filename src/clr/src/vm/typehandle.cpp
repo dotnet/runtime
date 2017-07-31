@@ -1546,6 +1546,14 @@ BOOL TypeHandle::IsByRef()  const
 
 }
 
+BOOL TypeHandle::IsByRefLike()  const
+{ 
+    LIMITED_METHOD_CONTRACT;
+
+    return(!IsTypeDesc() && AsMethodTable()->IsByRefLike());
+
+}
+
 BOOL TypeHandle::IsPointer()  const
 { 
     LIMITED_METHOD_CONTRACT;
