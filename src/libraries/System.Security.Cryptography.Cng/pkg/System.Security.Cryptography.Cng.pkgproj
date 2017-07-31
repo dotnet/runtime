@@ -10,13 +10,8 @@
     <!-- All elements from previous packages that will be included in the newly built package -->
     <HarvestIncludePaths Include="ref/net46;lib/net46;runtimes/win/lib/net46" />
     <HarvestIncludePaths Include="ref/netstandard1.3" />
-    <HarvestIncludePaths Include="ref/netstandard1.4;runtimes/win/lib/netstandard1.4" />   
-    <HarvestIncludePaths Include="ref/netstandard1.6;runtimes/win/lib/netstandard1.6" />
-    <HarvestIncludePaths Include="runtimes/unix/lib/netstandard1.6">
-      <!-- package unix impl (platform not supported) as RID agnostic -->
-      <TargetPath>lib/netstandard1.6</TargetPath>
-    </HarvestIncludePaths>
-
+    <HarvestIncludePaths Include="ref/netstandard1.4;runtimes/win/lib/netstandard1.4" />
+    <HarvestIncludePaths Include="ref/netstandard1.6;runtimes/win/lib/netstandard1.6;lib/netstandard1.6" />
     <!-- this package is part of the implementation closure of NETStandard.Library
          therefore it cannot reference NETStandard.Library -->
     <SuppressMetaPackage Include="NETStandard.Library" />
