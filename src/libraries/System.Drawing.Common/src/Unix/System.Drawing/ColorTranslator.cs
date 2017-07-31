@@ -113,7 +113,7 @@ namespace System.Drawing
             if (c.IsEmpty)
                 return String.Empty;
 
-            if (c.IsSystemColor)
+            if (ColorUtil.IsSystemColor(c))
             {
                 KnownColor kc = c.ToKnownColor();
                 switch (kc)

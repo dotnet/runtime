@@ -36,7 +36,7 @@ namespace System.Drawing
             //    We must never have another method called ToOle() with a different signature.
             //    This is so that we can push into the runtime a custom marshaller for OLE_COLOR to Color.
 
-            if (c.IsKnownColor)
+            if (ColorUtil.GetIsKnownColor(c))
             {
                 switch (c.ToKnownColor())
                 {
@@ -125,65 +125,65 @@ namespace System.Drawing
             switch (oleColor)
             {
                 case unchecked((int)0x8000000A):
-                    return Color.FromKnownColor(KnownColor.ActiveBorder);
+                    return ColorUtil.FromKnownColor(KnownColor.ActiveBorder);
                 case unchecked((int)0x80000002):
-                    return Color.FromKnownColor(KnownColor.ActiveCaption);
+                    return ColorUtil.FromKnownColor(KnownColor.ActiveCaption);
                 case unchecked((int)0x80000009):
-                    return Color.FromKnownColor(KnownColor.ActiveCaptionText);
+                    return ColorUtil.FromKnownColor(KnownColor.ActiveCaptionText);
                 case unchecked((int)0x8000000C):
-                    return Color.FromKnownColor(KnownColor.AppWorkspace);
+                    return ColorUtil.FromKnownColor(KnownColor.AppWorkspace);
                 case unchecked((int)0x8000000F):
-                    return Color.FromKnownColor(KnownColor.Control);
+                    return ColorUtil.FromKnownColor(KnownColor.Control);
                 case unchecked((int)0x80000010):
-                    return Color.FromKnownColor(KnownColor.ControlDark);
+                    return ColorUtil.FromKnownColor(KnownColor.ControlDark);
                 case unchecked((int)0x80000015):
-                    return Color.FromKnownColor(KnownColor.ControlDarkDark);
+                    return ColorUtil.FromKnownColor(KnownColor.ControlDarkDark);
                 case unchecked((int)0x80000016):
-                    return Color.FromKnownColor(KnownColor.ControlLight);
+                    return ColorUtil.FromKnownColor(KnownColor.ControlLight);
                 case unchecked((int)0x80000014):
-                    return Color.FromKnownColor(KnownColor.ControlLightLight);
+                    return ColorUtil.FromKnownColor(KnownColor.ControlLightLight);
                 case unchecked((int)0x80000012):
-                    return Color.FromKnownColor(KnownColor.ControlText);
+                    return ColorUtil.FromKnownColor(KnownColor.ControlText);
                 case unchecked((int)0x80000001):
-                    return Color.FromKnownColor(KnownColor.Desktop);
+                    return ColorUtil.FromKnownColor(KnownColor.Desktop);
                 case unchecked((int)0x8000001B):
-                    return Color.FromKnownColor(KnownColor.GradientActiveCaption);
+                    return ColorUtil.FromKnownColor(KnownColor.GradientActiveCaption);
                 case unchecked((int)0x8000001C):
-                    return Color.FromKnownColor(KnownColor.GradientInactiveCaption);
+                    return ColorUtil.FromKnownColor(KnownColor.GradientInactiveCaption);
                 case unchecked((int)0x80000011):
-                    return Color.FromKnownColor(KnownColor.GrayText);
+                    return ColorUtil.FromKnownColor(KnownColor.GrayText);
                 case unchecked((int)0x8000000D):
-                    return Color.FromKnownColor(KnownColor.Highlight);
+                    return ColorUtil.FromKnownColor(KnownColor.Highlight);
                 case unchecked((int)0x8000000E):
-                    return Color.FromKnownColor(KnownColor.HighlightText);
+                    return ColorUtil.FromKnownColor(KnownColor.HighlightText);
                 case unchecked((int)0x8000001A):
-                    return Color.FromKnownColor(KnownColor.HotTrack);
+                    return ColorUtil.FromKnownColor(KnownColor.HotTrack);
                 case unchecked((int)0x8000000B):
-                    return Color.FromKnownColor(KnownColor.InactiveBorder);
+                    return ColorUtil.FromKnownColor(KnownColor.InactiveBorder);
                 case unchecked((int)0x80000003):
-                    return Color.FromKnownColor(KnownColor.InactiveCaption);
+                    return ColorUtil.FromKnownColor(KnownColor.InactiveCaption);
                 case unchecked((int)0x80000013):
-                    return Color.FromKnownColor(KnownColor.InactiveCaptionText);
+                    return ColorUtil.FromKnownColor(KnownColor.InactiveCaptionText);
                 case unchecked((int)0x80000018):
-                    return Color.FromKnownColor(KnownColor.Info);
+                    return ColorUtil.FromKnownColor(KnownColor.Info);
                 case unchecked((int)0x80000017):
-                    return Color.FromKnownColor(KnownColor.InfoText);
+                    return ColorUtil.FromKnownColor(KnownColor.InfoText);
                 case unchecked((int)0x80000004):
-                    return Color.FromKnownColor(KnownColor.Menu);
+                    return ColorUtil.FromKnownColor(KnownColor.Menu);
                 case unchecked((int)0x8000001E):
-                    return Color.FromKnownColor(KnownColor.MenuBar);
+                    return ColorUtil.FromKnownColor(KnownColor.MenuBar);
                 case unchecked((int)0x8000001D):
-                    return Color.FromKnownColor(KnownColor.MenuHighlight);
+                    return ColorUtil.FromKnownColor(KnownColor.MenuHighlight);
                 case unchecked((int)0x80000007):
-                    return Color.FromKnownColor(KnownColor.MenuText);
+                    return ColorUtil.FromKnownColor(KnownColor.MenuText);
                 case unchecked((int)0x80000000):
-                    return Color.FromKnownColor(KnownColor.ScrollBar);
+                    return ColorUtil.FromKnownColor(KnownColor.ScrollBar);
                 case unchecked((int)0x80000005):
-                    return Color.FromKnownColor(KnownColor.Window);
+                    return ColorUtil.FromKnownColor(KnownColor.Window);
                 case unchecked((int)0x80000006):
-                    return Color.FromKnownColor(KnownColor.WindowFrame);
+                    return ColorUtil.FromKnownColor(KnownColor.WindowFrame);
                 case unchecked((int)0x80000008):
-                    return Color.FromKnownColor(KnownColor.WindowText);
+                    return ColorUtil.FromKnownColor(KnownColor.WindowText);
             }
 
             Color color = Color.FromArgb((byte)((oleColor >> Win32RedShift) & 0xFF),
@@ -274,7 +274,7 @@ namespace System.Drawing
             if (c.IsEmpty)
                 return colorString;
 
-            if (c.IsSystemColor)
+            if (ColorUtil.IsSystemColor(c))
             {
                 switch (c.ToKnownColor())
                 {
@@ -385,33 +385,33 @@ namespace System.Drawing
         private static void InitializeHtmlSysColorTable()
         {
             s_htmlSysColorTable = new Hashtable(26);
-            s_htmlSysColorTable["activeborder"] = Color.FromKnownColor(KnownColor.ActiveBorder);
-            s_htmlSysColorTable["activecaption"] = Color.FromKnownColor(KnownColor.ActiveCaption);
-            s_htmlSysColorTable["appworkspace"] = Color.FromKnownColor(KnownColor.AppWorkspace);
-            s_htmlSysColorTable["background"] = Color.FromKnownColor(KnownColor.Desktop);
-            s_htmlSysColorTable["buttonface"] = Color.FromKnownColor(KnownColor.Control);
-            s_htmlSysColorTable["buttonhighlight"] = Color.FromKnownColor(KnownColor.ControlLightLight);
-            s_htmlSysColorTable["buttonshadow"] = Color.FromKnownColor(KnownColor.ControlDark);
-            s_htmlSysColorTable["buttontext"] = Color.FromKnownColor(KnownColor.ControlText);
-            s_htmlSysColorTable["captiontext"] = Color.FromKnownColor(KnownColor.ActiveCaptionText);
-            s_htmlSysColorTable["graytext"] = Color.FromKnownColor(KnownColor.GrayText);
-            s_htmlSysColorTable["highlight"] = Color.FromKnownColor(KnownColor.Highlight);
-            s_htmlSysColorTable["highlighttext"] = Color.FromKnownColor(KnownColor.HighlightText);
-            s_htmlSysColorTable["inactiveborder"] = Color.FromKnownColor(KnownColor.InactiveBorder);
-            s_htmlSysColorTable["inactivecaption"] = Color.FromKnownColor(KnownColor.InactiveCaption);
-            s_htmlSysColorTable["inactivecaptiontext"] = Color.FromKnownColor(KnownColor.InactiveCaptionText);
-            s_htmlSysColorTable["infobackground"] = Color.FromKnownColor(KnownColor.Info);
-            s_htmlSysColorTable["infotext"] = Color.FromKnownColor(KnownColor.InfoText);
-            s_htmlSysColorTable["menu"] = Color.FromKnownColor(KnownColor.Menu);
-            s_htmlSysColorTable["menutext"] = Color.FromKnownColor(KnownColor.MenuText);
-            s_htmlSysColorTable["scrollbar"] = Color.FromKnownColor(KnownColor.ScrollBar);
-            s_htmlSysColorTable["threeddarkshadow"] = Color.FromKnownColor(KnownColor.ControlDarkDark);
-            s_htmlSysColorTable["threedface"] = Color.FromKnownColor(KnownColor.Control);
-            s_htmlSysColorTable["threedhighlight"] = Color.FromKnownColor(KnownColor.ControlLight);
-            s_htmlSysColorTable["threedlightshadow"] = Color.FromKnownColor(KnownColor.ControlLightLight);
-            s_htmlSysColorTable["window"] = Color.FromKnownColor(KnownColor.Window);
-            s_htmlSysColorTable["windowframe"] = Color.FromKnownColor(KnownColor.WindowFrame);
-            s_htmlSysColorTable["windowtext"] = Color.FromKnownColor(KnownColor.WindowText);
+            s_htmlSysColorTable["activeborder"] = ColorUtil.FromKnownColor(KnownColor.ActiveBorder);
+            s_htmlSysColorTable["activecaption"] = ColorUtil.FromKnownColor(KnownColor.ActiveCaption);
+            s_htmlSysColorTable["appworkspace"] = ColorUtil.FromKnownColor(KnownColor.AppWorkspace);
+            s_htmlSysColorTable["background"] = ColorUtil.FromKnownColor(KnownColor.Desktop);
+            s_htmlSysColorTable["buttonface"] = ColorUtil.FromKnownColor(KnownColor.Control);
+            s_htmlSysColorTable["buttonhighlight"] = ColorUtil.FromKnownColor(KnownColor.ControlLightLight);
+            s_htmlSysColorTable["buttonshadow"] = ColorUtil.FromKnownColor(KnownColor.ControlDark);
+            s_htmlSysColorTable["buttontext"] = ColorUtil.FromKnownColor(KnownColor.ControlText);
+            s_htmlSysColorTable["captiontext"] = ColorUtil.FromKnownColor(KnownColor.ActiveCaptionText);
+            s_htmlSysColorTable["graytext"] = ColorUtil.FromKnownColor(KnownColor.GrayText);
+            s_htmlSysColorTable["highlight"] = ColorUtil.FromKnownColor(KnownColor.Highlight);
+            s_htmlSysColorTable["highlighttext"] = ColorUtil.FromKnownColor(KnownColor.HighlightText);
+            s_htmlSysColorTable["inactiveborder"] = ColorUtil.FromKnownColor(KnownColor.InactiveBorder);
+            s_htmlSysColorTable["inactivecaption"] = ColorUtil.FromKnownColor(KnownColor.InactiveCaption);
+            s_htmlSysColorTable["inactivecaptiontext"] = ColorUtil.FromKnownColor(KnownColor.InactiveCaptionText);
+            s_htmlSysColorTable["infobackground"] = ColorUtil.FromKnownColor(KnownColor.Info);
+            s_htmlSysColorTable["infotext"] = ColorUtil.FromKnownColor(KnownColor.InfoText);
+            s_htmlSysColorTable["menu"] = ColorUtil.FromKnownColor(KnownColor.Menu);
+            s_htmlSysColorTable["menutext"] = ColorUtil.FromKnownColor(KnownColor.MenuText);
+            s_htmlSysColorTable["scrollbar"] = ColorUtil.FromKnownColor(KnownColor.ScrollBar);
+            s_htmlSysColorTable["threeddarkshadow"] = ColorUtil.FromKnownColor(KnownColor.ControlDarkDark);
+            s_htmlSysColorTable["threedface"] = ColorUtil.FromKnownColor(KnownColor.Control);
+            s_htmlSysColorTable["threedhighlight"] = ColorUtil.FromKnownColor(KnownColor.ControlLight);
+            s_htmlSysColorTable["threedlightshadow"] = ColorUtil.FromKnownColor(KnownColor.ControlLightLight);
+            s_htmlSysColorTable["window"] = ColorUtil.FromKnownColor(KnownColor.Window);
+            s_htmlSysColorTable["windowframe"] = ColorUtil.FromKnownColor(KnownColor.WindowFrame);
+            s_htmlSysColorTable["windowtext"] = ColorUtil.FromKnownColor(KnownColor.WindowText);
         }
     }
 }

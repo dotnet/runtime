@@ -405,7 +405,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => graphics.CompositingMode = compositingMode);
+                Assert.ThrowsAny<ArgumentException>(() => graphics.CompositingMode = compositingMode);
             }
         }
 
@@ -500,7 +500,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => graphics.CompositingQuality = compositingQuality);
+                Assert.ThrowsAny<ArgumentException>(() => graphics.CompositingQuality = compositingQuality);
             }
         }
 
@@ -713,7 +713,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => graphics.InterpolationMode = interpolationMode);
+                Assert.ThrowsAny<ArgumentException>(() => graphics.InterpolationMode = interpolationMode);
             }
         }
 
@@ -850,7 +850,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => graphics.PageUnit = pageUnit);
+                Assert.ThrowsAny<ArgumentException>(() => graphics.PageUnit = pageUnit);
             }
         }
 
@@ -923,7 +923,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => graphics.PixelOffsetMode = pixelOffsetMode);
+                Assert.ThrowsAny<ArgumentException>(() => graphics.PixelOffsetMode = pixelOffsetMode);
             }
         }
 
@@ -1087,7 +1087,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => graphics.SmoothingMode = smoothingMode);
+                Assert.ThrowsAny<ArgumentException>(() => graphics.SmoothingMode = smoothingMode);
             }
         }
 
@@ -1220,7 +1220,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => graphics.TextRenderingHint = textRenderingHint);
+                Assert.ThrowsAny<ArgumentException>(() => graphics.TextRenderingHint = textRenderingHint);
             }
         }
 
@@ -1932,7 +1932,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (Graphics graphics = Graphics.FromImage(image))
             {
-                AssertExtensions.Throws<InvalidEnumArgumentException>("copyPixelOperation", "value", () => graphics.CopyFromScreen(1, 2, 3, 4, Size.Empty, copyPixelOperation));
+                Assert.ThrowsAny<ArgumentException>(() => graphics.CopyFromScreen(1, 2, 3, 4, Size.Empty, copyPixelOperation));
             }
         }
 

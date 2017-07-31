@@ -302,9 +302,9 @@ namespace System.Drawing.Tests
         {
             using (var image = new Bitmap(10, 10))
             {
-                AssertExtensions.Throws<InvalidEnumArgumentException>("wrapMode", () => new TextureBrush(image, wrapMode));
-                AssertExtensions.Throws<InvalidEnumArgumentException>("wrapMode", () => new TextureBrush(image, wrapMode, RectangleF.Empty));
-                AssertExtensions.Throws<InvalidEnumArgumentException>("wrapMode", () => new TextureBrush(image, wrapMode, Rectangle.Empty));
+                Assert.ThrowsAny<ArgumentException>(() => new TextureBrush(image, wrapMode));
+                Assert.ThrowsAny<ArgumentException>(() => new TextureBrush(image, wrapMode, RectangleF.Empty));
+                Assert.ThrowsAny<ArgumentException>(() => new TextureBrush(image, wrapMode, Rectangle.Empty));
             }
         }
 
@@ -795,7 +795,7 @@ namespace System.Drawing.Tests
             using (var image = new Bitmap(10, 10))
             using (var brush = new TextureBrush(image))
             {
-                AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => brush.WrapMode = wrapMode);
+                Assert.ThrowsAny<ArgumentException>(() => brush.WrapMode = wrapMode);
             }
         }
 
