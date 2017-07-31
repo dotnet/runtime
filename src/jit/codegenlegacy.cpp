@@ -19067,7 +19067,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreeCall* call, bool valUsed)
                         CORINFO_CONST_LOOKUP lookup;
                         compiler->info.compCompHnd->getAddressOfPInvokeTarget(methHnd, &lookup);
 
-                        void* addr = lookup.addr;
+                        addr = lookup.addr;
 
                         assert(addr != NULL);
 
