@@ -272,7 +272,7 @@ namespace System.Net.Sockets.Tests
     public abstract class MemberDatas
     {
         public static readonly object[][] Loopbacks = new[]
-    {
+        {
             new object[] { IPAddress.Loopback },
             new object[] { IPAddress.IPv6Loopback },
         };
