@@ -481,6 +481,7 @@ struct DECLSPEC_ALIGN(16) UMEntryThunkCode
     TADDR       m_pvSecretParam;
 
     void Encode(BYTE* pTargetCode, void* pvSecretParam);
+    void Poison();
 
     LPCBYTE GetEntryPoint() const
     {
