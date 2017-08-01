@@ -44,6 +44,13 @@
 #define UtilMessageBoxNonLocalizedVA __error("Use one of the EEMessageBox APIs (defined in eemessagebox.h) from inside the EE")
 #define WszMessageBox __error("Use one of the EEMessageBox APIs (defined in eemessagebox.h) from inside the EE")
 
+// Hot cache lines need to be aligned to cache line size to improve performance
+#if defined(ARM64)
+#define MAX_CACHE_LINE_SIZE 128
+#else
+#define MAX_CACHE_LINE_SIZE 64
+#endif
+
 //========================================================================
 // More convenient names for integer types of a guaranteed size.
 //========================================================================
