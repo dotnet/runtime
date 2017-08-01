@@ -4436,8 +4436,8 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
         if (targetReg == REG_NA)
         {
             // stack store
-            emit->emitInsMov(ins_Store(targetType, compiler->isSIMDTypeLocalAligned(lclNum)), emitTypeSize(targetType),
-                             tree);
+            emit->emitInsStoreLcl(ins_Store(targetType, compiler->isSIMDTypeLocalAligned(lclNum)),
+                                  emitTypeSize(targetType), tree);
             varDsc->lvRegNum = REG_STK;
         }
         else
@@ -4512,7 +4512,7 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     else
     {
         genConsumeAddress(addr);
-        emit->emitInsMov(ins_Load(targetType), emitTypeSize(tree), tree);
+        emit->emitInsLoadInd(ins_Load(targetType), emitTypeSize(tree), tree->gtRegNum, tree);
     }
 
     genProduceReg(tree);
@@ -4774,7 +4774,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         }
         else
         {
-            getEmitter()->emitInsMov(ins_Store(data->TypeGet()), emitTypeSize(tree), tree);
+            getEmitter()->emitInsStoreInd(ins_Store(data->TypeGet()), emitTypeSize(tree), tree);
         }
     }
 }
