@@ -139,7 +139,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                             typeof(RuntimeBinderException).GetConstructor(new Type[] { typeof(string) }),
                             Expression.Constant(e.Message)
                         ),
-                        GetTypeForErrorMetaObject(action, args.Length == 0 ? null : args[0])
+                        GetTypeForErrorMetaObject(action, args)
                     ),
                     restrictions
                 );
@@ -304,21 +304,16 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private static Type GetTypeForErrorMetaObject(DynamicMetaObjectBinder action, DynamicMetaObject arg0)
+        private static Type GetTypeForErrorMetaObject(DynamicMetaObjectBinder action, DynamicMetaObject[] args)
         {
             // This is similar to ConvertResult but has fewer things to worry about.
 
-            var invokeConstructor = action as CSharpInvokeConstructorBinder;
-            if (invokeConstructor != null)
+            if (action is CSharpInvokeConstructorBinder)
             {
-                Type result = arg0.Value as Type;
-                if (result == null)
-                {
-                    Debug.Assert(false);
-                    return typeof(object);
-                }
-
-                return result;
+                Debug.Assert(args != null);
+                Debug.Assert(args.Length != 0);
+                Debug.Assert(args[0].Value is Type);
+                return args[0].Value as Type;
             }
 
             return action.ReturnType;
