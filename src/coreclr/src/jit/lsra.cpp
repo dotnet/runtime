@@ -3987,7 +3987,7 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
             regMaskTP candidates = getUseCandidates(useNode);
 #ifdef ARM_SOFTFP
             // If oper is GT_PUTARG_REG, set bits in useCandidates must be in sequential order.
-            if (useNode->OperGet() == GT_PUTARG_REG || useNode->OperGet() == GT_COPY)
+            if (useNode->OperIsMultiRegOp())
             {
                 regMaskTP candidate = genFindLowestReg(candidates);
                 useNode->gtLsraInfo.setSrcCandidates(this, candidates & ~candidate);
@@ -9238,6 +9238,11 @@ void LinearScan::resolveRegisters()
                             {
                                 GenTreePutArgSplit* splitArg = treeNode->AsPutArgSplit();
                                 splitArg->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());
+                            }
+                            else if (treeNode->OperIsMultiRegOp())
+                            {
+                                GenTreeMultiRegOp* multiReg = treeNode->AsMultiRegOp();
+                                multiReg->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());
                             }
 #endif
                         }
