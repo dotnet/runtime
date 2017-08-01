@@ -29,6 +29,12 @@ mcs/class/corlib/System.Reflection*/ @vargaz @lambdageek
 mcs/class/Mono.Debugger.Soft @vargaz
 mcs/class/Mono.Options @jonpryor
 mcs/class/Mono.Profiler.Log @alexrp
+mcs/class/System/Mono.AppleTls @baulig
+mcs/class/System/Mono.Btls @baulig
+mcs/class/System/Mono.Net.Security @baulig
+mcs/class/System/Mono.Security.Interface @baulig
+mcs/class/Mono.Btls.Interface @baulig
+mcs/class/Mono.Security/Mono.Security/Interface @baulig
 mono/metadata/*profiler* @alexrp
 mono/metadata/threads* @luhenry @kumpera
 mono/metadata/threadpool* @luhenry
