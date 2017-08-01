@@ -130,9 +130,6 @@
     <ClCompile Include="..\mono\metadata\w32process-win32.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\mono\metadata\profiler-legacy.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\mono\metadata\profiler.c">
       <Filter>Source Files</Filter>
     </ClCompile>
