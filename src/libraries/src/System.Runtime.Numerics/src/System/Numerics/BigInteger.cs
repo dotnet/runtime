@@ -259,10 +259,24 @@ namespace System.Numerics
         public BigInteger(ReadOnlySpan<byte> value)
         {
             int byteCount = value.Length;
-            bool isNegative = byteCount > 0 && ((value[byteCount - 1] & 0x80) == 0x80);
 
-            // Try to conserve space as much as possible by checking for wasted leading byte[] entries 
-            while (byteCount > 0 && value[byteCount - 1] == 0) byteCount--;
+            bool isNegative;
+            if (byteCount > 0)
+            {
+                byte lastByte = value[byteCount - 1];
+                isNegative = (lastByte & 0x80) != 0;
+                if (lastByte == 0)
+                {
+                    // Try to conserve space as much as possible by checking for wasted leading byte[] entries 
+                    byteCount -= 2;
+                    while (byteCount >= 0 && value[byteCount] == 0) byteCount--;
+                    byteCount++;
+                }
+            }
+            else
+            {
+                isNegative = false;
+            }
 
             if (byteCount == 0)
             {
@@ -275,29 +289,26 @@ namespace System.Numerics
 
             if (byteCount <= 4)
             {
-                if (isNegative)
-                    _sign = unchecked((int)0xffffffff);
-                else
-                    _sign = 0;
+                _sign = isNegative ? unchecked((int)0xffffffff) : 0;
                 for (int i = byteCount - 1; i >= 0; i--)
                 {
-                    _sign <<= 8;
-                    _sign |= value[i];
+                    _sign = (_sign << 8) | value[i];
                 }
-                _bits = null;
 
+                _bits = null;
                 if (_sign < 0 && !isNegative)
                 {
                     // Int32 overflow
                     // Example: Int64 value 2362232011 (0xCB, 0xCC, 0xCC, 0x8C, 0x0)
                     // can be naively packed into 4 bytes (due to the leading 0x0)
                     // it overflows into the int32 sign bit
-                    _bits = new uint[1];
-                    _bits[0] = unchecked((uint)_sign);
+                    _bits = new uint[1] { unchecked((uint)_sign) };
                     _sign = +1;
                 }
                 if (_sign == int.MinValue)
+                {
                     this = s_bnMinInt;
+                }
             }
             else
             {
@@ -307,18 +318,15 @@ namespace System.Numerics
                 uint[] val = new uint[dwordCount];
 
                 // Copy all dwords, except but don't do the last one if it's not a full four bytes
-                int curDword, curByte, byteInDword;
-                curByte = 3;
+                int curDword, curByte = 3;
                 for (curDword = 0; curDword < dwordCount - (unalignedBytes == 0 ? 0 : 1); curDword++)
                 {
-                    byteInDword = 0;
-                    while (byteInDword < 4)
+                    for (int byteInDword = 0; byteInDword < 4; byteInDword++)
                     {
-                        if (value[curByte] != 0x00) isZero = false;
-                        val[curDword] <<= 8;
-                        val[curDword] |= value[curByte];
+                        byte curByteValue = value[curByte];
+                        if (curByteValue != 0x00) isZero = false;
+                        val[curDword] = (val[curDword] << 8) | curByteValue;
                         curByte--;
-                        byteInDword++;
                     }
                     curByte += 8;
                 }
@@ -329,9 +337,9 @@ namespace System.Numerics
                     if (isNegative) val[dwordCount - 1] = 0xffffffff;
                     for (curByte = byteCount - 1; curByte >= byteCount - unalignedBytes; curByte--)
                     {
-                        if (value[curByte] != 0x00) isZero = false;
-                        val[curDword] <<= 8;
-                        val[curDword] |= value[curByte];
+                        byte curByteValue = value[curByte];
+                        if (curByteValue != 0x00) isZero = false;
+                        val[curDword] = (val[curDword] << 8) | curByteValue;
                     }
                 }
 
@@ -344,16 +352,17 @@ namespace System.Numerics
                     NumericsHelpers.DangerousMakeTwosComplement(val); // Mutates val
 
                     // Pack _bits to remove any wasted space after the twos complement
-                    int len = val.Length;
-                    while (len > 0 && val[len - 1] == 0)
-                        len--;
+                    int len = val.Length - 1;
+                    while (len >= 0 && val[len] == 0) len--;
+                    len++;
+
                     if (len == 1 && unchecked((int)(val[0])) > 0)
                     {
                         if (val[0] == 1 /* abs(-1) */)
                         {
                             this = s_bnMinusOneInt;
                         }
-                        else if (val[0] == kuMaskHighBit /* abs(Int32.MinValue) */)
+                        else if (val[0] == kuMaskHighBit) // abs(Int32.MinValue)
                         {
                             this = s_bnMinInt;
                         }
@@ -1035,11 +1044,8 @@ namespace System.Numerics
         /// <returns></returns>
         public byte[] ToByteArray()
         {
-            bool success = TryGetBytes(GetBytesMode.AllocateArray, default(Span<byte>), out byte[] array, out int bytesWritten);
-            Debug.Assert(success, "ToByteArray should always succeed");
-            Debug.Assert(array != null, "Expected non-null array");
-            Debug.Assert(bytesWritten == array.Length);
-            return array;
+            int ignored = 0;
+            return TryGetBytes(GetBytesMode.AllocateArray, default(Span<byte>), ref ignored);
         }
 
         /// <summary>
@@ -1050,59 +1056,63 @@ namespace System.Numerics
         /// <param name="destination">The destination span to which the resulting bytes should be written.</param>
         /// <param name="bytesWritten">The number of bytes written to <paramref name="destination"/>.</param>
         /// <returns>true if the bytes fit in <see cref="destination"/>; false if not all bytes could be written due to lack of space.</returns>
-        public bool TryWriteBytes(Span<byte> destination, out int bytesWritten) =>
-            TryGetBytes(GetBytesMode.Span, destination, out byte[] _, out bytesWritten);
+        public bool TryWriteBytes(Span<byte> destination, out int bytesWritten)
+        {
+            bytesWritten = 0;
+            return TryGetBytes(GetBytesMode.Span, destination, ref bytesWritten) != null;
+        }
 
         /// <summary>Gets the number of bytes that will be output by <see cref="ToByteArray"/> and <see cref="TryWriteBytes(Span{byte}, out int)"/>.</summary>
         /// <returns>The number of bytes.</returns>
         public int GetByteCount()
         {
-            bool success = TryGetBytes(GetBytesMode.Count, default(Span<byte>), out byte[] _, out int count);
-            Debug.Assert(success);
+            int count = 0;
+            TryGetBytes(GetBytesMode.Count, default(Span<byte>), ref count);
             return count;
         }
 
         /// <summary>Mode used to enable sharing <see cref="TryGetBytes(GetBytesMode, Span{byte}, out byte[], out int)"/> for multiple purposes.</summary>
-        private enum GetBytesMode { Count, AllocateArray, Span }
+        private enum GetBytesMode { AllocateArray, Count, Span }
+
+        /// <summary>Dummy array returned from TryGetBytes to indicate success when in span mode.</summary>
+        private static readonly byte[] s_success = Array.Empty<byte>();
 
         /// <summary>Shared logic for <see cref="ToByteArray"/>, <see cref="TryWriteBytes(Span{byte}, out int)"/>, and <see cref="GetByteCount"/>.</summary>
         /// <param name="mode">Which entry point is being used.</param>
         /// <param name="destination">The destination span, if mode is <see cref="GetBytesMode.Span"/>.</param>
-        /// <param name="array">The output array, if mode is <see cref="GetBytesMode.AllocateArray"/>.</param>
         /// <param name="bytesWritten">
-        /// The number of bytes written to <paramref name="destination"/> or <paramref name="array"/>,
-        /// or if counting, the number of bytes that would have been written.
+        /// If <paramref name="mode"/>==<see cref="GetBytesMode.AllocateArray"/>, ignored.
+        /// If <paramref name="mode"/>==<see cref="GetBytesMode.Count"/>, the number of bytes that would be written.
+        /// If <paramref name="mode"/>==<see cref="GetBytesMode.Span"/>, the number of bytes written to the span.
         /// </param>
-        /// <returns>false if in <see cref="GetBytesMode.Span"/> mode and the destination isn't large enough; otherwise, true.</returns>
-        private bool TryGetBytes(GetBytesMode mode, Span<byte> destination, out byte[] array, out int bytesWritten)
+        /// <returns>
+        /// If <paramref name="mode"/>==<see cref="GetBytesMode.AllocateArray"/>, the result array.
+        /// If <paramref name="mode"/>==<see cref="GetBytesMode.Count"/>, null.
+        /// If <paramref name="mode"/>==<see cref="GetBytesMode.Span"/>, non-null if the span was long enough, null if there wasn't enough room.
+        /// </returns>
+        private byte[] TryGetBytes(GetBytesMode mode, Span<byte> destination, ref int bytesWritten)
         {
-            Debug.Assert(mode == GetBytesMode.AllocateArray || mode == GetBytesMode.Count || mode == GetBytesMode.Span,
-                $"Unexpected mode {mode}.");
-            Debug.Assert(mode == GetBytesMode.Span || destination.IsEmpty,
-                $"If we're not in span mode, we shouldn't have been passed a destination.");
-            array = null;
-            bytesWritten = 0;
+            Debug.Assert(mode == GetBytesMode.AllocateArray || mode == GetBytesMode.Count || mode == GetBytesMode.Span, $"Unexpected mode {mode}.");
+            Debug.Assert(mode == GetBytesMode.Span || destination.IsEmpty, $"If we're not in span mode, we shouldn't have been passed a destination.");
 
             int sign = _sign;
             if (sign == 0)
             {
                 switch (mode)
                 {
+                    case GetBytesMode.AllocateArray:
+                        return new byte[] { 0 };
                     case GetBytesMode.Count:
                         bytesWritten = 1;
-                        return true;
-                    case GetBytesMode.AllocateArray:
-                        array = new byte[] { 0 };
-                        bytesWritten = 1;
-                        return true;
+                        return null;
                     default: // case GetBytesMode.Span:
-                        if (destination.Length < 1)
+                        if (destination.Length != 0)
                         {
-                            return false;
+                            destination[0] = 0;
+                            bytesWritten = 1;
+                            return s_success;
                         }
-                        destination[0] = 0;
-                        bytesWritten = 1;
-                        return true;
+                        return null;
                 }
             }
 
@@ -1172,23 +1182,28 @@ namespace System.Numerics
 
             // Ensure high bit is 0 if positive, 1 if negative
             bool needExtraByte = (msb & 0x80) != (highByte & 0x80);
-            int length = bits == null ?
-                msbIndex + 1 + (needExtraByte ? 1 : 0) :
-                checked(4 * (bits.Length - 1) + msbIndex + 1 + (needExtraByte ? 1 : 0));
+            int length = msbIndex + 1 + (needExtraByte ? 1 : 0);
+            if (bits != null)
+            {
+                length = checked(4 * (bits.Length - 1) + length);
+            }
+
+            byte[] array;
             switch (mode)
             {
-                case GetBytesMode.Count:
-                    bytesWritten = length;
-                    return true;
                 case GetBytesMode.AllocateArray:
                     destination = array = new byte[length];
                     break;
+                case GetBytesMode.Count:
+                    bytesWritten = length;
+                    return null;
                 default: // case GetBytesMode.Span:
                     if (destination.Length < length)
                     {
-                        bytesWritten = 0;
-                        return false;
+                        return null;
                     }
+                    bytesWritten = length;
+                    array = s_success;
                     break;
             }
 
@@ -1198,6 +1213,7 @@ namespace System.Numerics
                 for (int i = 0; i < bits.Length - 1; i++)
                 {
                     uint dword = bits[i];
+
                     if (sign == -1)
                     {
                         dword = ~dword;
@@ -1206,26 +1222,36 @@ namespace System.Numerics
                             dword = unchecked(dword + 1U);
                         }
                     }
-                    for (int j = 0; j < 4; j++)
+
+                    destination[curByte++] = unchecked((byte)dword);
+                    destination[curByte++] = unchecked((byte)(dword >> 8));
+                    destination[curByte++] = unchecked((byte)(dword >> 16));
+                    destination[curByte++] = unchecked((byte)(dword >> 24));
+                }
+            }
+
+            Debug.Assert(msbIndex >= 0 && msbIndex <= 3);
+            destination[curByte] = unchecked((byte)highDword);
+            if (msbIndex != 0)
+            {
+                destination[++curByte] = unchecked((byte)(highDword >> 8));
+                if (msbIndex != 1)
+                {
+                    destination[++curByte] = unchecked((byte)(highDword >> 16));
+                    if (msbIndex != 2)
                     {
-                        destination[curByte++] = unchecked((byte)dword);
-                        dword >>= 8;
+                        destination[++curByte] = unchecked((byte)(highDword >> 24));
                     }
                 }
             }
 
-            for (int j = 0; j <= msbIndex; j++)
-            {
-                destination[curByte++] = unchecked((byte)highDword);
-                highDword >>= 8;
-            }
+            Debug.Assert((!needExtraByte && curByte == length - 1) || (needExtraByte && curByte == length - 2));
             if (needExtraByte)
             {
                 destination[length - 1] = highByte;
             }
 
-            bytesWritten = length;
-            return true;
+            return array;
         }
 
         /// <summary>
