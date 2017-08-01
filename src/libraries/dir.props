@@ -278,7 +278,8 @@
   <!-- Properties related to multi-file mode for ILC tests -->
   <PropertyGroup Condition="'$(TargetGroup)' == 'uapaot'">
     <!-- Only enable multi-file for Release-x64 and Debug-x86 for now -->
-    <EnableMultiFileILCTests Condition="'$(ConfigurationGroup)|$(ArchGroup)' == 'Release|x64' Or '$(ConfigurationGroup)|$(ArchGroup)' == 'Debug|x86' Or '$(ConfigurationGroup)|$(ArchGroup)' == 'Release|arm'">true</EnableMultiFileILCTests>
+    <!-- Temporarily disabling multifile test configurations. For more info, please check: https://github.com/dotnet/corefx/issues/22826
+    <EnableMultiFileILCTests Condition="'$(ConfigurationGroup)|$(ArchGroup)' == 'Release|x64' Or '$(ConfigurationGroup)|$(ArchGroup)' == 'Debug|x86' Or '$(ConfigurationGroup)|$(ArchGroup)' == 'Release|arm'">true</EnableMultiFileILCTests> -->
   </PropertyGroup>
 
   <PropertyGroup>
