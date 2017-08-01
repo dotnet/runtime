@@ -540,13 +540,15 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
         // If it is contained then source must be the integer constant zero
         if (source->isContained())
         {
+#ifdef _TARGET_ARM64_
             assert(source->OperGet() == GT_CNS_INT);
             assert(source->AsIntConCommon()->IconValue() == 0);
-            NYI_ARM("genPutArgStk: contained zero source");
 
-#ifdef _TARGET_ARM64_
             emit->emitIns_S_R(storeIns, storeAttr, REG_ZR, varNumOut, argOffsetOut);
-#endif // _TARGET_ARM64_
+#else  // !_TARGET_ARM64_
+            // There is no zero register on ARM32
+            unreached();
+#endif // !_TARGET_ARM64
         }
         else
         {
