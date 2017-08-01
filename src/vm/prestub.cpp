@@ -740,7 +740,7 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
 
         // Interpretted methods skip this notification
 #ifdef FEATURE_INTERPRETER
-        if (Interpreter::InterpretationStubToMethodInfo(pJitNotificationInfo->pCode) == NULL)
+        if (Interpreter::InterpretationStubToMethodInfo(pCode) == NULL)
 #endif
         {
             // Fire an ETW event to mark the end of JIT'ing
