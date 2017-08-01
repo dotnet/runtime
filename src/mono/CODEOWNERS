@@ -26,21 +26,24 @@ mcs/errors @marek-safar
 mcs/mcs @marek-safar
 mcs/tests @marek-safar
 mcs/class/corlib/System.Reflection*/ @vargaz @lambdageek
+mcs/class/Mono.Btls.Interface @baulig
 mcs/class/Mono.Debugger.Soft @vargaz
 mcs/class/Mono.Options @jonpryor
 mcs/class/Mono.Profiler.Log @alexrp
+mcs/class/Mono.Security/Mono.Security/Interface @baulig
 mcs/class/System/Mono.AppleTls @baulig
 mcs/class/System/Mono.Btls @baulig
 mcs/class/System/Mono.Net.Security @baulig
 mcs/class/System/Mono.Security.Interface @baulig
-mcs/class/Mono.Btls.Interface @baulig
-mcs/class/Mono.Security/Mono.Security/Interface @baulig
 mono/metadata/*profiler* @alexrp
+mono/metadata/monitor* @brzvlad
+mono/metadata/sgen* @brzvlad
 mono/metadata/threads* @luhenry @kumpera
 mono/metadata/threadpool* @luhenry
 mono/metadata/w32* @luhenry
 mono/mini/*profiler* @alexrp
 mono/profiler @alexrp
+mono/sgen @brzvlad
 mono/utils/atomic* @alexrp
 mono/utils/mono-hwcap* @alexrp
 mono/utils/mono-mem* @alexrp
