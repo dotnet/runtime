@@ -32,10 +32,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private readonly StdTypeVarColl _stvcMethod;
         private readonly StdTypeVarColl _stvcClass;
 
-        public TypeManager()
+        public TypeManager(BSYMMGR bsymmgr, PredefinedTypes predefTypes)
         {
-            _predefTypes = null; // Initialized via the Init call.
-            _BSymmgr = null; // Initialized via the Init call.
             _typeFactory = new TypeFactory();
             _typeTable = new TypeTable();
 
@@ -51,6 +49,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             _stvcMethod = new StdTypeVarColl();
             _stvcClass = new StdTypeVarColl();
+            _BSymmgr = bsymmgr;
+            _predefTypes = predefTypes;
         }
 
         public void InitTypeFactory(SymbolTable table)
@@ -992,12 +992,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             return pTypeParameter;
-        }
-
-        internal void Init(BSYMMGR bsymmgr, PredefinedTypes predefTypes)
-        {
-            _BSymmgr = bsymmgr;
-            _predefTypes = predefTypes;
         }
 
         // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
