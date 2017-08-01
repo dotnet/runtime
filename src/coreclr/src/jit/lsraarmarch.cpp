@@ -41,11 +41,10 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //
 void Lowering::TreeNodeInfoInitStoreLoc(GenTreeLclVarCommon* storeLoc)
 {
-    ContainCheckStoreLoc(storeLoc);
     TreeNodeInfo* info = &(storeLoc->gtLsraInfo);
     GenTree*      op1  = storeLoc->gtGetOp1();
 
-    info->dstCount = 0;
+    assert(info->dstCount == 0);
 #ifdef _TARGET_ARM_
     if (varTypeIsLong(op1))
     {
@@ -91,12 +90,17 @@ void Lowering::TreeNodeInfoInitStoreLoc(GenTreeLclVarCommon* storeLoc)
 //
 void Lowering::TreeNodeInfoInitCmp(GenTreePtr tree)
 {
-    ContainCheckCompare(tree->AsOp());
-
     TreeNodeInfo* info = &(tree->gtLsraInfo);
 
     info->srcCount = tree->gtOp.gtOp2->isContained() ? 1 : 2;
-    info->dstCount = tree->OperIs(GT_CMP) ? 0 : 1;
+    if (info->isNoRegCompare)
+    {
+        info->dstCount = 0;
+    }
+    else
+    {
+        assert((info->dstCount == 1) || tree->OperIs(GT_CMP));
+    }
 }
 
 void Lowering::TreeNodeInfoInitGCWriteBarrier(GenTree* tree)
@@ -159,8 +163,6 @@ void Lowering::TreeNodeInfoInitGCWriteBarrier(GenTree* tree)
 //
 void Lowering::TreeNodeInfoInitIndir(GenTreeIndir* indirTree)
 {
-    ContainCheckIndir(indirTree);
-
     // If this is the rhs of a block copy (i.e. non-enregisterable struct),
     // it has no register requirements.
     if (indirTree->TypeGet() == TYP_STRUCT)
@@ -284,15 +286,13 @@ void Lowering::TreeNodeInfoInitShiftRotate(GenTree* tree)
 // Return Value:
 //    None.
 //
-void Lowering::TreeNodeInfoInitPutArgReg(
-    GenTreeUnOp* node, regNumber argReg, TreeNodeInfo& info, bool isVarArgs, bool* callHasFloatRegArgs)
+void Lowering::TreeNodeInfoInitPutArgReg(GenTreeUnOp* node)
 {
     assert(node != nullptr);
     assert(node->OperIsPutArgReg());
+    node->gtLsraInfo.srcCount = 1;
+    regNumber argReg          = node->gtRegNum;
     assert(argReg != REG_NA);
-
-    // Each register argument corresponds to one source.
-    info.srcCount++;
 
     // Set the register requirements for the node.
     regMaskTP argMask = genRegMask(argReg);
@@ -301,7 +301,7 @@ void Lowering::TreeNodeInfoInitPutArgReg(
     // The actual `long` types must have been transformed as a field list with two fields.
     if (node->TypeGet() == TYP_LONG)
     {
-        info.srcCount++;
+        node->gtLsraInfo.srcCount++;
         assert(genRegArgNext(argReg) == REG_NEXT(argReg));
         argMask |= genRegMask(REG_NEXT(argReg));
     }
@@ -312,8 +312,37 @@ void Lowering::TreeNodeInfoInitPutArgReg(
     // To avoid redundant moves, have the argument operand computed in the
     // register in which the argument is passed to the call.
     node->gtOp.gtOp1->gtLsraInfo.setSrcCandidates(m_lsra, m_lsra->getUseCandidates(node));
+}
 
-    *callHasFloatRegArgs |= varTypeIsFloating(node->TypeGet());
+//------------------------------------------------------------------------
+// HandleFloatVarArgs: Handle additional register requirements for a varargs call
+//
+// Arguments:
+//    call    - The call node of interest
+//    argNode - The current argument
+//
+// Return Value:
+//    None.
+//
+// Notes:
+//    In the case of a varargs call, the ABI dictates that if we have floating point args,
+//    we must pass the enregistered arguments in both the integer and floating point registers.
+//    Since the integer register is not associated with the arg node, we will reserve it as
+//    an internal register on the call so that it is not used during the evaluation of the call node
+//    (e.g. for the target).
+void Lowering::HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* callHasFloatRegArgs)
+{
+#if FEATURE_VARARG
+    if (call->IsVarargs() && varTypeIsFloating(argNode))
+    {
+        *callHasFloatRegArgs = true;
+
+        regNumber argReg    = argNode->gtRegNum;
+        regNumber targetReg = comp->getCallArgIntRegister(argReg);
+        call->gtLsraInfo.setInternalIntCount(call->gtLsraInfo.internalIntCount + 1);
+        call->gtLsraInfo.addInternalCandidates(m_lsra, genRegMask(targetReg));
+    }
+#endif // FEATURE_VARARG
 }
 
 //------------------------------------------------------------------------
@@ -422,25 +451,8 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
         info->setDstCandidates(l, RBM_INTRET);
     }
 
-    // If there is an explicit this pointer, we don't want that node to produce anything
-    // as it is redundant
-    if (call->gtCallObjp != nullptr)
-    {
-        GenTreePtr thisPtrNode = call->gtCallObjp;
-
-        if (thisPtrNode->gtOper == GT_PUTARG_REG)
-        {
-            l->clearOperandCounts(thisPtrNode);
-            thisPtrNode->SetContained();
-            l->clearDstCount(thisPtrNode->gtOp.gtOp1);
-        }
-        else
-        {
-            l->clearDstCount(thisPtrNode);
-        }
-    }
-
     // First, count reg args
+    // Each register argument corresponds to one source.
     bool callHasFloatRegArgs = false;
 
     for (GenTreePtr list = call->gtCallLateArgs; list; list = list->MoveNext())
@@ -449,29 +461,62 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
 
         GenTreePtr argNode = list->Current();
 
+#ifdef DEBUG
+        // During TreeNodeInfoInit, we only use the ArgTabEntry for validation,
+        // as getting it is rather expensive.
         fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(call, argNode);
+        regNumber        argReg         = curArgTabEntry->regNum;
         assert(curArgTabEntry);
+#endif
 
-        if (curArgTabEntry->regNum == REG_STK)
+        if (argNode->gtOper == GT_PUTARG_STK)
         {
             // late arg that is not passed in a register
-            assert(argNode->gtOper == GT_PUTARG_STK);
+            assert(curArgTabEntry->regNum == REG_STK);
+            GenTree* putArgChild = argNode->gtGetOp1();
+            if (!varTypeIsStruct(putArgChild) && !putArgChild->OperIs(GT_FIELD_LIST))
+            {
+#ifdef ARM_SOFTFP
+                // The `double` types have been transformed to `long` on armel, while the actual longs
+                // have been decomposed.
+                const bool isDouble = putArgChild->TypeGet() == TYP_LONG;
+                if (isDouble)
+                {
+                    argNode->gtLsraInfo.srcCount = 2;
+                }
+#endif // ARM_SOFT_FP
 
-            TreeNodeInfoInitPutArgStk(argNode->AsPutArgStk(), curArgTabEntry);
+#ifdef DEBUG
+// Validate the slot count for this arg.
+#ifdef _TARGET_ARM_
+#ifndef ARM_SOFTFP
+                const bool isDouble = (curArgTabEntry->numSlots == 2) && (putArgChild->TypeGet() == TYP_DOUBLE);
+#endif // !ARM_SOFTFP
+
+                // We must not have a multi-reg struct; double uses 2 slots and isn't a multi-reg struct
+                assert((curArgTabEntry->numSlots == 1) || isDouble);
+
+#else  // !_TARGET_ARM_
+                // We must not have a multi-reg struct
+                assert(curArgTabEntry->numSlots == 1);
+#endif // !_TARGET_ARM_
+#endif
+            }
             continue;
         }
 
         // A GT_FIELD_LIST has a TYP_VOID, but is used to represent a multireg struct
         if (argNode->OperGet() == GT_FIELD_LIST)
         {
-            argNode->SetContained();
+            assert(argNode->isContained());
 
             // There could be up to 2-4 PUTARG_REGs in the list (3 or 4 can only occur for HFAs)
-            regNumber argReg = curArgTabEntry->regNum;
             for (GenTreeFieldList* entry = argNode->AsFieldList(); entry != nullptr; entry = entry->Rest())
             {
-                TreeNodeInfoInitPutArgReg(entry->Current()->AsUnOp(), argReg, *info, false, &callHasFloatRegArgs);
-
+                info->srcCount++;
+#ifdef DEBUG
+                assert(entry->Current()->OperIs(GT_PUTARG_REG));
+                assert(entry->Current()->gtRegNum == argReg);
                 // Update argReg for the next putarg_reg (if any)
                 argReg = genRegArgNext(argReg);
 
@@ -482,18 +527,21 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
                     argReg = genRegArgNext(argReg);
                 }
 #endif // _TARGET_ARM_
+#endif
             }
         }
 #ifdef _TARGET_ARM_
         else if (argNode->OperGet() == GT_PUTARG_SPLIT)
         {
             fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(call, argNode);
-            TreeNodeInfoInitPutArgSplit(argNode->AsPutArgSplit(), *info, curArgTabEntry);
         }
 #endif
         else
         {
-            TreeNodeInfoInitPutArgReg(argNode->AsUnOp(), curArgTabEntry->regNum, *info, false, &callHasFloatRegArgs);
+            assert(argNode->OperIs(GT_PUTARG_REG));
+            assert(argNode->gtRegNum == argReg);
+            HandleFloatVarArgs(call, argNode, &callHasFloatRegArgs);
+            info->srcCount++;
         }
     }
 
@@ -518,25 +566,21 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
                 assert(curArgTabEntry);
 
                 assert(curArgTabEntry->regNum == REG_STK);
-
-                TreeNodeInfoInitPutArgStk(arg->AsPutArgStk(), curArgTabEntry);
             }
 #ifdef _TARGET_ARM_
             else if (arg->OperGet() == GT_PUTARG_SPLIT)
             {
+#ifdef DEBUG
                 fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(call, arg);
-                TreeNodeInfoInitPutArgSplit(arg->AsPutArgSplit(), *info, curArgTabEntry);
+                assert(arg->AsPutArgSplit()->gtNumRegs == curArgTabEntry->numRegs);
+#endif
+                info->srcCount += arg->gtLsraInfo.dstCount;
             }
 #endif
             else
             {
                 TreeNodeInfo* argInfo = &(arg->gtLsraInfo);
-                if (argInfo->dstCount != 0)
-                {
-                    argInfo->isLocalDefUse = true;
-                }
-
-                argInfo->dstCount = 0;
+                assert((argInfo->dstCount == 0) || (argInfo->isLocalDefUse));
             }
         }
         args = args->gtOp.gtOp2;
@@ -576,16 +620,13 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
 // Notes:
 //    Set the child node(s) to be contained when we have a multireg arg
 //
-void Lowering::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode, fgArgTabEntryPtr info)
+void Lowering::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode)
 {
     assert(argNode->gtOper == GT_PUTARG_STK);
 
     GenTreePtr putArgChild = argNode->gtOp.gtOp1;
 
-    // Initialize 'argNode' as not contained, as this is both the default case
-    //  and how MakeSrcContained expects to find things setup.
-    //
-    argNode->gtLsraInfo.srcCount = 1;
+    argNode->gtLsraInfo.srcCount = 0;
     argNode->gtLsraInfo.dstCount = 0;
 
     // Do we have a TYP_STRUCT argument (or a GT_FIELD_LIST), if so it must be a multireg pass-by-value struct
@@ -595,9 +636,12 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode, fgArgTabEntr
 
         if (putArgChild->OperGet() == GT_FIELD_LIST)
         {
+            assert(putArgChild->isContained());
             // We consume all of the items in the GT_FIELD_LIST
-            argNode->gtLsraInfo.srcCount = info->numSlots;
-            putArgChild->SetContained();
+            for (GenTreeFieldList* current = putArgChild->AsFieldList(); current != nullptr; current = current->Rest())
+            {
+                argNode->gtLsraInfo.srcCount++;
+            }
         }
         else
         {
@@ -617,8 +661,7 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode, fgArgTabEntr
                     // We will generate all of the code for the GT_PUTARG_STK, the GT_OBJ and the GT_LCL_VAR_ADDR
                     // as one contained operation
                     //
-                    MakeSrcContained(putArgChild, objChild);
-                    putArgChild->gtLsraInfo.srcCount--;
+                    assert(objChild->isContained());
                 }
             }
 
@@ -626,31 +669,24 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode, fgArgTabEntr
             // as one contained operation
             //
             argNode->gtLsraInfo.srcCount = putArgChild->gtLsraInfo.srcCount;
-            MakeSrcContained(argNode, putArgChild);
+            assert(putArgChild->isContained());
         }
     }
     else
     {
-#ifdef _TARGET_ARM_
-
-#ifdef ARM_SOFTFP
-        // The `double` types have been transformed to `long` on armel.
-        const bool isDouble = (info->numSlots == 2) && (putArgChild->TypeGet() == TYP_LONG);
+#if defined(_TARGET_ARM_) && defined(ARM_SOFTFP)
+        // The `double` types have been transformed to `long` on armel,
+        // while the actual long types have been decomposed.
+        const bool isDouble = (putArgChild->TypeGet() == TYP_LONG);
         if (isDouble)
         {
             argNode->gtLsraInfo.srcCount = 2;
         }
-#else  // !ARM_SOFTFP
-        const bool isDouble = (info->numSlots == 2) && (putArgChild->TypeGet() == TYP_DOUBLE);
-#endif // !ARM_SOFTFP
-
-        // We must not have a multi-reg struct; double uses 2 slots and isn't a multi-reg struct
-        assert((info->numSlots == 1) || isDouble);
-
-#else  // !_TARGET_ARM_
-        // We must not have a multi-reg struct
-        assert(info->numSlots == 1);
-#endif // !_TARGET_ARM_
+        else
+#endif // defined(_TARGET_ARM_) && defined(ARM_SOFTFP)
+        {
+            argNode->gtLsraInfo.srcCount = 1;
+        }
     }
 }
 
@@ -667,19 +703,18 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode, fgArgTabEntr
 // Notes:
 //    Set the child node(s) to be contained
 //
-void Lowering::TreeNodeInfoInitPutArgSplit(GenTreePutArgSplit* argNode, TreeNodeInfo& info, fgArgTabEntryPtr argInfo)
+void Lowering::TreeNodeInfoInitPutArgSplit(GenTreePutArgSplit* argNode)
 {
     assert(argNode->gtOper == GT_PUTARG_SPLIT);
 
     GenTreePtr putArgChild = argNode->gtOp.gtOp1;
 
     // Registers for split argument corresponds to source
-    argNode->gtLsraInfo.dstCount = argInfo->numRegs;
-    info.srcCount += argInfo->numRegs;
+    argNode->gtLsraInfo.dstCount = argNode->gtNumRegs;
 
-    regNumber argReg  = argInfo->regNum;
+    regNumber argReg  = argNode->gtRegNum;
     regMaskTP argMask = RBM_NONE;
-    for (unsigned i = 0; i < argInfo->numRegs; i++)
+    for (unsigned i = 0; i < argNode->gtNumRegs; i++)
     {
         argMask |= genRegMask((regNumber)((unsigned)argReg + i));
     }
@@ -692,29 +727,32 @@ void Lowering::TreeNodeInfoInitPutArgSplit(GenTreePutArgSplit* argNode, TreeNode
         // 1. Consume all of the items in the GT_FIELD_LIST (source)
         // 2. Store to target slot and move to target registers (destination) from source
         //
-        argNode->gtLsraInfo.srcCount = argInfo->numRegs + argInfo->numSlots;
+        unsigned slotCount = 0;
 
         // To avoid redundant moves, have the argument operand computed in the
         // register in which the argument is passed to the call.
         GenTreeFieldList* fieldListPtr = putArgChild->AsFieldList();
         for (unsigned idx = 0; fieldListPtr != nullptr; fieldListPtr = fieldListPtr->Rest(), idx++)
         {
-            if (idx < argInfo->numRegs)
+            if (idx < argNode->gtNumRegs)
             {
                 GenTreePtr node = fieldListPtr->gtGetOp1();
                 node->gtLsraInfo.setSrcCandidates(m_lsra, genRegMask((regNumber)((unsigned)argReg + idx)));
             }
+            else
+            {
+                slotCount++;
+            }
         }
-
-        putArgChild->SetContained();
+        argNode->gtLsraInfo.srcCount = argNode->gtNumRegs + slotCount;
+        assert(putArgChild->isContained());
     }
     else
     {
         assert(putArgChild->TypeGet() == TYP_STRUCT);
         assert(putArgChild->OperGet() == GT_OBJ);
 
-        // We could use a ldr/str sequence so we need a internal register
-        argNode->gtLsraInfo.srcCount         = 1;
+        // We can use a ldr/str sequence so we need an internal register
         argNode->gtLsraInfo.internalIntCount = 1;
         regMaskTP internalMask               = RBM_ALLINT & ~argMask;
         argNode->gtLsraInfo.setInternalCandidates(m_lsra, internalMask);
@@ -725,11 +763,13 @@ void Lowering::TreeNodeInfoInitPutArgSplit(GenTreePutArgSplit* argNode, TreeNode
             // We will generate all of the code for the GT_PUTARG_SPLIT, the GT_OBJ and the GT_LCL_VAR_ADDR
             // as one contained operation
             //
-            MakeSrcContained(putArgChild, objChild);
-            putArgChild->gtLsraInfo.srcCount--;
+            assert(objChild->isContained());
         }
-        argNode->gtLsraInfo.srcCount = putArgChild->gtLsraInfo.srcCount;
-        MakeSrcContained(argNode, putArgChild);
+        else
+        {
+            argNode->gtLsraInfo.srcCount = GetIndirSourceCount(putArgChild->AsIndir());
+        }
+        assert(putArgChild->isContained());
     }
 }
 #endif // _TARGET_ARM_
@@ -753,43 +793,17 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
 
     // Sources are dest address and initVal or source.
     // We may require an additional source or temp register for the size.
-    blkNode->gtLsraInfo.srcCount = 2;
-    blkNode->gtLsraInfo.dstCount = 0;
-    GenTreePtr srcAddrOrFill     = nullptr;
-    bool       isInitBlk         = blkNode->OperIsInitBlkOp();
-
-    if (!isInitBlk)
-    {
-        // CopyObj or CopyBlk
-        if (source->gtOper == GT_IND)
-        {
-            srcAddrOrFill = blkNode->Data()->gtGetOp1();
-            // We're effectively setting source as contained, but can't call MakeSrcContained, because the
-            // "inheritance" of the srcCount is to a child not a parent - it would "just work" but could be misleading.
-            // If srcAddr is already non-contained, we don't need to change it.
-            if (srcAddrOrFill->gtLsraInfo.getDstCount() == 0)
-            {
-                srcAddrOrFill->gtLsraInfo.setDstCount(1);
-                srcAddrOrFill->gtLsraInfo.setSrcCount(source->gtLsraInfo.srcCount);
-            }
-            m_lsra->clearOperandCounts(source);
-            source->SetContained();
-            source->AsIndir()->Addr()->ClearContained();
-        }
-        else if (!source->IsMultiRegCall() && !source->OperIsSIMD())
-        {
-            assert(source->IsLocal());
-            MakeSrcContained(blkNode, source);
-            blkNode->gtLsraInfo.srcCount--;
-        }
-    }
+    blkNode->gtLsraInfo.srcCount = GetOperandSourceCount(dstAddr);
+    assert(blkNode->gtLsraInfo.dstCount == 0);
+    GenTreePtr srcAddrOrFill = nullptr;
+    bool       isInitBlk     = blkNode->OperIsInitBlkOp();
 
     if (isInitBlk)
     {
         GenTreePtr initVal = source;
         if (initVal->OperIsInitVal())
         {
-            initVal->SetContained();
+            assert(initVal->isContained());
             initVal = initVal->gtGetOp1();
         }
         srcAddrOrFill = initVal;
@@ -801,22 +815,18 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
             // code sequences to improve CQ.
             // For reference see the code in lsraxarch.cpp.
             NYI_ARM("initblk loop unrolling is currently not implemented.");
-
-#ifdef _TARGET_ARM64_
-            // No additional temporaries required
-            ssize_t fill = initVal->gtIntCon.gtIconVal & 0xFF;
-            if (fill == 0)
+            if (!initVal->isContained())
             {
-                MakeSrcContained(blkNode, source);
-                blkNode->gtLsraInfo.srcCount--;
+                blkNode->gtLsraInfo.srcCount++;
             }
-#endif // _TARGET_ARM64_
         }
         else
         {
             assert(blkNode->gtBlkOpKind == GenTreeBlk::BlkOpKindHelper);
             // The helper follows the regular ABI.
             dstAddr->gtLsraInfo.setSrcCandidates(l, RBM_ARG_0);
+            assert(!initVal->isContained());
+            blkNode->gtLsraInfo.srcCount++;
             initVal->gtLsraInfo.setSrcCandidates(l, RBM_ARG_1);
             if (size != 0)
             {
@@ -838,6 +848,10 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
     {
         // CopyObj or CopyBlk
         // Sources are src and dest and size if not constant.
+        if (source->gtOper == GT_IND)
+        {
+            srcAddrOrFill = blkNode->Data()->gtGetOp1();
+        }
         if (blkNode->OperGet() == GT_STORE_OBJ)
         {
             // CopyObj
@@ -913,7 +927,7 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
                 else
                 {
                     // The block size argument is a third argument to GT_STORE_DYN_BLK
-                    noway_assert(blkNode->gtOper == GT_STORE_DYN_BLK);
+                    assert(blkNode->gtOper == GT_STORE_DYN_BLK);
                     blkNode->gtLsraInfo.setSrcCount(3);
                     GenTree* blockSize = blkNode->AsDynBlk()->gtDynamicSize;
                     blockSize->gtLsraInfo.setSrcCandidates(l, RBM_ARG_2);
@@ -925,6 +939,7 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
                 blkNode->gtLsraInfo.setInternalCandidates(l, internalIntCandidates);
             }
         }
+        blkNode->gtLsraInfo.srcCount += GetOperandSourceCount(source);
     }
 }
 
@@ -950,6 +965,12 @@ int Lowering::GetOperandSourceCount(GenTree* node)
         return 2;
     }
 #endif // !defined(_TARGET_64BIT_)
+
+    if (node->OperIsIndir())
+    {
+        const unsigned srcCount = GetIndirSourceCount(node->AsIndir());
+        return srcCount;
+    }
 
     return 0;
 }
