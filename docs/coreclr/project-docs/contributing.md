@@ -31,7 +31,7 @@ Contributions must also satisfy the other published guidelines defined in this d
 Automated Code Review Assistance
 ------------------
 
-CROSS is a tool developed my Microsoft that we use to highlight areas of higher risk in a code change in order to help code reviewers do a more effective job
+CROSS is a tool developed by Microsoft that is used to highlight areas of higher risk in a code change in order to help code reviewers do a more effective job.
 
 DOs and DON'Ts
 --------------
