@@ -9,6 +9,7 @@
 
 #include <mono/metadata/class-internals.h>
 #include <mono/metadata/object-internals.h>
+#include <mono/metadata/profiler-private.h>
 #include <mono/metadata/monitor.h>
 #include <mono/metadata/handle.h>
 #ifdef HAVE_SGEN_GC
