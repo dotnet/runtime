@@ -376,12 +376,6 @@ namespace System.ServiceProcess
         {
         }
 
-        // Delegate type used for the asynchronous call to handle the service stop.
-        private delegate void DeferredHandlerDelegate();
-        private delegate void DeferredHandlerDelegateCommand(int command);
-        private delegate void DeferredHandlerDelegateAdvanced(int eventType, IntPtr eventData);
-        private delegate void DeferredHandlerDelegateAdvancedSession(int eventType, int sessionId);
-
         private unsafe void DeferredContinue()
         {
             fixed (SERVICE_STATUS* pStatus = &_status)
@@ -687,9 +681,7 @@ namespace System.ServiceProcess
             {
                 case ControlOptions.CONTROL_POWEREVENT:
                     {
-                        DeferredHandlerDelegateAdvanced powerDelegate = new DeferredHandlerDelegateAdvanced(DeferredPowerEvent);
-                        powerDelegate.BeginInvoke(eventType, eventData, null, null);
-
+                        ThreadPool.QueueUserWorkItem(_ => DeferredPowerEvent(eventType, eventData));
                         break;
                     }
 
@@ -697,11 +689,9 @@ namespace System.ServiceProcess
                     {
                         // The eventData pointer can be released between now and when the DeferredDelegate gets called.
                         // So we capture the session id at this point
-                        DeferredHandlerDelegateAdvancedSession sessionDelegate = new DeferredHandlerDelegateAdvancedSession(DeferredSessionChange);
                         WTSSESSION_NOTIFICATION sessionNotification = new WTSSESSION_NOTIFICATION();
                         Marshal.PtrToStructure(eventData, sessionNotification);
-                        sessionDelegate.BeginInvoke(eventType, sessionNotification.sessionId, null, null);
-
+                        ThreadPool.QueueUserWorkItem(_ => DeferredSessionChange(eventType, sessionNotification.sessionId));
                         break;
                     }
 
@@ -741,8 +731,7 @@ namespace System.ServiceProcess
                                 _status.currentState = ServiceControlStatus.STATE_CONTINUE_PENDING;
                                 SetServiceStatus(_statusHandle, pStatus);
 
-                                DeferredHandlerDelegate continueDelegate = new DeferredHandlerDelegate(DeferredContinue);
-                                continueDelegate.BeginInvoke(null, null);
+                                ThreadPool.QueueUserWorkItem(_ => DeferredContinue());
                             }
 
                             break;
@@ -753,8 +742,7 @@ namespace System.ServiceProcess
                                 _status.currentState = ServiceControlStatus.STATE_PAUSE_PENDING;
                                 SetServiceStatus(_statusHandle, pStatus);
 
-                                DeferredHandlerDelegate pauseDelegate = new DeferredHandlerDelegate(DeferredPause);
-                                pauseDelegate.BeginInvoke(null, null);
+                                ThreadPool.QueueUserWorkItem(_ => DeferredPause());
                             }
 
                             break;
@@ -775,8 +763,7 @@ namespace System.ServiceProcess
                                 // can also save the previous state.
                                 _status.currentState = previousState;
 
-                                DeferredHandlerDelegate stopDelegate = new DeferredHandlerDelegate(DeferredStop);
-                                stopDelegate.BeginInvoke(null, null);
+                                ThreadPool.QueueUserWorkItem(_ => DeferredStop());
                             }
 
                             break;
@@ -786,15 +773,11 @@ namespace System.ServiceProcess
                             // Same goes for shutdown -- this needs to be very responsive, so we can't have one service tying up the
                             // dispatcher loop.
                             //
-                            DeferredHandlerDelegate shutdownDelegate = new DeferredHandlerDelegate(DeferredShutdown);
-
-                            shutdownDelegate.BeginInvoke(null, null);
+                            ThreadPool.QueueUserWorkItem(_ => DeferredShutdown());
                             break;
 
                         default:
-                            DeferredHandlerDelegateCommand customDelegate = new DeferredHandlerDelegateCommand(DeferredCustomCommand);
-                            customDelegate.BeginInvoke(command, null, null);
-
+                            ThreadPool.QueueUserWorkItem(_ => DeferredCustomCommand(command));
                             break;
                     }
                 }
