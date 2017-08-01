@@ -1735,12 +1735,6 @@ lookup_method (MonoDomain *domain, MonoMethod *method)
 	return ji;
 }
 
-MonoJitInfo *
-mono_get_jit_info_from_method (MonoDomain *domain, MonoMethod *method)
-{
-	return lookup_method (domain, method);
-}
-
 MonoClass*
 mini_get_class (MonoMethod *method, guint32 token, MonoGenericContext *context)
 {
