@@ -4,12 +4,16 @@
  * See the LICENSE file in the project root for more information.
  */
 
+#include <config.h>
+
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/mono-debug.h>
 
 #include "interp/interp.h"
 #include "ir-emit.h"
 #include "mini.h"
+
+#ifndef DISABLE_JIT
 
 void
 mini_profiler_emit_instrumentation_call (MonoCompile *cfg, void *func, gboolean entry, MonoInst **ret, MonoType *rtype)
@@ -63,6 +67,8 @@ mini_profiler_emit_instrumentation_call (MonoCompile *cfg, void *func, gboolean 
 
 	mono_emit_jit_icall (cfg, func, iargs);
 }
+
+#endif
 
 void
 mini_profiler_context_enable (void)
