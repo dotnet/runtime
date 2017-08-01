@@ -962,7 +962,10 @@ namespace System.Collections.Concurrent.Tests
         {
             IProducerConsumerCollection<int> c = CreateProducerConsumerCollection(count);
             DebuggerAttributes.ValidateDebuggerDisplayReferences(c);
-            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(c);
+            DebuggerAttributeInfo info = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(c);
+            PropertyInfo itemProperty = info.Properties.Single(pr => pr.GetCustomAttribute<DebuggerBrowsableAttribute>().State == DebuggerBrowsableState.RootHidden);
+            Array items = itemProperty.GetValue(info.Instance) as Array;
+            Assert.Equal(c, items.Cast<int>());
         }
 
         [Fact]
