@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Security.Cryptography;
 using System.Text;
@@ -33,6 +34,7 @@ namespace System.Net.Http
         private const string CNonce = "cnonce";
         private const string Opaque = "opaque";
         private const string Response = "response";
+        private const string Stale = "stale";
 
         // Define alphanumeric characters for cnonce
         // 48='0', 65='A', 97='a'
@@ -41,7 +43,7 @@ namespace System.Net.Http
         // Define a random number generator for cnonce
         private static RandomNumberGenerator s_rng = RandomNumberGenerator.Create();
 
-        public async static Task<bool> TrySetDigestAuthToken(HttpRequestMessage request, ICredentials credentials, DigestResponse digestResponse)
+        public async static Task<bool> TrySetDigestAuthToken(HttpRequestMessage request, ICredentials credentials, DigestResponse digestResponse, string authHeader)
         {
             NetworkCredential credential = credentials.GetCredential(request.RequestUri, Digest);
             if (credential == null)
@@ -55,7 +57,15 @@ namespace System.Net.Http
             if (string.IsNullOrEmpty(parameter))
                 return false;
 
-            request.Headers.Authorization = new AuthenticationHeaderValue(Digest, parameter);
+            if (authHeader == HttpKnownHeaderNames.Authorization)
+            {
+                request.Headers.Authorization = new AuthenticationHeaderValue(Digest, parameter);
+            }
+            else if (authHeader == HttpKnownHeaderNames.ProxyAuthorization)
+            {
+                request.Headers.ProxyAuthorization = new AuthenticationHeaderValue(Digest, parameter);
+            }
+
             return true;
         }
 
@@ -187,6 +197,12 @@ namespace System.Net.Http
             sb.AppendKeyValue(CNonce, cnonce, includeComma: false);
 
             return StringBuilderCache.GetStringAndRelease(sb);
+        }
+
+        public static bool IsServerNonceStale(DigestResponse digestResponse)
+        {
+            string stale = null;
+            return digestResponse.Parameters.TryGetValue(Stale, out stale) && stale == "true";
         }
 
         private static string GetRandomAlphaNumericString()
