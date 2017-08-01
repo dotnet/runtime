@@ -224,7 +224,6 @@ common_sources = \
 	w32process-internals.h		\
 	profiler.c		\
 	profiler-events.h	\
-	profiler-legacy.c	\
 	profiler-private.h	\
 	rand.h			\
 	rand.c			\

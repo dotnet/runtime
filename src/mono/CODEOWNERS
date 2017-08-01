@@ -29,11 +29,11 @@ mcs/class/corlib/System.Reflection*/ @vargaz @lambdageek
 mcs/class/Mono.Debugger.Soft @vargaz
 mcs/class/Mono.Options @jonpryor
 mcs/class/Mono.Profiler.Log @alexrp
-mono/metadata/profiler* @alexrp
+mono/metadata/*profiler* @alexrp
 mono/metadata/threads* @luhenry @kumpera
 mono/metadata/threadpool* @luhenry
 mono/metadata/w32* @luhenry
-mono/mini/profiler* @alexrp
+mono/mini/*profiler* @alexrp
 mono/profiler @alexrp
 mono/utils/atomic* @alexrp
 mono/utils/mono-hwcap* @alexrp

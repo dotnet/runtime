@@ -82,7 +82,6 @@
     <ClCompile Include="..\mono\metadata\number-ms.c" />
     <ClCompile Include="..\mono\metadata\object.c" />
     <ClCompile Include="..\mono\metadata\opcodes.c" />
-    <ClCompile Include="..\mono\metadata\profiler-legacy.c" />
     <ClCompile Include="..\mono\metadata\profiler.c" />
     <ClCompile Include="..\mono\metadata\rand.c" />
     <ClCompile Include="..\mono\metadata\reflection.c" />
