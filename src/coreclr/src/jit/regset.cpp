@@ -2336,9 +2336,13 @@ regNumber RegSet::rsUnspillOneReg(GenTreePtr tree, regNumber oldReg, KeepReg wil
             rsMaskMult |= genRegMask(newReg);
     }
 
-    /* Free the temp, it's no longer used */
-
-    m_rsCompiler->tmpRlsTemp(temp);
+    if (!multiUsed || (willKeepNewReg == KEEP_REG))
+    {
+        // Free the temp, it's no longer used.
+        // For multi-used regs that aren't (willKeepNewReg == KEEP_REG), we didn't unspill everything, so
+        // we need to leave the temp for future unspilling.
+        m_rsCompiler->tmpRlsTemp(temp);
+    }
 
     return newReg;
 }
