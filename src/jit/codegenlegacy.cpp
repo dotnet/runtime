@@ -2859,7 +2859,7 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     // Lock all ABI argument registers before generating the check. All other registers should be dead, so this
     // shouldn't over-constrain us.
     const regMaskTP unlockedArgRegs = RBM_ARG_REGS & ~regSet.rsMaskLock;
-    regMaskTP usedArgRegs;
+    regMaskTP       usedArgRegs;
     regSet.rsLockReg(unlockedArgRegs, &usedArgRegs);
 #endif
 
