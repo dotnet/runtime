@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 
 namespace System.Drawing
@@ -23,17 +24,13 @@ namespace System.Drawing
         private static void FillConstants(Dictionary<string, Color> colors, Type enumType)
         {
             const MethodAttributes attrs = MethodAttributes.Public | MethodAttributes.Static;
-            PropertyInfo[] props = enumType.GetProperties();
-
-            foreach (PropertyInfo prop in props)
+            foreach (PropertyInfo prop in enumType.GetProperties())
             {
                 if (prop.PropertyType == typeof(Color))
                 {
-                    MethodInfo method = prop.GetGetMethod();
-                    if (method != null && (method.Attributes & attrs) == attrs)
-                    {
-                        colors[prop.Name] = (Color)prop.GetValue(null, null);
-                    }
+                    Debug.Assert(prop.GetGetMethod() != null);
+                    Debug.Assert((prop.GetGetMethod().Attributes & attrs) == attrs);
+                    colors[prop.Name] = (Color)prop.GetValue(null, null);
                 }
             }
         }
