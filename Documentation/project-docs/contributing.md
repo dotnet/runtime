@@ -28,6 +28,11 @@ Maintainers will not merge changes that have narrowly-defined benefits, due to c
 
 Contributions must also satisfy the other published guidelines defined in this document.
 
+Automated Code Review Assistance
+------------------
+
+CROSS is a tool developed by Microsoft that is used to highlight areas of higher risk in a code change in order to help code reviewers do a more effective job.
+
 DOs and DON'Ts
 --------------
 
