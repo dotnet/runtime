@@ -1760,7 +1760,7 @@ class_loaded (MonoProfiler *prof, MonoClass *klass)
 }
 
 static void
-method_enter (MonoProfiler *prof, MonoMethod *method)
+method_enter (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *ctx)
 {
 	if (get_thread ()->call_depth++ <= log_config.max_call_depth) {
 		ENTER_LOG (&method_entries_ctr, logbuffer,
@@ -1776,7 +1776,7 @@ method_enter (MonoProfiler *prof, MonoMethod *method)
 }
 
 static void
-method_leave (MonoProfiler *prof, MonoMethod *method)
+method_leave (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *ctx)
 {
 	if (--get_thread ()->call_depth <= log_config.max_call_depth) {
 		ENTER_LOG (&method_exits_ctr, logbuffer,

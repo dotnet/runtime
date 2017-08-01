@@ -173,8 +173,6 @@ debug_enter (InterpFrame *frame, int *tracing)
 		g_print  ("%s)\n", args);
 		g_free (args);
 	}
-	if (mono_profiler_should_instrument_method (frame->imethod->method, TRUE))
-		MONO_PROFILER_RAISE (method_enter, (frame->imethod->method));
 }
 
 
@@ -190,9 +188,7 @@ debug_enter (InterpFrame *frame, int *tracing)
 		g_free (args);	\
 		debug_indent_level--;	\
 		if (tracing == 3) global_tracing = 0; \
-	}	\
-	if (mono_profiler_should_instrument_method (frame->imethod->method, FALSE)) \
-		MONO_PROFILER_RAISE (method_leave, (frame->imethod->method));
+	}
 
 #else
 
@@ -296,6 +292,8 @@ mono_interp_get_imethod (MonoDomain *domain, MonoMethod *method, MonoError *erro
 	if (!mono_internal_hash_table_lookup (&info->interp_code_hash, method))
 		mono_internal_hash_table_insert (&info->interp_code_hash, method, rtm);
 	mono_domain_jit_code_hash_unlock (domain);
+
+	rtm->prof_flags = mono_profiler_get_call_instrumentation_flags (rtm->method);
 
 	return rtm;
 }
@@ -603,6 +601,7 @@ fill_in_trace (MonoException *exception, InterpFrame *frame)
 		if (!rethrow) { \
 			FILL_IN_TRACE(frame->ex, frame);	\
 		} \
+		MONO_PROFILER_RAISE (exception_throw, ((MonoObject *) exception));	\
 		goto handle_exception;	\
 	} while (0)
 
@@ -4764,6 +4763,26 @@ array_constructed:
 			MINT_IN_BREAK;
 		}
 
+		MINT_IN_CASE(MINT_PROF_ENTER) {
+			ip += 1;
+
+			if (MONO_PROFILER_ENABLED (method_enter)) {
+				MonoProfilerCallContext *prof_ctx = NULL;
+
+				if (frame->imethod->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_PROLOGUE_CONTEXT) {
+					prof_ctx = g_new0 (MonoProfilerCallContext, 1);
+					prof_ctx->interp_frame = frame;
+					prof_ctx->method = frame->imethod->method;
+				}
+
+				MONO_PROFILER_RAISE (method_enter, (frame->imethod->method, prof_ctx));
+
+				g_free (prof_ctx);
+			}
+
+			MINT_IN_BREAK;
+		}
+
 		MINT_IN_CASE(MINT_LDARGA)
 			sp->data.p = frame->args + * (guint16 *)(ip + 1);
 			ip += 2;
@@ -5120,6 +5139,37 @@ die_on_ex:
 		goto exit_frame;
 	}
 exit_frame:
+
+	if (!frame->ex) {
+		if (MONO_PROFILER_ENABLED (method_leave) && frame->imethod->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_EPILOGUE) {
+			MonoProfilerCallContext *prof_ctx = NULL;
+
+			if (frame->imethod->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_EPILOGUE_CONTEXT) {
+				prof_ctx = g_new0 (MonoProfilerCallContext, 1);
+				prof_ctx->interp_frame = frame;
+				prof_ctx->method = frame->imethod->method;
+
+				MonoType *rtype = mono_method_signature (frame->imethod->method)->ret;
+
+				switch (rtype->type) {
+				case MONO_TYPE_VOID:
+					break;
+				case MONO_TYPE_VALUETYPE:
+					prof_ctx->return_value = frame->retval->data.p;
+					break;
+				default:
+					prof_ctx->return_value = frame->retval;
+					break;
+				}
+			}
+
+			MONO_PROFILER_RAISE (method_leave, (frame->imethod->method, prof_ctx));
+
+			g_free (prof_ctx);
+		}
+	} else
+		MONO_PROFILER_RAISE (method_exception_leave, (frame->imethod->method, (MonoObject *) frame->ex));
+
 	DEBUG_LEAVE ();
 }
 

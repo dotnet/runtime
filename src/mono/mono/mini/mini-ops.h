@@ -1305,3 +1305,10 @@ MINI_OP(OP_GET_SP, "get_sp", IREG, NONE, NONE)
 MINI_OP(OP_SET_SP, "set_sp", NONE, IREG, NONE)
 
 MINI_OP(OP_GET_LAST_ERROR, "get_last_error", IREG, NONE, NONE)
+
+/*
+ * Fill out a MonoContext contained in a MonoProfilerCallContext. This only
+ * stores the stack pointer, frame pointer, and callee-saved registers. This
+ * should be enough to locate arguments and variables.
+ */
+MINI_OP(OP_FILL_PROF_CALL_CTX, "fill_prof_call_ctx", NONE, IREG, NONE)

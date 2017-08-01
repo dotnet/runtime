@@ -67,7 +67,7 @@ typedef mono_bool (*MonoProfilerCoverageFilterCallback) (MonoProfiler *prof, Mon
  * Sets a code coverage filter function. The profiler API will invoke filter
  * functions from all installed profilers. If any of them return TRUE, then the
  * given method will be instrumented for coverage analysis. All filters are
- * guaranteed to be called exactly once per method, even if an earlier filter
+ * guaranteed to be called at least once per method, even if an earlier filter
  * has already returned TRUE.
  *
  * Note that filter functions must be installed before a method is compiled in
@@ -170,8 +170,12 @@ typedef enum {
 	MONO_PROFILER_CALL_INSTRUMENTATION_NONE = 1 << 0,
 	/* Instrument method prologues. */
 	MONO_PROFILER_CALL_INSTRUMENTATION_PROLOGUE = 1 << 1,
+	/* Also capture a call context for prologues. */
+	MONO_PROFILER_CALL_INSTRUMENTATION_PROLOGUE_CONTEXT = 1 << 2,
 	/* Instrument method epilogues. */
-	MONO_PROFILER_CALL_INSTRUMENTATION_EPILOGUE = 1 << 2,
+	MONO_PROFILER_CALL_INSTRUMENTATION_EPILOGUE = 1 << 3,
+	/* Also capture a call context for epilogues. */
+	MONO_PROFILER_CALL_INSTRUMENTATION_EPILOGUE_CONTEXT = 1 << 4,
 } MonoProfilerCallInstrumentationFlags;
 
 typedef MonoProfilerCallInstrumentationFlags (*MonoProfilerCallInstrumentationFilterCallback) (MonoProfiler *prof, MonoMethod *method);
@@ -181,20 +185,118 @@ typedef MonoProfilerCallInstrumentationFlags (*MonoProfilerCallInstrumentationFi
  * filter functions from all installed profilers. If any of them return flags
  * other than MONO_PROFILER_CALL_INSTRUMENTATION_NONE, then the given method
  * will be instrumented as requested. All filters are guaranteed to be called
- * at least once (possibly more) per method entry and exit, even if earlier
- * filters have already specified all flags.
+ * exactly once per method, even if earlier filters have already specified all
+ * flags.
  *
  * Note that filter functions must be installed before a method is compiled in
  * order to have any effect, i.e. you should register your filter function in
- * your profiler's init function.
+ * your profiler's init function. Also, if you want to instrument a method
+ * that's going to be AOT-compiled, you must attach your profiler and install a
+ * call instrumentation filter function at AOT time. This can be done in
+ * exactly the same way as you would normally, i.e. by passing the --profile
+ * option on the command line, by calling mono_profiler_load, or simply by
+ * using the profiler API as an embedder.
  *
- * Keep in mind that method instrumentation is extremely heavy and will slow
- * down most applications to a crawl. Consider using sampling instead if it
- * would work for your use case.
+ * Keep in mind that indiscriminate method instrumentation is extremely heavy
+ * and will slow down most applications to a crawl. Consider using sampling
+ * instead if it would work for your use case.
  *
  * This function is async safe.
  */
 MONO_API void mono_profiler_set_call_instrumentation_filter_callback (MonoProfilerHandle handle, MonoProfilerCallInstrumentationFilterCallback cb);
+
+/*
+ * Enables support for retrieving stack frame data from a call context. At the
+ * moment, this means enabling the debug info subsystem. If you do not call
+ * this function, you will not be able to use the call context introspection
+ * functions (they will simply return NULL). Returns TRUE if call context
+ * introspection was enabled, or FALSE if the function was called too late for
+ * this to be possible.
+ *
+ * Please note: Mono's LLVM backend does not support this feature. This means
+ * that methods with call context instrumentation will be handled by Mono's
+ * JIT even in LLVM mode. There is also a special case when Mono is compiling
+ * in LLVM-only mode: Since LLVM does not provide a way to implement call
+ * contexts, a NULL context will always be passed to enter/leave events even
+ * though this method returns TRUE.
+ *
+ * This function may only be called from your profiler's init function.
+ *
+ * This function is not async safe.
+ */
+MONO_API mono_bool mono_profiler_enable_call_context_introspection (void);
+
+typedef struct _MonoProfilerCallContext MonoProfilerCallContext;
+
+/*
+ * Given a valid call context from an enter/leave event, retrieves a pointer to
+ * the this reference for the method. Returns NULL if none exists (i.e. it's a
+ * static method) or if call context introspection was not enabled.
+ *
+ * The buffer returned by this function must be freed with
+ * mono_profiler_call_context_free_buffer.
+ *
+ * Please note that a call context is only valid for the duration of the
+ * enter/leave callback it was passed to.
+ *
+ * This function is not async safe.
+ */
+MONO_API void *mono_profiler_call_context_get_this (MonoProfilerCallContext *context);
+
+/*
+ * Given a valid call context from an enter/leave event, retrieves a pointer to
+ * the method argument at the given position. Returns NULL if position is out
+ * of bounds or if call context introspection was not enabled.
+ *
+ * The buffer returned by this function must be freed with
+ * mono_profiler_call_context_free_buffer.
+ *
+ * Please note that a call context is only valid for the duration of the
+ * enter/leave callback it was passed to.
+ *
+ * This function is not async safe.
+ */
+MONO_API void *mono_profiler_call_context_get_argument (MonoProfilerCallContext *context, uint32_t position);
+
+/*
+ * Given a valid call context from an enter/leave event, retrieves a pointer to
+ * the local variable at the given position. Returns NULL if position is out of
+ * bounds or if call context introspection was not enabled.
+ *
+ * The buffer returned by this function must be freed with
+ * mono_profiler_call_context_free_buffer.
+ *
+ * Please note that a call context is only valid for the duration of the
+ * enter/leave callback it was passed to.
+ *
+ * This function is not async safe.
+ */
+MONO_API void *mono_profiler_call_context_get_local (MonoProfilerCallContext *context, uint32_t position);
+
+/*
+ * Given a valid call context from an enter/leave event, retrieves a pointer to
+ * return value of a method. Returns NULL if the method has no return value
+ * (i.e. it returns void), if the leave event was the result of a tail call, if
+ * the function is called on a context from an enter event, or if call context
+ * introspection was not enabled.
+ *
+ * The buffer returned by this function must be freed with
+ * mono_profiler_call_context_free_buffer.
+ *
+ * Please note that a call context is only valid for the duration of the
+ * enter/leave callback it was passed to.
+ *
+ * This function is not async safe.
+ */
+MONO_API void *mono_profiler_call_context_get_result (MonoProfilerCallContext *context);
+
+/*
+ * Frees a buffer returned by one of the call context introspection functions.
+ * Passing a NULL buffer is allowed, which makes this function a no-op.
+ *
+ * This function is not async safe.
+ */
+MONO_API void mono_profiler_call_context_free_buffer (void *buffer);
 
 #ifdef MONO_PROFILER_UNSTABLE_GC_ROOTS
 typedef enum {

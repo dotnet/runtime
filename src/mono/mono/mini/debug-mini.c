@@ -241,7 +241,7 @@ mono_debug_close_method (MonoCompile *cfg)
 	jit->code_start = cfg->native_code;
 	jit->epilogue_begin = cfg->epilog_begin;
 	jit->code_size = cfg->code_len;
-	jit->has_var_info = debug_options.mdb_optimizations != 0;
+	jit->has_var_info = debug_options.mdb_optimizations || MONO_CFG_PROFILE_CALL_CONTEXT (cfg);
 
 	if (jit->epilogue_begin)
 		   record_line_number (info, jit->epilogue_begin, header->code_size);

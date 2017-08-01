@@ -63,6 +63,13 @@ typedef enum {
 MONO_API void
 mono_jit_set_aot_mode      (MonoAotMode mode);
 
+/*
+ * Returns whether the runtime was invoked for the purpose of AOT-compiling an
+ * assembly, i.e. no managed code will run.
+ */
+MONO_API mono_bool
+mono_jit_aot_compiling (void);
+
 /* Allow embedders to decide wherther to actually obey breakpoint instructions
  * in specific methods (works for both break IL instructions and Debugger.Break ()
  * method calls).
@@ -86,14 +93,6 @@ MONO_API void
 mono_jit_parse_options     (int argc, char * argv[]);
 
 MONO_API char*       mono_get_runtime_build_info    (void);
-
-/* The following APIs are not stable. Avoid if possible. */
-
-MONO_API MonoJitInfo *
-mono_get_jit_info_from_method (MonoDomain *domain, MonoMethod *method);
-
-MONO_API MONO_RT_EXTERNAL_ONLY void *
-mono_aot_get_method (MonoDomain *domain, MonoMethod *method);
 
 MONO_END_DECLS
 

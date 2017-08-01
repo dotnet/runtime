@@ -9,6 +9,7 @@
 
 #define MONO_PROFILER_UNSTABLE_GC_ROOTS
 #include <mono/metadata/profiler.h>
+#include <mono/utils/mono-context.h>
 #include <mono/utils/mono-lazy-init.h>
 #include <mono/utils/mono-os-mutex.h>
 #include <mono/utils/mono-os-semaphore.h>
@@ -42,15 +43,27 @@ struct _MonoProfilerDesc {
 
 typedef struct {
 	gboolean startup_done;
+
 	MonoProfilerHandle profilers;
+
 	mono_lazy_init_t coverage_status;
 	mono_mutex_t coverage_mutex;
 	GHashTable *coverage_hash;
+
 	MonoProfilerHandle sampling_owner;
 	MonoSemType sampling_semaphore;
 	MonoProfilerSampleMode sample_mode;
 	guint32 sample_freq;
+
 	gboolean allocations;
+
+	gboolean call_contexts;
+	void (*context_enable) (void);
+	gpointer (*context_get_this) (MonoProfilerCallContext *);
+	gpointer (*context_get_argument) (MonoProfilerCallContext *, guint32);
+	gpointer (*context_get_local) (MonoProfilerCallContext *, guint32);
+	gpointer (*context_get_result) (MonoProfilerCallContext *);
+	gpointer (*context_free_buffer) (gpointer);
 
 #define _MONO_PROFILER_EVENT(name) \
 	volatile gint32 name ## _count;
@@ -95,7 +108,25 @@ mono_profiler_installed (void)
 MonoProfilerCoverageInfo *mono_profiler_coverage_alloc (MonoMethod *method, guint32 entries);
 void mono_profiler_coverage_free (MonoMethod *method);
 
-gboolean mono_profiler_should_instrument_method (MonoMethod *method, gboolean entry);
+struct _MonoProfilerCallContext {
+	/*
+	 * Must be the first field (the JIT relies on it). Only filled out if this
+	 * is a JIT frame; otherwise, zeroed.
+	 */
+	MonoContext context;
+	/*
+	 * A non-NULL MonoInterpFrameHandle if this is an interpreter frame.
+	 */
+	gpointer interp_frame;
+	MonoMethod *method;
+	/*
+	 * Points to the return value for an epilogue context. For a prologue, this
+	 * is set to NULL.
+	 */
+	gpointer return_value;
+};
+
+MonoProfilerCallInstrumentationFlags mono_profiler_get_call_instrumentation_flags (MonoMethod *method);
 
 gboolean mono_profiler_sampling_enabled (void);
 void mono_profiler_sampling_thread_post (void);

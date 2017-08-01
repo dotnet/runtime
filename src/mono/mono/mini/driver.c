@@ -2378,6 +2378,12 @@ mono_jit_set_aot_mode (MonoAotMode mode)
 	}
 }
 
+mono_bool
+mono_jit_aot_compiling (void)
+{
+	return mono_compile_aot;
+}
+
 /**
  * mono_jit_set_trace_options:
  * \param options string representing the trace options

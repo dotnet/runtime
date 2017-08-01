@@ -1764,24 +1764,6 @@ emit_pop_lmf (MonoCompile *cfg)
 	EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STORE_MEMBASE_REG, lmf_addr_reg, 0, prev_lmf_reg);
 }
 
-static void
-emit_instrumentation_call (MonoCompile *cfg, void *func, gboolean entry)
-{
-	MonoInst *iargs [1];
-
-	/*
-	 * Avoid instrumenting inlined methods since it can
-	 * distort profiling results.
-	 */
-	if (cfg->method != cfg->current_method)
-		return;
-
-	if (mono_profiler_should_instrument_method (cfg->method, entry)) {
-		EMIT_NEW_METHODCONST (cfg, iargs [0], cfg->method);
-		mono_emit_jit_icall (cfg, func, iargs);
-	}
-}
-
 static int
 ret_type_to_call_opcode (MonoCompile *cfg, MonoType *type, int calli, int virt)
 {
@@ -2247,7 +2229,7 @@ mono_emit_call_args (MonoCompile *cfg, MonoMethodSignature *sig,
 		tail = FALSE;
 
 	if (tail) {
-		emit_instrumentation_call (cfg, mono_profiler_raise_method_leave, FALSE);
+		mini_profiler_emit_instrumentation_call (cfg, mono_profiler_raise_method_leave, FALSE, NULL, NULL);
 
 		MONO_INST_NEW_CALL (cfg, call, OP_TAILCALL);
 	} else
@@ -4360,6 +4342,9 @@ mono_method_check_inlining (MonoCompile *cfg, MonoMethod *method)
 #endif
 
 	if (g_list_find (cfg->dont_inline, method))
+		return FALSE;
+
+	if (mono_profiler_get_call_instrumentation_flags (method))
 		return FALSE;
 
 	return TRUE;
@@ -8045,7 +8030,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			if (cfg->gshared && mono_method_check_context_used (cmethod))
 				GENERIC_SHARING_FAILURE (CEE_JMP);
 
-			emit_instrumentation_call (cfg, mono_profiler_raise_method_leave, FALSE);
+			mini_profiler_emit_instrumentation_call (cfg, mono_profiler_raise_method_leave, FALSE, NULL, NULL);
 
 			fsig = mono_method_signature (cmethod);
 			n = fsig->param_count + fsig->hasthis;
@@ -8987,7 +8972,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					/* Handle tail calls similarly to normal calls */
 					tail_call = TRUE;
 				} else {
-					emit_instrumentation_call (cfg, mono_profiler_raise_method_leave, FALSE);
+					mini_profiler_emit_instrumentation_call (cfg, mono_profiler_raise_method_leave, FALSE, NULL, NULL);
 
 					MONO_INST_NEW_CALL (cfg, call, OP_JMP);
 					call->tail_call = TRUE;
@@ -9098,6 +9083,8 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			break;
 		}
 		case CEE_RET:
+			mini_profiler_emit_instrumentation_call (cfg, mono_profiler_raise_method_leave, FALSE, sp - 1, sig->ret);
+
 			if (cfg->method != method) {
 				/* return from inlined method */
 				/* 
@@ -9121,8 +9108,6 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 					cfg->ret_var_set = TRUE;
 				} 
 			} else {
-				emit_instrumentation_call (cfg, mono_profiler_raise_method_leave, FALSE);
-
 				if (cfg->lmf_var && cfg->cbb->in_count && !cfg->llvm_only)
 					emit_pop_lmf (cfg);
 
@@ -12650,7 +12635,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 	}
 
 	cfg->cbb = init_localsbb;
-	emit_instrumentation_call (cfg, mono_profiler_raise_method_enter, TRUE);
+	mini_profiler_emit_instrumentation_call (cfg, mono_profiler_raise_method_enter, TRUE, NULL, NULL);
 
 	if (seq_points) {
 		MonoBasicBlock *bb;

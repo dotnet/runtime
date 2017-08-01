@@ -96,6 +96,7 @@ typedef struct _InterpMethod
 	MonoType **param_types;
 	MonoJitInfo *jinfo;
 	MonoDomain *domain;
+	MonoProfilerCallInstrumentationFlags prof_flags;
 } InterpMethod;
 
 struct _InterpFrame {

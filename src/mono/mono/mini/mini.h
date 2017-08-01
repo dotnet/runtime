@@ -1916,7 +1916,12 @@ typedef struct {
 	int stat_inlineable_methods;
 	int stat_inlined_methods;
 	int stat_code_reallocs;
+
+	MonoProfilerCallInstrumentationFlags prof_flags;
 } MonoCompile;
+
+#define MONO_CFG_PROFILE_CALL_CONTEXT(cfg) \
+	((cfg)->prof_flags & (MONO_PROFILER_CALL_INSTRUMENTATION_PROLOGUE_CONTEXT | MONO_PROFILER_CALL_INSTRUMENTATION_EPILOGUE_CONTEXT))
 
 typedef enum {
 	MONO_CFG_HAS_ALLOCA = 1 << 0,
@@ -2353,6 +2358,13 @@ void        mini_cleanup                   (MonoDomain *domain);
 MONO_API MonoDebugOptions *mini_get_debug_options   (void);
 MONO_API gboolean    mini_parse_debug_option (const char *option);
 void        mini_add_profiler_argument (const char *desc);
+void        mini_profiler_emit_instrumentation_call (MonoCompile *cfg, void *func, gboolean entry, MonoInst **ret, MonoType *rtype);
+void        mini_profiler_context_enable (void);
+gpointer    mini_profiler_context_get_this (MonoProfilerCallContext *ctx);
+gpointer    mini_profiler_context_get_argument (MonoProfilerCallContext *ctx, guint32 pos);
+gpointer    mini_profiler_context_get_local (MonoProfilerCallContext *ctx, guint32 pos);
+gpointer    mini_profiler_context_get_result (MonoProfilerCallContext *ctx);
+void        mini_profiler_context_free_buffer (gpointer buffer);
 
 /* graph dumping */
 void mono_cfg_dump_create_context (MonoCompile *cfg);

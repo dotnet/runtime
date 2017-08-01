@@ -361,9 +361,7 @@ mono_profiler_enable_allocations (void)
 	if (mono_profiler_state.startup_done)
 		return FALSE;
 
-	mono_profiler_state.allocations = TRUE;
-
-	return TRUE;
+	return mono_profiler_state.allocations = TRUE;
 }
 
 void
@@ -372,8 +370,61 @@ mono_profiler_set_call_instrumentation_filter_callback (MonoProfilerHandle handl
 	InterlockedWritePointer (&handle->call_instrumentation_filter, (gpointer) cb);
 }
 
-gboolean
-mono_profiler_should_instrument_method (MonoMethod *method, gboolean entry)
+mono_bool
+mono_profiler_enable_call_context_introspection (void)
+{
+	if (mono_profiler_state.startup_done)
+		return FALSE;
+
+	mono_profiler_state.context_enable ();
+
+	return mono_profiler_state.call_contexts = TRUE;
+}
+
+void *
+mono_profiler_call_context_get_this (MonoProfilerCallContext *context)
+{
+	if (!mono_profiler_state.call_contexts)
+		return NULL;
+
+	return mono_profiler_state.context_get_this (context);
+}
+
+void *
+mono_profiler_call_context_get_argument (MonoProfilerCallContext *context, uint32_t position)
+{
+	if (!mono_profiler_state.call_contexts)
+		return NULL;
+
+	return mono_profiler_state.context_get_argument (context, position);
+}
+
+void *
+mono_profiler_call_context_get_local (MonoProfilerCallContext *context, uint32_t position)
+{
+	if (!mono_profiler_state.call_contexts)
+		return NULL;
+
+	return mono_profiler_state.context_get_local (context, position);
+}
+
+void *
+mono_profiler_call_context_get_result (MonoProfilerCallContext *context)
+{
+	if (!mono_profiler_state.call_contexts)
+		return NULL;
+
+	return mono_profiler_state.context_get_result (context);
+}
+
+void
+mono_profiler_call_context_free_buffer (void *buffer)
+{
+	mono_profiler_state.context_free_buffer (buffer);
+}
+
+MonoProfilerCallInstrumentationFlags
+mono_profiler_get_call_instrumentation_flags (MonoMethod *method)
 {
 	MonoProfilerCallInstrumentationFlags flags = MONO_PROFILER_CALL_INSTRUMENTATION_NONE;
 
@@ -384,10 +435,7 @@ mono_profiler_should_instrument_method (MonoMethod *method, gboolean entry)
 			flags |= cb (handle->prof, method);
 	}
 
-	if (entry)
-		return flags & MONO_PROFILER_CALL_INSTRUMENTATION_PROLOGUE;
-	else
-		return flags & MONO_PROFILER_CALL_INSTRUMENTATION_EPILOGUE;
+	return flags;
 }
 
 void

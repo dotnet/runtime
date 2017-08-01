@@ -160,6 +160,9 @@
     <ClCompile Include="..\mono\mini\interp\interp-stubs.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\mono\mini\mini-profiler.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\mono\mini\abcremoval.h">

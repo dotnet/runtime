@@ -404,3 +404,5 @@ atomic_store_r4: dest:b src1:f len:80
 atomic_store_r8: dest:b src1:f len:32
 
 generic_class_init: src1:a len:44 clob:c
+
+fill_prof_call_ctx: src1:i len:128
