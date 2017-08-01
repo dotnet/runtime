@@ -727,9 +727,6 @@ public:
 
     // Copy the _gtRegNum/_gtRegPair/gtRegTag fields
     void CopyReg(GenTreePtr from);
-
-    void gtClearReg(Compiler* compiler);
-
     bool gtHasReg() const;
 
     regMaskTP gtGetRegMask() const;
@@ -1437,6 +1434,20 @@ public:
                || OperIsShiftOrRotate(op);
     }
 
+#ifdef _TARGET_XARCH_
+    static bool OperIsRMWMemOp(genTreeOps gtOper)
+    {
+        // Return if binary op is one of the supported operations for RMW of memory.
+        return (gtOper == GT_ADD || gtOper == GT_SUB || gtOper == GT_AND || gtOper == GT_OR || gtOper == GT_XOR ||
+                gtOper == GT_NOT || gtOper == GT_NEG || OperIsShiftOrRotate(gtOper));
+    }
+    bool OperIsRMWMemOp() const
+    {
+        // Return if binary op is one of the supported operations for RMW of memory.
+        return OperIsRMWMemOp(gtOper);
+    }
+#endif // _TARGET_XARCH_
+
 #if !defined(LEGACY_BACKEND) && !defined(_TARGET_64BIT_)
     static bool OperIsHigh(genTreeOps gtOper)
     {
@@ -1998,13 +2009,15 @@ public:
 
     void SetContained()
     {
+        assert(IsValue());
         gtFlags |= GTF_CONTAINED;
     }
 
     void ClearContained()
     {
+        assert(IsValue());
         gtFlags &= ~GTF_CONTAINED;
-        gtLsraInfo.regOptional = false;
+        ClearRegOptional();
     }
 
 #endif // !LEGACY_BACKEND
@@ -2114,6 +2127,12 @@ public:
     // that codegen can still generate code even if it wasn't allocated a
     // register.
     bool IsRegOptional() const;
+#ifndef LEGACY_BACKEND
+    void ClearRegOptional()
+    {
+        gtLsraInfo.regOptional = false;
+    }
+#endif
 
     // Returns "true" iff "this" is a phi-related node (i.e. a GT_PHI_ARG, GT_PHI, or a PhiDefn).
     bool IsPhiNode();
@@ -3112,6 +3131,11 @@ struct GenTreeFieldList : public GenTreeArgList
         {
             prevList->gtOp2 = this;
         }
+#ifndef LEGACY_BACKEND
+        // A GT_FIELD_LIST is always contained. Note that this should only matter for the head node, but
+        // the list may be reordered.
+        gtFlags |= GTF_CONTAINED;
+#endif
     }
 };
 

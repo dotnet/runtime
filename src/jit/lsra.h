@@ -749,29 +749,6 @@ private:
     // Update reg state for an incoming register argument
     void updateRegStateForArg(LclVarDsc* argDsc);
 
-    inline void setTreeNodeInfo(GenTree* tree, TreeNodeInfo info)
-    {
-        tree->gtLsraInfo = info;
-        tree->gtClearReg(compiler);
-
-        DBEXEC(VERBOSE, info.dump(this));
-    }
-
-    inline void clearDstCount(GenTree* tree)
-    {
-        tree->gtLsraInfo.dstCount = 0;
-    }
-
-    inline void clearOperandCounts(GenTree* tree)
-    {
-        TreeNodeInfo& info = tree->gtLsraInfo;
-        info.srcCount      = 0;
-        info.dstCount      = 0;
-
-        info.internalIntCount   = 0;
-        info.internalFloatCount = 0;
-    }
-
     inline bool isLocalDefUse(GenTree* tree)
     {
         return tree->gtLsraInfo.isLocalDefUse;
