@@ -697,6 +697,14 @@ private:
 #ifdef _TARGET_ARM_
     bool isSecondHalfReg(RegRecord* regRec, Interval* interval);
     RegRecord* findAnotherHalfRegRec(RegRecord* regRec);
+    bool LinearScan::canSpillThisReg(RegRecord*   physRegRecord,
+                                     RefPosition* recentAssignedRef,
+                                     RegRecord*   anotherPhysRegRecord,
+                                     RefPosition* anotherRecentAssignedRef,
+                                     LsraLocation refLocation,
+                                     unsigned*    recentAssignedRefWeight,
+                                     unsigned     farthestRefPosWeight);
+    void LinearScan::checkReferenceAt(RefPosition* recentAssignedRef, LsraLocation refLocation);
 #endif
     void updateAssignedInterval(RegRecord* reg, Interval* interval, RegisterType regType);
     void updatePreviousInterval(RegRecord* reg, Interval* interval, RegisterType regType);
