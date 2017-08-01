@@ -516,6 +516,7 @@ void Rationalizer::RewriteAssignment(LIR::Use& use)
             location->gtType = TYP_BYREF;
 
             assignment->SetOper(GT_STOREIND);
+            assignment->AsStoreInd()->SetRMWStatusDefault();
 
             // TODO: JIT dump
         }

@@ -1031,7 +1031,7 @@ void Compiler::fgExtendDbgLifetimes()
 #if !defined(_TARGET_64BIT_)
                     DecomposeLongs::DecomposeRange(this, blockWeight, initRange);
 #endif // !defined(_TARGET_64BIT_)
-                    m_pLowering->LowerRange(std::move(initRange));
+                    m_pLowering->LowerRange(block, initRange);
 #endif // !LEGACY_BACKEND
 
                     // Naively inserting the initializer at the end of the block may add code after the block's
@@ -2348,6 +2348,8 @@ bool Compiler::fgTryRemoveDeadLIRStore(LIR::Range& blockRange, GenTree* node, Ge
         store = addrUse.User();
         value = store->gtGetOp2();
     }
+    JITDUMP("Liveness is removing a dead store:\n");
+    DISPNODE(store);
 
     bool               isClosed      = false;
     unsigned           sideEffects   = 0;
@@ -2357,6 +2359,8 @@ bool Compiler::fgTryRemoveDeadLIRStore(LIR::Range& blockRange, GenTree* node, Ge
     {
         // If the range of the operands contains unrelated code or if it contains any side effects,
         // do not remove it. Instead, just remove the store.
+        JITDUMP("  Marking operands as unused:\n");
+        DISPRANGE(operandsRange);
 
         store->VisitOperands([](GenTree* operand) -> GenTree::VisitResult {
             operand->SetUnusedValue();
@@ -2372,6 +2376,8 @@ bool Compiler::fgTryRemoveDeadLIRStore(LIR::Range& blockRange, GenTree* node, Ge
 
         // Compute the next node to process. Note that we must be careful not to set the next node to
         // process to a node that we are about to remove.
+        JITDUMP("  Deleting operands:\n");
+        DISPRANGE(operandsRange);
         if (node->OperIsLocalStore())
         {
             assert(node == store);
@@ -2385,6 +2391,7 @@ bool Compiler::fgTryRemoveDeadLIRStore(LIR::Range& blockRange, GenTree* node, Ge
 
         blockRange.Delete(this, compCurBB, std::move(operandsRange));
     }
+    JITDUMP("\n");
 
     // If the store is marked as a late argument, it is referenced by a call. Instead of removing it,
     // bash it to a NOP.
