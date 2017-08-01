@@ -15,9 +15,7 @@ namespace System.Drawing
         // Do not modify this enum without updating KnownColorTable.
         //
 
-
         // 0 - reserved for "not a known color"
-        FirstColor = 0,
         // "System" colors
         /// <include file='doc\KnownColor.uex' path='docs/doc[@for="KnownColor.ActiveBorder"]/*' />
         /// <devdoc>
@@ -893,7 +891,6 @@ namespace System.Drawing
         /// <devdoc>
         ///    <para>[To be supplied.]</para>
         /// </devdoc>
-        MenuHighlight,
-        LastColor = MenuHighlight,
+        MenuHighlight
     }
 }
