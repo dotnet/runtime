@@ -2846,8 +2846,6 @@ GenTreePtr CodeGen::genMakeAddrOrFPstk(GenTreePtr tree, regMaskTP* regMaskPtr, b
  *   Generate code to check that the GS cookie wasn't thrashed by a buffer
  *   overrun.  If pushReg is true, preserve all registers around code sequence.
  *   Otherwise, ECX maybe modified.
- *
- *   TODO-ARM-Bug?: pushReg is not implemented (is it needed for ARM?)
  */
 void CodeGen::genEmitGSCookieCheck(bool pushReg)
 {
@@ -2863,13 +2861,20 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
 
     noway_assert(compiler->gsGlobalSecurityCookieAddr || compiler->gsGlobalSecurityCookieVal);
 
+#if CPU_LOAD_STORE_ARCH
+    // Lock all ABI argument registers before generating the check. All other registers should be dead, so this
+    // shouldn't over-constrain us.
+    const regMaskTP unlockedArgRegs = RBM_ARG_REGS & ~regSet.rsMaskLock;
+    regMaskTP       usedArgRegs;
+    regSet.rsLockReg(unlockedArgRegs, &usedArgRegs);
+#endif
+
     if (compiler->gsGlobalSecurityCookieAddr == NULL)
     {
         // JIT case
         CLANG_FORMAT_COMMENT_ANCHOR;
 
 #if CPU_LOAD_STORE_ARCH
-
         regNumber reg = regSet.rsGrabReg(RBM_ALLINT);
         getEmitter()->emitIns_R_S(ins_Load(TYP_INT), EA_4BYTE, reg, compiler->lvaGSSecurityCookie, 0);
         regTracker.rsTrackRegTrash(reg);
@@ -2947,6 +2952,11 @@ void CodeGen::genEmitGSCookieCheck(bool pushReg)
     genDefineTempLabel(gsCheckBlk);
 
     genPopRegs(pushedRegs, byrefPushedRegs, norefPushedRegs);
+
+#if CPU_LOAD_STORE_ARCH
+    // Unlock all ABI argument registers.
+    regSet.rsUnlockReg(unlockedArgRegs, usedArgRegs);
+#endif
 }
 
 /*****************************************************************************
