@@ -2705,7 +2705,7 @@ void RegSet::rsUnspillRegPair(GenTreePtr tree, regMaskTP needReg, KeepReg keepRe
 
         if (!rsIsTreeInReg(regHi, tree))
         {
-            regMaskTP regLoUsed;
+            regMaskTP regLoUsed = RBM_NONE;
 
             // Temporarily lock the low part if necessary. If this register is a multi-use register that is shared
             // with another tree, the register may already be locked.
