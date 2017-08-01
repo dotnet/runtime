@@ -869,7 +869,7 @@ void RegSet::rsMarkRegUsed(GenTreePtr tree, GenTreePtr addr)
             else
                 printf(" / Constant(0x%X)", tree->gtIntCon.gtIconVal);
         }
-        printf("]\n");
+        printf("\n");
     }
 #endif // DEBUG
 
@@ -927,7 +927,7 @@ void RegSet::rsMarkArgRegUsedByPromotedFieldArg(GenTreePtr promotedStructArg, re
             else
                 printf(" / Constant(0x%X)", promotedStructArg->gtIntCon.gtIconVal);
         }
-        printf("]\n");
+        printf("\n");
     }
 #endif
 
@@ -990,10 +990,10 @@ void RegSet::rsMarkRegPairUsed(GenTreePtr tree)
 #ifdef DEBUG
     if (m_rsCompiler->verbose)
     {
-        printf("\t\t\t\t\t\t\tThe register %s currently holds \n", m_rsCompiler->compRegVarName(regLo));
+        printf("\t\t\t\t\t\t\tThe register %s currently holds ", m_rsCompiler->compRegVarName(regLo));
         Compiler::printTreeID(tree);
         printf("/lo32\n");
-        printf("\t\t\t\t\t\t\tThe register %s currently holds \n", m_rsCompiler->compRegVarName(regHi));
+        printf("\t\t\t\t\t\t\tThe register %s currently holds ", m_rsCompiler->compRegVarName(regHi));
         Compiler::printTreeID(tree);
         printf("/hi32\n");
     }
@@ -1167,7 +1167,11 @@ void RegSet::rsMarkRegFree(regMaskTP regMask)
             {
                 printf("\t\t\t\t\t\t\tThe register %s no longer holds ", m_rsCompiler->compRegVarName(regNum));
                 Compiler::printTreeID(rsUsedTree[regNum]);
-                Compiler::printTreeID(rsUsedAddr[regNum]);
+                if (rsUsedAddr[regNum] != nullptr)
+                {
+                    Compiler::printTreeID(rsUsedAddr[regNum]);
+                }
+
                 printf("\n");
             }
 #endif
@@ -1648,8 +1652,10 @@ void RegSet::rsSpillTree(regNumber reg, GenTreePtr tree, unsigned regIdx /* =0 *
         printf("\t\t\t\t\t\t\tThe register %s spilled with    ", m_rsCompiler->compRegVarName(reg));
         Compiler::printTreeID(spill->spillTree);
 #ifdef LEGACY_BACKEND
-        printf("/");
-        Compiler::printTreeID(spill->spillAddr);
+        if (spill->spillAddr != nullptr)
+        {
+            Compiler::printTreeID(spill->spillAddr);
+        }
 #endif // LEGACY_BACKEND
     }
 #endif
