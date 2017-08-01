@@ -1034,6 +1034,32 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
 
             unspillTree->gtFlags &= ~GTF_SPILLED;
         }
+        else if (unspillTree->OperIsMultiRegOp())
+        {
+            GenTreeMultiRegOp* multiReg = unspillTree->AsMultiRegOp();
+            unsigned           regCount = multiReg->gtOtherReg == REG_NA ? 1 : 2;
+
+            // In case of split struct argument node, GTF_SPILLED flag on it indicates that
+            // one or more of its result regs are spilled.  Call node needs to be
+            // queried to know which specific result regs to be unspilled.
+            for (unsigned i = 0; i < regCount; ++i)
+            {
+                unsigned flags = multiReg->GetRegSpillFlagByIdx(i);
+                if ((flags & GTF_SPILLED) != 0)
+                {
+                    var_types dstType = multiReg->GetRegType(i);
+                    regNumber dstReg  = multiReg->GetRegNumByIdx(i);
+
+                    TempDsc* t = regSet.rsUnspillInPlace(multiReg, dstReg, i);
+                    getEmitter()->emitIns_R_S(ins_Load(dstType), emitActualTypeSize(dstType), dstReg, t->tdTempNum(),
+                                              0);
+                    compiler->tmpRlsTemp(t);
+                    gcInfo.gcMarkRegPtrVal(dstReg, dstType);
+                }
+            }
+
+            unspillTree->gtFlags &= ~GTF_SPILLED;
+        }
 #endif
         else
         {
@@ -1652,6 +1678,22 @@ void CodeGen::genProduceReg(GenTree* tree)
                     {
                         regNumber reg = argSplit->GetRegNumByIdx(i);
                         regSet.rsSpillTree(reg, argSplit, i);
+                        gcInfo.gcMarkRegSetNpt(genRegMask(reg));
+                    }
+                }
+            }
+            else if (tree->OperIsMultiRegOp())
+            {
+                GenTreeMultiRegOp* multiReg = tree->AsMultiRegOp();
+                unsigned           regCount = multiReg->gtOtherReg == REG_NA ? 1 : 2;
+
+                for (unsigned i = 0; i < regCount; ++i)
+                {
+                    unsigned flags = multiReg->GetRegSpillFlagByIdx(i);
+                    if ((flags & GTF_SPILL) != 0)
+                    {
+                        regNumber reg = multiReg->GetRegNumByIdx(i);
+                        regSet.rsSpillTree(reg, multiReg, i);
                         gcInfo.gcMarkRegSetNpt(genRegMask(reg));
                     }
                 }
