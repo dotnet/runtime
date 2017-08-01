@@ -28,10 +28,10 @@ Maintainers will not merge changes that have narrowly-defined benefits, due to c
 
 Contributions must also satisfy the other published guidelines defined in this document.
 
-Automatic Security Assessment
+Automated Code Review Assistance
 ------------------
 
-We deeply care about security issues in our code and we thoroughly review each PR. However, humans aren’t perfect and will make mistakes. To aid our code reviews, we run a tool called [CROSS](cross.md) that inspects the PR to find interesting areas that need further inspection. If the tool finds such areas, it will add a comment to the PR letting everyone know about this. If you’re interested to learn more, take a look at [CROSS](cross.md).
+CROSS is a tool developed my Microsoft that we use to highlight areas of higher risk in a code change in order to help code reviewers do a more effective job
 
 DOs and DON'Ts
 --------------
