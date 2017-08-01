@@ -1582,7 +1582,7 @@ void Dbg_TrackSyncStack::EnterSync(UINT_PTR caller, void *pAwareLock)
     STRESS_LOG4(LF_SYNC, LL_INFO100, "Dbg_TrackSyncStack::EnterSync, IP=%p, Recursion=%d, MonitorHeld=%d, HoldingThread=%p.\n",
                     caller,
                     ((AwareLock*)pAwareLock)->m_Recursion,
-                    ((AwareLock*)pAwareLock)->m_MonitorHeld,
+                    ((AwareLock*)pAwareLock)->m_MonitorHeld.LoadWithoutBarrier(),
                     ((AwareLock*)pAwareLock)->m_HoldingThread );
 
     if (m_Active)
@@ -1608,7 +1608,7 @@ void Dbg_TrackSyncStack::LeaveSync(UINT_PTR caller, void *pAwareLock)
     STRESS_LOG4(LF_SYNC, LL_INFO100, "Dbg_TrackSyncStack::LeaveSync, IP=%p, Recursion=%d, MonitorHeld=%d, HoldingThread=%p.\n",
                     caller,
                     ((AwareLock*)pAwareLock)->m_Recursion,
-                    ((AwareLock*)pAwareLock)->m_MonitorHeld,
+                    ((AwareLock*)pAwareLock)->m_MonitorHeld.LoadWithoutBarrier(),
                     ((AwareLock*)pAwareLock)->m_HoldingThread );
 
     if (m_Active)
