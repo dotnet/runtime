@@ -94,7 +94,23 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
                             CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)
                         }));
             Func<CallSite, object, object, object, object> target = site.Target;
-            Assert.Throws<ArgumentException>("Type Argument", () => target.Invoke(site, null, 2, 2));
+            AssertExtensions.Throws<ArgumentException>("Type Argument", () => target.Invoke(site, null, 2, 2));
+        }
+
+        [Fact]
+        public void NonTypeToCtor()
+        {
+            CallSite<Func<CallSite, object, object>> site = CallSite<Func<CallSite, object, object>>.Create(
+                Binder.InvokeConstructor(
+                    CSharpBinderFlags.None, GetType(),
+                    new[]
+                    {
+                        CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, "Type Argument")
+                    }
+                )
+            );
+            Func<CallSite, object, object> targ = site.Target;
+            AssertExtensions.Throws<ArgumentException>("Type Argument", () => targ.Invoke(site, 23));
         }
     }
 }
