@@ -7928,6 +7928,55 @@ void Module::ExpandAll(DataImage *image)
         _ASSERTE(pBlobEntry->type == EndOfBlobStream);
     }
 
+    //
+    // Record references to all of the hot methods specifiled by MethodProfilingData array
+    // We call MethodReferencedByCompiledCode to indicate that we plan on compiling this method
+    //
+    CORBBTPROF_TOKEN_INFO * pMethodProfilingData = profileData->GetTokenFlagsData(MethodProfilingData);
+    DWORD                   cMethodProfilingData = profileData->GetTokenFlagsCount(MethodProfilingData);
+    for (unsigned int i = 0; (i < cMethodProfilingData); i++)
+    {
+        mdToken token = pMethodProfilingData[i].token;
+        DWORD   profilingFlags = pMethodProfilingData[i].flags;
+
+        // We call MethodReferencedByCompiledCode only when the profile data indicates that 
+        // we executed (i.e read) the code for the method
+        //
+        if (profilingFlags & (1 << ReadMethodCode))
+        {
+            if (TypeFromToken(token) == mdtMethodDef)
+            {
+                MethodDesc *  pMD = LookupMethodDef(token);
+                //
+                // Record a reference to a hot non-generic method 
+                //
+                image->GetPreloader()->MethodReferencedByCompiledCode((CORINFO_METHOD_HANDLE)pMD);
+            }
+            else if (TypeFromToken(token) == ibcMethodSpec)
+            {
+                CORBBTPROF_BLOB_PARAM_SIG_ENTRY *pBlobSigEntry = profileData->GetBlobSigEntry(token);
+
+                if (pBlobSigEntry != NULL)
+                {
+                    _ASSERTE(pBlobSigEntry->blob.token == token);
+                    MethodDesc * pMD = LoadIBCMethodHelper(image, pBlobSigEntry);
+
+                    if (pMD != NULL)
+                    {
+                        // Occasionally a non-instantiated generic method shows up in the IBC data, we should NOT compile it.
+                        if (!pMD->IsTypicalMethodDefinition())
+                        {
+                            //
+                            // Record a reference to a hot instantiated generic method 
+                            //
+                            image->GetPreloader()->MethodReferencedByCompiledCode((CORINFO_METHOD_HANDLE)pMD);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
     {
         //
         // Fill out MemberRef RID map and va sig cookies for
