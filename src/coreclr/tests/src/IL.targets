@@ -13,8 +13,7 @@
     <PropertyGroup>
       <_ShellKeyMarker Condition="'$(RunningOnUnix)' == 'true'">-</_ShellKeyMarker>  <!-- Work around ilasm comandline parser bugs... -->
       <_ShellKeyMarker Condition="'$(RunningOnUnix)' != 'true'">/</_ShellKeyMarker>
-      <_ilasm>ilasm</_ilasm>
-      <_ilasm Condition="'$(RunningOnUnix)' == 'true'">$(CoreCLRBinDir)ilasm</_ilasm>
+      <_ilasm>$(CoreCLRBinDir)ilasm</_ilasm>
       <_OutputTypeArgument Condition="'$(OutputType)' == 'Library'">$(_ShellKeyMarker)DLL</_OutputTypeArgument>
       <_OutputTypeArgument Condition="'$(OutputType)' == 'Exe'">$(_ShellKeyMarker)EXE</_OutputTypeArgument>
       <_IlasmSwitches>-QUIET -NOLOGO</_IlasmSwitches>
@@ -24,12 +23,9 @@
       <_IlasmSwitches Condition="'$(DebugType)' == 'Impl'">$(_IlasmSwitches) -DEBUG=IMPL</_IlasmSwitches>
       <_IlasmSwitches Condition="'$(DebugType)' == 'PdbOnly'">$(_IlasmSwitches) -DEBUG=OPT</_IlasmSwitches>
       <_IlasmSwitches Condition="'$(Optimize)' == 'True'">$(_IlasmSwitches) -OPTIMIZE</_IlasmSwitches>
-      <ILAsmExe>ilasm</ILAsmExe>
-      <!-- Unfortunately not every IL test is compatible with CoreCLR ilasm. We are only opt-in those that really requires it -->
-      <ILAsmExe Condition="'$(UseCustomILAsm)'=='True'">$(__BinDir)\$(ILAsmExe)</ILAsmExe>
     </PropertyGroup>
 
-    <Exec Command="$(ILAsmExe) $(_OutputTypeArgument) $(_ShellKeyMarker)OUTPUT=@(IntermediateAssembly) $(_IlasmSwitches) @(Compile)">
+    <Exec Command="$(_ilasm) $(_OutputTypeArgument) $(_ShellKeyMarker)OUTPUT=@(IntermediateAssembly) $(_IlasmSwitches) @(Compile)">
       <Output TaskParameter="ExitCode" PropertyName="_ILAsmExitCode" />
     </Exec>
     <Error Text="ILAsm failed" Condition="'$(_ILAsmExitCode)' != '0'" />
