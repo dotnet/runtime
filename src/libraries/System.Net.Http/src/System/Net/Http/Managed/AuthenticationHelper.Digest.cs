@@ -113,7 +113,7 @@ namespace System.Net.Http
                 string usernameStar;
                 if (HeaderUtilities.IsInputEncoded5987(credential.UserName, out usernameStar))
                 {
-                    sb.AppendKeyValue(UsernameStar, usernameStar);
+                    sb.AppendKeyValue(UsernameStar, usernameStar, includeQuotes: false);
                 }
                 else
                 {
