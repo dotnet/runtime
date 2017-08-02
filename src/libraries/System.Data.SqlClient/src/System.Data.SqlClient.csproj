@@ -177,7 +177,6 @@
     <Compile Include="System\Data\SqlClient\SNI\SNILoadHandle.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNIMarsConnection.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNIMarsHandle.cs" />
-    <Compile Include="System\Data\SqlClient\SNI\SNIMarsManager.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNIMarsQueuedPacket.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNINpHandle.cs" />
     <Compile Include="System\Data\SqlClient\SNI\SNIPacket.cs" />
