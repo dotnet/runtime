@@ -5830,42 +5830,91 @@ bool LinearScan::canSpillThisReg(RegRecord*   physRegRecord,
     }
     return true;
 }
+#endif
 
 //----------------------------------------------------------------------------
-// checkReferenceAt: Test assertion conditions for recent assigned RefPosition
+// checkActiveInterval: Test activness of an interval
+//                      and check assertions if the interval is not active
 //
 // Arguments:
-//    recentAssignedRef - RefPosition to be tested
-//    refLocation       - LsraLocation of interval being allocated
+//    interval    - An interval to be tested
+//    refLocation - Location where the interval is being tested
 //
 // Return Value:
-//    N/A
+//    True - iff the interval is active
+//    False - otherwise
+//
+// Note: This helper is designed to be used only from checkActiveIntervals()
+//
+bool LinearScan::checkActiveInterval(Interval* interval, LsraLocation refLocation)
+{
+    RefPosition* recentAssignedRef = interval->recentRefPosition;
+    if (!interval->isActive)
+    {
+        // Note that we may or may not have actually handled the reference yet, so it could either
+        // be recentAssignedRef, or the next reference.
+        assert(recentAssignedRef != nullptr);
+        if (recentAssignedRef->nodeLocation != refLocation)
+        {
+            if (recentAssignedRef->nodeLocation + 1 == refLocation)
+            {
+                assert(recentAssignedRef->delayRegFree);
+            }
+            else
+            {
+                RefPosition* nextAssignedRef = recentAssignedRef->nextRefPosition;
+                assert(nextAssignedRef != nullptr);
+                assert(nextAssignedRef->nodeLocation == refLocation ||
+                       (nextAssignedRef->nodeLocation + 1 == refLocation && nextAssignedRef->delayRegFree));
+            }
+        }
+        return false;
+    }
+    return true;
+}
+
+//----------------------------------------------------------------------------------------
+// checkActiveIntervals: Test activness of a interval assinged to a register
+//                       and check assertions if the interval is not active.
+//                       We look into all intervals of two float registers consisting
+//                       a double regsiter for ARM32.
+//
+// Arguments:
+//    physRegRecord - A register
+//    refLocation   - Location where intervsl is being tested
+//    registerType  - Type of regsiter
+//
+// Return Value:
+//    True - iff the all intervals are active
+//    False - otherwise
 //
 // Note: This helper is designed to be used only from allocateBusyReg()
 //
-void LinearScan::checkReferenceAt(RefPosition* recentAssignedRef, LsraLocation refLocation)
+bool LinearScan::checkActiveIntervals(RegRecord* physRegRecord, LsraLocation refLocation, RegisterType registerType)
 {
-    // The assigned interval has a reference at this location - otherwise, we would have found
-    // this in tryAllocateFreeReg().
-    // Note that we may or may not have actually handled the reference yet, so it could either
-    // be recentAssignedRef, or the next reference.
-    assert(recentAssignedRef != nullptr);
-    if (recentAssignedRef->nodeLocation != refLocation)
-    {
-        if (recentAssignedRef->nodeLocation + 1 == refLocation)
-        {
-            assert(recentAssignedRef->delayRegFree);
-        }
-        else
-        {
-            RefPosition* nextAssignedRef = recentAssignedRef->nextRefPosition;
-            assert(nextAssignedRef != nullptr);
-            assert(nextAssignedRef->nodeLocation == refLocation ||
-                   (nextAssignedRef->nodeLocation + 1 == refLocation && nextAssignedRef->delayRegFree));
-        }
-    }
-}
+    Interval* assignedInterval = physRegRecord->assignedInterval;
+
+#ifdef _TARGET_ARM_
+    // Check two intervals for a double register in ARM32
+    Interval* assignedInterval2 = nullptr;
+    if (registerType == TYP_DOUBLE)
+        assignedInterval2 = findAnotherHalfRegRec(physRegRecord)->assignedInterval;
+
+    // Both intervals should not be nullptr at the same time, becasue we already handle this case before.
+    assert(!(assignedInterval == nullptr && assignedInterval2 == nullptr));
+
+    if (assignedInterval != nullptr && !checkActiveInterval(assignedInterval, refLocation))
+        return false;
+
+    if (assignedInterval2 != nullptr && !checkActiveInterval(assignedInterval2, refLocation))
+        return false;
+
+    return true;
+#else
+    return checkActiveInterval(assignedInterval, refLocation);
 #endif
+}
+
 //------------------------------------------------------------------------
 // allocateBusyReg: Find a busy register that satisfies the requirements for refPosition,
 //                  and that can be spilled.
@@ -6043,71 +6092,15 @@ regNumber LinearScan::allocateBusyReg(Interval* current, RefPosition* refPositio
         RefPosition* recentAssignedRef = (assignedInterval == nullptr) ? nullptr : assignedInterval->recentRefPosition;
         RefPosition* recentAssignedRef2 =
             (assignedInterval2 == nullptr) ? nullptr : assignedInterval2->recentRefPosition;
-        // There are four cases for ARM32 when we are trying to allocate a double register for TYP_DOUBLE
-        // Case 1: LoReg->assignedInterval != nullptr && HiReg->assignedInterval != nullptr
-        // Case 2: LoReg->assignedInterval != nullptr && HiReg->assignedInterval == nullptr
-        // Case 3: LoReg->assignedInterval == nullptr && HiReg->assignedInterval != nullptr
-        // Case 4: LoReg->assignedInterval == nullptr && HiReg->assignedInterval == nullptr
-        if (assignedInterval != nullptr)
-        {
-            // Case 1: LoReg->assignedInterval != nullptr && HiReg->assignedInterval != nullptr
-            // Case 2: LoReg->assignedInterval != nullptr && HiReg->assignedInterval == nullptr
-            if (!assignedInterval->isActive)
-            {
-                checkReferenceAt(recentAssignedRef, refLocation);
-                continue;
-            }
-
-            if (assignedInterval2 != nullptr && !assignedInterval2->isActive)
-            {
-                checkReferenceAt(recentAssignedRef2, refLocation);
-                continue;
-            }
-        }
-        else
-        {
-            if (assignedInterval2 != nullptr)
-            {
-                // Case 3: LoReg->assignedInterval == nullptr && HiReg->assignedInterval != nullptr
-                if (!assignedInterval2->isActive)
-                {
-                    checkReferenceAt(recentAssignedRef2, refLocation);
-                    continue;
-                }
-            }
-            else
-            {
-                // Case 4: LoReg->assignedInterval == nullptr && HiReg->assignedInterval == nullptr
-                // This should not be happen, because we already handle this case before.
-                unreached();
-            }
-        }
 #else
         RefPosition* recentAssignedRef = assignedInterval->recentRefPosition;
-        if (!assignedInterval->isActive)
+#endif
+
+        if (!checkActiveIntervals(physRegRecord, refLocation, current->registerType))
         {
-            // The assigned interval has a reference at this location - otherwise, we would have found
-            // this in tryAllocateFreeReg().
-            // Note that we may or may not have actually handled the reference yet, so it could either
-            // be recentAssignedRef, or the next reference.
-            assert(recentAssignedRef != nullptr);
-            if (recentAssignedRef->nodeLocation != refLocation)
-            {
-                if (recentAssignedRef->nodeLocation + 1 == refLocation)
-                {
-                    assert(recentAssignedRef->delayRegFree);
-                }
-                else
-                {
-                    RefPosition* nextAssignedRef = recentAssignedRef->nextRefPosition;
-                    assert(nextAssignedRef != nullptr);
-                    assert(nextAssignedRef->nodeLocation == refLocation ||
-                           (nextAssignedRef->nodeLocation + 1 == refLocation && nextAssignedRef->delayRegFree));
-                }
-            }
             continue;
         }
-#endif
+
         // If we have a recentAssignedRef, check that it is going to be OK to spill it
         //
         // TODO-Review: Under what conditions recentAssginedRef would be null?
