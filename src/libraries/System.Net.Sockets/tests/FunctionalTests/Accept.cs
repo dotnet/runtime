@@ -43,7 +43,7 @@ namespace System.Net.Sockets.Tests
             // The SyncForceNonBlocking implementation currently toggles the listener's Blocking setting
             // back and force on every Accept, which causes pending sync Accepts to return EWOULDBLOCK.
             // For now, just skip the test for SyncForceNonBlocking.
-            // TODO: Refactor SyncForceNonBlocking Accept handling to avoid this problem
+            // TODO: Issue #22885
             if (typeof(T) == typeof(SocketHelperSyncForceNonBlocking))
                 return;
 
@@ -100,7 +100,7 @@ namespace System.Net.Sockets.Tests
             // The SyncForceNonBlocking implementation currently toggles the listener's Blocking setting
             // back and force on every Accept, which causes pending sync Accepts to return EWOULDBLOCK.
             // For now, just skip the test for SyncForceNonBlocking.
-            // TODO: Refactor SyncForceNonBlocking Accept handling to avoid this problem
+            // TODO: Issue #22885
             if (typeof(T) == typeof(SocketHelperSyncForceNonBlocking))
                 return;
 
