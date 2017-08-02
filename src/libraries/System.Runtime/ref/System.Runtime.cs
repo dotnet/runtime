@@ -2055,6 +2055,7 @@ namespace System
         public unsafe String(sbyte* value, int startIndex, int length) { }
         [System.CLSCompliantAttribute(false)]
         public unsafe String(sbyte* value, int startIndex, int length, System.Text.Encoding enc) { }
+        public String(System.ReadOnlySpan<char> value) { }
         [System.Runtime.CompilerServices.IndexerName("Chars")]
         public char this[int index] { get { throw null; } }
         public int Length { get { throw null; } }
