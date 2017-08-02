@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -54,17 +55,21 @@ namespace System.Net.Http
                 while (list.Count > 0)
                 {
                     CachedConnection cachedConnection = list[list.Count - 1];
+                    HttpConnection conn = cachedConnection._connection;
+
                     list.RemoveAt(list.Count - 1);
                     if (cachedConnection.IsUsable())
                     {
                         // We found a valid collection.  Return it.
-                        return new ValueTask<HttpConnection>(cachedConnection._connection);
+                        if (NetEventSource.IsEnabled) conn.Trace("Found usable connection in pool.");
+                        return new ValueTask<HttpConnection>(conn);
                     }
 
                     // We got a connection, but it was already closed by the server or the
                     // server sent unexpected data or the connection is too old.  In any case,
                     // we can't use the connection, so get rid of it and try again.
-                    cachedConnection._connection.Dispose();
+                    if (NetEventSource.IsEnabled) conn.Trace("Found invalid connection in pool.");
+                    conn.Dispose();
                 }
 
                 // No valid cached connections, so we need to create a new one.  If
@@ -73,6 +78,7 @@ namespace System.Net.Http
                 // connection.
                 if (_waiters == null || _associatedConnectionCount < _maxConnections)
                 {
+                    if (NetEventSource.IsEnabled) Trace("Creating new connection for pool.");
                     IncrementConnectionCountNoLock();
                     return WaitForCreatedConnectionAsync(createConnection(state));
                 }
@@ -85,6 +91,7 @@ namespace System.Net.Http
                     // be signaled with the created connection when one is returned or
                     // space is available and the provided creation func has successfully
                     // created the connection to be used.
+                    if (NetEventSource.IsEnabled) Trace("Limit reached.  Waiting to create new connection.");
                     var waiter = new ConnectionWaiter<TState>(this, createConnection, state);
                     _waiters.Enqueue(waiter);
                     return new ValueTask<HttpConnection>(waiter.Task);
@@ -128,6 +135,7 @@ namespace System.Net.Http
         {
             Debug.Assert(Monitor.IsEntered(SyncObj), $"Expected to be holding {nameof(SyncObj)}");
 
+            if (NetEventSource.IsEnabled) Trace(null);
             _usedSinceLastCleanup = true;
 
             Debug.Assert(
@@ -143,6 +151,7 @@ namespace System.Net.Http
         /// </summary>
         public void DecrementConnectionCount()
         {
+            if (NetEventSource.IsEnabled) Trace(null);
             lock (SyncObj)
             {
                 Debug.Assert(_associatedConnectionCount > 0 && _associatedConnectionCount <= _maxConnections,
@@ -224,6 +233,7 @@ namespace System.Net.Http
                 // transfer this one to them rather than pooling it.
                 if (_waiters != null && _waiters.TryDequeue(out ConnectionWaiter waiter))
                 {
+                    if (NetEventSource.IsEnabled) connection.Trace("Transferring connection returned to pool.");
                     waiter.SetResult(connection);
                     return;
                 }
@@ -234,11 +244,13 @@ namespace System.Net.Http
                 // the pool was disposed of.
                 if (_disposed)
                 {
+                    if (NetEventSource.IsEnabled) connection.Trace("Disposing connection returned to disposed pool.");
                     connection.Dispose();
                     return;
                 }
 
                 // Pool the connection by adding it to the list.
+                if (NetEventSource.IsEnabled) connection.Trace("Returning connection to pool.");
                 list.Add(new CachedConnection(connection));
             }
         }
@@ -251,6 +263,7 @@ namespace System.Net.Http
             {
                 if (!_disposed)
                 {
+                    if (NetEventSource.IsEnabled) Trace("Disposing pool.");
                     _disposed = true;
                     list.ForEach(c => c._connection.Dispose());
                     list.Clear();
@@ -273,6 +286,7 @@ namespace System.Net.Http
             bool tookLock = false;
             try
             {
+                if (NetEventSource.IsEnabled) Trace("Cleaning pool.");
                 Monitor.Enter(SyncObj, ref tookLock);
 
                 // Get the current time.  This is compared against each connection's last returned
@@ -350,6 +364,16 @@ namespace System.Net.Http
             // Pool is active.  Should not be removed.
             return false;
         }
+
+        public override string ToString() => $"{nameof(HttpConnectionPool)}(Connections:{_associatedConnectionCount})"; // Description for diagnostic purposes
+
+        private void Trace(string message, [CallerMemberName] string memberName = null) =>
+            NetEventSource.Log.HandlerMessage(
+                GetHashCode(),               // pool ID
+                0,                           // connection ID
+                0,                           // request ID
+                memberName,                  // method name
+                ToString() + ":" + message); // message
 
         /// <summary>A cached idle connection and metadata about it.</summary>
         [StructLayout(LayoutKind.Auto)]
