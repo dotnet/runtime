@@ -129,6 +129,7 @@ namespace System.Security.Claims
                 {
                     Properties.Add(reader.ReadString(), reader.ReadString());
                 }
+                numPropertiesRead++;
             }
 
             if ((mask & SerializationMask.UserData) == SerializationMask.UserData)
