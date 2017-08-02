@@ -5906,7 +5906,44 @@ void LinearScan::unassignDoublePhysReg(RegRecord* doubleRegRecord)
         unassignPhysReg(doubleRegRecordHi, doubleRegRecordHi->assignedInterval->recentRefPosition);
     }
 }
+
 #endif // _TARGET_ARM_
+
+//----------------------------------------------------------------------------------------
+// isRegInUse: Test whether regRec is being used at the refPosition
+//
+// Arguments:
+//    regRec - A register to be tested
+//    refPosition - RefPosition where regRec is tested
+//    nextLocation - next RefPosition of interval assigned to regRec
+//
+// Return Value:
+//    True - if regRec is beding used
+//    False - otherwise
+//
+// Note: This helper is designed to be used only from allocateBusyReg()
+//
+bool LinearScan::isRegInUse(RegRecord* regRec, RefPosition* refPosition, LsraLocation* nextLocation)
+{
+    Interval* assignedInterval = regRec->assignedInterval;
+    if (assignedInterval != nullptr)
+    {
+        LsraLocation refLocation     = refPosition->nodeLocation;
+        RefPosition* nextRefPosition = assignedInterval->getNextRefPosition();
+        *nextLocation                = assignedInterval->getNextRefLocation();
+
+        // We should never spill a register that's occupied by an Interval with its next use at the current
+        // location.
+        // Normally this won't occur (unless we actually had more uses in a single node than there are registers),
+        // because we'll always find something with a later nextLocation, but it can happen in stress when
+        // we have LSRA_SELECT_NEAREST.
+        if ((*nextLocation == refLocation) && !refPosition->isFixedRegRef && nextRefPosition->RequiresRegister())
+        {
+            return true;
+        }
+    }
+    return false;
+}
 
 //------------------------------------------------------------------------
 // allocateBusyReg: Find a busy register that satisfies the requirements for refPosition,
@@ -6113,38 +6150,25 @@ regNumber LinearScan::allocateBusyReg(Interval* current, RefPosition* refPositio
             continue;
         }
 
-        RefPosition* nextRefPosition = nullptr;
-        LsraLocation nextLocation    = MinLocation;
-#ifdef _TARGET_ARM_
-        if (assignedInterval != nullptr)
-        {
-#endif
-            nextRefPosition = assignedInterval->getNextRefPosition();
-            nextLocation    = assignedInterval->getNextRefLocation();
+        LsraLocation nextLocation = MinLocation;
 
-            // We should never spill a register that's occupied by an Interval with its next use at the current
-            // location.
-            // Normally this won't occur (unless we actually had more uses in a single node than there are registers),
-            // because we'll always find something with a later nextLocation, but it can happen in stress when
-            // we have LSRA_SELECT_NEAREST.
-            if ((nextLocation == refLocation) && !refPosition->isFixedRegRef && nextRefPosition->RequiresRegister())
-            {
-                continue;
-            }
-#ifdef _TARGET_ARM_
+        if (isRegInUse(physRegRecord, refPosition, &nextLocation))
+        {
+            continue;
         }
 
-        if (assignedInterval2 != nullptr)
+#ifdef _TARGET_ARM_
+        if (current->registerType == TYP_DOUBLE)
         {
-            RefPosition* nextRefPosition2 = assignedInterval2->getNextRefPosition();
-            LsraLocation nextLocation2    = assignedInterval2->getNextRefLocation();
-            if ((nextLocation2 == refLocation) && !refPosition->isFixedRegRef && nextRefPosition2->RequiresRegister())
+            LsraLocation nextLocation2 = MinLocation;
+            if (isRegInUse(physRegRecord2, refPosition, &nextLocation2))
             {
                 continue;
             }
             nextLocation = (nextLocation > nextLocation2) ? nextLocation : nextLocation2;
         }
 #endif
+
         if (nextLocation > physRegNextLocation)
         {
             nextLocation = physRegNextLocation;
