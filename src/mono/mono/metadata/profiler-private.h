@@ -63,7 +63,7 @@ typedef struct {
 	gpointer (*context_get_argument) (MonoProfilerCallContext *, guint32);
 	gpointer (*context_get_local) (MonoProfilerCallContext *, guint32);
 	gpointer (*context_get_result) (MonoProfilerCallContext *);
-	gpointer (*context_free_buffer) (gpointer);
+	void (*context_free_buffer) (gpointer);
 
 #define _MONO_PROFILER_EVENT(name) \
 	volatile gint32 name ## _count;
