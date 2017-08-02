@@ -149,7 +149,7 @@ namespace System.Drawing.Drawing2D.Tests
         {
             using (GraphicsPath gp = new GraphicsPath())
             {
-                AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => gp.FillMode = fillMode);
+                Assert.ThrowsAny<ArgumentException>(() => gp.FillMode = fillMode);
             }
         }
 

@@ -288,7 +288,7 @@ namespace System.Drawing
 
         public static Pen FromSystemColor(Color c)
         {
-            if (c.IsSystemColor)
+            if (ColorUtil.IsSystemColor(c))
             {
                 Pen newPen = new Pen(c);
                 newPen.isModifiable = false;
