@@ -408,7 +408,7 @@ namespace System.Net.Http.Headers
                 string processedValue = string.Empty;
                 if (parameter.EndsWith("*", StringComparison.Ordinal))
                 {
-                    processedValue = Encode5987(value);
+                    processedValue = HeaderUtilities.Encode5987(value);
                 }
                 else
                 {
@@ -534,35 +534,6 @@ namespace System.Net.Http.Headers
             return false;
         }
 
-        // Encode a string using RFC 5987 encoding.
-        // encoding'lang'PercentEncodedSpecials
-        private string Encode5987(string input)
-        {
-            StringBuilder builder = new StringBuilder("utf-8\'\'");
-            foreach (char c in input)
-            {
-                // attr-char = ALPHA / DIGIT / "!" / "#" / "$" / "&" / "+" / "-" / "." / "^" / "_" / "`" / "|" / "~"
-                //      ; token except ( "*" / "'" / "%" )
-                if (c > 0x7F) // Encodes as multiple utf-8 bytes
-                {
-                    byte[] bytes = Encoding.UTF8.GetBytes(c.ToString());
-                    foreach (byte b in bytes)
-                    {
-                        AddHexEscaped((char)b, builder);
-                    }
-                }
-                else if (!HttpRuleParser.IsTokenChar(c) || c == '*' || c == '\'' || c == '%')
-                {
-                    // ASCII - Only one encoded byte.
-                    AddHexEscaped(c, builder);
-                }
-                else
-                {
-                    builder.Append(c);
-                }
-            }
-            return builder.ToString();
-        }
 
         // Attempt to decode using RFC 5987 encoding.
         // encoding'language'my%20string
