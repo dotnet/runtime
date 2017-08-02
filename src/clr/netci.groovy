@@ -1794,7 +1794,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                     }
 
                     if (!enableCorefxTesting) {
-                        buildCommands += "ROOTFS_DIR=/opt/arm64-xenial-rootfs ./build.sh skipmscorlib verbose ${lowerConfiguration} ${architecture} cross clang3.8 skipnuget ${standaloneGc}"
+                        buildCommands += "ROOTFS_DIR=/opt/arm64-xenial-rootfs ./build.sh verbose ${lowerConfiguration} ${architecture} cross clang3.8 ${standaloneGc}"
                         
                         // HACK -- Arm64 does not have corefx jobs yet.
                         buildCommands += "git clone https://github.com/dotnet/corefx fx"
