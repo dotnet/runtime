@@ -35,8 +35,8 @@ namespace System.Drawing
                 int argb = s_colorTable[index];
                 if (argb == targetARGB)
                 {
-                    Color color = Color.FromKnownColor((KnownColor)index);
-                    if (!color.IsSystemColor)
+                    Color color = ColorUtil.FromKnownColor((KnownColor)index);
+                    if (!ColorUtil.IsSystemColor(color))
                         return color;
                 }
             }

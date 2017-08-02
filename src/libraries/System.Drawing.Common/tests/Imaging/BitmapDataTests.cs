@@ -111,7 +111,7 @@ namespace System.Drawing.Imaging.Tests
         public void PixelFormat_SetInvalid_ThrowsInvalidEnumException()
         {
             BitmapData bd = new BitmapData();
-            Assert.Throws<InvalidEnumArgumentException>(() => bd.PixelFormat = (PixelFormat)(-1));
+            Assert.ThrowsAny<ArgumentException>(() => bd.PixelFormat = (PixelFormat)(-1));
         }
     }
 }

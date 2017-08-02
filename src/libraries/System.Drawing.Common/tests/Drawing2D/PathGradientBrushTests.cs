@@ -96,10 +96,10 @@ namespace System.Drawing.Drawing2D.Tests
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_InvalidWrapMode_ThrowsInvalidEnumArgumentException()
         {
-            AssertExtensions.Throws<InvalidEnumArgumentException>("wrapMode", () => 
+            Assert.ThrowsAny<ArgumentException>(() => 
                 new PathGradientBrush(_defaultIntPoints, (WrapMode)int.MaxValue));
 
-            AssertExtensions.Throws<InvalidEnumArgumentException>("wrapMode", () => 
+            Assert.ThrowsAny<ArgumentException>(() => 
                 new PathGradientBrush(_defaultFloatPoints, (WrapMode)int.MaxValue));
         }
 
@@ -1065,7 +1065,7 @@ namespace System.Drawing.Drawing2D.Tests
         {
             using (PathGradientBrush brush = new PathGradientBrush(_defaultFloatPoints))
             {
-                AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => brush.WrapMode = (WrapMode)int.MinValue);
+                Assert.ThrowsAny<ArgumentException>(() => brush.WrapMode = (WrapMode)int.MinValue);
             }
         }
 
