@@ -11958,10 +11958,7 @@ GenTreePtr Compiler::gtFoldExprCompare(GenTreePtr tree)
 
     if (fgGlobalMorph)
     {
-        if (!fgIsInlining())
-        {
-            fgMorphTreeDone(cons);
-        }
+        fgMorphTreeDone(cons);
     }
     else
     {
@@ -12041,26 +12038,8 @@ GenTreePtr Compiler::gtFoldExprSpecial(GenTreePtr tree)
             //     <T> ... foo(T x) { ... if ((object)x == null) ...
             if (val == 0 && op->IsBoxedValue())
             {
-                // The tree under the box must be side effect free
-                // since we drop it if we optimize the compare.
-                assert(!gtTreeHasSideEffects(op->gtBox.gtOp.gtOp1, GTF_SIDE_EFFECT));
-
-                // grab related parts for the optimization
-                GenTreePtr asgStmt = op->gtBox.gtAsgStmtWhenInlinedBoxValue;
-                assert(asgStmt->gtOper == GT_STMT);
-                GenTreePtr copyStmt = op->gtBox.gtCopyStmtWhenInlinedBoxValue;
-                assert(copyStmt->gtOper == GT_STMT);
-#ifdef DEBUG
-                if (verbose)
-                {
-                    printf("\nAttempting to optimize BOX(valueType) %s null\n", GenTree::OpName(oper));
-                    gtDispTree(tree);
-                    printf("\nWith assign\n");
-                    gtDispTree(asgStmt);
-                    printf("\nAnd copy\n");
-                    gtDispTree(copyStmt);
-                }
-#endif
+                JITDUMP("\nAttempting to optimize BOX(valueType) %s null [%06u]\n", GenTree::OpName(oper),
+                        dspTreeID(tree));
 
                 // We don't expect GT_GT with signed compares, and we
                 // can't predict the result if we do see it, since the
@@ -12068,152 +12047,59 @@ GenTreePtr Compiler::gtFoldExprSpecial(GenTreePtr tree)
                 if ((oper == GT_GT) && !tree->IsUnsigned())
                 {
                     JITDUMP(" bailing; unexpected signed compare via GT_GT\n");
-                    goto FAIL;
                 }
-
-                // If we don't recognize the form of the assign, bail.
-                GenTreePtr asg = asgStmt->gtStmt.gtStmtExpr;
-                if (asg->gtOper != GT_ASG)
+                else
                 {
-                    JITDUMP(" bailing; unexpected assignment op %s\n", GenTree::OpName(asg->gtOper));
-                    goto FAIL;
-                }
+                    // The tree under the box must be side effect free
+                    // since we will drop it if we optimize.
+                    assert(!gtTreeHasSideEffects(op->gtBox.gtOp.gtOp1, GTF_SIDE_EFFECT));
 
-                // If we don't recognize the form of the copy, bail.
-                GenTree* copy = copyStmt->gtStmt.gtStmtExpr;
-                if (copy->gtOper != GT_ASG)
-                {
-                    // GT_RET_EXPR is a tolerable temporary failure.
-                    // The jit will revisit this optimization after
-                    // inlining is done.
-                    if (copy->gtOper == GT_RET_EXPR)
+                    // See if we can optimize away the box and related statements.
+                    bool didOptimize = gtTryRemoveBoxUpstreamEffects(op);
+
+                    // If optimization succeeded, remove the box.
+                    if (didOptimize)
                     {
-                        JITDUMP(" bailing; must wait for replacement of copy %s\n", GenTree::OpName(copy->gtOper));
-                    }
-                    else
-                    {
-                        // Anything else is a missed case we should
-                        // figure out how to handle.  One known case
-                        // is GT_COMMAs enclosing the GT_ASG we are
-                        // looking for.
-                        JITDUMP(" bailing; unexpected copy op %s\n", GenTree::OpName(copy->gtOper));
-                    }
-                    goto FAIL;
-                }
-
-                // If the copy is a struct copy, make sure we know how to isolate
-                // any source side effects.
-                GenTreePtr copySrc = copy->gtOp.gtOp2;
-
-                // If the copy source is from a pending inline, wait for it to resolve.
-                if (copySrc->gtOper == GT_RET_EXPR)
-                {
-                    JITDUMP(" bailing; must wait for replacement of copy source %s\n",
-                            GenTree::OpName(copySrc->gtOper));
-                    goto FAIL;
-                }
-
-                bool hasSrcSideEffect = false;
-                bool isStructCopy     = false;
-
-                if (gtTreeHasSideEffects(copySrc, GTF_SIDE_EFFECT))
-                {
-                    hasSrcSideEffect = true;
-
-                    if (copySrc->gtType == TYP_STRUCT)
-                    {
-                        isStructCopy = true;
-
-                        if ((copySrc->gtOper != GT_OBJ) && (copySrc->gtOper != GT_IND) && (copySrc->gtOper != GT_FIELD))
+                        // Set up the result of the compare.
+                        int compareResult = 0;
+                        if (oper == GT_GT)
                         {
-                            // We don't know how to handle other cases, yet.
-                            JITDUMP(" bailing; unexpected copy source struct op with side effect %s\n",
-                                    GenTree::OpName(copySrc->gtOper));
-                            goto FAIL;
+                            // GT_GT(null, box) == false
+                            // GT_GT(box, null) == true
+                            compareResult = (op1 == op);
                         }
+                        else if (oper == GT_EQ)
+                        {
+                            // GT_EQ(box, null) == false
+                            // GT_EQ(null, box) == false
+                            compareResult = 0;
+                        }
+                        else
+                        {
+                            assert(oper == GT_NE);
+                            // GT_NE(box, null) == true
+                            // GT_NE(null, box) == true
+                            compareResult = 1;
+                        }
+
+                        JITDUMP("\nSuccess: replacing BOX(valueType) %s null with %d\n", GenTree::OpName(oper),
+                                compareResult);
+
+                        op = gtNewIconNode(compareResult);
+
+                        if (fgGlobalMorph)
+                        {
+                            fgMorphTreeDone(op);
+                        }
+                        else
+                        {
+                            op->gtNext = tree->gtNext;
+                            op->gtPrev = tree->gtPrev;
+                        }
+
+                        return op;
                     }
                 }
-
-                // Proceed with the optimization
-                //
-                // Change the assignment expression to a NOP.
-                JITDUMP("\nBashing NEWOBJ [%06u] to NOP\n", dspTreeID(asg));
-                asg->gtBashToNOP();
-
-                // Change the copy expression so it preserves key
-                // source side effects.
-                JITDUMP("\nBashing COPY [%06u]", dspTreeID(copy));
-
-                if (!hasSrcSideEffect)
-                {
-                    // If there were no copy source side effects just bash
-                    // the copy to a NOP.
-                    copy->gtBashToNOP();
-                    JITDUMP(" to NOP\n");
-                }
-                else if (!isStructCopy)
-                {
-                    // For scalar types, go ahead and produce the
-                    // value as the copy is fairly cheap and likely
-                    // the optimizer can trim things down to just the
-                    // minimal side effect parts.
-                    copyStmt->gtStmt.gtStmtExpr = copySrc;
-                    JITDUMP(" to scalar read via [%06u]\n", dspTreeID(copySrc));
-                }
-                else
-                {
-                    // For struct types read the first byte of the
-                    // source struct; there's no need to read the
-                    // entire thing, and no place to put it.
-                    assert(copySrc->gtOper == GT_OBJ || copySrc->gtOper == GT_IND || copySrc->gtOper == GT_FIELD);
-                    copySrc->ChangeOper(GT_IND);
-                    copySrc->gtType             = TYP_BYTE;
-                    copyStmt->gtStmt.gtStmtExpr = copySrc;
-                    JITDUMP(" to read first byte of struct via modified [%06u]\n", dspTreeID(copySrc));
-                }
-
-                // Set up the result of the compare.
-                int compareResult = 0;
-                if (oper == GT_GT)
-                {
-                    // GT_GT(null, box) == false
-                    // GT_GT(box, null) == true
-                    compareResult = (op1 == op);
-                }
-                else if (oper == GT_EQ)
-                {
-                    // GT_EQ(box, null) == false
-                    // GT_EQ(null, box) == false
-                    compareResult = 0;
-                }
-                else
-                {
-                    assert(oper == GT_NE);
-                    // GT_NE(box, null) == true
-                    // GT_NE(null, box) == true
-                    compareResult = 1;
-                }
-                op = gtNewIconNode(compareResult);
-
-                if (fgGlobalMorph)
-                {
-                    if (!fgIsInlining())
-                    {
-                        fgMorphTreeDone(op);
-                    }
-                }
-                else
-                {
-                    op->gtNext = tree->gtNext;
-                    op->gtPrev = tree->gtPrev;
-                }
-
-                if (fgStmtListThreaded)
-                {
-                    fgSetStmtSeq(asgStmt);
-                    fgSetStmtSeq(copyStmt);
-                }
-                return op;
             }
 
             break;
@@ -12383,9 +12269,7 @@ GenTreePtr Compiler::gtFoldExprSpecial(GenTreePtr tree)
             break;
     }
 
-/* The node is not foldable */
-
-FAIL:
+    /* The node is not foldable */
 
     return tree;
 
@@ -12406,6 +12290,164 @@ DONE_FOLD:
     op->gtPrev = tree->gtPrev;
 
     return op;
+}
+
+//------------------------------------------------------------------------
+// gtTryRemoveBoxUpstreamEffects: given an unused value type box,
+//    try and remove the upstream allocation and unnecessary parts of
+//    the copy.
+//
+// Arguments:
+//    op  -- the box node to optimize
+//
+// Return Value:
+//    True if the upstream effects were removed. Note parts of the
+//    copy tree may remain, if the copy source had side effects.
+//
+//    False if the upstream effects could not be removed.
+//
+// Notes:
+//    Value typed box gets special treatment because it has associated
+//    side effects that can be removed if the box result is not used.
+//
+//    If removal fails, is is possible that a subsequent pass may be
+//    able to optimize.  Blocking side effects may now be minimized
+//    (null or bounds checks might have been removed) or might be
+//    better known (inline return placeholder updated with the actual
+//    return expression). So the box is perhaps best left as is to
+//    help trigger this re-examination.
+
+bool Compiler::gtTryRemoveBoxUpstreamEffects(GenTreePtr op)
+{
+    JITDUMP("gtTryRemoveBoxUpstreamEffects called for [%06u]\n", dspTreeID(op));
+    assert(op->IsBoxedValue());
+
+    // grab related parts for the optimization
+    GenTreePtr asgStmt = op->gtBox.gtAsgStmtWhenInlinedBoxValue;
+    assert(asgStmt->gtOper == GT_STMT);
+    GenTreePtr copyStmt = op->gtBox.gtCopyStmtWhenInlinedBoxValue;
+    assert(copyStmt->gtOper == GT_STMT);
+
+#ifdef DEBUG
+    if (verbose)
+    {
+        printf("\nAttempting to remove side effects of BOX (valuetype)\n");
+        gtDispTree(op);
+        printf("\nWith assign\n");
+        gtDispTree(asgStmt);
+        printf("\nAnd copy\n");
+        gtDispTree(copyStmt);
+    }
+#endif
+
+    // If we don't recognize the form of the assign, bail.
+    GenTreePtr asg = asgStmt->gtStmt.gtStmtExpr;
+    if (asg->gtOper != GT_ASG)
+    {
+        JITDUMP(" bailing; unexpected assignment op %s\n", GenTree::OpName(asg->gtOper));
+        return false;
+    }
+
+    // If we don't recognize the form of the copy, bail.
+    GenTreePtr copy = copyStmt->gtStmt.gtStmtExpr;
+    if (copy->gtOper != GT_ASG)
+    {
+        // GT_RET_EXPR is a tolerable temporary failure.
+        // The jit will revisit this optimization after
+        // inlining is done.
+        if (copy->gtOper == GT_RET_EXPR)
+        {
+            JITDUMP(" bailing; must wait for replacement of copy %s\n", GenTree::OpName(copy->gtOper));
+        }
+        else
+        {
+            // Anything else is a missed case we should
+            // figure out how to handle.  One known case
+            // is GT_COMMAs enclosing the GT_ASG we are
+            // looking for.
+            JITDUMP(" bailing; unexpected copy op %s\n", GenTree::OpName(copy->gtOper));
+        }
+        return false;
+    }
+
+    // If the copy is a struct copy, make sure we know how to isolate
+    // any source side effects.
+    GenTreePtr copySrc = copy->gtOp.gtOp2;
+
+    // If the copy source is from a pending inline, wait for it to resolve.
+    if (copySrc->gtOper == GT_RET_EXPR)
+    {
+        JITDUMP(" bailing; must wait for replacement of copy source %s\n", GenTree::OpName(copySrc->gtOper));
+        return false;
+    }
+
+    bool hasSrcSideEffect = false;
+    bool isStructCopy     = false;
+
+    if (gtTreeHasSideEffects(copySrc, GTF_SIDE_EFFECT))
+    {
+        hasSrcSideEffect = true;
+
+        if (copySrc->gtType == TYP_STRUCT)
+        {
+            isStructCopy = true;
+
+            if ((copySrc->gtOper != GT_OBJ) && (copySrc->gtOper != GT_IND) && (copySrc->gtOper != GT_FIELD))
+            {
+                // We don't know how to handle other cases, yet.
+                JITDUMP(" bailing; unexpected copy source struct op with side effect %s\n",
+                        GenTree::OpName(copySrc->gtOper));
+                return false;
+            }
+        }
+    }
+
+    // Proceed with the optimization
+    //
+    // Change the assignment expression to a NOP.
+    JITDUMP("\nBashing NEWOBJ [%06u] to NOP\n", dspTreeID(asg));
+    asg->gtBashToNOP();
+
+    // Change the copy expression so it preserves key
+    // source side effects.
+    JITDUMP("\nBashing COPY [%06u]", dspTreeID(copy));
+
+    if (!hasSrcSideEffect)
+    {
+        // If there were no copy source side effects just bash
+        // the copy to a NOP.
+        copy->gtBashToNOP();
+        JITDUMP(" to NOP; no source side effects.\n");
+    }
+    else if (!isStructCopy)
+    {
+        // For scalar types, go ahead and produce the
+        // value as the copy is fairly cheap and likely
+        // the optimizer can trim things down to just the
+        // minimal side effect parts.
+        copyStmt->gtStmt.gtStmtExpr = copySrc;
+        JITDUMP(" to scalar read via [%06u]\n", dspTreeID(copySrc));
+    }
+    else
+    {
+        // For struct types read the first byte of the
+        // source struct; there's no need to read the
+        // entire thing, and no place to put it.
+        assert(copySrc->gtOper == GT_OBJ || copySrc->gtOper == GT_IND || copySrc->gtOper == GT_FIELD);
+        copySrc->ChangeOper(GT_IND);
+        copySrc->gtType             = TYP_BYTE;
+        copyStmt->gtStmt.gtStmtExpr = copySrc;
+        JITDUMP(" to read first byte of struct via modified [%06u]\n", dspTreeID(copySrc));
+    }
+
+    if (fgStmtListThreaded)
+    {
+        fgSetStmtSeq(asgStmt);
+        fgSetStmtSeq(copyStmt);
+    }
+
+    // Box effects were successfully optimized
+    return true;
 }
 
 /*****************************************************************************
