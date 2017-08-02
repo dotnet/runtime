@@ -982,6 +982,19 @@ void CodeGen::genCodeForMul(GenTreeOp* treeNode)
             unsigned int scale = (unsigned int)(imm - 1);
             getEmitter()->emitIns_R_ARX(INS_lea, size, targetReg, rmOp->gtRegNum, rmOp->gtRegNum, scale, 0);
         }
+        else if (!requiresOverflowCheck && rmOp->isUsedFromReg() && (imm == genFindLowestBit(imm)) && (imm != 0))
+        {
+            // Use shift for constant multiply when legal
+            uint64_t     zextImm     = static_cast<uint64_t>(static_cast<size_t>(imm));
+            unsigned int shiftAmount = genLog2(zextImm);
+
+            if (targetReg != rmOp->gtRegNum)
+            {
+                // Copy reg src to dest register
+                inst_RV_RV(ins_Copy(targetType), targetReg, rmOp->gtRegNum, targetType);
+            }
+            inst_RV_SH(INS_shl, size, targetReg, shiftAmount);
+        }
         else
         {
             // use the 3-op form with immediate
