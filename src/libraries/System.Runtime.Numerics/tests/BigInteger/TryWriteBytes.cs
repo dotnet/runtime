@@ -19,6 +19,7 @@ namespace System.Numerics.Tests
             ValidateGetByteCountAndTryWriteBytes(new BigInteger(l), expectedBytes);
 
         [Theory]
+        [MemberData(nameof(FromStringTests_MemberData))]
         public void TryWriteBytes_FromStringTests(string str, byte[] expectedBigEndianBytes)
         {
             byte[] expectedBytes = (byte[])expectedBigEndianBytes.Clone();
@@ -34,14 +35,13 @@ namespace System.Numerics.Tests
             int count = bi.GetByteCount();
             Assert.Equal(expectedBytes.Length, count);
 
-            int bytesWritten;
-            for (int i = 0; i < 2; i++)
-            {
-                Span<byte> destination = i == 0 ?
-                    new byte[expectedBytes.Length] : // make sure it works with a span just long enough
-                    new byte[expectedBytes.Length + 1]; // make sure it also works with a longer span
+            Validate(new byte[expectedBytes.Length]); // make sure it works with a span just long enough
+            Validate(new byte[expectedBytes.Length + 1]); // make sure it also works with a longer span
 
+            void Validate(Span<byte> destination)
+            {
                 // Fails if the span is too small
+                int bytesWritten;
                 Assert.False(bi.TryWriteBytes(destination.Slice(0, expectedBytes.Length - 1), out bytesWritten));
                 Assert.Equal(0, bytesWritten);
 
