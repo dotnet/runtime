@@ -13,6 +13,7 @@ namespace System
     public static class AdminHelpers
     {
         public static int RunAsSudo(string commandLine) => throw null;
+        public static bool IsProcessElevated() => throw null;
     }
 
     public static class AssertExtensions
