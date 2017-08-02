@@ -1407,10 +1407,15 @@ namespace System
             {
                 throw new ArgumentOutOfRangeException(nameof(character));
             }
-            char[] chars = new char[3];
-            int pos = 0;
-            UriHelper.EscapeAsciiChar(character, chars, ref pos);
-            return new string(chars);
+
+            unsafe
+            {
+                char* chars = stackalloc char[3];
+                chars[0] = '%';
+                chars[1] = UriHelper.s_hexUpperChars[(character & 0xf0) >> 4];
+                chars[2] = UriHelper.s_hexUpperChars[character & 0xf];
+                return new string(chars, 0, 3);
+            }
         }
 
         //
