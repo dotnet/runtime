@@ -1861,8 +1861,6 @@ size_t GetLargestOnDieCacheSize(BOOL bTrueSize)
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
-#if defined(_TARGET_AMD64_) || defined (_TARGET_X86_)
-
     static size_t maxSize;
     static size_t maxTrueSize;
 
@@ -1879,6 +1877,7 @@ size_t GetLargestOnDieCacheSize(BOOL bTrueSize)
         }
     }
 
+#if defined(_TARGET_AMD64_) || defined (_TARGET_X86_)
     DefaultCatchFilterParam param;
     param.pv = COMPLUS_EXCEPTION_EXECUTE_HANDLER;
 
@@ -2001,18 +2000,20 @@ size_t GetLargestOnDieCacheSize(BOOL bTrueSize)
     {
     }
     PAL_ENDTRY
+#else
+    maxSize = maxTrueSize = GetLogicalProcessorCacheSizeFromOS() ; // Returns the size of the highest level processor cache
+#endif
+
+#if defined(_TARGET_ARM64_)
+    // Bigger gen0 size helps arm64 targets
+    maxSize = maxTrueSize * 3;
+#endif
 
     //    printf("GetLargestOnDieCacheSize returns %d, adjusted size %d\n", maxSize, maxTrueSize);
     if (bTrueSize)
         return maxTrueSize;
     else
         return maxSize;
-
-#else
-    size_t cache_size = GetLogicalProcessorCacheSizeFromOS() ; // Returns the size of the highest level processor cache
-    return cache_size;
-
-#endif
 }
 
 //---------------------------------------------------------------------

@@ -304,47 +304,7 @@ private:
 
     bool ReadMemoryValueFromFile(const char* filename, size_t* val)
     {
-        bool result = false;
-        char *line = nullptr;
-        size_t lineLen = 0;
-        char* endptr = nullptr;
-        size_t num = 0, l, multiplier;
-
-        if (val == nullptr)
-            return false;
-
-        FILE* file = fopen(filename, "r");
-        if (file == nullptr)
-            goto done;
-        
-        if (getline(&line, &lineLen, file) == -1)
-            goto done;
-
-        errno = 0;
-        num = strtoull(line, &endptr, 0); 
-        if (errno != 0)
-            goto done;
-
-        multiplier = 1;
-        switch(*endptr)
-        {
-            case 'g':
-            case 'G': multiplier = 1024;
-            case 'm': 
-            case 'M': multiplier = multiplier*1024;
-            case 'k':
-            case 'K': multiplier = multiplier*1024;
-        }
-
-        *val = num * multiplier;
-        result = true;
-        if (*val/multiplier != num)
-            result = false;
-    done:
-        if (file)
-            fclose(file);
-        free(line);    
-        return result;
+        return ::ReadMemoryValueFromFile(filename, val);
     }
 
     long long ReadCpuCGroupValue(const char* subsystemFilename){
