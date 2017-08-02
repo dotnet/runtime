@@ -33,7 +33,7 @@ namespace System.Globalization
 
         [SecurityCritical]
         internal static bool TryStringToBigInteger(
-            string s,
+            ReadOnlySpan<char> s,
             NumberStyles styles,
             NumberFormatInfo numberFormatInfo,
             StringBuilder receiver,  // Receives the decimal digits
