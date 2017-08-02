@@ -25,6 +25,7 @@ namespace System.Net.Http
         private const string Realm = "realm";
         private const string UserHash = "userhash";
         private const string Username = "username";
+        private const string UsernameStar = "username*";
         private const string Algorithm = "algorithm";
         private const string Uri = "uri";
         private const string Sha256 = "SHA-256";
@@ -109,7 +110,15 @@ namespace System.Net.Http
             }
             else
             {
-                sb.AppendKeyValue(Username, credential.UserName);
+                string usernameStar;
+                if (HeaderUtilities.Encode5987(credential.UserName, out usernameStar))
+                {
+                    sb.AppendKeyValue(UsernameStar, usernameStar);
+                }
+                else
+                {
+                    sb.AppendKeyValue(Username, credential.UserName);
+                }
             }
 
             // Add realm
