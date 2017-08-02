@@ -107,6 +107,7 @@ namespace System.Net.Http
             if (digestResponse.Parameters.TryGetValue(UserHash, out userhash) && userhash == "true")
             {
                 sb.AppendKeyValue(Username, ComputeHash(credential.UserName + ":" + realm, algorithm));
+                sb.AppendKeyValue(UserHash, userhash, includeQuotes: false);
             }
             else
             {
