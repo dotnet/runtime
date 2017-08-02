@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Net.Http.Headers;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -36,6 +37,7 @@ namespace System.Net.Http
 
         private ValueStringBuilder _sb; // mutable struct, do not make this readonly
 
+        private HttpRequestMessage _currentRequest;
         private readonly byte[] _writeBuffer;
         private int _writeOffset;
 
@@ -81,25 +83,20 @@ namespace System.Net.Http
 
             _connectionClose = false;
             _disposed = false;
+
+            if (NetEventSource.IsEnabled) Trace("Connection created.");
         }
 
         public void Dispose()
         {
-//#if DEBUG
-//            GC.SuppressFinalize(this);
-//#endif
             if (!_disposed)
             {
+                if (NetEventSource.IsEnabled) Trace("Connection closing.");
                 _disposed = true;
                 _pool.DecrementConnectionCount();
                 _stream.Dispose();
             }
         }
-
-//#if DEBUG
-//        private readonly string _debugCreationStackTrace = Environment.StackTrace;
-//        ~HttpConnection() => Environment.FailFast($"Dropped HttpConnection without disposing it, created at: {_debugCreationStackTrace}");
-//#endif
 
         public bool ReadAheadCompleted
         {
@@ -180,9 +177,12 @@ namespace System.Net.Http
 
         public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            Debug.Assert(_currentRequest == null, $"Expected null {nameof(_currentRequest)}.");
+            _currentRequest = request;
             try
             {
                 // Send the request.
+                if (NetEventSource.IsEnabled) Trace($"Sending request: {request}");
 
                 if (request.Version.Major != 1 || request.Version.Minor != 1)
                 {
@@ -305,14 +305,16 @@ namespace System.Net.Http
                 }
                 ((HttpConnectionContent)response.Content).SetStream(responseStream);
 
+                if (NetEventSource.IsEnabled) Trace($"Received response: {response}");
                 return response;
             }
-            catch (Exception inner)
+            catch (Exception error)
             {
+                if (NetEventSource.IsEnabled) Trace($"Error sending request: {error}");
                 Dispose();
-                if (inner is InvalidOperationException || inner is IOException)
+                if (error is InvalidOperationException || error is IOException)
                 {
-                    throw new HttpRequestException(SR.net_http_client_execution_error, inner);
+                    throw new HttpRequestException(SR.net_http_client_execution_error, error);
                 }
                 throw;
             }
@@ -463,7 +465,7 @@ namespace System.Net.Http
             {
                 // Large write.  No sense buffering this.  Write directly to stream.
                 // CONSIDER: May want to be a bit smarter here?  Think about how large writes should work...
-                await _stream.WriteAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
+                await WriteToStreamAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
             }
             else
             {
@@ -485,7 +487,7 @@ namespace System.Net.Http
         private async Task WriteByteSlowAsync(byte b, CancellationToken cancellationToken)
         {
             Debug.Assert(_writeOffset == _writeBuffer.Length);
-            await _stream.WriteAsync(_writeBuffer, 0, _writeBuffer.Length, cancellationToken).ConfigureAwait(false);
+            await WriteToStreamAsync(_writeBuffer, 0, _writeBuffer.Length, cancellationToken).ConfigureAwait(false);
 
             _writeBuffer[0] = b;
             _writeOffset = 1;
@@ -539,7 +541,7 @@ namespace System.Net.Http
                 }
                 else if (_writeOffset == _writeBuffer.Length)
                 {
-                    await _stream.WriteAsync(_writeBuffer, 0, _writeBuffer.Length, cancellationToken).ConfigureAwait(false);
+                    await WriteToStreamAsync(_writeBuffer, 0, _writeBuffer.Length, cancellationToken).ConfigureAwait(false);
                     _writeOffset = 0;
                 }
             }
@@ -607,11 +609,17 @@ namespace System.Net.Http
         {
             if (_writeOffset > 0)
             {
-                Task t = _stream.WriteAsync(_writeBuffer, 0, _writeOffset, cancellationToken);
+                Task t = WriteToStreamAsync(_writeBuffer, 0, _writeOffset, cancellationToken);
                 _writeOffset = 0;
                 return t;
             }
             return Task.CompletedTask;
+        }
+
+        private Task WriteToStreamAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            if (NetEventSource.IsEnabled) Trace($"Writing {count} bytes.");
+            return _stream.WriteAsync(buffer, offset, count, cancellationToken);
         }
 
         private async ValueTask<ArraySegment<byte>> ReadNextLineAsync(CancellationToken cancellationToken)
@@ -743,7 +751,9 @@ namespace System.Net.Http
             if (t.IsCompleted)
             {
                 // The read completed synchronously, so update the amount of data in the buffer and return.
-                _readLength += t.GetAwaiter().GetResult();
+                int bytesRead = t.GetAwaiter().GetResult();
+                if (NetEventSource.IsEnabled) Trace($"Received {bytesRead} bytes.");
+                _readLength += bytesRead;
                 return Task.CompletedTask;
             }
             else
@@ -751,8 +761,12 @@ namespace System.Net.Http
                 // Using async/await results in slightly higher allocations for the case of a single await,
                 // and it's simple to transform this one into ContinueWith.
                 return t.ContinueWith((completed, state) =>
-                    ((HttpConnection)state)._readLength += completed.GetAwaiter().GetResult(),
-                    this, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+                {
+                    var innerConnection = (HttpConnection)state;
+                    int bytesRead = completed.GetAwaiter().GetResult();
+                    if (NetEventSource.IsEnabled) innerConnection.Trace($"Received {bytesRead} bytes.");
+                    innerConnection._readLength += bytesRead;
+                }, this, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             }
         }
 
@@ -793,6 +807,7 @@ namespace System.Net.Http
             // Do an unbuffered read directly against the underlying stream.
             Debug.Assert(_readAheadTask == null, "Read ahead task should have been consumed as part of the headers.");
             count = await _stream.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
+            if (NetEventSource.IsEnabled) Trace($"Received {count} bytes.");
             return count;
         }
 
@@ -800,6 +815,7 @@ namespace System.Net.Http
         {
             Debug.Assert(count <= _readLength - _readOffset);
 
+            if (NetEventSource.IsEnabled) Trace($"Copying {count} bytes to stream.");
             await destination.WriteAsync(_readBuffer, _readOffset, count, cancellationToken).ConfigureAwait(false);
             _readOffset += count;
         }
@@ -875,6 +891,9 @@ namespace System.Net.Http
             {
                 try
                 {
+                    // Null out the associated request before the connection is potentially reused by another.
+                    _currentRequest = null;
+
                     // When putting a connection back into the pool, we initiate a pre-emptive
                     // read on the stream.  When the connection is subsequently taken out of the
                     // pool, this can be used in place of the first read on the stream that would
@@ -918,6 +937,16 @@ namespace System.Net.Http
             return true;
         }
 
+        public override string ToString() => $"{nameof(HttpConnection)}(Host:{_key.Host})"; // Description for diagnostic purposes
+
         private static void ThrowInvalidHttpResponse() => throw new HttpRequestException(SR.net_http_invalid_response);
+
+        public void Trace(string message, [CallerMemberName] string memberName = null) =>
+            NetEventSource.Log.HandlerMessage(
+                _pool?.GetHashCode() ?? 0,    // pool ID
+                GetHashCode(),                // connection ID
+                _currentRequest?.GetHashCode() ?? 0,  // request ID
+                memberName,                   // method name
+                ToString() + ": " + message); // message
     }
 }
