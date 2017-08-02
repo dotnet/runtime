@@ -8,7 +8,13 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
-    <Compile Include="SmokeTest.cs" />
+    <Compile Include="System\Data\DataRowComparerTests.cs" />
+    <Compile Include="System\Data\DataRowExtensionsTests.cs" />
+    <Compile Include="System\Data\DataTableExtensionsTests.cs" />
+    <Compile Include="System\Data\TypedTableBaseExtensionsTests.cs" />
+    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
+      <Link>Common\System\PlatformDetection.cs</Link>
+    </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

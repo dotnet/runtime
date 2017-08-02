@@ -17,7 +17,7 @@ namespace System.Data
         /// </summary>
         public static EnumerableRowCollection<TRow> Where<TRow>(this TypedTableBase<TRow> source, Func<TRow, bool> predicate) where TRow : DataRow
         {
-            DataSetUtil.CheckArgumentNull(nameof(source), "source");
+            DataSetUtil.CheckArgumentNull(source, nameof(source));
             EnumerableRowCollection<TRow> erc = new EnumerableRowCollection<TRow>(source);
             return erc.Where(predicate);
         }
@@ -27,7 +27,7 @@ namespace System.Data
         /// </summary>
         public static OrderedEnumerableRowCollection<TRow> OrderBy<TRow, TKey>(this TypedTableBase<TRow> source, Func<TRow, TKey> keySelector) where TRow : DataRow
         {
-            DataSetUtil.CheckArgumentNull(nameof(source), "source");
+            DataSetUtil.CheckArgumentNull(source, nameof(source));
             EnumerableRowCollection<TRow> erc = new EnumerableRowCollection<TRow>(source);
             return erc.OrderBy(keySelector);
         }
@@ -40,7 +40,7 @@ namespace System.Data
             Func<TRow, TKey> keySelector,
             IComparer<TKey> comparer) where TRow : DataRow
         {
-            DataSetUtil.CheckArgumentNull(nameof(source), "source");
+            DataSetUtil.CheckArgumentNull(source, nameof(source));
             EnumerableRowCollection<TRow> erc = new EnumerableRowCollection<TRow>(source);
             return erc.OrderBy(keySelector, comparer);
         }
@@ -50,7 +50,7 @@ namespace System.Data
         /// </summary>
         public static OrderedEnumerableRowCollection<TRow> OrderByDescending<TRow, TKey>(this TypedTableBase<TRow> source, Func<TRow, TKey> keySelector) where TRow : DataRow
         {
-            DataSetUtil.CheckArgumentNull(nameof(source), "source");
+            DataSetUtil.CheckArgumentNull(source, nameof(source));
             EnumerableRowCollection<TRow> erc = new EnumerableRowCollection<TRow>(source);
             return erc.OrderByDescending(keySelector);
         }
@@ -63,7 +63,7 @@ namespace System.Data
             Func<TRow, TKey> keySelector,
             IComparer<TKey> comparer) where TRow : DataRow
         {
-            DataSetUtil.CheckArgumentNull(nameof(source), "source");
+            DataSetUtil.CheckArgumentNull(source, nameof(source));
             EnumerableRowCollection<TRow> erc = new EnumerableRowCollection<TRow>(source);
             return erc.OrderByDescending(keySelector, comparer);
         }
@@ -76,7 +76,7 @@ namespace System.Data
         /// </summary>
         public static EnumerableRowCollection<S> Select<TRow, S>(this TypedTableBase<TRow> source, Func<TRow, S> selector) where TRow : DataRow
         {
-            DataSetUtil.CheckArgumentNull(nameof(source), "source");
+            DataSetUtil.CheckArgumentNull(source, nameof(source));
             EnumerableRowCollection<TRow> erc = new EnumerableRowCollection<TRow>(source);
             return erc.Select(selector);
         }
@@ -88,7 +88,7 @@ namespace System.Data
         /// <returns>IEnumerable of datarows.</returns>
         public static EnumerableRowCollection<TRow> AsEnumerable<TRow>(this TypedTableBase<TRow> source) where TRow : DataRow
         {
-            DataSetUtil.CheckArgumentNull(nameof(source), "source");
+            DataSetUtil.CheckArgumentNull(source, nameof(source));
             return new EnumerableRowCollection<TRow>(source as DataTable);
         }
 
