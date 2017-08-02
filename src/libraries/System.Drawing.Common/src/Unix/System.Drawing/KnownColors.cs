@@ -273,7 +273,7 @@ namespace System.Drawing
 
         public static Color FromKnownColor(KnownColor kc)
         {
-            return Color.FromKnownColor(kc);
+            return ColorUtil.FromKnownColor(kc);
         }
 
         public static string GetName(short kc)

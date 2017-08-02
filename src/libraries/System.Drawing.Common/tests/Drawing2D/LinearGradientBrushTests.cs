@@ -242,8 +242,8 @@ namespace System.Drawing.Drawing2D.Tests
         [InlineData(LinearGradientMode.BackwardDiagonal + 1)]
         public void Ctor_InvalidLinearGradientMode_ThrowsEnumArgumentException(LinearGradientMode linearGradientMode)
         {
-            AssertExtensions.Throws<InvalidEnumArgumentException>("linearGradientMode", () => new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Empty, Color.Empty, linearGradientMode));
-            AssertExtensions.Throws<InvalidEnumArgumentException>("linearGradientMode", () => new LinearGradientBrush(new RectangleF(1, 2, 3, 4), Color.Empty, Color.Empty, linearGradientMode));
+            Assert.ThrowsAny<ArgumentException>(() => new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Empty, Color.Empty, linearGradientMode));
+            Assert.ThrowsAny<ArgumentException>(() => new LinearGradientBrush(new RectangleF(1, 2, 3, 4), Color.Empty, Color.Empty, linearGradientMode));
         }
 
         public static IEnumerable<object[]> Ctor_HatchStyle_ForeColor_BackColor_TestData()
@@ -456,7 +456,7 @@ namespace System.Drawing.Drawing2D.Tests
             var blend = new ColorBlend
             {
                 Colors = new Color[] { Color.Red, Color.PeachPuff, Color.PowderBlue },
-                Positions = new float[] { 0, 0.5f, 1f  }
+                Positions = new float[] { 0, 0.5f, 1f }
             };
             brush.InterpolationColors = blend;
             Assert.Equal(blend.Colors.Select(c => Color.FromArgb(c.ToArgb())), brush.InterpolationColors.Colors);
@@ -668,7 +668,7 @@ namespace System.Drawing.Drawing2D.Tests
         public void WrapMode_SetInvalid_ThrowsInvalidEnumArgumentException(WrapMode wrapMode)
         {
             var brush = new LinearGradientBrush(new Rectangle(1, 2, 3, 4), Color.Plum, Color.Red, 45, true);
-            AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => brush.WrapMode = wrapMode);
+            Assert.ThrowsAny<ArgumentException>(() => brush.WrapMode = wrapMode);
         }
 
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
