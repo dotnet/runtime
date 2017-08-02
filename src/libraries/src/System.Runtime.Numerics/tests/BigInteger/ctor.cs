@@ -6,7 +6,7 @@ using Xunit;
 
 namespace System.Numerics.Tests
 {
-    public class BigIntegerConstructorTest
+    public partial class BigIntegerConstructorTest
     {
         private static int s_samples = 10;
         private static Random s_random = new Random(100);
@@ -953,6 +953,7 @@ namespace System.Numerics.Tests
 
             VerifyCtorByteArray(value);
         }
+        static partial void VerifyCtorByteSpan(byte[] value);
 
         private static void VerifyCtorByteArray(byte[] value)
         {
@@ -961,6 +962,7 @@ namespace System.Numerics.Tests
             bool isZero = MyBigIntImp.IsZero(value);
 
             bigInteger = new BigInteger(value);
+            VerifyCtorByteSpan(value);
 
             roundTrippedByteArray = bigInteger.ToByteArray();
 
