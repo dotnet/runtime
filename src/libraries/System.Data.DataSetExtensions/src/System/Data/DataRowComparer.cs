@@ -94,21 +94,10 @@ namespace System.Data
 
         private static bool CompareEquatableArray<TElem>(TElem[] a, TElem[] b) where TElem : IEquatable<TElem>
         {
-            if (ReferenceEquals(a, b))
-            {
-                return true;
-            }
-
-            if (ReferenceEquals(a, null) ||
-                ReferenceEquals(b, null))
-            {
-                return false;
-            }
-
-            if (a.Length != b.Length)
-            {
-                return false;
-            }
+            Debug.Assert(!ReferenceEquals(a, b));
+            Debug.Assert(a != null);
+            Debug.Assert(b != null);
+            Debug.Assert(a.Length == b.Length);
 
             for (int i = 0; i < a.Length; ++i)
             {
