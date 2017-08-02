@@ -2524,8 +2524,8 @@ void UMEntryThunkCode::Encode(BYTE* pTargetCode, void* pvSecretParam)
 
 void UMEntryThunkCode::Poison()
 {
-    // Insert 'bkpt 0x00be' at the entry point
-    m_code[0] = 0xbebe;
+    // Insert 'udf 0xff' at the entry point
+    m_code[0] = 0xdeff;
 }
 
 ///////////////////////////// UNIMPLEMENTED //////////////////////////////////
