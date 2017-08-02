@@ -90,9 +90,6 @@
     <Compile Include="..\..\src\Internal\UriHelper.cs">
       <Link>ProductionCode\Internal\UriHelper.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\Shims\Uri.cs">
-      <Link>ProductionCode\Shims\Uri.cs</Link>
-    </Compile>
     <Compile Include="..\..\src\System\Net\Http\ByteArrayContent.cs">
       <Link>ProductionCode\System\Net\Http\ByteArrayContent.cs</Link>
     </Compile>
