@@ -4,6 +4,8 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using System.Reflection;
 using Xunit;
 
 namespace System.Collections.ObjectModel.Tests
@@ -202,8 +204,20 @@ namespace System.Collections.ObjectModel.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework | TargetFrameworkMonikers.UapAot)]
         public static void DebuggerAttribute_Tests()
         {
-            DebuggerAttributes.ValidateDebuggerDisplayReferences(new ReadOnlyObservableCollection<int>(new ObservableCollection<int>()));
-            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(new ReadOnlyObservableCollection<int>(new ObservableCollection<int>()));
+            ReadOnlyObservableCollection<int> col = new ReadOnlyObservableCollection<int>(new ObservableCollection<int>(new[] {1, 2, 3, 4}));
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(col);
+            DebuggerAttributeInfo info = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(col);
+            PropertyInfo itemProperty = info.Properties.Single(pr => pr.GetCustomAttribute<DebuggerBrowsableAttribute>().State == DebuggerBrowsableState.RootHidden);
+            int[] items = itemProperty.GetValue(info.Instance) as int[];
+            Assert.Equal(col, items);
+        }
+
+        [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework | TargetFrameworkMonikers.UapAot, "Cannot do DebuggerAttribute testing on UapAot: requires internal Reflection on framework types.")]
+        public static void DebuggerAttribute_NullCollection_ThrowsArgumentNullException()
+        {
+            TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => DebuggerAttributes.ValidateDebuggerTypeProxyProperties(typeof(ReadOnlyObservableCollection<int>), null));
+            ArgumentNullException argumentNullException = Assert.IsType<ArgumentNullException>(ex.InnerException);
         }
     }
 
