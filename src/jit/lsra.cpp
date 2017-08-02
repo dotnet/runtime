@@ -5867,6 +5867,47 @@ bool LinearScan::checkActiveIntervals(RegRecord* physRegRecord, LsraLocation ref
 #endif
 }
 
+#ifdef _TARGET_ARM_
+void LinearScan::unassignDoublePhysReg(RegRecord* doubleRegRecord)
+{
+    RegRecord* doubleRegRecordLo = doubleRegRecord;
+    RegRecord* doubleRegRecordHi = findAnotherHalfRegRec(doubleRegRecordLo);
+    // For a double register, we has following four cases.
+    // Case 1: doubleRegRecLo is assigned to TYP_DOUBLE interval
+    // Case 2: doubleRegRecLo and doubleRegRecHi are assigned to different TYP_FLOAT intervals
+    // Case 3: doubelRegRecLo is assgined to TYP_FLOAT interval and doubleRegRecHi is nullptr
+    // Case 4: doubleRegRecordLo is nullptr, and doubleRegRecordHi is assigned to a TYP_FLOAT interval
+    if (doubleRegRecordLo->assignedInterval != nullptr)
+    {
+        if (doubleRegRecordLo->assignedInterval->registerType == TYP_DOUBLE)
+        {
+            // Case 1: doubleRegRecLo is assigned to TYP_DOUBLE interval
+            unassignPhysReg(doubleRegRecordLo, doubleRegRecordLo->assignedInterval->recentRefPosition);
+        }
+        else
+        {
+            // Case 2: doubleRegRecLo and doubleRegRecHi are assigned to different TYP_FLOAT intervals
+            // Case 3: doubelRegRecLo is assgined to TYP_FLOAT interval and doubleRegRecHi is nullptr
+            assert(doubleRegRecordLo->assignedInterval->registerType == TYP_FLOAT);
+            unassignPhysReg(doubleRegRecordLo, doubleRegRecordLo->assignedInterval->recentRefPosition);
+
+            if (doubleRegRecordHi != nullptr)
+            {
+                assert(doubleRegRecordHi->assignedInterval->registerType == TYP_FLOAT);
+                unassignPhysReg(doubleRegRecordHi, doubleRegRecordHi->assignedInterval->recentRefPosition);
+            }
+        }
+    }
+    else
+    {
+        // Case 4: doubleRegRecordLo is nullptr, and doubleRegRecordHi is assigned to a TYP_FLOAT interval
+        assert(doubleRegRecordHi->assignedInterval != nullptr);
+        assert(doubleRegRecordHi->assignedInterval->registerType == TYP_FLOAT);
+        unassignPhysReg(doubleRegRecordHi, doubleRegRecordHi->assignedInterval->recentRefPosition);
+    }
+}
+#endif // _TARGET_ARM_
+
 //------------------------------------------------------------------------
 // allocateBusyReg: Find a busy register that satisfies the requirements for refPosition,
 //                  and that can be spilled.
@@ -6219,71 +6260,33 @@ regNumber LinearScan::allocateBusyReg(Interval* current, RefPosition* refPositio
             {
                 assert(nextRefPosition2 != nullptr && !nextRefPosition2->RequiresRegister());
             }
-#else
+#else  // !_TARGET_ARM_
             Interval*    assignedInterval = farthestRefPhysRegRecord->assignedInterval;
             RefPosition* nextRefPosition  = assignedInterval->getNextRefPosition();
             assert(!nextRefPosition->RequiresRegister());
-#endif
+#endif // !_TARGET_ARM_
         }
         else
         {
             assert(farthestLocation > refLocation || refPosition->isFixedRegRef);
         }
     }
-#endif
+#endif // DEBUG
 
     if (farthestRefPhysRegRecord != nullptr)
     {
         foundReg = farthestRefPhysRegRecord->regNum;
+
 #ifdef _TARGET_ARM_
-        if (genIsValidDoubleReg(foundReg))
+        if (current->registerType == TYP_DOUBLE)
         {
-            // For a double register, we has following three cases.
-            // Case 1: farthestRefPhysRegRecord is assigned to TYP_DOUBLE interval
-            // Case 2: farthestRefPhysRegRecord and farthestRefPhysRegRecord2 are assigned to
-            //         different TYP_FLOAT intervals
-            // Case 3: farthestRefPhysRegRecord is assgined to TYP_FLOAT interval
-            //         and farthestRefPhysRegRecord2 is nullptr
-            // Case 4: farthestRefPhysRegRecord is nullptr, and farthestRefPhysRegRecord2 is
-            //         assigned to a TYP_FLOAT interval
-            if (farthestRefPhysRegRecord->assignedInterval != nullptr)
-            {
-                if (farthestRefPhysRegRecord->assignedInterval->registerType == TYP_DOUBLE)
-                {
-                    // Case 1: farthestRefPhysRegRecord is assigned to TYP_DOUBLE interval
-                    unassignPhysReg(farthestRefPhysRegRecord,
-                                    farthestRefPhysRegRecord->assignedInterval->recentRefPosition);
-                }
-                else
-                {
-                    // Case 2: farthestRefPhysRegRecord and farthestRefPhysRegRecord2 are assigned to
-                    //         different TYP_FLOAT intervals
-                    // Case 3: farthestRefPhysRegRecord is assgined to TYP_FLOAT interval
-                    //         and farthestRefPhysRegRecord2 is nullptr
-                    unassignPhysReg(farthestRefPhysRegRecord,
-                                    farthestRefPhysRegRecord->assignedInterval->recentRefPosition);
-                    if (farthestRefPhysRegRecord2 != nullptr)
-                        unassignPhysReg(farthestRefPhysRegRecord2,
-                                        farthestRefPhysRegRecord2->assignedInterval->recentRefPosition);
-                }
-            }
-            else
-            {
-                // Case 4: farthestRefPhysRegRecord is nullptr, and farthestRefPhysRegRecord2 is
-                //         assigned to a TYP_FLOAT interval
-                assert(farthestRefPhysRegRecord2->assignedInterval != nullptr);
-                assert(farthestRefPhysRegRecord2->assignedInterval->registerType == TYP_FLOAT);
-                unassignPhysReg(farthestRefPhysRegRecord2,
-                                farthestRefPhysRegRecord2->assignedInterval->recentRefPosition);
-            }
+            assert(genIsValidDoubleReg(foundReg));
+            unassignDoublePhysReg(farthestRefPhysRegRecord);
         }
         else
-        {
-            unassignPhysReg(farthestRefPhysRegRecord, farthestRefPhysRegRecord->assignedInterval->recentRefPosition);
-        }
-#else
-        unassignPhysReg(farthestRefPhysRegRecord, farthestRefPhysRegRecord->assignedInterval->recentRefPosition);
 #endif
+            unassignPhysReg(farthestRefPhysRegRecord, farthestRefPhysRegRecord->assignedInterval->recentRefPosition);
+
         assignPhysReg(farthestRefPhysRegRecord, current);
         refPosition->registerAssignment = genRegMask(foundReg);
     }
