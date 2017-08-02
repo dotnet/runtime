@@ -104,7 +104,7 @@ namespace System.Net.Http
                             // Update digest response with new parameter from Proxy-Authenticate
                             AuthenticationHelper.DigestResponse digestResponse = new AuthenticationHelper.DigestResponse(h.Parameter);
 
-                            if (await AuthenticationHelper.TrySetDigestAuthToken(request, credential, digestResponse, HttpKnownHeaderNames.ProxyAuthorization))
+                            if (await AuthenticationHelper.TrySetDigestAuthToken(request, credential, digestResponse, HttpKnownHeaderNames.ProxyAuthorization).ConfigureAwait(false))
                             {
                                 response.Dispose();
                                 response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
@@ -118,7 +118,7 @@ namespace System.Net.Http
                                         {
                                             digestResponse = new AuthenticationHelper.DigestResponse(ahv.Parameter);
                                             if (AuthenticationHelper.IsServerNonceStale(digestResponse) &&
-                                                await AuthenticationHelper.TrySetDigestAuthToken(request, credential, digestResponse, HttpKnownHeaderNames.ProxyAuthorization))
+                                                await AuthenticationHelper.TrySetDigestAuthToken(request, credential, digestResponse, HttpKnownHeaderNames.ProxyAuthorization).ConfigureAwait(false))
                                             {
                                                 response.Dispose();
                                                 response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
