@@ -11761,6 +11761,7 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
 #ifdef FEATURE_INTERPRETER
     static ConfigDWORD s_InterpreterFallback;
 
+    bool isInterpreterStub   = false;
     bool interpreterFallback = (s_InterpreterFallback.val(CLRConfig::INTERNAL_InterpreterFallback) != 0);
 
     if (interpreterFallback == false)
@@ -11769,7 +11770,10 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
         // (We assume that importation is completely architecture-independent, or at least nearly so.)
         if (FAILED(ret) && !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY) && !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE))
         {
-            ret = Interpreter::GenerateInterpreterStub(comp, info, nativeEntry, nativeSizeOfCode);
+            if (SUCCEEDED(ret = Interpreter::GenerateInterpreterStub(comp, info, nativeEntry, nativeSizeOfCode)))
+            {
+                isInterpreterStub = true;
+            }
         }
     }
     
@@ -11789,7 +11793,10 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
         // (We assume that importation is completely architecture-independent, or at least nearly so.)
         if (FAILED(ret) && !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY) && !jitFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_MAKEFINALCODE))
         {
-            ret = Interpreter::GenerateInterpreterStub(comp, info, nativeEntry, nativeSizeOfCode);
+            if (SUCCEEDED(ret = Interpreter::GenerateInterpreterStub(comp, info, nativeEntry, nativeSizeOfCode)))
+            {
+                isInterpreterStub = true;
+            }
         }
     }
 #else
@@ -11824,7 +11831,13 @@ CorJitResult invokeCompileMethodHelper(EEJitManager *jitMgr,
     
 
 #if defined(FEATURE_GDBJIT)
-    if (SUCCEEDED(ret) && *nativeEntry != NULL)
+    bool isJittedEntry = SUCCEEDED(ret) && *nativeEntry != NULL;
+
+#ifdef FEATURE_INTERPRETER
+    isJittedEntry &= !isInterpreterStub;
+#endif // FEATURE_INTERPRETER
+
+    if (isJittedEntry)
     {
         CodeHeader* pCH = ((CodeHeader*)((PCODE)*nativeEntry & ~1)) - 1;
         pCH->SetCalledMethods((PTR_VOID)comp->GetCalledMethods());
