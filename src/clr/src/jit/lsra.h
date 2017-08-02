@@ -701,6 +701,7 @@ private:
                            LsraLocation refLocation,
                            unsigned*    recentAssignedRefWeight,
                            unsigned     farthestRefPosWeight);
+    void unassignDoublePhysReg(RegRecord* doubleRegRecord);
 #endif
     void updateAssignedInterval(RegRecord* reg, Interval* interval, RegisterType regType);
     void updatePreviousInterval(RegRecord* reg, Interval* interval, RegisterType regType);
