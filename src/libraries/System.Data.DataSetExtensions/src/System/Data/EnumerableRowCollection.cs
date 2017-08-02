@@ -160,8 +160,8 @@ namespace System.Data
         /// </summary>
         internal void AddSortExpression<TKey>(Func<TRow, TKey> keySelector, IComparer<TKey> comparer, bool isDescending, bool isOrderBy)
         {
-            DataSetUtil.CheckArgumentNull(nameof(keySelector), "keySelector");
-            DataSetUtil.CheckArgumentNull(nameof(comparer), "comparer");
+            DataSetUtil.CheckArgumentNull(keySelector, nameof(keySelector));
+            DataSetUtil.CheckArgumentNull(comparer, nameof(comparer));
 
             _sortExpression.Add(
                     delegate (TRow input)
