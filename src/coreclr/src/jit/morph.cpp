@@ -2878,6 +2878,37 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             nonStandardArgs.Add(arg1, REG_PINVOKE_FRAME);
         }
 #endif // defined(_TARGET_X86_) || defined(_TARGET_ARM_)
+#if defined(_TARGET_ARM_)
+        else if (call->gtCallMoreFlags & GTF_CALL_M_SECURE_DELEGATE_INV)
+        {
+            GenTree* arg = call->gtCallObjp;
+            if (arg->OperIsLocal())
+            {
+                arg = gtClone(arg, true);
+            }
+            else
+            {
+                GenTree* tmp     = fgInsertCommaFormTemp(&arg);
+                call->gtCallObjp = arg;
+                call->gtFlags |= GTF_ASG;
+                arg = tmp;
+            }
+            noway_assert(arg != nullptr);
+
+            GenTree* newArg = new (this, GT_ADDR)
+                GenTreeAddrMode(TYP_REF, arg, nullptr, 0, eeGetEEInfo()->offsetOfSecureDelegateIndirectCell);
+
+            // Append newArg as the last arg
+            GenTreeArgList** insertionPoint = &call->gtCallArgs;
+            for (; *insertionPoint != nullptr; insertionPoint = &(*insertionPoint)->Rest())
+            {
+            }
+            *insertionPoint = gtNewListNode(newArg, nullptr);
+
+            numArgs++;
+            nonStandardArgs.Add(newArg, virtualStubParamInfo->GetReg());
+        }
+#endif // defined(_TARGET_ARM_)
 #if defined(_TARGET_X86_)
         // The x86 shift helpers have custom calling conventions and expect the lo part of the long to be in EAX and the
         // hi part to be in EDX. This sets the argument registers up correctly.
