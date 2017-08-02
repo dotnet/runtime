@@ -77,7 +77,6 @@ namespace System.IO
         // We don't guarantee thread safety on StreamReader, but we should at 
         // least prevent users from trying to read anything while an Async
         // read from the same thread is in progress.
-        [NonSerialized]
         private volatile Task _asyncReadTask;
 
         private void CheckAsyncTaskInProgress()
