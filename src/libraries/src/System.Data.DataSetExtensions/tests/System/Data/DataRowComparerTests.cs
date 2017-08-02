@@ -357,7 +357,6 @@ namespace System.Data.Tests
         }
 
         [Fact]
-        [ActiveIssue(22854, TargetFrameworkMonikers.NetFramework)]
         public void GetHashCode_NullRow_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("row", () => DataRowComparer<DataRow>.Default.GetHashCode(null));
