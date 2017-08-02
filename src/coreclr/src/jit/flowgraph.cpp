@@ -90,9 +90,8 @@ void Compiler::fgInit()
     genReturnBB = nullptr;
 
     /* We haven't reached the global morphing phase */
-    fgGlobalMorph  = false;
-    fgExpandInline = false;
-    fgModified     = false;
+    fgGlobalMorph = false;
+    fgModified    = false;
 
 #ifdef DEBUG
     fgSafeBasicBlockCreation = true;
@@ -22675,6 +22674,12 @@ GenTreePtr Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                         gtDispTree(afterStmt);
                     }
 #endif // DEBUG
+                }
+                else if (argNode->IsBoxedValue())
+                {
+                    // Try to clean up any unnecessary boxing side effects
+                    // since the box itself will be ignored.
+                    gtTryRemoveBoxUpstreamEffects(argNode);
                 }
             }
         }

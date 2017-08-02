@@ -2228,6 +2228,7 @@ public:
         gtFoldExprConst(GenTreePtr tree);
     GenTreePtr gtFoldExprSpecial(GenTreePtr tree);
     GenTreePtr gtFoldExprCompare(GenTreePtr tree);
+    bool gtTryRemoveBoxUpstreamEffects(GenTreePtr tree);
 
     //-------------------------------------------------------------------------
     // Get the handle, if any.
@@ -3614,9 +3615,8 @@ public:
     bool fgFuncletsCreated; // true if the funclet creation phase has been run
 #endif                      // FEATURE_EH_FUNCLETS
 
-    bool fgGlobalMorph;  // indicates if we are during the global morphing phase
-                         // since fgMorphTree can be called from several places
-    bool fgExpandInline; // indicates that we are creating tree for the inliner
+    bool fgGlobalMorph; // indicates if we are during the global morphing phase
+                        // since fgMorphTree can be called from several places
 
     bool     impBoxTempInUse; // the temp below is valid and available
     unsigned impBoxTemp;      // a temporary that is used for boxing
@@ -4479,12 +4479,6 @@ public:
 
     static GenTreePtr fgGetFirstNode(GenTreePtr tree);
     static bool fgTreeIsInStmt(GenTree* tree, GenTreeStmt* stmt);
-
-    inline bool fgIsInlining()
-    {
-        return fgExpandInline;
-    }
-
     void fgTraverseRPO();
 
     //--------------------- Walking the trees in the IR -----------------------
