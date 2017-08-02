@@ -7,9 +7,8 @@ using Xunit;
 
 namespace System
 {
-    public static class AdminHelpers
+    public static partial class AdminHelpers
     {
-
         /// <summary>
         /// Runs the given command as sudo (for Unix).
         /// </summary>
