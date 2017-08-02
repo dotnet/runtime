@@ -697,13 +697,10 @@ private:
 #ifdef _TARGET_ARM_
     bool isSecondHalfReg(RegRecord* regRec, Interval* interval);
     RegRecord* findAnotherHalfRegRec(RegRecord* regRec);
-    bool LinearScan::canSpillThisReg(RegRecord*   physRegRecord,
-                                     RefPosition* recentAssignedRef,
-                                     RegRecord*   anotherPhysRegRecord,
-                                     RefPosition* anotherRecentAssignedRef,
-                                     LsraLocation refLocation,
-                                     unsigned*    recentAssignedRefWeight,
-                                     unsigned     farthestRefPosWeight);
+    bool canSpillDoubleReg(RegRecord*   physRegRecord,
+                           LsraLocation refLocation,
+                           unsigned*    recentAssignedRefWeight,
+                           unsigned     farthestRefPosWeight);
 #endif
     void updateAssignedInterval(RegRecord* reg, Interval* interval, RegisterType regType);
     void updatePreviousInterval(RegRecord* reg, Interval* interval, RegisterType regType);
@@ -711,6 +708,10 @@ private:
     bool isAssignedToInterval(Interval* interval, RegRecord* regRec);
     bool checkActiveInterval(Interval* interval, LsraLocation refLocation);
     bool checkActiveIntervals(RegRecord* physRegRecord, LsraLocation refLocation, RegisterType registerType);
+    bool canSpillReg(RegRecord*   physRegRecord,
+                     LsraLocation refLocation,
+                     unsigned*    recentAssignedRefWeight,
+                     unsigned     farthestRefPosWeight);
 
     RefType CheckBlockType(BasicBlock* block, BasicBlock* prevBlock);
 
