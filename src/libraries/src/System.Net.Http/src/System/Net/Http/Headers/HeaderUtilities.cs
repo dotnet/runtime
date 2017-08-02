@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Globalization;
+using System.IO;
 using System.Net.Mail;
 using System.Text;
 
@@ -68,14 +69,16 @@ namespace System.Net.Http.Headers
         internal static string Encode5987(string input)
         {
             string output;
-            Encode5987(input, out output);
+            IsInputEncoded5987(input, out output);
 
             return output;
         }
 
-        internal static bool Encode5987(string input, out string output)
+        internal static bool IsInputEncoded5987(string input, out string output)
         {
-            StringBuilder builder = new StringBuilder();
+            bool wasEncoded = false;
+            StringBuilder builder = StringBuilderCache.Acquire();
+            builder.Append("utf-8\'\'");
             foreach (char c in input)
             {
                 // attr-char = ALPHA / DIGIT / "!" / "#" / "$" / "&" / "+" / "-" / "." / "^" / "_" / "`" / "|" / "~"
@@ -86,12 +89,14 @@ namespace System.Net.Http.Headers
                     foreach (byte b in bytes)
                     {
                         builder.Append(UriShim.HexEscape((char)b));
+                        wasEncoded = true;
                     }
                 }
                 else if (!HttpRuleParser.IsTokenChar(c) || c == '*' || c == '\'' || c == '%')
                 {
                     // ASCII - Only one encoded byte.
                     builder.Append(UriShim.HexEscape(c));
+                    wasEncoded = true;
                 }
                 else
                 {
@@ -99,10 +104,8 @@ namespace System.Net.Http.Headers
                 }
             }
 
-            string encodedInput = builder.ToString();
-            output = "utf-8\'\'" + encodedInput;
-
-            return input != encodedInput;
+            output = StringBuilderCache.GetStringAndRelease(builder);
+            return wasEncoded;
         }
 
         internal static double? GetQuality(ObjectCollection<NameValueHeaderValue> parameters)
