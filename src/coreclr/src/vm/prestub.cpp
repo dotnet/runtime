@@ -60,14 +60,6 @@ EXTERN_C void DeleteFromPitchingCandidate(MethodDesc* pMD);
 EXTERN_C void MarkMethodNotPitchingCandidate(MethodDesc* pMD);
 #endif
 
-EXTERN_C void STDCALL ThePreStub();
-
-#if defined(HAS_COMPACT_ENTRYPOINTS) && defined (_TARGET_ARM_)
-
-EXTERN_C void STDCALL ThePreStubCompactARM();
-
-#endif // defined(HAS_COMPACT_ENTRYPOINTS) && defined (_TARGET_ARM_)
-
 EXTERN_C void STDCALL ThePreStubPatch();
 
 //==========================================================================
