@@ -6,6 +6,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
@@ -162,8 +163,19 @@ namespace System.Text.RegularExpressions.Tests
         [Fact]
         public static void DebuggerAttributeTests()
         {
-            DebuggerAttributes.ValidateDebuggerDisplayReferences(CreateCollection());
-            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(CreateCollection());
+            GroupCollection col = CreateCollection();
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(col);
+            DebuggerAttributeInfo info = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(col);
+            PropertyInfo itemProperty = info.Properties.Single(pr => pr.GetCustomAttribute<DebuggerBrowsableAttribute>().State == DebuggerBrowsableState.RootHidden);
+            Group[] items = itemProperty.GetValue(info.Instance) as Group[];
+            Assert.Equal(col, items);
+        }
+
+        [Fact]
+        public static void DebuggerAttributeTests_Null()
+        {
+            TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => DebuggerAttributes.ValidateDebuggerTypeProxyProperties(typeof(GroupCollection), null));
+            Assert.IsType<ArgumentNullException>(ex.InnerException);
         }
     }
 }
