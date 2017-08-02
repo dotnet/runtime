@@ -1522,7 +1522,7 @@ builtin_types[] = {
 #define NBUILTIN_TYPES() (sizeof (builtin_types) / sizeof (builtin_types [0]))
 
 static GHashTable *type_cache = NULL;
-static int next_generic_inst_id = 0;
+static gint32 next_generic_inst_id = 0;
 
 /* Protected by image_sets_mutex */
 static MonoImageSet *mscorlib_image_set;
@@ -3160,7 +3160,7 @@ mono_metadata_get_canonical_generic_inst (MonoGenericInst *candidate)
 		int size = MONO_SIZEOF_GENERIC_INST + type_argc * sizeof (MonoType *);
 		ginst = (MonoGenericInst *)mono_image_set_alloc0 (set, size);
 #ifndef MONO_SMALL_CONFIG
-		ginst->id = ++next_generic_inst_id;
+		ginst->id = InterlockedIncrement (&next_generic_inst_id);
 #endif
 		ginst->is_open = is_open;
 		ginst->type_argc = type_argc;
