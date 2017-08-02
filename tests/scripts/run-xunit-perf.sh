@@ -370,7 +370,7 @@ if [ -d "$BENCHVIEW_TOOLS_PATH" ]; then
     args+=" --config Configuration Release"
     args+=" --config OS $benchViewOS"
     args+=" --config Profile $perfCollection"
-    args+=" --arch x64"
+    args+=" --architecture x64"
     args+=" --machinepool Perfsnake"
     run_command python3.5 "$BENCHVIEW_TOOLS_PATH/submission.py" $args || {
         echo [ERROR] Failed to generate BenchView submission data;
