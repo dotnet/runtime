@@ -5705,67 +5705,34 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
 
     return foundReg;
 }
-
-#ifdef _TARGET_ARM_
 //------------------------------------------------------------------------
-// canSpillThisReg: Determine whether we can spill physRegRecord and anotherPhysRegRecord
+// canSpillReg: Determine whether we can spill physRegRecord
 //
 // Arguments:
-//    physRegRecord             -  reg to spill
-//    recentAssignedRef         - recent RefPosition of physRegRecord
-//    anotherPhysRegRecord      - When we have to test a double reigster, this is a second float register
-//                                of a double register in ARM32.
-//                                Otherwise it is nullptr.
-//    anotherRecentAssignedRef  - recent RefPosition of anotherPhysRegRecord
+//    physRegRecord             - reg to spill
 //    refLocation               - Location of RefPosition where this register will be spilled
 //    recentAssignedRefWeight   - Weight of recent assigned RefPosition which will be determined in this function
 //    farthestRefPosWeight      - Current farthestRefPosWeight at allocateBusyReg()
 //
 // Return Value:
-//    True  - if we can spill physRegRecord and anotherPhysRegRecord
+//    True  - if we can spill physRegRecord
 //    False - otherwise
 //
-// Note: This helper is designed to be used only from allocateBusyReg()
+// Note: This helper is designed to be used only from allocateBusyReg() and canSpillDoubleReg()
 //
-bool LinearScan::canSpillThisReg(RegRecord*   physRegRecord,
-                                 RefPosition* recentAssignedRef,
-                                 RegRecord*   anotherPhysRegRecord,
-                                 RefPosition* anotherRecentAssignedRef,
-                                 LsraLocation refLocation,
-                                 unsigned*    recentAssignedRefWeight,
-                                 unsigned     farthestRefPosWeight)
+bool LinearScan::canSpillReg(RegRecord*   physRegRecord,
+                             LsraLocation refLocation,
+                             unsigned*    recentAssignedRefWeight,
+                             unsigned     farthestRefPosWeight)
 {
-    // There are four cases for ARM32 when we are trying to allocation a double register for TYP_DOUBLE
-    // Case 1: recentAssignedRef !=nullptr && anotherRecentAssignedRef != nullptr
-    // Case 2: recentAssignedRef !=nullptr && anotherRecentAssignedRef == nullptr
-    // Case 3: recentAssignedRef ==nullptr && anotherRecentAssignedRef != nullptr
-    // Case 4: recentAssignedRef ==nullptr && anotherRecentAssignedRef == nullptr
+    assert(physRegRecord->assignedInterval != nullptr);
+    RefPosition* recentAssignedRef = physRegRecord->assignedInterval->recentRefPosition;
+
     if (recentAssignedRef != nullptr)
     {
-        if (anotherRecentAssignedRef != nullptr)
-        {
-            // Case 1: recentAssignedRef !=nullptr && anotherRecentAssignedRef != nullptr
-            if (anotherRecentAssignedRef->nodeLocation == refLocation)
-            {
-                // We can't spill a register that's being used at the current location
-                return false;
-            }
-
-            // If the current position has the candidate register marked to be delayed,
-            // check if the previous location is using this register, if that's the case we have to skip
-            // since we can't spill this register.
-            if (anotherRecentAssignedRef->delayRegFree && (refLocation == anotherRecentAssignedRef->nodeLocation + 1))
-            {
-                return false;
-            }
-        }
-        // fallthrough to test recentAssignedRef
-
-        // Case 2: recentAssignedRef !=nullptr && anotherRecentAssignedRef == nullptr
         if (recentAssignedRef->nodeLocation == refLocation)
         {
             // We can't spill a register that's being used at the current location
-            RefPosition* physRegRef = physRegRecord->recentRefPosition;
             return false;
         }
 
@@ -5780,55 +5747,40 @@ bool LinearScan::canSpillThisReg(RegRecord*   physRegRecord,
         // We don't prefer to spill a register if the weight of recentAssignedRef > weight
         // of the spill candidate found so far.  We would consider spilling a greater weight
         // ref position only if the refPosition being allocated must need a reg.
-        unsigned weight1 = BB_ZERO_WEIGHT;
-        unsigned weight2 = BB_ZERO_WEIGHT;
-        if (recentAssignedRef != nullptr)
-            weight1 = getWeight(recentAssignedRef);
-        if (anotherRecentAssignedRef != nullptr)
-            weight2 = getWeight(anotherRecentAssignedRef);
-
-        *recentAssignedRefWeight = (weight1 > weight2) ? weight1 : weight2;
-
+        *recentAssignedRefWeight = getWeight(recentAssignedRef);
         if (*recentAssignedRefWeight > farthestRefPosWeight)
         {
             return false;
         }
     }
-    else
-    {
-        if (anotherRecentAssignedRef != nullptr)
-        {
-            // Case 3: recentAssignedRef ==nullptr && anotherRecentAssignedRef != nullptr
-            if (anotherRecentAssignedRef->nodeLocation == refLocation)
-            {
-                // We can't spill a register that's being used at the current location
-                return false;
-            }
-
-            // If the current position has the candidate register marked to be delayed,
-            // check if the previous location is using this register, if that's the case we have to skip
-            // since we can't spill this register.
-            if (anotherRecentAssignedRef->delayRegFree && (refLocation == anotherRecentAssignedRef->nodeLocation + 1))
-            {
-                return false;
-            }
-
-            // We don't prefer to spill a register if the weight of recentAssignedRef > weight
-            // of the spill candidate found so far.  We would consider spilling a greater weight
-            // ref position only if the refPosition being allocated must need a reg.
-            *recentAssignedRefWeight = getWeight(anotherRecentAssignedRef);
-            if (*recentAssignedRefWeight > farthestRefPosWeight)
-            {
-                return false;
-            }
-        }
-        else
-        {
-            // Case 4: recentAssignedRef ==nullptr && anotherRecentAssignedRef == nullptr
-            // fallthrough
-        }
-    }
     return true;
+}
+
+#ifdef _TARGET_ARM_
+bool LinearScan::canSpillDoubleReg(RegRecord*   physRegRecord,
+                                   LsraLocation refLocation,
+                                   unsigned*    recentAssignedRefWeight,
+                                   unsigned     farthestRefPosWeight)
+{
+    bool     retVal  = true;
+    unsigned weight  = BB_ZERO_WEIGHT;
+    unsigned weight2 = BB_ZERO_WEIGHT;
+
+    RegRecord* physRegRecord2 = findAnotherHalfRegRec(physRegRecord);
+
+    if (physRegRecord->assignedInterval != nullptr)
+        retVal &= canSpillReg(physRegRecord, refLocation, &weight, farthestRefPosWeight);
+
+    if (physRegRecord2->assignedInterval != nullptr)
+        retVal &= canSpillReg(physRegRecord2, refLocation, &weight2, farthestRefPosWeight);
+
+    if (!(weight == BB_ZERO_WEIGHT && weight2 == BB_ZERO_WEIGHT))
+    {
+        // weight and/or weight2 have been updated.
+        *recentAssignedRefWeight = (weight > weight2) ? weight : weight2;
+    }
+
+    return retVal;
 }
 #endif
 
@@ -6105,40 +6057,20 @@ regNumber LinearScan::allocateBusyReg(Interval* current, RefPosition* refPositio
         //
         // TODO-Review: Under what conditions recentAssginedRef would be null?
         unsigned recentAssignedRefWeight = BB_ZERO_WEIGHT;
+
 #ifdef _TARGET_ARM_
-        if (!canSpillThisReg(physRegRecord, recentAssignedRef, physRegRecord2, recentAssignedRef2, refLocation,
-                             &recentAssignedRefWeight, farthestRefPosWeight))
+        if (current->registerType == TYP_DOUBLE)
+        {
+            if (!canSpillDoubleReg(physRegRecord, refLocation, &recentAssignedRefWeight, farthestRefPosWeight))
+                continue;
+        }
+        else
+#endif
+            // This if-stmt is associated with the above else
+            if (!canSpillReg(physRegRecord, refLocation, &recentAssignedRefWeight, farthestRefPosWeight))
         {
             continue;
         }
-#else  // !_TARGET_ARM_
-        if (recentAssignedRef != nullptr)
-        {
-            if (recentAssignedRef->nodeLocation == refLocation)
-            {
-                // We can't spill a register that's being used at the current location
-                RefPosition* physRegRef = physRegRecord->recentRefPosition;
-                continue;
-            }
-
-            // If the current position has the candidate register marked to be delayed,
-            // check if the previous location is using this register, if that's the case we have to skip
-            // since we can't spill this register.
-            if (recentAssignedRef->delayRegFree && (refLocation == recentAssignedRef->nodeLocation + 1))
-            {
-                continue;
-            }
-
-            // We don't prefer to spill a register if the weight of recentAssignedRef > weight
-            // of the spill candidate found so far.  We would consider spilling a greater weight
-            // ref position only if the refPosition being allocated must need a reg.
-            recentAssignedRefWeight = getWeight(recentAssignedRef);
-            if (recentAssignedRefWeight > farthestRefPosWeight)
-            {
-                continue;
-            }
-        }
-#endif // !_TARGET_ARM_
 
         RefPosition* nextRefPosition = nullptr;
         LsraLocation nextLocation    = MinLocation;
@@ -6234,7 +6166,7 @@ regNumber LinearScan::allocateBusyReg(Interval* current, RefPosition* refPositio
                     if (recentAssignedRef2 != nullptr)
                         isBetterLocation &= (recentAssignedRef2->reload && recentAssignedRef2->AllocateIfProfitable());
 #else
-                    isBetterLocation = (recentAssignedRef != nullptr) && recentAssignedRef->reload &&
+                    isBetterLocation   = (recentAssignedRef != nullptr) && recentAssignedRef->reload &&
                                        recentAssignedRef->AllocateIfProfitable();
 #endif
                 }
