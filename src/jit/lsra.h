@@ -713,6 +713,7 @@ private:
                      LsraLocation refLocation,
                      unsigned*    recentAssignedRefWeight,
                      unsigned     farthestRefPosWeight);
+    bool isRegInUse(RegRecord* regRec, RefPosition* refPosition, LsraLocation* nextLocation);
 
     RefType CheckBlockType(BasicBlock* block, BasicBlock* prevBlock);
 
