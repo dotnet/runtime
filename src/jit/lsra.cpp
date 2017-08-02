@@ -8839,6 +8839,13 @@ void LinearScan::recordMaxSpill()
         maxSpill[TYP_FLOAT] += 1;
     }
 #endif // _TARGET_X86_
+
+    if (compiler->opts.compUseSoftFP)
+    {
+        JITDUMP("Adding a spill temp for moving target address to a register.\n");
+        maxSpill[TYP_INT] += 1;
+    }
+
     for (int i = 0; i < TYP_COUNT; i++)
     {
         if (var_types(i) != compiler->tmpNormalizeType(var_types(i)))
