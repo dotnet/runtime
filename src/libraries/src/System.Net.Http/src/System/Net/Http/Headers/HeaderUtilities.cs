@@ -63,6 +63,48 @@ namespace System.Net.Http.Headers
             }
         }
 
+        // Encode a string using RFC 5987 encoding.
+        // encoding'lang'PercentEncodedSpecials
+        internal static string Encode5987(string input)
+        {
+            string output;
+            Encode5987(input, out output);
+
+            return output;
+        }
+
+        internal static bool Encode5987(string input, out string output)
+        {
+            StringBuilder builder = new StringBuilder();
+            foreach (char c in input)
+            {
+                // attr-char = ALPHA / DIGIT / "!" / "#" / "$" / "&" / "+" / "-" / "." / "^" / "_" / "`" / "|" / "~"
+                //      ; token except ( "*" / "'" / "%" )
+                if (c > 0x7F) // Encodes as multiple utf-8 bytes
+                {
+                    byte[] bytes = Encoding.UTF8.GetBytes(c.ToString());
+                    foreach (byte b in bytes)
+                    {
+                        builder.Append(UriShim.HexEscape((char)b));
+                    }
+                }
+                else if (!HttpRuleParser.IsTokenChar(c) || c == '*' || c == '\'' || c == '%')
+                {
+                    // ASCII - Only one encoded byte.
+                    builder.Append(UriShim.HexEscape(c));
+                }
+                else
+                {
+                    builder.Append(c);
+                }
+            }
+
+            string encodedInput = builder.ToString();
+            output = "utf-8\'\'" + encodedInput;
+
+            return input != encodedInput;
+        }
+
         internal static double? GetQuality(ObjectCollection<NameValueHeaderValue> parameters)
         {
             Debug.Assert(parameters != null);
