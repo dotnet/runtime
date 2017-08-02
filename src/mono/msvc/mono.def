@@ -2,7 +2,6 @@
 EXPORTS
 MonoFixupCorEE
 mono_add_internal_call
-mono_aot_get_method
 mono_aot_register_module
 mono_array_addr_with_size
 mono_array_class_get
@@ -414,7 +413,6 @@ mono_get_int16_class
 mono_get_int32_class
 mono_get_int64_class
 mono_get_intptr_class
-mono_get_jit_info_from_method
 mono_get_machine_config
 mono_get_method
 mono_get_method_constrained
