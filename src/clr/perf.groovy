@@ -33,12 +33,7 @@ def static getOSGroup(def os) {
                 def architecture = arch
                 def jobName = isSmoketest ? "perf_perflab_${os}_${arch}_smoketest" : "perf_perflab_${os}_${arch}"
 
-                if (arch == 'x86jit32')
-                {
-                    architecture = 'x86'
-                    testEnv = '-testEnv %WORKSPACE%\\tests\\x86\\compatjit_x86_testenv.cmd'
-                }
-                else if (arch == 'x86')
+                if (arch == 'x86')
                 {
                     testEnv = '-testEnv %WORKSPACE%\\tests\\x86\\ryujit_x86_testenv.cmd'
                 }
@@ -95,13 +90,6 @@ def static getOSGroup(def os) {
                         "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\build.py\" git --branch %GIT_BRANCH_WITHOUT_ORIGIN% --type ${runType}")
                         batchFile("py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\machinedata.py\"")
                         batchFile("set __TestIntermediateDir=int&&build.cmd ${configuration} ${architecture}")
-
-                        if (arch == 'x86jit32')
-                        {
-                            // Download package and copy compatjit into Core_Root
-                            batchFile("C:\\Tools\\nuget.exe install runtime.win7-${architecture}.Microsoft.NETCore.Jit -Source https://dotnet.myget.org/F/dotnet-core -OutputDirectory \"%WORKSPACE%\" -Prerelease -ExcludeVersion\n" +
-                            "xcopy \"%WORKSPACE%\\runtime.win7-x86.Microsoft.NETCore.Jit\\runtimes\\win7-x86\\native\\compatjit.dll\" \"%WORKSPACE%\\bin\\Product\\${os}.${architecture}.${configuration}\" /Y")
-                        }
 
                         batchFile("tests\\runtest.cmd ${configuration} ${architecture} GenerateLayoutOnly")
 
@@ -181,7 +169,7 @@ def static getOSGroup(def os) {
             {
                 parameters
                 {
-                    stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
+                    stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that will be used to build the full title of a run in Benchview.')
                 }
             }
             def configuration = 'Release'
@@ -410,7 +398,7 @@ def static getFullThroughputJobName(def project, def os, def isPR) {
             {
                 parameters
                 {
-                    stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
+                    stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that will be used to build the full title of a run in Benchview.')
                 }
             }
 
@@ -420,7 +408,7 @@ def static getFullThroughputJobName(def project, def os, def isPR) {
 
             def osGroup = getOSGroup(os)
             def runType = isPR ? 'private' : 'rolling'
-            def benchViewName = isPR ? 'coreclr private \$BenchviewCommitName' : 'coreclr rolling \$GIT_BRANCH_WITHOUT_ORIGIN \$GIT_COMMIT'
+            def benchViewName = isPR ? 'coreclr-throughput private \$BenchviewCommitName' : 'coreclr-throughput rolling \$GIT_BRANCH_WITHOUT_ORIGIN \$GIT_COMMIT'
 
             steps {
                 shell("bash ./tests/scripts/perf-prep.sh --throughput")
@@ -504,12 +492,12 @@ parallel(
 
 } // isPR
 
-// Setup ILLink tests
+// Setup CoreCLR-Scenarios tests
 [true, false].each { isPR ->
     ['Windows_NT'].each { os ->
-        ['x64'].each { arch ->
+        ['x64', 'x86'].each { arch ->
             def architecture = arch
-            def newJob = job(Utilities.getFullJobName(project, "perf_illink_${os}_${arch}", isPR)) {
+            def newJob = job(Utilities.getFullJobName(project, "perf_scenarios_${os}_${arch}", isPR)) {
                 // Set the label.
                 label('windows_clr_perf')
                 wrappers {
@@ -533,7 +521,7 @@ parallel(
                 }
                 def configuration = 'Release'
                 def runType = isPR ? 'private' : 'rolling'
-                def benchViewName = isPR ? 'coreclr private %BenchviewCommitName%' : 'coreclr rolling %GIT_BRANCH_WITHOUT_ORIGIN% %GIT_COMMIT%'
+                def benchViewName = isPR ? 'CoreCLR-Scenarios private %BenchviewCommitName%' : 'CoreCLR-Scenarios rolling %GIT_BRANCH_WITHOUT_ORIGIN% %GIT_COMMIT%'
                 def uploadString = '-uploadToBenchview'
 
                 steps {
@@ -554,8 +542,10 @@ parallel(
 
                     batchFile("tests\\runtest.cmd ${configuration} ${architecture} GenerateLayoutOnly")
 
-                    // Run with just stopwatch: Profile=Off
-                    batchFile("tests\\scripts\\run-xunit-perf.cmd -arch ${arch} -configuration ${configuration} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\linkbench\\linkbench -generateBenchviewData \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" ${uploadString} -nowarmup -runtype ${runType} -scenarioTest -group ILLink")
+                    if (arch == 'x64') {
+                        batchFile("tests\\scripts\\run-xunit-perf.cmd -arch ${arch} -configuration ${configuration} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\linkbench\\linkbench -generateBenchviewData \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" ${uploadString} -nowarmup -runtype ${runType} -scenarioTest -group ILLink")
+                    }
+                    batchFile("tests\\scripts\\run-xunit-perf.cmd -arch ${arch} -configuration ${configuration} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\Scenario\\JitBench -generateBenchviewData \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" ${uploadString} -nowarmup -runtype ${runType} -scenarioTest -group CoreCLR-Scenarios")
                 }
              }
 
@@ -578,9 +568,9 @@ parallel(
 
             if (isPR) {
                 TriggerBuilder builder = TriggerBuilder.triggerOnPullRequest()
-                builder.setGithubContext("${os} ${arch} ILLink Perf Tests")
+                builder.setGithubContext("${os} ${arch} Performance Scenarios Tests")
                 builder.triggerOnlyOnComment()
-                builder.setCustomTriggerPhrase("(?i).*test\\W+${os}\\W+${arch}\\W+illink\\W+perf.*")
+                builder.setCustomTriggerPhrase("(?i).*test\\W+${os}\\W+${arch}\\W+perf\\W+scenarios.*")
                 builder.triggerForBranch(branch)
                 builder.emitTrigger(newJob)
             }
