@@ -5953,8 +5953,9 @@ regNumber LinearScan::allocateBusyReg(Interval* current, RefPosition* refPositio
         RegRecord* physRegRecord2 = nullptr;
         // For ARM32, let's consider two float registers consisting a double reg together,
         // when allocaing a double register.
-        if (current->registerType == TYP_DOUBLE && genIsValidDoubleReg(regNum))
+        if (current->registerType == TYP_DOUBLE)
         {
+            assert(genIsValidDoubleReg(regNum));
             physRegRecord2 = findAnotherHalfRegRec(physRegRecord);
         }
 #endif
@@ -6042,7 +6043,7 @@ regNumber LinearScan::allocateBusyReg(Interval* current, RefPosition* refPositio
         RefPosition* recentAssignedRef = (assignedInterval == nullptr) ? nullptr : assignedInterval->recentRefPosition;
         RefPosition* recentAssignedRef2 =
             (assignedInterval2 == nullptr) ? nullptr : assignedInterval2->recentRefPosition;
-        // There are four cases for ARM32 when we are trying to allocation a double register for TYP_DOUBLE
+        // There are four cases for ARM32 when we are trying to allocate a double register for TYP_DOUBLE
         // Case 1: LoReg->assignedInterval != nullptr && HiReg->assignedInterval != nullptr
         // Case 2: LoReg->assignedInterval != nullptr && HiReg->assignedInterval == nullptr
         // Case 3: LoReg->assignedInterval == nullptr && HiReg->assignedInterval != nullptr
