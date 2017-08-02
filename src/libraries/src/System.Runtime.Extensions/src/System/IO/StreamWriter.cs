@@ -42,7 +42,6 @@ namespace System.IO
         // We don't guarantee thread safety on StreamWriter, but we should at 
         // least prevent users from trying to write anything while an Async
         // write from the same thread is in progress.
-        [NonSerialized]
         private volatile Task _asyncWriteTask;
 
         private void CheckAsyncTaskInProgress()

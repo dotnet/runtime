@@ -38,15 +38,10 @@ namespace System.Security.Principal
         private volatile bool _impersonationLevelInitialized;
 
         public new const string DefaultIssuer = @"AD AUTHORITY";
-        [NonSerialized]
         private string _issuerName = DefaultIssuer;
-        [NonSerialized]
         private object _claimsIntiailizedLock = new object();
-        [NonSerialized]
         private volatile bool _claimsInitialized;
-        [NonSerialized]
         private List<Claim> _deviceClaims;
-        [NonSerialized]
         private List<Claim> _userClaims;
 
         //

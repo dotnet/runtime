@@ -40,7 +40,6 @@ namespace System.Net
         /// <summary>
         /// A lazily initialized cache of the result of calling <see cref="ToString"/>.
         /// </summary>
-        [NonSerialized]
         private string _toString;
 
         /// <summary>
