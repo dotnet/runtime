@@ -787,9 +787,13 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
     }
 #endif // PROFILING_SUPPORTED
 
+#ifdef FEATURE_INTERPRETER
+    bool isJittedMethod = (Interpreter::InterpretationStubToMethodInfo(pCode) == NULL);
+#endif
+
     // Interpretted methods skip this notification
 #ifdef FEATURE_INTERPRETER
-    if (Interpreter::InterpretationStubToMethodInfo(pCode) == NULL)
+    if (isJittedMethod)
 #endif
     {
 #ifdef FEATURE_PERFMAP
@@ -814,8 +818,13 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
     }
 #endif
 
-    // The notification will only occur if someone has registered for this method.
-    DACNotifyCompilationFinished(this);
+#ifdef FEATURE_INTERPRETER
+    if (isJittedMethod)
+#endif
+    {
+        // The notification will only occur if someone has registered for this method.
+        DACNotifyCompilationFinished(this);
+    }
 
     return pCode;
 }
