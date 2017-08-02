@@ -309,6 +309,18 @@ namespace LinkBench
                         return UsageError();
                     }
                 }
+                else if (args[i].Equals("--target-architecture", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (i + 1 < args.Length)
+                    {
+                        ++i; // Ignore this argument.
+                    }
+                    else
+                    {
+                        Console.WriteLine("Missing target architecture.");
+                        return UsageError();
+                    }
+                }
                 else if (args[i][0] == '-')
                 {
                     Console.WriteLine("Unknown Option {0}", args[i]);
