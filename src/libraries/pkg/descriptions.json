@@ -608,6 +608,18 @@
     ]
   },
   {
+    "Name": "System.Drawing.Common",
+    "Description": "Provides access to GDI+ graphics functionality.",
+    "CommonTypes": [
+      "System.Drawing.Bitmap",
+      "System.Drawing.BitmapData",
+      "System.Drawing.Brush",
+      "System.Drawing.Font",
+      "System.Drawing.Graphics",
+      "System.Drawing.Icon",
+    ]
+  },
+  {
     "Name": "System.Dynamic.Runtime",
     "Description": "Provides classes and interfaces that support the Dynamic Language Runtime (DLR).",
     "CommonTypes": [
