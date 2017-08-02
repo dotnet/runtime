@@ -2068,7 +2068,7 @@ void Lowering::TreeNodeInfoInitModDiv(GenTree* tree)
         op1->gtLsraInfo.setSrcCandidates(l, RBM_RAX);
     }
 
-    if (op2->IsRegOptional())
+    if (!op2->isContained())
     {
         op2->gtLsraInfo.setSrcCandidates(l, l->allRegs(TYP_INT) & ~(RBM_RAX | RBM_RDX));
     }
