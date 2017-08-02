@@ -32,6 +32,7 @@
     <Compile Include="MemoryStream\MemoryStream.ConstructorTests.cs" />
     <Compile Include="MemoryStream\MemoryStream.TryGetBufferTests.cs" />
     <Compile Include="MemoryStream\MemoryStreamTests.cs" />
+    <Compile Include="MemoryStream\MemoryStreamTests.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
     <Compile Include="StreamReader\StreamReader.CtorTests.cs" />
     <Compile Include="StreamReader\StreamReaderTests.cs" />
     <Compile Include="StreamWriter\StreamWriter.BaseStream.cs" />
@@ -39,6 +40,8 @@
     <Compile Include="StreamWriter\StreamWriter.CtorTests.cs" />
     <Compile Include="StreamWriter\StreamWriter.FlushTests.cs" />
     <Compile Include="StreamWriter\StreamWriter.WriteTests.cs" />
+    <Compile Include="Stream\Stream.ReadWriteSpan.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
+    <Compile Include="Stream\Stream.NullTests.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
     <Compile Include="Stream\Stream.NullTests.cs" />
     <Compile Include="Stream\Stream.AsyncTests.cs" />
     <Compile Include="Stream\Stream.CopyToTests.cs" />
