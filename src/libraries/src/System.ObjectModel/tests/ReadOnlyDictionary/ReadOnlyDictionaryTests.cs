@@ -214,11 +214,24 @@ namespace System.Collections.ObjectModel.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "Cannot do DebuggerAttribute testing on UapAot: requires internal Reflection on framework types.")]
         public static void DebuggerAttributeTests()
         {
-            DebuggerAttributes.ValidateDebuggerDisplayReferences(new ReadOnlyDictionary<int, int>(new Dictionary<int, int>()));
-            DebuggerAttributes.ValidateDebuggerTypeProxyProperties(new ReadOnlyDictionary<int, int>(new Dictionary<int, int>()));
+            ReadOnlyDictionary<int, int> dict = new ReadOnlyDictionary<int, int>(new Dictionary<int, int>{{1, 2}, {2, 4}, {3, 6}});
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(dict);
+            DebuggerAttributeInfo info = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(dict);
+            PropertyInfo itemProperty = info.Properties.Single(pr => pr.GetCustomAttribute<DebuggerBrowsableAttribute>().State == DebuggerBrowsableState.RootHidden);
+            KeyValuePair<int, int>[] pairs = itemProperty.GetValue(info.Instance) as KeyValuePair<int, int>[];
+            Assert.Equal(dict, pairs);
 
-            DebuggerAttributes.ValidateDebuggerDisplayReferences(new ReadOnlyDictionary<int, int>(new Dictionary<int, int>()).Keys);
-            DebuggerAttributes.ValidateDebuggerDisplayReferences(new ReadOnlyDictionary<int, int>(new Dictionary<int, int>()).Values);
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(dict.Keys);
+            info = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(typeof(ReadOnlyDictionary<int, int>.KeyCollection), new Type[] { typeof(int) }, dict.Keys);
+            itemProperty = info.Properties.Single(pr => pr.GetCustomAttribute<DebuggerBrowsableAttribute>().State == DebuggerBrowsableState.RootHidden);
+            int[] items = itemProperty.GetValue(info.Instance) as int[];
+            Assert.Equal(dict.Keys, items);
+
+            DebuggerAttributes.ValidateDebuggerDisplayReferences(dict.Values);
+            info = DebuggerAttributes.ValidateDebuggerTypeProxyProperties(typeof(ReadOnlyDictionary<int, int>.KeyCollection), new Type[] { typeof(int) }, dict.Values);
+            itemProperty = info.Properties.Single(pr => pr.GetCustomAttribute<DebuggerBrowsableAttribute>().State == DebuggerBrowsableState.RootHidden);
+            items = itemProperty.GetValue(info.Instance) as int[];
+            Assert.Equal(dict.Values, items);
         }
 
         [Fact]
