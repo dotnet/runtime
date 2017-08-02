@@ -21,7 +21,6 @@ namespace System.Xml.Schema
         private int _lineNumber;
         private int _linePosition;
 
-        [NonSerialized]
         private XmlSchemaObject _sourceSchemaObject;
 
         // message != null for V1 exceptions deserialized in Whidbey
