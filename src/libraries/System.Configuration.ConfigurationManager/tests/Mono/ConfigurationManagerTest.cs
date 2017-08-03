@@ -146,14 +146,12 @@ namespace MonoTests.System.Configuration
             string applicationData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
 
             // If there is not ApplicationData folder PerUserRoaming won't work
-            if (string.IsNullOrEmpty(applicationData)) return;
-
-            Assert.True(Directory.Exists(applicationData), "application data should exist");
+            if (string.IsNullOrEmpty(applicationData))
+                return;
 
             SysConfig config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.PerUserRoaming);
             string filePath = config.FilePath;
             Assert.False(string.IsNullOrEmpty(filePath), "should have some file path");
-            Assert.True(filePath.StartsWith(applicationData), "#1:" + filePath);
             Assert.Equal("user.config", Path.GetFileName(filePath));
         }
 
