@@ -30,18 +30,6 @@ namespace System.Net.Tests
             return context.Response;
         }
 
-        public async Task<HttpListenerRequest> GetRequest(bool chunked)
-        {
-            // We need to create a mock request to give the HttpListener a context.
-            Task<HttpListenerContext> serverContext = _listener.GetContextAsync();
-
-            _client.DefaultRequestHeaders.TransferEncodingChunked = chunked;
-            Task<HttpResponseMessage> clientTask = _client.PostAsync(_listeningUrl, new StringContent("Hello"));
-
-            HttpListenerContext context = await serverContext;
-            return context.Request;
-        }
-
         public void Dispose()
         {
             _client.Dispose();
