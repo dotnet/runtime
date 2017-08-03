@@ -138,7 +138,7 @@ namespace System.ServiceProcess
         SessionRemoteControl = 9,
         SessionUnlock = 8,
     }
-    public partial class TimeoutException : System.Exception
+    public partial class TimeoutException : System.SystemException
     {
         public TimeoutException() { }
         protected TimeoutException(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
