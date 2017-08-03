@@ -13,6 +13,6 @@ internal partial class Interop
         public struct SERVICE_DELAYED_AUTOSTART_INFO
         {
             public bool fDelayedAutostart;
-        };
+        }
     }
 }

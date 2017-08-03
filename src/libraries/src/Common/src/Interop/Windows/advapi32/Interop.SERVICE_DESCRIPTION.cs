@@ -13,6 +13,6 @@ internal partial class Interop
         public struct SERVICE_DESCRIPTION
         {
             public IntPtr description;
-        };
+        }
     }
 }
