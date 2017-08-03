@@ -2,14 +2,13 @@
 <Directives xmlns="http://schemas.microsoft.com/netfx/2013/01/metadata">
   <Library Name="System.Collections.Tests">
     <Assembly Name="*Application*" DoNotInline="true" DoNotOptimize="true" />
-    <Assembly Name="System.Collections" BinaryFormatter="All" Dynamic="Required All" DoNotInline="true" DoNotOptimize="true" />
+    <Assembly Name="System.Collections" BinaryFormatter="All" DoNotInline="true" DoNotOptimize="true" />
 
     <!-- Needed because test code calls IsSerializable on these types  -->
-    <Type Name="System.Collections.Generic.SortedList`2" Browse="Required Public" />
-    <Type Name="System.Collections.Generic.SortedDictionary`2" Browse="Required Public">
-      <Field Name="_set" Dynamic="Required" />
-    </Type>
-    <Type Name="System.Collections.Generic.SortedList`2" Dynamic="Required All" />
-    <Type Name="System.Collections.ObjectModel.ReadOnlyCollection`1" Dynamic="Required All" />
+    <Type Name="System.Collections.Generic.SortedList`2" BinaryFormatter="All" Browse="Required Public" />
+    <Type Name="System.Collections.Generic.SortedDictionary`2" BinaryFormatter="All" Browse="Required Public" />
+    
+    <Type Name="System.Collections.Generic.SortedList`2" BinaryFormatter="All" />
+    <Type Name="System.Collections.ObjectModel.ReadOnlyCollection`1" BinaryFormatter="All" />
   </Library>
 </Directives>
