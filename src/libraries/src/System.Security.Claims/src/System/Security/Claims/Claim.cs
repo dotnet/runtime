@@ -122,6 +122,7 @@ namespace System.Security.Claims
             if ((mask & SerializationMask.HasProperties) == SerializationMask.HasProperties)
             {
                 int numProperties = reader.ReadInt32();
+                numPropertiesRead++;
                 for (int i = 0; i < numProperties; i++)
                 {
                     Properties.Add(reader.ReadString(), reader.ReadString());
