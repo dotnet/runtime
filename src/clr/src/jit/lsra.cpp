@@ -8916,6 +8916,12 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
                     ReturnTypeDesc* retTypeDesc = treeNode->AsCall()->GetReturnTypeDesc();
                     typ                         = retTypeDesc->GetReturnRegType(refPosition->getMultiRegIdx());
                 }
+#ifdef _TARGET_ARM_
+                else if (treeNode->OperIsPutArgSplit())
+                {
+                    typ = treeNode->AsPutArgSplit()->GetRegType(refPosition->getMultiRegIdx());
+                }
+#endif
 #ifdef ARM_SOFTFP
                 else if (treeNode->OperIsPutArgReg())
                 {
@@ -9247,11 +9253,6 @@ void LinearScan::resolveRegisters()
                             {
                                 GenTreePutArgSplit* splitArg = treeNode->AsPutArgSplit();
                                 splitArg->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());
-                            }
-                            else if (treeNode->OperIsMultiRegOp())
-                            {
-                                GenTreeMultiRegOp* multiReg = treeNode->AsMultiRegOp();
-                                multiReg->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());
                             }
 #endif
                         }
