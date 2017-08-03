@@ -502,13 +502,13 @@ handle_type:
 }
 
 static MonoObject*
-load_cattr_value_boxed (MonoDomain *domain, MonoImage *image, MonoType *t, const char* p, const char** end, MonoError *error)
+load_cattr_value_boxed (MonoDomain *domain, MonoImage *image, MonoType *t, const char* p, const char *boundp, const char** end, MonoError *error)
 {
 	error_init (error);
 
 	gboolean is_ref = type_is_reference (t);
 
-	void *val = load_cattr_value (image, t, p, NULL, end, error); /* TODO: bounds check load_cattr_value_boxed */
+	void *val = load_cattr_value (image, t, p, boundp, end, error);
 	if (!is_ok (error)) {
 		if (is_ref)
 			g_free (val);
@@ -924,6 +924,7 @@ mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *meth
 	MonoClass *attrklass;
 	MonoDomain *domain;
 	const char *p = (const char*)data;
+	const char *data_end = p + len;
 	const char *named;
 	guint32 i, j, num_named;
 	CattrNamedArg *arginfo = NULL;
@@ -945,21 +946,28 @@ mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *meth
 
 	if (len < 2 || read16 (p) != 0x0001) /* Prolog */
 		return;
+	/* skip prolog */
+	p += 2;
 
+	/* Parse each argument corresponding to the signature's parameters from
+	 * the blob and store in typedargs.
+	 */
 	typedargs = mono_array_new_checked (domain, mono_get_object_class (), mono_method_signature (method)->param_count, error);
 	return_if_nok (error);
 
-	/* skip prolog */
-	p += 2;
 	for (i = 0; i < mono_method_signature (method)->param_count; ++i) {
 		MonoObject *obj;
 
-		obj = load_cattr_value_boxed (domain, image, mono_method_signature (method)->params [i], p, &p, error);
+		obj = load_cattr_value_boxed (domain, image, mono_method_signature (method)->params [i], p, data_end, &p, error);
 		return_if_nok (error);
 		mono_array_setref (typedargs, i, obj);
 	}
 
 	named = p;
+
+	/* Parse mandatory count of named arguments (could be zero) */
+	if (!bcheck_blob (named, 1, data_end, error))
+		return;
 	num_named = read16 (named);
 	namedargs = mono_array_new_checked (domain, mono_get_object_class (), num_named, error);
 	return_if_nok (error);
@@ -969,17 +977,25 @@ mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *meth
 	arginfo = g_new0 (CattrNamedArg, num_named);
 	*named_arg_info = arginfo;
 
+	/* Parse each named arg, and add to arginfo.  Each named argument could
+	 * be a field name or a property name followed by a value. */
 	for (j = 0; j < num_named; j++) {
-		gint name_len;
+		guint32 name_len;
 		char *name, named_type, data_type;
-		named_type = *named++;
+		if (!bcheck_blob (named, 1, data_end, error))
+			return;
+		named_type = *named++; /* field or property? */
 		data_type = *named++; /* type of data */
-		if (data_type == MONO_TYPE_SZARRAY)
+		if (data_type == MONO_TYPE_SZARRAY) {
+			if (!bcheck_blob (named, 0, data_end, error))
+				return;
 			data_type = *named++;
+		}
 		if (data_type == MONO_TYPE_ENUM) {
-			gint type_len;
+			guint32 type_len;
 			char *type_name;
-			type_len = mono_metadata_decode_blob_size (named, &named);
+			if (!decode_blob_size_checked (named, data_end, &type_len, &named, error))
+				return;
 			if (ADDP_IS_GREATER_OR_OVF ((const guchar*)named, type_len, data + len))
 				goto fail;
 
@@ -990,7 +1006,9 @@ mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *meth
 			/* FIXME: lookup the type and check type consistency */
 			g_free (type_name);
 		}
-		name_len = mono_metadata_decode_blob_size (named, &named);
+		/* named argument name: length, then name */
+		if (!decode_blob_size_checked(named, data_end, &name_len, &named, error))
+			return;
 		if (ADDP_IS_GREATER_OR_OVF ((const guchar*)named, name_len, data + len))
 			goto fail;
 		name = (char *)g_malloc (name_len + 1);
@@ -998,6 +1016,7 @@ mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *meth
 		name [name_len] = 0;
 		named += name_len;
 		if (named_type == 0x53) {
+			/* Named arg is a field. */
 			MonoObject *obj;
 			MonoClassField *field = mono_class_get_field_from_name (attrklass, name);
 
@@ -1009,7 +1028,7 @@ mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *meth
 			arginfo [j].type = field->type;
 			arginfo [j].field = field;
 
-			obj = load_cattr_value_boxed (domain, image, field->type, named, &named, error);
+			obj = load_cattr_value_boxed (domain, image, field->type, named, data_end, &named, error);
 			if (!is_ok (error)) {
 				g_free (name);
 				return;
@@ -1017,6 +1036,7 @@ mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *meth
 			mono_array_setref (namedargs, j, obj);
 
 		} else if (named_type == 0x54) {
+			/* Named arg is a property */
 			MonoObject *obj;
 			MonoType *prop_type;
 			MonoProperty *prop = mono_class_get_property_from_name (attrklass, name);
@@ -1032,7 +1052,7 @@ mono_reflection_create_custom_attr_data_args (MonoImage *image, MonoMethod *meth
 			arginfo [j].type = prop_type;
 			arginfo [j].prop = prop;
 
-			obj = load_cattr_value_boxed (domain, image, prop_type, named, &named, error);
+			obj = load_cattr_value_boxed (domain, image, prop_type, named, data_end, &named, error);
 			if (!is_ok (error)) {
 				g_free (name);
 				return;
