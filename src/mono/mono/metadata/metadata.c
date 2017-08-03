@@ -1180,7 +1180,7 @@ mono_metadata_decode_row_col (const MonoTableInfo *t, int idx, guint col)
  * \param ptr pointer to a blob object
  * \param rptr the new position of the pointer
  *
- * This decodes a compressed size as described by 23.1.4 (a blob or user string object)
+ * This decodes a compressed size as described by 24.2.4 (#US and #Blob a blob or user string object)
  *
  * \returns the size of the blob object
  */

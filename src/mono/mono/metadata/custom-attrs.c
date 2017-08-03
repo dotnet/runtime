@@ -46,6 +46,12 @@ static GENERATE_GET_CLASS_WITH_CACHE (custom_attribute_named_argument, "System.R
 static MonoCustomAttrInfo*
 mono_custom_attrs_from_builders_handle (MonoImage *alloc_img, MonoImage *image, MonoArrayHandle cattrs);
 
+static gboolean
+bcheck_blob (const char *ptr, int bump, const char *endp, MonoError *error);
+
+static gboolean
+decode_blob_value_checked (const char *ptr, const char *endp, guint32 *size_out, const char **retp, MonoError *error);
+
 /*
  * LOCKING: Acquires the loader lock. 
  */
@@ -185,14 +191,18 @@ cattr_type_from_name (char *n, MonoImage *image, gboolean is_enum, MonoError *er
 }
 
 static MonoClass*
-load_cattr_enum_type (MonoImage *image, const char *p, const char **end, MonoError *error)
+load_cattr_enum_type (MonoImage *image, const char *p, const char *boundp, const char **end, MonoError *error)
 {
 	char *n;
 	MonoType *t;
-	int slen = mono_metadata_decode_value (p, &p);
-
+	guint32 slen;
 	error_init (error);
 
+	if (!decode_blob_value_checked (p, boundp, &slen, &p, error))
+		return NULL;
+
+	if (boundp && slen > 0 && !bcheck_blob (p, slen - 1, boundp, error))
+		return NULL;
 	n = (char *)g_memdup (p, slen + 1);
 	n [slen] = 0;
 	t = cattr_type_from_name (n, image, TRUE, error);
@@ -204,11 +214,13 @@ load_cattr_enum_type (MonoImage *image, const char *p, const char **end, MonoErr
 }
 
 static void*
-load_cattr_value (MonoImage *image, MonoType *t, const char *p, const char **end, MonoError *error)
+load_cattr_value (MonoImage *image, MonoType *t, const char *p, const char *boundp, const char **end, MonoError *error)
 {
-	int slen, type = t->type;
+	int type = t->type;
+	guint32 slen;
 	MonoClass *tklass = t->data.klass;
 
+	g_assert (boundp);
 	error_init (error);
 
 handle_enum:
@@ -217,6 +229,8 @@ handle_enum:
 	case MONO_TYPE_I1:
 	case MONO_TYPE_BOOLEAN: {
 		MonoBoolean *bval = (MonoBoolean *)g_malloc (sizeof (MonoBoolean));
+		if (!bcheck_blob (p, 0, boundp, error))
+			return NULL;
 		*bval = *p;
 		*end = p + 1;
 		return bval;
@@ -225,6 +239,8 @@ handle_enum:
 	case MONO_TYPE_U2:
 	case MONO_TYPE_I2: {
 		guint16 *val = (guint16 *)g_malloc (sizeof (guint16));
+		if (!bcheck_blob (p, 1, boundp, error))
+			return NULL;
 		*val = read16 (p);
 		*end = p + 2;
 		return val;
@@ -237,6 +253,8 @@ handle_enum:
 	case MONO_TYPE_U4:
 	case MONO_TYPE_I4: {
 		guint32 *val = (guint32 *)g_malloc (sizeof (guint32));
+		if (!bcheck_blob (p, 3, boundp, error))
+			return NULL;
 		*val = read32 (p);
 		*end = p + 4;
 		return val;
@@ -248,12 +266,16 @@ handle_enum:
 	case MONO_TYPE_U8:
 	case MONO_TYPE_I8: {
 		guint64 *val = (guint64 *)g_malloc (sizeof (guint64));
+		if (!bcheck_blob (p, 7, boundp, error))
+			return NULL;
 		*val = read64 (p);
 		*end = p + 8;
 		return val;
 	}
 	case MONO_TYPE_R8: {
 		double *val = (double *)g_malloc (sizeof (double));
+		if (!bcheck_blob (p, 7, boundp, error))
+			return NULL;
 		readr8 (p, val);
 		*end = p + 8;
 		return val;
@@ -267,6 +289,8 @@ handle_enum:
 			
 			if (mono_is_corlib_image (k->image) && strcmp (k->name_space, "System") == 0 && strcmp (k->name, "DateTime") == 0){
 				guint64 *val = (guint64 *)g_malloc (sizeof (guint64));
+				if (!bcheck_blob (p, 7, boundp, error))
+					return NULL;
 				*val = read64 (p);
 				*end = p + 8;
 				return val;
@@ -276,23 +300,33 @@ handle_enum:
 		break;
 		
 	case MONO_TYPE_STRING:
+		if (!bcheck_blob (p, 0, boundp, error))
+			return NULL;
 		if (*p == (char)0xFF) {
 			*end = p + 1;
 			return NULL;
 		}
-		slen = mono_metadata_decode_value (p, &p);
+		if (!decode_blob_value_checked (p, boundp, &slen, &p, error))
+			return NULL;
+		if (slen > 0 && !bcheck_blob (p, slen - 1, boundp, error))
+			return NULL;
 		*end = p + slen;
 		return mono_string_new_len_checked (mono_domain_get (), p, slen, error);
 	case MONO_TYPE_CLASS: {
 		MonoReflectionType *rt;
 		char *n;
 		MonoType *t;
+		if (!bcheck_blob (p, 0, boundp, error))
+			return NULL;
 		if (*p == (char)0xFF) {
 			*end = p + 1;
 			return NULL;
 		}
 handle_type:
-		slen = mono_metadata_decode_value (p, &p);
+		if (!decode_blob_value_checked (p, boundp, &slen, &p, error))
+			return NULL;
+		if (slen > 0 && !bcheck_blob (p, slen - 1, boundp, error))
+			return NULL;
 		n = (char *)g_memdup (p, slen + 1);
 		n [slen] = 0;
 		t = cattr_type_from_name (n, image, FALSE, error);
@@ -307,6 +341,8 @@ handle_type:
 		return rt;
 	}
 	case MONO_TYPE_OBJECT: {
+		if (!bcheck_blob (p, 0, boundp, error))
+			return NULL;
 		char subt = *p++;
 		MonoObject *obj;
 		MonoClass *subc = NULL;
@@ -319,6 +355,8 @@ handle_type:
 			goto handle_enum;
 		} else if (subt == 0x1D) {
 			MonoType simple_type = {{0}};
+			if (!bcheck_blob (p, 0, boundp, error))
+				return NULL;
 			int etype = *p;
 			p ++;
 
@@ -326,8 +364,8 @@ handle_type:
 			if (etype == 0x50) {
 				tklass = mono_defaults.systemtype_class;
 			} else if (etype == 0x55) {
-				tklass = load_cattr_enum_type (image, p, &p, error);
-				if (!mono_error_ok (error))
+				tklass = load_cattr_enum_type (image, p, boundp, &p, error);
+				if (!is_ok (error))
 					return NULL;
 			} else {
 				if (etype == 0x51)
@@ -340,7 +378,10 @@ handle_type:
 		} else if (subt == 0x55) {
 			char *n;
 			MonoType *t;
-			slen = mono_metadata_decode_value (p, &p);
+			if (!decode_blob_value_checked (p, boundp, &slen, &p, error))
+				return NULL;
+			if (slen > 0 && !bcheck_blob (p, slen - 1, boundp, error))
+				return NULL;
 			n = (char *)g_memdup (p, slen + 1);
 			n [slen] = 0;
 			t = cattr_type_from_name (n, image, FALSE, error);
@@ -355,12 +396,12 @@ handle_type:
 		} else {
 			g_error ("Unknown type 0x%02x for object type encoding in custom attr", subt);
 		}
-		val = load_cattr_value (image, &subc->byval_arg, p, end, error);
+		val = load_cattr_value (image, &subc->byval_arg, p, boundp, end, error);
 		obj = NULL;
-		if (mono_error_ok (error)) {
+		if (is_ok (error)) {
 			obj = mono_object_new_checked (mono_domain_get (), subc, error);
 			g_assert (!subc->has_references);
-			if (mono_error_ok (error))
+			if (is_ok (error))
 				mono_gc_memmove_atomic ((char*)obj + sizeof (MonoObject), val, mono_class_value_size (subc, NULL));
 		}
 
@@ -370,6 +411,8 @@ handle_type:
 	case MONO_TYPE_SZARRAY: {
 		MonoArray *arr;
 		guint32 i, alen, basetype;
+		if (!bcheck_blob (p, 3, boundp, error))
+			return NULL;
 		alen = read32 (p);
 		p += 4;
 		if (alen == 0xffffffff) {
@@ -387,6 +430,8 @@ handle_type:
 			case MONO_TYPE_I1:
 			case MONO_TYPE_BOOLEAN:
 				for (i = 0; i < alen; i++) {
+					if (!bcheck_blob (p, 0, boundp, error))
+						return NULL;
 					MonoBoolean val = *p++;
 					mono_array_set (arr, MonoBoolean, i, val);
 				}
@@ -395,6 +440,8 @@ handle_type:
 			case MONO_TYPE_U2:
 			case MONO_TYPE_I2:
 				for (i = 0; i < alen; i++) {
+					if (!bcheck_blob (p, 1, boundp, error))
+						return NULL;
 					guint16 val = read16 (p);
 					mono_array_set (arr, guint16, i, val);
 					p += 2;
@@ -404,6 +451,8 @@ handle_type:
 			case MONO_TYPE_U4:
 			case MONO_TYPE_I4:
 				for (i = 0; i < alen; i++) {
+					if (!bcheck_blob (p, 3, boundp, error))
+						return NULL;
 					guint32 val = read32 (p);
 					mono_array_set (arr, guint32, i, val);
 					p += 4;
@@ -411,6 +460,8 @@ handle_type:
 				break;
 			case MONO_TYPE_R8:
 				for (i = 0; i < alen; i++) {
+					if (!bcheck_blob (p, 7, boundp, error))
+						return NULL;
 					double val;
 					readr8 (p, &val);
 					mono_array_set (arr, double, i, val);
@@ -420,6 +471,8 @@ handle_type:
 			case MONO_TYPE_U8:
 			case MONO_TYPE_I8:
 				for (i = 0; i < alen; i++) {
+					if (!bcheck_blob (p, 7, boundp, error))
+						return NULL;
 					guint64 val = read64 (p);
 					mono_array_set (arr, guint64, i, val);
 					p += 8;
@@ -430,8 +483,8 @@ handle_type:
 			case MONO_TYPE_STRING:
 			case MONO_TYPE_SZARRAY:
 				for (i = 0; i < alen; i++) {
-					MonoObject *item = (MonoObject *)load_cattr_value (image, &tklass->byval_arg, p, &p, error);
-					if (!mono_error_ok (error))
+					MonoObject *item = (MonoObject *)load_cattr_value (image, &tklass->byval_arg, p, boundp, &p, error);
+					if (!is_ok (error))
 						return NULL;
 					mono_array_setref (arr, i, item);
 				}
@@ -455,7 +508,7 @@ load_cattr_value_boxed (MonoDomain *domain, MonoImage *image, MonoType *t, const
 
 	gboolean is_ref = type_is_reference (t);
 
-	void *val = load_cattr_value (image, t, p, end, error);
+	void *val = load_cattr_value (image, t, p, NULL, end, error); /* TODO: bounds check load_cattr_value_boxed */
 	if (!is_ok (error)) {
 		if (is_ref)
 			g_free (val);
@@ -620,7 +673,7 @@ static gboolean
 decode_blob_size_checked (const char *ptr, const char *endp, guint32 *size_out, const char **retp, MonoError *error)
 {
 	error_init (error);
-	if (!bcheck_blob (ptr, 0, endp, error))
+	if (endp && !bcheck_blob (ptr, 0, endp, error))
 		goto leave;
 	if ((*ptr & 0x80) != 0) {
 		if ((*ptr & 0x40) == 0 && !bcheck_blob (ptr, 1, endp, error))
@@ -629,6 +682,38 @@ decode_blob_size_checked (const char *ptr, const char *endp, guint32 *size_out, 
 			goto leave;
 	}
 	*size_out = mono_metadata_decode_blob_size (ptr, retp);
+leave:
+	return is_ok (error);
+}
+
+/**
+ * decode_blob_value_checked:
+ * \param ptr a pointer into a blob
+ * \param endp upper bound for \p ptr - one pas the last valid value for \p ptr
+ * \param value_out on success set to the decoded value
+ * \param retp on success set to the next byte after the encoded size
+ * \param error set on error
+ *
+ * Decode an encoded uint32 value which takes 1, 2, or 4 bytes and set \p
+ * value_out to the decoded value and \p retp to the next byte after the
+ * encoded value.  Returns TRUE on success, or FALASE on failure and sets \p
+ * error.
+ */
+static gboolean
+decode_blob_value_checked (const char *ptr, const char *endp, guint32 *value_out, const char **retp, MonoError *error)
+{
+	/* This similar to decode_blob_size_checked, above but delegates to
+	 * mono_metadata_decode_value which is semantically different. */
+	error_init (error);
+	if (!bcheck_blob (ptr, 0, endp, error))
+		goto leave;
+	if ((*ptr & 0x80) != 0) {
+		if ((*ptr & 0x40) == 0 && !bcheck_blob (ptr, 1, endp, error))
+			goto leave;
+		else if (!bcheck_blob (ptr, 3, endp, error))
+			goto leave;
+	}
+	*value_out = mono_metadata_decode_value (ptr, retp);
 leave:
 	return is_ok (error);
 }
@@ -682,8 +767,8 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 	/* skip prolog */
 	p += 2;
 	for (i = 0; i < mono_method_signature (method)->param_count; ++i) {
-		params [i] = load_cattr_value (image, mono_method_signature (method)->params [i], p, &p, error);
-		if (!mono_error_ok (error))
+		params [i] = load_cattr_value (image, mono_method_signature (method)->params [i], p, data_end, &p, error);
+		if (!is_ok (error))
 			goto fail;
 	}
 
@@ -758,8 +843,7 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 				goto fail;
 			}
 
-			/* TODO: bounds check load_cattr_value */
-			val = load_cattr_value (image, field->type, named, &named, error);
+			val = load_cattr_value (image, field->type, named, data_end, &named, error);
 			if (!is_ok (error)) {
 				g_free (name);
 				if (!type_is_reference (field->type))
@@ -793,8 +877,7 @@ create_custom_attr (MonoImage *image, MonoMethod *method, const guchar *data, gu
 			prop_type = prop->get? mono_method_signature (prop->get)->ret :
 			     mono_method_signature (prop->set)->params [mono_method_signature (prop->set)->param_count - 1];
 
-			/* TODO: bound check load_cattr_value */
-			pparams [0] = load_cattr_value (image, prop_type, named, &named, error);
+			pparams [0] = load_cattr_value (image, prop_type, named, data_end, &named, error);
 			if (!is_ok (error)) {
 				g_free (name);
 				if (!type_is_reference (prop_type))
