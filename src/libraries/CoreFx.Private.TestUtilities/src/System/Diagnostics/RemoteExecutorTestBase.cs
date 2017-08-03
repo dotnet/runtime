@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Diagnostics
 {
@@ -169,7 +170,7 @@ namespace System.Diagnostics
 
                         if (File.Exists(Options.ExceptionFile))
                         {
-                            Assert.True(false, File.ReadAllText(Options.ExceptionFile));
+                            throw new RemoteExecutionException(File.ReadAllText(Options.ExceptionFile));
                         }
 
                         if (Options.CheckExitCode)
@@ -177,7 +178,7 @@ namespace System.Diagnostics
                             int expected = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? Options.ExpectedExitCode : unchecked((sbyte)Options.ExpectedExitCode);
                             int actual = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? Process.ExitCode : unchecked((sbyte)Process.ExitCode);
 
-                            Assert.True(Options.ExpectedExitCode == Process.ExitCode, $"Exit code was {Process.ExitCode} but it should have been {Options.ExpectedExitCode}");
+                            Assert.True(expected == actual, $"Exit code was {Process.ExitCode} but it should have been {Options.ExpectedExitCode}");
                         }
                     }
                     finally
@@ -196,6 +197,11 @@ namespace System.Diagnostics
                     }
                 }
             }
+
+            private sealed class RemoteExecutionException : XunitException
+            {
+                internal RemoteExecutionException(string stackTrace) : base("Remote process failed with an unhandled exception.", stackTrace) { }
+            }
         }
     }
 
@@ -209,7 +215,6 @@ namespace System.Diagnostics
 
         public int TimeOut {get; set; } = RemoteExecutorTestBase.FailWaitTimeoutMilliseconds;
         public int ExpectedExitCode { get; set; } = RemoteExecutorTestBase.SuccessExitCode;
-        public string ExceptionFile { get; } = Path.GetRandomFileName();
-
+        public string ExceptionFile { get; } = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
     }
 }
