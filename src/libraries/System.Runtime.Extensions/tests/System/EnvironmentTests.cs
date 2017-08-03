@@ -7,9 +7,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Security;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -181,9 +179,9 @@ namespace System.Tests
         {
             Assert.True(Environment.WorkingSet > 0, "Expected positive WorkingSet value");
         }
-        
+
         [Fact]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.Uap)] 
+        [SkipOnTargetFramework(~TargetFrameworkMonikers.Uap)]
         public void WorkingSet_Valid_Uap()
         {
             Assert.Throws<PlatformNotSupportedException>(() => Environment.WorkingSet);
@@ -276,70 +274,120 @@ namespace System.Tests
             }
         }
 
-        // The commented out folders aren't set on all systems.
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))] // https://github.com/dotnet/corefx/issues/19110
-        [ActiveIssue(20782, TargetFrameworkMonikers.Uap)]
-        [InlineData(Environment.SpecialFolder.ApplicationData, false)]
-        [InlineData(Environment.SpecialFolder.CommonApplicationData, false)]
-        [InlineData(Environment.SpecialFolder.LocalApplicationData, true)]
-        [InlineData(Environment.SpecialFolder.Cookies, true)]
-        [InlineData(Environment.SpecialFolder.Desktop, false)]
-        [InlineData(Environment.SpecialFolder.Favorites, false)]
-        [InlineData(Environment.SpecialFolder.History, true)]
-        [InlineData(Environment.SpecialFolder.InternetCache, true)]
-        [InlineData(Environment.SpecialFolder.Programs, true)]
-        // [InlineData(Environment.SpecialFolder.MyComputer)]
-        [InlineData(Environment.SpecialFolder.MyMusic, false)]
-        [InlineData(Environment.SpecialFolder.MyPictures, false)]
-        [InlineData(Environment.SpecialFolder.MyVideos, false)]
-        [InlineData(Environment.SpecialFolder.Recent, false)]
-        [InlineData(Environment.SpecialFolder.SendTo, false)]
-        [InlineData(Environment.SpecialFolder.StartMenu, false)]
-        [InlineData(Environment.SpecialFolder.Startup, true)]
-        [InlineData(Environment.SpecialFolder.System, true)]
-        [InlineData(Environment.SpecialFolder.Templates, false)]
-        [InlineData(Environment.SpecialFolder.DesktopDirectory, false)]
-        [InlineData(Environment.SpecialFolder.Personal, false)]
-        [InlineData(Environment.SpecialFolder.ProgramFiles, true)]
-        [InlineData(Environment.SpecialFolder.CommonProgramFiles, true)]
-        [InlineData(Environment.SpecialFolder.AdminTools, true)]
-        [InlineData(Environment.SpecialFolder.CDBurning, false)]
-        [InlineData(Environment.SpecialFolder.CommonAdminTools, false)]
-        [InlineData(Environment.SpecialFolder.CommonDocuments, false)]
-        [InlineData(Environment.SpecialFolder.CommonMusic, false)]
-        // [InlineData(Environment.SpecialFolder.CommonOemLinks)]
-        [InlineData(Environment.SpecialFolder.CommonPictures, false)]
-        [InlineData(Environment.SpecialFolder.CommonStartMenu, false)]
-        [InlineData(Environment.SpecialFolder.CommonPrograms, false)]
-        [InlineData(Environment.SpecialFolder.CommonStartup, false)]
-        [InlineData(Environment.SpecialFolder.CommonDesktopDirectory, false)]
-        [InlineData(Environment.SpecialFolder.CommonTemplates, false)]
-        [InlineData(Environment.SpecialFolder.CommonVideos, false)]
-        [InlineData(Environment.SpecialFolder.Fonts, true)]
-        [InlineData(Environment.SpecialFolder.NetworkShortcuts, false)]
-        // [InlineData(Environment.SpecialFolder.PrinterShortcuts)]
-        [InlineData(Environment.SpecialFolder.UserProfile, false)]
-        [InlineData(Environment.SpecialFolder.CommonProgramFilesX86, true)]
-        [InlineData(Environment.SpecialFolder.ProgramFilesX86, true)]
-        [InlineData(Environment.SpecialFolder.Resources, true)]
-        // [InlineData(Environment.SpecialFolder.LocalizedResources)]
-        [InlineData(Environment.SpecialFolder.SystemX86, true)]
-        [InlineData(Environment.SpecialFolder.Windows, true)]
-        [PlatformSpecific(TestPlatforms.Windows)]  // Tests OS-specific environment
-        public unsafe void GetFolderPath_Windows(Environment.SpecialFolder folder, bool existsInAppContainer = true)
+        // Requires recent RS3 builds
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsWindows10Version16251OrGreater))]
+        [SkipOnTargetFramework(~(TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.UapAot))]
+        [InlineData(Environment.SpecialFolder.LocalApplicationData)]
+        [InlineData(Environment.SpecialFolder.Cookies)]
+        [InlineData(Environment.SpecialFolder.History)]
+        [InlineData(Environment.SpecialFolder.InternetCache)]
+        [InlineData(Environment.SpecialFolder.System)]
+        [InlineData(Environment.SpecialFolder.SystemX86)]
+        [InlineData(Environment.SpecialFolder.Windows)]
+        public void GetFolderPath_UapExistAndAccessible(Environment.SpecialFolder folder)
         {
             string knownFolder = Environment.GetFolderPath(folder);
-            // If you are not executing inside an AppContainer or the folder is allowed in it the path must not be empty.
-            if (!PlatformDetection.IsWinRT || existsInAppContainer)
+            Assert.NotEmpty(knownFolder);
+            AssertDirectoryExists(knownFolder);
+        }
+
+        // Requires recent RS3 builds
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsWindows10Version16251OrGreater))]
+        [SkipOnTargetFramework(~(TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.UapAot))]
+        [InlineData(Environment.SpecialFolder.ApplicationData)]
+        [InlineData(Environment.SpecialFolder.MyMusic)]
+        [InlineData(Environment.SpecialFolder.MyPictures)]
+        [InlineData(Environment.SpecialFolder.MyVideos)]
+        [InlineData(Environment.SpecialFolder.Recent)]
+        [InlineData(Environment.SpecialFolder.Templates)]
+        [InlineData(Environment.SpecialFolder.DesktopDirectory)]
+        [InlineData(Environment.SpecialFolder.Personal)]
+        [InlineData(Environment.SpecialFolder.UserProfile)]
+        [InlineData(Environment.SpecialFolder.CommonDocuments)]
+        [InlineData(Environment.SpecialFolder.CommonMusic)]
+        [InlineData(Environment.SpecialFolder.CommonPictures)]
+        [InlineData(Environment.SpecialFolder.CommonDesktopDirectory)]
+        [InlineData(Environment.SpecialFolder.CommonVideos)]
+        // These are in the package folder
+        [InlineData(Environment.SpecialFolder.CommonApplicationData)]
+        [InlineData(Environment.SpecialFolder.Desktop)]
+        [InlineData(Environment.SpecialFolder.Favorites)]
+        public void GetFolderPath_UapNotEmpty(Environment.SpecialFolder folder)
+        {
+            // The majority of the paths here cannot be accessed from an appcontainer
+            string knownFolder = Environment.GetFolderPath(folder);
+            Assert.NotEmpty(knownFolder);
+        }
+
+        private void AssertDirectoryExists(string path)
+        {
+            // Directory.Exists won't tell us if access was denied, etc. Invoking directly
+            // to get diagnosable test results.
+
+            FileAttributes attributes = GetFileAttributesW(path);
+            if (attributes == (FileAttributes)(-1))
             {
-                Assert.NotEmpty(knownFolder);
+                int error = Marshal.GetLastWin32Error();
+                Assert.False(true, $"error {error} getting attributes for {path}");
             }
-            else
-            {
-                // If you hit this assert it means that SHGetFolderPath inside a UWP has been fixed. 
-                // Check the value is reasonable and update the test data to expect a path from now on.
-                Assert.Empty(knownFolder);
-            }
+
+            Assert.True((attributes & FileAttributes.Directory) == FileAttributes.Directory, $"not a directory: {path}");
+        }
+
+        // The commented out folders aren't set on all systems.
+        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))] // https://github.com/dotnet/corefx/issues/19110
+        [InlineData(Environment.SpecialFolder.ApplicationData)]
+        [InlineData(Environment.SpecialFolder.CommonApplicationData)]
+        [InlineData(Environment.SpecialFolder.LocalApplicationData)]
+        [InlineData(Environment.SpecialFolder.Cookies)]
+        [InlineData(Environment.SpecialFolder.Desktop)]
+        [InlineData(Environment.SpecialFolder.Favorites)]
+        [InlineData(Environment.SpecialFolder.History)]
+        [InlineData(Environment.SpecialFolder.InternetCache)]
+        [InlineData(Environment.SpecialFolder.Programs)]
+        // [InlineData(Environment.SpecialFolder.MyComputer)]
+        [InlineData(Environment.SpecialFolder.MyMusic)]
+        [InlineData(Environment.SpecialFolder.MyPictures)]
+        [InlineData(Environment.SpecialFolder.MyVideos)]
+        [InlineData(Environment.SpecialFolder.Recent)]
+        [InlineData(Environment.SpecialFolder.SendTo)]
+        [InlineData(Environment.SpecialFolder.StartMenu)]
+        [InlineData(Environment.SpecialFolder.Startup)]
+        [InlineData(Environment.SpecialFolder.System)]
+        [InlineData(Environment.SpecialFolder.Templates)]
+        [InlineData(Environment.SpecialFolder.DesktopDirectory)]
+        [InlineData(Environment.SpecialFolder.Personal)]
+        [InlineData(Environment.SpecialFolder.ProgramFiles)]
+        [InlineData(Environment.SpecialFolder.CommonProgramFiles)]
+        [InlineData(Environment.SpecialFolder.AdminTools)]
+        [InlineData(Environment.SpecialFolder.CDBurning)]
+        [InlineData(Environment.SpecialFolder.CommonAdminTools)]
+        [InlineData(Environment.SpecialFolder.CommonDocuments)]
+        [InlineData(Environment.SpecialFolder.CommonMusic)]
+        // [InlineData(Environment.SpecialFolder.CommonOemLinks)]
+        [InlineData(Environment.SpecialFolder.CommonPictures)]
+        [InlineData(Environment.SpecialFolder.CommonStartMenu)]
+        [InlineData(Environment.SpecialFolder.CommonPrograms)]
+        [InlineData(Environment.SpecialFolder.CommonStartup)]
+        [InlineData(Environment.SpecialFolder.CommonDesktopDirectory)]
+        [InlineData(Environment.SpecialFolder.CommonTemplates)]
+        [InlineData(Environment.SpecialFolder.CommonVideos)]
+        [InlineData(Environment.SpecialFolder.Fonts)]
+        [InlineData(Environment.SpecialFolder.NetworkShortcuts)]
+        // [InlineData(Environment.SpecialFolder.PrinterShortcuts)]
+        [InlineData(Environment.SpecialFolder.UserProfile)]
+        [InlineData(Environment.SpecialFolder.CommonProgramFilesX86)]
+        [InlineData(Environment.SpecialFolder.ProgramFilesX86)]
+        [InlineData(Environment.SpecialFolder.Resources)]
+        // [InlineData(Environment.SpecialFolder.LocalizedResources)]
+        [InlineData(Environment.SpecialFolder.SystemX86)]
+        [InlineData(Environment.SpecialFolder.Windows)]
+        [PlatformSpecific(TestPlatforms.Windows)]  // Tests OS-specific environment
+        [SkipOnTargetFramework(TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.UapAot)] // Don't run on UAP
+        public unsafe void GetFolderPath_Windows(Environment.SpecialFolder folder)
+        {
+            string knownFolder = Environment.GetFolderPath(folder);
+            Assert.NotEmpty(knownFolder);
 
             // Call the older folder API to compare our results.
             char* buffer = stackalloc char[260];
@@ -389,6 +437,9 @@ namespace System.Tests
             IntPtr hToken,
             uint dwFlags,
             char* pszPath);
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode, ExactSpelling = true)]
+        internal static extern FileAttributes GetFileAttributesW(string lpFileName);
 
         public static IEnumerable<object[]> EnvironmentVariableTargets
         {
