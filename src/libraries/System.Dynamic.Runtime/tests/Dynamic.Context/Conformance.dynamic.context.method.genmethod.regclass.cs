@@ -921,10 +921,6 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.genmetho
             }
         }
 
-        public void Foo()
-        {
-        }
-
         private static int Verify()
         {
             lock (Test.locker)
@@ -943,7 +939,7 @@ namespace ManagedTests.DynamicCSharp.Conformance.dynamic.context.method.genmetho
         {
             Test t = new Test();
             Test.s_field = "Field";
-            t.Foo();
+            GC.KeepAlive(t);
         }
 
         [Fact]
