@@ -13,15 +13,16 @@ namespace System.Tests
 {
     public class Perf_Double
     {
-        public static readonly double dValue = 1.23456789E+5;
-        private string _string;
+        private volatile string _string;
 
         [Benchmark]
         [InlineData(104234.343, 1_000_000)]
         [InlineData(double.MaxValue, 100_000)]
         [InlineData(double.MinValue, 100_000)]
+        [InlineData(double.MinValue / 2, 100_000)]
         [InlineData(double.NaN, 10_000_000)]
         [InlineData(double.PositiveInfinity, 10_000_000)]
+        [InlineData(2.2250738585072009E-308, 100_000)]
         public void DefaultToString(double number, int innerIterations)
         {
             foreach (var iteration in Benchmark.Iterations)
@@ -66,7 +67,7 @@ namespace System.Tests
                 "G",
                 "G17",
                 "E",
-                "F"
+                "F50"
             };
 
             double[] normalTestValues =
@@ -118,7 +119,7 @@ namespace System.Tests
         [Benchmark(InnerIterationCount = 4_000_000)]
         public static void Decimal_ToString()
         {
-            decimal decimalNum = new decimal(dValue);
+            decimal decimalNum = new decimal(1.23456789E+5);
             foreach (var iteration in Benchmark.Iterations)
             {
                 using (iteration.StartMeasurement())
