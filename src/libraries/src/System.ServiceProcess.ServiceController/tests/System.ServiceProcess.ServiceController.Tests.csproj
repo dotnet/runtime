@@ -17,7 +17,7 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\System.ServiceProcess.ServiceController.TestService\System.ServiceProcess.ServiceController.TestService.csproj" />
+    <ProjectReference Include=".\System.ServiceProcess.ServiceController.TestService\System.ServiceProcess.ServiceController.TestService.csproj" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
