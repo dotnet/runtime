@@ -51,7 +51,7 @@ namespace System.Tests
                 int oldCollectionCount = GC.CollectionCount(gen);
                 b = null;
 
-                GC.Collect(gen, GCCollectionMode.Default);
+                GC.Collect(gen, mode);
 
                 Assert.True(GC.CollectionCount(gen) > oldCollectionCount);
             }
