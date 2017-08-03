@@ -157,7 +157,7 @@
     </StaticDependency>
 
     <StaticDependency Include="Microsoft.TargetingPack.Private.WinRT">
-      <Version>1.0.3</Version>
+      <Version>1.0.5</Version>
     </StaticDependency>
 
     <XUnitDependency Include="xunit"/>
