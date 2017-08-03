@@ -128,19 +128,15 @@ namespace System.ServiceProcess.Tests
 
         public void RemoveService()
         {
-            //try
+            // Stop the service
+            using (ServiceController svc = new ServiceController(ServiceName))
             {
-                // Stop the service
-                using (ServiceController svc = new ServiceController(ServiceName))
+                if (svc.Status != ServiceControllerStatus.Stopped)
                 {
-                    if (svc.Status != ServiceControllerStatus.Stopped)
-                    {
-                        svc.Stop();
-                        svc.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
-                    }
+                    svc.Stop();
+                    svc.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(30));
                 }
             }
-            //catch { }
 
             IntPtr serviceManagerHandle = Interop.Advapi32.OpenSCManager(null, null, Interop.Advapi32.ServiceControllerOptions.SC_MANAGER_ALL);
             if (serviceManagerHandle == IntPtr.Zero)

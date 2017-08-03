@@ -140,9 +140,9 @@ namespace System.ServiceProcess
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
 
-                if (string.Compare(value, _displayName, StringComparison.OrdinalIgnoreCase) == 0)
+                if (string.Equals(value, _displayName, StringComparison.OrdinalIgnoreCase))
                 {
                     // they're just changing the casing. No need to close.
                     _displayName = value;
@@ -229,7 +229,7 @@ namespace System.ServiceProcess
                 if (!CheckMachineName(value))
                     throw new ArgumentException(SR.Format(SR.BadMachineName, value));
 
-                if (string.Compare(_machineName, value, StringComparison.OrdinalIgnoreCase) == 0)
+                if (string.Equals(_machineName, value, StringComparison.OrdinalIgnoreCase))
                 {
                     // no need to close, because the most they're changing is the
                     // casing.
@@ -254,9 +254,9 @@ namespace System.ServiceProcess
             set
             {
                 if (value == null)
-                    throw new ArgumentNullException("value");
+                    throw new ArgumentNullException(nameof(value));
 
-                if (string.Compare(value, _name, StringComparison.OrdinalIgnoreCase) == 0)
+                if (string.Equals(value, _name, StringComparison.OrdinalIgnoreCase))
                 {
                     // they might be changing the casing, but the service we refer to
                     // is the same. No need to close.
