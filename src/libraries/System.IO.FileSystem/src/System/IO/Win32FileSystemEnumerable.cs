@@ -99,8 +99,8 @@ namespace System.IO
         private SafeFindHandle _hnd = null;
 
         // empty means we know in advance that we won?t find any search results, which can happen if:
-        // 1. we don?t have a search pattern
-        // 2. we?re enumerating only the top directory and found no matches during the first call
+        // 1. we don't have a search pattern
+        // 2. we're enumerating only the top directory and found no matches during the first call
         // This flag allows us to return early for these cases. We can?t know this in advance for
         // SearchOption.AllDirectories because we do a ?*? search for subdirs and then use the
         // searchPattern at each directory level.
@@ -287,6 +287,7 @@ namespace System.IO
                     {
                         Debug.Assert(_searchOption != SearchOption.TopDirectoryOnly, "should not reach this code path if searchOption == TopDirectoryOnly");
                         Debug.Assert(_searchList != null, "_searchList should not be null");
+
                         // Traverse directory structure. We need to get '*'
                         while (_searchList.Count > 0)
                         {
@@ -398,7 +399,7 @@ namespace System.IO
         [SecurityCritical]
         private bool IsResultIncluded(ref Interop.Kernel32.WIN32_FIND_DATA findData, out TSource result)
         {
-            Debug.Assert(findData.cFileName.Length != 0 && !Path.IsPathRooted(findData.cFileName),
+            Debug.Assert(findData.cFileName.Length != 0 && !Path.IsPathRooted(findData.cFileName.GetStringFromFixedBuffer()),
                 "Expected file system enumeration to not have empty file/directory name and not have rooted name");
 
             return _resultHandler.IsResultIncluded(_searchData.FullPath, _searchData.UserPath, ref findData, out result);
@@ -450,11 +451,13 @@ namespace System.IO
                 {
                     if (Win32FileSystemEnumerableHelpers.IsDir(ref data))
                     {
-                        Debug.Assert(data.cFileName.Length != 0 && !Path.IsPathRooted(data.cFileName),
+                        string fileName = data.cFileName.GetStringFromFixedBuffer();
+
+                        Debug.Assert(fileName.Length != 0 && !Path.IsPathRooted(fileName),
                             "Expected file system enumeration to not have empty file/directory name and not have rooted name");
 
-                        string tempFullPath = Path.Combine(localSearchData.FullPath, data.cFileName);
-                        string tempUserPath = Path.Combine(localSearchData.UserPath, data.cFileName);
+                        string tempFullPath = Path.Combine(localSearchData.FullPath, fileName);
+                        string tempUserPath = Path.Combine(localSearchData.UserPath, fileName);
 
                         // Setup search data for the sub directory and push it into the list
                         PathPair searchDataSubDir = new PathPair(tempUserPath, tempFullPath);
@@ -565,7 +568,7 @@ namespace System.IO
                 if ((_includeFiles && Win32FileSystemEnumerableHelpers.IsFile(ref findData)) ||
                     (_includeDirs && Win32FileSystemEnumerableHelpers.IsDir(ref findData)))
                 {
-                    result = Path.Combine(userPath, findData.cFileName);
+                    result = Path.Combine(userPath, findData.cFileName.GetStringFromFixedBuffer());
                     return true;
                 }
 
@@ -581,7 +584,7 @@ namespace System.IO
             {
                 if (Win32FileSystemEnumerableHelpers.IsFile(ref findData))
                 {
-                    string fullPathFinal = Path.Combine(fullPath, findData.cFileName);
+                    string fullPathFinal = Path.Combine(fullPath, findData.cFileName.GetStringFromFixedBuffer());
                     result = new FileInfo(fullPathFinal, ref findData);
                     return true;
                 }
@@ -598,7 +601,7 @@ namespace System.IO
             {
                 if (Win32FileSystemEnumerableHelpers.IsDir(ref findData))
                 {
-                    string fullPathFinal = Path.Combine(fullPath, findData.cFileName);
+                    string fullPathFinal = Path.Combine(fullPath, findData.cFileName.GetStringFromFixedBuffer());
                     result = new DirectoryInfo(fullPathFinal, ref findData);
                     return true;
                 }
@@ -615,13 +618,13 @@ namespace System.IO
             {
                 if (Win32FileSystemEnumerableHelpers.IsFile(ref findData))
                 {
-                    string fullPathFinal = Path.Combine(fullPath, findData.cFileName);
+                    string fullPathFinal = Path.Combine(fullPath, findData.cFileName.GetStringFromFixedBuffer());
                     result = new FileInfo(fullPathFinal, ref findData);
                     return true;
                 }
                 else if (Win32FileSystemEnumerableHelpers.IsDir(ref findData))
                 {
-                    string fullPathFinal = Path.Combine(fullPath, findData.cFileName);
+                    string fullPathFinal = Path.Combine(fullPath, findData.cFileName.GetStringFromFixedBuffer());
                     result = new DirectoryInfo(fullPathFinal, ref findData);
                     return true;
                 }
@@ -639,7 +642,7 @@ namespace System.IO
         {
             // Don't add "." nor ".."
             return (0 != (data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY))
-                                                && !data.cFileName.Equals(".") && !data.cFileName.Equals("..");
+                                                && !data.cFileName.FixedBufferEqualsString(".") && !data.cFileName.FixedBufferEqualsString("..");
         }
 
         [SecurityCritical]  // auto-generated
