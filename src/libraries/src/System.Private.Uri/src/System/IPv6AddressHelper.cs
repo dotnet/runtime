@@ -188,7 +188,7 @@ namespace System
             int i;
             for (i = start; i < end; ++i)
             {
-                if (havePrefix ? (name[i] >= '0' && name[i] <= '9') : UriHelper.IsHexDigit(name[i]))
+                if (havePrefix ? (name[i] >= '0' && name[i] <= '9') : Uri.IsHexDigit(name[i]))
                 {
                     ++sequenceLength;
                     expectingNumber = false;
@@ -539,7 +539,7 @@ namespace System
                         break;
 
                     default:
-                        number = number * 16 + UriHelper.FromHex(address[i++]);
+                        number = number * 16 + Uri.FromHex(address[i++]);
                         break;
                 }
             }

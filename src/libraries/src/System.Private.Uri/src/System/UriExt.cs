@@ -224,7 +224,7 @@ namespace System
             {
                 for (int i = 0; i < data.Length - 2; ++i)
                 {
-                    if (tempPtr[i] == '%' && UriHelper.IsHexDigit(tempPtr[i + 1]) && UriHelper.IsHexDigit(tempPtr[i + 2])
+                    if (tempPtr[i] == '%' && IsHexDigit(tempPtr[i + 1]) && IsHexDigit(tempPtr[i + 2])
                         && tempPtr[i + 1] >= '0' && tempPtr[i + 1] <= '7') // max 0x7F
                     {
                         char ch = UriHelper.EscapedAscii(tempPtr[i + 1], tempPtr[i + 2]);
