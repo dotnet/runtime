@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Text;
 using Xunit;
 using Xunit.NetCore.Extensions;
 
@@ -247,6 +248,33 @@ namespace System.IO.Tests
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             Delete(testDir.FullName + Path.DirectorySeparatorChar, true);
             Assert.False(testDir.Exists);
+        }
+
+        [Fact]
+        [PlatformSpecific(TestPlatforms.Windows)]
+        [OuterLoop("This test is very slow.")]
+        public void RecursiveDelete_DeepNesting()
+        {
+            // Create a 2000 level deep directory and recursively delete from the root.
+            // This number can be dropped if we find it problematic on low memory machines
+            // and/or we can look at skipping in such environments.
+            //
+            // On debug we were overflowing the stack with directories that were under 1000
+            // levels deep. Testing on a 32GB box I consistently fell over around 1300.
+            // With optimizations to the Delete helper I was able to raise this to around 3200.
+            // Release binaries don't stress the stack nearly as much (10K+ is doable, but can
+            // take 5 minutes on an SSD).
+
+            string rootDirectory = GetTestFilePath();
+            StringBuilder sb = new StringBuilder(5000);
+            sb.Append(rootDirectory);
+            for (int i = 0; i < 2000; i++)
+            {
+                sb.Append(@"\a");
+            }
+            string path = sb.ToString();
+            Directory.CreateDirectory(path);
+            Delete(rootDirectory, recursive: true);
         }
 
         [Fact]
