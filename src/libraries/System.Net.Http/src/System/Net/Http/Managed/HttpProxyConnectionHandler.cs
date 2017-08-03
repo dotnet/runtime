@@ -23,7 +23,7 @@ namespace System.Net.Http
             Debug.Assert(innerHandler != null);
 
             _innerHandler = innerHandler;
-            _proxy = settings._useProxy ? settings._proxy : new PassthroughWebProxy(s_proxyFromEnvironment.Value);
+            _proxy = (settings._useProxy && settings._proxy != null) ? settings._proxy : new PassthroughWebProxy(s_proxyFromEnvironment.Value);
             _defaultCredentials = settings._defaultProxyCredentials;
             _connectionPools = new HttpConnectionPools(settings._maxConnectionsPerServer);
         }
