@@ -6,8 +6,8 @@ namespace System.ServiceProcess
 {
     public struct SessionChangeDescription
     {
-        private SessionChangeReason _reason;
-        private int _id;
+        private readonly SessionChangeReason _reason;
+        private readonly int _id;
 
         internal SessionChangeDescription(SessionChangeReason reason, int id)
         {

@@ -266,7 +266,7 @@ namespace System.ServiceProcess
                 return false;
 
             // no slashes or backslash allowed
-            foreach (char c in serviceName.ToCharArray())
+            foreach (char c in serviceName)
             {
                 if ((c == '\\') || (c == '/'))
                     return false;
@@ -843,14 +843,7 @@ namespace System.ServiceProcess
                     Initialize(true);
                 }
 
-                if (Environment.OSVersion.Version.Major >= 5)
-                {
-                    _statusHandle = RegisterServiceCtrlHandlerEx(ServiceName, (Delegate)_commandCallbackEx, (IntPtr)0);
-                }
-                else
-                {
-                    _statusHandle = RegisterServiceCtrlHandler(ServiceName, (Delegate)_commandCallback);
-                }
+                _statusHandle = RegisterServiceCtrlHandlerEx(ServiceName, (Delegate)_commandCallbackEx, (IntPtr)0);
 
                 _nameFrozen = true;
                 if (_statusHandle == (IntPtr)0)
@@ -864,11 +857,6 @@ namespace System.ServiceProcess
                 if ((_status.controlsAccepted & AcceptOptions.ACCEPT_STOP) != 0)
                 {
                     _status.controlsAccepted = _status.controlsAccepted | AcceptOptions.ACCEPT_SHUTDOWN;
-                }
-
-                if (Environment.OSVersion.Version.Major < 5)
-                {
-                    _status.controlsAccepted &= ~AcceptOptions.ACCEPT_POWEREVENT;   // clear Power Event flag for NT4
                 }
 
                 _status.currentState = ServiceControlStatus.STATE_START_PENDING;
