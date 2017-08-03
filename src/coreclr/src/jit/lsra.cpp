@@ -5800,9 +5800,9 @@ bool LinearScan::canSpillDoubleReg(RegRecord*   physRegRecord,
 //
 bool LinearScan::checkActiveInterval(Interval* interval, LsraLocation refLocation)
 {
-    RefPosition* recentAssignedRef = interval->recentRefPosition;
     if (!interval->isActive)
     {
+        RefPosition* recentAssignedRef = interval->recentRefPosition;
         // Note that we may or may not have actually handled the reference yet, so it could either
         // be recentAssignedRef, or the next reference.
         assert(recentAssignedRef != nullptr);
@@ -6276,10 +6276,16 @@ regNumber LinearScan::allocateBusyReg(Interval* current, RefPosition* refPositio
             RefPosition* nextRefPosition2 =
                 (assignedInterval2 == nullptr) ? nullptr : assignedInterval2->getNextRefPosition();
             if (nextRefPosition != nullptr)
+            {
                 if (nextRefPosition2 != nullptr)
+                {
                     assert(!nextRefPosition->RequiresRegister() || !nextRefPosition2->RequiresRegister());
+                }
                 else
+                {
                     assert(!nextRefPosition->RequiresRegister());
+                }
+            }
             else
             {
                 assert(nextRefPosition2 != nullptr && !nextRefPosition2->RequiresRegister());
@@ -6309,7 +6315,9 @@ regNumber LinearScan::allocateBusyReg(Interval* current, RefPosition* refPositio
         }
         else
 #endif
+        {
             unassignPhysReg(farthestRefPhysRegRecord, farthestRefPhysRegRecord->assignedInterval->recentRefPosition);
+        }
 
         assignPhysReg(farthestRefPhysRegRecord, current);
         refPosition->registerAssignment = genRegMask(foundReg);
