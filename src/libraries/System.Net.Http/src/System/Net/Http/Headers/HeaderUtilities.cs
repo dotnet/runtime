@@ -27,6 +27,8 @@ namespace System.Net.Http.Headers
         // Validator
         internal static readonly Action<HttpHeaderValueCollection<string>, string> TokenValidator = ValidateToken;
 
+        private static readonly char[] s_hexUpperChars = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
+
         internal static void SetQuality(ObjectCollection<NameValueHeaderValue> parameters, double? value)
         {
             Debug.Assert(parameters != null);
@@ -76,6 +78,8 @@ namespace System.Net.Http.Headers
 
         internal static bool IsInputEncoded5987(string input, out string output)
         {
+            // Encode a string using RFC 5987 encoding.
+            // encoding'lang'PercentEncodedSpecials
             bool wasEncoded = false;
             StringBuilder builder = StringBuilderCache.Acquire();
             builder.Append("utf-8\'\'");
@@ -88,24 +92,36 @@ namespace System.Net.Http.Headers
                     byte[] bytes = Encoding.UTF8.GetBytes(c.ToString());
                     foreach (byte b in bytes)
                     {
-                        builder.Append(UriShim.HexEscape((char)b));
+                        AddHexEscaped((char)b, builder);
                         wasEncoded = true;
                     }
                 }
                 else if (!HttpRuleParser.IsTokenChar(c) || c == '*' || c == '\'' || c == '%')
                 {
                     // ASCII - Only one encoded byte.
-                    builder.Append(UriShim.HexEscape(c));
+                    AddHexEscaped(c, builder);
                     wasEncoded = true;
                 }
                 else
                 {
                     builder.Append(c);
                 }
+
             }
 
             output = StringBuilderCache.GetStringAndRelease(builder);
             return wasEncoded;
+        }
+
+        /// <summary>Transforms an ASCII character into its hexadecimal representation, adding the characters to a StringBuilder.</summary>
+        private static void AddHexEscaped(char c, StringBuilder destination)
+        {
+            Debug.Assert(destination != null);
+            Debug.Assert(c <= 0xFF);
+
+            destination.Append('%');
+            destination.Append(s_hexUpperChars[(c & 0xf0) >> 4]);
+            destination.Append(s_hexUpperChars[c & 0xf]);
         }
 
         internal static double? GetQuality(ObjectCollection<NameValueHeaderValue> parameters)
