@@ -12,194 +12,90 @@ using System.Text;
 using System.Runtime.InteropServices;
 using System.Globalization;
 
-namespace System.ServiceProcess
+namespace System.ServiceProcess.Tests
 {
-    public class TestServiceInstaller
+    public class TestService : ServiceBase
     {
-        public const string NetworkServiceName = "NT AUTHORITY\\NetworkService";
-        public const string LocalServiceName = "NT AUTHORITY\\LocalService";
-
-        public TestServiceInstaller()
+        public TestService(string serviceName)
         {
+            this.ServiceName = serviceName;
+
+            // Enable all the events
+            this.CanPauseAndContinue = true;
+            this.CanStop = true;
+            this.CanShutdown = true;
+
+            // We cannot easily test these so disable the events
+            this.CanHandleSessionChangeEvent = false;
+            this.CanHandlePowerEvent = false;
         }
 
-        public string DisplayName { get; set; } = string.Empty;
-
-        public string Description { get; set; } = string.Empty;
-
-        public string[] ServicesDependedOn { get; set; } = Array.Empty<string>();
-
-        public string ServiceName { get; set; } = string.Empty;
-
-        public ServiceStartMode StartType { get; set; } = ServiceStartMode.Manual;
-
-        public bool DelayedAutoStart { get; set; } = false;
-
-        public string Username { get; set; }
-
-        public string Password { get; set; }
-
-        public unsafe void Install()
+        protected override void OnContinue()
         {
-            string username = Username;
-            string password = Password;
+            WriteLog(nameof(OnContinue));
+            base.OnContinue();
+        }
 
-            if (string.IsNullOrEmpty(username))
+        protected override void OnCustomCommand(int command)
+        {
+            WriteLog(nameof(OnCustomCommand) + " command=" + command);
+            base.OnCustomCommand(command);
+        }
+
+        protected override void OnPause()
+        {
+            WriteLog(nameof(OnPause));
+            base.OnPause();
+        }
+
+        protected override void OnSessionChange(SessionChangeDescription changeDescription)
+        {
+            WriteLog(nameof(OnSessionChange) + " change=" + changeDescription.ToString());
+            base.OnSessionChange(changeDescription);
+        }
+
+        protected override bool OnPowerEvent(PowerBroadcastStatus powerStatus)
+        {
+            WriteLog(nameof(OnPowerEvent) + " status=" + powerStatus.ToString());
+            return base.OnPowerEvent(powerStatus);
+        }
+
+        protected override void OnShutdown()
+        {
+            WriteLog(nameof(OnShutdown));
+            base.OnShutdown();
+        }
+
+        protected override void OnStart(string[] args)
+        {
+            WriteLog(nameof(OnStart) + " args=" + string.Join(",", args));
+            base.OnStart(args);
+        }
+
+        protected override void OnStop()
+        {
+            WriteLog(nameof(OnStop));
+            base.OnStop();
+
+            if (_log != null)
             {
-                username = LocalServiceName;
-            }
-
-            string moduleFileName = System.Reflection.Assembly.GetEntryAssembly().Location;
-
-            // Put quotas around module file name. Otherwise a service might fail to start if there is space in the path.
-            // Note: Though CreateService accepts a binaryPath allowing
-            // arguments for automatic services, in /assemblypath=foo,
-            // foo is simply the path to the executable.
-            // Therefore, it is best to quote if there are no quotes,
-            // and best to not quote if there are quotes.
-            if (moduleFileName.IndexOf('\"') == -1)
-                moduleFileName = "\"" + moduleFileName + "\"";
-
-            //Build servicesDependedOn string
-            string servicesDependedOn = null;
-            if (ServicesDependedOn.Length > 0)
-            {
-                StringBuilder buff = new StringBuilder();
-                for (int i = 0; i < ServicesDependedOn.Length; ++i)
-                {
-                    // we have to build a list of the services' short names. But the user
-                    // might have used long names in the ServicesDependedOn property. Try
-                    // to use ServiceController's logic to get the short name.
-                    string tempServiceName = ServicesDependedOn[i];
-                    try
-                    {
-                        ServiceController svc = new ServiceController(tempServiceName, ".");
-                        tempServiceName = svc.ServiceName;
-                    }
-                    catch
-                    {
-                    }
-                    //The servicesDependedOn need to be separated by a null
-                    buff.Append(tempServiceName);
-                    buff.Append('\0');
-                }
-                // an extra null at the end indicates end of list.
-                buff.Append('\0');
-
-                servicesDependedOn = buff.ToString();
-            }
-
-            // Open the service manager
-            IntPtr serviceManagerHandle = Interop.Advapi32.OpenSCManager(null, null, Interop.Advapi32.ServiceControllerOptions.SC_MANAGER_ALL);
-            IntPtr serviceHandle = IntPtr.Zero;
-            if (serviceManagerHandle == IntPtr.Zero)
-                throw new InvalidOperationException("Cannot open Service Control Manager");
-
-            try
-            {
-                // Install the service
-                serviceHandle = Interop.Advapi32.CreateService(serviceManagerHandle, ServiceName,
-                    DisplayName, Interop.Advapi32.ServiceAccessOptions.ACCESS_TYPE_ALL, Interop.Advapi32.ServiceTypeOptions.SERVICE_TYPE_WIN32_OWN_PROCESS,
-                    (int)StartType, Interop.Advapi32.ServiceStartErrorModes.ERROR_CONTROL_NORMAL,
-                    moduleFileName, null, IntPtr.Zero, servicesDependedOn, username, password);
-
-                if (serviceHandle == IntPtr.Zero)
-                    throw new Win32Exception();
-
-                // A local variable in an unsafe method is already fixed -- so we don't need a "fixed { }" blocks to protect
-                // across the p/invoke calls below.
-
-                if (Description.Length != 0)
-                {
-                    Interop.Advapi32.SERVICE_DESCRIPTION serviceDesc = new Interop.Advapi32.SERVICE_DESCRIPTION();
-                    serviceDesc.description = Marshal.StringToHGlobalUni(Description);
-                    bool success = Interop.Advapi32.ChangeServiceConfig2(serviceHandle, Interop.Advapi32.ServiceConfigOptions.SERVICE_CONFIG_DESCRIPTION, ref serviceDesc);
-                    Marshal.FreeHGlobal(serviceDesc.description);
-                    if (!success)
-                        throw new Win32Exception();
-                }
-
-                if (Environment.OSVersion.Version.Major > 5)
-                {
-                    if (StartType == ServiceStartMode.Automatic)
-                    {
-                        Interop.Advapi32.SERVICE_DELAYED_AUTOSTART_INFO serviceDelayedInfo = new Interop.Advapi32.SERVICE_DELAYED_AUTOSTART_INFO();
-                        serviceDelayedInfo.fDelayedAutostart = DelayedAutoStart;
-                        bool success = Interop.Advapi32.ChangeServiceConfig2(serviceHandle, Interop.Advapi32.ServiceConfigOptions.SERVICE_CONFIG_DELAYED_AUTO_START_INFO, ref serviceDelayedInfo);
-                        if (!success)
-                            throw new Win32Exception();
-                    }
-                }
-            }
-            finally
-            {
-                if (serviceHandle != IntPtr.Zero)
-                    Interop.Advapi32.CloseServiceHandle(serviceHandle);
-
-                Interop.Advapi32.CloseServiceHandle(serviceManagerHandle);
+                _log.Dispose();
+                _log = null;
             }
         }
 
-        private void RemoveService()
+        private StreamWriter _log;
+
+        private void WriteLog(string msg)
         {
-            //
-            // SCUM deletes a service when the Service is stopped and there is no open handle to the Service.
-            // Service will be deleted asynchrously, so it takes a while for the deletion to be complete.
-            // The recoommended way to delete a Service is:
-            // (a)  DeleteService/closehandle,
-            // (b) Stop service & wait until it is stopped & close handle
-            // (c)  Wait for 5-10 secs for the async deletion to go through.
-            //
-            //Context.LogMessage(Res.GetString(Res.ServiceRemoving, ServiceName));
-            IntPtr serviceManagerHandle = Interop.Advapi32.OpenSCManager(null, null, Interop.Advapi32.ServiceControllerOptions.SC_MANAGER_ALL);
-            if (serviceManagerHandle == IntPtr.Zero)
-                throw new Win32Exception();
-
-            IntPtr serviceHandle = IntPtr.Zero;
-            try
+            if (_log == null)
             {
-                serviceHandle = Interop.Advapi32.OpenService(serviceManagerHandle,
-                    ServiceName, Interop.Advapi32.ServiceOptions.STANDARD_RIGHTS_DELETE);
+                string path = System.Reflection.Assembly.GetEntryAssembly().Location + "." + ServiceName + ".log";
+                _log = new StreamWriter(path);
+                _log.AutoFlush = true;
+;            }
 
-                if (serviceHandle == IntPtr.Zero)
-                    throw new Win32Exception();
-
-                Interop.Advapi32.DeleteService(serviceHandle);
-            }
-            finally
-            {
-                if (serviceHandle != IntPtr.Zero)
-                    Interop.Advapi32.CloseServiceHandle(serviceHandle);
-
-                Interop.Advapi32.CloseServiceHandle(serviceManagerHandle);
-            }
-            //Context.LogMessage(Res.GetString(Res.ServiceRemoved, ServiceName));
-
-            // Stop the service
-            try
-            {
-                using (ServiceController svc = new ServiceController(ServiceName))
-                {
-                    if (svc.Status != ServiceControllerStatus.Stopped)
-                    {
-                        //Context.LogMessage(Res.GetString(Res.TryToStop, ServiceName));
-                        svc.Stop();
-                        int timeout = 10;
-                        svc.Refresh();
-                        while (svc.Status != ServiceControllerStatus.Stopped && timeout > 0)
-                        {
-                            Thread.Sleep(1000);
-                            svc.Refresh();
-                            timeout--;
-                        }
-                    }
-                }
-            }
-            catch
-            {
-            }
-
-            Thread.Sleep(5000);
+            _log.WriteLine(msg);
         }
     }
 }
