@@ -328,7 +328,7 @@ public:
     // number of fixed arguments plus number of varargs
     ULONG32                                     m_allArgsCount;   
 
-    // indicates whether an attempt has been made toinitialize the var data already
+    // indicates whether an attempt has been made to initialize the var data already
     bool                                        m_fInitialized;   
 }; // class NativeVarData
 
