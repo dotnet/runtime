@@ -7,6 +7,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Xunit;
+using Xunit.Sdk;
 
 namespace System.Diagnostics
 {
@@ -167,16 +168,26 @@ namespace System.Diagnostics
                         Assert.True(Process.WaitForExit(Options.TimeOut),
                             $"Timed out after {Options.TimeOut}ms waiting for remote process {Process.Id}");
 
+                        if (File.Exists(Options.ExceptionFile))
+                        {
+                            throw new RemoteExecutionException(File.ReadAllText(Options.ExceptionFile));
+                        }
+
                         if (Options.CheckExitCode)
                         {
-                            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-                                Assert.Equal(Options.ExpectedExitCode, Process.ExitCode);
-                            else
-                                Assert.Equal(unchecked((sbyte)Options.ExpectedExitCode), unchecked((sbyte)Process.ExitCode));
+                            int expected = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? Options.ExpectedExitCode : unchecked((sbyte)Options.ExpectedExitCode);
+                            int actual = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? Process.ExitCode : unchecked((sbyte)Process.ExitCode);
+
+                            Assert.True(expected == actual, $"Exit code was {Process.ExitCode} but it should have been {Options.ExpectedExitCode}");
                         }
                     }
                     finally
                     {
+                        if (File.Exists(Options.ExceptionFile))
+                        {
+                            File.Delete(Options.ExceptionFile);
+                        }
+
                         // Cleanup
                         try { Process.Kill(); }
                         catch { } // ignore all cleanup errors
@@ -185,6 +196,11 @@ namespace System.Diagnostics
                         Process = null;
                     }
                 }
+            }
+
+            private sealed class RemoteExecutionException : XunitException
+            {
+                internal RemoteExecutionException(string stackTrace) : base("Remote process failed with an unhandled exception.", stackTrace) { }
             }
         }
     }
@@ -199,5 +215,6 @@ namespace System.Diagnostics
 
         public int TimeOut {get; set; } = RemoteExecutorTestBase.FailWaitTimeoutMilliseconds;
         public int ExpectedExitCode { get; set; } = RemoteExecutorTestBase.SuccessExitCode;
+        public string ExceptionFile { get; } = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
     }
 }
