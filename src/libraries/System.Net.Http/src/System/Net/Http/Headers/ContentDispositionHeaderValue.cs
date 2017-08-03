@@ -22,8 +22,6 @@ namespace System.Net.Http.Headers
         private const string readDate = "read-date";
         private const string size = "size";
 
-        private static readonly char[] s_hexUpperChars = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-
         // Use ObjectCollection<T> since we may have multiple parameters with the same name.
         private ObjectCollection<NameValueHeaderValue> _parameters;
         private string _dispositionType;
@@ -596,18 +594,6 @@ namespace System.Net.Http.Headers
 
             output = decoded.ToString();
             return true;
-        }
-
-
-        /// <summary>Transforms an ASCII character into its hexadecimal representation, adding the characters to a StringBuilder.</summary>
-        private static void AddHexEscaped(char c, StringBuilder destination)
-        {
-            Debug.Assert(destination != null);
-            Debug.Assert(c <= 0xFF);
-
-            destination.Append('%');
-            destination.Append(s_hexUpperChars[(c & 0xf0) >> 4]);
-            destination.Append(s_hexUpperChars[c & 0xf]);
         }
         #endregion Helpers
     }
