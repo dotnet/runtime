@@ -36,12 +36,12 @@ namespace System.IO.Compression
 
         // Extra bits for length code 257 - 285.
         private static readonly byte[] s_extraLengthBits =
-            { 0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,16,56,62 };
+            { 0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,16 };
 
         // The base length for length code 257 - 285.
         // The formula to get the real length for a length code is lengthBase[code - 257] + (value stored in extraBits)
         private static readonly int[] s_lengthBase =
-            { 3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,3,0,0 };
+            { 3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,35,43,51,59,67,83,99,115,131,163,195,227,3};
 
         // The base distance for distance code 0 - 31
         // The real distance for a distance code is  distanceBasePosition[code] + (value stored in extraBits)
@@ -401,9 +401,10 @@ namespace System.IO.Compression
             end_of_block_code_seen = false;
 
             int freeBytes = _output.FreeBytes;   // it is a little bit faster than frequently accessing the property
-            while (freeBytes > 258)
+            while (freeBytes > 65536)
             {
-                // 258 means we can safely do decoding since maximum repeat length is 258
+                // With Deflate64 we can have up to a 64kb length, so we ensure at least that much space is available
+                // in the OutputWindow to avoid overwriting previous unflushed output data.
 
                 int symbol;
                 switch (_state)
@@ -506,7 +507,7 @@ namespace System.IO.Compression
                         goto case InflaterState.HaveDistCode;
 
                     case InflaterState.HaveDistCode:
-                        // To avoid a table lookup we note that for distanceCode >= 2,
+                        // To avoid a table lookup we note that for distanceCode > 3,
                         // extra_bits = (distanceCode-2) >> 1
                         int offset;
                         if (_distanceCode > 3)
@@ -524,7 +525,6 @@ namespace System.IO.Compression
                             offset = _distanceCode + 1;
                         }
 
-                        Debug.Assert(freeBytes >= 258, "following operation is not safe!");
                         _output.WriteLengthDistance(_length, offset);
                         freeBytes -= _length;
                         _state = InflaterState.DecodeTop;
