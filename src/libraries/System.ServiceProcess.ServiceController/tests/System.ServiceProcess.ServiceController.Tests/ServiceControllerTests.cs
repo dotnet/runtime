@@ -10,82 +10,20 @@ using Xunit;
 
 namespace System.ServiceProcess.Tests
 {
-    internal sealed class ServiceProvider
-    {
-        public readonly string TestMachineName;
-        public readonly TimeSpan ControlTimeout;
-        public readonly string TestServiceName;
-        public readonly string TestServiceDisplayName;
-        public readonly string DependentTestServiceNamePrefix;
-        public readonly string DependentTestServiceDisplayNamePrefix;
-        public readonly string TestServiceRegistryKey;
-
-        public ServiceProvider()
-        {
-            TestMachineName = ".";
-            ControlTimeout = TimeSpan.FromSeconds(120);
-            TestServiceName = Guid.NewGuid().ToString();
-            TestServiceDisplayName = "Test Service " + TestServiceName;
-            DependentTestServiceNamePrefix = TestServiceName + ".Dependent";
-            DependentTestServiceDisplayNamePrefix = TestServiceDisplayName + ".Dependent";
-            TestServiceRegistryKey = @"HKEY_USERS\.DEFAULT\dotnetTests\ServiceController\" + TestServiceName;
-
-            // Create the service
-            CreateTestServices();
-        }
-
-        private void CreateTestServices()
-        {
-            // Create the test service and its dependent services. Then, start the test service.
-            // All control tests assume that the test service is running when they are executed.
-            // So all tests should make sure to restart the service if they stop, pause, or shut
-            // it down.
-            RunServiceExecutable("create");
-        }
-
-        public void DeleteTestServices()
-        {
-            RunServiceExecutable("delete");
-            RegistryKey users = Registry.Users;
-            if (users.OpenSubKey(".DEFAULT\\dotnetTests") != null)
-                users.DeleteSubKeyTree(".DEFAULT\\dotnetTests");
-        }
-
-        private void RunServiceExecutable(string action)
-        {
-            const string serviceExecutable = "System.ServiceProcess.ServiceController.TestNativeService.exe";
-            var process = new Process();
-            process.StartInfo.FileName = serviceExecutable;
-            process.StartInfo.Arguments = string.Format("\"{0}\" \"{1}\" {2}", TestServiceName, TestServiceDisplayName, action);
-            process.Start();
-            process.WaitForExit();
-            
-            if (process.ExitCode != 0)
-            {
-                throw new Exception("error: " + serviceExecutable + " failed with exit code " + process.ExitCode.ToString());
-            }
-        }
-    }
-
     [OuterLoop(/* Modifies machine state */)]
     [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Appx doesn't allow to access ServiceController")]
     public class ServiceControllerTests : IDisposable
     {
-        private const int ExpectedDependentServiceCount = 3;
-
-        private static readonly Lazy<bool> s_runningWithElevatedPrivileges = new Lazy<bool>(
-            () => new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator));
-
-        private readonly ServiceProvider _testService;
+        private readonly TestServiceProvider _testService;
 
         public ServiceControllerTests()
         {
-            _testService = new ServiceProvider();
+            _testService = new TestServiceProvider();
         }
 
         private static bool RunningWithElevatedPrivileges
         {
-            get { return s_runningWithElevatedPrivileges.Value; }
+            get { return TestServiceProvider.RunningWithElevatedPrivileges; }
         }
 
         private void AssertExpectedProperties(ServiceController testServiceController)
@@ -135,7 +73,7 @@ namespace System.ServiceProcess.Tests
 
             Assert.True(controller.CanStop);
             Assert.True(controller.CanPauseAndContinue);
-            Assert.False(controller.CanShutdown);
+            Assert.True(controller.CanShutdown);
         }
 
         [ConditionalFact(nameof(RunningWithElevatedPrivileges))]
@@ -154,10 +92,9 @@ namespace System.ServiceProcess.Tests
             controller.WaitForStatus(ServiceControllerStatus.Running, _testService.ControlTimeout);
             Assert.Equal(ServiceControllerStatus.Running, controller.Status);
 
-            // The test service writes the arguments that it was started with to the _testService.TestServiceRegistryKey.
-            // Read this key to verify that the arguments were properly passed to the service.
-            string argsString = Registry.GetValue(_testService.TestServiceRegistryKey, "ServiceArguments", null) as string;
-            Assert.Equal(string.Join(",", args), argsString);
+            string argsOutput = _testService.GetServiceOutput().Trim();
+            string argsInput = "OnStart args=" + string.Join(",", args);
+            Assert.Equal(argsInput, argsOutput);
         }
 
         [ConditionalFact(nameof(RunningWithElevatedPrivileges))]
@@ -228,32 +165,15 @@ namespace System.ServiceProcess.Tests
             // The test service creates a number of dependent services, each of which is depended on
             // by all the services created after it.
             var controller = new ServiceController(_testService.TestServiceName);
-            Assert.Equal(ExpectedDependentServiceCount, controller.DependentServices.Length);
+            Assert.Equal(0, controller.DependentServices.Length);
+            Assert.Equal(1, controller.ServicesDependedOn.Length);
 
-            for (int i = 0; i < controller.DependentServices.Length; i++)
-            {
-                var dependent = AssertHasDependent(controller, _testService.DependentTestServiceNamePrefix + i, _testService.DependentTestServiceDisplayNamePrefix + i);
-                Assert.Equal(ServiceType.Win32OwnProcess, dependent.ServiceType);
+            var dependentController = new ServiceController(_testService.TestServiceName + ".Dependent");
+            Assert.Equal(1, dependentController.DependentServices.Length);
+            Assert.Equal(0, dependentController.ServicesDependedOn.Length);
 
-                // Assert that this dependent service is depended on by all the test services created after it
-                Assert.Equal(ExpectedDependentServiceCount - i - 1, dependent.DependentServices.Length);
-
-                for (int j = i + 1; j < ExpectedDependentServiceCount; j++)
-                {
-                    AssertHasDependent(dependent, _testService.DependentTestServiceNamePrefix + j, _testService.DependentTestServiceDisplayNamePrefix + j);
-                }
-
-                // Assert that the dependent service depends on the main test service
-                AssertDependsOn(dependent, _testService.TestServiceName, _testService.TestServiceDisplayName);
-
-                // Assert that this dependent service depends on all the test services created before it
-                Assert.Equal(i + 1, dependent.ServicesDependedOn.Length);
-
-                for (int j = i - 1; j >= 0; j--)
-                {
-                    AssertDependsOn(dependent, _testService.DependentTestServiceNamePrefix + j, _testService.DependentTestServiceDisplayNamePrefix + j);
-                }
-            }
+            Assert.Equal(controller.ServicesDependedOn[0].ServiceName, dependentController.ServiceName);
+            Assert.Equal(dependentController.DependentServices[0].ServiceName, controller.ServiceName);
         }
 
         [ConditionalFact(nameof(RunningWithElevatedPrivileges))]
