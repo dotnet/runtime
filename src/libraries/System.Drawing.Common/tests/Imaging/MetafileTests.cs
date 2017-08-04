@@ -71,7 +71,6 @@ namespace System.Drawing.Imaging.Tests
             Assert.Throws<ExternalException>(() => new Metafile(GetPath(BmpFile)));
         }
 
-        [ActiveIssue(22598)]
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_NullString_ThrowsArgumentNullException()
@@ -93,13 +92,13 @@ namespace System.Drawing.Imaging.Tests
             yield return new object[] { string.Empty };
         }
 
-        [ActiveIssue(22640)]
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
-        [MemberData(nameof(InvalidPath_TestData))]
+        [InlineData(@"fileNo*-//\\#@(found")]
+        [InlineData("")]
         public void Ctor_InvalidPath_ThrowsArgumentException(string path)
         {
-            AssertExtensions.Throws<ArgumentException>(null, () => new Metafile(path));
+            AssertExtensions.Throws<ArgumentException>("path", null, () => new Metafile(path));
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
@@ -113,12 +112,11 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue(22741)]
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_NullStream_ThrowsArgumentException()
         {
-            AssertExtensions.Throws<ArgumentException>(null, () => new Metafile((Stream)null));
+            AssertExtensions.Throws<ArgumentNullException, ArgumentException>("stream", null, () => new Metafile((Stream)null));
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
@@ -414,7 +412,7 @@ namespace System.Drawing.Imaging.Tests
 
             File.Delete(fileName);
         }
-        
+
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(Description_TestData))]
@@ -458,7 +456,6 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue(22723)]
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_NullPath_ThrowsArgumentNullException()
@@ -472,7 +469,6 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue(22723)]
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(@"fileNo*-//\\#@(found")]
@@ -482,18 +478,17 @@ namespace System.Drawing.Imaging.Tests
             using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
             {
                 IntPtr referenceHdc = bufferGraphics.GetHdc();
-                AssertExtensions.Throws<ArgumentException>(null, () => new Metafile(fileName, referenceHdc));
-                AssertExtensions.Throws<ArgumentException>(null, () => new Metafile(fileName, referenceHdc, EmfType.EmfOnly));
-                AssertExtensions.Throws<ArgumentException>(null, () => new Metafile(fileName, referenceHdc, EmfType.EmfOnly, "description"));
+                AssertExtensions.Throws<ArgumentException>("path", null, () => new Metafile(fileName, referenceHdc));
+                AssertExtensions.Throws<ArgumentException>("path", null, () => new Metafile(fileName, referenceHdc, EmfType.EmfOnly));
+                AssertExtensions.Throws<ArgumentException>("path", null, () => new Metafile(fileName, referenceHdc, EmfType.EmfOnly, "description"));
             }
         }
 
-        [ActiveIssue(22723)]
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_PathTooLong_ThrowsPathTooLongException()
         {
-            string fileName = GetPath(new string('a', 261));
+            string fileName = GetPath(new string('a', short.MaxValue));
             using (var bufferGraphics = Graphics.FromHwndInternal(IntPtr.Zero))
             {
                 IntPtr referenceHdc = bufferGraphics.GetHdc();
@@ -955,18 +950,9 @@ namespace System.Drawing.Imaging.Tests
         [InlineData("")]
         public void Static_GetMetafileHeader_InvalidPath_ThrowsArgumentException(string fileName)
         {
-            AssertExtensions.Throws<ArgumentException>(null, () => Metafile.GetMetafileHeader(fileName));
+            AssertExtensions.Throws<ArgumentException>("path", null, () => Metafile.GetMetafileHeader(fileName));
         }
 
-        [ActiveIssue(22747)]
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ConditionalFact(Helpers.GdiplusIsAvailable)]
-        public void Static_GetMetafileHeader_PathTooLong_ThrowsPathTooLongException()
-        {
-            Assert.Throws<PathTooLongException>(() => Metafile.GetMetafileHeader(GetPath(new string('a', 261))));
-        }
-
-        [ActiveIssue(22747)]
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Static_GetMetafileHeader_NullString_ThrowsArgumentNullException()
@@ -1090,7 +1076,7 @@ namespace System.Drawing.Imaging.Tests
             GraphicsUnit graphicsUnit = (GraphicsUnit)int.MaxValue;
 
             AssertMetafileHeaderIsBlank(metafile.GetMetafileHeader());
-            Assert.Equal(new Rectangle(0, 0, 1, 1), metafile.GetBounds(ref graphicsUnit));           
+            Assert.Equal(new Rectangle(0, 0, 1, 1), metafile.GetBounds(ref graphicsUnit));
             Assert.Equal(GraphicsUnit.Pixel, graphicsUnit);
         }
 

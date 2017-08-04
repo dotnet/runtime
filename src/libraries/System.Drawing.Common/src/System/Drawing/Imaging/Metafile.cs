@@ -59,6 +59,9 @@ namespace System.Drawing.Imaging
         /// </summary>
         public Metafile(string filename)
         {
+            // Called in order to emulate exception behavior from netfx related to invalid file paths.
+            Path.GetFullPath(filename);
+
             IntPtr metafile = IntPtr.Zero;
 
             int status = SafeNativeMethods.Gdip.GdipCreateMetafileFromFile(filename, out metafile);
@@ -240,6 +243,9 @@ namespace System.Drawing.Imaging
         /// </summary>
         public Metafile(string fileName, IntPtr referenceHdc, EmfType type, String description)
         {
+            // Called in order to emulate exception behavior from netfx related to invalid file paths.
+            Path.GetFullPath(fileName);
+
             IntPtr metafile = IntPtr.Zero;
 
             int status = SafeNativeMethods.Gdip.GdipRecordMetafileFileName(fileName, new HandleRef(null, referenceHdc),
@@ -555,6 +561,9 @@ namespace System.Drawing.Imaging
         /// </summary>
         public static MetafileHeader GetMetafileHeader(string fileName)
         {
+            // Called in order to emulate exception behavior from netfx related to invalid file paths.
+            Path.GetFullPath(fileName);
+
             MetafileHeader header = new MetafileHeader();
 
             IntPtr memory = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(MetafileHeaderEmf)));

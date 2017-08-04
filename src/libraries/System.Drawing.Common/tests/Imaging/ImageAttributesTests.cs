@@ -1191,7 +1191,6 @@ namespace System.Drawing.Imaging.Tests
                 imageAttr.SetOutputChannelColorProfile(Helpers.GetTestColorProfilePath("RSWOP.icm"), ColorAdjustType.Default));
         }
 
-        [ActiveIssue(22367)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void SetOutputChannelColorProfile_Null_ThrowsArgumentNullException()
         {
@@ -1223,17 +1222,17 @@ namespace System.Drawing.Imaging.Tests
             }
         }
 
-        [ActiveIssue(22309)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void SetOutputChannelColorProfile_InvalidPath_ThrowsPathTooLongException()
         {
-            string fileNameTooLong = new string('a', 261);
+            string fileNameTooLong = new string('a', short.MaxValue);
             using (var imageAttr = new ImageAttributes())
             {
                 Assert.Throws<PathTooLongException>(() => imageAttr.SetOutputChannelColorProfile(fileNameTooLong));
                 Assert.Throws<PathTooLongException>(() => imageAttr.SetOutputChannelColorProfile(fileNameTooLong, ColorAdjustType.Default));
             }
         }
+
 
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [MemberData(nameof(ColorAdjustType_InvalidTypes_TestData))]
