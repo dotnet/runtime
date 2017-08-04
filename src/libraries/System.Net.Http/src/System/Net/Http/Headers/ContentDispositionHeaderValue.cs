@@ -22,8 +22,6 @@ namespace System.Net.Http.Headers
         private const string readDate = "read-date";
         private const string size = "size";
 
-        private static readonly char[] s_hexUpperChars = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-
         // Use ObjectCollection<T> since we may have multiple parameters with the same name.
         private ObjectCollection<NameValueHeaderValue> _parameters;
         private string _dispositionType;
@@ -408,7 +406,7 @@ namespace System.Net.Http.Headers
                 string processedValue = string.Empty;
                 if (parameter.EndsWith("*", StringComparison.Ordinal))
                 {
-                    processedValue = Encode5987(value);
+                    processedValue = HeaderUtilities.Encode5987(value);
                 }
                 else
                 {
@@ -534,35 +532,6 @@ namespace System.Net.Http.Headers
             return false;
         }
 
-        // Encode a string using RFC 5987 encoding.
-        // encoding'lang'PercentEncodedSpecials
-        private string Encode5987(string input)
-        {
-            StringBuilder builder = new StringBuilder("utf-8\'\'");
-            foreach (char c in input)
-            {
-                // attr-char = ALPHA / DIGIT / "!" / "#" / "$" / "&" / "+" / "-" / "." / "^" / "_" / "`" / "|" / "~"
-                //      ; token except ( "*" / "'" / "%" )
-                if (c > 0x7F) // Encodes as multiple utf-8 bytes
-                {
-                    byte[] bytes = Encoding.UTF8.GetBytes(c.ToString());
-                    foreach (byte b in bytes)
-                    {
-                        AddHexEscaped((char)b, builder);
-                    }
-                }
-                else if (!HttpRuleParser.IsTokenChar(c) || c == '*' || c == '\'' || c == '%')
-                {
-                    // ASCII - Only one encoded byte.
-                    AddHexEscaped(c, builder);
-                }
-                else
-                {
-                    builder.Append(c);
-                }
-            }
-            return builder.ToString();
-        }
 
         // Attempt to decode using RFC 5987 encoding.
         // encoding'language'my%20string
@@ -625,18 +594,6 @@ namespace System.Net.Http.Headers
 
             output = decoded.ToString();
             return true;
-        }
-
-
-        /// <summary>Transforms an ASCII character into its hexadecimal representation, adding the characters to a StringBuilder.</summary>
-        private static void AddHexEscaped(char c, StringBuilder destination)
-        {
-            Debug.Assert(destination != null);
-            Debug.Assert(c <= 0xFF);
-
-            destination.Append('%');
-            destination.Append(s_hexUpperChars[(c & 0xf0) >> 4]);
-            destination.Append(s_hexUpperChars[c & 0xf]);
         }
         #endregion Helpers
     }
