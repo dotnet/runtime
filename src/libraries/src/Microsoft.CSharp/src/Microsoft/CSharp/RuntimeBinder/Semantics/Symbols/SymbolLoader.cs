@@ -124,7 +124,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case TypeKind.TK_TypeParameterType:
                     return ((TypeParameterType)typeSym).GetEffectiveBaseClass();
                 case TypeKind.TK_NullableType:
-                    return ((NullableType)typeSym).GetAts(ErrorContext);
+                    return ((NullableType)typeSym).GetAts();
             }
             Debug.Assert(false, "Bad typeSym!");
             return null;
@@ -184,11 +184,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
             if (pDerived is NullableType derivedNub)
             {
-                pDerived = derivedNub.GetAts(ErrorContext);
-                if (pDerived == null)
-                {
-                    return false;
-                }
+                pDerived = derivedNub.GetAts();
             }
 
             if (!(pDerived is AggregateType atsDer))
