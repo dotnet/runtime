@@ -144,7 +144,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             }
             if (type is NullableType nub)
             {
-                type = nub.GetAts(_semanticChecker.SymbolLoader.GetErrorContext());
+                type = nub.GetAts();
             }
 
             if (!mem.Lookup(

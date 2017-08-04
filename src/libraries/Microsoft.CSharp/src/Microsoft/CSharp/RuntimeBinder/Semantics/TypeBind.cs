@@ -39,11 +39,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (type is NullableType nub)
             {
-                CType typeT = nub.GetAts(checker.ErrorContext);
-                if (typeT != null)
-                    type = typeT;
-                else
-                    type = type.GetNakedType(true);
+                type = nub.GetAts();
             }
 
             if (!(type is AggregateType ats))
@@ -358,9 +354,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     break;
 
                 case TypeKind.TK_NullableType:
-                    typeBnd = ((NullableType)typeBnd).GetAts(checker.ErrorContext);
-                    if (null == typeBnd)
-                        return true;
+                    typeBnd = ((NullableType)typeBnd).GetAts();
                     break;
 
                 case TypeKind.TK_AggregateType:
@@ -377,9 +371,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 case TypeKind.TK_PointerType:
                     return false;
                 case TypeKind.TK_NullableType:
-                    arg = ((NullableType)arg).GetAts(checker.ErrorContext);
-                    if (null == arg)
-                        return true;
+                    arg = ((NullableType)arg).GetAts();
                     // Fall through.
                     goto case TypeKind.TK_TypeParameterType;
                 case TypeKind.TK_TypeParameterType:

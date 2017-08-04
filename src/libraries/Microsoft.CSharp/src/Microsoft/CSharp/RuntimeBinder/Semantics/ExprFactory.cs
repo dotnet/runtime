@@ -33,9 +33,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public ExprArrayInit CreateArrayInit(CType type, Expr arguments, Expr argumentDimensions, int[] dimSizes, int dimSize) => 
             new ExprArrayInit(type, arguments, argumentDimensions, dimSizes, dimSize);
 
-        public ExprProperty CreateProperty(CType type, Expr optionalObject) => 
-            CreateProperty(type, null, null, CreateMemGroup(optionalObject, new MethPropWithInst()), null, null);
-
         public ExprProperty CreateProperty(CType type, Expr optionalObjectThrough, Expr arguments, ExprMemberGroup memberGroup, PropWithType property, MethWithType setMethod) => 
             new ExprProperty(type, optionalObjectThrough, arguments, memberGroup, property, setMethod);
 

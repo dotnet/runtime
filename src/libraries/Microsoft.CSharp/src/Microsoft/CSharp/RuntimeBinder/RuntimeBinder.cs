@@ -629,7 +629,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             }
             else if (callingObjectType is NullableType callingNub)
             {
-                callingType = callingNub.GetAts(_semanticChecker.SymbolLoader.GetErrorContext());
+                callingType = callingNub.GetAts();
             }
             else
             {

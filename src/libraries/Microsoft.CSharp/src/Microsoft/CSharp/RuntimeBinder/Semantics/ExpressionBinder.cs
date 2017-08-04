@@ -1390,7 +1390,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             CType typeObj = pObject.Type;
             CType typeTmp;
 
-            if (typeObj is NullableType nubTypeObj && (typeTmp = nubTypeObj.GetAts(GetErrorContext())) != null && typeTmp != swt.GetType())
+            if (typeObj is NullableType nubTypeObj && (typeTmp = nubTypeObj.GetAts()) != swt.GetType())
             {
                 typeObj = typeTmp;
             }
@@ -1503,12 +1503,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // Don't remap static or interface methods.
             if (typeObj is NullableType nubTypeObj)
             {
-                typeObj = nubTypeObj.GetAts(symbolLoader.GetErrorContext());
-                if (typeObj == null)
-                {
-                    VSFAIL("Why did GetAts return null?");
-                    return;
-                }
+                typeObj = nubTypeObj.GetAts();
             }
 
             // Don't remap non-virtual members
