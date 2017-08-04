@@ -37,6 +37,7 @@
     <Compile Include="System\MathF.netcoreapp.cs" />
     <Compile Include="System\StringComparer.netcoreapp.cs" />
     <Compile Include="System\UnloadingAndProcessExitTests.netcoreapp.cs" />
+    <Compile Include="System\IO\Path.IsPathFullyQualified.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="System\Environment.UserDomainName.cs" />
