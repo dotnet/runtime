@@ -8839,13 +8839,6 @@ void LinearScan::recordMaxSpill()
         maxSpill[TYP_FLOAT] += 1;
     }
 #endif // _TARGET_X86_
-
-    if (compiler->opts.compUseSoftFP)
-    {
-        JITDUMP("Adding a spill temp for moving target address to a register.\n");
-        maxSpill[TYP_INT] += 1;
-    }
-
     for (int i = 0; i < TYP_COUNT; i++)
     {
         if (var_types(i) != compiler->tmpNormalizeType(var_types(i)))
@@ -8923,6 +8916,15 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
                     ReturnTypeDesc* retTypeDesc = treeNode->AsCall()->GetReturnTypeDesc();
                     typ                         = retTypeDesc->GetReturnRegType(refPosition->getMultiRegIdx());
                 }
+#ifdef _TARGET_ARM_
+                else if (treeNode->OperIsPutArgReg())
+                {
+                    // For double arg regs, the type is changed to long since they must be passed via `r0-r3`.
+                    // However when they get spilled, they should be treated as separated int registers.
+                    var_types typNode = treeNode->TypeGet();
+                    typ = (typNode == TYP_LONG) ? TYP_INT : typNode;
+                }
+#endif // _TARGET_ARM_
                 else
                 {
                     typ = treeNode->TypeGet();
