@@ -92,7 +92,7 @@
     </When>
     <When Condition="'$(_runtimeOSFamily)' == 'rhel'">
       <PropertyGroup>
-        <PackageRID>rhel.7-$(ArchGroup)</PackageRID>
+        <PackageRID>$(OSRid)-$(ArchGroup)</PackageRID>
         <!-- Set the platform part of the RID if we are doing a portable build -->
         <PackageRID Condition="'$(PortableBuild)' == 'true'">linux-$(ArchGroup)</PackageRID>
       </PropertyGroup>
@@ -132,6 +132,7 @@
 
   <ItemGroup Condition="$(SupportedPackageOSGroups.Contains(';Linux;'))">
     <OfficialBuildRID Include="linux-x64" />
+    <OfficialBuildRID Include="rhel.6-x64" />
     <OfficialBuildRID Include="linux-arm">
       <Platform>arm</Platform>
     </OfficialBuildRID>
