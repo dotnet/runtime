@@ -14,7 +14,6 @@ using Xunit;
 namespace System.ServiceProcess.Tests
 {
     [OuterLoop(/* Modifies machine state */)]
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Appx doesn't allow to access ServiceBase")]
     public class ServiceBaseTests : IDisposable
     {
         private readonly TestServiceProvider _testService;
