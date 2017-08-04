@@ -430,13 +430,24 @@ namespace System.IO
             if (readbytes == 0)
                 return 0;
 
-            Debug.Assert(readbytes > 0);
-
             if (readbytes > count)
                 readbytes = count;
             Buffer.BlockCopy(_buffer, _readPos, array, offset, readbytes);
             _readPos += readbytes;
 
+            return readbytes;
+        }
+
+        private int ReadFromBuffer(Span<byte> destination)
+        {
+            int readbytes = Math.Min(_readLen - _readPos, destination.Length);
+            Debug.Assert(readbytes >= 0);
+            if (readbytes > 0)
+            {
+                bool copied = new Span<byte>(_buffer, _readPos, readbytes).TryCopyTo(destination);
+                Debug.Assert(copied);
+                _readPos += readbytes;
+            }
             return readbytes;
         }
 
@@ -516,6 +527,51 @@ namespace System.IO
             // underlying reads are significantly more expensive.
 
             return bytesFromBuffer + alreadySatisfied;
+        }
+
+        public override int Read(Span<byte> destination)
+        {
+            EnsureNotClosed();
+            EnsureCanRead();
+
+            // Try to read from the buffer.
+            int bytesFromBuffer = ReadFromBuffer(destination);
+            if (bytesFromBuffer == destination.Length)
+            {
+                // We got as many bytes as were asked for; we're done.
+                return bytesFromBuffer;
+            }
+
+            // We didn't get as many bytes as were asked for from the buffer, so try filling the buffer once.
+
+            if (bytesFromBuffer > 0)
+            {
+                destination = destination.Slice(bytesFromBuffer);
+            }
+
+            // The read buffer must now be empty.
+            Debug.Assert(_readLen == _readPos);
+            _readPos = _readLen = 0;
+
+            // If there was anything in the write buffer, clear it.
+            if (_writePos > 0)
+            {
+                FlushWrite();
+            }
+
+            if (destination.Length >= _bufferSize)
+            {
+                // If the requested read is larger than buffer size, avoid the buffer and just read
+                // directly into the destination.
+                return _stream.Read(destination) + bytesFromBuffer;
+            }
+            else
+            {
+                // Otherwise, fill the buffer, then read from that.
+                EnsureBufferAllocated();
+                _readLen = _stream.Read(_buffer, 0, _bufferSize);
+                return ReadFromBuffer(destination) + bytesFromBuffer;
+            }
         }
 
         private Task<int> LastSyncCompletedReadTask(int val)
@@ -713,6 +769,18 @@ namespace System.IO
             offset += bytesToWrite;
         }
 
+        private void WriteToBuffer(ref ReadOnlySpan<byte> source)
+        {
+            int bytesToWrite = Math.Min(_bufferSize - _writePos, source.Length);
+            if (bytesToWrite > 0)
+            {
+                EnsureBufferAllocated();
+                source.Slice(0, bytesToWrite).CopyTo(new Span<byte>(_buffer, _writePos, bytesToWrite));
+                _writePos += bytesToWrite;
+                source = source.Slice(bytesToWrite);
+            }
+        }
+
         private void WriteToBuffer(byte[] array, ref int offset, ref int count, out Exception error)
         {
             try
@@ -725,7 +793,6 @@ namespace System.IO
                 error = ex;
             }
         }
-
 
         public override void Write(byte[] array, int offset, int count)
         {
@@ -863,10 +930,79 @@ namespace System.IO
             }
         }
 
+        public override void Write(ReadOnlySpan<byte> source)
+        {
+            EnsureNotClosed();
+            EnsureCanWrite();
+
+            if (_writePos == 0)
+            {
+                ClearReadBufferBeforeWrite();
+            }
+            Debug.Assert(_writePos < _bufferSize);
+
+            int totalUserbytes;
+            bool useBuffer;
+            checked
+            {
+                // We do not expect buffer sizes big enough for an overflow, but if it happens, lets fail early:
+                totalUserbytes = _writePos + source.Length;
+                useBuffer = (totalUserbytes + source.Length < (_bufferSize + _bufferSize));
+            }
+
+            if (useBuffer)
+            {
+                // Copy as much data to the buffer as will fit.  If there's still room in the buffer,
+                // everything must have fit.
+                WriteToBuffer(ref source);
+                if (_writePos < _bufferSize)
+                {
+                    Debug.Assert(source.IsEmpty);
+                    return;
+                }
+
+                Debug.Assert(_writePos == _bufferSize);
+                Debug.Assert(_buffer != null);
+
+                // Output the buffer to the underlying stream.
+                _stream.Write(_buffer, 0, _writePos);
+                _writePos = 0;
+
+                // Now write the remainder.  It must fit, as we're only on this path if that's true.
+                WriteToBuffer(ref source);
+
+                Debug.Assert(source.IsEmpty);
+                Debug.Assert(_writePos < _bufferSize);
+            }
+            else // skip the buffer
+            {
+                // Flush anything existing in the buffer.
+                if (_writePos > 0)
+                {
+                    Debug.Assert(_buffer != null);
+                    Debug.Assert(totalUserbytes >= _bufferSize);
+
+                    // Try avoiding extra write to underlying stream by combining previously buffered data with current user data:
+                    if (totalUserbytes <= (_bufferSize + _bufferSize) && totalUserbytes <= MaxShadowBufferSize)
+                    {
+                        EnsureShadowBufferAllocated();
+                        source.CopyTo(new Span<byte>(_buffer, _writePos, source.Length));
+                        _stream.Write(_buffer, 0, totalUserbytes);
+                        _writePos = 0;
+                        return;
+                    }
+
+                    _stream.Write(_buffer, 0, _writePos);
+                    _writePos = 0;
+                }
+
+                // Write out user data.
+                _stream.Write(source);
+            }
+        }
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-
             if (buffer == null)
                 throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
             if (offset < 0)
