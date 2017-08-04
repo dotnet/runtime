@@ -234,9 +234,6 @@
   <data name="BadArgTypes" xml:space="preserve">
     <value>'{0}' に最も適しているオーバーロード メソッドには無効な引数がいくつか含まれています</value>
   </data>
-  <data name="BadArgType" xml:space="preserve">
-    <value>引数 '{0}': '{1}' から '{2}' へ変換できません</value>
-  </data>
   <data name="RefLvalueExpected" xml:space="preserve">
     <value>ref または out 引数は、割り当て可能な変数でなければなりません。</value>
   </data>
@@ -264,12 +261,6 @@
   <data name="ReturnNotLValue" xml:space="preserve">
     <value>変数ではないため、'{0}' の戻り値を変更できません</value>
   </data>
-  <data name="BadArgExtraRef" xml:space="preserve">
-    <value>引数 '{0}' を '{1}' キーワードと共に渡すことはできません</value>
-  </data>
-  <data name="BadArgRef" xml:space="preserve">
-    <value>引数 '{0}' は '{1}' キーワードと共に渡されなければなりません</value>
-  </data>
   <data name="AssgReadonly2" xml:space="preserve">
     <value>読み取り専用フィールド '{0}' のメンバーは変更できません (コンストラクターまたは変数初期化子では可)。</value>
   </data>
@@ -296,9 +287,6 @@
   </data>
   <data name="BadExtensionArgTypes" xml:space="preserve">
     <value>'{0}' に '{1}' の定義が含まれておらず、最も適している拡張メソッド オーバーロード '{2}' には無効な引数がいくつか含まれています</value>
-  </data>
-  <data name="BadInstanceArgType" xml:space="preserve">
-    <value>インスタンス引数: '{0}' から '{1}' へ変換できません</value>
   </data>
   <data name="NonInvocableMemberCalled" xml:space="preserve">
     <value>実行不可能なメンバー '{0}' をメソッドのように使用することはできません。</value>

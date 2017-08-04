@@ -302,10 +302,6 @@
           <source>The best overloaded method match for '{0}' has some invalid arguments</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">La mejor coincidencia de método sobrecargado para '{0}' tiene algunos argumentos no válidos</target>
         </trans-unit>
-        <trans-unit id="BadArgType" translate="yes" xml:space="preserve">
-          <source>Argument '{0}': cannot convert from '{1}' to '{2}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Argumento '{0}': no se puede convertir de '{1}' a '{2}'</target>
-        </trans-unit>
         <trans-unit id="RefLvalueExpected" translate="yes" xml:space="preserve">
           <source>A ref or out argument must be an assignable variable</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Un argumento out o ref debe ser una variable asignable</target>
@@ -342,14 +338,6 @@
           <source>Cannot modify the return value of '{0}' because it is not a variable</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">No se puede modificar el valor devuelto de '{0}' porque no es una variable.</target>
         </trans-unit>
-        <trans-unit id="BadArgExtraRef" translate="yes" xml:space="preserve">
-          <source>Argument '{0}' should not be passed with the '{1}' keyword</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">No se debe pasar el argumento '{0}' con la palabra clave '{1}'</target>
-        </trans-unit>
-        <trans-unit id="BadArgRef" translate="yes" xml:space="preserve">
-          <source>Argument '{0}' must be passed with the '{1}' keyword</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">El argumento '{0}' se debe pasar con la palabra clave '{1}'</target>
-        </trans-unit>
         <trans-unit id="AssgReadonly2" translate="yes" xml:space="preserve">
           <source>Members of readonly field '{0}' cannot be modified (except in a constructor or a variable initializer)</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Los miembros del campo de solo lectura '{0}' no se pueden modificar (excepto en un constructor o inicializador de variable)</target>
@@ -385,10 +373,6 @@
         <trans-unit id="BadExtensionArgTypes" translate="yes" xml:space="preserve">
           <source>'{0}' does not contain a definition for '{1}' and the best extension method overload '{2}' has some invalid arguments</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}' no contiene una definición para '{1}' y la mejor sobrecarga del método de extensión '{2}' tiene algunos argumentos no válidos</target>
-        </trans-unit>
-        <trans-unit id="BadInstanceArgType" translate="yes" xml:space="preserve">
-          <source>Instance argument: cannot convert from '{0}' to '{1}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Argumento de instancia: no se puede convertir de '{0}' a '{1}'</target>
         </trans-unit>
         <trans-unit id="NonInvocableMemberCalled" translate="yes" xml:space="preserve">
           <source>Non-invocable member '{0}' cannot be used like a method.</source>

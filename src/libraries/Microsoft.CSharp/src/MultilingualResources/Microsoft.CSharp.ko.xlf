@@ -302,10 +302,6 @@
           <source>The best overloaded method match for '{0}' has some invalid arguments</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}'에 가장 일치하는 오버로드된 메서드에 잘못된 인수가 있습니다.</target>
         </trans-unit>
-        <trans-unit id="BadArgType" translate="yes" xml:space="preserve">
-          <source>Argument '{0}': cannot convert from '{1}' to '{2}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}' 인수: '{1}'에서 '{2}'(으)로 변환할 수 없습니다.</target>
-        </trans-unit>
         <trans-unit id="RefLvalueExpected" translate="yes" xml:space="preserve">
           <source>A ref or out argument must be an assignable variable</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">ref 또는 out 인수는 할당 가능한 변수여야 합니다.</target>
@@ -342,14 +338,6 @@
           <source>Cannot modify the return value of '{0}' because it is not a variable</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}'은(는) 변수가 아니므로 해당 반환 값을 수정할 수 없습니다.</target>
         </trans-unit>
-        <trans-unit id="BadArgExtraRef" translate="yes" xml:space="preserve">
-          <source>Argument '{0}' should not be passed with the '{1}' keyword</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}' 인수는 '{1}' 키워드와 함께 전달할 수 없습니다.</target>
-        </trans-unit>
-        <trans-unit id="BadArgRef" translate="yes" xml:space="preserve">
-          <source>Argument '{0}' must be passed with the '{1}' keyword</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}' 인수는 '{1}' 키워드와 함께 전달해야 합니다.</target>
-        </trans-unit>
         <trans-unit id="AssgReadonly2" translate="yes" xml:space="preserve">
           <source>Members of readonly field '{0}' cannot be modified (except in a constructor or a variable initializer)</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">읽기 전용 필드 '{0}'의 멤버는 수정할 수 없습니다. 단 생성자 또는 변수 이니셜라이저에서는 예외입니다.</target>
@@ -385,10 +373,6 @@
         <trans-unit id="BadExtensionArgTypes" translate="yes" xml:space="preserve">
           <source>'{0}' does not contain a definition for '{1}' and the best extension method overload '{2}' has some invalid arguments</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}'에 '{1}'에 대한 정의가 없으며 가장 적합한 확장 메서드 오버로드 '{2}'에 잘못된 인수가 있습니다.</target>
-        </trans-unit>
-        <trans-unit id="BadInstanceArgType" translate="yes" xml:space="preserve">
-          <source>Instance argument: cannot convert from '{0}' to '{1}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">인스턴스 인수: '{0}'에서 '{1}'(으)로 변환할 수 없습니다.</target>
         </trans-unit>
         <trans-unit id="NonInvocableMemberCalled" translate="yes" xml:space="preserve">
           <source>Non-invocable member '{0}' cannot be used like a method.</source>

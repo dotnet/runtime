@@ -248,7 +248,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             MethodSymbol ctor = FindDelegateConstructor(delegateType);
             if (ctor == null && fReportErrors)
             {
-                GetErrorContext().Error(ErrorCode.ERR_BadDelegateConstructor, delegateType);
+                throw GetErrorContext().Error(ErrorCode.ERR_BadDelegateConstructor, delegateType);
             }
 
             return ctor;

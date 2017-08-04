@@ -234,9 +234,6 @@
   <data name="BadArgTypes" xml:space="preserve">
     <value>La mejor coincidencia de método sobrecargado para '{0}' tiene algunos argumentos no válidos</value>
   </data>
-  <data name="BadArgType" xml:space="preserve">
-    <value>Argumento '{0}': no se puede convertir de '{1}' a '{2}'</value>
-  </data>
   <data name="RefLvalueExpected" xml:space="preserve">
     <value>Un argumento out o ref debe ser una variable asignable</value>
   </data>
@@ -264,12 +261,6 @@
   <data name="ReturnNotLValue" xml:space="preserve">
     <value>No se puede modificar el valor devuelto de '{0}' porque no es una variable.</value>
   </data>
-  <data name="BadArgExtraRef" xml:space="preserve">
-    <value>No se debe pasar el argumento '{0}' con la palabra clave '{1}'</value>
-  </data>
-  <data name="BadArgRef" xml:space="preserve">
-    <value>El argumento '{0}' se debe pasar con la palabra clave '{1}'</value>
-  </data>
   <data name="AssgReadonly2" xml:space="preserve">
     <value>Los miembros del campo de solo lectura '{0}' no se pueden modificar (excepto en un constructor o inicializador de variable)</value>
   </data>
@@ -296,9 +287,6 @@
   </data>
   <data name="BadExtensionArgTypes" xml:space="preserve">
     <value>'{0}' no contiene una definición para '{1}' y la mejor sobrecarga del método de extensión '{2}' tiene algunos argumentos no válidos</value>
-  </data>
-  <data name="BadInstanceArgType" xml:space="preserve">
-    <value>Argumento de instancia: no se puede convertir de '{0}' a '{1}'</value>
   </data>
   <data name="NonInvocableMemberCalled" xml:space="preserve">
     <value>No se puede usar como método el miembro '{0}' no invocable.</value>

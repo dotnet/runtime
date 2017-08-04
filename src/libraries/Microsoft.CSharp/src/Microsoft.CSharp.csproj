@@ -33,15 +33,10 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\CSharpSetMemberBinder.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\CSharpUnaryOperationBinder.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Error.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Errors\CController.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Errors\CError.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Errors\CErrorFactory.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Errors\CParameterizedError.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Errors\ErrorCode.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Errors\ErrorFacts.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Errors\ErrorFmt.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Errors\ErrorHandling.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Errors\IErrorSink.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Errors\MessageID.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Errors\UserStringBuilder.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ExpressionTreeCallRewriter.cs" />
@@ -49,7 +44,6 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ICSharpInvokeOrInvokeMemberBinder.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\ResetBindException.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\RuntimeBinder.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\RuntimeBinderController.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\RuntimeBinderException.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\RuntimeBinderExtensions.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\RuntimeBinderInternalCompilerException.cs" />
@@ -77,7 +71,6 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\GroupToArgsBinder.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\GroupToArgsBinderResult.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\ImplicitConversion.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\LangCompiler.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\MemberLookup.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\MemberLookupResults.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\MethodIterator.cs" />

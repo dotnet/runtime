@@ -40,9 +40,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             private TypeArray _pCurrentParameters;
             private TypeArray _pBestParameters;
             private int _nArgBest;
-            // Keep track of the first 20 or so syms with the wrong arg count.
-            private readonly SymWithType[] _swtWrongCount = new SymWithType[20];
-            private int _nWrongCount;
             private bool _bIterateToEndOfNsList;               // we have found an appliacable extension method only itereate to 
             // end of current namespaces extension method list
             private readonly GroupToArgsBinderResult _results;
@@ -81,7 +78,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 _pCurrentParameters = null;
                 _pBestParameters = null;
                 _nArgBest = -1;
-                _nWrongCount = 0;
                 _bIterateToEndOfNsList = false;
                 _results = new GroupToArgsBinderResult();
                 _methList = new List<CandidateFunctionMember>();
@@ -108,10 +104,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 {
                     if (bReportErrors)
                     {
-                        ReportErrorsOnFailure();
+                        throw ReportErrorsOnFailure();
                     }
+
                     return false;
                 }
+
                 return true;
             }
 
@@ -144,7 +142,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 bool fExpanded = false;
                 bool bSearchForExpanded = true;
-                int cswtMaxWrongCount = _swtWrongCount.Length;
                 bool allCandidatesUnsupported = true;
                 bool lookedAtCandidates = false;
 
@@ -218,11 +215,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         // then store it in our cache and go to the next sym.
                         if (_pCurrentParameters.Count != _pArguments.carg)
                         {
-                            if (_nWrongCount < cswtMaxWrongCount &&
-                                    (!_pCurrentSym.isParamArray || _pArguments.carg < _pCurrentParameters.Count - 1))
-                            {
-                                _swtWrongCount[_nWrongCount++] = new SymWithType(_pCurrentSym, _pCurrentType);
-                            }
                             bSearchForExpanded = true;
                             continue;
                         }
@@ -376,12 +368,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                                     pAmbig1.mpwi.GetType() != pAmbig2.mpwi.GetType() ||
                                     pAmbig1.mpwi.MethProp().Params == pAmbig2.mpwi.MethProp().Params)
                                 {
-                                    GetErrorContext().Error(ErrorCode.ERR_AmbigCall, pAmbig1.mpwi, pAmbig2.mpwi);
+                                    throw GetErrorContext().Error(ErrorCode.ERR_AmbigCall, pAmbig1.mpwi, pAmbig2.mpwi);
                                 }
                                 else
                                 {
                                     // The two signatures are identical so don't use the type args in the error message.
-                                    GetErrorContext().Error(ErrorCode.ERR_AmbigCall, pAmbig1.mpwi.MethProp(), pAmbig2.mpwi.MethProp());
+                                    throw GetErrorContext().Error(ErrorCode.ERR_AmbigCall, pAmbig1.mpwi.MethProp(), pAmbig2.mpwi.MethProp());
                                 }
                             }
                         }
@@ -1250,13 +1242,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
             }
 
-            private void ReportErrorsOnFailure()
+            private Exception ReportErrorsOnFailure()
             {
                 // First and foremost, report if the user specified a name more than once.
                 if (_pDuplicateSpecifiedName != null)
                 {
-                    GetErrorContext().Error(ErrorCode.ERR_DuplicateNamedArgument, _pDuplicateSpecifiedName);
-                    return;
+                    return GetErrorContext().Error(ErrorCode.ERR_DuplicateNamedArgument, _pDuplicateSpecifiedName);
                 }
 
                 Debug.Assert(_methList.IsEmpty());
@@ -1264,16 +1255,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 if (_results.GetInaccessibleResult())
                 {
                     // We might have called this, but it is inaccessible...
-                    GetSemanticChecker().ReportAccessError(_results.GetInaccessibleResult(), _pExprBinder.ContextForMemberLookup(), GetTypeQualifier(_pGroup));
-                    return;
+                    return GetSemanticChecker().ReportAccessError(_results.GetInaccessibleResult(), _pExprBinder.ContextForMemberLookup(), GetTypeQualifier(_pGroup));
                 }
 
                 // Report bogus.
                 if (_mpwiBogus)
                 {
                     // We might have called this, but it is bogus...
-                    GetErrorContext().ErrorRef(ErrorCode.ERR_BindToBogus, _mpwiBogus);
-                    return;
+                    return GetErrorContext().Error(ErrorCode.ERR_BindToBogus, _mpwiBogus);
                 }
 
                 bool bUseDelegateErrors = false;
@@ -1294,9 +1283,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 if (_results.GetBestResult())
                 {
                     // If we had some invalid arguments for best matching.
-                    ReportErrorsForBestMatching(bUseDelegateErrors, nameErr);
+                    return ReportErrorsForBestMatching(bUseDelegateErrors, nameErr);
                 }
-                else if (_results.GetUninferableResult() || _mpwiCantInferInstArg)
+
+                if (_results.GetUninferableResult() || _mpwiCantInferInstArg)
                 {
                     if (!_results.GetUninferableResult())
                     {
@@ -1305,171 +1295,84 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
                     Debug.Assert(_results.GetUninferableResult().Sym is MethodSymbol);
 
-                    MethodSymbol sym = _results.GetUninferableResult().Meth();
-                    TypeArray pCurrentParameters = sym.Params;
-                    // if we tried to bind to an extensionmethod and the instance argument Type Inference failed then the method does not exist
-                    // on the type at all. this is treated as a lookup error
-                    CType type = null;
-                    if (_pGroup.OptionalObject != null)
-                    {
-                        type = _pGroup.OptionalObject.Type;
-                    }
-                    else if (_pGroup.OptionalLHS != null)
-                    {
-                        type = _pGroup.OptionalLHS.Type;
-                    }
-
                     MethWithType mwtCantInfer = new MethWithType();
                     mwtCantInfer.Set(_results.GetUninferableResult().Meth(), _results.GetUninferableResult().GetType());
-                    GetErrorContext().Error(ErrorCode.ERR_CantInferMethTypeArgs, mwtCantInfer);
+                    return GetErrorContext().Error(ErrorCode.ERR_CantInferMethTypeArgs, mwtCantInfer);
                 }
-                else if (_mwtBadArity)
+
+                if (_mwtBadArity)
                 {
                     int cvar = _mwtBadArity.Meth().typeVars.Count;
-                    GetErrorContext().ErrorRef(cvar > 0 ? ErrorCode.ERR_BadArity : ErrorCode.ERR_HasNoTypeVars, _mwtBadArity, new ErrArgSymKind(_mwtBadArity.Meth()), _pArguments.carg);
+                    return GetErrorContext().Error(cvar > 0 ? ErrorCode.ERR_BadArity : ErrorCode.ERR_HasNoTypeVars, _mwtBadArity, new ErrArgSymKind(_mwtBadArity.Meth()), _pArguments.carg);
                 }
-                else if (_mpwiParamTypeConstraints)
+
+                if (_mpwiParamTypeConstraints)
                 {
                     // This will always report an error
                     TypeBind.CheckMethConstraints(GetSemanticChecker(), GetErrorContext(), new MethWithInst(_mpwiParamTypeConstraints));
+                    Debug.Fail("Unreachable");
+                    return null;
                 }
-                else if (_pInvalidSpecifiedName != null)
+
+                if (_pInvalidSpecifiedName != null)
                 {
                     // Give a better message for delegate invoke.
-                    if (_pGroup.OptionalObject != null &&
-                            _pGroup.OptionalObject.Type is AggregateType agg &&
-                            agg.GetOwningAggregate().IsDelegate())
-                    {
-                        GetErrorContext().Error(ErrorCode.ERR_BadNamedArgumentForDelegateInvoke, agg.GetOwningAggregate().name, _pInvalidSpecifiedName);
-                    }
-                    else
-                    {
-                        GetErrorContext().Error(ErrorCode.ERR_BadNamedArgument, _pGroup.Name, _pInvalidSpecifiedName);
-                    }
+                    return _pGroup.OptionalObject != null && _pGroup.OptionalObject.Type is AggregateType agg
+                           && agg.GetOwningAggregate().IsDelegate()
+                        ? GetErrorContext().Error(
+                            ErrorCode.ERR_BadNamedArgumentForDelegateInvoke, agg.GetOwningAggregate().name,
+                            _pInvalidSpecifiedName)
+                        : GetErrorContext().Error(ErrorCode.ERR_BadNamedArgument, _pGroup.Name, _pInvalidSpecifiedName);
                 }
-                else if (_pNameUsedInPositionalArgument != null)
+
+                if (_pNameUsedInPositionalArgument != null)
                 {
-                    GetErrorContext().Error(ErrorCode.ERR_NamedArgumentUsedInPositional, _pNameUsedInPositionalArgument);
+                    return GetErrorContext().Error(ErrorCode.ERR_NamedArgumentUsedInPositional, _pNameUsedInPositionalArgument);
                 }
-                else
+
+                if (_pDelegate != null)
                 {
-                    CParameterizedError error;
-
-                    if (_pDelegate != null)
-                    {
-                        GetErrorContext().MakeError(out error, ErrorCode.ERR_MethDelegateMismatch, nameErr, _pDelegate);
-                        GetErrorContext().AddRelatedTypeLoc(error, _pDelegate);
-                    }
-                    else
-                    {
-                        // The number of arguments must be wrong.
-
-                        if (_fCandidatesUnsupported)
-                        {
-                            GetErrorContext().MakeError(out error, ErrorCode.ERR_BindToBogus, nameErr);
-                        }
-                        else if (bUseDelegateErrors)
-                        {
-                            Debug.Assert(0 == (_pGroup.Flags & EXPRFLAG.EXF_CTOR));
-                            GetErrorContext().MakeError(out error, ErrorCode.ERR_BadDelArgCount, nameErr, _pArguments.carg);
-                        }
-                        else
-                        {
-                            if (0 != (_pGroup.Flags & EXPRFLAG.EXF_CTOR))
-                            {
-                                Debug.Assert(!(_pGroup.ParentType is TypeParameterType));
-                                GetErrorContext().MakeError(out error, ErrorCode.ERR_BadCtorArgCount, _pGroup.ParentType, _pArguments.carg);
-                            }
-                            else
-                            {
-                                GetErrorContext().MakeError(out error, ErrorCode.ERR_BadArgCount, nameErr, _pArguments.carg);
-                            }
-                        }
-                    }
-
-                    // Report possible matches (same name and is accessible). We stored these in m_swtWrongCount.
-                    for (int i = 0; i < _nWrongCount; i++)
-                    {
-                        if (GetSemanticChecker().CheckAccess(
-                                    _swtWrongCount[i].Sym,
-                                    _swtWrongCount[i].GetType(),
-                                    _pExprBinder.ContextForMemberLookup(),
-                                    GetTypeQualifier(_pGroup)))
-                        {
-                            GetErrorContext().AddRelatedSymLoc(error, _swtWrongCount[i].Sym);
-                        }
-                    }
-                    GetErrorContext().SubmitError(error);
+                    return GetErrorContext().Error(ErrorCode.ERR_MethDelegateMismatch, nameErr, _pDelegate);
                 }
+
+                // The number of arguments must be wrong.
+
+                if (_fCandidatesUnsupported)
+                {
+                    return GetErrorContext().Error(ErrorCode.ERR_BindToBogus, nameErr);
+                }
+
+                if (bUseDelegateErrors)
+                {
+                    Debug.Assert(0 == (_pGroup.Flags & EXPRFLAG.EXF_CTOR));
+                    return GetErrorContext().Error(ErrorCode.ERR_BadDelArgCount, nameErr, _pArguments.carg);
+                }
+
+                if (0 != (_pGroup.Flags & EXPRFLAG.EXF_CTOR))
+                {
+                    Debug.Assert(!(_pGroup.ParentType is TypeParameterType));
+                    return GetErrorContext().Error(ErrorCode.ERR_BadCtorArgCount, _pGroup.ParentType, _pArguments.carg);
+                }
+
+                return GetErrorContext().Error(ErrorCode.ERR_BadArgCount, nameErr, _pArguments.carg);
             }
-            private void ReportErrorsForBestMatching(bool bUseDelegateErrors, Name nameErr)
+
+            private RuntimeBinderException ReportErrorsForBestMatching(bool bUseDelegateErrors, Name nameErr)
             {
                 // Best matching overloaded method 'name' had some invalid arguments.
                 if (_pDelegate != null)
                 {
-                    GetErrorContext().ErrorRef(ErrorCode.ERR_MethDelegateMismatch, nameErr, _pDelegate, _results.GetBestResult());
-                    return;
+                    return GetErrorContext().Error(
+                        ErrorCode.ERR_MethDelegateMismatch, nameErr, _pDelegate, _results.GetBestResult());
                 }
 
                 if (bUseDelegateErrors)
                 {
                     // Point to the Delegate, not the Invoke method
-                    GetErrorContext().Error(ErrorCode.ERR_BadDelArgTypes, _results.GetBestResult().GetType());
-                }
-                else
-                {
-                    if (_results.GetBestResult().Sym is MethodSymbol methSym && methSym.IsExtension() && _pGroup.OptionalObject != null)
-                    {
-                        GetErrorContext().Error(ErrorCode.ERR_BadExtensionArgTypes, _pGroup.OptionalObject.Type, _pGroup.Name, _results.GetBestResult().Sym);
-                    }
-                    else
-                    {
-                        GetErrorContext().Error(ErrorCode.ERR_BadArgTypes, _results.GetBestResult());
-                    }
+                    return GetErrorContext().Error(ErrorCode.ERR_BadDelArgTypes, _results.GetBestResult().GetType());
                 }
 
-                // Argument X: cannot convert type 'Y' to type 'Z'
-                for (int ivar = 0; ivar < _pArguments.carg; ivar++)
-                {
-                    CType var = _pBestParameters[ivar];
-
-                    if (!_pExprBinder.canConvert(_pArguments.prgexpr[ivar], var))
-                    {
-                        // See if they just differ in out / ref.
-                        CType argStripped = _pArguments.types[ivar] is ParameterModifierType modArg ? modArg.GetParameterType() : _pArguments.types[ivar];
-                        CType varStripped = var is ParameterModifierType modVar ? modVar.GetParameterType() : var;
-                        if (argStripped == varStripped)
-                        {
-                            if (varStripped != var)
-                            {
-                                // The argument is wrong in ref / out-ness.
-                                GetErrorContext().Error(ErrorCode.ERR_BadArgRef, ivar + 1, var is ParameterModifierType mod && mod.isOut ? "out" : "ref");
-                            }
-                            else
-                            {
-                                CType argument = _pArguments.types[ivar];
-
-                                // the argument is decorated, but doesn't needs a 'ref' or 'out'
-                                GetErrorContext().Error(ErrorCode.ERR_BadArgExtraRef, ivar + 1, argument is ParameterModifierType mod && mod.isOut ? "out" : "ref");
-                            }
-                        }
-                        else
-                        {
-                            // if we tried to bind to an extensionmethod and the instance argument conversion failed then the method does not exist
-                            // on the type at all. 
-                            Symbol sym = _results.GetBestResult().Sym;
-                            if (ivar == 0 && sym is MethodSymbol meth && meth.IsExtension() && _pGroup.OptionalObject != null &&
-                                !_pExprBinder.canConvertInstanceParamForExtension(_pGroup.OptionalObject, meth.Params[0]))
-                            {
-                                GetErrorContext().Error(ErrorCode.ERR_BadInstanceArgType, _pGroup.OptionalObject.Type, var);
-                            }
-                            else
-                            {
-                                GetErrorContext().Error(ErrorCode.ERR_BadArgType, ivar + 1, new ErrArg(_pArguments.types[ivar], ErrArgFlags.Unique), new ErrArg(var, ErrArgFlags.Unique));
-                            }
-                        }
-                    }
-                }
+                return GetErrorContext().Error(ErrorCode.ERR_BadArgTypes, _results.GetBestResult());
             }
         }
     }
