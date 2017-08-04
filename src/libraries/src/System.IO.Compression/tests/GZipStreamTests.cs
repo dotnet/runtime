@@ -381,5 +381,41 @@ namespace System.IO.Compression.Tests
             zip.Dispose();
             Assert.False(zip.CanSeek);
         }
+
+        [Fact]
+        public void DerivedStream_ReadWriteSpan_UsesReadWriteArray()
+        {
+            var ms = new MemoryStream();
+            using (var compressor = new DerivedGZipStream(ms, CompressionMode.Compress, leaveOpen:true))
+            {
+                compressor.Write(new Span<byte>(new byte[1]));
+                Assert.True(compressor.WriteArrayInvoked);
+            }
+            ms.Position = 0;
+            using (var compressor = new DerivedGZipStream(ms, CompressionMode.Decompress, leaveOpen: true))
+            {
+                compressor.Read(new Span<byte>(new byte[1]));
+                Assert.True(compressor.ReadArrayInvoked);
+            }
+        }
+
+        private sealed class DerivedGZipStream : GZipStream
+        {
+            public bool ReadArrayInvoked, WriteArrayInvoked;
+
+            public DerivedGZipStream(Stream stream, CompressionMode mode, bool leaveOpen) : base(stream, mode, leaveOpen) { }
+
+            public override int Read(byte[] array, int offset, int count)
+            {
+                ReadArrayInvoked = true;
+                return base.Read(array, offset, count);
+            }
+
+            public override void Write(byte[] array, int offset, int count)
+            {
+                WriteArrayInvoked = true;
+                base.Write(array, offset, count);
+            }
+        }
     }
 }

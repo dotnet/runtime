@@ -23,7 +23,7 @@ namespace System.IO.Compression
         private int _activeAsyncOperation; // 1 == true, 0 == false
         private bool _wroteBytes;
 
-        public DeflateStream(Stream stream, CompressionMode mode): this(stream, mode, leaveOpen: false)
+        public DeflateStream(Stream stream, CompressionMode mode) : this(stream, mode, leaveOpen: false)
         {
         }
 
@@ -232,22 +232,38 @@ namespace System.IO.Compression
 
         public override int Read(byte[] array, int offset, int count)
         {
-            EnsureDecompressionMode();
             ValidateParameters(array, offset, count);
+            return ReadCore(new Span<byte>(array, offset, count));
+        }
+
+        public override int Read(Span<byte> destination)
+        {
+            if (GetType() != typeof(DeflateStream))
+            {
+                // DeflateStream is not sealed, and a derived type may have overridden Read(byte[], int, int) prior
+                // to this Read(Span<byte>) overload being introduced.  In that case, this Read(Span<byte>) overload
+                // should use the behavior of Read(byte[],int,int) overload.
+                return base.Read(destination);
+            }
+            else
+            {
+                return ReadCore(destination);
+            }
+        }
+
+        internal int ReadCore(Span<byte> destination)
+        {
+            EnsureDecompressionMode();
             EnsureNotDisposed();
             EnsureBufferInitialized();
 
-            int bytesRead;
-            int currentOffset = offset;
-            int remainingCount = count;
+            int totalRead = 0;
 
             while (true)
             {
-                bytesRead = _inflater.Inflate(array, currentOffset, remainingCount);
-                currentOffset += bytesRead;
-                remainingCount -= bytesRead;
-
-                if (remainingCount == 0)
+                int bytesRead = _inflater.Inflate(destination.Slice(totalRead));
+                totalRead += bytesRead;
+                if (totalRead == destination.Length)
                 {
                     break;
                 }
@@ -274,7 +290,7 @@ namespace System.IO.Compression
                 _inflater.SetInput(_buffer, 0, bytes);
             }
 
-            return count - remainingCount;
+            return totalRead;
         }
 
         private void ValidateParameters(byte[] array, int offset, int count)
@@ -438,18 +454,43 @@ namespace System.IO.Compression
 
         public override void Write(byte[] array, int offset, int count)
         {
-            // Validate the state and the parameters
-            EnsureCompressionMode();
             ValidateParameters(array, offset, count);
+            WriteCore(new ReadOnlySpan<byte>(array, offset, count));
+        }
+
+        public override void Write(ReadOnlySpan<byte> source)
+        {
+            if (GetType() != typeof(DeflateStream))
+            {
+                // DeflateStream is not sealed, and a derived type may have overridden Write(byte[], int, int) prior
+                // to this Write(ReadOnlySpan<byte>) overload being introduced.  In that case, this Write(ReadOnlySpan<byte>) overload
+                // should use the behavior of Write(byte[],int,int) overload.
+                base.Write(source);
+            }
+            else
+            {
+                WriteCore(source);
+            }
+        }
+
+        internal void WriteCore(ReadOnlySpan<byte> source)
+        {
+            EnsureCompressionMode();
             EnsureNotDisposed();
 
             // Write compressed the bytes we already passed to the deflater:
             WriteDeflaterOutput();
 
-            // Pass new bytes through deflater and write them too:
-            _deflater.SetInput(array, offset, count);
-            WriteDeflaterOutput();
-            _wroteBytes = true;
+            unsafe
+            {
+                // Pass new bytes through deflater and write them too:
+                fixed (byte* bufferPtr = &source.DangerousGetPinnableReference())
+                {
+                    _deflater.SetInput(bufferPtr, source.Length);
+                    WriteDeflaterOutput();
+                    _wroteBytes = true;
+                }
+            }
         }
 
         private void WriteDeflaterOutput()
