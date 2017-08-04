@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Diagnostics;
+using System.Net;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
@@ -33,7 +34,7 @@ namespace System.Net.Http
                 // Try using previous digest response WWWAuthenticate header
                 if (_digestResponse != null)
                 {
-                    await AuthenticationHelper.TrySetDigestAuthToken(request, _credentials, _digestResponse);
+                    await AuthenticationHelper.TrySetDigestAuthToken(request, _credentials, _digestResponse, HttpKnownHeaderNames.Authorization).ConfigureAwait(false);
                 }
                 else
                 {
@@ -63,7 +64,7 @@ namespace System.Net.Http
                     {
                         // Update digest response with new parameter from WWWAuthenticate
                         _digestResponse = new AuthenticationHelper.DigestResponse(h.Parameter);
-                        if (await AuthenticationHelper.TrySetDigestAuthToken(request, _credentials, _digestResponse))
+                        if (await AuthenticationHelper.TrySetDigestAuthToken(request, _credentials, _digestResponse, HttpKnownHeaderNames.Authorization).ConfigureAwait(false))
                         {
                             response.Dispose();
                             response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
@@ -76,9 +77,8 @@ namespace System.Net.Http
                                     if (ahv.Scheme == AuthenticationHelper.Digest)
                                     {
                                         _digestResponse = new AuthenticationHelper.DigestResponse(ahv.Parameter);
-                                        string stale;
-                                        if (_digestResponse.Parameters.TryGetValue("stale", out stale) && stale == "true" &&
-                                            await AuthenticationHelper.TrySetDigestAuthToken(request, _credentials, _digestResponse))
+                                        if (AuthenticationHelper.IsServerNonceStale(_digestResponse) &&
+                                            await AuthenticationHelper.TrySetDigestAuthToken(request, _credentials, _digestResponse, HttpKnownHeaderNames.Authorization).ConfigureAwait(false))
                                         {
                                             response.Dispose();
                                             response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
