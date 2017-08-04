@@ -1178,6 +1178,7 @@ namespace System.IO
         public static string GetTempPath() { throw null; }
         public static bool HasExtension(string path) { throw null; }
         public static bool IsPathRooted(string path) { throw null; }
+        public static bool IsPathFullyQualified(string path) { throw null; }
         public static string GetRelativePath(string relativeTo, string path) { throw null; }
     }
 
