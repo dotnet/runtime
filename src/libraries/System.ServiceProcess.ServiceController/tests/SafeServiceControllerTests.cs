@@ -6,7 +6,6 @@ using Xunit;
 
 namespace System.ServiceProcess.Tests
 {
-    [SkipOnTargetFramework(TargetFrameworkMonikers.Uap, "Appx doesn't allow to access ServiceController")]
     public static class SafeServiceControllerTests
     {
         private const string KeyIsoSvcName = "KEYISO";
@@ -17,7 +16,7 @@ namespace System.ServiceProcess.Tests
             bool foundKeyIsoSvc = false;
             bool foundSamSvc = false;
             bool foundOtherSvc = false;
-            
+
             foreach (var service in ServiceController.GetServices())
             {
                 // The CNG Key Isolation service (KeyIso) and Security Accounts Manager (SAM) service (SamSs)
