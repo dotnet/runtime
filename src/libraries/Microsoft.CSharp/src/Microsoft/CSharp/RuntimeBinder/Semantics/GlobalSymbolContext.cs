@@ -36,10 +36,5 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             return GetGlobalSymbols().GetSymFactory();
         }
-
-        public MiscSymFactory GetGlobalMiscSymFactory()
-        {
-            return GetGlobalSymbols().GetMiscSymFactory();
-        }
     }
 }

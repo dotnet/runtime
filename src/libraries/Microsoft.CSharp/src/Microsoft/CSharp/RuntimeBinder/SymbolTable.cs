@@ -1420,7 +1420,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             {
                 if (isIndexer)
                 {
-                    prop = _semanticChecker.SymbolLoader.GetGlobalMiscSymFactory().CreateIndexer(name, aggregate, GetName(property.Name));
+                    prop = _semanticChecker.SymbolLoader.GetGlobalSymbolFactory().CreateIndexer(name, aggregate, GetName(property.Name));
                     prop.Params = CreateParameterArray(null, property.GetIndexParameters());
                 }
                 else
