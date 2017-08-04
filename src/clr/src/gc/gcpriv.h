@@ -2939,8 +2939,13 @@ public:
     PER_HEAP_ISOLATED
     size_t last_gc_index;
 
+#ifdef SEG_MAPPING_TABLE
     PER_HEAP_ISOLATED
     size_t min_segment_size;
+
+    PER_HEAP_ISOLATED
+    size_t min_segment_size_shr;
+#endif //SEG_MAPPING_TABLE
 
     // For SOH we always allocate segments of the same
     // size unless no_gc_region requires larger ones.
