@@ -5029,15 +5029,20 @@ void GenTree::VisitBinOpOperands(TVisitor visitor)
  *
  *  Note that compGetMem is an arena allocator that returns memory that is
  *  not zero-initialized and can contain data from a prior allocation lifetime.
+ *  it also requires that 'sz' be aligned to a multiple of sizeof(int)
  */
 
 inline void* __cdecl operator new(size_t sz, Compiler* context, CompMemKind cmk)
 {
+    sz = AlignUp(sz, sizeof(int));
+    assert(sz != 0 && (sz & (sizeof(int) - 1)) == 0);
     return context->compGetMem(sz, cmk);
 }
 
 inline void* __cdecl operator new[](size_t sz, Compiler* context, CompMemKind cmk)
 {
+    sz = AlignUp(sz, sizeof(int));
+    assert(sz != 0 && (sz & (sizeof(int) - 1)) == 0);
     return context->compGetMem(sz, cmk);
 }
 
