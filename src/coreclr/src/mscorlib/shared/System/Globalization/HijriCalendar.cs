@@ -303,7 +303,7 @@ namespace System.Globalization
             //
             HijriYear = (int)(((NumDays - 227013) * 30) / 10631) + 1;
 
-            long daysToHijriYear = DaysUpToHijriYear(HijriYear);            // The absoulte date for HijriYear
+            long daysToHijriYear = DaysUpToHijriYear(HijriYear);            // The absolute date for HijriYear
             long daysOfHijriYear = GetDaysInYear(HijriYear, CurrentEra);    // The number of days for (HijriYear+1) year.
 
             if (NumDays < daysToHijriYear)

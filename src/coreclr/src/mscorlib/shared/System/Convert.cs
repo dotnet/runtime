@@ -84,7 +84,7 @@ namespace System
     // of the conversion method.
 
     // Constant representing the database null value. This value is used in
-    // database applications to indicate the absense of a known value. Note
+    // database applications to indicate the absence of a known value. Note
     // that Value.DBNull is NOT the same as a null object reference, which is
     // represented by Value.Empty.
     //
