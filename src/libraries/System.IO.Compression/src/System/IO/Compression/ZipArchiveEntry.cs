@@ -1089,7 +1089,7 @@ namespace System.IO.Compression
             return path;
         }
 
-        private sealed class DirectToArchiveWriterStream : Stream
+        private sealed partial class DirectToArchiveWriterStream : Stream
         {
             private long _position;
             private CheckSumAndSizeWriteStream _crcSizeStream;

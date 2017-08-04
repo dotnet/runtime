@@ -64,6 +64,18 @@ namespace System.IO.Compression
             }
         }
 
+        public unsafe int Inflate(Span<byte> destination)
+        {
+            // If Inflate is called on an invalid or unready inflater, return 0 to indicate no bytes have been read.
+            if (destination.Length == 0)
+                return 0;
+
+            fixed (byte* bufPtr = &destination.DangerousGetPinnableReference())
+            {
+                return InflateVerified(bufPtr, destination.Length);
+            }
+        }
+
         public unsafe int InflateVerified(byte* bufPtr, int length)
         {
             // State is valid; attempt inflation
