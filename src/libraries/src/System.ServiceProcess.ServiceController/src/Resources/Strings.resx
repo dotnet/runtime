@@ -100,4 +100,97 @@
   <data name="PlatformNotSupported_ServiceController" xml:space="preserve">
     <value>ServiceController enables manipulating and accessing Windows services and it is not applicable for other operating systems.</value>
   </data>
+  <data name="CannotChangeProperties" xml:space="preserve">
+    <value>Cannot change CanStop, CanPauseAndContinue, CanShutdown, CanHandlePowerEvent, or CanHandleSessionChangeEvent property values after the service has been started.</value>
+  </data>
+  <data name="CannotChangeName" xml:space="preserve">
+    <value>Cannot change service name when the service is running.</value>
+  </data>
+  <data name="ServiceName" xml:space="preserve">
+    <value>Service name {0} contains invalid characters, is empty, or is too long (max length = {1}).</value>
+  </data>
+  <data name="NoServices" xml:space="preserve">
+    <value>Service has not been supplied. At least one object derived from ServiceBase is required in order to run.</value>
+  </data>
+  <data name="CantStartFromCommandLine" xml:space="preserve">
+    <value>Cannot start service from the command line or a debugger.  A Windows Service must first be installed and then started with the ServerExplorer, Windows Services Administrative tool or the NET START command.</value>
+  </data>
+  <data name="NotInPendingState" xml:space="preserve">
+    <value>UpdatePendingStatus can only be called during the handling of Start, Stop, Pause and Continue commands.</value>
+  </data>
+  <data name="StartSuccessful" xml:space="preserve">
+    <value>Service started successfully.</value>
+  </data>
+  <data name="StopSuccessful" xml:space="preserve">
+    <value>Service stopped successfully.</value>
+  </data>
+  <data name="PauseSuccessful" xml:space="preserve">
+    <value>Service paused successfully.</value>
+  </data>
+  <data name="ContinueSuccessful" xml:space="preserve">
+    <value>Service continued successfully.</value>
+  </data>
+  <data name="InstallSuccessful" xml:space="preserve">
+    <value>Service was installed successfully.</value>
+  </data>
+  <data name="UninstallSuccessful" xml:space="preserve">
+    <value>Service was uninstalled successfully.</value>
+  </data>
+  <data name="CommandSuccessful" xml:space="preserve">
+    <value>Service command was processed successfully.</value>
+  </data>
+  <data name="StartFailed" xml:space="preserve">
+    <value>Service cannot be started. {0}</value>
+  </data>
+  <data name="StopFailed" xml:space="preserve">
+    <value>Failed to stop service. {0}</value>
+  </data>
+  <data name="PauseFailed" xml:space="preserve">
+    <value>Failed to pause service. {0}</value>
+  </data>
+  <data name="ContinueFailed" xml:space="preserve">
+    <value>Failed to continue service. {0}</value>
+  </data>
+  <data name="SessionChangeFailed" xml:space="preserve">
+    <value>Failed to process session change. {0}</value>
+  </data>
+  <data name="InstallFailed" xml:space="preserve">
+    <value>Failed to install service. Service may have been installed already.</value>
+  </data>
+  <data name="UninstallFailed" xml:space="preserve">
+    <value>Failed to uninstall service. Service may be running.</value>
+  </data>
+  <data name="CommandFailed" xml:space="preserve">
+    <value>Failed to process service command. {0}</value>
+  </data>
+  <data name="ErrorNumber" xml:space="preserve">
+    <value>Windows Error number: {0}.</value>
+  </data>
+  <data name="ShutdownOK" xml:space="preserve">
+    <value>Service has been successfully shut down.</value>
+  </data>
+  <data name="ShutdownFailed" xml:space="preserve">
+    <value>Failed to shut down service. The error that occurred was: {0}.</value>
+  </data>
+  <data name="PowerEventOK" xml:space="preserve">
+    <value>PowerEvent handled successfully by the service.</value>
+  </data>
+  <data name="PowerEventFailed" xml:space="preserve">
+    <value>Failed in handling the PowerEvent. The error that occurred was: {0}.</value>
+  </data>
+  <data name="InstallOK" xml:space="preserve">
+    <value>Service {0} has been successfully installed.</value>
+  </data>
+  <data name="TryToStop" xml:space="preserve">
+    <value>Attempt to stop service {0}.</value>
+  </data>
+  <data name="ServiceRemoving" xml:space="preserve">
+    <value>Service {0} is being removed from the system...</value>
+  </data>
+  <data name="ServiceRemoved" xml:space="preserve">
+    <value>Service {0} was successfully removed from the system.</value>
+  </data>
+  <data name="ControlService" xml:space="preserve">
+    <value>Cannot control {0} service on computer '{1}'.</value>
+  </data>
 </root>
