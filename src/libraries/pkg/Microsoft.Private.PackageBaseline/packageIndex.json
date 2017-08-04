@@ -1157,6 +1157,7 @@
         "net461": "4.1.0.0",
         "monoandroid10": "Any",
         "monotouch10": "Any",
+        "uap10.0.15138": "4.3.0.0",
         "xamarinios10": "Any",
         "xamarinmac20": "Any",
         "xamarintvos10": "Any",
@@ -3860,7 +3861,9 @@
         "4.4.0"
       ],
       "BaselineVersion": "4.4.0",
-      "InboxOn": {},
+      "InboxOn": {
+        "uap10.0.15138": "4.1.1.0"
+      },
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
@@ -3925,7 +3928,9 @@
         "4.4.0"
       ],
       "BaselineVersion": "4.4.0",
-      "InboxOn": {},
+      "InboxOn": {
+        "uap10.0.15138": "4.3.1.0",
+      },
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.2.0",
         "4.1.0.0": "4.2.0",
@@ -4148,7 +4153,9 @@
         "4.4.0"
       ],
       "BaselineVersion": "4.4.0",
-      "InboxOn": {},
+      "InboxOn": {
+        "uap10.0.15138": "4.1.1.0"
+      },
       "AssemblyVersionInPackageVersion": {
         "4.0.0.0": "4.0.0",
         "4.0.1.0": "4.3.0",
