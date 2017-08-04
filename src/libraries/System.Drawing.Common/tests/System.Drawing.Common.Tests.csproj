@@ -44,6 +44,7 @@
     <Compile Include="Imaging\ImageFormatTests.cs" />
     <Compile Include="Imaging\MetaHeaderTests.cs" />
     <Compile Include="Imaging\WmfPlaceableFileHeaderTests.cs" />
+    <Compile Include="Printing\PrintDocumentTests.cs" />
     <Compile Include="RegionTests.cs" />
     <Compile Include="SolidBrushTests.cs" />
     <Compile Include="StringFormatTests.cs" />
