@@ -19,11 +19,8 @@ using System.Diagnostics;
 namespace System.IO.Compression
 {
     /// <summary>
-    /// This class contains a managed Crc32 function as well as an indirection to the Interop.Zlib.Crc32 call.
     /// Since Desktop compression uses this file alongside the Open ZipArchive, we cannot remove it
-    /// without breaking the Desktop build.
-    ///
-    /// Note that in CoreFX the ZlibCrc32 function is always called.
+    /// without breaking the Desktop build. Note that in CoreFX the Zlib Crc32 function is always called.
     /// </summary>
     internal static class Crc32Helper
     {
@@ -31,17 +28,44 @@ namespace System.IO.Compression
         // See RFC1952 for details.
         public static uint UpdateCrc32(uint crc32, byte[] buffer, int offset, int length)
         {
-            Debug.Assert((buffer != null) && (offset >= 0) && (length >= 0)
-                       && (offset <= buffer.Length - length), "check the caller");
-#if FEATURE_ZLIB
-            return Interop.zlib.crc32(crc32, buffer, offset, length);
-#else
-            return ManagedCrc32(crc32, buffer, offset, length);
-#endif
+            Debug.Assert((buffer != null) && (offset >= 0) && (length >= 0) && (offset <= buffer.Length - length));
+            Debug.Assert(BitConverter.IsLittleEndian, "ManagedCrc32 Expects Little Endian");
 
+            uint term1, term2, term3 = 0;
+
+            crc32 ^= 0xFFFFFFFFU;
+            int runningLength = (length / 8) * 8;
+            int endBytes = length - runningLength;
+
+            for (int i = 0; i < runningLength / 8; i++)
+            {
+                crc32 ^= unchecked((uint)(buffer[offset] | buffer[offset + 1] << 8 | buffer[offset + 2] << 16 | buffer[offset + 3] << 24));
+                offset += 4;
+                term1 = s_crcTable_7[crc32 & 0x000000FF] ^
+                        s_crcTable_6[(crc32 >> 8) & 0x000000FF];
+                term2 = crc32 >> 16;
+                crc32 = term1 ^
+                        s_crcTable_5[term2 & 0x000000FF] ^
+                        s_crcTable_4[(term2 >> 8) & 0x000000FF];
+
+                term3 = unchecked((uint)(buffer[offset] | buffer[offset + 1] << 8 | buffer[offset + 2] << 16 | buffer[offset + 3] << 24));
+                offset += 4;
+                term1 = s_crcTable_3[term3 & 0x000000FF] ^
+                        s_crcTable_2[(term3 >> 8) & 0x000000FF];
+                term2 = term3 >> 16;
+                crc32 ^= term1 ^
+                        s_crcTable_1[term2 & 0x000000FF] ^
+                        s_crcTable_0[(term2 >> 8) & 0x000000FF];
+            }
+
+            for (int i = 0; i < endBytes; i++)
+            {
+                crc32 = s_crcTable_0[(crc32 ^ buffer[offset++]) & 0x000000FF] ^ (crc32 >> 8);
+            }
+
+            crc32 ^= 0xFFFFFFFFU;
+            return crc32;
         }
-
-#if !FEATURE_ZLIB
 
         // Generated tables for managed crc calculation.
         // Each table n (starting at 0) contains remainders from the long division of
@@ -480,47 +504,5 @@ namespace System.IO.Compression
             0x6EAB0882u, 0xA201081Cu, 0xA8C40105u, 0x646E019Bu, 0xEAE10678u,
             0x264B06E6u
         };
-
-        private static uint ManagedCrc32(uint crc32, byte[] buffer, int offset, int length)
-        {
-            Debug.Assert(BitConverter.IsLittleEndian, "ManagedCrc32 Expects Little Endian");
-
-            uint term1, term2, term3 = 0;
-
-            crc32 ^= 0xFFFFFFFFU;
-            int runningLength = (length / 8) * 8;
-            int endBytes = length - runningLength;
-
-            for (int i = 0; i < runningLength / 8; i++)
-            {
-                crc32 ^= unchecked((uint)(buffer[offset] | buffer[offset + 1] << 8 | buffer[offset + 2] << 16 | buffer[offset + 3] << 24));
-                offset += 4;
-                term1 = s_crcTable_7[crc32 & 0x000000FF] ^
-                        s_crcTable_6[(crc32 >> 8) & 0x000000FF];
-                term2 = crc32 >> 16;
-                crc32 = term1 ^
-                        s_crcTable_5[term2 & 0x000000FF] ^
-                        s_crcTable_4[(term2 >> 8) & 0x000000FF];
-
-
-                term3 = unchecked((uint)(buffer[offset] | buffer[offset + 1] << 8 | buffer[offset + 2] << 16 | buffer[offset + 3] << 24));
-                offset += 4;
-                term1 = s_crcTable_3[term3 & 0x000000FF] ^
-                        s_crcTable_2[(term3 >> 8) & 0x000000FF];
-                term2 = term3 >> 16;
-                crc32 ^= term1 ^
-                        s_crcTable_1[term2 & 0x000000FF] ^
-                        s_crcTable_0[(term2 >> 8) & 0x000000FF];
-            }
-
-            for (int i = 0; i < endBytes; i++)
-            {
-                crc32 = s_crcTable_0[(crc32 ^ buffer[offset++]) & 0x000000FF] ^ (crc32 >> 8);
-            }
-
-            crc32 ^= 0xFFFFFFFFU;
-            return crc32;
-        }
-#endif
     }
 }

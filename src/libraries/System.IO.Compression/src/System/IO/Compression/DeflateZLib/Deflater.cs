@@ -83,8 +83,7 @@ namespace System.IO.Compression
                 if (disposing)
                     _zlibStream.Dispose();
 
-                if (_inputBufferHandle.IsAllocated)
-                    DeallocateInputBufferHandle();
+                DeallocateInputBufferHandle();
                 _isDisposed = true;
             }
         }
@@ -110,13 +109,30 @@ namespace System.IO.Compression
             }
         }
 
+        internal unsafe void SetInput(byte* inputBufferPtr, int count)
+        {
+            Debug.Assert(NeedsInput(), "We have something left in previous input!");
+            Debug.Assert(inputBufferPtr != null);
+            Debug.Assert(!_inputBufferHandle.IsAllocated);
+
+            if (count == 0)
+            {
+                return;
+            }
+
+            lock (SyncLock)
+            {
+                _zlibStream.NextIn = (IntPtr)inputBufferPtr;
+                _zlibStream.AvailIn = (uint)count;
+            }
+        }
+
         internal int GetDeflateOutput(byte[] outputBuffer)
         {
             Contract.Ensures(Contract.Result<int>() >= 0 && Contract.Result<int>() <= outputBuffer.Length);
 
             Debug.Assert(null != outputBuffer, "Can't pass in a null output buffer!");
             Debug.Assert(!NeedsInput(), "GetDeflateOutput should only be called after providing input");
-            Debug.Assert(_inputBufferHandle.IsAllocated);
 
             try
             {
@@ -127,8 +143,10 @@ namespace System.IO.Compression
             finally
             {
                 // Before returning, make sure to release input buffer if necessary:
-                if (0 == _zlibStream.AvailIn && _inputBufferHandle.IsAllocated)
+                if (0 == _zlibStream.AvailIn)
+                {
                     DeallocateInputBufferHandle();
+                }
             }
         }
 
@@ -185,13 +203,14 @@ namespace System.IO.Compression
 
         private void DeallocateInputBufferHandle()
         {
-            Debug.Assert(_inputBufferHandle.IsAllocated);
-
             lock (SyncLock)
             {
                 _zlibStream.AvailIn = 0;
                 _zlibStream.NextIn = ZLibNative.ZNullPtr;
-                _inputBufferHandle.Free();
+                if (_inputBufferHandle.IsAllocated)
+                {
+                    _inputBufferHandle.Free();
+                }
             }
         }
 
