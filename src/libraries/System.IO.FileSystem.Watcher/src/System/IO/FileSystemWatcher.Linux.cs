@@ -69,7 +69,7 @@ namespace System.IO
                 // active operations to all be outstanding at the same time.
                 var runner = new RunningInstance(
                     this, handle, _directory,
-                    IncludeSubdirectories, TranslateFilters(NotifyFilter), cancellation.Token);
+                    IncludeSubdirectories, NotifyFilter, cancellation.Token);
 
                 // Now that we've created the runner, store the cancellation object and mark the instance
                 // as running.  We wait to do this so that if there was a failure, StartRaisingEvents
@@ -256,7 +256,8 @@ namespace System.IO
             /// <summary>
             /// Filters to use when adding a watch on directories.
             /// </summary>
-            private readonly Interop.Sys.NotifyEvents _notifyFilters;
+            private readonly NotifyFilters _notifyFilters;
+            private readonly Interop.Sys.NotifyEvents _watchFilters;
             /// <summary>
             /// Whether to monitor subdirectories.  Unlike Win32, inotify does not implicitly monitor subdirectories;
             /// watches must be explicitly added for those subdirectories.
@@ -282,7 +283,7 @@ namespace System.IO
             /// <summary>Initializes the instance with all state necessary to operate a watch.</summary>
             internal RunningInstance(
                 FileSystemWatcher watcher, SafeFileHandle inotifyHandle, string directoryPath,
-                bool includeSubdirectories, Interop.Sys.NotifyEvents notifyFilters, CancellationToken cancellationToken)
+                bool includeSubdirectories, NotifyFilters notifyFilters, CancellationToken cancellationToken)
             {
                 Debug.Assert(watcher != null);
                 Debug.Assert(inotifyHandle != null && !inotifyHandle.IsInvalid && !inotifyHandle.IsClosed);
@@ -295,6 +296,7 @@ namespace System.IO
                 Debug.Assert(_buffer != null && _buffer.Length > (c_INotifyEventSize + NAME_MAX + 1));
                 _includeSubdirectories = includeSubdirectories;
                 _notifyFilters = notifyFilters;
+                _watchFilters = TranslateFilters(notifyFilters);
                 _cancellationToken = cancellationToken;
 
                 // Add a watch for this starting directory.  We keep track of the watch descriptor => directory information
@@ -358,7 +360,7 @@ namespace System.IO
                 // the existing descriptor.  This works even in the case of a rename. We also add the DONT_FOLLOW
                 // and EXCL_UNLINK flags to keep parity with Windows where we don't pickup symlinks or unlinked
                 // files (which don't exist in Windows)
-                int wd = Interop.Sys.INotifyAddWatch(_inotifyHandle, fullPath, (uint)(this._notifyFilters | Interop.Sys.NotifyEvents.IN_DONT_FOLLOW | Interop.Sys.NotifyEvents.IN_EXCL_UNLINK));
+                int wd = Interop.Sys.INotifyAddWatch(_inotifyHandle, fullPath, (uint)(this._watchFilters | Interop.Sys.NotifyEvents.IN_DONT_FOLLOW | Interop.Sys.NotifyEvents.IN_EXCL_UNLINK));
                 if (wd == -1)
                 {
                     // If we get an error when trying to add the watch, don't let that tear down processing.  Instead,
@@ -637,10 +639,21 @@ namespace System.IO
                             AddDirectoryWatch(associatedDirectoryEntry, nextEvent.name);
                         }
 
-                        const Interop.Sys.NotifyEvents switchMask =
-                            Interop.Sys.NotifyEvents.IN_IGNORED |Interop.Sys.NotifyEvents.IN_CREATE | Interop.Sys.NotifyEvents.IN_DELETE |
-                            Interop.Sys.NotifyEvents.IN_ACCESS | Interop.Sys.NotifyEvents.IN_MODIFY | Interop.Sys.NotifyEvents.IN_ATTRIB |
-                            Interop.Sys.NotifyEvents.IN_MOVED_FROM | Interop.Sys.NotifyEvents.IN_MOVED_TO;
+                        // Check if the event should have been filtered but was unable because of inotify's inability
+                        // to filter files vs directories.
+                        const Interop.Sys.NotifyEvents fileDirEvents = Interop.Sys.NotifyEvents.IN_CREATE |
+                                Interop.Sys.NotifyEvents.IN_DELETE |
+                                Interop.Sys.NotifyEvents.IN_MOVED_FROM |
+                                Interop.Sys.NotifyEvents.IN_MOVED_TO;
+                        if ((((uint)fileDirEvents & mask) > 0) &&
+                            (isDir && ((_notifyFilters & NotifyFilters.DirectoryName) == 0) ||
+                            (!isDir && ((_notifyFilters & NotifyFilters.FileName) == 0))))
+                        {
+                            continue;
+                        }
+
+                        const Interop.Sys.NotifyEvents switchMask = fileDirEvents | Interop.Sys.NotifyEvents.IN_IGNORED |
+                            Interop.Sys.NotifyEvents.IN_ACCESS | Interop.Sys.NotifyEvents.IN_MODIFY | Interop.Sys.NotifyEvents.IN_ATTRIB;
                         switch ((Interop.Sys.NotifyEvents)(mask & (uint)switchMask))
                         {
                             case Interop.Sys.NotifyEvents.IN_CREATE:
