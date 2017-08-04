@@ -459,10 +459,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (cIndices != rank)
             {
-                ErrorContext.Error(ErrorCode.ERR_BadIndexCount, rank);
-                pExpr = GetExprFactory().CreateArrayIndex(pOp1, transformedIndices);
-                pExpr.SetError();
-                return pExpr;
+                throw ErrorContext.Error(ErrorCode.ERR_BadIndexCount, rank);
             }
 
             // Allocate a new expression, the type is the element type of the array.
@@ -484,12 +481,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (!(type is AggregateType) && !(type is TypeParameterType))
             {
-                ErrorContext.Error(ErrorCode.ERR_BadIndexLHS, type);
-                MethWithInst mwi = new MethWithInst(null, null);
-                ExprMemberGroup pMemGroup = GetExprFactory().CreateMemGroup(pObject, mwi);
-                ExprCall rval = GetExprFactory().CreateCall(0, type, args, pMemGroup, null);
-                rval.SetError();
-                return rval;
+                throw ErrorContext.Error(ErrorCode.ERR_BadIndexLHS, type);
             }
 
             Name pName = NameManager.GetPredefinedName(PredefinedName.PN_INDEXERINTERNAL);
@@ -498,34 +490,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (!mem.Lookup(GetSemanticChecker(), type, pObject, ContextForMemberLookup(), pName, 0,
                             MemLookFlags.Indexer))
             {
-                mem.ReportErrors();
-                type = GetTypes().GetErrorSym();
-                Symbol pSymbol = null;
-
-                if (mem.SwtInaccessible().Sym != null)
-                {
-                    Debug.Assert(mem.SwtInaccessible().Sym is MethodOrPropertySymbol);
-                    type = mem.SwtInaccessible().MethProp().RetType;
-                    pSymbol = mem.SwtInaccessible().Sym;
-                }
-
-                ExprMemberGroup memgrp = null;
-
-                if (pSymbol != null)
-                {
-                    memgrp = GetExprFactory().CreateMemGroup((EXPRFLAG)mem.GetFlags(),
-                        pName, BSYMMGR.EmptyTypeArray(), pSymbol.getKind(), mem.GetSourceType(), null/*pMPS*/, mem.GetObject(), mem.GetResults());
-                    memgrp.SetInaccessibleBit();
-                }
-                else
-                {
-                    MethWithInst mwi = new MethWithInst(null, null);
-                    memgrp = GetExprFactory().CreateMemGroup(mem.GetObject(), mwi);
-                }
-
-                ExprCall rval = GetExprFactory().CreateCall(0, type, args, memgrp, null);
-                rval.SetError();
-                return rval;
+                throw mem.ReportErrors();
             }
 
             Debug.Assert(mem.SymFirst() is IndexerSymbol);
@@ -821,7 +786,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     {
                         return GetExprFactory().CreateClass(pOtherType);
                     }
-                    ErrorContext.ErrorRef(ErrorCode.ERR_PropertyLacksGet, pwt);
+
+                    throw ErrorContext.Error(ErrorCode.ERR_PropertyLacksGet, pwt);
                 }
                 else
                 {
@@ -842,11 +808,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                         if (error == ACCESSERROR.ACCESSERROR_NOACCESSTHRU)
                         {
-                            ErrorContext.Error(ErrorCode.ERR_BadProtectedAccess, pwt, type, ContextForMemberLookup());
+                            throw ErrorContext.Error(ErrorCode.ERR_BadProtectedAccess, pwt, type, ContextForMemberLookup());
                         }
                         else
                         {
-                            ErrorContext.ErrorRef(ErrorCode.ERR_InaccessibleGetter, pwt);
+                            throw ErrorContext.Error(ErrorCode.ERR_InaccessibleGetter, pwt);
                         }
                     }
                 }
@@ -967,12 +933,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (pmethBest == null)
             {
                 // No winner, so its an ambiguous call...
-                ErrorContext.Error(ErrorCode.ERR_AmbigCall, pmethAmbig1.mpwi, pmethAmbig2.mpwi);
-
-                ExprMemberGroup pMemGroup = GetExprFactory().CreateMemGroup(null, pmethAmbig1.mpwi);
-                ExprCall rval = GetExprFactory().CreateCall(0, null, arg, pMemGroup, null);
-                rval.SetError();
-                return rval;
+                throw ErrorContext.Error(ErrorCode.ERR_AmbigCall, pmethAmbig1.mpwi, pmethAmbig2.mpwi);
             }
 
             ExprCall call;
@@ -1074,16 +1035,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             // If we have named arguments specified, make sure we have them all appearing after 
             // fixed arguments.
-            bool bSeenNamed = false;
-            if (!VerifyNamedArgumentsAfterFixed(args, out bSeenNamed))
-            {
-                ExprCall rval = GetExprFactory().CreateCall(0, GetTypes().GetErrorSym(), args, grp, null);
-                rval.SetError();
-                return rval;
-            }
+            bool seenNamed = VerifyNamedArgumentsAfterFixed(args);
 
             GroupToArgsBinderResult result;
-            if (!BindMethodGroupToArgumentsCore(out result, bindFlags, grp, ref args, carg, bSeenNamed))
+            if (!BindMethodGroupToArgumentsCore(out result, bindFlags, grp, ref args, carg, seenNamed))
             {
                 Debug.Assert(false, "Why didn't BindMethodGroupToArgumentsCore throw an error?");
                 return null;
@@ -1108,10 +1063,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         /////////////////////////////////////////////////////////////////////////////////
 
-        private bool VerifyNamedArgumentsAfterFixed(Expr args, out bool seenNamed)
+        private bool VerifyNamedArgumentsAfterFixed(Expr args)
         {
             Expr list = args;
-            seenNamed = false;
+            bool seenNamed = false;
             while (list != null)
             {
                 Expr arg;
@@ -1135,12 +1090,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 {
                     if (seenNamed)
                     {
-                        GetErrorContext().Error(ErrorCode.ERR_NamedArgumentSpecificationBeforeFixedArgument);
-                        return false;
+                        throw GetErrorContext().Error(ErrorCode.ERR_NamedArgumentSpecificationBeforeFixedArgument);
                     }
                 }
             }
-            return true;
+
+            return seenNamed;
         }
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -1168,12 +1123,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             pOperand2.Type != null &&
                             !(pOperand2.Type is ErrorType))
                     {
-                        ErrorContext.Error(ErrorCode.ERR_BadBinaryOps, strOp, pOperand1.Type, pOperand2.Type);
+                        throw ErrorContext.Error(ErrorCode.ERR_BadBinaryOps, strOp, pOperand1.Type, pOperand2.Type);
                     }
                 }
                 else if (pOperand1.Type != null && !(pOperand1.Type is ErrorType))
                 {
-                    ErrorContext.Error(ErrorCode.ERR_BadUnaryOp, strOp, pOperand1.Type);
+                    throw ErrorContext.Error(ErrorCode.ERR_BadUnaryOp, strOp, pOperand1.Type);
                 }
             }
 
@@ -1235,20 +1190,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             CheckPropertyAccess(prop.MethWithTypeSet, prop.PropWithTypeSlot, type);
         }
 
-        private bool CheckPropertyAccess(MethWithType mwt, PropWithType pwtSlot, CType type)
+        private void CheckPropertyAccess(MethWithType mwt, PropWithType pwtSlot, CType type)
         {
-            ACCESSERROR error = SemanticChecker.CheckAccess2(mwt.Meth(), mwt.GetType(), ContextForMemberLookup(), type);
-            if (error == ACCESSERROR.ACCESSERROR_NOACCESSTHRU)
+            switch (SemanticChecker.CheckAccess2(mwt.Meth(), mwt.GetType(), ContextForMemberLookup(), type))
             {
-                ErrorContext.Error(ErrorCode.ERR_BadProtectedAccess, pwtSlot, type, ContextForMemberLookup());
-                return false;
+                case ACCESSERROR.ACCESSERROR_NOACCESSTHRU:
+                    throw ErrorContext.Error(ErrorCode.ERR_BadProtectedAccess, pwtSlot, type, ContextForMemberLookup());
+                case ACCESSERROR.ACCESSERROR_NOACCESS:
+                    throw ErrorContext.Error(mwt.Meth().isSetAccessor() ? ErrorCode.ERR_InaccessibleSetter : ErrorCode.ERR_InaccessibleGetter, pwtSlot);
             }
-            else if (error == ACCESSERROR.ACCESSERROR_NOACCESS)
-            {
-                ErrorContext.Error(mwt.Meth().isSetAccessor() ? ErrorCode.ERR_InaccessibleSetter : ErrorCode.ERR_InaccessibleGetter, pwtSlot);
-                return false;
-            }
-            return true;
         }
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -1274,8 +1224,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     if (kind == CheckLvalueKind.OutParameter)
                     {
                         // passing a property as ref or out
-                        ErrorContext.Error(ErrorCode.ERR_RefProperty);
-                        return true;
+                        throw ErrorContext.Error(ErrorCode.ERR_RefProperty);
                     }
 
                     ExprProperty prop = (ExprProperty)expr;
@@ -1304,26 +1253,21 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         // SPEC VIOLATION: would be a breaking change.  We currently discard "no op" casts
                         // SPEC VIOLATION: very aggressively rather than generating an ExpressionKind.EK_CAST node.
 
-                        ErrorContext.Error(ErrorCode.ERR_AssgReadonlyProp, prop.PropWithTypeSlot);
-                        return true;
+                        throw ErrorContext.Error(ErrorCode.ERR_AssgReadonlyProp, prop.PropWithTypeSlot);
                     }
                     break;
 
                 case ExpressionKind.BoundLambda:
                 case ExpressionKind.Constant:
-                    ErrorContext.Error(GetStandardLvalueError(kind));
-                    return false;
+                    throw ErrorContext.Error(GetStandardLvalueError(kind));
+
                 case ExpressionKind.MemberGroup:
-                    {
-                        ErrorCode err = (kind == CheckLvalueKind.OutParameter) ? ErrorCode.ERR_RefReadonlyLocalCause : ErrorCode.ERR_AssgReadonlyLocalCause;
-                        ErrorContext.Error(err, ((ExprMemberGroup)expr).Name, new ErrArgIds(MessageID.MethodGroup));
-                        return false;
-                    }
-                default:
-                    break;
+                    ErrorCode err = (kind == CheckLvalueKind.OutParameter) ? ErrorCode.ERR_RefReadonlyLocalCause : ErrorCode.ERR_AssgReadonlyLocalCause;
+                    throw ErrorContext.Error(err, ((ExprMemberGroup)expr).Name, new ErrArgIds(MessageID.MethodGroup));
             }
 
-            return !TryReportLvalueFailure(expr, kind);
+            TryReportLvalueFailure(expr, kind);
+            return true;
         }
 
         private void PostBindMethod(ref MethWithInst pMWI, Expr pObject)
@@ -1418,17 +1362,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         // We've made the static match now.
                         return null;
                     }
-                    else
-                    {
-                        ErrorContext.ErrorRef(ErrorCode.ERR_ObjectProhibited, swt);
-                        return null;
-                    }
+
+                    throw ErrorContext.Error(ErrorCode.ERR_ObjectProhibited, swt);
                 }
-                else
-                {
-                    ErrorContext.ErrorRef(ErrorCode.ERR_ObjectRequired, swt);
-                    return pObject;
-                }
+
+                throw ErrorContext.Error(ErrorCode.ERR_ObjectRequired, swt);
             }
 
             // At this point, all errors for static invocations have been reported, and
@@ -1487,7 +1425,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // WE don't give a great message for this, but it'll do.
                 if (objNew == null)
                 {
-                    ErrorContext.Error(ErrorCode.ERR_WrongNestedThis, swt.GetType(), pObject.Type);
+                    throw ErrorContext.Error(ErrorCode.ERR_WrongNestedThis, swt.GetType(), pObject.Type);
                 }
 
                 pObject = objNew;
@@ -2193,12 +2131,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             if (type == null || type.isUnsafe())
             {
-                if (ReportUnsafeErrors())
-                {
-                    ErrorContext.Error(ErrorCode.ERR_UnsafeNeeded);
-                }
-
-                RecordUnsafeUsage();
+                throw ErrorContext.Error(ErrorCode.ERR_UnsafeNeeded);
             }
         }
 
@@ -2206,16 +2139,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private AggregateDeclaration ContextForMemberLookup()
         {
             return Context.ContextForMemberLookup;
-        }
-
-        private bool ReportUnsafeErrors()
-        {
-            return Context.ReportUnsafeErrors;
-        }
-
-        private void RecordUnsafeUsage()
-        {
-            RecordUnsafeUsage(Context);
         }
 
         private ExprWrap WrapShortLivedExpression(Expr expr)
@@ -2226,11 +2149,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private ExprAssignment GenerateOptimizedAssignment(Expr op1, Expr op2)
         {
             return GetExprFactory().CreateAssignment(op1, op2);
-        }
-
-        private static void RecordUnsafeUsage(BindingContext context)
-        {
-            context.ReportUnsafeErrors = false;
         }
 
         internal static int CountArguments(Expr args, out bool typeErrors)

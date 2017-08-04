@@ -280,9 +280,6 @@
   <data name="BadArgTypes" xml:space="preserve">
     <value>The best overloaded method match for '{0}' has some invalid arguments</value>
   </data>
-  <data name="BadArgType" xml:space="preserve">
-    <value>Argument '{0}': cannot convert from '{1}' to '{2}'</value>
-  </data>
   <data name="RefLvalueExpected" xml:space="preserve">
     <value>A ref or out argument must be an assignable variable</value>
   </data>
@@ -310,12 +307,6 @@
   <data name="ReturnNotLValue" xml:space="preserve">
     <value>Cannot modify the return value of '{0}' because it is not a variable</value>
   </data>
-  <data name="BadArgExtraRef" xml:space="preserve">
-    <value>Argument '{0}' should not be passed with the '{1}' keyword</value>
-  </data>
-  <data name="BadArgRef" xml:space="preserve">
-    <value>Argument '{0}' must be passed with the '{1}' keyword</value>
-  </data>
   <data name="AssgReadonly2" xml:space="preserve">
     <value>Members of readonly field '{0}' cannot be modified (except in a constructor or a variable initializer)</value>
   </data>
@@ -342,9 +333,6 @@
   </data>
   <data name="BadExtensionArgTypes" xml:space="preserve">
     <value>'{0}' does not contain a definition for '{1}' and the best extension method overload '{2}' has some invalid arguments</value>
-  </data>
-  <data name="BadInstanceArgType" xml:space="preserve">
-    <value>Instance argument: cannot convert from '{0}' to '{1}'</value>
   </data>
   <data name="NonInvocableMemberCalled" xml:space="preserve">
     <value>Non-invocable member '{0}' cannot be used like a method.</value>

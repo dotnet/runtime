@@ -504,7 +504,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 {
                     // Ambiguous.
 
-                    return ambiguousOperatorError(ek, arg1, arg2);
+                    throw AmbiguousOperatorError(ek, arg1, arg2);
                 }
             }
 
@@ -1315,7 +1315,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         if (nBestSignature < 0)
                         {
                             // Ambiguous.
-                            return ambiguousOperatorError(ek, pArgument, null);
+                            throw AmbiguousOperatorError(ek, pArgument, null);
                         }
 
                         // Verify that our answer works.
@@ -1327,7 +1327,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             }
                             if (WhichUofsIsBetter(pSignatures[nBestSignature], pSignatures[iuofs], type) >= 0)
                             {
-                                return ambiguousOperatorError(ek, pArgument, null);
+                                throw AmbiguousOperatorError(ek, pArgument, null);
                             }
                         }
                     }
@@ -2467,7 +2467,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         /*
           Report an ambiguous operator types error.
          */
-        private ExprOperator ambiguousOperatorError(ExpressionKind ek, Expr op1, Expr op2)
+        private RuntimeBinderException AmbiguousOperatorError(ExpressionKind ek, Expr op1, Expr op2)
         {
             Debug.Assert(op1 != null);
 
@@ -2476,18 +2476,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             string strOp = op1.ErrorString;
 
             // Bad arg types - report error to user.
-            if (op2 != null)
-            {
-                GetErrorContext().Error(ErrorCode.ERR_AmbigBinaryOps, strOp, op1.Type, op2.Type);
-            }
-            else
-            {
-                GetErrorContext().Error(ErrorCode.ERR_AmbigUnaryOp, strOp, op1.Type);
-            }
-
-            ExprOperator rval = GetExprFactory().CreateOperator(ek, null, op1, op2);
-            rval.SetError();
-            return rval;
+            return op2 != null
+                ? GetErrorContext().Error(ErrorCode.ERR_AmbigBinaryOps, strOp, op1.Type, op2.Type)
+                : GetErrorContext().Error(ErrorCode.ERR_AmbigUnaryOp, strOp, op1.Type);
         }
 
         private Expr BindUserBoolOp(ExpressionKind kind, ExprCall pCall)
@@ -2503,12 +2494,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (!GetTypes().SubstEqualTypes(typeRet, pCall.MethWithInst.Meth().Params[0], typeRet) ||
                 !GetTypes().SubstEqualTypes(typeRet, pCall.MethWithInst.Meth().Params[1], typeRet))
             {
-                MethWithInst mwi = new MethWithInst(null, null);
-                ExprMemberGroup pMemGroup = GetExprFactory().CreateMemGroup(null, mwi);
-                ExprCall pCallTF = GetExprFactory().CreateCall(0, null, null, pMemGroup, null);
-                pCallTF.SetError();
-                GetErrorContext().Error(ErrorCode.ERR_BadBoolOp, pCall.MethWithInst);
-                return GetExprFactory().CreateUserLogOpError(typeRet, pCallTF, pCall);
+                throw GetErrorContext().Error(ErrorCode.ERR_BadBoolOp, pCall.MethWithInst);
             }
 
             ExprList list = (ExprList)pCall.OptionalArguments;
@@ -2527,17 +2513,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             if (pCallT == null || pCallF == null)
             {
-                Expr pCallTorF = pCallT != null ? pCallT : pCallF;
-                if (pCallTorF == null)
-                {
-                    MethWithInst mwi = new MethWithInst(null, null);
-                    ExprMemberGroup pMemGroup = GetExprFactory().CreateMemGroup(null, mwi);
-                    pCallTorF = GetExprFactory().CreateCall(0, null, pExprWrap, pMemGroup, null);
-                    pCall.SetError();
-                }
-                GetErrorContext().Error(ErrorCode.ERR_MustHaveOpTF, typeRet);
-                return GetExprFactory().CreateUserLogOpError(typeRet, pCallTorF, pCall);
+                throw GetErrorContext().Error(ErrorCode.ERR_MustHaveOpTF, typeRet);
             }
+
             pCallT = mustConvert(pCallT, GetPredefindType(PredefinedType.PT_BOOL));
             pCallF = mustConvert(pCallF, GetPredefindType(PredefinedType.PT_BOOL));
             return GetExprFactory().CreateUserLogOp(typeRet, kind == ExpressionKind.LogicalAnd ? pCallF : pCallT, pCall);
@@ -2746,12 +2724,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             if (pmethBest == null)
             {
                 // No winner, so its an ambiguous call...
-                GetErrorContext().Error(ErrorCode.ERR_AmbigCall, pmethAmbig1.mpwi, pmethAmbig2.mpwi);
-
-                ExprMemberGroup pMemGroup = GetExprFactory().CreateMemGroup(null, pmethAmbig1.mpwi);
-                ExprCall rval = GetExprFactory().CreateCall(0, null, GetExprFactory().CreateList(arg1, arg2), pMemGroup, null);
-                rval.SetError();
-                return rval;
+                throw GetErrorContext().Error(ErrorCode.ERR_AmbigCall, pmethAmbig1.mpwi, pmethAmbig2.mpwi);
             }
 
             ppmpwi = pmethBest.mpwi;

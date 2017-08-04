@@ -234,9 +234,6 @@
   <data name="BadArgTypes" xml:space="preserve">
     <value>Die beste Übereinstimmung für die überladene {0}-Methode enthält einige ungültige Argumente.</value>
   </data>
-  <data name="BadArgType" xml:space="preserve">
-    <value>{0}-Argument: Die Konvertierung von {1} in {2} ist nicht möglich.</value>
-  </data>
   <data name="RefLvalueExpected" xml:space="preserve">
     <value>Ein ref- oder out-Argument muss eine zuweisbare Variable sein.</value>
   </data>
@@ -264,12 +261,6 @@
   <data name="ReturnNotLValue" xml:space="preserve">
     <value>Der Rückgabewert von {0} ist keine Variable und kann daher nicht geändert werden.</value>
   </data>
-  <data name="BadArgExtraRef" xml:space="preserve">
-    <value>Das {0}-Argument darf nicht mit dem {1}-Schlüsselwort übergeben werden.</value>
-  </data>
-  <data name="BadArgRef" xml:space="preserve">
-    <value>Das {0}-Argument muss mit dem {1}-Schlüsselwort übergeben werden.</value>
-  </data>
   <data name="AssgReadonly2" xml:space="preserve">
     <value>Member des schreibgeschützten Felds "{0}" können nicht geändert werden (außer in einem Konstruktor oder Variableninitialisierer).</value>
   </data>
@@ -296,9 +287,6 @@
   </data>
   <data name="BadExtensionArgTypes" xml:space="preserve">
     <value>"{0}" enthält keine Definition für {1}, und die Überladung der optimalen {2}-Erweiterungsmethode enthält einige ungültige Argumente.</value>
-  </data>
-  <data name="BadInstanceArgType" xml:space="preserve">
-    <value>Instanzenargument: Konvertierung von {0} in {1} ist nicht möglich.</value>
   </data>
   <data name="NonInvocableMemberCalled" xml:space="preserve">
     <value>Der nicht aufrufbare Member "{0}" kann nicht wie eine Methode verwendet werden.</value>

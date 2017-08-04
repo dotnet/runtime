@@ -17,14 +17,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public ErrorHandling ErrorContext { get; }
         public SymbolTable RuntimeBinderSymbolTable { get; private set; }
 
-        public SymbolLoader(
-            GlobalSymbolContext globalSymbols,
-            ErrorHandling errorContext
-        )
+        public SymbolLoader()
         {
+            GlobalSymbolContext globalSymbols = new GlobalSymbolContext(new NameManager());
             _nameManager = globalSymbols.GetNameManager();
             PredefinedMembers = new PredefinedMembers(this);
-            ErrorContext = errorContext;
+            ErrorContext = new ErrorHandling(globalSymbols);
             GlobalSymbolContext = globalSymbols;
             Debug.Assert(GlobalSymbolContext != null);
         }

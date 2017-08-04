@@ -234,9 +234,6 @@
   <data name="BadArgTypes" xml:space="preserve">
     <value>La méthode surchargée correspondant le mieux à '{0}' a des arguments non valides</value>
   </data>
-  <data name="BadArgType" xml:space="preserve">
-    <value>Argument '{0}' : impossible de convertir de '{1}' en '{2}'</value>
-  </data>
   <data name="RefLvalueExpected" xml:space="preserve">
     <value>Un argument ref ou out doit être une variable qui peut être assignée</value>
   </data>
@@ -264,12 +261,6 @@
   <data name="ReturnNotLValue" xml:space="preserve">
     <value>Impossible de modifier la valeur de retour de '{0}' car il ne s'agit pas d'une variable</value>
   </data>
-  <data name="BadArgExtraRef" xml:space="preserve">
-    <value>L'argument '{0}' ne doit pas être passé avec le mot clé '{1}'</value>
-  </data>
-  <data name="BadArgRef" xml:space="preserve">
-    <value>L'argument '{0}' doit être passé avec le mot clé '{1}'</value>
-  </data>
   <data name="AssgReadonly2" xml:space="preserve">
     <value>Impossible de modifier les membres d'un champ readonly '{0}' (sauf s'ils appartiennent à un constructeur ou un initialiseur de variable)</value>
   </data>
@@ -296,9 +287,6 @@
   </data>
   <data name="BadExtensionArgTypes" xml:space="preserve">
     <value>'{0}' ne contient pas de définition pour '{1}' et la meilleure surcharge de la méthode d'extension '{2}' contient des arguments non valides</value>
-  </data>
-  <data name="BadInstanceArgType" xml:space="preserve">
-    <value>Argument d'instance : impossible de convertir '{0}' en '{1}'</value>
   </data>
   <data name="NonInvocableMemberCalled" xml:space="preserve">
     <value>Impossible d'utiliser un membre '{0}' ne pouvant pas être appelé comme une méthode.</value>
