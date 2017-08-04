@@ -308,6 +308,92 @@ void GCStatistics::DisplayAndUpdate()
 
 #endif // GC_STATS
 
+#ifdef BIT64
+#define TOTAL_TIMES_TO_SHIFT 6
+#else
+#define TOTAL_TIMES_TO_SHIFT 5
+#endif // BIT64
+
+size_t round_up_power2 (size_t size)
+{
+    unsigned short shift = 1;
+    size_t shifted = 0;
+
+    size--;
+    for (unsigned short i = 0; i < TOTAL_TIMES_TO_SHIFT; i++)
+    {
+        shifted = size | (size >> shift);
+        if (shifted == size)
+        {
+            break;
+        }
+
+        size = shifted;
+        shift <<= 1;
+    }
+    shifted++;
+
+    return shifted;
+}
+
+inline
+size_t round_down_power2 (size_t size)
+{
+    size_t power2 = round_up_power2 (size);
+
+    if (power2 != size)
+    {
+        power2 >>= 1;
+    }
+
+    return power2;
+}
+
+// the index starts from 0.
+int index_of_set_bit (size_t power2)
+{
+    int low = 0;
+    int high = sizeof (size_t) * 8 - 1;
+    int mid; 
+    while (low <= high)
+    {
+        mid = ((low + high)/2);
+        size_t temp = (size_t)1 << mid;
+        if (power2 & temp)
+        {
+            return mid;
+        }
+        else if (power2 < temp)
+        {
+            high = mid - 1;
+        }
+        else
+        {
+            low = mid + 1;
+        }
+    }
+
+    return -1;
+}
+
+inline
+int relative_index_power2_plug (size_t power2)
+{
+    int index = index_of_set_bit (power2);
+    assert (index <= MAX_INDEX_POWER2);
+
+    return ((index < MIN_INDEX_POWER2) ? 0 : (index - MIN_INDEX_POWER2));
+}
+
+inline
+int relative_index_power2_free_space (size_t power2)
+{
+    int index = index_of_set_bit (power2);
+    assert (index <= MAX_INDEX_POWER2);
+
+    return ((index < MIN_INDEX_POWER2) ? -1 : (index - MIN_INDEX_POWER2));
+}
+
 #ifdef BACKGROUND_GC
 uint32_t bgc_alloc_spin_count = 140;
 uint32_t bgc_alloc_spin_count_loh = 16;
@@ -2685,7 +2771,10 @@ GCSpinLock gc_heap::gc_lock;
 size_t gc_heap::eph_gen_starts_size = 0;
 heap_segment* gc_heap::segment_standby_list;
 size_t        gc_heap::last_gc_index = 0;
+#ifdef SEG_MAPPING_TABLE
 size_t        gc_heap::min_segment_size = 0;
+size_t        gc_heap::min_segment_size_shr = 0;
+#endif //SEG_MAPPING_TABLE
 size_t        gc_heap::soh_segment_size = 0;
 size_t        gc_heap::min_loh_segment_size = 0;
 size_t        gc_heap::segment_info_size = 0;
@@ -3447,8 +3536,8 @@ size_t size_seg_mapping_table_of (uint8_t* from, uint8_t* end)
 {
     from = align_lower_segment (from);
     end = align_on_segment (end);
-    dprintf (1, ("from: %Ix, end: %Ix, size: %Ix", from, end, sizeof (seg_mapping)*(((end - from) / gc_heap::min_segment_size))));
-    return sizeof (seg_mapping)*((end - from) / gc_heap::min_segment_size);
+    dprintf (1, ("from: %Ix, end: %Ix, size: %Ix", from, end, sizeof (seg_mapping)*(((size_t)(end - from) >> gc_heap::min_segment_size_shr))));
+    return sizeof (seg_mapping)*((size_t)(end - from) >> gc_heap::min_segment_size_shr);
 }
 
 // for seg_mapping_table we want it to start from a pointer sized address.
@@ -3461,7 +3550,7 @@ size_t align_for_seg_mapping_table (size_t size)
 inline
 size_t seg_mapping_word_of (uint8_t* add)
 {
-    return (size_t)add / gc_heap::min_segment_size;
+    return (size_t)add >> gc_heap::min_segment_size_shr;
 }
 #else //GROWABLE_SEG_MAPPING_TABLE
 BOOL seg_mapping_table_init()
@@ -3472,7 +3561,7 @@ BOOL seg_mapping_table_init()
     uint64_t total_address_space = (uint64_t)4*1024*1024*1024;
 #endif // BIT64
 
-    size_t num_entries = (size_t)(total_address_space / gc_heap::min_segment_size);
+    size_t num_entries = (size_t)(total_address_space >> gc_heap::min_segment_size_shr);
     seg_mapping_table = new seg_mapping[num_entries];
 
     if (seg_mapping_table)
@@ -3495,16 +3584,16 @@ BOOL seg_mapping_table_init()
 inline
 size_t ro_seg_begin_index (heap_segment* seg)
 {
-    size_t begin_index = (size_t)seg / gc_heap::min_segment_size;
-    begin_index = max (begin_index, (size_t)g_gc_lowest_address / gc_heap::min_segment_size);
+    size_t begin_index = (size_t)seg >> gc_heap::min_segment_size_shr;
+    begin_index = max (begin_index, (size_t)g_gc_lowest_address >> gc_heap::min_segment_size_shr);
     return begin_index;
 }
 
 inline
 size_t ro_seg_end_index (heap_segment* seg)
 {
-    size_t end_index = (size_t)(heap_segment_reserved (seg) - 1) / gc_heap::min_segment_size;
-    end_index = min (end_index, (size_t)g_gc_highest_address / gc_heap::min_segment_size);
+    size_t end_index = (size_t)(heap_segment_reserved (seg) - 1) >> gc_heap::min_segment_size_shr;
+    end_index = min (end_index, (size_t)g_gc_highest_address >> gc_heap::min_segment_size_shr);
     return end_index;
 }
 
@@ -3545,10 +3634,11 @@ heap_segment* ro_segment_lookup (uint8_t* o)
 void gc_heap::seg_mapping_table_add_segment (heap_segment* seg, gc_heap* hp)
 {
     size_t seg_end = (size_t)(heap_segment_reserved (seg) - 1);
-    size_t begin_index = (size_t)seg / gc_heap::min_segment_size;
+    size_t begin_index = (size_t)seg >> gc_heap::min_segment_size_shr;
     seg_mapping* begin_entry = &seg_mapping_table[begin_index];
-    size_t end_index = seg_end / gc_heap::min_segment_size;
+    size_t end_index = seg_end >> gc_heap::min_segment_size_shr;
     seg_mapping* end_entry = &seg_mapping_table[end_index];
+
     dprintf (1, ("adding seg %Ix(%d)-%Ix(%d)", 
         seg, begin_index, heap_segment_reserved (seg), end_index));
 
@@ -3606,9 +3696,9 @@ void gc_heap::seg_mapping_table_add_segment (heap_segment* seg, gc_heap* hp)
 void gc_heap::seg_mapping_table_remove_segment (heap_segment* seg)
 {
     size_t seg_end = (size_t)(heap_segment_reserved (seg) - 1);
-    size_t begin_index = (size_t)seg / gc_heap::min_segment_size;
+    size_t begin_index = (size_t)seg >> gc_heap::min_segment_size_shr;
     seg_mapping* begin_entry = &seg_mapping_table[begin_index];
-    size_t end_index = seg_end / gc_heap::min_segment_size;
+    size_t end_index = seg_end >> gc_heap::min_segment_size_shr;
     seg_mapping* end_entry = &seg_mapping_table[end_index];
     dprintf (1, ("removing seg %Ix(%d)-%Ix(%d)", 
         seg, begin_index, heap_segment_reserved (seg), end_index));
@@ -3654,7 +3744,7 @@ void gc_heap::seg_mapping_table_remove_segment (heap_segment* seg)
 inline
 gc_heap* seg_mapping_table_heap_of_worker (uint8_t* o)
 {
-    size_t index = (size_t)o / gc_heap::min_segment_size;
+    size_t index = (size_t)o >> gc_heap::min_segment_size_shr;
     seg_mapping* entry = &seg_mapping_table[index];
 
     gc_heap* hp = ((o > entry->boundary) ? entry->h1 : entry->h0);
@@ -3725,7 +3815,7 @@ heap_segment* seg_mapping_table_segment_of (uint8_t* o)
 #endif //FEATURE_BASICFREEZE
 #endif //FEATURE_BASICFREEZE || GROWABLE_SEG_MAPPING_TABLE
 
-    size_t index = (size_t)o / gc_heap::min_segment_size;
+    size_t index = (size_t)o >> gc_heap::min_segment_size_shr;
     seg_mapping* entry = &seg_mapping_table[index];
 
     dprintf (2, ("checking obj %Ix, index is %Id, entry: boundry: %Ix, seg0: %Ix, seg1: %Ix",
@@ -4437,6 +4527,14 @@ static size_t get_valid_segment_size (BOOL large_seg=FALSE)
         else
             seg_size = initial_seg_size;
     }
+
+#ifdef SEG_MAPPING_TABLE
+#ifdef BIT64
+    seg_size = round_up_power2 (seg_size);
+#else
+    seg_size = round_down_power2 (seg_size);
+#endif // BIT64
+#endif //SEG_MAPPING_TABLE
 
     return (seg_size);
 }
@@ -8404,92 +8502,6 @@ void gc_heap::combine_mark_lists()
 #endif // PARALLEL_MARK_LIST_SORT
 #endif //MULTIPLE_HEAPS
 #endif //MARK_LIST
-
-#ifdef BIT64
-#define TOTAL_TIMES_TO_SHIFT 6
-#else
-#define TOTAL_TIMES_TO_SHIFT 5
-#endif // BIT64
-
-size_t round_up_power2 (size_t size)
-{
-    unsigned short shift = 1;
-    size_t shifted = 0;
-
-    size--;
-    for (unsigned short i = 0; i < TOTAL_TIMES_TO_SHIFT; i++)
-    {
-        shifted = size | (size >> shift);
-        if (shifted == size)
-        {
-            break;
-        }
-
-        size = shifted;
-        shift <<= 1;
-    }
-    shifted++;
-
-    return shifted;
-}
-
-inline
-size_t round_down_power2 (size_t size)
-{
-    size_t power2 = round_up_power2 (size);
-
-    if (power2 != size)
-    {
-        power2 >>= 1;
-    }
-
-    return power2;
-}
-
-// the index starts from 0.
-int index_of_set_bit (size_t power2)
-{
-    int low = 0;
-    int high = sizeof (size_t) * 8 - 1;
-    int mid; 
-    while (low <= high)
-    {
-        mid = ((low + high)/2);
-        size_t temp = (size_t)1 << mid;
-        if (power2 & temp)
-        {
-            return mid;
-        }
-        else if (power2 < temp)
-        {
-            high = mid - 1;
-        }
-        else
-        {
-            low = mid + 1;
-        }
-    }
-
-    return -1;
-}
-
-inline
-int relative_index_power2_plug (size_t power2)
-{
-    int index = index_of_set_bit (power2);
-    assert (index <= MAX_INDEX_POWER2);
-
-    return ((index < MIN_INDEX_POWER2) ? 0 : (index - MIN_INDEX_POWER2));
-}
-
-inline
-int relative_index_power2_free_space (size_t power2)
-{
-    int index = index_of_set_bit (power2);
-    assert (index <= MAX_INDEX_POWER2);
-
-    return ((index < MIN_INDEX_POWER2) ? -1 : (index - MIN_INDEX_POWER2));
-}
 
 class seg_free_spaces
 {
@@ -33474,6 +33486,9 @@ HRESULT GCHeap::Initialize ()
     size_t large_seg_size = get_valid_segment_size(TRUE);
     gc_heap::min_loh_segment_size = large_seg_size;
     gc_heap::min_segment_size = min (seg_size, large_seg_size);
+#ifdef SEG_MAPPING_TABLE
+    gc_heap::min_segment_size_shr = index_of_set_bit (gc_heap::min_segment_size);
+#endif //SEG_MAPPING_TABLE
 
 #ifdef MULTIPLE_HEAPS
     if (GCConfig::GetNoAffinitize())
