@@ -4,6 +4,7 @@
 
 using Microsoft.Win32.SafeHandles;
 using System;
+using System.IO;
 using System.Runtime.InteropServices;
 
 internal partial class Interop
@@ -11,12 +12,23 @@ internal partial class Interop
     internal partial class Kernel32
     {
         [DllImport(Libraries.Kernel32, EntryPoint = "CreateFile2", SetLastError = true, CharSet = CharSet.Unicode, BestFitMapping = false)]
-        internal static extern unsafe SafeFileHandle CreateFile2(
+        private static extern unsafe SafeFileHandle CreateFile2Private(
             string lpFileName,
             int dwDesiredAccess,
             System.IO.FileShare dwShareMode,
             System.IO.FileMode dwCreationDisposition,
             CREATEFILE2_EXTENDED_PARAMETERS* pCreateExParams);
+
+        internal static unsafe SafeFileHandle CreateFile2(
+            string lpFileName,
+            int dwDesiredAccess,
+            System.IO.FileShare dwShareMode,
+            System.IO.FileMode dwCreationDisposition,
+            CREATEFILE2_EXTENDED_PARAMETERS* pCreateExParams)
+        {
+            lpFileName = PathInternal.EnsureExtendedPrefixOverMaxPath(lpFileName);
+            return CreateFile2Private(lpFileName, dwDesiredAccess, dwShareMode, dwCreationDisposition, pCreateExParams);
+        }
 
         internal unsafe struct CREATEFILE2_EXTENDED_PARAMETERS
         {
