@@ -3,37 +3,40 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Xunit;
 
 namespace System.Globalization.Tests
 {
-    public class RegionInfoPropertyTests
+    public class RegionInfoPropertyTests : RemoteExecutorTestBase
     {
         [Fact]
         public void CurrentRegion()
         {
-            CultureInfo oldThreadCulture = CultureInfo.CurrentCulture;
-
-            try
+            RemoteInvoke(() =>
             {
                 CultureInfo.CurrentCulture = new CultureInfo("en-US");
 
                 RegionInfo ri = new RegionInfo(new RegionInfo(CultureInfo.CurrentCulture.Name).TwoLetterISORegionName);
                 Assert.True(RegionInfo.CurrentRegion.Equals(ri) || RegionInfo.CurrentRegion.Equals(new RegionInfo(CultureInfo.CurrentCulture.Name)));
                 Assert.Same(RegionInfo.CurrentRegion, RegionInfo.CurrentRegion);
-            }
-            finally
-            {
-                CultureInfo.CurrentCulture = oldThreadCulture;
-            }
+
+                return SuccessExitCode;
+            }).Dispose();
         }
 
         [Theory]
         [InlineData("en-US", "United States")]
         public void DisplayName(string name, string expected)
         {
-            Assert.Equal(expected, new RegionInfo(name).DisplayName);
+            RemoteInvoke((string _name, string _expected) =>
+            {
+                CultureInfo.CurrentUICulture = new CultureInfo(_name);
+                Assert.Equal(_expected, new RegionInfo(_name).DisplayName);
+
+                return SuccessExitCode;
+            }, name, expected).Dispose();
         }
 
         [Theory]
