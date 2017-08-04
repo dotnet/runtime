@@ -302,10 +302,6 @@
           <source>The best overloaded method match for '{0}' has some invalid arguments</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Die beste Übereinstimmung für die überladene {0}-Methode enthält einige ungültige Argumente.</target>
         </trans-unit>
-        <trans-unit id="BadArgType" translate="yes" xml:space="preserve">
-          <source>Argument '{0}': cannot convert from '{1}' to '{2}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">{0}-Argument: Die Konvertierung von {1} in {2} ist nicht möglich.</target>
-        </trans-unit>
         <trans-unit id="RefLvalueExpected" translate="yes" xml:space="preserve">
           <source>A ref or out argument must be an assignable variable</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Ein ref- oder out-Argument muss eine zuweisbare Variable sein.</target>
@@ -342,14 +338,6 @@
           <source>Cannot modify the return value of '{0}' because it is not a variable</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Der Rückgabewert von {0} ist keine Variable und kann daher nicht geändert werden.</target>
         </trans-unit>
-        <trans-unit id="BadArgExtraRef" translate="yes" xml:space="preserve">
-          <source>Argument '{0}' should not be passed with the '{1}' keyword</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Das {0}-Argument darf nicht mit dem {1}-Schlüsselwort übergeben werden.</target>
-        </trans-unit>
-        <trans-unit id="BadArgRef" translate="yes" xml:space="preserve">
-          <source>Argument '{0}' must be passed with the '{1}' keyword</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Das {0}-Argument muss mit dem {1}-Schlüsselwort übergeben werden.</target>
-        </trans-unit>
         <trans-unit id="AssgReadonly2" translate="yes" xml:space="preserve">
           <source>Members of readonly field '{0}' cannot be modified (except in a constructor or a variable initializer)</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Member des schreibgeschützten Felds "{0}" können nicht geändert werden (außer in einem Konstruktor oder Variableninitialisierer).</target>
@@ -385,10 +373,6 @@
         <trans-unit id="BadExtensionArgTypes" translate="yes" xml:space="preserve">
           <source>'{0}' does not contain a definition for '{1}' and the best extension method overload '{2}' has some invalid arguments</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">"{0}" enthält keine Definition für {1}, und die Überladung der optimalen {2}-Erweiterungsmethode enthält einige ungültige Argumente.</target>
-        </trans-unit>
-        <trans-unit id="BadInstanceArgType" translate="yes" xml:space="preserve">
-          <source>Instance argument: cannot convert from '{0}' to '{1}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Instanzenargument: Konvertierung von {0} in {1} ist nicht möglich.</target>
         </trans-unit>
         <trans-unit id="NonInvocableMemberCalled" translate="yes" xml:space="preserve">
           <source>Non-invocable member '{0}' cannot be used like a method.</source>

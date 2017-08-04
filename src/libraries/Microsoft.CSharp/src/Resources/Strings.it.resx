@@ -234,9 +234,6 @@
   <data name="BadArgTypes" xml:space="preserve">
     <value>La corrispondenza migliore del metodo di overload per '{0}' presenta alcuni argomenti non validi</value>
   </data>
-  <data name="BadArgType" xml:space="preserve">
-    <value>Argomento '{0}': impossibile eseguire la conversione da '{1}' a '{2}'</value>
-  </data>
   <data name="RefLvalueExpected" xml:space="preserve">
     <value>Un argomento ref o out deve essere una variabile assegnabile.</value>
   </data>
@@ -264,12 +261,6 @@
   <data name="ReturnNotLValue" xml:space="preserve">
     <value>Impossibile modificare il valore restituito da '{0}' perché non è una variabile</value>
   </data>
-  <data name="BadArgExtraRef" xml:space="preserve">
-    <value>L'argomento '{0}' non deve essere passato con la parola chiave '{1}'</value>
-  </data>
-  <data name="BadArgRef" xml:space="preserve">
-    <value>L'argomento '{0}' deve essere passato con la parola chiave '{1}'</value>
-  </data>
   <data name="AssgReadonly2" xml:space="preserve">
     <value>Impossibile modificare i membri del campo di sola lettura '{0}' (tranne che in un costruttore o in un inizializzatore di variabile)</value>
   </data>
@@ -296,9 +287,6 @@
   </data>
   <data name="BadExtensionArgTypes" xml:space="preserve">
     <value>'{0}' non contiene una definizione per '{1}' e l'overload migliore del metodo di estensione '{2}' presenta alcuni argomenti non validi</value>
-  </data>
-  <data name="BadInstanceArgType" xml:space="preserve">
-    <value>Argomento dell'istanza: impossibile eseguire la conversione da '{0}' a '{1}'</value>
   </data>
   <data name="NonInvocableMemberCalled" xml:space="preserve">
     <value>Impossibile utilizzare il membro non richiamabile '{0}' come metodo.</value>

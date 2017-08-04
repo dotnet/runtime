@@ -306,10 +306,6 @@
           <source>The best overloaded method match for '{0}' has some invalid arguments</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">与“{0}”最匹配的重载方法具有一些无效参数</target>
         </trans-unit>
-        <trans-unit id="BadArgType" translate="yes" xml:space="preserve">
-          <source>Argument '{0}': cannot convert from '{1}' to '{2}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">参数“{0}”: 无法从“{1}”转换为“{2}”</target>
-        </trans-unit>
         <trans-unit id="RefLvalueExpected" translate="yes" xml:space="preserve">
           <source>A ref or out argument must be an assignable variable</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">ref 或 out 参数必须是可以赋值的变量</target>
@@ -346,14 +342,6 @@
           <source>Cannot modify the return value of '{0}' because it is not a variable</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">无法修改“{0}”的返回值，因为它不是变量</target>
         </trans-unit>
-        <trans-unit id="BadArgExtraRef" translate="yes" xml:space="preserve">
-          <source>Argument '{0}' should not be passed with the '{1}' keyword</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">参数“{0}”不应使用关键字“{1}”传递</target>
-        </trans-unit>
-        <trans-unit id="BadArgRef" translate="yes" xml:space="preserve">
-          <source>Argument '{0}' must be passed with the '{1}' keyword</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">参数“{0}”必须使用关键字“{1}”传递</target>
-        </trans-unit>
         <trans-unit id="AssgReadonly2" translate="yes" xml:space="preserve">
           <source>Members of readonly field '{0}' cannot be modified (except in a constructor or a variable initializer)</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">无法修改只读字段“{0}”的成员(在构造函数或变量初始值设定项中除外)</target>
@@ -389,10 +377,6 @@
         <trans-unit id="BadExtensionArgTypes" translate="yes" xml:space="preserve">
           <source>'{0}' does not contain a definition for '{1}' and the best extension method overload '{2}' has some invalid arguments</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">“{0}”不包含“{1}”的定义，并且最佳扩展方法重载“{2}”具有一些无效参数</target>
-        </trans-unit>
-        <trans-unit id="BadInstanceArgType" translate="yes" xml:space="preserve">
-          <source>Instance argument: cannot convert from '{0}' to '{1}'</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">实例参数: 无法从“{0}”转换为“{1}”</target>
         </trans-unit>
         <trans-unit id="NonInvocableMemberCalled" translate="yes" xml:space="preserve">
           <source>Non-invocable member '{0}' cannot be used like a method.</source>

@@ -234,9 +234,6 @@
   <data name="BadArgTypes" xml:space="preserve">
     <value>最符合的多載方法 '{0}' 有一些無效的引數</value>
   </data>
-  <data name="BadArgType" xml:space="preserve">
-    <value>引數 '{0}': 無法從 '{1}' 轉換為 '{2}'</value>
-  </data>
   <data name="RefLvalueExpected" xml:space="preserve">
     <value>ref 或 out 引數必須是可指派的變數</value>
   </data>
@@ -264,12 +261,6 @@
   <data name="ReturnNotLValue" xml:space="preserve">
     <value>無法修改 '{0}' 的傳回值，因為它不是變數</value>
   </data>
-  <data name="BadArgExtraRef" xml:space="preserve">
-    <value>傳遞引數 '{0}' 時不能包含 '{1}' 關鍵字</value>
-  </data>
-  <data name="BadArgRef" xml:space="preserve">
-    <value>傳遞引數 '{0}' 時必須包含 '{1}' 關鍵字</value>
-  </data>
   <data name="AssgReadonly2" xml:space="preserve">
     <value>唯讀欄位 '{0}' 的成員無法修改 (除非是在建構函式或變數初始設定式)</value>
   </data>
@@ -296,9 +287,6 @@
   </data>
   <data name="BadExtensionArgTypes" xml:space="preserve">
     <value>'{0}' 不包含 '{1}' 的定義，而且最佳的擴充方法多載 '{2}' 有一些無效的引數</value>
-  </data>
-  <data name="BadInstanceArgType" xml:space="preserve">
-    <value>執行個體引數: 無法從 '{0}' 轉換為 '{1}'</value>
   </data>
   <data name="NonInvocableMemberCalled" xml:space="preserve">
     <value>非可叫用 (Non-invocable) 成員 '{0}' 不能做為方法使用。</value>

@@ -197,9 +197,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 case ErrorCode.ERR_BadArgTypes:
                     codeStr = SR.BadArgTypes;
                     break;
-                case ErrorCode.ERR_BadArgType:
-                    codeStr = SR.BadArgType;
-                    break;
                 case ErrorCode.ERR_RefLvalueExpected:
                     codeStr = SR.RefLvalueExpected;
                     break;
@@ -227,12 +224,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 case ErrorCode.ERR_ReturnNotLValue:
                     codeStr = SR.ReturnNotLValue;
                     break;
-                case ErrorCode.ERR_BadArgExtraRef:
-                    codeStr = SR.BadArgExtraRef;
-                    break;
-                case ErrorCode.ERR_BadArgRef:
-                    codeStr = SR.BadArgRef;
-                    break;
                 case ErrorCode.ERR_AssgReadonly2:
                     codeStr = SR.AssgReadonly2;
                     break;
@@ -259,9 +250,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                     break;
                 case ErrorCode.ERR_BadExtensionArgTypes:
                     codeStr = SR.BadExtensionArgTypes;
-                    break;
-                case ErrorCode.ERR_BadInstanceArgType:
-                    codeStr = SR.BadInstanceArgType;
                     break;
                 case ErrorCode.ERR_NonInvocableMemberCalled:
                     codeStr = SR.NonInvocableMemberCalled;

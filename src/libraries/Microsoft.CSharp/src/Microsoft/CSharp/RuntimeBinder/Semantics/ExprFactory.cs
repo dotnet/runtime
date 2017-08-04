@@ -95,13 +95,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public ExprUserLogicalOp CreateUserLogOp(CType type, Expr trueFalseCall, ExprCall operatorCall) => 
             new ExprUserLogicalOp(type, trueFalseCall, operatorCall);
 
-        public ExprUserLogicalOp CreateUserLogOpError(CType type, Expr trueFalseCall, ExprCall operatorCall)
-        {
-            ExprUserLogicalOp rval = CreateUserLogOp(type, trueFalseCall, operatorCall);
-            rval.SetError();
-            return rval;
-        }
-
         public ExprConcat CreateConcat(Expr first, Expr second) => new ExprConcat(first, second);
 
         public ExprConstant CreateStringConstant(string str) => 

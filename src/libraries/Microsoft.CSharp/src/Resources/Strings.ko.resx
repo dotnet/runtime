@@ -234,9 +234,6 @@
   <data name="BadArgTypes" xml:space="preserve">
     <value>'{0}'에 가장 일치하는 오버로드된 메서드에 잘못된 인수가 있습니다.</value>
   </data>
-  <data name="BadArgType" xml:space="preserve">
-    <value>'{0}' 인수: '{1}'에서 '{2}'(으)로 변환할 수 없습니다.</value>
-  </data>
   <data name="RefLvalueExpected" xml:space="preserve">
     <value>ref 또는 out 인수는 할당 가능한 변수여야 합니다.</value>
   </data>
@@ -264,12 +261,6 @@
   <data name="ReturnNotLValue" xml:space="preserve">
     <value>'{0}'은(는) 변수가 아니므로 해당 반환 값을 수정할 수 없습니다.</value>
   </data>
-  <data name="BadArgExtraRef" xml:space="preserve">
-    <value>'{0}' 인수는 '{1}' 키워드와 함께 전달할 수 없습니다.</value>
-  </data>
-  <data name="BadArgRef" xml:space="preserve">
-    <value>'{0}' 인수는 '{1}' 키워드와 함께 전달해야 합니다.</value>
-  </data>
   <data name="AssgReadonly2" xml:space="preserve">
     <value>읽기 전용 필드 '{0}'의 멤버는 수정할 수 없습니다. 단 생성자 또는 변수 이니셜라이저에서는 예외입니다.</value>
   </data>
@@ -296,9 +287,6 @@
   </data>
   <data name="BadExtensionArgTypes" xml:space="preserve">
     <value>'{0}'에 '{1}'에 대한 정의가 없으며 가장 적합한 확장 메서드 오버로드 '{2}'에 잘못된 인수가 있습니다.</value>
-  </data>
-  <data name="BadInstanceArgType" xml:space="preserve">
-    <value>인스턴스 인수: '{0}'에서 '{1}'(으)로 변환할 수 없습니다.</value>
   </data>
   <data name="NonInvocableMemberCalled" xml:space="preserve">
     <value>호출할 수 없는 멤버인 '{0}'은(는) 메서드처럼 사용할 수 없습니다.</value>

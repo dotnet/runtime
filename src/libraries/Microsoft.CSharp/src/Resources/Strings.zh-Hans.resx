@@ -234,9 +234,6 @@
   <data name="BadArgTypes" xml:space="preserve">
     <value>与“{0}”最匹配的重载方法具有一些无效参数</value>
   </data>
-  <data name="BadArgType" xml:space="preserve">
-    <value>参数“{0}”: 无法从“{1}”转换为“{2}”</value>
-  </data>
   <data name="RefLvalueExpected" xml:space="preserve">
     <value>ref 或 out 参数必须是可以赋值的变量</value>
   </data>
@@ -264,12 +261,6 @@
   <data name="ReturnNotLValue" xml:space="preserve">
     <value>无法修改“{0}”的返回值，因为它不是变量</value>
   </data>
-  <data name="BadArgExtraRef" xml:space="preserve">
-    <value>参数“{0}”不应使用关键字“{1}”传递</value>
-  </data>
-  <data name="BadArgRef" xml:space="preserve">
-    <value>参数“{0}”必须使用关键字“{1}”传递</value>
-  </data>
   <data name="AssgReadonly2" xml:space="preserve">
     <value>无法修改只读字段“{0}”的成员(在构造函数或变量初始值设定项中除外)</value>
   </data>
@@ -296,9 +287,6 @@
   </data>
   <data name="BadExtensionArgTypes" xml:space="preserve">
     <value>“{0}”不包含“{1}”的定义，并且最佳扩展方法重载“{2}”具有一些无效参数</value>
-  </data>
-  <data name="BadInstanceArgType" xml:space="preserve">
-    <value>实例参数: 无法从“{0}”转换为“{1}”</value>
   </data>
   <data name="NonInvocableMemberCalled" xml:space="preserve">
     <value>不可调用的成员“{0}”不能像方法一样使用。</value>
