@@ -18,7 +18,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public MethodSymbol methNubCtor;
 
         private readonly SymFactory _symFactory;
-        private readonly MiscSymFactory _miscSymFactory;
 
         private readonly NamespaceSymbol _rootNS;         // The "root" (unnamed) namespace.
 
@@ -35,7 +34,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             this.m_nameTable = nameMgr;
             this.tableGlobal = new SYMTBL();
             _symFactory = new SymFactory(this.tableGlobal);
-            _miscSymFactory = new MiscSymFactory(this.tableGlobal);
 
             this.tableTypeArrays = new Dictionary<TypeArrayKey, TypeArray>();
             _rootNS = _symFactory.CreateNamespace(m_nameTable.Lookup(""), null);
@@ -168,9 +166,28 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return _symFactory;
         }
 
-        public MiscSymFactory GetMiscSymFactory()
+        ////////////////////////////////////////////////////////////////////////////////
+        // Build the data structures needed to make FPreLoad fast. Make sure the 
+        // namespaces are created. Compute and sort hashes of the NamespaceSymbol * value and type
+        // name (sans arity indicator).
+
+        private void InitPreLoad()
         {
-            return _miscSymFactory;
+            for (int i = 0; i < (int)PredefinedType.PT_COUNT; ++i)
+            {
+                NamespaceSymbol ns = GetRootNS();
+                string name = PredefinedTypeFacts.GetName((PredefinedType)i);
+                int start = 0;
+                while (start < name.Length)
+                {
+                    int iDot = name.IndexOf('.', start);
+                    if (iDot == -1) break;
+                    string sub = (iDot > start) ? name.Substring(start, iDot - start) : name.Substring(start);
+                    Name nm = this.GetNameManager().Add(sub);
+                    ns = LookupGlobalSymCore(nm, ns, symbmask_t.MASK_NamespaceSymbol) as NamespaceSymbol ?? _symFactory.CreateNamespace(nm, ns);
+                    start += sub.Length + 1;
+                }
+            }
         }
 
         public Symbol LookupGlobalSymCore(Name name, ParentSymbol parent, symbmask_t kindmask)
