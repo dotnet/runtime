@@ -2,6 +2,7 @@
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <UsingTask TaskName="DownloadFromAzure" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.CloudTestTasks.dll" />
+  <UsingTask TaskName="ExecWithRetriesForNuGetPush" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll" />
   <UsingTask TaskName="FinalizeBuild" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll" />
   <UsingTask TaskName="ListAzureBlobs" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.CloudTestTasks.dll" />
   <UsingTask TaskName="UploadToAzure" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.CloudTestTasks.dll" />
@@ -216,11 +217,13 @@
       <NuGetPushSymbolsCommand>$(DotnetToolCommand) nuget push --source $(NuGetSymbolsFeedUrl) --api-key $(NuGetApiKey) --timeout $(NuGetPushTimeoutSeconds)</NuGetPushSymbolsCommand>
     </PropertyGroup>
 
-      <!-- ToDo: look at moving this to an msbuild task so that we can include retry logic, parallelize it, and hide the api key -->
-    <Exec Command="$(NuGetPushCommand) %(_DownloadedStandardPackages.Identity)" />
+    <ExecWithRetriesForNuGetPush Command="$(NuGetPushCommand) %(_DownloadedStandardPackages.Identity)"
+                                 IgnoredErrorMessagesWithConditional="@(IgnorableErrorMessages)" />
 
     <Message Condition="'@(_DownloadedSymbolsPackages)' != ''" Text="Pushing CoreHost symbols packages to $(NuGetSymbolsFeedUrl)" />
-    <Exec Condition="'@(_DownloadedSymbolsPackages)' != ''" Command="$(NuGetPushSymbolsCommand) %(_DownloadedSymbolsPackages.Identity)" />
+    <ExecWithRetriesForNuGetPush Condition="'@(_DownloadedSymbolsPackages)' != ''"
+                                 Command="$(NuGetPushSymbolsCommand) %(_DownloadedSymbolsPackages.Identity)"
+                                 IgnoredErrorMessagesWithConditional="@(IgnorableErrorMessages)" />
   </Target>
 
   <Target Name="PublishDebToolPackageToFeed"
@@ -233,7 +236,8 @@
     <PropertyGroup>
       <NuGetPushCommand>$(DotnetToolCommand) nuget push --source $(CliNuGetFeedUrl) --api-key $(CliNuGetApiKey) --timeout $(NuGetPushTimeoutSeconds)</NuGetPushCommand>
     </PropertyGroup>
-    <Exec Command="$(NuGetPushCommand) %(DebToolPackages.Identity)" />
+    <ExecWithRetriesForNuGetPush Command="$(NuGetPushCommand) %(DebToolPackages.Identity)"
+                                 IgnoredErrorMessagesWithConditional="@(IgnorableErrorMessages)" />
   </Target>
   
   <Import Project="$(ToolsDir)VersionTools.targets" Condition="Exists('$(ToolsDir)VersionTools.targets')" />
