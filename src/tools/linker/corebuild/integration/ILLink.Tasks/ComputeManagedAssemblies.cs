@@ -10,6 +10,7 @@ using Microsoft.Build.Framework; // MessageImportance
 using Microsoft.NET.Build.Tasks; // LockFileCache
 using NuGet.ProjectModel; // LockFileTargetLibrary
 using NuGet.Frameworks; // NuGetFramework.Parse(targetframework)
+using Mono.Cecil;
 
 namespace ILLink.Tasks
 {
@@ -33,10 +34,8 @@ namespace ILLink.Tasks
 		{
 			var managedAssemblies = new List<ITaskItem>();
 			foreach (var f in Assemblies) {
-				try {
-					AssemblyName.GetAssemblyName(f.ItemSpec);
+				if (Utils.IsManagedAssembly(f.ItemSpec)) {
 					managedAssemblies.Add(f);
-				} catch (BadImageFormatException) {
 				}
 			}
 			ManagedAssemblies = managedAssemblies.ToArray();

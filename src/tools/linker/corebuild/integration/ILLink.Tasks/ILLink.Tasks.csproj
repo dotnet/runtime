@@ -91,6 +91,7 @@
     <Compile Include="ComputeManagedAssemblies.cs" />
     <Compile Include="GetRuntimeLibraries.cs" />
     <Compile Include="CreateRootDescriptorFile.cs" />
+    <Compile Include="Utils.cs" />
     <Compile Include="Microsoft.NET.Build.Tasks/LockFileCache.cs" />
     <Compile Include="Microsoft.NET.Build.Tasks/BuildErrorException.cs" />
   </ItemGroup>
@@ -165,6 +166,7 @@
       -->
       <SetConfiguration>Configuration=illink_$(Configuration)</SetConfiguration>
     </ProjectReference>
+    <ProjectReference Include="../../../cecil/Mono.Cecil.csproj" />
   </ItemGroup>
 
   <!-- Workaround for the SetConfiguration issue described above. -->

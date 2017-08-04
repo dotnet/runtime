@@ -39,10 +39,7 @@ namespace ILLink.Tasks
 
 			long totalUnlinked = 0;
 			foreach (string unlinkedFile in unlinkedFiles) {
-				try {
-					AssemblyName.GetAssemblyName (unlinkedFile);
-				}
-				catch (BadImageFormatException) {
+				if (!Utils.IsManagedAssembly (unlinkedFile)) {
 					continue;
 				}
 				string fileName = Path.GetFileName (unlinkedFile);
@@ -54,10 +51,7 @@ namespace ILLink.Tasks
 
 			long totalLinked = 0;
 			foreach (string linkedFile in linkedFiles) {
-				try {
-					AssemblyName.GetAssemblyName (linkedFile);
-				}
-				catch (BadImageFormatException) {
+				if (!Utils.IsManagedAssembly (linkedFile)) {
 					continue;
 				}
 				string fileName = Path.GetFileName (linkedFile);
@@ -72,14 +66,29 @@ namespace ILLink.Tasks
 			}
 
 			Console.WriteLine ("{0, -60} {1,-20:N0} {2, -20:N0} {3, -10:P}",
+				"",
+				"Before linking (B)",
+				"After linking (B)",
+				"Size decrease");
+			Console.WriteLine ("{0, -60} {1,-20:N0} {2, -20:N0} {3, -10:P}",
+				"-----------",
+				"-----------",
+				"-----------",
+				"-----------"
+			);
+
+			Console.WriteLine ("{0, -60} {1,-20:N0} {2, -20:N0} {3, -10:P}",
 				"Total size of assemblies",
 				totalUnlinked,
 				totalLinked,
 				((double)totalUnlinked - (double)totalLinked) / (double)totalUnlinked);
 
-			Console.WriteLine ("-----------");
-			Console.WriteLine ("Details");
-			Console.WriteLine ("-----------");
+			Console.WriteLine ("{0, -60} {1,-20:N0} {2, -20:N0} {3, -10:P}",
+				"-----------",
+				"-----------",
+				"-----------",
+				"-----------"
+			);
 
 			foreach (string assembly in sizes.Keys) {
 				Console.WriteLine ("{0, -60} {1,-20:N0} {2, -20:N0} {3, -10:P}",
