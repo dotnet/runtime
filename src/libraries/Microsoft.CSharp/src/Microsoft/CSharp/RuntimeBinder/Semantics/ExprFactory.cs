@@ -114,13 +114,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         //
         // This returns a null for reference types and an EXPRZEROINIT for all others.
 
-        public Expr CreateZeroInit(CType type) => CreateZeroInit(CreateClass(type), null, false);
-
-        private Expr CreateZeroInit(ExprClass typeExpr, Expr originalConstructorCall, bool isConstructor)
+        public Expr CreateZeroInit(CType type)
         {
-            Debug.Assert(typeExpr != null);
-            CType type = typeExpr.Type;
-            bool isError = false;
+            Debug.Assert(type != null);
 
             if (type.isEnumType())
             {
@@ -129,52 +125,30 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return CreateConstant(type, ConstVal.Get(Activator.CreateInstance(type.AssociatedSystemType)));
             }
 
+            Debug.Assert(type.fundType() > FUNDTYPE.FT_NONE);
+            Debug.Assert(type.fundType() < FUNDTYPE.FT_COUNT);
             switch (type.fundType())
             {
                 case FUNDTYPE.FT_PTR:
                     {
-                        CType nullType = Types.GetNullType();
-
-                        // It looks like this if is always false ...
-                        if (nullType.fundType() == type.fundType())
-                        {
-                            // Create a constant here.
-                            return CreateConstant(type, ConstVal.GetDefaultValue(ConstValKind.IntPtr));
-                        }
-
                         // Just allocate a new node and fill it in.
-                        return CreateCast(0, typeExpr, CreateNull());
+                        return CreateCast(0, CreateClass(type), CreateNull());
                     }
 
-                case FUNDTYPE.FT_REF:
-                case FUNDTYPE.FT_I1:
-                case FUNDTYPE.FT_U1:
-                case FUNDTYPE.FT_I2:
-                case FUNDTYPE.FT_U2:
-                case FUNDTYPE.FT_I4:
-                case FUNDTYPE.FT_U4:
-                case FUNDTYPE.FT_I8:
-                case FUNDTYPE.FT_U8:
-                case FUNDTYPE.FT_R4:
-                case FUNDTYPE.FT_R8:
-                    return CreateConstant(type, ConstVal.GetDefaultValue(type.constValKind()));
                 case FUNDTYPE.FT_STRUCT:
                     if (type.isPredefType(PredefinedType.PT_DECIMAL))
                     {
-                        goto case FUNDTYPE.FT_R8;
+                        goto default;
                     }
 
-                    break;
+                    goto case FUNDTYPE.FT_VAR;
 
                 case FUNDTYPE.FT_VAR:
-                    break;
+                    return new ExprZeroInit(type);
 
                 default:
-                    isError = true;
-                    break;
+                    return CreateConstant(type, ConstVal.GetDefaultValue(type.constValKind()));
             }
-
-            return new ExprZeroInit(type, originalConstructorCall, isConstructor, isError);
         }
 
         public ExprConstant CreateConstant(CType type, ConstVal constVal) => new ExprConstant(type, constVal);

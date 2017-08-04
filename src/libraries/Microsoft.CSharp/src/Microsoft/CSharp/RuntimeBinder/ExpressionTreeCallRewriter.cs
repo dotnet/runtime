@@ -956,10 +956,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 }
                 else if (pExpr is ExprZeroInit zeroInit)
                 {
-                    if ((pExpr = zeroInit.OptionalArgument) == null)
-                    {
-                        return Activator.CreateInstance(zeroInit.Type.AssociatedSystemType);
-                    }
+                    return Activator.CreateInstance(zeroInit.Type.AssociatedSystemType);
                 }
                 else
                 {
