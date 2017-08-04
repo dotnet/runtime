@@ -15387,7 +15387,20 @@ void CodeGen::genTableSwitch(regNumber reg, unsigned jumpCnt, BasicBlock** jumpT
 
 #endif // _TARGET_ARM_
 
-    if (jumpCnt < minSwitchTabJumpCnt)
+    bool useJumpSequence = jumpCnt < minSwitchTabJumpCnt;
+
+#if defined(_TARGET_UNIX_) && defined(_TARGET_ARM_)
+    // Force using an inlined jumping instead switch table generation.
+    // Switch jump table is generated with incorrect values in CoreRT case,
+    // so any large switch will crash after loading to PC any such value.
+    // I think this is due to the fact that we use absolute addressing
+    // instead of relative. But in CoreRT is used as a rule relative
+    // addressing when we generate an executable.
+    // See also https://github.com/dotnet/coreclr/issues/13194
+    useJumpSequence = useJumpSequence || compiler->IsTargetAbi(CORINFO_CORERT_ABI);
+#endif // defined(_TARGET_UNIX_) && defined(_TARGET_ARM_)
+
+    if (useJumpSequence)
     {
         /* Does the first case label follow? */
         emitJumpKind jmpEqual = genJumpKindForOper(GT_EQ, CK_SIGNED);
