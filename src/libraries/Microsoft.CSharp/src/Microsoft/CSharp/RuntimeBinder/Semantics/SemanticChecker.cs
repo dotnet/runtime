@@ -128,7 +128,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public TypeManager GetTypeManager() { return SymbolLoader.GetTypeManager(); }
         public BSYMMGR getBSymmgr() { return SymbolLoader.getBSymmgr(); }
         public SymFactory GetGlobalSymbolFactory() { return SymbolLoader.GetGlobalSymbolFactory(); }
-        public MiscSymFactory GetGlobalMiscSymFactory() { return SymbolLoader.GetGlobalMiscSymFactory(); }
 
         //protected CompilerPhase GetCompPhase() { return SymbolLoader.CompPhase(); }
         //protected void SetCompPhase(CompilerPhase compPhase) { SymbolLoader.compPhase = compPhase; }

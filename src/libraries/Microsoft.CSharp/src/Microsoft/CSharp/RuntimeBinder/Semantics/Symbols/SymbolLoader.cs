@@ -87,11 +87,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return GlobalSymbolContext.GetGlobalSymbolFactory();
         }
 
-        public MiscSymFactory GetGlobalMiscSymFactory()
-        {
-            return GlobalSymbolContext.GetGlobalMiscSymFactory();
-        }
-
         public AggregateSymbol GetPredefAgg(PredefinedType pt) => GetTypeManager().GetPredefAgg(pt);
 
         public AggregateType GetPredefindType(PredefinedType pt) => GetPredefAgg(pt).getThisType();

@@ -184,7 +184,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             //    Linq expression tree for the whole thing and return it.
 
             // (1) - Create the locals
-            Scope pScope = _semanticChecker.GetGlobalMiscSymFactory().CreateScope(null);
+            Scope pScope = _semanticChecker.GetGlobalSymbolFactory().CreateScope(null);
             LocalVariableSymbol[] locals = PopulateLocalScope(payload, pScope, arguments, parameters);
 
             // (1.5) - Check to see if we need to defer.
