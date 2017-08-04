@@ -31,7 +31,7 @@ namespace System.Globalization
     // This is an internal flag.
     //
     // This flag is different from MonthNameStyles because this flag
-    // can be expanded to accomodate parsing behaviors like CJK month names
+    // can be expanded to accommodate parsing behaviors like CJK month names
     // or alternative month names, etc.
 
     [Flags]
@@ -2645,7 +2645,7 @@ namespace System.Globalization
                 {
                     String str;
                     // We have to call public methods here to work with inherited DTFI.
-                    // Insert the month name first, so that they are at the front of abbrevaited
+                    // Insert the month name first, so that they are at the front of abbreviated
                     // month names.
                     str = InvariantInfo.GetMonthName(i);
                     InsertHash(temp, str, TokenType.MonthToken, i);
