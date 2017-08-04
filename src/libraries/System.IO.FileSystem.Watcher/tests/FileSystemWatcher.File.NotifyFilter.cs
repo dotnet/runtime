@@ -91,9 +91,6 @@ namespace System.IO.Tests
 
                 if (filter == NotifyFilters.DirectoryName)
                     expected |= WatcherChangeTypes.Renamed;
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && (filter == NotifyFilters.FileName))
-                    expected |= WatcherChangeTypes.Renamed;
-
                 ExpectEvent(watcher, expected, action, cleanup, targetPath);
             }
         }
@@ -278,6 +275,35 @@ namespace System.IO.Tests
 
                 WatcherChangeTypes expected = 0;
                 expected |= WatcherChangeTypes.Deleted | WatcherChangeTypes.Changed;
+                ExpectEvent(watcher, expected, action, cleanup, new string[] { otherFile, file.Path });
+            }
+        }
+
+        [Fact]
+        public void FileSystemWatcher_File_NotifyFilter_FileNameDoesntTriggerOnDirectoryEvent()
+        {
+            using (var testDirectory = new TempDirectory(GetTestFilePath()))
+            using (var file = new TempFile(Path.Combine(testDirectory.Path, "file")))
+            using (var sourcePath = new TempFile(Path.Combine(testDirectory.Path, "sourceFile")))
+            using (var watcher = new FileSystemWatcher(testDirectory.Path, "*"))
+            {
+                watcher.NotifyFilter = NotifyFilters.DirectoryName;
+                string otherFile = Path.Combine(testDirectory.Path, "file2");
+                string destPath = Path.Combine(testDirectory.Path, "destFile");
+
+                Action action = () =>
+                {
+                    File.Create(otherFile).Dispose();
+                    File.SetLastWriteTime(file.Path, DateTime.Now + TimeSpan.FromSeconds(10));
+                    File.Delete(otherFile);
+                    File.Move(sourcePath.Path, destPath);
+                };
+                Action cleanup = () =>
+                {
+                    File.Move(destPath, sourcePath.Path);
+                };
+
+                WatcherChangeTypes expected = 0;
                 ExpectEvent(watcher, expected, action, cleanup, new string[] { otherFile, file.Path });
             }
         }
