@@ -63,6 +63,18 @@ typedef struct _MonoProfilerDesc *MonoProfilerHandle;
  */
 MONO_API MonoProfilerHandle mono_profiler_create (MonoProfiler *prof);
 
+typedef void (*MonoProfilerCleanupCallback) (MonoProfiler *prof);
+
+/*
+ * Sets a profiler cleanup function. This function will be invoked at shutdown
+ * when the profiler API is cleaning up its internal structures. It's mainly
+ * intended for a profiler to free the structure pointer that was passed to
+ * mono_profiler_create, if necessary.
+ *
+ * This function is async safe.
+ */
+MONO_API void mono_profiler_set_cleanup_callback (MonoProfilerHandle handle, MonoProfilerCleanupCallback cb);
+
 /*
  * Enables support for code coverage instrumentation. At the moment, this means
  * enabling the debug info subsystem. If you do not call this function, you

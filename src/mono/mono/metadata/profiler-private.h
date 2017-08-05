@@ -16,6 +16,7 @@
 struct _MonoProfilerDesc {
 	MonoProfilerHandle next;
 	MonoProfiler *prof;
+	volatile gpointer cleanup_callback;
 	volatile gpointer coverage_filter;
 	volatile gpointer call_instrumentation_filter;
 

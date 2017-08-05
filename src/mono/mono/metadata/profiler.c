@@ -158,6 +158,12 @@ mono_profiler_create (MonoProfiler *prof)
 }
 
 void
+mono_profiler_set_cleanup_callback (MonoProfilerHandle handle, MonoProfilerCleanupCallback cb)
+{
+	InterlockedWritePointer (&handle->cleanup_callback, (gpointer) cb);
+}
+
+void
 mono_profiler_set_coverage_filter_callback (MonoProfilerHandle handle, MonoProfilerCoverageFilterCallback cb)
 {
 	InterlockedWritePointer (&handle->coverage_filter, (gpointer) cb);
@@ -478,6 +484,38 @@ mono_profiler_cleanup (void)
 #undef MONO_PROFILER_EVENT_3
 #undef MONO_PROFILER_EVENT_4
 #undef _MONO_PROFILER_EVENT
+
+	MonoProfilerHandle head = mono_profiler_state.profilers;
+
+	while (head) {
+		MonoProfilerCleanupCallback cb = head->cleanup_callback;
+
+		if (cb)
+			cb (head->prof);
+
+		MonoProfilerHandle cur = head;
+		head = head->next;
+
+		g_free (cur);
+	}
+
+	if (mono_profiler_state.code_coverage) {
+		mono_os_mutex_destroy (&mono_profiler_state.coverage_mutex);
+
+		GHashTableIter iter;
+
+		g_hash_table_iter_init (&iter, mono_profiler_state.coverage_hash);
+
+		MonoProfilerCoverageInfo *info;
+
+		while (g_hash_table_iter_next (&iter, NULL, (gpointer *) &info))
+			g_free (info);
+
+		g_hash_table_destroy (mono_profiler_state.coverage_hash);
+	}
+
+	if (mono_profiler_state.sampling_owner)
+		mono_os_sem_destroy (&mono_profiler_state.sampling_semaphore);
 }
 
 static void
