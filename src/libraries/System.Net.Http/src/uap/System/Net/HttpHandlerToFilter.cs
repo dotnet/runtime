@@ -87,23 +87,15 @@ namespace System.Net.Http
                 RTHttpResponseMessage rtResponse;
                 try
                 {
-                    if (redirects > 0)
-                    {
-                        rtResponse = await FilterWithNoCredentials.SendRequestAsync(rtRequest).AsTask(cancel).ConfigureAwait(false);
-                    }
-                    else
-                    {
-                        rtResponse = await _filter.SendRequestAsync(rtRequest).AsTask(cancel).ConfigureAwait(false);
-                    }
+                    rtResponse = await (redirects > 0 ? FilterWithNoCredentials : _filter).SendRequestAsync(rtRequest).AsTask(cancel).ConfigureAwait(false);
                 }
                 catch (TaskCanceledException)
                 {
                     throw;
                 }
-                catch (Exception)
+                catch
                 {
-                    object info;
-                    if (rtRequest.Properties.TryGetValue(SavedExceptionDispatchInfoLookupKey, out info))
+                    if (rtRequest.Properties.TryGetValue(SavedExceptionDispatchInfoLookupKey, out object info))
                     {
                         ((ExceptionDispatchInfo)info).Throw();
                     }

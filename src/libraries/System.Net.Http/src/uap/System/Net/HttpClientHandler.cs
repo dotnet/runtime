@@ -244,7 +244,7 @@ namespace System.Net.Http
             {
                 if (value <= 0)
                 {
-                    throw new ArgumentOutOfRangeException("value");
+                    throw new ArgumentOutOfRangeException(nameof(value));
                 }
                 CheckDisposedOrStarted();
             }
@@ -591,6 +591,13 @@ namespace System.Net.Http
             HttpResponseMessage response;
             try
             {
+                if (string.Equals(request.Method.Method, HttpMethod.Trace.Method, StringComparison.OrdinalIgnoreCase))
+                {
+                    // https://github.com/dotnet/corefx/issues/22161
+                    throw new PlatformNotSupportedException(string.Format(CultureInfo.InvariantCulture,
+                        SR.net_http_httpmethod_notsupported_error, request.Method.Method));
+                }
+
                 await ConfigureRequest(request).ConfigureAwait(false);
 
                 Task<HttpResponseMessage> responseTask = DiagnosticsHandler.IsEnabled() ? 
