@@ -524,7 +524,7 @@ ASSERT_TP& Compiler::GetAssertionDep(unsigned lclNum)
 
 void Compiler::optAssertionTraitsInit(AssertionIndex assertionCount)
 {
-    apTraits = new (this, CMK_AssertionProp) BitVecTraits(assertionCount, this);
+    apTraits = new (getAllocator()) BitVecTraits(assertionCount, this);
     apFull   = BitVecOps::MakeFull(apTraits);
 }
 
@@ -547,9 +547,9 @@ void Compiler::optAssertionInit(bool isLocalProp)
     optMaxAssertionCount                    = countFunc[isLocalProp ? lowerBound : min(upperBound, codeSize)];
 
     optLocalAssertionProp  = isLocalProp;
-    optAssertionTabPrivate = new (this, CMK_AssertionProp) AssertionDsc[optMaxAssertionCount];
+    optAssertionTabPrivate = new (getAllocator()) AssertionDsc[optMaxAssertionCount];
     optComplementaryAssertionMap =
-        new (this, CMK_AssertionProp) AssertionIndex[optMaxAssertionCount + 1](); // zero-inited (NO_ASSERTION_INDEX)
+        new (getAllocator()) AssertionIndex[optMaxAssertionCount](); // zero-inited (NO_ASSERTION_INDEX.)
     assert(NO_ASSERTION_INDEX == 0);
 
     if (!isLocalProp)
@@ -559,7 +559,7 @@ void Compiler::optAssertionInit(bool isLocalProp)
 
     if (optAssertionDep == nullptr)
     {
-        optAssertionDep = new (this, CMK_AssertionProp) ExpandArray<ASSERT_TP>(getAllocator(), max(1, lvaCount));
+        optAssertionDep = new (getAllocator()) ExpandArray<ASSERT_TP>(getAllocator(), max(1, lvaCount));
     }
 
     optAssertionTraitsInit(optMaxAssertionCount);
@@ -2150,10 +2150,6 @@ void Compiler::optMapComplementary(AssertionIndex assertionIndex, AssertionIndex
     {
         return;
     }
-
-    assert(assertionIndex <= optMaxAssertionCount);
-    assert(index <= optMaxAssertionCount);
-
     optComplementaryAssertionMap[assertionIndex] = index;
     optComplementaryAssertionMap[index]          = assertionIndex;
 }
