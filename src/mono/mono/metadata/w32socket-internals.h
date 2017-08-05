@@ -148,4 +148,7 @@ mono_w32socket_get_last_error (void);
 gint32
 mono_w32socket_convert_error (gint error);
 
+gboolean
+mono_w32socket_duplicate (gpointer handle, gint32 targetProcessId, gpointer *duplicate_handle);
+
 #endif // __MONO_METADATA_W32SOCKET_INTERNALS_H__

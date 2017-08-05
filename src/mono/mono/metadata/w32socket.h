@@ -278,6 +278,9 @@ ves_icall_System_Net_Sockets_Socket_Poll_internal (gsize sock, gint mode, gint t
 void
 ves_icall_System_Net_Sockets_Socket_Disconnect_internal (gsize sock, MonoBoolean reuse, gint32 *werror, MonoError *error);
 
+MonoBoolean
+ves_icall_System_Net_Sockets_Socket_Duplicate_internal (gpointer handle, gint32 targetProcessId, gpointer *duplicate_handle, gint32 *werror, MonoError *error);
+
 gboolean
 ves_icall_System_Net_Sockets_Socket_SendFile_internal (gsize sock, MonoStringHandle filename,
 						       MonoArrayHandle pre_buffer, MonoArrayHandle post_buffer,

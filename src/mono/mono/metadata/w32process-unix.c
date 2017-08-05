@@ -1945,7 +1945,7 @@ process_create (const gunichar2 *appname, const gunichar2 *cmdline,
 		dup2 (err_fd, 2);
 
 		/* Close all file descriptors */
-		for (i = mono_w32handle_fd_reserve - 1; i > 2; i--)
+		for (i = eg_getdtablesize() - 1; i > 2; i--)
 			close (i);
 
 #ifdef DEBUG_ENABLED
