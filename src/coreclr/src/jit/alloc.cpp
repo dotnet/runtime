@@ -310,7 +310,7 @@ void ArenaAllocator::freeHostMemory(void* block)
 
 #if defined(DEBUG)
 //------------------------------------------------------------------------
-// ArenaAllocator::allocateMemory:
+// ArenaAllocator::alloateMemory:
 //    Allocates memory using an `ArenaAllocator`.
 //
 // Arguments:
@@ -326,11 +326,10 @@ void ArenaAllocator::freeHostMemory(void* block)
 //    version does not: it may inject faults into the allocator and
 //    seeds all allocations with a specified pattern to help catch
 //    use-before-init problems.
-//
 void* ArenaAllocator::allocateMemory(size_t size)
 {
     assert(isInitialized());
-    assert(size != 0);
+    assert(size != 0 && (size & (sizeof(int) - 1)) == 0);
 
     // Ensure that we always allocate in pointer sized increments.
     size = (size_t)roundUp(size, sizeof(size_t));
