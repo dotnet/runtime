@@ -1632,7 +1632,6 @@ namespace System.Net.Http.Functional.Tests
 
         #region Various HTTP Method Tests
 
-        [ActiveIssue(22161, TargetFrameworkMonikers.Uap)]
         [OuterLoop] // TODO: Issue #11345
         [Theory, MemberData(nameof(HttpMethods))]
         public async Task SendAsync_SendRequestUsingMethodToEchoServerWithNoContent_MethodCorrectlySent(
@@ -1644,10 +1643,19 @@ namespace System.Net.Http.Functional.Tests
                 var request = new HttpRequestMessage(
                     new HttpMethod(method),
                     secureServer ? Configuration.Http.SecureRemoteEchoServer : Configuration.Http.RemoteEchoServer);
-                using (HttpResponseMessage response = await client.SendAsync(request))
+
+                if (PlatformDetection.IsUap && method == "TRACE")
                 {
-                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-                    TestHelper.VerifyRequestMethod(response, method);
+                    HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request));
+                    Assert.IsType<PlatformNotSupportedException>(ex.InnerException);
+                }
+                else
+                {
+                    using (HttpResponseMessage response = await client.SendAsync(request))
+                    {
+                        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                        TestHelper.VerifyRequestMethod(response, method);
+                    }
                 }
             }
         }
