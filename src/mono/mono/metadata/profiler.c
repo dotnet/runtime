@@ -163,17 +163,19 @@ mono_profiler_set_coverage_filter_callback (MonoProfilerHandle handle, MonoProfi
 	InterlockedWritePointer (&handle->coverage_filter, (gpointer) cb);
 }
 
-static void
-initialize_coverage (void)
+mono_bool
+mono_profiler_enable_coverage (void)
 {
+	if (mono_profiler_state.startup_done)
+		return FALSE;
+
 	mono_os_mutex_init (&mono_profiler_state.coverage_mutex);
 	mono_profiler_state.coverage_hash = g_hash_table_new (NULL, NULL);
-}
 
-static void
-lazy_initialize_coverage (void)
-{
-	mono_lazy_initialize (&mono_profiler_state.coverage_status, initialize_coverage);
+	if (!mono_debug_enabled ())
+		mono_debug_init (MONO_DEBUG_FORMAT_MONO);
+
+	return TRUE;
 }
 
 static void
@@ -188,10 +190,11 @@ coverage_unlock (void)
 	mono_os_mutex_unlock (&mono_profiler_state.coverage_mutex);
 }
 
-void
+mono_bool
 mono_profiler_get_coverage_data (MonoProfilerHandle handle, MonoMethod *method, MonoProfilerCoverageCallback cb)
 {
-	lazy_initialize_coverage ();
+	if (!mono_profiler_state.code_coverage)
+		return FALSE;
 
 	coverage_lock ();
 
@@ -200,7 +203,7 @@ mono_profiler_get_coverage_data (MonoProfilerHandle handle, MonoMethod *method, 
 	coverage_unlock ();
 
 	if (!info)
-		return;
+		return FALSE;
 
 	MonoError error;
 	MonoMethodHeader *header = mono_method_get_header_checked (method, &error);
@@ -245,12 +248,15 @@ mono_profiler_get_coverage_data (MonoProfilerHandle handle, MonoMethod *method, 
 	}
 
 	mono_metadata_free_mh (header);
+
+	return TRUE;
 }
 
 MonoProfilerCoverageInfo *
 mono_profiler_coverage_alloc (MonoMethod *method, guint32 entries)
 {
-	lazy_initialize_coverage ();
+	if (!mono_profiler_state.code_coverage)
+		return FALSE;
 
 	gboolean cover = FALSE;
 
@@ -275,23 +281,6 @@ mono_profiler_coverage_alloc (MonoMethod *method, guint32 entries)
 	coverage_unlock ();
 
 	return info;
-}
-
-void
-mono_profiler_coverage_free (MonoMethod *method)
-{
-	lazy_initialize_coverage ();
-
-	coverage_lock ();
-
-	MonoProfilerCoverageInfo *info = g_hash_table_lookup (mono_profiler_state.coverage_hash, method);
-
-	if (info) {
-		g_hash_table_remove (mono_profiler_state.coverage_hash, method);
-		g_free (info);
-	}
-
-	coverage_unlock ();
 }
 
 mono_bool

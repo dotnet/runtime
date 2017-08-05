@@ -4738,8 +4738,10 @@ mono_profiler_init_log (const char *desc)
 		mono_profiler_set_method_exception_leave_callback (handle, method_exc_leave);
 	}
 
-	if (log_config.collect_coverage)
+	if (log_config.collect_coverage) {
+		mono_profiler_enable_coverage ();
 		mono_profiler_set_coverage_filter_callback (handle, coverage_filter);
+	}
 
 	mono_profiler_enable_allocations ();
 	mono_profiler_enable_sampling (handle);

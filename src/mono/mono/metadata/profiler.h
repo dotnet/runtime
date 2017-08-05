@@ -42,7 +42,9 @@ typedef struct _MonoProfilerDesc *MonoProfilerHandle;
 
 /*
  * Installs a profiler and returns a handle for it. The handle is used with the
- * other functions in the profiler API (e.g. for setting up callbacks).
+ * other functions in the profiler API (e.g. for setting up callbacks). The
+ * given structure pointer will be passed to all callbacks from the profiler
+ * API. It can be NULL.
  *
  * This function may only be called from your profiler's init function.
  *
@@ -60,6 +62,19 @@ typedef struct _MonoProfilerDesc *MonoProfilerHandle;
  * This function is not async safe.
  */
 MONO_API MonoProfilerHandle mono_profiler_create (MonoProfiler *prof);
+
+/*
+ * Enables support for code coverage instrumentation. At the moment, this means
+ * enabling the debug info subsystem. If you do not call this function, you
+ * will not be able to use mono_profiler_get_coverage_data. Returns TRUE if
+ * code coverage support was enabled, or FALSE if the function was called too
+ * late for this to be possible.
+ *
+ * This function may only be called from your profiler's init function.
+ *
+ * This function is not async safe.
+ */
+MONO_API mono_bool mono_profiler_enable_coverage (void);
 
 typedef mono_bool (*MonoProfilerCoverageFilterCallback) (MonoProfiler *prof, MonoMethod *method);
 
@@ -91,11 +106,16 @@ typedef void (*MonoProfilerCoverageCallback) (MonoProfiler *prof, const MonoProf
 
 /*
  * Retrieves all coverage data for the specified method and invokes the given
- * callback for each entry.
+ * callback for each entry. Source location information will only be filled out
+ * if the given method has debug info available. Returns TRUE if the given
+ * method was instrumented for code coverage; otherwise, FALSE.
+ *
+ * Please note that the structure passed to the callback is only valid for the
+ * duration of the callback.
  *
  * This function is not async safe.
  */
-MONO_API void mono_profiler_get_coverage_data (MonoProfilerHandle handle, MonoMethod *method, MonoProfilerCoverageCallback cb);
+MONO_API mono_bool mono_profiler_get_coverage_data (MonoProfilerHandle handle, MonoMethod *method, MonoProfilerCoverageCallback cb);
 
 typedef enum {
 	/*

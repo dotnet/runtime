@@ -10,7 +10,6 @@
 #define MONO_PROFILER_UNSTABLE_GC_ROOTS
 #include <mono/metadata/profiler.h>
 #include <mono/utils/mono-context.h>
-#include <mono/utils/mono-lazy-init.h>
 #include <mono/utils/mono-os-mutex.h>
 #include <mono/utils/mono-os-semaphore.h>
 
@@ -46,7 +45,7 @@ typedef struct {
 
 	MonoProfilerHandle profilers;
 
-	mono_lazy_init_t coverage_status;
+	gboolean code_coverage;
 	mono_mutex_t coverage_mutex;
 	GHashTable *coverage_hash;
 
@@ -106,7 +105,6 @@ mono_profiler_installed (void)
 }
 
 MonoProfilerCoverageInfo *mono_profiler_coverage_alloc (MonoMethod *method, guint32 entries);
-void mono_profiler_coverage_free (MonoMethod *method);
 
 struct _MonoProfilerCallContext {
 	/*
