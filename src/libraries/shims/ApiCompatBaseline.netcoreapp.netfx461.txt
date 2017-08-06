@@ -42,7 +42,6 @@ MembersMustExist : Member 'System.Data.SqlClient.SqlCommand.EndExecuteReader(Sys
 MembersMustExist : Member 'System.Data.SqlClient.SqlCommand.EndExecuteXmlReader(System.IAsyncResult)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlCommand.NotificationAutoEnlist.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlCommand.NotificationAutoEnlist.set(System.Boolean)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Data.SqlClient.SqlCommand.ResetCommandTimeout()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlConnection..ctor(System.String, System.Data.SqlClient.SqlCredential)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlConnection.AccessToken.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlConnection.AccessToken.set(System.String)' does not exist in the implementation but it does exist in the contract.
@@ -73,7 +72,6 @@ MembersMustExist : Member 'System.Data.SqlClient.SqlParameter.ForceColumnEncrypt
 MembersMustExist : Member 'System.Data.SqlClient.SqlParameter.ForceColumnEncryption.set(System.Boolean)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlParameter.UdtTypeName.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlParameter.UdtTypeName.set(System.String)' does not exist in the implementation but it does exist in the contract.
-MembersMustExist : Member 'System.Data.SqlClient.SqlParameterCollection.Add(System.String, System.Data.SqlDbType, System.Int32, System.String)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Data.SqlClient.SqlParameterCollection.Add(System.String, System.Object)' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.DirectoryServices:
 TypesMustExist : Type 'System.DirectoryServices.DirectoryServicesPermission' does not exist in the implementation but it does exist in the contract.
@@ -110,7 +108,6 @@ MembersMustExist : Member 'System.DirectoryServices.Protocols.SearchRequest..cto
 MembersMustExist : Member 'System.DirectoryServices.Protocols.SearchRequest.ToXmlNode(System.Xml.XmlDocument)' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Drawing:
 CannotRemoveBaseTypeOrInterface : Type 'System.Drawing.Bitmap' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
-CannotMakeTypeAbstract : Type 'System.Drawing.BufferedGraphicsManager' is abstract in the implementation but is not abstract in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Drawing.Font' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Drawing.Icon' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
 CannotRemoveBaseTypeOrInterface : Type 'System.Drawing.Image' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
@@ -322,4 +319,4 @@ TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionEven
 TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionEventHandler' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionFilterEventArgs' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionFilterEventHandler' does not exist in the implementation but it does exist in the contract.
-Total Issues: 309
+Total Issues: 306
