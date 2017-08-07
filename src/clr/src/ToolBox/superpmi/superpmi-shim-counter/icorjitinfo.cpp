@@ -146,7 +146,7 @@ CORINFO_MODULE_HANDLE interceptor_ICJI::getMethodModule(CORINFO_METHOD_HANDLE me
 void interceptor_ICJI::getMethodVTableOffset(CORINFO_METHOD_HANDLE method,                /* IN */
                                              unsigned*             offsetOfIndirection,   /* OUT */
                                              unsigned*             offsetAfterIndirection,/* OUT */
-                                             unsigned*             isRelative             /* OUT */
+                                             bool*                 isRelative             /* OUT */
                                              )
 {
     mcs->AddCall("getMethodVTableOffset");

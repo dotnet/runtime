@@ -123,7 +123,7 @@ void WrapICorJitInfo::getMethodVTableOffset(
             CORINFO_METHOD_HANDLE       method,                 /* IN */
             unsigned*                   offsetOfIndirection,    /* OUT */
             unsigned*                   offsetAfterIndirection, /* OUT */
-            unsigned*                   isRelative              /* OUT */)
+            bool*                       isRelative              /* OUT */)
 {
     API_ENTER(getMethodVTableOffset);
     wrapHnd->getMethodVTableOffset(method, offsetOfIndirection, offsetAfterIndirection, isRelative);

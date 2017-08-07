@@ -7170,7 +7170,7 @@ void Compiler::fgMorphTailCall(GenTreeCall* call)
 
         unsigned vtabOffsOfIndirection;
         unsigned vtabOffsAfterIndirection;
-        unsigned isRelative;
+        bool     isRelative;
         info.compCompHnd->getMethodVTableOffset(call->gtCallMethHnd, &vtabOffsOfIndirection, &vtabOffsAfterIndirection,
                                                 &isRelative);
 

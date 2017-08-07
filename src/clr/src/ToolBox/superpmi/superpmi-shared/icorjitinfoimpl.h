@@ -110,7 +110,7 @@ CORINFO_MODULE_HANDLE getMethodModule(CORINFO_METHOD_HANDLE method);
 void getMethodVTableOffset(CORINFO_METHOD_HANDLE method,                /* IN */
                            unsigned*             offsetOfIndirection,   /* OUT */
                            unsigned*             offsetAfterIndirection,/* OUT */
-                           unsigned*             isRelative             /* OUT */
+                           bool*                 isRelative             /* OUT */
                            );
 
 // Find the virtual method in implementingClass that overrides virtualMethod.
