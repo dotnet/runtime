@@ -30,6 +30,7 @@ Install the following packages for the toolchain:
 - libcurl4-openssl-dev
 - libssl-dev
 - uuid-dev
+- libkrb5-dev
 - libnuma-dev (optional, enables numa support)
 
 In order to get lldb-3.6 on Ubuntu 14.04, we need to add an additional package source:
@@ -51,7 +52,7 @@ For other version of Debian/Ubuntu, please visit http://apt.llvm.org/.
 Then install the packages you need:
 
 ```
-ellismg@linux:~$ sudo apt-get install cmake llvm-3.5 clang-3.5 lldb-3.6 lldb-3.6-dev libunwind8 libunwind8-dev gettext libicu-dev liblttng-ust-dev libcurl4-openssl-dev libssl-dev uuid-dev libnuma-dev
+ellismg@linux:~$ sudo apt-get install cmake llvm-3.5 clang-3.5 lldb-3.6 lldb-3.6-dev libunwind8 libunwind8-dev gettext libicu-dev liblttng-ust-dev libcurl4-openssl-dev libssl-dev uuid-dev libnuma-dev libkrb5-dev
 ```
 
 You now have all the required components.
