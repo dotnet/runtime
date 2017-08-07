@@ -37,17 +37,17 @@ public class Int64ToString3
         retVal &= PosTest(3, Int64.MaxValue, "Int64.MaxValue", "g", "9223372036854775807");
         retVal &= PosTest(4, Int64.MaxValue, "Int64.MaxValue", "x", "7fffffffffffffff");
         retVal &= PosTest(5, Int64.MaxValue, "Int64.MaxValue", "f", "9223372036854775807,000");
-        retVal &= PosTest(6, Int64.MaxValue, "Int64.MaxValue", "E", TestLibrary.Utilities.IsWindows ? "9,223372E++018" : "9,223372E18");
+        retVal &= PosTest(6, Int64.MaxValue, "Int64.MaxValue", "E", "9,223372E++018");
         retVal &= PosTest(7, Int64.MaxValue, "Int64.MaxValue", "N", "9#22#33#72#03#68#54#77#58#07,000");
         retVal &= PosTest(8, Int64.MaxValue, "Int64.MaxValue", "P", "922,337,203,685,477,580,700,0000~");
         retVal &= PosTest(9, Int64.MaxValue, "Int64.MaxValue", "D", "9223372036854775807");
         retVal &= PosTest(10, 00065536, "00065536", "G", "65536");
         retVal &= PosTest(11, 00065536, "00065536", "P", "6,553,600,0000~");
-        retVal &= PosTest(12, 00065536, "00065536", "E", TestLibrary.Utilities.IsWindows ? "6,553600E++004" : "6,553600E4");
+        retVal &= PosTest(12, 00065536, "00065536", "E", "6,553600E++004");
         retVal &= PosTest(13, 00065536, "00065536", string.Empty, "65536");
         retVal &= PosTest(14, 00065536, "00065536", null, "65536");
         retVal &= PosTest(15, -00065536, "-00065536", "P", "@~6,553,600,0000");
-        retVal &= PosTest(16, -00065536, "-00065536", "E", TestLibrary.Utilities.IsWindows ? "@6,553600E++004" : "@6,553600E4");
+        retVal &= PosTest(16, -00065536, "-00065536", "E", "@6,553600E++004");
 
         TestLibrary.Utilities.CurrentCulture = CurrentCulture;
 
