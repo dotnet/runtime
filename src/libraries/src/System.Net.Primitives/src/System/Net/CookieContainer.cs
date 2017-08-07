@@ -734,7 +734,7 @@ namespace System.Net
                 return null;
             }
 
-            bool isSecure = (uri.Scheme == UriScheme.Https);
+            bool isSecure = (uri.Scheme == UriScheme.Https || uri.Scheme == UriScheme.Wss);
             int port = uri.Port;
             CookieCollection cookies = null;
 
