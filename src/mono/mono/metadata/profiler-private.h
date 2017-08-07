@@ -7,6 +7,7 @@
 #ifndef __MONO_PROFILER_PRIVATE_H__
 #define __MONO_PROFILER_PRIVATE_H__
 
+#include <mono/metadata/class-internals.h>
 #define MONO_PROFILER_UNSTABLE_GC_ROOTS
 #include <mono/metadata/profiler.h>
 #include <mono/utils/mono-context.h>
@@ -138,7 +139,7 @@ mono_profiler_allocations_enabled (void)
 }
 
 #define _MONO_PROFILER_EVENT(name, ...) \
-	void mono_profiler_raise_ ## name (__VA_ARGS__);
+	ICALL_DECL_EXPORT void mono_profiler_raise_ ## name (__VA_ARGS__);
 #define MONO_PROFILER_EVENT_0(name, type) \
 	_MONO_PROFILER_EVENT(name, void)
 #define MONO_PROFILER_EVENT_1(name, type, arg1_type, arg1_name) \
