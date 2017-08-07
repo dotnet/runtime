@@ -4413,12 +4413,6 @@ mono_arch_get_argument_info (MonoMethodSignature *csig, int param_count, MonoJit
 	return 0;
 }
 
-gboolean
-mono_arch_print_tree (MonoInst *tree, int arity)
-{
-	return 0;
-}
-
 mgreg_t
 mono_arch_context_get_int_reg (MonoContext *ctx, int reg)
 {

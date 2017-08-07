@@ -2767,7 +2767,6 @@ void      mono_arch_free_jit_tls_data           (MonoJitTlsData *tls);
 void      mono_arch_fill_argument_info          (MonoCompile *cfg);
 void      mono_arch_allocate_vars               (MonoCompile *m);
 int       mono_arch_get_argument_info           (MonoMethodSignature *csig, int param_count, MonoJitArgumentInfo *arg_info);
-gboolean  mono_arch_print_tree			        (MonoInst *tree, int arity);
 void      mono_arch_emit_call                   (MonoCompile *cfg, MonoCallInst *call);
 void      mono_arch_emit_outarg_vt              (MonoCompile *cfg, MonoInst *ins, MonoInst *src);
 void      mono_arch_emit_setret                 (MonoCompile *cfg, MonoMethod *method, MonoInst *val);

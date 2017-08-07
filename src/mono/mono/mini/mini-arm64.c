@@ -4930,12 +4930,6 @@ mono_arch_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMetho
 	return NULL;
 }
 
-gboolean
-mono_arch_print_tree (MonoInst *tree, int arity)
-{
-	return FALSE;
-}
-
 guint32
 mono_arch_get_patch_offset (guint8 *code)
 {
