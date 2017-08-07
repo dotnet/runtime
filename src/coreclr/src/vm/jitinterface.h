@@ -728,7 +728,7 @@ public:
             CORINFO_METHOD_HANDLE methodHnd,
             unsigned * pOffsetOfIndirection,
             unsigned * pOffsetAfterIndirection,
-            unsigned * isRelative);
+            bool * isRelative);
 
     CORINFO_METHOD_HANDLE resolveVirtualMethod(
         CORINFO_METHOD_HANDLE virtualMethod,

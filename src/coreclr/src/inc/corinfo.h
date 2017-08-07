@@ -2070,7 +2070,7 @@ public:
             CORINFO_METHOD_HANDLE       method,                 /* IN */
             unsigned*                   offsetOfIndirection,    /* OUT */
             unsigned*                   offsetAfterIndirection, /* OUT */
-            unsigned*                   isRelative              /* OUT */
+            bool*                       isRelative              /* OUT */
             ) = 0;
 
     // Find the virtual method in implementingClass that overrides virtualMethod,
