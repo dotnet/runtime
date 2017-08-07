@@ -164,8 +164,12 @@
 
   <Target Name="GenerateCombinedInstallers" DependsOnTargets="InitPackage;GenerateBundles" />
 
+  <PropertyGroup>
+    <BuildAllPackages>false</BuildAllPackages>
+  </PropertyGroup>
+
   <Target Name="GenerateNugetPackages" DependsOnTargets="InitPackage" Condition="'$(UsePrebuiltPortableBinariesForInstallers)' == 'false'">
-    <ItemGroup>
+    <ItemGroup Condition="'$(BuildAllPackages)' == 'true'">
       <PackageProjects Include="$(ProjectDir)src\managed\Microsoft.DotNet.PlatformAbstractions\Microsoft.DotNet.PlatformAbstractions.csproj" />
       <PackageProjects Include="$(ProjectDir)src\managed\Microsoft.Extensions.DependencyModel\Microsoft.Extensions.DependencyModel.csproj" />
     </ItemGroup>
