@@ -152,20 +152,11 @@ namespace BasicEventSourceTests
                         logger.Request(8);
                         Sleep(100);
                         logger.Request(16);
+                        Sleep(200);
                         listener.EnableTimer(logger, 0);
                     },
                     delegate (List<Event> evts)
                     {
-                        // We expect the timer to have gone off at least twice, plus the explicit poll at the begining and end.
-                        // Each one fires two events (one for requests, one for errors). so that is (2 + 2)*2 = 8
-                        // We expect about 5 timer requests, but we don't get picky about the exact count
-                        // We don't expect more than say 9 timer request so that is (2 + 9) * 2 = 22
-                        Assert.True(8 <= evts.Count);
-                        Assert.True(evts.Count <= 22);    
-                        Assert.True(evts.Count % 2 == 0);
-
-                        ValidateSingleEventCounter(evts[0], "Request", 0, 0, 0, float.PositiveInfinity, float.NegativeInfinity);
-                        ValidateSingleEventCounter(evts[1], "Error", 0, 0, 0, float.PositiveInfinity, float.NegativeInfinity);
 
                         int requestCount = 0;
                         float requestSum = 0;
@@ -179,7 +170,7 @@ namespace BasicEventSourceTests
 
                         float timeSum = 0;
 
-                        for (int j = 0; j < evts.Count; j+= 2)
+                        for (int j = 0; j < evts.Count; j += 2)
                         {
                             var requestPayload = ValidateEventHeaderAndGetPayload(evts[j]);
                             Assert.Equal("Request", requestPayload["Name"]);
@@ -192,7 +183,7 @@ namespace BasicEventSourceTests
                             requestMax = Math.Max(requestMax, (float)requestPayload["Max"]);
                             float requestIntevalSec = (float)requestPayload["IntervalSec"];
 
-                            var errorPayload = ValidateEventHeaderAndGetPayload(evts[j+1]);
+                            var errorPayload = ValidateEventHeaderAndGetPayload(evts[j + 1]);
                             Assert.Equal("Error", errorPayload["Name"]);
 
                             count = (int)errorPayload["Count"];
@@ -216,8 +207,22 @@ namespace BasicEventSourceTests
                         Assert.Equal(errorMin, 1);
                         Assert.Equal(errorMax, 1);
 
-                        Assert.True(.4 < timeSum);   // We should have at least 400 msec 
-                        Assert.True(timeSum < 1);    // But well under 1 sec.  
+                        Assert.True(.4 < timeSum, $"FAILURE: .4 < {timeSum}");  // We should have at least 400 msec 
+                        Assert.True(timeSum < 2, $"FAILURE: {timeSum} < 2");    // But well under 2 sec.  
+
+                        // Do all the things that depend on the count of events last so we know everything else is sane 
+                        Assert.True(4 <= evts.Count, "We expect two metrices at the begining trigger and two at the end trigger.  evts.Count = " + evts.Count);
+                        Assert.True(evts.Count % 2 == 0, "We expect two metrics for every trigger.  evts.Count = " + evts.Count);
+
+                        ValidateSingleEventCounter(evts[0], "Request", 0, 0, 0, float.PositiveInfinity, float.NegativeInfinity);
+                        ValidateSingleEventCounter(evts[1], "Error", 0, 0, 0, float.PositiveInfinity, float.NegativeInfinity);
+
+                        // We expect the timer to have gone off at least twice, plus the explicit poll at the begining and end.
+                        // Each one fires two events (one for requests, one for errors). so that is (2 + 2)*2 = 8
+                        // We expect about 5 timer requests, but we don't get picky about the exact count
+                        // We don't expect more than say 9 timer request so that is (2 + 9) * 2 = 22
+                        Assert.True(8 <= evts.Count, $"FAILURE: 8 <= {evts.Count}");
+                        Assert.True(evts.Count <= 22, $"FAILURE: {evts.Count} <= 22");
                     }));
 
 
