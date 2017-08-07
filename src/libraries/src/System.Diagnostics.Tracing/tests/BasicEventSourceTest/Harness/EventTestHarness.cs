@@ -77,6 +77,8 @@ namespace BasicEventSourceTests
                 }
                 else
                 {
+                    Console.WriteLine("Received Event {0}  thread: {1} time: {2:mm:ss.fff}",
+                        data.EventName, System.Threading.Thread.CurrentThread.ManagedThreadId, DateTime.UtcNow);
                     // If expectedTestNumber is 0 then this is before the first test
                     // If expectedTestNumber is count then it is after the last test
                     Assert.NotNull(currentTest);
