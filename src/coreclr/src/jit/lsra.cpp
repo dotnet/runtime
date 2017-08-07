@@ -8916,15 +8916,15 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
                     ReturnTypeDesc* retTypeDesc = treeNode->AsCall()->GetReturnTypeDesc();
                     typ                         = retTypeDesc->GetReturnRegType(refPosition->getMultiRegIdx());
                 }
-#ifdef _TARGET_ARM_
+#ifdef ARM_SOFTFP
                 else if (treeNode->OperIsPutArgReg())
                 {
                     // For double arg regs, the type is changed to long since they must be passed via `r0-r3`.
                     // However when they get spilled, they should be treated as separated int registers.
                     var_types typNode = treeNode->TypeGet();
-                    typ = (typNode == TYP_LONG) ? TYP_INT : typNode;
+                    typ               = (typNode == TYP_LONG) ? TYP_INT : typNode;
                 }
-#endif // _TARGET_ARM_
+#endif // ARM_SOFTFP
                 else
                 {
                     typ = treeNode->TypeGet();
