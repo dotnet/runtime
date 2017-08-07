@@ -54,9 +54,9 @@ public class UInt16ToString
         retVal &= DoPosTest("PosTest11: Value is UInt16.MaxValue integer, format is decimal \"D\".", "PosTest11", UInt16.MaxValue, "D", "65535", CustomNFI);
         retVal &= DoPosTest("PosTest12: Value is UInt16.MinValue integer, format is decimal \"D\".", "PosTest12", UInt16.MinValue, "D", "0", CustomNFI);
 
-        retVal &= DoPosTest("PosTest13: Value is UInt16 integer, format is decimal \"E\".", "PosTest13", 2351, "E", TestLibrary.Utilities.IsWindows ? "2,351000E++003" : "2,351000E3", CustomNFI);
-        retVal &= DoPosTest("PosTest14: Value is UInt16.MaxValue integer, format is decimal \"E\".", "PosTest14", UInt16.MaxValue, "E", TestLibrary.Utilities.IsWindows ? "6,553500E++004" : "6,553500E4", CustomNFI);
-        retVal &= DoPosTest("PosTest15: Value is UInt16.MinValue integer, format is decimal \"E\".", "PosTest15", UInt16.MinValue, "E", TestLibrary.Utilities.IsWindows ? "0,000000E++000" : "0,000000E0", CustomNFI);
+        retVal &= DoPosTest("PosTest13: Value is UInt16 integer, format is decimal \"E\".", "PosTest13", 2351, "E", "2,351000E++003", CustomNFI);
+        retVal &= DoPosTest("PosTest14: Value is UInt16.MaxValue integer, format is decimal \"E\".", "PosTest14", UInt16.MaxValue, "E", "6,553500E++004", CustomNFI);
+        retVal &= DoPosTest("PosTest15: Value is UInt16.MinValue integer, format is decimal \"E\".", "PosTest15", UInt16.MinValue, "E", "0,000000E++000", CustomNFI);
 
         retVal &= DoPosTest("PosTest16: Value is UInt16 integer, format is decimal \"F\".", "PosTest16", 2341, "F", "2341,000", CustomNFI);
 
