@@ -17,19 +17,16 @@ namespace System.Net.Tests
     {
         private HttpListenerFactory _factory;
         private HttpListener _listener;
-        private GetContextHelper _helper;
 
         public HttpRequestStreamTests()
         {
             _factory = new HttpListenerFactory();
             _listener = _factory.GetListener();
-            _helper = new GetContextHelper(_listener, _factory.ListeningUrl);
         }
 
         public void Dispose()
         {
             _factory.Dispose();
-            _helper.Dispose();
         }
 
         [Theory]
