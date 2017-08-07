@@ -13,19 +13,19 @@
   
   <!-- Source of truth for dependency tooling: the commit hash of the dotnet/versions master branch as of the last auto-upgrade. -->
   <PropertyGroup>
-    <CoreFxCurrentRef>21bb773993713105abf5a9cb67db558b050333c8</CoreFxCurrentRef>
-    <CoreClrCurrentRef>21bb773993713105abf5a9cb67db558b050333c8</CoreClrCurrentRef>
+    <CoreFxCurrentRef>d95704b4541df4eeea641f4b10de2acc94e05265</CoreFxCurrentRef>
+    <CoreClrCurrentRef>d95704b4541df4eeea641f4b10de2acc94e05265</CoreClrCurrentRef>
   </PropertyGroup>
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
-    <CoreFxPackageVersion>4.5.0-preview2-25531-01</CoreFxPackageVersion>
-    <PlatformPackageVersion>2.1.0-preview2-25531-01</PlatformPackageVersion>
+    <CoreFxPackageVersion>4.5.0-preview2-25607-02</CoreFxPackageVersion>
+    <PlatformPackageVersion>2.1.0-preview2-25607-02</PlatformPackageVersion>
   </PropertyGroup>
 
   <!-- Full package version strings that are used in other parts of the build. -->
   <PropertyGroup>
-    <CoreClrPackageVersion>2.1.0-preview2-25531-02</CoreClrPackageVersion>
+    <CoreClrPackageVersion>2.1.0-preview2-25607-01</CoreClrPackageVersion>
     <XunitPackageVersion>2.2.0-beta2-build3300</XunitPackageVersion>
     <XUnitConsoleNetCoreVersion>1.0.2-prerelease-00177</XUnitConsoleNetCoreVersion>
     <XUnitPerformanceApiVersion>1.0.0-beta-build0007</XUnitPerformanceApiVersion>
