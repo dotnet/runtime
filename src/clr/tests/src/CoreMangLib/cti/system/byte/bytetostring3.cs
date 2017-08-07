@@ -89,8 +89,8 @@ public class ByteToString3
         TestLibrary.Utilities.CurrentCulture = CustomCulture;
 
         retVal &= VerifyToString("PostTest3", 128, "C", "1.28,000USD");
-        retVal &= VerifyToString("PostTest4, default", 128, "E", TestLibrary.Utilities.IsWindows ? "1,280000E++002" : "1,280000E2");
-        retVal &= VerifyToString("PostTest4, 4digits", 128, "E4", TestLibrary.Utilities.IsWindows ? "1,2800E++002" : "1,2800E2");
+        retVal &= VerifyToString("PostTest4, default", 128, "E", "1,280000E++002");
+        retVal &= VerifyToString("PostTest4, 4digits", 128, "E4", "1,2800E++002");
         retVal &= VerifyToString("PostTest5", 128, "F", "128,000");
         retVal &= VerifyToString("PostTest6", 128, "N", "1#28,000");
 

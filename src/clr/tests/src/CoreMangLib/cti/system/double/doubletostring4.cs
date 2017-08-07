@@ -73,14 +73,14 @@ public class DoubleToString3
         retVal &= VerifyToString("PostTestG4", 0.123456789123000009123D, "G", "0,123456789123");
                 
         retVal &= VerifyToString("PostTestR1", Double.NaN, "R", "NaN");
-        retVal &= VerifyToString("PostTestR2", 0.123456789123456789123D, "R", TestLibrary.Utilities.IsWindows ? "0,12345678912345678" : "0,123456789123457");
-        retVal &= VerifyToString("PostTestR3", 0.123456789123459789D, "R", TestLibrary.Utilities.IsWindows ? "0,1234567891234598" : "0,12345678912346");
-        retVal &= VerifyToString("PostTestR4", 0.123456789123000009123D, "R", TestLibrary.Utilities.IsWindows ? "0,12345678912300001" : "0,123456789123");
+        retVal &= VerifyToString("PostTestR2", 0.123456789123456789123D, "R", "0,12345678912345678");
+        retVal &= VerifyToString("PostTestR3", 0.123456789123459789D, "R", "0,1234567891234598");
+        retVal &= VerifyToString("PostTestR4", 0.123456789123000009123D, "R", "0,12345678912300001");
 
         retVal &= VerifyToString("PostTestE1", Double.NaN, "E", "NaN");
-        retVal &= VerifyToString("PostTestE2", 0.123456789123456789123D, "E", TestLibrary.Utilities.IsWindows ? "1,234568E@001" : "1,234568E@1");
-        retVal &= VerifyToString("PostTestE3", 0.123456789123459789D, "E", TestLibrary.Utilities.IsWindows ? "1,234568E@001" : "1,234568E@1");
-        retVal &= VerifyToString("PostTestE4", 0.123456789123000009123D, "E", TestLibrary.Utilities.IsWindows ? "1,234568E@001" : "1,234568E@1");
+        retVal &= VerifyToString("PostTestE2", 0.123456789123456789123D, "E", "1,234568E@001");
+        retVal &= VerifyToString("PostTestE3", 0.123456789123459789D, "E", "1,234568E@001");
+        retVal &= VerifyToString("PostTestE4", 0.123456789123000009123D, "E", "1,234568E@001");
 
         TestLibrary.TestFramework.LogInformation("[Negative]");
         retVal &= NegTest1();
