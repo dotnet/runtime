@@ -18853,7 +18853,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreeCall* call, bool valUsed)
                     regMaskTP vptrMask1;
                     unsigned  vtabOffsOfIndirection;
                     unsigned  vtabOffsAfterIndirection;
-                    unsigned  isRelative;
+                    bool      isRelative;
 
                     noway_assert(callType == CT_USER_FUNC);
 
@@ -18907,7 +18907,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreeCall* call, bool valUsed)
                             // ADD vptrReg1, REG_CALL_IND_SCRATCH, vtabOffsOfIndirection + vtabOffsAfterIndirection
                             getEmitter()->emitIns_R_R_I(INS_add, EA_PTRSIZE, vptrReg1, vptrReg, offset);
 #else
-                            _ASSERTE(false);
+                            unreached();
 #endif
                         }
 
@@ -18917,7 +18917,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreeCall* call, bool valUsed)
                     }
                     else
                     {
-                        _ASSERTE(!isRelative);
+                        assert(!isRelative);
                     }
 
                     /* Call through the appropriate vtable slot */
@@ -18931,7 +18931,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreeCall* call, bool valUsed)
                             getEmitter()->emitIns_R_ARR(ins_Load(TYP_I_IMPL), EA_PTRSIZE, REG_TAILCALL_ADDR, vptrReg1,
                                                         vptrReg, 0);
 #else
-                            _ASSERTE(false);
+                            unreached();
 #endif
                         }
                         else
@@ -18961,7 +18961,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreeCall* call, bool valUsed)
                                                    gcInfo.gcRegByrefSetCur, ilOffset,
                                                    vptrReg); // ireg
 #else
-                        _ASSERTE(!isRelative);
+                        assert(!isRelative);
                         getEmitter()->emitIns_Call(emitter::EC_FUNC_VIRTUAL, call->gtCallMethHnd,
                                                    INDEBUG_LDISASM_COMMA(sigInfo) NULL, // addr
                                                    args, retSize, gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,

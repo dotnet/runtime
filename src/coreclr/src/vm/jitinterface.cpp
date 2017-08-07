@@ -8587,7 +8587,7 @@ CONTRACTL {
 void CEEInfo::getMethodVTableOffset (CORINFO_METHOD_HANDLE methodHnd,
                                      unsigned * pOffsetOfIndirection,
                                      unsigned * pOffsetAfterIndirection,
-                                     unsigned * isRelative)
+                                     bool * isRelative)
 {
     CONTRACTL {
         SO_TOLERANT;

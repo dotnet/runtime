@@ -3461,7 +3461,7 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
     // Get hold of the vtable offset (note: this might be expensive)
     unsigned vtabOffsOfIndirection;
     unsigned vtabOffsAfterIndirection;
-    unsigned isRelative;
+    bool     isRelative;
     comp->info.compCompHnd->getMethodVTableOffset(call->gtCallMethHnd, &vtabOffsOfIndirection,
                                                   &vtabOffsAfterIndirection, &isRelative);
 
@@ -3485,13 +3485,24 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
     {
         if (isRelative)
         {
+            // MethodTable offset is a relative pointer.
+            //
+            // Additional temporary variable is used to store virtual table pointer.
+            // Address of method is obtained by the next computations:
+            //
+            // Save relative offset to tmp (vtab is virtual table pointer, vtabOffsOfIndirection is offset of
+            // vtable-1st-level-indirection):
+            // tmp = [vtab + vtabOffsOfIndirection]
+            //
+            // Save address of method to result (vtabOffsAfterIndirection is offset of vtable-2nd-level-indirection):
+            // result = [vtab + vtabOffsOfIndirection + vtabOffsAfterIndirection + tmp]
             unsigned lclNumTmp = comp->lvaGrabTemp(true DEBUGARG("lclNumTmp"));
 
             comp->lvaTable[lclNumTmp].incRefCnts(comp->compCurBB->getBBWeight(comp), comp);
             GenTree* lclvNodeStore = comp->gtNewTempAssign(lclNumTmp, result);
 
             LIR::Range range = LIR::SeqTree(comp, lclvNodeStore);
-            JITDUMP("results of lowering call interm:\n");
+            JITDUMP("result of obtaining pointer to virtual table:\n");
             DISPRANGE(range);
             BlockRange().InsertBefore(call, std::move(range));
 
@@ -3512,7 +3523,7 @@ GenTree* Lowering::LowerVirtualVtableCall(GenTreeCall* call)
     }
     else
     {
-        _ASSERTE(!isRelative);
+        assert(!isRelative);
     }
 
     // Load the function address

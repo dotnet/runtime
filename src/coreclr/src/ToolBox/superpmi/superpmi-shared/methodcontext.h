@@ -241,7 +241,7 @@ public:
     {
         DWORD A;
         DWORD B;
-        DWORD C;
+        bool C;
     };
     struct Agnostic_CanTailCall
     {
@@ -851,12 +851,12 @@ public:
     void recGetMethodVTableOffset(CORINFO_METHOD_HANDLE method,
                                   unsigned*             offsetOfIndirection,
                                   unsigned*             offsetAfterIndirection,
-                                  unsigned*             isRelative);
+                                  bool*                 isRelative);
     void dmpGetMethodVTableOffset(DWORDLONG key, DDD value);
     void repGetMethodVTableOffset(CORINFO_METHOD_HANDLE method,
                                   unsigned*             offsetOfIndirection,
                                   unsigned*             offsetAfterIndirection,
-                                  unsigned*             isRelative);
+                                  bool*                 isRelative);
 
     void recResolveVirtualMethod(CORINFO_METHOD_HANDLE  virtMethod,
                                  CORINFO_CLASS_HANDLE   implClass,

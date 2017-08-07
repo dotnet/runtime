@@ -2972,7 +2972,7 @@ void MethodContext::repGetEHinfo(CORINFO_METHOD_HANDLE ftn, unsigned EHnumber, C
 void MethodContext::recGetMethodVTableOffset(CORINFO_METHOD_HANDLE method,
                                              unsigned*             offsetOfIndirection,
                                              unsigned*             offsetAfterIndirection,
-                                             unsigned*             isRelative)
+                                             bool*                 isRelative)
 {
     if (GetMethodVTableOffset == nullptr)
         GetMethodVTableOffset = new LightWeightMap<DWORDLONG, DDD>();
@@ -2980,18 +2980,18 @@ void MethodContext::recGetMethodVTableOffset(CORINFO_METHOD_HANDLE method,
     DDD value;
     value.A = (DWORD)*offsetOfIndirection;
     value.B = (DWORD)*offsetAfterIndirection;
-    value.C = (DWORD)*isRelative;
+    value.C = *isRelative;
     GetMethodVTableOffset->Add((DWORDLONG)method, value);
     DEBUG_REC(dmpGetMethodVTableOffset((DWORDLONG)method, value));
 }
 void MethodContext::dmpGetMethodVTableOffset(DWORDLONG key, DDD value)
 {
-    printf("GetMethodVTableOffset key ftn-%016llX, value offi-%u, offa-%u", key, value.A, value.B);
+    printf("GetMethodVTableOffset key ftn-%016llX, value offi-%u, offa-%u. offr-%d", key, value.A, value.B, value.C);
 }
 void MethodContext::repGetMethodVTableOffset(CORINFO_METHOD_HANDLE method,
                                              unsigned*             offsetOfIndirection,
                                              unsigned*             offsetAfterIndirection,
-                                             unsigned*             isRelative)
+                                             bool*                 isRelative)
 {
     DDD value;
 
@@ -3003,7 +3003,7 @@ void MethodContext::repGetMethodVTableOffset(CORINFO_METHOD_HANDLE method,
 
     *offsetOfIndirection    = (unsigned)value.A;
     *offsetAfterIndirection = (unsigned)value.B;
-    *isRelative             = (unsigned)value.C;
+    *isRelative             = value.C;
     DEBUG_REP(dmpGetMethodVTableOffset((DWORDLONG)method, value));
 }
 
