@@ -6,38 +6,35 @@
 **
 **
 **
-** Purpose: This class will encapsulate an uint and 
-**          provide an Object representation of it.
+** Purpose: This class will encapsulate a long and provide an
+**          Object representation of it.
 **
 ** 
 ===========================================================*/
 
-using System.Globalization;
-using System;
-using System.Runtime;
-using System.Runtime.InteropServices;
 using System.Diagnostics.Contracts;
+using System.Globalization;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace System
 {
-    // * Wrapper for unsigned 32 bit integers.
     [Serializable]
-    [CLSCompliant(false), System.Runtime.InteropServices.StructLayout(LayoutKind.Sequential)]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
-    public struct UInt32 : IComparable, IFormattable, IConvertible
-        , IComparable<UInt32>, IEquatable<UInt32>
+    [StructLayout(LayoutKind.Sequential)]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    public struct Int64 : IComparable, IConvertible, IFormattable, IComparable<Int64>, IEquatable<Int64>
     {
-        private uint m_value; // Do not rename (binary serialization)
+        private long m_value; // Do not rename (binary serialization)
 
-        public const uint MaxValue = (uint)0xffffffff;
-        public const uint MinValue = 0U;
-
+        public const long MaxValue = 0x7fffffffffffffffL;
+        public const long MinValue = unchecked((long)0x8000000000000000L);
 
         // Compares this object to another object, returning an integer that
         // indicates the relationship. 
         // Returns a value less than zero if this  object
         // null is considered to be less than any instance.
-        // If object is not of type UInt32, this method throws an ArgumentException.
+        // If object is not of type Int64, this method throws an ArgumentException.
         // 
         public int CompareTo(Object value)
         {
@@ -45,19 +42,19 @@ namespace System
             {
                 return 1;
             }
-            if (value is UInt32)
+            if (value is Int64)
             {
                 // Need to use compare because subtraction will wrap
                 // to positive for very large neg numbers, etc.
-                uint i = (uint)value;
+                long i = (long)value;
                 if (m_value < i) return -1;
                 if (m_value > i) return 1;
                 return 0;
             }
-            throw new ArgumentException(SR.Arg_MustBeUInt32);
+            throw new ArgumentException(SR.Arg_MustBeInt64);
         }
 
-        public int CompareTo(UInt32 value)
+        public int CompareTo(Int64 value)
         {
             // Need to use compare because subtraction will wrap
             // to positive for very large neg numbers, etc.
@@ -68,88 +65,85 @@ namespace System
 
         public override bool Equals(Object obj)
         {
-            if (!(obj is UInt32))
+            if (!(obj is Int64))
             {
                 return false;
             }
-            return m_value == ((UInt32)obj).m_value;
+            return m_value == ((Int64)obj).m_value;
         }
 
         [System.Runtime.Versioning.NonVersionable]
-        public bool Equals(UInt32 obj)
+        public bool Equals(Int64 obj)
         {
             return m_value == obj;
         }
 
-        // The absolute value of the int contained.
+        // The value of the lower 32 bits XORed with the uppper 32 bits.
         public override int GetHashCode()
         {
-            return ((int)m_value);
+            return (unchecked((int)((long)m_value)) ^ (int)(m_value >> 32));
         }
 
-        // The base 10 representation of the number with no extra padding.
         public override String ToString()
         {
             Contract.Ensures(Contract.Result<String>() != null);
-            return Number.FormatUInt32(m_value, null, NumberFormatInfo.CurrentInfo);
+            return Number.FormatInt64(m_value, null, NumberFormatInfo.CurrentInfo);
         }
 
         public String ToString(IFormatProvider provider)
         {
             Contract.Ensures(Contract.Result<String>() != null);
-            return Number.FormatUInt32(m_value, null, NumberFormatInfo.GetInstance(provider));
+            return Number.FormatInt64(m_value, null, NumberFormatInfo.GetInstance(provider));
         }
 
         public String ToString(String format)
         {
             Contract.Ensures(Contract.Result<String>() != null);
-            return Number.FormatUInt32(m_value, format, NumberFormatInfo.CurrentInfo);
+            return Number.FormatInt64(m_value, format, NumberFormatInfo.CurrentInfo);
         }
 
         public String ToString(String format, IFormatProvider provider)
         {
             Contract.Ensures(Contract.Result<String>() != null);
-            return Number.FormatUInt32(m_value, format, NumberFormatInfo.GetInstance(provider));
+            return Number.FormatInt64(m_value, format, NumberFormatInfo.GetInstance(provider));
         }
 
-        [CLSCompliant(false)]
-        public static uint Parse(String s)
+        public static long Parse(String s)
         {
-            return Number.ParseUInt32(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
+            return Number.ParseInt64(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
         }
 
-        [CLSCompliant(false)]
-        public static uint Parse(String s, NumberStyles style)
+        public static long Parse(String s, NumberStyles style)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.ParseUInt32(s, style, NumberFormatInfo.CurrentInfo);
+            return Number.ParseInt64(s, style, NumberFormatInfo.CurrentInfo);
         }
 
-
-        [CLSCompliant(false)]
-        public static uint Parse(String s, IFormatProvider provider)
+        public static long Parse(String s, IFormatProvider provider)
         {
-            return Number.ParseUInt32(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseInt64(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
         }
 
-        [CLSCompliant(false)]
-        public static uint Parse(String s, NumberStyles style, IFormatProvider provider)
-        {
-            NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.ParseUInt32(s, style, NumberFormatInfo.GetInstance(provider));
-        }
 
-        [CLSCompliant(false)]
-        public static bool TryParse(String s, out UInt32 result)
-        {
-            return Number.TryParseUInt32(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
-        }
-
-        [CLSCompliant(false)]
-        public static bool TryParse(String s, NumberStyles style, IFormatProvider provider, out UInt32 result)
+        // Parses a long from a String in the given style.  If
+        // a NumberFormatInfo isn't specified, the current culture's 
+        // NumberFormatInfo is assumed.
+        // 
+        public static long Parse(String s, NumberStyles style, IFormatProvider provider)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.TryParseUInt32(s, style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.ParseInt64(s, style, NumberFormatInfo.GetInstance(provider));
+        }
+
+        public static Boolean TryParse(String s, out Int64 result)
+        {
+            return Number.TryParseInt64(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
+        }
+
+        public static Boolean TryParse(String s, NumberStyles style, IFormatProvider provider, out Int64 result)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            return Number.TryParseInt64(s, style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
         //
@@ -158,7 +152,7 @@ namespace System
 
         public TypeCode GetTypeCode()
         {
-            return TypeCode.UInt32;
+            return TypeCode.Int64;
         }
 
         bool IConvertible.ToBoolean(IFormatProvider provider)
@@ -198,12 +192,12 @@ namespace System
 
         uint IConvertible.ToUInt32(IFormatProvider provider)
         {
-            return m_value;
+            return Convert.ToUInt32(m_value);
         }
 
         long IConvertible.ToInt64(IFormatProvider provider)
         {
-            return Convert.ToInt64(m_value);
+            return m_value;
         }
 
         ulong IConvertible.ToUInt64(IFormatProvider provider)
@@ -228,7 +222,7 @@ namespace System
 
         DateTime IConvertible.ToDateTime(IFormatProvider provider)
         {
-            throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "UInt32", "DateTime"));
+            throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "Int64", "DateTime"));
         }
 
         Object IConvertible.ToType(Type type, IFormatProvider provider)

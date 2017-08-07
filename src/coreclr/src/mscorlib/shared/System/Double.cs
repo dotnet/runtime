@@ -12,11 +12,9 @@
 **
 ===========================================================*/
 
-using System;
 using System.Diagnostics.Contracts;
 using System.Globalization;
 using System.Runtime.CompilerServices;
-using System.Runtime.ConstrainedExecution;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 
@@ -25,7 +23,7 @@ namespace System
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
     [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public struct Double :IComparable, IConvertible, IFormattable, IComparable<Double>, IEquatable<Double>
+    public struct Double : IComparable, IConvertible, IFormattable, IComparable<Double>, IEquatable<Double>
     {
         private double m_value; // Do not rename (binary serialization)
 
