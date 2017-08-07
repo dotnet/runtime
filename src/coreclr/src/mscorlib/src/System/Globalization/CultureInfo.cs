@@ -458,15 +458,23 @@ namespace System.Globalization
                 return ci;
             }
 
-            // if s_userDefaultUICulture == null means CultureInfo statics didn't get initialized yet. this can happen if there early static 
-            // method get executed which eventually hit the cultureInfo code while CultureInfo statics didn’t get chance to initialize
-            if (s_userDefaultUICulture == null)
-            {
-                Init();
-            }
+            return UserDefaultUICulture;
+        }
 
-            Debug.Assert(s_userDefaultUICulture != null);
-            return s_userDefaultUICulture;
+        internal static CultureInfo UserDefaultUICulture
+        {
+            get
+            {
+                // if s_userDefaultUICulture == null means CultureInfo statics didn't get initialized yet. this can happen if there early static
+                // method get executed which eventually hit the cultureInfo code while CultureInfo statics didn’t get chance to initialize
+                if (s_userDefaultUICulture == null)
+                {
+                    Init();
+                }
+
+                Debug.Assert(s_userDefaultUICulture != null);
+                return s_userDefaultUICulture;
+            }
         }
 
         public static CultureInfo InstalledUICulture
