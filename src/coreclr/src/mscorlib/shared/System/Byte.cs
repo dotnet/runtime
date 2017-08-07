@@ -5,37 +5,40 @@
 /*============================================================
 **
 **
-** Purpose: This class will encapsulate a short and provide an
+**
+** Purpose: This class will encapsulate a byte and provide an
 **          Object representation of it.
 **
 ** 
 ===========================================================*/
 
-using System.Globalization;
-using System;
-using System.Runtime.InteropServices;
 using System.Diagnostics.Contracts;
+using System.Globalization;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 
 namespace System
 {
-    // Wrapper for unsigned 16 bit integers.
     [Serializable]
-    [CLSCompliant(false), System.Runtime.InteropServices.StructLayout(LayoutKind.Sequential)]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")] 
-    public struct UInt16 : IComparable, IFormattable, IConvertible
-            , IComparable<UInt16>, IEquatable<UInt16>
+    [StructLayout(LayoutKind.Sequential)]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    public struct Byte : IComparable, IConvertible, IFormattable, IComparable<Byte>, IEquatable<Byte>
     {
-        private ushort m_value; // Do not rename (binary serialization)
+        private byte m_value; // Do not rename (binary serialization)
 
-        public const ushort MaxValue = (ushort)0xFFFF;
-        public const ushort MinValue = 0;
+        // The maximum value that a Byte may represent: 255.
+        public const byte MaxValue = (byte)0xFF;
+
+        // The minimum value that a Byte may represent: 0.
+        public const byte MinValue = 0;
 
 
         // Compares this object to another object, returning an integer that
         // indicates the relationship. 
         // Returns a value less than zero if this  object
         // null is considered to be less than any instance.
-        // If object is not of type UInt16, this method throws an ArgumentException.
+        // If object is not of type byte, this method throws an ArgumentException.
         // 
         public int CompareTo(Object value)
         {
@@ -43,145 +46,151 @@ namespace System
             {
                 return 1;
             }
-            if (value is UInt16)
+            if (!(value is Byte))
             {
-                return ((int)m_value - (int)(((UInt16)value).m_value));
+                throw new ArgumentException(SR.Arg_MustBeByte);
             }
-            throw new ArgumentException(SR.Arg_MustBeUInt16);
+
+            return m_value - (((Byte)value).m_value);
         }
 
-        public int CompareTo(UInt16 value)
+        public int CompareTo(Byte value)
         {
-            return ((int)m_value - (int)value);
+            return m_value - value;
         }
 
+        // Determines whether two Byte objects are equal.
         public override bool Equals(Object obj)
         {
-            if (!(obj is UInt16))
+            if (!(obj is Byte))
             {
                 return false;
             }
-            return m_value == ((UInt16)obj).m_value;
+            return m_value == ((Byte)obj).m_value;
         }
 
-        [System.Runtime.Versioning.NonVersionable]
-        public bool Equals(UInt16 obj)
+        [NonVersionable]
+        public bool Equals(Byte obj)
         {
             return m_value == obj;
         }
 
-        // Returns a HashCode for the UInt16
+        // Gets a hash code for this instance.
         public override int GetHashCode()
         {
-            return (int)m_value;
+            return m_value;
         }
 
-        // Converts the current value to a String in base-10 with no extra padding.
-        public override String ToString()
-        {
-            Contract.Ensures(Contract.Result<String>() != null);
-            return Number.FormatUInt32(m_value, null, NumberFormatInfo.CurrentInfo);
-        }
-
-        public String ToString(IFormatProvider provider)
-        {
-            Contract.Ensures(Contract.Result<String>() != null);
-            return Number.FormatUInt32(m_value, null, NumberFormatInfo.GetInstance(provider));
-        }
-
-
-        public String ToString(String format)
-        {
-            Contract.Ensures(Contract.Result<String>() != null);
-            return Number.FormatUInt32(m_value, format, NumberFormatInfo.CurrentInfo);
-        }
-
-        public String ToString(String format, IFormatProvider provider)
-        {
-            Contract.Ensures(Contract.Result<String>() != null);
-            return Number.FormatUInt32(m_value, format, NumberFormatInfo.GetInstance(provider));
-        }
-
-        [CLSCompliant(false)]
-        public static ushort Parse(String s)
+        [Pure]
+        public static byte Parse(String s)
         {
             return Parse(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
         }
 
-        [CLSCompliant(false)]
-        public static ushort Parse(String s, NumberStyles style)
+        [Pure]
+        public static byte Parse(String s, NumberStyles style)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             return Parse(s, style, NumberFormatInfo.CurrentInfo);
         }
 
-
-        [CLSCompliant(false)]
-        public static ushort Parse(String s, IFormatProvider provider)
+        [Pure]
+        public static byte Parse(String s, IFormatProvider provider)
         {
             return Parse(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
         }
 
-        [CLSCompliant(false)]
-        public static ushort Parse(String s, NumberStyles style, IFormatProvider provider)
+
+        // Parses an unsigned byte from a String in the given style.  If
+        // a NumberFormatInfo isn't specified, the current culture's 
+        // NumberFormatInfo is assumed.
+        [Pure]
+        public static byte Parse(String s, NumberStyles style, IFormatProvider provider)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             return Parse(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        private static ushort Parse(String s, NumberStyles style, NumberFormatInfo info)
+        private static byte Parse(String s, NumberStyles style, NumberFormatInfo info)
         {
-            uint i = 0;
+            int i = 0;
             try
             {
-                i = Number.ParseUInt32(s, style, info);
+                i = Number.ParseInt32(s, style, info);
             }
             catch (OverflowException e)
             {
-                throw new OverflowException(SR.Overflow_UInt16, e);
+                throw new OverflowException(SR.Overflow_Byte, e);
             }
 
-            if (i > MaxValue) throw new OverflowException(SR.Overflow_UInt16);
-            return (ushort)i;
+            if (i < MinValue || i > MaxValue) throw new OverflowException(SR.Overflow_Byte);
+            return (byte)i;
         }
 
-        [CLSCompliant(false)]
-        public static bool TryParse(String s, out UInt16 result)
+        public static bool TryParse(String s, out Byte result)
         {
             return TryParse(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
         }
 
-        [CLSCompliant(false)]
-        public static bool TryParse(String s, NumberStyles style, IFormatProvider provider, out UInt16 result)
+        public static bool TryParse(String s, NumberStyles style, IFormatProvider provider, out Byte result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             return TryParse(s, style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
-        private static bool TryParse(String s, NumberStyles style, NumberFormatInfo info, out UInt16 result)
+        private static bool TryParse(String s, NumberStyles style, NumberFormatInfo info, out Byte result)
         {
             result = 0;
-            UInt32 i;
-            if (!Number.TryParseUInt32(s, style, info, out i))
+            int i;
+            if (!Number.TryParseInt32(s, style, info, out i))
             {
                 return false;
             }
-            if (i > MaxValue)
+            if (i < MinValue || i > MaxValue)
             {
                 return false;
             }
-            result = (UInt16)i;
+            result = (byte)i;
             return true;
+        }
+
+        [Pure]
+        public override String ToString()
+        {
+            Contract.Ensures(Contract.Result<String>() != null);
+            return Number.FormatInt32(m_value, null, NumberFormatInfo.CurrentInfo);
+        }
+
+        [Pure]
+        public String ToString(String format)
+        {
+            Contract.Ensures(Contract.Result<String>() != null);
+            return Number.FormatInt32(m_value, format, NumberFormatInfo.CurrentInfo);
+        }
+
+        [Pure]
+        public String ToString(IFormatProvider provider)
+        {
+            Contract.Ensures(Contract.Result<String>() != null);
+            return Number.FormatInt32(m_value, null, NumberFormatInfo.GetInstance(provider));
+        }
+
+        [Pure]
+        public String ToString(String format, IFormatProvider provider)
+        {
+            Contract.Ensures(Contract.Result<String>() != null);
+            return Number.FormatInt32(m_value, format, NumberFormatInfo.GetInstance(provider));
         }
 
         //
         // IConvertible implementation
         // 
-
+        [Pure]
         public TypeCode GetTypeCode()
         {
-            return TypeCode.UInt16;
+            return TypeCode.Byte;
         }
+
 
         bool IConvertible.ToBoolean(IFormatProvider provider)
         {
@@ -200,7 +209,7 @@ namespace System
 
         byte IConvertible.ToByte(IFormatProvider provider)
         {
-            return Convert.ToByte(m_value);
+            return m_value;
         }
 
         short IConvertible.ToInt16(IFormatProvider provider)
@@ -210,7 +219,7 @@ namespace System
 
         ushort IConvertible.ToUInt16(IFormatProvider provider)
         {
-            return m_value;
+            return Convert.ToUInt16(m_value);
         }
 
         int IConvertible.ToInt32(IFormatProvider provider)
@@ -250,7 +259,7 @@ namespace System
 
         DateTime IConvertible.ToDateTime(IFormatProvider provider)
         {
-            throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "UInt16", "DateTime"));
+            throw new InvalidCastException(SR.Format(SR.InvalidCast_FromTo, "Byte", "DateTime"));
         }
 
         Object IConvertible.ToType(Type type, IFormatProvider provider)

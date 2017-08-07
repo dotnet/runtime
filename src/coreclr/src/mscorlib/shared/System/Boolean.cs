@@ -12,16 +12,15 @@
 ** 
 ===========================================================*/
 
-using System;
-using System.Globalization;
 using System.Diagnostics.Contracts;
+using System.Globalization;
+using System.Runtime.CompilerServices;
+using System.Runtime.Versioning;
 
 namespace System
 {
-    // The Boolean class provides the
-    // object representation of the boolean primitive type.
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
     public struct Boolean : IComparable, IConvertible, IComparable<Boolean>, IEquatable<Boolean>
     {
         //
@@ -34,7 +33,7 @@ namespace System
         internal const int True = 1;
 
         // The false value.
-        // 
+        //
         internal const int False = 0;
 
 
@@ -95,11 +94,7 @@ namespace System
 
         public String ToString(IFormatProvider provider)
         {
-            if (false == m_value)
-            {
-                return FalseLiteral;
-            }
-            return TrueLiteral;
+            return ToString();
         }
 
         // Determines whether two Boolean objects are equal.
@@ -114,7 +109,7 @@ namespace System
             return (m_value == ((Boolean)obj).m_value);
         }
 
-        [System.Runtime.Versioning.NonVersionable]
+        [NonVersionable]
         public bool Equals(Boolean obj)
         {
             return m_value == obj;
