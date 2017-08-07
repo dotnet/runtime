@@ -36,6 +36,9 @@
     <Compile Include="System\Net\Http\ClientCertificateOption.cs" />
     <Compile Include="System\Net\Http\DelegatingHandler.cs" />
     <Compile Include="System\Net\Http\FormUrlEncodedContent.cs" />
+    <Compile Include="System\Net\Http\Headers\KnownHeader.cs" />
+    <Compile Include="System\Net\Http\Headers\HttpHeaderType.cs" />
+    <Compile Include="System\Net\Http\Headers\KnownHeaders.cs" />
     <Compile Include="System\Net\Http\HttpClient.cs" />
     <Compile Include="System\Net\Http\HttpClientHandler.cs" />
     <Compile Include="System\Net\Http\HttpCompletionOption.cs" />
@@ -66,6 +69,7 @@
     <Compile Include="System\Net\Http\Headers\DateHeaderParser.cs" />
     <Compile Include="System\Net\Http\Headers\EntityTagHeaderValue.cs" />
     <Compile Include="System\Net\Http\Headers\GenericHeaderParser.cs" />
+    <Compile Include="System\Net\Http\Headers\HeaderDescriptor.cs" />
     <Compile Include="System\Net\Http\Headers\HeaderUtilities.cs" />
     <Compile Include="System\Net\Http\Headers\HttpContentHeaders.cs" />
     <Compile Include="System\Net\Http\Headers\HttpGeneralHeaders.cs" />
