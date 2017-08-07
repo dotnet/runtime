@@ -407,7 +407,6 @@ private:
     static void OnMethodCompiled(MethodDesc* methodDescPtr);
 
     static int GetSectionIndex(const char *sectName);
-    static bool BuildELFHeader(MemBuf& buf);
     static void BuildSectionTables(MemBuf& sectBuf, MemBuf& strBuf, FunctionMemberPtrArrayHolder &method,
                                    int symbolCount);
     static bool BuildSymbolTableSection(MemBuf& buf, PCODE addr, TADDR codeSize, FunctionMemberPtrArrayHolder &method,
