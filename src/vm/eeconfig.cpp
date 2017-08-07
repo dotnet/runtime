@@ -241,7 +241,6 @@ HRESULT EEConfig::Init()
     
     INDEBUG(fStressLog = true;)
 
-    fVerifyAllOnLoad = false;
 #ifdef _DEBUG
     fExpandAllOnLoad = false;
     fDebuggable = false;
@@ -1095,9 +1094,6 @@ HRESULT EEConfig::sync()
 
     fEnableRCWCleanupOnSTAShutdown = (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EnableRCWCleanupOnSTAShutdown) != 0);
 #endif // FEATURE_COMINTEROP
-
-    //Eager verification of all assemblies.
-    fVerifyAllOnLoad = (GetConfigDWORD_DontUse_(CLRConfig::EXTERNAL_VerifyAllOnLoad, fVerifyAllOnLoad) != 0);
 
 #ifdef _DEBUG
     fExpandAllOnLoad = (GetConfigDWORD_DontUse_(CLRConfig::INTERNAL_ExpandAllOnLoad, fExpandAllOnLoad) != 0);

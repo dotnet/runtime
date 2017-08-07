@@ -19,7 +19,6 @@
 #include "eeconfig.h"
 #include "cgensys.h"
 #include "asmconstants.h"
-#include "security.h"
 #include "virtualcallstub.h"
 #include "gcdump.h"
 #include "rtlfunctions.h"

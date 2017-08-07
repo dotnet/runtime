@@ -21,7 +21,6 @@
 #include "encee.h"
 #include "mdaassistants.h"
 #include "ecmakey.h"
-#include "security.h"
 #include "customattribute.h"
 #include "typestring.h"
 
@@ -4177,19 +4176,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                   pszFieldName
                   );
 
-        // Check if the ValueType field containing non-publics is overlapped
-        if (HasExplicitFieldOffsetLayout()
-            && pLayoutFieldInfo != NULL
-            && pLayoutFieldInfo->m_fIsOverlapped
-            && pByValueClass != NULL
-            && pByValueClass->GetClass()->HasNonPublicFields())
-        {
-            if (!Security::CanSkipVerification(GetAssembly()->GetDomainAssembly()))
-            {
-                BuildMethodTableThrowException(IDS_CLASSLOAD_BADOVERLAP);
-            }
-        }
-
         // We're using FieldDesc::m_pMTOfEnclosingClass to temporarily store the field's size.
         // 
         if (fIsByValue)
@@ -4290,14 +4276,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                             BAD_FORMAT_NOTHROW_ASSERT(!"ObjectRef in an RVA field");
                             BuildMethodTableThrowException(COR_E_BADIMAGEFORMAT, IDS_CLASSLOAD_BAD_FIELD, mdTokenNil);
                         }
-                        if (pByValueClass->GetClass()->HasNonPublicFields())
-                        {
-                            if (!Security::CanHaveRVA(GetAssembly()))
-                            {
-                                BAD_FORMAT_NOTHROW_ASSERT(!"ValueType with non-public fields as a type of an RVA field");
-                                BuildMethodTableThrowException(COR_E_BADIMAGEFORMAT, IDS_CLASSLOAD_BAD_FIELD, mdTokenNil);
-                            }
-                        }
                     }
                 }
                 
@@ -4329,14 +4307,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
                 else
                 {
                     fldSize = GetSizeForCorElementType(FieldDescElementType);
-                }
-                if (!GetModule()->CheckRvaField(rva, fldSize))
-                {
-                    if (!Security::CanHaveRVA(GetAssembly()))
-                    {
-                        BAD_FORMAT_NOTHROW_ASSERT(!"Illegal RVA of a mapped field");
-                        BuildMethodTableThrowException(COR_E_BADIMAGEFORMAT, IDS_CLASSLOAD_BAD_FIELD, mdTokenNil);
-                    }
                 }
                 
                 pFD->SetOffsetRVA(rva);
@@ -4376,14 +4346,6 @@ VOID    MethodTableBuilder::InitializeFieldDescs(FieldDesc *pFieldDescList,
         {   // RVA fields are not allowed to have GC pointers.
             BAD_FORMAT_NOTHROW_ASSERT(!"ObjectRef in an RVA self-referencing static field");
             BuildMethodTableThrowException(COR_E_BADIMAGEFORMAT, IDS_CLASSLOAD_BAD_FIELD, mdTokenNil);
-        }
-        if (HasNonPublicFields())
-        {   // RVA ValueTypes with non-public fields must be checked against security
-            if (!Security::CanHaveRVA(GetAssembly()))
-            {
-                BAD_FORMAT_NOTHROW_ASSERT(!"ValueType with non-public fields as a type of an RVA self-referencing static field");
-                BuildMethodTableThrowException(COR_E_BADIMAGEFORMAT, IDS_CLASSLOAD_BAD_FIELD, mdTokenNil);
-            }
         }
     }
     
@@ -4473,15 +4435,6 @@ MethodTableBuilder::VerifySelfReferencingStaticValueTypeFields_WithRVA(
             {
                 DWORD rva;
                 IfFailThrow(GetMDImport()->GetFieldRVA(pFD->GetMemberDef(), &rva));
-                
-                if (!GetModule()->CheckRvaField(rva, bmtFP->NumInstanceFieldBytes))
-                {
-                    if (!Security::CanHaveRVA(GetAssembly()))
-                    {
-                        BAD_FORMAT_NOTHROW_ASSERT(!"Illegal RVA of a mapped self-referencing static field");
-                        BuildMethodTableThrowException(COR_E_BADIMAGEFORMAT, IDS_CLASSLOAD_BAD_FIELD, mdTokenNil);
-                    }
-                }
             }
         }
     }
@@ -8534,17 +8487,6 @@ MethodTableBuilder::HandleExplicitLayout(
                               GetModule(),
                               badOffset,
                               IDS_CLASSLOAD_EXPLICIT_LAYOUT);
-    }
-
-    if (!explicitClassTrust.IsVerifiable())
-    {
-        if (!Security::CanSkipVerification(GetAssembly()->GetDomainAssembly()))
-        {
-            ThrowFieldLayoutError(GetCl(),
-                                  GetModule(),
-                                  firstObjectOverlapOffset,
-                                  IDS_CLASSLOAD_UNVERIFIABLE_FIELD_LAYOUT);
-        }
     }
 
     if (!explicitClassTrust.IsNonOverLayed())

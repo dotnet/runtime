@@ -26,7 +26,6 @@
 #include "typeparse.h"
 #include "debuginfostore.h"
 #include "generics.h"
-#include "../../vm/security.h"
 #include "../../vm/methoditer.h"
 #include "../../vm/encee.h"
 #include "../../vm/dwreport.h"

@@ -18,7 +18,6 @@
 
 #include "assembly.hpp"
 #include "appdomain.hpp"
-#include "security.h"
 #include "perfcounters.h"
 #include "assemblyname.hpp"
 

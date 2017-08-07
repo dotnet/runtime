@@ -16,7 +16,6 @@
 
 #include <shlwapi.h>
 
-#include "security.h"
 #include "invokeutil.h"
 #include "eeconfig.h"
 #include "dynamicmethod.h"
@@ -1290,10 +1289,6 @@ void DomainFile::Activate()
             pMT->CheckRestore();
             m_bDisableActivationCheck=TRUE;
             pMT->CheckRunClassInitThrowing();
-        }
-        if (g_pConfig->VerifyModulesOnLoad())
-        {
-            m_pModule->VerifyAllMethods();
         }
 #ifdef _DEBUG
         if (g_pConfig->ExpandModulesOnLoad())

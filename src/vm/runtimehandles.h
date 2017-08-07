@@ -198,7 +198,6 @@ public:
     static 
     BOOL QCALLTYPE IsVisible(EnregisteredTypeHandle pTypeHandle);
 
-    static FCDECL1(FC_BOOL_RET, HasProxyAttribute, ReflectClassBaseObject *pType);
     static FCDECL2(FC_BOOL_RET, IsComObject, ReflectClassBaseObject *pType, CLR_BOOL isGenericCOM);
     static FCDECL2(FC_BOOL_RET, CanCastTo, ReflectClassBaseObject *pType, ReflectClassBaseObject *pTarget);
     static FCDECL2(FC_BOOL_RET, IsInstanceOfType, ReflectClassBaseObject *pType, Object *object);

@@ -474,7 +474,6 @@ public:
     }
 #endif // FEATURE_COMINTEROP
 
-    bool VerifyModulesOnLoad(void) const { LIMITED_METHOD_CONTRACT; return fVerifyAllOnLoad; }
 #ifdef _DEBUG
     bool ExpandModulesOnLoad(void) const { LIMITED_METHOD_CONTRACT; return fExpandAllOnLoad; }
 #endif //_DEBUG
@@ -934,8 +933,6 @@ private: //----------------------------------------------------------------
     bool   m_fDeveloperInstallation;      // We are on a developers machine
     bool   fAppDomainUnload;            // Enable appdomain unloading
     
-    bool fVerifyAllOnLoad;              // True if we want to verify all methods in an assembly at load time.
-
     DWORD  dwADURetryCount;
 
 #ifdef _DEBUG
