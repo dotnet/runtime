@@ -15,62 +15,94 @@
 
 #ifndef DISABLE_JIT
 
-void
-mini_profiler_emit_instrumentation_call (MonoCompile *cfg, void *func, gboolean entry, MonoInst **ret, MonoType *rtype)
+static MonoInst *
+emit_fill_call_ctx (MonoCompile *cfg, MonoInst *method, MonoInst *ret)
 {
-	gboolean instrument, capture;
+	cfg->flags |= MONO_CFG_HAS_ALLOCA;
 
-	/*
-	 * Do not instrument an inlined method - it becomes
-	 * part of the current method.
-	 */
-	if (cfg->current_method != cfg->method)
-		return;
+	MonoInst *alloc, *size, *fill_ctx;
 
-	if (entry) {
-		instrument = cfg->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_PROLOGUE;
-		capture = cfg->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_PROLOGUE_CONTEXT;
-	} else {
-		instrument = cfg->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_EPILOGUE;
-		capture = cfg->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_EPILOGUE_CONTEXT;
+	EMIT_NEW_ICONST (cfg, size, sizeof (MonoProfilerCallContext));
+	MONO_INST_NEW (cfg, alloc, OP_LOCALLOC);
+	alloc->dreg = alloc_preg (cfg);
+	alloc->sreg1 = size->dreg;
+	alloc->flags |= MONO_INST_INIT;
+	MONO_ADD_INS (cfg->cbb, alloc);
+	MONO_INST_NEW (cfg, fill_ctx, OP_FILL_PROF_CALL_CTX);
+	fill_ctx->sreg1 = alloc->dreg;
+	MONO_ADD_INS (cfg->cbb, fill_ctx);
+	MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, alloc->dreg, MONO_STRUCT_OFFSET (MonoProfilerCallContext, method), method->dreg);
+
+	if (ret) {
+		MonoInst *var = mono_compile_create_var (cfg, mono_method_signature (cfg->method)->ret, OP_LOCAL);
+
+		MonoInst *store, *addr;
+
+		EMIT_NEW_TEMPSTORE (cfg, store, var->inst_c0, ret);
+		EMIT_NEW_VARLOADA (cfg, addr, var, NULL);
+		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, alloc->dreg, MONO_STRUCT_OFFSET (MonoProfilerCallContext, return_value), addr->dreg);
 	}
 
-	if (!instrument)
+	return alloc;
+}
+
+void
+mini_profiler_emit_enter (MonoCompile *cfg)
+{
+	if (!MONO_CFG_PROFILE (cfg, ENTER) || cfg->current_method != cfg->method)
 		return;
 
 	MonoInst *iargs [2];
 
 	EMIT_NEW_METHODCONST (cfg, iargs [0], cfg->method);
 
-	if (capture && !cfg->llvm_only) {
-		cfg->flags |= MONO_CFG_HAS_ALLOCA;
-
-		MonoInst *size, *fill_ctx;
-
-		EMIT_NEW_ICONST (cfg, size, sizeof (MonoProfilerCallContext));
-		MONO_INST_NEW (cfg, iargs [1], OP_LOCALLOC);
-		iargs [1]->dreg = alloc_preg (cfg);
-		iargs [1]->sreg1 = size->dreg;
-		iargs [1]->flags |= MONO_INST_INIT;
-		MONO_ADD_INS (cfg->cbb, iargs [1]);
-		MONO_INST_NEW (cfg, fill_ctx, OP_FILL_PROF_CALL_CTX);
-		fill_ctx->sreg1 = iargs [1]->dreg;
-		MONO_ADD_INS (cfg->cbb, fill_ctx);
-		MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, iargs [1]->dreg, MONO_STRUCT_OFFSET (MonoProfilerCallContext, method), iargs [0]->dreg);
-
-		if (rtype && rtype->type != MONO_TYPE_VOID) {
-			MonoInst *var = mono_compile_create_var (cfg, rtype, OP_LOCAL);
-
-			MonoInst *store, *addr;
-
-			EMIT_NEW_TEMPSTORE (cfg, store, var->inst_c0, *ret);
-			EMIT_NEW_VARLOADA (cfg, addr, var, NULL);
-			MONO_EMIT_NEW_STORE_MEMBASE (cfg, OP_STORE_MEMBASE_REG, iargs [1]->dreg, MONO_STRUCT_OFFSET (MonoProfilerCallContext, return_value), addr->dreg);
-		}
-	} else
+	if (MONO_CFG_PROFILE (cfg, ENTER_CONTEXT) && !cfg->llvm_only)
+		iargs [1] = emit_fill_call_ctx (cfg, iargs [0], NULL);
+	else
 		EMIT_NEW_PCONST (cfg, iargs [1], NULL);
 
-	mono_emit_jit_icall (cfg, func, iargs);
+	/* void mono_profiler_raise_method_enter (MonoMethod *method, MonoProfilerCallContext *ctx) */
+	mono_emit_jit_icall (cfg, mono_profiler_raise_method_enter, iargs);
+}
+
+void
+mini_profiler_emit_leave (MonoCompile *cfg, MonoInst *ret)
+{
+	if (!MONO_CFG_PROFILE (cfg, LEAVE) || cfg->current_method != cfg->method)
+		return;
+
+	MonoInst *iargs [2];
+
+	EMIT_NEW_METHODCONST (cfg, iargs [0], cfg->method);
+
+	if (MONO_CFG_PROFILE (cfg, LEAVE_CONTEXT) && !cfg->llvm_only)
+		iargs [1] = emit_fill_call_ctx (cfg, iargs [0], ret);
+	else
+		EMIT_NEW_PCONST (cfg, iargs [1], NULL);
+
+	/* void mono_profiler_raise_method_leave (MonoMethod *method, MonoProfilerCallContext *ctx) */
+	mono_emit_jit_icall (cfg, mono_profiler_raise_method_leave, iargs);
+}
+
+void
+mini_profiler_emit_tail_call (MonoCompile *cfg, MonoMethod *target)
+{
+	if (!MONO_CFG_PROFILE (cfg, TAIL_CALL) || cfg->current_method != cfg->method)
+		return;
+
+	g_assert (cfg->current_method == cfg->method);
+
+	MonoInst *iargs [2];
+
+	EMIT_NEW_METHODCONST (cfg, iargs [0], cfg->method);
+
+	if (target)
+		EMIT_NEW_METHODCONST (cfg, iargs [1], target);
+	else
+		EMIT_NEW_PCONST (cfg, iargs [1], NULL);
+
+	/* void mono_profiler_raise_method_tail_call (MonoMethod *method, MonoMethod *target) */
+	mono_emit_jit_icall (cfg, mono_profiler_raise_method_tail_call, iargs);
 }
 
 #endif

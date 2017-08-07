@@ -2230,9 +2230,12 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 			}
 		}
 
-		jit_tls->orig_ex_ctx_set = TRUE;
-		MONO_PROFILER_RAISE (method_exception_leave, (method, ex_obj));
-		jit_tls->orig_ex_ctx_set = FALSE;
+		if (MONO_PROFILER_ENABLED (method_exception_leave) &&
+		    mono_profiler_get_call_instrumentation_flags (method) & MONO_PROFILER_CALL_INSTRUMENTATION_EXCEPTION_LEAVE) {
+			jit_tls->orig_ex_ctx_set = TRUE;
+			MONO_PROFILER_RAISE (method_exception_leave, (method, ex_obj));
+			jit_tls->orig_ex_ctx_set = FALSE;
+		}
 
 		*ctx = new_ctx;
 	}
