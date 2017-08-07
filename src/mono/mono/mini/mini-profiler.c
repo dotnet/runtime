@@ -20,6 +20,13 @@ mini_profiler_emit_instrumentation_call (MonoCompile *cfg, void *func, gboolean 
 {
 	gboolean instrument, capture;
 
+	/*
+	 * Do not instrument an inlined method - it becomes
+	 * part of the current method.
+	 */
+	if (cfg->current_method != cfg->method)
+		return;
+
 	if (entry) {
 		instrument = cfg->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_PROLOGUE;
 		capture = cfg->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_PROLOGUE_CONTEXT;
@@ -30,8 +37,6 @@ mini_profiler_emit_instrumentation_call (MonoCompile *cfg, void *func, gboolean 
 
 	if (!instrument)
 		return;
-
-	g_assert (cfg->current_method == cfg->method);
 
 	MonoInst *iargs [2];
 
