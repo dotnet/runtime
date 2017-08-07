@@ -74,7 +74,7 @@ namespace System
             return m_value == ((UInt32)obj).m_value;
         }
 
-        [System.Runtime.Versioning.NonVersionable]
+        [NonVersionable]
         public bool Equals(UInt32 obj)
         {
             return m_value == obj;
