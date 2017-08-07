@@ -915,13 +915,10 @@ class MsbuildGenerator {
 		string strongNameSection = "";
 		if (StrongNameKeyFile != null){
 			strongNameSection = String.Format (
-				"  <PropertyGroup>" + NewLine +
 				"    <SignAssembly>true</SignAssembly>" + NewLine +
 				"{1}" +
-				"  </PropertyGroup>" + NewLine +
-				"  <PropertyGroup>" + NewLine +
-				"    <AssemblyOriginatorKeyFile>{0}</AssemblyOriginatorKeyFile>" + NewLine +
-				"  </PropertyGroup>", StrongNameKeyFile, StrongNameDelaySign ? "    <DelaySign>true</DelaySign>" + NewLine : "");
+				"    <AssemblyOriginatorKeyFile>{0}</AssemblyOriginatorKeyFile>",
+				StrongNameKeyFile, StrongNameDelaySign ? "    <DelaySign>true</DelaySign>" + NewLine : "");
 		}
 		Csproj.output = template.
 			Replace ("@OUTPUTTYPE@", Target == Target.Library ? "Library" : "Exe").
