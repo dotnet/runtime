@@ -165,6 +165,36 @@ namespace System.IO.Tests
         }
 
         [Theory]
+        [OuterLoop]
+        [MemberData(nameof(FilterTypes))]
+        public void FileSystemWatcher_File_NotifyFilter_Size_TwoFilters(NotifyFilters filter)
+        {
+            Assert.All(FilterTypes(), (filter2Arr =>
+            {
+                using (var testDirectory = new TempDirectory(GetTestFilePath()))
+                using (var file = new TempFile(Path.Combine(testDirectory.Path, "file")))
+                using (var watcher = new FileSystemWatcher(testDirectory.Path, Path.GetFileName(file.Path)))
+                {
+                    filter |= (NotifyFilters)filter2Arr[0];
+                    watcher.NotifyFilter = filter;
+                    Action action = () => File.AppendAllText(file.Path, "longText!");
+                    Action cleanup = () => File.AppendAllText(file.Path, "short");
+
+                    WatcherChangeTypes expected = 0;
+                    if (((filter & NotifyFilters.Size) > 0) || ((filter & NotifyFilters.LastWrite) > 0))
+                        expected |= WatcherChangeTypes.Changed;
+                    else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && ((filter & LinuxFiltersForModify) > 0))
+                        expected |= WatcherChangeTypes.Changed;
+                    else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && ((filter & OSXFiltersForModify) > 0))
+                        expected |= WatcherChangeTypes.Changed;
+                    else if (PlatformDetection.IsWindows7 && ((filter & NotifyFilters.Attributes) > 0)) // win7 FSW Size change passes the Attribute filter
+                        expected |= WatcherChangeTypes.Changed;
+                    ExpectEvent(watcher, expected, action, expectedPath: file.Path);
+                }
+            }));
+        }
+
+        [Theory]
         [MemberData(nameof(FilterTypes))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes to set security info
         public void FileSystemWatcher_File_NotifyFilter_Security(NotifyFilters filter)

@@ -139,6 +139,33 @@ namespace System.IO.Tests
         }
 
         [Theory]
+        [OuterLoop]
+        [MemberData(nameof(FilterTypes))]
+        public void FileSystemWatcher_Directory_NotifyFilter_LastWriteTime_TwoFilters(NotifyFilters filter)
+        {
+            Assert.All(FilterTypes(), (filter2Arr =>
+            {
+                using (var testDirectory = new TempDirectory(GetTestFilePath()))
+                using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
+                using (var watcher = new FileSystemWatcher(testDirectory.Path, Path.GetFileName(dir.Path)))
+                {
+                    filter |= (NotifyFilters)filter2Arr[0];
+                    watcher.NotifyFilter = filter;
+                    Action action = () => Directory.SetLastWriteTime(dir.Path, DateTime.Now + TimeSpan.FromSeconds(10));
+
+                    WatcherChangeTypes expected = 0;
+                    if ((filter & NotifyFilters.LastWrite) > 0)
+                        expected |= WatcherChangeTypes.Changed;
+                    else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && ((filter & LinuxFiltersForAttribute) > 0))
+                        expected |= WatcherChangeTypes.Changed;
+                    else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && ((filter & OSXFiltersForModify) > 0))
+                        expected |= WatcherChangeTypes.Changed;
+                    ExpectEvent(watcher, expected, action, expectedPath: dir.Path);
+                }
+            }));
+        }
+
+        [Theory]
         [MemberData(nameof(FilterTypes))]
         [PlatformSpecific(TestPlatforms.Windows)]  // Uses P/Invokes to set security info
         [ActiveIssue(21109, TargetFrameworkMonikers.Uap)]
