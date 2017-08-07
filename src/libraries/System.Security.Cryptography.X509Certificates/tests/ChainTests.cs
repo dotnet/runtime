@@ -5,6 +5,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
 using Xunit;
@@ -629,6 +630,49 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         {
             using (var chain = X509Chain.Create())
                 Assert.NotNull(chain);
+        }
+
+        [Fact]
+        public static void InvalidSelfSignedSignature()
+        {
+            X509ChainStatusFlags expectedFlags;
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                expectedFlags = X509ChainStatusFlags.NotSignatureValid;
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                expectedFlags = X509ChainStatusFlags.UntrustedRoot;
+            }
+            else
+            {
+                expectedFlags =
+                    X509ChainStatusFlags.NotSignatureValid |
+                    X509ChainStatusFlags.UntrustedRoot;
+            }
+
+            byte[] certBytes = (byte[])TestData.MicrosoftDotComRootBytes.Clone();
+            // The signature goes up to the very last byte, so flip some bits in it.
+            certBytes[certBytes.Length - 1] ^= 0xFF;
+
+            using (var cert = new X509Certificate2(certBytes))
+            using (ChainHolder holder = new ChainHolder())
+            {
+                X509Chain chain = holder.Chain;
+                X509ChainPolicy policy = chain.ChainPolicy;
+                policy.VerificationTime = cert.NotBefore.AddDays(3);
+                policy.RevocationMode = X509RevocationMode.NoCheck;
+
+                chain.Build(cert);
+
+                X509ChainStatusFlags allFlags =
+                    chain.ChainStatus.Select(cs => cs.Status).Aggregate(
+                        X509ChainStatusFlags.NoError,
+                        (a, b) => a | b);
+
+                Assert.Equal(expectedFlags, allFlags);
+            }
         }
     }
 }
