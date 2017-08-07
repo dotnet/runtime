@@ -281,7 +281,9 @@ common_sources = \
 	sre.c	\
 	sre-encode.c	\
 	sre-save.c	\
-	custom-attrs.c
+	custom-attrs.c	\
+	fdhandle.h	\
+	fdhandle.c
 
 # These source files have compile time dependencies on GC code
 gc_dependent_sources = \

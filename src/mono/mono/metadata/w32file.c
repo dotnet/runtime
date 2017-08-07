@@ -1065,24 +1065,22 @@ MonoBoolean
 ves_icall_System_IO_MonoIO_DuplicateHandle (HANDLE source_process_handle, HANDLE source_handle,
 		HANDLE target_process_handle, HANDLE *target_handle, gint32 access, gint32 inherit, gint32 options, gint32 *error)
 {
-	/* This is only used on Windows */
+#ifndef HOST_WIN32
+	*target_handle = mono_w32handle_duplicate (source_handle);
+#else
 	gboolean ret;
-	
-#ifdef HOST_WIN32
+
 	MONO_ENTER_GC_SAFE;
 	ret=DuplicateHandle (source_process_handle, source_handle, target_process_handle, target_handle, access, inherit, options);
 	MONO_EXIT_GC_SAFE;
-#else
-	*target_handle = mono_w32handle_duplicate (source_handle);
-	ret = TRUE;
-#endif
 
-	if(ret==FALSE) {
+	if (!ret) {
 		*error = mono_w32error_get_last ();
 		/* FIXME: throw an exception? */
 		return(FALSE);
 	}
-	
+#endif
+
 	return(TRUE);
 }
 
