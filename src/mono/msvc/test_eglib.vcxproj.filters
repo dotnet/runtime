@@ -1,22 +1,22 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="..\eglib\test\array.c">
+    <ClCompile Include="..\mono\eglib\test\array.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\test\dir.c">
+    <ClCompile Include="..\mono\eglib\test\dir.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\test\driver.c">
+    <ClCompile Include="..\mono\eglib\test\driver.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\test\endian.c">
+    <ClCompile Include="..\mono\eglib\test\endian.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\test\fake.c">
+    <ClCompile Include="..\mono\eglib\test\fake.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\test\file.c">
+    <ClCompile Include="..\mono\eglib\test\file.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="getopt.c">
@@ -25,61 +25,61 @@
     <ClCompile Include="getopt_long.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\test\hashtable.c">
+    <ClCompile Include="..\mono\eglib\test\hashtable.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\test\list.c">
+    <ClCompile Include="..\mono\eglib\test\list.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\test\markup.c">
+    <ClCompile Include="..\mono\eglib\test\markup.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\test\memory.c">
+    <ClCompile Include="..\mono\eglib\test\memory.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\test\module.c">
+    <ClCompile Include="..\mono\eglib\test\module.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\test\path.c">
+    <ClCompile Include="..\mono\eglib\test\path.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\test\pattern.c">
+    <ClCompile Include="..\mono\eglib\test\pattern.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\test\ptrarray.c">
+    <ClCompile Include="..\mono\eglib\test\ptrarray.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\test\queue.c">
+    <ClCompile Include="..\mono\eglib\test\queue.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\test\shell.c">
+    <ClCompile Include="..\mono\eglib\test\shell.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\test\sizes.c">
+    <ClCompile Include="..\mono\eglib\test\sizes.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\test\slist.c">
+    <ClCompile Include="..\mono\eglib\test\slist.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\test\spawn.c">
+    <ClCompile Include="..\mono\eglib\test\spawn.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\test\string.c">
+    <ClCompile Include="..\mono\eglib\test\string.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\test\string-util.c">
+    <ClCompile Include="..\mono\eglib\test\string-util.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\test\test.c">
+    <ClCompile Include="..\mono\eglib\test\test.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\test\utf8.c">
+    <ClCompile Include="..\mono\eglib\test\utf8.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\test\timer.c">
+    <ClCompile Include="..\mono\eglib\test\timer.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\eglib\test\unicode.c">
+    <ClCompile Include="..\mono\eglib\test\unicode.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -90,13 +90,13 @@
     <ClInclude Include="getopt_long.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\eglib\src\glib.h">
+    <ClInclude Include="..\mono\eglib\src\glib.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\eglib\test\test.h">
+    <ClInclude Include="..\mono\eglib\test\test.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\eglib\test\tests.h">
+    <ClInclude Include="..\mono\eglib\test\tests.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

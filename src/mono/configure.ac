@@ -693,8 +693,8 @@ fi
 AC_SUBST([WERROR_CFLAGS])
 AC_SUBST([SHARED_CFLAGS])
 
-GLIB_CFLAGS='-I$(top_srcdir)/eglib/src -I$(top_builddir)/eglib/src'
-GLIB_LIBS='-L$(top_builddir)/eglib/src -leglib -lm'
+GLIB_CFLAGS='-I$(top_srcdir)/mono/eglib -I$(top_builddir)/mono/eglib'
+GLIB_LIBS='$(top_builddir)/mono/eglib/libeglib.la -lm'
   
 AC_SUBST(GLIB_CFLAGS)
 AC_SUBST(GLIB_LIBS)
@@ -4541,9 +4541,8 @@ mono/unit-tests/Makefile
 mono/benchmark/Makefile
 mono/mini/Makefile
 mono/profiler/Makefile
-eglib/Makefile
-eglib/src/Makefile
-eglib/src/eglib-config.h
+mono/eglib/Makefile
+mono/eglib/eglib-config.h
 m4/Makefile
 ikvm-native/Makefile
 scripts/Makefile

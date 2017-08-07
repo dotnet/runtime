@@ -1,6 +1,3 @@
-/* config.h.  Generated from config.h.in by configure.  */
-/* config.h.in.  Generated from configure.ac by autoheader.  */
-
 #ifndef _MSC_VER
 #include "cygconfig.h"
 #else
@@ -588,6 +585,9 @@
 
 /* Define to 1 if you have IPv6 support. */
 #define HAVE_STRUCT_SOCKADDR_IN6 1
+
+/* Defined as strtok_s in eglib-config.hw */
+#define HAVE_STRTOK_R 1
 
 /* Have a working sigaltstack */
 /* #undef HAVE_WORKING_SIGALTSTACK */
