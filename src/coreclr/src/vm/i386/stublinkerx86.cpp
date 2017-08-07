@@ -21,7 +21,6 @@
 #include "excep.h"
 #include "dllimport.h"
 #include "log.h"
-#include "security.h"
 #include "comdelegate.h"
 #include "array.h"
 #include "jitinterface.h"

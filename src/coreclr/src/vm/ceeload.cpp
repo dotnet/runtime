@@ -20,7 +20,6 @@
 #include "reflectclasswriter.h"
 #include "method.hpp"
 #include "stublink.h"
-#include "security.h"
 #include "cgensys.h"
 #include "excep.h"
 #include "dbginterface.h"
@@ -14083,97 +14082,6 @@ LPCWSTR Module::GetPathForErrorMessages()
     }
 }
 
-#ifndef DACCESS_COMPILE
-BOOL IsVerifiableWrapper(MethodDesc* pMD)
-{
-    BOOL ret = FALSE;
-    //EX_TRY contains _alloca, so I can't use this inside of a loop.  4wesome.
-    EX_TRY
-    {
-        ret = pMD->IsVerifiable();
-    }
-    EX_CATCH
-    {
-        //if the method has a security exception, it will fly through IsVerifiable.  Shunt
-        //to the unverifiable path below.
-    }
-    EX_END_CATCH(RethrowTerminalExceptions)
-    return ret;
-}
-#endif //DACCESS_COMPILE
-void Module::VerifyAllMethods()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_ANY;
-    }
-    CONTRACTL_END;
-#ifndef DACCESS_COMPILE
-    //If the EE isn't started yet, it's not safe to jit.  We fail in COM jitting a p/invoke.
-    if (!g_fEEStarted)
-        return;
-
-    struct Local
-    {
-        static bool VerifyMethodsForTypeDef(Module * pModule, mdTypeDef td)
-        {
-            bool ret = true;
-            TypeHandle th = ClassLoader::LoadTypeDefThrowing(pModule, td, ClassLoader::ThrowIfNotFound,
-                                                             ClassLoader::PermitUninstDefOrRef);
-
-            MethodTable * pMT = th.GetMethodTable();
-            MethodTable::MethodIterator it(pMT);
-            for (; it.IsValid(); it.Next())
-            {
-                MethodDesc * pMD = it.GetMethodDesc();
-                if (pMD->HasILHeader() && Security::IsMethodTransparent(pMD)
-                    && (g_pObjectCtorMD != pMD))
-                {
-                    if (!IsVerifiableWrapper(pMD))
-                    {
-#ifdef _DEBUG
-                        SString s;
-                        if (LoggingOn(LF_VERIFIER, LL_ERROR))
-                            TypeString::AppendMethodDebug(s, pMD);
-                        LOG((LF_VERIFIER, LL_ERROR, "Transparent Method (0x%p), %S is unverifiable\n",
-                             pMD, s.GetUnicode()));
-#endif
-                        ret = false;
-                    }
-                }
-            }
-            return ret;
-        }
-    };
-    //Verify all methods in a module eagerly, forcing them to get loaded.
-
-    IMDInternalImport * pMDI = GetMDImport();
-    HENUMTypeDefInternalHolder hEnum(pMDI);
-    mdTypeDef td;
-    hEnum.EnumTypeDefInit();
-
-    bool isAllVerifiable = true;
-    //verify global methods
-    if (GetGlobalMethodTable())
-    {
-        //verify everything in the MT.
-        if (!Local::VerifyMethodsForTypeDef(this, COR_GLOBAL_PARENT_TOKEN))
-            isAllVerifiable = false;
-    }
-    while (pMDI->EnumTypeDefNext(&hEnum, &td))
-    {
-        //verify everything
-        if (!Local::VerifyMethodsForTypeDef(this, td))
-            isAllVerifiable = false;
-    }
-    if (!isAllVerifiable)
-        EEFileLoadException::Throw(GetFile(), COR_E_VERIFICATION);
-#endif //DACCESS_COMPILE
-}
-
-
 #if defined(_DEBUG) && !defined(DACCESS_COMPILE) && !defined(CROSS_COMPILE)
 void Module::ExpandAll()
 {
@@ -14275,9 +14183,6 @@ void Module::ExpandAll()
     };
     //Jit all methods eagerly
 
-    /* XXX Thu 4/26/2007
-     * This code is lifted mostly from code:Module::VerifyAllMethods
-     */
     IMDInternalImport * pMDI = GetMDImport();
     HENUMTypeDefInternalHolder hEnum(pMDI);
     mdTypeDef td;

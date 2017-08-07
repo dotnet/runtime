@@ -19,7 +19,6 @@
 #include <stdlib.h>
 
 #include "assemblyspec.hpp"
-#include "security.h"
 #include "eeconfig.h"
 #include "strongname.h"
 #include "strongnameholders.h"
@@ -527,13 +526,13 @@ void AssemblySpec::AssemblyNameInit(ASSEMBLYNAMEREF* pAsmName, PEImage* pImageIn
         
         strCtor.Call(args);
     }
-    
 
     // public key or token byte array
     if (m_pbPublicKeyOrToken)
-        Security::CopyEncodingToByteArray((BYTE*) m_pbPublicKeyOrToken,
-                                          m_cbPublicKeyOrToken,
-                                          (OBJECTREF*) &gc.PublicKeyOrToken);
+    {
+        gc.PublicKeyOrToken = (U1ARRAYREF)AllocatePrimitiveArray(ELEMENT_TYPE_U1, m_cbPublicKeyOrToken);
+        memcpyNoGCRefs(gc.PublicKeyOrToken->m_Array, m_pbPublicKeyOrToken, m_cbPublicKeyOrToken);
+    }
 
     // simple name
     if(GetName())

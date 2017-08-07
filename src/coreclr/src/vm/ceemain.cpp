@@ -137,7 +137,6 @@
 #include "stackwalk.h"
 #include "gcheaputilities.h"
 #include "interoputil.h"
-#include "security.h"
 #include "fieldmarshaler.h"
 #include "dbginterface.h"
 #include "eedbginterfaceimpl.h"
@@ -1109,12 +1108,6 @@ void EEStartupHelper(COINITIEE fFlags)
         if (g_pConfig->ExpandModulesOnLoad())
         {
             SystemDomain::SystemModule()->ExpandAll();
-        }
-
-        //For a similar reason, let's not run VerifyAllOnLoad either.
-        if (g_pConfig->VerifyModulesOnLoad())
-        {
-            SystemDomain::SystemModule()->VerifyAllMethods();
         }
 
         // Perform mscorlib consistency check if requested

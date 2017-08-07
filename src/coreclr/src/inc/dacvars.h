@@ -206,7 +206,6 @@ DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pICastableInterface, ::g_pICas
 
 DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pExecuteBackoutCodeHelperMethod, ::g_pExecuteBackoutCodeHelperMethod)
 
-DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pObjectCtorMD, ::g_pObjectCtorMD)
 DEFINE_DACVAR(ULONG, UNKNOWN_POINTER_TYPE, dac__g_pObjectFinalizerMD, ::g_pObjectFinalizerMD)
 
 DEFINE_DACVAR(ULONG, bool, dac__g_fProcessDetach, ::g_fProcessDetach)

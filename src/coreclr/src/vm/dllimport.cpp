@@ -19,7 +19,6 @@
 #include "dllimport.h"
 #include "method.hpp"
 #include "siginfo.hpp"
-#include "security.h"
 #include "comdelegate.h"
 #include "ceeload.h"
 #include "mlinfo.h"
@@ -1183,7 +1182,6 @@ public:
 #endif // FEATURE_COMINTEROP
         LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_NGENEDSTUBFORPROFILING,  "   NDIRECTSTUB_FL_NGENEDSTUBFORPROFILING\n", facility, level);
         LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_GENERATEDEBUGGABLEIL,    "   NDIRECTSTUB_FL_GENERATEDEBUGGABLEIL\n", facility, level);
-        LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_HASDECLARATIVESECURITY,  "   NDIRECTSTUB_FL_HASDECLARATIVESECURITY\n", facility, level);
         LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_UNMANAGED_CALLI,         "   NDIRECTSTUB_FL_UNMANAGED_CALLI\n", facility, level);
         LogOneFlag(dwStubFlags, NDIRECTSTUB_FL_TRIGGERCCTOR,            "   NDIRECTSTUB_FL_TRIGGERCCTOR\n", facility, level);
 #ifdef FEATURE_COMINTEROP
@@ -1214,7 +1212,6 @@ public:
             NDIRECTSTUB_FL_REVERSE_INTEROP          |
             NDIRECTSTUB_FL_NGENEDSTUBFORPROFILING   |
             NDIRECTSTUB_FL_GENERATEDEBUGGABLEIL     |
-            NDIRECTSTUB_FL_HASDECLARATIVESECURITY   |
             NDIRECTSTUB_FL_UNMANAGED_CALLI          |
             NDIRECTSTUB_FL_TRIGGERCCTOR             |
 #ifdef FEATURE_COMINTEROP
@@ -5010,44 +5007,7 @@ MethodDesc* NDirect::CreateCLRToNativeILStub(
     pParamTokenArray = (mdParamDef*)_alloca(numParamTokens * sizeof(mdParamDef));
     CollateParamTokens(pModule->GetMDImport(), pSigDesc->m_tkMethodDef, numArgs, pParamTokenArray);
 
-    // for interop vectors that have declarative security, we need
-    //      to update the stub flags to ensure a unique stub hash
-    //      is generated based on the marshalling signature AND
-    //      any declarative security.
-    // IMPORTANT: This will only inject the security callouts for
-    //      interop functionality which has a non-null target MethodDesc.
-    //      Currently, this is known to exclude things like native
-    //      function ptrs. It is assumed that if the target is not
-    //      attribute'able for metadata, then it cannot have declarative
-    //      security - and that the target is not attributable if it was
-    //      not passed to this function.
     MethodDesc *pMD = pSigDesc->m_pMD;
-    if (pMD != NULL && SF_IsForwardStub(dwStubFlags))
-    {
-        // In an AppX process there is only one fully trusted AppDomain, so there is never any need to insert
-        // a security callout on the stubs.
-        if (!AppX::IsAppXProcess())
-        {
-#ifdef FEATURE_COMINTEROP
-            if (pMD->IsComPlusCall() || pMD->IsGenericComPlusCall())
-            {
-                // To preserve Whidbey behavior, we only enforce the implicit demand for
-                // unmanaged code permission.
-                MethodTable* pMT = ComPlusCallInfo::FromMethodDesc(pMD)->m_pInterfaceMT;
-                if (pMT->ClassRequiresUnmanagedCodeCheck() &&
-                    !pMD->HasSuppressUnmanagedCodeAccessAttr())
-                {
-                    dwStubFlags |= NDIRECTSTUB_FL_HASDECLARATIVESECURITY;
-                }
-            }
-            else
-#endif // FEATURE_COMPINTEROP
-            if (pMD->IsInterceptedForDeclSecurity())
-            {
-                dwStubFlags |= NDIRECTSTUB_FL_HASDECLARATIVESECURITY;
-            }
-        }
-    }
 
     NewHolder<ILStubState> pStubState;
 

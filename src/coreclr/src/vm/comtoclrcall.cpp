@@ -28,7 +28,6 @@
 #include "siginfo.hpp"
 #include "comcallablewrapper.h"
 #include "field.h"
-#include "security.h"
 #include "virtualcallstub.h"
 #include "dllimport.h"
 #include "mlinfo.h"
@@ -425,45 +424,6 @@ void COMToCLRInvokeTarget(PCODE pManagedTarget, OBJECTREF pObject, ComCallMethod
     InvokeStub(pCMD, pManagedTarget, pObject, pFrame, pThread, pRetValOut);
 }
 
-bool COMToCLRWorkerBody_SecurityCheck(ComCallMethodDesc * pCMD, MethodDesc * pMD, Thread * pThread, UINT64 * pRetValOut)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-        SO_TOLERANT; 
-    }
-    CONTRACTL_END;
-
-    bool result = true;
-
-    BEGIN_SO_INTOLERANT_CODE_NOTHROW(pThread, { *pRetValOut = COR_E_STACKOVERFLOW; return false; } );
-
-    EX_TRY
-    {
-
-        // Need to check for the presence of a security link demand on the target
-        // method. If we're hosted inside of an app domain with security, we perform
-        // the link demand against that app domain's grant set.
-        Security::CheckLinkDemandAgainstAppDomain(pMD);
-
-        if (pCMD->IsEarlyBoundUnsafe())
-            COMPlusThrow(kSecurityException);
-
-    }
-    EX_CATCH
-    {
-        *pRetValOut = SetupErrorInfo(GET_THROWABLE());
-        result = false;
-    }
-    EX_END_CATCH(SwallowAllExceptions);
-
-    END_SO_INTOLERANT_CODE;
-
-    return result;
-}
-
 NOINLINE
 void COMToCLRWorkerBody_Rare(Thread * pThread, ComMethodFrame * pFrame, ComCallWrapper * pWrap,
                              MethodDesc * pRealMD, ComCallMethodDesc * pCMD, DWORD maskedFlags, 
@@ -482,17 +442,12 @@ void COMToCLRWorkerBody_Rare(Thread * pThread, ComMethodFrame * pFrame, ComCallW
     OBJECTREF pObject;
 
     int fpReturnSize = 0;
-    if (maskedFlags & enum_NeedsSecurityCheck)
-    {
-        if (!COMToCLRWorkerBody_SecurityCheck(pCMD, pRealMD, pThread, pRetValOut))
-            return;
-    }
     if (maskedFlags & enum_NativeR8Retval)
         fpReturnSize = 8;
     if (maskedFlags & enum_NativeR4Retval)
         fpReturnSize = 4;
 
-    maskedFlags &= ~(enum_NeedsSecurityCheck|enum_NativeR4Retval|enum_NativeR8Retval);
+    maskedFlags &= ~(enum_NativeR4Retval|enum_NativeR8Retval);
 
     CONSISTENCY_CHECK(maskedFlags != (                      enum_IsWinRTCtor|enum_IsVirtual));
     CONSISTENCY_CHECK(maskedFlags != (enum_IsDelegateInvoke|enum_IsWinRTCtor|enum_IsVirtual));
@@ -573,7 +528,6 @@ void COMToCLRWorkerBody(
     OBJECTREF pObject;
 
     DWORD mask = (
-        enum_NeedsSecurityCheck |
         enum_IsDelegateInvoke |
         enum_IsWinRTCtor |
         enum_IsVirtual |
@@ -1104,11 +1058,6 @@ static void FieldCallWorkerBody(Thread *pThread, ComMethodFrame* pFrame)
     }
 #endif // PROFILING_SUPPORTED
 
-    if (pCMD->IsEarlyBoundUnsafe())
-    {
-        COMPlusThrow(kSecurityException);
-    }
-
     UINT64 retVal;
     InvokeStub(pCMD, NULL, pWrap->GetObjectRef(), pFrame, pThread, &retVal);
 
@@ -1338,20 +1287,6 @@ void ComCallMethodDesc::InitMethod(MethodDesc *pMD, MethodDesc *pInterfaceMD, BO
     {
         // Initialize the native type information size of native stack, native retval flags, etc).
         InitNativeInfo();
-
-        // If this interface method is implemented on a class which lives
-        //  in an assembly without UnmanagedCodePermission, then
-        //  we mark the ComCallMethodDesc as unsafe for being called early-bound.
-        Module* pModule = pMD->GetModule();
-        if (!Security::CanCallUnmanagedCode(pModule))
-        {
-            m_flags |= (enum_NeedsSecurityCheck | enum_IsEarlyBoundUnsafe);
-        }
-        else if (pMD->RequiresLinktimeCheck())
-        {
-            // remember that we have to call Security::CheckLinkDemandAgainstAppDomain at invocation time
-            m_flags |= enum_NeedsSecurityCheck;
-        }
     }
 
     if (pMD->IsEEImpl() && COMDelegate::IsDelegateInvokeMethod(pMD))
@@ -1384,15 +1319,6 @@ void ComCallMethodDesc::InitField(FieldDesc* pFD, BOOL isGetter)
     {
         // Initialize the native type information size of native stack, native retval flags, etc).
         InitNativeInfo();
-        
-        // If this interface method is implemented on a class which lives
-        //  in an assembly without UnmanagedCodePermission, then
-        //  we mark the ComCallMethodDesc as unsafe for being called early-bound.
-        Module* pModule = pFD->GetModule();
-        if (!Security::CanCallUnmanagedCode(pModule))
-        {
-            m_flags |= enum_IsEarlyBoundUnsafe;
-        }
     }
 };
 

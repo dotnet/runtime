@@ -16,7 +16,6 @@
 #include "dllimport.h"
 #include "fieldmarshaler.h"
 #include "comdelegate.h"
-#include "security.h"
 #include "eventtrace.h"
 #include "comdatetime.h"
 #include "gcheaputilities.h"

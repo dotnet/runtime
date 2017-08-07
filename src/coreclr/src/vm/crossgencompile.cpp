@@ -16,7 +16,6 @@
 
 #include "comdelegate.h"
 #include "compile.h"
-#include "security.h"
 #include "invokeutil.h"
 #include "comcallablewrapper.h"
 

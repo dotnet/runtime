@@ -12,7 +12,6 @@
 #include "method.hpp"
 #include "typehandle.h"
 #include "field.h"
-#include "security.h"
 #include "eeconfig.h"
 #include "vars.hpp"
 #include "jitinterface.h"
@@ -36,13 +35,13 @@
 // it's used for both method and field to signify that no access is allowed
 #define INVOCATION_FLAGS_NO_INVOKE                  0x00000002
 
-#define INVOCATION_FLAGS_NEED_SECURITY              0x00000004
+// #define unused                                   0x00000004
 
 // because field and method are different we can reuse the same bits
 //method
 #define INVOCATION_FLAGS_IS_CTOR                    0x00000010
 #define INVOCATION_FLAGS_RISKY_METHOD               0x00000020
-#define INVOCATION_FLAGS_W8P_API                    0x00000040
+// #define unused                                   0x00000040
 #define INVOCATION_FLAGS_IS_DELEGATE_CTOR           0x00000080
 #define INVOCATION_FLAGS_CONTAINS_STACK_POINTERS    0x00000100
 // field
@@ -74,24 +73,6 @@ static TypeHandle NullableTypeOfByref(TypeHandle th) {
         return TypeHandle();
             
     return subType;
-}
-
-static void TryDemand(DWORD whatPermission, RuntimeExceptionKind reKind, LPCWSTR wszTag) {
-    CONTRACTL {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_COOPERATIVE;
-    }
-    CONTRACTL_END;
-
-
-    EX_TRY {
-        Security::SpecialDemand(SSWT_LATEBOUND_LINKDEMAND, whatPermission);
-    } 
-    EX_CATCH {
-        COMPlusThrow(reKind, wszTag);
-    }
-    EX_END_CATCH_UNREACHABLE
 }
 
 static void TryCallMethodWorker(MethodDescCallSite* pMethodCallSite, ARG_SLOT* args, Frame* pDebuggerCatchFrame)
@@ -222,55 +203,6 @@ FCIMPL5(Object*, RuntimeFieldHandle::GetValue, ReflectFieldObject *pFieldUNSAFE,
 }
 FCIMPLEND
 
-FCIMPL5(void, ReflectionInvocation::PerformVisibilityCheckOnField, FieldDesc *pFieldDesc, Object *target, ReflectClassBaseObject *pDeclaringTypeUNSAFE, DWORD attr, DWORD invocationFlags) {
-    CONTRACTL {
-        FCALL_CHECK;
-        PRECONDITION(CheckPointer(pFieldDesc));
-        PRECONDITION(CheckPointer(pDeclaringTypeUNSAFE));
-    }
-    CONTRACTL_END;
-
-
-    REFLECTCLASSBASEREF refDeclaringType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pDeclaringTypeUNSAFE);
-
-    TypeHandle declaringType = refDeclaringType->GetType();
-    OBJECTREF targetObj = ObjectToOBJECTREF(target);
-
-    HELPER_METHOD_FRAME_BEGIN_2(targetObj, refDeclaringType);
-
-    if ((invocationFlags & INVOCATION_FLAGS_SPECIAL_FIELD) != 0) {
-        // Verify that this is not a Final Field
-        if (IsFdInitOnly(attr))
-            TryDemand(SECURITY_SERIALIZATION, kFieldAccessException, W("Acc_ReadOnly"));
-        if (IsFdHasFieldRVA(attr))
-            TryDemand(SECURITY_SKIP_VER, kFieldAccessException, W("Acc_RvaStatic"));
-    }
-
-    if ((invocationFlags & INVOCATION_FLAGS_NEED_SECURITY) != 0) {
-        // Verify the callee/caller access
-
-        bool targetRemoted = FALSE;
-
-
-        RefSecContext sCtx(InvokeUtil::GetInvocationAccessCheckType(targetRemoted));
-
-        MethodTable* pInstanceMT = NULL;
-        if (targetObj != NULL && !pFieldDesc->IsStatic()) {
-            TypeHandle targetType = targetObj->GetTypeHandle();
-            if (!targetType.IsTypeDesc())
-                pInstanceMT = targetType.AsMethodTable();
-        }
-
-        // Perform the normal access check (caller vs field).
-        InvokeUtil::CanAccessField(&sCtx,
-                                   declaringType.GetMethodTable(),
-                                   pInstanceMT,
-                                   pFieldDesc);
-    }
-    HELPER_METHOD_FRAME_END();
-}
-FCIMPLEND
-
 FCIMPL2(FC_BOOL_RET, ReflectionInvocation::CanValueSpecialCast, ReflectClassBaseObject *pValueTypeUNSAFE, ReflectClassBaseObject *pTargetTypeUNSAFE) {
     CONTRACTL {
         FCALL_CHECK;
@@ -296,9 +228,7 @@ FCIMPL2(FC_BOOL_RET, ReflectionInvocation::CanValueSpecialCast, ReflectClassBase
         // the object must be an IntPtr or a System.Reflection.Pointer
         if (valueType == TypeHandle(MscorlibBinder::GetClass(CLASS__INTPTR))) {
             //
-            // it's an IntPtr, it's good. Demand SkipVerification and proceed
-
-            Security::SpecialDemand(SSWT_LATEBOUND_LINKDEMAND, SECURITY_SKIP_VER);
+            // it's an IntPtr, it's good.
         }
         //
         // it's a System.Reflection.Pointer object
@@ -307,13 +237,7 @@ FCIMPL2(FC_BOOL_RET, ReflectionInvocation::CanValueSpecialCast, ReflectClassBase
         else if (!InvokeUtil::IsVoidPtr(targetType)) {
             if (!valueType.CanCastTo(targetType))
                 ret = FALSE;
-            else
-                // demand SkipVerification and proceed
-                Security::SpecialDemand(SSWT_LATEBOUND_LINKDEMAND, SECURITY_SKIP_VER);
         }
-        else
-            // demand SkipVerification and proceed
-            Security::SpecialDemand(SSWT_LATEBOUND_LINKDEMAND, SECURITY_SKIP_VER);
     } else {
         // the field type is an enum or a primitive. To have any chance of assignement the object type must
         // be an enum or primitive as well.
@@ -523,10 +447,6 @@ FCIMPL4(Object*, RuntimeTypeHandle::CreateInstance, ReflectClassBaseObject* refT
         if (!pClassFactory)
             COMPlusThrow(kInvalidComObjectException, IDS_EE_NO_BACKING_CLASS_FACTORY);
 
-        // Check for the required permissions (SecurityPermission.UnmanagedCode),
-        // since arbitrary unmanaged code in the class factory will execute below).
-        Security::SpecialDemand(SSWT_LATEBOUND_LINKDEMAND, SECURITY_UNMANAGED_CODE);
-
         // create an instance of the Com Object
         rv = ((ComClassFactory*)pClassFactory)->CreateInstance(NULL);
 
@@ -539,11 +459,6 @@ FCIMPL4(Object*, RuntimeTypeHandle::CreateInstance, ReflectClassBaseObject* refT
     else
 #endif // FEATURE_COMINTEROP
     {
-        // If we are creating a COM object which has backing metadata we still
-        // need to ensure that the caller has unmanaged code access permission.
-        if (pVMT->IsComObjectType())
-            Security::SpecialDemand(SSWT_LATEBOUND_LINKDEMAND, SECURITY_UNMANAGED_CODE);
-
         // if this is an abstract class then we will fail this
         if (pVMT->IsAbstract())  {
             if (pVMT->IsInterface())
@@ -767,15 +682,6 @@ FCIMPL1(DWORD, ReflectionInvocation::GetSpecialSecurityFlags, ReflectMethodObjec
     if (InvokeUtil::IsDangerousMethod(pMethod))
         dwFlags |= INVOCATION_FLAGS_RISKY_METHOD;
 
-    // Is there a link demand?
-    if (pMethod->RequiresLinktimeCheck()) {
-        dwFlags |= INVOCATION_FLAGS_NEED_SECURITY;
-    }
-    else
-    if (Security::IsMethodCritical(pMethod) && !Security::IsMethodSafeCritical(pMethod)) {
-        dwFlags |= INVOCATION_FLAGS_NEED_SECURITY;
-    }
-
     HELPER_METHOD_FRAME_END();
     return dwFlags;
 }
@@ -846,8 +752,6 @@ OBJECTREF InvokeArrayConstructor(ArrayTypeDesc* arrayDesc, MethodDesc* pMeth, PT
     // If we're trying to create an array of pointers or function pointers,
     // check that the caller has skip verification permission.
     CorElementType et = arrayDesc->GetArrayElementTypeHandle().GetVerifierCorElementType();
-    if (et == ELEMENT_TYPE_PTR || et == ELEMENT_TYPE_FNPTR)
-        Security::SpecialDemand(SSWT_LATEBOUND_LINKDEMAND, SECURITY_SKIP_VER);
 
     // Validate the argCnt an the Rank. Also allow nested SZARRAY's.
     _ASSERTE(argCnt == (int) arrayDesc->GetRank() || argCnt == (int) arrayDesc->GetRank() * 2 ||
@@ -1826,12 +1730,6 @@ FCIMPL5(void, RuntimeFieldHandle::SetValueDirect, ReflectFieldObject *pFieldUNSA
 
         // Verify that this is not a Final Field
         DWORD attr = pField->GetAttributes(); // should we cache?
-        if (IsFdInitOnly(attr)) {
-            TryDemand(SECURITY_SERIALIZATION, kFieldAccessException, W("Acc_ReadOnly"));
-        }
-        if (IsFdHasFieldRVA(attr)) {
-            TryDemand(SECURITY_SKIP_VER, kFieldAccessException, W("Acc_RvaStatic"));
-        }
         if (IsFdLiteral(attr))
             COMPlusThrow(kFieldAccessException,W("Acc_ReadOnly"));
 
@@ -2580,10 +2478,6 @@ FCIMPL8(Object*, ReflectionInvocation::InvokeDispMethod, ReflectClassBaseObject*
 
     _ASSERTE(gc.target != NULL);
     _ASSERTE(gc.target->GetMethodTable()->IsComObjectType());
-
-    // Unless security is turned off, we need to validate that the calling code
-    // has unmanaged code access privilege.
-    Security::SpecialDemand(SSWT_LATEBOUND_LINKDEMAND, SECURITY_UNMANAGED_CODE);
 
     WORD flags = 0;
     if (invokeAttr & BINDER_InvokeMethod)

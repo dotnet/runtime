@@ -345,10 +345,6 @@ FCFuncStart(gMetaDataImport)
     FCFuncElement("_GetMarshalAs", MetaDataImport::GetMarshalAs)  
 FCFuncEnd()
 
-FCFuncStart(gRuntimeFieldInfoFuncs)
-    FCFuncElement("PerformVisibilityCheckOnField",  ReflectionInvocation::PerformVisibilityCheckOnField)
-FCFuncEnd()
-
 FCFuncStart(gSignatureNative)
     FCFuncElement("GetSignature", SignatureNative::GetSignature)
     FCFuncElement("GetCustomModifiers", SignatureNative::GetCustomModifiers)
@@ -1415,7 +1411,6 @@ FCClassElement("RegistrationServices", "System.Runtime.InteropServices", gRegist
 #endif // FEATURE_COMINTEROP_MANAGED_ACTIVATION
 #endif // FEATURE_COMINTEROP
 
-FCClassElement("RtFieldInfo", "System.Reflection", gRuntimeFieldInfoFuncs)
 FCClassElement("RuntimeAssembly", "System.Reflection", gAssemblyFuncs)
 #ifdef FEATURE_COMINTEROP    
 FCClassElement("RuntimeClass", "System.Runtime.InteropServices.WindowsRuntime", gRuntimeClassFuncs)

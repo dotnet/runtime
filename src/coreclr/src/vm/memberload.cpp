@@ -30,7 +30,6 @@
 #include "fieldmarshaler.h"
 #include "cgensys.h"
 #include "gcheaputilities.h"
-#include "security.h"
 #include "dbginterface.h"
 #include "comdelegate.h"
 #include "sigformat.h"

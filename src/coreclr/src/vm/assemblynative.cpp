@@ -23,7 +23,6 @@
 #include "field.h"
 #include "assemblyname.hpp"
 #include "eeconfig.h"
-#include "security.h"
 #include "strongname.h"
 #include "interoputil.h"
 #include "frames.h"
