@@ -559,10 +559,6 @@ LPVOID ECall::GetQCallImpl(MethodDesc * pMD)
         ("%s::%s is not registered using QCFuncElement macro in ecall.cpp",
         pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
 
-    CONSISTENCY_CHECK_MSGF(pMD->HasSuppressUnmanagedCodeAccessAttr(),       
-        ("%s::%s is not marked with SuppressUnmanagedCodeSecurityAttribute()", 
-        pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName));
-
     DWORD dwAttrs = pMD->GetAttrs();
     BOOL fPublicOrProtected = IsMdPublic(dwAttrs) || IsMdFamily(dwAttrs) || IsMdFamORAssem(dwAttrs);
 

@@ -1262,15 +1262,12 @@ Dispatch_GetIDsOfNames(IDispatch* pDisp, REFIID riid, __in_ecount(cNames) OLECHA
         if (pCMT->HasInvisibleParent())
             return E_NOTIMPL;
 
-    // Use the right implementation based on the flags in the ComMethodTable and ComCallWrapperTemplate
-    if (!pCMT->IsDefinedInUntrustedCode())
+    ComCallWrapperTemplate *pTemplate = MapIUnknownToWrapper(pDisp)->GetComCallWrapperTemplate();
+    if (pTemplate->IsUseOleAutDispatchImpl())
     {
-        ComCallWrapperTemplate *pTemplate = MapIUnknownToWrapper(pDisp)->GetComCallWrapperTemplate();
-        if (pTemplate->IsUseOleAutDispatchImpl())
-        {
-            return OleAutDispatchImpl_GetIDsOfNames(pDisp, riid, rgszNames, cNames, lcid, rgdispid);
-        }
+        return OleAutDispatchImpl_GetIDsOfNames(pDisp, riid, rgszNames, cNames, lcid, rgdispid);
     }
+
     return InternalDispatchImpl_GetIDsOfNames(pDisp, riid, rgszNames, cNames, lcid, rgdispid);
 }
 
@@ -1305,14 +1302,10 @@ Dispatch_Invoke
         if (pCMT->HasInvisibleParent())
             return E_NOTIMPL;
 
-    // Use the right implementation based on the flags in the ComMethodTable.
-    if (!pCMT->IsDefinedInUntrustedCode())
+    ComCallWrapperTemplate *pTemplate = MapIUnknownToWrapper(pDisp)->GetComCallWrapperTemplate();
+    if (pTemplate->IsUseOleAutDispatchImpl())
     {
-        ComCallWrapperTemplate *pTemplate = MapIUnknownToWrapper(pDisp)->GetComCallWrapperTemplate();
-        if (pTemplate->IsUseOleAutDispatchImpl())
-        {
-            return OleAutDispatchImpl_Invoke(pDisp, dispidMember, riid, lcid, wFlags, pdispparams, pvarResult, pexcepinfo, puArgErr);
-        }
+        return OleAutDispatchImpl_Invoke(pDisp, dispidMember, riid, lcid, wFlags, pdispparams, pvarResult, pexcepinfo, puArgErr);
     }
 
     return InternalDispatchImpl_Invoke(pDisp, dispidMember, riid, lcid, wFlags, pdispparams, pvarResult, pexcepinfo, puArgErr);

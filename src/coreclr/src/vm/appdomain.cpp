@@ -8,7 +8,6 @@
 #include "appdomain.hpp"
 #include "peimagelayout.inl"
 #include "field.h"
-#include "security.h"
 #include "strongnameinternal.h"
 #include "excep.h"
 #include "eeconfig.h"
@@ -2715,9 +2714,6 @@ void SystemDomain::LoadBaseSystemClasses()
     // Load Object
     g_pObjectClass = MscorlibBinder::GetClass(CLASS__OBJECT);
 
-    // get the Object::.ctor method desc so we can special-case it
-    g_pObjectCtorMD = MscorlibBinder::GetMethod(METHOD__OBJECT__CTOR);
-
     // Now that ObjectClass is loaded, we can set up
     // the system for finalizers.  There is no point in deferring this, since we need
     // to know this before we allocate our first object.
@@ -3740,10 +3736,6 @@ StackWalkAction SystemDomain::CallersMethodCallback(CrawlFrame* pCf, VOID* data)
 
     /* We asked to be called back only for functions */
     _ASSERTE(pFunc);
-
-    // Ignore intercepted frames
-    if(pFunc->IsInterceptedForDeclSecurity())
-        return SWA_CONTINUE;
 
     CallersData* pCaller = (CallersData*) data;
     if(pCaller->skip == 0) {

@@ -10210,7 +10210,7 @@ void Interpreter::CallI()
             MethodDesc* pMD;
             if (mSig.HasThis())
             {
-                pMD = g_pObjectCtorMD;
+                pMD = g_pObjectFinalizerMD;
             }
             else
             {

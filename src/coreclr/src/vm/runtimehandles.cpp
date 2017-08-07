@@ -28,7 +28,6 @@
 #include "contractimpl.h"
 #include "dynamicmethod.h"
 #include "peimagelayout.inl"
-#include "security.h"
 #include "eventtrace.h"
 #include "invokeutil.h"
 
@@ -135,9 +134,7 @@ static BOOL CheckCAVisibilityFromDecoratedType(MethodTable* pCAMT, MethodDesc* p
         dwAttr,
         pCACtor,
         NULL,
-        *AccessCheckOptions::s_pNormalAccessChecks,
-        FALSE,
-        FALSE);
+        *AccessCheckOptions::s_pNormalAccessChecks);
 }
 
 BOOL QCALLTYPE RuntimeMethodHandle::IsCAVisibleFromDecoratedType(
@@ -1013,37 +1010,6 @@ RuntimeTypeHandle::IsVisible(
     
     return fIsExternallyVisible;
 } // RuntimeTypeHandle::IsVisible
-
-FCIMPL1(FC_BOOL_RET, RuntimeTypeHandle::HasProxyAttribute, ReflectClassBaseObject *pTypeUNSAFE) {
-    CONTRACTL {
-        FCALL_CHECK;
-    }
-    CONTRACTL_END;
-
-    REFLECTCLASSBASEREF refType = (REFLECTCLASSBASEREF)ObjectToOBJECTREF(pTypeUNSAFE);
-
-    if (refType == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    TypeHandle typeHandle = refType->GetType();
-    
-    // TODO: Justify this
-    if (typeHandle.IsGenericVariable())
-        FC_RETURN_BOOL(FALSE);
-        
-    if (typeHandle.IsTypeDesc()) {
-        if (!typeHandle.IsArray()) 
-            FC_RETURN_BOOL(FALSE);
-    }  
-    
-    MethodTable* pMT= typeHandle.GetMethodTable();
-    
-    if (!pMT) 
-        FCThrowRes(kArgumentException, W("Arg_InvalidHandle"));
-
-    FC_RETURN_BOOL(pMT->GetClass()->HasRemotingProxyAttribute());
-}
-FCIMPLEND
 
 FCIMPL2(FC_BOOL_RET, RuntimeTypeHandle::IsComObject, ReflectClassBaseObject *pTypeUNSAFE, CLR_BOOL isGenericCOM) {
 #ifdef FEATURE_COMINTEROP

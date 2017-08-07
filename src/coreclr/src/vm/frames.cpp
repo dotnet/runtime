@@ -13,7 +13,6 @@
 #include "method.hpp"
 #include "class.h"
 #include "excep.h"
-#include "security.h"
 #include "stublink.h"
 #include "fieldmarshaler.h"
 #include "siginfo.hpp"

@@ -54,29 +54,6 @@ namespace System.Reflection
                     {
                         // this should be an invocable method, determine the other flags that participate in invocation
                         invocationFlags = RuntimeMethodHandle.GetSecurityFlags(this);
-
-                        if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NEED_SECURITY) == 0)
-                        {
-                            if ((Attributes & MethodAttributes.MemberAccessMask) != MethodAttributes.Public ||
-                                 (declaringType != null && declaringType.NeedsReflectionSecurityCheck))
-                            {
-                                // If method is non-public, or declaring type is not visible
-                                invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_NEED_SECURITY;
-                            }
-                            else if (IsGenericMethod)
-                            {
-                                Type[] genericArguments = GetGenericArguments();
-
-                                for (int i = 0; i < genericArguments.Length; i++)
-                                {
-                                    if (genericArguments[i].NeedsReflectionSecurityCheck)
-                                    {
-                                        invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_NEED_SECURITY;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
                     }
 
                     m_invocationFlags = invocationFlags | INVOCATION_FLAGS.INVOCATION_FLAGS_INITIALIZED;

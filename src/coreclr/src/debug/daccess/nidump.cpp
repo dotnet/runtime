@@ -5739,17 +5739,6 @@ static NativeImageDumper::EnumMnemonics s_CorTypeAttr[] =
 };
 static NativeImageDumper::EnumMnemonics s_VMFlags[] =
 {
-#define VMF_ENTRY_TRANSPARENCY(x) NativeImageDumper::EnumMnemonics( EEClass::VMFLAG_ ## x, EEClass::VMFLAG_TRANSPARENCY_MASK, W(#x) )
-        VMF_ENTRY_TRANSPARENCY(TRANSPARENCY_UNKNOWN),
-        VMF_ENTRY_TRANSPARENCY(TRANSPARENCY_TRANSPARENT),
-        VMF_ENTRY_TRANSPARENCY(TRANSPARENCY_ALL_TRANSPARENT),
-        VMF_ENTRY_TRANSPARENCY(TRANSPARENCY_CRITICAL),
-        VMF_ENTRY_TRANSPARENCY(TRANSPARENCY_CRITICAL_TAS),
-        VMF_ENTRY_TRANSPARENCY(TRANSPARENCY_ALLCRITICAL),
-        VMF_ENTRY_TRANSPARENCY(TRANSPARENCY_ALLCRITICAL_TAS),
-        VMF_ENTRY_TRANSPARENCY(TRANSPARENCY_TAS_NOTCRITICAL),
-#undef VMF_ENTRY_TRANSPARENCY
-
 #define VMF_ENTRY(x) NativeImageDumper::EnumMnemonics( EEClass::VMFLAG_ ## x, W(#x) )
 
 #ifdef FEATURE_READYTORUN
@@ -5769,12 +5758,9 @@ static NativeImageDumper::EnumMnemonics s_VMFlags[] =
         VMF_ENTRY(BESTFITMAPPING),
         VMF_ENTRY(THROWONUNMAPPABLECHAR),
 
-        VMF_ENTRY(NOSUPPRESSUNMGDCODEACCESS),
         VMF_ENTRY(NO_GUID),
         VMF_ENTRY(HASNONPUBLICFIELDS),
-        VMF_ENTRY(REMOTING_PROXY_ATTRIBUTE),
         VMF_ENTRY(PREFER_ALIGN8),
-        VMF_ENTRY(METHODS_REQUIRE_INHERITANCE_CHECKS),
 
 #ifdef FEATURE_COMINTEROP
         VMF_ENTRY(SPARSE_FOR_COMINTEROP),
@@ -5831,11 +5817,6 @@ NativeImageDumper::EnumMnemonics NativeImageDumper::s_MDFlag2[] =
     MDF2_ENTRY(HasPrecode),
     MDF2_ENTRY(IsUnboxingStub),
     MDF2_ENTRY(HasNativeCodeSlot),
-    MDF2_ENTRY(Transparency_TreatAsSafe),
-    MDF2_ENTRY(Transparency_Transparent),
-    MDF2_ENTRY(Transparency_Critical),
-    MDF2_ENTRY(HostProtectionLinkCheckOnly),
-    MDF2_ENTRY(CASDemandsOnly),
 #undef MDF2_ENTRY
 };
 
@@ -5861,13 +5842,6 @@ NativeImageDumper::EnumMnemonics NativeImageDumper::s_MDC[] =
 
     // Method is static
     MDC_ENTRY(mdcStatic),
-    MDC_ENTRY(mdcIntercepted),
-
-    MDC_ENTRY(mdcRequiresLinktimeCheck),
-
-    MDC_ENTRY(mdcRequiresInheritanceCheck),
-
-    MDC_ENTRY(mdcParentRequiresInheritanceCheck),
 
     MDC_ENTRY(mdcDuplicate),
     MDC_ENTRY(mdcVerifiedState),

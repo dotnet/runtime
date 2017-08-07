@@ -20,7 +20,6 @@
 #include "excep.h"
 #include "float.h"      // for isnan
 #include "dbginterface.h"
-#include "security.h"
 #include "dllimport.h"
 #include "gcheaputilities.h"
 #include "comdelegate.h"
@@ -46,7 +45,6 @@
 #include "genericdict.h"
 #include "array.h"
 #include "debuginfostore.h"
-#include "security.h"
 #include "safemath.h"
 #include "threadstatics.h"
 

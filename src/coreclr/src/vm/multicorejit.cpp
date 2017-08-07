@@ -12,7 +12,6 @@
 
 #include "common.h"
 #include "vars.hpp"
-#include "security.h"
 #include "eeconfig.h"
 #include "dllimport.h"
 #include "comdelegate.h"

@@ -33,7 +33,6 @@
 #include "fieldmarshaler.h"
 #include "cgensys.h"
 #include "gcheaputilities.h"
-#include "security.h"
 #include "dbginterface.h"
 #include "comdelegate.h"
 #include "eventtrace.h"
@@ -5157,7 +5156,7 @@ void MethodTable::CheckRestore()
 BOOL SatisfiesClassConstraints(TypeHandle instanceTypeHnd, TypeHandle typicalTypeHnd,
                                const InstantiationContext *pInstContext);
 
-static VOID DoAccessibilityCheck(MethodTable *pAskingMT, MethodTable *pTargetMT, UINT resIDWhy, BOOL checkTargetTypeTransparency)
+static VOID DoAccessibilityCheck(MethodTable *pAskingMT, MethodTable *pTargetMT, UINT resIDWhy)
 {
     CONTRACTL
     {
@@ -5171,8 +5170,7 @@ static VOID DoAccessibilityCheck(MethodTable *pAskingMT, MethodTable *pTargetMT,
     if (!ClassLoader::CanAccessClass(&accessContext,
                                      pTargetMT,                 //the desired class
                                      pTargetMT->GetAssembly(),  //the desired class's assembly
-                                     *AccessCheckOptions::s_pNormalAccessChecks,
-                                     checkTargetTypeTransparency
+                                     *AccessCheckOptions::s_pNormalAccessChecks
                                     ))
     {
         SString displayName;
@@ -5221,7 +5219,7 @@ VOID DoAccessibilityCheckForConstraint(MethodTable *pAskingMT, TypeHandle thCons
     }
     else
     {
-        DoAccessibilityCheck(pAskingMT, thConstraint.GetMethodTable(), resIDWhy, FALSE);
+        DoAccessibilityCheck(pAskingMT, thConstraint.GetMethodTable(), resIDWhy);
     }
 
 }
@@ -5585,7 +5583,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
                 // A transparenct type should not be allowed to derive from a critical type.
                 // However since this has never been enforced before we have many classes that
                 // violate this rule. Enforcing it now will be a breaking change.
-                DoAccessibilityCheck(this, pParentMT, E_ACCESSDENIED, /* checkTargetTypeTransparency*/ FALSE);
+                DoAccessibilityCheck(this, pParentMT, E_ACCESSDENIED);
             }
         }
     }
@@ -5604,7 +5602,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
                 // A transparenct type should not be allowed to implement a critical interface.
                 // However since this has never been enforced before we have many classes that
                 // violate this rule. Enforcing it now will be a breaking change.
-                DoAccessibilityCheck(this, it.GetInterface(), IDS_CLASSLOAD_INTERFACE_NO_ACCESS, /* checkTargetTypeTransparency*/ FALSE);
+                DoAccessibilityCheck(this, it.GetInterface(), IDS_CLASSLOAD_INTERFACE_NO_ACCESS);
             }
         }
     }
@@ -5643,7 +5641,7 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
 
                 if (fNeedAccessChecks)
                 {
-                    DoAccessibilityCheck(this, th.GetMethodTable(), E_ACCESSDENIED, FALSE);
+                    DoAccessibilityCheck(this, th.GetMethodTable(), E_ACCESSDENIED);
                 }
 
             }

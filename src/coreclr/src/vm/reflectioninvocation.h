@@ -80,8 +80,6 @@ public:
     static FCDECL4(void, PerformSecurityCheck, Object *target, MethodDesc *pMeth, ReflectClassBaseObject *pParent, DWORD dwFlags);
     static FCDECL2(void, CheckArgs, PTRArray *objs, SignatureNative sig);
 
-    static FCDECL5(void, PerformVisibilityCheckOnField, FieldDesc *fieldDesc, Object *target, ReflectClassBaseObject *pDeclaringType, DWORD attr, DWORD invocationFlags);
-
     static void PrepareDelegateHelper(OBJECTREF* pDelegate, BOOL onlyContractedMethod);
     static void CanCacheTargetAndCrackedSig(MethodDesc* pMD);
 };

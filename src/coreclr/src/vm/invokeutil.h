@@ -66,14 +66,6 @@ public:
     virtual MethodDesc* GetCallerMethod();
     virtual Assembly* GetCallerAssembly();
     virtual bool IsCalledFromInterop();
-
-    // The caller will be computed lazily by the reflection system.
-    virtual bool IsCallerCritical()
-    {
-        LIMITED_METHOD_CONTRACT;
-        
-        return false;
-    }
     
     AccessCheckOptions::AccessCheckType GetAccessCheckType() const
     {

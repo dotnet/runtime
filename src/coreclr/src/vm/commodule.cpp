@@ -9,7 +9,6 @@
 #include "reflectclasswriter.h"
 #include "class.h"
 #include "corpolicy.h"
-#include "security.h"
 #include "ceesectionstring.h"
 #include <cor.h>
 #include "typeparse.h"
