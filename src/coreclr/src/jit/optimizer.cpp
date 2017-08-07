@@ -1571,48 +1571,8 @@ void Compiler::optFindNaturalLoops()
                 }
 
                 // Now we find the "first" block -- the earliest block reachable within the loop.
-                // This is usually the same as "top", but can differ in rare cases where "top" is
-                // the entry block of a nested loop, and that nested loop branches backwards to a
-                // a block before "top".  We find this by searching for such backwards branches
-                // in the loop known so far.
+                // With our current algorithm, this is always the same as "top".
                 BasicBlock* first = top;
-                BasicBlock* newFirst;
-                bool        blocksToSearch = true;
-                BasicBlock* validatedAfter = bottom->bbNext;
-                while (blocksToSearch)
-                {
-                    blocksToSearch = false;
-                    newFirst       = nullptr;
-                    blocksToSearch = false;
-                    for (loopBlock = first; loopBlock != validatedAfter; loopBlock = loopBlock->bbNext)
-                    {
-                        unsigned nSucc = loopBlock->NumSucc();
-                        for (unsigned j = 0; j < nSucc; j++)
-                        {
-                            BasicBlock* succ = loopBlock->GetSucc(j);
-                            if ((newFirst == nullptr && succ->bbNum < first->bbNum) ||
-                                (newFirst != nullptr && succ->bbNum < newFirst->bbNum))
-                            {
-                                newFirst = succ;
-                            }
-                        }
-                    }
-                    if (newFirst != nullptr)
-                    {
-                        validatedAfter = first;
-                        first          = newFirst;
-                        blocksToSearch = true;
-                    }
-                }
-
-                // Is "head" still before "first"?  If not, we don't have a valid loop...
-                if (head->bbNum >= first->bbNum)
-                {
-                    JITDUMP(
-                        "Extending loop [BB%02u..BB%02u] 'first' to BB%02u captures head BB%02u.  Rejecting loop.\n",
-                        top->bbNum, bottom->bbNum, first->bbNum, head->bbNum);
-                    goto NO_LOOP;
-                }
 
                 /* Make sure ENTRY dominates all blocks in the loop
                  * This is necessary to ensure condition 2. above
