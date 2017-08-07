@@ -1950,7 +1950,7 @@ void NotifyGdb::OnMethodCompiled(MethodDesc* methodDescPtr)
         start_index = end_index;
     }
 
-    MemBuf elfHeader, sectHeaders, sectStr, sectSymTab, sectStrTab, dbgInfo, dbgAbbrev, dbgPubname, dbgPubType, dbgLine,
+    MemBuf sectHeaders, sectStr, sectSymTab, sectStrTab, dbgInfo, dbgAbbrev, dbgPubname, dbgPubType, dbgLine,
         dbgStr, elfFile;
 
     /* Build .debug_abbrev section */
@@ -2071,12 +2071,16 @@ void NotifyGdb::OnMethodCompiled(MethodDesc* methodDescPtr)
         pShdr->sh_size = 8;
     }
 
+    /* Build ELF image in memory */
+    elfFile.MemSize = sizeof(Elf_Ehdr) + sectStr.MemSize + dbgStr.MemSize + dbgAbbrev.MemSize + dbgInfo.MemSize +
+                      dbgPubname.MemSize + dbgPubType.MemSize + dbgLine.MemSize + sectSymTab.MemSize +
+                      sectStrTab.MemSize + sectHeaders.MemSize;
+    elfFile.MemPtr =  new char[elfFile.MemSize];
+
+
     /* Build ELF header */
-    if (!BuildELFHeader(elfHeader))
-    {
-        return;
-    }
-    Elf_Ehdr* header = reinterpret_cast<Elf_Ehdr*>(elfHeader.MemPtr.GetValue());
+    Elf_Ehdr* header = new (reinterpret_cast<Elf_Ehdr *>(elfFile.MemPtr.GetValue())) Elf_Ehdr;
+
 #ifdef _TARGET_ARM_
     header->e_flags = EF_ARM_EABI_VER5;
 #ifdef ARM_SOFTFP
@@ -2091,16 +2095,8 @@ void NotifyGdb::OnMethodCompiled(MethodDesc* methodDescPtr)
     header->e_shnum = SectionNamesCount + thunks_count;
     header->e_shstrndx = GetSectionIndex(".shstrtab");
 
-    /* Build ELF image in memory */
-    elfFile.MemSize = elfHeader.MemSize + sectStr.MemSize + dbgStr.MemSize + dbgAbbrev.MemSize + dbgInfo.MemSize +
-                      dbgPubname.MemSize + dbgPubType.MemSize + dbgLine.MemSize + sectSymTab.MemSize +
-                      sectStrTab.MemSize + sectHeaders.MemSize;
-    elfFile.MemPtr =  new char[elfFile.MemSize];
-
     /* Copy section data */
-    offset = 0;
-    memcpy(elfFile.MemPtr, elfHeader.MemPtr, elfHeader.MemSize);
-    offset += elfHeader.MemSize;
+    offset = sizeof(Elf_Ehdr);
     memcpy(elfFile.MemPtr + offset, sectStr.MemPtr, sectStr.MemSize);
     offset +=  sectStr.MemSize;
     memcpy(elfFile.MemPtr + offset, dbgStr.MemPtr, dbgStr.MemSize);
@@ -2788,15 +2784,6 @@ void NotifyGdb::BuildSectionTables(MemBuf& sectBuf, MemBuf& strBuf, FunctionMemb
 
     // Set actual used size to avoid garbage in ELF section
     strBuf.MemSize = sectNameOffset;
-}
-
-/* Build the ELF header */
-bool NotifyGdb::BuildELFHeader(MemBuf& buf)
-{
-    Elf_Ehdr* header = new Elf_Ehdr;
-    buf.MemPtr = reinterpret_cast<char*>(header);
-    buf.MemSize = sizeof(Elf_Ehdr);
-    return true;
 }
 
 /* Split full path name into directory & file names */
