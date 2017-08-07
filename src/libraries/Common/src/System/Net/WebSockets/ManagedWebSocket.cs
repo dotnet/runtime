@@ -279,7 +279,8 @@ namespace System.Net.WebSockets
 
             try
             {
-               WebSocketValidate.ThrowIfInvalidState(_state, _disposed, s_validSendStates);
+                ThrowIfDisposed();
+                WebSocketValidate.ThrowIfInvalidState(_state, _disposed, s_validSendStates);
                 ThrowIfOperationInProgress(_lastSendAsync);
             }
             catch (Exception exc)
@@ -304,6 +305,7 @@ namespace System.Net.WebSockets
 
             try
             {
+                ThrowIfDisposed();
                 WebSocketValidate.ThrowIfInvalidState(_state, _disposed, s_validReceiveStates);
 
                 Debug.Assert(!Monitor.IsEntered(StateUpdateLock), $"{nameof(StateUpdateLock)} must never be held when acquiring {nameof(ReceiveAsyncLock)}");
@@ -327,6 +329,7 @@ namespace System.Net.WebSockets
 
             try
             {
+                ThrowIfDisposed();
                 WebSocketValidate.ThrowIfInvalidState(_state, _disposed, s_validCloseStates);
             }
             catch (Exception exc)
@@ -343,6 +346,7 @@ namespace System.Net.WebSockets
 
             try
             {
+                ThrowIfDisposed();
                 WebSocketValidate.ThrowIfInvalidState(_state, _disposed, s_validCloseOutputStates);
             }
             catch (Exception exc)
@@ -1277,6 +1281,14 @@ namespace System.Net.WebSockets
             {
                 Abort();
                 throw new InvalidOperationException(SR.Format(SR.net_Websockets_AlreadyOneOutstandingOperation, methodName));
+            }
+        }
+        
+        private void ThrowIfDisposed()
+        {
+            if (_disposed)
+            {
+                throw new ObjectDisposedException(GetType().ToString());
             }
         }
 
