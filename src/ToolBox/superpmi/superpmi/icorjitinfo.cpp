@@ -166,7 +166,7 @@ CORINFO_MODULE_HANDLE MyICJI::getMethodModule(CORINFO_METHOD_HANDLE method)
 void MyICJI::getMethodVTableOffset(CORINFO_METHOD_HANDLE method,                /* IN */
                                    unsigned*             offsetOfIndirection,   /* OUT */
                                    unsigned*             offsetAfterIndirection,/* OUT */
-                                   unsigned*             isRelative             /* OUT */
+                                   bool*                 isRelative             /* OUT */
                                    )
 {
     jitInstance->mc->cr->AddCall("getMethodVTableOffset");
