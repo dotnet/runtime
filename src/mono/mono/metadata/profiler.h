@@ -167,7 +167,7 @@ MONO_API mono_bool mono_profiler_enable_allocations (void);
 
 typedef enum {
 	/* Do not instrument calls. */
-	MONO_PROFILER_CALL_INSTRUMENTATION_NONE = 1 << 0,
+	MONO_PROFILER_CALL_INSTRUMENTATION_NONE = 0,
 	/* Instrument method prologues. */
 	MONO_PROFILER_CALL_INSTRUMENTATION_PROLOGUE = 1 << 1,
 	/* Also capture a call context for prologues. */
