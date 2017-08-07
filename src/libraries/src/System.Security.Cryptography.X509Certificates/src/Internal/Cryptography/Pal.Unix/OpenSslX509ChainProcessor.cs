@@ -418,6 +418,8 @@ namespace Internal.Cryptography.Pal
                     extraStore,
                     userIntermediateCerts,
                     systemIntermediateCerts,
+                    userRootCerts,
+                    systemRootCerts,
                 };
 
                 while (toProcess.Count > 0)
