@@ -12,7 +12,6 @@
 
 
 #include "common.h"
-#include "security.h"
 #include "excep.h"
 #include "dbginterface.h"
 #include "ecall.h"
@@ -938,118 +937,6 @@ BOOL MethodDesc::IsTightlyBoundToMethodTable()
 }
 
 #ifndef DACCESS_COMPILE
-
-
-//*******************************************************************************
-HRESULT MethodDesc::Verify(COR_ILMETHOD_DECODER* ILHeader,
-                            BOOL fThrowException,
-                            BOOL fForceVerify)
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_TRIGGERS;
-        INJECT_FAULT(return E_OUTOFMEMORY;);
-    }
-    CONTRACTL_END
-
-#ifdef _VER_EE_VERIFICATION_ENABLED
-    // ForceVerify will force verification if the Verifier is OFF
-    if (fForceVerify)
-        goto DoVerify;
-
-    // Don't even try to verify if verifier is off.
-    if (g_fVerifierOff)
-        return S_OK;
-
-    if (IsVerified())
-        return S_OK;
-
-    // LazyCanSkipVerification does not resolve the policy.
-    // We go ahead with verification if policy is not resolved.
-    // In case the verification fails, we resolve policy and
-    // fail verification if the Assembly of this method does not have
-    // permission to skip verification.
-
-    if (Security::LazyCanSkipVerification(GetModule()->GetDomainAssembly()))
-        return S_OK;
-
-#ifdef _DEBUG
-    _ASSERTE(Security::IsSecurityOn());
-    _ASSERTE(GetModule() != SystemDomain::SystemModule());
-#endif // _DEBUG
-
-
-DoVerify:
-
-    HRESULT hr;
-
-    if (fThrowException)
-        hr = Verifier::VerifyMethod(this, ILHeader, NULL,
-            fForceVerify ? VER_FORCE_VERIFY : VER_STOP_ON_FIRST_ERROR);
-    else
-        hr = Verifier::VerifyMethodNoException(this, ILHeader);
-
-    if (SUCCEEDED(hr))
-        SetIsVerified(TRUE);
-
-    return hr;
-#else // !_VER_EE_VERIFICATION_ENABLED
-    _ASSERTE(!"EE Verification is disabled, should never get here");
-    return E_FAIL;
-#endif // !_VER_EE_VERIFICATION_ENABLED
-}
-
-//*******************************************************************************
-
-BOOL MethodDesc::IsVerifiable()
-{
-    STANDARD_VM_CONTRACT;
-
-    if (IsVerified())
-        return (m_wFlags & mdcVerifiable);
-
-    if (!IsTypicalMethodDefinition())
-    {
-        // We cannot verify concrete instantiation (eg. List<int>.Add()).
-        // We have to verify the typical instantiation (eg. List<T>.Add()).
-        MethodDesc * pGenMethod = LoadTypicalMethodDefinition();
-        BOOL isVerifiable = pGenMethod->IsVerifiable();
-
-        // Propagate the result from the typical instantiation to the
-        // concrete instantiation
-        SetIsVerified(isVerifiable);
-
-        return isVerifiable;
-    }
-
-    COR_ILMETHOD_DECODER *pHeader = NULL;
-    // Don't use HasILHeader() here because it returns the wrong answer
-    // for methods that have DynamicIL (not to be confused with DynamicMethods)
-    if (IsIL() && !IsUnboxingStub())
-    {
-        COR_ILMETHOD_DECODER::DecoderStatus status;
-        COR_ILMETHOD_DECODER header(GetILHeader(), GetMDImport(), &status);
-        if (status != COR_ILMETHOD_DECODER::SUCCESS)
-        {
-            COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL);
-        }
-        pHeader = &header;
-
-#ifdef _VER_EE_VERIFICATION_ENABLED
-        static ConfigDWORD peVerify;
-        if (peVerify.val(CLRConfig::EXTERNAL_PEVerify))
-        {
-            HRESULT hr = Verify(&header, TRUE, FALSE);
-        }
-#endif // _VER_EE_VERIFICATION_ENABLED
-    }
-
-    UnsafeJitFunction(this, pHeader, CORJIT_FLAGS(CORJIT_FLAGS::CORJIT_FLAG_IMPORT_ONLY));
-    _ASSERTE(IsVerified());
-
-    return (IsVerified() && (m_wFlags & mdcVerifiable));
-}
 
 //*******************************************************************************
 // Update flags in a thread safe manner.
@@ -2654,9 +2541,6 @@ BOOL MethodDesc::MayHaveNativeCode()
 void MethodDesc::Save(DataImage *image)
 {
     STANDARD_VM_CONTRACT;
-
-    // Make sure that the transparency is cached in the NGen image
-    Security::IsMethodTransparent(this);
 
     // Initialize the DoesNotHaveEquivalentValuetypeParameters flag.
     // If we fail to determine whether there is a type-equivalent struct parameter (eg. because there is a struct parameter
@@ -5141,14 +5025,6 @@ BOOL MethodDesc::HasNativeCallableAttribute()
     }
 
     return FALSE;
-}
-
-//*******************************************************************************
-BOOL MethodDesc::HasSuppressUnmanagedCodeAccessAttr()
-{
-    LIMITED_METHOD_CONTRACT;
-
-    return TRUE;
 }
 
 #ifdef FEATURE_COMINTEROP

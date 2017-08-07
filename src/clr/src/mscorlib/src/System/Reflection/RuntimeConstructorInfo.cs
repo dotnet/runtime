@@ -57,14 +57,6 @@ namespace System.Reflection
                         // this should be an invocable method, determine the other flags that participate in invocation
                         invocationFlags |= RuntimeMethodHandle.GetSecurityFlags(this);
 
-                        if ((invocationFlags & INVOCATION_FLAGS.INVOCATION_FLAGS_NEED_SECURITY) == 0 &&
-                             ((Attributes & MethodAttributes.MemberAccessMask) != MethodAttributes.Public ||
-                              (declaringType != null && declaringType.NeedsReflectionSecurityCheck)))
-                        {
-                            // If method is non-public, or declaring type is not visible
-                            invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_NEED_SECURITY;
-                        }
-
                         // Check for attempt to create a delegate class, we demand unmanaged
                         // code permission for this since it's hard to validate the target address.
                         if (typeof(Delegate).IsAssignableFrom(DeclaringType))
@@ -362,13 +354,6 @@ namespace System.Reflection
 
             // check basic method consistency. This call will throw if there are problems in the target/method relationship
             CheckConsistency(obj);
-
-            if (obj != null)
-            {
-                // For unverifiable code, we require the caller to be critical.
-                // Adding the INVOCATION_FLAGS_NEED_SECURITY flag makes that check happen
-                invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_NEED_SECURITY;
-            }
 
             Signature sig = Signature;
 

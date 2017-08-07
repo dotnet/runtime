@@ -3259,8 +3259,6 @@ protected:
 
 public:
 
-    void VerifyAllMethods();
-
     CrstBase *GetLookupTableCrst()
     {
         LIMITED_METHOD_CONTRACT;

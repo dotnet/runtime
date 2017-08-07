@@ -13,7 +13,6 @@
  
 #include "common.h"
 #include "vars.hpp"
-#include "security.h"
 #include "eeconfig.h"
 #include "dllimport.h"
 #include "comdelegate.h"
@@ -482,23 +481,9 @@ COR_ILMETHOD_DECODER* MethodDesc::GetAndVerifyMetadataILHeader(PrepareCodeConfig
         pHeader = new (pDecoderMemory) COR_ILMETHOD_DECODER(ilHeader, GetMDImport(), &status);
     }
 
-    if (status == COR_ILMETHOD_DECODER::VERIFICATION_ERROR &&
-        Security::CanSkipVerification(GetModule()->GetDomainAssembly()))
+    if (status == COR_ILMETHOD_DECODER::FORMAT_ERROR)
     {
-        status = COR_ILMETHOD_DECODER::SUCCESS;
-    }
-
-    if (status != COR_ILMETHOD_DECODER::SUCCESS)
-    {
-        if (status == COR_ILMETHOD_DECODER::VERIFICATION_ERROR)
-        {
-            // Throw a verification HR
-            COMPlusThrowHR(COR_E_VERIFICATION);
-        }
-        else
-        {
-            COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL);
-        }
+        COMPlusThrowHR(COR_E_BADIMAGEFORMAT, BFA_BAD_IL);
     }
 
 #ifdef _VER_EE_VERIFICATION_ENABLED 
@@ -769,7 +754,6 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
             // Notify the profiler that JIT completed.
             // Must do this after the address has been set.
             // @ToDo: Why must we set the address before notifying the profiler ??
-            //        Note that if IsInterceptedForDeclSecurity is set no one should access the jitted code address anyway.
         {
             if (!IsNoMetadata())
             {

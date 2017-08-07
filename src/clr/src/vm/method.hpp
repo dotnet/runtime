@@ -146,29 +146,10 @@ enum MethodDescClassification
     // Method is static
     mdcStatic                           = 0x0020,
 
-    // Temporary Security Interception.
-    // Methods can now be intercepted by security. An intercepted method behaves
-    // like it was an interpreted method. The Prestub at the top of the method desc
-    // is replaced by an interception stub. Therefore, no back patching will occur.
-    // We picked this approach to minimize the number variations given IL and native
-    // code with edit and continue. E&C will need to find the real intercepted method
-    // and if it is intercepted change the real stub. If E&C is enabled then there
-    // is no back patching and needs to fix the pre-stub.
-    mdcIntercepted                      = 0x0040,
-
-    // Method requires linktime security checks.
-    mdcRequiresLinktimeCheck            = 0x0080,
-
-    // Method requires inheritance security checks.
-    // If this bit is set, then this method demands inheritance permissions
-    // or a method that this method overrides demands inheritance permissions
-    // or both.
-    mdcRequiresInheritanceCheck         = 0x0100,
-
-    // The method that this method overrides requires an inheritance security check.
-    // This bit is used as an optimization to avoid looking up overridden methods
-    // during the inheritance check.
-    mdcParentRequiresInheritanceCheck   = 0x0200,
+    // unused                           = 0x0040,
+    // unused                           = 0x0080,
+    // unused                           = 0x0100,
+    // unused                           = 0x0200,
 
     // Duplicate method. When a method needs to be placed in multiple slots in the
     // method table, because it could not be packed into one slot. For eg, a method
@@ -673,7 +654,6 @@ public:
     }
 
     void ComputeSuppressUnmanagedCodeAccessAttr(IMDInternalImport *pImport);
-    BOOL HasSuppressUnmanagedCodeAccessAttr();
     BOOL HasNativeCallableAttribute();
 
 #ifdef FEATURE_COMINTEROP 
@@ -700,32 +680,6 @@ public:
 
     // Update flags in a thread safe manner.
     WORD InterlockedUpdateFlags(WORD wMask, BOOL fSet);
-
-    inline DWORD IsInterceptedForDeclSecurity()
-    {
-        LIMITED_METHOD_CONTRACT;
-        STATIC_CONTRACT_SO_TOLERANT;        
-        return m_wFlags & mdcIntercepted;
-    }
-
-    inline void SetInterceptedForDeclSecurity()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_wFlags |= mdcIntercepted;
-    }
-
-    inline DWORD IsInterceptedForDeclSecurityCASDemandsOnly()
-    {
-        LIMITED_METHOD_CONTRACT;
-        STATIC_CONTRACT_SO_TOLERANT;        
-        return m_bFlags2 & enum_flag2_CASDemandsOnly;
-    }
-
-    inline void SetInterceptedForDeclSecurityCASDemandsOnly()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_bFlags2 |= enum_flag2_CASDemandsOnly;
-    }
 
     // If the method is in an Edit and Contine (EnC) module, then
     // we DON'T want to backpatch this, ever.  We MUST always call
@@ -815,50 +769,11 @@ public:
     BOOL IsQCall();
 
     //================================================================
-    // Has the method been verified?
-    // This does not mean that the IL is verifiable, just that we have
-    // determined if the IL is verfiable or unverifiable.
-    // (Is this is dead code since the JIT now does verification?)
-
-    inline BOOL IsVerified()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_wFlags & mdcVerifiedState;
-    }
-
-    inline void SetIsVerified(BOOL isVerifiable)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        WORD flags = isVerifiable ? (WORD(mdcVerifiedState) | WORD(mdcVerifiable))
-                                  : (WORD(mdcVerifiedState));
-        InterlockedUpdateFlags(flags, TRUE);
-    }
-
-    inline void ResetIsVerified()
-    {
-        WRAPPER_NO_CONTRACT;
-        InterlockedUpdateFlags(mdcVerifiedState | mdcVerifiable, FALSE);
-    }
-
-    BOOL IsVerifiable();
-
-    // fThrowException is used to prevent Verifier from
-    // throwin an exception on error
-    // fForceVerify is to be used by tools that need to
-    // force verifier to verify code even if the code is fully trusted.
-    HRESULT Verify(COR_ILMETHOD_DECODER* ILHeader,
-                   BOOL fThrowException,
-                   BOOL fForceVerify);
-
-
-    //================================================================
     //
 
     inline void ClearFlagsOnUpdate()
     {
         WRAPPER_NO_CONTRACT;
-        ResetIsVerified();
         SetNotInline(FALSE);
     }
 
@@ -1225,45 +1140,6 @@ protected:
     }
 
 public:
-    //==================================================================
-    // Security...
-
-    inline DWORD RequiresLinktimeCheck()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_wFlags & mdcRequiresLinktimeCheck;
-    }
-
-    inline DWORD RequiresInheritanceCheck()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_wFlags & mdcRequiresInheritanceCheck;
-    }
-
-    inline DWORD ParentRequiresInheritanceCheck()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return m_wFlags & mdcParentRequiresInheritanceCheck;
-    }
-
-    void SetRequiresLinktimeCheck()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_wFlags |= mdcRequiresLinktimeCheck;
-    }
-
-    void SetRequiresInheritanceCheck()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_wFlags |= mdcRequiresInheritanceCheck;
-    }
-
-    void SetParentRequiresInheritanceCheck()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_wFlags |= mdcParentRequiresInheritanceCheck;
-    }
-
     mdMethodDef GetMemberDef() const;
     mdMethodDef GetMemberDef_NoLogging() const;
 
@@ -1765,62 +1641,6 @@ public:
     VOID GetMethodInfoNoSig(SString &namespaceOrClassName, SString &methodName);
     VOID GetFullMethodInfo(SString& fullMethodSigName);
 
-    BOOL IsCritical()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(HasCriticalTransparentInfo());
-        return (m_bFlags2 & enum_flag2_Transparency_Mask) != enum_flag2_Transparency_Transparent;
-    }
-
-    BOOL IsTreatAsSafe()
-    {
-        LIMITED_METHOD_CONTRACT;
-        _ASSERTE(HasCriticalTransparentInfo());
-        return (m_bFlags2 & enum_flag2_Transparency_Mask) == enum_flag2_Transparency_TreatAsSafe;
-    }
-
-    BOOL IsTransparent()
-    {
-        WRAPPER_NO_CONTRACT;
-        _ASSERTE(HasCriticalTransparentInfo());
-        return !IsCritical();
-    }
-
-    BOOL HasCriticalTransparentInfo()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_bFlags2 & enum_flag2_Transparency_Mask) != enum_flag2_Transparency_Unknown;
-    }
-
-    void SetCriticalTransparentInfo(BOOL fIsCritical, BOOL fIsTreatAsSafe)
-    {
-        WRAPPER_NO_CONTRACT;
-
-        // TreatAsSafe has to imply critical
-        _ASSERTE(fIsCritical || !fIsTreatAsSafe);
-
-        EnsureWritablePages(this);
-        InterlockedUpdateFlags2(
-            static_cast<BYTE>(fIsTreatAsSafe ? enum_flag2_Transparency_TreatAsSafe :
-                fIsCritical ? enum_flag2_Transparency_Critical :
-                    enum_flag2_Transparency_Transparent),
-            TRUE);
-
-        _ASSERTE(HasCriticalTransparentInfo());
-    }
-
-    BOOL RequiresLinkTimeCheckHostProtectionOnly()
-    {
-        LIMITED_METHOD_CONTRACT;
-        return (m_bFlags2 & enum_flag2_HostProtectionLinkCheckOnly) != 0;
-    }
-
-    void SetRequiresLinkTimeCheckHostProtectionOnly()
-    {
-        LIMITED_METHOD_CONTRACT;
-        m_bFlags2 |= enum_flag2_HostProtectionLinkCheckOnly;
-    }
-
     BOOL HasTypeEquivalentStructParameters()
 #ifndef FEATURE_TYPEEQUIVALENCE
     {
@@ -1870,21 +1690,10 @@ protected:
         enum_flag2_IsUnboxingStub           = 0x04,
         enum_flag2_HasNativeCodeSlot        = 0x08,   // Has slot for native code
 
-        enum_flag2_Transparency_Mask        = 0x30,
-        enum_flag2_Transparency_Unknown     = 0x00,   // The transparency has not been computed yet
-        enum_flag2_Transparency_Transparent = 0x10,   // Method is transparent
-        enum_flag2_Transparency_Critical    = 0x20,   // Method is critical
-        enum_flag2_Transparency_TreatAsSafe = 0x30,   // Method is treat as safe. Also implied critical.
-
-        // CAS Demands: Demands for Permissions that are CAS Permissions. CAS Perms are those 
-        // that derive from CodeAccessPermission and need a stackwalk to evaluate demands
-        // Non-CAS perms are those that don't need a stackwalk and don't derive from CodeAccessPermission. The implementor 
-        // specifies the behavior on a demand. Examples: CAS: FileIOPermission. Non-CAS: PrincipalPermission.
-        // This bit gets set if the demands are BCL CAS demands only. Even if there are non-BCL CAS demands, we don't set this
-        // bit.
-        enum_flag2_CASDemandsOnly           = 0x40,
-
-        enum_flag2_HostProtectionLinkCheckOnly = 0x80, // Method has LinkTime check due to HP only.
+        // unused                           = 0x10,
+        // unused                           = 0x20,
+        // unused                           = 0x40,
+        // unused                           = 0x80, 
     };
     BYTE        m_bFlags2;
 

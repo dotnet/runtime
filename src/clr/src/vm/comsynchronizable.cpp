@@ -20,7 +20,6 @@
 #include "excep.h"
 #include "vars.hpp"
 #include "field.h"
-#include "security.h"
 #include "comsynchronizable.h"
 #include "dbginterface.h"
 #include "comdelegate.h"

@@ -1114,13 +1114,6 @@ ClrDataAccess::GetMethodDescTransparencyData(CLRDATA_ADDRESS methodDesc, struct 
     else
     {
         ZeroMemory(data, sizeof(DacpMethodDescTransparencyData));
-
-        if (pMD->HasCriticalTransparentInfo())
-        {
-            data->bHasCriticalTransparentInfo = pMD->HasCriticalTransparentInfo();
-            data->bIsCritical = pMD->IsCritical();
-            data->bIsTreatAsSafe = pMD->IsTreatAsSafe();
-        }
     }
 
     SOSDacLeave();
@@ -1871,14 +1864,6 @@ ClrDataAccess::GetMethodTableTransparencyData(CLRDATA_ADDRESS mt, struct DacpMet
     else
     {
         ZeroMemory(pTransparencyData, sizeof(DacpMethodTableTransparencyData));
-
-        EEClass * pClass = pMT->GetClass();
-        if (pClass->HasCriticalTransparentInfo())
-        {
-            pTransparencyData->bHasCriticalTransparentInfo = pClass->HasCriticalTransparentInfo();
-            pTransparencyData->bIsCritical = pClass->IsCritical() || pClass->IsAllCritical();
-            pTransparencyData->bIsTreatAsSafe = pClass->IsTreatAsSafe();
-        }
     }
 
     SOSDacLeave();

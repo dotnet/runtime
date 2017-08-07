@@ -101,7 +101,6 @@ set(VM_SOURCES_DAC_AND_WKS_COMMON
     precode.cpp
     prestub.cpp
     rejit.cpp
-    security.cpp
     sigformat.cpp
     siginfo.cpp
     spinlock.cpp
