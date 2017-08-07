@@ -123,6 +123,9 @@
       "BaselineVersion": "2.0.0",
       "InboxOn": {}
     },
+    "Microsoft.NETFramework.Compatibility": {
+      "InboxOn": {}
+    },
     "Microsoft.Phone": {
       "InboxOn": {
         "wp8": "8.0.0.0"

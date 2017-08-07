@@ -51,6 +51,11 @@
     "CommonTypes": []
   },
   {
+    "Name": "Microsoft.NETFramework.Compatibility",
+    "Description": "References a number of .NET Core libraries that are intended to provide support for more APIs that exist on .NET Framework.",
+    "CommonTypes": []
+  },
+  {
     "Name": "Microsoft.NETCore.Runtime",
     "Description": "The .NET Core runtime.",
     "CommonTypes": []
@@ -1577,7 +1582,7 @@
   {
     "Name": "System.Security.Cryptography.Xml",
     "Description": "Provides classes to support the creation and validation of XML digital signatures. The classes in this namespace implement the World Wide Web Consortium Recommendation, \"XML-Signature Syntax and Processing\", described at http://www.w3.org/TR/xmldsig-core/.",
-    "CommonTypes": [ 
+    "CommonTypes": [
       "System.Security.Cryptography.Xml.CipherData",
       "System.Security.Cryptography.Xml.CipherReference",
       "System.Security.Cryptography.Xml.DataObject",
