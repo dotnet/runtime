@@ -119,7 +119,7 @@ FCFuncStart(gStringFuncs)
     FCIntrinsic("get_Chars", COMString::GetCharAt, CORINFO_INTRINSIC_StringGetChar)
     FCFuncElement("IsAscii", COMString::IsAscii)
     FCFuncElement("CompareOrdinalHelper", COMString::CompareOrdinalEx)
-    FCFuncElement("IndexOfAny", COMString::IndexOfCharArray)
+    FCFuncElement("IndexOfCharArray", COMString::IndexOfCharArray)
     FCFuncElement("LastIndexOfAny", COMString::LastIndexOfCharArray)
     FCFuncElementSig("ReplaceInternal", &gsig_IM_Str_Str_RetStr, COMString::ReplaceString)
 #ifdef FEATURE_COMINTEROP
