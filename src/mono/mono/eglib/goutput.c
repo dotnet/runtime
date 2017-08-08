@@ -137,7 +137,7 @@ g_assertion_message (const gchar *format, ...)
 	exit (0);
 }
 
-#if TARGET_ANDROID
+#if PLATFORM_ANDROID
 #include <android/log.h>
 
 static android_LogPriority
