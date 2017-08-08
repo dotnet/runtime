@@ -42,10 +42,6 @@ namespace System.Net.WebSockets
             return new ManagedWebSocket(stream, isServer, subprotocol, keepAliveInterval, receiveBufferSize, receiveBuffer);
         }
 
-        /// <summary>Per-thread cached 4-byte mask byte array.</summary>
-        [ThreadStatic]
-        private static byte[] t_headerMask;
-
         /// <summary>Thread-safe random number generator used to generate masks for each send.</summary>
         private static readonly RandomNumberGenerator s_random = RandomNumberGenerator.Create();
         /// <summary>Encoding for the payload of text messages: UTF8 encoding that throws if invalid bytes are discovered, per the RFC.</summary>
@@ -604,13 +600,8 @@ namespace System.Net.WebSockets
         /// <summary>Writes a 4-byte random mask to the specified buffer at the specified offset.</summary>
         /// <param name="buffer">The buffer to which to write the mask.</param>
         /// <param name="offset">The offset into the buffer at which to write the mask.</param>
-        private static void WriteRandomMask(byte[] buffer, int offset)
-        {
-            byte[] mask = t_headerMask ?? (t_headerMask = new byte[MaskLength]);
-            Debug.Assert(mask.Length == MaskLength, $"Expected mask of length {MaskLength}, got {mask.Length}");
-            s_random.GetBytes(mask);
-            Buffer.BlockCopy(mask, 0, buffer, offset, MaskLength);
-        }
+        private static void WriteRandomMask(byte[] buffer, int offset) =>
+            s_random.GetBytes(buffer, offset, MaskLength);
 
         /// <summary>
         /// Receive the next text, binary, continuation, or close message, returning information about it and
