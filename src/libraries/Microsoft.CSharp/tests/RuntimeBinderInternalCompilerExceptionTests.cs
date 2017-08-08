@@ -42,5 +42,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             RuntimeBinderInternalCompilerException rbe = new RuntimeBinderInternalCompilerException(message, inner);
             Assert.Same(inner, rbe.InnerException);
         }
+
+        [Fact]
+        public void AssertExceptionDeserializationFails()
+        {
+            BinaryFormatterHelpers.AssertExceptionDeserializationFails<RuntimeBinderInternalCompilerException>();
+        }
     }
 }
