@@ -91,9 +91,6 @@ namespace System.IO.Tests
 
                 if (filter == NotifyFilters.DirectoryName)
                     expected |= WatcherChangeTypes.Renamed;
-                else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && (filter == NotifyFilters.FileName))
-                    expected |= WatcherChangeTypes.Renamed;
-
                 ExpectEvent(watcher, expected, action, cleanup, targetPath);
             }
         }
@@ -165,6 +162,36 @@ namespace System.IO.Tests
                     expected |= WatcherChangeTypes.Changed;
                 ExpectEvent(watcher, expected, action, expectedPath: file.Path);
             }
+        }
+
+        [Theory]
+        [OuterLoop]
+        [MemberData(nameof(FilterTypes))]
+        public void FileSystemWatcher_File_NotifyFilter_Size_TwoFilters(NotifyFilters filter)
+        {
+            Assert.All(FilterTypes(), (filter2Arr =>
+            {
+                using (var testDirectory = new TempDirectory(GetTestFilePath()))
+                using (var file = new TempFile(Path.Combine(testDirectory.Path, "file")))
+                using (var watcher = new FileSystemWatcher(testDirectory.Path, Path.GetFileName(file.Path)))
+                {
+                    filter |= (NotifyFilters)filter2Arr[0];
+                    watcher.NotifyFilter = filter;
+                    Action action = () => File.AppendAllText(file.Path, "longText!");
+                    Action cleanup = () => File.AppendAllText(file.Path, "short");
+
+                    WatcherChangeTypes expected = 0;
+                    if (((filter & NotifyFilters.Size) > 0) || ((filter & NotifyFilters.LastWrite) > 0))
+                        expected |= WatcherChangeTypes.Changed;
+                    else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && ((filter & LinuxFiltersForModify) > 0))
+                        expected |= WatcherChangeTypes.Changed;
+                    else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX) && ((filter & OSXFiltersForModify) > 0))
+                        expected |= WatcherChangeTypes.Changed;
+                    else if (PlatformDetection.IsWindows7 && ((filter & NotifyFilters.Attributes) > 0)) // win7 FSW Size change passes the Attribute filter
+                        expected |= WatcherChangeTypes.Changed;
+                    ExpectEvent(watcher, expected, action, expectedPath: file.Path);
+                }
+            }));
         }
 
         [Theory]
@@ -278,6 +305,35 @@ namespace System.IO.Tests
 
                 WatcherChangeTypes expected = 0;
                 expected |= WatcherChangeTypes.Deleted | WatcherChangeTypes.Changed;
+                ExpectEvent(watcher, expected, action, cleanup, new string[] { otherFile, file.Path });
+            }
+        }
+
+        [Fact]
+        public void FileSystemWatcher_File_NotifyFilter_FileNameDoesntTriggerOnDirectoryEvent()
+        {
+            using (var testDirectory = new TempDirectory(GetTestFilePath()))
+            using (var file = new TempFile(Path.Combine(testDirectory.Path, "file")))
+            using (var sourcePath = new TempFile(Path.Combine(testDirectory.Path, "sourceFile")))
+            using (var watcher = new FileSystemWatcher(testDirectory.Path, "*"))
+            {
+                watcher.NotifyFilter = NotifyFilters.DirectoryName;
+                string otherFile = Path.Combine(testDirectory.Path, "file2");
+                string destPath = Path.Combine(testDirectory.Path, "destFile");
+
+                Action action = () =>
+                {
+                    File.Create(otherFile).Dispose();
+                    File.SetLastWriteTime(file.Path, DateTime.Now + TimeSpan.FromSeconds(10));
+                    File.Delete(otherFile);
+                    File.Move(sourcePath.Path, destPath);
+                };
+                Action cleanup = () =>
+                {
+                    File.Move(destPath, sourcePath.Path);
+                };
+
+                WatcherChangeTypes expected = 0;
                 ExpectEvent(watcher, expected, action, cleanup, new string[] { otherFile, file.Path });
             }
         }
