@@ -127,30 +127,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
             TypeArray pCheckedOuterTypeArgs = outerTypeArgs;
             TypeManager pTypeManager = getAggregate().GetTypeManager();
-
-            if (_pTypeArgsThis.Count > 0 && AreAllTypeArgumentsUnitTypes(_pTypeArgsThis))
-            {
-                if (outerTypeArgs.Count > 0 && !AreAllTypeArgumentsUnitTypes(outerTypeArgs))
-                {
-                    // We have open placeholder types in our type, but not the parent.
-                    pCheckedOuterTypeArgs = pTypeManager.CreateArrayOfUnitTypes(outerTypeArgs.Count);
-                }
-            }
             _pTypeArgsAll = pTypeManager.ConcatenateTypeArrays(pCheckedOuterTypeArgs, _pTypeArgsThis);
-        }
-
-        private bool AreAllTypeArgumentsUnitTypes(TypeArray typeArray)
-        {
-            foreach (CType type in typeArray.Items)
-            {
-                Debug.Assert(type != null);
-                if (!(type is OpenTypePlaceholderType))
-                {
-                    return false;
-                }
-            }
-
-            return true;
         }
 
         public TypeArray GetTypeArgsThis()
