@@ -29,7 +29,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         string ICSharpBinder.Name => "Invoke";
 
-        IList<Type> ICSharpInvokeOrInvokeMemberBinder.TypeArguments => Array.Empty<Type>();
+        Type[] ICSharpInvokeOrInvokeMemberBinder.TypeArguments => Array.Empty<Type>();
 
         CSharpCallFlags ICSharpInvokeOrInvokeMemberBinder.Flags => _flags;
 
@@ -39,7 +39,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         public bool IsChecked => false;
 
-        private readonly List<CSharpArgumentInfo> _argumentInfo;
+        private readonly CSharpArgumentInfo[] _argumentInfo;
 
         CSharpArgumentInfo ICSharpBinder.GetArgumentInfo(int index) => _argumentInfo[index];
 
@@ -61,7 +61,7 @@ namespace Microsoft.CSharp.RuntimeBinder
         {
             _flags = flags;
             CallingContext = callingContext;
-            _argumentInfo = BinderHelper.ToList(argumentInfo);
+            _argumentInfo = BinderHelper.ToArray(argumentInfo);
             _binder = RuntimeBinder.GetInstance();
         }
 
