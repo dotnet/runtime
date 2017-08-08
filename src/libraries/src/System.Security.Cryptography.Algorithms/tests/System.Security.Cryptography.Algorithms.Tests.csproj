@@ -137,7 +137,6 @@
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">
       <Link>Common\Interop\Unix\Interop.Libraries.cs</Link>
     </Compile>
-    <Folder Include="Common\Interop\Unix\" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
     <Compile Include="AesManagedTests.cs" />
@@ -152,6 +151,7 @@
     <Compile Include="ECDiffieHellmanPublicKeyTests.cs" />
     <Compile Include="PaddingModeTests.cs" />
     <Compile Include="PKCS1MaskGenerationMethodTest.cs" />
+    <Compile Include="RandomNumberGeneratorTests.netcoreapp.cs" />
     <Compile Include="RC2Provider.cs" />
     <Compile Include="RC2Tests.cs" />
     <Compile Include="RijndaelTests.cs" />
