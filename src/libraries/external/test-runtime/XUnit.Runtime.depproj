@@ -85,6 +85,7 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
+    <PackageToInclude Include="Microsoft.DiaSymReader.Native"/>
     <PackageToInclude Include="xunit.abstractions"/>
     <PackageToInclude Include="xunit.assert"/>
     <PackageToInclude Include="xunit.extensibility.core"/>
