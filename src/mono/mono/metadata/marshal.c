@@ -11590,7 +11590,6 @@ mono_marshal_load_type_info (MonoClass* klass)
 
 	layout = mono_class_get_flags (klass) & TYPE_ATTRIBUTE_LAYOUT_MASK;
 
-	/* The mempool is protected by the loader lock */
 	info = (MonoMarshalType *)mono_image_alloc0 (klass->image, MONO_SIZEOF_MARSHAL_TYPE + sizeof (MonoMarshalField) * count);
 	info->num_fields = count;
 	
@@ -11677,8 +11676,11 @@ mono_marshal_load_type_info (MonoClass* klass)
 	info->min_align = min_align;
 
 	/* Update the class's blittable info, if the layouts don't match */
-	if (info->native_size != mono_class_value_size (klass, NULL))
+	if (info->native_size != mono_class_value_size (klass, NULL)) {
+		mono_loader_lock ();
 		klass->blittable = FALSE;
+		mono_loader_unlock ();
+	}
 
 	/* If this is an array type, ensure that we have element info */
 	if (klass->rank && !mono_marshal_is_loading_type_info (klass->element_class)) {
