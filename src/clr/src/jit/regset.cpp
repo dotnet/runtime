@@ -1533,6 +1533,7 @@ void RegSet::rsSpillTree(regNumber reg, GenTreePtr tree, unsigned regIdx /* =0 *
     var_types    treeType;
 #if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
     GenTreePutArgSplit* splitArg = nullptr;
+    GenTreeMultiRegOp*  multiReg = nullptr;
 #endif
 
 #ifndef LEGACY_BACKEND
@@ -1547,6 +1548,11 @@ void RegSet::rsSpillTree(regNumber reg, GenTreePtr tree, unsigned regIdx /* =0 *
     {
         splitArg = tree->AsPutArgSplit();
         treeType = splitArg->GetRegType(regIdx);
+    }
+    else if (tree->OperIsMultiRegOp())
+    {
+        multiReg = tree->AsMultiRegOp();
+        treeType = multiReg->GetRegType(regIdx); // XXX check
     }
 #endif // _TARGET_ARM_
     else
@@ -1602,6 +1608,12 @@ void RegSet::rsSpillTree(regNumber reg, GenTreePtr tree, unsigned regIdx /* =0 *
     else if (splitArg != nullptr)
     {
         regFlags = splitArg->GetRegSpillFlagByIdx(regIdx);
+        assert((regFlags & GTF_SPILL) != 0);
+        regFlags &= ~GTF_SPILL;
+    }
+    else if (multiReg != nullptr)
+    {
+        regFlags = multiReg->GetRegSpillFlagByIdx(regIdx);
         assert((regFlags & GTF_SPILL) != 0);
         regFlags &= ~GTF_SPILL;
     }
@@ -1758,6 +1770,11 @@ void RegSet::rsSpillTree(regNumber reg, GenTreePtr tree, unsigned regIdx /* =0 *
     {
         regFlags |= GTF_SPILLED;
         splitArg->SetRegSpillFlagByIdx(regFlags, regIdx);
+    }
+    else if (multiReg != nullptr)
+    {
+        regFlags |= GTF_SPILLED;
+        multiReg->SetRegSpillFlagByIdx(regFlags, regIdx);
     }
 #endif // _TARGET_ARM_
 #endif //! LEGACY_BACKEND
@@ -2400,6 +2417,13 @@ TempDsc* RegSet::rsUnspillInPlace(GenTreePtr tree, regNumber oldReg, unsigned re
         unsigned            flags    = splitArg->GetRegSpillFlagByIdx(regIdx);
         flags &= ~GTF_SPILLED;
         splitArg->SetRegSpillFlagByIdx(flags, regIdx);
+    }
+    else if (tree->OperIsMultiRegOp())
+    {
+        GenTreeMultiRegOp* multiReg = tree->AsMultiRegOp();
+        unsigned           flags    = multiReg->GetRegSpillFlagByIdx(regIdx);
+        flags &= ~GTF_SPILLED;
+        multiReg->SetRegSpillFlagByIdx(flags, regIdx);
     }
 #endif // !LEGACY_BACKEND && _TARGET_ARM_
     else
