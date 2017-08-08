@@ -822,11 +822,6 @@ namespace System.Text
                 throw new ArgumentNullException(nameof(destination));
             }
 
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count), SR.Arg_NegativeArgCount);
-            }
-
             if (destinationIndex < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(destinationIndex), SR.Format(SR.ArgumentOutOfRange_MustBeNonNegNum, nameof(destinationIndex)));
@@ -835,6 +830,17 @@ namespace System.Text
             if (destinationIndex > destination.Length - count)
             {
                 throw new ArgumentException(SR.ArgumentOutOfRange_OffsetOut);
+            }
+            Contract.EndContractBlock();
+
+            CopyTo(sourceIndex, new Span<char>(destination, destinationIndex), count);
+        }
+
+        public void CopyTo(int sourceIndex, Span<char> destination, int count)
+        {
+            if (count < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(count), SR.Arg_NegativeArgCount);
             }
 
             if ((uint)sourceIndex > (uint)Length)
@@ -852,7 +858,7 @@ namespace System.Text
 
             StringBuilder chunk = this;
             int sourceEndIndex = sourceIndex + count;
-            int curDestIndex = destinationIndex + count;
+            int curDestIndex = count;
             while (count > 0)
             {
                 int chunkEndIndex = sourceEndIndex - chunk.m_ChunkOffset;
@@ -1025,6 +1031,21 @@ namespace System.Text
                 unsafe
                 {
                     fixed (char* valueChars = &value[0])
+                    {
+                        Append(valueChars, value.Length);
+                    }
+                }
+            }
+            return this;
+        }
+
+        public StringBuilder Append(ReadOnlySpan<char> value)
+        {
+            if (value.Length > 0)
+            {
+                unsafe
+                {
+                    fixed (char* valueChars = &value.DangerousGetPinnableReference())
                     {
                         Append(valueChars, value.Length);
                     }
@@ -1262,6 +1283,27 @@ namespace System.Text
         public StringBuilder Insert(int index, ulong value) => Insert(index, value.ToString(), 1);
 
         public StringBuilder Insert(int index, Object value) => (value == null) ? this : Insert(index, value.ToString(), 1);
+
+        public StringBuilder Insert(int index, ReadOnlySpan<char> value)
+        {
+            Contract.Ensures(Contract.Result<StringBuilder>() != null);
+            Contract.EndContractBlock();
+
+            if ((uint)index > (uint)Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+            }
+
+            if (value.Length > 0)
+            {
+                unsafe
+                {
+                    fixed (char* sourcePtr = &value.DangerousGetPinnableReference())
+                        Insert(index, sourcePtr, value.Length);
+                }
+            }
+            return this;
+        }
 
         public StringBuilder AppendFormat(String format, Object arg0) => AppendFormatHelper(null, format, new ParamsArray(arg0));
 
@@ -2001,22 +2043,23 @@ namespace System.Text
             }
         }
 
-        private static void ThreadSafeCopy(char[] source, int sourceIndex, char[] destination, int destinationIndex, int count)
+        private static unsafe void ThreadSafeCopy(char[] source, int sourceIndex, Span<char> destination, int destinationIndex, int count)
         {
             if (count > 0)
             {
-                if ((uint)sourceIndex <= (uint)source.Length && (sourceIndex + count) <= source.Length)
-                {
-                    unsafe
-                    {
-                        fixed (char* sourcePtr = &source[sourceIndex])
-                            ThreadSafeCopy(sourcePtr, destination, destinationIndex, count);
-                    }
-                }
-                else
+                if ((uint)sourceIndex > (uint)source.Length || count > source.Length - sourceIndex)
                 {
                     throw new ArgumentOutOfRangeException(nameof(sourceIndex), SR.ArgumentOutOfRange_Index);
                 }
+
+                if ((uint)destinationIndex > (uint)destination.Length || count > destination.Length - destinationIndex)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(destinationIndex), SR.ArgumentOutOfRange_Index);
+                }
+
+                fixed (char* sourcePtr = &source[sourceIndex])
+                    fixed (char* destinationPtr = &destination.DangerousGetPinnableReference())
+                        string.wstrcpy(destinationPtr + destinationIndex, sourcePtr, count);
             }
         }
 
