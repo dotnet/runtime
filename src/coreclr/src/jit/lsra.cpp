@@ -3935,6 +3935,10 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
         assert(removed);
         assert(!operandDefs.IsEmpty());
 
+#ifdef _TARGET_ARM_
+        regMaskTP currCandidates = RBM_NONE;
+#endif // _TARGET_ARM_
+
         LocationInfoListNode* const operandDefsEnd = operandDefs.End();
         for (LocationInfoListNode* operandDefsIterator = operandDefs.Begin(); operandDefsIterator != operandDefsEnd;
              operandDefsIterator                       = operandDefsIterator->Next())
@@ -3985,6 +3989,14 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
 #endif // DEBUG
 
             regMaskTP candidates = getUseCandidates(useNode);
+#ifdef _TARGET_ARM_
+            // If oper is GT_PUTARG_SPLIT, set bits in useCandidates must be in sequential order.
+            if (useNode->OperIsPutArgSplit())
+            {
+                // get i-th candidate
+                candidates = genFindLowestReg(candidates & ~currCandidates);
+                currCandidates |= candidates;
+            }
 #ifdef ARM_SOFTFP
             // If oper is GT_PUTARG_REG, set bits in useCandidates must be in sequential order.
             if (useNode->OperIsMultiRegOp())
@@ -3994,6 +4006,8 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
                 candidates = candidate;
             }
 #endif // ARM_SOFTFP
+#endif // _TARGET_ARM_
+
             assert((candidates & allRegs(i->registerType)) != 0);
 
             // For non-localVar uses we record nothing, as nothing needs to be written back to the tree.
