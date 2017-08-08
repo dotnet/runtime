@@ -491,7 +491,7 @@ namespace System.Diagnostics.Tracing
     internal class EventListenerHelper : EventListener
     {
         public new static int EventSourceIndex(EventSource eventSource) { return EventListener.EventSourceIndex(eventSource); }
-        protected override void OnEventWritten(EventWrittenEventArgs eventData) { } // override abstact methods to keep compiler happy
+        protected override void OnEventWritten(EventWrittenEventArgs eventData) { } // override abstract methods to keep compiler happy
     }
 
     #endregion // internal supporting classes
