@@ -820,6 +820,14 @@ namespace System.Drawing
                     throw new ArgumentException(SR.Format(SR.InvalidDashPattern));
                 }
 
+                foreach (float val in value)
+                {
+                    if (val <= 0)
+                    {
+                        throw new ArgumentException(SR.Format(SR.InvalidDashPattern));
+                    }
+                }
+
                 int count = value.Length;
                 IntPtr buf = Marshal.AllocHGlobal(checked(4 * count));
 
@@ -859,6 +867,19 @@ namespace System.Drawing
                 if (_immutable)
                 {
                     throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, nameof(Pen)));
+                }
+
+                if (value.Length <= 1)
+                {
+                    throw new ArgumentException(SR.Format(SR.GdiplusInvalidParameter));
+                }
+
+                foreach (float val in value)
+                {
+                    if (val < 0 || val > 1)
+                    {
+                        throw new ArgumentException(SR.Format(SR.GdiplusInvalidParameter));
+                    }
                 }
 
                 int status = SafeNativeMethods.Gdip.GdipSetPenCompoundArray(new HandleRef(this, NativePen), value, value.Length);
