@@ -92,6 +92,8 @@ namespace Microsoft.CSharp.RuntimeBinder
         /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public override DynamicMetaObject FallbackBinaryOperation(DynamicMetaObject target, DynamicMetaObject arg, DynamicMetaObject errorSuggestion)
         {
+            BinderHelper.ValidateBindArgument(target, nameof(target));
+            BinderHelper.ValidateBindArgument(arg, nameof(arg));
             return BinderHelper.Bind(this, _binder, new [] {target, arg}, _argumentInfo, errorSuggestion);
         }
     }

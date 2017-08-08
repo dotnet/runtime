@@ -79,6 +79,8 @@ namespace Microsoft.CSharp.RuntimeBinder
                 return com;
             }
 #endif
+            BinderHelper.ValidateBindArgument(target, nameof(target));
+            BinderHelper.ValidateBindArgument(value, nameof(value));
             return BinderHelper.Bind(this, _binder, new[] { target, value }, _argumentInfo, errorSuggestion);
         }
     }
