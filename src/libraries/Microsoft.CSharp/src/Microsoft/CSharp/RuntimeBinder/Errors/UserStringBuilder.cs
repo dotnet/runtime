@@ -553,10 +553,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                     ErrAppendId(MessageID.NULL);
                     break;
 
-                case TypeKind.TK_OpenTypePlaceholderType:
-                    // Leave blank.
-                    break;
-
                 case TypeKind.TK_MethodGroupType:
                     ErrAppendId(MessageID.MethodGroup);
                     break;

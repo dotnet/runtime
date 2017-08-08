@@ -24,7 +24,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // Special types
         private readonly VoidType _voidType;
         private readonly NullType _nullType;
-        private readonly OpenTypePlaceholderType _typeUnit;
         private readonly MethodGroupType _typeMethGrp;
         private readonly ArgumentListType _argListType;
         private readonly ErrorType _errorType;
@@ -41,7 +40,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             _errorType = _typeFactory.CreateError(null, null, null, null, null);
             _voidType = _typeFactory.CreateVoid();
             _nullType = _typeFactory.CreateNull();
-            _typeUnit = _typeFactory.CreateUnit();
             _typeMethGrp = _typeFactory.CreateMethodGroup();
             _argListType = _typeFactory.CreateArgList();
 
@@ -381,11 +379,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return _nullType;
         }
 
-        private OpenTypePlaceholderType GetUnitType()
-        {
-            return _typeUnit;
-        }
-
         public MethodGroupType GetMethGrpType()
         {
             return _typeMethGrp;
@@ -476,7 +469,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 case TypeKind.TK_NullType:
                 case TypeKind.TK_VoidType:
-                case TypeKind.TK_OpenTypePlaceholderType:
                 case TypeKind.TK_MethodGroupType:
                 case TypeKind.TK_ArgumentListType:
                     return type;
@@ -618,7 +610,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 case TypeKind.TK_NullType:
                 case TypeKind.TK_VoidType:
-                case TypeKind.TK_OpenTypePlaceholderType:
                     // There should only be a single instance of these.
                     Debug.Assert(typeDst.GetTypeKind() != typeSrc.GetTypeKind());
                     return false;
@@ -766,7 +757,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 case TypeKind.TK_NullType:
                 case TypeKind.TK_VoidType:
-                case TypeKind.TK_OpenTypePlaceholderType:
                     // There should only be a single instance of these.
                     Debug.Assert(typeFind.GetTypeKind() != type.GetTypeKind());
                     return false;
@@ -825,7 +815,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 case TypeKind.TK_NullType:
                 case TypeKind.TK_VoidType:
-                case TypeKind.TK_OpenTypePlaceholderType:
                 case TypeKind.TK_MethodGroupType:
                     return false;
 
@@ -897,16 +886,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         public AggregateSymbol GetPredefAgg(PredefinedType pt) => _predefTypes.GetPredefinedAggregate(pt);
-
-        public TypeArray CreateArrayOfUnitTypes(int cSize)
-        {
-            CType[] ppArray = new CType[cSize];
-            for (int i = 0; i < cSize; i++)
-            {
-                ppArray[i] = GetUnitType();
-            }
-            return _BSymmgr.AllocParams(cSize, ppArray);
-        }
 
         public TypeArray ConcatenateTypeArrays(TypeArray pTypeArray1, TypeArray pTypeArray2)
         {
