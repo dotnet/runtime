@@ -667,23 +667,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             MethWithInst mwiWrap = new MethWithInst(mpwiWrap);
             MethWithInst mwiAmbig = new MethWithInst(mpwiAmbig);
 
-            bool isExtensionMethod = false;
-            // If the method we have bound to is an extension method and we are using it as an extension and not as a static method
-            if (methInvoke.Params.Count < @params.Count && mwiWrap.Meth().IsExtension())
-            {
-                isExtensionMethod = true;
-                TypeArray extParams = GetTypes().SubstTypeArray(mwiWrap.Meth().Params, mwiWrap.GetType());
-                // The this parameter must be a reference type.
-                CType param = extParams[0] is TypeParameterType ? @params[0] : extParams[0];
-                if (!param.IsRefType())
-                {
-                    // We should issue a better message here.
-                    // We were only disallowing value types, hence the error message specific to value types.
-                    // Now we are issuing the same error message for not-known to be reference types, not just value types.
-                    throw ErrorContext.Error(ErrorCode.ERR_ValueTypeExtDelegate, mwiWrap, param);
-                }
-            }
-
             // From here on we should only return true.
             if (!fReportErrors && !needDest)
                 return true;
@@ -716,11 +699,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
             }
 
-            Expr obj = !isExtensionMethod ? grp.OptionalObject: null;
+            Expr obj = grp.OptionalObject;
             bool constrained;
             PostBindMethod(ref mwiWrap, obj);
             obj = AdjustMemberObject(mwiWrap, obj, out constrained);
-            obj = isExtensionMethod ? grp.OptionalObject: obj;
+
             Debug.Assert(mwiWrap.Meth().getKind() == SYMKIND.SK_MethodSymbol);
             if (mwiWrap.TypeArgs.Count > 0)
             {
@@ -732,7 +715,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 return true;
 
             ExprFuncPtr funcPtr = ExprFactory.CreateFunctionPointer(0, getVoidType(), null, mwiWrap);
-            if (!mwiWrap.Meth().isStatic || isExtensionMethod)
+            if (!mwiWrap.Meth().isStatic)
             {
                 if (mwiWrap.Meth().getClass().isPredefAgg(PredefinedType.PT_G_OPTIONAL))
                 {

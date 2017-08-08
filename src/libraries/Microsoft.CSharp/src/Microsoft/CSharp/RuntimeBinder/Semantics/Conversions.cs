@@ -284,10 +284,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         
             Always returns false if the types are error, anonymous method, or method group
         ***************************************************************************************************/
-        public static bool FIsSameType(CType typeSrc, CType typeDst)
-        {
-            return typeSrc == typeDst && !typeSrc.IsNeverSameType();
-        }
+
         /***************************************************************************************************
             Determines whether there is a boxing conversion from typeSrc to typeDst
         
@@ -314,11 +311,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         *   From T to an interface-type I in T’s effective interface set and from T to any base 
             interface of I.
         ***************************************************************************************************/
-
-        public static bool FBoxingConv(SymbolLoader loader, CType typeSrc, CType typeDst)
-        {
-            return loader.HasImplicitBoxingConversion(typeSrc, typeDst);
-        }
 
         /***************************************************************************************************
             Determines whether there is a wrapping conversion from typeSrc to typeDst

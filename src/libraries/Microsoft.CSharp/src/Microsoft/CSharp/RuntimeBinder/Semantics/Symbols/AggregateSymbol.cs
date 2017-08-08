@@ -63,9 +63,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // Constructors
         private bool _hasPubNoArgCtor; // Whether it has a public instance constructor taking no args
 
-        // private struct members should not be checked for assignment or references
-        private bool _hasExternReference;
-
         // User defined operators
 
         private bool _isSkipUDOps; // Never check for user defined operators on this type (eg, decimal, string, delegate).
@@ -259,17 +256,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             _hasPubNoArgCtor = hasPubNoArgCtor;
         }
-
-        public bool HasExternReference()
-        {
-            return _hasExternReference == true;
-        }
-
-        public void SetHasExternReference(bool hasExternReference)
-        {
-            _hasExternReference = hasExternReference;
-        }
-
 
         public bool IsSkipUDOps()
         {
