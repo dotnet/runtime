@@ -114,7 +114,6 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Clone_Success()
         {

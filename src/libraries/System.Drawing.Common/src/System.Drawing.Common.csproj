@@ -192,6 +192,7 @@
     <Compile Include="System\Drawing\ColorTranslator.cs" />
     <Compile Include="System\Drawing\ContentAlignment.cs" />
     <Compile Include="System\Drawing\CopyPixelOperation.cs" />
+    <Compile Include="System\Drawing\Drawing2D\CustomLineCap.Windows.cs" />
     <Compile Include="System\Drawing\Drawing2D\GraphicsContainer.cs" />
     <Compile Include="System\Drawing\Drawing2D\GraphicsPath.cs" />
     <Compile Include="System\Drawing\Drawing2D\LinearGradientBrush.cs" />
@@ -214,6 +215,7 @@
     <Compile Include="System\Drawing\Internal\GPStream.cs" />
     <Compile Include="System\Drawing\Internal\SystemColorTracker.cs" />
     <Compile Include="System\Drawing\LocalAppContextSwitches.cs" />
+    <Compile Include="System\Drawing\Pen.Windows.cs" />
     <Compile Include="System\Drawing\Printing\DefaultPrintController.cs" />
     <Compile Include="System\Drawing\Printing\ModeField.cs" />
     <Compile Include="System\Drawing\Printing\PageSettings.cs" />
@@ -300,6 +302,7 @@
     <Compile Include="Unix\System.Drawing\ImageAnimator.cs" />
     <Compile Include="Unix\System.Drawing\Image.cs" />
     <Compile Include="Unix\System.Drawing\KnownColors.cs" />
+    <Compile Include="System\Drawing\Pen.Unix.cs" />
     <Compile Include="Unix\System.Drawing\Region.cs" />
     <Compile Include="Unix\System.Drawing\SRDescriptionAttribute.cs" />
     <Compile Include="Unix\System.Drawing\StringFormat.cs" />
@@ -307,6 +310,8 @@
     <Compile Include="Unix\System.Drawing\SystemFonts.cs" />
     <Compile Include="Unix\System.Drawing\SystemIcons.cs" />
     <Compile Include="Unix\System.Drawing\ToolboxBitmapAttribute.cs" />
+    <Compile Include="System\Drawing\Drawing2D\AdjustableArrowCap.Unix.cs" />
+    <Compile Include="System\Drawing\Drawing2D\CustomLineCap.Unix.cs" />
     <Compile Include="Unix\System.Drawing.Drawing2D\GraphicsContainer.cs" />
     <Compile Include="Unix\System.Drawing.Drawing2D\GraphicsPath.cs" />
     <Compile Include="Unix\System.Drawing.Drawing2D\LinearGradientBrush.cs" />
