@@ -189,9 +189,7 @@ namespace System.Resources
             }
         }
 
-        // Constructs a new ResourceSet for a given file name.  The logic in
-        // here avoids a ReflectionPermission check for our RuntimeResourceSet
-        // for perf and working set reasons.
+        // Constructs a new ResourceSet for a given file name.
         // Use the assembly to resolve assembly manifest resource references.
         // Note that is can be null, but probably shouldn't be.
         // This method could use some refactoring. One thing at a time.
@@ -248,13 +246,7 @@ namespace System.Resources
                     // the abbreviated ones emitted by InternalResGen.
                     if (CanUseDefaultResourceClasses(readerTypeName, resSetTypeName))
                     {
-                        RuntimeResourceSet rs;
-#if LOOSELY_LINKED_RESOURCE_REFERENCE
-                        rs = new RuntimeResourceSet(store, assembly);
-#else
-                        rs = new RuntimeResourceSet(store);
-#endif // LOOSELY_LINKED_RESOURCE_REFERENCE
-                        return rs;
+                        return new RuntimeResourceSet(store);
                     }
                     else
                     {
@@ -264,16 +256,9 @@ namespace System.Resources
                         args[0] = store;
                         IResourceReader reader = (IResourceReader)Activator.CreateInstance(readerType, args);
 
-                        Object[] resourceSetArgs =
-#if LOOSELY_LINKED_RESOURCE_REFERENCE
-                            new Object[2];
-#else
- new Object[1];
-#endif // LOOSELY_LINKED_RESOURCE_REFERENCE
+                        Object[] resourceSetArgs = new Object[1];
                         resourceSetArgs[0] = reader;
-#if LOOSELY_LINKED_RESOURCE_REFERENCE
-                        resourceSetArgs[1] = assembly;
-#endif // LOOSELY_LINKED_RESOURCE_REFERENCE
+
                         Type resSetType;
                         if (_mediator.UserResourceSet == null)
                         {
@@ -299,14 +284,7 @@ namespace System.Resources
 
             if (_mediator.UserResourceSet == null)
             {
-                // Explicitly avoid CreateInstance if possible, because it
-                // requires ReflectionPermission to call private & protected
-                // constructors.  
-#if LOOSELY_LINKED_RESOURCE_REFERENCE                
-                return new RuntimeResourceSet(store, assembly);
-#else
                 return new RuntimeResourceSet(store);
-#endif // LOOSELY_LINKED_RESOURCE_REFERENCE
             }
             else
             {
@@ -327,9 +305,7 @@ namespace System.Resources
                     args = new Object[1];
                     args[0] = store;
                     rs = (ResourceSet)Activator.CreateInstance(_mediator.UserResourceSet, args);
-#if LOOSELY_LINKED_RESOURCE_REFERENCE
-                    rs.Assembly = assembly;
-#endif // LOOSELY_LINKED_RESOURCE_REFERENCE
+
                     return rs;
                 }
                 catch (MissingMethodException e)
