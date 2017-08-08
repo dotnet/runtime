@@ -731,6 +731,7 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, ArrayStack<G
             {
                 use.ReplaceWith(comp, node->gtGetOp1());
                 BlockRange().Remove(node);
+                node = node->gtGetOp1();
             }
             break;
 
