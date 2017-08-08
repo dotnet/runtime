@@ -1171,11 +1171,8 @@ mono_gc_is_critical_method (MonoMethod *method)
  * @klass. The method will typically have an thread-local inline allocation sequence.
  * The signature of the called method is:
  * 	object allocate (MonoVTable *vtable)
- * Some of the logic here is similar to mono_class_get_allocation_ftn () i object.c,
- * keep in sync.
  * The thread local alloc logic is taken from libgc/pthread_support.c.
  */
-
 MonoMethod*
 mono_gc_get_managed_allocator (MonoClass *klass, gboolean for_box, gboolean known_instance_size)
 {

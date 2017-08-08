@@ -239,6 +239,7 @@ mono_type_initialization_init (void)
 	type_initialization_hash = g_hash_table_new (NULL, NULL);
 	blocked_thread_hash = g_hash_table_new (NULL, NULL);
 	mono_os_mutex_init_recursive (&ldstr_section);
+	mono_register_jit_icall (ves_icall_string_alloc, "ves_icall_string_alloc", mono_create_icall_signature ("object int"), FALSE);
 }
 
 void
@@ -1008,18 +1009,7 @@ mono_class_compute_gc_descriptor (MonoClass *klass)
 	int max_set = 0;
 	gsize *bitmap;
 	gsize default_bitmap [4] = {0};
-	static gboolean gcj_inited = FALSE;
 	MonoGCDescriptor gc_descr;
-
-	if (!gcj_inited) {
-		mono_loader_lock ();
-
-		mono_register_jit_icall (ves_icall_object_new_fast, "ves_icall_object_new_fast", mono_create_icall_signature ("object ptr"), FALSE);
-		mono_register_jit_icall (ves_icall_string_alloc, "ves_icall_string_alloc", mono_create_icall_signature ("object int"), FALSE);
-
-		gcj_inited = TRUE;
-		mono_loader_unlock ();
-	}
 
 	if (!klass->inited)
 		mono_class_init (klass);
@@ -5452,16 +5442,6 @@ mono_object_new_fast_checked (MonoVTable *vtable, MonoError *error)
 	return o;
 }
 
-MonoObject *
-ves_icall_object_new_fast (MonoVTable *vtable)
-{
-	MonoError error;
-	MonoObject *o = mono_object_new_fast_checked (vtable, &error);
-	mono_error_set_pending_exception (&error);
-
-	return o;
-}
-
 MonoObject*
 mono_object_new_mature (MonoVTable *vtable, MonoError *error)
 {
@@ -5479,44 +5459,6 @@ mono_object_new_mature (MonoVTable *vtable, MonoError *error)
 		mono_object_register_finalizer (o);
 
 	return o;
-}
-
-/**
- * mono_class_get_allocation_ftn:
- * \param vtable vtable
- * \param for_box the object will be used for boxing
- * \param pass_size_in_words Unused
- * \returns the allocation function appropriate for the given class.
- */
-void*
-mono_class_get_allocation_ftn (MonoVTable *vtable, gboolean for_box, gboolean *pass_size_in_words)
-{
-	MONO_REQ_GC_NEUTRAL_MODE;
-
-	*pass_size_in_words = FALSE;
-
-	if (mono_class_has_finalizer (vtable->klass) || mono_class_is_marshalbyref (vtable->klass))
-		return ves_icall_object_new_specific;
-
-	if (vtable->gc_descr != MONO_GC_DESCRIPTOR_NULL) {
-
-		return ves_icall_object_new_fast;
-
-		/* 
-		 * FIXME: This is actually slower than ves_icall_object_new_fast, because
-		 * of the overhead of parameter passing.
-		 */
-		/*
-		*pass_size_in_words = TRUE;
-#ifdef GC_REDIRECT_TO_LOCAL
-		return GC_local_gcj_fast_malloc;
-#else
-		return GC_gcj_fast_malloc;
-#endif
-		*/
-	}
-
-	return ves_icall_object_new_specific;
 }
 
 /**

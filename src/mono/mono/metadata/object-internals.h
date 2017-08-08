@@ -683,9 +683,6 @@ mono_delegate_ctor_with_method (MonoObjectHandle this_obj, MonoObjectHandle targ
 gboolean
 mono_delegate_ctor	    (MonoObjectHandle this_obj, MonoObjectHandle target, gpointer addr, MonoError *error);
 
-void*
-mono_class_get_allocation_ftn (MonoVTable *vtable, gboolean for_box, gboolean *pass_size_in_words);
-
 void
 mono_runtime_free_method    (MonoDomain *domain, MonoMethod *method);
 
@@ -1812,9 +1809,6 @@ mono_object_new_mature (MonoVTable *vtable, MonoError *error);
 
 MonoObject*
 mono_object_new_fast_checked (MonoVTable *vtable, MonoError *error);
-
-MonoObject *
-ves_icall_object_new_fast (MonoVTable *vtable);
 
 MonoObject *
 mono_object_clone_checked (MonoObject *obj, MonoError *error);
