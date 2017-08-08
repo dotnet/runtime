@@ -218,25 +218,21 @@ namespace System.Net.Http
         private static string GetRandomAlphaNumericString()
         {
             const int Length = 16;
-            StringBuilder sb = StringBuilderCache.Acquire(Length);
-            for (int i = 0; i < Length; i++)
+            Span<byte> randomNumbers;
+            unsafe
             {
-                byte[] randomNumber = new byte[1];
-                s_rng.GetBytes(randomNumber);
+                byte* ptr = stackalloc byte[Length * 2];
+                randomNumbers = new Span<byte>(ptr, Length * 2);
+            }
+            s_rng.GetBytes(randomNumbers);
 
-                int rangeIndex = (randomNumber[0] % 3);
-                s_rng.GetBytes(randomNumber);
-
-                if (rangeIndex == 0)
-                {
-                    // Get a random digit 0-9
-                    sb.Append((char)(s_alphaNumChooser[rangeIndex] + randomNumber[0] % 10));
-                }
-                else
-                {
-                    // Get a random alphabet in a-z, A-Z
-                    sb.Append((char)(s_alphaNumChooser[rangeIndex] + randomNumber[0] % 26));
-                }
+            StringBuilder sb = StringBuilderCache.Acquire(Length);
+            for (int i = 0; i < randomNumbers.Length; )
+            {
+                // Get a random digit 0-9, a random alphabet in a-z, or a random alphabeta in A-Z
+                int rangeIndex = randomNumbers[i++] % 3;
+                int value = randomNumbers[i++] % (rangeIndex == 0 ? 10 : 26);
+                sb.Append((char)(s_alphaNumChooser[rangeIndex] + value));
             }
 
             return StringBuilderCache.GetStringAndRelease(sb);
