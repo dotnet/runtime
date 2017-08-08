@@ -1241,6 +1241,36 @@ namespace System.Net.Sockets
             return bytesTransferred;
         }
 
+        public int Send(ReadOnlySpan<byte> buffer) => Send(buffer, SocketFlags.None);
+
+        public int Send(ReadOnlySpan<byte> buffer, SocketFlags socketFlags)
+        {
+            int bytesTransferred = Send(buffer, socketFlags, out SocketError errorCode);
+            return errorCode == SocketError.Success ?
+                bytesTransferred :
+                throw new SocketException((int)errorCode);
+        }
+
+        public int Send(ReadOnlySpan<byte> buffer, SocketFlags socketFlags, out SocketError errorCode)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (CleanedUp) throw new ObjectDisposedException(GetType().FullName);
+            ValidateBlockingMode();
+
+            int bytesTransferred;
+            errorCode = SocketPal.Send(_handle, buffer, socketFlags, out bytesTransferred);
+
+            if (errorCode != SocketError.Success)
+            {
+                UpdateStatusAfterSocketError(errorCode);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, new SocketException((int)errorCode));
+                bytesTransferred = 0;
+            }
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, bytesTransferred);
+            return bytesTransferred;
+        }
+
         public void SendFile(string fileName)
         {
             SendFile(fileName, null, null, TransmitFileOptions.UseDefaultWorkerThread);
@@ -1459,6 +1489,36 @@ namespace System.Net.Sockets
                 NetEventSource.Exit(this, bytesTransferred);
             }
 
+            return bytesTransferred;
+        }
+
+        public int Receive(Span<byte> buffer) => Receive(buffer, SocketFlags.None);
+
+        public int Receive(Span<byte> buffer, SocketFlags socketFlags)
+        {
+            int bytesTransferred = Receive(buffer, socketFlags, out SocketError errorCode);
+            return errorCode == SocketError.Success ?
+                bytesTransferred :
+                throw new SocketException((int)errorCode);
+        }
+
+        public int Receive(Span<byte> buffer, SocketFlags socketFlags, out SocketError errorCode)
+        {
+            if (NetEventSource.IsEnabled) NetEventSource.Enter(this);
+            if (CleanedUp) throw new ObjectDisposedException(GetType().FullName);
+            ValidateBlockingMode();
+
+            int bytesTransferred;
+            errorCode = SocketPal.Receive(_handle, buffer, socketFlags, out bytesTransferred);
+
+            if (errorCode != SocketError.Success)
+            {
+                UpdateStatusAfterSocketError(errorCode);
+                if (NetEventSource.IsEnabled) NetEventSource.Error(this, new SocketException((int)errorCode));
+                bytesTransferred = 0;
+            }
+
+            if (NetEventSource.IsEnabled) NetEventSource.Exit(this, bytesTransferred);
             return bytesTransferred;
         }
 
@@ -4629,7 +4689,7 @@ namespace System.Net.Sockets
                         else
                         {
                             int unused;
-                            errorCode = SocketPal.Receive(_handle, null, 0, 0, SocketFlags.None, out unused);
+                            errorCode = SocketPal.Receive(_handle, Array.Empty<byte>(), 0, 0, SocketFlags.None, out unused);
                             if (NetEventSource.IsEnabled) NetEventSource.Info(this, $"handle:{_handle} recv():{errorCode}");
 
                             if (errorCode != (SocketError)0)

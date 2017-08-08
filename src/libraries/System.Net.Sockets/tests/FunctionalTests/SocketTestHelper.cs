@@ -32,7 +32,7 @@ namespace System.Net.Sockets.Tests
         public virtual bool SupportsAcceptIntoExistingSocket => true;
     }
 
-    public class SocketHelperSync : SocketHelperBase
+    public class SocketHelperArraySync : SocketHelperBase
     {
         public override Task<Socket> AcceptAsync(Socket s) =>
             Task.Run(() => s.Accept());
@@ -68,7 +68,7 @@ namespace System.Net.Sockets.Tests
         public override bool SupportsAcceptIntoExistingSocket => false;
     }
 
-    public sealed class SocketHelperSyncForceNonBlocking : SocketHelperSync
+    public sealed class SocketHelperSyncForceNonBlocking : SocketHelperArraySync
     {
         public override Task<Socket> AcceptAsync(Socket s) =>
             Task.Run(() => { s.ForceNonBlocking(true); Socket accepted = s.Accept(); accepted.ForceNonBlocking(true); return accepted; });

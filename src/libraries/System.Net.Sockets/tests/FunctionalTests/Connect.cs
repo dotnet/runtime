@@ -86,7 +86,7 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    public sealed class ConnectSync : Connect<SocketHelperSync> { }
+    public sealed class ConnectSync : Connect<SocketHelperArraySync> { }
     public sealed class ConnectSyncForceNonBlocking : Connect<SocketHelperSyncForceNonBlocking> { }
     public sealed class ConnectApm : Connect<SocketHelperApm> { }
     public sealed class ConnectTask : Connect<SocketHelperTask> { }
