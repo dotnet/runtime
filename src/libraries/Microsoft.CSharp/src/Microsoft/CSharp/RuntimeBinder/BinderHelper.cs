@@ -37,11 +37,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 // Our contract with the DLR is such that we will not enter a bind unless we have
                 // values for the meta-objects involved.
 
-                if (!o.HasValue)
-                {
-                    Debug.Assert(false, "The runtime binder is being asked to bind a metaobject without a value");
-                    throw Error.InternalCompilerError();
-                }
+                Debug.Assert(o.HasValue);
 
                 CSharpArgumentInfo info = arginfosEnum.MoveNext() ? arginfosEnum.Current : null;
 
@@ -143,6 +139,30 @@ namespace Microsoft.CSharp.RuntimeBinder
                     ),
                     restrictions
                 );
+            }
+        }
+
+        public static void ValidateBindArgument(DynamicMetaObject argument, string paramName)
+        {
+            if (argument == null)
+            {
+                throw Error.ArgumentNull(paramName);
+            }
+
+            if (!argument.HasValue)
+            {
+                throw Error.DynamicArgumentNeedsValue(paramName);
+            }
+        }
+
+        public static void ValidateBindArgument(DynamicMetaObject[] arguments, string paramName)
+        {
+            if (arguments != null) // null is treated as empty, so not invalid
+            {
+                for (int i = 0; i != arguments.Length; ++i)
+                {
+                    ValidateBindArgument(arguments[i], $"{paramName}[{i}]");
+                }
             }
         }
 

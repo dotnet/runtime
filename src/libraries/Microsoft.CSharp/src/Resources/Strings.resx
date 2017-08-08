@@ -355,4 +355,7 @@
   <data name="TypeArgumentRequiredForStaticCall" xml:space="preserve">
     <value>The first argument to dynamically-bound static or constructor call must be a Type</value>
   </data>
+  <data name="DynamicArgumentNeedsValue" xml:space="preserve">
+    <value>The runtime binder cannot bind a metaobject without a value</value>
+  </data>
 </root>
