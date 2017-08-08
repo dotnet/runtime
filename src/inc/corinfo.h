@@ -213,11 +213,11 @@ TODO: Talk about initializing strutures before use
     #define SELECTANY extern __declspec(selectany)
 #endif
 
-SELECTANY const GUID JITEEVersionIdentifier = { /* 28eb875f-b6a9-4a04-9ba7-69ba59deed46 */
-    0x28eb875f,
-    0xb6a9,
-    0x4a04,
-    { 0x9b, 0xa7, 0x69, 0xba, 0x59, 0xde, 0xed, 0x46 }
+SELECTANY const GUID JITEEVersionIdentifier = { /* 5a1cfc89-a84a-4642-b01d-ead88e60c1ee */
+    0x5a1cfc89,
+    0xa84a,
+    0x4642,
+    { 0xb0, 0x1d, 0xea, 0xd8, 0x8e, 0x60, 0xc1, 0xee }
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1332,6 +1332,13 @@ struct CORINFO_RUNTIME_LOOKUP
     // 1 means that value stored at first offset (offsets[0]) from pointer is offset1, and the next pointer is
     // stored at pointer+offsets[0]+offset1.
     bool                indirectFirstOffset;
+
+    // If set, second offset is indirect.
+    // 0 means that value stored at second offset (offsets[1]) from pointer is next pointer, to which the next offset
+    // (offsets[2]) is added and so on.
+    // 1 means that value stored at second offset (offsets[1]) from pointer is offset2, and the next pointer is
+    // stored at pointer+offsets[1]+offset2.
+    bool                indirectSecondOffset;
 } ;
 
 // Result of calling embedGenericHandle
@@ -2062,7 +2069,8 @@ public:
     virtual void getMethodVTableOffset (
             CORINFO_METHOD_HANDLE       method,                 /* IN */
             unsigned*                   offsetOfIndirection,    /* OUT */
-            unsigned*                   offsetAfterIndirection  /* OUT */
+            unsigned*                   offsetAfterIndirection, /* OUT */
+            bool*                       isRelative              /* OUT */
             ) = 0;
 
     // Find the virtual method in implementingClass that overrides virtualMethod,
