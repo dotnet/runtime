@@ -120,31 +120,6 @@
 #define ALIGN_PTR_TO(ptr,align) (gpointer)((((gssize)(ptr)) + (align - 1)) & (~(align - 1)))
 #define ROUND_DOWN(VALUE,SIZE)	((VALUE) & ~((SIZE) - 1))
 
-#if defined(TARGET_AMD64) && !defined(HOST_WIN32) && !defined(__APPLE__)
-#define USE_ELF_WRITER 1
-#define USE_ELF_RELA 1
-#endif
-
-#if defined(TARGET_X86) && !defined(HOST_WIN32) && !defined(__APPLE__)
-#define USE_ELF_WRITER 1
-#endif
-
-#if defined(TARGET_ARM) && !defined(TARGET_MACH) && !defined(HOST_WIN32)
-//#define USE_ELF_WRITER 1
-#endif
-
-#if defined(__mips__)
-#define USE_ELF_WRITER 1
-#endif
-
-#if defined(TARGET_X86) && defined(__APPLE__)
-//#define USE_MACH_WRITER
-#endif
-
-#if defined(USE_ELF_WRITER) || defined(USE_MACH_WRITER)
-#define USE_BIN_WRITER 1
-#endif
-
 #ifdef USE_BIN_WRITER
 
 typedef struct _BinSymbol BinSymbol;
