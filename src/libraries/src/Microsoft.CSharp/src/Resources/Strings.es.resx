@@ -222,12 +222,6 @@
   <data name="IncrementLvalueExpected" xml:space="preserve">
     <value>El operando de un operador de incremento o decremento debe ser una variable, una propiedad o un indizador</value>
   </data>
-  <data name="NoSuchMemberOrExtension" xml:space="preserve">
-    <value>'{0}' no contiene una definición para '{1}' ni se encuentra ningún método de extensión '{1}' que acepte un primer argumento del tipo '{0}' (¿falta una directiva de uso o una referencia de ensamblado?).</value>
-  </data>
-  <data name="ValueTypeExtDelegate" xml:space="preserve">
-    <value>Los métodos de extensión '{0}' definidos en el tipo de valor '{1}' no se pueden usar para crear delegados.</value>
-  </data>
   <data name="BadArgCount" xml:space="preserve">
     <value>Ninguna sobrecarga del método '{0}' toma argumentos '{1}'</value>
   </data>
@@ -284,9 +278,6 @@
   </data>
   <data name="BadCtorArgCount" xml:space="preserve">
     <value>'{0}' no contiene un constructor que tome '{1}' argumentos</value>
-  </data>
-  <data name="BadExtensionArgTypes" xml:space="preserve">
-    <value>'{0}' no contiene una definición para '{1}' y la mejor sobrecarga del método de extensión '{2}' tiene algunos argumentos no válidos</value>
   </data>
   <data name="NonInvocableMemberCalled" xml:space="preserve">
     <value>No se puede usar como método el miembro '{0}' no invocable.</value>

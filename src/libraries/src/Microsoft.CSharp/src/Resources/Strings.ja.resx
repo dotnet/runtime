@@ -222,12 +222,6 @@
   <data name="IncrementLvalueExpected" xml:space="preserve">
     <value>インクリメント演算子またはデクリメント演算子のオペランドには、変数、プロパティ、またはインデクサーを指定してください。</value>
   </data>
-  <data name="NoSuchMemberOrExtension" xml:space="preserve">
-    <value>'{0}' に '{1}' の定義が含まれておらず、型 '{0}' の最初の引数を受け付ける拡張メソッド '{1}' が見つかりませんでした。using ディレクティブまたはアセンブリ参照が不足しています</value>
-  </data>
-  <data name="ValueTypeExtDelegate" xml:space="preserve">
-    <value>値の型 '{1}' で定義された拡張メソッド '{0}' は、デリゲートを作成するために使用できません</value>
-  </data>
   <data name="BadArgCount" xml:space="preserve">
     <value>引数を '{1}' 個指定できる、メソッド '{0}' のオーバーロードはありません</value>
   </data>
@@ -284,9 +278,6 @@
   </data>
   <data name="BadCtorArgCount" xml:space="preserve">
     <value>'{0}' に、引数を '{1}' 個指定できるコンストラクターがありません</value>
-  </data>
-  <data name="BadExtensionArgTypes" xml:space="preserve">
-    <value>'{0}' に '{1}' の定義が含まれておらず、最も適している拡張メソッド オーバーロード '{2}' には無効な引数がいくつか含まれています</value>
   </data>
   <data name="NonInvocableMemberCalled" xml:space="preserve">
     <value>実行不可能なメンバー '{0}' をメソッドのように使用することはできません。</value>

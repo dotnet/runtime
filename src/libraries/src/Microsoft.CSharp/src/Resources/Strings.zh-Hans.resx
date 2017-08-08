@@ -222,12 +222,6 @@
   <data name="IncrementLvalueExpected" xml:space="preserve">
     <value>递增或递减运算符的操作数必须是变量、属性或索引器</value>
   </data>
-  <data name="NoSuchMemberOrExtension" xml:space="preserve">
-    <value>“{0}”未包含“{1}”的定义，并且找不到可接受第一个“{0}”类型参数的扩展方法“{1}”(是否缺少 using 指令或程序集引用?)</value>
-  </data>
-  <data name="ValueTypeExtDelegate" xml:space="preserve">
-    <value>无法使用值类型“{1}”定义的扩展方法“{0}”来创建委托</value>
-  </data>
   <data name="BadArgCount" xml:space="preserve">
     <value>“{0}”方法没有采用“{1}”个参数的重载</value>
   </data>
@@ -284,9 +278,6 @@
   </data>
   <data name="BadCtorArgCount" xml:space="preserve">
     <value>“{0}”不包含采用“{1}”个参数的构造函数</value>
-  </data>
-  <data name="BadExtensionArgTypes" xml:space="preserve">
-    <value>“{0}”不包含“{1}”的定义，并且最佳扩展方法重载“{2}”具有一些无效参数</value>
   </data>
   <data name="NonInvocableMemberCalled" xml:space="preserve">
     <value>不可调用的成员“{0}”不能像方法一样使用。</value>

@@ -34,9 +34,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             // if Extension can be part of the results that are returned by the iterator
             // this may be false if an applicable instance method was found by bindgrptoArgs
             private bool _bcanIncludeExtensionsInResults;
-            // we have found a applicable extension and only continue to the end of the current
-            // Namespace's extension methodlist
-            private bool _bEndIterationAtCurrentExtensionList;
 
             public CMethodIterator(CSemanticChecker checker, SymbolLoader symLoader, Name name, TypeArray containingTypes, CType @object, CType qualifyingType, AggregateDeclaration context, bool allowBogusAndInaccessible, bool allowExtensionMethods, int arity, EXPRFLAG flags, symbmask_t mask)
             {
@@ -62,7 +59,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 _bCurrentSymIsBogus = false;
                 _bCurrentSymIsInaccessible = false;
                 _bcanIncludeExtensionsInResults = allowExtensionMethods;
-                _bEndIterationAtCurrentExtensionList = false;
             }
             public MethodOrPropertySymbol GetCurrentSymbol()
             {
@@ -80,15 +76,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             {
                 return _bCurrentSymIsBogus;
             }
-            public bool MoveNext(bool canIncludeExtensionsInResults, bool endatCurrentExtensionList)
+            public bool MoveNext(bool canIncludeExtensionsInResults)
             {
                 if (_bcanIncludeExtensionsInResults)
                 {
                     _bcanIncludeExtensionsInResults = canIncludeExtensionsInResults;
-                }
-                if (!_bEndIterationAtCurrentExtensionList)
-                {
-                    _bEndIterationAtCurrentExtensionList = endatCurrentExtensionList;
                 }
 
                 if (_bAtEnd)
@@ -194,14 +186,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     }
                 }
 
-                // if we are done checking all the instance types ensure that currentsym is an 
-                // extension method and not a simple static method
-                if (!_bIsCheckingInstanceMethods && !((MethodSymbol)_pCurrentSym).IsExtension())
-                {
-                    return false;
-                }
-
-                return true;
+                return _bIsCheckingInstanceMethods;
             }
 
             private bool FindNextMethod()

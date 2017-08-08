@@ -222,12 +222,6 @@
   <data name="IncrementLvalueExpected" xml:space="preserve">
     <value>증가 연산자 또는 감소 연산자의 피연산자는 변수, 속성 또는 인덱서여야 합니다.</value>
   </data>
-  <data name="NoSuchMemberOrExtension" xml:space="preserve">
-    <value>'{0}'에 '{1}'에 대한 정의가 없고 '{0}' 형식의 첫 번째 인수를 허용하는 확장 메서드 '{1}'을(를) 찾을 수 없습니다. using 지시문 또는 어셈블리 참조가 있는지 확인하십시오.</value>
-  </data>
-  <data name="ValueTypeExtDelegate" xml:space="preserve">
-    <value>값 형식 '{1}'에 정의된 확장 메서드 '{0}'은(는) 대리자를 만드는 데 사용할 수 없습니다.</value>
-  </data>
   <data name="BadArgCount" xml:space="preserve">
     <value>'{1}'개의 인수를 사용하는 '{0}' 메서드에 대한 오버로드가 없습니다.</value>
   </data>
@@ -284,9 +278,6 @@
   </data>
   <data name="BadCtorArgCount" xml:space="preserve">
     <value>'{0}'에 '{1}'개의 인수를 사용하는 생성자가 없습니다.</value>
-  </data>
-  <data name="BadExtensionArgTypes" xml:space="preserve">
-    <value>'{0}'에 '{1}'에 대한 정의가 없으며 가장 적합한 확장 메서드 오버로드 '{2}'에 잘못된 인수가 있습니다.</value>
   </data>
   <data name="NonInvocableMemberCalled" xml:space="preserve">
     <value>호출할 수 없는 멤버인 '{0}'은(는) 메서드처럼 사용할 수 없습니다.</value>

@@ -290,14 +290,6 @@
           <source>The operand of an increment or decrement operator must be a variable, property or indexer</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">递增或递减运算符的操作数必须是变量、属性或索引器</target>
         </trans-unit>
-        <trans-unit id="NoSuchMemberOrExtension" translate="yes" xml:space="preserve">
-          <source>'{0}' does not contain a definition for '{1}' and no extension method '{1}' accepting a first argument of type '{0}' could be found (are you missing a using directive or an assembly reference?)</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">“{0}”未包含“{1}”的定义，并且找不到可接受第一个“{0}”类型参数的扩展方法“{1}”(是否缺少 using 指令或程序集引用?)</target>
-        </trans-unit>
-        <trans-unit id="ValueTypeExtDelegate" translate="yes" xml:space="preserve">
-          <source>Extension methods '{0}' defined on value type '{1}' cannot be used to create delegates</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">无法使用值类型“{1}”定义的扩展方法“{0}”来创建委托</target>
-        </trans-unit>
         <trans-unit id="BadArgCount" translate="yes" xml:space="preserve">
           <source>No overload for method '{0}' takes '{1}' arguments</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">“{0}”方法没有采用“{1}”个参数的重载</target>
@@ -373,10 +365,6 @@
         <trans-unit id="BadCtorArgCount" translate="yes" xml:space="preserve">
           <source>'{0}' does not contain a constructor that takes '{1}' arguments</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">“{0}”不包含采用“{1}”个参数的构造函数</target>
-        </trans-unit>
-        <trans-unit id="BadExtensionArgTypes" translate="yes" xml:space="preserve">
-          <source>'{0}' does not contain a definition for '{1}' and the best extension method overload '{2}' has some invalid arguments</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">“{0}”不包含“{1}”的定义，并且最佳扩展方法重载“{2}”具有一些无效参数</target>
         </trans-unit>
         <trans-unit id="NonInvocableMemberCalled" translate="yes" xml:space="preserve">
           <source>Non-invocable member '{0}' cannot be used like a method.</source>

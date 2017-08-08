@@ -222,12 +222,6 @@
   <data name="IncrementLvalueExpected" xml:space="preserve">
     <value>L'opérande d'un opérateur d'incrémentation ou de décrémentation doit être une variable, une propriété ou un indexeur</value>
   </data>
-  <data name="NoSuchMemberOrExtension" xml:space="preserve">
-    <value>'{0}' ne contient pas de définition pour '{1}' et aucune méthode d'extension '{1}' acceptant un premier argument de type '{0}' n'a été trouvée (une directive using ou une référence d'assembly est-elle manquante ?)</value>
-  </data>
-  <data name="ValueTypeExtDelegate" xml:space="preserve">
-    <value>Impossible d'utiliser les méthodes d'extension '{0}' définies dans un type valeur '{1}' pour créer des délégués</value>
-  </data>
   <data name="BadArgCount" xml:space="preserve">
     <value>Aucune surcharge pour la méthode '{0}' ne prend d'arguments '{1}'</value>
   </data>
@@ -284,9 +278,6 @@
   </data>
   <data name="BadCtorArgCount" xml:space="preserve">
     <value>'{0}' ne contient pas de constructeur qui accepte des arguments '{1}'</value>
-  </data>
-  <data name="BadExtensionArgTypes" xml:space="preserve">
-    <value>'{0}' ne contient pas de définition pour '{1}' et la meilleure surcharge de la méthode d'extension '{2}' contient des arguments non valides</value>
   </data>
   <data name="NonInvocableMemberCalled" xml:space="preserve">
     <value>Impossible d'utiliser un membre '{0}' ne pouvant pas être appelé comme une méthode.</value>
