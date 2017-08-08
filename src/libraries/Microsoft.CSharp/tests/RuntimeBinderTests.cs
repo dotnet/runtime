@@ -174,5 +174,25 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             dynamic res = itd.Equals(d);
             Assert.True(res);
         }
+
+        [Fact, ActiveIssue(7527)]
+        public void CyclicTypeDefinition()
+        {
+            dynamic x = new Third<int>();
+            Assert.Equal(0, x.Zero());
+        }
+
+        class First<T> where T : First<T>
+        {
+            public int Zero() => 0;
+        }
+
+        class Second<T> : First<T> where T : First<T>
+        {
+        }
+
+        class Third<T> : Second<Third<T>>
+        {
+        }
     }
 }
