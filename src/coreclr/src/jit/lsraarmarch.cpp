@@ -684,6 +684,7 @@ void Lowering::TreeNodeInfoInitPutArgSplit(GenTreePutArgSplit* argNode, TreeNode
         argMask |= genRegMask((regNumber)((unsigned)argReg + i));
     }
     argNode->gtLsraInfo.setDstCandidates(m_lsra, argMask);
+    argNode->gtLsraInfo.setSrcCandidates(m_lsra, argMask);
 
     if (putArgChild->OperGet() == GT_FIELD_LIST)
     {
