@@ -56,6 +56,9 @@
       <RepoIds Include="DebianId_debian8-x64">
         <Key>$(DebianId_debian8-x64)</Key>
       </RepoIds>
+      <RepoIds Include="DebianId_debian9-x64">
+        <Key>$(DebianId_debian9-x64)</Key>
+      </RepoIds>
       <RepoIds Include="DebianId_ubuntu1604-x64">
         <Key>$(DebianId_ubuntu1604-x64)</Key>
       </RepoIds>
