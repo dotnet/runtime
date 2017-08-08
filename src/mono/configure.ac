@@ -686,6 +686,9 @@ AC_ARG_WITH(crosspkgdir, [  --with-crosspkgdir=/path/to/pkg-config/dir      Chan
 	fi
 )
 
+AC_CHECK_PROG(ninja, ninja, yes, no)
+AM_CONDITIONAL(NINJA, test x$ninja != xno)
+
 AC_ARG_ENABLE(werror, [  --enable-werror Pass -Werror to the C compiler], werror_flag=$enableval, werror_flag=no)
 if test x$werror_flag = xyes; then
 	WERROR_CFLAGS="-Werror"
