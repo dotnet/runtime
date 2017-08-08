@@ -779,7 +779,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 }
             }
 
-            return GetErrorContext().Error((_flags & MemLookFlags.ExtensionCall) != 0 ? ErrorCode.ERR_NoSuchMemberOrExtension : ErrorCode.ERR_NoSuchMember, _typeSrc, _name);
+            return GetErrorContext().Error(ErrorCode.ERR_NoSuchMember, _typeSrc, _name);
         }
     }
 }
