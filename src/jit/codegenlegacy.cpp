@@ -18904,7 +18904,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreeCall* call, bool valUsed)
                 // stub dispatching is off or this is not a virtual call (could be a tailcall)
                 {
                     regNumber vptrReg;
-                    regNumber vptrReg1 = REG_NA;
+                    regNumber vptrReg1  = REG_NA;
                     regMaskTP vptrMask1 = RBM_NONE;
                     unsigned  vtabOffsOfIndirection;
                     unsigned  vtabOffsAfterIndirection;
