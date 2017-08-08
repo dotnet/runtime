@@ -54,9 +54,10 @@ namespace System.Diagnostics.Tracing
         public bool DisableEvent(int eventId) { throw null; }
         public bool EnableEvent(int eventId) { throw null; }
     }
-    public class EventCounter {
+    public class EventCounter : IDisposable {
         public EventCounter(string name, EventSource eventSource) { }
         public void WriteMetric(float value) { }
+        public void Dispose() { }
     }
     [System.AttributeUsageAttribute((System.AttributeTargets)(12), Inherited = false)]
     public partial class EventDataAttribute : System.Attribute
