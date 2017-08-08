@@ -80,6 +80,7 @@ set __BuildStandaloneGCOnly="-DFEATURE_STANDALONE_GC_ONLY=0"
 
 set __PgoInstrument=0
 set __PgoOptimize=1
+set __EnforcePgo=0
 set __IbcTuning=
 
 REM __PassThroughArgs is a set of things that will be passed through to nested calls to build.cmd
@@ -140,6 +141,7 @@ if /i "%1" == "skiprestoreoptdata"  (set __RestoreOptData=0&set processedArgs=!p
 if /i "%1" == "usenmakemakefiles"   (set __NMakeMakefiles=1&set __ConfigureOnly=1&set __BuildNative=1&set __BuildNativeCoreLib=0&set __BuildCoreLib=0&set __BuildTests=0&set __BuildPackages=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "pgoinstrument"       (set __PgoInstrument=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "nopgooptimize"       (set __PgoOptimize=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "enforcepgo"          (set __EnforcePgo=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "ibcinstrument"       (set __IbcTuning=/Tuning&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "toolset_dir"         (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
 if /i "%1" == "buildstandalonegc"   (
@@ -193,6 +195,17 @@ if %__BuildTypeRelease%==1  set __BuildType=Release
 
 set __RunArgs=-BuildOS=%__BuildOS% -BuildType=%__BuildType% -BuildArch=%__BuildArch%
 
+if %__EnforcePgo%==1 (
+    if %__BuildArchArm%==1 (
+        echo Error: enforcepgo cannot be used with arm architecture
+        goto Usage
+    )
+    if %__BuildArchArm64%==1 (
+        echo Error: enforcepgo cannot be used with arm64 architecture
+        goto Usage
+    )
+)
+
 :: Set the remaining variables based upon the determined build configuration
 set "__BinDir=%__RootBinDir%\Product\%__BuildOS%.%__BuildArch%.%__BuildType%"
 set "__IntermediatesDir=%__RootBinDir%\obj\%__BuildOS%.%__BuildArch%.%__BuildType%"
@@ -203,6 +216,7 @@ set "__TestBinDir=%__TestRootDir%\%__BuildOS%.%__BuildArch%.%__BuildType%"
 set "__TestIntermediatesDir=%__RootBinDir%\tests\obj\%__BuildOS%.%__BuildArch%.%__BuildType%"
 set "__CrossComponentBinDir=%__BinDir%"
 set "__CrossCompIntermediatesDir=%__IntermediatesDir%\crossgen"
+
 
 if NOT "%__CrossArch%" == "" set __CrossComponentBinDir=%__CrossComponentBinDir%\%__CrossArch%
 set "__CrossGenCoreLibLog=%__LogsDir%\CrossgenCoreLib_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
@@ -626,6 +640,7 @@ echo     respectively^).
 echo     add nativemscorlib to go further and build the native image for designated mscorlib.
 echo toolset_dir ^<dir^> : set the toolset directory -- Arm64 use only. Required for Arm64 builds.
 echo nopgooptimize: do not use profile guided optimizations.
+echo enforcepgo: verify after the build that PGO was used for key DLLs, and fail the build if not
 echo pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.
 echo ibcinstrument: generate IBC-tuning-enabled native images when invoking crossgen.
 echo configureonly: skip all builds; only run CMake ^(default: CMake and builds are run^)
