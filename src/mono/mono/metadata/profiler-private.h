@@ -7,16 +7,17 @@
 #ifndef __MONO_PROFILER_PRIVATE_H__
 #define __MONO_PROFILER_PRIVATE_H__
 
+#include <mono/metadata/class-internals.h>
 #define MONO_PROFILER_UNSTABLE_GC_ROOTS
 #include <mono/metadata/profiler.h>
 #include <mono/utils/mono-context.h>
-#include <mono/utils/mono-lazy-init.h>
 #include <mono/utils/mono-os-mutex.h>
 #include <mono/utils/mono-os-semaphore.h>
 
 struct _MonoProfilerDesc {
 	MonoProfilerHandle next;
 	MonoProfiler *prof;
+	volatile gpointer cleanup_callback;
 	volatile gpointer coverage_filter;
 	volatile gpointer call_instrumentation_filter;
 
@@ -46,7 +47,7 @@ typedef struct {
 
 	MonoProfilerHandle profilers;
 
-	mono_lazy_init_t coverage_status;
+	gboolean code_coverage;
 	mono_mutex_t coverage_mutex;
 	GHashTable *coverage_hash;
 
@@ -106,7 +107,6 @@ mono_profiler_installed (void)
 }
 
 MonoProfilerCoverageInfo *mono_profiler_coverage_alloc (MonoMethod *method, guint32 entries);
-void mono_profiler_coverage_free (MonoMethod *method);
 
 struct _MonoProfilerCallContext {
 	/*
@@ -139,7 +139,7 @@ mono_profiler_allocations_enabled (void)
 }
 
 #define _MONO_PROFILER_EVENT(name, ...) \
-	void mono_profiler_raise_ ## name (__VA_ARGS__);
+	ICALL_DECL_EXPORT void mono_profiler_raise_ ## name (__VA_ARGS__);
 #define MONO_PROFILER_EVENT_0(name, type) \
 	_MONO_PROFILER_EVENT(name, void)
 #define MONO_PROFILER_EVENT_1(name, type, arg1_type, arg1_name) \

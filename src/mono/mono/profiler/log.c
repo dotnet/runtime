@@ -1792,6 +1792,12 @@ method_leave (MonoProfiler *prof, MonoMethod *method, MonoProfilerCallContext *c
 }
 
 static void
+tail_call (MonoProfiler *prof, MonoMethod *method, MonoMethod *target)
+{
+	method_leave (prof, method, NULL);
+}
+
+static void
 method_exc_leave (MonoProfiler *prof, MonoMethod *method, MonoObject *exc)
 {
 	if (--get_thread ()->call_depth <= log_config.max_call_depth) {
@@ -1810,7 +1816,10 @@ method_exc_leave (MonoProfiler *prof, MonoMethod *method, MonoObject *exc)
 static MonoProfilerCallInstrumentationFlags
 method_filter (MonoProfiler *prof, MonoMethod *method)
 {
-	return MONO_PROFILER_CALL_INSTRUMENTATION_PROLOGUE | MONO_PROFILER_CALL_INSTRUMENTATION_EPILOGUE;
+	return MONO_PROFILER_CALL_INSTRUMENTATION_ENTER |
+	       MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE |
+	       MONO_PROFILER_CALL_INSTRUMENTATION_TAIL_CALL |
+	       MONO_PROFILER_CALL_INSTRUMENTATION_EXCEPTION_LEAVE;
 }
 
 static void
@@ -4735,11 +4744,14 @@ mono_profiler_init_log (const char *desc)
 		mono_profiler_set_call_instrumentation_filter_callback (handle, method_filter);
 		mono_profiler_set_method_enter_callback (handle, method_enter);
 		mono_profiler_set_method_leave_callback (handle, method_leave);
+		mono_profiler_set_method_tail_call_callback (handle, tail_call);
 		mono_profiler_set_method_exception_leave_callback (handle, method_exc_leave);
 	}
 
-	if (log_config.collect_coverage)
+	if (log_config.collect_coverage) {
+		mono_profiler_enable_coverage ();
 		mono_profiler_set_coverage_filter_callback (handle, coverage_filter);
+	}
 
 	mono_profiler_enable_allocations ();
 	mono_profiler_enable_sampling (handle);

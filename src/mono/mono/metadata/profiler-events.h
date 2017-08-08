@@ -56,6 +56,7 @@ MONO_PROFILER_EVENT_1(assembly_unloaded, AssemblyLUnloaded, MonoAssembly *, asse
 
 MONO_PROFILER_EVENT_2(method_enter, MethodEnter, MonoMethod *, method, MonoProfilerCallContext *, context)
 MONO_PROFILER_EVENT_2(method_leave, MethodLeave, MonoMethod *, method, MonoProfilerCallContext *, context)
+MONO_PROFILER_EVENT_2(method_tail_call, MethodTailCall, MonoMethod *, method, MonoMethod *, target)
 MONO_PROFILER_EVENT_2(method_exception_leave, MethodExceptionLeave, MonoMethod *, method, MonoObject *, exception)
 MONO_PROFILER_EVENT_1(method_free, MethodFree, MonoMethod *, method)
 MONO_PROFILER_EVENT_1(method_begin_invoke, MethodBeginInvoke, MonoMethod *, method)

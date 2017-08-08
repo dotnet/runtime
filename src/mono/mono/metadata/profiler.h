@@ -42,7 +42,9 @@ typedef struct _MonoProfilerDesc *MonoProfilerHandle;
 
 /*
  * Installs a profiler and returns a handle for it. The handle is used with the
- * other functions in the profiler API (e.g. for setting up callbacks).
+ * other functions in the profiler API (e.g. for setting up callbacks). The
+ * given structure pointer will be passed to all callbacks from the profiler
+ * API. It can be NULL.
  *
  * This function may only be called from your profiler's init function.
  *
@@ -60,6 +62,31 @@ typedef struct _MonoProfilerDesc *MonoProfilerHandle;
  * This function is not async safe.
  */
 MONO_API MonoProfilerHandle mono_profiler_create (MonoProfiler *prof);
+
+typedef void (*MonoProfilerCleanupCallback) (MonoProfiler *prof);
+
+/*
+ * Sets a profiler cleanup function. This function will be invoked at shutdown
+ * when the profiler API is cleaning up its internal structures. It's mainly
+ * intended for a profiler to free the structure pointer that was passed to
+ * mono_profiler_create, if necessary.
+ *
+ * This function is async safe.
+ */
+MONO_API void mono_profiler_set_cleanup_callback (MonoProfilerHandle handle, MonoProfilerCleanupCallback cb);
+
+/*
+ * Enables support for code coverage instrumentation. At the moment, this means
+ * enabling the debug info subsystem. If you do not call this function, you
+ * will not be able to use mono_profiler_get_coverage_data. Returns TRUE if
+ * code coverage support was enabled, or FALSE if the function was called too
+ * late for this to be possible.
+ *
+ * This function may only be called from your profiler's init function.
+ *
+ * This function is not async safe.
+ */
+MONO_API mono_bool mono_profiler_enable_coverage (void);
 
 typedef mono_bool (*MonoProfilerCoverageFilterCallback) (MonoProfiler *prof, MonoMethod *method);
 
@@ -91,11 +118,16 @@ typedef void (*MonoProfilerCoverageCallback) (MonoProfiler *prof, const MonoProf
 
 /*
  * Retrieves all coverage data for the specified method and invokes the given
- * callback for each entry.
+ * callback for each entry. Source location information will only be filled out
+ * if the given method has debug info available. Returns TRUE if the given
+ * method was instrumented for code coverage; otherwise, FALSE.
+ *
+ * Please note that the structure passed to the callback is only valid for the
+ * duration of the callback.
  *
  * This function is not async safe.
  */
-MONO_API void mono_profiler_get_coverage_data (MonoProfilerHandle handle, MonoMethod *method, MonoProfilerCoverageCallback cb);
+MONO_API mono_bool mono_profiler_get_coverage_data (MonoProfilerHandle handle, MonoMethod *method, MonoProfilerCoverageCallback cb);
 
 typedef enum {
 	/*
@@ -168,14 +200,18 @@ MONO_API mono_bool mono_profiler_enable_allocations (void);
 typedef enum {
 	/* Do not instrument calls. */
 	MONO_PROFILER_CALL_INSTRUMENTATION_NONE = 0,
-	/* Instrument method prologues. */
-	MONO_PROFILER_CALL_INSTRUMENTATION_PROLOGUE = 1 << 1,
-	/* Also capture a call context for prologues. */
-	MONO_PROFILER_CALL_INSTRUMENTATION_PROLOGUE_CONTEXT = 1 << 2,
-	/* Instrument method epilogues. */
-	MONO_PROFILER_CALL_INSTRUMENTATION_EPILOGUE = 1 << 3,
-	/* Also capture a call context for epilogues. */
-	MONO_PROFILER_CALL_INSTRUMENTATION_EPILOGUE_CONTEXT = 1 << 4,
+	/* Instrument method entries. */
+	MONO_PROFILER_CALL_INSTRUMENTATION_ENTER = 1 << 1,
+	/* Also capture a call context for method entries. */
+	MONO_PROFILER_CALL_INSTRUMENTATION_ENTER_CONTEXT = 1 << 2,
+	/* Instrument method exits. */
+	MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE = 1 << 3,
+	/* Also capture a call context for method exits. */
+	MONO_PROFILER_CALL_INSTRUMENTATION_LEAVE_CONTEXT = 1 << 4,
+	/* Instrument method exits as a result of a tail call. */
+	MONO_PROFILER_CALL_INSTRUMENTATION_TAIL_CALL = 1 << 5,
+	/* Instrument exceptional method exits. */
+	MONO_PROFILER_CALL_INSTRUMENTATION_EXCEPTION_LEAVE = 1 << 6,
 } MonoProfilerCallInstrumentationFlags;
 
 typedef MonoProfilerCallInstrumentationFlags (*MonoProfilerCallInstrumentationFilterCallback) (MonoProfiler *prof, MonoMethod *method);

@@ -1514,7 +1514,7 @@ generate (MonoMethod *method, InterpMethod *rtm, unsigned char *is_bb_start, Mon
 		}
 	}
 
-	if (rtm->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_PROLOGUE)
+	if (rtm->prof_flags & MONO_PROFILER_CALL_INSTRUMENTATION_ENTER)
 		ADD_CODE (td, MINT_PROF_ENTER);
 
 	if (sym_seq_points) {
@@ -3753,6 +3753,7 @@ generate (MonoMethod *method, InterpMethod *rtm, unsigned char *is_bb_start, Mon
 			case CEE_TAIL_:
 				++td->ip;
 				/* FIX: should do something? */;
+				// TODO: This should raise a method_tail_call profiler event.
 				break;
 			case CEE_INITOBJ:
 				CHECK_STACK(td, 1);
