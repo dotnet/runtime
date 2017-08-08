@@ -30,18 +30,6 @@ sgen_libs = \
 	$(monodir)/mono/utils/libmonoutils.la \
 	$(GLIB_LIBS) $(LIBICONV)
 
-boehm_static_libs=	\
-	$(monodir)/mono/metadata/libmonoruntime-static.la	\
-	$(monodir)/mono/utils/libmonoutils.la \
-	$(GLIB_LIBS) $(LIBICONV) \
-	$(libgc_static_libs)
-
-sgen_static_libs = \
-	$(monodir)/mono/metadata/libmonoruntimesgen-static.la	\
-	$(monodir)/mono/sgen/libmonosgen-static.la	\
-	$(monodir)/mono/utils/libmonoutils.la \
-	$(GLIB_LIBS) $(LIBICONV)
-
 if FULL_AOT_TESTS
 # if the tests are going to run with framework assemblies compiled with
 # -d:MOBILE, tell the runtime to remap framework assemblies using the mobile
@@ -95,12 +83,12 @@ endif
 if SUPPORT_SGEN
 sgen_binaries = mono-sgen
 sgen_libraries = libmonosgen-2.0.la
-sgen_static_libraries = libmini-static.la $(interp_libs_static) $(sgen_static_libs)
+sgen_static_libraries = libmini.la $(interp_libs) $(sgen_libs)
 endif
 
 if SUPPORT_BOEHM
 boehm_libraries = libmonoboehm-2.0.la
-boehm_static_libraries = libmini-static.la $(interp_libs_static) $(boehm_static_libs)
+boehm_static_libraries = libmini.la $(interp_libs) $(boehm_libs)
 boehm_binaries  = mono-boehm
 endif
 
@@ -156,11 +144,7 @@ else
 mini_common_lib = 
 endif
 
-if DISABLE_EXECUTABLES
 noinst_LTLIBRARIES = $(mini_common_lib)
-else
-noinst_LTLIBRARIES = $(mini_common_lib) libmini-static.la $(interp_libs_static)
-endif
 
 if LOADED_LLVM
 lib_LTLIBRARIES += libmono-llvm.la
@@ -193,20 +177,12 @@ mono_sgen_CFLAGS = $(AM_CFLAGS)
 # We build this after libmono was built so it contains the date when the final
 # link was done
 if SUPPORT_BOEHM
-if DISABLE_EXECUTABLES
-buildver-boehm.h: libmini-static.la $(monodir)/mono/metadata/libmonoruntime.la
-else
-buildver-boehm.h: libmini-static.la $(monodir)/mono/metadata/libmonoruntime-static.la
-endif
+buildver-boehm.h: libmini.la $(monodir)/mono/metadata/libmonoruntime.la
 	@echo "const char *build_date = \"`date`\";" > buildver-boehm.h
 mono_boehm-main.$(OBJEXT): buildver-boehm.h
 endif
 
-if DISABLE_EXECUTABLES
-buildver-sgen.h: libmini-static.la $(monodir)/mono/metadata/libmonoruntimesgen.la $(monodir)/mono/sgen/libmonosgen.la
-else
-buildver-sgen.h: libmini-static.la $(monodir)/mono/metadata/libmonoruntimesgen-static.la $(monodir)/mono/sgen/libmonosgen-static.la
-endif
+buildver-sgen.h: libmini.la $(monodir)/mono/metadata/libmonoruntimesgen.la $(monodir)/mono/sgen/libmonosgen.la
 	@echo "const char *build_date = \"`date`\";" > buildver-sgen.h
 mono_sgen-main-sgen.$(OBJEXT): buildver-sgen.h
 main-sgen.$(OBJEXT): buildver-sgen.h
@@ -399,10 +375,8 @@ interp_sources =	\
 
 if DISABLE_INTERPRETER
 interp_libs =
-interp_libs_static =
 else
 interp_libs = libmono-ee-interp.la
-interp_libs_static = libmono-ee-interp-static.la
 endif
 
 if ENABLE_LLVM
@@ -653,6 +627,10 @@ if BITCODE
 libmono_ee_interp_la_LIBADD = libmonosgen-2.0.la
 endif
 
+#
+# This library is shared between mono and mono-sgen, since the code in mini/ doesn't contain
+# compile time dependencies on boehm/sgen.
+#
 libmini_la_SOURCES = $(common_sources) $(llvm_sources) $(llvm_runtime_sources) $(arch_sources) $(os_sources)
 libmini_la_CFLAGS = $(mono_CFLAGS)
 
@@ -665,22 +643,6 @@ libmonosgen_2_0_la_SOURCES =
 libmonosgen_2_0_la_CFLAGS = $(mono_sgen_CFLAGS)
 libmonosgen_2_0_la_LIBADD = libmini.la $(interp_libs) $(sgen_libs) $(LIBMONO_DTRACE_OBJECT) $(LLVMMONOF)
 libmonosgen_2_0_la_LDFLAGS = $(libmonoldflags) $(monobin_platform_ldflags)
-
-#
-# This library is shared between mono and mono-sgen, since the code in mini/ doesn't contain
-# compile time dependencies on boehm/sgen.
-#
-libmini_static_la_SOURCES = $(libmini_la_SOURCES)
-libmini_static_la_CFLAGS = $(AM_CFLAGS)
-libmini_static_la_LDFLAGS = $(libmonoldflags) -static
-libmini_static_la_LIBADD = $(MONO_DTRACE_OBJECT)
-
-libmono_ee_interp_static_la_SOURCES = $(libmono_ee_interp_la_SOURCES)
-libmono_ee_interp_static_la_CFLAGS = $(AM_CFLAGS)
-libmono_ee_interp_static_la_LDFLAGS = -static
-if BITCODE
-libmono_ee_interp_static_la_LIBADD = libmonosgen-2.0.la
-endif
 
 libmonoincludedir = $(includedir)/mono-$(API_VER)/mono/jit
 

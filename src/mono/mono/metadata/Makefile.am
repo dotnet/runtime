@@ -69,11 +69,6 @@ else
 platform_sources += threadpool-worker-default.c
 endif
 
-
-#
-# libtool is not capable of creating static/shared versions of the same
-# convenience lib, so we have to do it ourselves
-#
 if SUPPORT_SGEN
 if DISABLE_EXECUTABLES
 shared_sgen_libraries = libmonoruntimesgen.la 
@@ -82,7 +77,7 @@ if SHARED_MONO
 shared_sgen_libraries = libmonoruntimesgen.la 
 endif
 endif
-sgen_libraries = $(shared_sgen_libraries) libmonoruntimesgen-static.la 
+sgen_libraries = $(shared_sgen_libraries)
 endif
 
 if SUPPORT_BOEHM
@@ -93,7 +88,7 @@ if SHARED_MONO
 shared_boehm_libraries = libmonoruntime.la
 endif
 endif
-boehm_libraries = $(shared_boehm_libraries) libmonoruntime-static.la
+boehm_libraries = $(shared_boehm_libraries)
 endif
 
 if DISABLE_EXECUTABLES
@@ -325,16 +320,6 @@ libmonoruntime_la_LIBADD = libmonoruntime-config.la
 libmonoruntimesgen_la_SOURCES = $(common_sources) $(gc_dependent_sources) $(sgen_sources)
 libmonoruntimesgen_la_CFLAGS = $(SGEN_DEFINES)
 libmonoruntimesgen_la_LIBADD = libmonoruntime-config.la
-
-libmonoruntime_static_la_SOURCES = $(libmonoruntime_la_SOURCES)
-libmonoruntime_static_la_LDFLAGS = -static
-libmonoruntime_static_la_CFLAGS = $(BOEHM_DEFINES)
-libmonoruntime_static_la_LIBADD = $(bundle_obj) libmonoruntime-config.la
-
-libmonoruntimesgen_static_la_SOURCES = $(libmonoruntimesgen_la_SOURCES)
-libmonoruntimesgen_static_la_LDFLAGS = -static
-libmonoruntimesgen_static_la_CFLAGS = $(SGEN_DEFINES)
-libmonoruntimesgen_static_la_LIBADD = libmonoruntime-config.la
 
 libmonoruntimeincludedir = $(includedir)/mono-$(API_VER)/mono/metadata
 
