@@ -6480,7 +6480,7 @@ void Compiler::rpPredictRegUse()
             allAcceptableRegs &= ~RBM_OPT_RSVD;
             if ((regUsed & RBM_OPT_RSVD) != 0)
             {
-                mustPredict = true;
+                mustPredict              = true;
                 rpBestRecordedPrediction = nullptr;
             }
         }
