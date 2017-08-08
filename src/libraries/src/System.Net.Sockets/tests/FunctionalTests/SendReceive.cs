@@ -991,7 +991,7 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    public sealed class SendReceiveSync : SendReceive<SocketHelperSync> { }
+    public sealed class SendReceiveSync : SendReceive<SocketHelperArraySync> { }
     public sealed class SendReceiveSyncForceNonBlocking : SendReceive<SocketHelperSyncForceNonBlocking> { }
     public sealed class SendReceiveApm : SendReceive<SocketHelperApm> { }
     public sealed class SendReceiveTask : SendReceive<SocketHelperTask> { }

@@ -277,7 +277,7 @@ namespace System.Net.Sockets.Tests
         }
     }
 
-    public sealed class AcceptSync : Accept<SocketHelperSync> { }
+    public sealed class AcceptSync : Accept<SocketHelperArraySync> { }
     public sealed class AcceptSyncForceNonBlocking : Accept<SocketHelperSyncForceNonBlocking> { }
     public sealed class AcceptApm : Accept<SocketHelperApm> { }
     public sealed class AcceptTask : Accept<SocketHelperTask> { }

@@ -174,23 +174,15 @@ namespace System.Net.Sockets
             }
         }
 
-        public static unsafe SocketError Send(SafeCloseSocket handle, byte[] buffer, int offset, int size, SocketFlags socketFlags, out int bytesTransferred)
+        public static unsafe SocketError Send(SafeCloseSocket handle, byte[] buffer, int offset, int size, SocketFlags socketFlags, out int bytesTransferred) =>
+            Send(handle, new ReadOnlySpan<byte>(buffer, offset, size), socketFlags, out bytesTransferred);
+
+        public static unsafe SocketError Send(SafeCloseSocket handle, ReadOnlySpan<byte> buffer, SocketFlags socketFlags, out int bytesTransferred)
         {
             int bytesSent;
-            if (buffer.Length == 0)
+            fixed (byte* bufferPtr = &buffer.DangerousGetPinnableReference())
             {
-                bytesSent = Interop.Winsock.send(handle.DangerousGetHandle(), null, 0, socketFlags);
-            }
-            else
-            {
-                fixed (byte* pinnedBuffer = &buffer[0])
-                {
-                    bytesSent = Interop.Winsock.send(
-                        handle.DangerousGetHandle(),
-                        pinnedBuffer + offset,
-                        size,
-                        socketFlags);
-                }
+                bytesSent = Interop.Winsock.send(handle.DangerousGetHandle(), bufferPtr, buffer.Length, socketFlags);
             }
 
             if (bytesSent == (int)SocketError.SocketError)
@@ -302,19 +294,15 @@ namespace System.Net.Sockets
             }
         }
 
-        public static unsafe SocketError Receive(SafeCloseSocket handle, byte[] buffer, int offset, int size, SocketFlags socketFlags, out int bytesTransferred)
+        public static unsafe SocketError Receive(SafeCloseSocket handle, byte[] buffer, int offset, int size, SocketFlags socketFlags, out int bytesTransferred) =>
+            Receive(handle, new Span<byte>(buffer, offset, size), socketFlags, out bytesTransferred);
+
+        public static unsafe SocketError Receive(SafeCloseSocket handle, Span<byte> buffer, SocketFlags socketFlags, out int bytesTransferred)
         {
             int bytesReceived;
-            if (buffer?.Length == 0)
+            fixed (byte* bufferPtr = &buffer.DangerousGetPinnableReference())
             {
-                bytesReceived = Interop.Winsock.recv(handle.DangerousGetHandle(), null, 0, socketFlags);
-            }
-            else
-            {
-                fixed (byte* pinnedBuffer = buffer)
-                {
-                    bytesReceived = Interop.Winsock.recv(handle.DangerousGetHandle(), pinnedBuffer + offset, size, socketFlags);
-                }
+                bytesReceived = Interop.Winsock.recv(handle.DangerousGetHandle(), bufferPtr, buffer.Length, socketFlags);
             }
 
             if (bytesReceived == (int)SocketError.SocketError)
