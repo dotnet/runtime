@@ -3985,6 +3985,15 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
 #endif // DEBUG
 
             regMaskTP candidates = getUseCandidates(useNode);
+#ifdef ARM_SOFTFP
+            // If oper is GT_PUTARG_REG, set bits in useCandidates must be in sequential order.
+            if (useNode->OperIsMultiRegOp())
+            {
+                regMaskTP candidate = genFindLowestReg(candidates);
+                useNode->gtLsraInfo.setSrcCandidates(this, candidates & ~candidate);
+                candidates = candidate;
+            }
+#endif // ARM_SOFTFP
             assert((candidates & allRegs(i->registerType)) != 0);
 
             // For non-localVar uses we record nothing, as nothing needs to be written back to the tree.
@@ -8907,6 +8916,15 @@ void LinearScan::updateMaxSpill(RefPosition* refPosition)
                     ReturnTypeDesc* retTypeDesc = treeNode->AsCall()->GetReturnTypeDesc();
                     typ                         = retTypeDesc->GetReturnRegType(refPosition->getMultiRegIdx());
                 }
+#ifdef ARM_SOFTFP
+                else if (treeNode->OperIsPutArgReg())
+                {
+                    // For double arg regs, the type is changed to long since they must be passed via `r0-r3`.
+                    // However when they get spilled, they should be treated as separated int registers.
+                    var_types typNode = treeNode->TypeGet();
+                    typ               = (typNode == TYP_LONG) ? TYP_INT : typNode;
+                }
+#endif // ARM_SOFTFP
                 else
                 {
                     typ = treeNode->TypeGet();
@@ -9229,6 +9247,11 @@ void LinearScan::resolveRegisters()
                             {
                                 GenTreePutArgSplit* splitArg = treeNode->AsPutArgSplit();
                                 splitArg->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());
+                            }
+                            else if (treeNode->OperIsMultiRegOp())
+                            {
+                                GenTreeMultiRegOp* multiReg = treeNode->AsMultiRegOp();
+                                multiReg->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());
                             }
 #endif
                         }
