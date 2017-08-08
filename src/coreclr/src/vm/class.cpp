@@ -883,7 +883,15 @@ ClassLoader::LoadExactParentAndInterfacesTransitively(MethodTable *pMT)
             LOG((LF_CLASSLOADER, LL_INFO1000, "GENERICS: Replaced approximate parent %s with exact parent %s from token %x\n", pParentMT->GetDebugClassName(), pNewParentMT->GetDebugClassName(), crExtends));
 
             // SetParentMethodTable is not used here since we want to update the indirection cell in the NGen case
-            *EnsureWritablePages(pMT->GetParentMethodTablePtr()) = pNewParentMT;
+            if (pMT->GetParentMethodTablePlainOrRelativePointerPtr()->IsIndirectPtrMaybeNull())
+            {
+                *EnsureWritablePages(pMT->GetParentMethodTablePlainOrRelativePointerPtr()->GetValuePtr()) = pNewParentMT;
+            }
+            else
+            {
+                EnsureWritablePages(pMT->GetParentMethodTablePlainOrRelativePointerPtr());
+                pMT->GetParentMethodTablePlainOrRelativePointerPtr()->SetValueMaybeNull(pNewParentMT);
+            }
 
             pParentMT = pNewParentMT;
         }
@@ -902,8 +910,11 @@ ClassLoader::LoadExactParentAndInterfacesTransitively(MethodTable *pMT)
         DWORD nDicts = pParentMT->GetNumDicts();
         for (DWORD iDict = 0; iDict < nDicts; iDict++)
         {
-            if (pMT->GetPerInstInfo()[iDict] != pParentMT->GetPerInstInfo()[iDict])
-                *EnsureWritablePages(&pMT->GetPerInstInfo()[iDict]) = pParentMT->GetPerInstInfo()[iDict];
+            if (pMT->GetPerInstInfo()[iDict].GetValueMaybeNull() != pParentMT->GetPerInstInfo()[iDict].GetValueMaybeNull())
+            {
+                EnsureWritablePages(&pMT->GetPerInstInfo()[iDict]);
+                pMT->GetPerInstInfo()[iDict].SetValueMaybeNull(pParentMT->GetPerInstInfo()[iDict].GetValueMaybeNull());
+            }
         }
     }
 

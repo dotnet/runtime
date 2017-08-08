@@ -309,13 +309,91 @@ public:
     void FixupPointerField(PVOID p, SSIZE_T offset);
     void FixupRelativePointerField(PVOID p, SSIZE_T offset);
 
+    template<typename T, typename PT>
+    void FixupPlainOrRelativePointerField(const T *base, const RelativePointer<PT> T::* pPointerFieldMember)
+    {
+        STANDARD_VM_CONTRACT;
+        SSIZE_T offset = (SSIZE_T) &(base->*pPointerFieldMember) - (SSIZE_T) base;
+        FixupRelativePointerField((PVOID)base, offset);
+    }
+
+    template<typename T, typename C, typename PT>
+    void FixupPlainOrRelativePointerField(const T *base, const C T::* pFirstPointerFieldMember, const RelativePointer<PT> C::* pSecondPointerFieldMember)
+    {
+        STANDARD_VM_CONTRACT;
+        const RelativePointer<PT> *ptr = &(base->*pFirstPointerFieldMember.*pSecondPointerFieldMember);
+        SSIZE_T offset = (SSIZE_T) ptr - (SSIZE_T) base;
+        FixupRelativePointerField((PVOID)base, offset);
+    }
+
+    template<typename T, typename PT>
+    void FixupPlainOrRelativePointerField(const T *base, const PlainPointer<PT> T::* pPointerFieldMember)
+    {
+        STANDARD_VM_CONTRACT;
+        SSIZE_T offset = (SSIZE_T) &(base->*pPointerFieldMember) - (SSIZE_T) base;
+        FixupPointerField((PVOID)base, offset);
+    }
+
+    template<typename T, typename C, typename PT>
+    void FixupPlainOrRelativePointerField(const T *base, const C T::* pFirstPointerFieldMember, const PlainPointer<PT> C::* pSecondPointerFieldMember)
+    {
+        STANDARD_VM_CONTRACT;
+        const PlainPointer<PT> *ptr = &(base->*pFirstPointerFieldMember.*pSecondPointerFieldMember);
+        SSIZE_T offset = (SSIZE_T) ptr - (SSIZE_T) base;
+        FixupPointerField((PVOID)base, offset);
+    }
+
     void FixupField(PVOID p, SSIZE_T offset, PVOID pTarget, SSIZE_T targetOffset = 0, ZapRelocationType type = IMAGE_REL_BASED_PTR);
+
+    template<typename T, typename PT>
+    void FixupPlainOrRelativeField(const T *base, const RelativePointer<PT> T::* pPointerFieldMember, PVOID pTarget, SSIZE_T targetOffset = 0)
+    {
+        STANDARD_VM_CONTRACT;
+        SSIZE_T offset = (SSIZE_T) &(base->*pPointerFieldMember) - (SSIZE_T) base;
+        FixupField((PVOID)base, offset, pTarget, targetOffset, IMAGE_REL_BASED_RELPTR);
+    }
+
+    template<typename T, typename PT>
+    void FixupPlainOrRelativeField(const T *base, const PlainPointer<PT> T::* pPointerFieldMember, PVOID pTarget, SSIZE_T targetOffset = 0)
+    {
+        STANDARD_VM_CONTRACT;
+        SSIZE_T offset = (SSIZE_T) &(base->*pPointerFieldMember) - (SSIZE_T) base;
+        FixupField((PVOID)base, offset, pTarget, targetOffset, IMAGE_REL_BASED_PTR);
+    }
 
     void FixupFieldToNode(PVOID p, SSIZE_T offset, ZapNode * pTarget, SSIZE_T targetOffset = 0, ZapRelocationType type = IMAGE_REL_BASED_PTR);
 
     void FixupFieldToNode(PVOID p, SSIZE_T offset, ZapStoredStructure * pTarget, SSIZE_T targetOffset = 0, ZapRelocationType type = IMAGE_REL_BASED_PTR)
     {
         return FixupFieldToNode(p, offset, (ZapNode *)pTarget, targetOffset, type);
+    }
+
+    template<typename T, typename PT>
+    void FixupPlainOrRelativeFieldToNode(const T *base, const RelativePointer<PT> T::* pPointerFieldMember, ZapNode * pTarget, SSIZE_T targetOffset = 0)
+    {
+        STANDARD_VM_CONTRACT;
+        SSIZE_T offset = (SSIZE_T) &(base->*pPointerFieldMember) - (SSIZE_T) base;
+        FixupFieldToNode((PVOID)base, offset, pTarget, targetOffset, IMAGE_REL_BASED_RELPTR);
+    }
+
+    template<typename T, typename PT>
+    void FixupPlainOrRelativeFieldToNode(const T *base, const RelativePointer<PT> T::* pPointerFieldMember, ZapStoredStructure * pTarget, SSIZE_T targetOffset = 0)
+    {
+        return FixupPlainOrRelativeFieldToNode(base, pPointerFieldMember, (ZapNode *)pTarget, targetOffset);
+    }
+
+    template<typename T, typename PT>
+    void FixupPlainOrRelativeFieldToNode(const T *base, const PlainPointer<PT> T::* pPointerFieldMember, ZapNode * pTarget, SSIZE_T targetOffset = 0)
+    {
+        STANDARD_VM_CONTRACT;
+        SSIZE_T offset = (SSIZE_T) &(base->*pPointerFieldMember) - (SSIZE_T) base;
+        FixupFieldToNode((PVOID)base, offset, pTarget, targetOffset, IMAGE_REL_BASED_PTR);
+    }
+
+    template<typename T, typename PT>
+    void FixupPlainOrRelativeFieldToNode(const T *base, const PlainPointer<PT> T::* pPointerFieldMember, ZapStoredStructure * pTarget, SSIZE_T targetOffset = 0)
+    {
+        return FixupPlainOrRelativeFieldToNode(base, pPointerFieldMember, (ZapNode *)pTarget, targetOffset);
     }
 
     BOOL IsStored(const void *data)

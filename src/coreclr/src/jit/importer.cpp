@@ -1980,10 +1980,10 @@ GenTreePtr Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedTok
     // Applied repeated indirections
     for (WORD i = 0; i < pRuntimeLookup->indirections; i++)
     {
-        if (i == 1 && pRuntimeLookup->indirectFirstOffset)
+        if ((i == 1 && pRuntimeLookup->indirectFirstOffset) || (i == 2 && pRuntimeLookup->indirectSecondOffset))
         {
             indOffTree = impCloneExpr(slotPtrTree, &slotPtrTree, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL,
-                                      nullptr DEBUGARG("impRuntimeLookup indirectFirstOffset"));
+                                      nullptr DEBUGARG("impRuntimeLookup indirectOffset"));
         }
 
         if (i != 0)
@@ -1993,7 +1993,7 @@ GenTreePtr Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedTok
             slotPtrTree->gtFlags |= GTF_IND_INVARIANT;
         }
 
-        if (i == 1 && pRuntimeLookup->indirectFirstOffset)
+        if ((i == 1 && pRuntimeLookup->indirectFirstOffset) || (i == 2 && pRuntimeLookup->indirectSecondOffset))
         {
             slotPtrTree = gtNewOperNode(GT_ADD, TYP_I_IMPL, indOffTree, slotPtrTree);
         }

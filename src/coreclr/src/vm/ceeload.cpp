@@ -2803,7 +2803,7 @@ BOOL Module::IsPreV4Assembly()
 }
 
 
-ArrayDPTR(FixupPointer<PTR_MethodTable>) ModuleCtorInfo::GetGCStaticMTs(DWORD index)
+ArrayDPTR(RelativeFixupPointer<PTR_MethodTable>) ModuleCtorInfo::GetGCStaticMTs(DWORD index)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -8100,6 +8100,8 @@ void Module::SaveTypeHandle(DataImage *  image,
 #endif // _DEBUG
 }
 
+#ifndef DACCESS_COMPILE
+
 void ModuleCtorInfo::Save(DataImage *image, CorProfileData *profileData)
 {
     STANDARD_VM_CONTRACT;
@@ -8121,7 +8123,7 @@ void ModuleCtorInfo::Save(DataImage *image, CorProfileData *profileData)
     // items numElementsHot...i-1 are cold
     for (i = 0; i < numElements; i++)
     {
-        MethodTable *ppMTTemp = ppMT[i];
+        MethodTable *ppMTTemp = ppMT[i].GetValue();
 
         // Count the number of boxed statics along the way
         totalBoxedStatics += ppMTTemp->GetNumBoxedRegularStatics();
@@ -8135,8 +8137,8 @@ void ModuleCtorInfo::Save(DataImage *image, CorProfileData *profileData)
         if (hot)
         {
             // swap ppMT[i] and ppMT[numElementsHot] to maintain the loop invariant
-            ppMT[i] = ppMT[numElementsHot];
-            ppMT[numElementsHot] = ppMTTemp;
+            ppMT[i].SetValue(ppMT[numElementsHot].GetValue());
+            ppMT[numElementsHot].SetValue(ppMTTemp);
 
             numElementsHot++;
         }
@@ -8161,11 +8163,11 @@ void ModuleCtorInfo::Save(DataImage *image, CorProfileData *profileData)
 
     for (i = 0; i < numElementsHot; i++)
     {
-        hashArray[i] = GenerateHash(ppMT[i], HOT);
+        hashArray[i] = GenerateHash(ppMT[i].GetValue(), HOT);
     }
     for (i = numElementsHot; i < numElements; i++)
     {
-        hashArray[i] = GenerateHash(ppMT[i], COLD);
+        hashArray[i] = GenerateHash(ppMT[i].GetValue(), COLD);
     }
 
     // Sort the two arrays by hash values to create regions with the same hash values.
@@ -8228,7 +8230,7 @@ void ModuleCtorInfo::Save(DataImage *image, CorProfileData *profileData)
     // make cctorInfoCold point to the first cold element
     cctorInfoCold   = cctorInfoHot + numElementsHot;
 
-    ppHotGCStaticsMTs   = (totalBoxedStatics != 0) ? new FixupPointer<PTR_MethodTable>[totalBoxedStatics] : NULL;
+    ppHotGCStaticsMTs   = (totalBoxedStatics != 0) ? new RelativeFixupPointer<PTR_MethodTable>[totalBoxedStatics] : NULL;
     numHotGCStaticsMTs  = totalBoxedStatics;
 
     DWORD iGCStaticMT = 0;
@@ -8244,7 +8246,7 @@ void ModuleCtorInfo::Save(DataImage *image, CorProfileData *profileData)
             ppColdGCStaticsMTs = ppHotGCStaticsMTs + numHotGCStaticsMTs;
         }
 
-        MethodTable* pMT = ppMT[i];
+        MethodTable* pMT = ppMT[i].GetValue();
         ClassCtorInfoEntry* pEntry = &cctorInfoHot[i];
 
         WORD numBoxedStatics = pMT->GetNumBoxedRegularStatics();
@@ -8274,7 +8276,7 @@ void ModuleCtorInfo::Save(DataImage *image, CorProfileData *profileData)
                     == (iGCStaticMT - pEntry->firstBoxedStaticMTIndex) * sizeof(MethodTable*));
 
                 TypeHandle th = pField->GetFieldTypeHandleThrowing();
-                ppHotGCStaticsMTs[iGCStaticMT++].SetValue(th.GetMethodTable());
+                ppHotGCStaticsMTs[iGCStaticMT++].SetValueMaybeNull(th.GetMethodTable());
 
                 numFoundBoxedStatics++;
             }
@@ -8297,7 +8299,7 @@ void ModuleCtorInfo::Save(DataImage *image, CorProfileData *profileData)
 
     if (numElements > 0)
         image->StoreStructure(ppMT,
-                                sizeof(MethodTable *) * numElements,
+                                sizeof(RelativePointer<MethodTable *>) * numElements,
                                 DataImage::ITEM_MODULE_CCTOR_INFO_HOT);
 
     if (numElements > numElementsHot)
@@ -8314,7 +8316,7 @@ void ModuleCtorInfo::Save(DataImage *image, CorProfileData *profileData)
     if ( numHotGCStaticsMTs )
     {
         // Save the mt templates
-        image->StoreStructure( ppHotGCStaticsMTs, numHotGCStaticsMTs * sizeof(MethodTable*),
+        image->StoreStructure( ppHotGCStaticsMTs, numHotGCStaticsMTs * sizeof(RelativeFixupPointer<MethodTable*>),
                                 DataImage::ITEM_GC_STATIC_HANDLES_HOT);
     }
     else
@@ -8325,7 +8327,7 @@ void ModuleCtorInfo::Save(DataImage *image, CorProfileData *profileData)
     if ( numColdGCStaticsMTs )
     {
         // Save the hot mt templates
-        image->StoreStructure( ppColdGCStaticsMTs, numColdGCStaticsMTs * sizeof(MethodTable*),
+        image->StoreStructure( ppColdGCStaticsMTs, numColdGCStaticsMTs * sizeof(RelativeFixupPointer<MethodTable*>),
                                 DataImage::ITEM_GC_STATIC_HANDLES_COLD);
     }
     else
@@ -8334,6 +8336,7 @@ void ModuleCtorInfo::Save(DataImage *image, CorProfileData *profileData)
     }
 }
 
+#endif // !DACCESS_COMPILE
 
 bool Module::AreAllClassesFullyLoaded()
 {
@@ -9134,13 +9137,20 @@ void Module::PlaceType(DataImage *image, TypeHandle th, DWORD profilingFlags)
         {
             if (pMT->HasPerInstInfo())
             {
-                Dictionary ** pPerInstInfo = pMT->GetPerInstInfo();
+                DPTR(MethodTable::PerInstInfoElem_t) pPerInstInfo = pMT->GetPerInstInfo();
 
                 BOOL fIsEagerBound = pMT->CanEagerBindToParentDictionaries(image, NULL);
 
                 if (fIsEagerBound)
                 {
-                    image->PlaceInternedStructureForAddress(pPerInstInfo, CORCOMPILE_SECTION_READONLY_SHARED_HOT, CORCOMPILE_SECTION_READONLY_HOT);
+                    if (MethodTable::PerInstInfoElem_t::isRelative)
+                    {
+                        image->PlaceStructureForAddress(pPerInstInfo, CORCOMPILE_SECTION_READONLY_HOT);
+                    }
+                    else
+                    {
+                        image->PlaceInternedStructureForAddress(pPerInstInfo, CORCOMPILE_SECTION_READONLY_SHARED_HOT, CORCOMPILE_SECTION_READONLY_HOT);
+                    }
                 }
                 else
                 {
@@ -9470,7 +9480,7 @@ void ModuleCtorInfo::Fixup(DataImage *image)
 
         for (DWORD i=0; i<numElements; i++)
         {
-            image->FixupPointerField(ppMT, i * sizeof(ppMT[0]));
+            image->FixupRelativePointerField(ppMT, i * sizeof(ppMT[0]));
         }
     }
     else
@@ -10092,11 +10102,37 @@ void Module::RestoreMethodTablePointer(RelativeFixupPointer<PTR_MethodTable> * p
 
     if (ppMT->IsTagged((TADDR)ppMT))
     {
-        RestoreMethodTablePointerRaw(ppMT->GetValuePtr((TADDR)ppMT), pContainingModule, level);
+        RestoreMethodTablePointerRaw(ppMT->GetValuePtr(), pContainingModule, level);
     }
     else
     {
-        ClassLoader::EnsureLoaded(ppMT->GetValue((TADDR)ppMT), level);
+        ClassLoader::EnsureLoaded(ppMT->GetValue(), level);
+    }
+}
+
+/*static*/
+void Module::RestoreMethodTablePointer(PlainPointer<PTR_MethodTable> * ppMT,
+                                       Module *pContainingModule,
+                                       ClassLoadLevel level)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if (ppMT->IsNull())
+        return;
+
+    if (ppMT->IsTagged())
+    {
+        RestoreMethodTablePointerRaw(ppMT->GetValuePtr(), pContainingModule, level);
+    }
+    else
+    {
+        ClassLoader::EnsureLoaded(ppMT->GetValue(), level);
     }
 }
 
@@ -10231,7 +10267,7 @@ PTR_Module Module::RestoreModulePointerIfLoaded(DPTR(RelativeFixupPointer<PTR_Mo
         return ppModule->GetValue(dac_cast<TADDR>(ppModule));
 
 #ifndef DACCESS_COMPILE 
-    PTR_Module * ppValue = ppModule->GetValuePtr(dac_cast<TADDR>(ppModule));
+    PTR_Module * ppValue = ppModule->GetValuePtr();
 
     // Ensure that the compiler won't fetch the value twice
     TADDR fixup = VolatileLoadWithoutBarrier((TADDR *)ppValue);
@@ -10284,7 +10320,7 @@ void Module::RestoreModulePointer(RelativeFixupPointer<PTR_Module> * ppModule, M
     if (!ppModule->IsTagged((TADDR)ppModule))
         return;
 
-    PTR_Module * ppValue = ppModule->GetValuePtr((TADDR)ppModule);
+    PTR_Module * ppValue = ppModule->GetValuePtr();
 
     // Ensure that the compiler won't fetch the value twice
     TADDR fixup = VolatileLoadWithoutBarrier((TADDR *)ppValue);
@@ -10438,7 +10474,7 @@ void Module::RestoreTypeHandlePointer(RelativeFixupPointer<TypeHandle> * pHandle
 
     if (pHandle->IsTagged((TADDR)pHandle))
     {
-        RestoreTypeHandlePointerRaw(pHandle->GetValuePtr((TADDR)pHandle), pContainingModule, level);
+        RestoreTypeHandlePointerRaw(pHandle->GetValuePtr(), pContainingModule, level);
     }
     else
     {
@@ -10540,7 +10576,7 @@ void Module::RestoreMethodDescPointer(RelativeFixupPointer<PTR_MethodDesc> * ppM
 
     if (ppMD->IsTagged((TADDR)ppMD))
     {
-        RestoreMethodDescPointerRaw(ppMD->GetValuePtr((TADDR)ppMD), pContainingModule, level);
+        RestoreMethodDescPointerRaw(ppMD->GetValuePtr(), pContainingModule, level);
     }
     else
     {
@@ -13865,7 +13901,7 @@ ModuleCtorInfo::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
 
     // This class is contained so do not enumerate 'this'.
     DacEnumMemoryRegion(dac_cast<TADDR>(ppMT), numElements *
-                        sizeof(TADDR));
+                        sizeof(RelativePointer<MethodTable *>));
     DacEnumMemoryRegion(dac_cast<TADDR>(cctorInfoHot), numElementsHot *
                         sizeof(ClassCtorInfoEntry));
     DacEnumMemoryRegion(dac_cast<TADDR>(cctorInfoCold),
