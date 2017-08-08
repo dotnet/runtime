@@ -222,7 +222,7 @@ namespace BasicEventSourceTests
 
 
                 /*************************************************************************/
-                // TODO expose Dispose() method and activate this test.  
+#if FEATURE_EVENTCOUNTER_DISPOSE
                 tests.Add(new SubTest("EventCounter: Dispose()",
                     delegate ()
                     {
@@ -244,6 +244,7 @@ namespace BasicEventSourceTests
                         ValidateSingleEventCounter(evts[3], "Request", 0, 0, 0, float.PositiveInfinity, float.NegativeInfinity);
                         ValidateSingleEventCounter(evts[4], "Error", 0, 0, 0, float.PositiveInfinity, float.NegativeInfinity);
                     }));
+#endif
                 /*************************************************************************/
                 EventTestHarness.RunTests(tests, listener, logger);
             }
