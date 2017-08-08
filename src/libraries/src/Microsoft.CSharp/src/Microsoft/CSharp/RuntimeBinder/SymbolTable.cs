@@ -1155,7 +1155,7 @@ namespace Microsoft.CSharp.RuntimeBinder
             {
                 type = type.GetGenericTypeDefinition();
             }
-            Type[] interfaces = type.GetTypeInfo().ImplementedInterfaces.ToArray();
+            Type[] interfaces = type.GetInterfaces();
 
             // We won't be able to find the difference between Ifaces and
             // IfacesAll anymore - at runtime, the class implements all of its
