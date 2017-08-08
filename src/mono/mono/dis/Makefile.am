@@ -5,10 +5,10 @@ export HOST_CC
 endif
 
 if SUPPORT_SGEN
-metadata_lib=$(top_builddir)/mono/metadata/libmonoruntimesgen-static.la
-gc_lib=$(top_builddir)/mono/sgen/libmonosgen-static.la
+metadata_lib=$(top_builddir)/mono/metadata/libmonoruntimesgen.la
+gc_lib=$(top_builddir)/mono/sgen/libmonosgen.la
 else
-metadata_lib=$(top_builddir)/mono/metadata/libmonoruntime-static.la
+metadata_lib=$(top_builddir)/mono/metadata/libmonoruntime.la
 gc_lib=$(LIBGC_STATIC_LIBS)
 endif
 
