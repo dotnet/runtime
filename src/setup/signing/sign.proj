@@ -38,6 +38,7 @@
       </FilesToSign>
       <FilesToSign Include="$(OutDir)Microsoft.Build.Net.CoreRuntimeTask/**/Microsoft.Build.Net.CoreRuntimeTask.dll">
         <Authenticode>$(CertificateId)</Authenticode>
+        <StrongName>StrongName</StrongName>
       </FilesToSign>
     </ItemGroup>
 
