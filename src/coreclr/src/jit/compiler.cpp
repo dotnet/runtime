@@ -3661,14 +3661,6 @@ void Compiler::compInitOptions(JitFlags* jitFlags)
 
 #ifdef DEBUG
 
-void JitDump(const char* pcFormat, ...)
-{
-    va_list lst;
-    va_start(lst, pcFormat);
-    vflogf(jitstdout, pcFormat, lst);
-    va_end(lst);
-}
-
 bool Compiler::compJitHaltMethod()
 {
     /* This method returns true when we use an INS_BREAKPOINT to allow us to step into the generated native code */
