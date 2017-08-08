@@ -16,7 +16,6 @@ namespace System.Net.Sockets
     {
         public const bool SupportsMultipleConnectAttempts = false;
         private static readonly bool SupportsDualModeIPv4PacketInfo = GetPlatformSupportsDualModeIPv4PacketInfo();
-        private static readonly byte[] s_peekBuffer = new byte[1];
 
         private static bool GetPlatformSupportsDualModeIPv4PacketInfo()
         {
@@ -62,24 +61,19 @@ namespace System.Net.Sockets
             return SafeCloseSocket.CreateSocket(addressFamily, socketType, protocolType, out socket);
         }
 
-        private static unsafe int Receive(SafeCloseSocket socket, SocketFlags flags, byte[] buffer, int offset, int count, byte[] socketAddress, ref int socketAddressLen, out SocketFlags receivedFlags, out Interop.Error errno)
+        private static unsafe int Receive(SafeCloseSocket socket, SocketFlags flags, Span<byte> buffer, byte[] socketAddress, ref int socketAddressLen, out SocketFlags receivedFlags, out Interop.Error errno)
         {
             Debug.Assert(socketAddress != null || socketAddressLen == 0, $"Unexpected values: socketAddress={socketAddress}, socketAddressLen={socketAddressLen}");
 
             long received;
-
-            int sockAddrLen = 0;
-            if (socketAddress != null)
-            {
-                sockAddrLen = socketAddressLen;
-            }
+            int sockAddrLen = socketAddress != null ? socketAddressLen : 0;
 
             fixed (byte* sockAddr = socketAddress)
-            fixed (byte* b = buffer)
+            fixed (byte* b = &buffer.DangerousGetPinnableReference())
             {
                 var iov = new Interop.Sys.IOVector {
-                    Base = (b == null) ? null : &b[offset],
-                    Count = (UIntPtr)count
+                    Base = b,
+                    Count = (UIntPtr)buffer.Length
                 };
 
                 var messageHeader = new Interop.Sys.MessageHeader {
@@ -109,27 +103,22 @@ namespace System.Net.Sockets
             return checked((int)received);
         }
 
-        private static unsafe int Send(SafeCloseSocket socket, SocketFlags flags, byte[] buffer, ref int offset, ref int count, byte[] socketAddress, int socketAddressLen, out Interop.Error errno)
+        private static unsafe int Send(SafeCloseSocket socket, SocketFlags flags, ReadOnlySpan<byte> buffer, ref int offset, ref int count, byte[] socketAddress, int socketAddressLen, out Interop.Error errno)
         {
             int sent;
-
-            int sockAddrLen = 0;
-            if (socketAddress != null)
-            {
-                sockAddrLen = socketAddressLen;
-            }
-
             fixed (byte* sockAddr = socketAddress)
-            fixed (byte* b = buffer)
+            fixed (byte* b = &buffer.DangerousGetPinnableReference())
             {
-                var iov = new Interop.Sys.IOVector {
+                var iov = new Interop.Sys.IOVector
+                {
                     Base = &b[offset],
                     Count = (UIntPtr)count
                 };
 
-                var messageHeader = new Interop.Sys.MessageHeader {
+                var messageHeader = new Interop.Sys.MessageHeader
+                {
                     SocketAddress = sockAddr,
-                    SocketAddressLen = sockAddrLen,
+                    SocketAddressLen = socketAddress != null ? socketAddressLen : 0,
                     IOVectors = &iov,
                     IOVectorCount = 1
                 };
@@ -150,7 +139,6 @@ namespace System.Net.Sockets
                 return -1;
             }
 
-            
             offset += sent;
             count -= sent;
             return sent;
@@ -594,17 +582,16 @@ namespace System.Net.Sockets
             return true;
         }
 
-        public static bool TryCompleteReceiveFrom(SafeCloseSocket socket, byte[] buffer, int offset, int count, SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, out int bytesReceived, out SocketFlags receivedFlags, out SocketError errorCode)
-        {
-            return TryCompleteReceiveFrom(socket, buffer, null, offset, count, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode);
-        }
+        public static bool TryCompleteReceiveFrom(SafeCloseSocket socket, byte[] buffer, int offset, int count, SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, out int bytesReceived, out SocketFlags receivedFlags, out SocketError errorCode) =>
+            TryCompleteReceiveFrom(socket, new Span<byte>(buffer, offset, count), null, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode);
 
-        public static bool TryCompleteReceiveFrom(SafeCloseSocket socket, IList<ArraySegment<byte>> buffers, SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, out int bytesReceived, out SocketFlags receivedFlags, out SocketError errorCode)
-        {
-            return TryCompleteReceiveFrom(socket, null, buffers, 0, 0, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode);
-        }
+        public static bool TryCompleteReceiveFrom(SafeCloseSocket socket, Span<byte> buffer, SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, out int bytesReceived, out SocketFlags receivedFlags, out SocketError errorCode) =>
+            TryCompleteReceiveFrom(socket, buffer, null, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode);
 
-        public static unsafe bool TryCompleteReceiveFrom(SafeCloseSocket socket, byte[] buffer, IList<ArraySegment<byte>> buffers, int offset, int count, SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, out int bytesReceived, out SocketFlags receivedFlags, out SocketError errorCode)
+        public static bool TryCompleteReceiveFrom(SafeCloseSocket socket, IList<ArraySegment<byte>> buffers, SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, out int bytesReceived, out SocketFlags receivedFlags, out SocketError errorCode) =>
+            TryCompleteReceiveFrom(socket, default(Span<byte>), buffers, flags, socketAddress, ref socketAddressLen, out bytesReceived, out receivedFlags, out errorCode);
+
+        public static unsafe bool TryCompleteReceiveFrom(SafeCloseSocket socket, Span<byte> buffer, IList<ArraySegment<byte>> buffers, SocketFlags flags, byte[] socketAddress, ref int socketAddressLen, out int bytesReceived, out SocketFlags receivedFlags, out SocketError errorCode)
         {
             try
             {
@@ -614,16 +601,16 @@ namespace System.Net.Sockets
                 if (buffers != null)
                 {
                     // Receive into a set of buffers
-                    Debug.Assert(buffer == null);
                     received = Receive(socket, flags, buffers, socketAddress, ref socketAddressLen, out receivedFlags, out errno);
                 }
-                else if (count == 0)
+                else if (buffer.Length == 0)
                 {
                     // Special case a receive of 0 bytes into a single buffer.  A common pattern is to ReceiveAsync 0 bytes in order
                     // to be asynchronously notified when data is available, without needing to dedicate a buffer.  Some platforms (e.g. macOS),
                     // however complete a 0-byte read successfully when data isn't available, as the request can logically be satisfied
                     // synchronously. As such, we treat 0 specially, and perform a 1-byte peek.
-                    received = Receive(socket, flags | SocketFlags.Peek, s_peekBuffer, 0, s_peekBuffer.Length, socketAddress, ref socketAddressLen, out receivedFlags, out errno);
+                    byte oneBytePeekBuffer;
+                    received = Receive(socket, flags | SocketFlags.Peek, new Span<byte>(&oneBytePeekBuffer, 1), socketAddress, ref socketAddressLen, out receivedFlags, out errno);
                     if (received > 0)
                     {
                         // Peeked for 1-byte, but the actual request was for 0.
@@ -633,7 +620,7 @@ namespace System.Net.Sockets
                 else
                 {
                     // Receive > 0 bytes into a single buffer
-                    received = Receive(socket, flags, buffer, offset, count, socketAddress, ref socketAddressLen, out receivedFlags, out errno);
+                    received = Receive(socket, flags, buffer, socketAddress, ref socketAddressLen, out receivedFlags, out errno);
                 }
 
                 if (received != -1)
@@ -713,13 +700,19 @@ namespace System.Net.Sockets
             return TryCompleteSendTo(socket, buffer, null, ref bufferIndex, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode);
         }
 
+        public static bool TryCompleteSendTo(SafeCloseSocket socket, ReadOnlySpan<byte> buffer, SocketFlags flags, byte[] socketAddress, int socketAddressLen, ref int bytesSent, out SocketError errorCode)
+        {
+            int bufferIndex = 0, offset = 0, count = buffer.Length;
+            return TryCompleteSendTo(socket, buffer, null, ref bufferIndex, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode);
+        }
+
         public static bool TryCompleteSendTo(SafeCloseSocket socket, IList<ArraySegment<byte>> buffers, ref int bufferIndex, ref int offset, SocketFlags flags, byte[] socketAddress, int socketAddressLen, ref int bytesSent, out SocketError errorCode)
         {
             int count = 0;
-            return TryCompleteSendTo(socket, null, buffers, ref bufferIndex, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode);
+            return TryCompleteSendTo(socket, default(ReadOnlySpan<byte>), buffers, ref bufferIndex, ref offset, ref count, flags, socketAddress, socketAddressLen, ref bytesSent, out errorCode);
         }
 
-        public static bool TryCompleteSendTo(SafeCloseSocket socket, byte[] buffer, IList<ArraySegment<byte>> buffers, ref int bufferIndex, ref int offset, ref int count, SocketFlags flags, byte[] socketAddress, int socketAddressLen, ref int bytesSent, out SocketError errorCode)
+        public static bool TryCompleteSendTo(SafeCloseSocket socket, ReadOnlySpan<byte> buffer, IList<ArraySegment<byte>> buffers, ref int bufferIndex, ref int offset, ref int count, SocketFlags flags, byte[] socketAddress, int socketAddressLen, ref int bytesSent, out SocketError errorCode)
         {
             for (;;)
             {
@@ -727,14 +720,9 @@ namespace System.Net.Sockets
                 Interop.Error errno;
                 try
                 {
-                    if (buffer != null)
-                    {
-                        sent = Send(socket, flags, buffer, ref offset, ref count, socketAddress, socketAddressLen, out errno);
-                    }
-                    else
-                    {
-                        sent = Send(socket, flags, buffers, ref bufferIndex, ref offset, socketAddress, socketAddressLen, out errno);
-                    }
+                    sent = buffers != null ?
+                        Send(socket, flags, buffers, ref bufferIndex, ref offset, socketAddress, socketAddressLen, out errno) :
+                        Send(socket, flags, buffer, ref offset, ref count, socketAddress, socketAddressLen, out errno);
                 }
                 catch (ObjectDisposedException)
                 {
@@ -758,7 +746,7 @@ namespace System.Net.Sockets
                 bytesSent += sent;
 
                 bool isComplete = sent == 0 ||
-                    (buffer != null && count == 0) ||
+                    (buffers == null && count == 0) ||
                     (buffers != null && bufferIndex == buffers.Count);
                 if (isComplete)
                 {
@@ -919,6 +907,19 @@ namespace System.Net.Sockets
             return completed ? errorCode : SocketError.WouldBlock;
         }
 
+        public static SocketError Send(SafeCloseSocket handle, ReadOnlySpan<byte> buffer, SocketFlags socketFlags, out int bytesTransferred)
+        {
+            if (!handle.IsNonBlocking)
+            {
+                return handle.AsyncContext.Send(buffer, socketFlags, handle.SendTimeout, out bytesTransferred);
+            }
+
+            bytesTransferred = 0;
+            SocketError errorCode;
+            bool completed = TryCompleteSendTo(handle, buffer, socketFlags, null, 0, ref bytesTransferred, out errorCode);
+            return completed ? errorCode : SocketError.WouldBlock;
+        }
+
         public static SocketError SendFile(SafeCloseSocket handle, FileStream fileStream)
         {
             long offset = 0;
@@ -980,6 +981,19 @@ namespace System.Net.Sockets
             int socketAddressLen = 0;
             SocketError errorCode;
             bool completed = TryCompleteReceiveFrom(handle, buffer, offset, count, socketFlags, null, ref socketAddressLen, out bytesTransferred, out socketFlags, out errorCode);
+            return completed ? errorCode : SocketError.WouldBlock;
+        }
+
+        public static SocketError Receive(SafeCloseSocket handle, Span<byte> buffer, SocketFlags socketFlags, out int bytesTransferred)
+        {
+            if (!handle.IsNonBlocking)
+            {
+                return handle.AsyncContext.Receive(buffer, ref socketFlags, handle.ReceiveTimeout, out bytesTransferred);
+            }
+
+            int socketAddressLen = 0;
+            SocketError errorCode;
+            bool completed = TryCompleteReceiveFrom(handle, buffer, socketFlags, null, ref socketAddressLen, out bytesTransferred, out socketFlags, out errorCode);
             return completed ? errorCode : SocketError.WouldBlock;
         }
 
