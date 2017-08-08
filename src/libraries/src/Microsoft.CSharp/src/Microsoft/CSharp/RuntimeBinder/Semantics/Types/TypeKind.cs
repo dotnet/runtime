@@ -9,7 +9,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         TK_AggregateType,
         TK_VoidType,
         TK_NullType,
-        TK_OpenTypePlaceholderType,
         TK_MethodGroupType,
         TK_ErrorType,
         TK_ArgumentListType,

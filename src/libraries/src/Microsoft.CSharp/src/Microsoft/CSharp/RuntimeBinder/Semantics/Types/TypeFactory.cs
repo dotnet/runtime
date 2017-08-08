@@ -55,13 +55,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return type;
         }
 
-        public OpenTypePlaceholderType CreateUnit()
-        {
-            OpenTypePlaceholderType type = new OpenTypePlaceholderType();
-            type.SetTypeKind(TypeKind.TK_OpenTypePlaceholderType);
-            return type;
-        }
-
         public MethodGroupType CreateMethodGroup()
         {
             MethodGroupType type = new MethodGroupType();
