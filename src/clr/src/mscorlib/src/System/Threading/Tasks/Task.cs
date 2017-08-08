@@ -2831,7 +2831,12 @@ namespace System.Threading.Tasks
         /// the current context is known or cached.
         /// </summary>
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
-        internal bool InternalWait(int millisecondsTimeout, CancellationToken cancellationToken)
+        internal bool InternalWait(int millisecondsTimeout, CancellationToken cancellationToken) =>
+            InternalWaitCore(millisecondsTimeout, cancellationToken);
+
+        // Separated out to allow it to be optimized (caller is marked NoOptimization for VS parallel debugger
+        // to be able to see the method on the stack and inspect arguments).
+        private bool InternalWaitCore(int millisecondsTimeout, CancellationToken cancellationToken)
         {
             // ETW event for Task Wait Begin
             var etwLog = TplEtwProvider.Log;
@@ -4605,7 +4610,12 @@ namespace System.Threading.Tasks
         /// The <paramref name="cancellationToken"/> was canceled.
         /// </exception>
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
-        public static bool WaitAll(Task[] tasks, int millisecondsTimeout, CancellationToken cancellationToken)
+        public static bool WaitAll(Task[] tasks, int millisecondsTimeout, CancellationToken cancellationToken) =>
+            WaitAllCore(tasks, millisecondsTimeout, cancellationToken);
+
+        // Separated out to allow it to be optimized (caller is marked NoOptimization for VS parallel debugger
+        // to be able to see the method on the stack and inspect arguments).
+        private static bool WaitAllCore(Task[] tasks, int millisecondsTimeout, CancellationToken cancellationToken)
         {
             if (tasks == null)
             {
@@ -4977,7 +4987,12 @@ namespace System.Threading.Tasks
         /// The <paramref name="cancellationToken"/> was canceled.
         /// </exception>
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
-        public static int WaitAny(Task[] tasks, int millisecondsTimeout, CancellationToken cancellationToken)
+        public static int WaitAny(Task[] tasks, int millisecondsTimeout, CancellationToken cancellationToken) =>
+            WaitAnyCore(tasks, millisecondsTimeout, cancellationToken);
+
+        // Separated out to allow it to be optimized (caller is marked NoOptimization for VS parallel debugger
+        // to be able to inspect arguments).
+        private static int WaitAnyCore(Task[] tasks, int millisecondsTimeout, CancellationToken cancellationToken)
         {
             if (tasks == null)
             {
