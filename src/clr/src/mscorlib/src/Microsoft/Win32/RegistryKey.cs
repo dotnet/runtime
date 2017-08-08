@@ -119,27 +119,6 @@ namespace Microsoft.Win32
         private volatile RegistryView regView = RegistryView.Default;
 
         /**
-         * RegistryInternalCheck values.  Useful only for CheckPermission
-         */
-        private enum RegistryInternalCheck
-        {
-            CheckSubKeyWritePermission = 0,
-            CheckSubKeyReadPermission = 1,
-            CheckSubKeyCreatePermission = 2,
-            CheckSubTreeReadPermission = 3,
-            CheckSubTreeWritePermission = 4,
-            CheckSubTreeReadWritePermission = 5,
-            CheckValueWritePermission = 6,
-            CheckValueCreatePermission = 7,
-            CheckValueReadPermission = 8,
-            CheckKeyReadPermission = 9,
-            CheckSubTreePermission = 10,
-            CheckOpenSubKeyWithWritablePermission = 11,
-            CheckOpenSubKeyPermission = 12
-        };
-
-
-        /**
          * Creates a RegistryKey.
          *
          * This key is bound to hkey, if writable is <b>false</b> then no write operations
@@ -315,29 +294,6 @@ namespace Microsoft.Win32
                 ThrowHelper.ThrowSecurityException(ExceptionResource.Security_RegistryPermission);
             }
 
-            return null;
-        }
-
-        // This required no security checks. This is to get around the Deleting SubKeys which only require
-        // write permission. They call OpenSubKey which required read. Now instead call this function w/o security checks
-        internal RegistryKey InternalOpenSubKey(String name, bool writable)
-        {
-            ValidateKeyName(name);
-            EnsureNotDisposed();
-
-            SafeRegistryHandle result = null;
-            int ret = Win32Native.RegOpenKeyEx(hkey,
-                name,
-                0,
-                GetRegistryKeyAccess(writable) | (int)regView,
-                out result);
-
-            if (ret == 0 && !result.IsInvalid)
-            {
-                RegistryKey key = new RegistryKey(result, writable, false, remoteKey, false, regView);
-                key.keyName = keyName + "\\" + name;
-                return key;
-            }
             return null;
         }
 
