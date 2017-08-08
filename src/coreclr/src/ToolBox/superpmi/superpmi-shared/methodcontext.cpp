@@ -1504,6 +1504,7 @@ void MethodContext::repGetCallInfo(CORINFO_RESOLVED_TOKEN* pResolvedToken,
         pResult->stubLookup.runtimeLookup.testForNull         = value.stubLookup.runtimeLookup.testForNull != 0;
         pResult->stubLookup.runtimeLookup.testForFixup        = value.stubLookup.runtimeLookup.testForFixup != 0;
         pResult->stubLookup.runtimeLookup.indirectFirstOffset = value.stubLookup.runtimeLookup.indirectFirstOffset != 0;
+        pResult->stubLookup.runtimeLookup.indirectSecondOffset = value.stubLookup.runtimeLookup.indirectSecondOffset != 0;
         for (int i                                       = 0; i < CORINFO_MAXINDIRECTIONS; i++)
             pResult->stubLookup.runtimeLookup.offsets[i] = (SIZE_T)value.stubLookup.runtimeLookup.offsets[i];
     }
@@ -2970,26 +2971,29 @@ void MethodContext::repGetEHinfo(CORINFO_METHOD_HANDLE ftn, unsigned EHnumber, C
 
 void MethodContext::recGetMethodVTableOffset(CORINFO_METHOD_HANDLE method,
                                              unsigned*             offsetOfIndirection,
-                                             unsigned*             offsetAfterIndirection)
+                                             unsigned*             offsetAfterIndirection,
+                                             bool*                 isRelative)
 {
     if (GetMethodVTableOffset == nullptr)
-        GetMethodVTableOffset = new LightWeightMap<DWORDLONG, DD>();
+        GetMethodVTableOffset = new LightWeightMap<DWORDLONG, DDD>();
 
-    DD value;
+    DDD value;
     value.A = (DWORD)*offsetOfIndirection;
     value.B = (DWORD)*offsetAfterIndirection;
+    value.C = *isRelative;
     GetMethodVTableOffset->Add((DWORDLONG)method, value);
     DEBUG_REC(dmpGetMethodVTableOffset((DWORDLONG)method, value));
 }
-void MethodContext::dmpGetMethodVTableOffset(DWORDLONG key, DD value)
+void MethodContext::dmpGetMethodVTableOffset(DWORDLONG key, DDD value)
 {
-    printf("GetMethodVTableOffset key ftn-%016llX, value offi-%u, offa-%u", key, value.A, value.B);
+    printf("GetMethodVTableOffset key ftn-%016llX, value offi-%u, offa-%u. offr-%d", key, value.A, value.B, value.C);
 }
 void MethodContext::repGetMethodVTableOffset(CORINFO_METHOD_HANDLE method,
                                              unsigned*             offsetOfIndirection,
-                                             unsigned*             offsetAfterIndirection)
+                                             unsigned*             offsetAfterIndirection,
+                                             bool*                 isRelative)
 {
-    DD value;
+    DDD value;
 
     AssertCodeMsg(GetMethodVTableOffset != nullptr, EXCEPTIONCODE_MC, "Didn't find anything for %016llX",
                   (DWORDLONG)method);
@@ -2999,6 +3003,7 @@ void MethodContext::repGetMethodVTableOffset(CORINFO_METHOD_HANDLE method,
 
     *offsetOfIndirection    = (unsigned)value.A;
     *offsetAfterIndirection = (unsigned)value.B;
+    *isRelative             = value.C;
     DEBUG_REP(dmpGetMethodVTableOffset((DWORDLONG)method, value));
 }
 
