@@ -3947,7 +3947,7 @@ void NativeImageDumper::DumpModule( PTR_Module module )
     DisplayWriteFieldInt( numElementsHot, ctorInfo->numElementsHot,
                           ModuleCtorInfo, SLIM_MODULE_TBLS );
     DisplayWriteFieldAddress( ppMT, DPtrToPreferredAddr(ctorInfo->ppMT),
-                              ctorInfo->numElements * sizeof(MethodTable*),
+                              ctorInfo->numElements * sizeof(RelativePointer<MethodTable*>),
                               ModuleCtorInfo, SLIM_MODULE_TBLS );
     /* REVISIT_TODO Tue 03/21/2006
      * is cctorInfoHot and cctorInfoCold actually have anything interesting
@@ -5084,7 +5084,10 @@ void NativeImageDumper::MethodTableToString( PTR_MethodTable mt, SString& buf )
             {
                 numDicts = (DWORD)CountDictionariesInClass(token, dependency->pImport);
             }
-            PTR_Dictionary dictionary( mt->GetPerInstInfo()[numDicts-1] );
+
+            TADDR base = dac_cast<TADDR>(&(mt->GetPerInstInfo()[numDicts-1]));
+
+            PTR_Dictionary dictionary( MethodTable::PerInstInfoElem_t::GetValueAtPtr(base) );
             unsigned numArgs = mt->GetNumGenericArgs();
 
             DictionaryToArgString( dictionary, numArgs, buf );
@@ -5983,7 +5986,7 @@ PTR_MethodTable NativeImageDumper::GetParent( PTR_MethodTable mt )
     /* REVISIT_TODO Thu 12/01/2005
      * Handle fixups
      */
-    PTR_MethodTable parent( mt->m_pParentMethodTable );
+    PTR_MethodTable parent( ReadPointerMaybeNull((MethodTable *) mt, &MethodTable::m_pParentMethodTable) );
     _ASSERTE(!CORCOMPILE_IS_POINTER_TAGGED(PTR_TO_TADDR(parent)));
     return parent;
 }
@@ -6957,7 +6960,7 @@ NativeImageDumper::DumpMethodTable( PTR_MethodTable mt, const char * name,
 
 
 
-    PTR_MethodTable parent = mt->m_pParentMethodTable;
+    PTR_MethodTable parent = ReadPointerMaybeNull((MethodTable *) mt, &MethodTable::m_pParentMethodTable);
     if( parent == NULL )
     {
         DisplayWriteFieldPointer( m_pParentMethodTable, NULL, MethodTable,
@@ -6977,7 +6980,7 @@ NativeImageDumper::DumpMethodTable( PTR_MethodTable mt, const char * name,
                               DPtrToPreferredAddr(mt->GetLoaderModule()),
                               MethodTable, METHODTABLES );
 
-    PTR_MethodTableWriteableData wd = mt->m_pWriteableData;
+    PTR_MethodTableWriteableData wd = ReadPointer((MethodTable *)mt, &MethodTable::m_pWriteableData);
     _ASSERTE(wd != NULL);
     DisplayStartStructureWithOffset( m_pWriteableData, DPtrToPreferredAddr(wd),
                                      sizeof(*wd), MethodTable, METHODTABLES );
@@ -7023,8 +7026,7 @@ NativeImageDumper::DumpMethodTable( PTR_MethodTable mt, const char * name,
                                 GenericsDictInfo, METHODTABLES);
         DisplayEndStructure( METHODTABLES ); //GenericsDictInfo
 
-
-        DPTR(PTR_Dictionary) perInstInfo = mt->GetPerInstInfo();
+        DPTR(MethodTable::PerInstInfoElem_t) perInstInfo = mt->GetPerInstInfo();
 
         DisplayStartStructure( "PerInstInfo",
                                DPtrToPreferredAddr(perInstInfo),
@@ -7160,9 +7162,9 @@ NativeImageDumper::DumpMethodTable( PTR_MethodTable mt, const char * name,
     {
         m_display->StartStructureWithOffset("Vtable",
                                             mt->GetVtableOffset(),
-                                            mt->GetNumVtableIndirections() * sizeof(PTR_PCODE),
+                                            mt->GetNumVtableIndirections() * sizeof(MethodTable::VTableIndir_t),
                                             DataPtrToDisplay(PTR_TO_TADDR(mt) + mt->GetVtableOffset()),
-                                            mt->GetNumVtableIndirections() * sizeof(PTR_PCODE));
+                                            mt->GetNumVtableIndirections() * sizeof(MethodTable::VTableIndir_t));
 
 
         MethodTable::VtableIndirectionSlotIterator itIndirect = mt->IterateVtableIndirectionSlots();
@@ -7181,7 +7183,8 @@ NativeImageDumper::DumpMethodTable( PTR_MethodTable mt, const char * name,
             {
                 DisplayStartElement( "Slot", ALWAYS );
                 DisplayWriteElementInt( "Index", i, ALWAYS );
-                PTR_PCODE tgt = mt->GetVtableIndirections()[i];
+                TADDR base = dac_cast<TADDR>(&(mt->GetVtableIndirections()[i]));
+                PTR_PCODE tgt = MethodTable::VTableIndir_t::GetValueMaybeNullAtPtr(base);
                 DisplayWriteElementPointer( "Pointer",
                                             DataPtrToDisplay(dac_cast<TADDR>(tgt)),
                                             ALWAYS );
@@ -7217,7 +7220,7 @@ NativeImageDumper::DumpMethodTable( PTR_MethodTable mt, const char * name,
         else
         {
             CoverageRead( PTR_TO_TADDR(mt) + mt->GetVtableOffset(),
-                          mt->GetNumVtableIndirections() * sizeof(PTR_PCODE) );
+                          mt->GetNumVtableIndirections() * sizeof(MethodTable::VTableIndir_t) );
 
             if (mt->HasNonVirtualSlotsArray())
             {
@@ -7233,7 +7236,7 @@ NativeImageDumper::DumpMethodTable( PTR_MethodTable mt, const char * name,
     {
         PTR_InterfaceInfo ifMap = mt->GetInterfaceMap();
         m_display->StartArrayWithOffset( "InterfaceMap",
-                                         offsetof(MethodTable, m_pMultipurposeSlot2),
+                                         offsetof(MethodTable, m_pInterfaceMap),
                                          sizeof(void*),
                                          NULL );
         for( unsigned i = 0; i < mt->GetNumInterfaces(); ++i )
@@ -7267,7 +7270,7 @@ NativeImageDumper::DumpMethodTable( PTR_MethodTable mt, const char * name,
                                              DPtrToPreferredAddr(genStatics),
                                              sizeof(*genStatics) );
 
-        PTR_FieldDesc fieldDescs = genStatics->m_pFieldDescs;
+        PTR_FieldDesc fieldDescs = ReadPointerMaybeNull((GenericsStaticsInfo *) genStatics, &GenericsStaticsInfo::m_pFieldDescs);
         if( fieldDescs == NULL )
         {
             DisplayWriteFieldPointer( m_pFieldDescs, NULL, GenericsStaticsInfo,
