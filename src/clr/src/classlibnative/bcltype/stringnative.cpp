@@ -327,8 +327,6 @@ FCIMPL4(INT32, COMString::IndexOfCharArray, StringObject* thisRef, CHARArray* va
 
     if (thisRef == NULL)
         FCThrow(kNullReferenceException);
-    if (valueRef == NULL)
-        FCThrowArgumentNull(W("anyOf"));
 
     WCHAR *thisChars;
     WCHAR *valueChars;
@@ -336,14 +334,6 @@ FCIMPL4(INT32, COMString::IndexOfCharArray, StringObject* thisRef, CHARArray* va
     int thisLength;
 
     thisRef->RefInterpretGetStringValuesDangerousForGC(&thisChars, &thisLength);
-
-    if (startIndex < 0 || startIndex > thisLength) {
-        FCThrowArgumentOutOfRange(W("startIndex"), W("ArgumentOutOfRange_Index"));
-    }
-
-    if (count < 0 || count > thisLength - startIndex) {
-        FCThrowArgumentOutOfRange(W("count"), W("ArgumentOutOfRange_Count"));
-    }
 
     int endIndex = startIndex + count;
 
@@ -494,19 +484,31 @@ void InitializeProbabilisticMap(int* charMap, __in_ecount(length) const WCHAR* c
     _ASSERTE(charArray != NULL);
     _ASSERTE(length >= 0);
 
+    bool hasAscii = false;
+
     for(int i = 0; i < length; ++i) {
         int hi,lo;
 
-        WCHAR c = charArray[i];
+        int c = charArray[i];
 
-        hi = (c >> 8) & 0xFF;
         lo = c & 0xFF;
+        hi = (c >> 8) & 0xFF;
 
         int* value = &charMap[lo & PROBABILISTICMAP_BLOCK_INDEX_MASK];
         SetBit(value, lo >> PROBABILISTICMAP_BLOCK_INDEX_SHIFT);
 
-        value = &charMap[hi & PROBABILISTICMAP_BLOCK_INDEX_MASK];
-        SetBit(value, hi >> PROBABILISTICMAP_BLOCK_INDEX_SHIFT);
+        if (hi > 0) {
+            value = &charMap[hi & PROBABILISTICMAP_BLOCK_INDEX_MASK];
+            SetBit(value, hi >> PROBABILISTICMAP_BLOCK_INDEX_SHIFT);
+        }
+        else {
+            hasAscii = true;
+        }
+    }
+
+    if (hasAscii) {
+        // Common to search for ASCII symbols. Just the high value once.
+        charMap[0] |= 1;
     }
 }
 
