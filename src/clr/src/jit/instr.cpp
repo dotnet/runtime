@@ -977,7 +977,7 @@ void CodeGen::sched_AM(instruction ins,
         // Setup regVal
         //
 
-        regVal = regSet.rsPickReg(RBM_ALLINT & ~avoidMask);
+        regVal = regSet.rsPickFreeReg(RBM_ALLINT & ~avoidMask);
         regTracker.rsTrackRegTrash(regVal);
         avoidMask |= genRegMask(regVal);
         var_types load_store_type;
