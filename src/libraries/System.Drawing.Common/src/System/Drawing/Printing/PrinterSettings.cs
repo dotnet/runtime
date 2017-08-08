@@ -1163,7 +1163,7 @@ namespace System.Drawing.Printing
             int count = FastDeviceCapabilities(SafeNativeMethods.DC_ENUMRESOLUTIONS, IntPtr.Zero, -1, printerName);
             if (count == -1)
             {
-                //Just return the standrard values if custom resolutions absemt ....
+                //Just return the standard values if custom resolutions are absent ....
                 result = new PrinterResolution[4];
                 result[0] = new PrinterResolution(PrinterResolutionKind.High, -4, -1);
                 result[1] = new PrinterResolution(PrinterResolutionKind.Medium, -3, -1);
