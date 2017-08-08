@@ -6473,12 +6473,16 @@ void Compiler::rpPredictRegUse()
 
 #ifdef _TARGET_ARM_
         // The spill count may be now high enough that we now need to reserve r10. If this is the case, we'll need to
-        // reserve r10, and if it was used, repredict.
+        // reserve r10, and if it was used, throw out the last prediction and repredict.
         if (((codeGen->regSet.rsMaskResvd & RBM_OPT_RSVD) == 0) && compRsvdRegCheck(REGALLOC_FRAME_LAYOUT))
         {
             codeGen->regSet.rsMaskResvd |= RBM_OPT_RSVD;
             allAcceptableRegs &= ~RBM_OPT_RSVD;
-            mustPredict = (regUsed & RBM_OPT_RSVD) != 0;
+            if ((regUsed & RBM_OPT_RSVD) != 0)
+            {
+                mustPredict              = true;
+                rpBestRecordedPrediction = nullptr;
+            }
         }
 #endif
 
