@@ -201,6 +201,7 @@
       <InputRoot>$(SharedFrameworkPublishRoot)</InputRoot>
       <DebFile>$(SharedFrameworkInstallerFile)</DebFile>
       <ConfigJsonName>dotnet-sharedframework-debian_config.json</ConfigJsonName>
+      <ConfigJsonName  Condition="$(PackageTargetRid.StartsWith('debian.9'))">dotnet-sharedframework-debian9_config.json</ConfigJsonName>
       <ConfigJsonFile>$(debPackaginfConfigPath)$(ConfigJsonName)</ConfigJsonFile>
       <debIntermediatesDir>$(PackagesIntermediateDir)$(DebPackageName)/$(DebPackageVersion)</debIntermediatesDir>
     </PropertyGroup>
