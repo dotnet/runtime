@@ -1210,7 +1210,7 @@ namespace System.Net.WebSockets
             if (State == WebSocketState.Closed || State == WebSocketState.Aborted)
             {
                 throw new WebSocketException(WebSocketError.InvalidState,
-                    SR.Format(SR.net_WebSockets_InvalidState_ClosedOrAborted, GetType().ToString(), State));
+                    SR.Format(SR.net_WebSockets_InvalidState_ClosedOrAborted, GetType().FullName, State));
             }
         }
 
@@ -1219,7 +1219,7 @@ namespace System.Net.WebSockets
             if (aborted)
             {
                 throw new WebSocketException(WebSocketError.InvalidState,
-                    SR.Format(SR.net_WebSockets_InvalidState_ClosedOrAborted, GetType().ToString(), WebSocketState.Aborted),
+                    SR.Format(SR.net_WebSockets_InvalidState_ClosedOrAborted, GetType().FullName, WebSocketState.Aborted),
                     innerException);
             }
         }
@@ -1409,7 +1409,7 @@ namespace System.Net.WebSockets
         {
             if (_isDisposed)
             {
-                throw new ObjectDisposedException(GetType().ToString());
+                throw new ObjectDisposedException(GetType().FullName);
             }
         }
 
@@ -2406,7 +2406,7 @@ namespace System.Net.WebSockets
             {
                 if (_isDisposed)
                 {
-                    throw new ObjectDisposedException(GetType().ToString());
+                    throw new ObjectDisposedException(GetType().FullName);
                 }
             }
         }
