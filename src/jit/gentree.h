@@ -4012,7 +4012,16 @@ struct GenTreeMultiRegOp : public GenTreeOp
     var_types GetRegType(unsigned index)
     {
         assert(index < 2);
-        var_types result = TYP_INT; // XXX
+        // The type of register is usually the same as GenTree type
+        // since most of time GenTreeMultiRegOp uses only a single reg (when gtOtherReg is REG_NA).
+        // The special case is when we have TYP_LONG here, which was `TYP_DOUBLE` originally
+        // (copied to int regs for argument push on armel). Then we need to separate them into int for each index.
+        var_types result = TypeGet();
+        if (result == TYP_LONG)
+        {
+            assert(gtOtherReg != REG_NA);
+            result = TYP_INT;
+        }
         return result;
     }
 
