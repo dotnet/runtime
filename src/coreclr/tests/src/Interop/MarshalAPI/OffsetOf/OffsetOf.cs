@@ -135,7 +135,7 @@ struct FieldAlignementTest_Decimal
     // The largest field in below struct is decimal (16 bytes wide).
     // However, alignment requirement for the below struct should be only  8 bytes (not 16).
     // This is because unlike fields of other types well known to mcg (like long, char etc.)
-    // which need to be aligned accoring to their byte size, decimal is really a struct
+    // which need to be aligned according to their byte size, decimal is really a struct
     // with 8 byte alignment requirement.
     public FieldAlignementTest p; // 80 bytes
 
