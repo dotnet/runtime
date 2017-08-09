@@ -1571,6 +1571,9 @@ ves_icall_array_new_specific (MonoVTable *vtable, uintptr_t n);
 MonoRemoteClass*
 mono_remote_class (MonoDomain *domain, MonoStringHandle class_name, MonoClass *proxy_class, MonoError *error);
 
+gboolean
+mono_remote_class_is_interface_proxy (MonoRemoteClass *remote_class);
+
 MonoObject *
 mono_remoting_invoke (MonoObject *real_proxy, MonoMethodMessage *msg, MonoObject **exc, MonoArray **out_args, MonoError *error);
 
