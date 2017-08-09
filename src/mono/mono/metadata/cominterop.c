@@ -3664,3 +3664,52 @@ ves_icall_System_Runtime_InteropServices_Marshal_FreeBSTR (gpointer ptr)
 {
 	mono_free_bstr (ptr);
 }
+
+void*
+mono_cominterop_get_com_interface (MonoObject *object, MonoClass *ic, MonoError *error)
+{
+	error_init (error);
+
+#ifndef DISABLE_COM
+	if (!object)
+		return NULL;
+
+	if (cominterop_object_is_rcw (object)) {
+		MonoClass *klass = NULL;
+		MonoRealProxy* real_proxy = NULL;
+		if (!object)
+			return NULL;
+		klass = mono_object_class (object);
+		if (!mono_class_is_transparent_proxy (klass)) {
+			mono_error_set_invalid_operation (error, "Class is not transparent");
+			return NULL;
+		}
+
+		real_proxy = ((MonoTransparentProxy*)object)->rp;
+		if (!real_proxy) {
+			mono_error_set_invalid_operation (error, "RealProxy is null");
+			return NULL;
+		}
+
+		klass = mono_object_class (real_proxy);
+		if (klass != mono_class_get_interop_proxy_class ()) {
+			mono_error_set_invalid_operation (error, "Object is not a proxy");
+			return NULL;
+		}
+
+		if (!((MonoComInteropProxy*)real_proxy)->com_object) {
+			mono_error_set_invalid_operation (error, "Proxy points to null COM object");
+			return NULL;
+		}
+
+		void* com_itf = cominterop_get_interface_checked (((MonoComInteropProxy*)real_proxy)->com_object, ic, error);
+		return com_itf;
+	}
+	else {
+		void* ccw_entry = cominterop_get_ccw_checked (object, ic, error);
+		return ccw_entry;
+	}
+#else
+	g_assert_not_reached ();
+#endif
+}
