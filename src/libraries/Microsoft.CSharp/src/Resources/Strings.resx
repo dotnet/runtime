@@ -349,4 +349,7 @@
   <data name="DynamicArgumentNeedsValue" xml:space="preserve">
     <value>The runtime binder cannot bind a metaobject without a value</value>
   </data>
+  <data name="BindingNameCollision" xml:space="preserve">
+    <value>More than one type in the binding has the same full name.</value>
+  </data>
 </root>

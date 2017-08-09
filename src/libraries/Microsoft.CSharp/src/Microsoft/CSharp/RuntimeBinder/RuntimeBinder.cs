@@ -117,7 +117,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 // In order to make this work, we have to reset the symbol table and begin
                 // the second binding over again when we detect the collision. So this is
                 // something like a longjmp to the beginning of binding. For a single binding,
-                // if we have to do this more than once, we give an ICE--this would be a
+                // if we have to do this more than once, we give an RBE--this would be a
                 // scenario that needs to know about both N.T's simultaneously to work.
 
                 // See SymbolTable.LoadSymbolsFromType for more information.
@@ -136,8 +136,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                     catch (ResetBindException)
                     {
                         Reset();
-                        Debug.Assert(false, "More than one symbol table name collision in a single binding");
-                        throw Error.InternalCompilerError();
+                        throw Error.BindingNameCollision();
                     }
                 }
             }
