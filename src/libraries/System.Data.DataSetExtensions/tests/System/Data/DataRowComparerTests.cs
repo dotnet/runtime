@@ -1,3 +1,7 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+
 using System.Collections.Generic;
 using Xunit;
 
@@ -357,6 +361,17 @@ namespace System.Data.Tests
         }
 
         [Fact]
+        public void GetHashCode_OneColumn_DoesNotReturnZero()
+        {
+            var comparer = DataRowComparer<DataRow>.Default;
+            DataTable table = new DataTable();
+            DataRow row = table.NewRow();
+            table.Columns.Add();
+
+            Assert.NotEqual(0, comparer.GetHashCode(row));
+        }
+
+        [Fact]
         public void GetHashCode_NullRow_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("row", () => DataRowComparer<DataRow>.Default.GetHashCode(null));
@@ -374,5 +389,6 @@ namespace System.Data.Tests
 
             Assert.Throws<InvalidOperationException>(() => DataRowComparer<DataRow>.Default.GetHashCode(row));
         }
+
     }
 }

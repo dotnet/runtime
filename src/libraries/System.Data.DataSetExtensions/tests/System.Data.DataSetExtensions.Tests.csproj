@@ -8,13 +8,23 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Release|AnyCPU'" />
   <ItemGroup>
+    <Compile Include="Mono\DataRowComparerTest.cs" />
+    <Compile Include="Mono\DataRowExtensionsTest.cs" />
+    <Compile Include="Mono\DataTableExtensionsTest.cs" />
+    <Compile Include="Mono\EnumerableRowCollectionTest.cs" />
     <Compile Include="System\Data\DataRowComparerTests.cs" />
     <Compile Include="System\Data\DataRowExtensionsTests.cs" />
     <Compile Include="System\Data\DataTableExtensionsTests.cs" />
+    <Compile Include="System\Data\EnumerableRowCollectionExtensionsTests.cs" />
     <Compile Include="System\Data\TypedTableBaseExtensionsTests.cs" />
     <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
       <Link>Common\System\PlatformDetection.cs</Link>
     </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Mono\testdataset1.xml">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
