@@ -152,8 +152,10 @@ namespace System.Collections.Immutable
         /// <summary>
         /// See the <see cref="ICollection"/> interface.
         /// </summary>
+        /// <devremarks>
+        /// This type is immutable, so it is always thread-safe.
+        /// </devremarks>
         [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-        // This is immutable, so it is always thread-safe.
         bool ICollection.IsSynchronized => true;
 
         #endregion
