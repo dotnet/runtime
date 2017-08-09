@@ -1777,6 +1777,75 @@ static int getNextPrologueIndex(int from, const SymbolsInfo *lines, int nlines)
     return -1;
 }
 
+static inline bool isListedModule(const WCHAR *wszModuleFile)
+{
+    static NewArrayHolder<WCHAR> wszModuleNames = nullptr;
+    static DWORD cBytesNeeded = 0;
+
+    // Get names of interesting modules from environment
+    if (wszModuleNames == nullptr && cBytesNeeded == 0)
+    {
+        DWORD cCharsNeeded = GetEnvironmentVariableW(W("CORECLR_GDBJIT"), NULL, 0);
+
+        if (cCharsNeeded == 0)
+        {
+            cBytesNeeded = 0xffffffff;
+            return false;
+        }
+
+        WCHAR *wszModuleNamesBuf = new WCHAR[cCharsNeeded+1];
+
+        cCharsNeeded = GetEnvironmentVariableW(W("CORECLR_GDBJIT"), wszModuleNamesBuf, cCharsNeeded);
+
+        if (cCharsNeeded == 0)
+        {
+            delete[] wszModuleNamesBuf;
+            cBytesNeeded = 0xffffffff;
+            return false;
+        }
+
+        wszModuleNames = wszModuleNamesBuf;
+        cBytesNeeded = cCharsNeeded + 1;
+    }
+    else if (wszModuleNames == nullptr)
+    {
+        return false;
+    }
+
+    _ASSERTE(wszModuleNames != nullptr && cBytesNeeded > 0);
+
+    BOOL isUserDebug = FALSE;
+
+    NewArrayHolder<WCHAR> wszModuleName = new WCHAR[cBytesNeeded];
+    LPWSTR pComma = wcsstr(wszModuleNames, W(","));
+    LPWSTR tmp = wszModuleNames;
+
+    while (pComma != NULL)
+    {
+        wcsncpy(wszModuleName, tmp, pComma - tmp);
+        wszModuleName[pComma - tmp] = W('\0');
+
+        if (wcscmp(wszModuleName, wszModuleFile) == 0)
+        {
+            isUserDebug = TRUE;
+            break;
+        }
+        tmp = pComma + 1;
+        pComma = wcsstr(tmp, W(","));
+    }
+    if (isUserDebug == FALSE)
+    {
+        wcsncpy(wszModuleName, tmp, wcslen(tmp));
+        wszModuleName[wcslen(tmp)] = W('\0');
+        if (wcscmp(wszModuleName, wszModuleFile) == 0)
+        {
+            isUserDebug = TRUE;
+        }
+    }
+
+    return isUserDebug;
+}
+
 static NotifyGdb::AddrSet codeAddrs;
 
 /* Create ELF/DWARF debug info for jitted method */
@@ -1829,57 +1898,9 @@ void NotifyGdb::OnMethodCompiled(MethodDesc* methodDescPtr)
     if (length == 0)
         return;
 
-    static NewArrayHolder<WCHAR> wszModuleNames = nullptr;
-    DWORD cCharsNeeded = 0;
-
-    // Get names of interesting modules from environment
-    if (wszModuleNames == nullptr)
+    if (!isListedModule(wszModuleFile))
     {
-        cCharsNeeded = GetEnvironmentVariableW(W("CORECLR_GDBJIT"), NULL, 0);
-
-        if(cCharsNeeded == 0)
-            return;
-        wszModuleNames = new WCHAR[cCharsNeeded+1];
-        cCharsNeeded = GetEnvironmentVariableW(W("CORECLR_GDBJIT"), wszModuleNames, cCharsNeeded);
-        if(cCharsNeeded == 0)
-            return;
-    }
-    else
-    {
-        cCharsNeeded = wcslen(wszModuleNames);
-    }
-
-    BOOL isUserDebug = FALSE;
-
-    NewArrayHolder<WCHAR> wszModuleName = new WCHAR[cCharsNeeded+1];
-    LPWSTR pComma = wcsstr(wszModuleNames, W(","));
-    LPWSTR tmp = wszModuleNames;
-
-    while (pComma != NULL)
-    {
-        wcsncpy(wszModuleName, tmp, pComma - tmp);
-        wszModuleName[pComma - tmp] = W('\0');
-
-        if (wcscmp(wszModuleName, wszModuleFile) == 0)
-        {
-            isUserDebug = TRUE;
-            break;
-        }
-        tmp = pComma + 1;
-        pComma = wcsstr(tmp, W(","));
-    }
-    if (isUserDebug == FALSE)
-    {
-        wcsncpy(wszModuleName, tmp, wcslen(tmp));
-        wszModuleName[wcslen(tmp)] = W('\0');
-        if (wcscmp(wszModuleName, wszModuleFile) == 0)
-        {
-            isUserDebug = TRUE;
-        }
-    }
-
-    if (isUserDebug == FALSE)
-    {
+        // Do NOTHING if the current module is not listed.
         return;
     }
 
