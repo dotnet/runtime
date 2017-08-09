@@ -62,21 +62,6 @@ namespace System
             return SR.GetResourceString(key);
         }
 
-        // Private object for locking instead of locking on a public type for SQL reliability work.
-        private static Object s_InternalSyncObject;
-        private static Object InternalSyncObject
-        {
-            get
-            {
-                if (s_InternalSyncObject == null)
-                {
-                    Object o = new Object();
-                    Interlocked.CompareExchange<Object>(ref s_InternalSyncObject, o, null);
-                }
-                return s_InternalSyncObject;
-            }
-        }
-
         /*==================================TickCount===================================
         **Action: Gets the number of ticks since the system was started.
         **Returns: The number of ticks since the system was started.

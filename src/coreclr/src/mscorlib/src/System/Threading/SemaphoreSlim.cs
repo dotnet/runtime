@@ -910,14 +910,6 @@ namespace System.Threading
             }
         }
 
-        /// <summary>
-        /// local helper function to retrieve the exception string message from the resource file
-        /// </summary>
-        /// <param name="str">The key string</param>
-        private static string GetResourceString(string str)
-        {
-            return SR.GetResourceString(str);
-        }
         #endregion
     }
 }
