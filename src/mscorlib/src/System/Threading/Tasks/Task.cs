@@ -2827,7 +2827,7 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>
-        /// The core wait function, which is only accesible internally. It's meant to be used in places in TPL code where 
+        /// The core wait function, which is only accessible internally. It's meant to be used in places in TPL code where 
         /// the current context is known or cached.
         /// </summary>
         [MethodImpl(MethodImplOptions.NoOptimization)]  // this is needed for the parallel debugger
