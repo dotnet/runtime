@@ -8,7 +8,7 @@ if SHARED_MONO
 shared_libraries = libmonosgen.la
 endif
 endif
-libraries = $(shared_libraries)
+libraries = $(shared_libraries) libmonosgen-static.la
 endif
 
 if DISABLE_EXECUTABLES
@@ -72,3 +72,7 @@ monosgen_sources = \
 
 libmonosgen_la_SOURCES = $(monosgen_sources)
 libmonosgen_la_CFLAGS = $(SGEN_DEFINES)
+
+libmonosgen_static_la_SOURCES = $(libmonosgen_la_SOURCES)
+libmonosgen_static_la_CFLAGS = $(SGEN_DEFINES)
+libmonosgen_static_la_LDFLAGS = -static

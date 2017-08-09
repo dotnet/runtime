@@ -552,7 +552,7 @@ extern MonoMethodDesc *mono_break_at_bb_method;
 extern int mono_break_at_bb_bb_num;
 extern gboolean mono_verify_all;
 extern gboolean mono_do_x86_stack_align;
-extern MONO_API const char *mono_build_date;
+extern const char *mono_build_date;
 extern gboolean mono_do_signal_chaining;
 extern gboolean mono_do_crash_chaining;
 extern MONO_API gboolean mono_use_llvm;
