@@ -1552,7 +1552,7 @@ void RegSet::rsSpillTree(regNumber reg, GenTreePtr tree, unsigned regIdx /* =0 *
     else if (tree->OperIsMultiRegOp())
     {
         multiReg = tree->AsMultiRegOp();
-        treeType = multiReg->GetRegType(regIdx); // XXX check
+        treeType = multiReg->GetRegType(regIdx);
     }
 #endif // _TARGET_ARM_
     else
