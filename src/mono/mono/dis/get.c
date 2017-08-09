@@ -3143,12 +3143,16 @@ get_method_override (MonoImage *m, guint32 token, MonoGenericContainer *containe
 				g_free (meth_str);
 				return ret;
 			} else {
-				char *meth_str = get_method_core (m, decl, FALSE, container);
-				char *ret = g_strdup_printf ("Could not decode method override %s due to %s", meth_str, mono_error_get_message (&error));
+				if (!mono_error_ok (&error)) {
+					char *meth_str = get_method_core (m, decl, FALSE, container);
+					char *ret = g_strdup_printf ("Could not decode method override %s due to %s", meth_str, mono_error_get_message (&error));
 
-				mono_error_cleanup (&error);
-				g_free (meth_str);
-				return ret;
+					mono_error_cleanup (&error);
+					g_free (meth_str);
+					return ret;
+				} else {
+					return get_method_core (m, decl, FALSE, container);
+				}
 			}
 		}
 	}
