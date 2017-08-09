@@ -12728,6 +12728,12 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                     /* get a temporary for the new object */
                     lclNum = lvaGrabTemp(true DEBUGARG("NewObj constructor temp"));
+                    if (compDonotInline())
+                    {
+                        // Fail fast if lvaGrabTemp fails with CALLSITE_TOO_MANY_LOCALS.
+                        assert(compInlineResult->GetObservation() == InlineObservation::CALLSITE_TOO_MANY_LOCALS);
+                        return;
+                    }
 
                     // In the value class case we only need clsHnd for size calcs.
                     //
