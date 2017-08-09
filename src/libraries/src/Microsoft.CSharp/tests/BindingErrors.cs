@@ -7,11 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Dynamic;
-using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Microsoft.CSharp.RuntimeBinder.Tests
@@ -85,6 +81,26 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
         public static T ReturnVal<T>(T item) where T : struct
         {
             return item;
+        }
+
+        private class NonGeneric
+        {
+            public int Prop => 1;
+
+            public int Meth() => 1;
+        }
+
+        private class Constraints
+        {
+            public void MustBeConvertible<T>(T arg) where T:IConvertible
+            {
+            }
+
+            public void MustBeStruct<T>(T arg) where T : struct
+            {
+            }
+
+            public void MustBeDerived<TDerived, TBase>(TDerived d, TBase b) where TDerived : TBase { }
         }
 
         [Fact]
@@ -253,6 +269,107 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             StaticAndInstanceSameName.DoSomething(d); // No exception
             d = 2.0;
             Assert.Throws<RuntimeBinderException>(() => StaticAndInstanceSameName.DoSomething(d));
+        }
+
+        [Fact]
+        public void CtorCallOnNoCtorType()
+        {
+            CallSite<Func<CallSite, Type, double>> callSite = CallSite<Func<CallSite, Type, double>>.Create(
+                Binder.InvokeConstructor(
+                    CSharpBinderFlags.InvokeSpecialName, GetType(),
+                    new[]
+                    {
+                        CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)
+                    }));
+            Func<CallSite, Type, double> target = callSite.Target;
+            Assert.Throws<RuntimeBinderException>(() => target(callSite, typeof(double)));
+        }
+
+        [Fact]
+        public void NullaryCtorCallOnNoNullaryCtor()
+        {
+            CallSite<Func<CallSite, Type, string>> callSite = CallSite<Func<CallSite, Type, string>>.Create(
+                Binder.InvokeConstructor(
+                    CSharpBinderFlags.InvokeSpecialName, GetType(),
+                    new[]
+                    {
+                        CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)
+                    }));
+            Func<CallSite, Type, string> target = callSite.Target;
+            RuntimeBinderException rbe = Assert.Throws<RuntimeBinderException>(() => target(callSite, typeof(string)));
+            Assert.Contains("0", rbe.Message);
+        }
+
+        [Fact]
+        public void QuinaryCtorCallOnNoQuinaryCtor()
+        {
+            CallSite<Func<CallSite, Type, object, object, object, object, object, object>> callSite = CallSite<Func<CallSite, Type, object, object, object, object, object, object>>.Create(
+                Binder.InvokeConstructor(CSharpBinderFlags.InvokeSpecialName, GetType(),
+                    new[]{
+                        CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null),
+                        CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null),
+                        CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null),
+                        CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null),
+                        CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null),
+                        CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null)}));
+            Func<CallSite, Type, object, object, object, object, object, object> target = callSite.Target;
+            RuntimeBinderException rbe = Assert.Throws<RuntimeBinderException>(() => target.Invoke(callSite, typeof(string), null, null, null, null, null));
+            Assert.Contains("5", rbe.Message);
+        }
+
+        [Fact]
+        public void NoSuchMember()
+        {
+            dynamic d = 3;
+            Assert.Throws<RuntimeBinderException>(() => d.Test());
+        }
+
+        [Fact]
+        public void NoTypeVarsOnProperty()
+        {
+            dynamic d = new NonGeneric();
+            Assert.Throws<RuntimeBinderException>(() => d.Prop<int>());
+        }
+
+        [Fact]
+        public void NoTypeVarsOnNonGenericMethod()
+        {
+            dynamic d = new NonGeneric();
+            Assert.Throws<RuntimeBinderException>(() => d.Meth<int>());
+        }
+
+        [Fact]
+        public void NullableDoesNotSatisfyInterfaceConstraints()
+        {
+            dynamic d = new Constraints();
+            int? i = 3;
+            Assert.Throws<RuntimeBinderException>(() => d.MustBeConvertible(i));
+        }
+
+        [Fact]
+        public void NullableDoesNotSatisfyStructConstraints()
+        {
+            dynamic d = new Constraints();
+            int? i = 3;
+            Assert.Throws<RuntimeBinderException>(() => d.MustBeStruct(i));
+        }
+
+        [Fact]
+        public void NullableDoesNotSatisfyConstraints()
+        {
+            dynamic d = new Constraints();
+            int? n = 3;
+            int i = 3;
+            Assert.Throws<RuntimeBinderException>(() => d.MustBeDerived(n, i));
+        }
+
+        [Fact]
+        public void NullableDoesNotSatisfyConstraintsEnum()
+        {
+            dynamic d = new Constraints();
+            StringComparison? n = StringComparison.CurrentCulture;
+            Enum e = StringComparison.CurrentCulture;
+            Assert.Throws<RuntimeBinderException>(() => d.MustBeDerived(n, e));
         }
     }
 }
