@@ -1058,14 +1058,6 @@ namespace Microsoft.Win32
             }
         }
 
-        private bool ContainsRegistryValue(string name)
-        {
-            int type = 0;
-            int datasize = 0;
-            int retval = Win32Native.RegQueryValueEx(hkey, name, null, ref type, (byte[])null, ref datasize);
-            return retval == 0;
-        }
-
         private void EnsureNotDisposed()
         {
             if (hkey == null)

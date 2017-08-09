@@ -113,8 +113,6 @@ DEFINE_CLASS_U(System,       AppDomainSetup,                 AppDomainSetupObjec
 DEFINE_FIELD_U(_Entries,                           AppDomainSetupObject,   m_Entries)
 DEFINE_FIELD_U(_AppBase,                           AppDomainSetupObject,   m_AppBase)
 DEFINE_FIELD_U(_CompatFlags,                       AppDomainSetupObject,   m_CompatFlags)
-DEFINE_FIELD_U(_TargetFrameworkName,               AppDomainSetupObject,   m_TargetFrameworkName)
-DEFINE_FIELD_U(_CheckedForTargetFrameworkName,     AppDomainSetupObject,   m_CheckedForTargetFrameworkName)
 #ifdef FEATURE_RANDOMIZED_STRING_HASHING
 DEFINE_FIELD_U(_UseRandomizedStringHashing,        AppDomainSetupObject,   m_UseRandomizedStringHashing)
 #endif
