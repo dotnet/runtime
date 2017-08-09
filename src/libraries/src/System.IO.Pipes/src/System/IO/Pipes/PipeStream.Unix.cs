@@ -88,9 +88,9 @@ namespace System.IO.Pipes
             // nop
         }
 
-        private unsafe int ReadCore(byte[] buffer, int offset, int count)
+        private unsafe int ReadCore(Span<byte> buffer)
         {
-            DebugAssertReadWriteArgs(buffer, offset, count, _handle);
+            DebugAssertHandleValid(_handle);
 
             // For named pipes, receive on the socket.
             Socket socket = _handle.NamedPipeSocket;
@@ -102,7 +102,7 @@ namespace System.IO.Pipes
                 // is already handled by Socket.Receive, so we use it here.
                 try
                 {
-                    return socket.Receive(buffer, offset, count, SocketFlags.None);
+                    return socket.Receive(buffer, SocketFlags.None);
                 }
                 catch (SocketException e)
                 {
@@ -111,18 +111,17 @@ namespace System.IO.Pipes
             }
 
             // For anonymous pipes, read from the file descriptor.
-            fixed (byte* bufPtr = buffer)
+            fixed (byte* bufPtr = &buffer.DangerousGetPinnableReference())
             {
-                int result = CheckPipeCall(Interop.Sys.Read(_handle, bufPtr + offset, count));
-                Debug.Assert(result <= count);
-
+                int result = CheckPipeCall(Interop.Sys.Read(_handle, bufPtr, buffer.Length));
+                Debug.Assert(result <= buffer.Length);
                 return result;
             }
         }
 
-        private unsafe void WriteCore(byte[] buffer, int offset, int count)
+        private unsafe void WriteCore(ReadOnlySpan<byte> buffer)
         {
-            DebugAssertReadWriteArgs(buffer, offset, count, _handle);
+            DebugAssertHandleValid(_handle);
 
             // For named pipes, send to the socket.
             Socket socket = _handle.NamedPipeSocket;
@@ -134,13 +133,10 @@ namespace System.IO.Pipes
                 // Such a case is already handled by Socket.Send, so we use it here.
                 try
                 {
-                    while (count > 0)
+                    while (buffer.Length > 0)
                     {
-                        int bytesWritten = socket.Send(buffer, offset, count, SocketFlags.None);
-                        Debug.Assert(bytesWritten <= count);
-
-                        count -= bytesWritten;
-                        offset += bytesWritten;
+                        int bytesWritten = socket.Send(buffer, SocketFlags.None);
+                        buffer = buffer.Slice(bytesWritten);
                     }
                 }
                 catch (SocketException e)
@@ -150,15 +146,12 @@ namespace System.IO.Pipes
             }
 
             // For anonymous pipes, write the file descriptor.
-            fixed (byte* bufPtr = buffer)
+            fixed (byte* bufPtr = &buffer.DangerousGetPinnableReference())
             {
-                while (count > 0)
+                while (buffer.Length > 0)
                 {
-                    int bytesWritten = CheckPipeCall(Interop.Sys.Write(_handle, bufPtr + offset, count));
-                    Debug.Assert(bytesWritten <= count);
-
-                    count -= bytesWritten;
-                    offset += bytesWritten;
+                    int bytesWritten = CheckPipeCall(Interop.Sys.Write(_handle, bufPtr, buffer.Length));
+                    buffer = buffer.Slice(bytesWritten);
                 }
             }
         }
@@ -182,7 +175,7 @@ namespace System.IO.Pipes
                     cancellationToken.ThrowIfCancellationRequested();
                     if (socket.Poll(timeout, SelectMode.SelectRead))
                     {
-                        return ReadCore(buffer, offset, count);
+                        return ReadCore(new Span<byte>(buffer, offset, count));
                     }
                     timeout = Math.Min(timeout * 2, MaxTimeoutMicroseconds);
                 }
