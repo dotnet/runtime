@@ -477,7 +477,7 @@ namespace System
         }
 
         // This method will clear the _stackTrace of the exception object upon deserialization
-        // to ensure that references from another AD/Process dont get accidently used.
+        // to ensure that references from another AD/Process dont get accidentally used.
         [OnDeserialized]
         private void OnDeserialized(StreamingContext context)
         {
