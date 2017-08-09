@@ -390,8 +390,9 @@ get_virtual_method (InterpMethod *imethod, MonoObject *obj)
 }
 
 static void inline
-stackval_from_data (MonoType *type, stackval *result, char *data, gboolean pinvoke)
+stackval_from_data (MonoType *type_, stackval *result, char *data, gboolean pinvoke)
 {
+	MonoType *type = mini_native_type_replace_type (type_);
 	if (type->byref) {
 		switch (type->type) {
 		case MONO_TYPE_OBJECT:
@@ -479,8 +480,9 @@ stackval_from_data (MonoType *type, stackval *result, char *data, gboolean pinvo
 }
 
 static void inline
-stackval_to_data (MonoType *type, stackval *val, char *data, gboolean pinvoke)
+stackval_to_data (MonoType *type_, stackval *val, char *data, gboolean pinvoke)
 {
+	MonoType *type = mini_native_type_replace_type (type_);
 	if (type->byref) {
 		gpointer *p = (gpointer*)data;
 		*p = val->data.p;
@@ -2330,6 +2332,9 @@ ves_exec_method_with_context (InterpFrame *frame, ThreadContext *context, unsign
 		MINT_IN_CASE(MINT_NOP)
 			++ip;
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_NIY)
+			g_error ("mint_niy: instruction not implemented yet.  This shouldn't happen.");
+			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_BREAK)
 			++ip;
 			do_debugger_tramp (mono_debugger_agent_user_break, frame);
@@ -3613,6 +3618,15 @@ array_constructed:
 			++sp;
 			MINT_IN_BREAK;
 		}
+		MINT_IN_CASE(MINT_NEWOBJ_MAGIC) {
+			guint32 token;
+
+			frame->ip = ip;
+			token = * (guint16 *)(ip + 1);
+			ip += 2;
+
+			MINT_IN_BREAK;
+		}
 		MINT_IN_CASE(MINT_CASTCLASS)
 			c = rtm->data_items [*(guint16 *)(ip + 1)];
 			if ((o = sp [-1].data.p)) {
@@ -3958,7 +3972,7 @@ array_constructed:
 			c = rtm->data_items [* (guint16 *)(ip + 1)];
 			guint16 offset = * (guint16 *)(ip + 2);
 
-			if (c->byval_arg.type == MONO_TYPE_VALUETYPE && !c->enumtype) {
+			if (c->byval_arg.type == MONO_TYPE_VALUETYPE && !c->enumtype && !(mono_class_is_magic_int (c) || mono_class_is_magic_float (c))) {
 				int size = mono_class_value_size (c, NULL);
 				sp [-1 - offset].data.p = mono_value_box_checked (rtm->domain, c, sp [-1 - offset].data.p, &error);
 				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
@@ -4594,6 +4608,15 @@ array_constructed:
 	--sp; \
 	sp [-1].data.i = sp [-1].data.datamem op sp [0].data.datamem; \
 	++ip;
+
+#define RELOP_FP(datamem, op, noorder) \
+	--sp; \
+	if (isunordered (sp [-1].data.datamem, sp [0].data.datamem)) \
+		sp [-1].data.i = noorder; \
+	else \
+		sp [-1].data.i = sp [-1].data.datamem op sp [0].data.datamem; \
+	++ip;
+
 		MINT_IN_CASE(MINT_CEQ_I4)
 			RELOP(i, ==);
 			MINT_IN_BREAK;
@@ -4605,12 +4628,16 @@ array_constructed:
 			RELOP(l, ==);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CEQ_R8)
-			--sp; 
-			if (isunordered (sp [-1].data.f, sp [0].data.f))
-				sp [-1].data.i = 0;
-			else
-				sp [-1].data.i = sp [-1].data.f == sp [0].data.f;
-			++ip;
+			RELOP_FP(f, ==, 0);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CNE_I4)
+			RELOP(i, !=);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CNE_I8)
+			RELOP(l, !=);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CNE_R8)
+			RELOP_FP(f, !=, 0);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CGT_I4)
 			RELOP(i, >);
@@ -4619,18 +4646,29 @@ array_constructed:
 			RELOP(l, >);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CGT_R8)
-			--sp; 
-			if (isunordered (sp [-1].data.f, sp [0].data.f))
-				sp [-1].data.i = 0;
-			else
-				sp [-1].data.i = sp [-1].data.f > sp [0].data.f;
-			++ip;
+			RELOP_FP(f, >, 0);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CGE_I4)
+			RELOP(i, >=);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CGE_I8)
+			RELOP(l, >=);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CGE_R8)
+			RELOP_FP(f, >=, 0);
 			MINT_IN_BREAK;
 
 #define RELOP_CAST(datamem, op, type) \
 	--sp; \
 	sp [-1].data.i = (type)sp [-1].data.datamem op (type)sp [0].data.datamem; \
 	++ip;
+
+		MINT_IN_CASE(MINT_CGE_UN_I4)
+			RELOP_CAST(l, >=, guint32);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CGE_UN_I8)
+			RELOP_CAST(l, >=, guint64);
+			MINT_IN_BREAK;
 
 		MINT_IN_CASE(MINT_CGT_UN_I4)
 			RELOP_CAST(i, >, guint32);
@@ -4639,12 +4677,7 @@ array_constructed:
 			RELOP_CAST(l, >, guint64);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CGT_UN_R8)
-			--sp; 
-			if (isunordered (sp [-1].data.f, sp [0].data.f))
-				sp [-1].data.i = 1;
-			else
-				sp [-1].data.i = sp [-1].data.f > sp [0].data.f;
-			++ip;
+			RELOP_FP(f, >, 1);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CLT_I4)
 			RELOP(i, <);
@@ -4653,12 +4686,7 @@ array_constructed:
 			RELOP(l, <);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CLT_R8)
-			--sp; 
-			if (isunordered (sp [-1].data.f, sp [0].data.f))
-				sp [-1].data.i = 0;
-			else
-				sp [-1].data.i = sp [-1].data.f < sp [0].data.f;
-			++ip;
+			RELOP_FP(f, <, 0);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CLT_UN_I4)
 			RELOP_CAST(i, <, guint32);
@@ -4667,13 +4695,28 @@ array_constructed:
 			RELOP_CAST(l, <, guint64);
 			MINT_IN_BREAK;
 		MINT_IN_CASE(MINT_CLT_UN_R8)
-			--sp; 
-			if (isunordered (sp [-1].data.f, sp [0].data.f))
-				sp [-1].data.i = 1;
-			else
-				sp [-1].data.i = sp [-1].data.f < sp [0].data.f;
-			++ip;
+			RELOP_FP(f, <, 1);
 			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CLE_I4)
+			RELOP(i, <=);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CLE_I8)
+			RELOP(l, <=);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CLE_UN_I4)
+			RELOP_CAST(l, <=, guint32);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CLE_UN_I8)
+			RELOP_CAST(l, <=, guint64);
+			MINT_IN_BREAK;
+		MINT_IN_CASE(MINT_CLE_R8)
+			RELOP_FP(f, <=, 0);
+			MINT_IN_BREAK;
+
+#undef RELOP
+#undef RELOP_FP
+#undef RELOP_CAST
+
 		MINT_IN_CASE(MINT_LDFTN) {
 			sp->data.p = rtm->data_items [* (guint16 *)(ip + 1)];
 			++sp;

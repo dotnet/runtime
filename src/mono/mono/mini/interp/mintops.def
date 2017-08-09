@@ -9,6 +9,7 @@
 /* OPDEF (opsymbol, opstring, oplength (in uint16s), optype) */
 
 OPDEF(MINT_NOP, "nop", 1, MintOpNoArgs)
+OPDEF(MINT_NIY, "niy", 1, MintOpNoArgs)
 OPDEF(MINT_BREAK, "break", 1, MintOpNoArgs)
 OPDEF(MINT_LDNULL, "ldnull", 1, MintOpNoArgs)
 OPDEF(MINT_DUP, "dup", 1, MintOpNoArgs)
@@ -269,6 +270,7 @@ OPDEF(MINT_CALLRUN, "callrun", 1, MintOpNoArgs)
 OPDEF(MINT_ENDFILTER, "endfilter", 1, MintOpNoArgs)
 
 OPDEF(MINT_NEWOBJ, "newobj", 2, MintOpMethodToken) 
+OPDEF(MINT_NEWOBJ_MAGIC, "newobj_magic", 2, MintOpMethodToken)
 OPDEF(MINT_INITOBJ, "initobj", 3, MintOpInt) 
 OPDEF(MINT_CASTCLASS, "castclass", 2, MintOpClassToken) 
 OPDEF(MINT_ISINST, "isinst", 2, MintOpClassToken) 
@@ -471,11 +473,22 @@ OPDEF(MINT_CEQ_I4, "ceq.i4", 1, MintOpNoArgs)
 OPDEF(MINT_CEQ_I8, "ceq.i8", 1, MintOpNoArgs)
 OPDEF(MINT_CEQ_R8, "ceq.r8", 1, MintOpNoArgs)
 
+OPDEF(MINT_CNE_I4, "cne.i4", 1, MintOpNoArgs)
+OPDEF(MINT_CNE_I8, "cne.i8", 1, MintOpNoArgs)
+OPDEF(MINT_CNE_R8, "cne.r8", 1, MintOpNoArgs)
+
 OPDEF(MINT_CEQ0_I4, "ceq0.i4", 1, MintOpNoArgs)
 
 OPDEF(MINT_CGT_I4, "cgt.i4", 1, MintOpNoArgs)
 OPDEF(MINT_CGT_I8, "cgt.i8", 1, MintOpNoArgs)
 OPDEF(MINT_CGT_R8, "cgt.r8", 1, MintOpNoArgs)
+
+OPDEF(MINT_CGE_I4, "cge.i4", 1, MintOpNoArgs)
+OPDEF(MINT_CGE_I8, "cge.i8", 1, MintOpNoArgs)
+OPDEF(MINT_CGE_R8, "cge.r8", 1, MintOpNoArgs)
+
+OPDEF(MINT_CGE_UN_I4, "cge.un.i4", 1, MintOpNoArgs)
+OPDEF(MINT_CGE_UN_I8, "cge.un.i8", 1, MintOpNoArgs)
 
 OPDEF(MINT_CGT_UN_I4, "cgt.un.i4", 1, MintOpNoArgs)
 OPDEF(MINT_CGT_UN_I8, "cgt.un.i8", 1, MintOpNoArgs)
@@ -484,6 +497,13 @@ OPDEF(MINT_CGT_UN_R8, "cgt.un.r8", 1, MintOpNoArgs)
 OPDEF(MINT_CLT_I4, "clt.i4", 1, MintOpNoArgs)
 OPDEF(MINT_CLT_I8, "clt.i8", 1, MintOpNoArgs)
 OPDEF(MINT_CLT_R8, "clt.r8", 1, MintOpNoArgs)
+
+OPDEF(MINT_CLE_I4, "cle.i4", 1, MintOpNoArgs)
+OPDEF(MINT_CLE_I8, "cle.i8", 1, MintOpNoArgs)
+OPDEF(MINT_CLE_R8, "cle.r8", 1, MintOpNoArgs)
+
+OPDEF(MINT_CLE_UN_I4, "cle.un.i4", 1, MintOpNoArgs)
+OPDEF(MINT_CLE_UN_I8, "cle.un.i8", 1, MintOpNoArgs)
 
 OPDEF(MINT_CLT_UN_I4, "clt.un.i4", 1, MintOpNoArgs)
 OPDEF(MINT_CLT_UN_I8, "clt.un.i8", 1, MintOpNoArgs)

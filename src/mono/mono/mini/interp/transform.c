@@ -142,6 +142,132 @@ static int stack_type [] = {
 	STACK_TYPE_VT
 };
 
+#if SIZEOF_VOID_P == 8
+#define MINT_NEG_P MINT_NEG_I8
+#define MINT_NOT_P MINT_NOT_I8
+
+#define MINT_NEG_FP MINT_NEG_R8
+
+#define MINT_ADD_P MINT_ADD_I8
+#define MINT_SUB_P MINT_SUB_I8
+#define MINT_MUL_P MINT_MUL_I8
+#define MINT_DIV_P MINT_DIV_I8
+#define MINT_DIV_UN_P MINT_DIV_UN_I8
+#define MINT_REM_P MINT_REM_I8
+#define MINT_REM_UN_P MINT_REM_UN_I8
+#define MINT_AND_P MINT_AND_I8
+#define MINT_OR_P MINT_OR_I8
+#define MINT_XOR_P MINT_XOR_I8
+#define MINT_SHL_P MINT_SHL_I8
+#define MINT_SHR_P MINT_SHR_I8
+#define MINT_SHR_UN_P MINT_SHR_UN_I8
+
+#define MINT_CEQ_P MINT_CEQ_I8
+#define MINT_CNE_P MINT_CNE_I8
+#define MINT_CLT_P MINT_CLT_I8
+#define MINT_CLT_UN_P MINT_CLT_UN_I8
+#define MINT_CGT_P MINT_CGT_I8
+#define MINT_CGT_UN_P MINT_CGT_UN_I8
+#define MINT_CLE_P MINT_CLE_I8
+#define MINT_CLE_UN_P MINT_CLE_UN_I8
+#define MINT_CGE_P MINT_CGE_I8
+#define MINT_CGE_UN_P MINT_CGE_UN_I8
+
+#define MINT_ADD_FP MINT_ADD_R8
+#define MINT_SUB_FP MINT_SUB_R8
+#define MINT_MUL_FP MINT_MUL_R8
+#define MINT_DIV_FP MINT_DIV_R8
+#define MINT_REM_FP MINT_REM_R8
+
+#define MINT_CNE_FP MINT_CNE_R8
+#define MINT_CEQ_FP MINT_CEQ_R8
+#define MINT_CGT_FP MINT_CGT_R8
+#define MINT_CGE_FP MINT_CGE_R8
+#define MINT_CLT_FP MINT_CLT_R8
+#define MINT_CLE_FP MINT_CLE_R8
+
+#else
+
+#define MINT_NEG_P MINT_NEG_I4
+#define MINT_NOT_P MINT_NOT_I4
+
+#define MINT_NEG_FP MINT_NEG_R8
+
+#define MINT_ADD_P MINT_ADD_I4
+#define MINT_SUB_P MINT_SUB_I4
+#define MINT_MUL_P MINT_MUL_I4
+#define MINT_DIV_P MINT_DIV_I4
+#define MINT_DIV_UN_P MINT_DIV_UN_I4
+#define MINT_REM_P MINT_REM_I4
+#define MINT_REM_UN_P MINT_REM_UN_I4
+#define MINT_AND_P MINT_AND_I4
+#define MINT_OR_P MINT_OR_I4
+#define MINT_XOR_P MINT_XOR_I4
+#define MINT_SHL_P MINT_SHL_I4
+#define MINT_SHR_P MINT_SHR_I4
+#define MINT_SHR_UN_P MINT_SHR_UN_I4
+
+#define MINT_CEQ_P MINT_CEQ_I4
+#define MINT_CNE_P MINT_CNE_I4
+#define MINT_CLT_P MINT_CLT_I4
+#define MINT_CLT_UN_P MINT_CLT_UN_I4
+#define MINT_CGT_P MINT_CGT_I4
+#define MINT_CGT_UN_P MINT_CGT_UN_I4
+#define MINT_CLE_P MINT_CLE_I4
+#define MINT_CLE_UN_P MINT_CLE_UN_I4
+#define MINT_CGE_P MINT_CGE_I4
+#define MINT_CGE_UN_P MINT_CGE_UN_I4
+
+#define MINT_ADD_FP MINT_ADD_R8
+#define MINT_SUB_FP MINT_SUB_R8
+#define MINT_MUL_FP MINT_MUL_R8
+#define MINT_DIV_FP MINT_DIV_R8
+#define MINT_REM_FP MINT_REM_R8
+
+#define MINT_CNE_FP MINT_CNE_R8
+#define MINT_CEQ_FP MINT_CEQ_R8
+#define MINT_CGT_FP MINT_CGT_R8
+#define MINT_CGE_FP MINT_CGE_R8
+#define MINT_CLT_FP MINT_CLT_R8
+#define MINT_CLE_FP MINT_CLE_R8
+
+#endif
+
+typedef struct {
+	const gchar *op_name;
+	guint16 insn [3];
+} MagicIntrinsic;
+
+// static const MagicIntrinsic int_binop[] = {
+
+static const MagicIntrinsic int_unnop[] = {
+	{ "op_UnaryPlus", {MINT_NOP, MINT_NOP, MINT_NOP}},
+	{ "op_UnaryNegation", {MINT_NEG_P, MINT_NEG_P, MINT_NEG_FP}},
+	{ "op_OnesComplement", {MINT_NOT_P, MINT_NOT_P, MINT_NIY}}
+};
+
+static const MagicIntrinsic int_binop[] = {
+	{ "op_Addition", {MINT_ADD_P, MINT_ADD_P, MINT_ADD_FP}},
+	{ "op_Subtraction", {MINT_SUB_P, MINT_SUB_P, MINT_SUB_FP}},
+	{ "op_Multiply", {MINT_MUL_P, MINT_MUL_P, MINT_MUL_FP}},
+	{ "op_Division", {MINT_DIV_P, MINT_DIV_UN_P, MINT_DIV_FP}},
+	{ "op_Modulus", {MINT_REM_P, MINT_REM_UN_P, MINT_REM_FP}},
+	{ "op_BitwiseAnd", {MINT_AND_P, MINT_AND_P, MINT_NIY}},
+	{ "op_BitwiseOr", {MINT_OR_P, MINT_OR_P, MINT_NIY}},
+	{ "op_ExclusiveOr", {MINT_XOR_P, MINT_XOR_P, MINT_NIY}},
+	{ "op_LeftShift", {MINT_SHL_P, MINT_SHL_P, MINT_NIY}},
+	{ "op_RightShift", {MINT_SHR_P, MINT_SHR_UN_P, MINT_NIY}},
+};
+
+static const MagicIntrinsic int_cmpop[] = {
+	{ "op_Inequality", {MINT_CNE_P, MINT_CNE_P, MINT_CNE_FP}},
+	{ "op_Equality", {MINT_CEQ_P, MINT_CEQ_P, MINT_CEQ_FP}},
+	{ "op_GreaterThan", {MINT_CGT_P, MINT_CGT_UN_P, MINT_CGT_FP}},
+	{ "op_GreaterThanOrEqual", {MINT_CGE_P, MINT_CGE_UN_P, MINT_CGE_FP}},
+	{ "op_LessThan", {MINT_CLT_P, MINT_CLT_UN_P, MINT_CLT_FP}},
+	{ "op_LessThanOrEqual", {MINT_CLE_P, MINT_CLE_UN_P, MINT_CLE_FP}}
+};
+
 static void
 grow_code (TransformData *td)
 {
@@ -315,8 +441,9 @@ shift_op(TransformData *td, int mint_op)
 }
 
 static int 
-mint_type(MonoType *type)
+mint_type(MonoType *type_)
 {
+	MonoType *type = mini_native_type_replace_type (type_);
 	if (type->byref)
 		return MINT_TYPE_P;
 enum_type:
@@ -700,6 +827,32 @@ jit_call_supported (MonoMethod *method, MonoMethodSignature *sig)
 	return FALSE;
 }
 
+static inline gboolean
+type_size (MonoType *type)
+{
+	if (type->type == MONO_TYPE_I4 || type->type == MONO_TYPE_U4)
+		return 4;
+	else if (type->type == MONO_TYPE_I8 || type->type == MONO_TYPE_U8)
+		return 8;
+	else if (type->type == MONO_TYPE_R4 && !type->byref)
+		return 4;
+	else if (type->type == MONO_TYPE_R8 && !type->byref)
+		return 8;
+	return SIZEOF_VOID_P;
+}
+
+static int mono_class_get_magic_index (MonoClass *k)
+{
+	if (mono_class_is_magic_int (k))
+		return !strcmp ("nint", k->name) ? 0 : 1;
+
+	if (mono_class_is_magic_float (k))
+		return 2;
+
+	return -1;
+}
+
+
 static void
 interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target_method, MonoDomain *domain, MonoGenericContext *generic_context, unsigned char *is_bb_start, int body_start_offset, MonoClass *constrained_class, gboolean readonly)
 {
@@ -761,30 +914,151 @@ interp_transform_call (TransformData *td, MonoMethod *method, MonoMethod *target
 
 	/* Intrinsics */
 	if (target_method) {
+		const char *tm = target_method->name;
+		int type_index = mono_class_get_magic_index (target_method->klass);
+
 		if (target_method->klass == mono_defaults.string_class) {
-			if (target_method->name [0] == 'g') {
-				if (strcmp (target_method->name, "get_Chars") == 0)
+			if (tm [0] == 'g') {
+				if (strcmp (tm, "get_Chars") == 0)
 					op = MINT_GETCHR;
-				else if (strcmp (target_method->name, "get_Length") == 0)
+				else if (strcmp (tm, "get_Length") == 0)
 					op = MINT_STRLEN;
 			}
+		} else if (type_index >= 0) {
+			MonoClass *magic_class = target_method->klass;
+
+			const int mt = mint_type (&magic_class->byval_arg);
+			if (!strcmp (".ctor", tm)) {
+				MonoType *arg = csignature->params [0];
+				/* depending on SIZEOF_VOID_P and the type of the value passed to the .ctor we either have to CONV it, or do nothing */
+				int arg_size = type_size (arg);
+
+				if (arg_size > SIZEOF_VOID_P) { // 8 -> 4
+					switch (type_index) {
+					case 0: case 1:
+						ADD_CODE (td, MINT_CONV_I8_I4);
+						break;
+					case 2:
+						// ADD_CODE (td, MINT_CONV_R8_R4);
+						break;
+					}
+				}
+
+				if (arg_size < SIZEOF_VOID_P) { // 4 -> 8
+					switch (type_index) {
+					case 0: case 1:
+						ADD_CODE (td, MINT_CONV_I4_I8);
+						break;
+					case 2:
+						ADD_CODE (td, MINT_CONV_R4_R8);
+						break;
+					}
+				}
+
+				switch (type_index) {
+				case 0: case 1:
+#if SIZEOF_VOID_P == 4
+					ADD_CODE (td, MINT_STIND_I4);
+#else
+					ADD_CODE (td, MINT_STIND_I8);
+#endif
+					break;
+				case 2:
+#if SIZEOF_VOID_P == 4
+					ADD_CODE (td, MINT_STIND_R4);
+#else
+					ADD_CODE (td, MINT_STIND_R8);
+#endif
+					break;
+				}
+
+				td->sp -= 2;
+				td->ip += 5;
+				return;
+			} else if (!strcmp ("op_Implicit", tm ) || !strcmp ("op_Explicit", tm)) {
+				int arg_size = type_size (csignature->params [0]);
+				if (arg_size > SIZEOF_VOID_P) { // 8 -> 4
+					switch (type_index) {
+					case 0: case 1:
+						ADD_CODE (td, MINT_CONV_I8_I4);
+						break;
+					case 2:
+						// ADD_CODE (td, MINT_CONV_R4_R8);
+						break;
+					}
+				}
+
+				if (arg_size < SIZEOF_VOID_P) { // 4 -> 8
+					switch (type_index) {
+					case 0: case 1:
+						ADD_CODE (td, MINT_CONV_I4_I8);
+						break;
+					case 2:
+						ADD_CODE (td, MINT_CONV_R4_R8);
+						break;
+					}
+				}
+
+				SET_TYPE (td->sp - 1, stack_type [mt], magic_class);
+				td->ip += 5;
+				return;
+			} else if (!strcmp (".cctor", tm)) {
+				/* white list */
+				goto no_intrinsic;
+			} else if (!strcmp ("Parse", tm)) {
+				/* white list */
+				goto no_intrinsic;
+			}
+
+			for (i = 0; i < sizeof (int_unnop) / sizeof  (MagicIntrinsic); ++i) {
+				if (!strcmp (int_unnop [i].op_name, tm)) {
+					ADD_CODE (td, int_unnop [i].insn [type_index]);
+					SET_TYPE (td->sp - 1, stack_type [mt], magic_class);
+					td->ip += 5;
+					return;
+				}
+			}
+
+			for (i = 0; i < sizeof (int_binop) / sizeof  (MagicIntrinsic); ++i) {
+				if (!strcmp (int_binop [i].op_name, tm)) {
+					ADD_CODE (td, int_binop [i].insn [type_index]);
+					td->sp -= 1;
+					SET_TYPE (td->sp - 1, stack_type [mt], magic_class);
+					td->ip += 5;
+					return;
+				}
+			}
+
+			for (i = 0; i < sizeof (int_cmpop) / sizeof  (MagicIntrinsic); ++i) {
+				if (!strcmp (int_cmpop [i].op_name, tm)) {
+					MonoClass *k = mono_defaults.boolean_class;
+					ADD_CODE (td, int_cmpop [i].insn [type_index]);
+					td->sp -= 1;
+					SET_TYPE (td->sp - 1, stack_type [mint_type (&k->byval_arg)], k);
+					td->ip += 5;
+					return;
+				}
+			}
+
+			g_error ("TODO: %s", tm);
 		} else if (mono_class_is_subclass_of (target_method->klass, mono_defaults.array_class, FALSE)) {
-			if (!strcmp (target_method->name, "get_Rank")) {
+			if (!strcmp (tm, "get_Rank")) {
 				op = MINT_ARRAY_RANK;
-			} else if (!strcmp (target_method->name, "get_Length")) {
+			} else if (!strcmp (tm, "get_Length")) {
 				op = MINT_LDLEN;
-			} else if (!strcmp (target_method->name, "Address")) {
+			} else if (!strcmp (tm, "Address")) {
 				op = readonly ? MINT_LDELEMA : MINT_LDELEMA_TC;
 			}
 		} else if (target_method->klass->image == mono_defaults.corlib &&
 				   (strcmp (target_method->klass->name_space, "System.Diagnostics") == 0) &&
 				   (strcmp (target_method->klass->name, "Debugger") == 0)) {
-			if (!strcmp (target_method->name, "Break") && csignature->param_count == 0) {
+			if (!strcmp (tm, "Break") && csignature->param_count == 0) {
 				if (mini_should_insert_breakpoint (method))
 					op = MINT_BREAK;
 			}
 		}
 	}
+no_intrinsic:
 
 	if (constrained_class) {
 		if (constrained_class->enumtype && !strcmp (target_method->name, "GetHashCode")) {
@@ -2457,31 +2731,38 @@ generate (MonoMethod *method, InterpMethod *rtm, unsigned char *is_bb_start, Mon
 
 			csignature = mono_method_signature (m);
 			klass = m->klass;
-			td->sp -= csignature->param_count;
-			ADD_CODE(td, MINT_NEWOBJ);
-			ADD_CODE(td, get_data_item_index (td, mono_interp_get_imethod (domain, m, &error)));
-			mono_error_cleanup (&error); /* FIXME: don't swallow the error */
 
-			if (mint_type (&klass->byval_arg) == MINT_TYPE_VT) {
-				vt_res_size = mono_class_value_size (klass, NULL);
-				PUSH_VT (td, vt_res_size);
-			}
-			for (i = 0; i < csignature->param_count; ++i) {
-				int mt = mint_type(csignature->params [i]);
-				if (mt == MINT_TYPE_VT) {
-					MonoClass *k = mono_class_from_mono_type (csignature->params [i]);
-					gint32 size = mono_class_value_size (k, NULL);
-					size = (size + 7) & ~7;
-					vt_stack_used += size;
+			td->sp -= csignature->param_count;
+			if (mono_class_is_magic_int (klass) || mono_class_is_magic_float (klass)) {
+				ADD_CODE (td, MINT_NEWOBJ_MAGIC);
+				ADD_CODE (td, get_data_item_index (td, mono_interp_get_imethod (domain, m, &error)));
+				PUSH_TYPE (td, stack_type [mint_type (&klass->byval_arg)], klass);
+			} else {
+				ADD_CODE(td, MINT_NEWOBJ);
+				ADD_CODE(td, get_data_item_index (td, mono_interp_get_imethod (domain, m, &error)));
+				mono_error_cleanup (&error); /* FIXME: don't swallow the error */
+
+				if (mint_type (&klass->byval_arg) == MINT_TYPE_VT) {
+					vt_res_size = mono_class_value_size (klass, NULL);
+					PUSH_VT (td, vt_res_size);
 				}
+				for (i = 0; i < csignature->param_count; ++i) {
+					int mt = mint_type(csignature->params [i]);
+					if (mt == MINT_TYPE_VT) {
+						MonoClass *k = mono_class_from_mono_type (csignature->params [i]);
+						gint32 size = mono_class_value_size (k, NULL);
+						size = (size + 7) & ~7;
+						vt_stack_used += size;
+					}
+				}
+				if (vt_stack_used != 0 || vt_res_size != 0) {
+					ADD_CODE(td, MINT_VTRESULT);
+					ADD_CODE(td, vt_res_size);
+					WRITE32(td, &vt_stack_used);
+					td->vt_sp -= vt_stack_used;
+				}
+				PUSH_TYPE (td, stack_type [mint_type (&klass->byval_arg)], klass);
 			}
-			if (vt_stack_used != 0 || vt_res_size != 0) {
-				ADD_CODE(td, MINT_VTRESULT);
-				ADD_CODE(td, vt_res_size);
-				WRITE32(td, &vt_stack_used);
-				td->vt_sp -= vt_stack_used;
-			}
-			PUSH_TYPE (td, stack_type [mint_type (&klass->byval_arg)], klass);
 			break;
 		}
 		case CEE_CASTCLASS:
