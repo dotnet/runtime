@@ -3461,6 +3461,7 @@ namespace System.Drawing.Tests
             }
         }
 
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawString_DefaultFont_Succeeds()
         {
@@ -3472,6 +3473,7 @@ namespace System.Drawing.Tests
             }
         }
 
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DrawString_CompositingModeSourceCopy_ThrowsArgumentException()
         {
