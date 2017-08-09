@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Drawing.Drawing2D
 {
-    public sealed class AdjustableArrowCap : CustomLineCap
+    public sealed partial class AdjustableArrowCap : CustomLineCap
     {
         internal AdjustableArrowCap(IntPtr nativeCap) : base(nativeCap) { }
 

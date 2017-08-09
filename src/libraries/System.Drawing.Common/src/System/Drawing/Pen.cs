@@ -14,7 +14,7 @@ namespace System.Drawing
     /// <summary>
     /// Defines an object used to draw lines and curves.
     /// </summary>
-    public sealed class Pen : MarshalByRefObject, ICloneable, IDisposable
+    public sealed partial class Pen : MarshalByRefObject, ICloneable, IDisposable
 #if FEATURE_SYSTEM_EVENTS
         , ISystemColorTracker
 #endif
@@ -360,58 +360,6 @@ namespace System.Drawing
         }
 
         /// <summary>
-        /// Gets or sets a custom cap style to use at the beginning of lines drawn with this <see cref='Pen'/>.
-        /// </summary>
-        public CustomLineCap CustomStartCap
-        {
-            get
-            {
-                IntPtr lineCap = IntPtr.Zero;
-                int status = SafeNativeMethods.Gdip.GdipGetPenCustomStartCap(new HandleRef(this, NativePen), out lineCap);
-                SafeNativeMethods.Gdip.CheckStatus(status);
-
-                return CustomLineCap.CreateCustomLineCapObject(lineCap);
-            }
-            set
-            {
-                if (_immutable)
-                {
-                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, nameof(Pen)));
-                }
-
-                int status = SafeNativeMethods.Gdip.GdipSetPenCustomStartCap(new HandleRef(this, NativePen),
-                                                              new HandleRef(value, (value == null) ? IntPtr.Zero : value.nativeCap));
-                SafeNativeMethods.Gdip.CheckStatus(status);
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets a custom cap style to use at the end of lines drawn with this <see cref='Pen'/>.
-        /// </summary>
-        public CustomLineCap CustomEndCap
-        {
-            get
-            {
-                IntPtr lineCap = IntPtr.Zero;
-                int status = SafeNativeMethods.Gdip.GdipGetPenCustomEndCap(new HandleRef(this, NativePen), out lineCap);
-                SafeNativeMethods.Gdip.CheckStatus(status);
-
-                return CustomLineCap.CreateCustomLineCapObject(lineCap);
-            }
-            set
-            {
-                if (_immutable)
-                {
-                    throw new ArgumentException(SR.Format(SR.CantChangeImmutableObjects, nameof(Pen)));
-                }
-
-                int status = SafeNativeMethods.Gdip.GdipSetPenCustomEndCap(new HandleRef(this, NativePen),
-                                                            new HandleRef(value, (value == null) ? IntPtr.Zero : value.nativeCap));
-                SafeNativeMethods.Gdip.CheckStatus(status);
-            }
-        }
-
-        /// <summary>
         /// Gets or sets the limit of the thickness of the join on a mitered corner.
         /// </summary>
         public float MiterLimit
@@ -516,6 +464,12 @@ namespace System.Drawing
         /// </summary>
         public void MultiplyTransform(Matrix matrix, MatrixOrder order)
         {
+            if (matrix.nativeMatrix == IntPtr.Zero)
+            {
+                // Disposed matrices should result in a no-op.
+                return;
+            }
+
             int status = SafeNativeMethods.Gdip.GdipMultiplyPenTransform(new HandleRef(this, NativePen),
                                                           new HandleRef(matrix, matrix.nativeMatrix),
                                                           order);
