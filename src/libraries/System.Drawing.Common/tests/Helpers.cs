@@ -174,5 +174,23 @@ namespace System.Drawing
             public int Right;
             public int Bottom;
         }
+
+        public static void VerifyBitmapNotBlank(Bitmap bmp)
+        {
+            Color emptyColor = Color.FromArgb(0);
+            for (int y = 0; y < bmp.Height; y++)
+            {
+                for (int x = 0; x < bmp.Width; x++)
+                {
+                    Color pixel = bmp.GetPixel(x, y);
+                    if (!pixel.Equals(emptyColor))
+                    {
+                        return;
+                    }
+                }
+            }
+
+            throw new XunitException("The entire image was blank.");
+        }
     }
 }
