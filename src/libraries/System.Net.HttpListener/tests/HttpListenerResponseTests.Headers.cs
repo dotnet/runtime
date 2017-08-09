@@ -35,7 +35,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(18784, TargetFrameworkMonikers.Netcoreapp)]
+        [ActiveIssue(22057, TargetFrameworkMonikers.Netcoreapp)]
         public async Task AddHeader_LongName_ThrowsArgumentOutOfRangeException()
         {
             HttpListenerResponse response = await GetResponse();
@@ -73,7 +73,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(18784, TargetFrameworkMonikers.Netcoreapp)]
+        [ActiveIssue(22057, TargetFrameworkMonikers.Netcoreapp)]
         public async Task AppendHeader_LongName_ThrowsArgumentOutOfRangeException()
         {
             HttpListenerResponse response = await GetResponse();
@@ -833,7 +833,7 @@ namespace System.Net.Tests
 
         [Theory]
         [InlineData("Transfer-Encoding")]
-        [ActiveIssue(18784, TargetFrameworkMonikers.Netcoreapp)]
+        [ActiveIssue(22057, TargetFrameworkMonikers.Netcoreapp)]
         public async Task Headers_SetRestricted_ThrowsArgumentException(string name)
         {
             HttpListenerResponse response = await GetResponse();
@@ -854,7 +854,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(18784, TargetFrameworkMonikers.Netcoreapp)]
+        [ActiveIssue(22057, TargetFrameworkMonikers.Netcoreapp)]
         public async Task Headers_SetLongName_ThrowsArgumentOutOfRangeException()
         {
             HttpListenerResponse response = await GetResponse();
@@ -866,7 +866,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
-        [ActiveIssue(18784, TargetFrameworkMonikers.Netcoreapp)]
+        [ActiveIssue(22057, TargetFrameworkMonikers.Netcoreapp)]
         public async Task Headers_SetRequestHeader_ThrowsInvalidOperationException()
         {
             HttpListenerResponse response = await GetResponse();

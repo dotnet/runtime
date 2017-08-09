@@ -77,7 +77,7 @@ namespace System.Net.Tests
             await AssertExtensions.ThrowsAsync<ArgumentException>("messageType", () => context.WebSocket.SendAsync(new ArraySegment<byte>(), messageType, false, new CancellationToken()));
         }
 
-        [ConditionalFact(nameof(IsNotWindows7))]
+        [ConditionalFact(nameof(IsNotWindows7AndIsWindowsImplementation))] // [ActiveIssue(20395, TestPlatforms.AnyUnix)]
         public async Task SendAsync_Disposed_ThrowsObjectDisposedException()
         {
             HttpListenerWebSocketContext context = await GetWebSocketContext();
@@ -121,7 +121,7 @@ namespace System.Net.Tests
             await AssertExtensions.ThrowsAsync<ArgumentNullException>("buffer.Array", () => context.WebSocket.ReceiveAsync(new ArraySegment<byte>(), new CancellationToken()));
         }
 
-        [ConditionalFact(nameof(IsNotWindows7))]
+        [ConditionalFact(nameof(IsNotWindows7AndIsWindowsImplementation))] // [ActiveIssue(20395, TestPlatforms.AnyUnix)]
         public async Task ReceiveAsync_Disposed_ThrowsObjectDisposedException()
         {
             HttpListenerWebSocketContext context = await GetWebSocketContext();
