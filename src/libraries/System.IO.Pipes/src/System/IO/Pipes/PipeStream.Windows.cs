@@ -54,10 +54,10 @@ namespace System.IO.Pipes
         }
 
         [SecurityCritical]
-        private unsafe int ReadCore(byte[] buffer, int offset, int count)
+        private unsafe int ReadCore(Span<byte> buffer)
         {
             int errorCode = 0;
-            int r = ReadFileNative(_handle, buffer, offset, count, null, out errorCode);
+            int r = ReadFileNative(_handle, buffer, null, out errorCode);
 
             if (r == -1)
             {
@@ -90,7 +90,7 @@ namespace System.IO.Pipes
             int r;
             unsafe
             {
-                r = ReadFileNative(_handle, buffer, offset, count, completionSource.Overlapped, out errorCode);
+                r = ReadFileNative(_handle, new Span<byte>(buffer, offset, count), completionSource.Overlapped, out errorCode);
             }
 
             // ReadFile, the OS version, will return 0 on failure, but this ReadFileNative wrapper
@@ -136,10 +136,10 @@ namespace System.IO.Pipes
         }
 
         [SecurityCritical]
-        private unsafe void WriteCore(byte[] buffer, int offset, int count)
+        private unsafe void WriteCore(ReadOnlySpan<byte> buffer)
         {
             int errorCode = 0;
-            int r = WriteFileNative(_handle, buffer, offset, count, null, out errorCode);
+            int r = WriteFileNative(_handle, buffer, null, out errorCode);
 
             if (r == -1)
             {
@@ -158,7 +158,7 @@ namespace System.IO.Pipes
             int r;
             unsafe
             {
-                r = WriteFileNative(_handle, buffer, offset, count, completionSource.Overlapped, out errorCode);
+                r = WriteFileNative(_handle, new ReadOnlySpan<byte>(buffer, offset, count), completionSource.Overlapped, out errorCode);
             }
 
             // WriteFile, the OS version, will return 0 on failure, but this WriteFileNative 
@@ -336,10 +336,9 @@ namespace System.IO.Pipes
         // -----------------------------
 
         [SecurityCritical]
-        private unsafe int ReadFileNative(SafePipeHandle handle, byte[] buffer, int offset, int count,
-                NativeOverlapped* overlapped, out int errorCode)
+        private unsafe int ReadFileNative(SafePipeHandle handle, Span<byte> buffer, NativeOverlapped* overlapped, out int errorCode)
         {
-            DebugAssertReadWriteArgs(buffer, offset, count, handle);
+            DebugAssertHandleValid(handle);
             Debug.Assert((_isAsync && overlapped != null) || (!_isAsync && overlapped == null), "Async IO parameter screwup in call to ReadFileNative.");
 
             // You can't use the fixed statement on an array of length 0. Note that async callers
@@ -353,43 +352,32 @@ namespace System.IO.Pipes
             int r = 0;
             int numBytesRead = 0;
 
-            fixed (byte* p = &buffer[0])
+            fixed (byte* p = &buffer.DangerousGetPinnableReference())
             {
-                if (_isAsync)
-                {
-                    r = Interop.Kernel32.ReadFile(handle, p + offset, count, IntPtr.Zero, overlapped);
-                }
-                else
-                {
-                    r = Interop.Kernel32.ReadFile(handle, p + offset, count, out numBytesRead, IntPtr.Zero);
-                }
+                r = _isAsync ?
+                    Interop.Kernel32.ReadFile(handle, p, buffer.Length, IntPtr.Zero, overlapped) :
+                    Interop.Kernel32.ReadFile(handle, p, buffer.Length, out numBytesRead, IntPtr.Zero);
             }
 
             if (r == 0)
             {
-                errorCode = Marshal.GetLastWin32Error();
-
                 // In message mode, the ReadFile can inform us that there is more data to come.
-                if (errorCode == Interop.Errors.ERROR_MORE_DATA)
-                {
-                    return numBytesRead;
-                }
-
-                return -1;
+                errorCode = Marshal.GetLastWin32Error();
+                return errorCode == Interop.Errors.ERROR_MORE_DATA ?
+                    numBytesRead :
+                    -1;
             }
             else
             {
                 errorCode = 0;
+                return numBytesRead;
             }
-
-            return numBytesRead;
         }
 
         [SecurityCritical]
-        private unsafe int WriteFileNative(SafePipeHandle handle, byte[] buffer, int offset, int count,
-                NativeOverlapped* overlapped, out int errorCode)
+        private unsafe int WriteFileNative(SafePipeHandle handle, ReadOnlySpan<byte> buffer, NativeOverlapped* overlapped, out int errorCode)
         {
-            DebugAssertReadWriteArgs(buffer, offset, count, handle);
+            DebugAssertHandleValid(handle);
             Debug.Assert((_isAsync && overlapped != null) || (!_isAsync && overlapped == null), "Async IO parameter screwup in call to WriteFileNative.");
 
             // You can't use the fixed statement on an array of length 0. Note that async callers
@@ -400,19 +388,14 @@ namespace System.IO.Pipes
                 return 0;
             }
 
-            int numBytesWritten = 0;
             int r = 0;
+            int numBytesWritten = 0;
 
-            fixed (byte* p = &buffer[0])
+            fixed (byte* p = &buffer.DangerousGetPinnableReference())
             {
-                if (_isAsync)
-                {
-                    r = Interop.Kernel32.WriteFile(handle, p + offset, count, IntPtr.Zero, overlapped);
-                }
-                else
-                {
-                    r = Interop.Kernel32.WriteFile(handle, p + offset, count, out numBytesWritten, IntPtr.Zero);
-                }
+                r = _isAsync ?
+                    Interop.Kernel32.WriteFile(handle, p, buffer.Length, IntPtr.Zero, overlapped) :
+                    Interop.Kernel32.WriteFile(handle, p, buffer.Length, out numBytesWritten, IntPtr.Zero);
             }
 
             if (r == 0)
@@ -423,9 +406,8 @@ namespace System.IO.Pipes
             else
             {
                 errorCode = 0;
+                return numBytesWritten;
             }
-
-            return numBytesWritten;
         }
 
         [SecurityCritical]
