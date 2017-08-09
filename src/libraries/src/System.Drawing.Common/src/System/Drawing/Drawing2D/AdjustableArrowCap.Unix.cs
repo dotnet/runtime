@@ -12,9 +12,7 @@ namespace System.Drawing.Drawing2D
         {
             IntPtr clonedCap;
             int status = SafeNativeMethods.Gdip.GdipCloneCustomLineCap(new HandleRef(this, nativeCap), out clonedCap);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-                throw SafeNativeMethods.Gdip.StatusException(status);
+            SafeNativeMethods.Gdip.CheckStatus(status);
 
             return new AdjustableArrowCap(clonedCap);
         }
