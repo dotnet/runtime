@@ -384,7 +384,6 @@ namespace LinkBench
             Environment.SetEnvironmentVariable("LinkBenchRoot", LinkBenchRoot);
             Environment.SetEnvironmentVariable("__dotnet", LinkBenchRoot + "\\.Net\\dotnet.exe");
             Environment.SetEnvironmentVariable("__dotnet1", LinkBenchRoot + "\\.Net1\\dotnet.exe");
-            Environment.SetEnvironmentVariable("__dotnet2", LinkBenchRoot + "\\.Net2\\dotnet.exe");
 
             // Update the build files to facilitate the link step
             if (doSetup)
