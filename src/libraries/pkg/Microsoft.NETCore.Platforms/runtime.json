@@ -234,6 +234,13 @@
             "#import": [ "rhel", "linux-x64" ]
         },
 
+        "rhel.6": {
+            "#import": [ "rhel" ]
+        },
+        "rhel.6-x64": {
+            "#import": [ "rhel.6", "rhel-x64" ]
+        },
+
         "rhel.7": {
             "#import": [ "rhel" ]
         },
