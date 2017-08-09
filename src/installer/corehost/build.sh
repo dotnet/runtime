@@ -14,35 +14,38 @@ init_rid_plat()
         else
             if [ -e $ROOTFS_DIR/etc/os-release ]; then
                 source $ROOTFS_DIR/etc/os-release
-                export __rid_plat="$ID.$VERSION_ID"
+                __rid_plat="$ID.$VERSION_ID"
             fi
             echo "__rid_plat is $__rid_plat"
         fi
     else
+        __rid_plat=""
         if [ -e /etc/os-release ]; then
             source /etc/os-release
-
             if [[ "$ID" == "rhel" && $VERSION_ID = 7* ]]; then
-                export __rid_plat="rhel.7"
+                __rid_plat="rhel.7"
             elif [[ "$ID" == "centos" && "$VERSION_ID" = "7" ]]; then
-                export __rid_plat="rhel.7"
+                __rid_plat="rhel.7"
             else
-                export __rid_plat="$ID.$VERSION_ID"
+                __rid_plat="$ID.$VERSION_ID"
             fi
-        else
-            export __rid_plat=
+        elif [ -e /etc/redhat-release ]; then
+            local redhatRelease=$(</etc/redhat-release)
+            if [[ $redhatRelease == "CentOS release 6."* || $redhatRelease == "Red Hat Enterprise Linux Server release 6."* ]]; then
+               __rid_plat="rhel.6"
+            fi
         fi
     fi
 
     if [ "$(uname -s)" == "Darwin" ]; then
-        export __rid_plat=osx.10.12
+        __rid_plat=osx.10.12
     fi
 
     if [ $__linkPortable == 1 ]; then
         if [ "$(uname -s)" == "Darwin" ]; then
-            export __rid_plat="osx"
+            __rid_plat="osx"
         else
-            export __rid_plat="linux"
+            __rid_plat="linux"
         fi
     fi
 }
