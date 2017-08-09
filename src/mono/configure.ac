@@ -786,7 +786,10 @@ if test $csc_compiler = default; then
    if test $endian = big; then
       csc_compiler=mcs
    elif test $endian = little; then
-      csc_compiler=roslyn
+      case "$host" in
+        powerpc*) csc_compiler=mcs ;;
+        *) csc_compiler=roslyn ;;
+      esac
    else
       csc_compiler=mcs
    fi
