@@ -623,13 +623,14 @@ Note that this is not necessarily the approach one would take, because the loop 
   - The second one does a pattern match of the loop
 
 ### Getting Dumps
+```
 set COMPlus_JitDump=Main
 set COMPlus_JitDumpAscii=0
 set COMPlus_JitDumpFg=Main
 set COMPlus_JitDumpFgDot=1
 set COMPlus_JitDumpFgFile=Main
 set COMPlus_JitDumpFgPhase=OPT-CHK
-
+```
 {BinaryDir}\CoreRun.exe PopCount.exe 1122334455667788 > jitdump.out.0
 
 ![RyuJIT Flowgraph](../images/ryujit-flowgraph.png)
