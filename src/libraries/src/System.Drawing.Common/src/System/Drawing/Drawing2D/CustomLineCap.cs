@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Drawing.Drawing2D
 {    
-    public class CustomLineCap : MarshalByRefObject, ICloneable, IDisposable
+    public partial class CustomLineCap : MarshalByRefObject, ICloneable, IDisposable
     {
 #if FINALIZATION_WATCH
         private string allocationSite = Graphics.GetAllocationStack();
@@ -74,7 +74,7 @@ namespace System.Drawing.Drawing2D
 
         ~CustomLineCap() => Dispose(false);
 
-        public object Clone()
+        public virtual object Clone()
         {
             IntPtr clonedCap;
             int status = SafeNativeMethods.Gdip.GdipCloneCustomLineCap(new HandleRef(this, nativeCap), out clonedCap);
@@ -83,29 +83,6 @@ namespace System.Drawing.Drawing2D
                 throw SafeNativeMethods.Gdip.StatusException(status);
 
             return CreateCustomLineCapObject(clonedCap);
-        }
-
-        internal static CustomLineCap CreateCustomLineCapObject(IntPtr cap)
-        {
-            int status = SafeNativeMethods.Gdip.GdipGetCustomLineCapType(new HandleRef(null, cap), out CustomLineCapType capType);
-
-            if (status != SafeNativeMethods.Gdip.Ok)
-            {
-                SafeNativeMethods.Gdip.GdipDeleteCustomLineCap(new HandleRef(null, cap));
-                throw SafeNativeMethods.Gdip.StatusException(status);
-            }
-
-            switch (capType)
-            {
-                case CustomLineCapType.Default:
-                    return new CustomLineCap(cap);
-
-                case CustomLineCapType.AdjustableArrowCap:
-                    return new AdjustableArrowCap(cap);
-            }
-
-            SafeNativeMethods.Gdip.GdipDeleteCustomLineCap(new HandleRef(null, cap));
-            throw SafeNativeMethods.Gdip.StatusException(SafeNativeMethods.Gdip.NotImplemented);
         }
 
         public void SetStrokeCaps(LineCap startCap, LineCap endCap)
