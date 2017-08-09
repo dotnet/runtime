@@ -132,11 +132,12 @@ cd ..
 
 REM Build CscCore
 call Restore.cmd
-cd src\Compilers\CSharp\CscCore
-call %__dotnet2% publish -c Release -r win7-x64
+REM Fetch the appropriate version of MSBuild to build and publish CscCore 
+for /f "delims=`" %%i in ('powershell -noprofile -executionPolicy RemoteSigned -command "& { . build\scripts\build-utils.ps1;Ensure-MSBuild }"') do set MSBUILD=%%i
+REM publish CscCore for win7-x64
+"%MSBUILD%" src\Compilers\CSharp\CscCore\CscCore.csproj /t:Publish /p:RuntimeIdentifier=win7-x64 /p:Configuration=Release /p:TreatWarningsAsErrors=true /warnaserror /nologo /nodeReuse:false /m 
 if errorlevel 1 set ExitCode=1&& echo Roslyn: publish failed 
 REM Published CscCore to Binaries\Release\Exes\CscCore\win7-x64\publish
-cd ..\..\..\..
 
 REM Create Linker Directory
 cd Binaries\Release\Exes\CscCore\win7-x64\
