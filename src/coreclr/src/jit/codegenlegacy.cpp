@@ -19547,6 +19547,7 @@ regMaskTP CodeGen::genCodeForCall(GenTreeCall* call, bool valUsed)
                             {
                                 noway_assert(regSet.rsRegMaskCanGrab() & RBM_R2R_INDIRECT_PARAM);
                                 getEmitter()->emitIns_R_R(INS_mov, EA_PTRSIZE, REG_R2R_INDIRECT_PARAM, indCallReg);
+                                regTracker.rsTrackRegTrash(REG_R2R_INDIRECT_PARAM);
                             }
 #endif // FEATURE_READYTORUN_COMPILER
 
