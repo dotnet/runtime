@@ -3468,7 +3468,7 @@ namespace System.Drawing.Tests
             using (Graphics graphics = Graphics.FromImage(image))
             {
                 graphics.DrawString("Test text", SystemFonts.DefaultFont, Brushes.White, new Point());
-                VerifyBitmapNotBlank(image);
+                Helpers.VerifyBitmapNotBlank(image);
             }
         }
 
@@ -3505,24 +3505,6 @@ namespace System.Drawing.Tests
             Assert.Equal(TextRenderingHint.SystemDefault, graphics.TextRenderingHint);
             Assert.Equal(new Matrix(), graphics.Transform);
             Assert.Equal(expectedVisibleClipBounds, graphics.VisibleClipBounds);
-        }
-
-        private static void VerifyBitmapNotBlank(Bitmap bmp)
-        {
-            Color emptyColor = Color.FromArgb(0);
-            for (int y = 0; y < bmp.Height; y++)
-            {
-                for (int x = 0; x < bmp.Width; x++)
-                {
-                    Color pixel = bmp.GetPixel(x, y);
-                    if (!pixel.Equals(emptyColor))
-                    {
-                        return;
-                    }
-                }
-            }
-
-            throw new XunitException("The entire image was blank.");
         }
     }
 }
