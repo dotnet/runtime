@@ -219,10 +219,11 @@ namespace BasicEventSourceTests
 
                         // We expect the timer to have gone off at least twice, plus the explicit poll at the begining and end.
                         // Each one fires two events (one for requests, one for errors). so that is (2 + 2)*2 = 8
-                        // We expect about 5 timer requests, but we don't get picky about the exact count
-                        // We don't expect more than say 9 timer request so that is (2 + 9) * 2 = 22
+                        // We expect about 7 timer requests, but we don't get picky about the exact count
+                        // Putting in a generous buffer, we double7 to say we don't expect more than  14 timer fires 
+                        // so that is (2 + 14) * 2 = 32
                         Assert.True(8 <= evts.Count, $"FAILURE: 8 <= {evts.Count}");
-                        Assert.True(evts.Count <= 22, $"FAILURE: {evts.Count} <= 22");
+                        Assert.True(evts.Count <= 32, $"FAILURE: {evts.Count} <= 32");
                     }));
 
 
