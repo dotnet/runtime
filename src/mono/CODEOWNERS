@@ -43,6 +43,11 @@ mono/metadata/sgen* @brzvlad
 mono/metadata/threads* @luhenry @kumpera
 mono/metadata/threadpool* @luhenry
 mono/metadata/w32* @luhenry
+mono/mini/*cfgdump* @lewurm
+mono/mini/*exceptions* @lewurm
+mono/mini/*ppc* @lewurm
+mono/mini/*type-check* @lewurm
+mono/mini/interp/* @lewurm
 mono/mini/*profiler* @alexrp
 mono/profiler @alexrp
 mono/sgen @brzvlad
