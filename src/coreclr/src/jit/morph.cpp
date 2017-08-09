@@ -7241,7 +7241,7 @@ void Compiler::fgMorphTailCall(GenTreeCall* call)
         {
             add = gtNewOperNode(GT_ADD, TYP_I_IMPL, vtbl, gtNewIconNode(vtabOffsOfIndirection, TYP_I_IMPL));
 
-            GenTreePtr indOffTree;
+            GenTreePtr indOffTree = nullptr;
 
             if (isRelative)
             {
