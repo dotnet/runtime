@@ -195,10 +195,7 @@ namespace System.Collections.Immutable
             /// <returns>
             /// A <see cref="IEnumerator{T}"/> that can be used to iterate through the collection.
             /// </returns>
-            public Enumerator GetEnumerator()
-            {
-                return new Enumerator(this);
-            }
+            public Enumerator GetEnumerator() => new Enumerator(this);
 
             /// <summary>
             /// Returns an enumerator that iterates through the collection.
@@ -207,10 +204,7 @@ namespace System.Collections.Immutable
             /// A <see cref="IEnumerator{T}"/> that can be used to iterate through the collection.
             /// </returns>
             [ExcludeFromCodeCoverage] // internal, never called, but here for interface implementation
-            IEnumerator<T> IEnumerable<T>.GetEnumerator()
-            {
-                return this.GetEnumerator();
-            }
+            IEnumerator<T> IEnumerable<T>.GetEnumerator() => this.GetEnumerator();
 
             /// <summary>
             /// Returns an enumerator that iterates through the collection.
@@ -219,10 +213,7 @@ namespace System.Collections.Immutable
             /// A <see cref="IEnumerator{T}"/> that can be used to iterate through the collection.
             /// </returns>
             [ExcludeFromCodeCoverage] // internal, never called, but here for interface implementation
-            IEnumerator IEnumerable.GetEnumerator()
-            {
-                return this.GetEnumerator();
-            }
+            IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
 
             #endregion
 
@@ -233,10 +224,7 @@ namespace System.Collections.Immutable
             /// <returns>
             /// A <see cref="IEnumerator{T}"/> that can be used to iterate through the collection.
             /// </returns>
-            internal Enumerator GetEnumerator(Builder builder)
-            {
-                return new Enumerator(this, builder);
-            }
+            internal Enumerator GetEnumerator(Builder builder) => new Enumerator(this, builder);
 
             /// <summary>
             /// Creates a node tree that contains the contents of a list.
@@ -493,11 +481,7 @@ namespace System.Collections.Immutable
             /// Reverses the order of the elements in the entire <see cref="ImmutableList{T}"/>.
             /// </summary>
             /// <returns>The reversed list.</returns>
-            internal Node Reverse()
-            {
-                Contract.Ensures(Contract.Result<Node>() != null);
-                return this.Reverse(0, this.Count);
-            }
+            internal Node Reverse() => this.Reverse(0, this.Count);
 
             /// <summary>
             /// Reverses the order of the elements in the specified range.
@@ -532,11 +516,7 @@ namespace System.Collections.Immutable
             /// Sorts the elements in the entire <see cref="ImmutableList{T}"/> using
             /// the default comparer.
             /// </summary>
-            internal Node Sort()
-            {
-                Contract.Ensures(Contract.Result<Node>() != null);
-                return this.Sort(Comparer<T>.Default);
-            }
+            internal Node Sort() => this.Sort(Comparer<T>.Default);
 
             /// <summary>
             /// Sorts the elements in the entire <see cref="ImmutableList{T}"/> using
@@ -567,11 +547,7 @@ namespace System.Collections.Immutable
             /// elements, or null to use the default comparer <see cref="Comparer{T}.Default"/>.
             /// </param>
             /// <returns>The sorted list.</returns>
-            internal Node Sort(IComparer<T> comparer)
-            {
-                Contract.Ensures(Contract.Result<Node>() != null);
-                return this.Sort(0, this.Count, comparer);
-            }
+            internal Node Sort(IComparer<T> comparer) => this.Sort(0, this.Count, comparer);
 
             /// <summary>
             /// Sorts the elements in a range of elements in <see cref="ImmutableList{T}"/>
@@ -698,10 +674,7 @@ namespace System.Collections.Immutable
             /// <see cref="ImmutableList{T}"/>, if found; otherwise, -1.
             /// </returns>
             [Pure]
-            internal int IndexOf(T item, IEqualityComparer<T> equalityComparer)
-            {
-                return this.IndexOf(item, 0, this.Count, equalityComparer);
-            }
+            internal int IndexOf(T item, IEqualityComparer<T> equalityComparer) => this.IndexOf(item, 0, this.Count, equalityComparer);
 
             /// <summary>
             /// Searches for the specified object and returns the zero-based index of the
