@@ -18,15 +18,14 @@ namespace System.ServiceProcess.Tests
     {
         private readonly TestServiceProvider _testService;
 
+        private static readonly Lazy<bool> s_isElevated = new Lazy<bool>(() => AdminHelpers.IsProcessElevated());
+        protected static bool IsProcessElevated => s_isElevated.Value;
+
         public ServiceBaseTests()
         {
             _testService = new TestServiceProvider();
         }
 
-        private static bool RunningWithElevatedPrivileges
-        {
-            get { return TestServiceProvider.RunningWithElevatedPrivileges; }
-        }
         private void AssertExpectedProperties(ServiceController testServiceController)
         {
             var comparer = PlatformDetection.IsFullFramework ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal; // Full framework upper cases the name
@@ -70,7 +69,7 @@ namespace System.ServiceProcess.Tests
             }
         }
 
-        [ConditionalFact(nameof(RunningWithElevatedPrivileges))]
+        [ConditionalFact(nameof(IsProcessElevated))]
         public void TestOnStartThenStop()
         {
             var controller = new ServiceController(_testService.TestServiceName);
@@ -84,7 +83,7 @@ OnStop
             Assert.Equal(expected, _testService.GetServiceOutput());
         }
 
-        [ConditionalFact(nameof(RunningWithElevatedPrivileges))]
+        [ConditionalFact(nameof(IsProcessElevated))]
         public void TestOnStartWithArgsThenStop()
         {
             var controller = new ServiceController(_testService.TestServiceName);
@@ -103,7 +102,7 @@ OnStop
             Assert.Equal(expected, _testService.GetServiceOutput());
         }
 
-        [ConditionalFact(nameof(RunningWithElevatedPrivileges))]
+        [ConditionalFact(nameof(IsProcessElevated))]
         public void TestOnPauseThenStop()
         {
             var controller = new ServiceController(_testService.TestServiceName);
@@ -120,7 +119,7 @@ OnStop
             Assert.Equal(expected, _testService.GetServiceOutput());
         }
 
-        [ConditionalFact(nameof(RunningWithElevatedPrivileges))]
+        [ConditionalFact(nameof(IsProcessElevated))]
         public void TestOnPauseAndContinueThenStop()
         {
             var controller = new ServiceController(_testService.TestServiceName);
@@ -140,7 +139,7 @@ OnStop
             Assert.Equal(expected, _testService.GetServiceOutput());
         }
 
-        [ConditionalFact(nameof(RunningWithElevatedPrivileges))]
+        [ConditionalFact(nameof(IsProcessElevated))]
         public void TestOnExecuteCustomCommand()
         {
             var controller = new ServiceController(_testService.TestServiceName);
@@ -157,7 +156,7 @@ OnStop
             Assert.Equal(expected, _testService.GetServiceOutput());
         }
 
-        [ConditionalFact(nameof(RunningWithElevatedPrivileges))]
+        [ConditionalFact(nameof(IsProcessElevated))]
         public void TestOnContinueBeforePause()
         {
             var controller = new ServiceController(_testService.TestServiceName);

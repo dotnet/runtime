@@ -22,7 +22,6 @@ namespace System.Diagnostics
         /// <summary>The name of the test console app.</summary>
         protected static readonly string TestConsoleApp = "RemoteExecutorConsoleApp.exe";
 
-
         /// <summary>Invokes the method from this assembly in another process using the specified arguments.</summary>
         /// <param name="method">The method to invoke.</param>
         /// <param name="options">Options to use for the invocation.</param>
