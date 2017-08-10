@@ -149,6 +149,8 @@
     <Compile Include="DSACreateTests.cs" />
     <Compile Include="DSASignatureFormatterTests.cs" />
     <Compile Include="ECDiffieHellmanPublicKeyTests.cs" />
+    <Compile Include="HashAlgorithmTest.netcoreapp.cs" />
+    <Compile Include="IncrementalHashTests.netcoreapp.cs" />
     <Compile Include="PaddingModeTests.cs" />
     <Compile Include="PKCS1MaskGenerationMethodTest.cs" />
     <Compile Include="RandomNumberGeneratorTests.netcoreapp.cs" />
