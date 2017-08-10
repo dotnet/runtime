@@ -2896,4 +2896,58 @@ END:
     IL_0018:  ldloc.0
 	ret
 	}
+
+    .field  private static  int32 byte_val
+    .field  private static  int32 short_val
+
+    .method public static int32 test_0_implicit_widen_or_local_stores () cil managed 
+    {
+		.maxstack 1
+		.locals init (
+			unsigned int8	V_0,
+			int8	V_1,
+			int16	V_2,
+			unsigned int16	V_3)
+
+		ldc.i4 256
+		stsfld int32 Tests::byte_val
+		ldc.i4 65536
+		stsfld int32 Tests::short_val
+
+		ldsfld int32 Tests::byte_val
+		stloc.0
+		ldloc.0
+		brfalse L_0
+
+		ldc.i4.1
+		ret
+L_0:
+		ldsfld int32 Tests::byte_val
+		stloc.1
+		ldloc.1
+		conv.i4
+		brfalse L_1
+
+		ldc.i4.2
+		ret
+L_1:
+		ldsfld int32 Tests::short_val
+		stloc.2
+		ldloc.2
+		brfalse L_2
+
+		ldc.i4.3
+		ret
+L_2:
+		ldsfld int32 Tests::short_val
+		stloc.3
+		ldloc.3
+		brfalse L_3
+
+		ldc.i4.4
+		ret
+L_3:
+		ldc.i4.0
+		ret
+    }
 }

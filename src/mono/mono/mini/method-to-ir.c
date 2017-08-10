@@ -6607,10 +6607,78 @@ set_exception_type_from_invalid_il (MonoCompile *cfg, MonoMethod *method, unsign
 	cfg->headers_to_free = g_slist_prepend_mempool (cfg->mempool, cfg->headers_to_free, header);
 }
 
+static guint32
+mono_type_to_stloc_coerce (MonoType *type)
+{
+	if (type->byref)
+		return 0;
+
+	type = mini_get_underlying_type (type);
+handle_enum:
+	switch (type->type) {
+	case MONO_TYPE_I1:
+		return OP_ICONV_TO_I1;
+	case MONO_TYPE_U1:
+		return OP_ICONV_TO_U1;
+	case MONO_TYPE_I2:
+		return OP_ICONV_TO_I2;
+	case MONO_TYPE_U2:
+		return OP_ICONV_TO_U2;
+	case MONO_TYPE_I4:
+	case MONO_TYPE_U4:
+	case MONO_TYPE_I:
+	case MONO_TYPE_U:
+	case MONO_TYPE_PTR:
+	case MONO_TYPE_FNPTR:
+	case MONO_TYPE_CLASS:
+	case MONO_TYPE_STRING:
+	case MONO_TYPE_OBJECT:
+	case MONO_TYPE_SZARRAY:
+	case MONO_TYPE_ARRAY:
+	case MONO_TYPE_I8:
+	case MONO_TYPE_U8:
+	case MONO_TYPE_R4:
+	case MONO_TYPE_R8:
+	case MONO_TYPE_TYPEDBYREF:
+	case MONO_TYPE_GENERICINST:
+		return 0;
+	case MONO_TYPE_VALUETYPE:
+		if (type->data.klass->enumtype) {
+			type = mono_class_enum_basetype (type->data.klass);
+			goto handle_enum;
+		}
+		return 0;
+	case MONO_TYPE_VAR:
+	case MONO_TYPE_MVAR: //TODO I believe we don't need to handle gsharedvt as there won't be match and, for example, u1 is not covariant to u32
+		return 0;
+	default:
+		g_error ("unknown type 0x%02x in mono_type_to_stloc_coerce", type->type);
+	}
+	return -1;
+}
+
 static void
 emit_stloc_ir (MonoCompile *cfg, MonoInst **sp, MonoMethodHeader *header, int n)
 {
 	MonoInst *ins;
+	guint32 coerce_op = mono_type_to_stloc_coerce (header->locals [n]);
+
+	if (coerce_op) {
+		if (cfg->cbb->last_ins == sp [0] && sp [0]->opcode == coerce_op) {
+			if (cfg->verbose_level > 2)
+				printf ("Found existing coercing that is enough\n");
+		} else {
+			MONO_INST_NEW (cfg, ins, coerce_op);
+			ins->dreg = alloc_ireg (cfg);
+			ins->sreg1 = sp [0]->dreg;
+			ins->type = STACK_I4;
+			ins->klass = mono_class_from_mono_type (header->locals [n]);
+	        MONO_ADD_INS (cfg->cbb, ins);
+			*sp = mono_decompose_opcode (cfg, ins);
+		}
+	}
+
+
 	guint32 opcode = mono_type_to_regmove (cfg, header->locals [n]);
 	if ((opcode == OP_MOVE) && cfg->cbb->last_ins == sp [0]  &&
 			((sp [0]->opcode == OP_ICONST) || (sp [0]->opcode == OP_I8CONST))) {
