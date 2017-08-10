@@ -26,7 +26,6 @@ internal class List
             GC.WaitForPendingFinalizers();
         }
 
-
         //Large Object Collection (half array)
         CreateLargeObjectsHalf();
         GC.Collect();
