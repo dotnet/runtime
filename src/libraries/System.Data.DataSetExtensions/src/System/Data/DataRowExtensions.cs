@@ -143,26 +143,17 @@ namespace System.Data
 
         private static class UnboxT<T>
         {
-            internal static readonly Converter<object, T> s_unbox = Create(typeof(T));
+            internal static readonly Converter<object, T> s_unbox = Create();
 
-            private static Converter<object, T> Create(Type type)
+            private static Converter<object, T> Create()
             {
-                if (type.IsValueType)
-                {
-                    if (type.IsGenericType && !type.IsGenericTypeDefinition && (typeof(Nullable<>) == type.GetGenericTypeDefinition()))
-                    {
-                        return (Converter<object, T>)Delegate.CreateDelegate(
-                            typeof(Converter<object, T>),
-                                typeof(UnboxT<T>)
-                                    .GetMethod("NullableField", Reflection.BindingFlags.Static | Reflection.BindingFlags.NonPublic)
-                                    .MakeGenericMethod(type.GetGenericArguments()[0]));
-                    }
+                if (default(T) == null)
+                    return ReferenceOrNullableField;
+                else
                     return ValueField;
-                }
-                return ReferenceField;
             }
 
-            private static T ReferenceField(object value)
+            private static T ReferenceOrNullableField(object value)
             {
                 return ((DBNull.Value == value) ? default(T) : (T)value);
             }
@@ -174,15 +165,6 @@ namespace System.Data
                     throw DataSetUtil.InvalidCast(string.Format(SR.DataSetLinq_NonNullableCast, typeof(T).ToString()));
                 }
                 return (T)value;
-            }
-
-            private static TElem? NullableField<TElem>(object value) where TElem : struct
-            {
-                if (DBNull.Value == value)
-                {
-                    return default(TElem?);
-                }
-                return new TElem?((TElem)value);
             }
         }
     }
