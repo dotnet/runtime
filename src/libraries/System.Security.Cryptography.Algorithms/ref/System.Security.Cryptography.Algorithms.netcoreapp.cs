@@ -8,6 +8,12 @@
 
 namespace System.Security.Cryptography
 {
+    public sealed partial class IncrementalHash : System.IDisposable
+    {
+        public void AppendData(ReadOnlySpan<byte> data) { }
+        public bool TryGetHashAndReset(Span<byte> destination, out int bytesWritten) { throw null; }
+    }
+
     public abstract partial class RandomNumberGenerator : System.IDisposable
     {
         public virtual void GetBytes(Span<byte> data) { }
