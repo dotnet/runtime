@@ -4104,7 +4104,7 @@ void LinearScan::buildRefPositionsForNode(GenTree*                  tree,
         }
 #ifdef ARM_SOFTFP
         // If oper is GT_PUTARG_REG, set bits in useCandidates must be in sequential order.
-        else if (tree->OperGet() == GT_PUTARG_REG || tree->OperGet() == GT_COPY)
+        else if (tree->OperIsMultiRegOp())
         {
             useCandidates = genFindLowestReg(remainingUseCandidates);
             remainingUseCandidates &= ~useCandidates;
