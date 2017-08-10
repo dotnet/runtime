@@ -1431,6 +1431,11 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         buildCommands += "tests\\scripts\\build_illink.cmd clone ${arch}"
                     }
 
+                    // If it is a release build for windows, ensure PGO is used, else fail the build
+                    if ((lowerConfiguration == 'release') && (scenario in Constants.basicScenarios) && (architecture != 'x86lb')) {
+                        buildOpts += ' enforcepgo'
+                    }
+
                     if (Constants.jitStressModeScenarios.containsKey(scenario) ||
                             scenario == 'default' ||
                             scenario == 'r2r' ||
