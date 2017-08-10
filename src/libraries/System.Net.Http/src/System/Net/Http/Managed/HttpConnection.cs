@@ -36,8 +36,6 @@ namespace System.Net.Http
         private readonly bool _usingProxy;
         private readonly byte[] _idnHostAsciiBytes;
 
-        private ValueStringBuilder _sb; // mutable struct, do not make this readonly
-
         private HttpRequestMessage _currentRequest;
         private readonly byte[] _writeBuffer;
         private int _writeOffset;
@@ -71,9 +69,6 @@ namespace System.Net.Http
             {
                 _idnHostAsciiBytes = Encoding.ASCII.GetBytes(requestIdnHost);
             }
-
-            const int DefaultCapacity = 16;
-            _sb = new ValueStringBuilder(DefaultCapacity);
 
             _writeBuffer = new byte[InitialWriteBufferSize];
             _writeOffset = 0;
@@ -411,38 +406,65 @@ namespace System.Net.Http
 
         private void ParseHeaderNameValue(Span<byte> line, HttpResponseMessage response)
         {
-            // TODO #23147: Use Span to get the header name and value rather than going through ValueStringBuilder
-
-            _sb.Clear();
             int pos = 0;
-
-            // Get header name
-            char c = (char)line[pos++];
-            while (c != ':')
+            while (line[pos] != (byte)':' && line[pos] != (byte)' ')
             {
-                _sb.Append(c);
-                c = (char)line[pos++];
-            }
-            if (!HttpKnownHeaderNames.TryGetHeaderName(_sb.Chars, 0, _sb.Length, out string headerName))
-            {
-                headerName = _sb.ToString().TrimEnd(); // TryAddWithoutValidation will fail if the header name has trailing whitespace. So, trim it here.
+                pos++;
+                if (pos == line.Length)
+                {
+                    // Ignore invalid header line that doesn't contain ':'.
+                    return;
+                }
             }
 
-            // Get header value
-            _sb.Clear();
-            while ((c = (char)line[pos++]) == ' ');
-            while (c != '\r')
+            if (pos == 0)
             {
-                _sb.Append(c);
-                c = (char)line[pos++];
+                // Ignore invalid empty header name.
+                return;
             }
-            string headerValue = HttpKnownHeaderNames.GetHeaderValue(headerName, _sb.Chars, 0, _sb.Length);
 
-            // Add header to appropriate collection.
-            if (!response.Headers.TryAddWithoutValidation(headerName, headerValue))
+            // CONSIDER: trailing whitespace?
+
+            if (!HeaderDescriptor.TryGet(line.Slice(0, pos), out HeaderDescriptor descriptor))
             {
-                response.Content.Headers.TryAddWithoutValidation(headerName, headerValue);
-                // Existing handlers ignore headers that couldn't be added.  Do the same here.
+                // Ignore invalid header name
+                return;
+            }
+
+            // Eat any trailing whitespace
+            while (line[pos] == (byte)' ')
+            {
+                pos++;
+                if (pos == line.Length)
+                {
+                    // Ignore invalid header line that doesn't contain ':'.
+                    return;
+                }
+            }
+
+            if (line[pos++] != ':')
+            {
+                // Ignore invalid header line that doesn't contain ':'.
+                return;
+            }
+
+            // Skip whitespace after colon
+            while (pos < line.Length && (line[pos] == (byte)' ' || line[pos] == '\t'))
+            {
+                pos++;
+            }
+
+            string headerValue = descriptor.GetHeaderValue(line.Slice(pos, line.Length - pos - 2));     // trim trailing \r\n
+
+            // Note we ignore the return value from TryAddWithoutValidation; 
+            // if the header can't be added, we silently drop it.
+            if (descriptor.HeaderType == HttpHeaderType.Content)
+            {
+                response.Content.Headers.TryAddWithoutValidation(descriptor, headerValue);
+            }
+            else
+            {
+                response.Headers.TryAddWithoutValidation(descriptor, headerValue);
             }
         }
 
