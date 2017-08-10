@@ -19,8 +19,16 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacReset")]
         internal extern static int HmacReset(SafeHmacCtxHandle ctx);
 
+        internal static unsafe int HmacUpdate(SafeHmacCtxHandle ctx, ReadOnlySpan<byte> data, int len)
+        {
+            fixed (byte* dataPtr = &data.DangerousGetPinnableReference())
+            {
+                return HmacUpdate(ctx, dataPtr, len);
+            }
+        }
+
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacUpdate")]
-        internal extern static unsafe int HmacUpdate(SafeHmacCtxHandle ctx, byte* data, int len);
+        private extern static unsafe int HmacUpdate(SafeHmacCtxHandle ctx, byte* data, int len);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_HmacFinal")]
         internal extern static unsafe int HmacFinal(SafeHmacCtxHandle ctx, byte* data, ref int len);

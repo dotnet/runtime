@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System;
-using System.Diagnostics;
 
 namespace Internal.Cryptography
 {
@@ -29,15 +28,15 @@ namespace Internal.Cryptography
             if (data.Length - offset < count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
-            AppendHashDataCore(data, offset, count);
+            AppendHashData(new ReadOnlySpan<byte>(data, offset, count));
         }
 
-        // Adds new data to be hashed. This can be called repeatedly in order to hash data from noncontiguous sources.
-        // Argument validation is handled by AppendHashData.
-        public abstract void AppendHashDataCore(byte[] data, int offset, int count);
-
+        public abstract void AppendHashData(ReadOnlySpan<byte> data);
+        
         // Compute the hash based on the appended data and resets the HashProvider for more hashing.
         public abstract byte[] FinalizeHashAndReset();
+
+        public abstract bool TryFinalizeHashAndReset(Span<byte> destination, out int bytesWritten);
 
         // Returns the length of the byte array returned by FinalizeHashAndReset.
         public abstract int HashSizeInBytes { get; }
@@ -53,4 +52,3 @@ namespace Internal.Cryptography
         public abstract void Dispose(bool disposing);
     }
 }
-

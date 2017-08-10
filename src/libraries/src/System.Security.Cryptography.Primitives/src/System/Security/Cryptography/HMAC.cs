@@ -6,43 +6,30 @@ namespace System.Security.Cryptography
 {
     public abstract class HMAC : KeyedHashAlgorithm
     {
+        private string _hashName;
         private int _blockSizeValue = 64;
 
         protected int BlockSizeValue
         {
-            get
-            {
-                return _blockSizeValue;
-            }
-            
-            set
-            {
-                _blockSizeValue = value;
-            }
+            get => _blockSizeValue;
+            set => _blockSizeValue = value;
         }
 
         protected HMAC() { }
 
-        public static new HMAC Create()
-        {
-            return Create("System.Security.Cryptography.HMAC");
-        }
+        public static new HMAC Create() => Create("System.Security.Cryptography.HMAC");
 
-        public static new HMAC Create(string algorithmName)
-        {
-            throw new PlatformNotSupportedException();
-        }
+        public static new HMAC Create(string algorithmName) => throw new PlatformNotSupportedException();
 
-        public String HashName
+        public string HashName
         {
-            get
-            {
-                return _hashName;
-            }
+            get => _hashName;
             set
             {
                 if (value == null)
+                {
                     throw new ArgumentNullException(nameof(HashName));
+                }
 
                 // On the desktop, setting the HashName selects (or switches over to) a new hashing algorithm via CryptoConfig.
                 // Our intended refactoring turns HMAC back into an abstract class with no algorithm-specific implementation.
@@ -52,7 +39,9 @@ namespace System.Security.Cryptography
                 // Since the set is public, ensure that hmac.HashName = hmac.HashName works without throwing.
 
                 if (_hashName != null && value != _hashName)
+                {
                     throw new PlatformNotSupportedException(SR.HashNameMultipleSetNotSupported);
+                }
 
                 _hashName = value;
             }
@@ -60,38 +49,26 @@ namespace System.Security.Cryptography
 
         public override byte[] Key
         {
-            get
-            {
-                return base.Key;
-            }
-
-            set
-            {
-                base.Key = value;
-            }
+            get => base.Key;
+            set => base.Key = value;
         }
 
-        protected override void Dispose(bool disposing)
-        {
+        protected override void Dispose(bool disposing) =>
             base.Dispose(disposing);
-        }
 
-        protected override void HashCore(byte[] rgb, int ib, int cb)
-        {
+        protected override void HashCore(byte[] rgb, int ib, int cb) =>
             throw new PlatformNotSupportedException(SR.CryptoConfigNotSupported);
-        }
 
-        protected override byte[] HashFinal()
-        {
+        protected override void HashCore(ReadOnlySpan<byte> source) =>
             throw new PlatformNotSupportedException(SR.CryptoConfigNotSupported);
-        }
 
-        public override void Initialize()
-        {
+        protected override byte[] HashFinal() =>
             throw new PlatformNotSupportedException(SR.CryptoConfigNotSupported);
-        }
 
-        private String _hashName;
+        protected override bool TryHashFinal(Span<byte> destination, out int bytesWritten) =>
+            throw new PlatformNotSupportedException(SR.CryptoConfigNotSupported);
+
+        public override void Initialize() =>
+            throw new PlatformNotSupportedException(SR.CryptoConfigNotSupported);
     }
 }
-
