@@ -7296,6 +7296,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         }
         break;
 
+        case VNF_Box:
         case VNF_BoxNullable:
         {
             // Generate unique VN so, VNForFunc generates a uniq value number for box nullable.
@@ -7790,6 +7791,10 @@ VNFunc Compiler::fgValueNumberHelperMethVNFunc(CorInfoHelpFunc helpFunc)
 
         case CORINFO_HELP_LOOP_CLONE_CHOICE_ADDR:
             vnf = VNF_LoopCloneChoiceAddr;
+            break;
+
+        case CORINFO_HELP_BOX:
+            vnf = VNF_Box;
             break;
 
         case CORINFO_HELP_BOX_NULLABLE:
