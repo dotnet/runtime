@@ -426,6 +426,9 @@
     <ClInclude Include="..\mono\utils\os-event.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\mono\utils\unlocked.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files">

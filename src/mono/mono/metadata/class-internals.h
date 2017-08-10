@@ -757,17 +757,17 @@ typedef struct {
 
 typedef struct {
 	guint64 new_object_count;
-	size_t initialized_class_count;
-	size_t generic_vtable_count;
+	gsize initialized_class_count;
+	gsize generic_vtable_count;
 	size_t used_class_count;
 	size_t method_count;
 	size_t class_vtable_size;
 	size_t class_static_data_size;
 	size_t generic_instance_count;
-	size_t generic_class_count;
-	size_t inflated_method_count;
+	gsize generic_class_count;
+	gsize inflated_method_count;
 	size_t inflated_method_count_2;
-	size_t inflated_type_count;
+	gsize inflated_type_count;
 	size_t generics_metadata_size;
 	size_t delegate_creations;
 	size_t imt_tables_size;

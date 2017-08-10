@@ -175,7 +175,8 @@ monoutils_sources = \
 	checked-build.h \
 	os-event.h \
 	refcount.h	\
-	w32api.h
+	w32api.h	\
+	unlocked.h
 
 arch_sources = 
 

@@ -189,6 +189,7 @@
     <ClInclude Include="..\mono\utils\strenc.h" />
     <ClInclude Include="..\mono\utils\valgrind.h" />
     <ClInclude Include="..\mono\utils\atomic.h" />
+    <ClInclude Include="..\mono\utils\unlocked.h" />
     <ClInclude Include="..\mono\utils\mono-hwcap.h" />
     <ClInclude Include="..\mono\utils\mono-hwcap-x86.h" />
     <ClInclude Include="..\mono\utils\bsearch.h" />

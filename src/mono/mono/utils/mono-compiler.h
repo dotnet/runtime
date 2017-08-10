@@ -113,13 +113,19 @@ typedef SSIZE_T ssize_t;
 #define MONO_GNUC_VERSION (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__)
 #endif
 
-/* Used to tell clang's ThreadSanitizer to not report data races that occur within a certain function */
 #if defined(__has_feature)
 #if __has_feature(thread_sanitizer)
-#define MONO_NO_SANITIZE_THREAD __attribute__ ((no_sanitize("thread")))
+#define MONO_HAS_CLANG_THREAD_SANITIZER 1
 #else
-#define MONO_NO_SANITIZE_THREAD
+#define MONO_HAS_CLANG_THREAD_SANITIZER 0
 #endif
+#else
+#define MONO_HAS_CLANG_THREAD_SANITIZER 0
+#endif
+
+/* Used to tell Clang's ThreadSanitizer to not report data races that occur within a certain function */
+#if MONO_HAS_CLANG_THREAD_SANITIZER
+#define MONO_NO_SANITIZE_THREAD __attribute__ ((no_sanitize("thread")))
 #else
 #define MONO_NO_SANITIZE_THREAD
 #endif
