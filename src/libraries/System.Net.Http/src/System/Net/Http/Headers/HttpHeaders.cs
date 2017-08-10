@@ -122,16 +122,9 @@ namespace System.Net.Http.Headers
             }
         }
 
-        public bool TryAddWithoutValidation(string name, string value)
-        {
-            HeaderDescriptor descriptor;
-            if (!TryGetHeaderDescriptor(name, out descriptor))
-            {
-                return false;
-            }
-
-            return TryAddWithoutValidation(descriptor, value);
-        }
+        public bool TryAddWithoutValidation(string name, string value) =>
+            TryGetHeaderDescriptor(name, out HeaderDescriptor descriptor) &&
+            TryAddWithoutValidation(descriptor, value);
 
         internal bool TryAddWithoutValidation(HeaderDescriptor descriptor, string value)
         {
@@ -149,16 +142,9 @@ namespace System.Net.Http.Headers
             return true;
         }
 
-        public bool TryAddWithoutValidation(string name, IEnumerable<string> values)
-        {
-            HeaderDescriptor descriptor;
-            if (!TryGetHeaderDescriptor(name, out descriptor))
-            {
-                return false;
-            }
-
-            return TryAddWithoutValidation(descriptor, values);
-        }
+        public bool TryAddWithoutValidation(string name, IEnumerable<string> values) =>
+            TryGetHeaderDescriptor(name, out HeaderDescriptor descriptor) &&
+            TryAddWithoutValidation(descriptor, values);
 
         internal bool TryAddWithoutValidation(HeaderDescriptor descriptor, IEnumerable<string> values)
         {
@@ -1068,13 +1054,6 @@ namespace System.Net.Http.Headers
             }
 
             return info.ParsedValue;
-        }
-
-        // This is only used by unit tests.
-        // CONSIDER: Update unit tests to use HeaderDescriptor directly
-        internal object GetParsedValues(string name)
-        {
-            return GetParsedValues(GetHeaderDescriptor(name));
         }
 
         private void PrepareHeaderInfoForAdd(HeaderDescriptor descriptor, out HeaderStoreItemInfo info, out bool addToStore)

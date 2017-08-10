@@ -57,7 +57,7 @@ namespace System.Net.Http.Tests
         public void Location_UseAddMethodWithInvalidValue_InvalidValueRecognized()
         {
             headers.TryAddWithoutValidation("Location", " http://example.com http://other");
-            Assert.Null(headers.GetParsedValues("Location"));
+            Assert.Null(headers.GetParsedValues(KnownHeaders.Location.Descriptor));
             Assert.Equal(1, headers.GetValues("Location").Count());
             Assert.Equal(" http://example.com http://other", headers.GetValues("Location").First());
         }
@@ -311,26 +311,26 @@ namespace System.Net.Http.Tests
         public void Server_UseAddMethodWithInvalidValue_InvalidValueRecognized()
         {
             headers.TryAddWithoutValidation("Server", "custom会");
-            Assert.Null(headers.GetParsedValues("Server"));
+            Assert.Null(headers.GetParsedValues(KnownHeaders.Server.Descriptor));
             Assert.Equal(1, headers.GetValues("Server").Count());
             Assert.Equal("custom会", headers.GetValues("Server").First());
 
             headers.Clear();
             // Note that "Server" uses whitespace as separators, so the following is an invalid value
             headers.TryAddWithoutValidation("Server", "custom1, custom2");
-            Assert.Null(headers.GetParsedValues("Server"));
+            Assert.Null(headers.GetParsedValues(KnownHeaders.Server.Descriptor));
             Assert.Equal(1, headers.GetValues("Server").Count());
             Assert.Equal("custom1, custom2", headers.GetValues("Server").First());
 
             headers.Clear();
             headers.TryAddWithoutValidation("Server", "custom1, ");
-            Assert.Null(headers.GetParsedValues("Server"));
+            Assert.Null(headers.GetParsedValues(KnownHeaders.Server.Descriptor));
             Assert.Equal(1, headers.GetValues("Server").Count());
             Assert.Equal("custom1, ", headers.GetValues("Server").First());
 
             headers.Clear();
             headers.TryAddWithoutValidation("Server", ",custom1");
-            Assert.Null(headers.GetParsedValues("Server"));
+            Assert.Null(headers.GetParsedValues(KnownHeaders.Server.Descriptor));
             Assert.Equal(1, headers.GetValues("Server").Count());
             Assert.Equal(",custom1", headers.GetValues("Server").First());
         }
@@ -454,13 +454,13 @@ namespace System.Net.Http.Tests
         public void Age_UseAddMethodWithInvalidValue_InvalidValueRecognized()
         {
             headers.TryAddWithoutValidation("Age", "10,");
-            Assert.Null(headers.GetParsedValues("Age"));
+            Assert.Null(headers.GetParsedValues(KnownHeaders.Age.Descriptor));
             Assert.Equal(1, headers.GetValues("Age").Count());
             Assert.Equal("10,", headers.GetValues("Age").First());
 
             headers.Clear();
             headers.TryAddWithoutValidation("Age", "1.1");
-            Assert.Null(headers.GetParsedValues("Age"));
+            Assert.Null(headers.GetParsedValues(KnownHeaders.Age.Descriptor));
             Assert.Equal(1, headers.GetValues("Age").Count());
             Assert.Equal("1.1", headers.GetValues("Age").First());
         }

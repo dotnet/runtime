@@ -103,7 +103,7 @@ namespace System.Net.Http.Headers
 
         private struct StringAccessor : IHeaderNameAccessor
         {
-            private string _string;
+            private readonly string _string;
 
             public StringAccessor(string s)
             {

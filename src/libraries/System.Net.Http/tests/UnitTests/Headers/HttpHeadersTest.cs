@@ -1286,7 +1286,7 @@ namespace System.Net.Http.Tests
             MockHeaders headers = new MockHeaders();
 
             // Get header values from uninitialized store (store collection is null).
-            object storeValue = headers.GetParsedValues("doesntexist");
+            object storeValue = headers.GetParsedValues(customHeader);
             Assert.Null(storeValue);
         }
 
@@ -1297,7 +1297,7 @@ namespace System.Net.Http.Tests
             headers.Add("custom1", "customValue1");
 
             // Get header values for non-existing header (but other headers exist in the store).
-            object storeValue = headers.GetParsedValues("doesntexist");
+            object storeValue = headers.GetParsedValues(customHeader);
             Assert.Null(storeValue);
         }
 
@@ -1305,10 +1305,10 @@ namespace System.Net.Http.Tests
         public void GetParsedValues_GetSingleValueForExistingHeader_ReturnsAddedValue()
         {
             MockHeaders headers = new MockHeaders();
-            headers.Add("custom1", "customValue1");
+            headers.Add(customHeader.Name, "customValue1");
 
             // Get header values for non-existing header (but other headers exist in the store).
-            object storeValue = headers.GetParsedValues("custom1");
+            object storeValue = headers.GetParsedValues(customHeader);
             Assert.NotNull(storeValue);
 
             // If we only have one value, then GetValues() should return just the value and not wrap it in a List<T>.
