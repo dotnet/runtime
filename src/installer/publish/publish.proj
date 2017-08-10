@@ -11,9 +11,13 @@
   
   <Target Name="PublishFinalOutput"
           Condition="'$(Finalize)' == 'true'"
-          DependsOnTargets="PublishCoreHostPackagesToFeed;FinalizeBuildInAzure;UpdatePublishedVersions" />
-          
-  <Target Name="ExcludeSymbolsPackagesFromPublishedVersions" BeforeTargets="UpdatePublishedVersions" >
+          DependsOnTargets="PublishCoreHostPackagesToFeed;FinalizeBuildInAzure;UpdateVersionsRepo" />
+
+  <Target Name="UpdateVersionsRepo"
+          Condition="'$(GitHubAuthToken)' != ''"
+          DependsOnTargets="UpdatePublishedVersions" />
+
+  <Target Name="ExcludeSymbolsPackagesFromPublishedVersions" BeforeTargets="UpdateVersionsRepo" >
     <ItemGroup>
       <PackagesToShip Include="$(BinDir)/ForPublishing/*.nupkg" Exclude="$(BinDir)/ForPublishing/*.symbols.nupkg" />
       <PackagesToShip Remove="%(PackagesToShip.Identity)" Condition="$([System.String]::Copy('%(PackagesToShip.Identity)').Contains('latest'))" />
@@ -85,8 +89,13 @@
   </Target>
 
   <Target Name="PublishDebFilesToDebianRepo"
-          DependsOnTargets="GenerateDebRepoFiles">
-      <Exec Condition="'@(DebInstallerFile)' != ''" Command="$(ProjectDir)tools-local/scripts/publish/repoapi_client.sh $(DebRepoUser) $(DebRepoPass) $(DebRepoId) $(DebRepoServer) -addpkg %(DebInstallerFile.UploadJsonFilename)" />
+          DependsOnTargets="GenerateDebRepoFiles"
+          Condition="'$(DebRepoId)' != '' AND
+                     '$(DebRepoUser)' != '' AND
+                     '$(DebRepoPass)' != '' AND
+                     '$(DebRepoServer)' != ''">
+    <Exec Condition="'@(DebInstallerFile)' != ''"
+          Command="$(ProjectDir)tools-local/scripts/publish/repoapi_client.sh $(DebRepoUser) $(DebRepoPass) $(DebRepoId) $(DebRepoServer) -addpkg %(DebInstallerFile.UploadJsonFilename)" />
   </Target>
 
   <Target Name="FinalizeBuildInAzure"
@@ -135,8 +144,7 @@
 
   <Target Name="PublishCoreHostPackagesToFeed"
           DependsOnTargets="CheckIfAllBuildsHavePublished"
-          Condition="'@(_MissingBlobNames)' == ''">
-    <Error Condition="'$(NuGetFeedUrl)' ==''" Text="Missing required property NuGetFeedUrl" />
+          Condition="'@(_MissingBlobNames)' == '' AND '$(NuGetFeedUrl)' != ''">
     <Error Condition="'$(NuGetApiKey)' == ''" Text="Missing required property NuGetApiKey" />
     <Error Condition="'$(AzureAccessToken)' == ''" Text="Missing required property 'AzureAccessToken'" />
     <Error Condition="'$(AzureAccountName)' == ''" Text="Missing required property 'AzureAccountName'" />
@@ -185,8 +193,7 @@
   </Target>
   
   <Target Name="PublishDebToolPackageToFeed"
-          Condition="'$(PublishDebToolToFeed)' == 'true'">
-    <Error Condition="'$(CliNuGetFeedUrl)' ==''" Text="Missing required property CliNuGetFeedUrl" />
+          Condition="'$(PublishDebToolToFeed)' == 'true' AND '$(CliNuGetFeedUrl)' != ''">
     <Error Condition="'$(CliNuGetApiKey)' == ''" Text="Missing required property CliNuGetApiKey" />
     <ItemGroup>
       <DebToolPackages Include="$(PackagesOutDir)/dotnet-deb-tool.*.nupkg" />
