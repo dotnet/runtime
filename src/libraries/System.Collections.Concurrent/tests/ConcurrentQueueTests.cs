@@ -98,8 +98,8 @@ namespace System.Collections.Concurrent.Tests
         public void MultipleProducerConsumer_AllItemsTransferred(int producers, int consumers, int itemsPerProducer)
         {
             //ActiveIssue("https://github.com/dotnet/corefx/issues/22385 - Never terminates on Win10 RS3 - when built using CHK framework on ILC", TargetFrameworkMonikers.UapAot)
-            if (PlatformDetection.IsNetNative && PlatformDetection.IsWindows10InsiderPreviewBuild16215OrGreater)
-                return;
+            //if (PlatformDetection.IsNetNative && PlatformDetection.IsWindows10InsiderPreviewBuild16215OrGreater)
+            //    return;
 
             var cq = new ConcurrentQueue<int>();
             var tasks = new List<Task>();
