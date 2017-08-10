@@ -19,12 +19,10 @@
 acceptance-tests/* @akoeplinger
 acceptance-tests/profiler-stress* @alexrp
 docs/sources/mono-api-profiler.html @alexrp
+man @marek-safar @miguel
 man/mprof-report.1 @alexrp
 mcs/build @marek-safar
 mcs/class @marek-safar
-mcs/errors @marek-safar
-mcs/mcs @marek-safar
-mcs/tests @marek-safar
 mcs/class/corlib/System.Reflection*/ @vargaz @lambdageek
 mcs/class/Mono.Btls.Interface @baulig
 mcs/class/Mono.Data.Tds @egorbo
@@ -37,14 +35,18 @@ mcs/class/System/Mono.Btls @baulig
 mcs/class/System/Mono.Net.Security @baulig
 mcs/class/System/Mono.Security.Interface @baulig
 mcs/class/System.Data @egorbo
+mcs/errors @marek-safar
+mcs/mcs @marek-safar
+mcs/tests @marek-safar
 mono/eglib @kumpera
-mono/man @marek-safar @miguel
+mono/metadata @vargaz
 mono/metadata/*profiler* @alexrp
 mono/metadata/monitor* @brzvlad
 mono/metadata/sgen* @brzvlad
 mono/metadata/threads* @luhenry @kumpera
 mono/metadata/threadpool* @luhenry
 mono/metadata/w32* @luhenry
+mono/mini @vargaz
 mono/mini/*cfgdump* @lewurm
 mono/mini/*exceptions* @lewurm
 mono/mini/*ppc* @lewurm
@@ -52,8 +54,8 @@ mono/mini/*type-check* @lewurm
 mono/mini/interp/* @lewurm
 mono/mini/*profiler* @alexrp
 mono/profiler @alexrp
-mono/scripts @akoeplinger
 mono/sgen @brzvlad
+mono/utils @kumpera
 mono/utils/atomic* @alexrp
 mono/utils/mono-hwcap* @alexrp
 mono/utils/mono-mem* @alexrp
@@ -63,8 +65,6 @@ msvc/scripts @akoeplinger
 packaging/Windows @akoeplinger
 samples/profiler @alexrp
 samples/size @alexrp
-scripts/ci/run-jenkins.sh @akoeplinger
-scripts/ci/run-test-acceptance-tests.sh @akoeplinger
-scripts/ci/run-test-default.sh @akoeplinger
+scripts @akoeplinger
+scripts/ci @akoeplinger
 scripts/ci/run-test-profiler-stress-tests.sh @alexrp
-scripts/ci/util.sh @akoeplinger
