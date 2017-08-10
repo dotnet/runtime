@@ -37,6 +37,8 @@ mcs/class/System/Mono.Btls @baulig
 mcs/class/System/Mono.Net.Security @baulig
 mcs/class/System/Mono.Security.Interface @baulig
 mcs/class/System.Data @egorbo
+mono/eglib @kumpera
+mono/man @marek-safar @miguel
 mono/metadata/*profiler* @alexrp
 mono/metadata/monitor* @brzvlad
 mono/metadata/sgen* @brzvlad
@@ -50,6 +52,7 @@ mono/mini/*type-check* @lewurm
 mono/mini/interp/* @lewurm
 mono/mini/*profiler* @alexrp
 mono/profiler @alexrp
+mono/scripts @akoeplinger
 mono/sgen @brzvlad
 mono/utils/atomic* @alexrp
 mono/utils/mono-hwcap* @alexrp
