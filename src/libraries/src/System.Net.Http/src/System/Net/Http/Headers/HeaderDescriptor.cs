@@ -33,11 +33,11 @@ namespace System.Net.Http.Headers
         public HttpHeaderType HeaderType => _knownHeader == null ? HttpHeaderType.Custom : _knownHeader.HeaderType;
 
         public bool Equals(HeaderDescriptor other) =>
-            (_knownHeader == null ?
-                StringComparer.OrdinalIgnoreCase.Equals(_headerName, other._headerName) :
-                _knownHeader == other._knownHeader);
-        public override int GetHashCode() => (_knownHeader == null ? StringComparer.OrdinalIgnoreCase.GetHashCode(_headerName) : _knownHeader.GetHashCode());
-        public override bool Equals(object obj) => (obj is HeaderDescriptor headerInfo ? Equals(headerInfo) : false);
+            _knownHeader == null ?
+                string.Equals(_headerName, other._headerName, StringComparison.OrdinalIgnoreCase) :
+                _knownHeader == other._knownHeader;
+        public override int GetHashCode() => _knownHeader?.GetHashCode() ?? StringComparer.OrdinalIgnoreCase.GetHashCode(_headerName);
+        public override bool Equals(object obj) => throw new InvalidOperationException();   // Ensure this is never called, to avoid boxing
         public static bool operator ==(HeaderDescriptor left, HeaderDescriptor right) => left.Equals(right);
         public static bool operator !=(HeaderDescriptor left, HeaderDescriptor right) => !left.Equals(right);
 
