@@ -11,6 +11,10 @@ namespace System.IO
     /// <summary>Base class for test classes the use temporary files that need to be cleaned up.</summary>
     public abstract class FileCleanupTestBase : IDisposable
     {
+        private static readonly Lazy<bool> s_isElevated = new Lazy<bool>(() => AdminHelpers.IsProcessElevated());
+
+        protected static bool IsProcessElevated => s_isElevated.Value;
+
         /// <summary>Initialize the test class base.  This creates the associated test directory.</summary>
         protected FileCleanupTestBase()
         {
