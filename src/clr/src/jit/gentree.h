@@ -3921,6 +3921,15 @@ struct GenTreeMultiRegOp : public GenTreeOp
         ClearOtherRegFlags();
     }
 
+    unsigned GetRegCount() const
+    {
+        if (gtRegNum == REG_NA || gtRegNum == REG_STK)
+        {
+            return 0;
+        }
+        return (gtOtherReg == REG_NA || gtOtherReg == REG_STK) ? 1 : 2;
+    }
+
     //---------------------------------------------------------------------------
     // GetRegNumByIdx: get ith register allocated to this struct argument.
     //
