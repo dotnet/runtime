@@ -1091,6 +1091,37 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
+        [Theory]
+        [InlineData("")] // missing size
+        [InlineData("10000000000000000")] // overflowing size
+        public async Task GetAsync_InvalidChunkSize_ThrowsHttpRequestException(string chunkSize)
+        {
+            await LoopbackServer.CreateServerAsync(async (server, url) =>
+            {
+                using (var client = new HttpClient())
+                {
+                    string partialResponse = "HTTP/1.1 200 OK\r\n" +
+                        "Transfer-Encoding: chunked\r\n" +
+                        "\r\n" +
+                        $"{chunkSize}\r\n";
+
+                    var tcs = new TaskCompletionSource<bool>();
+                    Task serverTask =
+                        LoopbackServer.AcceptSocketAsync(server, async (s, stream, reader, writer) =>
+                        {
+                            var list = await LoopbackServer.ReadWriteAcceptedAsync(s, reader, writer, partialResponse, shutdown: false);
+                            await tcs.Task;
+                            return list;
+                        }, null);
+
+                    await Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(url));
+                    tcs.SetResult(true);
+                    await serverTask;
+                }
+            });
+        }
+
+        [OuterLoop] // TODO: Issue #11345
         [Fact]
         public async Task GetAsync_ResponseHeadersRead_ReadFromEachIterativelyDoesntDeadlock()
         {

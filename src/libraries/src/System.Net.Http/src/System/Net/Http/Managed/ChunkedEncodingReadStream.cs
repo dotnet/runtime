@@ -13,7 +13,7 @@ namespace System.Net.Http
     {
         private sealed class ChunkedEncodingReadStream : HttpContentReadStream
         {
-            private int _chunkBytesRemaining;
+            private ulong _chunkBytesRemaining;
 
             public ChunkedEncodingReadStream(HttpConnection connection)
                 : base(connection)
@@ -26,7 +26,7 @@ namespace System.Net.Http
                 Debug.Assert(_chunkBytesRemaining == 0);
 
                 // Start of chunk, read chunk size.
-                int chunkSize = ParseHexSize(await _connection.ReadNextLineAsync(cancellationToken).ConfigureAwait(false));
+                ulong chunkSize = ParseHexSize(await _connection.ReadNextLineAsync(cancellationToken).ConfigureAwait(false));
                 _chunkBytesRemaining = chunkSize;
 
                 if (chunkSize > 0)
@@ -41,38 +41,44 @@ namespace System.Net.Http
                 return false;
             }
 
-            private int ParseHexSize(ArraySegment<byte> line)
+            private ulong ParseHexSize(ArraySegment<byte> line)
             {
-                // TODO #21452: Handle overflow of size
-                long size = 0;
-                for (int i = 0; i < line.Count; i++)
+                ulong size = 0;
+                try
                 {
-                    char c = (char)line[i];
-                    if ((uint)(c - '0') <= '9' - '0')
+                    for (int i = 0; i < line.Count; i++)
                     {
-                        size = size * 16 + (c - '0');
-                    }
-                    else if ((uint)(c - 'a') <= ('f' - 'a'))
-                    {
-                        size = size * 16 + (c - 'a' + 10);
-                    }
-                    else if ((uint)(c - 'A') <= ('F' - 'A'))
-                    {
-                        size = size * 16 + (c - 'A' + 10);
-                    }
-                    else if (c == '\r')
-                    {
-                        break;
-                    }
-                    else
-                    {
-                        throw new IOException("Invalid chunk size in response stream");
+                        char c = (char)line[i];
+                        if ((uint)(c - '0') <= '9' - '0')
+                        {
+                            size = checked(size * 16 + ((ulong)c - '0'));
+                        }
+                        else if ((uint)(c - 'a') <= ('f' - 'a'))
+                        {
+                            size = checked(size * 16 + ((ulong)c - 'a' + 10));
+                        }
+                        else if ((uint)(c - 'A') <= ('F' - 'A'))
+                        {
+                            size = checked(size * 16 + ((ulong)c - 'A' + 10));
+                        }
+                        else
+                        {
+                            if (c == '\r' && i > 0)
+                            {
+                                break;
+                            }
+                            throw new IOException("Invalid chunk size in response stream");
+                        }
                     }
                 }
-                return (int)size;
+                catch (OverflowException e)
+                {
+                    throw new IOException("Invalid chunk size in response stream", e);
+                }
+                return size;
             }
 
-            private async Task ConsumeChunkBytes(int bytesConsumed, CancellationToken cancellationToken)
+            private async Task ConsumeChunkBytes(ulong bytesConsumed, CancellationToken cancellationToken)
             {
                 Debug.Assert(bytesConsumed <= _chunkBytesRemaining);
                 _chunkBytesRemaining -= bytesConsumed;
@@ -101,17 +107,20 @@ namespace System.Net.Http
                     }
                 }
 
-                count = Math.Min(count, _chunkBytesRemaining);
+                if (_chunkBytesRemaining < (ulong)count)
+                {
+                    count = (int)_chunkBytesRemaining;
+                }
 
                 int bytesRead = await _connection.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
 
-                if (bytesRead == 0)
+                if (bytesRead <= 0)
                 {
                     // Unexpected end of response stream
                     throw new IOException("Unexpected end of content stream while processing chunked response body");
                 }
 
-                await ConsumeChunkBytes(bytesRead, cancellationToken).ConfigureAwait(false);
+                await ConsumeChunkBytes((ulong)bytesRead, cancellationToken).ConfigureAwait(false);
 
                 return bytesRead;
             }
