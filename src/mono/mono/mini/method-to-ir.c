@@ -6666,7 +6666,7 @@ emit_stloc_ir (MonoCompile *cfg, MonoInst **sp, MonoMethodHeader *header, int n)
 	if (coerce_op) {
 		if (cfg->cbb->last_ins == sp [0] && sp [0]->opcode == coerce_op) {
 			if (cfg->verbose_level > 2)
-				printf ("Found existing coercing that is enough\n");
+				printf ("Found existing coercing is enough for stloc\n");
 		} else {
 			MONO_INST_NEW (cfg, ins, coerce_op);
 			ins->dreg = alloc_ireg (cfg);
@@ -6691,6 +6691,30 @@ emit_stloc_ir (MonoCompile *cfg, MonoInst **sp, MonoMethodHeader *header, int n)
 	} else {
 		EMIT_NEW_LOCSTORE (cfg, ins, n, *sp);
 	}
+}
+
+static void
+emit_starg_ir (MonoCompile *cfg, MonoInst **sp, int n)
+{
+	MonoInst *ins;
+	guint32 coerce_op = mono_type_to_stloc_coerce (cfg->arg_types [n]);
+
+	if (coerce_op) {
+		if (cfg->cbb->last_ins == sp [0] && sp [0]->opcode == coerce_op) {
+			if (cfg->verbose_level > 2)
+				printf ("Found existing coercing is enough for starg\n");
+		} else {
+			MONO_INST_NEW (cfg, ins, coerce_op);
+			ins->dreg = alloc_ireg (cfg);
+			ins->sreg1 = sp [0]->dreg;
+			ins->type = STACK_I4;
+			ins->klass = mono_class_from_mono_type (cfg->arg_types [n]);
+			MONO_ADD_INS (cfg->cbb, ins);
+			*sp = mono_decompose_opcode (cfg, ins);
+		}
+	}
+
+	EMIT_NEW_ARGSTORE (cfg, ins, n, *sp);
 }
 
 /*
@@ -7866,7 +7890,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 			CHECK_ARG (n);
 			if (!dont_verify_stloc && target_type_is_incompatible (cfg, param_types [ip [1]], *sp))
 				UNVERIFIED;
-			EMIT_NEW_ARGSTORE (cfg, ins, n, *sp);
+			emit_starg_ir (cfg, sp, n);
 			ip += 2;
 			break;
 		case CEE_LDLOC_S:
@@ -12347,7 +12371,7 @@ mono_method_to_ir (MonoCompile *cfg, MonoMethod *method, MonoBasicBlock *start_b
 				CHECK_ARG (n);
 				if (!dont_verify_stloc && target_type_is_incompatible (cfg, param_types [n], *sp))
 					UNVERIFIED;
-				EMIT_NEW_ARGSTORE (cfg, ins, n, *sp);
+				emit_starg_ir (cfg, sp, n);
 				ip += 4;
 				break;
 			case CEE_LDLOC:
