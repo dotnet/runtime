@@ -93,7 +93,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (ManagedHandlerTestHelpers.IsEnabled)
             {
-                // TODO #21452: The managed handler is failing.
+                // TODO #23138: The managed handler is failing.
                 return;
             }
 
@@ -132,7 +132,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (ManagedHandlerTestHelpers.IsEnabled)
             {
-                // TODO #21452: The managed handler is failing.
+                // TODO #23138: The managed handler is failing.
                 return;
             }
 
