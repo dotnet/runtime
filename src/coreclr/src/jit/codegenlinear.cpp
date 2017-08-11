@@ -735,7 +735,7 @@ void CodeGen::genSpillVar(GenTreePtr tree)
             restoreRegVar = true;
         }
 
-        instruction storeIns = ins_Store(tree->TypeGet(), compiler->isSIMDTypeLocalAligned(varNum));
+        instruction storeIns = ins_Store(lclTyp, compiler->isSIMDTypeLocalAligned(varNum));
 #if CPU_LONG_USES_REGPAIR
         if (varTypeIsMultiReg(tree))
         {
