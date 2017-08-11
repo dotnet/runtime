@@ -181,7 +181,7 @@ mono_profiler_enable_coverage (void)
 	if (!mono_debug_enabled ())
 		mono_debug_init (MONO_DEBUG_FORMAT_MONO);
 
-	return TRUE;
+	return mono_profiler_state.code_coverage = TRUE;
 }
 
 static void
@@ -218,7 +218,7 @@ mono_profiler_get_coverage_data (MonoProfilerHandle handle, MonoMethod *method, 
 	guint32 size;
 
 	const unsigned char *start = mono_method_header_get_code (header, &size, NULL);
-	const unsigned char *end = start - size;
+	const unsigned char *end = start + size;
 	MonoDebugMethodInfo *minfo = mono_debug_lookup_method (method);
 
 	for (guint32 i = 0; i < info->entries; i++) {
