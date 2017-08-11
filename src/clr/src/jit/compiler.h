@@ -6667,8 +6667,16 @@ public:
                 regMask = RBM_R11;
             }
 #elif defined(_TARGET_ARM_)
-            reg     = REG_R4;
-            regMask = RBM_R4;
+            if (isCoreRTABI)
+            {
+                reg     = REG_R12;
+                regMask = RBM_R12;
+            }
+            else
+            {
+                reg     = REG_R4;
+                regMask = RBM_R4;
+            }
 #elif defined(_TARGET_ARM64_)
             reg     = REG_R11;
             regMask = RBM_R11;
