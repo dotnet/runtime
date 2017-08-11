@@ -26,9 +26,6 @@
     <Compile Include="$(CommonTestPath)\System\Net\Capability.RawSocketPermissions.cs">
       <Link>Common\System\Net\Capability.RawSocketPermissions.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>Common\tests\System\PlatformDetection.cs</Link>
-    </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

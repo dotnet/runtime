@@ -15,9 +15,6 @@
     <Compile Include="System\Composition\Hosting\Core\ExportDescriptorProviderTests.cs" />
     <Compile Include="System\Composition\Hosting\Core\LifetimeContextTests.cs" />
     <Compile Include="System\Composition\Hosting\Core\ExportDescriptorTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>Common\System\PlatformDetection.cs</Link>
-    </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

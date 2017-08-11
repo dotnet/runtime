@@ -13,9 +13,6 @@
     <Compile Include="TestServiceProvider.cs" />
     <Compile Include="SafeServiceControllerTests.cs" />
     <Compile Include="ServiceControllerTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>CommonTest\System\PlatformDetection.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include=".\System.ServiceProcess.ServiceController.TestService\System.ServiceProcess.ServiceController.TestService.csproj" />

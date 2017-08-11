@@ -257,7 +257,7 @@ namespace System.Runtime.InteropServices.WindowsRuntime.Tests
             AssertExtensions.Throws<ArgumentNullException>("removeMethod", () => WindowsRuntimeMarshal.RemoveAllEventHandlers(null));
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsWinRTSupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWinRTSupported))]
         [InlineData("")]
         [InlineData("HString")]
         public void StringToHString_PtrToHString_ReturnsExpected(string s)
@@ -281,25 +281,25 @@ namespace System.Runtime.InteropServices.WindowsRuntime.Tests
             }
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsWinRTSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsWinRTSupported))]
         public void StringToHString_NullString_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("s", () => WindowsRuntimeMarshal.StringToHString(null));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWinRTSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWinRTSupported))]
         public void StringToHString_WinRTNotSupported_ThrowsPlatformNotSupportedException()
         {
             Assert.Throws<PlatformNotSupportedException>(() => WindowsRuntimeMarshal.StringToHString(null));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWinRTSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWinRTSupported))]
         public void PtrToStringHString_WinRTNotSupported_ThrowsPlatformNotSupportedException()
         {
             Assert.Throws<PlatformNotSupportedException>(() => WindowsRuntimeMarshal.PtrToStringHString(IntPtr.Zero));
         }
 
-        [ConditionalFact(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWinRTSupported))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWinRTSupported))]
         public void FreeHString_WinRTNotSupported_ThrowsPlatformNotSupportedException()
         {
             Assert.Throws<PlatformNotSupportedException>(() => WindowsRuntimeMarshal.FreeHString(IntPtr.Zero));

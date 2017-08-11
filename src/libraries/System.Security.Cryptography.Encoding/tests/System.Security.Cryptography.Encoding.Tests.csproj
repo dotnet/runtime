@@ -23,9 +23,6 @@
     <Compile Include="$(CommonPath)\System\Security\Cryptography\DerSequenceReader.cs">
       <Link>Common\System\Security\Cryptography\DerSequenceReader.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>Common\System\PlatformDetection.cs</Link>
-    </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\ByteUtils.cs">
       <Link>CommonTest\System\Security\Cryptography\ByteUtils.cs</Link>
     </Compile>

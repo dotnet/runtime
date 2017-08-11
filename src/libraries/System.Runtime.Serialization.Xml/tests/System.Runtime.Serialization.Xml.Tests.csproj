@@ -25,9 +25,6 @@
     <Compile Include="$(CommonTestPath)\System\IO\TempFile.cs">
       <Link>Common\System\IO\TempFile.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>CommonTest\System\PlatformDetection.cs</Link>
-    </Compile>
     <Compile Include="$(TestSourceFolder)SerializationTestTypes\ObjRefSample.cs" />
     <Compile Include="SerializationTestTypes\Collections.cs" />
     <Compile Include="SerializationTestTypes\DataContract.cs" />

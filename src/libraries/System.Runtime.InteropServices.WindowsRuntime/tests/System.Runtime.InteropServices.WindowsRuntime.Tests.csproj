@@ -21,9 +21,6 @@
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\InterfaceImplementedInVersionAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\ReturnValueNameAttributeTests.cs" />
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\WindowsRuntimeMarshalTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>Common\System\PlatformDetection.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'false'">
     <Compile Include="System\Runtime\InteropServices\WindowsRuntime\UnixTests.cs" />

@@ -16,9 +16,6 @@
     <DefineConstants>$(DefineConstants);netcoreapp</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>CommonTest\System\PlatformDetection.cs</Link>
-    </Compile>
     <Compile Include="$(CommonTestPath)\System\IO\PositionValueStream.cs">
       <Link>CommonTest\System\IO\PositionValueStream.cs</Link>
     </Compile>

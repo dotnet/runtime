@@ -33,9 +33,6 @@
     <Compile Include="PipeTest.Read.cs" />
     <Compile Include="PipeTest.Write.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>Common\System\PlatformDetection.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="Interop.Windows.cs" />

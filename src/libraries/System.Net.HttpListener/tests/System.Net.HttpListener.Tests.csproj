@@ -31,12 +31,6 @@
     <Compile Include="SimpleHttpTests.cs" />
     <Compile Include="WebSocketTests.cs" />
     <Compile Include="XUnitAssemblyAttributes.cs" />
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>Common\tests\System\PlatformDetection.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonTestPath)\System\Net\PlatformDetection.Networking.cs">
-      <Link>Common\tests\System\Net\PlatformDetection.Networking.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\System.Net.HttpListener.Tests.rd.xml" />
