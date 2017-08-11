@@ -1133,13 +1133,13 @@ namespace System.Net.Http.Headers
 
         private HeaderDescriptor GetHeaderDescriptor(string name)
         {
+            if (string.IsNullOrEmpty(name))
+            {
+                throw new ArgumentException(SR.net_http_argument_empty_string, nameof(name));
+            }
+
             if (!HeaderDescriptor.TryGet(name, out HeaderDescriptor descriptor))
             {
-                if (string.IsNullOrEmpty(name))
-                {
-                    throw new ArgumentException(SR.net_http_argument_empty_string, nameof(name));
-                }
-
                 throw new FormatException(SR.net_http_headers_invalid_header_name);
             }
 
@@ -1157,6 +1157,12 @@ namespace System.Net.Http.Headers
 
         private bool TryGetHeaderDescriptor(string name, out HeaderDescriptor descriptor)
         {
+            if (string.IsNullOrEmpty(name))
+            {
+                descriptor = default(HeaderDescriptor);
+                return false;
+            }
+
             if (!HeaderDescriptor.TryGet(name, out descriptor))
             {
                 return false;

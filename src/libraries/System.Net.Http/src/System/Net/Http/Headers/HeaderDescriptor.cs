@@ -41,31 +41,25 @@ namespace System.Net.Http.Headers
         public static bool operator ==(HeaderDescriptor left, HeaderDescriptor right) => left.Equals(right);
         public static bool operator !=(HeaderDescriptor left, HeaderDescriptor right) => !left.Equals(right);
 
-        public static bool TryGet(string name, out HeaderDescriptor descriptor)
+        public static bool TryGet(string headerName, out HeaderDescriptor descriptor)
         {
-            if (string.IsNullOrEmpty(name))
-            {
-                descriptor = default(HeaderDescriptor);
-                return false;
-            }
+            Debug.Assert(!string.IsNullOrEmpty(headerName));
 
-            if (HttpRuleParser.GetTokenLength(name, 0) != name.Length)
-            {
-                descriptor = default(HeaderDescriptor);
-                return false;
-            }
-
-            KnownHeader knownHeader = KnownHeaders.TryGetKnownHeader(name);
+            KnownHeader knownHeader = KnownHeaders.TryGetKnownHeader(headerName);
             if (knownHeader != null)
             {
                 descriptor = new HeaderDescriptor(knownHeader);
                 return true;
             }
-            else
+
+            if (HttpRuleParser.GetTokenLength(headerName, 0) != headerName.Length)
             {
-                descriptor = new HeaderDescriptor(name);
-                return true;
+                descriptor = default(HeaderDescriptor);
+                return false;
             }
+
+            descriptor = new HeaderDescriptor(headerName);
+            return true;
         }
 
         public HeaderDescriptor AsCustomHeader()

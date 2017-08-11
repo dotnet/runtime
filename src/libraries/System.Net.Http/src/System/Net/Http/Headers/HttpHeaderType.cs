@@ -5,7 +5,7 @@
 namespace System.Net.Http.Headers
 {
     [Flags]
-    internal enum HttpHeaderType
+    internal enum HttpHeaderType : byte
     {
         General = 0b1,
         Request = 0b10,
