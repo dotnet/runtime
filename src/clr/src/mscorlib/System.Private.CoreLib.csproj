@@ -152,7 +152,6 @@
   <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\Collections\Comparer.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\CompatibleComparer.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Collections\ListDictionaryInternal.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\EmptyReadOnlyDictionaryInternal.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\Hashtable.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Collections\IHashCodeProvider.cs" />
@@ -322,7 +321,7 @@
     <Compile Include="$(BclSourcesRoot)\System\Enum.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Environment.cs" />
     <Compile Include="$(BclSourcesRoot)\System\GC.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Guid.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Guid.CoreCLR.cs" />
     <Compile Include="$(BclSourcesRoot)\System\InsufficientMemoryException.cs" />
     <Compile Include="$(BclSourcesRoot)\System\IntPtr.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Internal.cs" />
