@@ -25,19 +25,47 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_DecodeRsaPublicKey")]
         internal static extern SafeRsaHandle DecodeRsaPublicKey(byte[] buf, int len);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaPublicEncrypt")]
-        internal extern static int RsaPublicEncrypt(
+        internal static unsafe int RsaPublicEncrypt(
             int flen,
-            byte[] from,
-            byte[] to,
+            ReadOnlySpan<byte> from,
+            Span<byte> to,
+            SafeRsaHandle rsa,
+            RsaPadding padding)
+        {
+            fixed (byte* fromPtr = &from.DangerousGetPinnableReference())
+            fixed (byte* toPtr = &to.DangerousGetPinnableReference())
+            {
+                return RsaPublicEncrypt(flen, fromPtr, toPtr, rsa, padding);
+            }
+        }
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaPublicEncrypt")]
+        private extern static unsafe int RsaPublicEncrypt(
+            int flen,
+            byte* from,
+            byte* to,
             SafeRsaHandle rsa,
             RsaPadding padding);
 
-        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaPrivateDecrypt")]
-        internal extern static int RsaPrivateDecrypt(
+        internal static unsafe int RsaPrivateDecrypt(
             int flen,
-            byte[] from,
-            byte[] to,
+            ReadOnlySpan<byte> from,
+            Span<byte> to,
+            SafeRsaHandle rsa,
+            RsaPadding padding)
+        {
+            fixed (byte* fromPtr = &from.DangerousGetPinnableReference())
+            fixed (byte* toPtr = &to.DangerousGetPinnableReference())
+            {
+                return RsaPrivateDecrypt(flen, fromPtr, toPtr, rsa, padding);
+            }
+        }
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaPrivateDecrypt")]
+        private extern static unsafe int RsaPrivateDecrypt(
+            int flen,
+            byte* from,
+            byte* to,
             SafeRsaHandle rsa,
             RsaPadding padding);
 
@@ -47,13 +75,31 @@ internal static partial class Interop
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaGenerateKeyEx")]
         internal static extern int RsaGenerateKeyEx(SafeRsaHandle rsa, int bits, SafeBignumHandle e);
 
+        internal static unsafe bool RsaSign(int type, ReadOnlySpan<byte> m, int m_len, Span<byte> sigret, out int siglen, SafeRsaHandle rsa)
+        {
+            fixed (byte* mPtr = &m.DangerousGetPinnableReference())
+            fixed (byte* sigretPtr = &sigret.DangerousGetPinnableReference())
+            {
+                return RsaSign(type, mPtr, m_len, sigretPtr, out siglen, rsa);
+            }
+        }
+
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaSign")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool RsaSign(int type, byte[] m, int m_len, byte[] sigret, out int siglen, SafeRsaHandle rsa);
+        private static extern unsafe bool RsaSign(int type, byte* m, int m_len, byte* sigret, out int siglen, SafeRsaHandle rsa);
+
+        internal static unsafe bool RsaVerify(int type, ReadOnlySpan<byte> m, int m_len, ReadOnlySpan<byte> sigbuf, int siglen, SafeRsaHandle rsa)
+        {
+            fixed (byte* mPtr = &m.DangerousGetPinnableReference())
+            fixed (byte* sigbufPtr = &sigbuf.DangerousGetPinnableReference())
+            {
+                return RsaVerify(type, mPtr, m_len, sigbufPtr, siglen, rsa);
+            }
+        }
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_RsaVerify")]
         [return: MarshalAs(UnmanagedType.Bool)]
-        internal static extern bool RsaVerify(int type, byte[] m, int m_len, byte[] sigbuf, int siglen, SafeRsaHandle rsa);
+        private static extern unsafe bool RsaVerify(int type, byte* m, int m_len, byte* sigbuf, int siglen, SafeRsaHandle rsa);
 
         internal static RSAParameters ExportRsaParameters(SafeRsaHandle key, bool includePrivateParameters)
         {
