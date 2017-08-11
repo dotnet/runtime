@@ -6673,7 +6673,7 @@ emit_stloc_ir (MonoCompile *cfg, MonoInst **sp, MonoMethodHeader *header, int n)
 			ins->sreg1 = sp [0]->dreg;
 			ins->type = STACK_I4;
 			ins->klass = mono_class_from_mono_type (header->locals [n]);
-	        MONO_ADD_INS (cfg->cbb, ins);
+			MONO_ADD_INS (cfg->cbb, ins);
 			*sp = mono_decompose_opcode (cfg, ins);
 		}
 	}
