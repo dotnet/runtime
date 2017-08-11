@@ -13,9 +13,9 @@ namespace System.Net.Http
     {
         private sealed class ContentLengthReadStream : HttpContentReadStream
         {
-            private long _contentBytesRemaining;
+            private ulong _contentBytesRemaining;
 
-            public ContentLengthReadStream(HttpConnection connection, long contentLength)
+            public ContentLengthReadStream(HttpConnection connection, ulong contentLength)
                 : base(connection)
             {
                 if (contentLength == 0)
@@ -42,18 +42,21 @@ namespace System.Net.Http
 
                 Debug.Assert(_contentBytesRemaining > 0);
 
-                count = (int)Math.Min(count, _contentBytesRemaining);
+                if ((ulong)count > _contentBytesRemaining)
+                {
+                    count = (int)_contentBytesRemaining;
+                }
 
                 int bytesRead = await _connection.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
 
-                if (bytesRead == 0)
+                if (bytesRead <= 0)
                 {
                     // Unexpected end of response stream
                     throw new IOException("Unexpected end of content stream");
                 }
 
-                Debug.Assert(bytesRead <= _contentBytesRemaining);
-                _contentBytesRemaining -= bytesRead;
+                Debug.Assert((ulong)bytesRead <= _contentBytesRemaining);
+                _contentBytesRemaining -= (ulong)bytesRead;
 
                 if (_contentBytesRemaining == 0)
                 {
