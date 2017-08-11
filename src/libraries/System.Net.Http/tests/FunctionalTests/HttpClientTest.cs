@@ -128,20 +128,22 @@ namespace System.Net.Http.Functional.Tests
             {
                 await LoopbackServer.CreateServerAsync(async (server, url) =>
                 {
-                    Task<string> t = client.GetStringAsync(url);
-                    await LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                    Task<string> getTask = client.GetStringAsync(url);
+                    Task serverTask = LoopbackServer.ReadRequestAndSendResponseAsync(server,
                         $"HTTP/1.1 200 OK\r\n" +
                         $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
                         $"Content-Length: {contentLength}\r\n" +
                         "\r\n" +
                         new string('s', contentLength));
+                    Task bothTasks = TestHelper.WhenAllCompletedOrAnyFailed(getTask, serverTask);
+
                     if (exceptionExpected)
                     {
-                        await Assert.ThrowsAsync<HttpRequestException>(() => t);
+                        await Assert.ThrowsAsync<HttpRequestException>(() => bothTasks);
                     }
                     else
                     {
-                        await t;
+                        await bothTasks;
                     }
                 });
             }

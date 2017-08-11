@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Net.Http.Headers;
+using System.Net.Security;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -84,7 +85,23 @@ namespace System.Net.Http
             _connectionClose = false;
             _disposed = false;
 
-            if (NetEventSource.IsEnabled) Trace("Connection created.");
+            if (NetEventSource.IsEnabled)
+            {
+                if (_stream is SslStream sslStream)
+                {
+                    Trace(
+                        $"Secure connection created to {key.Host}:{key.Port}. " +
+                        $"SslProtocol:{sslStream.SslProtocol}, " +
+                        $"CipherAlgorithm:{sslStream.CipherAlgorithm}, CipherStrength:{sslStream.CipherStrength}, " +
+                        $"HashAlgorithm:{sslStream.HashAlgorithm}, HashStrength:{sslStream.HashStrength}, " +
+                        $"KeyExchangeAlgorithm:{sslStream.KeyExchangeAlgorithm}, KeyExchangeStrength:{sslStream.KeyExchangeStrength}, " +
+                        $"LocalCert:{sslStream.LocalCertificate}, RemoteCert:{sslStream.RemoteCertificate}");
+                }
+                else
+                {
+                    Trace($"Connection created to {key.Host}:{key.Port}.");
+                }
+            }
         }
 
         public void Dispose()
@@ -186,8 +203,8 @@ namespace System.Net.Http
 
                 if (request.Version.Major != 1 || request.Version.Minor != 1)
                 {
-                    // TODO #21452: Support 1.0
-                    // TODO #21452: Support 2.0
+                    // TODO #23132: Support 1.0
+                    // TODO #23134: Support 2.0
                     throw new PlatformNotSupportedException($"Only HTTP 1.1 supported -- request.Version was {request.Version}");
                 }
 
@@ -246,9 +263,9 @@ namespace System.Net.Http
                         (HttpContentWriteStream)new ChunkedEncodingWriteStream(this) :
                         (HttpContentWriteStream)new ContentLengthWriteStream(this));
 
-                    // TODO #21452: CopyToAsync doesn't take a CancellationToken, how do we deal with Cancellation here?
-                    // TODO #21452: We need to enable duplex communication, which means not waiting here until all data is sent.
-                    // TODO #21452: Support Expect: 100-continue
+                    // TODO #23146: CopyToAsync doesn't take a CancellationToken, how do we deal with Cancellation here?
+                    // TODO #23145: We need to enable duplex communication, which means not waiting here until all data is sent.
+                    // TODO #23144: Support Expect: 100-continue
                     await request.Content.CopyToAsync(stream, _transportContext).ConfigureAwait(false);
                     await stream.FinishAsync(cancellationToken).ConfigureAwait(false);
                 }
@@ -394,7 +411,7 @@ namespace System.Net.Http
 
         private void ParseHeaderNameValue(Span<byte> line, HttpResponseMessage response)
         {
-            // TODO: Use Span to get the header name and value rather than going through ValueStringBuilder
+            // TODO #23147: Use Span to get the header name and value rather than going through ValueStringBuilder
 
             _sb.Clear();
             int pos = 0;
