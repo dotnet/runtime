@@ -10,48 +10,97 @@ using Xunit;
 
 namespace System
 {
-    public static class AdminHelpers
+    public static partial class AdminHelpers
     {
-        public static int RunAsSudo(string commandLine) => throw null;
-        public static bool IsProcessElevated() => throw null;
+        public static bool IsProcessElevated() { throw null; }
+        public static int RunAsSudo(string commandLine) { throw null; }
     }
-
-    public static class AssertExtensions
+    public static partial class AssertExtensions
     {
-        public static void Throws<T>(System.Action action, string message) where T : System.Exception { }
-        public static void Throws<T>(string netCoreParamName, string netFxParamName, Action action) where T : System.ArgumentException { }
-        public static T Throws<T>(string paramName, System.Action action) where T : System.ArgumentException { throw null; }
-        public static T Throws<T>(string paramName, Func<object> testCode) where T : System.ArgumentException { throw null; }
-        public static System.Threading.Tasks.Task<T> ThrowsAsync<T>(string paramName, System.Func<Task> testCode) where T : System.ArgumentException { throw null; }
-        public static void Throws<TNetCoreExceptionType, TNetFxExceptionType>(string paramName, System.Action action)
-                where TNetCoreExceptionType : System.ArgumentException
-                where TNetFxExceptionType : System.ArgumentException
-        { }
-        public static void Throws<TNetCoreExceptionType, TNetFxExceptionType>(string netCoreParamName, string netFxParamName, System.Action action)
-            where TNetCoreExceptionType : System.ArgumentException
-            where TNetFxExceptionType : System.ArgumentException
-        { }
-        public static void ThrowsAny(System.Type firstExceptionType, System.Type secondExceptionType, System.Action action) { }
-        public static void ThrowsAny<TFirstExceptionType, TSecondExceptionType>(System.Action action)
-            where TFirstExceptionType : System.Exception
-            where TSecondExceptionType : System.Exception
-        { }
-        public static void ThrowsAny<TFirstExceptionType, TSecondExceptionType, TThirdExceptionType>(Action action)
-            where TFirstExceptionType : Exception
-            where TSecondExceptionType : Exception
-            where TThirdExceptionType : Exception
-        { }
-        public static void ThrowsIf<T>(bool condition, System.Action action) where T : System.Exception { }
-        public static void GreaterThan<T>(T actual, T greaterThan, string userMessage = null) where T : System.IComparable { }
-        public static void LessThan<T>(T actual, T lessThan, string userMessage = null) where T : System.IComparable { }
-        public static void LessThanOrEqualTo<T>(T actual, T lessThanOrEqualTo, string userMessage = null) where T : System.IComparable { }
-        public static void GreaterThanOrEqualTo<T>(T actual, T greaterThanOrEqualTo, string userMessage = null) where T : System.IComparable { }
         public static void Equal(byte[] expected, byte[] actual) { }
+        public static void GreaterThanOrEqualTo<T>(T actual, T greaterThanOrEqualTo, string userMessage=null) where T : System.IComparable { }
+        public static void GreaterThan<T>(T actual, T greaterThan, string userMessage=null) where T : System.IComparable { }
+        public static void LessThanOrEqualTo<T>(T actual, T lessThanOrEqualTo, string userMessage=null) where T : System.IComparable { }
+        public static void LessThan<T>(T actual, T lessThan, string userMessage=null) where T : System.IComparable { }
+        public static void ThrowsAny(System.Type firstExceptionType, System.Type secondExceptionType, System.Action action) { }
+        public static void ThrowsAny<TFirstExceptionType, TSecondExceptionType>(System.Action action) where TFirstExceptionType : System.Exception where TSecondExceptionType : System.Exception { }
+        public static void ThrowsAny<TFirstExceptionType, TSecondExceptionType, TThirdExceptionType>(System.Action action) where TFirstExceptionType : System.Exception where TSecondExceptionType : System.Exception where TThirdExceptionType : System.Exception { }
+        public static System.Threading.Tasks.Task<T> ThrowsAsync<T>(string paramName, System.Func<System.Threading.Tasks.Task> testCode) where T : System.ArgumentException { throw null; }
+        public static void ThrowsIf<T>(bool condition, System.Action action) where T : System.Exception { }
+        public static void Throws<T>(System.Action action, string message) where T : System.Exception { }
+        public static T Throws<T>(string paramName, System.Action action) where T : System.ArgumentException { throw null; }
+        public static T Throws<T>(string paramName, System.Func<object> testCode) where T : System.ArgumentException { throw null; }
+        public static void Throws<T>(string netCoreParamName, string netFxParamName, System.Action action) where T : System.ArgumentException { }
+        public static void Throws<TNetCoreExceptionType, TNetFxExceptionType>(string paramName, System.Action action) where TNetCoreExceptionType : System.ArgumentException where TNetFxExceptionType : System.ArgumentException { }
+        public static void Throws<TNetCoreExceptionType, TNetFxExceptionType>(string netCoreParamName, string netFxParamName, System.Action action) where TNetCoreExceptionType : System.ArgumentException where TNetFxExceptionType : System.ArgumentException { }
     }
-    public static class TheoryExtensions
+    public static partial class PlatformDetection
+    {
+        public static bool IsReflectionEmitSupported;
+        public static bool ClientWebSocketPartialMessagesSupported { get { throw null; } }
+        public static System.PlatformDetection.Range[] FrameworkRanges { get { throw null; } }
+        public static bool IsArmProcess { get { throw null; } }
+        public static bool IsCentos7 { get { throw null; } }
+        public static bool IsDebian { get { throw null; } }
+        public static bool IsDebian8 { get { throw null; } }
+        public static bool IsDrawingSupported { get { throw null; } }
+        public static bool IsFedora { get { throw null; } }
+        public static bool IsFullFramework { get { throw null; } }
+        public static bool IsInvokingStaticConstructorsSupported { get { throw null; } }
+        public static bool IsMacOsHighSierra { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public static bool IsNetBSD { get { throw null; } }
+        public static bool IsNetCore { get { throw null; } }
+        public static bool IsNetNative { get { throw null; } }
+        public static bool IsNonZeroLowerBoundArraySupported { get { throw null; } }
+        public static bool IsNotArmProcess { get { throw null; } }
+        public static bool IsNotFedoraOrRedHatOrCentos { get { throw null; } }
+        public static bool IsNotOneCoreUAP { get { throw null; } }
+        public static bool IsNotWindows8x { get { throw null; } }
+        public static bool IsNotWindowsIoTCore { get { throw null; } }
+        public static bool IsNotWindowsNanoServer { get { throw null; } }
+        public static bool IsNotWindowsSubsystemForLinux { get { throw null; } }
+        public static bool IsNotWinRT { get { throw null; } }
+        public static bool IsNotWinRTSupported { get { throw null; } }
+        public static bool IsOpenSUSE { get { throw null; } }
+        public static bool IsOSX { get { throw null; } }
+        public static bool IsSuperUser { get { throw null; } }
+        public static bool IsTizen { get { throw null; } }
+        public static bool IsUap { get { throw null; } }
+        public static bool IsUbuntu { get { throw null; } }
+        public static bool IsUbuntu1404 { get { throw null; } }
+        public static bool IsWindows { get { throw null; } }
+        public static bool IsWindows10InsiderPreviewBuild16215OrGreater { get { throw null; } }
+        public static bool IsWindows10Version1607OrGreater { get { throw null; } }
+        public static bool IsWindows10Version16251OrGreater { get { throw null; } }
+        public static bool IsWindows10Version1703OrGreater { get { throw null; } }
+        public static bool IsWindows7 { get { throw null; } }
+        public static bool IsWindows8x { get { throw null; } }
+        public static bool IsWindowsAndElevated { get { throw null; } }
+        public static bool IsWindowsIoTCore { get { throw null; } }
+        public static bool IsWindowsNanoServer { get { throw null; } }
+        public static bool IsWindowsSubsystemForLinux { get { throw null; } }
+        public static bool IsWinRT { get { throw null; } }
+        public static bool IsWinRTSupported { get { throw null; } }
+        public static bool IsXmlDsigXsltTransformSupported { get { throw null; } }
+        public static System.Version OSXKernelVersion { get { throw null; } }
+        public static int WindowsVersion { get { throw null; } }
+        public static string GetDistroVersionString() { throw null; }
+        public static bool IsNetfx462OrNewer() { throw null; }
+        public static bool IsNetfx470OrNewer() { throw null; }
+        public static bool IsNetfx471OrNewer() { throw null; }
+        public partial class Range
+        {
+            public Range(System.Version start, System.Version finish, System.Version frameworkVersion) { }
+            public System.Version Finish { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+            public System.Version FrameworkVersion { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+            public System.Version Start { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+            public bool IsInRange(System.Version version) { throw null; }
+        }
+    }
+    public static partial class TheoryExtensions
     {
         [CLSCompliant(false)]
-        public static TheoryData ToTheoryData<T>(this IEnumerable<T> data) { throw null; }
+        public static Xunit.TheoryData ToTheoryData<T>(this System.Collections.Generic.IEnumerable<T> data) { throw null; }
     }
 }
 namespace System.Diagnostics
@@ -76,7 +125,7 @@ namespace System.Diagnostics
         {
             public RemoteInvokeHandle(System.Diagnostics.Process process, System.Diagnostics.RemoteInvokeOptions options) { }
             public System.Diagnostics.RemoteInvokeOptions Options { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
-            public System.Diagnostics.Process Process { [System.Runtime.CompilerServices.CompilerGeneratedAttribute] get { throw null; } }
+            public System.Diagnostics.Process Process { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
             public void Dispose() { }
         }
     }
@@ -85,6 +134,7 @@ namespace System.Diagnostics
         public RemoteInvokeOptions() { }
         public bool CheckExitCode { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
         public bool EnableProfiling { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
+        public string ExceptionFile { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
         public int ExpectedExitCode { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
         public bool Start { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }
         public System.Diagnostics.ProcessStartInfo StartInfo { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } [System.Runtime.CompilerServices.CompilerGeneratedAttribute]set { } }

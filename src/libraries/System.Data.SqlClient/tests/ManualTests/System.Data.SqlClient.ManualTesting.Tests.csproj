@@ -113,9 +113,6 @@
     <Compile Include="SQL\WeakRefTest\WeakRefTest.cs" />
     <Compile Include="SQL\WeakRefTestYukonSpecific\WeakRefTestYukonSpecific.cs" />
     <Compile Include="XUnitAssemblyAttributes.cs" />
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>Common\System\PlatformDetection.cs</Link>
-    </Compile>
     <Content Include="DDBasics\DDDataTypesTest\data.xml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Link>data.xml</Link>

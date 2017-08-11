@@ -27,9 +27,6 @@
     <Compile Include="TestData.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>CommonTest\System\PlatformDetection.cs</Link>
-    </Compile>
     <Compile Include="$(CommonTestPath)\System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherTests.Data.cs">
       <Link>CommonTest\AlgorithmImplementations\AES\AesCipherTests.Data.cs</Link>
     </Compile>

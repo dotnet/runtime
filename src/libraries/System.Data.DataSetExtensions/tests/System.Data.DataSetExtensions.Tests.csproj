@@ -17,9 +17,6 @@
     <Compile Include="System\Data\DataTableExtensionsTests.cs" />
     <Compile Include="System\Data\EnumerableRowCollectionExtensionsTests.cs" />
     <Compile Include="System\Data\TypedTableBaseExtensionsTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>Common\System\PlatformDetection.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <Content Include="Mono\testdataset1.xml">

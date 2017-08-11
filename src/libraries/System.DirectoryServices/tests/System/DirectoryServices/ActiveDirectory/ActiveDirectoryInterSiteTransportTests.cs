@@ -47,7 +47,7 @@ namespace System.DirectoryServices.ActiveDirectory.Tests
             AssertExtensions.Throws<ArgumentException>("context", () => ActiveDirectoryInterSiteTransport.FindByTransportType(context, ActiveDirectoryTransportType.Rpc));
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))]
         [OuterLoop("Takes too long on domain joined machines")]
         [InlineData(DirectoryContextType.ApplicationPartition)]
         [InlineData(DirectoryContextType.DirectoryServer)]

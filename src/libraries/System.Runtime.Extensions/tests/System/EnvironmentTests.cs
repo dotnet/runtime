@@ -275,7 +275,7 @@ namespace System.Tests
         }
 
         // Requires recent RS3 builds
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsWindows10Version16251OrGreater))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version16251OrGreater))]
         [SkipOnTargetFramework(~(TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.UapAot))]
         [InlineData(Environment.SpecialFolder.LocalApplicationData)]
         [InlineData(Environment.SpecialFolder.Cookies)]
@@ -292,7 +292,7 @@ namespace System.Tests
         }
 
         // Requires recent RS3 builds
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsWindows10Version16251OrGreater))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version16251OrGreater))]
         [SkipOnTargetFramework(~(TargetFrameworkMonikers.Uap | TargetFrameworkMonikers.UapAot))]
         [InlineData(Environment.SpecialFolder.ApplicationData)]
         [InlineData(Environment.SpecialFolder.MyMusic)]
@@ -335,7 +335,7 @@ namespace System.Tests
         }
 
         // The commented out folders aren't set on all systems.
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotWindowsNanoServer))] // https://github.com/dotnet/corefx/issues/19110
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // https://github.com/dotnet/corefx/issues/19110
         [InlineData(Environment.SpecialFolder.ApplicationData)]
         [InlineData(Environment.SpecialFolder.CommonApplicationData)]
         [InlineData(Environment.SpecialFolder.LocalApplicationData)]

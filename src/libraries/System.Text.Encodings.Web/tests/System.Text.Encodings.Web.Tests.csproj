@@ -46,11 +46,6 @@
     <Compile Include="UrlEncoderTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>Common\System\PlatformDetection.cs</Link>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
     <EmbeddedResource Include="$(CommonTestPath)\Data\UnicodeData.8.0.txt">
       <LogicalName>UnicodeData.8.0.txt</LogicalName>
     </EmbeddedResource>
