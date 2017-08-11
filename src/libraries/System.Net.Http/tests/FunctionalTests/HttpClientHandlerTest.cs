@@ -1065,7 +1065,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (ManagedHandlerTestHelpers.IsEnabled)
             {
-                // TODO #21452: The managed handler isn't correctly handling trailing headers.
+                // TODO #23130: The managed handler isn't correctly handling trailing headers.
                 return;
             }
 
@@ -1221,7 +1221,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (ManagedHandlerTestHelpers.IsEnabled)
             {
-                // TODO #21452: The ManagedHandler isn't correctly handling disposal of the handler.
+                // TODO #23131: The ManagedHandler isn't correctly handling disposal of the handler.
                 // It should cause the outstanding requests to be canceled with OperationCanceledExceptions,
                 // whereas currently it's resulting in ObjectDisposedExceptions.
                 return;
@@ -1857,7 +1857,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (ManagedHandlerTestHelpers.IsEnabled)
             {
-                // TODO #23132: ManagedHandler requires 1.0 currently.
+                // TODO #23132: ManagedHandler requires 1.1 currently.
                 return;
             }
 
@@ -1881,7 +1881,7 @@ namespace System.Net.Http.Functional.Tests
             }
             if (ManagedHandlerTestHelpers.IsEnabled)
             {
-                // TODO #21452: The managed handler doesn't yet support HTTP/2.
+                // TODO #23134: The managed handler doesn't yet support HTTP/2.
                 return;
             }
 
@@ -1934,7 +1934,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (ManagedHandlerTestHelpers.IsEnabled)
             {
-                // TODO #21452: The managed handler doesn't yet support HTTP/2.
+                // TODO #23134: The managed handler doesn't yet support HTTP/2.
                 return;
             }
 
@@ -2000,11 +2000,11 @@ namespace System.Net.Http.Functional.Tests
         [OuterLoop] // TODO: Issue #11345
         [Theory]
         [MemberData(nameof(CredentialsForProxy))]
-        public void Proxy_BypassFalse_GetRequestGoesThroughCustomProxy(ICredentials creds, bool wrapCredsInCache)
+        public async Task Proxy_BypassFalse_GetRequestGoesThroughCustomProxy(ICredentials creds, bool wrapCredsInCache)
         {
             if (ManagedHandlerTestHelpers.IsEnabled)
             {
-                // TODO #21452: The test is hanging with the managed handler for some of the theory inputs.
+                // TODO #23135: ManagedHandler currently gets error "System.NotImplementedException : Basic auth: can't handle ':' in domain "dom:\ain""
                 return;
             }
 
@@ -2029,7 +2029,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 Task<HttpResponseMessage> responseTask = client.GetAsync(Configuration.Http.RemoteEchoServer);
                 Task<string> responseStringTask = responseTask.ContinueWith(t => t.Result.Content.ReadAsStringAsync(), TaskScheduler.Default).Unwrap();
-                Task.WaitAll(proxyTask, responseTask, responseStringTask);
+                await TestHelper.WhenAllCompletedOrAnyFailed(proxyTask, responseTask, responseStringTask);
 
                 using (responseTask.Result)
                 {

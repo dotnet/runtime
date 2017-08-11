@@ -143,7 +143,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (ManagedHandlerTestHelpers.IsEnabled)
             {
-                // TODO #21452: The managed handler is currently sending out client certificates when it shouldn't.
+                // TODO #23128: The managed handler is currently sending out client certificates when it shouldn't.
                 return;
             }
 

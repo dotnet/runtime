@@ -42,13 +42,13 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    // TODO #21452: Tests on this class fail when the associated condition is enabled.
+    // TODO #23139: Tests on this class fail when the associated condition is enabled.
     //public sealed class ManagedHandler_HttpClientEKUTest : HttpClientEKUTest, IDisposable
     //{
     //    public ManagedHandler_HttpClientEKUTest() => ManagedHandlerTestHelpers.SetEnvVar();
     //    public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
     //}
-    
+
     public sealed class ManagedHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test : HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test, IDisposable
     {
         public ManagedHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test() => ManagedHandlerTestHelpers.SetEnvVar();
@@ -121,7 +121,7 @@ namespace System.Net.Http.Functional.Tests
         public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
     }
 
-    // TODO #21452:
+    // TODO #23140:
     //public sealed class ManagedHandler_DefaultCredentialsTest : DefaultCredentialsTest, IDisposable
     //{
     //    public ManagedHandler_DefaultCredentialsTest(ITestOutputHelper output) : base(output) => ManagedHandlerTestHelpers.SetEnvVar();
@@ -138,7 +138,7 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    // TODO #21452: Socket's don't support canceling individual operations, so ReadStream on NetworkStream
+    // TODO #23141: Socket's don't support canceling individual operations, so ReadStream on NetworkStream
     // isn't cancelable once the operation has started.  We either need to wrap the operation with one that's
     // "cancelable", meaning that the underlying operation will still be running even though we've returned "canceled",
     // or we need to just recognize that cancellation in such situations can be left up to the caller to do the
@@ -149,7 +149,7 @@ namespace System.Net.Http.Functional.Tests
     //    public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
     //}
 
-    // TODO #21452: The managed handler doesn't currently track how much data was written for the response headers.
+    // TODO #23142: The managed handler doesn't currently track how much data was written for the response headers.
     //public sealed class ManagedHandler_HttpClientHandler_MaxResponseHeadersLength_Test : HttpClientHandler_MaxResponseHeadersLength_Test, IDisposable
     //{
     //    public ManagedHandler_HttpClientHandler_MaxResponseHeadersLength_Test() => ManagedHandlerTestHelpers.SetEnvVar();
