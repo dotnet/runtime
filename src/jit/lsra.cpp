@@ -9209,11 +9209,6 @@ void LinearScan::insertMove(
     GenTreePtr src              = compiler->gtNewLclvNode(lclNum, varDsc->TypeGet());
     src->gtLsraInfo.isLsraAdded = true;
 
-    if (varDsc->lvNormalizeOnStore())
-    {
-        src->gtType = TYP_INT;
-    }
-
     // There are three cases we need to handle:
     // - We are loading a lclVar from the stack.
     // - We are storing a lclVar to the stack.
