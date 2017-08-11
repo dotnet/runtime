@@ -7057,6 +7057,7 @@ namespace System.Text
         public System.Text.StringBuilder Append(uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public System.Text.StringBuilder Append(ulong value) { throw null; }
+        public System.Text.StringBuilder Append(System.ReadOnlySpan<char> value) { throw null; }
         public System.Text.StringBuilder AppendFormat(System.IFormatProvider provider, string format, object arg0) { throw null; }
         public System.Text.StringBuilder AppendFormat(System.IFormatProvider provider, string format, object arg0, object arg1) { throw null; }
         public System.Text.StringBuilder AppendFormat(System.IFormatProvider provider, string format, object arg0, object arg1, object arg2) { throw null; }
@@ -7075,6 +7076,7 @@ namespace System.Text
         public StringBuilder AppendJoin(char separator, params string[] values) { throw null; }
         public System.Text.StringBuilder Clear() { throw null; }
         public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count) { }
+        public void CopyTo(int sourceIndex, System.Span<char> destination, int count) { }
         public int EnsureCapacity(int capacity) { throw null; }
         public bool Equals(System.Text.StringBuilder sb) { throw null; }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
@@ -7083,6 +7085,7 @@ namespace System.Text
         public System.Text.StringBuilder Insert(int index, char value) { throw null; }
         public System.Text.StringBuilder Insert(int index, char[] value) { throw null; }
         public System.Text.StringBuilder Insert(int index, char[] value, int startIndex, int charCount) { throw null; }
+        public System.Text.StringBuilder Insert(int index, System.ReadOnlySpan<char> value) { throw null; }
         public System.Text.StringBuilder Insert(int index, decimal value) { throw null; }
         public System.Text.StringBuilder Insert(int index, double value) { throw null; }
         public System.Text.StringBuilder Insert(int index, short value) { throw null; }
