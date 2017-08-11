@@ -73,6 +73,10 @@
     <BinPlaceConfiguration Include="netstandard">
       <RefPath>$(RefRootPath)netstandard/</RefPath>
     </BinPlaceConfiguration>
+    <!-- some libraries that produce packages will remain targeting netcoreapp2.0 -->
+    <BinPlaceConfiguration Condition="'$(BuildingNETCoreAppVertical)' == 'true'" Include="netcoreapp2.0">
+      <RefPath>$(RefRootPath)netcoreapp2.0/</RefPath>
+    </BinPlaceConfiguration>
     <!-- for BuildAllConfigurations make sure all refpaths are created.  -->
     <_TargetGroupsWithIsAot Condition="'$(BuildAllConfigurations)' == 'true'" Include="@(TargetGroups)">
       <IsAot>$([System.String]::new('%(Identity)').Contains('aot'))</IsAot>
