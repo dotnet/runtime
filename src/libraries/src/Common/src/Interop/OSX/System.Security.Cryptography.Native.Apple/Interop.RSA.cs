@@ -21,36 +21,90 @@ internal static partial class Interop
             out SafeSecKeyRefHandle pPrivateKey,
             out int pOSStatus);
 
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaEncryptOaep")]
-        private static extern int RsaEncryptOaep(
+        private static unsafe int RsaEncryptOaep(
             SafeSecKeyRefHandle publicKey,
-            byte[] pbData,
+            ReadOnlySpan<byte> pbData,
+            int cbData,
+            PAL_HashAlgorithm mgfAlgorithm,
+            out SafeCFDataHandle pEncryptedOut,
+            out SafeCFErrorHandle pErrorOut)
+        {
+            fixed (byte* pbDataPtr = &pbData.DangerousGetPinnableReference())
+            {
+                return RsaEncryptOaep(publicKey, pbDataPtr, cbData, mgfAlgorithm, out pEncryptedOut, out pErrorOut);
+            }
+        }
+
+        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaEncryptOaep")]
+        private static extern unsafe int RsaEncryptOaep(
+            SafeSecKeyRefHandle publicKey,
+            byte* pbData,
             int cbData,
             PAL_HashAlgorithm mgfAlgorithm,
             out SafeCFDataHandle pEncryptedOut,
             out SafeCFErrorHandle pErrorOut);
+
+        private static unsafe int RsaEncryptPkcs(
+            SafeSecKeyRefHandle publicKey,
+            ReadOnlySpan<byte> pbData,
+            int cbData,
+            out SafeCFDataHandle pEncryptedOut,
+            out SafeCFErrorHandle pErrorOut)
+        {
+            fixed (byte* pbDataPtr = &pbData.DangerousGetPinnableReference())
+            {
+                return RsaEncryptPkcs(publicKey, pbDataPtr, cbData, out pEncryptedOut, out pErrorOut);
+            }
+        }
 
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaEncryptPkcs")]
-        private static extern int RsaEncryptPkcs(
+        private static extern unsafe int RsaEncryptPkcs(
             SafeSecKeyRefHandle publicKey,
-            byte[] pbData,
+            byte* pbData,
             int cbData,
             out SafeCFDataHandle pEncryptedOut,
             out SafeCFErrorHandle pErrorOut);
 
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaDecryptOaep")]
-        private static extern int RsaDecryptOaep(
+        private static unsafe int RsaDecryptOaep(
             SafeSecKeyRefHandle publicKey,
-            byte[] pbData,
+            ReadOnlySpan<byte> pbData,
+            int cbData,
+            PAL_HashAlgorithm mgfAlgorithm,
+            out SafeCFDataHandle pEncryptedOut,
+            out SafeCFErrorHandle pErrorOut)
+        {
+            fixed (byte* pbDataPtr = &pbData.DangerousGetPinnableReference())
+            {
+                return RsaDecryptOaep(publicKey, pbDataPtr, cbData, mgfAlgorithm, out pEncryptedOut, out pErrorOut);
+            }
+        }
+
+        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaDecryptOaep")]
+        private static extern unsafe int RsaDecryptOaep(
+            SafeSecKeyRefHandle publicKey,
+            byte* pbData,
             int cbData,
             PAL_HashAlgorithm mgfAlgorithm,
             out SafeCFDataHandle pEncryptedOut,
             out SafeCFErrorHandle pErrorOut);
 
-        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaDecryptPkcs")]
-        private static extern int RsaDecryptPkcs(
+        private static unsafe int RsaDecryptPkcs(
             SafeSecKeyRefHandle publicKey,
-            byte[] pbData,
+            ReadOnlySpan<byte> pbData,
+            int cbData,
+            out SafeCFDataHandle pEncryptedOut,
+            out SafeCFErrorHandle pErrorOut)
+        {
+            fixed (byte* pbDataPtr = &pbData.DangerousGetPinnableReference())
+            {
+                return RsaDecryptPkcs(publicKey, pbDataPtr, cbData, out pEncryptedOut, out pErrorOut);
+            }
+        }
+
+        [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaDecryptPkcs")]
+        private static extern unsafe int RsaDecryptPkcs(
+            SafeSecKeyRefHandle publicKey,
+            byte* pbData,
             int cbData,
             out SafeCFDataHandle pEncryptedOut,
             out SafeCFErrorHandle pErrorOut);
@@ -117,7 +171,26 @@ internal static partial class Interop
                         out encrypted,
                         out error);
                 });
+        }
 
+        internal static bool TryRsaEncrypt(
+            SafeSecKeyRefHandle publicKey,
+            ReadOnlySpan<byte> source,
+            Span<byte> destination,
+            RSAEncryptionPadding padding,
+            out int bytesWritten)
+        {
+            Debug.Assert(padding.Mode == RSAEncryptionPaddingMode.Pkcs1 || padding.Mode == RSAEncryptionPaddingMode.Oaep);
+            return TryExecuteTransform(
+                source,
+                destination,
+                out bytesWritten,
+                delegate (ReadOnlySpan<byte> innerSource, out SafeCFDataHandle outputHandle, out SafeCFErrorHandle errorHandle)
+                {
+                    return padding.Mode == RSAEncryptionPaddingMode.Pkcs1 ?
+                        RsaEncryptPkcs(publicKey, innerSource, innerSource.Length, out outputHandle, out errorHandle) :
+                        RsaEncryptOaep(publicKey, innerSource, innerSource.Length, PalAlgorithmFromAlgorithmName(padding.OaepHashAlgorithm), out outputHandle, out errorHandle);
+                });
         }
 
         internal static byte[] RsaDecrypt(
@@ -145,31 +218,32 @@ internal static partial class Interop
                 });
         }
 
-        private static Interop.AppleCrypto.PAL_HashAlgorithm PalAlgorithmFromAlgorithmName(
-                HashAlgorithmName hashAlgorithmName)
+        internal static bool TryRsaDecrypt(
+            SafeSecKeyRefHandle privateKey,
+            ReadOnlySpan<byte> source,
+            Span<byte> destination,
+            RSAEncryptionPadding padding,
+            out int bytesWritten)
         {
-            if (hashAlgorithmName == HashAlgorithmName.MD5)
-            {
-                return Interop.AppleCrypto.PAL_HashAlgorithm.Md5;
-            }
-            else if (hashAlgorithmName == HashAlgorithmName.SHA1)
-            {
-                return Interop.AppleCrypto.PAL_HashAlgorithm.Sha1;
-            }
-            else if (hashAlgorithmName == HashAlgorithmName.SHA256)
-            {
-                return Interop.AppleCrypto.PAL_HashAlgorithm.Sha256;
-            }
-            else if (hashAlgorithmName == HashAlgorithmName.SHA384)
-            {
-                return Interop.AppleCrypto.PAL_HashAlgorithm.Sha384;
-            }
-            else if (hashAlgorithmName == HashAlgorithmName.SHA512)
-            {
-                return Interop.AppleCrypto.PAL_HashAlgorithm.Sha512;
-            }
-
-            throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmName.Name);
+            Debug.Assert(padding.Mode == RSAEncryptionPaddingMode.Pkcs1 || padding.Mode == RSAEncryptionPaddingMode.Oaep);
+            return TryExecuteTransform(
+                source,
+                destination,
+                out bytesWritten,
+                delegate (ReadOnlySpan<byte> innerSource, out SafeCFDataHandle outputHandle, out SafeCFErrorHandle errorHandle)
+                {
+                    return padding.Mode == RSAEncryptionPaddingMode.Pkcs1 ?
+                        RsaDecryptPkcs(privateKey, innerSource, innerSource.Length, out outputHandle, out errorHandle) :
+                        RsaDecryptOaep(privateKey, innerSource, innerSource.Length, PalAlgorithmFromAlgorithmName(padding.OaepHashAlgorithm), out outputHandle, out errorHandle);
+                });
         }
+
+        private static PAL_HashAlgorithm PalAlgorithmFromAlgorithmName(HashAlgorithmName hashAlgorithmName) =>
+            hashAlgorithmName == HashAlgorithmName.MD5 ? PAL_HashAlgorithm.Md5 :
+            hashAlgorithmName == HashAlgorithmName.SHA1 ? PAL_HashAlgorithm.Sha1 :
+            hashAlgorithmName == HashAlgorithmName.SHA256 ? PAL_HashAlgorithm.Sha256 :
+            hashAlgorithmName == HashAlgorithmName.SHA384 ? PAL_HashAlgorithm.Sha384 :
+            hashAlgorithmName == HashAlgorithmName.SHA512 ? PAL_HashAlgorithm.Sha512 :
+            throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmName.Name);
     }
 }
