@@ -285,14 +285,14 @@ namespace System.Net.Http
                 else if (response.Content.Headers.ContentLength != null)
                 {
                     long contentLength = response.Content.Headers.ContentLength.GetValueOrDefault();
-                    if (contentLength == 0)
+                    if (contentLength <= 0)
                     {
                         responseStream = EmptyReadStream.Instance;
                         ReturnConnectionToPool();
                     }
                     else
                     {
-                        responseStream = new ContentLengthReadStream(this, contentLength);
+                        responseStream = new ContentLengthReadStream(this, (ulong)contentLength);
                     }
                 }
                 else if (response.Headers.TransferEncodingChunked == true)
@@ -844,7 +844,7 @@ namespace System.Net.Http
         }
 
         // Copy *exactly* [length] bytes into destination; throws on end of stream.
-        private async Task CopyChunkToAsync(Stream destination, long length, CancellationToken cancellationToken)
+        private async Task CopyChunkToAsync(Stream destination, ulong length, CancellationToken cancellationToken)
         {
             Debug.Assert(destination != null);
             Debug.Assert(length > 0);
@@ -852,10 +852,13 @@ namespace System.Net.Http
             int remaining = _readLength - _readOffset;
             if (remaining > 0)
             {
-                remaining = (int)Math.Min(remaining, length);
+                if ((ulong)remaining > length)
+                {
+                    remaining = (int)length;
+                }
                 await CopyFromBufferAsync(destination, remaining, cancellationToken).ConfigureAwait(false);
 
-                length -= remaining;
+                length -= (ulong)remaining;
                 if (length == 0)
                 {
                     return;
@@ -870,10 +873,10 @@ namespace System.Net.Http
                     ThrowInvalidHttpResponse();
                 }
 
-                remaining = (int)Math.Min(_readLength, length);
+                remaining = (ulong)_readLength < length ? _readLength : (int)length;
                 await CopyFromBufferAsync(destination, remaining, cancellationToken).ConfigureAwait(false);
 
-                length -= remaining;
+                length -= (ulong)remaining;
                 if (length == 0)
                 {
                     return;
