@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Net.Http.Headers;
+using System.Net.Security;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
@@ -84,7 +85,23 @@ namespace System.Net.Http
             _connectionClose = false;
             _disposed = false;
 
-            if (NetEventSource.IsEnabled) Trace("Connection created.");
+            if (NetEventSource.IsEnabled)
+            {
+                if (_stream is SslStream sslStream)
+                {
+                    Trace(
+                        $"Secure connection created to {key.Host}:{key.Port}. " +
+                        $"SslProtocol:{sslStream.SslProtocol}, " +
+                        $"CipherAlgorithm:{sslStream.CipherAlgorithm}, CipherStrength:{sslStream.CipherStrength}, " +
+                        $"HashAlgorithm:{sslStream.HashAlgorithm}, HashStrength:{sslStream.HashStrength}, " +
+                        $"KeyExchangeAlgorithm:{sslStream.KeyExchangeAlgorithm}, KeyExchangeStrength:{sslStream.KeyExchangeStrength}, " +
+                        $"LocalCert:{sslStream.LocalCertificate}, RemoteCert:{sslStream.RemoteCertificate}");
+                }
+                else
+                {
+                    Trace($"Connection created to {key.Host}:{key.Port}.");
+                }
+            }
         }
 
         public void Dispose()
