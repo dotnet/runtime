@@ -71,7 +71,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (ManagedHandlerTestHelpers.IsEnabled)
             {
-                return; // TODO #21452: SSL proxy tunneling not yet implemented in ManagedHandler
+                return; // TODO #23136: SSL proxy tunneling not yet implemented in ManagedHandler
             }
 
             int port;
@@ -312,7 +312,7 @@ namespace System.Net.Http.Functional.Tests
                     Assert.NotNull(chain);
                     if (!ManagedHandlerTestHelpers.IsEnabled)
                     {
-                        // TODO #21452: This test is failing with the managed handler on the exact value of the managed errors,
+                        // TODO #23137: This test is failing with the managed handler on the exact value of the managed errors,
                         // e.g. reporting "RemoteCertificateNameMismatch, RemoteCertificateChainErrors" when we only expect
                         // "RemoteCertificateChainErrors"
                         Assert.Equal(expectedErrors, errors);

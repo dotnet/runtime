@@ -14,7 +14,7 @@ namespace System.Net.Http
             var socket = new Socket(SocketType.Stream, ProtocolType.Tcp) { NoDelay = true };
             try
             {
-                // TODO #21452: No cancellationToken on ConnectAsync?
+                // TODO #23151: cancellation support?
                 await (IPAddress.TryParse(host, out IPAddress address) ?
                     socket.ConnectAsync(address, port) :
                     socket.ConnectAsync(host, port)).ConfigureAwait(false);
@@ -25,17 +25,7 @@ namespace System.Net.Http
                 throw new HttpRequestException(se.Message, se);
             }
 
-            return new NetworkStream(socket, ownsSocket: true)
-            {
-#if false
-                // TODO #21452: Timeouts?
-                // Default timeout should be something less than infinity (the Socket default)
-                // Timeouts probably need to be configurable
-                // However, timeouts are also a huge pain when debugging, so consider that too.
-                ReadTimeout = 5000,
-                WriteTimeout = 5000
-#endif
-            };
+            return new NetworkStream(socket, ownsSocket: true);
         }
     }
 }
