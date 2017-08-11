@@ -14,9 +14,6 @@
     <Compile Include="ForAllTests.cs" />
     <Compile Include="Utilities.cs" />
     <Compile Include="ValueTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>Common\System\PlatformDetection.cs</Link>
-    </Compile>
     <Compile Include="$(CommonTestPath)\System\ShouldNotBeInvokedException.cs">
       <Link>Common\System\ShouldNotBeInvokedException.cs</Link>
     </Compile>

@@ -22,9 +22,6 @@
     <Compile Include="Drawing\SizeFConverterTests.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>Common\tests\System\PlatformDetection.cs</Link>
-    </Compile>
     <Compile Include="AmbientValueAttributeTests.cs" />
     <Compile Include="ArrayConverterTests.cs" />
     <Compile Include="AttributeCollectionTests.cs" />

@@ -45,9 +45,6 @@
     <Compile Include="ValidationExceptionTests.cs" />
     <Compile Include="ValidationResultTests.cs" />
     <Compile Include="ValidatorTests.cs" />
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>Common\System\PlatformDetection.cs</Link>
-    </Compile>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

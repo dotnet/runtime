@@ -72,7 +72,7 @@ namespace System.Data.SqlClient.Tests
             new object[] { EnlistConnectionInTransaction, s_connectionStringWithEnlistOff }
         };
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNotArmProcess))] // https://github.com/dotnet/corefx/issues/21598
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArmProcess))] // https://github.com/dotnet/corefx/issues/21598
         [MemberData(nameof(ExceptionTestDataForSqlException))]
         public void TestSqlException(Action<string> connectAction, string connectionString)
         {

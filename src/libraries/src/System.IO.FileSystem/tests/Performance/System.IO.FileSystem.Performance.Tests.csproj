@@ -30,9 +30,6 @@
     <Compile Include="$(CommonTestPath)\System\IO\PathFeatures.cs">
       <Link>Common\System\IO\PathFeatures.cs</Link>
     </Compile>
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>Common\System\PlatformDetection.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonPath)\..\perf\PerfRunner\PerfRunner.csproj">

@@ -12,7 +12,7 @@ namespace System.Linq.Expressions.Tests
     {
         private static IEnumerable<object[]> Ranks() => Enumerable.Range(1, 5).Select(i => new object[] {i});
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
         [ClassData(typeof(CompilationTypes))]
         public static void ArrayAccess_MultiDimensionalOf1(bool useInterpreter)
         {
@@ -30,7 +30,7 @@ namespace System.Linq.Expressions.Tests
             Assert.Equal(42, get());
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
         [ClassData(typeof(CompilationTypes))]
         public static void ArrayIndex_MultiDimensionalOf1(bool useInterpreter)
         {
@@ -77,7 +77,7 @@ namespace System.Linq.Expressions.Tests
             AssertExtensions.Throws<ArgumentException>("indexes", () => Expression.ArrayAccess(instance, index));
         }
 
-        [ConditionalTheory(nameof(PlatformDetection) + "." + nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNonZeroLowerBoundArraySupported))]
         [ClassData(typeof(CompilationTypes))]
         public static void NonZeroBasedOneDimensionalArrayAccess(bool useInterpreter)
         {

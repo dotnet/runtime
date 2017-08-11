@@ -8,6 +8,7 @@
     <ClsCompliant>false</ClsCompliant>
     <ShouldWriteSigningRequired>false</ShouldWriteSigningRequired>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <EnablePInvokeAnalyzer>false</EnablePInvokeAnalyzer>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
@@ -22,11 +23,15 @@
     <Compile Include="System\AdminHelpers.cs" />
     <Compile Include="System\IO\FileCleanupTestBase.cs" />
     <Compile Include="System\Diagnostics\RemoteExecutorTestBase.cs" />
+    <Compile Include="System\Net\PlatformDetection.Networking.cs" />
     <Compile Condition="'$(TargetGroup)' == 'netcoreapp'" Include="System\Diagnostics\RemoteExecutorTestBase.netcore.cs" />
     <Compile Condition="'$(TargetGroup)' == 'netfx'" Include="System\Diagnostics\RemoteExecutorTestBase.netfx.cs" />
     <Compile Condition="'$(TargetGroup)' != 'uap'" Include="System\Diagnostics\RemoteExecutorTestBase.Process.cs" />
     <Compile Condition="'$(TargetGroup)' == 'uap'" Include="System\Diagnostics\RemoteExecutorTestBase.uap.cs" />
     <Compile Condition="'$(TargetGroup)' == 'uapaot'" Include="System\Diagnostics\RemoteExecutorTestBase.uapaot.cs" />
+    <Compile Include="System\PlatformDetection.cs" />
+    <Compile Include="System\PlatformDetection.Unix.cs" Condition="'$(TargetsWindows)' != 'true'" />
+    <Compile Include="System\PlatformDetection.Windows.cs" Condition="'$(TargetsWindows)' == 'true'" />
     <Compile Include="$(CommonPath)\System\PasteArguments.cs">
       <Link>Common\System\PasteArguments.cs</Link>
     </Compile>
@@ -40,6 +45,7 @@
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Runtime.Extensions" />
+    <Reference Include="System.Diagnostics.Debug" />
     <Reference Include="System.Diagnostics.Process" />
     <Reference Include="System.ComponentModel.Primitives" />
     <Reference Include="System.Runtime.InteropServices.RuntimeInformation" />
@@ -97,6 +103,9 @@
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
