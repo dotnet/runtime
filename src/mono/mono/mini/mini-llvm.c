@@ -4117,26 +4117,26 @@ emit_handler_start (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef builder
 	}
 
 	/* Start a new bblock which CALL_HANDLER can branch to */
-	target_bb = bblocks [bb->block_num].call_handler_target_bb;
-	if (target_bb) {
-		ctx->builder = builder = create_builder (ctx);
-		LLVMPositionBuilderAtEnd (ctx->builder, target_bb);
+	ctx->builder = builder = create_builder (ctx);
+	LLVMPositionBuilderAtEnd (ctx->builder, target_bb);
 
-		ctx->bblocks [bb->block_num].end_bblock = target_bb;
+	ctx->bblocks [bb->block_num].end_bblock = target_bb;
 
-		/* Store the exception into the IL level exvar */
-		if (bb->in_scount == 1) {
-			g_assert (bb->in_scount == 1);
-			exvar = bb->in_stack [0];
+	/* Store the exception into the IL level exvar */
+	if (bb->in_scount == 1) {
+		g_assert (bb->in_scount == 1);
+		exvar = bb->in_stack [0];
 
-			// FIXME: This is shared with filter clauses ?
-			g_assert (!values [exvar->dreg]);
+		// FIXME: This is shared with filter clauses ?
+		g_assert (!values [exvar->dreg]);
 
-			g_assert (ctx->ex_var);
-			values [exvar->dreg] = LLVMBuildLoad (builder, ctx->ex_var, "");
-			emit_volatile_store (ctx, exvar->dreg);
-		}
+		g_assert (ctx->ex_var);
+		values [exvar->dreg] = LLVMBuildLoad (builder, ctx->ex_var, "");
+		emit_volatile_store (ctx, exvar->dreg);
 	}
+
+	/* Make normal branches to the start of the clause branch to the new bblock */
+	bblocks [bb->block_num].bblock = target_bb;
 }
 
 static void
