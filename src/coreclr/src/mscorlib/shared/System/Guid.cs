@@ -2,11 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-
-using System;
-using System.Globalization;
-using System.Text;
-using Microsoft.Win32;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
@@ -19,10 +14,10 @@ namespace System
     [Serializable]
     [System.Runtime.Versioning.NonVersionable] // This only applies to field layout
     [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public struct Guid : IFormattable, IComparable
-        , IComparable<Guid>, IEquatable<Guid>
+    public partial struct Guid : IFormattable, IComparable, IComparable<Guid>, IEquatable<Guid>
     {
         public static readonly Guid Empty = new Guid();
+
         ////////////////////////////////////////////////////////////////////////////////
         //  Member variables
         ////////////////////////////////////////////////////////////////////////////////
@@ -37,7 +32,6 @@ namespace System
         private byte _i; // Do not rename (binary serialization)
         private byte _j; // Do not rename (binary serialization)
         private byte _k; // Do not rename (binary serialization)
-
 
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -1024,8 +1018,7 @@ namespace System
         public unsafe override int GetHashCode()
         {
             // Simply XOR all the bits of the GUID 32 bits at a time.
-            fixed (int* ptr = &_a)
-                return ptr[0] ^ ptr[1] ^ ptr[2] ^ ptr[3];
+            return _a ^ Unsafe.Add(ref _a, 1) ^ Unsafe.Add(ref _a, 2) ^ Unsafe.Add(ref _a, 3);
         }
 
         // Returns true if and only if the guid represented
@@ -1041,25 +1034,11 @@ namespace System
             // Now compare each of the elements
             if (g._a != _a)
                 return false;
-            if (g._b != _b)
+            if (Unsafe.Add(ref g._a, 1) != Unsafe.Add(ref _a, 1))
                 return false;
-            if (g._c != _c)
+            if (Unsafe.Add(ref g._a, 2) != Unsafe.Add(ref _a, 2))
                 return false;
-            if (g._d != _d)
-                return false;
-            if (g._e != _e)
-                return false;
-            if (g._f != _f)
-                return false;
-            if (g._g != _g)
-                return false;
-            if (g._h != _h)
-                return false;
-            if (g._i != _i)
-                return false;
-            if (g._j != _j)
-                return false;
-            if (g._k != _k)
+            if (Unsafe.Add(ref g._a, 3) != Unsafe.Add(ref _a, 3))
                 return false;
 
             return true;
@@ -1070,25 +1049,11 @@ namespace System
             // Now compare each of the elements
             if (g._a != _a)
                 return false;
-            if (g._b != _b)
+            if (Unsafe.Add(ref g._a, 1) != Unsafe.Add(ref _a, 1))
                 return false;
-            if (g._c != _c)
+            if (Unsafe.Add(ref g._a, 2) != Unsafe.Add(ref _a, 2))
                 return false;
-            if (g._d != _d)
-                return false;
-            if (g._e != _e)
-                return false;
-            if (g._f != _f)
-                return false;
-            if (g._g != _g)
-                return false;
-            if (g._h != _h)
-                return false;
-            if (g._i != _i)
-                return false;
-            if (g._j != _j)
-                return false;
-            if (g._k != _k)
+            if (Unsafe.Add(ref g._a, 3) != Unsafe.Add(ref _a, 3))
                 return false;
 
             return true;
@@ -1238,25 +1203,11 @@ namespace System
             // Now compare each of the elements
             if (a._a != b._a)
                 return false;
-            if (a._b != b._b)
+            if (Unsafe.Add(ref a._a, 1) != Unsafe.Add(ref b._a, 1))
                 return false;
-            if (a._c != b._c)
+            if (Unsafe.Add(ref a._a, 2) != Unsafe.Add(ref b._a, 2))
                 return false;
-            if (a._d != b._d)
-                return false;
-            if (a._e != b._e)
-                return false;
-            if (a._f != b._f)
-                return false;
-            if (a._g != b._g)
-                return false;
-            if (a._h != b._h)
-                return false;
-            if (a._i != b._i)
-                return false;
-            if (a._j != b._j)
-                return false;
-            if (a._k != b._k)
+            if (Unsafe.Add(ref a._a, 3) != Unsafe.Add(ref b._a, 3))
                 return false;
 
             return true;
@@ -1264,21 +1215,17 @@ namespace System
 
         public static bool operator !=(Guid a, Guid b)
         {
-            return !(a == b);
-        }
+            // Now compare each of the elements
+            if (a._a != b._a)
+                return true;
+            if (Unsafe.Add(ref a._a, 1) != Unsafe.Add(ref b._a, 1))
+                return true;
+            if (Unsafe.Add(ref a._a, 2) != Unsafe.Add(ref b._a, 2))
+                return true;
+            if (Unsafe.Add(ref a._a, 3) != Unsafe.Add(ref b._a, 3))
+                return true;
 
-        // This will create a new guid.  Since we've now decided that constructors should 0-init,
-        // we need a method that allows users to create a guid.
-        public static Guid NewGuid()
-        {
-            // CoCreateGuid should never return Guid.Empty, since it attempts to maintain some
-            // uniqueness guarantees.  It should also never return a known GUID, but it's unclear
-            // how extensively it checks for known values.
-            Contract.Ensures(Contract.Result<Guid>() != Guid.Empty);
-
-            Guid guid;
-            Marshal.ThrowExceptionForHR(Win32Native.CoCreateGuid(out guid), new IntPtr(-1));
-            return guid;
+            return false;
         }
 
         public String ToString(String format)
