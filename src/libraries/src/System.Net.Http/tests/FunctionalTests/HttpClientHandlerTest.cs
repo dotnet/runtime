@@ -492,11 +492,11 @@ namespace System.Net.Http.Functional.Tests
                 handler.Credentials = new NetworkCredential("unused", "unused");
                 using (var client = new HttpClient(handler))
                 {
-                    Task<HttpResponseMessage> getResponse = client.GetAsync(url);
+                    Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
+                    Task<List<string>> serverTask = LoopbackServer.ReadRequestAndSendResponseAsync(server, responseHeaders);
 
-                    await LoopbackServer.ReadRequestAndSendResponseAsync(server, responseHeaders);
-
-                    using (HttpResponseMessage response = await getResponse)
+                    await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
+                    using (HttpResponseMessage response = await getResponseTask)
                     {
                         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
                     }
@@ -544,21 +544,28 @@ namespace System.Net.Http.Functional.Tests
                 await LoopbackServer.CreateServerAsync(async (origServer, origUrl) =>
                 {
                     var request = new HttpRequestMessage(new HttpMethod(oldMethod), origUrl);
-                    Task<HttpResponseMessage> getResponse = client.SendAsync(request);
 
-                    await LoopbackServer.ReadRequestAndSendResponseAsync(origServer,
+                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
+
+                    Task<List<string>> serverTask = LoopbackServer.ReadRequestAndSendResponseAsync(origServer,
                             $"HTTP/1.1 {statusCode} OK\r\n" +
                             $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
                             $"Location: {origUrl}\r\n" +
                             "\r\n");
+                    await Task.WhenAny(getResponseTask, serverTask);
+                    Assert.False(getResponseTask.IsCompleted, $"{getResponseTask.Status}: {getResponseTask.Exception}");
+                    await serverTask;
 
-                    List<string> receivedRequest = await LoopbackServer.ReadRequestAndSendResponseAsync(origServer,
+                    serverTask = LoopbackServer.ReadRequestAndSendResponseAsync(origServer,
                             $"HTTP/1.1 200 OK\r\n" +
                             $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
                             "\r\n");
+                    await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
+
+                    List <string> receivedRequest = await serverTask;
                     string[] statusLineParts = receivedRequest[0].Split(' ');
 
-                    using (HttpResponseMessage response = await getResponse)
+                    using (HttpResponseMessage response = await getResponseTask)
                     {
                         Assert.Equal(200, (int)response.StatusCode);
                         Assert.Equal(newMethod, statusLineParts[0]);
@@ -739,17 +746,19 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await LoopbackServer.CreateServerAsync(async (redirectServer, redirectUrl) =>
                     {
-                        Task<HttpResponseMessage> getResponse = client.GetAsync(origUrl);
+                        Task<HttpResponseMessage> getResponseTask = client.GetAsync(origUrl);
 
                         Task redirectTask = LoopbackServer.ReadRequestAndSendResponseAsync(redirectServer);
 
-                        await LoopbackServer.ReadRequestAndSendResponseAsync(origServer,
+                        await TestHelper.WhenAllCompletedOrAnyFailed(
+                            getResponseTask,
+                            LoopbackServer.ReadRequestAndSendResponseAsync(origServer,
                                 $"HTTP/1.1 {statusCode} OK\r\n" +
                                 $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
                                 $"Location: {redirectUrl}\r\n" +
-                                "\r\n");
+                                "\r\n"));
 
-                        using (HttpResponseMessage response = await getResponse)
+                        using (HttpResponseMessage response = await getResponseTask)
                         {
                             Assert.Equal(statusCode, (int)response.StatusCode);
                             Assert.Equal(origUrl, response.RequestMessage.RequestUri);
@@ -811,7 +820,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (ManagedHandlerTestHelpers.IsEnabled)
             {
-                // TODO #21452: The managed handler is currently getting Ok when it should be getting Unauthorized.
+                // TODO #23129: The managed handler is currently getting Ok when it should be getting Unauthorized.
                 return;
             }
 
@@ -1022,17 +1031,18 @@ namespace System.Net.Http.Functional.Tests
                 using (var handler = new HttpClientHandler())
                 using (var client = new HttpClient(handler))
                 {
-                    Task<HttpResponseMessage> getResponse = client.GetAsync(url);
-
-                    await LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                    Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
+                    await TestHelper.WhenAllCompletedOrAnyFailed(
+                        getResponseTask,
+                        LoopbackServer.ReadRequestAndSendResponseAsync(server,
                             $"HTTP/1.1 200 OK\r\n" +
                             $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
                             $"Set-Cookie: {cookie1.Key}={cookie1.Value}; Path=/\r\n" +
                             $"Set-Cookie   : {cookie2.Key}={cookie2.Value}; Path=/\r\n" + // space before colon to verify header is trimmed and recognized
                             $"Set-Cookie: {cookie3.Key}={cookie3.Value}; Path=/\r\n" +
-                            "\r\n");
+                            "\r\n"));
 
-                    using (HttpResponseMessage response = await getResponse)
+                    using (HttpResponseMessage response = await getResponseTask)
                     {
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                         CookieCollection cookies = handler.CookieContainer.GetCookies(url);
@@ -1064,9 +1074,10 @@ namespace System.Net.Http.Functional.Tests
                 using (var handler = new HttpClientHandler())
                 using (var client = new HttpClient(handler))
                 {
-                    Task<HttpResponseMessage> getResponse = client.GetAsync(url);
-
-                    await LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                    Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
+                    await TestHelper.WhenAllCompletedOrAnyFailed(
+                        getResponseTask,
+                        LoopbackServer.ReadRequestAndSendResponseAsync(server,
                             "HTTP/1.1 200 OK\r\n" +
                             "Transfer-Encoding: chunked\r\n" +
                             (includeTrailerHeader ? "Trailer: MyCoolTrailerHeader\r\n" : "") +
@@ -1075,9 +1086,9 @@ namespace System.Net.Http.Functional.Tests
                             "data\r\n" +
                             "0\r\n" +
                             "MyCoolTrailerHeader: amazingtrailer\r\n" +
-                            "\r\n");
+                            "\r\n"));
 
-                    using (HttpResponseMessage response = await getResponse)
+                    using (HttpResponseMessage response = await getResponseTask)
                     {
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                         if (includeTrailerHeader)
@@ -1290,12 +1301,14 @@ namespace System.Net.Http.Functional.Tests
             {
                 using (var client = new HttpClient())
                 {
-                    Task<HttpResponseMessage> getResponse = client.GetAsync(url);
-                    await LoopbackServer.ReadRequestAndSendResponseAsync(server,
+                    Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
+                    await TestHelper.WhenAllCompletedOrAnyFailed(
+                        getResponseTask,
+                        LoopbackServer.ReadRequestAndSendResponseAsync(server,
                             $"HTTP/1.1 {statusCode}\r\n" +
                             $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
-                            "\r\n");
-                    using (HttpResponseMessage response = await getResponse)
+                            "\r\n"));
+                    using (HttpResponseMessage response = await getResponseTask)
                     {
                         Assert.Equal(statusCode, (int)response.StatusCode);
                     }
@@ -1319,13 +1332,13 @@ namespace System.Net.Http.Functional.Tests
             {
                 using (var client = new HttpClient())
                 {
-                    Task<HttpResponseMessage> getResponse = client.GetAsync(url);
+                    Task<HttpResponseMessage> getResponseTask = client.GetAsync(url);
                     await LoopbackServer.ReadRequestAndSendResponseAsync(server,
                             $"HTTP/1.1 {statusCode}\r\n" +
                             $"Date: {DateTimeOffset.UtcNow:R}\r\n" +
                             "\r\n");
 
-                    await Assert.ThrowsAsync<HttpRequestException>(() => getResponse);
+                    await Assert.ThrowsAsync<HttpRequestException>(() => getResponseTask);
                 }
             });
         }
@@ -1821,7 +1834,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (ManagedHandlerTestHelpers.IsEnabled)
             {
-                // TODO #21452: The test is hanging with the managed handler.
+                // TODO #23132: ManagedHandler doesn't support 1.0 currently.
                 return;
             }
 
@@ -1844,7 +1857,7 @@ namespace System.Net.Http.Functional.Tests
         {
             if (ManagedHandlerTestHelpers.IsEnabled)
             {
-                // TODO #21452: The test is hanging with the managed handler.
+                // TODO #23132: ManagedHandler requires 1.0 currently.
                 return;
             }
 
@@ -1952,9 +1965,10 @@ namespace System.Net.Http.Functional.Tests
                 using (var client = new HttpClient())
                 {
                     Task<HttpResponseMessage> getResponse = client.SendAsync(request);
+                    Task<List<string>> serverTask = LoopbackServer.ReadRequestAndSendResponseAsync(server);
+                    await TestHelper.WhenAllCompletedOrAnyFailed(getResponse, serverTask);
 
-                    List<string> receivedRequest = await LoopbackServer.ReadRequestAndSendResponseAsync(server);
-
+                    List<string> receivedRequest = await serverTask;
                     using (HttpResponseMessage response = await getResponse)
                     {
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -2104,11 +2118,12 @@ namespace System.Net.Http.Functional.Tests
 
                 using (var client = new HttpClient())
                 {
-                    Task<HttpResponseMessage> getResponse = client.SendAsync(request);
+                    Task<HttpResponseMessage> getResponseTask = client.SendAsync(request);
+                    Task<List<string>> serverTask = LoopbackServer.ReadRequestAndSendResponseAsync(server);
 
-                    List<string> receivedRequest = await LoopbackServer.ReadRequestAndSendResponseAsync(server);
-
-                    using (HttpResponseMessage response = await getResponse)
+                    await TestHelper.WhenAllCompletedOrAnyFailed(getResponseTask, serverTask);
+                    List<string> receivedRequest = await serverTask;
+                    using (HttpResponseMessage response = await getResponseTask)
                     {
                         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
                         Assert.True(receivedRequest[0].Contains(uri.PathAndQuery), $"statusLine should contain {uri.PathAndQuery}");
