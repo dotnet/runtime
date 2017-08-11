@@ -98,7 +98,7 @@ namespace System.Net.Http.Headers
         private interface IHeaderNameAccessor
         {
             int Length { get; }
-            char UpperCharAt(int index);
+            char CharAt(int index);
         }
 
         private struct StringAccessor : IHeaderNameAccessor
@@ -111,7 +111,7 @@ namespace System.Net.Http.Headers
             }
 
             public int Length => _string.Length;
-            public char UpperCharAt(int index) => char.ToUpperInvariant(_string[index]);
+            public char CharAt(int index) => _string[index];
         }
 
         // Find possible known header match via lookup on length and a distinguishing char for that length.
@@ -128,7 +128,7 @@ namespace System.Net.Http.Headers
                     return TE; // TE
 
                 case 3:
-                    switch (key.UpperCharAt(0))
+                    switch (CharArrayHelpers.ToUpperAscii(key.CharAt(0)))
                     {
                         case 'A': return Age; // [A]ge
                         case 'P': return P3P; // [P]3P
@@ -138,7 +138,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 4:
-                    switch (key.UpperCharAt(0))
+                    switch (CharArrayHelpers.ToUpperAscii(key.CharAt(0)))
                     {
                         case 'D': return Date; // [D]ate
                         case 'E': return ETag; // [E]Tag
@@ -150,7 +150,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 5:
-                    switch (key.UpperCharAt(0))
+                    switch (CharArrayHelpers.ToUpperAscii(key.CharAt(0)))
                     {
                         case 'A': return Allow; // [A]llow
                         case 'R': return Range; // [R]ange
@@ -158,7 +158,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 6:
-                    switch (key.UpperCharAt(0))
+                    switch (CharArrayHelpers.ToUpperAscii(key.CharAt(0)))
                     {
                         case 'A': return Accept; // [A]ccept
                         case 'C': return Cookie; // [C]ookie
@@ -170,7 +170,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 7:
-                    switch (key.UpperCharAt(0))
+                    switch (CharArrayHelpers.ToUpperAscii(key.CharAt(0)))
                     {
                         case 'A': return AltSvc;  // [A]lt-Svc
                         case 'C': return Cookie2; // [C]ookie2
@@ -183,7 +183,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 8:
-                    switch (key.UpperCharAt(3))
+                    switch (CharArrayHelpers.ToUpperAscii(key.CharAt(3)))
                     {
                         case 'M': return IfMatch;  // If-[M]atch
                         case 'R': return IfRange;  // If-[R]ange
@@ -192,7 +192,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 10:
-                    switch (key.UpperCharAt(0))
+                    switch (CharArrayHelpers.ToUpperAscii(key.CharAt(0)))
                     {
                         case 'C': return Connection; // [C]onnection
                         case 'K': return KeepAlive;  // [K]eep-Alive
@@ -202,7 +202,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 11:
-                    switch (key.UpperCharAt(0))
+                    switch (CharArrayHelpers.ToUpperAscii(key.CharAt(0)))
                     {
                         case 'C': return ContentMD5; // [C]ontent-MD5
                         case 'R': return RetryAfter; // [R]etry-After
@@ -211,7 +211,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 12:
-                    switch (key.UpperCharAt(2))
+                    switch (CharArrayHelpers.ToUpperAscii(key.CharAt(2)))
                     {
                         case 'C': return AcceptPatch; // Ac[c]ept-Patch
                         case 'N': return ContentType; // Co[n]tent-Type
@@ -223,7 +223,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 13:
-                    switch (key.UpperCharAt(6))
+                    switch (CharArrayHelpers.ToUpperAscii(key.CharAt(6)))
                     {
                         case '-': return AcceptRanges;  // Accept[-]Ranges
                         case 'I': return Authorization; // Author[i]zation
@@ -235,7 +235,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 14:
-                    switch (key.UpperCharAt(0))
+                    switch (CharArrayHelpers.ToUpperAscii(key.CharAt(0)))
                     {
                         case 'A': return AcceptCharset; // [A]ccept-Charset
                         case 'C': return ContentLength; // [C]ontent-Length
@@ -243,7 +243,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 15:
-                    switch (key.UpperCharAt(7))
+                    switch (CharArrayHelpers.ToUpperAscii(key.CharAt(7)))
                     {
                         case '-': return XFrameOptions;  // X-Frame[-]Options
                         case 'M': return XUACompatible;  // X-UA-Co[m]patible
@@ -254,7 +254,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 16:
-                    switch (key.UpperCharAt(11))
+                    switch (CharArrayHelpers.ToUpperAscii(key.CharAt(11)))
                     {
                         case 'O': return ContentEncoding; // Content-Enc[o]ding
                         case 'G': return ContentLanguage; // Content-Lan[g]uage
@@ -266,7 +266,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 17:
-                    switch (key.UpperCharAt(0))
+                    switch (CharArrayHelpers.ToUpperAscii(key.CharAt(0)))
                     {
                         case 'I': return IfModifiedSince;  // [I]f-Modified-Since
                         case 'S': return SecWebSocketKey;  // [S]ec-WebSocket-Key
@@ -275,7 +275,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 18:
-                    switch (key.UpperCharAt(0))
+                    switch (CharArrayHelpers.ToUpperAscii(key.CharAt(0)))
                     {
                         case 'P': return ProxyAuthenticate; // [P]roxy-Authenticate
                         case 'X': return XContentDuration;  // [X]-Content-Duration
@@ -283,7 +283,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 19:
-                    switch (key.UpperCharAt(0))
+                    switch (CharArrayHelpers.ToUpperAscii(key.CharAt(0)))
                     {
                         case 'C': return ContentDisposition; // [C]ontent-Disposition
                         case 'I': return IfUnmodifiedSince;  // [I]f-Unmodified-Since
@@ -298,7 +298,7 @@ namespace System.Net.Http.Headers
                     return SecWebSocketVersion; // Sec-WebSocket-Version
 
                 case 22:
-                    switch (key.UpperCharAt(0))
+                    switch (CharArrayHelpers.ToUpperAscii(key.CharAt(0)))
                     {
                         case 'A': return AccessControlMaxAge;  // [A]ccess-Control-Max-Age
                         case 'S': return SecWebSocketProtocol; // [S]ec-WebSocket-Protocol
@@ -313,7 +313,7 @@ namespace System.Net.Http.Headers
                     return SecWebSocketExtensions; // Sec-WebSocket-Extensions
 
                 case 25:
-                    switch (key.UpperCharAt(0))
+                    switch (CharArrayHelpers.ToUpperAscii(key.CharAt(0)))
                     {
                         case 'S': return StrictTransportSecurity; // [S]trict-Transport-Security
                         case 'U': return UpgradeInsecureRequests; // [U]pgrade-Insecure-Requests
@@ -324,7 +324,7 @@ namespace System.Net.Http.Headers
                     return AccessControlAllowOrigin; // Access-Control-Allow-Origin
 
                 case 28:
-                    switch (key.UpperCharAt(21))
+                    switch (CharArrayHelpers.ToUpperAscii(key.CharAt(21)))
                     {
                         case 'H': return AccessControlAllowHeaders; // Access-Control-Allow-[H]eaders
                         case 'M': return AccessControlAllowMethods; // Access-Control-Allow-[M]ethods

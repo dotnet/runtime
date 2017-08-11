@@ -80,6 +80,16 @@ namespace System
             length = end - offset + 1;
         }
 
+        internal static char ToUpperAscii(char c)
+        {
+            Debug.Assert(c < 128);
+
+            char result = (char)(((ushort)(c - 'a') <= ('z' - 'a')) ? c - ('a' - 'A') : c);
+
+            Debug.Assert(result == char.ToUpperInvariant(c), $"Expected '{char.ToUpperInvariant(c)}', got '{result}'");
+            return result;
+        }
+
         [Conditional("DEBUG")]
         internal static void DebugAssertArrayInputs(char[] array, int startIndex, int length)
         {
