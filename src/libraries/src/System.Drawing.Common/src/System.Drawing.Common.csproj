@@ -68,6 +68,7 @@
     <Compile Include="System\Drawing\Drawing2D\DashStyle.cs" />
     <Compile Include="System\Drawing\Drawing2D\FillMode.cs" />
     <Compile Include="System\Drawing\Drawing2D\FlushIntention.cs" />
+    <Compile Include="System\Drawing\Drawing2D\GraphicsContainer.cs" />
     <Compile Include="System\Drawing\Drawing2D\HatchBrush.cs" />
     <Compile Include="System\Drawing\Drawing2D\HatchStyle.cs" />
     <Compile Include="System\Drawing\Drawing2D\InterpolationMode.cs" />
@@ -193,7 +194,6 @@
     <Compile Include="System\Drawing\ContentAlignment.cs" />
     <Compile Include="System\Drawing\CopyPixelOperation.cs" />
     <Compile Include="System\Drawing\Drawing2D\CustomLineCap.Windows.cs" />
-    <Compile Include="System\Drawing\Drawing2D\GraphicsContainer.cs" />
     <Compile Include="System\Drawing\Drawing2D\GraphicsPath.cs" />
     <Compile Include="System\Drawing\Drawing2D\LinearGradientBrush.cs" />
     <Compile Include="System\Drawing\Drawing2D\Matrix.cs" />
@@ -312,7 +312,6 @@
     <Compile Include="Unix\System.Drawing\ToolboxBitmapAttribute.cs" />
     <Compile Include="System\Drawing\Drawing2D\AdjustableArrowCap.Unix.cs" />
     <Compile Include="System\Drawing\Drawing2D\CustomLineCap.Unix.cs" />
-    <Compile Include="Unix\System.Drawing.Drawing2D\GraphicsContainer.cs" />
     <Compile Include="Unix\System.Drawing.Drawing2D\GraphicsPath.cs" />
     <Compile Include="Unix\System.Drawing.Drawing2D\LinearGradientBrush.cs" />
     <Compile Include="Unix\System.Drawing.Drawing2D\Matrix.cs" />

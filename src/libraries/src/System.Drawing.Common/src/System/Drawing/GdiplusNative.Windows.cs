@@ -390,9 +390,6 @@ namespace System.Drawing
                 GdipIsVisibleRectI_ptr = LoadFunction<GdipIsVisibleRectI_delegate>("GdipIsVisibleRectI");
                 GdipSaveGraphics_ptr = LoadFunction<GdipSaveGraphics_delegate>("GdipSaveGraphics");
                 GdipRestoreGraphics_ptr = LoadFunction<GdipRestoreGraphics_delegate>("GdipRestoreGraphics");
-                GdipBeginContainer_ptr = LoadFunction<GdipBeginContainer_delegate>("GdipBeginContainer");
-                GdipBeginContainer2_ptr = LoadFunction<GdipBeginContainer2_delegate>("GdipBeginContainer2");
-                GdipBeginContainerI_ptr = LoadFunction<GdipBeginContainerI_delegate>("GdipBeginContainerI");
                 GdipEndContainer_ptr = LoadFunction<GdipEndContainer_delegate>("GdipEndContainer");
                 GdipGetMetafileHeaderFromWmf_ptr = LoadFunction<GdipGetMetafileHeaderFromWmf_delegate>("GdipGetMetafileHeaderFromWmf");
                 GdipGetMetafileHeaderFromEmf_ptr = LoadFunction<GdipGetMetafileHeaderFromEmf_delegate>("GdipGetMetafileHeaderFromEmf");
@@ -1919,22 +1916,6 @@ namespace System.Drawing
             private delegate int GdipRestoreGraphics_delegate(HandleRef graphics, int state);
             private static FunctionWrapper<GdipRestoreGraphics_delegate> GdipRestoreGraphics_ptr;
             internal static int GdipRestoreGraphics(HandleRef graphics, int state) => GdipRestoreGraphics_ptr.Delegate(graphics, state);
-
-            private delegate int GdipBeginContainer_delegate(HandleRef graphics, ref GPRECTF dstRect, ref GPRECTF srcRect, int unit, out int state);
-            private static FunctionWrapper<GdipBeginContainer_delegate> GdipBeginContainer_ptr;
-            internal static int GdipBeginContainer(HandleRef graphics, ref GPRECTF dstRect, ref GPRECTF srcRect, int unit, out int state) => GdipBeginContainer_ptr.Delegate(graphics, ref dstRect, ref srcRect, unit, out state);
-
-            private delegate int GdipBeginContainer2_delegate(HandleRef graphics, out int state);
-            private static FunctionWrapper<GdipBeginContainer2_delegate> GdipBeginContainer2_ptr;
-            internal static int GdipBeginContainer2(HandleRef graphics, out int state) => GdipBeginContainer2_ptr.Delegate(graphics, out state);
-
-            private delegate int GdipBeginContainerI_delegate(HandleRef graphics, ref GPRECT dstRect, ref GPRECT srcRect, int unit, out int state);
-            private static FunctionWrapper<GdipBeginContainerI_delegate> GdipBeginContainerI_ptr;
-            internal static int GdipBeginContainerI(HandleRef graphics, ref GPRECT dstRect, ref GPRECT srcRect, int unit, out int state) => GdipBeginContainerI_ptr.Delegate(graphics, ref dstRect, ref srcRect, unit, out state);
-
-            private delegate int GdipEndContainer_delegate(HandleRef graphics, int state);
-            private static FunctionWrapper<GdipEndContainer_delegate> GdipEndContainer_ptr;
-            internal static int GdipEndContainer(HandleRef graphics, int state) => GdipEndContainer_ptr.Delegate(graphics, state);
 
             private delegate int GdipGetMetafileHeaderFromWmf_delegate(HandleRef hMetafile, WmfPlaceableFileHeader wmfplaceable, [In] [Out] MetafileHeaderWmf metafileHeaderWmf);
             private static FunctionWrapper<GdipGetMetafileHeaderFromWmf_delegate> GdipGetMetafileHeaderFromWmf_ptr;

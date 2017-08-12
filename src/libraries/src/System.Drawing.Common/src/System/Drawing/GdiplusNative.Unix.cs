@@ -201,7 +201,6 @@ namespace System.Drawing
                 GdipSetClipRegion_ptr = LoadFunction<GdipSetClipRegion_delegate>("GdipSetClipRegion");
                 GdipSetClipGraphics_ptr = LoadFunction<GdipSetClipGraphics_delegate>("GdipSetClipGraphics");
                 GdipResetClip_ptr = LoadFunction<GdipResetClip_delegate>("GdipResetClip");
-                GdipEndContainer_ptr = LoadFunction<GdipEndContainer_delegate>("GdipEndContainer");
                 GdipGetClip_ptr = LoadFunction<GdipGetClip_delegate>("GdipGetClip");
                 GdipFillClosedCurve_ptr = LoadFunction<GdipFillClosedCurve_delegate>("GdipFillClosedCurve");
                 GdipFillClosedCurveI_ptr = LoadFunction<GdipFillClosedCurveI_delegate>("GdipFillClosedCurveI");
@@ -300,9 +299,6 @@ namespace System.Drawing
                 GdipDrawImageI_ptr = LoadFunction<GdipDrawImageI_delegate>("GdipDrawImageI");
                 GdipGetImageGraphicsContext_ptr = LoadFunction<GdipGetImageGraphicsContext_delegate>("GdipGetImageGraphicsContext");
                 GdipDrawImage_ptr = LoadFunction<GdipDrawImage_delegate>("GdipDrawImage");
-                GdipBeginContainer_ptr = LoadFunction<GdipBeginContainer_delegate>("GdipBeginContainer");
-                GdipBeginContainerI_ptr = LoadFunction<GdipBeginContainerI_delegate>("GdipBeginContainerI");
-                GdipBeginContainer2_ptr = LoadFunction<GdipBeginContainer2_delegate>("GdipBeginContainer2");
                 GdipDrawImagePoints_ptr = LoadFunction<GdipDrawImagePoints_delegate>("GdipDrawImagePoints");
                 GdipDrawImagePointsI_ptr = LoadFunction<GdipDrawImagePointsI_delegate>("GdipDrawImagePointsI");
                 GdipDrawImageRectRectI_ptr = LoadFunction<GdipDrawImageRectRectI_delegate>("GdipDrawImageRectRectI");
@@ -1124,10 +1120,6 @@ namespace System.Drawing
             private static FunctionWrapper<GdipResetClip_delegate> GdipResetClip_ptr;
             internal static Status GdipResetClip(IntPtr graphics) => GdipResetClip_ptr.Delegate(graphics);
 
-            private delegate Status GdipEndContainer_delegate(IntPtr graphics, uint state);
-            private static FunctionWrapper<GdipEndContainer_delegate> GdipEndContainer_ptr;
-            internal static Status GdipEndContainer(IntPtr graphics, uint state) => GdipEndContainer_ptr.Delegate(graphics, state);
-
             private delegate Status GdipGetClip_delegate(IntPtr graphics, IntPtr region);
             private static FunctionWrapper<GdipGetClip_delegate> GdipGetClip_ptr;
             internal static Status GdipGetClip(IntPtr graphics, IntPtr region) => GdipGetClip_ptr.Delegate(graphics, region);
@@ -1520,18 +1512,6 @@ namespace System.Drawing
             private delegate Status GdipDrawImage_delegate(IntPtr graphics, IntPtr image, float x, float y);
             private static FunctionWrapper<GdipDrawImage_delegate> GdipDrawImage_ptr;
             internal static Status GdipDrawImage(IntPtr graphics, IntPtr image, float x, float y) => GdipDrawImage_ptr.Delegate(graphics, image, x, y);
-
-            private delegate Status GdipBeginContainer_delegate(IntPtr graphics, ref RectangleF dstrect, ref RectangleF srcrect, GraphicsUnit unit, out uint state);
-            private static FunctionWrapper<GdipBeginContainer_delegate> GdipBeginContainer_ptr;
-            internal static Status GdipBeginContainer(IntPtr graphics, ref RectangleF dstrect, ref RectangleF srcrect, GraphicsUnit unit, out uint state) => GdipBeginContainer_ptr.Delegate(graphics, ref dstrect, ref srcrect, unit, out state);
-
-            private delegate Status GdipBeginContainerI_delegate(IntPtr graphics, ref Rectangle dstrect, ref Rectangle srcrect, GraphicsUnit unit, out uint state);
-            private static FunctionWrapper<GdipBeginContainerI_delegate> GdipBeginContainerI_ptr;
-            internal static Status GdipBeginContainerI(IntPtr graphics, ref Rectangle dstrect, ref Rectangle srcrect, GraphicsUnit unit, out uint state) => GdipBeginContainerI_ptr.Delegate(graphics, ref dstrect, ref srcrect, unit, out state);
-
-            private delegate Status GdipBeginContainer2_delegate(IntPtr graphics, out uint state);
-            private static FunctionWrapper<GdipBeginContainer2_delegate> GdipBeginContainer2_ptr;
-            internal static Status GdipBeginContainer2(IntPtr graphics, out uint state) => GdipBeginContainer2_ptr.Delegate(graphics, out state);
 
             private delegate Status GdipDrawImagePoints_delegate(IntPtr graphics, IntPtr image, PointF[] destPoints, int count);
             private static FunctionWrapper<GdipDrawImagePoints_delegate> GdipDrawImagePoints_ptr;
