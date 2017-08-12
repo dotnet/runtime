@@ -62,7 +62,7 @@ namespace System.Net.Http
                 Uri location = response.Headers.Location;
                 if (location == null)
                 {
-                    throw new HttpRequestException("no Location header for redirect");
+                    throw new HttpRequestException(SR.net_http_headers_missing_location);
                 }
 
                 if (!location.IsAbsoluteUri)
@@ -82,7 +82,7 @@ namespace System.Net.Http
                 redirectCount++;
                 if (redirectCount > _maxAutomaticRedirections)
                 {
-                    throw new HttpRequestException("max redirects exceeded");
+                    throw new HttpRequestException(SR.net_http_max_redirects);
                 }
 
                 // Set up for the automatic redirect
