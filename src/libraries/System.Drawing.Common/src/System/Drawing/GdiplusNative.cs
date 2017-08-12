@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
+using System.Drawing.Internal;
 using System.Runtime.InteropServices;
 
 namespace System.Drawing
@@ -59,6 +60,10 @@ namespace System.Drawing
 
             private static void LoadSharedFunctionPointers()
             {
+                GdipBeginContainer_ptr = LoadFunction<GdipBeginContainer_delegate>("GdipBeginContainer");
+                GdipBeginContainer2_ptr = LoadFunction<GdipBeginContainer2_delegate>("GdipBeginContainer2");
+                GdipBeginContainerI_ptr = LoadFunction<GdipBeginContainerI_delegate>("GdipBeginContainerI");
+                GdipEndContainer_ptr = LoadFunction<GdipEndContainer_delegate>("GdipEndContainer");
                 GdipCreateAdjustableArrowCap_ptr = LoadFunction<GdipCreateAdjustableArrowCap_delegate>("GdipCreateAdjustableArrowCap");
                 GdipGetAdjustableArrowCapHeight_ptr = LoadFunction<GdipGetAdjustableArrowCapHeight_delegate>("GdipGetAdjustableArrowCapHeight");
                 GdipSetAdjustableArrowCapHeight_ptr = LoadFunction<GdipSetAdjustableArrowCapHeight_delegate>("GdipSetAdjustableArrowCapHeight");
@@ -187,6 +192,21 @@ namespace System.Drawing
             }
 
             // Shared function imports (all platforms)
+            private delegate int GdipBeginContainer_delegate(HandleRef graphics, ref GPRECTF dstRect, ref GPRECTF srcRect, int unit, out int state);
+            private static FunctionWrapper<GdipBeginContainer_delegate> GdipBeginContainer_ptr;
+            internal static int GdipBeginContainer(HandleRef graphics, ref GPRECTF dstRect, ref GPRECTF srcRect, int unit, out int state) => GdipBeginContainer_ptr.Delegate(graphics, ref dstRect, ref srcRect, unit, out state);
+
+            private delegate int GdipBeginContainer2_delegate(HandleRef graphics, out int state);
+            private static FunctionWrapper<GdipBeginContainer2_delegate> GdipBeginContainer2_ptr;
+            internal static int GdipBeginContainer2(HandleRef graphics, out int state) => GdipBeginContainer2_ptr.Delegate(graphics, out state);
+
+            private delegate int GdipBeginContainerI_delegate(HandleRef graphics, ref GPRECT dstRect, ref GPRECT srcRect, int unit, out int state);
+            private static FunctionWrapper<GdipBeginContainerI_delegate> GdipBeginContainerI_ptr;
+            internal static int GdipBeginContainerI(HandleRef graphics, ref GPRECT dstRect, ref GPRECT srcRect, int unit, out int state) => GdipBeginContainerI_ptr.Delegate(graphics, ref dstRect, ref srcRect, unit, out state);
+
+            private delegate int GdipEndContainer_delegate(HandleRef graphics, int state);
+            private static FunctionWrapper<GdipEndContainer_delegate> GdipEndContainer_ptr;
+            internal static int GdipEndContainer(HandleRef graphics, int state) => GdipEndContainer_ptr.Delegate(graphics, state);
 
             private delegate int GdipCreateAdjustableArrowCap_delegate(float height, float width, bool isFilled, out IntPtr adjustableArrowCap);
             private static FunctionWrapper<GdipCreateAdjustableArrowCap_delegate> GdipCreateAdjustableArrowCap_ptr;

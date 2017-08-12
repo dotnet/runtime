@@ -34,6 +34,7 @@
 
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
+using System.Drawing.Internal;
 using System.Drawing.Text;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
@@ -123,9 +124,8 @@ namespace System.Drawing
 
         public GraphicsContainer BeginContainer()
         {
-            uint state;
-            Status status;
-            status = SafeNativeMethods.Gdip.GdipBeginContainer2(nativeObject, out state);
+            int state;
+            int status = SafeNativeMethods.Gdip.GdipBeginContainer2(new HandleRef(this, nativeObject), out state);
             SafeNativeMethods.Gdip.CheckStatus(status);
 
             return new GraphicsContainer(state);
@@ -134,9 +134,12 @@ namespace System.Drawing
         [MonoTODO("The rectangles and unit parameters aren't supported in libgdiplus")]
         public GraphicsContainer BeginContainer(Rectangle dstrect, Rectangle srcrect, GraphicsUnit unit)
         {
-            uint state;
-            Status status;
-            status = SafeNativeMethods.Gdip.GdipBeginContainerI(nativeObject, ref dstrect, ref srcrect, unit, out state);
+            int state;
+
+            var dstf = new GPRECT(dstrect);
+            var srcf = new GPRECT(srcrect);
+
+            int status = SafeNativeMethods.Gdip.GdipBeginContainerI(new HandleRef(this, nativeObject), ref dstf, ref srcf, unchecked((int)unit), out state);
             SafeNativeMethods.Gdip.CheckStatus(status);
 
             return new GraphicsContainer(state);
@@ -145,9 +148,12 @@ namespace System.Drawing
         [MonoTODO("The rectangles and unit parameters aren't supported in libgdiplus")]
         public GraphicsContainer BeginContainer(RectangleF dstrect, RectangleF srcrect, GraphicsUnit unit)
         {
-            uint state;
-            Status status;
-            status = SafeNativeMethods.Gdip.GdipBeginContainer(nativeObject, ref dstrect, ref srcrect, unit, out state);
+            int state;
+
+            var dstf = new GPRECTF(dstrect);
+            var srcf = new GPRECTF(srcrect);
+
+            int status = SafeNativeMethods.Gdip.GdipBeginContainer(new HandleRef(this, nativeObject), ref dstf, ref srcf, unchecked((int)unit), out state);
             SafeNativeMethods.Gdip.CheckStatus(status);
 
             return new GraphicsContainer(state);
@@ -1221,7 +1227,7 @@ namespace System.Drawing
         {
             if (container == null)
                 throw new ArgumentNullException("container");
-            Status status = SafeNativeMethods.Gdip.GdipEndContainer(nativeObject, container.NativeObject);
+            int status = SafeNativeMethods.Gdip.GdipEndContainer(new HandleRef(this, nativeObject), container.nativeGraphicsContainer);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
