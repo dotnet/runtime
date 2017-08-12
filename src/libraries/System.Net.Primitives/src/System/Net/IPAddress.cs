@@ -121,13 +121,13 @@ namespace System.Net
         ///     Constructor for an IPv6 Address with a specified Scope.
         ///   </para>
         /// </devdoc>
-        public IPAddress(byte[] address, long scopeid)
+        public IPAddress(byte[] address, long scopeid) :
+            this(new ReadOnlySpan<byte>(address ?? throw new ArgumentNullException(nameof(address))), scopeid)
         {
-            if (address == null)
-            {
-                throw new ArgumentNullException(nameof(address));
-            }
+        }
 
+        public IPAddress(ReadOnlySpan<byte> address, long scopeid)
+        {
             if (address.Length != IPAddressParserStatics.IPv6AddressBytes)
             {
                 throw new ArgumentException(SR.dns_bad_ip_address, nameof(address));
@@ -200,12 +200,13 @@ namespace System.Net
         ///     Constructor for IPv4 and IPv6 Address.
         ///   </para>
         /// </devdoc>
-        public IPAddress(byte[] address)
+        public IPAddress(byte[] address) :
+            this(new ReadOnlySpan<byte>(address ?? throw new ArgumentNullException(nameof(address))))
         {
-            if (address == null)
-            {
-                throw new ArgumentNullException(nameof(address));
-            }
+        }
+
+        public IPAddress(ReadOnlySpan<byte> address)
+        {
             if (address.Length != IPAddressParserStatics.IPv4AddressBytes && address.Length != IPAddressParserStatics.IPv6AddressBytes)
             {
                 throw new ArgumentException(SR.dns_bad_ip_address, nameof(address));
@@ -262,15 +263,80 @@ namespace System.Net
         /// </devdoc>
         public static bool TryParse(string ipString, out IPAddress address)
         {
-            address = IPAddressParser.Parse(ipString, true);
+            if (ipString == null)
+            {
+                address = null;
+                return false;
+            }
+
+            address = IPAddressParser.Parse(ipString, tryParse: true);
+            return (address != null);
+        }
+
+        public static bool TryParse(ReadOnlySpan<char> ipSpan, out IPAddress address)
+        {
+            address = IPAddressParser.Parse(ipSpan, tryParse: true);
             return (address != null);
         }
 
         public static IPAddress Parse(string ipString)
         {
-            return IPAddressParser.Parse(ipString, false);
+            if (ipString == null)
+            {
+                throw new ArgumentNullException(nameof(ipString));
+            }
+
+            return IPAddressParser.Parse(ipString, tryParse: false);
         }
 
+        public static IPAddress Parse(ReadOnlySpan<char> ipSpan)
+        {
+            return IPAddressParser.Parse(ipSpan, tryParse: false);
+        }
+
+        public bool TryWriteBytes(Span<byte> destination, out int bytesWritten)
+        {
+            if (IsIPv6)
+            {
+                Debug.Assert(_numbers != null && _numbers.Length == NumberOfLabels);
+
+                if (destination.Length < IPAddressParserStatics.IPv6AddressBytes)
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+
+                int j = 0;
+                for (int i = 0; i < NumberOfLabels; i++)
+                {
+                    destination[j++] = (byte)((_numbers[i] >> 8) & 0xFF);
+                    destination[j++] = (byte)((_numbers[i]) & 0xFF);
+                }
+
+                bytesWritten = IPAddressParserStatics.IPv6AddressBytes;
+            }
+            else
+            {
+                if (destination.Length < IPAddressParserStatics.IPv4AddressBytes)
+                {
+                    bytesWritten = 0;
+                    return false;
+                }
+
+                uint address = PrivateAddress;
+                unchecked
+                {
+                    destination[0] = (byte)(address);
+                    destination[1] = (byte)(address >> 8);
+                    destination[2] = (byte)(address >> 16);
+                    destination[3] = (byte)(address >> 24);
+                }
+
+                bytesWritten = IPAddressParserStatics.IPv4AddressBytes;
+            }
+
+            return true;
+        }
         /// <devdoc>
         ///   <para>
         ///     Provides a copy of the IPAddress internals as an array of bytes.
@@ -278,32 +344,18 @@ namespace System.Net
         /// </devdoc>
         public byte[] GetAddressBytes()
         {
-            byte[] bytes;
             if (IsIPv6)
             {
                 Debug.Assert(_numbers != null && _numbers.Length == NumberOfLabels);
-
-                bytes = new byte[IPAddressParserStatics.IPv6AddressBytes];
-                int j = 0;
-                for (int i = 0; i < NumberOfLabels; i++)
-                {
-                    bytes[j++] = (byte)((_numbers[i] >> 8) & 0xFF);
-                    bytes[j++] = (byte)((_numbers[i]) & 0xFF);
-                }
             }
-            else
-            {
-                uint address = PrivateAddress;
-                bytes = new byte[IPAddressParserStatics.IPv4AddressBytes];
 
-                unchecked
-                {
-                    bytes[0] = (byte)(address);
-                    bytes[1] = (byte)(address >> 8);
-                    bytes[2] = (byte)(address >> 16);
-                    bytes[3] = (byte)(address >> 24);
-                }
-            }
+            int length = IsIPv6 ? IPAddressParserStatics.IPv6AddressBytes : IPAddressParserStatics.IPv4AddressBytes;
+            var bytes = new byte[length];
+
+            bool result = TryWriteBytes(new Span<byte>(bytes), out int bytesWritten);
+
+            Debug.Assert(result);
+
             return bytes;
         }
 
@@ -367,6 +419,13 @@ namespace System.Net
             }
 
             return _toString;
+        }
+
+        public bool TryFormat(Span<char> destination, out int charsWritten)
+        {
+            return IsIPv4 ?
+                IPAddressParser.IPv4AddressToString(PrivateAddress, destination, out charsWritten) :
+                IPAddressParser.IPv6AddressToString(_numbers, PrivateScopeId, destination, out charsWritten);
         }
 
         public static long HostToNetworkOrder(long host)
