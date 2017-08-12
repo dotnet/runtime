@@ -33,7 +33,7 @@ namespace System.Net.Http
             {
                 if (_stream == null)
                 {
-                    throw new InvalidOperationException("content already consumed");
+                    throw new InvalidOperationException(SR.net_http_content_stream_already_read);
                 }
 
                 HttpContentReadStream stream = _stream;
