@@ -576,7 +576,7 @@ namespace System.Net.Http
                 {
                     if ((c & 0xFF80) != 0)
                     {
-                        throw new HttpRequestException("Non-ASCII characters found");
+                        throw new HttpRequestException(SR.net_http_request_invalid_char_encoding);
                     }
                     writeBuffer[offset++] = (byte)c;
                 }
@@ -616,7 +616,7 @@ namespace System.Net.Http
                 char c = s[i];
                 if ((c & 0xFF80) != 0)
                 {
-                    throw new HttpRequestException("Non-ASCII characters found");
+                    throw new HttpRequestException(SR.net_http_request_invalid_char_encoding);
                 }
                 await WriteByteAsync((byte)c, cancellationToken).ConfigureAwait(false);
             }

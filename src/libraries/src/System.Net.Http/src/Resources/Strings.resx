@@ -366,4 +366,19 @@
   <data name="net_http_feature_UWPClientCertSupportRequiresCertInPersonalCertificateStore" xml:space="preserve">
     <value>Client certificate was not found in the personal (\"MY\") certificate store. In UWP, client certificates are only supported if they have been added to that certificate store.</value>
   </data>
+  <data name="net_http_headers_missing_location" xml:space="preserve">
+    <value>The response code indicates a redirect, but the 'Location' header is missing.</value>
+  </data>
+  <data name="net_http_max_redirects" xml:space="preserve">
+    <value>The maximum number of redirects was exceeded.</value>
+  </data>
+  <data name="net_http_invalid_proxy_scheme" xml:space="preserve">
+    <value>Only the 'http' scheme is allowed for proxies.</value>
+  </data>
+  <data name="net_http_request_invalid_char_encoding" xml:space="preserve">
+    <value>Request headers must contain only ASCII characters.</value>
+  </data>
+  <data name="net_http_ssl_connection_failed" xml:space="preserve">
+    <value>The SSL connection could not be established, see inner exception.</value>
+  </data>
 </root>

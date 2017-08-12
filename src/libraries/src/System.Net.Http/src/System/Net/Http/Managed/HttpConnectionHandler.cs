@@ -66,7 +66,7 @@ namespace System.Net.Http
                 sslStream.Dispose();
                 if (e is AuthenticationException || e is IOException)
                 {
-                    throw new HttpRequestException("could not establish SSL connection", e);
+                    throw new HttpRequestException(SR.net_http_ssl_connection_failed, e);
                 }
                 throw;
             }
