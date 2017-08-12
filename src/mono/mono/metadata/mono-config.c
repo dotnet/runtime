@@ -686,7 +686,7 @@ mono_set_config_dir (const char *dir)
 	/* If this environment variable is set, overrides the directory computed */
 	char *env_mono_cfg_dir = g_getenv ("MONO_CFG_DIR");
 	if (env_mono_cfg_dir == NULL && dir != NULL)
-		env_mono_cfg_dir = strdup (dir);
+		env_mono_cfg_dir = g_strdup (dir);
 
 	mono_cfg_dir = env_mono_cfg_dir;
 }
