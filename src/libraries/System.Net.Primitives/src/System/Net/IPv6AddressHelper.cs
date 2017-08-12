@@ -282,7 +282,7 @@ namespace System
         //  Nothing
         //
 
-        internal static unsafe void Parse(string address, ushort* numbers, int start, ref string scopeId)
+        internal static unsafe void Parse(ReadOnlySpan<char> address, ushort* numbers, int start, ref string scopeId)
         {
             int number = 0;
             int index = 0;
@@ -311,7 +311,7 @@ namespace System
                         for (++i; i < address.Length && address[i] != ']' && address[i] != '/'; ++i)
                         {
                         }
-                        scopeId = address.Substring(start, i - start);
+                        scopeId = new string(address.Slice(start, i - start));
                         // ignore prefix if any
                         for (; i < address.Length && address[i] != ']'; ++i)
                         {

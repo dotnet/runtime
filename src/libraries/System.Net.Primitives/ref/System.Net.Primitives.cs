@@ -191,7 +191,9 @@ namespace System.Net
         public static readonly System.Net.IPAddress Loopback;
         public static readonly System.Net.IPAddress None;
         public IPAddress(byte[] address) { }
+        public IPAddress(ReadOnlySpan<byte> address) { }
         public IPAddress(byte[] address, long scopeid) { }
+        public IPAddress(ReadOnlySpan<byte> address, long scopeid) { }
         public IPAddress(long newAddress) { }
         public System.Net.Sockets.AddressFamily AddressFamily { get { throw null; } }
         public bool IsIPv4MappedToIPv6 { get { throw null; } }
@@ -202,6 +204,7 @@ namespace System.Net
         public long ScopeId { get { throw null; } set { } }
         public override bool Equals(object comparand) { throw null; }
         public byte[] GetAddressBytes() { throw null; }
+        public bool TryWriteBytes(Span<byte> destination, out int bytesWritten) { throw null; }
         public override int GetHashCode() { throw null; }
         public static short HostToNetworkOrder(short host) { throw null; }
         public static int HostToNetworkOrder(int host) { throw null; }
@@ -213,8 +216,11 @@ namespace System.Net
         public static int NetworkToHostOrder(int network) { throw null; }
         public static long NetworkToHostOrder(long network) { throw null; }
         public static System.Net.IPAddress Parse(string ipString) { throw null; }
+        public static System.Net.IPAddress Parse(ReadOnlySpan<char> ipString) { throw null; }
         public override string ToString() { throw null; }
+        public bool TryFormat(Span<char> destination, out int charsWritten) { throw null; }
         public static bool TryParse(string ipString, out System.Net.IPAddress address) { throw null; }
+        public static bool TryParse(ReadOnlySpan<char> ipString, out System.Net.IPAddress address) { throw null; }
         [Obsolete("This property has been deprecated. It is address family dependent. Please use IPAddress.Equals method to perform comparisons. http://go.microsoft.com/fwlink/?linkid=14202")]
         public long Address { get { throw null; } set { } }
     }
