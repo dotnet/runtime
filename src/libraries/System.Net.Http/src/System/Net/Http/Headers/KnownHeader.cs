@@ -8,9 +8,9 @@ namespace System.Net.Http.Headers
 {
     internal sealed class KnownHeader
     {
-        private string _name;
-        private HttpHeaderType _headerType;
-        private HttpHeaderParser _parser;
+        private readonly string _name;
+        private readonly HttpHeaderType _headerType;
+        private readonly HttpHeaderParser _parser;
 
         public KnownHeader(string name, HttpHeaderType headerType, HttpHeaderParser parser)
         {
