@@ -4256,12 +4256,12 @@ proflog_icall_SetMonitorEvents (MonoBoolean value)
 	mono_coop_mutex_lock (&log_profiler.api_mutex);
 
 	if (value) {
-		ENABLE (PROFLOG_EXCEPTION_EVENTS);
+		ENABLE (PROFLOG_MONITOR_EVENTS);
 		mono_profiler_set_monitor_contention_callback (log_profiler.handle, monitor_contention);
 		mono_profiler_set_monitor_acquired_callback (log_profiler.handle, monitor_acquired);
 		mono_profiler_set_monitor_failed_callback (log_profiler.handle, monitor_failed);
 	} else {
-		DISABLE (PROFLOG_EXCEPTION_EVENTS);
+		DISABLE (PROFLOG_MONITOR_EVENTS);
 		mono_profiler_set_monitor_contention_callback (log_profiler.handle, NULL);
 		mono_profiler_set_monitor_acquired_callback (log_profiler.handle, NULL);
 		mono_profiler_set_monitor_failed_callback (log_profiler.handle, NULL);
