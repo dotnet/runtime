@@ -237,7 +237,8 @@ namespace System.Drawing.Drawing2D
         public Blend Blend
         {
             get
-            {    // Figure out the size of blend factor array
+            {
+                // Figure out the size of blend factor array
                 int status = SafeNativeMethods.Gdip.GdipGetPathGradientBlendCount(new HandleRef(this, NativeBrush), out int retval);
 
                 if (status != SafeNativeMethods.Gdip.Ok)
@@ -290,6 +291,17 @@ namespace System.Drawing.Drawing2D
             }
             set
             {
+                if (value == null || value.Factors == null)
+                {
+                    // This is the behavior on Desktop
+                    throw new NullReferenceException();
+                }
+
+                if (value.Positions == null)
+                {
+                    throw new ArgumentNullException("source");
+                }
+
                 int count = value.Factors.Length;
 
                 // Explicit argument validation, because libgdiplus does not correctly validate all parameters.
@@ -298,17 +310,17 @@ namespace System.Drawing.Drawing2D
                     throw new ArgumentException("Invalid Blend object. It should have at least 2 elements in each of the factors and positions arrays.");
                 }
 
-                if (count != value.Positions.Length)
+                if (count >= 2 && count != value.Positions.Length)
                 {
-                    throw new ArgumentException("Invalid Blend object. It should contain the same number of factors and positions values.");
+                    throw new ArgumentOutOfRangeException();
                 }
 
-                if (value.Positions[0] != 0.0F)
+                if (count >= 2 && value.Positions[0] != 0.0F)
                 {
                     throw new ArgumentException("Invalid Blend object. The positions array must have 0.0 as its first element.");
                 }
 
-                if (value.Positions[count - 1] != 1.0F)
+                if (count >= 2 && value.Positions[count - 1] != 1.0F)
                 {
                     throw new ArgumentException("Invalid Blend object. The positions array must have 1.0 as its last element.");
                 }
