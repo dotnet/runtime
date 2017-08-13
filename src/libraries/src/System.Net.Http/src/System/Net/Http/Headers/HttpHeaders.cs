@@ -35,8 +35,8 @@ namespace System.Net.Http.Headers
     public abstract class HttpHeaders : IEnumerable<KeyValuePair<string, IEnumerable<string>>>
     {
         private Dictionary<HeaderDescriptor, HeaderStoreItemInfo> _headerStore;
-        private HttpHeaderType _allowedHeaderTypes;
-        private HttpHeaderType _treatAsCustomHeaderTypes;
+        private readonly HttpHeaderType _allowedHeaderTypes;
+        private readonly HttpHeaderType _treatAsCustomHeaderTypes;
 
         private enum StoreLocation
         {

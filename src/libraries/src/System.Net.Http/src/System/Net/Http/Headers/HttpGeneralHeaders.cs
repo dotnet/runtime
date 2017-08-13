@@ -130,7 +130,7 @@ namespace System.Net.Http.Headers
                     return true;
                 }
             }
-                else if (parent.ContainsParsedValue(KnownHeaders.TransferEncoding.Descriptor, HeaderUtilities.TransferEncodingChunked))
+            else if (parent.ContainsParsedValue(KnownHeaders.TransferEncoding.Descriptor, HeaderUtilities.TransferEncodingChunked))
             {
                 return true;
             }
