@@ -15,12 +15,12 @@ namespace System.Net.Http
                 throw new ArgumentNullException(nameof(buffer));
             }
 
-            if (offset < 0 || offset > buffer.Length)
+            if ((uint)offset > buffer.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset));
             }
 
-            if (count < 0 || count > buffer.Length - offset)
+            if ((uint)count > buffer.Length - offset)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
             }
