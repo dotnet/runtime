@@ -9,25 +9,36 @@ namespace System.Net.Http
 {
     internal sealed partial class HttpConnection : IDisposable
     {
-        public sealed class ContentLengthWriteStream : HttpContentWriteStream
+        private sealed class ContentLengthWriteStream : HttpContentWriteStream
         {
-            public ContentLengthWriteStream(HttpConnection connection)
-                : base(connection)
+            public ContentLengthWriteStream(HttpConnection connection, CancellationToken cancellationToken) :
+                base(connection, cancellationToken)
             {
             }
 
-            public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken ignored)
             {
                 ValidateBufferArgs(buffer, offset, count);
-                return _connection.WriteAsync(buffer, offset, count, cancellationToken);
+
+                if (_connection._currentRequest == null)
+                {
+                    // Avoid sending anything if the response has already completed, in which case there's no point
+                    // sending further data (this might happen, for example, on a redirect.)
+                    return Task.CompletedTask;
+                }
+
+                // Have the connection write the data, skipping the buffer. Importantly, this will
+                // force a flush of anything already in the buffer, i.e. any remaining request headers
+                // that are still buffered.
+                return _connection.WriteWithoutBufferingAsync(buffer, offset, count, _cancellationToken);
             }
 
-            public override Task FlushAsync(CancellationToken cancellationToken)
+            public override Task FlushAsync(CancellationToken ignored)
             {
-                return _connection.FlushAsync(cancellationToken);
+                return _connection.FlushAsync(_cancellationToken);
             }
 
-            public override Task FinishAsync(CancellationToken cancellationToken)
+            public override Task FinishAsync()
             {
                 _connection = null;
                 return Task.CompletedTask;
