@@ -344,6 +344,13 @@ namespace System.Drawing.Drawing2D
 
             int status = SafeNativeMethods.Gdip.GdipSetLineLinearBlend(new HandleRef(this, NativeBrush), focus, scale);
             SafeNativeMethods.Gdip.CheckStatus(status);
+
+            // Setting a triangular shape overrides the explicitly set interpolation colors. libgdiplus correctly clears
+            // the interpolation colors (https://github.com/mono/libgdiplus/blob/master/src/lineargradientbrush.c#L959) but
+            // returns WrongState instead of ArgumentException (https://github.com/mono/libgdiplus/blob/master/src/lineargradientbrush.c#L814)
+            // when calling GdipGetLinePresetBlend, so it is important we set this to false. This way, we are sure get_InterpolationColors
+            // will return an ArgumentException.
+            _interpolationColorsWasSet = false;
         }
 
         public ColorBlend InterpolationColors
