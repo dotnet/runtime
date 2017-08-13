@@ -42,7 +42,7 @@ using System.Text;
 
 namespace System.Drawing
 {
-    public sealed class Graphics : MarshalByRefObject, IDisposable
+    public sealed partial class Graphics : MarshalByRefObject, IDisposable
     , IDeviceContext
     {
         internal IntPtr nativeObject = IntPtr.Zero;
