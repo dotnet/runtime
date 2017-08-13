@@ -290,11 +290,31 @@ namespace System.Drawing.Drawing2D
             }
             set
             {
-                // Allocate temporary native memory buffer
-                // and copy input blend factors into it.
-
                 int count = value.Factors.Length;
 
+                // Explicit argument validation, because libgdiplus does not correctly validate all parameters.
+                if (count == 0 || value.Positions.Length == 0)
+                {
+                    throw new ArgumentException("Invalid Blend object. It should have at least 2 elements in each of the factors and positions arrays.");
+                }
+
+                if (count != value.Positions.Length)
+                {
+                    throw new ArgumentException("Invalid Blend object. It should contain the same number of factors and positions values.");
+                }
+
+                if (value.Positions[0] != 0.0F)
+                {
+                    throw new ArgumentException("Invalid Blend object. The positions array must have 0.0 as its first element.");
+                }
+
+                if (value.Positions[count - 1] != 1.0F)
+                {
+                    throw new ArgumentException("Invalid Blend object. The positions array must have 1.0 as its last element.");
+                }
+
+                // Allocate temporary native memory buffer
+                // and copy input blend factors into it.
                 IntPtr factors = IntPtr.Zero;
                 IntPtr positions = IntPtr.Zero;
 
