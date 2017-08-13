@@ -38,16 +38,16 @@ namespace System.Net.Http.Tests
 
             // The delegate is invoked to return the length.
             Assert.Equal(15, _headers.ContentLength);
-            Assert.Equal((long)15, _headers.GetParsedValues(HttpKnownHeaderNames.ContentLength));
+            Assert.Equal((long)15, _headers.GetParsedValues(KnownHeaders.ContentLength.Descriptor));
 
             // After getting the calculated content length, set it to null.
             _headers.ContentLength = null;
             Assert.Equal(null, _headers.ContentLength);
-            Assert.False(_headers.Contains(HttpKnownHeaderNames.ContentLength));
+            Assert.False(_headers.Contains(KnownHeaders.ContentLength.Name));
 
             _headers.ContentLength = 27;
             Assert.Equal((long)27, _headers.ContentLength);
-            Assert.Equal((long)27, _headers.GetParsedValues(HttpKnownHeaderNames.ContentLength));
+            Assert.Equal((long)27, _headers.GetParsedValues(KnownHeaders.ContentLength.Descriptor));
         }
 
         [Fact]
@@ -57,12 +57,12 @@ namespace System.Net.Http.Tests
 
             _headers.ContentLength = 27;
             Assert.Equal((long)27, _headers.ContentLength);
-            Assert.Equal((long)27, _headers.GetParsedValues(HttpKnownHeaderNames.ContentLength));
+            Assert.Equal((long)27, _headers.GetParsedValues(KnownHeaders.ContentLength.Descriptor));
 
             // After explicitly setting the content length, set it to null.
             _headers.ContentLength = null;
             Assert.Equal(null, _headers.ContentLength);
-            Assert.False(_headers.Contains(HttpKnownHeaderNames.ContentLength));
+            Assert.False(_headers.Contains(KnownHeaders.ContentLength.Name));
 
             // Make sure the header gets serialized correctly
             _headers.ContentLength = 12345;
@@ -181,13 +181,13 @@ namespace System.Net.Http.Tests
         public void ContentLocation_UseAddMethodWithInvalidValue_InvalidValueRecognized()
         {
             _headers.TryAddWithoutValidation("Content-Location", " http://example.com http://other");
-            Assert.Null(_headers.GetParsedValues("Content-Location"));
+            Assert.Null(_headers.GetParsedValues(KnownHeaders.ContentLocation.Descriptor));
             Assert.Equal(1, _headers.GetValues("Content-Location").Count());
             Assert.Equal(" http://example.com http://other", _headers.GetValues("Content-Location").First());
 
             _headers.Clear();
             _headers.TryAddWithoutValidation("Content-Location", "http://host /other");
-            Assert.Null(_headers.GetParsedValues("Content-Location"));
+            Assert.Null(_headers.GetParsedValues(KnownHeaders.ContentLocation.Descriptor));
             Assert.Equal(1, _headers.GetValues("Content-Location").Count());
             Assert.Equal("http://host /other", _headers.GetValues("Content-Location").First());
         }
@@ -319,13 +319,13 @@ namespace System.Net.Http.Tests
         public void ContentMD5_UseAddMethodWithInvalidValue_InvalidValueRecognized()
         {
             _headers.TryAddWithoutValidation("Content-MD5", "AQ--");
-            Assert.Null(_headers.GetParsedValues("Content-MD5"));
+            Assert.Null(_headers.GetParsedValues(KnownHeaders.ContentMD5.Descriptor));
             Assert.Equal(1, _headers.GetValues("Content-MD5").Count());
             Assert.Equal("AQ--", _headers.GetValues("Content-MD5").First());
 
             _headers.Clear();
             _headers.TryAddWithoutValidation("Content-MD5", "AQ==, CD");
-            Assert.Null(_headers.GetParsedValues("Content-MD5"));
+            Assert.Null(_headers.GetParsedValues(KnownHeaders.ContentMD5.Descriptor));
             Assert.Equal(1, _headers.GetValues("Content-MD5").Count());
             Assert.Equal("AQ==, CD", _headers.GetValues("Content-MD5").First());
         }
@@ -405,13 +405,13 @@ namespace System.Net.Http.Tests
         public void Expires_UseAddMethodWithInvalidValue_InvalidValueRecognized()
         {
             _headers.TryAddWithoutValidation("Expires", " Sun, 06 Nov 1994 08:49:37 GMT ,");
-            Assert.Null(_headers.GetParsedValues("Expires"));
+            Assert.Null(_headers.GetParsedValues(KnownHeaders.Expires.Descriptor));
             Assert.Equal(1, _headers.GetValues("Expires").Count());
             Assert.Equal(" Sun, 06 Nov 1994 08:49:37 GMT ,", _headers.GetValues("Expires").First());
 
             _headers.Clear();
             _headers.TryAddWithoutValidation("Expires", " Sun, 06 Nov ");
-            Assert.Null(_headers.GetParsedValues("Expires"));
+            Assert.Null(_headers.GetParsedValues(KnownHeaders.Expires.Descriptor));
             Assert.Equal(1, _headers.GetValues("Expires").Count());
             Assert.Equal(" Sun, 06 Nov ", _headers.GetValues("Expires").First());
         }
@@ -445,13 +445,13 @@ namespace System.Net.Http.Tests
         public void LastModified_UseAddMethodWithInvalidValue_InvalidValueRecognized()
         {
             _headers.TryAddWithoutValidation("Last-Modified", " Sun, 06 Nov 1994 08:49:37 GMT ,");
-            Assert.Null(_headers.GetParsedValues("Last-Modified"));
+            Assert.Null(_headers.GetParsedValues(KnownHeaders.LastModified.Descriptor));
             Assert.Equal(1, _headers.GetValues("Last-Modified").Count());
             Assert.Equal(" Sun, 06 Nov 1994 08:49:37 GMT ,", _headers.GetValues("Last-Modified").First());
 
             _headers.Clear();
             _headers.TryAddWithoutValidation("Last-Modified", " Sun, 06 Nov ");
-            Assert.Null(_headers.GetParsedValues("Last-Modified"));
+            Assert.Null(_headers.GetParsedValues(KnownHeaders.LastModified.Descriptor));
             Assert.Equal(1, _headers.GetValues("Last-Modified").Count());
             Assert.Equal(" Sun, 06 Nov ", _headers.GetValues("Last-Modified").First());
         }

@@ -286,11 +286,11 @@ namespace System.Net.Http.Headers
             return current;
         }
 
-        internal static DateTimeOffset? GetDateTimeOffsetValue(string headerName, HttpHeaders store)
+        internal static DateTimeOffset? GetDateTimeOffsetValue(HeaderDescriptor descriptor, HttpHeaders store)
         {
             Debug.Assert(store != null);
 
-            object storedValue = store.GetParsedValues(headerName);
+            object storedValue = store.GetParsedValues(descriptor);
             if (storedValue != null)
             {
                 return (DateTimeOffset)storedValue;
@@ -298,11 +298,11 @@ namespace System.Net.Http.Headers
             return null;
         }
 
-        internal static TimeSpan? GetTimeSpanValue(string headerName, HttpHeaders store)
+        internal static TimeSpan? GetTimeSpanValue(HeaderDescriptor descriptor, HttpHeaders store)
         {
             Debug.Assert(store != null);
 
-            object storedValue = store.GetParsedValues(headerName);
+            object storedValue = store.GetParsedValues(descriptor);
             if (storedValue != null)
             {
                 return (TimeSpan)storedValue;
