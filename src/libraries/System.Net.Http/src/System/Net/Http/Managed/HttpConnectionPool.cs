@@ -250,8 +250,8 @@ namespace System.Net.Http
                 }
 
                 // Pool the connection by adding it to the list.
-                if (NetEventSource.IsEnabled) connection.Trace("Returning connection to pool.");
                 list.Add(new CachedConnection(connection));
+                if (NetEventSource.IsEnabled) connection.Trace("Stored connection in pool.");
             }
         }
 
