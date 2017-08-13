@@ -24,8 +24,8 @@ namespace System.Net.Http.Headers
 
         public CacheControlHeaderValue CacheControl
         {
-            get { return (CacheControlHeaderValue)_parent.GetParsedValues(HttpKnownHeaderNames.CacheControl); }
-            set { _parent.SetOrRemoveParsedValue(HttpKnownHeaderNames.CacheControl, value); }
+            get { return (CacheControlHeaderValue)_parent.GetParsedValues(KnownHeaders.CacheControl.Descriptor); }
+            set { _parent.SetOrRemoveParsedValue(KnownHeaders.CacheControl.Descriptor, value); }
         }
 
         public HttpHeaderValueCollection<string> Connection
@@ -70,7 +70,7 @@ namespace System.Net.Http.Headers
                     return true;
                 }
             }
-            else if (parent.ContainsParsedValue(HttpKnownHeaderNames.Connection, HeaderUtilities.ConnectionClose))
+                else if (parent.ContainsParsedValue(KnownHeaders.Connection.Descriptor, HeaderUtilities.ConnectionClose))
             {
                 return true;
             }
@@ -83,8 +83,8 @@ namespace System.Net.Http.Headers
 
         public DateTimeOffset? Date
         {
-            get { return HeaderUtilities.GetDateTimeOffsetValue(HttpKnownHeaderNames.Date, _parent); }
-            set { _parent.SetOrRemoveParsedValue(HttpKnownHeaderNames.Date, value); }
+            get { return HeaderUtilities.GetDateTimeOffsetValue(KnownHeaders.Date.Descriptor, _parent); }
+            set { _parent.SetOrRemoveParsedValue(KnownHeaders.Date.Descriptor, value); }
         }
 
         public HttpHeaderValueCollection<NameValueHeaderValue> Pragma
@@ -93,7 +93,7 @@ namespace System.Net.Http.Headers
             {
                 if (_pragma == null)
                 {
-                    _pragma = new HttpHeaderValueCollection<NameValueHeaderValue>(HttpKnownHeaderNames.Pragma, _parent);
+                    _pragma = new HttpHeaderValueCollection<NameValueHeaderValue>(KnownHeaders.Pragma.Descriptor, _parent);
                 }
                 return _pragma;
             }
@@ -105,7 +105,7 @@ namespace System.Net.Http.Headers
             {
                 if (_trailer == null)
                 {
-                    _trailer = new HttpHeaderValueCollection<string>(HttpKnownHeaderNames.Trailer,
+                    _trailer = new HttpHeaderValueCollection<string>(KnownHeaders.Trailer.Descriptor,
                         _parent, HeaderUtilities.TokenValidator);
                 }
                 return _trailer;
@@ -130,7 +130,7 @@ namespace System.Net.Http.Headers
                     return true;
                 }
             }
-            else if (parent.ContainsParsedValue(HttpKnownHeaderNames.TransferEncoding, HeaderUtilities.TransferEncodingChunked))
+            else if (parent.ContainsParsedValue(KnownHeaders.TransferEncoding.Descriptor, HeaderUtilities.TransferEncodingChunked))
             {
                 return true;
             }
@@ -171,7 +171,7 @@ namespace System.Net.Http.Headers
             {
                 if (_upgrade == null)
                 {
-                    _upgrade = new HttpHeaderValueCollection<ProductHeaderValue>(HttpKnownHeaderNames.Upgrade, _parent);
+                    _upgrade = new HttpHeaderValueCollection<ProductHeaderValue>(KnownHeaders.Upgrade.Descriptor, _parent);
                 }
                 return _upgrade;
             }
@@ -183,7 +183,7 @@ namespace System.Net.Http.Headers
             {
                 if (_via == null)
                 {
-                    _via = new HttpHeaderValueCollection<ViaHeaderValue>(HttpKnownHeaderNames.Via, _parent);
+                    _via = new HttpHeaderValueCollection<ViaHeaderValue>(KnownHeaders.Via.Descriptor, _parent);
                 }
                 return _via;
             }
@@ -195,7 +195,7 @@ namespace System.Net.Http.Headers
             {
                 if (_warning == null)
                 {
-                    _warning = new HttpHeaderValueCollection<WarningHeaderValue>(HttpKnownHeaderNames.Warning, _parent);
+                    _warning = new HttpHeaderValueCollection<WarningHeaderValue>(KnownHeaders.Warning.Descriptor, _parent);
                 }
                 return _warning;
             }
@@ -207,7 +207,7 @@ namespace System.Net.Http.Headers
             {
                 if (_connection == null)
                 {
-                    _connection = new HttpHeaderValueCollection<string>(HttpKnownHeaderNames.Connection,
+                    _connection = new HttpHeaderValueCollection<string>(KnownHeaders.Connection.Descriptor,
                         _parent, HeaderUtilities.ConnectionClose, HeaderUtilities.TokenValidator);
                 }
                 return _connection;
@@ -221,7 +221,7 @@ namespace System.Net.Http.Headers
                 if (_transferEncoding == null)
                 {
                     _transferEncoding = new HttpHeaderValueCollection<TransferCodingHeaderValue>(
-                        HttpKnownHeaderNames.TransferEncoding, _parent, HeaderUtilities.TransferEncodingChunked);
+                        KnownHeaders.TransferEncoding.Descriptor, _parent, HeaderUtilities.TransferEncodingChunked);
                 }
                 return _transferEncoding;
             }
@@ -232,36 +232,6 @@ namespace System.Net.Http.Headers
             Debug.Assert(parent != null);
 
             _parent = parent;
-        }
-
-        internal static void AddParsers(Dictionary<string, HttpHeaderParser> parserStore)
-        {
-            Debug.Assert(parserStore != null);
-
-            parserStore.Add(HttpKnownHeaderNames.CacheControl, CacheControlHeaderParser.Parser);
-            parserStore.Add(HttpKnownHeaderNames.Connection, GenericHeaderParser.TokenListParser);
-            parserStore.Add(HttpKnownHeaderNames.Date, DateHeaderParser.Parser);
-            parserStore.Add(HttpKnownHeaderNames.Pragma, GenericHeaderParser.MultipleValueNameValueParser);
-            parserStore.Add(HttpKnownHeaderNames.Trailer, GenericHeaderParser.TokenListParser);
-            parserStore.Add(HttpKnownHeaderNames.TransferEncoding, TransferCodingHeaderParser.MultipleValueParser);
-            parserStore.Add(HttpKnownHeaderNames.Upgrade, GenericHeaderParser.MultipleValueProductParser);
-            parserStore.Add(HttpKnownHeaderNames.Via, GenericHeaderParser.MultipleValueViaParser);
-            parserStore.Add(HttpKnownHeaderNames.Warning, GenericHeaderParser.MultipleValueWarningParser);
-        }
-
-        internal static void AddKnownHeaders(HashSet<string> headerSet)
-        {
-            Debug.Assert(headerSet != null);
-
-            headerSet.Add(HttpKnownHeaderNames.CacheControl);
-            headerSet.Add(HttpKnownHeaderNames.Connection);
-            headerSet.Add(HttpKnownHeaderNames.Date);
-            headerSet.Add(HttpKnownHeaderNames.Pragma);
-            headerSet.Add(HttpKnownHeaderNames.Trailer);
-            headerSet.Add(HttpKnownHeaderNames.TransferEncoding);
-            headerSet.Add(HttpKnownHeaderNames.Upgrade);
-            headerSet.Add(HttpKnownHeaderNames.Via);
-            headerSet.Add(HttpKnownHeaderNames.Warning);
         }
 
         internal void AddSpecialsFrom(HttpGeneralHeaders sourceHeaders)
