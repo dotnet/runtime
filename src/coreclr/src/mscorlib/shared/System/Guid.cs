@@ -160,24 +160,23 @@ namespace System
         // This will store the result of the parsing.  And it will eventually be used to construct a Guid instance.
         private struct GuidResult
         {
-            internal Guid parsedGuid;
-            internal GuidParseThrowStyle throwStyle;
+            internal Guid _parsedGuid;
+            internal GuidParseThrowStyle _throwStyle;
 
-            internal ParseFailureKind m_failure;
-            internal string m_failureMessageID;
-            internal object m_failureMessageFormatArgument;
-            internal string m_failureArgumentName;
-            internal Exception m_innerException;
+            private ParseFailureKind _failure;
+            private string _failureMessageID;
+            private object _failureMessageFormatArgument;
+            private string _failureArgumentName;
+            private Exception _innerException;
 
             internal void Init(GuidParseThrowStyle canThrow)
             {
-                parsedGuid = Guid.Empty;
-                throwStyle = canThrow;
+                _throwStyle = canThrow;
             }
             internal void SetFailure(Exception nativeException)
             {
-                m_failure = ParseFailureKind.NativeException;
-                m_innerException = nativeException;
+                _failure = ParseFailureKind.NativeException;
+                _innerException = nativeException;
             }
             internal void SetFailure(ParseFailureKind failure, string failureMessageID)
             {
@@ -191,12 +190,12 @@ namespace System
                                      string failureArgumentName, Exception innerException)
             {
                 Debug.Assert(failure != ParseFailureKind.NativeException, "ParseFailureKind.NativeException should not be used with this overload");
-                m_failure = failure;
-                m_failureMessageID = failureMessageID;
-                m_failureMessageFormatArgument = failureMessageFormatArgument;
-                m_failureArgumentName = failureArgumentName;
-                m_innerException = innerException;
-                if (throwStyle != GuidParseThrowStyle.None)
+                _failure = failure;
+                _failureMessageID = failureMessageID;
+                _failureMessageFormatArgument = failureMessageFormatArgument;
+                _failureArgumentName = failureArgumentName;
+                _innerException = innerException;
+                if (_throwStyle != GuidParseThrowStyle.None)
                 {
                     throw GetGuidParseException();
                 }
@@ -204,25 +203,25 @@ namespace System
 
             internal Exception GetGuidParseException()
             {
-                switch (m_failure)
+                switch (_failure)
                 {
                     case ParseFailureKind.ArgumentNull:
-                        return new ArgumentNullException(m_failureArgumentName, SR.GetResourceString(m_failureMessageID));
+                        return new ArgumentNullException(_failureArgumentName, SR.GetResourceString(_failureMessageID));
 
                     case ParseFailureKind.FormatWithInnerException:
-                        return new FormatException(SR.GetResourceString(m_failureMessageID), m_innerException);
+                        return new FormatException(SR.GetResourceString(_failureMessageID), _innerException);
 
                     case ParseFailureKind.FormatWithParameter:
-                        return new FormatException(SR.Format(SR.GetResourceString(m_failureMessageID), m_failureMessageFormatArgument));
+                        return new FormatException(SR.Format(SR.GetResourceString(_failureMessageID), _failureMessageFormatArgument));
 
                     case ParseFailureKind.Format:
-                        return new FormatException(SR.GetResourceString(m_failureMessageID));
+                        return new FormatException(SR.GetResourceString(_failureMessageID));
 
                     case ParseFailureKind.NativeException:
-                        return m_innerException;
+                        return _innerException;
 
                     default:
-                        Debug.Assert(false, "Unknown GuidParseFailure: " + m_failure);
+                        Debug.Assert(false, "Unknown GuidParseFailure: " + _failure);
                         return new FormatException(SR.Format_GuidUnrecognized);
                 }
             }
@@ -249,7 +248,7 @@ namespace System
             result.Init(GuidParseThrowStyle.All);
             if (TryParseGuid(g, GuidStyles.Any, ref result))
             {
-                this = result.parsedGuid;
+                this = result._parsedGuid;
             }
             else
             {
@@ -270,7 +269,7 @@ namespace System
             result.Init(GuidParseThrowStyle.AllButOverflow);
             if (TryParseGuid(input, GuidStyles.Any, ref result))
             {
-                return result.parsedGuid;
+                return result._parsedGuid;
             }
             else
             {
@@ -284,7 +283,7 @@ namespace System
             parseResult.Init(GuidParseThrowStyle.None);
             if (TryParseGuid(input, GuidStyles.Any, ref parseResult))
             {
-                result = parseResult.parsedGuid;
+                result = parseResult._parsedGuid;
                 return true;
             }
             else
@@ -339,7 +338,7 @@ namespace System
             result.Init(GuidParseThrowStyle.AllButOverflow);
             if (TryParseGuid(input, style, ref result))
             {
-                return result.parsedGuid;
+                return result._parsedGuid;
             }
             else
             {
@@ -389,7 +388,7 @@ namespace System
             parseResult.Init(GuidParseThrowStyle.None);
             if (TryParseGuid(input, style, ref parseResult))
             {
-                result = parseResult.parsedGuid;
+                result = parseResult._parsedGuid;
                 return true;
             }
             else
@@ -546,7 +545,7 @@ namespace System
             }
 
 
-            if (!StringToInt(guidString.Substring(numStart, numLen) /*first DWORD*/, -1, ParseNumbers.IsTight, out result.parsedGuid._a, ref result))
+            if (!StringToInt(guidString.Substring(numStart, numLen) /*first DWORD*/, -1, ParseNumbers.IsTight, out result._parsedGuid._a, ref result))
                 return false;
 
             // Check for '0x'
@@ -565,7 +564,7 @@ namespace System
             }
 
             // Read in the number
-            if (!StringToShort(guidString.Substring(numStart, numLen) /*first DWORD*/, -1, ParseNumbers.IsTight, out result.parsedGuid._b, ref result))
+            if (!StringToShort(guidString.Substring(numStart, numLen) /*first DWORD*/, -1, ParseNumbers.IsTight, out result._parsedGuid._b, ref result))
                 return false;
             // Check for '0x'
             if (!IsHexPrefix(guidString, numStart + numLen + 1))
@@ -583,7 +582,7 @@ namespace System
             }
 
             // Read in the number
-            if (!StringToShort(guidString.Substring(numStart, numLen) /*first DWORD*/, -1, ParseNumbers.IsTight, out result.parsedGuid._c, ref result))
+            if (!StringToShort(guidString.Substring(numStart, numLen) /*first DWORD*/, -1, ParseNumbers.IsTight, out result._parsedGuid._c, ref result))
                 return false;
 
             // Check for '{'
@@ -646,14 +645,14 @@ namespace System
                 bytes[i] = (byte)number;
             }
 
-            result.parsedGuid._d = bytes[0];
-            result.parsedGuid._e = bytes[1];
-            result.parsedGuid._f = bytes[2];
-            result.parsedGuid._g = bytes[3];
-            result.parsedGuid._h = bytes[4];
-            result.parsedGuid._i = bytes[5];
-            result.parsedGuid._j = bytes[6];
-            result.parsedGuid._k = bytes[7];
+            result._parsedGuid._d = bytes[0];
+            result._parsedGuid._e = bytes[1];
+            result._parsedGuid._f = bytes[2];
+            result._parsedGuid._g = bytes[3];
+            result._parsedGuid._h = bytes[4];
+            result._parsedGuid._i = bytes[5];
+            result._parsedGuid._j = bytes[6];
+            result._parsedGuid._k = bytes[7];
 
             // Check for last '}'
             if (numStart + numLen + 1 >= guidString.Length || guidString[numStart + numLen + 1] != '}')
@@ -706,15 +705,15 @@ namespace System
                 return false;
             }
 
-            if (!StringToInt(guidString.Substring(startPos, 8) /*first DWORD*/, -1, ParseNumbers.IsTight, out result.parsedGuid._a, ref result))
+            if (!StringToInt(guidString.Substring(startPos, 8) /*first DWORD*/, -1, ParseNumbers.IsTight, out result._parsedGuid._a, ref result))
                 return false;
 
             startPos += 8;
-            if (!StringToShort(guidString.Substring(startPos, 4), -1, ParseNumbers.IsTight, out result.parsedGuid._b, ref result))
+            if (!StringToShort(guidString.Substring(startPos, 4), -1, ParseNumbers.IsTight, out result._parsedGuid._b, ref result))
                 return false;
 
             startPos += 4;
-            if (!StringToShort(guidString.Substring(startPos, 4), -1, ParseNumbers.IsTight, out result.parsedGuid._c, ref result))
+            if (!StringToShort(guidString.Substring(startPos, 4), -1, ParseNumbers.IsTight, out result._parsedGuid._c, ref result))
                 return false;
 
             startPos += 4;
@@ -733,16 +732,16 @@ namespace System
                 return false;
             }
 
-            result.parsedGuid._d = (byte)(temp >> 8);
-            result.parsedGuid._e = (byte)(temp);
+            result._parsedGuid._d = (byte)(temp >> 8);
+            result._parsedGuid._e = (byte)(temp);
             temp = (int)(templ >> 32);
-            result.parsedGuid._f = (byte)(temp >> 8);
-            result.parsedGuid._g = (byte)(temp);
+            result._parsedGuid._f = (byte)(temp >> 8);
+            result._parsedGuid._g = (byte)(temp);
             temp = (int)(templ);
-            result.parsedGuid._h = (byte)(temp >> 24);
-            result.parsedGuid._i = (byte)(temp >> 16);
-            result.parsedGuid._j = (byte)(temp >> 8);
-            result.parsedGuid._k = (byte)(temp);
+            result._parsedGuid._h = (byte)(temp >> 24);
+            result._parsedGuid._i = (byte)(temp >> 16);
+            result._parsedGuid._j = (byte)(temp >> 8);
+            result._parsedGuid._k = (byte)(temp);
 
             return true;
         }
@@ -793,17 +792,17 @@ namespace System
             currentPos = startPos;
             if (!StringToInt(guidString, ref currentPos, 8, ParseNumbers.NoSpace, out temp, ref result))
                 return false;
-            result.parsedGuid._a = temp;
+            result._parsedGuid._a = temp;
             ++currentPos; //Increment past the '-';
 
             if (!StringToInt(guidString, ref currentPos, 4, ParseNumbers.NoSpace, out temp, ref result))
                 return false;
-            result.parsedGuid._b = (short)temp;
+            result._parsedGuid._b = (short)temp;
             ++currentPos; //Increment past the '-';
 
             if (!StringToInt(guidString, ref currentPos, 4, ParseNumbers.NoSpace, out temp, ref result))
                 return false;
-            result.parsedGuid._c = (short)temp;
+            result._parsedGuid._c = (short)temp;
             ++currentPos; //Increment past the '-';
 
             if (!StringToInt(guidString, ref currentPos, 4, ParseNumbers.NoSpace, out temp, ref result))
@@ -819,64 +818,58 @@ namespace System
                 result.SetFailure(ParseFailureKind.Format, "Format_GuidInvLen");
                 return false;
             }
-            result.parsedGuid._d = (byte)(temp >> 8);
-            result.parsedGuid._e = (byte)(temp);
+            result._parsedGuid._d = (byte)(temp >> 8);
+            result._parsedGuid._e = (byte)(temp);
             temp = (int)(templ >> 32);
-            result.parsedGuid._f = (byte)(temp >> 8);
-            result.parsedGuid._g = (byte)(temp);
+            result._parsedGuid._f = (byte)(temp >> 8);
+            result._parsedGuid._g = (byte)(temp);
             temp = (int)(templ);
-            result.parsedGuid._h = (byte)(temp >> 24);
-            result.parsedGuid._i = (byte)(temp >> 16);
-            result.parsedGuid._j = (byte)(temp >> 8);
-            result.parsedGuid._k = (byte)(temp);
+            result._parsedGuid._h = (byte)(temp >> 24);
+            result._parsedGuid._i = (byte)(temp >> 16);
+            result._parsedGuid._j = (byte)(temp >> 8);
+            result._parsedGuid._k = (byte)(temp);
 
             return true;
         }
 
 
-        //
-        // StringToShort, StringToInt, and StringToLong are wrappers around COMUtilNative integer parsing routines;
-
-        private static unsafe bool StringToShort(String str, int requiredLength, int flags, out short result, ref GuidResult parseResult)
+        private static bool StringToShort(String str, int requiredLength, int flags, out short result, ref GuidResult parseResult)
         {
-            return StringToShort(str, null, requiredLength, flags, out result, ref parseResult);
+            int parsePos = 0;
+            return StringToShort(str, ref parsePos, requiredLength, flags, out result, ref parseResult);
         }
-        private static unsafe bool StringToShort(String str, int* parsePos, int requiredLength, int flags, out short result, ref GuidResult parseResult)
+
+        private static bool StringToShort(String str, ref int parsePos, int requiredLength, int flags, out short result, ref GuidResult parseResult)
         {
             result = 0;
             int x;
-            bool retValue = StringToInt(str, parsePos, requiredLength, flags, out x, ref parseResult);
+            bool retValue = StringToInt(str, ref parsePos, requiredLength, flags, out x, ref parseResult);
             result = (short)x;
             return retValue;
         }
 
-        private static unsafe bool StringToInt(String str, int requiredLength, int flags, out int result, ref GuidResult parseResult)
+        private static bool StringToInt(String str, int requiredLength, int flags, out int result, ref GuidResult parseResult)
         {
-            return StringToInt(str, null, requiredLength, flags, out result, ref parseResult);
+            int parsePos = 0;
+            return StringToInt(str, ref parsePos, requiredLength, flags, out result, ref parseResult);
         }
-        private static unsafe bool StringToInt(String str, ref int parsePos, int requiredLength, int flags, out int result, ref GuidResult parseResult)
-        {
-            fixed (int* ppos = &parsePos)
-            {
-                return StringToInt(str, ppos, requiredLength, flags, out result, ref parseResult);
-            }
-        }
-        private static unsafe bool StringToInt(String str, int* parsePos, int requiredLength, int flags, out int result, ref GuidResult parseResult)
+
+        private static bool StringToInt(String str, ref int parsePos, int requiredLength, int flags, out int result, ref GuidResult parseResult)
         {
             result = 0;
 
-            int currStart = (parsePos == null) ? 0 : (*parsePos);
+            int currStart = parsePos;
             try
             {
-                result = ParseNumbers.StringToInt(str, 16, flags, parsePos);
+                result = ParseNumbers.StringToInt(str, 16, flags, ref parsePos);
             }
             catch (OverflowException ex)
             {
-                if (parseResult.throwStyle == GuidParseThrowStyle.All)
+                if (parseResult._throwStyle == GuidParseThrowStyle.All)
                 {
                     throw;
                 }
-                else if (parseResult.throwStyle == GuidParseThrowStyle.AllButOverflow)
+                else if (parseResult._throwStyle == GuidParseThrowStyle.AllButOverflow)
                 {
                     throw new FormatException(SR.Format_GuidUnrecognized, ex);
                 }
@@ -888,7 +881,7 @@ namespace System
             }
             catch (Exception ex)
             {
-                if (parseResult.throwStyle == GuidParseThrowStyle.None)
+                if (parseResult._throwStyle == GuidParseThrowStyle.None)
                 {
                     parseResult.SetFailure(ex);
                     return false;
@@ -900,35 +893,29 @@ namespace System
             }
 
             //If we didn't parse enough characters, there's clearly an error.
-            if (requiredLength != -1 && parsePos != null && (*parsePos) - currStart != requiredLength)
+            if (requiredLength != -1 && parsePos - currStart != requiredLength)
             {
                 parseResult.SetFailure(ParseFailureKind.Format, "Format_GuidInvalidChar");
                 return false;
             }
             return true;
         }
+
         private static unsafe bool StringToLong(String str, ref int parsePos, int flags, out long result, ref GuidResult parseResult)
-        {
-            fixed (int* ppos = &parsePos)
-            {
-                return StringToLong(str, ppos, flags, out result, ref parseResult);
-            }
-        }
-        private static unsafe bool StringToLong(String str, int* parsePos, int flags, out long result, ref GuidResult parseResult)
         {
             result = 0;
 
             try
             {
-                result = ParseNumbers.StringToLong(str, 16, flags, parsePos);
+                result = ParseNumbers.StringToLong(str, 16, flags, ref parsePos);
             }
             catch (OverflowException ex)
             {
-                if (parseResult.throwStyle == GuidParseThrowStyle.All)
+                if (parseResult._throwStyle == GuidParseThrowStyle.All)
                 {
                     throw;
                 }
-                else if (parseResult.throwStyle == GuidParseThrowStyle.AllButOverflow)
+                else if (parseResult._throwStyle == GuidParseThrowStyle.AllButOverflow)
                 {
                     throw new FormatException(SR.Format_GuidUnrecognized, ex);
                 }
@@ -940,7 +927,7 @@ namespace System
             }
             catch (Exception ex)
             {
-                if (parseResult.throwStyle == GuidParseThrowStyle.None)
+                if (parseResult._throwStyle == GuidParseThrowStyle.None)
                 {
                     parseResult.SetFailure(ex);
                     return false;
@@ -1015,7 +1002,7 @@ namespace System
             return ToString("D", null);
         }
 
-        public unsafe override int GetHashCode()
+        public override int GetHashCode()
         {
             // Simply XOR all the bits of the GUID 32 bits at a time.
             return _a ^ Unsafe.Add(ref _a, 1) ^ Unsafe.Add(ref _a, 2) ^ Unsafe.Add(ref _a, 3);
@@ -1032,31 +1019,19 @@ namespace System
             else g = (Guid)o;
 
             // Now compare each of the elements
-            if (g._a != _a)
-                return false;
-            if (Unsafe.Add(ref g._a, 1) != Unsafe.Add(ref _a, 1))
-                return false;
-            if (Unsafe.Add(ref g._a, 2) != Unsafe.Add(ref _a, 2))
-                return false;
-            if (Unsafe.Add(ref g._a, 3) != Unsafe.Add(ref _a, 3))
-                return false;
-
-            return true;
+            return g._a == _a &&
+                Unsafe.Add(ref g._a, 1) == Unsafe.Add(ref _a, 1) &&
+                Unsafe.Add(ref g._a, 2) == Unsafe.Add(ref _a, 2) &&
+                Unsafe.Add(ref g._a, 3) == Unsafe.Add(ref _a, 3);
         }
 
         public bool Equals(Guid g)
         {
             // Now compare each of the elements
-            if (g._a != _a)
-                return false;
-            if (Unsafe.Add(ref g._a, 1) != Unsafe.Add(ref _a, 1))
-                return false;
-            if (Unsafe.Add(ref g._a, 2) != Unsafe.Add(ref _a, 2))
-                return false;
-            if (Unsafe.Add(ref g._a, 3) != Unsafe.Add(ref _a, 3))
-                return false;
-
-            return true;
+            return g._a == _a &&
+                Unsafe.Add(ref g._a, 1) == Unsafe.Add(ref _a, 1) &&
+                Unsafe.Add(ref g._a, 2) == Unsafe.Add(ref _a, 2) &&
+                Unsafe.Add(ref g._a, 3) == Unsafe.Add(ref _a, 3);
         }
 
         private int GetResult(uint me, uint them)
@@ -1201,31 +1176,19 @@ namespace System
         public static bool operator ==(Guid a, Guid b)
         {
             // Now compare each of the elements
-            if (a._a != b._a)
-                return false;
-            if (Unsafe.Add(ref a._a, 1) != Unsafe.Add(ref b._a, 1))
-                return false;
-            if (Unsafe.Add(ref a._a, 2) != Unsafe.Add(ref b._a, 2))
-                return false;
-            if (Unsafe.Add(ref a._a, 3) != Unsafe.Add(ref b._a, 3))
-                return false;
-
-            return true;
+            return a._a == b._a &&
+                Unsafe.Add(ref a._a, 1) == Unsafe.Add(ref b._a, 1) &&
+                Unsafe.Add(ref a._a, 2) == Unsafe.Add(ref b._a, 2) &&
+                Unsafe.Add(ref a._a, 3) == Unsafe.Add(ref b._a, 3);
         }
 
         public static bool operator !=(Guid a, Guid b)
         {
             // Now compare each of the elements
-            if (a._a != b._a)
-                return true;
-            if (Unsafe.Add(ref a._a, 1) != Unsafe.Add(ref b._a, 1))
-                return true;
-            if (Unsafe.Add(ref a._a, 2) != Unsafe.Add(ref b._a, 2))
-                return true;
-            if (Unsafe.Add(ref a._a, 3) != Unsafe.Add(ref b._a, 3))
-                return true;
-
-            return false;
+            return a._a != b._a ||
+                Unsafe.Add(ref a._a, 1) != Unsafe.Add(ref b._a, 1) ||
+                Unsafe.Add(ref a._a, 2) != Unsafe.Add(ref b._a, 2) ||
+                Unsafe.Add(ref a._a, 3) != Unsafe.Add(ref b._a, 3);
         }
 
         public String ToString(String format)
