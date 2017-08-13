@@ -45,6 +45,7 @@
     <Compile Include="System\Drawing\BitmapSuffixInSatelliteAssemblyAttribute.cs" />
     <Compile Include="System\Drawing\IDeviceContext.cs" />
     <Compile Include="System\Drawing\GdiplusNative.cs" />
+    <Compile Include="System\Drawing\Graphics.cs" />
     <Compile Include="System\Drawing\Pen.cs" />
     <Compile Include="System\Drawing\Pens.cs" />
     <Compile Include="System\Drawing\RotateFlipType.cs" />
@@ -203,7 +204,7 @@
     <Compile Include="System\Drawing\Font.NotSerializable.cs" />
     <Compile Include="System\Drawing\FontFamily.cs" />
     <Compile Include="System\Drawing\GdiplusNative.Windows.cs" />
-    <Compile Include="System\Drawing\Graphics.cs" />
+    <Compile Include="System\Drawing\Graphics.Windows.cs" />
     <Compile Include="System\Drawing\GraphicsContext.cs" />
     <Compile Include="System\Drawing\Icon.cs" />
     <Compile Include="System\Drawing\Icon.NotSerializable.cs" />
@@ -282,6 +283,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <!-- Unix-specific -->
+    <Compile Include="System\Drawing\Graphics.Unix.cs" />
     <Compile Include="Unix\System.Drawing\Bitmap.cs" />
     <Compile Include="Unix\System.Drawing\Brushes.cs" />
     <Compile Include="Unix\System.Drawing\BufferedGraphics.cs" />
@@ -296,7 +298,6 @@
     <Compile Include="Unix\System.Drawing\CopyPixelOperation.cs" />
     <Compile Include="Unix\System.Drawing\Font.cs" />
     <Compile Include="Unix\System.Drawing\FontFamily.cs" />
-    <Compile Include="Unix\System.Drawing\Graphics.cs" />
     <Compile Include="Unix\System.Drawing\GraphicsUnit.cs" />
     <Compile Include="Unix\System.Drawing\gdipEnums.cs" />
     <Compile Include="Unix\System.Drawing\gdipFunctions.cs" />
