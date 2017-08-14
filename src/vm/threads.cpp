@@ -2524,7 +2524,7 @@ void UndoRevert(BOOL bReverted, HANDLE hToken)
 // We don't want ::CreateThread() calls scattered throughout the source.  So gather
 // them all here.
 
-BOOL Thread::CreateNewThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, void *args)
+BOOL Thread::CreateNewThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, void *args, LPCWSTR pName)
 {
     CONTRACTL {
         NOTHROW;
@@ -2551,6 +2551,7 @@ BOOL Thread::CreateNewThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, voi
     bRet = CreateNewOSThread(stackSize, start, args);
 #ifndef FEATURE_PAL
     UndoRevert(bReverted, token);
+    SetThreadName(m_ThreadHandle, pName);
 #endif // !FEATURE_PAL
 
     return bRet;

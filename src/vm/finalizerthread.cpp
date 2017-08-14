@@ -909,7 +909,7 @@ void FinalizerThread::FinalizerThreadCreate()
     // actual thread terminates.
     GetFinalizerThread()->IncExternalCount();
 
-    if (GetFinalizerThread()->CreateNewThread(0, &FinalizerThreadStart, NULL))
+    if (GetFinalizerThread()->CreateNewThread(0, &FinalizerThreadStart, NULL, W("Finalizer")) )
     {
         DWORD dwRet = GetFinalizerThread()->StartThread();
 
