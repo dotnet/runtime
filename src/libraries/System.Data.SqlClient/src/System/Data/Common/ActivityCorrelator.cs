@@ -71,7 +71,7 @@ namespace System.Data.Common
         }
 
         /// <summary>
-        /// Increment the sequence number and generate the new ActviityId
+        /// Increment the sequence number and generate the new ActivityId
         /// </summary>
         /// <returns>ActivityId</returns>
         internal static ActivityId Next()
