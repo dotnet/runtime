@@ -42,6 +42,8 @@
     <Reference Include="System.Runtime" />
     <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Linq" />
+    <Reference Include="System.Xml.XDocument" />
+    <Reference Include="System.Xml.ReaderWriter" />
     <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Threading.Tasks" />
     <Reference Include="System.Runtime.Extensions" />

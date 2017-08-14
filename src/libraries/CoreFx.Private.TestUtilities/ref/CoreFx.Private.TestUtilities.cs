@@ -47,7 +47,7 @@ namespace System
         public static bool IsFedora { get { throw null; } }
         public static bool IsFullFramework { get { throw null; } }
         public static bool IsInvokingStaticConstructorsSupported { get { throw null; } }
-        public static bool IsMacOsHighSierra { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
+        public static bool IsMacOsHighSierraOrHigher { [System.Runtime.CompilerServices.CompilerGeneratedAttribute]get { throw null; } }
         public static bool IsNetBSD { get { throw null; } }
         public static bool IsNetCore { get { throw null; } }
         public static bool IsNetNative { get { throw null; } }

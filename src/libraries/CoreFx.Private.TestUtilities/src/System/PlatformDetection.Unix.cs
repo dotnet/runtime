@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.IO;
+using System.Xml.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using Xunit;
@@ -52,6 +53,11 @@ namespace System
 
             return "Distro=" + v.Id + " VersionId=" + v.VersionId + " Pretty=" + v.PrettyName + " Version=" + v.Version;
         }
+
+        private static readonly Version s_osxProductVersion = GetOSXProductVersion();
+
+        public static bool IsMacOsHighSierraOrHigher { get; } =
+            IsOSX && (s_osxProductVersion.Major > 10 || (s_osxProductVersion.Major == 10 && s_osxProductVersion.Minor >= 13));
 
         private static DistroInfo ParseOsReleaseFile()
         {
@@ -140,6 +146,56 @@ namespace System
                 return Version.Parse(versionString);
             }
 
+            return new Version(0, 0, 0);
+        }
+
+        private static Version GetOSXProductVersion()
+        {
+            try
+            {
+                if (IsOSX)
+                {
+                    // <plist version="1.0">
+                    // <dict>
+                    //         <key>ProductBuildVersion</key>
+                    //         <string>17A330h</string>
+                    //         <key>ProductCopyright</key>
+                    //         <string>1983-2017 Apple Inc.</string>
+                    //         <key>ProductName</key>
+                    //         <string>Mac OS X</string>
+                    //         <key>ProductUserVisibleVersion</key>
+                    //         <string>10.13</string>
+                    //         <key>ProductVersion</key>
+                    //         <string>10.13</string>
+                    // </dict>
+                    // </plist>
+
+                    XElement dict = XDocument.Load("/System/Library/CoreServices/SystemVersion.plist").Root.Element("dict");
+                    if (dict != null)
+                    {
+                        foreach (XElement key in dict.Elements("key"))
+                        {
+                            if ("ProductVersion".Equals(key.Value))
+                            {
+                                XElement stringElement = key.NextNode as XElement;
+                                if (stringElement != null && stringElement.Name.LocalName.Equals("string"))
+                                {
+                                    string versionString = stringElement.Value;
+                                    if (versionString != null)
+                                    {
+                                        return Version.Parse(versionString);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch
+            {
+            }
+
+            // In case of exception or couldn't get the version 
             return new Version(0, 0, 0);
         }
 
