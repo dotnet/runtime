@@ -11,8 +11,9 @@ namespace System.Net.Http.Headers
         private readonly string _name;
         private readonly HttpHeaderType _headerType;
         private readonly HttpHeaderParser _parser;
+        private readonly string[] _knownValues;
 
-        public KnownHeader(string name, HttpHeaderType headerType, HttpHeaderParser parser)
+        public KnownHeader(string name, HttpHeaderType headerType, HttpHeaderParser parser, string[] knownValues = null)
         {
             Debug.Assert(!string.IsNullOrEmpty(name));
             Debug.Assert(HttpRuleParser.GetTokenLength(name, 0) == name.Length);
@@ -22,6 +23,7 @@ namespace System.Net.Http.Headers
             _name = name;
             _headerType = headerType;
             _parser = parser;
+            _knownValues = knownValues;
         }
 
         public KnownHeader(string name)
@@ -37,6 +39,7 @@ namespace System.Net.Http.Headers
         public string Name => _name;
         public HttpHeaderParser Parser => _parser;
         public HttpHeaderType HeaderType => _headerType;
+        public string[] KnownValues => _knownValues;
         public HeaderDescriptor Descriptor => new HeaderDescriptor(this);
     }
 }

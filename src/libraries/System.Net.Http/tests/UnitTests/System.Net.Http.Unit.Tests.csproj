@@ -99,6 +99,9 @@
     <Compile Include="$(CommonPath)\System\IO\DelegatingStream.cs">
       <Link>ProductionCode\System\IO\DelegatingStream.cs</Link>
     </Compile>
+    <Compile Include="..\..\src\System\Net\Http\ByteArrayHelpers.cs">
+      <Link>ProductionCode\System\Net\Http\ByteArrayHelpers.cs</Link>
+    </Compile>
     <Compile Include="..\..\src\System\Net\Http\FormUrlEncodedContent.cs">
       <Link>ProductionCode\System\Net\Http\FormUrlEncodedContent.cs</Link>
     </Compile>
