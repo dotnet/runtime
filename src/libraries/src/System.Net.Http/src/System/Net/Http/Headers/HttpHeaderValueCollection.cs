@@ -206,6 +206,15 @@ namespace System.Net.Http.Headers
             return _store.GetHeaderString(_descriptor);
         }
 
+        internal string GetHeaderStringWithoutSpecial()
+        {
+            if (!IsSpecialValueSet)
+            {
+                return ToString();
+            }
+            return _store.GetHeaderString(_descriptor, _specialValue);
+        }
+
         internal void SetSpecialValue()
         {
             Debug.Assert(_specialValue != null,
