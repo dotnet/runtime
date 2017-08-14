@@ -27,9 +27,9 @@ namespace System.Net.Http.Headers
         public static readonly KnownHeader AltSvc = new KnownHeader("Alt-Svc");
         public static readonly KnownHeader Authorization = new KnownHeader("Authorization", HttpHeaderType.Request, GenericHeaderParser.SingleValueAuthenticationParser);
         public static readonly KnownHeader CacheControl = new KnownHeader("Cache-Control", HttpHeaderType.General, CacheControlHeaderParser.Parser);
-        public static readonly KnownHeader Connection = new KnownHeader("Connection", HttpHeaderType.General, GenericHeaderParser.TokenListParser);
+        public static readonly KnownHeader Connection = new KnownHeader("Connection", HttpHeaderType.General, GenericHeaderParser.TokenListParser, new string[] { "close" });
         public static readonly KnownHeader ContentDisposition = new KnownHeader("Content-Disposition", HttpHeaderType.Content, GenericHeaderParser.ContentDispositionParser);
-        public static readonly KnownHeader ContentEncoding = new KnownHeader("Content-Encoding", HttpHeaderType.Content, GenericHeaderParser.TokenListParser);
+        public static readonly KnownHeader ContentEncoding = new KnownHeader("Content-Encoding", HttpHeaderType.Content, GenericHeaderParser.TokenListParser, new string[] { "gzip", "deflate" });
         public static readonly KnownHeader ContentLanguage = new KnownHeader("Content-Language", HttpHeaderType.Content, GenericHeaderParser.TokenListParser);
         public static readonly KnownHeader ContentLength = new KnownHeader("Content-Length", HttpHeaderType.Content, Int64NumberHeaderParser.Parser);
         public static readonly KnownHeader ContentLocation = new KnownHeader("Content-Location", HttpHeaderType.Content, UriHeaderParser.RelativeOrAbsoluteUriParser);
@@ -41,7 +41,7 @@ namespace System.Net.Http.Headers
         public static readonly KnownHeader Cookie2 = new KnownHeader("Cookie2");
         public static readonly KnownHeader Date = new KnownHeader("Date", HttpHeaderType.General, DateHeaderParser.Parser);
         public static readonly KnownHeader ETag = new KnownHeader("ETag", HttpHeaderType.Response, GenericHeaderParser.SingleValueEntityTagParser);
-        public static readonly KnownHeader Expect = new KnownHeader("Expect", HttpHeaderType.Request, GenericHeaderParser.MultipleValueNameValueWithParametersParser);
+        public static readonly KnownHeader Expect = new KnownHeader("Expect", HttpHeaderType.Request, GenericHeaderParser.MultipleValueNameValueWithParametersParser, new string[] { "100-continue" });
         public static readonly KnownHeader Expires = new KnownHeader("Expires", HttpHeaderType.Content, DateHeaderParser.Parser);
         public static readonly KnownHeader From = new KnownHeader("From", HttpHeaderType.Request, GenericHeaderParser.MailAddressParser);
         public static readonly KnownHeader Host = new KnownHeader("Host", HttpHeaderType.Request, GenericHeaderParser.HostParser);
@@ -77,7 +77,7 @@ namespace System.Net.Http.Headers
         public static readonly KnownHeader TE = new KnownHeader("TE", HttpHeaderType.Request, TransferCodingHeaderParser.MultipleValueWithQualityParser);
         public static readonly KnownHeader TSV = new KnownHeader("TSV");
         public static readonly KnownHeader Trailer = new KnownHeader("Trailer", HttpHeaderType.General, GenericHeaderParser.TokenListParser);
-        public static readonly KnownHeader TransferEncoding = new KnownHeader("Transfer-Encoding", HttpHeaderType.General, TransferCodingHeaderParser.MultipleValueParser);
+        public static readonly KnownHeader TransferEncoding = new KnownHeader("Transfer-Encoding", HttpHeaderType.General, TransferCodingHeaderParser.MultipleValueParser, new string[] { "chunked" });
         public static readonly KnownHeader Upgrade = new KnownHeader("Upgrade", HttpHeaderType.General, GenericHeaderParser.MultipleValueProductParser);
         public static readonly KnownHeader UpgradeInsecureRequests = new KnownHeader("Upgrade-Insecure-Requests");
         public static readonly KnownHeader UserAgent = new KnownHeader("User-Agent", HttpHeaderType.Request, ProductInfoHeaderParser.MultipleValueParser);
@@ -98,7 +98,7 @@ namespace System.Net.Http.Headers
         private interface IHeaderNameAccessor
         {
             int Length { get; }
-            char CharAt(int index);
+            char this[int index] { get; }
         }
 
         private struct StringAccessor : IHeaderNameAccessor
@@ -111,7 +111,23 @@ namespace System.Net.Http.Headers
             }
 
             public int Length => _string.Length;
-            public char CharAt(int index) => _string[index];
+            public char this[int index] => _string[index];
+        }
+
+        // Can't use Span here as it's unsupported.
+        private unsafe struct BytePtrAccessor : IHeaderNameAccessor
+        {
+            private readonly byte* _p;
+            private readonly int _length;
+
+            public BytePtrAccessor(byte* p, int length)
+            {
+                _p = p;
+                _length = length;
+            }
+
+            public int Length => _length;
+            public char this[int index] => (char)_p[index];
         }
 
         // Find possible known header match via lookup on length and a distinguishing char for that length.
@@ -128,7 +144,7 @@ namespace System.Net.Http.Headers
                     return TE; // TE
 
                 case 3:
-                    switch (key.CharAt(0))
+                    switch (key[0])
                     {
                         case 'A': case 'a': return Age; // [A]ge
                         case 'P': case 'p': return P3P; // [P]3P
@@ -138,7 +154,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 4:
-                    switch (key.CharAt(0))
+                    switch (key[0])
                     {
                         case 'D': case 'd': return Date; // [D]ate
                         case 'E': case 'e': return ETag; // [E]Tag
@@ -150,7 +166,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 5:
-                    switch (key.CharAt(0))
+                    switch (key[0])
                     {
                         case 'A': case 'a': return Allow; // [A]llow
                         case 'R': case 'r': return Range; // [R]ange
@@ -158,7 +174,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 6:
-                    switch (key.CharAt(0))
+                    switch (key[0])
                     {
                         case 'A': case 'a': return Accept; // [A]ccept
                         case 'C': case 'c': return Cookie; // [C]ookie
@@ -170,7 +186,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 7:
-                    switch (key.CharAt(0))
+                    switch (key[0])
                     {
                         case 'A': case 'a': return AltSvc;  // [A]lt-Svc
                         case 'C': case 'c': return Cookie2; // [C]ookie2
@@ -183,7 +199,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 8:
-                    switch (key.CharAt(3))
+                    switch (key[3])
                     {
                         case 'M': case 'm': return IfMatch;  // If-[M]atch
                         case 'R': case 'r': return IfRange;  // If-[R]ange
@@ -192,7 +208,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 10:
-                    switch (key.CharAt(0))
+                    switch (key[0])
                     {
                         case 'C': case 'c': return Connection; // [C]onnection
                         case 'K': case 'k': return KeepAlive;  // [K]eep-Alive
@@ -202,7 +218,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 11:
-                    switch (key.CharAt(0))
+                    switch (key[0])
                     {
                         case 'C': case 'c': return ContentMD5; // [C]ontent-MD5
                         case 'R': case 'r': return RetryAfter; // [R]etry-After
@@ -211,7 +227,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 12:
-                    switch (key.CharAt(2))
+                    switch (key[2])
                     {
                         case 'C': case 'c': return AcceptPatch; // Ac[c]ept-Patch
                         case 'N': case 'n': return ContentType; // Co[n]tent-Type
@@ -223,7 +239,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 13:
-                    switch (key.CharAt(6))
+                    switch (key[6])
                     {
                         case '-': return AcceptRanges;            // Accept[-]Ranges
                         case 'I': case 'i': return Authorization; // Author[i]zation
@@ -235,7 +251,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 14:
-                    switch (key.CharAt(0))
+                    switch (key[0])
                     {
                         case 'A': case 'a': return AcceptCharset; // [A]ccept-Charset
                         case 'C': case 'c': return ContentLength; // [C]ontent-Length
@@ -243,7 +259,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 15:
-                    switch (key.CharAt(7))
+                    switch (key[7])
                     {
                         case '-': return XFrameOptions;  // X-Frame[-]Options
                         case 'M': case 'm': return XUACompatible;  // X-UA-Co[m]patible
@@ -254,7 +270,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 16:
-                    switch (key.CharAt(11))
+                    switch (key[11])
                     {
                         case 'O': case 'o': return ContentEncoding; // Content-Enc[o]ding
                         case 'G': case 'g': return ContentLanguage; // Content-Lan[g]uage
@@ -266,7 +282,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 17:
-                    switch (key.CharAt(0))
+                    switch (key[0])
                     {
                         case 'I': case 'i': return IfModifiedSince;  // [I]f-Modified-Since
                         case 'S': case 's': return SecWebSocketKey;  // [S]ec-WebSocket-Key
@@ -275,7 +291,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 18:
-                    switch (key.CharAt(0))
+                    switch (key[0])
                     {
                         case 'P': case 'p': return ProxyAuthenticate; // [P]roxy-Authenticate
                         case 'X': case 'x': return XContentDuration;  // [X]-Content-Duration
@@ -283,7 +299,7 @@ namespace System.Net.Http.Headers
                     break;
 
                 case 19:
-                    switch (key.CharAt(0))
+                    switch (key[0])
                     {
                         case 'C': case 'c': return ContentDisposition; // [C]ontent-Disposition
                         case 'I': case 'i': return IfUnmodifiedSince;  // [I]f-Unmodified-Since
@@ -298,7 +314,7 @@ namespace System.Net.Http.Headers
                     return SecWebSocketVersion; // Sec-WebSocket-Version
 
                 case 22:
-                    switch (key.CharAt(0))
+                    switch (key[0])
                     {
                         case 'A': case 'a': return AccessControlMaxAge;  // [A]ccess-Control-Max-Age
                         case 'S': case 's': return SecWebSocketProtocol; // [S]ec-WebSocket-Protocol
@@ -313,7 +329,7 @@ namespace System.Net.Http.Headers
                     return SecWebSocketExtensions; // Sec-WebSocket-Extensions
 
                 case 25:
-                    switch (key.CharAt(0))
+                    switch (key[0])
                     {
                         case 'S': case 's': return StrictTransportSecurity; // [S]trict-Transport-Security
                         case 'U': case 'u': return UpgradeInsecureRequests; // [U]pgrade-Insecure-Requests
@@ -324,7 +340,7 @@ namespace System.Net.Http.Headers
                     return AccessControlAllowOrigin; // Access-Control-Allow-Origin
 
                 case 28:
-                    switch (key.CharAt(21))
+                    switch (key[21])
                     {
                         case 'H': case 'h': return AccessControlAllowHeaders; // Access-Control-Allow-[H]eaders
                         case 'M': case 'm': return AccessControlAllowMethods; // Access-Control-Allow-[M]ethods
@@ -347,6 +363,20 @@ namespace System.Net.Http.Headers
             if (candidate != null && StringComparer.OrdinalIgnoreCase.Equals(name, candidate.Name))
             {
                 return candidate;
+            }
+
+            return null;
+        }
+
+        internal unsafe static KnownHeader TryGetKnownHeader(ReadOnlySpan<byte> name)
+        {
+            fixed (byte* p = &name.DangerousGetPinnableReference())
+            {
+                KnownHeader candidate = GetCandidate(new BytePtrAccessor(p, name.Length));
+                if (candidate != null && ByteArrayHelpers.EqualsOrdinalAsciiIgnoreCase(candidate.Name, name))
+                {
+                    return candidate;
+                }
             }
 
             return null;
