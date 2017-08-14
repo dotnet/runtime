@@ -1946,7 +1946,7 @@ public:
     // Create all new threads here.  The thread is created as suspended, so
     // you must ::ResumeThread to kick it off.  It is guaranteed to create the
     // thread, or throw.
-    BOOL CreateNewThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, void *args);
+    BOOL CreateNewThread(SIZE_T stackSize, LPTHREAD_START_ROUTINE start, void *args, LPCWSTR pName=NULL);
 
 
     enum StackSizeBucket

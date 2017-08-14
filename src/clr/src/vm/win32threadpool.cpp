@@ -1815,8 +1815,8 @@ Thread* ThreadpoolMgr::CreateUnimpersonatedThread(LPTHREAD_START_ROUTINE lpStart
         // CreateNewThread takes care of reverting any impersonation - so dont do anything here.
         bOK = pThread->CreateNewThread(0,               // default stack size
                                        lpStartAddress,
-                                       lpArgs           //arguments
-                                       );
+                                       lpArgs,           //arguments
+                                       W(".NET Core ThreadPool"));
     }
     else {
 #ifndef FEATURE_PAL
