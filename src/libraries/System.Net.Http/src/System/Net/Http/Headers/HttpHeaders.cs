@@ -293,7 +293,7 @@ namespace System.Net.Http.Headers
             return GetHeaderString(descriptor);
         }
 
-        internal string GetHeaderString(HeaderDescriptor descriptor)
+        internal string GetHeaderString(HeaderDescriptor descriptor, object exclude = null)
         {
             HeaderStoreItemInfo info;
             if (!TryGetHeaderInfo(descriptor, out info))
@@ -301,14 +301,14 @@ namespace System.Net.Http.Headers
                 return string.Empty;
             }
 
-            return GetHeaderString(descriptor, info);
+            return GetHeaderString(descriptor, info, exclude);
         }
 
-        private string GetHeaderString(HeaderDescriptor descriptor, HeaderStoreItemInfo info)
+        private string GetHeaderString(HeaderDescriptor descriptor, HeaderStoreItemInfo info, object exclude = null)
         {
             string stringValue;
 
-            string[] values = GetValuesAsStrings(descriptor, info);
+            string[] values = GetValuesAsStrings(descriptor, info, exclude);
 
             if (values.Length == 1)
             {
@@ -1180,7 +1180,7 @@ namespace System.Net.Http.Headers
             return false;
         }
 
-        private static string[] GetValuesAsStrings(HeaderDescriptor descriptor, HeaderStoreItemInfo info)
+        private static string[] GetValuesAsStrings(HeaderDescriptor descriptor, HeaderStoreItemInfo info, object exclude = null)
         {
             Contract.Ensures(Contract.Result<string[]>() != null);
 
@@ -1192,12 +1192,12 @@ namespace System.Net.Http.Headers
                 values = new string[length];
                 int currentIndex = 0;
 
-                ReadStoreValues<string>(values, info.RawValue, null, ref currentIndex);
-                ReadStoreValues<object>(values, info.ParsedValue, descriptor.Parser, ref currentIndex);
+                ReadStoreValues<string>(values, info.RawValue, null, null, ref currentIndex);
+                ReadStoreValues<object>(values, info.ParsedValue, descriptor.Parser, exclude, ref currentIndex);
 
                 // Set parser parameter to 'null' for invalid values: The invalid values is always a string so we 
                 // don't need the parser to "serialize" the value to a string.
-                ReadStoreValues<string>(values, info.InvalidValue, null, ref currentIndex);
+                ReadStoreValues<string>(values, info.InvalidValue, null, null, ref currentIndex);
 
                 // The values array may not be full because some values were excluded
                 if (currentIndex < length)
@@ -1246,7 +1246,7 @@ namespace System.Net.Http.Headers
         }
 
         private static void ReadStoreValues<T>(string[] values, object storeValue, HttpHeaderParser parser,
-            ref int currentIndex)
+            T exclude, ref int currentIndex)
         {
             Debug.Assert(values != null);
 
@@ -1256,18 +1256,41 @@ namespace System.Net.Http.Headers
 
                 if (storeValues == null)
                 {
-                    values[currentIndex] = parser == null ? storeValue.ToString() : parser.ToString(storeValue);
-                    currentIndex++;
+                    if (ShouldAdd<T>(storeValue, parser, exclude))
+                    {
+                        values[currentIndex] = parser == null ? storeValue.ToString() : parser.ToString(storeValue);
+                        currentIndex++;
+                    }
                 }
                 else
                 {
                     foreach (object item in storeValues)
                     {
-                        values[currentIndex] = parser == null ? item.ToString() : parser.ToString(item);
-                        currentIndex++;
+                        if (ShouldAdd<T>(item, parser, exclude))
+                        {
+                            values[currentIndex] = parser == null ? item.ToString() : parser.ToString(item);
+                            currentIndex++;
+                        }
                     }
                 }
             }
+        }
+
+        private static bool ShouldAdd<T>(object storeValue, HttpHeaderParser parser, T exclude)
+        {
+            bool add = true;
+            if (parser != null && exclude != null)
+            {
+                if (parser.Comparer != null)
+                {
+                    add = !parser.Comparer.Equals(exclude, storeValue);
+                }
+                else
+                {
+                    add = !exclude.Equals(storeValue);
+                }
+            }
+            return add;
         }
 
         private bool AreEqual(object value, object storeValue, IEqualityComparer comparer)
