@@ -263,7 +263,8 @@ g_strerror (gint errnum)
 		if (buff != tmp_buff)
 			g_free (buff);
 #else /* USE_STRERROR_R_XSI */
-		buff = strerror_r (errnum, buff, buff_len);
+		int r;
+		r = strerror_r (errnum, buff, buff_len);
 		if (!error_messages [errnum])
 			error_messages [errnum] = g_strdup (buff);
 #endif /* USE_STRERROR_R_XSI */
