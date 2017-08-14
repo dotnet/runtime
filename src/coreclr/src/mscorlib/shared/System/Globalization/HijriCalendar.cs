@@ -187,7 +187,7 @@ namespace System.Globalization
 
             set
             {
-                // NOTE: Check the value of Min/MaxAdavncedHijri with Arabic speakers to see if the assumption is good.
+                // NOTE: Check the value of Min/MaxAdvancedHijri with Arabic speakers to see if the assumption is good.
                 if (value < MinAdvancedHijri || value > MaxAdvancedHijri)
                 {
                     throw new ArgumentOutOfRangeException(
