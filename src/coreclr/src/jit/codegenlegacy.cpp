@@ -19209,6 +19209,10 @@ regMaskTP CodeGen::genCodeForCall(GenTreeCall* call, bool valUsed)
                             emitCallType = emitter::EC_INDIR_ARD;
 
 #endif // CPU_LOAD_STORE_ARCH
+
+                            // For a indirect calls, we don't want to pass the address (used below),
+                            // so set it to nullptr. (We've already used the address to load up the target register.)
+                            addr = nullptr;
                         }
                     }
 
