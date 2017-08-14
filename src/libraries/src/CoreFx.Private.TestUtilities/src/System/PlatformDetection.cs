@@ -61,9 +61,6 @@ namespace System
             return false;
         }
 
-        // If we need this long-term hopefully we can come up with a better detection than the kernel verison.
-        public static bool IsMacOsHighSierra { get; } = IsOSX && RuntimeInformation.OSDescription.StartsWith("Darwin 17.0.0");
-
         public static bool IsNonZeroLowerBoundArraySupported
         {
             get

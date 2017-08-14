@@ -42,7 +42,7 @@ namespace System.Net.Http.Functional.Tests
                 // When the server uses SslProtocols.Tls, on MacOS, SecureTransport ends up picking a cipher suite
                 // for TLS1.2, even though server said it was only using TLS1.0. LibreSsl throws error that
                 // wrong cipher is used for TLs1.0.
-                if (requestOnlyThisProtocol || (PlatformDetection.IsMacOsHighSierra && acceptedProtocol == SslProtocols.Tls))
+                if (requestOnlyThisProtocol || (PlatformDetection.IsMacOsHighSierraOrHigher && acceptedProtocol == SslProtocols.Tls))
                 {
                     handler.SslProtocols = acceptedProtocol;
                 }
