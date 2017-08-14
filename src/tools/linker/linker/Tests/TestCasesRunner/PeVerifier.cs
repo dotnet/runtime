@@ -77,13 +77,8 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		private void CheckAssembly (NPath assemblyPath)
 		{
 			var capturedOutput = new List<string> ();
-			var exeArgs = Environment.OSVersion.Platform == PlatformID.Win32NT ? $"/nologo {assemblyPath.InQuotes ()}" : $"--verify metadata,code {assemblyPath.InQuotes ()}";
 			var process = new Process ();
-			process.StartInfo.FileName = _peExecutable;
-			process.StartInfo.Arguments = exeArgs;
-			process.StartInfo.UseShellExecute = false;
-			process.StartInfo.CreateNoWindow = true;
-			process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
+			SetupProcess (process, assemblyPath);
 			process.StartInfo.RedirectStandardOutput = true;
 			process.OutputDataReceived += (sender, args) => capturedOutput.Add (args.Data);
 			process.Start ();
@@ -93,6 +88,16 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			if (process.ExitCode != 0) {
 				Assert.Fail ($"Invalid IL detected in {assemblyPath}\n{capturedOutput.Aggregate ((buff, s) => buff + Environment.NewLine + s)}");
 			}
+		}
+
+		protected virtual void SetupProcess (Process process, NPath assemblyPath)
+		{
+			var exeArgs = Environment.OSVersion.Platform == PlatformID.Win32NT ? $"/nologo {assemblyPath.InQuotes ()}" : $"--verify metadata,code {assemblyPath.InQuotes ()}";
+			process.StartInfo.FileName = _peExecutable;
+			process.StartInfo.Arguments = exeArgs;
+			process.StartInfo.UseShellExecute = false;
+			process.StartInfo.CreateNoWindow = true;
+			process.StartInfo.WindowStyle = ProcessWindowStyle.Hidden;
 		}
 
 		public static NPath FindPeExecutableFromRegistry ()
