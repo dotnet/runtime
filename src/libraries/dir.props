@@ -28,6 +28,9 @@
     <ProjectDir>$(MSBuildThisFileDirectory)</ProjectDir>
     <SourceDir>$(ProjectDir)src\</SourceDir>
 
+    <!-- This name is used to create a GIT repository URL https://github.com/dotnet/$(GitHubRepositoryName) used to find source code for debugging -->
+    <GitHubRepositoryName Condition="'$(GitHubRepositoryName)' == ''">corefx</GitHubRepositoryName>
+
     <!-- Output directories -->
     <BinDir Condition="'$(BinDir)'==''">$(ProjectDir)bin/</BinDir>
 
