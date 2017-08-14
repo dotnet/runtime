@@ -879,28 +879,6 @@ namespace SerializationTestTypes
     }
 
     [DataContract]
-    public enum MyEnum5 : int
-    {
-        [EnumMember]
-        red,
-        [EnumMember]
-        blue,
-        [EnumMember]
-        black
-    }
-
-    [DataContract]
-    public enum MyEnum6 : uint
-    {
-        [EnumMember]
-        red,
-        [EnumMember]
-        blue,
-        [EnumMember]
-        black
-    }
-
-    [DataContract]
     public enum MyEnum7 : long
     {
         [EnumMember]
@@ -943,61 +921,6 @@ namespace SerializationTestTypes
         All = Summer | Autumn | Winter | Spring,
     }
 
-    [Flags]
-    public enum Seasons4 : ushort
-    {
-        None = 0,
-        Summer = 1,
-        Autumn = 2,
-        Winter = 4,
-        Spring = 8,
-        All = Summer | Autumn | Winter | Spring,
-    }
-
-    [Flags]
-    public enum Seasons5 : int
-    {
-        None = 0,
-        Summer = 1,
-        Autumn = 2,
-        Winter = 4,
-        Spring = 8,
-        All = Summer | Autumn | Winter | Spring,
-    }
-
-    [Flags]
-    public enum Seasons6 : uint
-    {
-        None = 0,
-        Summer = 1,
-        Autumn = 2,
-        Winter = 4,
-        Spring = 8,
-        All = Summer | Autumn | Winter | Spring,
-    }
-
-    [Flags]
-    public enum Seasons7 : long
-    {
-        None = 0,
-        Summer = 1,
-        Autumn = 2,
-        Winter = 4,
-        Spring = 8,
-        All = Summer | Autumn | Winter | Spring,
-    }
-
-    [Flags]
-    public enum Seasons8 : ulong
-    {
-        None = 0,
-        Summer = 1,
-        Autumn = 2,
-        Winter = 4,
-        Spring = 8,
-        All = Summer | Autumn | Winter | Spring,
-    }
-
     [DataContract]
     public class list
     {
@@ -1030,13 +953,6 @@ namespace SerializationTestTypes
 
         [DataMember]
         public int[] a4;
-    }
-
-    [DataContract]
-    public class Array2
-    {
-        [DataMember]
-        public int[,] a1 = { { 1, 2, 3 }, { 4, 5, 6 } };
     }
 
     [DataContract]
@@ -1103,37 +1019,5 @@ namespace SerializationTestTypes
 
         [DataMember]
         public object p2 = new VT(10);
-    }
-
-    [DataContract]
-    public class Test
-    {
-        [DataMember]
-        public astruct Data;
-
-        [DataContract]
-        public struct astruct
-        {
-            [DataMember]
-            public int a;
-
-            [DataMember]
-            public string b;
-        }
-    }
-
-    [DataContract(Name = "Drawing_using_{0}_T_and_{1}_K_and_{2}_U")]
-    public class Drawing<T, K, U>
-    {
-        public T m1;
-        public K m2;
-        public U m3;
-
-        public Drawing(T s, K b, U u)
-        {
-            m1 = s;
-            m2 = b;
-            m3 = u;
-        }
     }
 }
