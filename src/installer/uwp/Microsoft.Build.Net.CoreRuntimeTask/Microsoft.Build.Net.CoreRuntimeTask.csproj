@@ -33,7 +33,7 @@
     <ContainsPackageReferences>true</ContainsPackageReferences>
     <TargetFrameworkIdentifier>.NETStandard</TargetFrameworkIdentifier>
     <RestoreOutputPath>obj</RestoreOutputPath>
-    <SkipSigning>true</SkipSigning>
+    <AssemblyKey>MSFT</AssemblyKey>
     <RestorePackages>true</RestorePackages>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
