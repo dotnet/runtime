@@ -72,7 +72,7 @@ namespace System.Xml.Tests
             }
         }
 
-        //[Variation(Desc = "v2 - Bug115049 - XSD: content model validation for an invalid root element should be adandoned", Priority = 2)]
+        //[Variation(Desc = "v2 - Bug115049 - XSD: content model validation for an invalid root element should be abandoned", Priority = 2)]
         [InlineData()]
         [Theory]
         public void v2()
