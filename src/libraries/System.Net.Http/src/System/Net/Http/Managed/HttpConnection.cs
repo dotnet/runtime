@@ -24,6 +24,7 @@ namespace System.Net.Http
             4096;
 #endif
         private const int InitialWriteBufferSize = InitialReadBufferSize;
+        private const int Expect100TimeoutMilliseconds = 1000;
 
         private static readonly byte[] s_contentLength0NewlineAsciiBytes = Encoding.ASCII.GetBytes("Content-Length: 0\r\n");
         private static readonly byte[] s_spaceHttp11NewlineAsciiBytes = Encoding.ASCII.GetBytes(" HTTP/1.1\r\n");
@@ -42,6 +43,7 @@ namespace System.Net.Http
         private Task _sendRequestContentTask;
         private readonly byte[] _writeBuffer;
         private int _writeOffset;
+        private Exception _pendingException;
 
         private Task<int> _readAheadTask;
         private byte[] _readBuffer;
@@ -188,6 +190,7 @@ namespace System.Net.Http
 
         public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
+            TaskCompletionSource<Expect100ContinueSignal> allowExpect100ToContinue = null;
             Debug.Assert(_currentRequest == null, $"Expected null {nameof(_currentRequest)}.");
             _currentRequest = request;
             try
@@ -253,13 +256,11 @@ namespace System.Net.Http
                 Debug.Assert(_sendRequestContentTask == null);
                 if (request.Content == null)
                 {
-                    // Flush out any headers we haven't sent.
+                    // We have nothing more to send, so flush out any headers we haven't yet sent.
                     await FlushAsync(cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
-                    // TODO #23144: Support Expect: 100-continue
-
                     // Asynchronously send the body if there is one.  This can run concurrently with receiving
                     // the response. The write content streams will handle ensuring appropriate flushes are done
                     // to ensure the headers and content are sent.
@@ -268,24 +269,65 @@ namespace System.Net.Http
                         new ChunkedEncodingWriteStream(this, cancellationToken) :
                         new ContentLengthWriteStream(this, cancellationToken);
 
-                    // Start the copy from the request.  We do this here in case it synchronously throws
-                    // an exception, e.g. StreamContent throwing for non-rewindable content, and because if
-                    // we did it in SendRequestContentAsync, that exception would get trapped in the returned
-                    // task... at that point, we might get stuck waiting to receive a response from the server
-                    // that'll never come, as the server is still expecting us to send data.
-                    _sendRequestContentTask = SendRequestContentAsync(
-                        request.Content.CopyToAsync(stream, _transportContext),
-                        stream,
-                        cancellationToken);
+                    if (!request.HasHeaders || request.Headers.ExpectContinue != true)
+                    {
+                        // Start the copy from the request.  We do this here in case it synchronously throws
+                        // an exception, e.g. StreamContent throwing for non-rewindable content, and because if
+                        // we did it in SendRequestContentAsync, that exception would get trapped in the returned
+                        // task... at that point, we might get stuck waiting to receive a response from the server
+                        // that'll never come, as the server is still expecting us to send data.
+                        _sendRequestContentTask = SendRequestContentAsync(request.Content.CopyToAsync(stream, _transportContext), stream);
+                    }
+                    else
+                    {
+                        // We're sending an Expect: 100-continue header. We need to flush headers so that the server receives
+                        // all of them, and we need to do so before initiating the send, as once we do that, it effectively
+                        // owns the right to write, and we don't want to concurrently be accessing the write buffer.
+                        await FlushAsync(cancellationToken).ConfigureAwait(false);
+
+                        // Create a TCS we'll use to block the request content from being sent, and create a timer that's used
+                        // as a fail-safe to unblock the request content if we don't hear back from the server in a timely manner.
+                        // Then kick off the request.
+                        allowExpect100ToContinue = new TaskCompletionSource<Expect100ContinueSignal>();
+                        var expect100Timer = new Timer(
+                            s => ((TaskCompletionSource<Expect100ContinueSignal>)s).TrySetResult(Expect100ContinueSignal.Timeout),
+                            allowExpect100ToContinue, TimeSpan.FromMilliseconds(Expect100TimeoutMilliseconds), Timeout.InfiniteTimeSpan);
+                        _sendRequestContentTask = SendRequestContentWithExpect100ContinueAsync(request, allowExpect100ToContinue.Task, stream, expect100Timer);
+                    }
                 }
 
-                // Parse the response status line and headers
+                // Parse the response status line.
                 var response = new HttpResponseMessage() { RequestMessage = request, Content = new HttpConnectionContent(CancellationToken.None) };
                 ParseStatusLine(await ReadNextLineAsync(cancellationToken).ConfigureAwait(false), response);
+                
+                if (allowExpect100ToContinue != null)
+                {
+                    // We sent an Expect: 100-continue header.  Handle the response accordingly.
+                    if (response.StatusCode == HttpStatusCode.Continue)
+                    {
+                        // We got our continue header.  Read the subsequent \r\n, and allow the request content to continue.
+                        if (!LineIsEmpty(await ReadNextLineAsync(cancellationToken).ConfigureAwait(false)))
+                        {
+                            ThrowInvalidHttpResponse();
+                        }
+                        allowExpect100ToContinue.TrySetResult(Expect100ContinueSignal.Received100StatusCode);
+
+                        // Then redo the status line read in order to read the real one.
+                        ParseStatusLine(await ReadNextLineAsync(cancellationToken).ConfigureAwait(false), response);
+                    }
+                    else
+                    {
+                        // For any response status code other than 100, we want to try to avoid sending the content
+                        // but otherwise just continue handling this request as we would any other.
+                        allowExpect100ToContinue.TrySetResult(Expect100ContinueSignal.ReceivedOtherStatusCode);
+                    }
+                }
+
+                // Parse the response headers.
                 while (true)
                 {
                     ArraySegment<byte> line = await ReadNextLineAsync(cancellationToken).ConfigureAwait(false);
-                    if (line[0] == '\r')
+                    if (LineIsEmpty(line))
                     {
                         break;
                     }
@@ -344,8 +386,22 @@ namespace System.Net.Http
             }
             catch (Exception error)
             {
+                // Make sure to complete the allowExpect100ToContinue task if it exists.
+                allowExpect100ToContinue?.TrySetResult(Expect100ContinueSignal.Error);
+
                 if (NetEventSource.IsEnabled) Trace($"Error sending request: {error}");
                 Dispose();
+
+                if (_pendingException != null)
+                {
+                    // If we incurred an exception in non-linear control flow such that
+                    // the exception didn't bubble up here (e.g. concurrent sending of
+                    // the request content), use that error instead.
+                    throw new HttpRequestException(SR.net_http_client_execution_error, _pendingException);
+                }
+
+                // Otherwise, propagate this exception, wrapping it if necessary to
+                // match exception type expectations.
                 if (error is InvalidOperationException || error is IOException)
                 {
                     throw new HttpRequestException(SR.net_http_client_execution_error, error);
@@ -354,7 +410,13 @@ namespace System.Net.Http
             }
         }
 
-        private async Task SendRequestContentAsync(Task copyTask, HttpContentWriteStream stream, CancellationToken cancellationToken)
+        private static bool LineIsEmpty(ArraySegment<byte> line)
+        {
+            Debug.Assert(line.Count >= 2, "Lines should always be \r\n terminated.");
+            return line.Count == 2;
+        }
+
+        private async Task SendRequestContentAsync(Task copyTask, HttpContentWriteStream stream)
         {
             try
             {
@@ -365,13 +427,35 @@ namespace System.Net.Http
                 await stream.FinishAsync().ConfigureAwait(false);
 
                 // Flush any content that might still be buffered.
-                await FlushAsync(cancellationToken).ConfigureAwait(false);
+                await FlushAsync(stream.RequestCancellationToken).ConfigureAwait(false);
             }
             catch (Exception e)
             {
+                _pendingException = e;
                 if (NetEventSource.IsEnabled) Trace($"Error while sending request content: {e}");
                 Dispose();
                 throw;
+            }
+        }
+
+        private async Task SendRequestContentWithExpect100ContinueAsync(
+            HttpRequestMessage request, Task<Expect100ContinueSignal> allowExpect100ToContinueTask, HttpContentWriteStream stream, Timer expect100Timer)
+        {
+            // Wait until we receive a trigger notification that it's ok to continue sending content.
+            // This will come either when the timer fires or when we receive a response status line from the server.
+            Expect100ContinueSignal signal = await allowExpect100ToContinueTask.ConfigureAwait(false);
+            if (NetEventSource.IsEnabled) Trace($"Received signal \"{signal}\" for Expect: 100-continue request content transfer.");
+
+            // Clean up the timer; it's no longer needed.
+            expect100Timer.Dispose();
+
+            // If we received a 100 Continue status code or if we timeout waiting for one, send the request content. Otherwise, nothing more to do.
+            switch (signal)
+            {
+                case Expect100ContinueSignal.Received100StatusCode:
+                case Expect100ContinueSignal.Timeout:
+                    await SendRequestContentAsync(request.Content.CopyToAsync(stream, _transportContext), stream).ConfigureAwait(false);
+                    break;
             }
         }
 
@@ -977,8 +1061,9 @@ namespace System.Net.Http
             Debug.Assert(_currentRequest != null, "Expected the connection to be associated with a request.");
 
             // Disassociate the connection from a request.  If there's an in-flight request content still
-            // being sent, it'll see this nulled out and stop sending.
+            // being sent, it'll see this nulled out and stop sending.  Also clear out other request-specific content.
             _currentRequest = null;
+            _pendingException = null;
 
             // Check to see if we're still sending request content.
             Task sendRequestContentTask = _sendRequestContentTask;
@@ -1083,12 +1168,24 @@ namespace System.Net.Http
 
         private static void ThrowInvalidHttpResponse() => throw new HttpRequestException(SR.net_http_invalid_response);
 
-        public void Trace(string message, [CallerMemberName] string memberName = null) =>
+        internal void Trace(string message, [CallerMemberName] string memberName = null) =>
             NetEventSource.Log.HandlerMessage(
                 _pool?.GetHashCode() ?? 0,    // pool ID
                 GetHashCode(),                // connection ID
                 _currentRequest?.GetHashCode() ?? 0,  // request ID
                 memberName,                   // method name
                 ToString() + ": " + message); // message
+
+        private enum Expect100ContinueSignal : byte
+        {
+            /// <summary>Signal to the request content that a 100 Continue status was received from the server.</summary>
+            Received100StatusCode,
+            /// <summary>Signal to the request content that it should send anyway due to not hearing back from the server within the timeout period.</summary>
+            Timeout,
+            /// <summary>Signal to the request content that a non-100 status was received from the server.</summary>
+            ReceivedOtherStatusCode,
+            /// <summary>Signal to the request content that an arbitrary failure occurred during request/response processing.</summary>
+            Error
+        }
     }
 }

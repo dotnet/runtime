@@ -1575,6 +1575,40 @@ namespace System.Net.Http.Functional.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [InlineData(null)]
+        public async Task PostAsync_ExpectContinue_Success(bool? expectContinue)
+        {
+            using (var client = new HttpClient())
+            {
+                var req = new HttpRequestMessage(HttpMethod.Post, Configuration.Http.RemoteEchoServer)
+                {
+                    Content = new StringContent("Test String", Encoding.UTF8)
+                };
+                req.Headers.ExpectContinue = expectContinue;
+
+                using (HttpResponseMessage response = await client.SendAsync(req))
+                {
+                    Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+                    if (ManagedHandlerTestHelpers.IsEnabled)
+                    {
+                        const string ExpectedReqHeader = "\"Expect\": \"100-continue\"";
+                        if (expectContinue == true)
+                        {
+                            Assert.Contains(ExpectedReqHeader, await response.Content.ReadAsStringAsync());
+                        }
+                        else
+                        {
+                            Assert.DoesNotContain(ExpectedReqHeader, await response.Content.ReadAsStringAsync());
+                        }
+                    }
+                }
+            }
+        }
+
+        [OuterLoop] // TODO: Issue #11345
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
         public async Task PostAsync_Redirect_ResultingGetFormattedCorrectly(bool secure)
         {
             const string ContentString = "This is the content string.";

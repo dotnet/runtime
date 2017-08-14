@@ -30,12 +30,12 @@ namespace System.Net.Http
                 // Have the connection write the data, skipping the buffer. Importantly, this will
                 // force a flush of anything already in the buffer, i.e. any remaining request headers
                 // that are still buffered.
-                return _connection.WriteWithoutBufferingAsync(buffer, offset, count, _cancellationToken);
+                return _connection.WriteWithoutBufferingAsync(buffer, offset, count, RequestCancellationToken);
             }
 
             public override Task FlushAsync(CancellationToken ignored)
             {
-                return _connection.FlushAsync(_cancellationToken);
+                return _connection.FlushAsync(RequestCancellationToken);
             }
 
             public override Task FinishAsync()
