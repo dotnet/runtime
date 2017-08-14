@@ -11,15 +11,14 @@ using System.Runtime.CompilerServices;
 using System.Text;
 using System.Xml;
 using System.Runtime;
+using System.Diagnostics;
 
 namespace GCTest
 {
-
     public class GCTestC
     {
-
-        static int loid=0; // to give a "unique" identifier
-
+        private static int loid = 0; // to give a "unique" identifier
+        private static Stopwatch s_stopWatch = new Stopwatch();
         public static void Usage()
         {
             Console.WriteLine("Usage");
@@ -29,7 +28,7 @@ namespace GCTest
 
         static void Main(string[] args)
         {
-            if (args.Length!=2)
+            if (args.Length != 2)
             {
                 Usage();
                 return;
@@ -65,13 +64,12 @@ namespace GCTest
         }
 
 
-        private void LoadData( int count, ref long[] values )
+        private void LoadData(int count)
         {
-
             loid++;
             Hashtable aMap = new Hashtable(count);
             byte[] aBuffer = null;
-
+            long maxElapsed = 0;
             using (StreamReader reader = new StreamReader("clunie_small.xml"))
             {
                 aBuffer = new byte[reader.BaseStream.Length];
@@ -81,8 +79,7 @@ namespace GCTest
             using (MemoryStream aMemStream = new MemoryStream(aBuffer))
             {
                 aBuffer = null;
-
-                values[0] = PerformanceCounter.QueryCounter;
+                s_stopWatch.Restart();
                 for (int i = 0; i < count; i++)
                 {
                     Thread.Sleep(0); // simulate waiting on arrival of new data...
@@ -95,89 +92,32 @@ namespace GCTest
 
                     // reset the position in the memory stream to the beginning
                     aMemStream.Seek(0, SeekOrigin.Begin);
-
-                    values[i + 1] = PerformanceCounter.QueryCounter;
+                    s_stopWatch.Stop();
+                    if (maxElapsed < s_stopWatch.ElapsedMilliseconds)
+                    {
+                        maxElapsed = s_stopWatch.ElapsedMilliseconds;
+                    }
                 }
 
+                Console.WriteLine("Maximum of {0}: {1}", count, maxElapsed);
             }
 
         }
-
-
-        private void PrintStat(long[] values)
-        {
-            int count=values.Length-1;
-            long max = values[1]-values[0];
-
-            for (int i=0;i<count;i++)
-            {
-                max = Math.Max(max, (values[i+1]-values[i]));
-            }
-
-            //Console.WriteLine("Maximum of {0}: {1}", count, PerformanceCounter.PrintTime(PerformanceCounter.Seconds(max)));
-
-        }
-
 
         public void DoTest(int count, GCLatencyMode gcMode)
         {
-
             GCLatencyMode oldMode = GCSettings.LatencyMode;
-
-            long[] values = new long[count+1]; // reuse this array for every test ...
 
             RuntimeHelpers.PrepareConstrainedRegions();
             try
             {
                 // Load Data
                 GCSettings.LatencyMode = gcMode;
-                LoadData(count, ref values);
+                LoadData(count);
             }
             finally
             {
                 GCSettings.LatencyMode = oldMode;
-            }
-
-            PrintStat(values);
-        }
-
-
-        public static class PerformanceCounter
-        {
-            [DllImport("kernel32.dll", CallingConvention=CallingConvention.Winapi, EntryPoint="QueryPerformanceFrequency")]
-            private static extern int QueryPerformanceFrequency_int(ref long count);
-            [DllImport("kernel32.dll", CallingConvention=CallingConvention.Winapi, EntryPoint="QueryPerformanceCounter")]
-            private static extern int QueryPerformanceCounter_int(ref long count);
-
-            public static long QueryCounter
-            {
-                get
-                {
-                    long var = 0;
-                    QueryPerformanceCounter_int(ref var);
-                    return var;
-                }
-            }
-
-            public static long Frequency
-            {
-                get
-                {
-                    long var = 0;
-                    QueryPerformanceFrequency_int(ref var);
-                    return var;
-                }
-            }
-
-            public static double Seconds(long v)
-            {
-                return (double)v/Frequency;
-            }
-
-
-            public static string PrintTime(double time)
-            {
-                return (time*1000).ToString("0.000ms");
             }
         }
 
