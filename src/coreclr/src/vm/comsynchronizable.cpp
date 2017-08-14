@@ -28,6 +28,10 @@
 #include "appdomain.hpp"
 #include "appdomain.inl"
 
+#ifndef FEATURE_PAL
+#include "utilcode.h"
+#endif
+
 #include "newapis.h"
 
 // To include definition of CAPTURE_BUCKETS_AT_TRANSITION
@@ -1542,8 +1546,17 @@ void QCALLTYPE ThreadNative::InformThreadNameChange(QCall::ThreadHandle thread, 
     QCALL_CONTRACT;
 
     BEGIN_QCALL;
-
+    
     Thread* pThread = &(*thread);
+
+#ifndef FEATURE_PAL
+    // Set on Windows 10 Creators Update and later machines the unmanaged thread name as well. That will show up in ETW traces and debuggers which is very helpful
+    // if more and more threads get a meaningful name
+    if (len > 0 && name != NULL)
+    {
+        SetThreadName(pThread->GetThreadHandle(), name);
+    }
+#endif
 
 #ifdef PROFILING_SUPPORTED
     {
