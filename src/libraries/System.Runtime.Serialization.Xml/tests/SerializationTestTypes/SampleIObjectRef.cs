@@ -3,29 +3,6 @@ using System.Runtime.Serialization;
 
 namespace SerializationTestTypes
 {
-    [Serializable]
-    [KnownType(typeof(PublicDC))]
-    public class SerIObjRef : IObjectReference
-    {
-        [NonSerialized]
-        private static PublicDC s_containedData = new PublicDC();
-
-        object IObjectReference.GetRealObject(StreamingContext context)
-        {
-            return s_containedData;
-        }
-
-        public override bool Equals(object obj)
-        {
-            return obj.Equals(s_containedData);
-        }
-
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
-    }
-
     [DataContract(IsReference = false)]
     [KnownType(typeof(PublicDC))]
     public class DCExplicitInterfaceIObjRef : IObjectReference

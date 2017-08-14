@@ -11,7 +11,7 @@ namespace SerializationTestTypes
         public SimpleDC() { }
         public SimpleDC(bool init)
         {
-            Data = DateTime.MaxValue.ToLongTimeString();
+            Data = "This is a string";
         }
     }
 
@@ -27,7 +27,7 @@ namespace SerializationTestTypes
         public SimpleDCWithSimpleDMRef() { }
         public SimpleDCWithSimpleDMRef(bool init)
         {
-            Data = DateTime.MaxValue.ToLongTimeString();
+            Data = "This is a string";
             RefData = Data;
         }
     }
@@ -74,45 +74,7 @@ namespace SerializationTestTypes
 
         public SimpleStructDC(bool init)
         {
-            Data = DateTime.MaxValue.ToLongTimeString();
-        }
-    }
-
-    [DataContract(IsReference = true)]
-    public struct SimpleStructDCNegative
-    {
-        [DataMember]
-        public string Data;
-
-        public SimpleStructDCNegative(bool init)
-        {
-            Data = DateTime.MaxValue.ToLongTimeString();
-        }
-    }
-
-    [DataContract(IsReference = true)]
-    public class SimpleDCWithIsRequiredTrue
-    {
-        [DataMember(IsRequired = true)]
-        public string Data;
-
-        public SimpleDCWithIsRequiredTrue() { }
-        public SimpleDCWithIsRequiredTrue(bool init)
-        {
-            Data = DateTime.MaxValue.ToLongTimeString();
-        }
-    }
-
-    [DataContract(IsReference = true)]
-    public class SimpleDCContainer
-    {
-        [DataMember(IsRequired = true)]
-        public SimpleDC Data;
-
-        public SimpleDCContainer() { }
-        public SimpleDCContainer(bool init)
-        {
-            Data = new SimpleDC(true);
+            Data = "This is a string";
         }
     }
 
@@ -124,35 +86,8 @@ namespace SerializationTestTypes
         public SimpleDCWithIsRequiredFalse() { }
         public SimpleDCWithIsRequiredFalse(bool init)
         {
-            Data = DateTime.MaxValue.ToLongTimeString();
+            Data = "This is a string";
         }
-    }
-
-    [DataContract(IsReference = true)]
-    public enum EnumNegative1
-    {
-        One
-    }
-
-    [DataContract(IsReference = true)]
-    public enum EnumNegative2
-    {
-        [EnumMember]
-        One
-    }
-
-    [DataContract(IsReference = true)]
-    public enum EnumNegative3 : int
-    {
-        [EnumMember]
-        One
-    }
-
-    [DataContract(IsReference = false)]
-    public enum EnumPossitive
-    {
-        [EnumMember]
-        One
     }
     
     [DataContract]
