@@ -25,32 +25,30 @@ namespace System.Net.Http
 
         protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            HttpResponseMessage response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
-
+            HttpResponseMessage response;
             uint redirectCount = 0;
             while (true)
             {
+                response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
+
                 bool needRedirect = false;
                 bool forceGet = false;
                 switch (response.StatusCode)
                 {
-                    case HttpStatusCode.Moved:
                     case HttpStatusCode.TemporaryRedirect:
                         needRedirect = true;
                         break;
 
+                    case HttpStatusCode.Moved:
                     case HttpStatusCode.Found:
                     case HttpStatusCode.SeeOther:
                         needRedirect = true;
-                        forceGet = true;
+                        forceGet = request.Method == HttpMethod.Post;
                         break;
 
                     case HttpStatusCode.MultipleChoices:
-                        // Don't redirect if no Location specified
-                        if (response.Headers.Location != null)
-                        {
-                            needRedirect = true;
-                        }
+                        needRedirect = response.Headers.Location != null; // Don't redirect if no Location specified
+                        forceGet = request.Method == HttpMethod.Post;
                         break;
                 }
 
@@ -96,7 +94,6 @@ namespace System.Net.Http
 
                 // Do the redirect.
                 response.Dispose();
-                response = await _innerHandler.SendAsync(request, cancellationToken).ConfigureAwait(false);
             }
 
             return response;
