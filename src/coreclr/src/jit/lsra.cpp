@@ -9268,6 +9268,11 @@ void LinearScan::resolveRegisters()
                                 GenTreePutArgSplit* splitArg = treeNode->AsPutArgSplit();
                                 splitArg->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());
                             }
+                            else if (treeNode->OperIsMultiRegOp())
+                            {
+                                GenTreeMultiRegOp* multiReg = treeNode->AsMultiRegOp();
+                                multiReg->SetRegSpillFlagByIdx(GTF_SPILL, currentRefPosition->getMultiRegIdx());
+                            }
 #endif
                         }
 
