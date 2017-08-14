@@ -532,12 +532,6 @@ namespace System.Net.Http.Functional.Tests
         public async Task AllowAutoRedirect_True_ValidateNewMethodUsedOnRedirection(
             int statusCode, string oldMethod, string newMethod)
         {
-            if (ManagedHandlerTestHelpers.IsEnabled)
-            {
-                // TODO #22700: Managed handler not following RFC rules for method rewrites.
-                return;
-            }
-
             var handler = new HttpClientHandler() { AllowAutoRedirect = true };
             using (var client = new HttpClient(handler))
             {
