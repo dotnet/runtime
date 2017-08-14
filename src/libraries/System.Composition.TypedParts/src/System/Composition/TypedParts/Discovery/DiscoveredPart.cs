@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics.Hashing;
 using System.Reflection;
 using System.Linq.Expressions;
 using System.Diagnostics;
@@ -142,7 +143,7 @@ namespace System.Composition.TypedParts.Discovery
 
             var partActivatorDependencies = dependencies
                 .Where(dep => dep.Site is ParameterImportSite)
-                .ToDictionary(d => ((ParameterImportSite)d.Site).Parameter);
+                .ToDictionary(d => ((ParameterImportSite)d.Site).Parameter, ParameterInfoComparer.Instance);
 
             for (var i = 0; i < cps.Length; ++i)
             {
@@ -226,5 +227,44 @@ namespace System.Composition.TypedParts.Discovery
         }
 
         public IEnumerable<DiscoveredExport> DiscoveredExports { get { return _exports; } }
+
+        // uses the fact that current usage only has comparisons
+        // between ParameterInfo objects from the same constructor reference,
+        // thus only the position needs to be compared.
+        // Equals checks the member reference equality in case usage changes.
+        private sealed class ParameterInfoComparer : IEqualityComparer<ParameterInfo>
+        {
+            public static readonly ParameterInfoComparer Instance = new ParameterInfoComparer();
+
+            public int GetHashCode(ParameterInfo obj)
+            {
+                return HashHelpers.Combine(obj.Position.GetHashCode(),  obj.Member.GetHashCode());
+            }
+
+            public bool Equals(ParameterInfo x, ParameterInfo y)
+            {
+                if (ReferenceEquals(x, y))
+                {
+                    return true;
+                }
+
+                if (x == null || y == null)
+                {
+                    return false;
+                }
+
+                if (x.Position != y.Position)
+                {
+                    return false;
+                }
+
+                if (x.Member != y.Member)
+                {
+                    return false;
+                }
+
+                return true;
+            }
+        }
     }
 }
