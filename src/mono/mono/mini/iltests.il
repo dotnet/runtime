@@ -2900,7 +2900,73 @@ END:
     .field  private static  int32 byte_val
     .field  private static  int32 short_val
 
-    .method public static int32 test_0_implicit_widen_or_local_stores () cil managed 
+    .method static int32 widen_arguments (unsigned int8 a, int8 b, int16 c, unsigned int16 d) cil managed noinlining
+    {
+		.maxstack 4
+		ldsfld int32 Tests::byte_val
+		starg.s 0
+		ldarg.0
+		ldc.i4 128 //0x80
+		beq L_0
+
+		ldc.i4.1
+		ret
+L_0:
+		ldsfld int32 Tests::byte_val
+		starg.s 1
+		ldarg.1
+		ldc.i4 -128 //-0x80
+		beq L_1
+
+		ldc.i4.2
+		ret
+
+L_1:
+		ldsfld int32 Tests::short_val
+		starg.s 2
+		ldarg.2
+		ldc.i4 -32768 //-0x8000
+		beq L_2
+
+		ldc.i4.3
+		ret
+
+L_2:
+		ldsfld int32 Tests::short_val
+		starg.s 3
+		ldarg.3
+		ldc.i4 32768 //0x8000
+		beq L_3
+
+		ldc.i4.4
+		ret
+
+L_3:
+		ldc.i4.0
+		ret
+    }
+
+	.method public static int32 test_0_implicit_widen_of_argument_stores () cil managed
+	{
+		.maxstack 5
+		/*
+		This test verifies that storing an I4 value from the evail stack into a local variable triggers proper widening.
+		The values are picked so storing them have different values depending on the sign'ness of the local variable.
+		*/
+		ldc.i4 0x180
+		stsfld int32 Tests::byte_val
+		ldc.i4 0x18000
+		stsfld int32 Tests::short_val
+
+		ldc.i4.0
+		ldc.i4.0
+		ldc.i4.0
+		ldc.i4.0
+		call int32 Tests::widen_arguments (unsigned int8 a, int8 b, int16 c, unsigned int16 d)
+		ret
+	}
+
+    .method public static int32 test_0_implicit_widen_of_local_stores () cil managed
     {
 		.maxstack 4
 		.locals init (
