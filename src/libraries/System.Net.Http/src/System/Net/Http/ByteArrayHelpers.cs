@@ -41,18 +41,13 @@ namespace System
             return true;
         }
 
-        internal static string GetStringFromByteSpan(ReadOnlySpan<byte> bytes)
+        internal static unsafe string GetStringFromByteSpan(ReadOnlySpan<byte> bytes)
         {
-            string s;
-            unsafe
+            // TODO: Use new Span-based Encoding overload when available
+            fixed (byte* p = &bytes.DangerousGetPinnableReference())
             {
-                fixed (byte* p = &bytes.DangerousGetPinnableReference())
-                {
-                    s = Encoding.ASCII.GetString(p, bytes.Length);
-                }
+                return Encoding.ASCII.GetString(p, bytes.Length);
             }
-
-            return s;
         }
     }
 }
