@@ -26,7 +26,7 @@ namespace System.Net.Http
                 {
                     // Don't write if nothing was given, especially since we don't want to accidentally send a 0 chunk,
                     // which would indicate end of body.  Instead, just ensure no content is stuck in the buffer.
-                    return _connection.FlushAsync(_cancellationToken);
+                    return _connection.FlushAsync(RequestCancellationToken);
                 }
 
                 if (_connection._currentRequest == null)
@@ -50,17 +50,17 @@ namespace System.Net.Http
                     int digit = (count & mask) >> shift;
                     if (digitWritten || digit != 0)
                     {
-                        await _connection.WriteByteAsync((byte)(digit < 10 ? '0' + digit : 'A' + digit - 10), _cancellationToken).ConfigureAwait(false);
+                        await _connection.WriteByteAsync((byte)(digit < 10 ? '0' + digit : 'A' + digit - 10), RequestCancellationToken).ConfigureAwait(false);
                         digitWritten = true;
                     }
                 }
 
                 // End chunk length
-                await _connection.WriteTwoBytesAsync((byte)'\r', (byte)'\n', _cancellationToken).ConfigureAwait(false);
+                await _connection.WriteTwoBytesAsync((byte)'\r', (byte)'\n', RequestCancellationToken).ConfigureAwait(false);
 
                 // Write chunk contents
-                await _connection.WriteAsync(buffer, offset, count, _cancellationToken).ConfigureAwait(false);
-                await _connection.WriteTwoBytesAsync((byte)'\r', (byte)'\n', _cancellationToken).ConfigureAwait(false);
+                await _connection.WriteAsync(buffer, offset, count, RequestCancellationToken).ConfigureAwait(false);
+                await _connection.WriteTwoBytesAsync((byte)'\r', (byte)'\n', RequestCancellationToken).ConfigureAwait(false);
 
                 // Flush the chunk.  This is reasonable from the standpoint of having just written a standalone piece
                 // of data, but is also necessary to support duplex communication, where a CopyToAsync is taking the
@@ -68,18 +68,18 @@ namespace System.Net.Http
                 // source was empty, and it might be kept open to enable subsequent communication.  And it's necessary
                 // in general for at least the first write, as we need to ensure if it's the entirety of the content
                 // and if all of the headers and content fit in the write buffer that we've actually sent the request.
-                await _connection.FlushAsync(_cancellationToken);
+                await _connection.FlushAsync(RequestCancellationToken);
             }
 
             public override Task FlushAsync(CancellationToken ignored)
             {
-                return _connection.FlushAsync(_cancellationToken);
+                return _connection.FlushAsync(RequestCancellationToken);
             }
             
             public override async Task FinishAsync()
             {
                 // Send 0 byte chunk to indicate end, then final CrLf
-                await _connection.WriteBytesAsync(s_finalChunkBytes, _cancellationToken).ConfigureAwait(false);
+                await _connection.WriteBytesAsync(s_finalChunkBytes, RequestCancellationToken).ConfigureAwait(false);
                 _connection = null;
             }
         }
