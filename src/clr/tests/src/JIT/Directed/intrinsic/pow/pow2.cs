@@ -79,7 +79,7 @@ internal class pow2
 
         //Instead of using 10 * Double.Epsilon as the maximum allowed Delta
         //we can use a small value based on the precision of double (15-16 digits)
-        //to accomodate slight differences in the pow intrinsic on ARM
+        //to accommodate slight differences in the pow intrinsic on ARM
         double maxDelta = 9.9E-16;
 
         //straight

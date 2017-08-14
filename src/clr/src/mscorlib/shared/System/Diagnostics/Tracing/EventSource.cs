@@ -5642,7 +5642,7 @@ namespace System.Diagnostics.Tracing
                 // make sure current activity is still in the set:
                 activeActivities[EventSource.InternalCurrentThreadActivityId] = Environment.TickCount;
             }
-            // add child activity to list of actives
+            // add child activity to list of activities
             activeActivities[*childActivityID] = Environment.TickCount;
 
         }
