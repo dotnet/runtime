@@ -13,20 +13,20 @@ namespace System.Net.Http
     {
         protected HttpConnection _connection;
 
+        public HttpContentWriteStream(HttpConnection connection, CancellationToken cancellationToken)
+        {
+            Debug.Assert(connection != null);
+            _connection = connection;
+            RequestCancellationToken = cancellationToken;
+        }
+
         /// <summary>Cancellation token associated with the send operation.</summary>
         /// <remarks>
         /// Because of how this write stream is used, the CancellationToken passed into the individual
         /// stream operations will be the default non-cancelable token and can be ignored.  Instead,
         /// this token is used.
         /// </remarks>
-        protected readonly CancellationToken _cancellationToken;
-
-        public HttpContentWriteStream(HttpConnection connection, CancellationToken cancellationToken)
-        {
-            Debug.Assert(connection != null);
-            _connection = connection;
-            _cancellationToken = cancellationToken;
-        }
+        internal CancellationToken RequestCancellationToken { get; }
 
         public override bool CanRead => false;
         public override bool CanSeek => false;
