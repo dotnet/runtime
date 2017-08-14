@@ -445,7 +445,7 @@ Thread* GCToEEInterface::CreateBackgroundThread(GCBackgroundThreadFunction threa
         return NULL;
     }
 
-    if (threadStubArgs.thread->CreateNewThread(0, (LPTHREAD_START_ROUTINE)BackgroundThreadStub, &threadStubArgs))
+    if (threadStubArgs.thread->CreateNewThread(0, (LPTHREAD_START_ROUTINE)BackgroundThreadStub, &threadStubArgs, W("Background GC")))
     {
         threadStubArgs.thread->SetBackground (TRUE, FALSE);
         threadStubArgs.thread->StartThread();
