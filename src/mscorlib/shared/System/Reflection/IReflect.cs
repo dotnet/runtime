@@ -47,7 +47,7 @@ namespace System.Reflection
         MemberInfo[] GetMembers(BindingFlags bindingAttr);
 
         // Description of the Binding Process.
-        // We must invoke a method that is accessable and for which the provided
+        // We must invoke a method that is accessible and for which the provided
         // parameters have the most specific match.  A method may be called if
         // 1. The number of parameters in the method declaration equals the number of 
         //    arguments provided to the invocation
@@ -59,7 +59,7 @@ namespace System.Reflection
         // of methods is filtered by the name, number of arguments and a set of search modifiers
         // defined in the Binder.
         // 
-        // After the method is selected, it will be invoked.  Accessability is checked
+        // After the method is selected, it will be invoked.  Accessibility is checked
         // at that point.  The search may be control which set of methods are searched based
         // upon the accessibility attribute associated with the method.
         // 
