@@ -115,6 +115,34 @@ namespace System.Net.Http
             return input.Length - startIndex;
         }
 
+        [Pure]
+        internal static bool IsToken(string input)
+        {
+            for (int i = 0; i < input.Length; i++)
+            {
+                if (!IsTokenChar(input[i]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        [Pure]
+        internal static bool IsToken(ReadOnlySpan<byte> input)
+        {
+            for (int i = 0; i < input.Length; i++)
+            {
+                if (!IsTokenChar((char) input[i]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         internal static int GetWhitespaceLength(string input, int startIndex)
         {
             Debug.Assert(input != null);

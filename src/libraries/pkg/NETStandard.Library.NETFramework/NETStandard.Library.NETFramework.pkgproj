@@ -182,4 +182,8 @@
       </File>
     </ItemGroup>
   </Target>
+
+  <ItemGroup>
+    <IgnoredReference Include="System.Memory" />
+  </ItemGroup>
 </Project>

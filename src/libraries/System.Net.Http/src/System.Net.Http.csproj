@@ -33,6 +33,7 @@
   <!-- Common -->
   <ItemGroup>
     <Compile Include="System\Net\Http\ByteArrayContent.cs" />
+    <Compile Include="System\Net\Http\ByteArrayHelpers.cs" />
     <Compile Include="System\Net\Http\ClientCertificateOption.cs" />
     <Compile Include="System\Net\Http\DelegatingHandler.cs" />
     <Compile Include="System\Net\Http\FormUrlEncodedContent.cs" />
@@ -144,7 +145,6 @@
     <Compile Include="System\Net\Http\Managed\HttpContentWriteStream.cs" />
     <Compile Include="System\Net\Http\Managed\HttpProxyConnectionHandler.cs" />
     <Compile Include="System\Net\Http\Managed\ManagedHandler.cs" />
-    <Compile Include="System\Net\Http\Managed\ValueStringBuilder.cs" />
   </ItemGroup>
   <!-- Common, except for Windows net46 build -->
   <ItemGroup Condition="'$(TargetGroup)' != 'net46'  And '$(TargetGroup)' != 'netfx'">
@@ -208,6 +208,7 @@
     <Reference Include="mscorlib" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
   </ItemGroup>
   <!-- Unix -->
@@ -432,6 +433,7 @@
     <Reference Include="System.Diagnostics.Tools" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.IO.Compression" />
+    <Reference Include="System.Memory" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Security" />
     <Reference Include="System.Net.Sockets" />
