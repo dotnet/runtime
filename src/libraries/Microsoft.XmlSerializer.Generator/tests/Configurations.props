@@ -3,6 +3,8 @@
   <PropertyGroup>
     <BuildConfigurations>
       netstandard;
+      uap;
+      netcoreapp-Unix;
     </BuildConfigurations>
   </PropertyGroup>
 </Project>

@@ -3,15 +3,37 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <ProjectGuid>{0D1E2954-A5C7-4B8C-932A-31EB4A96A737}</ProjectGuid>
+    <DefineConstants>$(DefineConstants);XMLSERIALIZERGENERATORTESTS</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SkipTestsOnPlatform Condition="'$(TargetGroup)' == 'uap' OR '$(TargetsUnix)' == 'true'">true</SkipTestsOnPlatform>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='netstandard-Release|AnyCPU'" />
-  <ItemGroup>
-  <Compile Include=".\SGenTests.cs" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
+  <ItemGroup Condition=" '$(SkipTestsOnPlatform)' != 'true' ">
+    <Compile Include=".\SGenTests.cs" />
+    <Compile Include="$(TestSourceFolder)..\..\System.Runtime.Serialization.Xml\tests\Utils.cs" />
+    <Compile Include="$(TestSourceFolder)..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />
+    <Compile Include="$(TestSourceFolder)..\..\System.Private.Xml\tests\XmlSerializer\XmlSerializerTests.cs" />
   </ItemGroup>
-<ItemGroup>
-
+  <ItemGroup>
+    <Compile Include=".\AlwaysPassTest.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\src\Microsoft.XmlSerializer.Generator.csproj" />
   </ItemGroup>
+  <Target Name="GenerateSerializationAssembly" AfterTargets="Build" Condition=" '$(SkipTestsOnPlatform)' != 'true' " >
+    <PropertyGroup>
+      <SerializerName>$(AssemblyName).XmlSerializers</SerializerName>
+    </PropertyGroup>
+    <Copy SourceFiles="$(ToolsDir)\csc.runtimeconfig.json" DestinationFiles="$(OutputPath)Microsoft.XmlSerializer.Generator.runtimeconfig.json" />
+    <Message Text="Running Serialization Tool" Importance="normal" />
+    <Exec Command="$(ToolsDir)\dotnetcli\dotnet $(OutputPath)Microsoft.XmlSerializer.Generator.dll $(OutputPath)Microsoft.XmlSerializer.Generator.Tests.dll /force /casesensitive"  />
+    <Csc OutputAssembly="$(OutputPath)$(SerializerName).dll;" References="@(ReferencePath);@(IntermediateAssembly)" EmitDebugInformation="$(DebugSymbols)"  Sources="$(OutputPath)$(SerializerName).cs" TargetType="Library" ToolExe="$(CscToolExe)" ToolPath="$(CscToolPath)" WarningsAsErrors="false" DisabledWarnings="true"/>
+  </Target>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
