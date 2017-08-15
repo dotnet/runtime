@@ -78,11 +78,14 @@ using namespace CorUnix;
 
 CObjectType CorUnix::otProcess(
                 otiProcess,
-                NULL,
-                NULL,
-                0,
+                NULL,   // No cleanup routine
+                NULL,   // No initialization routine
+                0,      // No immutable data
+                NULL,   // No immutable data copy routine
+                NULL,   // No immutable data cleanup routine
                 sizeof(CProcProcessLocalData),
-                0,
+                NULL,   // No process local data cleanup routine
+                0,      // No shared data
                 PROCESS_ALL_ACCESS,
                 CObjectType::SecuritySupported,
                 CObjectType::SecurityInfoNotPersisted,

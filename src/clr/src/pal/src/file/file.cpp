@@ -56,6 +56,12 @@ InternalSetFilePointerForUnixFd(
     );
 
 void
+CFileProcessLocalDataCleanupRoutine(
+    CPalThread *pThread,
+    IPalObject *pObjectToCleanup
+    );
+
+void
 FileCleanupRoutine(
     CPalThread *pThread,
     IPalObject *pObjectToCleanup,
@@ -68,7 +74,10 @@ CObjectType CorUnix::otFile(
                 FileCleanupRoutine,
                 NULL,   // No initialization routine
                 0,      // No immutable data
+                NULL,   // No immutable data copy routine
+                NULL,   // No immutable data cleanup routine
                 sizeof(CFileProcessLocalData),
+                CFileProcessLocalDataCleanupRoutine,
                 0,      // No shared data
                 GENERIC_READ|GENERIC_WRITE,  // Ignored -- no Win32 object security support
                 CObjectType::SecuritySupported,
@@ -84,6 +93,34 @@ CObjectType CorUnix::otFile(
 CAllowedObjectTypes CorUnix::aotFile(otiFile);
 static CSharedMemoryFileLockMgr _FileLockManager;
 IFileLockManager *CorUnix::g_pFileLockManager = &_FileLockManager;
+
+void
+CFileProcessLocalDataCleanupRoutine(
+    CPalThread *pThread,
+    IPalObject *pObjectToCleanup
+    )
+{
+    PAL_ERROR palError;
+    CFileProcessLocalData *pLocalData = NULL;
+    IDataLock *pLocalDataLock = NULL;
+
+    palError = pObjectToCleanup->GetProcessLocalData(
+        pThread,
+        ReadLock,
+        &pLocalDataLock,
+        reinterpret_cast<void**>(&pLocalData)
+        );
+
+    if (NO_ERROR != palError)
+    {
+        ASSERT("Unable to obtain data to cleanup file object");
+        return;
+    }
+
+    free(pLocalData->unix_filename);
+
+    pLocalDataLock->ReleaseLock(pThread, FALSE);
+}
 
 void
 FileCleanupRoutine(
@@ -738,10 +775,12 @@ CorUnix::InternalCreateFile(
         goto done;
     }
 
-    if (strcpy_s(pLocalData->unix_filename, sizeof(pLocalData->unix_filename), lpUnixPath) != SAFECRT_SUCCESS)
+    _ASSERTE(pLocalData->unix_filename == NULL);
+    pLocalData->unix_filename = strdup(lpUnixPath);
+    if (pLocalData->unix_filename == NULL)
     {
-        palError = ERROR_INSUFFICIENT_BUFFER;
-        TRACE("strcpy_s failed!\n");
+        ASSERT("Unable to copy string\n");
+        palError = ERROR_INTERNAL_ERROR;
         goto done;
     }
 

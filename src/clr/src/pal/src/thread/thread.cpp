@@ -130,10 +130,13 @@ CObjectType CorUnix::otThread(
                 otiThread,
                 ThreadCleanupRoutine,
                 ThreadInitializationRoutine,
-                0, //sizeof(CThreadImmutableData),
+                0,      // sizeof(CThreadImmutableData),
+                NULL,   // No immutable data copy routine
+                NULL,   // No immutable data cleanup routine
                 sizeof(CThreadProcessLocalData),
-                0, //sizeof(CThreadSharedData),
-                0, // THREAD_ALL_ACCESS,
+                NULL,   // No process local data cleanup routine
+                0,      // sizeof(CThreadSharedData),
+                0,      // THREAD_ALL_ACCESS,
                 CObjectType::SecuritySupported,
                 CObjectType::SecurityInfoNotPersisted,
                 CObjectType::UnnamedObject,
