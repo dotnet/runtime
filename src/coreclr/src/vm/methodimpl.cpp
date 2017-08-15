@@ -72,6 +72,20 @@ PTR_MethodDesc MethodImpl::FindMethodDesc(DWORD slot, PTR_MethodDesc defaultRetu
         return defaultReturn;
     }
 
+    return GetMethodDesc(slotIndex, defaultReturn);
+}
+
+PTR_MethodDesc MethodImpl::GetMethodDesc(DWORD slotIndex, PTR_MethodDesc defaultReturn)
+{
+    CONTRACTL
+    {
+        if (FORBIDGC_LOADER_USE_ENABLED()) NOTHROW; else THROWS;
+        if (FORBIDGC_LOADER_USE_ENABLED()) GC_NOTRIGGER; else GC_TRIGGERS;
+        if (FORBIDGC_LOADER_USE_ENABLED()) FORBID_FAULT; else { INJECT_FAULT(COMPlusThrowOM()); }
+        MODE_ANY;
+    }
+    CONTRACTL_END
+
     DPTR(RelativePointer<PTR_MethodDesc>) pRelPtrForSlot = GetImpMDsNonNull();
     // The method descs are not offset by one
     TADDR base = dac_cast<TADDR>(pRelPtrForSlot) + slotIndex * sizeof(RelativePointer<MethodDesc *>);

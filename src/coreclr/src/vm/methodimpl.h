@@ -47,7 +47,7 @@ public:
         inline WORD GetSlot()
             { WRAPPER_NO_CONTRACT; CONSISTENCY_CHECK(IsValid()); _ASSERTE(FitsIn<WORD>(m_pImpl->GetSlots()[m_iCur])); return static_cast<WORD>(m_pImpl->GetSlots()[m_iCur]); }
         inline MethodDesc *GetMethodDesc()
-            { WRAPPER_NO_CONTRACT; return m_pImpl->FindMethodDesc(GetSlot(), (PTR_MethodDesc) m_pMD); }
+            { WRAPPER_NO_CONTRACT; return m_pImpl->GetMethodDesc(m_iCur, (PTR_MethodDesc) m_pMD); }
     };
 #endif // !DACCESS_COMPILE
 
@@ -128,6 +128,9 @@ public:
 
     // Returns the method desc for the replaced slot;
     PTR_MethodDesc FindMethodDesc(DWORD slot, PTR_MethodDesc defaultReturn);
+
+    // Returns the method desc for the slot index;
+    PTR_MethodDesc GetMethodDesc(DWORD slotIndex, PTR_MethodDesc defaultReturn);
 
 private:
     static const DWORD INVALID_INDEX = (DWORD)(-1);
