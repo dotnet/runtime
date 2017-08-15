@@ -41,32 +41,49 @@ shift
 goto :Arg_Loop
 
 :ToolsVersion
-:: Determine the tools version to pass to cmake/msbuild
-if not defined VisualStudioVersion (
-    if defined VS140COMNTOOLS (
-        goto :VS2015
-    ) 
-    goto :MissingVersion
-) 
-if "%VisualStudioVersion%"=="14.0" (
+
+if defined VisualStudioVersion goto :RunVCVars
+
+set _VSWHERE="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
+if exist %_VSWHERE% (
+  for /f "usebackq tokens=*" %%i in (`%_VSWHERE% -latest -property installationPath`) do set _VSCOMNTOOLS=%%i\Common7\Tools
+)
+if not exist "%_VSCOMNTOOLS%" set _VSCOMNTOOLS=%VS140COMNTOOLS%
+if not exist "%_VSCOMNTOOLS%" goto :MissingVersion
+
+call "%_VSCOMNTOOLS%\VsDevCmd.bat"
+
+:RunVCVars
+if "%VisualStudioVersion%"=="15.0" (
+    goto :VS2017
+) else if "%VisualStudioVersion%"=="14.0" (
     goto :VS2015
-) 
+)
 
 :MissingVersion
-:: Can't find VS 2013+
-echo Error: Visual Studio 2015 required  
-echo        Please see https://github.com/dotnet/corefx/blob/master/Documentation/project-docs/developer-guide.md for build instructions.
+:: Can't find VS 2015 or 2017
+echo Error: Visual Studio 2015 or 2017 required
+echo        Please see https://github.com/dotnet/corefx/tree/master/Documentation for build instructions.
 exit /b 1
 
-:VS2015
-:: Setup vars for VS2015
-set __VSVersion=vs2015
-set __PlatformToolset=v140
-if NOT "%__BuildArch%" == "arm64" ( 
+:VS2017
+:: Setup vars for VS2017
+set __VSVersion=vs2017
+set __PlatformToolset=v141
+if NOT "%__BuildArch%" == "arm64" (
     :: Set the environment for the native build
-    call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %__VCBuildArch%
+    call "%VS150COMNTOOLS%..\..\VC\Auxiliary\Build\vcvarsall.bat" %__VCBuildArch%
 )
 goto :SetupDirs
+
+:VS2015
+:: Setup vars for VS2015build
+set __VSVersion=vs2015
+set __PlatformToolset=v140
+if NOT "%__BuildArch%" == "arm64" (
+    :: Set the environment for the native build
+    call "%VS140COMNTOOLS%..\..\VC\vcvarsall.bat" %__VCBuildArch%
+)
 
 :SetupDirs
 :: Setup to cmake the native components
@@ -102,7 +119,7 @@ exit /b 1
 :GenVSSolution
 :: Regenerate the VS solution
 
-if /i "%__BuildArch%" == "arm64" ( 
+if /i "%__BuildArch%" == "arm64" (
     REM arm64 builds currently use private toolset which has not been released yet
     REM TODO, remove once the toolset is open.
     call :PrivateToolSet
