@@ -1579,8 +1579,12 @@ void fgArgInfo::ArgsComplete()
         // For RyuJIT backend we will expand a Multireg arg into a GT_FIELD_LIST
         // with multiple indirections, so here we consider spilling it into a tmp LclVar.
         //
-
+        CLANG_FORMAT_COMMENT_ANCHOR;
+#ifdef _TARGET_ARM_
+        bool isMultiRegArg = (curArgTabEntry->numRegs > 0) && (curArgTabEntry->numRegs + curArgTabEntry->numSlots > 1);
+#else
         bool isMultiRegArg = (curArgTabEntry->numRegs > 1);
+#endif
 
         if ((argx->TypeGet() == TYP_STRUCT) && (curArgTabEntry->needTmp == false))
         {
@@ -1589,10 +1593,6 @@ void fgArgInfo::ArgsComplete()
                 // Spill multireg struct arguments that have Assignments or Calls embedded in them
                 curArgTabEntry->needTmp = true;
             }
-#ifndef _TARGET_ARM_
-            // TODO-Arm: This optimization is not implemented for ARM32
-            // so we skip this for ARM32 until it is ported to use RyuJIT backend
-            //
             else
             {
                 // We call gtPrepareCost to measure the cost of evaluating this tree
@@ -1603,6 +1603,10 @@ void fgArgInfo::ArgsComplete()
                     // Spill multireg struct arguments that are expensive to evaluate twice
                     curArgTabEntry->needTmp = true;
                 }
+#ifndef _TARGET_ARM_
+                // TODO-Arm: This optimization is not implemented for ARM32
+                // so we skip this for ARM32 until it is ported to use RyuJIT backend
+                //
                 else if (argx->OperGet() == GT_OBJ)
                 {
                     GenTreeObj*          argObj     = argx->AsObj();
@@ -1644,8 +1648,8 @@ void fgArgInfo::ArgsComplete()
                             break;
                     }
                 }
-            }
 #endif // !_TARGET_ARM_
+            }
         }
 #endif // FEATURE_MULTIREG_ARGS
 #endif // LEGACY_BACKEND
