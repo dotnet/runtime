@@ -49,10 +49,10 @@
       "defaultValue": "x64"
     },
     "Framework":{
-      "description": "Build the specified framework (netcoreapp1.0 or netcoreapp1.1, default: netcoreapp1.0)",
+      "description": "Build the specified framework (netcoreapp1.0, netcoreapp1.1, netcoreapp2.0, or netcoreapp2.1 default: netcoreapp2.1)",
       "valueType": "property",
-      "values": ["netcoreapp1.0", "netcoreapp1.1", "netcoreapp2.0"],
-      "defaultValue": "netcoreapp2.0"
+      "values": ["netcoreapp1.0", "netcoreapp1.1", "netcoreapp2.0", "netcoreapp2.1"],
+      "defaultValue": "netcoreapp2.1"
     },    
     "ConfigurationGroup": {
       "description": "Sets the configuration group as Release or Debug.",
