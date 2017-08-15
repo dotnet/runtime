@@ -13,6 +13,7 @@
   <ItemGroup>
     <Compile Include="..\Utils.cs" />
     <Compile Include="..\SerializationTypes.cs" />
+    <Compile Include="..\SerializationTypes.RuntimeOnly.cs" />
     <Compile Include="..\SerializationTypes.CoreCLR.cs" />
     <Compile Include="XmlUTF8TextReaderTests.cs" />
     <Compile Include="PerformanceTestsCommon.cs" />

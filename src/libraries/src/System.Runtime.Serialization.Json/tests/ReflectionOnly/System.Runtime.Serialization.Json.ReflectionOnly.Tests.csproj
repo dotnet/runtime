@@ -12,6 +12,7 @@
   <ItemGroup>
     <Compile Include="$(TestSourceFolder)..\..\..\System.Runtime.Serialization.Xml\tests\Utils.cs" />
     <Compile Include="$(TestSourceFolder)..\..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />
+    <Compile Include="$(TestSourceFolder)..\..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.RuntimeOnly.cs" />
     <Compile Include="$(TestSourceFolder)..\DataContractJsonSerializer.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' != 'uapaot'">

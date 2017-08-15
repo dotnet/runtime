@@ -15,6 +15,7 @@
   <ItemGroup>
     <Compile Include="$(TestSourceFolder)..\..\System.Runtime.Serialization.Xml\tests\Utils.cs" />
     <Compile Include="$(TestSourceFolder)..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.cs" />
+    <Compile Include="$(TestSourceFolder)..\..\System.Runtime.Serialization.Xml\tests\SerializationTypes.RuntimeOnly.cs" />
     <Compile Include="$(TestSourceFolder)DataContractJsonSerializer.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />

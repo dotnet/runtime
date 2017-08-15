@@ -3393,4 +3393,13 @@
   <data name="Xslt_NotSupported" xml:space="preserve">
     <value>Compilation of XSLT is not supported on this platform.</value>
   </data>
+  <data name="ErrLoadAssembly" xml:space="preserve">
+    <value>File or assembly name '{0}', or one of its dependencies, was not found.</value>
+  </data>
+  <data name="InfoNoSerializableTypes" xml:space="preserve">
+    <value>Assembly '{0}' does not contain any types that can be serialized using XmlSerializer.</value>
+  </data>
+  <data name="FailLoadAssemblyUnderPregenMode" xml:space="preserve">
+    <value>"Fail to load assembly {0} or {0} doesn't exist under PreGen Mode.</value>
+  </data>
 </root>
