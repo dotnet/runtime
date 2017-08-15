@@ -106,7 +106,21 @@ if "%1" == "" goto ArgsDone
 if /i "%1" == "-?"    goto Usage
 if /i "%1" == "-h"    goto Usage
 if /i "%1" == "-help" goto Usage
+if /i "%1" == "--help" goto Usage
 
+
+if /i "%1" == "-all"                 (set __BuildAll=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-x64"                 (set __BuildArchX64=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-x86"                 (set __BuildArchX86=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-arm"                 (set __BuildArchArm=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-arm64"               (set __BuildArchArm64=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+
+if /i "%1" == "-debug"               (set __BuildTypeDebug=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-checked"             (set __BuildTypeChecked=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-release"             (set __BuildTypeRelease=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+
+REM TODO these are deprecated remove them eventually
+REM don't add more, use the - syntax instead
 if /i "%1" == "all"                 (set __BuildAll=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "x64"                 (set __BuildArchX64=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "x86"                 (set __BuildArchX86=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -125,6 +139,34 @@ if [!__PassThroughArgs!]==[] (
     set __PassThroughArgs=%__PassThroughArgs% %1
 )
 
+if /i "%1" == "-freebsdmscorlib"     (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildOS=FreeBSD&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-linuxmscorlib"       (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildOS=Linux&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-netbsdmscorlib"      (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildOS=NetBSD&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-osxmscorlib"         (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildOS=OSX&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-windowsmscorlib"     (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildOS=Windows_NT&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-nativemscorlib"      (set __BuildNativeCoreLib=1&set __BuildCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-configureonly"       (set __ConfigureOnly=1&set __BuildNative=1&set __BuildNativeCoreLib=0&set __BuildCoreLib=0&set __BuildTests=0&set __BuildPackages=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-skipconfigure"       (set __SkipConfigure=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-skipmscorlib"        (set __BuildCoreLib=0&set __BuildNativeCoreLib=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-skipnative"          (set __BuildNative=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-skiptests"           (set __BuildTests=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-skipbuildpackages"   (set __BuildPackages=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-skiprestoreoptdata"  (set __RestoreOptData=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-usenmakemakefiles"   (set __NMakeMakefiles=1&set __ConfigureOnly=1&set __BuildNative=1&set __BuildNativeCoreLib=0&set __BuildCoreLib=0&set __BuildTests=0&set __BuildPackages=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-pgoinstrument"       (set __PgoInstrument=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-enforcepgo"          (set __EnforcePgo=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-nopgooptimize"       (set __PgoOptimize=0&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-ibcinstrument"       (set __IbcTuning=/Tuning&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
+if /i "%1" == "-toolset_dir"         (set __ToolsetDir=%2&set __PassThroughArgs=%__PassThroughArgs% %2&set processedArgs=!processedArgs! %1 %2&shift&shift&goto Arg_Loop)
+if /i "%1" == "-buildstandalonegc"   (
+    set __BuildStandaloneGC="-DFEATURE_STANDALONE_GC=1"
+    set __BuildStandaloneGCOnly="-DFEATURE_STANDALONE_GC_ONLY=1"
+    set processedArgs=!processedArgs! %1
+    shift&goto Arg_Loop
+)
+
+REM TODO these are deprecated remove them eventually
+REM don't add more, use the - syntax instead
 if /i "%1" == "freebsdmscorlib"     (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildOS=FreeBSD&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "linuxmscorlib"       (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildOS=Linux&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
 if /i "%1" == "netbsdmscorlib"      (set __BuildNativeCoreLib=0&set __BuildNative=0&set __BuildTests=0&set __BuildPackages=0&set __BuildOS=NetBSD&set __SkipNugetPackage=1&set processedArgs=!processedArgs! %1&shift&goto Arg_Loop)
@@ -631,29 +673,29 @@ echo     build.cmd all [option1] [option2] -- ...
 echo.
 echo All arguments are optional. The options are:
 echo.
-echo.-? -h -help: view this message.
-echo all: Builds all configurations and platforms.
-echo Build architecture: one of x64, x86, arm, arm64 ^(default: x64^).
-echo Build type: one of Debug, Checked, Release ^(default: Debug^).
+echo.-? -h -help --help: view this message.
+echo -all: Builds all configurations and platforms.
+echo Build architecture: one of -x64, -x86, -arm, -arm64 ^(default: -x64^).
+echo Build type: one of -Debug, -Checked, -Release ^(default: -Debug^).
 echo -- ... : all arguments following this tag will be passed directly to msbuild.
-echo mscorlib version: one of freebsdmscorlib, linuxmscorlib, netbsdmscorlib, osxmscorlib,
-echo     or windowsmscorlib. If one of these is passed, only System.Private.CoreLib is built,
+echo mscorlib version: one of -freebsdmscorlib, -linuxmscorlib, -netbsdmscorlib, -osxmscorlib,
+echo     or -windowsmscorlib. If one of these is passed, only System.Private.CoreLib is built,
 echo     for the specified platform ^(FreeBSD, Linux, NetBSD, OS X or Windows,
 echo     respectively^).
 echo     add nativemscorlib to go further and build the native image for designated mscorlib.
-echo toolset_dir ^<dir^> : set the toolset directory -- Arm64 use only. Required for Arm64 builds.
-echo nopgooptimize: do not use profile guided optimizations.
-echo enforcepgo: verify after the build that PGO was used for key DLLs, and fail the build if not
-echo pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.
-echo ibcinstrument: generate IBC-tuning-enabled native images when invoking crossgen.
-echo configureonly: skip all builds; only run CMake ^(default: CMake and builds are run^)
-echo skipconfigure: skip CMake ^(default: CMake is run^)
-echo skipmscorlib: skip building System.Private.CoreLib ^(default: System.Private.CoreLib is built^).
-echo skipnative: skip building native components ^(default: native components are built^).
-echo skiptests: skip building tests ^(default: tests are built^).
-echo skipbuildpackages: skip building nuget packages ^(default: packages are built^).
-echo skiprestoreoptdata: skip restoring optimization data used by profile-based optimizations.
-echo buildstandalonegc: builds the GC in a standalone mode.
+echo -toolset_dir ^<dir^> : set the toolset directory -- Arm64 use only. Required for Arm64 builds.
+echo -nopgooptimize: do not use profile guided optimizations.
+echo -enforcepgo: verify after the build that PGO was used for key DLLs, and fail the build if not
+echo -pgoinstrument: generate instrumented code for profile guided optimization enabled binaries.
+echo -ibcinstrument: generate IBC-tuning-enabled native images when invoking crossgen.
+echo -configureonly: skip all builds; only run CMake ^(default: CMake and builds are run^)
+echo -skipconfigure: skip CMake ^(default: CMake is run^)
+echo -skipmscorlib: skip building System.Private.CoreLib ^(default: System.Private.CoreLib is built^).
+echo -skipnative: skip building native components ^(default: native components are built^).
+echo -skiptests: skip building tests ^(default: tests are built^).
+echo -skipbuildpackages: skip building nuget packages ^(default: packages are built^).
+echo -skiprestoreoptdata: skip restoring optimization data used by profile-based optimizations.
+echo -buildstandalonegc: builds the GC in a standalone mode.
 echo -skiprestore: skip restoring packages ^(default: packages are restored during build^).
 echo -disableoss: Disable Open Source Signing for System.Private.CoreLib.
 echo -priority=^<N^> : specify a set of test that will be built and run, with priority N.
@@ -668,11 +710,11 @@ echo one or more build architectures or types is specified, then only those buil
 echo and types are built.
 echo.
 echo For example:
-echo     build all
+echo     build -all
 echo        -- builds all architectures, and all build types per architecture
-echo     build all x86
+echo     build -all -x86
 echo        -- builds all build types for x86
-echo     build all x64 x86 Checked Release
+echo     build -all -x64 -x86 -Checked -Release
 echo        -- builds x64 and x86 architectures, Checked and Release build types for each
 exit /b 1
 
