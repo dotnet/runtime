@@ -14,6 +14,7 @@
     <Compile Include="$(TestSourceFolder)..\DataContractSerializerStressTests.cs" />
     <Compile Include="$(TestSourceFolder)..\Utils.cs" />
     <Compile Include="$(TestSourceFolder)..\SerializationTypes.cs" />
+    <Compile Include="$(TestSourceFolder)..\SerializationTypes.RuntimeOnly.cs" />
     <Compile Include="$(TestSourceFolder)..\DataContractSerializer.cs" />
     <Compile Include="$(TestSourceFolder)..\MyResolver.cs" />
     <Compile Include="$(TestSourceFolder)..\XmlDictionaryReaderTests.cs" />

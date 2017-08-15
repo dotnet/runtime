@@ -8,6 +8,8 @@
     <StringResourcesPath>..\..\System.Private.Xml\src\Resources\Strings.resx</StringResourcesPath>
     <DefineConstants>$(DefineConstants);XMLSERIALIZERGENERATOR</DefineConstants>
     <SourceDir>..\..\System.Private.Xml\src</SourceDir>
+    <OutputType>Exe</OutputType>
+    <TargetExt>.dll</TargetExt>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the options -->
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
@@ -156,6 +158,12 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Resources\$(AssemblyName).rd.xml" />
+    <Content Include="Microsoft.XmlSerializer.Generator.runtimeconfig.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="prefercliruntime">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
