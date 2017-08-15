@@ -8,6 +8,14 @@
 
 namespace System.Security.Cryptography
 {
+    public abstract partial class DSA : System.Security.Cryptography.AsymmetricAlgorithm
+    {
+        public virtual bool TryCreateSignature(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten) { throw null; }
+        protected virtual bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) { throw null; }
+        public virtual bool TrySignData(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) { throw null; }
+        public virtual bool VerifyData(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature, HashAlgorithmName hashAlgorithm) { throw null; }
+        public virtual bool VerifySignature(ReadOnlySpan<byte> rgbHash, ReadOnlySpan<byte> rgbSignature) { throw null; }
+    }
     public sealed partial class IncrementalHash : System.IDisposable
     {
         public void AppendData(System.ReadOnlySpan<byte> data) { }
