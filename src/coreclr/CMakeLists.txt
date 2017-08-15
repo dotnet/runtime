@@ -344,6 +344,10 @@ if (WIN32)
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /DEBUG /PDBCOMPRESS")
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /STACK:1572864")
 
+  # Temporarily disable incremental link due to incremental linking CFG bug crashing crossgen. 
+  # See https://github.com/dotnet/coreclr/issues/12592
+  set(NO_INCREMENTAL_LINKER_FLAGS "/INCREMENTAL:NO")  
+
   # Debug build specific flags
   set(CMAKE_SHARED_LINKER_FLAGS_DEBUG "/NOVCFEATURE ${NO_INCREMENTAL_LINKER_FLAGS}")
   set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${NO_INCREMENTAL_LINKER_FLAGS}")

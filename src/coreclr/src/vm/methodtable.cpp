@@ -6903,7 +6903,7 @@ MethodTable::FindDispatchImpl(
                 // See if we can find a default method from one of the implemented interfaces 
                 //
                 MethodDesc *pDefaultMethod = NULL;
-                if (FindDefaultMethod(
+                if (FindDefaultInterfaceImplementation(
                     pIfcMD,     // the interface method being resolved
                     pIfcMT,     // the interface being resolved
                     &pDefaultMethod))
@@ -6943,7 +6943,46 @@ MethodTable::FindDispatchImpl(
 }
 
 #ifndef DACCESS_COMPILE
-BOOL MethodTable::FindDefaultMethod(
+
+struct MatchCandidate
+{
+    MethodTable *pMT;
+    MethodDesc *pMD;
+};
+
+void ThrowExceptionForConflictingOverride(
+    MethodTable *pTargetClass,
+    MethodTable *pInterfaceMT,
+    MethodDesc *pInterfaceMD)
+{
+    LIMITED_METHOD_CONTRACT;
+
+    SString assemblyName;
+
+    pTargetClass->GetAssembly()->GetDisplayName(assemblyName);
+
+    SString strInterfaceName;
+    TypeString::AppendType(strInterfaceName, TypeHandle(pInterfaceMT));
+
+    SString strMethodName;
+    TypeString::AppendMethod(strMethodName, pInterfaceMD, pInterfaceMD->GetMethodInstantiation());
+
+    SString strTargetClassName;
+    TypeString::AppendType(strTargetClassName, pTargetClass);
+
+    COMPlusThrow(
+        kNotSupportedException,
+        IDS_CLASSLOAD_AMBIGUOUS_OVERRIDE,
+        strInterfaceName,
+        strMethodName,
+        strTargetClassName,
+        assemblyName);
+}
+
+// Find the default interface implementation method for interface dispatch
+// It is either the interface method with default interface method implementation, 
+// or an most specific interface with an explicit methodimpl overriding the method
+BOOL MethodTable::FindDefaultInterfaceImplementation(
     MethodDesc *pInterfaceMD,
     MethodTable *pInterfaceMT,
     MethodDesc **ppDefaultMethod
@@ -6960,20 +6999,17 @@ BOOL MethodTable::FindDefaultMethod(
         POSTCONDITION(!RETVAL || (*ppDefaultMethod) != nullptr);
     } CONTRACT_END;
 
-    //
-    // Find best candidate
-    //
     InterfaceMapIterator it = this->IterateInterfaceMap();
-    MethodTable *pBestCandidateMT = NULL;
-    MethodDesc  *pBestCandidateMD = NULL;
 
-
+    CQuickArray<MatchCandidate> candidates;
+    int candidatesCount = 0;
+    candidates.AllocThrows(this->GetNumInterfaces());
+    
     //
     // Walk interface from derived class to parent class
-    //
-    // @DIM_TODO - This is a first cut naive implementation for prototyping and flush out other 
-    // implementation issues without worrying too much about ordering/checks
-    // Once CLR/C# team has agreed on the right order, we'll replace this with the real deal
+    // We went with a straight-forward implementation as in most cases the number of interfaces are small
+    // and the result of the interface dispatch are already cached. If there are significant usage of default
+    // interface methods in highly complex interface hierarchies we can revisit this
     //
     MethodTable *pMT = this;
     while (pMT != NULL)
@@ -7006,31 +7042,52 @@ BOOL MethodTable::FindDefaultMethod(
                 {
                     if (pCurMT->HasSameTypeDefAs(pInterfaceMT))
                     {
-                        // Generic variance match
+                        // Generic variance match - we'll instantiate pCurMD with the right type arguments later
                         pCurMD = pInterfaceMD;
                     }
                     else
                     {
                         //
-                        // Parent interface - search for an methodimpl for explicit override
+                        // A more specific interface - search for an methodimpl for explicit override
                         // Implicit override in default interface methods are not allowed
                         //
                         MethodIterator methodIt(pCurMT);
                         for (; methodIt.IsValid(); methodIt.Next())
                         {
                             MethodDesc *pMD = methodIt.GetMethodDesc();
-                            if (pMD->IsVirtual() && !pMD->IsAbstract() && pMD->IsMethodImpl())
+                            int targetSlot = pInterfaceMD->GetSlot();
+
+                            if (pMD->IsMethodImpl())
                             {
                                 MethodImpl::Iterator it(pMD);
-                                while (it.IsValid())
+                                for (; it.IsValid(); it.Next())
                                 {
-                                    if (it.GetMethodDesc() == pInterfaceMD)
+                                    MethodDesc *pDeclMD = it.GetMethodDesc();
+
+                                    if (pDeclMD->GetSlot() != targetSlot)
+                                        continue;
+
+                                    MethodTable *pDeclMT = pDeclMD->GetMethodTable();
+                                    if (pDeclMT->ContainsGenericVariables())
                                     {
+                                        TypeHandle thInstDeclMT = ClassLoader::LoadGenericInstantiationThrowing(
+                                            pDeclMT->GetModule(),
+                                            pDeclMT->GetCl(),
+                                            pCurMT->GetInstantiation());
+                                        MethodTable *pInstDeclMT = thInstDeclMT.GetMethodTable();
+                                        if (pInstDeclMT == pInterfaceMT)
+                                        {
+                                            // This is a matching override. We'll instantiate pCurMD later
+                                            pCurMD = pMD;
+                                            break;
+                                        }
+                                    }
+                                    else if (pDeclMD == pInterfaceMD)
+                                    {
+                                        // Exact match override 
                                         pCurMD = pMD;
                                         break;
                                     }
-
-                                    it.Next();
                                 } 
                             }
                         }
@@ -7059,23 +7116,64 @@ BOOL MethodTable::FindDefaultMethod(
                         );
                     }
 
-                    if (pBestCandidateMT != pCurMT)
-                    {                    
-                        if (pBestCandidateMT == NULL ||                         // first time
-                            pCurMT->CanCastToInterface(pBestCandidateMT))       // Prefer "more specific"" interface
+                    bool needToInsert = true;
+                    bool seenMoreSpecific = false;
+
+                    // We need to maintain the invariant that the candidates are always the most specific
+                    // in all path scaned so far. There might be multiple incompatible candidates 
+                    for (int i = 0; i < candidatesCount; ++i)
+                    {
+                        MethodTable *pCandidateMT = candidates[i].pMT;
+                        if (pCandidateMT == NULL)
+                            continue;
+
+                        if (pCandidateMT == pCurMT)
                         {
-                            // This is a better match
-                            pBestCandidateMT = pCurMT;
-                            pBestCandidateMD = pCurMD;
+                            // A dup - we are done
+                            needToInsert = false;
+                            break;
+                        }
+
+                        if (pCurMT->CanCastToInterface(pCandidateMT))
+                        {
+                            // pCurMT is a more specific choice than IFoo/IBar both overrides IBlah :
+                            //         /--> IFoo ---\ 
+                            // pCurMT -              -->IBlah
+                            //         \--> IBar ---/
+                            // Only update first entry IFoo and null out IBar
+                            if (!seenMoreSpecific)
+                            {
+                                seenMoreSpecific = true;
+                                candidates[i].pMT = pCurMT;
+                                candidates[i].pMD = pCurMD;
+                            }
+                            else
+                            {
+                                candidates[i].pMT = NULL;
+                                candidates[i].pMD = NULL;
+                            }
+
+                            needToInsert = false;
+                        }
+                        else if (pCandidateMT->CanCastToInterface(pCurMT))
+                        {
+                            // pCurMT is less specific - we don't need to scan more entries as this entry can
+                            // represent pCurMT (other entries are incompatible with pCurMT)
+                            needToInsert = false;
+                            break;
                         }
                         else
                         {
-                            if (!pBestCandidateMT->CanCastToInterface(pCurMT))
-                            {
-                                // not good. we have a conflict 
-                                COMPlusThrow(kNotSupportedException);
-                            }
+                            // pCurMT is incompatible - keep scanning 
                         }
+                    }
+                    
+                    if (needToInsert)
+                    {
+                        ASSERT(candidatesCount < candidates.Size());
+                        candidates[candidatesCount].pMT = pCurMT;
+                        candidates[candidatesCount].pMD = pCurMD;
+                        candidatesCount++;
                     }
                 }
 
@@ -7084,6 +7182,25 @@ BOOL MethodTable::FindDefaultMethod(
         }
 
         pMT = pParentMT;
+    }
+
+    // scan to see if there are any conflicts
+    MethodTable *pBestCandidateMT = NULL;
+    MethodDesc *pBestCandidateMD = NULL;
+    for (int i = 0; i < candidatesCount; ++i)
+    {
+        if (candidates[i].pMT == NULL)
+            continue;
+
+        if (pBestCandidateMT == NULL)
+        {
+            pBestCandidateMT = candidates[i].pMT;
+            pBestCandidateMD = candidates[i].pMD;
+        }
+        else if (pBestCandidateMT != candidates[i].pMT)
+        {
+            ThrowExceptionForConflictingOverride(this, pInterfaceMT, pInterfaceMD);
+        }
     }
 
     if (pBestCandidateMD != NULL)
