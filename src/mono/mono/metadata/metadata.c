@@ -1641,6 +1641,16 @@ mono_metadata_init (void)
 {
 	int i;
 
+	/* We guard against double initialization due to how pedump in verification mode works.
+	Until runtime initialization is properly factored to work with what it needs we need workarounds like this.
+	FIXME: https://bugzilla.xamarin.com/show_bug.cgi?id=58793
+	*/
+	static gboolean inited;
+
+	if (inited)
+		return;
+	inited = TRUE;
+
 	type_cache = g_hash_table_new (mono_type_hash, mono_type_equal);
 
 	for (i = 0; i < NBUILTIN_TYPES (); ++i)
