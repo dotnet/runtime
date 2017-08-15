@@ -1894,8 +1894,13 @@ handle_enum:
 		FAIL (ctx, g_strdup_printf ("CustomAttribute: Invalid boxed object type %x", sub_type));
 	}
 
-
 	case MONO_TYPE_CLASS:
+		if (klass && klass->enumtype) {
+			klass = klass->element_class;
+			type = klass->byval_arg.type;
+			goto handle_enum;
+		}
+
 		if (klass != mono_defaults.systemtype_class)
 			FAIL (ctx, g_strdup_printf ("CustomAttribute: Invalid class parameter type %s:%s ",klass->name_space, klass->name));
 		*_ptr = ptr;
@@ -2413,7 +2418,7 @@ verify_typedef_table (VerifyContext *ctx)
 	for (i = 0; i < table->rows; ++i) {
 		mono_metadata_decode_row (table, i, data, MONO_TYPEDEF_SIZE);
 		if (data [MONO_TYPEDEF_FLAGS] & INVALID_TYPEDEF_FLAG_BITS)
-			ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d invalid flags field 0x%08x", i, data [MONO_TYPEDEF_FLAGS]));
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d invalid flags field 0x%08x rejected bits: 0x%08x", i, data [MONO_TYPEDEF_FLAGS], data [MONO_TYPEDEF_FLAGS] & INVALID_TYPEDEF_FLAG_BITS));
 
 		if ((data [MONO_TYPEDEF_FLAGS] & TYPE_ATTRIBUTE_LAYOUT_MASK) == 0x18)
 			ADD_ERROR (ctx, g_strdup_printf ("Invalid typedef row %d invalid class layout 0x18", i));
@@ -2962,8 +2967,11 @@ verify_cattr_table_full (VerifyContext *ctx)
 		/*This can't fail since this is checked in is_valid_cattr_blob*/
 		g_assert (decode_signature_header (ctx, data [MONO_CUSTOM_ATTR_VALUE], &size, &ptr));
 
-		if (!is_valid_cattr_content (ctx, ctor, ptr, size))
-			ADD_ERROR (ctx, g_strdup_printf ("Invalid CustomAttribute content row %d Value field 0x%08x", i, data [MONO_CUSTOM_ATTR_VALUE]));
+		if (!is_valid_cattr_content (ctx, ctor, ptr, size)) {
+			char *ctor_name =  mono_method_full_name (ctor, TRUE);
+			ADD_ERROR (ctx, g_strdup_printf ("Invalid CustomAttribute content row %d Value field 0x%08x ctor: %s", i, data [MONO_CUSTOM_ATTR_VALUE], ctor_name));
+			g_free (ctor_name);
+		}
 	}
 }
 
