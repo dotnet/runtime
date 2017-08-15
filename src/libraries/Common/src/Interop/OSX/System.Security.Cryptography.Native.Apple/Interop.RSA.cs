@@ -154,19 +154,20 @@ internal static partial class Interop
             RSAEncryptionPadding padding)
         {
             return ExecuteTransform(
-                (out SafeCFDataHandle encrypted, out SafeCFErrorHandle error) =>
+                data,
+                (ReadOnlySpan<byte> source, out SafeCFDataHandle encrypted, out SafeCFErrorHandle error) =>
                 {
                     if (padding == RSAEncryptionPadding.Pkcs1)
                     {
-                        return RsaEncryptPkcs(publicKey, data, data.Length, out encrypted, out error);
+                        return RsaEncryptPkcs(publicKey, source, source.Length, out encrypted, out error);
                     }
 
                     Debug.Assert(padding.Mode == RSAEncryptionPaddingMode.Oaep);
 
                     return RsaEncryptOaep(
                         publicKey,
-                        data,
-                        data.Length,
+                        source,
+                        source.Length,
                         PalAlgorithmFromAlgorithmName(padding.OaepHashAlgorithm),
                         out encrypted,
                         out error);
@@ -199,19 +200,20 @@ internal static partial class Interop
             RSAEncryptionPadding padding)
         {
             return ExecuteTransform(
-                (out SafeCFDataHandle decrypted, out SafeCFErrorHandle error) =>
+                data,
+                (ReadOnlySpan<byte> source, out SafeCFDataHandle decrypted, out SafeCFErrorHandle error) =>
                 {
                     if (padding == RSAEncryptionPadding.Pkcs1)
                     {
-                        return RsaDecryptPkcs(privateKey, data, data.Length, out decrypted, out error);
+                        return RsaDecryptPkcs(privateKey, source, source.Length, out decrypted, out error);
                     }
 
                     Debug.Assert(padding.Mode == RSAEncryptionPaddingMode.Oaep);
 
                     return RsaDecryptOaep(
                         privateKey,
-                        data,
-                        data.Length,
+                        source,
+                        source.Length,
                         PalAlgorithmFromAlgorithmName(padding.OaepHashAlgorithm),
                         out decrypted,
                         out error);

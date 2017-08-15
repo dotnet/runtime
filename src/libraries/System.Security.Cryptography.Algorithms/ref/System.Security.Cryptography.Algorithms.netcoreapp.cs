@@ -16,6 +16,14 @@ namespace System.Security.Cryptography
         public virtual bool VerifyData(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature, HashAlgorithmName hashAlgorithm) { throw null; }
         public virtual bool VerifySignature(ReadOnlySpan<byte> rgbHash, ReadOnlySpan<byte> rgbSignature) { throw null; }
     }
+    public abstract partial class ECDsa : System.Security.Cryptography.AsymmetricAlgorithm
+    {
+        protected virtual bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) { throw null; }
+        public virtual bool TrySignData(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) { throw null; }
+        public virtual bool TrySignHash(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten) { throw null; }
+        public virtual bool VerifyData(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature, HashAlgorithmName hashAlgorithm) { throw null; }
+        public virtual bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature) { throw null; }
+    }
     public sealed partial class IncrementalHash : System.IDisposable
     {
         public void AppendData(System.ReadOnlySpan<byte> data) { }

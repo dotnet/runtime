@@ -123,6 +123,34 @@ namespace System.Security.Cryptography
                     return ieeeFormatSignature;
                 }
 
+                public override bool TrySignHash(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
+                {
+                    SecKeyPair keys = GetKeys();
+                    if (keys.PrivateKey == null)
+                    {
+                        throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
+                    }
+
+                    byte[] derFormatSignature = Interop.AppleCrypto.GenerateSignature(keys.PrivateKey, source);
+                    byte[] ieeeFormatSignature = AsymmetricAlgorithmHelpers.ConvertDerToIeee1363(
+                        derFormatSignature,
+                        0,
+                        derFormatSignature.Length,
+                        KeySize);
+
+                    if (ieeeFormatSignature.Length <= destination.Length)
+                    {
+                        new ReadOnlySpan<byte>(ieeeFormatSignature).CopyTo(destination);
+                        bytesWritten = ieeeFormatSignature.Length;
+                        return true;
+                    }
+                    else
+                    {
+                        bytesWritten = 0;
+                        return false;
+                    }
+                }
+
                 public override bool VerifyHash(byte[] hash, byte[] signature)
                 {
                     if (hash == null)
@@ -130,23 +158,23 @@ namespace System.Security.Cryptography
                     if (signature == null)
                         throw new ArgumentNullException(nameof(signature));
 
-                    byte[] derFormatSignature = AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(signature);
+                    return VerifyHash((ReadOnlySpan<byte>)hash, (ReadOnlySpan<byte>)signature);
+                }
 
-                    return Interop.AppleCrypto.VerifySignature(
+                public override bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature) =>
+                    Interop.AppleCrypto.VerifySignature(
                         GetKeys().PublicKey,
                         hash,
-                        derFormatSignature);
-                }
+                        AsymmetricAlgorithmHelpers.ConvertIeee1363ToDer(signature));
 
-                protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
-                {
-                    return AsymmetricAlgorithmHelpers.HashData(data, offset, count, hashAlgorithm);
-                }
+                protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
+                    AsymmetricAlgorithmHelpers.HashData(data, offset, count, hashAlgorithm);
 
-                protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm)
-                {
-                    return AsymmetricAlgorithmHelpers.HashData(data, hashAlgorithm);
-                }
+                protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
+                    AsymmetricAlgorithmHelpers.HashData(data, hashAlgorithm);
+
+                protected override bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
+                    AsymmetricAlgorithmHelpers.TryHashData(source, destination, hashAlgorithm, out bytesWritten);
 
                 protected override void Dispose(bool disposing)
                 {
