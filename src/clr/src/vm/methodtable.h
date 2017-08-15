@@ -2487,7 +2487,7 @@ public:
 
 
 #ifndef DACCESS_COMPILE
-    BOOL FindDefaultMethod(
+    BOOL FindDefaultInterfaceImplementation(
         MethodDesc *pInterfaceMD,
         MethodTable *pObjectMT,
         MethodDesc **ppDefaultMethod);
