@@ -31,37 +31,37 @@
           }
         },
         {
-          "Name": "Core-Setup-Linux-BT",
+          "Name": "Core-Setup-Linux-Arm-BT",
           "Parameters": {
             "PB_DistroRid": "rhel.6-x64",
             "PB_DockerTag": "centos-6-c8c9b08-20174310104313",
-            "PB_AdditionalBuildArguments":"-PortableBuild=false -strip-symbols",
+            "PB_TargetArchitecture": "x64",
+            "PB_AdditionalBuildArguments":"-TargetArchitecture=x64 -DistroRid=rhel.6-x64 -PortableBuild=false -strip-symbols",
             "PB_PortableBuild": "false"
           },
           "ReportingParameters": {
-            "SubType": "LabBuild",
             "OperatingSystem": "RedHat6",
             "Type": "build/product/",
             "Platform": "x64"
           }
-        },		
+        },
         {
-          "Name": "Core-Setup-Linux-Arm-BT", 
-          "Parameters": { 
-            "PB_DistroRid": "ubuntu.14.04-arm", 
-            "PB_DockerTag": "ubuntu-14.04-cross-0cd4667-20172211042239", 
-            "PB_TargetArchitecture": "arm", 
+          "Name": "Core-Setup-Linux-Arm-BT",
+          "Parameters": {
+            "PB_DistroRid": "ubuntu.14.04-arm",
+            "PB_DockerTag": "ubuntu-14.04-cross-0cd4667-20172211042239",
+            "PB_TargetArchitecture": "arm",
             "PB_AdditionalBuildArguments":"-TargetArchitecture=arm -DistroRid=linux-arm -DisableCrossgen=true -PortableBuild=true -SkipTests=true -CrossBuild=true -strip-symbols",
             "PB_CrossBuildArgs": "-e ROOTFS_DIR ",
-            "PB_PortableBuild": "true" 
-          }, 
-          "ReportingParameters": { 
-            "SubType": "PortableBuild", 
-            "OperatingSystem": "Ubuntu 14.04", 
-            "Type": "build/product/", 
-            "Platform": "arm" 
-          } 
-        },         
+            "PB_PortableBuild": "true"
+          },
+          "ReportingParameters": {
+            "SubType": "PortableBuild",
+            "OperatingSystem": "Ubuntu 14.04",
+            "Type": "build/product/",
+            "Platform": "arm"
+          }
+        },
         {
           "Name": "Core-Setup-OSX-BT",
           "Parameters": {
