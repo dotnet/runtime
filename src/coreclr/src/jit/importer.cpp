@@ -3257,18 +3257,18 @@ GenTreePtr Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
     impPopStack();
 
     const unsigned blkSize = size.Value();
-    GenTreePtr     dst;
+    unsigned       dataOffset;
 
     if (isMDArray)
     {
-        unsigned dataOffset = eeGetMDArrayDataOffset(elementType, rank);
-
-        dst = gtNewOperNode(GT_ADD, TYP_BYREF, arrayLocalNode, gtNewIconNode(dataOffset, TYP_I_IMPL));
+        dataOffset = eeGetMDArrayDataOffset(elementType, rank);
     }
     else
     {
-        dst = gtNewOperNode(GT_ADDR, TYP_BYREF, gtNewIndexRef(elementType, arrayLocalNode, gtNewIconNode(0)));
+        dataOffset = eeGetArrayDataOffset(elementType);
     }
+
+    GenTreePtr dst     = gtNewOperNode(GT_ADD, TYP_BYREF, arrayLocalNode, gtNewIconNode(dataOffset, TYP_I_IMPL));
     GenTreePtr blk     = gtNewBlockVal(dst, blkSize);
     GenTreePtr srcAddr = gtNewIconHandleNode((size_t)initData, GTF_ICON_STATIC_HDL);
     GenTreePtr src     = gtNewOperNode(GT_IND, TYP_STRUCT, srcAddr);
