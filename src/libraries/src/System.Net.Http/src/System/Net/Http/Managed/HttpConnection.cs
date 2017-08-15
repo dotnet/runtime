@@ -827,7 +827,7 @@ namespace System.Net.Http
                 {
                     // Couldn't find a \r.  Read more.
                     searchOffset = length;
-                    await FillAsync(cancellationToken);
+                    await FillAsync(cancellationToken).ConfigureAwait(false);
                 }
                 else if (crPos + 1 >= _readLength)
                 {
@@ -846,11 +846,6 @@ namespace System.Net.Http
                 else
                 {
                     ThrowInvalidHttpResponse();
-                }
-
-                if (remaining == _readLength - _readOffset)
-                {
-                    throw new IOException(SR.net_http_invalid_response);
                 }
             }
         }
@@ -877,18 +872,11 @@ namespace System.Net.Http
 
                 // If we were unable to get more, it's an error.
                 // Otherwise, loop around to look again.
-                int newRemaining = _readLength - _readOffset;
-                if (remaining == newRemaining)
-                {
-                    break;
-                }
-                remaining = newRemaining;
+                remaining = _readLength - _readOffset;
             }
-
-            // Couldn't find the expect CrLf.
-            throw new IOException(SR.net_http_invalid_response);
         }
 
+        // Throws IOException on EOF.
         private Task FillAsync(CancellationToken cancellationToken)
         {
             int remaining = _readLength - _readOffset;
@@ -945,6 +933,11 @@ namespace System.Net.Http
                 // The read completed synchronously, so update the amount of data in the buffer and return.
                 int bytesRead = t.GetAwaiter().GetResult();
                 if (NetEventSource.IsEnabled) Trace($"Received {bytesRead} bytes.");
+                if (bytesRead == 0)
+                {
+                    throw new IOException(SR.net_http_invalid_response);
+                }
+
                 _readLength += bytesRead;
                 return Task.CompletedTask;
             }
@@ -957,6 +950,11 @@ namespace System.Net.Http
                     var innerConnection = (HttpConnection)state;
                     int bytesRead = completed.GetAwaiter().GetResult();
                     if (NetEventSource.IsEnabled) innerConnection.Trace($"Received {bytesRead} bytes.");
+                    if (bytesRead == 0)
+                    {
+                        throw new IOException(SR.net_http_invalid_response);
+                    }
+
                     innerConnection._readLength += bytesRead;
                 }, this, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
             }
@@ -984,18 +982,6 @@ namespace System.Net.Http
             }
 
             // No data in read buffer. 
-            if (count < _readBuffer.Length / 2)
-            {
-                // Caller requested a small read size (less than half the read buffer size).
-                // Read into the buffer, so that we read as much as possible, hopefully.
-                await FillAsync(cancellationToken).ConfigureAwait(false);
-
-                count = Math.Min(count, _readLength);
-                ReadFromBuffer(buffer, offset, count);
-                return count;
-            }
-
-            // Large read size, and no buffered data.
             // Do an unbuffered read directly against the underlying stream.
             Debug.Assert(_readAheadTask == null, "Read ahead task should have been consumed as part of the headers.");
             count = await _stream.ReadAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
@@ -1024,7 +1010,11 @@ namespace System.Net.Http
 
             while (true)
             {
-                await FillAsync(cancellationToken).ConfigureAwait(false);
+                _readOffset = 0;
+
+                // Don't use FillAsync here as it will throw on EOF.
+                Debug.Assert(_readAheadTask == null);
+                _readLength = await _stream.ReadAsync(_readBuffer, 0, _readBuffer.Length, cancellationToken).ConfigureAwait(false);
                 if (_readLength == 0)
                 {
                     // End of stream
@@ -1036,7 +1026,7 @@ namespace System.Net.Http
         }
 
         // Copy *exactly* [length] bytes into destination; throws on end of stream.
-        private async Task CopyChunkToAsync(Stream destination, ulong length, CancellationToken cancellationToken)
+        private async Task CopyToAsync(Stream destination, ulong length, CancellationToken cancellationToken)
         {
             Debug.Assert(destination != null);
             Debug.Assert(length > 0);
@@ -1060,10 +1050,6 @@ namespace System.Net.Http
             while (true)
             {
                 await FillAsync(cancellationToken).ConfigureAwait(false);
-                if (_readLength == 0)
-                {
-                    ThrowInvalidHttpResponse();
-                }
 
                 remaining = (ulong)_readLength < length ? _readLength : (int)length;
                 await CopyFromBufferAsync(destination, remaining, cancellationToken).ConfigureAwait(false);
