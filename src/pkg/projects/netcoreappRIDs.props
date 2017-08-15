@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <OfficialBuildRID Include="linux-x64" />
+    <OfficialBuildRID Include="rhel.6-x64" />
     <OfficialBuildRID Include="osx-x64" />
     <OfficialBuildRID Include="win-x86">
       <Platform>x86</Platform>
