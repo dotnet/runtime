@@ -9,7 +9,7 @@
 
     <!-- This corresponds to TFM we want the SharedFX to target and should be updated when needed. -->
 
-    <NETCoreAppFramework>netcoreapp2.0</NETCoreAppFramework>
+    <NETCoreAppFramework>netcoreapp2.1</NETCoreAppFramework>
     <OmitDependencies>true</OmitDependencies>
     <SkipValidatePackage>true</SkipValidatePackage>
     <ShouldCreateLayout>false</ShouldCreateLayout>
@@ -38,10 +38,16 @@
     <Dependency Include="@(NETCoreApp11Dependency)">
       <TargetFramework>.NETCoreApp1.1</TargetFramework>
     </Dependency>
+
+    <!-- temporarily disable netcoreapp2.0 until https://github.com/dotnet/core-setup/issues/2437 is fixed -->
+    <Dependency Include="_._">
+      <TargetFramework>.NETCoreApp2.0</TargetFramework>
+    </Dependency>
+    
     <!-- references the host packages -->
     <Dependency Include="Microsoft.NETCore.DotNetHostPolicy">
        <Version>$(HostPolicyVersion)</Version>
-       <TargetFramework>.NETCoreApp2.0</TargetFramework>
+       <TargetFramework>$(NETCoreAppFramework)</TargetFramework>
     </Dependency>
 
     <!-- Add a placeholder to make sure NuGet understands we still support older versions,
