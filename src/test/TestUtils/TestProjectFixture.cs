@@ -52,7 +52,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             string dotnetInstallPath = null,
             string currentRid = null,
             string builtDotnetOutputPath = null,
-            string framework = "netcoreapp2.0")
+            string framework = "netcoreapp2.1")
         {
             ValidateRequiredDirectories(repoDirectoriesProvider);
 
