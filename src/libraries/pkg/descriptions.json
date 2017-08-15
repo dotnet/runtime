@@ -441,6 +441,20 @@
     ]
   },
   {
+    "Name": "System.Data.DataSetExtensions",
+    "Description": "Provides extensions to form LINQ expressions and method queries against DataTable objects.",
+    "CommonTypes": [
+        "System.Data.DataRowComparer",
+        "System.Data.DataRowExtensions",
+        "System.Data.DataTableExtensions",
+        "System.Data.EnumerableRowCollection",
+        "System.Data.EnumerableRowCollectionExtensions",
+        "System.Data.OrderedEnumerableRowCollection",
+        "System.Data.TypedTableBase",
+        "System.Data.TypedTableBaseExtensions"
+    ]
+  },
+  {
     "Name": "System.Data.SqlClient",
     "Description": "Provides the data provider for SQL Server. These classes provide access to versions of SQL Server and encapsulate database-specific protocols, including tabular data stream (TDS)",
     "CommonTypes": [
@@ -621,7 +635,7 @@
       "System.Drawing.Brush",
       "System.Drawing.Font",
       "System.Drawing.Graphics",
-      "System.Drawing.Icon",
+      "System.Drawing.Icon"
     ]
   },
   {
@@ -899,7 +913,7 @@
     "Name": "System.Memory",
     "Description": "Provides types for efficient low-allocation access to memory.",
     "CommonTypes": [
-      "System.Span",
+      "System.Span"
     ]
   },
   {
