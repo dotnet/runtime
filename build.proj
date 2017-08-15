@@ -6,7 +6,7 @@
   <PropertyGroup>
     <SerializeProjects>true</SerializeProjects>
   </PropertyGroup>
-  
+
   <PropertyGroup>
     <!-- To disable the restoration of packages, set RestoreDuringBuild=false or pass /p:RestoreDuringBuild=false.-->
     <RestoreDuringBuild Condition="'$(RestoreDuringBuild)'==''">true</RestoreDuringBuild>
@@ -42,13 +42,16 @@
     <PropertyGroup>
       <DependencyModelTFM>netstandard1.3</DependencyModelTFM>
       <DependencyModelTFM Condition="'$(MSBuildRuntimeType)' != 'Core'">net451</DependencyModelTFM>
+      <NugetModelTFM>netstandard1.3</NugetModelTFM>
+      <NugetModelTFM Condition="'$(MSBuildRuntimeType)' != 'Core'">net45</NugetModelTFM>
     </PropertyGroup>
-    
+
       <ItemGroup>
         <CustomTaskDependencies Include="$(BuildToolsTaskDir)Newtonsoft.Json.dll" />
         <CustomTaskDependencies Include="$(BuildToolsTaskDir)Microsoft.DotNet.PlatformAbstractions.dll" />
         <CustomTaskDependencies Include="$(PackagesDir)microsoft.extensions.dependencymodel\1.1.1\lib\$(DependencyModelTFM)\Microsoft.Extensions.DependencyModel.dll" />
-      </ItemGroup>        
+        <CustomTaskDependencies Include="$(PackagesDir)nuget.runtimemodel\3.5.0\lib\$(NugetModelTFM)\NuGet.RuntimeModel.dll" />
+      </ItemGroup>
       <Copy SourceFiles="@(CustomTaskDependencies)"
             DestinationFolder="$(LocalBuildToolsTaskDir)"
             OverwriteReadOnlyFiles="true"
@@ -57,7 +60,7 @@
 
   <Target Name="BatchRestorePackages" Condition="'$(RestoreDuringBuild)'=='true'">
     <!-- Restore packages in a separate msbuild instance so that the buildversion props file generated in
-         CreateVersionInfoFile target gets evaluated, this ensures VersionSuffix is set (especially during 
+         CreateVersionInfoFile target gets evaluated, this ensures VersionSuffix is set (especially during
          'dotnet restore') to work around https://github.com/NuGet/Home/issues/4337 -->
     <MSBuild Projects="$(MSBuildThisFileDirectory)restore.proj" />
   </Target>
