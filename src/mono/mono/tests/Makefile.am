@@ -1139,10 +1139,10 @@ tests: compile-tests
 #
 # Test that no symbols are missed in eglib-remap.h
 #
-if PLATFORM_LINUX
+if HOST_LINUX
 test-platform: test-eglib-remap
 else
-if PLATFORM_DARWIN
+if HOST_DARWIN
 test-platform: test-eglib-remap
 endif
 endif

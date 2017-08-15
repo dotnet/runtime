@@ -7,9 +7,9 @@
  *   Ben Woods (woodsb02@gmail.com)
  */
 
-#if defined(PLATFORM_MACOSX) || defined(PLATFORM_BSD)
-
 #include <config.h>
+
+#if defined(HOST_DARWIN) || defined(HOST_BSD)
 #include <sys/socket.h>
 #include <net/if.h>
 #include <net/if_dl.h>
@@ -134,4 +134,4 @@ in_addr_t gateway_from_rtm(struct rt_msghdr *rtm)
 	return 0;
 }
 
-#endif /* #if defined(PLATFORM_MACOSX) || defined(PLATFORM_BSD) */
+#endif /* #if defined(HOST_DARWIN) || defined(HOST_BSD) */

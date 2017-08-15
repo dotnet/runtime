@@ -1195,7 +1195,7 @@ static guint32 file_seek(FileHandle *filehandle, gint32 movedistance,
 
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_IO_LAYER, "%s: moving fd %d by %" G_GINT64_FORMAT " bytes from %d", __func__, ((MonoFDHandle*) filehandle)->fd, offset, whence);
 
-#ifdef PLATFORM_ANDROID
+#ifdef HOST_ANDROID
 	/* bionic doesn't support -D_FILE_OFFSET_BITS=64 */
 	MONO_ENTER_GC_SAFE;
 	newpos=lseek64(((MonoFDHandle*) filehandle)->fd, offset, whence);
@@ -4245,7 +4245,7 @@ typedef struct {
 } _wapi_drive_type;
 
 static _wapi_drive_type _wapi_drive_types[] = {
-#if PLATFORM_MACOSX
+#if HOST_DARWIN
 	{ DRIVE_REMOTE, "afp" },
 	{ DRIVE_REMOTE, "autofs" },
 	{ DRIVE_CDROM, "cddafs" },
@@ -4402,7 +4402,7 @@ static guint32 _wapi_get_drive_type(const gchar* fstype)
 }
 #endif
 
-#if defined (PLATFORM_MACOSX) || defined (__linux__)
+#if defined (HOST_DARWIN) || defined (__linux__)
 static guint32
 GetDriveTypeFromPath (const gchar *utf8_root_path_name)
 {
@@ -4414,7 +4414,7 @@ GetDriveTypeFromPath (const gchar *utf8_root_path_name)
 	MONO_EXIT_GC_SAFE;
 	if (res == -1)
 		return DRIVE_UNKNOWN;
-#if PLATFORM_MACOSX
+#if HOST_DARWIN
 	return _wapi_get_drive_type (buf.f_fstypename);
 #else
 	return _wapi_get_drive_type (buf.f_type);
@@ -4507,11 +4507,11 @@ mono_w32file_get_drive_type(const gunichar2 *root_path_name)
 	return (drive_type);
 }
 
-#if defined (PLATFORM_MACOSX) || defined (__linux__) || defined(PLATFORM_BSD) || defined(__FreeBSD_kernel__) || defined(__HAIKU__)
+#if defined (HOST_DARWIN) || defined (__linux__) || defined(HOST_BSD) || defined(__FreeBSD_kernel__) || defined(__HAIKU__)
 static gchar*
 get_fstypename (gchar *utfpath)
 {
-#if defined (PLATFORM_MACOSX) || defined (__linux__)
+#if defined (HOST_DARWIN) || defined (__linux__)
 	struct statfs stat;
 #if __linux__
 	_wapi_drive_type *current;
@@ -4522,7 +4522,7 @@ get_fstypename (gchar *utfpath)
 	MONO_EXIT_GC_SAFE;
 	if (statfs_res == -1)
 		return NULL;
-#if PLATFORM_MACOSX
+#if HOST_DARWIN
 	return g_strdup (stat.f_fstypename);
 #else
 	current = &_wapi_drive_types[0];

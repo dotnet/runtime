@@ -68,7 +68,7 @@
 
 #include "jit-icalls.h"
 
-#ifdef PLATFORM_MACOSX
+#ifdef HOST_DARWIN
 #include <mach/mach.h>
 #include <mach/mach_time.h>
 #include <mach/clock.h>
@@ -95,7 +95,7 @@ MONO_SIG_HANDLER_SIGNATURE (mono_chain_signal)
 	return FALSE;
 }
 
-#ifndef PLATFORM_MACOSX
+#ifndef HOST_DARWIN
 void
 mono_runtime_install_handlers (void)
 {
@@ -302,7 +302,7 @@ add_signal_handler (int signo, gpointer handler, int flags)
 #ifdef MONO_ARCH_SIGSEGV_ON_ALTSTACK
 
 /*Apple likes to deliver SIGBUS for *0 */
-#ifdef PLATFORM_MACOSX
+#ifdef HOST_DARWIN
 	if (signo == SIGSEGV || signo == SIGBUS) {
 #else
 	if (signo == SIGSEGV) {
@@ -396,7 +396,7 @@ mono_runtime_posix_install_handlers (void)
 	add_signal_handler (SIGSEGV, mono_sigsegv_signal_handler, 0);
 }
 
-#ifndef PLATFORM_MACOSX
+#ifndef HOST_DARWIN
 void
 mono_runtime_install_handlers (void)
 {
@@ -428,7 +428,7 @@ mono_runtime_cleanup_handlers (void)
 
 static volatile gint32 sampling_thread_running;
 
-#ifdef PLATFORM_MACOSX
+#ifdef HOST_DARWIN
 
 static clock_serv_t sampling_clock_service;
 
@@ -699,7 +699,7 @@ mono_runtime_shutdown_stat_profiler (void)
 
 	mono_profiler_sampling_thread_post ();
 
-#ifndef PLATFORM_MACOSX
+#ifndef HOST_DARWIN
 	/*
 	 * There is a slight problem when we're using CLOCK_PROCESS_CPUTIME_ID: If
 	 * we're shutting down and there's largely no activity in the process other
@@ -755,7 +755,7 @@ mono_runtime_setup_stat_profiler (void)
 	 * get us a 100% sampling rate. However, this may interfere with the GC's
 	 * STW logic. Could perhaps be solved by taking the suspend lock.
 	 */
-#if defined (USE_POSIX_BACKEND) && defined (SIGRTMIN) && !defined (PLATFORM_ANDROID)
+#if defined (USE_POSIX_BACKEND) && defined (SIGRTMIN) && !defined (HOST_ANDROID)
 	/* Just take the first real-time signal we can get. */
 	profiler_signal = mono_threads_suspend_search_alternative_signal ();
 #else
@@ -855,7 +855,7 @@ mono_gdb_render_native_backtraces (pid_t crashed_pid)
 
 	memset (argv, 0, sizeof (char*) * 10);
 
-#if defined(PLATFORM_MACOSX)
+#if defined(HOST_DARWIN)
 	if (native_stack_with_lldb (crashed_pid, argv, commands, commands_filename))
 		goto exec;
 #endif
@@ -863,7 +863,7 @@ mono_gdb_render_native_backtraces (pid_t crashed_pid)
 	if (native_stack_with_gdb (crashed_pid, argv, commands, commands_filename))
 		goto exec;
 
-#if !defined(PLATFORM_MACOSX)
+#if !defined(HOST_DARWIN)
 	if (native_stack_with_lldb (crashed_pid, argv, commands, commands_filename))
 		goto exec;
 #endif

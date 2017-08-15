@@ -544,7 +544,7 @@ process_is_alive (pid_t pid)
 {
 #if defined(HOST_WATCHOS)
 	return TRUE; // TODO: Rewrite using sysctl
-#elif defined(PLATFORM_MACOSX) || defined(__OpenBSD__) || defined(__FreeBSD__)
+#elif defined(HOST_DARWIN) || defined(__OpenBSD__) || defined(__FreeBSD__)
 	if (pid == 0)
 		return FALSE;
 	if (kill (pid, 0) == 0)
@@ -2105,7 +2105,7 @@ ves_icall_System_Diagnostics_Process_ShellExecuteEx_internal (MonoW32ProcessStar
 			goto done;
 		}
 
-#ifdef PLATFORM_MACOSX
+#ifdef HOST_DARWIN
 		handler = g_strdup ("/usr/bin/open");
 #else
 		/*

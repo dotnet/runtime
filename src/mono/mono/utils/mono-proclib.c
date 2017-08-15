@@ -682,7 +682,7 @@ mono_process_current_pid ()
 int
 mono_cpu_count (void)
 {
-#ifdef PLATFORM_ANDROID
+#ifdef HOST_ANDROID
 	/* Android tries really hard to save power by powering off CPUs on SMP phones which
 	 * means the normal way to query cpu count returns a wrong value with userspace API.
 	 * Instead we use /sys entries to query the actual hardware CPU count.
@@ -750,7 +750,7 @@ mono_cpu_count (void)
  * * use sched_getaffinity (+ fallback to _SC_NPROCESSORS_ONLN in case of error) on x86. This
  * ensures we're inline with what OpenJDK [4] and CoreCLR [5] do
  * * use _SC_NPROCESSORS_CONF exclusively on ARM (I think we could eventually even get rid of
- * the PLATFORM_ANDROID special case)
+ * the HOST_ANDROID special case)
  *
  * Helpful links:
  *
@@ -891,7 +891,7 @@ mono_cpu_get_data (int cpu_id, MonoCpuData data, MonoProcessError *error)
 int
 mono_atexit (void (*func)(void))
 {
-#ifdef PLATFORM_ANDROID
+#ifdef HOST_ANDROID
 	/* Some versions of android libc doesn't define atexit () */
 	return 0;
 #else

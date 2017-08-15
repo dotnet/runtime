@@ -36,11 +36,11 @@ dump_arch (void)
 static int
 dump_os (void)
 {
-#if defined (PLATFORM_WIN32)
+#if defined (HOST_WIN32)
 	g_print ("#ifdef TARGET_WIN32\n");
-#elif defined (PLATFORM_ANDROID)
+#elif defined (HOST_ANDROID)
 	g_print ("#ifdef TARGET_ANDROID\n");
-#elif defined (PLATFORM_MACOSX)
+#elif defined (HOST_DARWIN)
 	g_print ("#ifdef TARGET_OSX\n");
 #elif defined (PLATFORM_IOS)
 	g_print ("#ifdef TARGET_IOS\n");

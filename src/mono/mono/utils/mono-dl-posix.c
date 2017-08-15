@@ -61,7 +61,7 @@ mono_dl_get_system_dir (void)
 void *
 mono_dl_open_file (const char *file, int flags)
 {
-#ifdef PLATFORM_ANDROID
+#ifdef HOST_ANDROID
 	/* Bionic doesn't support NULL filenames */
 	if (!file)
 		return NULL;

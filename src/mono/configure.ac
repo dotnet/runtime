@@ -110,7 +110,7 @@ host_darwin=no
 case "$host" in
 	*-mingw*|*-*-cygwin*)
 		AC_DEFINE(DISABLE_PORTABILITY,1,[Disable the io-portability layer])
-		AC_DEFINE(PLATFORM_NO_SYMLINKS,1,[This platform does not support symlinks])
+		AC_DEFINE(HOST_NO_SYMLINKS,1,[This platform does not support symlinks])
 		host_win32=yes
 		mono_cv_clang=no
 		if test "x$cross_compiling" = "xno"; then
@@ -141,7 +141,7 @@ case "$host" in
 		CPPFLAGS="$CPPFLAGS -D_REENTRANT -DGC_NETBSD_THREADS -D_GNU_SOURCE"
 		libmono_cflags="-D_REENTRANT"
 		LDFLAGS="$LDFLAGS -pthread"
-		CPPFLAGS="$CPPFLAGS -DPLATFORM_BSD"
+		CPPFLAGS="$CPPFLAGS -DHOST_BSD"
 		libmono_ldflags="-pthread"
 		need_link_unlink=yes
 		libdl="-ldl"
@@ -176,7 +176,7 @@ case "$host" in
 			LDFLAGS="$LDFLAGS $PTHREAD_LIBS -L/usr/local/lib"
 			libmono_ldflags="$PTHREAD_LIBS"
 		fi
-		CPPFLAGS="$CPPFLAGS -DPLATFORM_BSD"
+		CPPFLAGS="$CPPFLAGS -DHOST_BSD"
 		need_link_unlink=yes
 		AC_DEFINE(PTHREAD_POINTER_ID, 1, [pthread is a pointer])
 		libdl=
@@ -186,7 +186,7 @@ case "$host" in
 		with_sgen_default_concurrent=yes
 		;;
 	*-*-*openbsd*)
-		CPPFLAGS="$CPPFLAGS -D_THREAD_SAFE -DGC_OPENBSD_THREADS -DPLATFORM_BSD -D_REENTRANT -DUSE_MMAP"
+		CPPFLAGS="$CPPFLAGS -D_THREAD_SAFE -DGC_OPENBSD_THREADS -DHOST_BSD -D_REENTRANT -DUSE_MMAP"
 		if test "x$disable_munmap" != "xyes"; then
 		CPPFLAGS="$CPPFLAGS -DUSE_MUNMAP"
 		fi
@@ -202,7 +202,7 @@ case "$host" in
 		;;
 	*-*-linux-android*)
 		platform_android=yes
-		AC_DEFINE(PLATFORM_ANDROID,1,[Targeting the Android platform])
+		AC_DEFINE(HOST_ANDROID,1,[Targeting the Android platform])
 		AC_DEFINE(TARGET_ANDROID,1,[Targeting the Android platform])
 
 		CPPFLAGS="$CPPFLAGS -DGC_LINUX_THREADS -D_GNU_SOURCE -D_REENTRANT -DUSE_MMAP"
@@ -284,7 +284,7 @@ case "$host" in
 		use_sigposix=yes
 		;;
 	*-*-solaris*)
-		CPPFLAGS="$CPPFLAGS -DGC_SOLARIS_THREADS -DGC_SOLARIS_PTHREADS -D_REENTRANT -D_POSIX_PTHREAD_SEMANTICS -DUSE_MMAP -DUSE_MUNMAP -DPLATFORM_SOLARIS"
+		CPPFLAGS="$CPPFLAGS -DGC_SOLARIS_THREADS -DGC_SOLARIS_PTHREADS -D_REENTRANT -D_POSIX_PTHREAD_SEMANTICS -DUSE_MMAP -DUSE_MUNMAP -DHOST_SOLARIS"
 		need_link_unlink=yes
 		libmono_cflags="-D_REENTRANT"
 		libgc_threads=pthreads
@@ -296,7 +296,7 @@ case "$host" in
 		parallel_mark="Disabled_Currently_Hangs_On_MacOSX"
 		host_darwin=yes
 		target_mach=yes
-		CPPFLAGS="$CPPFLAGS -D_THREAD_SAFE -DGC_MACOSX_THREADS -DPLATFORM_MACOSX -DUSE_MMAP -DUSE_MUNMAP"
+		CPPFLAGS="$CPPFLAGS -D_THREAD_SAFE -DGC_MACOSX_THREADS -DUSE_MMAP -DUSE_MUNMAP"
 		libmono_cflags="-D_THREAD_SAFE"
 		need_link_unlink=yes
 		AC_DEFINE(PTHREAD_POINTER_ID)
@@ -364,6 +364,10 @@ if test x$target_win32 = xyes; then
    AC_DEFINE(TARGET_WIN32, 1, [Target Platform is Win32])
 fi
 
+if test x$host_darwin = xyes; then
+   AC_DEFINE(HOST_DARWIN, 1, [Host Platform is Darwin])
+fi
+
 # Defined for all targets/platforms using classic Windows API support.
 AC_DEFINE(HAVE_CLASSIC_WINAPI_SUPPORT, 1, [Use classic Windows API support])
 AC_DEFINE(HAVE_UWP_WINAPI_SUPPORT, 0, [Don't use UWP Windows API support])
@@ -371,16 +375,16 @@ AC_DEFINE(HAVE_UWP_WINAPI_SUPPORT, 0, [Don't use UWP Windows API support])
 AC_SUBST(extra_runtime_ldflags)
 AM_CONDITIONAL(HOST_WIN32, test x$host_win32 = xyes)
 AM_CONDITIONAL(TARGET_WIN32, test x$target_win32 = xyes)
-AM_CONDITIONAL(PLATFORM_LINUX, echo x$target_os | grep -q linux)
-AM_CONDITIONAL(PLATFORM_DARWIN, test x$host_darwin = xyes)
-AM_CONDITIONAL(PLATFORM_SIGPOSIX, test x$use_sigposix = xyes)
-AM_CONDITIONAL(PLATFORM_ANDROID, test x$platform_android = xyes)
+AM_CONDITIONAL(HOST_LINUX, echo x$target_os | grep -q linux)
+AM_CONDITIONAL(HOST_DARWIN, test x$host_darwin = xyes)
+AM_CONDITIONAL(HOST_SIGPOSIX, test x$use_sigposix = xyes)
+AM_CONDITIONAL(HOST_ANDROID, test x$platform_android = xyes)
 
-if test -z "$PLATFORM_DARWIN_TRUE"; then :
+if test -z "$HOST_DARWIN_TRUE"; then :
 PLATFORM_AOT_SUFFIX=.dylib
 fi
 
-if test -z "$PLATFORM_LINUX_TRUE"; then :
+if test -z "$HOST_LINUX_TRUE"; then :
 PLATFORM_AOT_SUFFIX=.so
 fi
 

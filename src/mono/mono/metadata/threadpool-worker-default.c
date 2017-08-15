@@ -286,7 +286,7 @@ mono_threadpool_worker_init (MonoThreadPoolWorkerCallback callback)
 
 	worker.limit_worker_min = threads_count;
 
-#if defined (PLATFORM_ANDROID) || defined (HOST_IOS)
+#if defined (HOST_ANDROID) || defined (HOST_IOS)
 	worker.limit_worker_max = CLAMP (threads_count * 100, MIN (threads_count, 200), MAX (threads_count, 200));
 #else
 	worker.limit_worker_max = threads_count * 100;

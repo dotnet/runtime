@@ -55,7 +55,7 @@
 #define DISABLE_PORTABILITY 1
 
 /* Windows does not have symlinks */
-#define PLATFORM_NO_SYMLINKS 1
+#define HOST_NO_SYMLINKS 1
 
 /* String of disabled features */
 #define DISABLED_FEATURES "none"

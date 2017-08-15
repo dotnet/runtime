@@ -335,7 +335,7 @@ mono_arm_patchable_bl (guint8 *code, int cond)
 	return code;
 }
 
-#if defined(__ARM_EABI__) && defined(__linux__) && !defined(PLATFORM_ANDROID) && !defined(MONO_CROSS_COMPILE)
+#if defined(__ARM_EABI__) && defined(__linux__) && !defined(HOST_ANDROID) && !defined(MONO_CROSS_COMPILE)
 #define HAVE_AEABI_READ_TP 1
 #endif
 

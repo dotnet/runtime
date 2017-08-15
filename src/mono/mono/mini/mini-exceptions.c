@@ -2709,12 +2709,12 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 		 * glibc fork acquires some locks, so if the crash happened inside malloc/free,
 		 * it will deadlock. Call the syscall directly instead.
 		 */
-#if defined(PLATFORM_ANDROID)
+#if defined(HOST_ANDROID)
 		/* SYS_fork is defined to be __NR_fork which is not defined in some ndk versions */
 		g_assert_not_reached ();
-#elif !defined(PLATFORM_MACOSX) && defined(SYS_fork)
+#elif !defined(HOST_DARWIN) && defined(SYS_fork)
 		pid = (pid_t) syscall (SYS_fork);
-#elif defined(PLATFORM_MACOSX) && HAVE_FORK
+#elif defined(HOST_DARWIN) && HAVE_FORK
 		pid = (pid_t) fork ();
 #else
 		g_assert_not_reached ();
@@ -2742,7 +2742,7 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 #endif
  }
 #else
-#ifdef PLATFORM_ANDROID
+#ifdef HOST_ANDROID
 	/* set DUMPABLE for this process so debuggerd can attach with ptrace(2), see:
 	 * https://android.googlesource.com/platform/bionic/+/151da681000c07da3c24cd30a3279b1ca017f452/linker/debugger.cpp#206
 	 * this has changed on later versions of Android.  Also, we don't want to
@@ -2782,7 +2782,7 @@ mono_handle_native_crash (const char *signal, void *ctx, MONO_SIG_HANDLER_INFO_T
 
 	if (!mono_do_crash_chaining) {
 		/*Android abort is a fluke, it doesn't abort, it triggers another segv. */
-#if defined (PLATFORM_ANDROID)
+#if defined (HOST_ANDROID)
 		exit (-1);
 #else
 		abort ();
@@ -2845,7 +2845,7 @@ mono_print_thread_dump_internal (void *sigctx, MonoContext *start_ctx)
 
 	mono_runtime_printf ("%s", text->str);
 
-#if PLATFORM_WIN32 && TARGET_WIN32 && _DEBUG
+#if HOST_WIN32 && TARGET_WIN32 && _DEBUG
 	OutputDebugStringA(text->str);
 #endif
 

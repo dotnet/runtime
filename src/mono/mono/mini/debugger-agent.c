@@ -47,7 +47,7 @@
 #include <ws2tcpip.h>
 #endif
 
-#ifdef PLATFORM_ANDROID
+#ifdef HOST_ANDROID
 #include <linux/in.h>
 #include <linux/tcp.h>
 #include <sys/endian.h>
@@ -607,7 +607,7 @@ typedef struct ReplyPacket {
 
 #define DEBUG(level,s) do { if (G_UNLIKELY ((level) <= log_level)) { s; fflush (log_file); } } while (0)
 
-#ifdef PLATFORM_ANDROID
+#ifdef HOST_ANDROID
 #define DEBUG_PRINTF(level, ...) do { if (G_UNLIKELY ((level) <= log_level)) { g_print (__VA_ARGS__); } } while (0)
 #else
 #define DEBUG_PRINTF(level, ...) do { if (G_UNLIKELY ((level) <= log_level)) { fprintf (log_file, __VA_ARGS__); fflush (log_file); } } while (0)
@@ -5941,7 +5941,7 @@ mono_debugger_agent_debug_log_is_enabled (void)
 	return agent_config.enabled;
 }
 
-#if defined(PLATFORM_ANDROID) || defined(TARGET_ANDROID)
+#if defined(HOST_ANDROID) || defined(TARGET_ANDROID)
 void
 mono_debugger_agent_unhandled_exception (MonoException *exc)
 {

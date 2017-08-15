@@ -5800,7 +5800,7 @@ mono_aot_is_pagefault (void *ptr)
 void
 mono_aot_handle_pagefault (void *ptr)
 {
-#ifndef PLATFORM_WIN32
+#ifndef HOST_WIN32
 	guint8* start = (guint8*)ROUND_DOWN (((gssize)ptr), mono_pagesize ());
 	int res;
 

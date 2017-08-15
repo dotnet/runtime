@@ -55,7 +55,7 @@ AM_CPPFLAGS = -I$(srcdir)
 if HOST_WIN32
 libeglib_la_LIBADD = -lm $(LIBICONV) -lpsapi
 else
-if PLATFORM_ANDROID
+if HOST_ANDROID
 libeglib_la_LIBADD = -llog
 endif
 endif

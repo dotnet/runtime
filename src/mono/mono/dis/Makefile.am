@@ -54,7 +54,7 @@ monodis_LDADD = 			\
 	$(GLIB_LIBS)			\
 	$(LIBICONV)
 
-if PLATFORM_DARWIN
+if HOST_DARWIN
 monodis_LDFLAGS=-framework CoreFoundation -framework Foundation
 endif
 

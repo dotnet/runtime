@@ -154,7 +154,7 @@ mono_trace_set_logdest_string (const char *dest)
 	if(level_stack == NULL)
 		mono_trace_init();
 
-#if PLATFORM_ANDROID
+#if HOST_ANDROID
 	logger.opener = mono_log_open_logcat;
 	logger.writer = mono_log_write_logcat;
 	logger.closer = mono_log_close_logcat;

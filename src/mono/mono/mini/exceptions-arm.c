@@ -15,9 +15,9 @@
 #include <string.h>
 
 #ifndef MONO_CROSS_COMPILE
-#ifdef PLATFORM_ANDROID
+#ifdef HOST_ANDROID
 #include <asm/sigcontext.h>
-#endif  /* def PLATFORM_ANDROID */
+#endif  /* def HOST_ANDROID */
 #endif
 
 #ifdef HAVE_UCONTEXT_H

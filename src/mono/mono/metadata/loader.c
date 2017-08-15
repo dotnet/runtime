@@ -1143,7 +1143,7 @@ static MonoDl *internal_module;
 static gboolean
 is_absolute_path (const char *path)
 {
-#ifdef PLATFORM_MACOSX
+#ifdef HOST_DARWIN
 	if (!strncmp (path, "@executable_path/", 17) || !strncmp (path, "@loader_path/", 13) ||
 	    !strncmp (path, "@rpath/", 7))
 	    return TRUE;

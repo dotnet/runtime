@@ -6,7 +6,7 @@
 #define __MONO_MONO_SIGCONTEXT_H__
 
 #include <config.h>
-#if defined(PLATFORM_ANDROID)
+#if defined(HOST_ANDROID)
 #include <asm/sigcontext.h>
 #endif
 
@@ -89,7 +89,7 @@
 	#define UCONTEXT_REG_ESI(ctx) (((ucontext_t*)(ctx))->sc_esi)
 	#define UCONTEXT_REG_EDI(ctx) (((ucontext_t*)(ctx))->sc_edi)
 	#define UCONTEXT_REG_EIP(ctx) (((ucontext_t*)(ctx))->sc_eip)
-#elif defined(PLATFORM_SOLARIS)
+#elif defined(HOST_SOLARIS)
 	#define UCONTEXT_REG_EAX(ctx) (((ucontext_t*)(ctx))->uc_mcontext.gregs [EAX])
 	#define UCONTEXT_REG_EBX(ctx) (((ucontext_t*)(ctx))->uc_mcontext.gregs [EBX])
 	#define UCONTEXT_REG_ECX(ctx) (((ucontext_t*)(ctx))->uc_mcontext.gregs [ECX])
@@ -101,7 +101,7 @@
 	#define UCONTEXT_REG_EIP(ctx) (((ucontext_t*)(ctx))->uc_mcontext.gregs [EIP])
 #else
 
-#if defined(PLATFORM_ANDROID) && !defined(HAVE_UCONTEXT_H)
+#if defined(HOST_ANDROID) && !defined(HAVE_UCONTEXT_H)
 /* No ucontext.h as of NDK v6b */
 typedef int greg_t;
 #define NGREG 19

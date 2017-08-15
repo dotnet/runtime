@@ -10,7 +10,7 @@
  */
 #include <config.h>
 
-#if defined (PLATFORM_ANDROID)
+#if defined (HOST_ANDROID)
 
 #include <android/log.h>
 #include "mono-logger-internals.h"

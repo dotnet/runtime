@@ -3163,7 +3163,7 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 	cfg->llvm_only = (flags & JIT_FLAG_LLVM_ONLY) != 0;
 	cfg->backend = current_backend;
 
-#ifdef PLATFORM_ANDROID
+#ifdef HOST_ANDROID
 	if (cfg->method->wrapper_type != MONO_WRAPPER_NONE) {
 		/* FIXME: Why is this needed */
 		cfg->gen_seq_points = FALSE;

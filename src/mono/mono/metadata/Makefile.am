@@ -59,7 +59,7 @@ unix_sources = \
 platform_sources = $(unix_sources)
 endif
 
-if PLATFORM_ANDROID
+if HOST_ANDROID
 platform_sources += ../../support/libm/complex.c
 endif
 

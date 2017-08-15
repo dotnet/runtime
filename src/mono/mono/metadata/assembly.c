@@ -50,7 +50,7 @@
 #include <sys/stat.h>
 #endif
 
-#ifdef PLATFORM_MACOSX
+#ifdef HOST_DARWIN
 #include <mach-o/dyld.h>
 #endif
 
@@ -840,7 +840,7 @@ set_dirs (char *exe)
 void
 mono_set_rootdir (void)
 {
-#if defined(HOST_WIN32) || (defined(PLATFORM_MACOSX) && !defined(TARGET_ARM))
+#if defined(HOST_WIN32) || (defined(HOST_DARWIN) && !defined(TARGET_ARM))
 	gchar *bindir, *installdir, *root, *name, *resolvedname, *config;
 
 #ifdef HOST_WIN32

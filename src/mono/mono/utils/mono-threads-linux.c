@@ -4,7 +4,7 @@
 
 #include <config.h>
 
-#if (defined(__linux__) && !defined(PLATFORM_ANDROID)) || defined(__FreeBSD_kernel__)
+#if (defined(__linux__) && !defined(HOST_ANDROID)) || defined(__FreeBSD_kernel__)
 
 #include <mono/utils/mono-threads.h>
 #include <pthread.h>

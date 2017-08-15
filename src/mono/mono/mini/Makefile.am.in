@@ -87,7 +87,7 @@ monobinldflags=$(export_ldflags) $(extra_runtime_ldflags)
 if HOST_WIN32
 libmonoldflags=-no-undefined -avoid-version -Wl,--kill-at $(monoldflags)
 else
-if PLATFORM_ANDROID
+if HOST_ANDROID
 libmonoldflags= -avoid-version $(monoldflags)
 else
 libmonoldflags=$(monoldflags) -version-info 1:0:0
@@ -168,7 +168,7 @@ if LOADED_LLVM
 lib_LTLIBRARIES += libmono-llvm.la
 libmono_llvm_la_SOURCES = mini-llvm.c mini-llvm-cpp.cpp llvm-jit.cpp
 libmono_llvm_la_LIBADD = $(GLIB_LIBS) $(LLVM_LIBS) $(LLVM_LDFLAGS)
-if PLATFORM_DARWIN
+if HOST_DARWIN
 libmono_llvm_la_LDFLAGS=-Wl,-undefined -Wl,suppress -Wl,-flat_namespace
 else
 libmono_llvm_la_LIBADD += $(top_builddir)/mono/mini/libmonoboehm-$(API_VER).la $(boehm_libs)
@@ -609,12 +609,12 @@ os_sources = $(windows_sources)
 monobin_platform_ldflags=
 endif
 
-if PLATFORM_SIGPOSIX
+if HOST_SIGPOSIX
 os_sources = $(posix_sources)
 monobin_platform_ldflags=
 endif
 
-if PLATFORM_DARWIN
+if HOST_DARWIN
 os_sources = $(darwin_sources) $(posix_sources)
 #monobin_platform_ldflags=-sectcreate __TEXT __info_plist $(top_srcdir)/mono/mini/Info.plist -framework CoreFoundation -framework Foundation
 monobin_platform_ldflags=-framework CoreFoundation -framework Foundation

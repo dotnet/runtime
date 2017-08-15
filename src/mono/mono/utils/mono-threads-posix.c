@@ -22,7 +22,7 @@
 
 #include <errno.h>
 
-#if defined(PLATFORM_ANDROID) && !defined(TARGET_ARM64) && !defined(TARGET_AMD64)
+#if defined(HOST_ANDROID) && !defined(TARGET_ARM64) && !defined(TARGET_AMD64)
 #define USE_TKILL_ON_ANDROID 1
 #endif
 
@@ -295,7 +295,7 @@ mono_threads_suspend_abort_syscall (MonoThreadInfo *info)
 void
 mono_threads_suspend_register (MonoThreadInfo *info)
 {
-#if defined (PLATFORM_ANDROID)
+#if defined (HOST_ANDROID)
 	info->native_handle = gettid ();
 #endif
 }

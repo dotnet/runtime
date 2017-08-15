@@ -1373,7 +1373,7 @@ mono_w32socket_get_available (SOCKET sock, guint64 *amount)
 		return SOCKET_ERROR;
 	}
 
-#if defined (PLATFORM_MACOSX)
+#if defined (HOST_DARWIN)
 	// ioctl (socket, FIONREAD, XXX) returns the size of
 	// the UDP header as well on Darwin.
 	//

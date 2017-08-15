@@ -30,7 +30,7 @@ lib_LTLIBRARIES = \
 suppressiondir = $(datadir)/mono-$(API_VER)/mono/profiler
 suppression_DATA = mono-profiler-log.suppression
 
-if PLATFORM_DARWIN
+if HOST_DARWIN
 if BITCODE
 prof_ldflags = -no-undefined
 else
@@ -44,7 +44,7 @@ else
 libmono_dep = $(monodir)/mono/mini/$(LIBMONO_LA)
 endif
 
-if PLATFORM_ANDROID
+if HOST_ANDROID
 prof_ldflags = -avoid-version
 endif
 

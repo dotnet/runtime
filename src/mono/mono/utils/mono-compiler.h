@@ -74,7 +74,7 @@ typedef SSIZE_T ssize_t;
 #define MONO_EMPTY_SOURCE_FILE(x)
 #endif
 
-#if !defined(_MSC_VER) && !defined(PLATFORM_SOLARIS) && !defined(_WIN32) && !defined(__CYGWIN__) && !defined(MONOTOUCH) && HAVE_VISIBILITY_HIDDEN
+#if !defined(_MSC_VER) && !defined(HOST_SOLARIS) && !defined(_WIN32) && !defined(__CYGWIN__) && !defined(MONOTOUCH) && HAVE_VISIBILITY_HIDDEN
 #if MONO_LLVM_LOADED
 #define MONO_LLVM_INTERNAL MONO_API
 #else

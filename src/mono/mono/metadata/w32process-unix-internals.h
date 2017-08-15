@@ -12,7 +12,7 @@
  * FOR EXCLUSIVE USE BY w32process-unix.c
  */
 
-#if defined(PLATFORM_MACOSX)
+#if defined(HOST_DARWIN)
 #define USE_OSX_BACKEND
 #elif (defined(__OpenBSD__) || defined(__FreeBSD__)) && defined(HAVE_LINK_H)
 #define USE_BSD_BACKEND

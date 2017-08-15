@@ -447,7 +447,7 @@ HANDLES(ICALL(NDNS_1, "GetHostByAddr_internal(string,string&,string[]&,string[]&
 HANDLES(ICALL(NDNS_2, "GetHostByName_internal(string,string&,string[]&,string[]&,int)", ves_icall_System_Net_Dns_GetHostByName_internal))
 HANDLES(ICALL(NDNS_3, "GetHostName_internal(string&)", ves_icall_System_Net_Dns_GetHostName_internal))
 
-#if defined(PLATFORM_MACOSX) || defined(PLATFORM_BSD)
+#if defined(HOST_DARWIN) || defined(HOST_BSD)
 ICALL_TYPE(MAC_IFACE_PROPS, "System.Net.NetworkInformation.MacOsIPInterfaceProperties", MAC_IFACE_PROPS_1)
 ICALL(MAC_IFACE_PROPS_1, "ParseRouteInfo_internal", ves_icall_System_Net_NetworkInformation_MacOsIPInterfaceProperties_ParseRouteInfo_internal)
 #endif

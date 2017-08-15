@@ -9,7 +9,7 @@
 
 #include <unistd.h>
 
-#ifdef PLATFORM_SOLARIS
+#ifdef HOST_SOLARIS
 /* procfs.h cannot be included if this define is set, but it seems to work fine if it is undefined */
 #if _FILE_OFFSET_BITS == 64
 #undef _FILE_OFFSET_BITS
@@ -41,7 +41,7 @@ mono_w32process_get_name (pid_t pid)
 	gchar buf[256];
 	gchar *ret = NULL;
 
-#if defined(PLATFORM_SOLARIS)
+#if defined(HOST_SOLARIS)
 	filename = g_strdup_printf ("/proc/%d/psinfo", pid);
 	if ((fp = fopen (filename, "r")) != NULL) {
 		struct psinfo info;

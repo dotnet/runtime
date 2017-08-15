@@ -123,7 +123,7 @@
 #define mono_simd_shuffle_mask(a,b,c,d) ((a) | ((b) << 2) | ((c) << 4) | ((d) << 6))
 
 /* Remap printf to g_print (we use a mix of these in the mini code) */
-#ifdef PLATFORM_ANDROID
+#ifdef HOST_ANDROID
 #define printf g_print
 #endif
 

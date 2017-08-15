@@ -28,7 +28,7 @@ debugger_agent_breakpoint_from_context (MonoContext *ctx);
 void
 mono_debugger_agent_free_domain_info (MonoDomain *domain);
 
-#if defined(PLATFORM_ANDROID) || defined(TARGET_ANDROID)
+#if defined(HOST_ANDROID) || defined(TARGET_ANDROID)
 void
 mono_debugger_agent_unhandled_exception (MonoException *exc);
 #endif

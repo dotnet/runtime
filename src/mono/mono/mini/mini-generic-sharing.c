@@ -390,7 +390,7 @@ info_has_identity (MonoRgctxInfoType info_type)
 /*
  * LOCKING: loader lock
  */
-#if defined(PLATFORM_ANDROID) && defined(TARGET_ARM)
+#if defined(HOST_ANDROID) && defined(TARGET_ARM)
 /* work around for HW bug on Nexus9 when running on armv7 */
 #ifdef __clang__
 static __attribute__ ((optnone)) void
