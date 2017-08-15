@@ -31,6 +31,21 @@
           }
         },
         {
+          "Name": "Core-Setup-Linux-BT",
+          "Parameters": {
+            "PB_DistroRid": "rhel.6-x64",
+            "PB_DockerTag": "centos-6-c8c9b08-20174310104313",
+            "PB_AdditionalBuildArguments":"-PortableBuild=false -strip-symbols",
+            "PB_PortableBuild": "false"
+          },
+          "ReportingParameters": {
+            "SubType": "LabBuild",
+            "OperatingSystem": "RedHat6",
+            "Type": "build/product/",
+            "Platform": "x64"
+          }
+        },		
+        {
           "Name": "Core-Setup-Linux-Arm-BT", 
           "Parameters": { 
             "PB_DistroRid": "ubuntu.14.04-arm", 
