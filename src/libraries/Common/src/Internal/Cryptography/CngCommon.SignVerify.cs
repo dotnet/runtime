@@ -11,7 +11,7 @@ namespace Internal.Cryptography
 {
     internal static partial class CngCommon
     {
-        public static unsafe byte[] SignHash(this SafeNCryptKeyHandle keyHandle, byte[] hash, AsymmetricPaddingMode paddingMode, void* pPaddingInfo, int estimatedSize)
+        public static unsafe byte[] SignHash(this SafeNCryptKeyHandle keyHandle, ReadOnlySpan<byte> hash, AsymmetricPaddingMode paddingMode, void* pPaddingInfo, int estimatedSize)
         {
 #if DEBUG
             estimatedSize = 2;  // Make sure the NTE_BUFFER_TOO_SMALL scenario gets exercised.

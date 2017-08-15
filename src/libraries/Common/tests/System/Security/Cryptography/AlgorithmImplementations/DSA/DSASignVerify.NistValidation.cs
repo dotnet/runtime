@@ -7,10 +7,10 @@ using Xunit;
 
 namespace System.Security.Cryptography.Dsa.Tests
 {
-    public partial class DSASignVerify
+    public abstract partial class DSASignVerify
     {
         [Fact]
-        public static void Fips186_2_1()
+        public void Fips186_2_1()
         {
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-2dsatestvectors.zip
             // SigGen.txt, first case
@@ -49,7 +49,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [ConditionalFact(nameof(SupportsFips186_3))]
-        public static void Fips186_3_L1024_N160_SHA256_1()
+        public void Fips186_3_L1024_N160_SHA256_1()
         {
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
             // SigGen.txt
@@ -89,7 +89,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [ConditionalFact(nameof(SupportsFips186_3))]
-        public static void Fips186_3_L1024_N160_SHA384_1()
+        public void Fips186_3_L1024_N160_SHA384_1()
         {
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
             // SigGen.txt
@@ -129,7 +129,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [ConditionalFact(nameof(SupportsFips186_3))]
-        public static void Fips186_3_L1024_N160_SHA384_4()
+        public void Fips186_3_L1024_N160_SHA384_4()
         {
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
             // SigGen.txt
@@ -169,7 +169,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [ConditionalFact(nameof(SupportsFips186_3))]
-        public static void Fips186_3_L1024_N160_SHA512_1()
+        public void Fips186_3_L1024_N160_SHA512_1()
         {
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
             // SigGen.txt
@@ -209,7 +209,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [ConditionalFact(nameof(SupportsFips186_3))]
-        public static void Fips186_3_L1024_N160_SHA512_4()
+        public void Fips186_3_L1024_N160_SHA512_4()
         {
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
             // SigGen.txt
@@ -249,7 +249,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [ConditionalFact(nameof(SupportsFips186_3))]
-        public static void Fips186_3_L2048_N256_SHA256_1()
+        public void Fips186_3_L2048_N256_SHA256_1()
         {
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
             // SigGen.txt
@@ -306,7 +306,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [ConditionalFact(nameof(SupportsFips186_3))]
-        public static void Fips186_3_L2048_N256_SHA384_1()
+        public void Fips186_3_L2048_N256_SHA384_1()
         {
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
             // SigGen.txt
@@ -363,7 +363,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [ConditionalFact(nameof(SupportsFips186_3))]
-        public static void Fips186_3_L2048_N256_SHA1_1()
+        public void Fips186_3_L2048_N256_SHA1_1()
         {
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
             // SigGen.txt
@@ -420,7 +420,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [ConditionalFact(nameof(SupportsFips186_3))]
-        public static void Fips186_3_L2048_N256_SHA384_3()
+        public void Fips186_3_L2048_N256_SHA384_3()
         {
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
             // SigGen.txt
@@ -477,7 +477,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [ConditionalFact(nameof(SupportsFips186_3))]
-        public static void Fips186_3_L3072_N256_SHA256_1()
+        public void Fips186_3_L3072_N256_SHA256_1()
         {
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
             // SigGen.txt
@@ -546,7 +546,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [ConditionalFact(nameof(SupportsFips186_3))]
-        public static void Fips186_3_L3072_N256_SHA384_1()
+        public void Fips186_3_L3072_N256_SHA384_1()
         {
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
             // SigGen.txt
@@ -615,7 +615,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [ConditionalFact(nameof(SupportsFips186_3))]
-        public static void Fips186_3_L3072_N256_SHA512_1()
+        public void Fips186_3_L3072_N256_SHA512_1()
         {
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
             // SigGen.txt
@@ -684,7 +684,7 @@ namespace System.Security.Cryptography.Dsa.Tests
         }
 
         [ConditionalFact(nameof(SupportsFips186_3))]
-        public static void Fips186_3_L3072_N256_SHA512_12()
+        public void Fips186_3_L3072_N256_SHA512_12()
         {
             // http://csrc.nist.gov/groups/STM/cavp/documents/dss/186-3dsatestvectors.zip
             // SigGen.txt
@@ -752,7 +752,7 @@ namespace System.Security.Cryptography.Dsa.Tests
             Validate(p, q, g, x, y, msg, r, s, HashAlgorithmName.SHA512);
         }
 
-        private static void Validate(
+        private void Validate(
             string p,
             string q,
             string g,
@@ -779,10 +779,10 @@ namespace System.Security.Cryptography.Dsa.Tests
                 byte[] message = msg.HexToByteArray();
                 byte[] signature = (r + s).HexToByteArray();
 
-                Assert.True(dsa.VerifyData(message, signature, hashAlgorithm), "Public+Private Valid Signature");
+                Assert.True(VerifyData(dsa, message, signature, hashAlgorithm), "Public+Private Valid Signature");
 
                 signature[0] ^= 0xFF;
-                Assert.False(dsa.VerifyData(message, signature, hashAlgorithm), "Public+Private Tampered Signature");
+                Assert.False(VerifyData(dsa, message, signature, hashAlgorithm), "Public+Private Tampered Signature");
             }
 
             // Public only
@@ -801,10 +801,10 @@ namespace System.Security.Cryptography.Dsa.Tests
                 byte[] message = msg.HexToByteArray();
                 byte[] signature = (r + s).HexToByteArray();
 
-                Assert.True(dsa.VerifyData(message, signature, hashAlgorithm), "Public-Only Valid Signature");
+                Assert.True(VerifyData(dsa, message, signature, hashAlgorithm), "Public-Only Valid Signature");
 
                 signature[0] ^= 0xFF;
-                Assert.False(dsa.VerifyData(message, signature, hashAlgorithm), "Public-Only Tampered Signature");
+                Assert.False(VerifyData(dsa, message, signature, hashAlgorithm), "Public-Only Tampered Signature");
             }
         }
     }

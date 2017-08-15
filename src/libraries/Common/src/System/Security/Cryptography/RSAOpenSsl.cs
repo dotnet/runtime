@@ -262,7 +262,7 @@ namespace System.Security.Cryptography
             }
 
             FreeKey();
-            _key = new Lazy<SafeRsaHandle>(() => key, isThreadSafe:true);
+            _key = new Lazy<SafeRsaHandle>(key);
 
             // Use ForceSet instead of the property setter to ensure that LegalKeySizes doesn't interfere
             // with the already loaded key.
