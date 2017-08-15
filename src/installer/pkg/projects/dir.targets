@@ -43,7 +43,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <File Include="$(ToolsDir)\_.pdb"
+      <File Include="$(MSBuildThisFileDirectory)_.pdb"
             Condition="'$(NeedsPlaceholderPdb)' == 'true' AND '$(PackageTargetRuntime)' != ''">
         <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
         <IsSymbolFile>true</IsSymbolFile>
