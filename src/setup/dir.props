@@ -195,7 +195,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <Framework>netcoreapp2.0</Framework>
+    <Framework>netcoreapp2.1</Framework>
   </PropertyGroup>
   
   <PropertyGroup Condition="'$(TargetRid)' == '' and '$(OSGroup)' == 'Windows_NT'">
