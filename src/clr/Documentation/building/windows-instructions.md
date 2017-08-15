@@ -141,8 +141,8 @@ full rebuild.
 
 Build has a number of options that you can learn about using build -?.   Some of the more important options are
 
- * skiptests - don't build the tests.   This can shorten build times quite a bit, but means you can't run tests.
- * release - build the 'Release' build type that does not have extra development-time checking compiled in.
+ * -skiptests - don't build the tests.   This can shorten build times quite a bit, but means you can't run tests.
+ * -release - build the 'Release' build type that does not have extra development-time checking compiled in.
  * -rebuild - force the build not to be incremental but to recompile everything.   
  You want this if you are going to do performance testing on your build. 
 
