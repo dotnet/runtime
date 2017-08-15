@@ -75,7 +75,7 @@ namespace System.Security.Cryptography.Dsa.Tests
 
         private static byte[] TryWithOutputArray(Func<byte[], (bool, int)> func)
         {
-            for (int length = 256; ; length = checked(length * 2))
+            for (int length = 1; ; length = checked(length * 2))
             {
                 var result = new byte[length];
                 var (success, bytesWritten) = func(result);

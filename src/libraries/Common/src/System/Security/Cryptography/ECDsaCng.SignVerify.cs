@@ -51,6 +51,14 @@ namespace System.Security.Cryptography
             }
         }
 
+        public override unsafe bool TrySignHash(ReadOnlySpan<byte> source, Span<byte> destination, out int bytesWritten)
+        {
+            using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
+            {
+                return keyHandle.TrySignHash(source, destination, AsymmetricPaddingMode.None, null, out bytesWritten);
+            }
+        }
+
         /// <summary>
         ///     Verifies that alleged signature of a hash is, in fact, a valid signature of that hash.
         /// </summary>
@@ -61,13 +69,14 @@ namespace System.Security.Cryptography
             if (signature == null)
                 throw new ArgumentNullException(nameof(signature));
 
-            unsafe
+            return VerifyHash((ReadOnlySpan<byte>)hash, (ReadOnlySpan<byte>)signature);
+        }
+
+        public override unsafe bool VerifyHash(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature)
+        {
+            using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
             {
-                using (SafeNCryptKeyHandle keyHandle = GetDuplicatedKeyHandle())
-                {
-                    bool verified = keyHandle.VerifyHash(hash, signature, AsymmetricPaddingMode.None, null);
-                    return verified;
-                }
+                return keyHandle.VerifyHash(hash, signature, AsymmetricPaddingMode.None, null);
             }
         }
     }
