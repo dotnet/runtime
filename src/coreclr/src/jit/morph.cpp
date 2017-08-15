@@ -18132,17 +18132,17 @@ void Compiler::fgRetypeImplicitByRefArgs()
             //
             varDsc->lvOverlappingFields = 0; // This flag could have been set, clear it.
 
-#ifdef DEBUG
-            // This should not be converted to a double in stress mode,
-            // because it is really a pointer
-            varDsc->lvKeepType = 1;
-
             // The struct parameter may have had its address taken, but the pointer parameter
             // cannot -- any uses of the struct parameter's address are uses of the pointer
             // parameter's value, and there's no way for the MSIL to reference the pointer
             // parameter's address.  So clear the address-taken bit for the parameter.
             varDsc->lvAddrExposed     = 0;
             varDsc->lvDoNotEnregister = 0;
+
+#ifdef DEBUG
+            // This should not be converted to a double in stress mode,
+            // because it is really a pointer
+            varDsc->lvKeepType = 1;
 
             if (verbose)
             {
