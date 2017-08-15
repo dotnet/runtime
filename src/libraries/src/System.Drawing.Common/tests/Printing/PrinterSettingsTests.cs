@@ -349,6 +349,7 @@ namespace System.Drawing.Printing.Tests
             Assert.Equal(printToFile, printerSettings.PrintToFile);
         }
 
+        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [Theory]
         [InlineData("")]
         [InlineData("My printer")]
