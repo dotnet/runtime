@@ -4,5 +4,6 @@
   <PropertyGroup>
     <AssemblyVersion>4.0.1.0</AssemblyVersion>
     <AssemblyKey>Open</AssemblyKey>
+    <IsUAP>true</IsUAP>
   </PropertyGroup>
 </Project>

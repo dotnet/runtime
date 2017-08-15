@@ -150,8 +150,9 @@ namespace Legacy.Support
 
                         openablePortNames.Add(portName);
                     }
-                    catch (Exception)
+                    catch (Exception e)
                     {
+                        PrintInfo("Exception opening port {0}: {1}", portName, e);
                     }
                 }
             }
