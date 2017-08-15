@@ -21,10 +21,24 @@ internal static partial class Interop
             out SafeSecKeyRefHandle ppKeyOut,
             out int pOSStatus);
 
-        [DllImport(Libraries.AppleCryptoNative)]
-        private static extern int AppleCryptoNative_GenerateSignature(
+        private static unsafe int AppleCryptoNative_GenerateSignature(
             SafeSecKeyRefHandle privateKey,
-            byte[] pbDataHash,
+            ReadOnlySpan<byte> pbDataHash,
+            int cbDataHash,
+            out SafeCFDataHandle pSignatureOut,
+            out SafeCFErrorHandle pErrorOut)
+        {
+            fixed (byte* pbDataHashPtr = &pbDataHash.DangerousGetPinnableReference())
+            {
+                return AppleCryptoNative_GenerateSignature(
+                    privateKey, pbDataHashPtr, cbDataHash, out pSignatureOut, out pErrorOut);
+            }
+        }
+
+        [DllImport(Libraries.AppleCryptoNative)]
+        private static extern unsafe int AppleCryptoNative_GenerateSignature(
+            SafeSecKeyRefHandle privateKey,
+            byte* pbDataHash,
             int cbDataHash,
             out SafeCFDataHandle pSignatureOut,
             out SafeCFErrorHandle pErrorOut);
@@ -106,10 +120,9 @@ internal static partial class Interop
         [DllImport(Libraries.AppleCryptoNative)]
         private static extern ulong AppleCryptoNative_SecKeyGetSimpleKeySizeInBytes(SafeSecKeyRefHandle publicKey);
 
-        private delegate int SecKeyTransform(out SafeCFDataHandle data, out SafeCFErrorHandle error);
-        private delegate int SecKeySpanTransform(ReadOnlySpan<byte> source, out SafeCFDataHandle outputHandle, out SafeCFErrorHandle errorHandle);
+        private delegate int SecKeyTransform(ReadOnlySpan<byte> source, out SafeCFDataHandle outputHandle, out SafeCFErrorHandle errorHandle);
 
-        private static byte[] ExecuteTransform(SecKeyTransform transform)
+        private static byte[] ExecuteTransform(ReadOnlySpan<byte> source, SecKeyTransform transform)
         {
             const int Success = 1;
             const int kErrorSeeError = -2;
@@ -117,7 +130,7 @@ internal static partial class Interop
             SafeCFDataHandle data;
             SafeCFErrorHandle error;
 
-            int ret = transform(out data, out error);
+            int ret = transform(source, out data, out error);
 
             using (error)
             using (data)
@@ -141,7 +154,7 @@ internal static partial class Interop
             ReadOnlySpan<byte> source,
             Span<byte> destination,
             out int bytesWritten,
-            SecKeySpanTransform transform)
+            SecKeyTransform transform)
         {
             SafeCFDataHandle outputHandle;
             SafeCFErrorHandle errorHandle;
@@ -204,36 +217,36 @@ internal static partial class Interop
             throw new CryptographicException();
         }
 
-        internal static byte[] GenerateSignature(SafeSecKeyRefHandle privateKey, byte[] dataHash)
+        internal static byte[] GenerateSignature(SafeSecKeyRefHandle privateKey, ReadOnlySpan<byte> dataHash)
         {
             Debug.Assert(privateKey != null, "privateKey != null");
-            Debug.Assert(dataHash != null, "dataHash != null");
 
             return ExecuteTransform(
-                (out SafeCFDataHandle signature, out SafeCFErrorHandle error) =>
+                dataHash,
+                (ReadOnlySpan<byte> source, out SafeCFDataHandle signature, out SafeCFErrorHandle error) =>
                     AppleCryptoNative_GenerateSignature(
                         privateKey,
-                        dataHash,
-                        dataHash.Length,
+                        source,
+                        source.Length,
                         out signature,
                         out error));
         }
 
         internal static byte[] GenerateSignature(
             SafeSecKeyRefHandle privateKey,
-            byte[] dataHash,
+            ReadOnlySpan<byte> dataHash,
             PAL_HashAlgorithm hashAlgorithm)
         {
             Debug.Assert(privateKey != null, "privateKey != null");
-            Debug.Assert(dataHash != null, "dataHash != null");
             Debug.Assert(hashAlgorithm != PAL_HashAlgorithm.Unknown, "hashAlgorithm != PAL_HashAlgorithm.Unknown");
 
             return ExecuteTransform(
-                (out SafeCFDataHandle signature, out SafeCFErrorHandle error) =>
+                dataHash,
+                (ReadOnlySpan<byte> source, out SafeCFDataHandle signature, out SafeCFErrorHandle error) =>
                     AppleCryptoNative_GenerateSignatureWithHashAlgorithm(
                         privateKey,
-                        dataHash,
-                        dataHash.Length,
+                        source,
+                        source.Length,
                         hashAlgorithm,
                         out signature,
                         out error));
