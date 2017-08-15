@@ -7860,8 +7860,8 @@ void Compiler::fgAddSyncMethodEnterExit()
 #ifdef DEBUG
         if (verbose)
         {
-            printf("\nSynchronized method - Add 'acquired' initialization in first block BB%02u [%08p]\n", fgFirstBB,
-                   dspPtr(fgFirstBB));
+            printf("\nSynchronized method - Add 'acquired' initialization in first block %s\n",
+                   fgFirstBB->dspToString());
             gtDispTree(initNode);
             printf("\n");
         }
@@ -7931,8 +7931,8 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nSynchronized method - Add monitor %s call to block BB%02u [%08p]\n", enter ? "enter" : "exit", block,
-               dspPtr(block));
+        printf("\nSynchronized method - Add monitor %s call to block %s\n", enter ? "enter" : "exit",
+               block->dspToString());
         gtDispTree(tree);
         printf("\n");
     }
@@ -8054,7 +8054,8 @@ void Compiler::fgAddReversePInvokeEnterExit()
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nReverse PInvoke method - Add reverse pinvoke enter in first basic block [%08p]\n", dspPtr(fgFirstBB));
+        printf("\nReverse PInvoke method - Add reverse pinvoke enter in first basic block %s\n",
+               fgFirstBB->dspToString());
         gtDispTree(tree);
         printf("\n");
     }
@@ -8073,8 +8074,8 @@ void Compiler::fgAddReversePInvokeEnterExit()
 #ifdef DEBUG
     if (verbose)
     {
-        printf("\nReverse PInvoke method - Add reverse pinvoke exit in return basic block [%08p]\n",
-               dspPtr(genReturnBB));
+        printf("\nReverse PInvoke method - Add reverse pinvoke exit in return basic block %s\n",
+               genReturnBB->dspToString());
         gtDispTree(tree);
         printf("\n");
     }
@@ -8177,7 +8178,7 @@ void Compiler::fgAddInternal()
 #ifdef DEBUG
             if (verbose)
             {
-                printf("\nCopy \"this\" to lvaArg0Var in first basic block [%08p]\n", dspPtr(fgFirstBB));
+                printf("\nCopy \"this\" to lvaArg0Var in first basic block %s\n", fgFirstBB->dspToString());
                 gtDispTree(tree);
                 printf("\n");
             }
@@ -8501,7 +8502,7 @@ void Compiler::fgAddInternal()
             printf("\ntiSecurityCalloutNeeded - Add call JIT_Security_Prolog(%08p) statement ",
                    dspPtr(info.compMethodHnd));
             printTreeID(tree);
-            printf(" in first basic block [%08p]\n", dspPtr(fgFirstBB));
+            printf(" in first basic block %s\n", fgFirstBB->dspToString());
             gtDispTree(tree);
             printf("\n");
         }
@@ -8542,7 +8543,8 @@ void Compiler::fgAddInternal()
 #ifdef DEBUG
         if (verbose)
         {
-            printf("\nSynchronized method - Add enterCrit statement in first basic block [%08p]\n", dspPtr(fgFirstBB));
+            printf("\nSynchronized method - Add enterCrit statement in first basic block %s\n",
+                   fgFirstBB->dspToString());
             gtDispTree(tree);
             printf("\n");
         }
@@ -8607,9 +8609,8 @@ void Compiler::fgAddInternal()
 #ifdef DEBUG
         if (verbose)
         {
-            printf("\ntiRuntimeCalloutNeeded - Call verificationRuntimeCheck(%08p) statement in first basic block "
-                   "[%08p]\n",
-                   dspPtr(info.compMethodHnd), dspPtr(fgFirstBB));
+            printf("\ntiRuntimeCalloutNeeded - Call verificationRuntimeCheck(%08p) statement in first basic block %s\n",
+                   dspPtr(info.compMethodHnd), fgFirstBB->dspToString());
             gtDispTree(tree);
             printf("\n");
         }
@@ -8661,7 +8662,7 @@ void Compiler::fgAddInternal()
         {
             printf("\noneReturn statement tree ");
             printTreeID(tree);
-            printf(" added to genReturnBB [%08p]\n", dspPtr(genReturnBB));
+            printf(" added to genReturnBB %s\n", genReturnBB->dspToString());
             gtDispTree(tree);
             printf("\n");
         }
@@ -17868,9 +17869,8 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
                 break;
         }
 
-        printf("\nfgAddCodeRef -"
-               " Add BB in %s%s, new block BB%02u [%08p], stkDepth is %d\n",
-               msgWhere, msg, add->acdDstBlk->bbNum, dspPtr(add->acdDstBlk), stkDepth);
+        printf("\nfgAddCodeRef - Add BB in %s%s, new block %s, stkDepth is %d\n", msgWhere, msg,
+               add->acdDstBlk->dspToString(), stkDepth);
     }
 #endif // DEBUG
 
@@ -19661,7 +19661,7 @@ void Compiler::fgTableDispBasicBlock(BasicBlock* block, int ibcColWidth /* = 0 *
     blockNumWidth                           = max(blockNumWidth, 2);
     int blockNumPadding                     = maxBlockNumWidth - blockNumWidth;
 
-    printf("BB%02u%*s [%08p] %2u", block->bbNum, blockNumPadding, "", dspPtr(block), block->bbRefs);
+    printf("%s %2u", block->dspToString(blockNumPadding), block->bbRefs);
 
     //
     // Display EH 'try' region index
@@ -19995,11 +19995,6 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
 {
     BasicBlock* block;
 
-    int padWidth = 0;
-#ifdef _TARGET_AMD64_
-    padWidth = 8;
-#endif // _TARGET_AMD64_
-
     // If any block has IBC data, we add an "IBC weight" column just before the 'IL range' column. This column is as
     // wide as necessary to accommodate all the various IBC weights. It's at least 4 characters wide, to accommodate
     // the "IBC" title and leading space.
@@ -20025,8 +20020,7 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
     unsigned bbNumMax         = compIsForInlining() ? impInlineInfo->InlinerCompiler->fgBBNumMax : fgBBNumMax;
     int      maxBlockNumWidth = CountDigits(bbNumMax);
     maxBlockNumWidth          = max(maxBlockNumWidth, 2);
-
-    padWidth += maxBlockNumWidth - 2; // Account for functions with a large number of blocks.
+    int padWidth              = maxBlockNumWidth - 2; // Account for functions with a large number of blocks.
 
     // clang-format off
 
@@ -20035,7 +20029,7 @@ void Compiler::fgDispBasicBlocks(BasicBlock* firstBlock, BasicBlock* lastBlock, 
         padWidth, "------------",
         ibcColWidth, "------------",
         maxBlockNumWidth, "----");
-    printf("BBnum %*sdescAddr ref try hnd %s     weight  %*s%s  [IL range]     [jump]%*s    [EH region]         [flags]\n",
+    printf("BBnum %*sBBid ref try hnd %s     weight  %*s%s  [IL range]     [jump]%*s    [EH region]         [flags]\n",
         padWidth, "",
         fgCheapPredsValid       ? "cheap preds" :
         (fgComputePredsDone     ? "preds      "
