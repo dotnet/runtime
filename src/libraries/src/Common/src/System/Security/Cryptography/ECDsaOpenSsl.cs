@@ -233,10 +233,7 @@ namespace System.Security.Cryptography
                 // with the already loaded key.
                 ForceSetKeySize(Interop.Crypto.EcKeyGetSize(newKey));
 
-                _key = new Lazy<SafeEcKeyHandle>(() => newKey, isThreadSafe: true);
-
-                // Have Lazy<T> consider the key to be loaded
-                var dummy = _key.Value;
+                _key = new Lazy<SafeEcKeyHandle>(newKey);
             }
         }
 #if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS

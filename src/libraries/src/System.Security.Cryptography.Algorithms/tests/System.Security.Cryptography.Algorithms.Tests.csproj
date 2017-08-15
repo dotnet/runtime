@@ -145,6 +145,7 @@
     <Compile Include="DESTests.cs" />
     <Compile Include="DSACreateTests.cs" />
     <Compile Include="DSASignatureFormatterTests.cs" />
+    <Compile Include="DSATests.cs" />
     <Compile Include="ECDiffieHellmanPublicKeyTests.cs" />
     <Compile Include="HashAlgorithmTest.netcoreapp.cs" />
     <Compile Include="IncrementalHashTests.netcoreapp.cs" />
