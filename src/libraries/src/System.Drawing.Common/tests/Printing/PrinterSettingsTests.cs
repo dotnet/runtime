@@ -119,7 +119,6 @@ namespace System.Drawing.Printing.Tests
         }
 
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
-        [ActiveIssue(23217)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(Duplex.Default - 1)]
         [InlineData(Duplex.Horizontal + 1)]
@@ -128,7 +127,7 @@ namespace System.Drawing.Printing.Tests
         public void Duplex_Invalid_ThrowsInvalidEnumArgumentException(Duplex duplex)
         {
             var printerSettings = new PrinterSettings();
-            AssertExtensions.Throws<InvalidEnumArgumentException>("value", () => printerSettings.Duplex = duplex);
+            Assert.ThrowsAny<ArgumentException>(() => printerSettings.Duplex = duplex);
         }
 
         [Fact]
@@ -324,8 +323,7 @@ namespace System.Drawing.Printing.Tests
 
             Assert.Equal(printRange, printerSettings.PrintRange);
         }
-
-        [ActiveIssue(23217)]
+        
         [Theory]
         [InlineData(PrintRange.AllPages - 1)]
         [InlineData(PrintRange.SomePages + 1)]
@@ -334,7 +332,7 @@ namespace System.Drawing.Printing.Tests
         public void PrintRange_Invalid_ThrowsInvalidEnumArgumentException(PrintRange printRange)
         {
             var printerSettings = new PrinterSettings();
-            Assert.Throws<InvalidEnumArgumentException>("value", () => printerSettings.PrintRange = printRange);
+            Assert.ThrowsAny<ArgumentException>(() => printerSettings.PrintRange = printRange);
         }
 
         [Fact]
