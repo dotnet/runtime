@@ -819,7 +819,6 @@ namespace System.Net.Http
             int searchOffset = 0;
             while (true)
             {
-                int remaining = _readLength - _readOffset;
                 int startIndex = _readOffset + searchOffset;
                 int length = _readLength - startIndex;
                 int crPos = Array.IndexOf(_readBuffer, (byte)'\r', startIndex, length);
@@ -852,31 +851,22 @@ namespace System.Net.Http
 
         private async Task ReadCrLfAsync(CancellationToken cancellationToken)
         {
-            int remaining = _readLength - _readOffset;
-            while (true)
+            while (_readLength - _readOffset < 2)
             {
-                // If there are at least two characters buffered, we expect them to be \r\n.
-                // If they are, consume them and we're done.  If they're not, it's an error.
-                if (remaining >= 2)
-                {
-                    byte[] readBuffer = _readBuffer;
-                    if (readBuffer[_readOffset++] == '\r' && readBuffer[_readOffset++] == '\n')
-                    {
-                        return;
-                    }
-                    break;
-                }
-
                 // We have fewer than 2 chars buffered.  Get more.
                 await FillAsync(cancellationToken).ConfigureAwait(false);
-
-                // If we were unable to get more, it's an error.
-                // Otherwise, loop around to look again.
-                remaining = _readLength - _readOffset;
             }
+
+            // We expect \r\n.  If so, consume them.  If not, it's an error.
+            if (_readBuffer[_readOffset] != '\r' || _readBuffer[_readOffset + 1] != '\n')
+            {
+                ThrowInvalidHttpResponse();
+            }
+
+            _readOffset += 2;
         }
 
-        // Throws IOException on EOF.
+        // Throws IOException on EOF.  This is only called when we expect more data.
         private Task FillAsync(CancellationToken cancellationToken)
         {
             int remaining = _readLength - _readOffset;
