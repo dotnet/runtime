@@ -289,6 +289,8 @@ namespace Microsoft.DotNet.CoreSetup.Test
             storeArgs.Add("--working-dir");
             storeArgs.Add("store_workin_dir");
 
+            storeArgs.Add($"/p:MNAVersion={_repoDirectoriesProvider.MicrosoftNETCoreAppVersion}");
+
             dotnet.Store(storeArgs.ToArray())
                 .WorkingDirectory(_testProject.ProjectDirectory)
                 .Environment("NUGET_PACKAGES", _repoDirectoriesProvider.NugetPackages)
