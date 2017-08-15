@@ -8,10 +8,10 @@
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsWindows)' != 'true'">SR.PlatformNotSupported_AccessControl</GeneratePlatformNotSupportedAssemblyMessage>
     <ProjectGuid>{D27FFA1F-B446-4D24-B60A-1F88385CDB6D}</ProjectGuid>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Unix-Release|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Debug|AnyCPU'" />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Windows_NT-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp2.0-Unix-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp2.0-Unix-Release|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp2.0-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp2.0-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Windows_NT-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Debug|AnyCPU'" />
@@ -21,7 +21,7 @@
   <ItemGroup Condition="'$(TargetGroup)'=='netfx'">
     <Reference Include="mscorlib" />
   </ItemGroup>
-  <ItemGroup Condition="('$(TargetGroup)'=='netcoreapp' OR '$(TargetGroup)'=='uap') AND '$(TargetsWindows)'=='true'">
+  <ItemGroup Condition="('$(TargetGroup)'=='netcoreapp2.0' OR '$(TargetGroup)'=='uap') AND '$(TargetsWindows)'=='true'">
     <Compile Include="System\Security\AccessControl\ACE.cs" />
     <Compile Include="System\Security\AccessControl\ACL.cs" />
     <Compile Include="System\Security\AccessControl\CommonObjectSecurity.cs" />
