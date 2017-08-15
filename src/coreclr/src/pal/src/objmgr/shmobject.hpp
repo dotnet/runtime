@@ -65,6 +65,9 @@ namespace CorUnix
         SHMPTR shmObjImmutableData;
         SHMPTR shmObjSharedData;
 
+        OBJECT_IMMUTABLE_DATA_COPY_ROUTINE pCopyRoutine;
+        OBJECT_IMMUTABLE_DATA_CLEANUP_ROUTINE pCleanupRoutine;
+
         LONG lProcessRefCount;
         DWORD dwNameLength;
 
@@ -138,12 +141,6 @@ namespace CorUnix
         void
         FreeSharedDataAreas(
             SHMPTR shmObjData
-            );
-
-        void
-        PromoteSharedData(
-            SHMPTR shmObjData,
-            SHMObjData *psmod
             );
 
         bool
@@ -226,12 +223,6 @@ namespace CorUnix
         InitializeFromExistingSharedData(
             CPalThread *pthr,
             CObjectAttributes *poa
-            );
-
-        virtual
-        PAL_ERROR
-        EnsureObjectIsShared(
-            CPalThread *pthr
             );
 
         void
@@ -351,12 +342,6 @@ namespace CorUnix
         Initialize(
             CPalThread *pthr,
             CObjectAttributes *poa
-            );
-
-        virtual
-        PAL_ERROR
-        EnsureObjectIsShared(
-            CPalThread *pthr
             );
 
         //
