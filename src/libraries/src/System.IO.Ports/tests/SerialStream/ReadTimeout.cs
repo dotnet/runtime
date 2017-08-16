@@ -5,6 +5,7 @@
 using System.Diagnostics;
 using System.IO.PortsTests;
 using System.Threading;
+using System.Threading.Tasks;
 using Legacy.Support;
 using Xunit;
 using Xunit.NetCore.Extensions;
@@ -164,7 +165,7 @@ namespace System.IO.Ports.Tests
         {
             using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
-                var t = new Thread(WriteToCom1);
+                var t = new Task(WriteToCom1);
 
                 com1.Open();
                 Stream stream = com1.BaseStream;
@@ -186,9 +187,7 @@ namespace System.IO.Ports.Tests
                 {
                 }
 
-                // Wait for the thread to finish
-                while (t.IsAlive)
-                    Thread.Sleep(50);
+                TCSupport.WaitForTaskCompletion(t);
 
                 // Make sure there is no bytes in the buffer so the next call to read will timeout
                 com1.DiscardInBuffer();
@@ -220,7 +219,7 @@ namespace System.IO.Ports.Tests
         {
             using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
-                var t = new Thread(WriteToCom1);
+                var t = new Task(WriteToCom1);
 
                 com1.Open();
                 Stream stream = com1.BaseStream;
@@ -242,9 +241,7 @@ namespace System.IO.Ports.Tests
                 {
                 }
 
-                // Wait for the thread to finish
-                while (t.IsAlive)
-                    Thread.Sleep(50);
+                TCSupport.WaitForTaskCompletion(t);
 
                 // Make sure there is no bytes in the buffer so the next call to read will timeout
                 com1.DiscardInBuffer();
@@ -386,19 +383,18 @@ namespace System.IO.Ports.Tests
         private void VerifyLongTimeout(ReadMethodDelegate readMethod, SerialPort com1, SerialPort com2)
         {
             var readThread = new ReadDelegateThread(com1.BaseStream, readMethod);
-            var t = new Thread(readThread.CallRead);
+            var t = new Task(readThread.CallRead);
 
 
             t.Start();
             Thread.Sleep(DEFAULT_WAIT_LONG_TIMEOUT);
 
-            Assert.True(t.IsAlive,
+            Assert.False(t.IsCompleted,
                 string.Format("Err_17071ahpa!!! {0} terminated with a long timeout of {1}ms", readMethod.Method.Name, com1.BaseStream.ReadTimeout));
 
             com2.Write(new byte[8], 0, 8);
 
-            while (t.IsAlive)
-                Thread.Sleep(10);
+            TCSupport.WaitForTaskCompletion(t);
         }
 
         private void VerifyTimeout(ReadMethodDelegate readMethod, int readTimeout)
