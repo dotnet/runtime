@@ -6702,7 +6702,7 @@ void LinearScan::unassignPhysReg(RegRecord* regRec ARM_ARG(RegisterType newRegTy
 {
     RegRecord* regRecToUnassign = regRec;
 #ifdef _TARGET_ARM_
-    RegRecord* anotherRegRec    = nullptr;
+    RegRecord* anotherRegRec = nullptr;
 
     if ((regRecToUnassign->assignedInterval != nullptr) &&
         (regRecToUnassign->assignedInterval->registerType == TYP_DOUBLE))
