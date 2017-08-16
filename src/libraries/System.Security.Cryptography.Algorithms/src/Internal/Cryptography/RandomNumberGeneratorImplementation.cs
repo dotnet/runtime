@@ -18,14 +18,11 @@ namespace System.Security.Cryptography
             GetBytes(new Span<byte>(data, offset, count));
         }
 
-        public override unsafe void GetBytes(Span<byte> data)
+        public override void GetBytes(Span<byte> data)
         {
             if (data.Length > 0)
             {
-                fixed (byte* ptr = &data.DangerousGetPinnableReference())
-                {
-                    GetBytes(ptr, data.Length);
-                }
+                GetBytes(ref data.DangerousGetPinnableReference(), data.Length);
             }
         }
 
