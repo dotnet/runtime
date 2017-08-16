@@ -286,6 +286,12 @@ namespace System.Runtime.Serialization
                         _ilg.Load(_contextArg);
                         _ilg.Call(XmlFormatGeneratorStatics.StoreIsGetOnlyCollectionMethod);
                     }
+                    else
+                    {
+                        _ilg.Load(_contextArg);
+                        _ilg.Call(XmlFormatGeneratorStatics.ResetIsGetOnlyCollectionMethod);
+                    }
+
                     if (!member.EmitDefaultValue)
                     {
                         memberValue = LoadMemberValue(member);
