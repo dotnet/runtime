@@ -54,6 +54,7 @@ namespace System
         public static bool IsNonZeroLowerBoundArraySupported { get { throw null; } }
         public static bool IsNotArmProcess { get { throw null; } }
         public static bool IsNotFedoraOrRedHatOrCentos { get { throw null; } }
+        public static bool IsNotMacOsHighSierraOrHigher { get { throw null; } }
         public static bool IsNotOneCoreUAP { get { throw null; } }
         public static bool IsNotWindows8x { get { throw null; } }
         public static bool IsNotWindowsIoTCore { get { throw null; } }
