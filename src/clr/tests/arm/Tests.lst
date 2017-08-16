@@ -2737,7 +2737,7 @@ RelativePath=baseservices\compilerservices\dynamicobjectproperties\test448035\te
 WorkingDir=baseservices\compilerservices\dynamicobjectproperties\test448035
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_FAIL;13203
 HostStyle=0
 
 [ldc_conv_ovf_u4_u2.cmd_343]
@@ -5201,7 +5201,7 @@ RelativePath=baseservices\exceptions\regressions\V1\SEH\VJ\UserExceptionThread\U
 WorkingDir=baseservices\exceptions\regressions\V1\SEH\VJ\UserExceptionThread
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_FAIL;13203
 HostStyle=0
 
 [thread22.cmd_651]
@@ -14433,7 +14433,7 @@ RelativePath=baseservices\threading\mutex\abandonedmutex\am07abandonmultiplemute
 WorkingDir=baseservices\threading\mutex\abandonedmutex\am07abandonmultiplemutex
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_FAIL;13203
 HostStyle=0
 
 [MathFIEEERemainder.cmd_1805]
@@ -15257,7 +15257,7 @@ RelativePath=Loader\classloader\regressions\523654\test532654_b\test532654_b.cmd
 WorkingDir=Loader\classloader\regressions\523654\test532654_b
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_FAIL;13203
 HostStyle=0
 
 [Generated501.cmd_1908]
@@ -20225,7 +20225,7 @@ RelativePath=JIT\Methodical\explicit\basic\_il_relrefloc_r8\_il_relrefloc_r8.cmd
 WorkingDir=JIT\Methodical\explicit\basic\_il_relrefloc_r8
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_FAIL;13203
 HostStyle=0
 
 [RuntimeMethodHanldeGetHashCode.cmd_2529]
@@ -24713,7 +24713,7 @@ RelativePath=baseservices\threading\waithandle\waitall\waitallex9\waitallex9.cmd
 WorkingDir=baseservices\threading\waithandle\waitall\waitallex9
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_FAIL;13203
 HostStyle=0
 
 [float_cs_ro.cmd_3090]
@@ -25529,7 +25529,7 @@ RelativePath=baseservices\exceptions\regressions\V1\SEH\VJ\HandlerException\Hand
 WorkingDir=baseservices\exceptions\regressions\V1\SEH\VJ\HandlerException
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_FAIL;13206
 HostStyle=0
 
 [bool_cs_d.cmd_3192]
@@ -30449,7 +30449,7 @@ RelativePath=JIT\Directed\lifetime\lifetime1\lifetime1.cmd
 WorkingDir=JIT\Directed\lifetime\lifetime1
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_FAIL;13200;13203
 HostStyle=0
 
 [castclass-interface003.cmd_3807]
@@ -32425,7 +32425,7 @@ RelativePath=JIT\Methodical\explicit\basic\_il_relrefloc_i1\_il_relrefloc_i1.cmd
 WorkingDir=JIT\Methodical\explicit\basic\_il_relrefloc_i1
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_FAIL;13203
 HostStyle=0
 
 [b16423.cmd_4054]
@@ -32481,7 +32481,7 @@ RelativePath=baseservices\threading\waithandle\waitone\waitoneex3a\waitoneex3a.c
 WorkingDir=baseservices\threading\waithandle\waitone\waitoneex3a
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_FAIL;13203
 HostStyle=0
 
 [waitallex7a.cmd_4061]
@@ -32497,7 +32497,7 @@ RelativePath=baseservices\threading\coverage\Nullref\CS_MRENullRefEx\CS_MRENullR
 WorkingDir=baseservices\threading\coverage\Nullref\CS_MRENullRefEx
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_FAIL;13203
 HostStyle=0
 
 [Generated741.cmd_4063]
@@ -35249,7 +35249,7 @@ RelativePath=baseservices\exceptions\regressions\V1\SEH\VJ\ExternalException\Ext
 WorkingDir=baseservices\exceptions\regressions\V1\SEH\VJ\ExternalException
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_FAIL;13203
 HostStyle=0
 
 [ConvertToString6.cmd_4407]
@@ -40521,7 +40521,7 @@ RelativePath=baseservices\threading\waithandle\waitany\waitanyex10a\waitanyex10a
 WorkingDir=baseservices\threading\waithandle\waitany\waitanyex10a
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_FAIL;13207
 HostStyle=0
 
 [Generated248.cmd_5066]
@@ -44169,7 +44169,7 @@ RelativePath=JIT\Directed\tailcall\tailcall\tailcall.cmd
 WorkingDir=JIT\Directed\tailcall\tailcall
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_FAIL;13200
 HostStyle=0
 
 [b47093.cmd_5523]
@@ -44209,7 +44209,7 @@ RelativePath=baseservices\exceptions\regressions\V1\SEH\VJ\MultipleException\Mul
 WorkingDir=baseservices\exceptions\regressions\V1\SEH\VJ\MultipleException
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_FAIL;13203
 HostStyle=0
 
 [Generated1448.cmd_5528]
@@ -44409,7 +44409,7 @@ RelativePath=baseservices\threading\waithandle\waitall\waitallex8a\waitallex8a.c
 WorkingDir=baseservices\threading\waithandle\waitall\waitallex8a
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_FAIL;13203
 HostStyle=0
 
 [cgt_u.cmd_5553]
@@ -45649,7 +45649,7 @@ RelativePath=baseservices\threading\mutex\openexisting\openmutexpos4\openmutexpo
 WorkingDir=baseservices\threading\mutex\openexisting\openmutexpos4
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_FAIL;13201
 HostStyle=0
 
 [hasvalue_d.cmd_5708]
@@ -47385,7 +47385,7 @@ RelativePath=baseservices\threading\regressions\269336\objmonhelper\objmonhelper
 WorkingDir=baseservices\threading\regressions\269336\objmonhelper
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_FAIL;13200
 HostStyle=0
 
 [ConvertToByte1.cmd_5925]
@@ -50673,7 +50673,7 @@ RelativePath=baseservices\threading\generics\Monitor\EnterExit13\EnterExit13.cmd
 WorkingDir=baseservices\threading\generics\Monitor\EnterExit13
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_FAIL;13205
 HostStyle=0
 
 [GThread10.cmd_6336]
@@ -56377,7 +56377,7 @@ RelativePath=baseservices\threading\threadstatic\threadstatic07\threadstatic07.c
 WorkingDir=baseservices\threading\threadstatic\threadstatic07
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_FAIL;13204
 HostStyle=0
 
 [convr8a_cs_ro.cmd_7049]
@@ -57905,7 +57905,7 @@ RelativePath=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1353\Generat
 WorkingDir=Loader\classloader\TypeGeneratorTests\TypeGeneratorTest1353\Generated1353
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_FAIL;13203
 HostStyle=0
 
 [lclfldmul_cs_ro.cmd_7240]
@@ -66665,7 +66665,7 @@ RelativePath=JIT\Regression\VS-ia64-JIT\V1.2-M01\b10827\b10827\b10827.cmd
 WorkingDir=JIT\Regression\VS-ia64-JIT\V1.2-M01\b10827\b10827
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_FAIL;13203
 HostStyle=0
 
 [istype.cmd_8335]
@@ -73113,7 +73113,7 @@ RelativePath=baseservices\threading\generics\Monitor\TryEnter05\TryEnter05.cmd
 WorkingDir=baseservices\threading\generics\Monitor\TryEnter05
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_FAIL;13203
 HostStyle=0
 
 [MathAtan.cmd_9141]
@@ -74873,7 +74873,7 @@ RelativePath=baseservices\exceptions\regressions\Dev11\154243\dynamicmethodliven
 WorkingDir=baseservices\exceptions\regressions\Dev11\154243\dynamicmethodliveness
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_FAIL;13204
 HostStyle=0
 
 [GCSimulator_247.cmd_9361]
@@ -77401,7 +77401,7 @@ RelativePath=JIT\Directed\lifetime\lifetime2\lifetime2.cmd
 WorkingDir=JIT\Directed\lifetime\lifetime2
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_FAIL;13207
 HostStyle=0
 
 [_il_dbgcatchfinally_ind.cmd_9677]
@@ -77497,7 +77497,7 @@ RelativePath=baseservices\threading\interlocked\exchange\exchange1_cti\exchange1
 WorkingDir=baseservices\threading\interlocked\exchange\exchange1_cti
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_FAIL;13204
 HostStyle=0
 
 [494226.cmd_9689]
@@ -82425,7 +82425,7 @@ RelativePath=baseservices\threading\regressions\beta2\437044\437044.cmd
 WorkingDir=baseservices\threading\regressions\beta2\437044
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_FAIL;13201
 HostStyle=0
 
 [KeyCollectionCtor.cmd_10305]
@@ -85617,7 +85617,7 @@ RelativePath=baseservices\threading\generics\Monitor\EnterExit05\EnterExit05.cmd
 WorkingDir=baseservices\threading\generics\Monitor\EnterExit05
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_FAIL;13203
 HostStyle=0
 
 [5w1d-06_cs_d.cmd_10704]
@@ -87089,7 +87089,7 @@ RelativePath=JIT\Methodical\explicit\basic\_il_relrefarg_i1\_il_relrefarg_i1.cmd
 WorkingDir=JIT\Methodical\explicit\basic\_il_relrefarg_i1
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS
+Categories=EXPECTED_PASS;GCSTRESS_FAIL;13203
 HostStyle=0
 
 [b16054.cmd_10888]
