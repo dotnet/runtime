@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+dp0=$( cd -P "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+
 function run_command {
     echo ""
     echo $USER@`hostname` "$PWD"
@@ -40,6 +42,7 @@ function print_usage {
     echo '                                      also have the BV_UPLOAD_SAS_TOKEN set to a SAS token for the Benchview upload container'
     echo '  --benchViewOS=<os>                : Specify the os that will be used to insert data into Benchview.'
     echo '  --runType=<local|private|rolling> : Specify the runType for Benchview. [Default: local]'
+    echo '  --outputdir                       : Specifies the directory where the generated performance output will be saved.'
 }
 
 # libExtension determines extension for dynamic library files
@@ -222,6 +225,7 @@ perfCollection=
 collectionflags=stopwatch
 hasWarmupRun=--drop-first-value
 stabilityPrefix=
+benchmarksOutputDir=$dp0/../../bin/sandbox/Logs
 
 for i in "$@"
 do
@@ -263,6 +267,9 @@ do
         --stabilityPrefix=*)
             stabilityPrefix=${i#*=}
             ;;
+        --outputdir=*)
+            benchmarksOutputDir=${i#*=}
+            ;;
         --uploadToBenchview)
             uploadToBenchview=TRUE
             ;;
@@ -303,11 +310,16 @@ export NUGET_PACKAGES=$CORECLR_REPO/packages
 create_core_overlay                 || { echo "Creating core overlay failed."; exit 1; }
 precompile_overlay_assemblies       || { echo "Precompiling overlay assemblies failed."; exit 1; }
 
-# Deploy xunit performance packages
+# If the output Logs folder exist, it was from a previous run (It needs to be deleted).
+if [ ! -d "$benchmarksOutputDir" ]; then
+    mkdir -p "$benchmarksOutputDir" || { echo "Failed to delete $benchmarksOutputDir"; exit 1; }
+fi
+
 cd $CORE_ROOT
 
 DO_SETUP=TRUE
 if [ ${DO_SETUP} == "TRUE" ]; then
+    # Deploy xunit performance packages
     $DOTNETCLI_PATH/dotnet restore $CORECLR_REPO/tests/src/Common/PerfHarness/PerfHarness.csproj                                    || { echo "dotnet restore failed."; exit 1; }
     $DOTNETCLI_PATH/dotnet publish $CORECLR_REPO/tests/src/Common/PerfHarness/PerfHarness.csproj -c Release -o "$coreOverlayDir"    || { echo "dotnet publish failed."; exit 1; }
 fi
@@ -333,37 +345,32 @@ for testcase in ${tests[@]}; do
         cp "$directory/$filename"*.txt .  || exit 1
     fi
 
-    # TODO: Do we need this here.
+    # FIXME: We should not need this here.
     chmod u+x ./corerun
+
+    xUnitRunId=Perf-$perfCollection
+    perfLogFileName=$benchmarksOutputDir/$xUnitRunId-$filename.log
+    perfXmlFileName=$benchmarksOutputDir/$xUnitRunId-$filename.xml
 
     echo ""
     echo "----------"
-    echo "  Running $testname"
+    echo "  Running $xUnitRunId $testname"
     echo "----------"
-    run_command $stabilityPrefix ./corerun PerfHarness.dll $test --perf:runid Perf --perf:collect $collectionflags 1>"Perf-$filename.log" 2>&1 || exit 1
+
+    run_command $stabilityPrefix ./corerun PerfHarness.dll $test --perf:runid "$xUnitRunId" --perf:outputdir "$benchmarksOutputDir" --perf:collect $collectionflags 1>"$perfLogFileName" 2>&1 || exit 1
     if [ -d "$BENCHVIEW_TOOLS_PATH" ]; then
-        run_command python3.5 "$BENCHVIEW_TOOLS_PATH/measurement.py" xunit "Perf-$filename.xml" --better desc $hasWarmupRun --append || {
+        run_command python3.5 "$BENCHVIEW_TOOLS_PATH/measurement.py" xunit "$perfXmlFileName" --better desc $hasWarmupRun --append || {
             echo [ERROR] Failed to generate BenchView data;
             exit 1;
         }
     fi
-
-    # Rename file to be archived by Jenkins.
-    mv -f "Perf-$filename.log" "$CORECLR_REPO/Perf-$filename-$perfCollection.log" || {
-        echo [ERROR] Failed to move "Perf-$filename.log" to "$CORECLR_REPO".
-        exit 1;
-    }
-    mv -f "Perf-$filename.xml" "$CORECLR_REPO/Perf-$filename-$perfCollection.xml" || {
-        echo [ERROR] Failed to move "Perf-$filename.xml" to "$CORECLR_REPO".
-        exit 1;
-    }
 done
 
 if [ -d "$BENCHVIEW_TOOLS_PATH" ]; then
     args=measurement.json
-    args+=" --build ../../../../../build.json"
-    args+=" --machine-data ../../../../../machinedata.json"
-    args+=" --metadata ../../../../../submission-metadata.json"
+    args+=" --build $CORECLR_REPO/build.json"
+    args+=" --machine-data $CORECLR_REPO/machinedata.json"
+    args+=" --metadata $CORECLR_REPO/submission-metadata.json"
     args+=" --group $benchViewGroup"
     args+=" --type $runType"
     args+=" --config-name Release"
