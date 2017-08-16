@@ -2372,17 +2372,18 @@ parse_public_key (const gchar *key, gchar** pubkey, gboolean *is_ecma)
 	const gchar *pkey;
 	gchar header [16], val, *arr, *endp;
 	gint i, j, offset, bitlen, keylen, pkeylen;
-	
+
+	//both pubkey and is_ecma are required arguments
+	g_assert (pubkey && is_ecma);
+
 	keylen = strlen (key) >> 1;
 	if (keylen < 1)
 		return FALSE;
 
 	/* allow the ECMA standard key */
 	if (strcmp (key, "00000000000000000400000000000000") == 0) {
-		if (pubkey) {
-			*pubkey = g_strdup (key);
-			*is_ecma = TRUE;
-		}
+		*pubkey = g_strdup (key);
+		*is_ecma = TRUE;
 		return TRUE;
 	}
 	*is_ecma = FALSE;
@@ -2427,10 +2428,6 @@ parse_public_key (const gchar *key, gchar** pubkey, gboolean *is_ecma)
 	bitlen = read32 (header + 12) >> 3;
 	if ((bitlen + 16 + 4) != pkeylen)
 		return FALSE;
-
-	/* parsing is OK and the public key itself is not requested back */
-	if (!pubkey)
-		return TRUE;
 		
 	arr = (gchar *)g_malloc (keylen + 4);
 	/* Encode the size of the blob */
@@ -2509,10 +2506,8 @@ build_assembly_name (const char *name, const char *version, const char *culture,
 		}
 
 		if (is_ecma) {
-			if (save_public_key)
-				aname->public_key = (guint8*)pkey;
-			else
-				g_free (pkey);
+			aname->public_key = NULL;
+			g_free (pkey);
 			g_strlcpy ((gchar*)aname->public_key_token, "b77a5c561934e089", MONO_PUBLIC_KEY_TOKEN_LENGTH);
 			return TRUE;
 		}
