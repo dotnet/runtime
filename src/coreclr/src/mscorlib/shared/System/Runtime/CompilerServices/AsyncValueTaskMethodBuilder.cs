@@ -25,7 +25,7 @@ namespace System.Runtime.CompilerServices
         /// <summary>Creates an instance of the <see cref="AsyncValueTaskMethodBuilder{TResult}"/> struct.</summary>
         /// <returns>The initialized instance.</returns>
         public static AsyncValueTaskMethodBuilder<TResult> Create() =>
-            new AsyncValueTaskMethodBuilder<TResult>() { _methodBuilder = AsyncTaskMethodBuilder<TResult>.Create() };
+            default(AsyncValueTaskMethodBuilder<TResult>);
 
         /// <summary>Begins running the builder with the associated state machine.</summary>
         /// <typeparam name="TStateMachine">The type of the state machine.</typeparam>
