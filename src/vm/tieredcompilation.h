@@ -27,7 +27,8 @@ public:
     void Init(ADID appDomainId);
     BOOL OnMethodCalled(MethodDesc* pMethodDesc, DWORD currentCallCount);
     void AsyncPromoteMethodToTier1(MethodDesc* pMethodDesc);
-    void OnAppDomainShutdown();
+    static void ShutdownAllDomains();
+    void Shutdown(BOOL fBlockUntilAsyncWorkIsComplete);
     static CORJIT_FLAGS GetJitFlags(NativeCodeVersion nativeCodeVersion);
 
 private:
@@ -39,6 +40,9 @@ private:
     BOOL CompileCodeVersion(NativeCodeVersion nativeCodeVersion);
     void ActivateCodeVersion(NativeCodeVersion nativeCodeVersion);
 
+    void IncrementWorkerThreadCount();
+    void DecrementWorkerThreadCount();
+
     SpinLock m_lock;
     SList<SListElem<NativeCodeVersion>> m_methodsToOptimize;
     ADID m_domainId;
@@ -46,6 +50,7 @@ private:
     DWORD m_countOptimizationThreadsRunning;
     DWORD m_callCountOptimizationThreshhold;
     DWORD m_optimizationQuantumMs;
+    CLREvent* m_pAsyncWorkDoneEvent;
 };
 
 #endif // FEATURE_TIERED_COMPILATION
