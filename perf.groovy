@@ -33,8 +33,7 @@ def static getOSGroup(def os) {
                 def architecture = arch
                 def jobName = isSmoketest ? "perf_perflab_${os}_${arch}_smoketest" : "perf_perflab_${os}_${arch}"
 
-                if (arch == 'x86')
-                {
+                if (arch == 'x86') {
                     testEnv = '-testEnv %WORKSPACE%\\tests\\x86\\ryujit_x86_testenv.cmd'
                 }
 
@@ -47,29 +46,25 @@ def static getOSGroup(def os) {
                         }
                     }
 
-                    if (isPR)
-                    {
-                        parameters
-                        {
+                    if (isPR) {
+                        parameters {
                             stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
                         }
                     }
-                    if (isSmoketest)
-                    {
-                        parameters
-                        {
+
+                    if (isSmoketest) {
+                        parameters {
                             stringParam('XUNIT_PERFORMANCE_MAX_ITERATION', '2', 'Sets the number of iterations to two.  We want to do this so that we can run as fast as possible as this is just for smoke testing')
                             stringParam('XUNIT_PERFORMANCE_MAX_ITERATION_INNER_SPECIFIED', '2', 'Sets the number of iterations to two.  We want to do this so that we can run as fast as possible as this is just for smoke testing')
                         }
                     }
-                    else
-                    {
-                        parameters
-                        {
+                    else {
+                        parameters {
                             stringParam('XUNIT_PERFORMANCE_MAX_ITERATION', '21', 'Sets the number of iterations to twenty one.  We are doing this to limit the amount of data that we upload as 20 iterations is enought to get a good sample')
                             stringParam('XUNIT_PERFORMANCE_MAX_ITERATION_INNER_SPECIFIED', '21', 'Sets the number of iterations to twenty one.  We are doing this to limit the amount of data that we upload as 20 iterations is enought to get a good sample')
                         }
                     }
+
                     def configuration = 'Release'
                     def runType = isPR ? 'private' : 'rolling'
                     def benchViewName = isPR ? 'coreclr private %BenchviewCommitName%' : 'coreclr rolling %GIT_BRANCH_WITHOUT_ORIGIN% %GIT_COMMIT%'
@@ -93,25 +88,27 @@ def static getOSGroup(def os) {
 
                         batchFile("tests\\runtest.cmd ${configuration} ${architecture} GenerateLayoutOnly")
 
+                        def runXUnitPerfCommonArgs = "-arch ${arch} -configuration ${configuration} -generateBenchviewData \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" ${uploadString} -runtype ${runType} -stabilityPrefix \"START \"CORECLR_PERF_RUN\" /B /WAIT /HIGH /AFFINITY 0x2\""
+
                         // Run with just stopwatch: Profile=Off
-                        batchFile("tests\\scripts\\run-xunit-perf.cmd -arch ${arch} -configuration ${configuration} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\perflab\\Perflab -library -generateBenchviewData \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" ${uploadString} -runtype ${runType} -stabilityPrefix \"START \"CORECLR_PERF_RUN\" /B /WAIT /HIGH /AFFINITY 0x2\"")
-                        batchFile("tests\\scripts\\run-xunit-perf.cmd -arch ${arch} -configuration ${configuration} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\Jit\\Performance\\CodeQuality -generateBenchviewData \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" ${uploadString} -runtype ${runType} -stabilityPrefix \"START \"CORECLR_PERF_RUN\" /B /WAIT /HIGH /AFFINITY 0x2\"")
+                        batchFile("tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\perflab\\Perflab -library")
+                        batchFile("tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\Jit\\Performance\\CodeQuality")
 
                         // Run with the full set of counters enabled: Profile=On
-                        batchFile("tests\\scripts\\run-xunit-perf.cmd -arch ${arch} -configuration ${configuration} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\perflab\\Perflab -library -generateBenchviewData \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" ${uploadString} -runtype ${runType} -collectionFlags default+BranchMispredictions+CacheMisses+InstructionRetired+gcapi -stabilityPrefix \"START \"CORECLR_PERF_RUN\" /B /WAIT /HIGH /AFFINITY 0x2\"")
-                        batchFile("tests\\scripts\\run-xunit-perf.cmd -arch ${arch} -configuration ${configuration} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\Jit\\Performance\\CodeQuality -generateBenchviewData \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" ${uploadString} -runtype ${runType} -collectionFlags default+BranchMispredictions+CacheMisses+InstructionRetired+gcapi -stabilityPrefix \"START \"CORECLR_PERF_RUN\" /B /WAIT /HIGH /AFFINITY 0x2\"")
+                        batchFile("tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\perflab\\Perflab -library -collectionFlags default+BranchMispredictions+CacheMisses+InstructionRetired+gcapi")
+                        batchFile("tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\Jit\\Performance\\CodeQuality -collectionFlags default+BranchMispredictions+CacheMisses+InstructionRetired+gcapi")
                     }
                 }
 
-                if (isSmoketest)
-                {
+                if (isSmoketest) {
                     Utilities.setMachineAffinity(newJob, "Windows_NT", '20170427-elevated')
                 }
+
                 // Save machinedata.json to /artifact/bin/ Jenkins dir
                 def archiveSettings = new ArchivalSettings()
-                archiveSettings.addFiles('Perf-*.xml')
-                archiveSettings.addFiles('Perf-*.etl')
-                archiveSettings.addFiles('Perf-*.log')
+                archiveSettings.addFiles('.\\bin\\sandbox\\Logs\\Perf-*.xml')
+                archiveSettings.addFiles('.\\bin\\sandbox\\Logs\\Perf-*.etl')
+                archiveSettings.addFiles('.\\bin\\sandbox\\Logs\\Perf-*.log')
                 archiveSettings.addFiles('machinedata.json')
                 Utilities.addArchival(newJob, archiveSettings)
 
@@ -166,20 +163,18 @@ def static getOSGroup(def os) {
                         }
                     }
 
-                    if (isPR)
-                    {
-                        parameters
-                        {
+                    if (isPR) {
+                        parameters {
                             stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that will be used to build the full title of a run in Benchview.')
                         }
                     }
+
                     def configuration = 'Release'
                     def runType = isPR ? 'private' : 'rolling'
                     def benchViewName = isPR ? 'coreclr-throughput private %BenchviewCommitName%' : 'coreclr-throughput rolling %GIT_BRANCH_WITHOUT_ORIGIN% %GIT_COMMIT%'
 
                     steps {
                         // Batch
-
                         batchFile("if exist \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\" rmdir /s /q \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\"")
                         batchFile("if exist \"%WORKSPACE%\\Microsoft.BenchView.ThroughputBenchmarks.${architecture}.${os}\" rmdir /s /q \"%WORKSPACE%\\Microsoft.BenchView.ThroughputBenchmarks.${architecture}.${os}\"")
                         batchFile("C:\\Tools\\nuget.exe install Microsoft.BenchView.JSONFormat -Source http://benchviewtestfeed.azurewebsites.net/nuget -OutputDirectory \"%WORKSPACE%\" -Prerelease -ExcludeVersion")
@@ -250,6 +245,7 @@ def static getFullPerfJobName(def project, def os, def isPR) {
         Utilities.addArchival(newBuildJob, "bin/Product/**,bin/obj/*/tests/**/*.dylib,bin/obj/*/tests/**/*.so", "bin/Product/**/.nuget/**")
     }
 
+
     // Actual perf testing on the following OSes
     def perfOSList = ['Ubuntu14.04']
     perfOSList.each { os ->
@@ -262,10 +258,8 @@ def static getFullPerfJobName(def project, def os, def isPR) {
                 }
             }
 
-            if (isPR)
-            {
-                parameters
-                {
+            if (isPR) {
+                parameters {
                     stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
                 }
             }
@@ -309,8 +303,8 @@ def static getFullPerfJobName(def project, def os, def isPR) {
 
         // Save machinedata.json to /artifact/bin/ Jenkins dir
         def archiveSettings = new ArchivalSettings()
-        archiveSettings.addFiles('Perf-*.log')
-        archiveSettings.addFiles('Perf-*.xml')
+        archiveSettings.addFiles('./bin/sandbox/Logs/Perf-*.log')
+        archiveSettings.addFiles('./bin/sandbox/Logs/Perf-*.xml')
         archiveSettings.addFiles('machinedata.json')
         Utilities.addArchival(newJob, archiveSettings)
 
@@ -526,19 +520,17 @@ parallel(
                     }
                 }
 
-                if (isPR)
-                {
-                    parameters
-                    {
+                if (isPR) {
+                    parameters {
                         stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
                     }
                 }
 
-                parameters
-                {
+                parameters {
                     stringParam('XUNIT_PERFORMANCE_MAX_ITERATION', '1', 'Size test, one iteration is sufficient')
                     stringParam('XUNIT_PERFORMANCE_MAX_ITERATION_INNER_SPECIFIED', '1', 'Size test, one iteration is sufficient')
                 }
+
                 def configuration = 'Release'
                 def runType = isPR ? 'private' : 'rolling'
                 def benchViewName = isPR ? 'CoreCLR-Scenarios private %BenchviewCommitName%' : 'CoreCLR-Scenarios rolling %GIT_BRANCH_WITHOUT_ORIGIN% %GIT_COMMIT%'
@@ -562,20 +554,29 @@ parallel(
 
                     batchFile("tests\\runtest.cmd ${configuration} ${architecture} GenerateLayoutOnly")
 
+                    def runXUnitPerfCommonArgs = "-arch ${arch} -configuration ${configuration} -generateBenchviewData \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" ${uploadString} -runtype ${runType} -scenarioTest"
+                    def failedOutputLogFilename = "run-xunit-perf-scenario.log"
+
+                    // Using a sentinel file to
+                    batchFile("if exist \"${failedOutputLogFilename}\" del /q /f \"${failedOutputLogFilename}\"")
+                    batchFile("if exist \"${failedOutputLogFilename}\" (echo [ERROR] Failed to delete previously created \"${failedOutputLogFilename}\" file.& exit /b 1)")
+
                     // Scenario: JitBench
-                    batchFile("tests\\scripts\\run-xunit-perf.cmd -arch ${arch} -configuration ${configuration} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\Scenario\\JitBench -generateBenchviewData \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" ${uploadString} -runtype ${runType} -scenarioTest -group CoreCLR-Scenarios")
+                    batchFile("tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\Scenario\\JitBench -group CoreCLR-Scenarios || (echo [ERROR] JitBench failed. 1>>\"${failedOutputLogFilename}\"& exit /b 0)")
 
                     // Scenario: ILLink
                     if (arch == 'x64') {
-                        batchFile("tests\\scripts\\run-xunit-perf.cmd -arch ${arch} -configuration ${configuration} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\linkbench\\linkbench -generateBenchviewData \"%WORKSPACE%\\Microsoft.Benchview.JSONFormat\\tools\" ${uploadString} -nowarmup -runtype ${runType} -scenarioTest -group ILLink")
+                        batchFile("tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\linkbench\\linkbench -group ILLink -nowarmup || (echo [ERROR] IlLink failed. 1>>\"${failedOutputLogFilename}\"& exit /b 0)")
                     }
+
+                    batchFile("if exist \"${failedOutputLogFilename}\" (type \"${failedOutputLogFilename}\"& exit /b 1)")
                 }
-             }
+            }
 
              // Save machinedata.json to /artifact/bin/ Jenkins dir
             def archiveSettings = new ArchivalSettings()
-            archiveSettings.addFiles('Perf-*.xml')
-            archiveSettings.addFiles('Perf-*.log')
+            archiveSettings.addFiles('.\\bin\\sandbox\\Perf-*.xml')
+            archiveSettings.addFiles('.\\bin\\sandbox\\Perf-*.log')
             archiveSettings.addFiles('machinedata.json')
             Utilities.addArchival(newJob, archiveSettings)
 
