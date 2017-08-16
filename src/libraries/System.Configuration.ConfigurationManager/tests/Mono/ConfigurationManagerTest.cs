@@ -42,7 +42,7 @@ namespace MonoTests.System.Configuration
 
     public class ConfigurationManagerTest
     {
-        [Fact] // OpenExeConfiguration (ConfigurationUserLevel)
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNativeRunningAsConsoleApp))] // OpenExeConfiguration (ConfigurationUserLevel)
         [ActiveIssue("dotnet/corefx #19384", TargetFrameworkMonikers.NetFramework)]
         public void OpenExeConfiguration1_UserLevel_None()
         {
@@ -51,7 +51,7 @@ namespace MonoTests.System.Configuration
             Assert.Equal(TestUtil.ThisConfigFileName, fi.Name);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNativeRunningAsConsoleApp))]
         public void OpenExeConfiguration1_UserLevel_PerUserRoaming()
         {
             string applicationData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
@@ -66,7 +66,7 @@ namespace MonoTests.System.Configuration
             Assert.Equal("user.config", fi.Name);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNativeRunningAsConsoleApp))]
         [ActiveIssue(15065, TestPlatforms.AnyUnix)]
         public void OpenExeConfiguration1_UserLevel_PerUserRoamingAndLocal()
         {
@@ -140,7 +140,7 @@ namespace MonoTests.System.Configuration
             Assert.Equal(TestUtil.ThisApplicationPath + ".config", config.FilePath);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNativeRunningAsConsoleApp))]
         public void exePath_UserLevelPerRoaming()
         {
             string applicationData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
@@ -155,7 +155,7 @@ namespace MonoTests.System.Configuration
             Assert.Equal("user.config", Path.GetFileName(filePath));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNativeRunningAsConsoleApp))]
         [ActiveIssue(15066, TestPlatforms.AnyUnix)]
         public void exePath_UserLevelPerRoamingAndLocal()
         {
@@ -258,7 +258,7 @@ namespace MonoTests.System.Configuration
             Assert.Equal("machineconfig", fi.Name);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNativeRunningAsConsoleApp))]
         // Doesn't pass on Mono
         // [Category("NotWorking")]
         [ActiveIssue("dotnet/corefx #19384", TargetFrameworkMonikers.NetFramework)]
@@ -281,13 +281,13 @@ namespace MonoTests.System.Configuration
             Assert.Equal("machine.config", fi.Name);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNativeRunningAsConsoleApp))]
         public void GetSectionReturnsNativeObject()
         {
             Assert.True(ConfigurationManager.GetSection("appSettings") is NameValueCollection);
         }
 
-        [Fact]  // Test for bug #3412
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNativeRunningAsConsoleApp))] // Test for bug #3412
         // Doesn't pass on Mono
         // [Category("NotWorking")]
         public void TestAddRemoveSection()
@@ -343,7 +343,7 @@ namespace MonoTests.System.Configuration
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNativeRunningAsConsoleApp))]
         public void TestContext()
         {
             var config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
