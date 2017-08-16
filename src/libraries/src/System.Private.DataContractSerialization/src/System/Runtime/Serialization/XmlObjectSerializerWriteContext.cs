@@ -96,6 +96,11 @@ namespace System.Runtime.Serialization
             _isGetOnlyCollection = true;
         }
 
+        internal void ResetIsGetOnlyCollection()
+        {
+            _isGetOnlyCollection = false;
+        }
+
 #if USE_REFEMIT
         public void InternalSerializeReference(XmlWriterDelegator xmlWriter, object obj, bool isDeclaredType, bool writeXsiType, int declaredTypeID, RuntimeTypeHandle declaredTypeHandle)
 #else

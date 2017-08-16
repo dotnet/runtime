@@ -207,6 +207,10 @@ namespace System.Runtime.Serialization.Json
                 {
                     context.StoreIsGetOnlyCollection();
                 }
+                else
+                {
+                    context.ResetIsGetOnlyCollection();
+                }
 
 
                 bool shouldWriteValue = true;
