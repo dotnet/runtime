@@ -89,7 +89,7 @@ namespace System.IO.Compression.Tests
             AssertExtensions.Throws<ArgumentNullException>("sourceArchiveFileName", () => ZipFile.ExtractToDirectory(null, GetTestFilePath()));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMacOsHighSierraOrHigher))]
         public void ExtractToDirectoryUnicode()
         {
             string zipFileName = zfile("unicode.zip");
@@ -175,7 +175,7 @@ namespace System.IO.Compression.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotMacOsHighSierraOrHigher))]
         public void ExtractToDirectoryExtension_Unicode()
         {
             using (ZipArchive archive = ZipFile.OpenRead(zfile("unicode.zip")))
