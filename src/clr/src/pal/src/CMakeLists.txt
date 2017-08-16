@@ -147,6 +147,7 @@ set(SOURCES
   debug/debug.cpp
   exception/seh.cpp
   exception/signal.cpp
+  exception/remote-unwind.cpp
   file/directory.cpp
   file/disk.cpp
   file/file.cpp
