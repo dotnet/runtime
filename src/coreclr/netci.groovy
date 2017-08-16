@@ -396,7 +396,8 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
                     Utilities.addGithubPushTrigger(job)
                     break
                 case 'arm64':
-                    Utilities.addGithubPushTrigger(job)
+                    // We would normally want a per-push trigger, but with limited hardware we can't keep up
+                    Utilities.addPeriodicTrigger(job, "H H/4 * * *")
                     break
                 default:
                     println("Unknown architecture: ${architecture}");
@@ -2723,7 +2724,7 @@ combinedScenarios.each { scenario ->
                     setTestJobTimeOut(newJob, scenario)
 
                     if (architecture == 'arm64') {
-                        Utilities.setJobTimeout(newJob, 480)
+                        Utilities.setJobTimeout(newJob, 240)
                     }
 
                     Utilities.addXUnitDotNETResults(newJob, '**/coreclrtests.xml')
