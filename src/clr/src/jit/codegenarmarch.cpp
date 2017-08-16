@@ -1554,11 +1554,13 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     emitAttr    attr       = emitTypeSize(tree);
     instruction ins        = ins_Load(targetType);
 
-    assert((attr != EA_1BYTE) || !(tree->gtFlags & GTF_IND_UNALIGNED));
-
     genConsumeAddress(tree->Addr());
-    if (tree->gtFlags & GTF_IND_VOLATILE)
+    if ((tree->gtFlags & GTF_IND_VOLATILE) != 0)
     {
+        bool isAligned = ((tree->gtFlags & GTF_IND_UNALIGNED) == 0);
+
+        assert((attr != EA_1BYTE) || isAligned);
+
 #ifdef _TARGET_ARM64_
         GenTree* addr           = tree->Addr();
         bool     useLoadAcquire = genIsValidIntReg(targetReg) && !addr->isContained() &&
