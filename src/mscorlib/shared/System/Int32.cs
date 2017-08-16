@@ -118,14 +118,16 @@ namespace System
         [Pure]
         public static int Parse(String s)
         {
-            return Number.ParseInt32(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
+            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            return Number.ParseInt32(s.AsSpan(), NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
         }
 
         [Pure]
         public static int Parse(String s, NumberStyles style)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.ParseInt32(s, style, NumberFormatInfo.CurrentInfo);
+            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            return Number.ParseInt32(s.AsSpan(), style, NumberFormatInfo.CurrentInfo);
         }
 
         // Parses an integer from a String in the given style.  If
@@ -135,7 +137,8 @@ namespace System
         [Pure]
         public static int Parse(String s, IFormatProvider provider)
         {
-            return Number.ParseInt32(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
+            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            return Number.ParseInt32(s.AsSpan(), NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
         }
 
         // Parses an integer from a String in the given style.  If
@@ -144,6 +147,13 @@ namespace System
         // 
         [Pure]
         public static int Parse(String s, NumberStyles style, IFormatProvider provider)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            return Number.ParseInt32(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider));
+        }
+
+        public static int Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             return Number.ParseInt32(s, style, NumberFormatInfo.GetInstance(provider));
@@ -155,7 +165,13 @@ namespace System
         [Pure]
         public static bool TryParse(String s, out Int32 result)
         {
-            return Number.TryParseInt32(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
+            if (s == null)
+            {
+                result = 0;
+                return false;
+            }
+
+            return Number.TryParseInt32(s.AsSpan(), NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
         }
 
         // Parses an integer from a String in the given style. Returns false rather
@@ -163,6 +179,19 @@ namespace System
         // 
         [Pure]
         public static bool TryParse(String s, NumberStyles style, IFormatProvider provider, out Int32 result)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+
+            if (s == null)
+            {
+                result = 0;
+                return false;
+            }
+
+            return Number.TryParseInt32(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result);
+        }
+
+        public static bool TryParse(ReadOnlySpan<char> s, out int result, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             return Number.TryParseInt32(s, style, NumberFormatInfo.GetInstance(provider), out result);

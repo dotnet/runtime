@@ -430,7 +430,8 @@ namespace System
         stateMachine,
         pHandle,
         values,
-        task
+        task,
+        s
     }
 
     //
