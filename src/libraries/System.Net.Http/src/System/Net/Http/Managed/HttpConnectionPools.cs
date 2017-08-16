@@ -21,9 +21,16 @@ namespace System.Net.Http
         /// <summary>The pools, indexed by endpoint.</summary>
         private readonly ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool> _pools;
         /// <summary>Timer used to initiate cleaning of the pools.</summary>
-        private readonly Timer _cleaningTimer; // TODO #23149: Consider changing this to stop when _pools is empty.
+        private readonly Timer _cleaningTimer;
         /// <summary>The maximum number of connections allowed per pool. <see cref="int.MaxValue"/> indicates unlimited.</summary>
         private readonly int _maxConnectionsPerServer;
+        /// <summary>
+        /// Keeps track of whether or not the cleanup timer is running. It helps us avoid the expensive
+        /// <see cref="ConcurrentDictionary{TKey,TValue}.IsEmpty"/> call.
+        /// </summary>
+        private bool _timerIsRunning;
+        /// <summary>Object used to synchronize access to state in the pool.</summary>
+        private object SyncObj => _pools;
 
         /// <summary>Initializes the pools.</summary>
         /// <param name="maxConnectionsPerServer">The maximum number of connections allowed per pool. <see cref="int.MaxValue"/> indicates unlimited.</param>
@@ -31,14 +38,37 @@ namespace System.Net.Http
         {
             _maxConnectionsPerServer = maxConnectionsPerServer;
             _pools = new ConcurrentDictionary<HttpConnectionKey, HttpConnectionPool>();
-            _cleaningTimer = new Timer(s => ((HttpConnectionPools)s).RemoveStalePools(), this, CleanPoolTimeoutMilliseconds, CleanPoolTimeoutMilliseconds);
+            // Start out with the timer not running, since we have no pools.
+            _cleaningTimer = new Timer(s => ((HttpConnectionPools)s).RemoveStalePools(), this, Timeout.Infinite, Timeout.Infinite);
         }
 
         /// <summary>Gets a pool for the specified endpoint, adding one if none existed.</summary>
         /// <param name="key">The endpoint for the pool.</param>
         /// <returns>The retrieved pool.</returns>
-        public HttpConnectionPool GetOrAddPool(HttpConnectionKey key) =>
-            _pools.GetOrAdd(key, (k, s) => new HttpConnectionPool(s), _maxConnectionsPerServer);
+        public HttpConnectionPool GetOrAddPool(HttpConnectionKey key)
+        {
+            HttpConnectionPool pool;
+            while (!_pools.TryGetValue(key, out pool))
+            {
+                pool = new HttpConnectionPool(_maxConnectionsPerServer);
+                if (_pools.TryAdd(key, pool))
+                {
+                    // We need to ensure the cleanup timer is running if it isn't
+                    // already now that we added a new connection pool.
+                    lock (SyncObj)
+                    {
+                        if (!_timerIsRunning)
+                        {
+                            _cleaningTimer.Change(CleanPoolTimeoutMilliseconds, CleanPoolTimeoutMilliseconds);
+                            _timerIsRunning = true;
+                        }
+                    }
+                    break;
+                }
+            }
+
+            return pool;
+        }
 
         /// <summary>Disposes of the pools, disposing of each individual pool.</summary>
         public void Dispose()
@@ -63,6 +93,16 @@ namespace System.Net.Http
                 if (entry.Value.CleanCacheAndDisposeIfUnused())
                 {
                     _pools.TryRemove(entry.Key, out HttpConnectionPool _);
+                }
+            }
+
+            // Stop running the timer if we don't have any pools to clean up.
+            lock (SyncObj)
+            {
+                if (_pools.IsEmpty)
+                {
+                    _cleaningTimer.Change(Timeout.Infinite, Timeout.Infinite);
+                    _timerIsRunning = false;
                 }
             }
 
