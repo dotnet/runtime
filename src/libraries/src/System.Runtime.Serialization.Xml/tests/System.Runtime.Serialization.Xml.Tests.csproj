@@ -40,5 +40,8 @@
     <Compile Include="$(TestSourceFolder)SerializationTypes.CoreCLR.cs" />
     <Compile Include="$(TestSourceFolder)DataContractSerializer.CoreCLR.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)'=='uapaot'">
+    <EmbeddedResource Include="$(MsBuildThisFileDirectory)Resources\$(AssemblyName).rd.xml" />
+  </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
