@@ -73,7 +73,7 @@ namespace System.Net.Http
                     return;
                 }
 
-                await _connection.CopyChunkToAsync(destination, _contentBytesRemaining, cancellationToken).ConfigureAwait(false);
+                await _connection.CopyToAsync(destination, _contentBytesRemaining, cancellationToken).ConfigureAwait(false);
 
                 _contentBytesRemaining = 0;
                 _connection.ReturnConnectionToPool();
