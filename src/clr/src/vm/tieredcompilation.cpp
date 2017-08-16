@@ -48,14 +48,16 @@
 // # Important entrypoints in this code:
 //
 // 
-// a) .ctor and Init(...) - called once during AppDomain initialization
-// b) OnMethodCalled(...) - called when a method is being invoked. When a method
-//                     has been called enough times this is currently the only
-//                     trigger that initiates re-compilation.
-// c) OnAppDomainShutdown() - called during AppDomain::Exit() to begin the process
-//                     of stopping tiered compilation. After this point no more
-//                     background optimization work will be initiated but in-progress
-//                     work still needs to complete.
+// a) .ctor and Init(...) -  called once during AppDomain initialization
+// b) OnMethodCalled(...) -  called when a method is being invoked. When a method
+//                           has been called enough times this is currently the only
+//                           trigger that initiates re-compilation.
+// c) Shutdown() -           called during AppDomain::Exit() to begin the process
+//                           of stopping tiered compilation. After this point no more
+//                           background optimization work will be initiated but in-progress
+//                           work still needs to complete.
+// d) ShutdownAllDomains() - Called from EEShutdownHelper to block until all async work is
+//                           complete. We must do this before we shutdown the JIT.
 //
 // # Overall workflow
 //
@@ -108,6 +110,8 @@ void TieredCompilationManager::Init(ADID appDomainId)
 
     SpinLockHolder holder(&m_lock);
     m_domainId = appDomainId;
+    m_pAsyncWorkDoneEvent = new CLREvent();
+    m_pAsyncWorkDoneEvent->CreateManualEvent(TRUE);
 }
 
 // Called each time code in this AppDomain has been run. This is our sole entrypoint to begin
@@ -190,7 +194,7 @@ void TieredCompilationManager::AsyncPromoteMethodToTier1(MethodDesc* pMethodDesc
         {
             // Our current policy throttles at 1 thread, but in the future we
             // could experiment with more parallelism.
-            m_countOptimizationThreadsRunning++;
+            IncrementWorkerThreadCount();
         }
         else
         {
@@ -203,7 +207,7 @@ void TieredCompilationManager::AsyncPromoteMethodToTier1(MethodDesc* pMethodDesc
         if (!ThreadpoolMgr::QueueUserWorkItem(StaticOptimizeMethodsCallback, this, QUEUE_ONLY, TRUE))
         {
             SpinLockHolder holder(&m_lock);
-            m_countOptimizationThreadsRunning--;
+            DecrementWorkerThreadCount();
             STRESS_LOG1(LF_TIEREDCOMPILATION, LL_WARNING, "TieredCompilationManager::OnMethodCalled: "
                 "ThreadpoolMgr::QueueUserWorkItem returned FALSE (no thread will run), method=%pM\n",
                 pMethodDesc);
@@ -212,7 +216,7 @@ void TieredCompilationManager::AsyncPromoteMethodToTier1(MethodDesc* pMethodDesc
     EX_CATCH
     {
         SpinLockHolder holder(&m_lock);
-        m_countOptimizationThreadsRunning--;
+        DecrementWorkerThreadCount();
         STRESS_LOG2(LF_TIEREDCOMPILATION, LL_WARNING, "TieredCompilationManager::OnMethodCalled: "
             "Exception queuing work item to threadpool, hr=0x%x, method=%pM\n",
             GET_EXCEPTION()->GetHR(), pMethodDesc);
@@ -222,19 +226,35 @@ void TieredCompilationManager::AsyncPromoteMethodToTier1(MethodDesc* pMethodDesc
     return;
 }
 
-void TieredCompilationManager::OnAppDomainShutdown()
+// static
+// called from EEShutDownHelper
+void TieredCompilationManager::ShutdownAllDomains()
 {
-    CONTRACTL
-    {
-        NOTHROW;
-        GC_NOTRIGGER;
-        MODE_ANY;
-        CAN_TAKE_LOCK;
-    }
-    CONTRACTL_END
+    STANDARD_VM_CONTRACT;
 
-    SpinLockHolder holder(&m_lock);
-    m_isAppDomainShuttingDown = TRUE;
+    AppDomainIterator domain(TRUE);
+    while (domain.Next())
+    {
+        AppDomain * pDomain = domain.GetDomain();
+        if (pDomain != NULL)
+        {
+            pDomain->GetTieredCompilationManager()->Shutdown(TRUE);
+        }
+    }
+}
+
+void TieredCompilationManager::Shutdown(BOOL fBlockUntilAsyncWorkIsComplete)
+{
+    STANDARD_VM_CONTRACT;
+
+    {
+        SpinLockHolder holder(&m_lock);
+        m_isAppDomainShuttingDown = TRUE;
+    }
+    if (fBlockUntilAsyncWorkIsComplete)
+    {
+        m_pAsyncWorkDoneEvent->Wait(INFINITE, FALSE);
+    }
 }
 
 // This is the initial entrypoint for the background thread, called by
@@ -268,7 +288,7 @@ void TieredCompilationManager::OptimizeMethodsCallback()
         SpinLockHolder holder(&m_lock);
         if (m_isAppDomainShuttingDown)
         {
-            m_countOptimizationThreadsRunning--;
+            DecrementWorkerThreadCount();
             return;
         }
     }
@@ -289,7 +309,7 @@ void TieredCompilationManager::OptimizeMethodsCallback()
                     if (nativeCodeVersion.IsNull() ||
                         m_isAppDomainShuttingDown)
                     {
-                        m_countOptimizationThreadsRunning--;
+                        DecrementWorkerThreadCount();
                         break;
                     }
                     
@@ -305,7 +325,7 @@ void TieredCompilationManager::OptimizeMethodsCallback()
                     if (!ThreadpoolMgr::QueueUserWorkItem(StaticOptimizeMethodsCallback, this, QUEUE_ONLY, TRUE))
                     {
                         SpinLockHolder holder(&m_lock);
-                        m_countOptimizationThreadsRunning--;
+                        DecrementWorkerThreadCount();
                         STRESS_LOG0(LF_TIEREDCOMPILATION, LL_WARNING, "TieredCompilationManager::OptimizeMethodsCallback: "
                             "ThreadpoolMgr::QueueUserWorkItem returned FALSE (no thread will run)\n");
                     }
@@ -419,6 +439,27 @@ NativeCodeVersion TieredCompilationManager::GetNextMethodToOptimize()
         return nativeCodeVersion;
     }
     return NativeCodeVersion();
+}
+
+void TieredCompilationManager::IncrementWorkerThreadCount()
+{
+    STANDARD_VM_CONTRACT;
+    //m_lock should be held
+
+    m_countOptimizationThreadsRunning++;
+    m_pAsyncWorkDoneEvent->Reset();
+}
+
+void TieredCompilationManager::DecrementWorkerThreadCount()
+{
+    STANDARD_VM_CONTRACT;
+    //m_lock should be held
+    
+    m_countOptimizationThreadsRunning--;
+    if (m_countOptimizationThreadsRunning == 0)
+    {
+        m_pAsyncWorkDoneEvent->Set();
+    }
 }
 
 //static
