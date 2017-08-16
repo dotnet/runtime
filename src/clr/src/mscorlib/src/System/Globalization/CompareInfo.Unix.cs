@@ -428,7 +428,7 @@ namespace System.Globalization
         {
             Debug.Assert(!_invariantMode);
 
-            int sortVersion = Interop.GlobalizationInterop.GetSortVersion();
+            int sortVersion = Interop.GlobalizationInterop.GetSortVersion(_sortHandle);
             return new SortVersion(sortVersion, LCID, new Guid(sortVersion, 0, 0, 0, 0, 0, 0,
                                                              (byte) (LCID >> 24),
                                                              (byte) ((LCID  & 0x00FF0000) >> 16),
