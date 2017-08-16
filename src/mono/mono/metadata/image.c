@@ -1113,6 +1113,11 @@ Right now the list of nugets are the ones that provide the assemblies in $ignore
 
 This is to be removed once a proper fix is shipped through nuget.
 
+Please keep this in sync with mcs/tools/xbuild/data/deniedAssembliesList.txt
+If any assemblies are added/removed, then this should be regenerated with:
+
+  $ mono tools/nuget-hash-extractor/nuget-hash-extractor.exe nugets guids_for_msbuild > mcs/tools/xbuild/data/deniedAssembliesList.txt
+
 */
 
 typedef enum {
