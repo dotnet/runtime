@@ -15,7 +15,7 @@ namespace System.ConfigurationTests
             ["SettingsKey"] = "SettingsKeyFoo"
         };
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNativeRunningAsConsoleApp))]
         public void GetPropertyValues_NotStoredProperty_ValueEqualsNull()
         {
             var property = new SettingsProperty("PropertyName");
@@ -30,7 +30,7 @@ namespace System.ConfigurationTests
             Assert.Equal(null, propertyValues["PropertyName"].PropertyValue);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNativeRunningAsConsoleApp))]
         public void GetPropertyValues_NotStoredConnectionStringProperty_ValueEqualsEmptyString()
         {
             var property = new SettingsProperty("PropertyName");
