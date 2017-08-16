@@ -6701,6 +6701,7 @@ void LinearScan::checkAndClearInterval(RegRecord* regRec, RefPosition* spillRefP
 void LinearScan::unassignPhysReg(RegRecord* regRec ARM_ARG(RegisterType newRegType))
 {
     RegRecord* regRecToUnassign = regRec;
+#ifdef _TARGET_ARM_
     RegRecord* anotherRegRec    = nullptr;
 
     if ((regRecToUnassign->assignedInterval != nullptr) &&
@@ -6713,7 +6714,6 @@ void LinearScan::unassignPhysReg(RegRecord* regRec ARM_ARG(RegisterType newRegTy
             regRecToUnassign = findAnotherHalfRegRec(regRec);
         }
     }
-#ifdef _TARGET_ARM_
     else
     {
         if (newRegType == TYP_DOUBLE)
@@ -6727,10 +6727,12 @@ void LinearScan::unassignPhysReg(RegRecord* regRec ARM_ARG(RegisterType newRegTy
     {
         unassignPhysReg(regRecToUnassign, regRecToUnassign->assignedInterval->recentRefPosition);
     }
+#ifdef _TARGET_ARM_
     if ((anotherRegRec != nullptr) && (anotherRegRec->assignedInterval != nullptr))
     {
         unassignPhysReg(anotherRegRec, anotherRegRec->assignedInterval->recentRefPosition);
     }
+#endif
 }
 
 //------------------------------------------------------------------------
