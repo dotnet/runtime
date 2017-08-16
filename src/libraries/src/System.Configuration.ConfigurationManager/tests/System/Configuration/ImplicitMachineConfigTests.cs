@@ -10,7 +10,7 @@ namespace System.ConfigurationTests
 {
     public class ImplicitMachineConfigTests
     {
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNetNativeRunningAsConsoleApp))]
         public void RuntimeAppSettingsAccessible()
         {
             var appSettings = ConfigurationManager.AppSettings;
