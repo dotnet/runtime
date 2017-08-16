@@ -3,8 +3,8 @@
 
   <UsingTask TaskName="PrereleaseResolveNuGetPackageAssets" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.Tasks.dll"/>
   <ItemGroup>
-    <TestTargetFramework Include=".NETCoreApp,Version=v2.0">
-      <Folder>netcoreapp2.0</Folder>
+    <TestTargetFramework Include=".NETCoreApp,Version=v2.1">
+      <Folder>netcoreapp2.1</Folder>
     </TestTargetFramework>
   </ItemGroup>
 
