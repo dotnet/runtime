@@ -326,6 +326,7 @@ public:
 };
 
 struct Elf_Symbol;
+class Elf_Builder;
 
 class NotifyGdb
 {
@@ -406,11 +407,14 @@ private:
 
     static void OnMethodCompiled(MethodDesc* methodDescPtr);
 
-    static int GetSectionIndex(const char *sectName);
-    static void BuildSectionTables(MemBuf& sectBuf, MemBuf& strBuf, FunctionMemberPtrArrayHolder &method,
-                                   int symbolCount);
+#ifdef FEATURE_GDBJIT_FRAME
+    static bool EmitFrameInfo(Elf_Builder &, PCODE pCode, TADDR codeSzie);
+#endif // FEATURE_GDBJIT_FRAME
+    static bool EmitDebugInfo(Elf_Builder &, MethodDesc* methodDescPtr, PCODE pCode, TADDR codeSize, const char *szModuleFile);
+
     static bool BuildSymbolTableSection(MemBuf& buf, PCODE addr, TADDR codeSize, FunctionMemberPtrArrayHolder &method,
-                                        NewArrayHolder<Elf_Symbol> &symbolNames, int symbolCount);
+                                        NewArrayHolder<Elf_Symbol> &symbolNames, int symbolCount,
+                                        unsigned int thunkIndexBase);
     static bool BuildStringTableSection(MemBuf& strTab, NewArrayHolder<Elf_Symbol> &symbolNames, int symbolCount);
     static bool BuildDebugStrings(MemBuf& buf, PTK_TypeInfoMap pTypeMap, FunctionMemberPtrArrayHolder &method);
     static bool BuildDebugAbbrev(MemBuf& buf);
