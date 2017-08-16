@@ -303,6 +303,7 @@ namespace System.Xml
                 return new Ucs4Encoding2143();
             }
         }
+
         internal static Encoding UCS4_3412
         {
             get
@@ -312,8 +313,10 @@ namespace System.Xml
         }
     }
 
-    internal class Ucs4Encoding1234 : Ucs4Encoding
+    internal sealed class Ucs4Encoding1234 : Ucs4Encoding
     {
+        private static readonly byte[] s_preamble = new byte[4] { 0x00, 0x00, 0xfe, 0xff };
+
         public Ucs4Encoding1234()
         {
             ucs4Decoder = new Ucs4Decoder1234();
@@ -331,10 +334,14 @@ namespace System.Xml
         {
             return new byte[4] { 0x00, 0x00, 0xfe, 0xff };
         }
+
+        public override ReadOnlySpan<byte> Preamble => s_preamble;
     }
 
-    internal class Ucs4Encoding4321 : Ucs4Encoding
+    internal sealed class Ucs4Encoding4321 : Ucs4Encoding
     {
+        private static readonly byte[] s_preamble = new byte[4] { 0xff, 0xfe, 0x00, 0x00 };
+
         public Ucs4Encoding4321()
         {
             ucs4Decoder = new Ucs4Decoder4321();
@@ -352,10 +359,14 @@ namespace System.Xml
         {
             return new byte[4] { 0xff, 0xfe, 0x00, 0x00 };
         }
+
+        public override ReadOnlySpan<byte> Preamble => s_preamble;
     }
 
-    internal class Ucs4Encoding2143 : Ucs4Encoding
+    internal sealed class Ucs4Encoding2143 : Ucs4Encoding
     {
+        private static readonly byte[] s_preamble = new byte[4] { 0x00, 0x00, 0xff, 0xfe };
+
         public Ucs4Encoding2143()
         {
             ucs4Decoder = new Ucs4Decoder2143();
@@ -372,10 +383,14 @@ namespace System.Xml
         {
             return new byte[4] { 0x00, 0x00, 0xff, 0xfe };
         }
+
+        public override ReadOnlySpan<byte> Preamble => s_preamble;
     }
 
-    internal class Ucs4Encoding3412 : Ucs4Encoding
+    internal sealed class Ucs4Encoding3412 : Ucs4Encoding
     {
+        private static readonly byte[] s_preamble = new byte[4] { 0xfe, 0xff, 0x00, 0x00 };
+
         public Ucs4Encoding3412()
         {
             ucs4Decoder = new Ucs4Decoder3412();
@@ -393,6 +408,8 @@ namespace System.Xml
         {
             return new byte[4] { 0xfe, 0xff, 0x00, 0x00 };
         }
+
+        public override ReadOnlySpan<byte> Preamble => s_preamble;
     }
 
     internal abstract class Ucs4Decoder : Decoder
