@@ -5,10 +5,10 @@
 using System.Diagnostics;
 using System.IO.PortsTests;
 using System.Threading;
+using System.Threading.Tasks;
 using Legacy.Support;
 using Xunit;
 using Xunit.NetCore.Extensions;
-using ThreadState = System.Threading.ThreadState;
 
 namespace System.IO.Ports.Tests
 {
@@ -193,9 +193,7 @@ namespace System.IO.Ports.Tests
             using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
                 var asyncEnableRts = new AsyncEnableRts();
-                var t = new Thread(asyncEnableRts.EnableRTS);
-
-                int waitTime;
+                var t = new Task(asyncEnableRts.EnableRTS);
 
                 com1.Open();
                 com1.Handshake = Handshake.RequestToSend;
@@ -209,15 +207,7 @@ namespace System.IO.Ports.Tests
                 // Call EnableRTS asynchronously this will enable RTS in the middle of the following write call allowing it to succeed 
                 // before the timeout is reached
                 t.Start();
-                waitTime = 0;
-
-                while (t.ThreadState == ThreadState.Unstarted && waitTime < 2000)
-                {
-                    // Wait for the thread to start
-                    Thread.Sleep(50);
-                    waitTime += 50;
-                }
-
+                TCSupport.WaitForTaskToStart(t);
                 try
                 {
                     stream.Write(new byte[s_DEFAULT_WRITE_BYTE_ARRAY_SIZE], 0, s_DEFAULT_WRITE_BYTE_ARRAY_SIZE);
@@ -228,9 +218,7 @@ namespace System.IO.Ports.Tests
 
                 asyncEnableRts.Stop();
 
-                // Wait for the thread to finish
-                while (t.IsAlive)
-                    Thread.Sleep(50);
+                TCSupport.WaitForTaskCompletion(t);
 
                 // Make sure there is no bytes in the buffer so the next call to write will timeout
                 com1.DiscardInBuffer();
@@ -265,9 +253,7 @@ namespace System.IO.Ports.Tests
             using (var com1 = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
                 var asyncEnableRts = new AsyncEnableRts();
-                var t = new Thread(asyncEnableRts.EnableRTS);
-
-                int waitTime;
+                var t = new Task(asyncEnableRts.EnableRTS);
 
                 com1.Open();
                 com1.Handshake = Handshake.RequestToSend;
@@ -281,15 +267,7 @@ namespace System.IO.Ports.Tests
                 // Call EnableRTS asynchronously this will enable RTS in the middle of the following write call allowing it to succeed 
                 // before the timeout is reached
                 t.Start();
-                waitTime = 0;
-
-                while (t.ThreadState == ThreadState.Unstarted && waitTime < 2000)
-                {
-                    // Wait for the thread to start
-                    Thread.Sleep(50);
-                    waitTime += 50;
-                }
-
+                TCSupport.WaitForTaskToStart(t);
                 try
                 {
                     stream.WriteByte(DEFAULT_WRITE_BYTE);
@@ -300,9 +278,7 @@ namespace System.IO.Ports.Tests
 
                 asyncEnableRts.Stop();
 
-                // Wait for the thread to finish
-                while (t.IsAlive)
-                    Thread.Sleep(50);
+                TCSupport.WaitForTaskCompletion(t);
 
                 // Make sure there is no bytes in the buffer so the next call to write will timeout
                 com1.DiscardInBuffer();
@@ -418,15 +394,14 @@ namespace System.IO.Ports.Tests
         private void VerifyLongTimeout(WriteMethodDelegate writeMethod, SerialPort com1)
         {
             var writeThread = new WriteDelegateThread(com1.BaseStream, writeMethod);
-            var t = new Thread(writeThread.CallWrite);
+            var t = new Task(writeThread.CallWrite);
 
             t.Start();
             Thread.Sleep(DEFAULT_WAIT_LONG_TIMEOUT);
-            Assert.True(t.IsAlive,
+            Assert.False(t.IsCompleted,
                 string.Format("Err_17071ahpa!!! {0} terminated with a long timeout of {1}ms", writeMethod.Method.Name, com1.BaseStream.WriteTimeout));
             com1.Handshake = Handshake.None;
-            while (t.IsAlive)
-                Thread.Sleep(10);
+            TCSupport.WaitForTaskCompletion(t);
         }
 
         private void VerifyTimeout(WriteMethodDelegate writeMethod, int WriteTimeout)

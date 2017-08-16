@@ -51,7 +51,6 @@ namespace System.IO.Ports.Tests
             }
         }
 
-
         [ConditionalFact(nameof(HasNullModem))]
         public void BreakState_true()
         {
@@ -73,7 +72,7 @@ namespace System.IO.Ports.Tests
             }
         }
 
-
+ 
         [ConditionalFact(nameof(HasNullModem))]
         public void BreakState_false()
         {
