@@ -73,7 +73,7 @@ namespace List_CrdMrk
                         if (current2.oRef != null)
                         {
                             current2.oRef = null;
-                        }2
+                        }
                         current2 = current.next;
                     }
 
