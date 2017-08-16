@@ -86,7 +86,7 @@ namespace Internal.Cryptography
                 return result;
             }
 
-            public override unsafe bool TryFinalizeHashAndReset(Span<byte> destination, out int bytesWritten)
+            public override bool TryFinalizeHashAndReset(Span<byte> destination, out int bytesWritten)
             {
                 if (destination.Length < _hashSize)
                 {
@@ -94,13 +94,10 @@ namespace Internal.Cryptography
                     return false;
                 }
 
-                fixed (byte* ptrDest = &destination.DangerousGetPinnableReference())
-                {
-                    uint length = (uint)destination.Length;
-                    Check(Interop.Crypto.EvpDigestFinalEx(_ctx, ptrDest, ref length));
-                    Debug.Assert(length == _hashSize);
-                    bytesWritten = (int)length;
-                }
+                uint length = (uint)destination.Length;
+                Check(Interop.Crypto.EvpDigestFinalEx(_ctx, ref destination.DangerousGetPinnableReference(), ref length));
+                Debug.Assert(length == _hashSize);
+                bytesWritten = (int)length;
 
                 // Reset the algorithm provider.
                 Check(Interop.Crypto.EvpDigestReset(_ctx, _algorithmEvp));
@@ -124,7 +121,7 @@ namespace Internal.Cryptography
             private readonly int _hashSize;
             private SafeHmacCtxHandle _hmacCtx;
 
-            public unsafe HmacHashProvider(IntPtr algorithmEvp, byte[] key)
+            public HmacHashProvider(IntPtr algorithmEvp, byte[] key)
             {
                 Debug.Assert(algorithmEvp != IntPtr.Zero);
                 Debug.Assert(key != null);
@@ -135,11 +132,8 @@ namespace Internal.Cryptography
                     throw new CryptographicException();
                 }
 
-                fixed (byte* keyPtr = key)
-                {
-                    _hmacCtx = Interop.Crypto.HmacCreate(keyPtr, key.Length, algorithmEvp);
-                    Interop.Crypto.CheckValidOpenSslHandle(_hmacCtx);
-                }
+                _hmacCtx = Interop.Crypto.HmacCreate(ref new Span<byte>(key).DangerousGetPinnableReference(), key.Length, algorithmEvp);
+                Interop.Crypto.CheckValidOpenSslHandle(_hmacCtx);
             }
 
             public override void AppendHashData(ReadOnlySpan<byte> data) =>
@@ -162,13 +156,10 @@ namespace Internal.Cryptography
                     return false;
                 }
 
-                fixed (byte* ptrDest = &destination.DangerousGetPinnableReference())
-                {
-                    int length = destination.Length;
-                    Check(Interop.Crypto.HmacFinal(_hmacCtx, ptrDest, ref length));
-                    Debug.Assert(length == _hashSize);
-                    bytesWritten = length;
-                }
+                int length = destination.Length;
+                Check(Interop.Crypto.HmacFinal(_hmacCtx, ref destination.DangerousGetPinnableReference(), ref length));
+                Debug.Assert(length == _hashSize);
+                bytesWritten = length;
 
                 Check(Interop.Crypto.HmacReset(_hmacCtx));
                 return true;

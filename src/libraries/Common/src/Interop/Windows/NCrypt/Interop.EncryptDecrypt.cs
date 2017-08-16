@@ -10,28 +10,16 @@ internal static partial class Interop
 {
     internal static partial class NCrypt
     {
-        internal static unsafe ErrorCode NCryptEncrypt(SafeNCryptKeyHandle hKey, ReadOnlySpan<byte> pbInput, int cbInput, void* pPaddingInfo, Span<byte> pbOutput, int cbOutput, out int pcbResult, AsymmetricPaddingMode dwFlags)
-        {
-            fixed (byte* pbInputPtr = &pbInput.DangerousGetPinnableReference())
-            fixed (byte* pbOutputPtr = &pbOutput.DangerousGetPinnableReference())
-            {
-                return NCryptEncrypt(hKey, pbInputPtr, cbInput, pPaddingInfo, pbOutputPtr, cbOutput, out pcbResult, dwFlags);
-            }
-        }
+        internal static unsafe ErrorCode NCryptEncrypt(SafeNCryptKeyHandle hKey, ReadOnlySpan<byte> pbInput, int cbInput, void* pPaddingInfo, Span<byte> pbOutput, int cbOutput, out int pcbResult, AsymmetricPaddingMode dwFlags) =>
+            NCryptEncrypt(hKey, ref pbInput.DangerousGetPinnableReference(), cbInput, pPaddingInfo, ref pbOutput.DangerousGetPinnableReference(), cbOutput, out pcbResult, dwFlags);
 
         [DllImport(Interop.Libraries.NCrypt, CharSet = CharSet.Unicode)]
-        private static extern unsafe ErrorCode NCryptEncrypt(SafeNCryptKeyHandle hKey, byte* pbInput, int cbInput, void* pPaddingInfo, byte* pbOutput, int cbOutput, out int pcbResult, AsymmetricPaddingMode dwFlags);
+        private static extern unsafe ErrorCode NCryptEncrypt(SafeNCryptKeyHandle hKey, ref byte pbInput, int cbInput, void* pPaddingInfo, ref byte pbOutput, int cbOutput, out int pcbResult, AsymmetricPaddingMode dwFlags);
 
-        internal static unsafe ErrorCode NCryptDecrypt(SafeNCryptKeyHandle hKey, ReadOnlySpan<byte> pbInput, int cbInput, void* pPaddingInfo, Span<byte> pbOutput, int cbOutput, out int pcbResult, AsymmetricPaddingMode dwFlags)
-        {
-            fixed (byte* pbInputPtr = &pbInput.DangerousGetPinnableReference())
-            fixed (byte* pbOutputPtr = &pbOutput.DangerousGetPinnableReference())
-            {
-                return NCryptDecrypt(hKey, pbInputPtr, cbInput, pPaddingInfo, pbOutputPtr, cbOutput, out pcbResult, dwFlags);
-            }
-        }
+        internal static unsafe ErrorCode NCryptDecrypt(SafeNCryptKeyHandle hKey, ReadOnlySpan<byte> pbInput, int cbInput, void* pPaddingInfo, Span<byte> pbOutput, int cbOutput, out int pcbResult, AsymmetricPaddingMode dwFlags) =>
+            NCryptDecrypt(hKey, ref pbInput.DangerousGetPinnableReference(), cbInput, pPaddingInfo, ref pbOutput.DangerousGetPinnableReference(), cbOutput, out pcbResult, dwFlags);
 
         [DllImport(Interop.Libraries.NCrypt, CharSet = CharSet.Unicode)]
-        private static extern unsafe ErrorCode NCryptDecrypt(SafeNCryptKeyHandle hKey, byte* pbInput, int cbInput, void* pPaddingInfo, byte* pbOutput, int cbOutput, out int pcbResult, AsymmetricPaddingMode dwFlags);
+        private static extern unsafe ErrorCode NCryptDecrypt(SafeNCryptKeyHandle hKey, ref byte pbInput, int cbInput, void* pPaddingInfo, ref byte pbOutput, int cbOutput, out int pcbResult, AsymmetricPaddingMode dwFlags);
     }
 }
