@@ -19,27 +19,17 @@ internal static partial class Interop
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_HmacInit")]
         internal static extern unsafe int HmacInit(SafeHmacHandle ctx, [In] byte[] pbKey, int cbKey);
 
-        internal static unsafe int HmacUpdate(SafeHmacHandle ctx, ReadOnlySpan<byte> pbData, int cbData)
-        {
-            fixed (byte* pbDataPtr = &pbData.DangerousGetPinnableReference())
-            {
-                return HmacUpdate(ctx, pbDataPtr, cbData);
-            }
-        }
+        internal static int HmacUpdate(SafeHmacHandle ctx, ReadOnlySpan<byte> pbData, int cbData) =>
+            HmacUpdate(ctx, ref pbData.DangerousGetPinnableReference(), cbData);
 
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_HmacUpdate")]
-        private static extern unsafe int HmacUpdate(SafeHmacHandle ctx, byte* pbData, int cbData);
+        private static extern int HmacUpdate(SafeHmacHandle ctx, ref byte pbData, int cbData);
 
-        internal static unsafe int HmacFinal(SafeHmacHandle ctx, ReadOnlySpan<byte> pbOutput, int cbOutput)
-        {
-            fixed (byte* pbOutputPtr = &pbOutput.DangerousGetPinnableReference())
-            {
-                return HmacFinal(ctx, pbOutputPtr, cbOutput);
-            }
-        }
+        internal static int HmacFinal(SafeHmacHandle ctx, ReadOnlySpan<byte> pbOutput, int cbOutput) =>
+            HmacFinal(ctx, ref pbOutput.DangerousGetPinnableReference(), cbOutput);
 
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_HmacFinal")]
-        private static extern unsafe int HmacFinal(SafeHmacHandle ctx, byte* pbOutput, int cbOutput);
+        private static extern unsafe int HmacFinal(SafeHmacHandle ctx, ref byte pbOutput, int cbOutput);
     }
 }
 

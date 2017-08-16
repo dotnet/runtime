@@ -43,7 +43,7 @@ namespace System
 
         internal static unsafe string GetStringFromByteSpan(ReadOnlySpan<byte> bytes)
         {
-            // TODO: Use new Span-based Encoding overload when available
+            // TODO #22431: Use new Span-based Encoding overload when available
             fixed (byte* p = &bytes.DangerousGetPinnableReference())
             {
                 return Encoding.ASCII.GetString(p, bytes.Length);

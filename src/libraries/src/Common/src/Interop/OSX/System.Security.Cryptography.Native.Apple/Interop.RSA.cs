@@ -21,90 +21,70 @@ internal static partial class Interop
             out SafeSecKeyRefHandle pPrivateKey,
             out int pOSStatus);
 
-        private static unsafe int RsaEncryptOaep(
+        private static int RsaEncryptOaep(
             SafeSecKeyRefHandle publicKey,
             ReadOnlySpan<byte> pbData,
             int cbData,
             PAL_HashAlgorithm mgfAlgorithm,
             out SafeCFDataHandle pEncryptedOut,
-            out SafeCFErrorHandle pErrorOut)
-        {
-            fixed (byte* pbDataPtr = &pbData.DangerousGetPinnableReference())
-            {
-                return RsaEncryptOaep(publicKey, pbDataPtr, cbData, mgfAlgorithm, out pEncryptedOut, out pErrorOut);
-            }
-        }
+            out SafeCFErrorHandle pErrorOut) =>
+            RsaEncryptOaep(publicKey, ref pbData.DangerousGetPinnableReference(), cbData, mgfAlgorithm, out pEncryptedOut, out pErrorOut);
 
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaEncryptOaep")]
-        private static extern unsafe int RsaEncryptOaep(
+        private static extern int RsaEncryptOaep(
             SafeSecKeyRefHandle publicKey,
-            byte* pbData,
+            ref byte pbData,
             int cbData,
             PAL_HashAlgorithm mgfAlgorithm,
             out SafeCFDataHandle pEncryptedOut,
             out SafeCFErrorHandle pErrorOut);
 
-        private static unsafe int RsaEncryptPkcs(
+        private static int RsaEncryptPkcs(
             SafeSecKeyRefHandle publicKey,
             ReadOnlySpan<byte> pbData,
             int cbData,
             out SafeCFDataHandle pEncryptedOut,
-            out SafeCFErrorHandle pErrorOut)
-        {
-            fixed (byte* pbDataPtr = &pbData.DangerousGetPinnableReference())
-            {
-                return RsaEncryptPkcs(publicKey, pbDataPtr, cbData, out pEncryptedOut, out pErrorOut);
-            }
-        }
+            out SafeCFErrorHandle pErrorOut) =>
+            RsaEncryptPkcs(publicKey, ref pbData.DangerousGetPinnableReference(), cbData, out pEncryptedOut, out pErrorOut);
 
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaEncryptPkcs")]
-        private static extern unsafe int RsaEncryptPkcs(
+        private static extern int RsaEncryptPkcs(
             SafeSecKeyRefHandle publicKey,
-            byte* pbData,
+            ref byte pbData,
             int cbData,
             out SafeCFDataHandle pEncryptedOut,
             out SafeCFErrorHandle pErrorOut);
 
-        private static unsafe int RsaDecryptOaep(
+        private static int RsaDecryptOaep(
             SafeSecKeyRefHandle publicKey,
             ReadOnlySpan<byte> pbData,
             int cbData,
             PAL_HashAlgorithm mgfAlgorithm,
             out SafeCFDataHandle pEncryptedOut,
-            out SafeCFErrorHandle pErrorOut)
-        {
-            fixed (byte* pbDataPtr = &pbData.DangerousGetPinnableReference())
-            {
-                return RsaDecryptOaep(publicKey, pbDataPtr, cbData, mgfAlgorithm, out pEncryptedOut, out pErrorOut);
-            }
-        }
+            out SafeCFErrorHandle pErrorOut) =>
+            RsaDecryptOaep(publicKey, ref pbData.DangerousGetPinnableReference(), cbData, mgfAlgorithm, out pEncryptedOut, out pErrorOut);
 
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaDecryptOaep")]
-        private static extern unsafe int RsaDecryptOaep(
+        private static extern int RsaDecryptOaep(
             SafeSecKeyRefHandle publicKey,
-            byte* pbData,
+            ref byte pbData,
             int cbData,
             PAL_HashAlgorithm mgfAlgorithm,
             out SafeCFDataHandle pEncryptedOut,
             out SafeCFErrorHandle pErrorOut);
 
-        private static unsafe int RsaDecryptPkcs(
+        private static int RsaDecryptPkcs(
             SafeSecKeyRefHandle publicKey,
             ReadOnlySpan<byte> pbData,
             int cbData,
             out SafeCFDataHandle pEncryptedOut,
-            out SafeCFErrorHandle pErrorOut)
-        {
-            fixed (byte* pbDataPtr = &pbData.DangerousGetPinnableReference())
-            {
-                return RsaDecryptPkcs(publicKey, pbDataPtr, cbData, out pEncryptedOut, out pErrorOut);
-            }
-        }
+            out SafeCFErrorHandle pErrorOut) =>
+            RsaDecryptPkcs(publicKey, ref pbData.DangerousGetPinnableReference(), cbData, out pEncryptedOut, out pErrorOut);
 
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_RsaDecryptPkcs")]
-        private static extern unsafe int RsaDecryptPkcs(
+        private static extern int RsaDecryptPkcs(
             SafeSecKeyRefHandle publicKey,
-            byte* pbData,
+            ref byte pbData,
             int cbData,
             out SafeCFDataHandle pEncryptedOut,
             out SafeCFErrorHandle pErrorOut);

@@ -16,27 +16,17 @@ internal static partial class Interop
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestCreate")]
         internal static extern SafeDigestCtxHandle DigestCreate(PAL_HashAlgorithm algorithm, out int cbDigest);
 
-        internal static unsafe int DigestUpdate(SafeDigestCtxHandle ctx, ReadOnlySpan<byte> pbData, int cbData)
-        {
-            fixed (byte* pbDataPtr = &pbData.DangerousGetPinnableReference())
-            {
-                return DigestUpdate(ctx, pbDataPtr, cbData);
-            }
-        }
+        internal static int DigestUpdate(SafeDigestCtxHandle ctx, ReadOnlySpan<byte> pbData, int cbData) =>
+            DigestUpdate(ctx, ref pbData.DangerousGetPinnableReference(), cbData);
 
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestUpdate")]
-        private static extern unsafe int DigestUpdate(SafeDigestCtxHandle ctx, byte* pbData, int cbData);
+        private static extern int DigestUpdate(SafeDigestCtxHandle ctx, ref byte pbData, int cbData);
 
-        internal static unsafe int DigestFinal(SafeDigestCtxHandle ctx, Span<byte> pbOutput, int cbOutput)
-        {
-            fixed (byte* pbOutputPtr = &pbOutput.DangerousGetPinnableReference())
-            {
-                return DigestFinal(ctx, pbOutputPtr, cbOutput);
-            }
-        }
+        internal static int DigestFinal(SafeDigestCtxHandle ctx, Span<byte> pbOutput, int cbOutput) =>
+            DigestFinal(ctx, ref pbOutput.DangerousGetPinnableReference(), cbOutput);
 
         [DllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_DigestFinal")]
-        private static extern unsafe int DigestFinal(SafeDigestCtxHandle ctx, byte* pbOutput, int cbOutput);
+        private static extern int DigestFinal(SafeDigestCtxHandle ctx, ref byte pbOutput, int cbOutput);
     }
 }
 

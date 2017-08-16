@@ -11,16 +11,10 @@ internal partial class Interop
 {
     internal partial class BCrypt
     {
-        internal static unsafe NTSTATUS BCryptHashData(SafeBCryptHashHandle hHash, ReadOnlySpan<byte> pbInput, int cbInput, int dwFlags)
-        {
-            fixed (byte* pbInputPtr = &pbInput.DangerousGetPinnableReference())
-            {
-                return BCryptHashData(hHash, pbInputPtr, cbInput, dwFlags);
-            }
-        }
+        internal static NTSTATUS BCryptHashData(SafeBCryptHashHandle hHash, ReadOnlySpan<byte> pbInput, int cbInput, int dwFlags) =>
+            BCryptHashData(hHash, ref pbInput.DangerousGetPinnableReference(), cbInput, dwFlags);
 
         [DllImport(Libraries.BCrypt, CharSet = CharSet.Unicode)]
-        private static extern unsafe NTSTATUS BCryptHashData(SafeBCryptHashHandle hHash, byte* pbInput, int cbInput, int dwFlags);
+        private static extern NTSTATUS BCryptHashData(SafeBCryptHashHandle hHash, ref byte pbInput, int cbInput, int dwFlags);
     }
 }
-
