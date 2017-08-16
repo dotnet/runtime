@@ -431,8 +431,9 @@ namespace System.Runtime.CompilerServices
         public static AsyncTaskMethodBuilder<TResult> Create()
         {
             return default(AsyncTaskMethodBuilder<TResult>);
-            // NOTE:  If this method is ever updated to perform more initialization,
-            //        ATMB.Create must also be updated to call this Create method.
+            // NOTE: If this method is ever updated to perform more initialization,
+            //       other Create methods like AsyncTaskMethodBuilder.Create and
+            //       AsyncValueTaskMethodBuilder.Create must be updated to call this.
         }
 
         /// <summary>Initiates the builder's execution with the associated state machine.</summary>
