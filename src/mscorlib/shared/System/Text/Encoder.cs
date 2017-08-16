@@ -132,6 +132,14 @@ namespace System.Text
             return GetByteCount(arrChar, 0, count, flush);
         }
 
+        public virtual unsafe int GetByteCount(ReadOnlySpan<char> chars, bool flush)
+        {
+            fixed (char* charsPtr = &chars.DangerousGetPinnableReference())
+            {
+                return GetByteCount(charsPtr, chars.Length, flush);
+            }
+        }
+
         // Encodes a range of characters in a character array into a range of bytes
         // in a byte array. The method encodes charCount characters from
         // chars starting at index charIndex, storing the resulting
@@ -212,6 +220,15 @@ namespace System.Text
                 bytes[index] = arrByte[index];
 
             return byteCount;
+        }
+
+        public virtual unsafe int GetBytes(ReadOnlySpan<char> chars, Span<byte> bytes, bool flush)
+        {
+            fixed (char* charsPtr = &chars.DangerousGetPinnableReference())
+            fixed (byte* bytesPtr = &bytes.DangerousGetPinnableReference())
+            {
+                return GetBytes(charsPtr, chars.Length, bytesPtr, bytes.Length, flush);
+            }
         }
 
         // This method is used to avoid running out of output buffer space.
@@ -319,6 +336,15 @@ namespace System.Text
 
             // Oops, we didn't have anything, we'll have to throw an overflow
             throw new ArgumentException(SR.Argument_ConversionOverflow);
+        }
+
+        public virtual unsafe void Convert(ReadOnlySpan<char> chars, Span<byte> bytes, bool flush, out int charsUsed, out int bytesUsed, out bool completed)
+        {
+            fixed (char* charsPtr = &chars.DangerousGetPinnableReference())
+            fixed (byte* bytesPtr = &bytes.DangerousGetPinnableReference())
+            {
+                Convert(charsPtr, chars.Length, bytesPtr, bytes.Length, flush, out charsUsed, out bytesUsed, out completed);
+            }
         }
     }
 }
