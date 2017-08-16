@@ -3983,7 +3983,39 @@ public static partial class DataContractSerializerTests
         
         Assert.Equal(value.MyIntProperty, actual.MyIntProperty);
         Assert.Equal(value.MyStringProperty, actual.MyStringProperty);
-    } 
+    }
+    
+    [Fact]
+    public static void DCS_TypeWithCollectionAndDateTimeOffset()
+    {
+        // Adding offsetMinutes so the DateTime component in serialized strings are time-zone independent
+        int offsetMinutes = (int)TimeZoneInfo.Local.GetUtcOffset(new DateTime(2013, 1, 2)).TotalMinutes;
+        DateTimeOffset dateTimeOffset = new DateTimeOffset(new DateTime(2013, 1, 2, 3, 4, 5, 6).AddMinutes(offsetMinutes));
+        var value = new TypeWithCollectionAndDateTimeOffset(new List<int>() { 1, 2, 3 }, dateTimeOffset);
+
+        TypeWithCollectionAndDateTimeOffset actual = SerializeAndDeserialize(value, $"<TypeWithCollectionAndDateTimeOffset xmlns=\"http://schemas.datacontract.org/2004/07/\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><AnIntList xmlns:a=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"><a:int>1</a:int><a:int>2</a:int><a:int>3</a:int></AnIntList><DateTimeOffset xmlns:a=\"http://schemas.datacontract.org/2004/07/System\"><a:DateTime>2013-01-02T03:04:05.006Z</a:DateTime><a:OffsetMinutes>{offsetMinutes}</a:OffsetMinutes></DateTimeOffset></TypeWithCollectionAndDateTimeOffset>");
+        Assert.NotNull(actual);
+        Assert.Equal(value.DateTimeOffset, actual.DateTimeOffset);
+        Assert.NotNull(actual.AnIntList);
+        Assert.True(Enumerable.SequenceEqual(value.AnIntList, actual.AnIntList));
+    }
+
+    [Fact]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Full framework throws InvalidDataContractException.")]
+    [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "dotnet-corefx #22974")]
+    public static void DCS_TypeWithCollectionAndDateTimeOffset_ListIsNull()
+    {
+        // Adding offsetMinutes so the DateTime component in serialized strings are time-zone independent
+        int offsetMinutes = (int)TimeZoneInfo.Local.GetUtcOffset(new DateTime(2013, 1, 2)).TotalMinutes;
+        DateTimeOffset dateTimeOffset = new DateTimeOffset(new DateTime(2013, 1, 2, 3, 4, 5, 6).AddMinutes(offsetMinutes));
+        var value = new TypeWithCollectionAndDateTimeOffset(null, dateTimeOffset);
+
+        TypeWithCollectionAndDateTimeOffset actual = SerializeAndDeserialize(value, $"<TypeWithCollectionAndDateTimeOffset xmlns=\"http://schemas.datacontract.org/2004/07/\" xmlns:i=\"http://www.w3.org/2001/XMLSchema-instance\"><AnIntList i:nil=\"true\" xmlns:a=\"http://schemas.microsoft.com/2003/10/Serialization/Arrays\"/><DateTimeOffset xmlns:a=\"http://schemas.datacontract.org/2004/07/System\"><a:DateTime>2013-01-02T03:04:05.006Z</a:DateTime><a:OffsetMinutes>{offsetMinutes}</a:OffsetMinutes></DateTimeOffset></TypeWithCollectionAndDateTimeOffset>");
+        Assert.NotNull(actual);
+        Assert.Equal(value.DateTimeOffset, actual.DateTimeOffset);
+        Assert.NotNull(actual.AnIntList);
+        Assert.Equal(0, actual.AnIntList.Count);
+    }
 
     private static T SerializeAndDeserialize<T>(T value, string baseline, DataContractSerializerSettings settings = null, Func<DataContractSerializer> serializerFactory = null, bool skipStringCompare = false)
     {

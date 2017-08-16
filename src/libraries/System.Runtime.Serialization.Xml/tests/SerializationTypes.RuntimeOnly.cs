@@ -4364,3 +4364,28 @@ public class NativeJsonTestData
     public Type Type { get; set; }
     public Func<object> Instantiate { get; set; }
 }
+
+public class TypeWithCollectionAndDateTimeOffset
+{
+    public TypeWithCollectionAndDateTimeOffset()
+    {
+        _anIntList = new List<int>();
+    }
+
+    public TypeWithCollectionAndDateTimeOffset(List<int> list, DateTimeOffset dateTimeOffset)
+    {
+        _anIntList = list;
+        DateTimeOffset = dateTimeOffset;
+    }
+
+    private List<int> _anIntList;
+    public List<int> AnIntList
+    {
+        get
+        {
+            return _anIntList;
+        }
+    }
+
+    public DateTimeOffset DateTimeOffset { get; set; }
+}
