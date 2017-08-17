@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 using Microsoft.Win32.SafeHandles;
+using System.Globalization;
 
 namespace System.IO.Ports
 {
@@ -11,7 +12,7 @@ namespace System.IO.Ports
         public SafeFileHandle OpenPort(uint portNumber)
         {
             return Interop.Kernel32.CreateFileDefaultSecurity(
-                @"\\?\COM" + portNumber,
+                @"\\?\COM" + portNumber.ToString(CultureInfo.InvariantCulture),
                 Interop.Kernel32.GenericOperations.GENERIC_READ | Interop.Kernel32.GenericOperations.GENERIC_WRITE,
                 0,              // comm devices must be opened w/exclusive-access
                 FileMode.Open,  // comm devices must use OPEN_EXISTING
