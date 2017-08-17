@@ -210,9 +210,9 @@ namespace System.Xml {
 
             // Output UTF-8 byte order mark if Encoding object wants it
             if ( !stream.CanSeek || stream.Position == 0 ) {
-                byte[] bom = encoding.GetPreamble();
+                ReadOnlySpan<byte> bom = encoding.Preamble;
                 if ( bom.Length != 0 ) {
-                    Buffer.BlockCopy( bom, 0, bufBytes, 1, bom.Length );
+                    bom.CopyTo(new Span<byte>(bufBytes, 1));
                     bufPos += bom.Length;
                     textPos += bom.Length;
                 }
@@ -237,9 +237,9 @@ namespace System.Xml {
             encoder = encoding.GetEncoder();
 
             if ( !stream.CanSeek || stream.Position == 0 ) {
-                byte[] bom = encoding.GetPreamble();
+                ReadOnlySpan<byte> bom = encoding.Preamble;
                 if ( bom.Length != 0 ) {
-                    this.stream.Write( bom, 0, bom.Length );
+                    this.stream.Write( bom );
                 }
             }
 #endif
