@@ -10717,7 +10717,11 @@ void TreeNodeInfo::Initialize(LinearScan* lsra, GenTree* node, LsraLocation loca
     // if there is a reg indicated on the tree node, use that for dstCandidates
     // the exception is the NOP, which sometimes show up around late args.
     // TODO-Cleanup: get rid of those NOPs.
-    if (node->gtRegNum == REG_NA || node->gtOper == GT_NOP)
+    if (node->gtRegNum == REG_STK)
+    {
+        dstCandidates = RBM_NONE;
+    }
+    else if (node->gtRegNum == REG_NA || node->gtOper == GT_NOP)
     {
 #ifdef ARM_SOFTFP
         if (node->OperGet() == GT_PUTARG_REG)

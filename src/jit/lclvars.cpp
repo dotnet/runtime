@@ -2035,7 +2035,12 @@ void Compiler::lvaPromoteLongVars()
             fieldVarDsc->lvFldOffset     = (unsigned char)(index * genTypeSize(TYP_INT));
             fieldVarDsc->lvFldOrdinal    = (unsigned char)index;
             fieldVarDsc->lvParentLcl     = lclNum;
-            fieldVarDsc->lvIsParam       = isParam;
+            // Currently we do not support enregistering incoming promoted aggregates with more than one field.
+            if (isParam)
+            {
+                fieldVarDsc->lvIsParam = true;
+                lvaSetVarDoNotEnregister(varNum DEBUGARG(DNER_LongParamField));
+            }
         }
     }
 
@@ -2168,6 +2173,11 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
         case DNER_PinningRef:
             JITDUMP("pinning ref\n");
             assert(varDsc->lvPinned);
+            break;
+#endif
+#if !defined(LEGACY_BACKEND) && !defined(_TARGET_64BIT_)
+        case DNER_LongParamField:
+            JITDUMP("it is a decomposed field of a long parameter\n");
             break;
 #endif
         default:

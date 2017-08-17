@@ -610,42 +610,6 @@ void Compiler::fgWalkAllTreesPre(fgWalkPreFn* visitor, void* pCallBackData)
     }
 }
 
-// ------------------------------------------------------------------------------------------
-// gtClearReg: Sets the register to the "no register assignment" value, depending upon
-// the type of the node, and whether it fits any of the special cases for register pairs
-// or multi-reg call nodes.
-//
-// Arguments:
-//     compiler  -  compiler instance
-//
-// Return Value:
-//     None
-void GenTree::gtClearReg(Compiler* compiler)
-{
-#if CPU_LONG_USES_REGPAIR
-    if (isRegPairType(TypeGet()) ||
-        // (IsLocal() && isRegPairType(compiler->lvaTable[gtLclVarCommon.gtLclNum].TypeGet())) ||
-        (OperGet() == GT_MUL && (gtFlags & GTF_MUL_64RSLT)))
-    {
-        gtRegPair = REG_PAIR_NONE;
-    }
-    else
-#endif // CPU_LONG_USES_REGPAIR
-    {
-        gtRegNum = REG_NA;
-    }
-
-    // Also clear multi-reg state if this is a call node
-    if (IsCall())
-    {
-        this->AsCall()->ClearOtherRegs();
-    }
-    else if (IsCopyOrReload())
-    {
-        this->AsCopyOrReload()->ClearOtherRegs();
-    }
-}
-
 //-----------------------------------------------------------
 // CopyReg: Copy the _gtRegNum/_gtRegPair/gtRegTag fields.
 //
@@ -704,56 +668,52 @@ bool GenTree::gtHasReg() const
     {
         assert(_gtRegNum != REG_NA);
         INDEBUG(assert(gtRegTag == GT_REGTAG_REGPAIR));
-        hasReg = (gtRegPair != REG_PAIR_NONE);
+        return (gtRegPair != REG_PAIR_NONE);
+    }
+    assert(_gtRegNum != REG_PAIR_NONE);
+    INDEBUG(assert(gtRegTag == GT_REGTAG_REG));
+#endif
+    if (IsMultiRegCall())
+    {
+        // Have to cast away const-ness because GetReturnTypeDesc() is a non-const method
+        GenTree*     tree     = const_cast<GenTree*>(this);
+        GenTreeCall* call     = tree->AsCall();
+        unsigned     regCount = call->GetReturnTypeDesc()->GetReturnRegCount();
+        hasReg                = false;
+
+        // A Multi-reg call node is said to have regs, if it has
+        // reg assigned to each of its result registers.
+        for (unsigned i = 0; i < regCount; ++i)
+        {
+            hasReg = (call->GetRegNumByIdx(i) != REG_NA);
+            if (!hasReg)
+            {
+                break;
+            }
+        }
+    }
+    else if (IsCopyOrReloadOfMultiRegCall())
+    {
+        GenTree*             tree         = const_cast<GenTree*>(this);
+        GenTreeCopyOrReload* copyOrReload = tree->AsCopyOrReload();
+        GenTreeCall*         call         = copyOrReload->gtGetOp1()->AsCall();
+        unsigned             regCount     = call->GetReturnTypeDesc()->GetReturnRegCount();
+        hasReg                            = false;
+
+        // A Multi-reg copy or reload node is said to have regs,
+        // if it has valid regs in any of the positions.
+        for (unsigned i = 0; i < regCount; ++i)
+        {
+            hasReg = (copyOrReload->GetRegNumByIdx(i) != REG_NA);
+            if (hasReg)
+            {
+                break;
+            }
+        }
     }
     else
-#endif
     {
-        assert(_gtRegNum != REG_PAIR_NONE);
-        INDEBUG(assert(gtRegTag == GT_REGTAG_REG));
-
-        if (IsMultiRegCall())
-        {
-            // Has to cast away const-ness because GetReturnTypeDesc() is a non-const method
-            GenTree*     tree     = const_cast<GenTree*>(this);
-            GenTreeCall* call     = tree->AsCall();
-            unsigned     regCount = call->GetReturnTypeDesc()->GetReturnRegCount();
-            hasReg                = false;
-
-            // A Multi-reg call node is said to have regs, if it has
-            // reg assigned to each of its result registers.
-            for (unsigned i = 0; i < regCount; ++i)
-            {
-                hasReg = (call->GetRegNumByIdx(i) != REG_NA);
-                if (!hasReg)
-                {
-                    break;
-                }
-            }
-        }
-        else if (IsCopyOrReloadOfMultiRegCall())
-        {
-            GenTree*             tree         = const_cast<GenTree*>(this);
-            GenTreeCopyOrReload* copyOrReload = tree->AsCopyOrReload();
-            GenTreeCall*         call         = copyOrReload->gtGetOp1()->AsCall();
-            unsigned             regCount     = call->GetReturnTypeDesc()->GetReturnRegCount();
-            hasReg                            = false;
-
-            // A Multi-reg copy or reload node is said to have regs,
-            // if it has valid regs in any of the positions.
-            for (unsigned i = 0; i < regCount; ++i)
-            {
-                hasReg = (copyOrReload->GetRegNumByIdx(i) != REG_NA);
-                if (hasReg)
-                {
-                    break;
-                }
-            }
-        }
-        else
-        {
-            hasReg = (gtRegNum != REG_NA);
-        }
+        hasReg = (gtRegNum != REG_NA);
     }
 
     return hasReg;
@@ -7006,8 +6966,9 @@ GenTree* Compiler::gtNewBlkOpNode(
 // gtNewPutArgReg: Creates a new PutArgReg node.
 //
 // Arguments:
-//    type - The actual type of the argument
-//    arg  - The argument node
+//    type   - The actual type of the argument
+//    arg    - The argument node
+//    argReg - The register that the argument will be passed in
 //
 // Return Value:
 //    Returns the newly created PutArgReg node.
@@ -7015,7 +6976,7 @@ GenTree* Compiler::gtNewBlkOpNode(
 // Notes:
 //    The node is generated as GenTreeMultiRegOp on armel, as GenTreeOp on all the other archs
 //
-GenTreePtr Compiler::gtNewPutArgReg(var_types type, GenTreePtr arg)
+GenTreePtr Compiler::gtNewPutArgReg(var_types type, GenTreePtr arg, regNumber argReg)
 {
     assert(arg != nullptr);
 
@@ -7031,6 +6992,7 @@ GenTreePtr Compiler::gtNewPutArgReg(var_types type, GenTreePtr arg)
     {
         node = gtNewOperNode(GT_PUTARG_REG, type, arg);
     }
+    node->gtRegNum = argReg;
 
     return node;
 }
@@ -15233,10 +15195,13 @@ bool GenTree::isContained() const
     }
 
     // these actually produce a register (the flags reg, we just don't model it)
-    // and are a separate instruction from the branch that consumes the result
+    // and are a separate instruction from the branch that consumes the result.
+    // They can only produce a result if the child is a SIMD equality comparison.
     else if (OperKind() & GTK_RELOP)
     {
-        assert(!isMarkedContained);
+        // We have to cast away const-ness since AsOp() method is non-const.
+        GenTree* childNode = const_cast<GenTree*>(this)->AsOp()->gtOp1;
+        assert((isMarkedContained == false) || childNode->IsSIMDEqualityOrInequality());
     }
 
     // these either produce a result in register or set flags reg.

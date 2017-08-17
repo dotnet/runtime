@@ -17,6 +17,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #endif
 
 #include "allocacheck.h" // for alloca
+#ifndef LEGACY_BACKEND
+#include "lower.h" // for LowerRange()
+#endif
 
 /*****************************************************************************/
 
@@ -13477,6 +13480,10 @@ bool Compiler::fgOptimizeEmptyBlock(BasicBlock* block)
                         if (block->IsLIR())
                         {
                             LIR::AsRange(block).InsertAtEnd(nop);
+#ifndef LEGACY_BACKEND
+                            LIR::ReadOnlyRange range(nop, nop);
+                            m_pLowering->LowerRange(block, range);
+#endif
                         }
                         else
                         {
@@ -13796,6 +13803,10 @@ bool Compiler::fgOptimizeSwitchBranches(BasicBlock* block)
         if (block->IsLIR())
         {
             blockRange->InsertAfter(switchVal, zeroConstNode, condNode);
+#ifndef LEGACY_BACKEND
+            LIR::ReadOnlyRange range(zeroConstNode, switchTree);
+            m_pLowering->LowerRange(block, range);
+#endif // !LEGACY_BACKEND
         }
         else
         {
