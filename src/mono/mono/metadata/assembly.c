@@ -2382,7 +2382,7 @@ parse_public_key (const gchar *key, gchar** pubkey, gboolean *is_ecma)
 
 	/* allow the ECMA standard key */
 	if (strcmp (key, "00000000000000000400000000000000") == 0) {
-		*pubkey = g_strdup (key);
+		*pubkey = NULL;
 		*is_ecma = TRUE;
 		return TRUE;
 	}
@@ -2450,7 +2450,7 @@ build_assembly_name (const char *name, const char *version, const char *culture,
 	gint major, minor, build, revision;
 	gint len;
 	gint version_parts;
-	gchar *pkey, *pkeyptr, *encoded, tok [8];
+	gchar *pkeyptr, *encoded, tok [8];
 
 	memset (aname, 0, sizeof (MonoAssemblyName));
 
@@ -2499,15 +2499,16 @@ build_assembly_name (const char *name, const char *version, const char *culture,
 	}
 
 	if (key) {
-		gboolean is_ecma;
+		gboolean is_ecma = FALSE;
+		gchar *pkey = NULL;
 		if (strcmp (key, "null") == 0 || !parse_public_key (key, &pkey, &is_ecma)) {
 			mono_assembly_name_free (aname);
 			return FALSE;
 		}
 
 		if (is_ecma) {
+			g_assert (pkey == NULL);
 			aname->public_key = NULL;
-			g_free (pkey);
 			g_strlcpy ((gchar*)aname->public_key_token, "b77a5c561934e089", MONO_PUBLIC_KEY_TOKEN_LENGTH);
 			return TRUE;
 		}
