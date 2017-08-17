@@ -41,6 +41,12 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			Append (value);
 		}
 
+		public virtual void AddKeepTypeForwarderOnlyAssemblies (string value)
+		{
+			if (bool.Parse (value))
+				Append ("-t");
+		}
+
 		public string [] ToArgs ()
 		{
 			return _arguments.ToArray ();
@@ -62,6 +68,9 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			// Internationalization assemblies pollute our test case results as well so disable them
 			if (!string.IsNullOrEmpty (options.Il8n))
 				AddIl8n (options.Il8n);
+
+			if (!string.IsNullOrEmpty (options.KeepTypeForwarderOnlyAssemblies))
+				AddKeepTypeForwarderOnlyAssemblies (options.KeepTypeForwarderOnlyAssemblies);
 		}
 	}
 }

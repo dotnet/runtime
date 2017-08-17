@@ -54,6 +54,7 @@
     <Compile Include="Metadata\CoreLinkAttribute.cs" />
     <Compile Include="Metadata\IncludeBlacklistStepAttribute.cs" />
     <Compile Include="Metadata\Il8nAttribute.cs" />
+    <Compile Include="Metadata\KeepTypeForwarderOnlyAssembliesAttribute.cs" />
     <Compile Include="Metadata\NotATestCaseAttribute.cs" />
     <Compile Include="Metadata\ReferenceAttribute.cs" />
     <Compile Include="Metadata\SandboxDependencyAttribute.cs" />
