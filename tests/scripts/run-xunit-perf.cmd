@@ -55,6 +55,14 @@ setlocal ENABLEDELAYEDEXPANSION
     )
   )
 
+  if not defined OPT_LEVEL (
+    set OPT_LEVEL=full_opt
+  )
+
+  if not defined JIT_NAME (
+    set JIT_NAME=ryujit
+  )
+
   rem optionally upload results to benchview
   if not [%BENCHVIEW_PATH%] == [] (
     call :upload_to_benchview || exit /b 1
@@ -89,10 +97,18 @@ setlocal
     )
   )
 
+  rem setup optimisation level
+  if DEFINED OPT_LEVEL (
+    if /I "%OPT_LEVEL%" == "min_opt" (
+        set COMPlus_JITMinOpts=1
+    )
+  )
+
   rem CORE_ROOT environment variable is used by some benchmarks such as Roslyn / CscBench.
   set CORE_ROOT=%LV_SANDBOX_DIR%
   set LV_RUNID=Perf-%ETW_COLLECTION%
   set BENCHNAME_LOG_FILE_NAME=%LV_BENCHMARKS_OUTPUT_DIR%\%LV_RUNID%-%BENCHNAME%.log
+
 
   echo/
   echo/  ----------
@@ -190,6 +206,18 @@ rem ****************************************************************************
   )
   IF /I [%~1] == [-testEnv] (
     set TEST_ENV=%~2
+    shift
+    shift
+    goto :parse_command_line_arguments
+  )
+  IF /I [%~1] == [-optLevel] (
+    set OPT_LEVEL=%~2
+    shift
+    shift
+    goto :parse_command_line_arguments
+  )
+  IF /I [%~1] == [-jitName] (
+    set JIT_NAME=%~2
     shift
     shift
     goto :parse_command_line_arguments
@@ -356,6 +384,8 @@ setlocal
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --config Configuration "%TEST_CONFIG%"
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --config OS "Windows_NT"
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --config Profile "%ETW_COLLECTION%"
+  set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --config OptLevel "%OPT_LEVEL%"
+  set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --config JitName  "%JIT_NAME%"
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --architecture "%TEST_ARCHITECTURE%"
   set LV_SUBMISSION_ARGS=%LV_SUBMISSION_ARGS% --machinepool "PerfSnake"
 
