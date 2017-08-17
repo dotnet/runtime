@@ -838,6 +838,13 @@ mono_method_get_name_full (MonoMethod *method, gboolean signature, gboolean ret,
 	char *inst_desc = NULL;
 	MonoError error;
 
+	const char *class_method_separator = ":";
+	const char *method_sig_space = " ";
+	if (format == MONO_TYPE_NAME_FORMAT_REFLECTION) {
+		class_method_separator = ".";
+		method_sig_space = "";
+	}
+
 	if (format == MONO_TYPE_NAME_FORMAT_IL)
 		klass_desc = mono_type_full_name (&method->klass->byval_arg);
 	else
@@ -897,16 +904,19 @@ mono_method_get_name_full (MonoMethod *method, gboolean signature, gboolean ret,
 			strcpy (wrapper, "");
 		if (ret && sig) {
 			char *ret_str = mono_type_full_name (sig->ret);
-			res = g_strdup_printf ("%s%s %s:%s%s (%s)", wrapper, ret_str, klass_desc,
-								   method->name, inst_desc ? inst_desc : "", tmpsig);
+			res = g_strdup_printf ("%s%s %s%s%s%s%s(%s)", wrapper, ret_str, klass_desc,
+								   class_method_separator,
+								   method->name, inst_desc ? inst_desc : "", method_sig_space, tmpsig);
 			g_free (ret_str);
 		} else {
-			res = g_strdup_printf ("%s%s:%s%s (%s)", wrapper, klass_desc,
-								   method->name, inst_desc ? inst_desc : "", tmpsig);
+			res = g_strdup_printf ("%s%s%s%s%s%s(%s)", wrapper, klass_desc,
+								   class_method_separator,
+								   method->name, inst_desc ? inst_desc : "", method_sig_space, tmpsig);
 		}
 		g_free (tmpsig);
 	} else {
-		res = g_strdup_printf ("%s%s:%s%s", wrapper, klass_desc,
+		res = g_strdup_printf ("%s%s%s%s%s", wrapper, klass_desc,
+							   class_method_separator,
 							   method->name, inst_desc ? inst_desc : "");
 	}
 
@@ -929,6 +939,17 @@ char *
 mono_method_get_full_name (MonoMethod *method)
 {
 	return mono_method_get_name_full (method, TRUE, TRUE, MONO_TYPE_NAME_FORMAT_IL);
+}
+
+/**
+ * mono_method_get_reflection_name:
+ *
+ * Returns the name of the method, including signature, using the same formating as reflection.
+ */
+char *
+mono_method_get_reflection_name (MonoMethod *method)
+{
+	return mono_method_get_name_full (method, TRUE, FALSE, MONO_TYPE_NAME_FORMAT_REFLECTION);
 }
 
 static const char*
