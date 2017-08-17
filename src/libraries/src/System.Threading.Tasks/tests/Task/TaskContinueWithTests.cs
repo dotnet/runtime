@@ -1210,6 +1210,7 @@ namespace System.Threading.Tasks.Tests
             }
         }
 
+        [ActiveIssue(23201)]
         [Fact]
         public static void RunStackGuardTests()
         {
