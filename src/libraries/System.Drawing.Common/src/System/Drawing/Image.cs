@@ -9,6 +9,7 @@ using System.Drawing.Internal;
 using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 
 namespace System.Drawing
 {
@@ -17,7 +18,7 @@ namespace System.Drawing
     /// </summary>
     [ImmutableObject(true)]
     [ComVisible(true)]
-    public abstract partial class Image : MarshalByRefObject, ICloneable, IDisposable
+    public abstract partial class Image : MarshalByRefObject, ICloneable, IDisposable, ISerializable
     {
 #if FINALIZATION_WATCH
         private string allocationSite = Graphics.GetAllocationStack();

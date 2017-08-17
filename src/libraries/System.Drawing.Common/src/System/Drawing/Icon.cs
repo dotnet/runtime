@@ -8,11 +8,12 @@ using System.Drawing.Imaging;
 using System.Drawing.Internal;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 using System.Text;
 
 namespace System.Drawing
 {
-    public sealed partial class Icon : MarshalByRefObject, ICloneable, IDisposable
+    public sealed partial class Icon : MarshalByRefObject, ICloneable, IDisposable, ISerializable
     {
 #if FINALIZATION_WATCH
         private string allocationSite = Graphics.GetAllocationStack();
