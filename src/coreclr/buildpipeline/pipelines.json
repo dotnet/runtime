@@ -24,6 +24,20 @@
           }
         },
         {
+          "Name": "DotNet-CoreClr-Trusted-Linux",
+          "Parameters": {
+            "DockerTag": "centos-6-c8c9b08-20174310104313",
+            "Rid": "rhel.6",
+			"PB_AdditionalBuildArgs": "-portablebuild=false"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "RedHat6",
+            "Type": "build/product/",
+            "Architecture": "x64",
+            "PB_BuildType": null
+          }
+        },		
+        {
           "Name": "DotNet-CoreClr-Trusted-Mac",
           "Parameters": {
             "Rid": "osx"
@@ -460,7 +474,42 @@
             "Type": "build/product/",
             "PB_BuildType": "Release"
           }
-        }
+        },
+        {
+          "Name": "Dotnet-CoreClr-Trusted-BuildTests",
+          "Parameters": {
+            "HelixJobType": "test/functional/cli/",
+            "TargetsWindows": "false",
+            "Rid": "rhel.6-x64",
+            "TargetQueues": "redhat.69.amd64",
+            "TestContainerSuffix": "rhel6",
+            "TargetsNonWindowsArg": "TargetsNonWindows "
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "RedHat6",
+            "SubType":  "Build-Tests",
+            "Type": "build/product/",
+            "PB_BuildType": "Release"
+          }
+        },
+        {
+          "Name": "Dotnet-CoreClr-Trusted-BuildTests",
+          "Parameters": {
+            "HelixJobType": "test/functional/r2r/cli/",
+            "TargetsWindows": "false",
+            "Rid": "rhel.6-x64",
+            "TargetQueues": "redhat.69.amd64",
+            "TestContainerSuffix": "rhel6-r2r",
+            "CrossgenArg": "Crossgen ",
+            "TargetsNonWindowsArg": "TargetsNonWindows "
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "RedHat6",
+            "SubType":  "Build-Tests-R2R",
+            "Type": "build/product/",
+            "PB_BuildType": "Release"
+          }
+        }		
       ],
       "DependsOn": [
         "Trusted-All-Release"
