@@ -9,9 +9,9 @@
        These ref versions are pulled from https://github.com/dotnet/versions.
   -->
   <PropertyGroup>
-    <CoreFxCurrentRef>0b862980d44e2f8428ea529bde7a82c9d68c8d41</CoreFxCurrentRef>
+    <CoreFxCurrentRef>1379e145fb34791952e80ca6b8c5f86b8400ffe7</CoreFxCurrentRef>
     <CoreClrCurrentRef>2f67b98926c277ec81ee2150bf25f6bde7486052</CoreClrCurrentRef>
-    <CoreSetupCurrentRef>634aeade9deb9c746e5778ebd400c286dc1d8fba</CoreSetupCurrentRef>
+    <CoreSetupCurrentRef>1379e145fb34791952e80ca6b8c5f86b8400ffe7</CoreSetupCurrentRef>
     <ExternalCurrentRef>5a0606fccb09fce4b47545ae9896139acca547f5</ExternalCurrentRef>
     <ProjectNTfsCurrentRef>634aeade9deb9c746e5778ebd400c286dc1d8fba</ProjectNTfsCurrentRef>
     <ProjectNTfsTestILCCurrentRef>634aeade9deb9c746e5778ebd400c286dc1d8fba</ProjectNTfsTestILCCurrentRef>
@@ -21,8 +21,8 @@
 
   <!-- Auto-upgraded properties for each build info dependency. -->
   <PropertyGroup>
-    <PlatformPackageVersion>2.1.0-preview2-25616-02</PlatformPackageVersion>
-    <CoreFxExpectedPrerelease>preview2-25616-02</CoreFxExpectedPrerelease>
+    <PlatformPackageVersion>2.1.0-preview2-25617-01</PlatformPackageVersion>
+    <CoreFxExpectedPrerelease>preview2-25617-01</CoreFxExpectedPrerelease>
     <CoreClrPackageVersion>2.1.0-preview2-25616-01</CoreClrPackageVersion>
     <ExternalExpectedPrerelease>beta-25322-00</ExternalExpectedPrerelease>
     <ProjectNTfsExpectedPrerelease>beta-25616-00</ProjectNTfsExpectedPrerelease>
@@ -30,7 +30,7 @@
     <ProjectNTfsTestILCPackageVersion>1.0.0-beta-25616-00</ProjectNTfsTestILCPackageVersion>
     <NETStandardPackageVersion>2.1.0-preview1-25616-01</NETStandardPackageVersion>
     <NETStandardPackageId>NETStandard.Library</NETStandardPackageId>
-    <MicrosoftNETCoreAppPackageVersion>2.1.0-preview2-25616-01</MicrosoftNETCoreAppPackageVersion>
+    <MicrosoftNETCoreAppPackageVersion>2.1.0-preview2-25616-02</MicrosoftNETCoreAppPackageVersion>
     <!-- Use the SNI runtime package -->
     <SniPackageVersion>4.4.0</SniPackageVersion>
   </PropertyGroup>
