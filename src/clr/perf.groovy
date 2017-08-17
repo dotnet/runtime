@@ -106,9 +106,7 @@ def static getOSGroup(def os) {
 
                 // Save machinedata.json to /artifact/bin/ Jenkins dir
                 def archiveSettings = new ArchivalSettings()
-                archiveSettings.addFiles('.\\bin\\sandbox\\Logs\\Perf-*.xml')
-                archiveSettings.addFiles('.\\bin\\sandbox\\Logs\\Perf-*.etl')
-                archiveSettings.addFiles('.\\bin\\sandbox\\Logs\\Perf-*.log')
+                archiveSettings.addFiles('bin/sandbox/Logs/Perf-*.*')
                 archiveSettings.addFiles('machinedata.json')
                 Utilities.addArchival(newJob, archiveSettings)
 
@@ -303,8 +301,7 @@ def static getFullPerfJobName(def project, def os, def isPR) {
 
         // Save machinedata.json to /artifact/bin/ Jenkins dir
         def archiveSettings = new ArchivalSettings()
-        archiveSettings.addFiles('./bin/sandbox/Logs/Perf-*.log')
-        archiveSettings.addFiles('./bin/sandbox/Logs/Perf-*.xml')
+        archiveSettings.addFiles('bin/sandbox/Logs/Perf-*.*')
         archiveSettings.addFiles('machinedata.json')
         Utilities.addArchival(newJob, archiveSettings)
 
@@ -575,8 +572,7 @@ parallel(
 
              // Save machinedata.json to /artifact/bin/ Jenkins dir
             def archiveSettings = new ArchivalSettings()
-            archiveSettings.addFiles('.\\bin\\sandbox\\Perf-*.xml')
-            archiveSettings.addFiles('.\\bin\\sandbox\\Perf-*.log')
+            archiveSettings.addFiles('bin/sandbox/Perf-*.*')
             archiveSettings.addFiles('machinedata.json')
             Utilities.addArchival(newJob, archiveSettings)
 
