@@ -29,10 +29,10 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			Append (value);
 		}
 
-		public virtual void IncludeBlacklist (string value)
+		public virtual void IncludeBlacklist (bool value)
 		{
 			Append ("-z");
-			Append (value);
+			Append (value ? "true" : "false");
 		}
 
 		public virtual void AddIl8n (string value)
@@ -57,8 +57,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 			// Running the blacklist step causes a ton of stuff to be preserved.  That's good for normal use cases, but for
 			// our test cases that pollutes the results
-			if (!string.IsNullOrEmpty (options.IncludeBlacklistStep))
-				IncludeBlacklist (options.IncludeBlacklistStep);
+			IncludeBlacklist (options.IncludeBlacklistStep);
 
 			// Internationalization assemblies pollute our test case results as well so disable them
 			if (!string.IsNullOrEmpty (options.Il8n))
