@@ -31,6 +31,7 @@
 #define ERROR_LOCK_VIOLATION       33
 #define ERROR_HANDLE_DISK_FULL     39
 #define ERROR_NOT_SUPPORTED        50
+#define ERROR_DEV_NOT_EXIST        55
 #define ERROR_FILE_EXISTS          80
 #define ERROR_CANNOT_MAKE          82
 #define ERROR_INVALID_PARAMETER    87
