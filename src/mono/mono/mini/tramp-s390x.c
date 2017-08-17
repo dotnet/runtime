@@ -559,8 +559,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 /*------------------------------------------------------------------*/
 
 gpointer
-mono_arch_get_static_rgctx_trampoline (gpointer arg,
-									   gpointer addr)
+mono_arch_get_static_rgctx_trampoline (gpointer arg, gpointer addr)
 {
 	guint8 *code, *start;
 	gint32 displace;
@@ -584,5 +583,22 @@ mono_arch_get_static_rgctx_trampoline (gpointer arg,
 
 	return(start);
 }	
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name	    - mono_arch_get_enter_icall_trampoline.                 */
+/*                                                                  */
+/* Function - 							    */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
+gpointer
+mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
 
 /*========================= End of Function ========================*/
