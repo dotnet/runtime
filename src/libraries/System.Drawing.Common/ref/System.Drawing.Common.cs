@@ -1,3 +1,10 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+// See the LICENSE file in the project root for more information.
+// ------------------------------------------------------------------------------
+// Changes to this file must follow the http://aka.ms/api-review process
+// ------------------------------------------------------------------------------
+
 namespace System.Drawing
 {
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
@@ -283,7 +290,7 @@ namespace System.Drawing
         Whiteness = 16711778,
     }
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public sealed partial class Font : System.MarshalByRefObject, System.ICloneable, System.IDisposable
+    public sealed partial class Font : System.MarshalByRefObject, System.ICloneable, System.IDisposable, Runtime.Serialization.ISerializable
     {
         public Font(System.Drawing.Font prototype, System.Drawing.FontStyle newStyle) { }
         public Font(System.Drawing.FontFamily family, float emSize) { }
@@ -340,6 +347,7 @@ namespace System.Drawing
         public float GetHeight() { throw null; }
         public float GetHeight(System.Drawing.Graphics graphics) { throw null; }
         public float GetHeight(float dpi) { throw null; }
+        void Runtime.Serialization.ISerializable.GetObjectData(Runtime.Serialization.SerializationInfo info, Runtime.Serialization.StreamingContext context) { }
         public System.IntPtr ToHfont() { throw null; }
         public void ToLogFont(object logFont) { }
         public void ToLogFont(object logFont, System.Drawing.Graphics graphics) { }
@@ -645,7 +653,7 @@ namespace System.Drawing
         Point = 3,
         World = 0,
     }
-    public sealed partial class Icon : System.MarshalByRefObject, System.ICloneable, System.IDisposable
+    public sealed partial class Icon : System.MarshalByRefObject, System.ICloneable, System.IDisposable, Runtime.Serialization.ISerializable
     {
         public Icon(System.Drawing.Icon original, System.Drawing.Size size) { }
         public Icon(System.Drawing.Icon original, int width, int height) { }
@@ -668,6 +676,7 @@ namespace System.Drawing
         public static System.Drawing.Icon ExtractAssociatedIcon(string filePath) { throw null; }
         ~Icon() { }
         public static System.Drawing.Icon FromHandle(System.IntPtr handle) { throw null; }
+        void Runtime.Serialization.ISerializable.GetObjectData(Runtime.Serialization.SerializationInfo info, Runtime.Serialization.StreamingContext context) { }
         public void Save(System.IO.Stream outputStream) { }
         [System.Security.Permissions.SecurityPermissionAttribute(System.Security.Permissions.SecurityAction.LinkDemand, Flags=(System.Security.Permissions.SecurityPermissionFlag)(128))]
         public System.Drawing.Bitmap ToBitmap() { throw null; }
@@ -684,7 +693,7 @@ namespace System.Drawing
     }
     [System.ComponentModel.ImmutableObjectAttribute(true)]
     [System.Runtime.InteropServices.ComVisibleAttribute(true)]
-    public abstract partial class Image : System.MarshalByRefObject, System.ICloneable, System.IDisposable
+    public abstract partial class Image : System.MarshalByRefObject, System.ICloneable, System.IDisposable, Runtime.Serialization.ISerializable
     {
         internal Image() { }
         [System.ComponentModel.BrowsableAttribute(false)]
@@ -728,6 +737,7 @@ namespace System.Drawing
         public System.Drawing.RectangleF GetBounds(ref System.Drawing.GraphicsUnit pageUnit) { throw null; }
         public System.Drawing.Imaging.EncoderParameters GetEncoderParameterList(System.Guid encoder) { throw null; }
         public int GetFrameCount(System.Drawing.Imaging.FrameDimension dimension) { throw null; }
+        void Runtime.Serialization.ISerializable.GetObjectData(Runtime.Serialization.SerializationInfo info, Runtime.Serialization.StreamingContext context) { }
         public static int GetPixelFormatSize(System.Drawing.Imaging.PixelFormat pixfmt) { throw null; }
         public System.Drawing.Imaging.PropertyItem GetPropertyItem(int propid) { throw null; }
         public System.Drawing.Image GetThumbnailImage(int thumbWidth, int thumbHeight, System.Drawing.Image.GetThumbnailImageAbort callback, System.IntPtr callbackData) { throw null; }
@@ -2530,6 +2540,7 @@ namespace System.Drawing.Printing
     }
     public partial class InvalidPrinterException : System.SystemException
     {
+        protected InvalidPrinterException(Runtime.Serialization.SerializationInfo info, Runtime.Serialization.StreamingContext context) { }
         public InvalidPrinterException(System.Drawing.Printing.PrinterSettings settings) { }
     }
     public partial class Margins : System.ICloneable

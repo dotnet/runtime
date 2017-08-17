@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Drawing.Internal;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Runtime.Serialization;
 
 namespace System.Drawing
 {
@@ -14,7 +15,7 @@ namespace System.Drawing
     /// Defines a particular format for text, including font face, size, and style attributes.
     /// </summary>
     [ComVisible(true)]
-    public sealed partial class Font : MarshalByRefObject, ICloneable, IDisposable
+    public sealed partial class Font : MarshalByRefObject, ICloneable, IDisposable, ISerializable
     {
         private const int LogFontCharSetOffset = 23;
         private const int LogFontNameOffset = 28;

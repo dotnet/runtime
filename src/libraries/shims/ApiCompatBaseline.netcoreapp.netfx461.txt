@@ -106,13 +106,6 @@ MembersMustExist : Member 'System.DirectoryServices.Protocols.ModifyDNRequest.To
 MembersMustExist : Member 'System.DirectoryServices.Protocols.ModifyRequest.ToXmlNode(System.Xml.XmlDocument)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.DirectoryServices.Protocols.SearchRequest..ctor(System.String, System.Xml.XmlDocument, System.DirectoryServices.Protocols.SearchScope, System.String[])' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.DirectoryServices.Protocols.SearchRequest.ToXmlNode(System.Xml.XmlDocument)' does not exist in the implementation but it does exist in the contract.
-Compat issues with assembly System.Drawing:
-CannotRemoveBaseTypeOrInterface : Type 'System.Drawing.Bitmap' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Drawing.Font' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Drawing.Icon' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Drawing.Image' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
-CannotRemoveBaseTypeOrInterface : Type 'System.Drawing.Imaging.Metafile' does not implement interface 'System.Runtime.Serialization.ISerializable' in the implementation but it does in the contract.
-MembersMustExist : Member 'System.Drawing.Printing.InvalidPrinterException..ctor(System.Runtime.Serialization.SerializationInfo, System.Runtime.Serialization.StreamingContext)' does not exist in the implementation but it does exist in the contract.
 Compat issues with assembly System.Security:
 MembersMustExist : Member 'System.Security.Cryptography.CryptographicAttributeObjectCollection.IsSynchronized.get()' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'System.Security.Cryptography.CryptographicAttributeObjectCollection.SyncRoot.get()' does not exist in the implementation but it does exist in the contract.
@@ -319,4 +312,4 @@ TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionEven
 TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionEventHandler' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionFilterEventArgs' does not exist in the implementation but it does exist in the contract.
 TypesMustExist : Type 'System.Windows.Threading.DispatcherUnhandledExceptionFilterEventHandler' does not exist in the implementation but it does exist in the contract.
-Total Issues: 306
+Total Issues: 300
