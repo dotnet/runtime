@@ -462,8 +462,8 @@ typedef union {
 #define SPECIAL_STATIC_OFFSET_TYPE_THREAD 0
 #define SPECIAL_STATIC_OFFSET_TYPE_CONTEXT 1
 
-#define MAKE_SPECIAL_STATIC_OFFSET(index, offset, type) \
-	((SpecialStaticOffset) { .fields = { (index), (offset), (type) } }.raw)
+#define MAKE_SPECIAL_STATIC_OFFSET(idx, off, ty) \
+	((SpecialStaticOffset) { .fields = { .index = (idx), .offset = (off), .type = (ty) } }.raw)
 #define ACCESS_SPECIAL_STATIC_OFFSET(x,f) \
 	(((SpecialStaticOffset *) &(x))->fields.f)
 
