@@ -110,8 +110,7 @@ void TieredCompilationManager::Init(ADID appDomainId)
 
     SpinLockHolder holder(&m_lock);
     m_domainId = appDomainId;
-    m_pAsyncWorkDoneEvent = new CLREvent();
-    m_pAsyncWorkDoneEvent->CreateManualEvent(TRUE);
+    m_asyncWorkDoneEvent.CreateManualEvent(TRUE);
 }
 
 // Called each time code in this AppDomain has been run. This is our sole entrypoint to begin
@@ -253,7 +252,7 @@ void TieredCompilationManager::Shutdown(BOOL fBlockUntilAsyncWorkIsComplete)
     }
     if (fBlockUntilAsyncWorkIsComplete)
     {
-        m_pAsyncWorkDoneEvent->Wait(INFINITE, FALSE);
+        m_asyncWorkDoneEvent.Wait(INFINITE, FALSE);
     }
 }
 
@@ -447,7 +446,7 @@ void TieredCompilationManager::IncrementWorkerThreadCount()
     //m_lock should be held
 
     m_countOptimizationThreadsRunning++;
-    m_pAsyncWorkDoneEvent->Reset();
+    m_asyncWorkDoneEvent.Reset();
 }
 
 void TieredCompilationManager::DecrementWorkerThreadCount()
@@ -458,7 +457,7 @@ void TieredCompilationManager::DecrementWorkerThreadCount()
     m_countOptimizationThreadsRunning--;
     if (m_countOptimizationThreadsRunning == 0)
     {
-        m_pAsyncWorkDoneEvent->Set();
+        m_asyncWorkDoneEvent.Set();
     }
 }
 
