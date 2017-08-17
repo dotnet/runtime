@@ -284,6 +284,12 @@ while :; do
         generateversion)
             __generateversionsource=true
             ;;
+        --clang*)
+                # clangx.y or clang-x.y
+                v=`echo $lowerI | tr -d '[:alpha:]-='`
+                __ClangMajorVersion=`echo $v | cut -d '.' -f1`
+                __ClangMinorVersion=`echo $v | cut -d '.' -f2`
+            ;;
         clang3.5)
             __ClangMajorVersion=3
             __ClangMinorVersion=5
