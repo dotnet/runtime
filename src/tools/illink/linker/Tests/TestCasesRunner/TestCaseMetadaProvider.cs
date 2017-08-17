@@ -26,12 +26,11 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 		public virtual TestCaseLinkerOptions GetLinkerOptions ()
 		{
-			// This will end up becoming more complicated as we get into more complex test cases that require additional
-			// data
-			var coreLink = GetOptionAttributeValue (nameof (CoreLinkAttribute), "skip");
-			var il8n = GetOptionAttributeValue (nameof (Il8nAttribute), string.Empty);
-			var blacklist = GetOptionAttributeValue (nameof (IncludeBlacklistStepAttribute), string.Empty);
-			return new TestCaseLinkerOptions {CoreLink = coreLink, Il8n = il8n, IncludeBlacklistStep = blacklist};
+			return new TestCaseLinkerOptions {
+				CoreLink = GetOptionAttributeValue (nameof (CoreLinkAttribute), "skip"),
+				Il8n = GetOptionAttributeValue (nameof (Il8nAttribute), string.Empty),
+				IncludeBlacklistStep = GetOptionAttributeValue (nameof (IncludeBlacklistStepAttribute), false)
+			};
 		}
 
 		public virtual IEnumerable<string> GetReferencedAssemblies (NPath workingDirectory)
