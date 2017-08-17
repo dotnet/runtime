@@ -50,7 +50,7 @@ private:
     DWORD m_countOptimizationThreadsRunning;
     DWORD m_callCountOptimizationThreshhold;
     DWORD m_optimizationQuantumMs;
-    CLREvent* m_pAsyncWorkDoneEvent;
+    CLREvent m_asyncWorkDoneEvent;
 };
 
 #endif // FEATURE_TIERED_COMPILATION
