@@ -29,12 +29,10 @@ namespace System.IO.Ports.Tests
         /// 3. Verify that the fAbortOnError flag is clear
         /// 
         /// </summary>
-        /// <remarks>
-        /// The tests require access, via reflection, to internal type SerialStream and respective methods GetDcbFlag and
-        /// SetDcbFlag, however, that requires either changes to the public type (incresing its size) or to the test itself.
-        /// Tracking issue at https://github.com/dotnet/corefx/issues/23234.
-        /// </remarks>
-        [ConditionalFact(nameof(HasOneSerialPort), nameof(s_isNotUap))]
+        // This test requires access, via reflection, to internal type SerialStream and respective methods GetDcbFlag and
+        // SetDcbFlag, however, that requires either changes to the public type (increasing its size) or to the test itself.
+        [ActiveIssue("https://github.com/dotnet/corefx/issues/23234", TargetFrameworkMonikers.Uap)]
+        [ConditionalFact(nameof(HasOneSerialPort))]
         public void AbortOnErrorShouldBeClearedOnOpen()
         {
             // Open the port, set the fAbortOnError flag and then close the port
@@ -47,8 +45,6 @@ namespace System.IO.Ports.Tests
                 Assert.False(ReadAbortOnErrorFlag(com), "fAbortOnError should be clear when port is opened");
             }
         }
-
-        private static bool s_isNotUap => !PlatformDetection.IsUap;
 
         private static bool ReadAbortOnErrorFlag(SerialPort com)
         {
