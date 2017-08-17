@@ -1,5 +1,6 @@
 ﻿﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Extensions;
 using Mono.Linker.Tests.TestCases;
@@ -63,6 +64,18 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			foreach (var dep in metadataProvider.AdditionalFilesToSandbox ()) {
 				dep.FileMustExist ().Copy (_directory);
 			}
+
+			foreach (var compileRefInfo in metadataProvider.GetSetupCompileAssembliesBefore ())
+			{
+				var destination = BeforeReferenceSourceDirectoryFor (compileRefInfo.OutputName).EnsureDirectoryExists ();
+				compileRefInfo.SourceFiles.Copy (destination);
+			}
+
+			foreach (var compileRefInfo in metadataProvider.GetSetupCompileAssembliesAfter ())
+			{
+				var destination = AfterReferenceSourceDirectoryFor (compileRefInfo.OutputName).EnsureDirectoryExists ();
+				compileRefInfo.SourceFiles.Copy (destination);
+			}
 		}
 
 		private static NPath GetExpectationsAssemblyPath ()
@@ -74,6 +87,16 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 		{
 			source.Copy (InputDirectory);
 			source.Copy (ExpectationsDirectory);
+		}
+
+		public NPath BeforeReferenceSourceDirectoryFor (string outputName)
+		{
+			return _directory.Combine ($"ref_source_before_{Path.GetFileNameWithoutExtension (outputName)}");
+		}
+
+		public NPath AfterReferenceSourceDirectoryFor (string outputName)
+		{
+			return _directory.Combine ($"ref_source_after_{Path.GetFileNameWithoutExtension (outputName)}");
 		}
 	}
 }
