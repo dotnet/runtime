@@ -3436,7 +3436,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    public static void DCS_BasicPerSerializerRoundTripAndCompare_TypeInheritedFromIList()
+    public static void DCS_BasicPerSerializerRoundTripAndCompare_TypeInheritedFromIListT()
     {
         string assemblyName = typeof(DataContractSerializerTests).Assembly.FullName;
 
@@ -3450,8 +3450,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    [ActiveIssue(22778, TargetFrameworkMonikers.UapAot)]
-    public static void DCS_BasicPerSerializerRoundTripAndCompare_SampleTypes_FailedInuapaot_InheritedFromIList_CanPassInReflectionOnly()
+    public static void DCS_BasicPerSerializerRoundTripAndCompare_InheritedFromIList()
     {
         TestObjectInObjectContainerWithSimpleResolver(new SerializationTestTypes.SampleListExplicitWithoutDC(true), @"<ObjectContainer xmlns=""http://schemas.datacontract.org/2004/07/SerializationTestTypes"" xmlns:i=""http://www.w3.org/2001/XMLSchema-instance""><_data i:type=""a:SerializationTestTypes.SampleListExplicitWithoutDC***"" xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.SampleListExplicitWithoutDC***""><anyType i:type=""b:dateTime"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">0001-01-01T00:00:00</anyType><anyType i:type=""b:duration"" xmlns:b=""http://schemas.microsoft.com/2003/10/Serialization/"">P10675199DT2H48M5.4775807S</anyType><anyType i:type=""b:string"" xmlns:b=""http://www.w3.org/2001/XMLSchema""/><anyType i:type=""b:double"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">1.7976931348623157E+308</anyType><anyType i:type=""b:double"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">-INF</anyType><anyType i:type=""b:guid"" xmlns:b=""http://schemas.microsoft.com/2003/10/Serialization/"">0c9e174e-cdd8-4b68-a70d-aaeb26c7deeb</anyType></_data><_data2 i:type=""a:SerializationTestTypes.SampleListExplicitWithoutDC***"" xmlns:a=""http://schemas.datacontract.org/2004/07/SerializationTestTypes.SampleListExplicitWithoutDC***""><anyType i:type=""b:dateTime"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">0001-01-01T00:00:00</anyType><anyType i:type=""b:duration"" xmlns:b=""http://schemas.microsoft.com/2003/10/Serialization/"">P10675199DT2H48M5.4775807S</anyType><anyType i:type=""b:string"" xmlns:b=""http://www.w3.org/2001/XMLSchema""/><anyType i:type=""b:double"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">1.7976931348623157E+308</anyType><anyType i:type=""b:double"" xmlns:b=""http://www.w3.org/2001/XMLSchema"">-INF</anyType><anyType i:type=""b:guid"" xmlns:b=""http://schemas.microsoft.com/2003/10/Serialization/"">0c9e174e-cdd8-4b68-a70d-aaeb26c7deeb</anyType></_data2></ObjectContainer>");
 

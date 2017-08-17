@@ -9,5 +9,8 @@
         <Method Name="GetDataTableSchema" Dynamic="Required Public"/>
       </Type>
     </Namespace>
+    <Namespace Name="System.Collections">
+      <Type Name="IList" Dynamic="Required All" />    
+    </Namespace>
   </Library>
 </Directives>
