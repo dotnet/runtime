@@ -39,4 +39,25 @@ UnlockedIncrementSize (gsize *val)
 	return ++*val;
 }
 
+MONO_UNLOCKED_ATTRS
+gint64
+UnlockedAdd64 (gint64 *dest, gint64 add)
+{
+	return *dest += add;
+}
+
+MONO_UNLOCKED_ATTRS
+gint64
+UnlockedSubtract64 (gint64 *dest, gint64 sub)
+{
+	return *dest -= sub;
+}
+
+MONO_UNLOCKED_ATTRS
+gint64
+UnlockedRead64 (gint64 *src)
+{
+	return *src;
+}
+
 #endif /* _UNLOCKED_H_ */

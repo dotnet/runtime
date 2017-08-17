@@ -20,7 +20,7 @@
 
 #include "mempool.h"
 #include "mempool-internals.h"
-#include "utils/mono-compiler.h"
+#include "utils/unlocked.h"
 
 /*
  * MonoMemPool is for fast allocation of memory. We free
@@ -78,7 +78,7 @@ struct _MonoMemPool {
 	} d;
 };
 
-static long total_bytes_allocated = 0;
+static gint64 total_bytes_allocated = 0;
 
 /**
  * mono_mempool_new:
@@ -93,19 +93,9 @@ mono_mempool_new (void)
 
 /**
  * mono_mempool_new_size:
- *
- *   clang's ThreadSanitizer detects races of total_bytes_allocated and pool->d.allocated throughout the functions
- *     * mono_mempool_alloc
- *     * mono_mempool_new_size
- *     * mono_mempool_destroy
- *   while these races could lead to wrong values, total_bytes_allocated is just used for debugging / reporting and since
- *   the mempool.c functions are called quite often, a discussion led the the conclusion of ignoring these races:
- *   https://bugzilla.xamarin.com/show_bug.cgi?id=57936
- *
  * \param initial_size the amount of memory to initially reserve for the memory pool.
  * \returns a new memory pool with a specific initial memory reservation.
  */
-MONO_NO_SANITIZE_THREAD
 MonoMemPool *
 mono_mempool_new_size (int initial_size)
 {
@@ -125,32 +115,22 @@ mono_mempool_new_size (int initial_size)
 	pool->pos = (guint8*)pool + SIZEOF_MEM_POOL; // Start after header
 	pool->end = (guint8*)pool + initial_size;    // End at end of allocated space 
 	pool->d.allocated = pool->size = initial_size;
-	total_bytes_allocated += initial_size;
+	UnlockedAdd64 (&total_bytes_allocated, initial_size);
 	return pool;
 }
 
 /**
  * mono_mempool_destroy:
- *
- *   clang's ThreadSanitizer detects races of total_bytes_allocated and pool->d.allocated throughout the functions
- *     * mono_mempool_alloc
- *     * mono_mempool_new_size
- *     * mono_mempool_destroy
- *   while these races could lead to wrong values, total_bytes_allocated is just used for debugging / reporting and since
- *   the mempool.c functions are called quite often, a discussion led the the conclusion of ignoring these races:
- *   https://bugzilla.xamarin.com/show_bug.cgi?id=57936
- *
  * \param pool the memory pool to destroy
  *
  * Free all memory associated with this pool.
  */
-MONO_NO_SANITIZE_THREAD
 void
 mono_mempool_destroy (MonoMemPool *pool)
 {
 	MonoMemPool *p, *n;
 
-	total_bytes_allocated -= pool->d.allocated;
+	UnlockedSubtract64 (&total_bytes_allocated, pool->d.allocated);
 
 	p = pool;
 	while (p) {
@@ -272,15 +252,6 @@ get_next_size (MonoMemPool *pool, int size)
 
 /**
  * mono_mempool_alloc:
- *
- *   clang's ThreadSanitizer detects races of total_bytes_allocated and pool->d.allocated throughout the functions
- *     * mono_mempool_alloc
- *     * mono_mempool_new_size
- *     * mono_mempool_destroy
- *   while these races could lead to wrong values, total_bytes_allocated is just used for debugging / reporting and since
- *   the mempool.c functions are called quite often, a discussion led the the conclusion of ignoring these races:
- *   https://bugzilla.xamarin.com/show_bug.cgi?id=57936
- *
  * \param pool the memory pool to use
  * \param size size of the memory block
  *
@@ -288,7 +259,6 @@ get_next_size (MonoMemPool *pool, int size)
  *
  * \returns the address of a newly allocated memory block.
  */
-MONO_NO_SANITIZE_THREAD
 gpointer
 mono_mempool_alloc (MonoMemPool *pool, guint size)
 {
@@ -318,7 +288,7 @@ mono_mempool_alloc (MonoMemPool *pool, guint size)
 			np->size = new_size;
 			pool->next = np;
 			pool->d.allocated += new_size;
-			total_bytes_allocated += new_size;
+			UnlockedAdd64 (&total_bytes_allocated, new_size);
 
 			rval = (guint8*)np + SIZEOF_MEM_POOL;
 		} else {
@@ -332,7 +302,7 @@ mono_mempool_alloc (MonoMemPool *pool, guint size)
 			pool->pos = (guint8*)np + SIZEOF_MEM_POOL;
 			pool->end = (guint8*)np + new_size;
 			pool->d.allocated += new_size;
-			total_bytes_allocated += new_size;
+			UnlockedAdd64 (&total_bytes_allocated, new_size);
 
 			rval = pool->pos;
 			pool->pos += size;
@@ -462,5 +432,5 @@ mono_mempool_get_allocated (MonoMemPool *pool)
 long
 mono_mempool_get_bytes_allocated (void)
 {
-	return total_bytes_allocated;
+	return UnlockedRead64 (&total_bytes_allocated);
 }
