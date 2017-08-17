@@ -33,7 +33,7 @@
     <Copy SourceFiles="$(ToolsDir)\csc.runtimeconfig.json" DestinationFiles="$(OutputPath)Microsoft.XmlSerializer.Generator.runtimeconfig.json" />
     <Message Text="Running Serialization Tool" Importance="normal" />
     <Exec Command="$(ToolsDir)\dotnetcli\dotnet $(OutputPath)Microsoft.XmlSerializer.Generator.dll $(OutputPath)Microsoft.XmlSerializer.Generator.Tests.dll /force /casesensitive"  />
-    <Csc OutputAssembly="$(OutputPath)$(SerializerName).dll;" References="@(ReferencePath);@(IntermediateAssembly)" EmitDebugInformation="$(DebugSymbols)"  Sources="$(OutputPath)$(SerializerName).cs" TargetType="Library" ToolExe="$(CscToolExe)" ToolPath="$(CscToolPath)" WarningsAsErrors="false" DisabledWarnings="true"/>
+    <Csc OutputAssembly="$(OutputPath)$(SerializerName).dll;" References="@(ReferencePath);@(IntermediateAssembly)" EmitDebugInformation="$(DebugSymbols)"  Sources="$(OutputPath)$(SerializerName).cs" TargetType="Library" ToolExe="$(CscToolExe)" ToolPath="$(CscToolPath)" DisabledWarnings="219"/>
   </Target>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
