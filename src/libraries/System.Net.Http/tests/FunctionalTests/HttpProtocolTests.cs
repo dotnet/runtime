@@ -87,12 +87,16 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(200, "      ")]
         [InlineData(200, "      Something")]
         [InlineData(200, "\t")]
+        [InlineData(200, "O K")]
+        [InlineData(200, "O\tK")]
+        [InlineData(200, "O    \t\t  \t\t\t\t  \t K")]
         [InlineData(201, "Created")]
         [InlineData(202, "Accepted")]
         [InlineData(299, "This is not a real status code")]
         [InlineData(345, "redirect to nowhere")]
         [InlineData(400, "Bad Request")]
         [InlineData(500, "Internal Server Error")]
+        [InlineData(555, "we just don't like you")]
         [InlineData(600, "still valid")]
         [InlineData(999, "this\ttoo\t")]
         public async Task ValidStatusLine(int statusCode, string reason)
@@ -109,15 +113,22 @@ namespace System.Net.Http.Functional.Tests
 
         [Theory]
         [InlineData("NOTHTTP/1.1")]
-        [InlineData("HTTP/1.1\r\n")]
-        [InlineData("HTTP/1.1 \r\n")]
+        [InlineData("NOTHTTP/1.1 200 OK")]
+        [InlineData("ABCD/1.1 200 OK")]
+        [InlineData("HTTP/1.1")]
+        [InlineData("HTTP/1.1 ")]
         [InlineData("HTTP/1.1  ")]
-        [InlineData("HTTP/1.1 200\r\n")]    // need trailing space
+        [InlineData("HTTP/1.1\t")]
+        [InlineData("HTTP/1.1\t\t")]
         [InlineData("HTTP/1.1\t200 OK")]
         [InlineData("HTTP/1.1 200\tOK")]
+        [InlineData("HTTP/1.1 200")]    // need trailing space
+        [InlineData("HTTP/1.1 200\tOK")]
+        [InlineData("HTTP/1.1 200 O\rK")]
+        [InlineData("HTTP/1.1 200 O\nK")]
         [InlineData("HTTP/1.1 200OK")]
         [InlineData("HTTP/1.1 2345")]
-        [InlineData("HTTP/1.1 23\r\n")]
+        [InlineData("HTTP/1.1 23")]
         [InlineData("HTTP/1.1 abc")]
         [InlineData("HTTP/1.1 2bc")]
         [InlineData("HTTP/1.1 20c")]
@@ -127,10 +138,16 @@ namespace System.Net.Http.Functional.Tests
         [InlineData("HTTP/0.1 200 OK")]
         [InlineData("HTTP/1.12 200 OK")]
         [InlineData("HTTP/12.1 200 OK")]
+        [InlineData("HTTP/1.A 200 OK")]
+        [InlineData("HTTP/A.1 200 OK")]
+        [InlineData("HTTP/X.Y.Z 200 OK")]
+        [InlineData("HTTP\\1.1 200 OK")]
+        [InlineData("HTTP 1.1 200 OK")]
         public void InvalidStatusLine(string responseString)
         {
             using (HttpClient client = new HttpClient())
             {
+                responseString += "\r\nContent-Length: 0\r\n\r\n";
                 Uri serverUri = CreateServer(responseString);
                 Assert.ThrowsAsync<HttpRequestException>(() => client.GetAsync(serverUri));
             }
