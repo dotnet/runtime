@@ -9,7 +9,7 @@ using System.Security.Permissions;
 namespace System.Drawing
 {
     [Serializable]
-    partial class Icon : ISerializable
+    partial class Icon
     {
         private Icon(SerializationInfo info, StreamingContext context)
         {

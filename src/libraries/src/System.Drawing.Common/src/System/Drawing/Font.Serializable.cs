@@ -10,7 +10,7 @@ using System.Security.Permissions;
 namespace System.Drawing
 {
     [Serializable]
-    partial class Font : ISerializable
+    partial class Font
     {
         private Font(SerializationInfo info, StreamingContext context)
         {
