@@ -38,8 +38,9 @@ mcs/class/System.Data @egorbo
 mcs/errors @marek-safar
 mcs/mcs @marek-safar
 mcs/tests @marek-safar
-mono/eglib @kumpera
-mono/metadata @vargaz
+mono/eglib @kumpera @vargaz @luhenry
+mono/metadata/*verify* @kumpera
+mono/metadata @vargaz @kumpera
 mono/metadata/*profiler* @alexrp
 mono/metadata/monitor* @brzvlad
 mono/metadata/sgen* @brzvlad
