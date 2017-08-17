@@ -8,9 +8,9 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			return new TestCaseSandbox (testCase);
 		}
 
-		public virtual TestCaseCompiler CreateCompiler ()
+		public virtual TestCaseCompiler CreateCompiler (TestCaseSandbox sandbox, TestCaseMetadaProvider metadataProvider)
 		{
-			return new TestCaseCompiler ();
+			return new TestCaseCompiler (sandbox, metadataProvider);
 		}
 
 		public virtual LinkerDriver CreateLinker ()
