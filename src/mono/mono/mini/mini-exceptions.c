@@ -251,10 +251,13 @@ mono_exceptions_init (void)
 
 	cbs.mono_walk_stack_with_state = mono_walk_stack_with_state;
 
-	if (mono_llvm_only)
+	if (mono_llvm_only) {
 		cbs.mono_raise_exception = mono_llvm_raise_exception;
-	else
+		cbs.mono_reraise_exception = mono_llvm_reraise_exception;
+	} else {
 		cbs.mono_raise_exception = (void (*)(MonoException *))mono_get_throw_exception ();
+		cbs.mono_reraise_exception = (void (*)(MonoException *))mono_get_rethrow_exception ();
+	}
 	cbs.mono_raise_exception_with_ctx = mono_raise_exception_with_ctx;
 	cbs.mono_exception_walk_trace = mono_exception_walk_trace;
 	cbs.mono_install_handler_block_guard = mono_install_handler_block_guard;
@@ -3237,6 +3240,12 @@ void
 mono_llvm_raise_exception (MonoException *e)
 {
 	mono_llvm_throw_exception ((MonoObject*)e);
+}
+
+void
+mono_llvm_reraise_exception (MonoException *e)
+{
+	mono_llvm_rethrow_exception ((MonoObject*)e);
 }
 
 void

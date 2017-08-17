@@ -7322,6 +7322,25 @@ mono_raise_exception (MonoException *ex)
 	eh_callbacks.mono_raise_exception (ex);
 }
 
+/**
+ * mono_raise_exception:
+ * \param ex exception object
+ * Signal the runtime that the exception \p ex has been raised in unmanaged code.
+ */
+void
+mono_reraise_exception (MonoException *ex)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	/*
+	 * NOTE: Do NOT annotate this function with G_GNUC_NORETURN, since
+	 * that will cause gcc to omit the function epilog, causing problems when
+	 * the JIT tries to walk the stack, since the return address on the stack
+	 * will point into the next function in the executable, not this one.
+	 */
+	eh_callbacks.mono_reraise_exception (ex);
+}
+
 void
 mono_raise_exception_with_context (MonoException *ex, MonoContext *ctx) 
 {

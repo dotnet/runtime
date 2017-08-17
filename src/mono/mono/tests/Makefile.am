@@ -512,7 +512,9 @@ TESTS_CS_SRC=		\
 	bug-46661.cs	\
 	w32message.cs \
 	runtime-invoke.gen.cs \
-	imt_big_iface_test.cs
+	imt_big_iface_test.cs \
+	bug-58782-plain-throw.cs \
+	bug-58782-capture-and-throw.cs
 
 if AMD64
 TESTS_CS_SRC += async-exc-compilation.cs finally_guard.cs finally_block_ending_in_dead_bb.cs
@@ -648,9 +650,15 @@ TESTS_GSHARED_SRC = \
 	bug-1147.cs	\
 	generic-type-builder.2.cs
 
+PLATFORM_DISABLED_TESTS=
+
+if HOST_WIN32
+PLATFORM_DISABLED_TESTS += bug-58782-plain-throw.exe bug-58782-capture-and-throw.exe
+endif
+
 if AMD64
 # #651684
-PLATFORM_DISABLED_TESTS = finally_guard.exe
+PLATFORM_DISABLED_TESTS += finally_guard.exe
 
 if HOST_WIN32
 PLATFORM_DISABLED_TESTS += w32message.exe
@@ -661,7 +669,7 @@ endif
 if X86
 
 if HOST_WIN32
-PLATFORM_DISABLED_TESTS=async-exc-compilation.exe finally_guard.exe finally_block_ending_in_dead_bb.exe \
+PLATFORM_DISABLED_TESTS += async-exc-compilation.exe finally_guard.exe finally_block_ending_in_dead_bb.exe \
 	bug-18026.exe monitor.exe threadpool-exceptions5.exe process-unref-race.exe w32message.exe \
 	unhandled-exception-1.exe unhandled-exception-2.exe unhandled-exception-3.exe unhandled-exception-4.exe \
 	unhandled-exception-5.exe unhandled-exception-6.exe unhandled-exception-7.exe unhandled-exception-8.exe
@@ -671,12 +679,12 @@ endif
 
 if POWERPC
 # bug #71274
-PLATFORM_DISABLED_TESTS=finalizer-abort.exe finalizer-exception.exe finalizer-exit.exe
+PLATFORM_DISABLED_TESTS += finalizer-abort.exe finalizer-exception.exe finalizer-exit.exe
 endif
 
 if POWERPC64
 # FIXME: These tests hang/fail for unknown reasons
-PLATFORM_DISABLED_TESTS=monitor.exe threadpool-exceptions5.exe appdomain-thread-abort.exe appdomain-unload.exe \
+PLATFORM_DISABLED_TESTS += monitor.exe threadpool-exceptions5.exe appdomain-thread-abort.exe appdomain-unload.exe \
 	pinvoke2.exe pinvoke3.exe pinvoke11.exe threadpool-exceptions7.exe winx64structs.exe bug-10127.exe pinvoke_ppcc.exe \
 	pinvoke_ppcs.exe pinvoke_ppci.exe pinvoke_ppcf.exe pinvoke_ppcd.exe abort-cctor.exe load-exceptions.exe \
 	sgen-domain-unload-2.exe sgen-weakref-stress.exe sgen-cementing-stress.exe sgen-new-threads-dont-join-stw.exe \
@@ -684,7 +692,7 @@ PLATFORM_DISABLED_TESTS=monitor.exe threadpool-exceptions5.exe appdomain-thread-
 endif
 
 if ARM
-PLATFORM_DISABLED_TESTS=filter-stack.exe
+PLATFORM_DISABLED_TESTS += filter-stack.exe
 INTERP_DISABLED_TESTS_PLATFORM=finalizer-exception.exe main-returns-abort-resetabort.exe block_guard_restore_aligment_on_exit.exe \
 	delegate-exit.exe delegate-exit.exe delegate-delegate-exit.exe delegate-async-exit.exe delegate3.exe delegate1.exe
 endif
@@ -695,11 +703,11 @@ endif
 
 if MIPS
 # monitor.exe is racy
-PLATFORM_DISABLED_TESTS=filter-stack.exe monitor.exe
+PLATFORM_DISABLED_TESTS += filter-stack.exe monitor.exe
 endif
 
 if S390X
-PLATFORM_DISABLED_TESTS=dynamic-method-resurrection.exe
+PLATFORM_DISABLED_TESTS += dynamic-method-resurrection.exe
 #PLATFORM_DISABLED_TESTS=dynamic-method-resurrection.exe exception17.exe
 
 PLATFORM_DISABLED_TESTS += \
@@ -758,7 +766,9 @@ PROFILE_DISABLED_TESTS += \
 	marshal8.exe \
 	pinvoke-2.2.exe \
 	pinvoke3.exe \
-	thunks.exe
+	thunks.exe \
+	bug-58782-plain-throw.exe \
+	bug-58782-capture-and-throw.exe
 
 # Tests which load assemblies which are not
 # in the testing_aot_full profile
@@ -959,6 +969,8 @@ INTERP_DISABLED_TESTS = \
 	bug-46661.exe \
 	bug-47295.exe \
 	bug-48015.exe \
+	bug-58782-plain-throw.exe \
+	bug-58782-capture-and-throw.exe \
 	bug-544446.exe \
 	bug-685908.exe \
 	bug-80307.exe \
@@ -1693,7 +1705,8 @@ test-unhandled-exception: unhandled-exception-test-runner.2.exe
 
 safehandle.2.exe winx64structs.exe thunks.exe pinvoke3.exe pinvoke2.exe pinvoke-2.2.exe pinvoke17.exe pinvoke13.exe \
 	pinvoke11.exe pinvoke_ppcs.exe pinvoke_ppci.exe pinvoke_ppcf.exe pinvoke_ppcd.exe pinvoke_ppcc.exe pinvoke.exe \
-	marshalbool.exe marshal9.exe marshal5.exe marshal.exe handleref.exe cominterop.exe bug-Xamarin-5278.exe: libtest.la
+	marshalbool.exe marshal9.exe marshal5.exe marshal.exe handleref.exe cominterop.exe bug-Xamarin-5278.exe \
+	bug-58782-plain-throw.exe bug-58782-capture-and-throw.exe: libtest.la
 
 event-get.2.exe$(PLATFORM_AOT_SUFFIX): event-il.exe$(PLATFORM_AOT_SUFFIX)
 event-get.2.exe: event-il.exe

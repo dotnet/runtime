@@ -2926,6 +2926,7 @@ void     mono_llvm_clear_exception              (void);
 MonoObject *mono_llvm_load_exception            (void);
 void     mono_llvm_reset_exception              (void);
 void     mono_llvm_raise_exception              (MonoException *e);
+void     mono_llvm_reraise_exception            (MonoException *e);
 gint32 mono_llvm_match_exception                (MonoJitInfo *jinfo, guint32 region_start, guint32 region_end, gpointer rgctx, MonoObject *this_obj);
 
 gboolean

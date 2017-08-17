@@ -7482,3 +7482,23 @@ mono_test_marshal_pointer_array (int *arr[])
 	}
 	return 0;
 }
+
+#ifndef WIN32
+
+typedef void (*NativeToManagedExceptionRethrowFunc) ();
+
+void *mono_test_native_to_managed_exception_rethrow_thread (void *arg)
+{
+	NativeToManagedExceptionRethrowFunc func = (NativeToManagedExceptionRethrowFunc) arg;
+	func ();
+	return NULL;
+}
+
+LIBTEST_API void STDCALL
+mono_test_native_to_managed_exception_rethrow (NativeToManagedExceptionRethrowFunc func)
+{
+	pthread_t t;
+	pthread_create (&t, NULL, mono_test_native_to_managed_exception_rethrow_thread, func);
+	pthread_join (t, NULL);
+}
+#endif
