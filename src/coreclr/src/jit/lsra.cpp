@@ -5618,8 +5618,7 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
 
         // The register is considered unassigned if it has no assignedInterval, OR
         // if its next reference is beyond the range of this interval.
-        if (physRegRecord->assignedInterval == nullptr ||
-            physRegRecord->assignedInterval->getNextRefLocation() > lastLocation)
+        if (!isAssigned(physRegRecord, lastLocation ARM_ARG(currentInterval->registerType)))
         {
             score |= UNASSIGNED;
         }
@@ -5680,16 +5679,10 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
 
     if (availablePhysRegInterval != nullptr)
     {
-        if (intervalToUnassign != nullptr)
+        intervalToUnassign = availablePhysRegInterval->assignedInterval;
+        if (isAssigned(availablePhysRegInterval ARM_ARG(currentInterval->registerType)))
         {
-            RegRecord* physRegToUnassign = availablePhysRegInterval;
-#ifdef _TARGET_ARM_
-            // We should unassign a double register if availablePhysRegInterval is part of the double register
-            if (availablePhysRegInterval->assignedInterval->registerType == TYP_DOUBLE &&
-                !genIsValidDoubleReg(availablePhysRegInterval->regNum))
-                physRegToUnassign = findAnotherHalfRegRec(availablePhysRegInterval);
-#endif
-            unassignPhysReg(physRegToUnassign, intervalToUnassign->recentRefPosition);
+            unassignPhysReg(availablePhysRegInterval ARM_ARG(currentInterval->registerType));
             if (bestScore & VALUE_AVAILABLE)
             {
                 assert(intervalToUnassign->isConstant);
@@ -5699,7 +5692,7 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
             // the next ref, remember it.
             else if ((bestScore & UNASSIGNED) != 0 && intervalToUnassign != nullptr)
             {
-                updatePreviousInterval(physRegToUnassign, intervalToUnassign, intervalToUnassign->registerType);
+                updatePreviousInterval(availablePhysRegInterval, intervalToUnassign, intervalToUnassign->registerType);
             }
         }
         else
@@ -5883,6 +5876,8 @@ bool LinearScan::checkActiveIntervals(RegRecord* physRegRecord, LsraLocation ref
 #ifdef _TARGET_ARM_
 void LinearScan::unassignDoublePhysReg(RegRecord* doubleRegRecord)
 {
+    assert(genIsValidDoubleReg(doubleRegRecord->regNum));
+
     RegRecord* doubleRegRecordLo = doubleRegRecord;
     RegRecord* doubleRegRecordHi = findAnotherHalfRegRec(doubleRegRecordLo);
     // For a double register, we has following four cases.
@@ -5906,8 +5901,11 @@ void LinearScan::unassignDoublePhysReg(RegRecord* doubleRegRecord)
 
             if (doubleRegRecordHi != nullptr)
             {
-                assert(doubleRegRecordHi->assignedInterval->registerType == TYP_FLOAT);
-                unassignPhysReg(doubleRegRecordHi, doubleRegRecordHi->assignedInterval->recentRefPosition);
+                if (doubleRegRecordHi->assignedInterval != nullptr)
+                {
+                    assert(doubleRegRecordHi->assignedInterval->registerType == TYP_FLOAT);
+                    unassignPhysReg(doubleRegRecordHi, doubleRegRecordHi->assignedInterval->recentRefPosition);
+                }
             }
         }
     }
@@ -6390,6 +6388,73 @@ regNumber LinearScan::assignCopyReg(RefPosition* refPosition)
     return allocatedReg;
 }
 
+//------------------------------------------------------------------------
+// isAssigned: This is the function to check if the given RegRecord has an assignedInterval
+//             regardless of lastLocation.
+//             So it would be call isAssigned() with Maxlocation value.
+//
+// Arguments:
+//    regRec       - The RegRecord to check that it is assigned.
+//    newRegType   - There are elements to judge according to the upcoming register type.
+//
+// Return Value:
+//    Returns true if the given RegRecord has an assignedInterval.
+//
+// Notes:
+//    There is the case to check if the RegRecord has an assignedInterval regardless of Lastlocation.
+//
+bool LinearScan::isAssigned(RegRecord* regRec ARM_ARG(RegisterType newRegType))
+{
+    return isAssigned(regRec, MaxLocation ARM_ARG(newRegType));
+}
+
+//------------------------------------------------------------------------
+// isAssigned: Check whether the given RegRecord has an assignedInterval
+//             that has a reference prior to the given location.
+//
+// Arguments:
+//    regRec       - The RegRecord of interest
+//    lastLocation - The LsraLocation up to which we want to check
+//    newRegType   - The `RegisterType` of interval we want to check
+//                   (this is for the purposes of checking the other half of a TYP_DOUBLE RegRecord)
+//
+// Return value:
+//    Returns true if the given RegRecord (and its other half, if TYP_DOUBLE) has an assignedInterval
+//    that is referenced prior to the given location
+//
+// Notes:
+//    The register is not considered to be assigned if it has no assignedInterval, or that Interval's
+//    next reference is beyond lastLocation
+//
+bool LinearScan::isAssigned(RegRecord* regRec, LsraLocation lastLocation ARM_ARG(RegisterType newRegType))
+{
+    Interval* assignedInterval = regRec->assignedInterval;
+
+    if ((assignedInterval == nullptr) || assignedInterval->getNextRefLocation() > lastLocation)
+    {
+#ifdef _TARGET_ARM_
+        if (newRegType == TYP_DOUBLE)
+        {
+            RegRecord* anotherRegRec = findAnotherHalfRegRec(regRec);
+
+            if ((anotherRegRec->assignedInterval == nullptr) ||
+                (anotherRegRec->assignedInterval->getNextRefLocation() > lastLocation))
+            {
+                // In case the newRegType is a double register,
+                // the score would be set UNASSIGNED if another register is also not set.
+                return false;
+            }
+        }
+        else
+#endif
+        {
+            return false;
+        }
+    }
+
+    return true;
+}
+
 // Check if the interval is already assigned and if it is then unassign the physical record
 // then set the assignedInterval to 'interval'
 //
@@ -6616,6 +6681,58 @@ void LinearScan::checkAndClearInterval(RegRecord* regRec, RefPosition* spillRefP
     }
 
     updateAssignedInterval(regRec, nullptr, assignedInterval->registerType);
+}
+
+//------------------------------------------------------------------------
+// unassignPhysReg: Unassign the given physical register record, and spill the
+//                  assignedInterval at the given spillRefPosition, if any.
+//
+// Arguments:
+//    regRec           - The RegRecord to be unasssigned
+//    newRegType       - The RegisterType of interval that would be assigned
+//
+// Return Value:
+//    None.
+//
+// Notes:
+//    On ARM architecture, Intervals have to be unassigned considering
+//    with the register type of interval that would be assigned.
+//
+void LinearScan::unassignPhysReg(RegRecord* regRec ARM_ARG(RegisterType newRegType))
+{
+    RegRecord* regRecToUnassign = regRec;
+#ifdef _TARGET_ARM_
+    RegRecord* anotherRegRec = nullptr;
+
+    if ((regRecToUnassign->assignedInterval != nullptr) &&
+        (regRecToUnassign->assignedInterval->registerType == TYP_DOUBLE))
+    {
+        // If the register type of interval(being unassigned or new) is TYP_DOUBLE,
+        // It should have to be valid double register (even register)
+        if (!genIsValidDoubleReg(regRecToUnassign->regNum))
+        {
+            regRecToUnassign = findAnotherHalfRegRec(regRec);
+        }
+    }
+    else
+    {
+        if (newRegType == TYP_DOUBLE)
+        {
+            anotherRegRec = findAnotherHalfRegRec(regRecToUnassign);
+        }
+    }
+#endif
+
+    if (regRecToUnassign->assignedInterval != nullptr)
+    {
+        unassignPhysReg(regRecToUnassign, regRecToUnassign->assignedInterval->recentRefPosition);
+    }
+#ifdef _TARGET_ARM_
+    if ((anotherRegRec != nullptr) && (anotherRegRec->assignedInterval != nullptr))
+    {
+        unassignPhysReg(anotherRegRec, anotherRegRec->assignedInterval->recentRefPosition);
+    }
+#endif
 }
 
 //------------------------------------------------------------------------
