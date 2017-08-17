@@ -594,6 +594,7 @@ namespace Microsoft.ServiceModel.Syndication.Tests
 
             rssformatter.StringParser = (val, name, ns) =>
             {
+                Assert.False(string.IsNullOrEmpty(name));
                 switch (name)
                 {
                     case "ttl":
@@ -603,6 +604,8 @@ namespace Microsoft.ServiceModel.Syndication.Tests
                     case "image":
                     case "url":
                         return "http://customparsedlink.com";
+                    case "title":
+                        return "new title";
                     default:
                         return "Custom Text";
                 }
@@ -617,7 +620,7 @@ namespace Microsoft.ServiceModel.Syndication.Tests
             SyndicationFeed res = task.Result;
 
             // *** ASSERT *** \\
-            Assert.True(res.Title.Text == "Custom Text");
+            Assert.True(res.Title.Text == "new title");
             foreach(int hour in res.SkipHours)
             {
                 Assert.True(hour == 5);
@@ -632,6 +635,7 @@ namespace Microsoft.ServiceModel.Syndication.Tests
 
             atomformatter.stringParser = (val, name, ns) =>
             {
+                Assert.False(string.IsNullOrEmpty(name));
                 switch (name)
                 {
                     case Atom10Constants.IdTag:
