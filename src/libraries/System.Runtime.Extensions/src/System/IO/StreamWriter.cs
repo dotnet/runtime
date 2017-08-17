@@ -246,10 +246,10 @@ namespace System.IO
             if (!_haveWrittenPreamble)
             {
                 _haveWrittenPreamble = true;
-                byte[] preamble = _encoding.GetPreamble();
+                ReadOnlySpan<byte> preamble = _encoding.Preamble;
                 if (preamble.Length > 0)
                 {
-                    _stream.Write(preamble, 0, preamble.Length);
+                    _stream.Write(preamble);
                 }
             }
 
