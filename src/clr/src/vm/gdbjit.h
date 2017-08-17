@@ -331,7 +331,7 @@ class Elf_Builder;
 class NotifyGdb
 {
 public:
-    static void MethodCompiled(MethodDesc* methodDescPtr);
+    static void MethodPrepared(MethodDesc* methodDescPtr);
     static void MethodPitched(MethodDesc* methodDescPtr);
     template <typename PARENT_TRAITS>
     class DeleteValuesOnDestructSHashTraits : public PARENT_TRAITS
@@ -405,7 +405,7 @@ private:
         }
     };
 
-    static void OnMethodCompiled(MethodDesc* methodDescPtr);
+    static void OnMethodPrepared(MethodDesc* methodDescPtr);
 
 #ifdef FEATURE_GDBJIT_FRAME
     static bool EmitFrameInfo(Elf_Builder &, PCODE pCode, TADDR codeSzie);
