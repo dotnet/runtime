@@ -50,6 +50,10 @@
 #include "callcounter.h"
 #endif
 
+#if defined(FEATURE_GDBJIT)
+#include "gdbjit.h"
+#endif // FEATURE_GDBJIT
+
 #ifndef DACCESS_COMPILE
 
 #if defined(FEATURE_JIT_PITCHING)
@@ -222,17 +226,13 @@ void DACNotifyCompilationFinished(MethodDesc *methodDesc)
 
         _ASSERTE(modulePtr);
 
-#ifndef FEATURE_GDBJIT
         // Are we listed?
         USHORT jnt = jn.Requested((TADDR) modulePtr, t);
         if (jnt & CLRDATA_METHNOTIFY_GENERATED)
         {
             // If so, throw an exception!
-#endif
             DACNotify::DoJITNotification(methodDesc);
-#ifndef FEATURE_GDBJIT
         }
-#endif
     }
 }
 
@@ -245,7 +245,13 @@ PCODE MethodDesc::PrepareInitialCode()
 {
     STANDARD_VM_CONTRACT;
     PrepareCodeConfig config(NativeCodeVersion(this), TRUE, TRUE);
-    return PrepareCode(&config);
+    PCODE pCode = PrepareCode(&config);
+
+#if defined(FEATURE_GDBJIT) && defined(FEATURE_PAL) && !defined(CROSSGEN_COMPILE)
+    NotifyGdb::MethodPrepared(this);
+#endif
+
+    return pCode;
 }
 
 PCODE MethodDesc::PrepareCode(NativeCodeVersion codeVersion)
