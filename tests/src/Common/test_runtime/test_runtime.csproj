@@ -5,8 +5,8 @@
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <CLRTestKind>BuildOnly</CLRTestKind>
-    <NugetTargetMoniker>.NETCoreApp,Version=v2.0</NugetTargetMoniker>
-    <NugetTargetMonikerShort>netcoreapp2.0</NugetTargetMonikerShort>
+    <NugetTargetMoniker>.NETCoreApp,Version=v2.1</NugetTargetMoniker>
+    <NugetTargetMonikerShort>netcoreapp2.1</NugetTargetMonikerShort>
     <IsTestProject>false</IsTestProject>
   </PropertyGroup>
   <ItemGroup>
@@ -27,7 +27,7 @@
     </PackageReference>
   </ItemGroup>
   <PropertyGroup>
-    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <TargetFramework>netcoreapp2.1</TargetFramework>
     <TargetFrameworkIdentifier>.NETCoreApp</TargetFrameworkIdentifier>
     <PackageTargetFallback>$(PackageTargetFallback);dnxcore50;portable-net45+win8</PackageTargetFallback>
     <RuntimeIdentifiers>win-arm;win-x64;win-x86;win7-x86;win7-x64;win-arm64;win-arm;win7-arm64;win7-arm;ubuntu.14.04-x64;ubuntu.16.04-x64;ubuntu.16.10-x64;osx.10.12-x64;osx-x64;centos.7-x64;rhel.7-x64;debian.8-x64;fedora.24-x64;linux-x64</RuntimeIdentifiers>
