@@ -63,7 +63,9 @@ mono/utils/mono-mem* @alexrp
 mono/utils/mono-threads* @luhenry @kumpera
 msvc/*profiler* @alexrp
 msvc/scripts @akoeplinger
+packaging/msbuild @radical
 packaging/Windows @akoeplinger
+packaging/ @alexischr
 samples/profiler @alexrp
 samples/size @alexrp
 scripts @akoeplinger
