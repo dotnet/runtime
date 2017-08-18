@@ -9,18 +9,19 @@ internal partial class Interop
     internal partial class Kernel32
     {
         [DllImport(Libraries.Kernel32, CharSet = CharSet.Unicode, EntryPoint = "GetComputerNameW")]
-        private extern static int GetComputerName(char[] lpBuffer, ref uint nSize);
+        private static extern unsafe int GetComputerName(char* lpBuffer, ref uint nSize);
 
-        private const int MacMachineNameLength = 256;
+        // maximum length of the NETBIOS name (not including NULL)
+        private const int MAX_COMPUTERNAME_LENGTH = 15;
 
-        internal static string GetComputerName()
+        internal static unsafe string GetComputerName()
         {
-            char[] buffer = new char[MacMachineNameLength];
-            uint length = (uint)buffer.Length;
+            uint length = MAX_COMPUTERNAME_LENGTH + 1;
+            char* buffer = stackalloc char[(int)length];
 
-            Interop.Kernel32.GetComputerName(buffer, ref length);
-            return new string(buffer, 0, (int)length);
+            return GetComputerName(buffer, ref length) != 0 ?
+                new string(buffer, 0, checked((int)length)) :
+                null;
         }
-
     }
 }
