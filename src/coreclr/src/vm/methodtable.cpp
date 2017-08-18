@@ -7137,10 +7137,6 @@ BOOL MethodTable::FindDefaultInterfaceImplementation(
                         if (pCurMT->CanCastToInterface(pCandidateMT))
                         {
                             // pCurMT is a more specific choice than IFoo/IBar both overrides IBlah :
-                            //         /--> IFoo ---\ 
-                            // pCurMT -              -->IBlah
-                            //         \--> IBar ---/
-                            // Only update first entry IFoo and null out IBar
                             if (!seenMoreSpecific)
                             {
                                 seenMoreSpecific = true;
