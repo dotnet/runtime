@@ -25,7 +25,11 @@ public:
             , breakOnAssert(false)
             , applyDiff(false)
             , parallel(false)
-            , useCoreDisTools(false)
+#if !defined(USE_MSVCDIS) && defined(USE_COREDISTOOLS)
+            , useCoreDisTools(true)     // if CoreDisTools is available (but MSVCDIS is not), use it.
+#else
+            , useCoreDisTools(false)    // Otherwise, use MSVCDIS if that is available (else no diffs are available).
+#endif
             , skipCleanup(false)
             , workerCount(-1)
             , indexCount(-1)

@@ -29,37 +29,88 @@ static void LogFromCoreDisToolsHelper(LogLevel level, const char* msg, va_list a
 }
 
 #define LOGGER(L)                                                                                                      \
-    \
-static void Log##L(const char* msg, ...)                                                                               \
-    \
-{                                                                                                               \
-        va_list argList;                                                                                               \
-        va_start(argList, msg);                                                                                        \
-        LogFromCoreDisToolsHelper(LOGLEVEL_##L, msg, argList);                                                         \
-        va_end(argList);                                                                                               \
-    \
+static void __cdecl CorDisToolsLog##L(const char* msg, ...)                                                            \
+{                                                                                                                      \
+    va_list argList;                                                                                                   \
+    va_start(argList, msg);                                                                                            \
+    LogFromCoreDisToolsHelper(LOGLEVEL_##L, msg, argList);                                                             \
+    va_end(argList);                                                                                                   \
 }
 
 LOGGER(VERBOSE)
 LOGGER(ERROR)
 LOGGER(WARNING)
 
-const PrintControl CorPrinter = {LogERROR, LogWARNING, LogVERBOSE, LogVERBOSE};
+const PrintControl CorPrinter = {CorDisToolsLogERROR, CorDisToolsLogWARNING, CorDisToolsLogVERBOSE, CorDisToolsLogVERBOSE};
 
 #endif // USE_COREDISTOOLS
 
+#ifdef USE_COREDISTOOLS
+NewDiffer_t* g_PtrNewDiffer = nullptr;
+FinishDiff_t* g_PtrFinishDiff = nullptr;
+NearDiffCodeBlocks_t* g_PtrNearDiffCodeBlocks = nullptr;
+DumpDiffBlocks_t* g_PtrDumpDiffBlocks = nullptr;
+#endif // USE_COREDISTOOLS
+
 //
-// The NearDiff Disassembler Initialization
+// The NearDiff Disassembler initialization.
+// 
+// Returns true on success, false on failure.
 //
-void NearDiffer::InitAsmDiff()
+bool NearDiffer::InitAsmDiff()
 {
 #ifdef USE_COREDISTOOLS
+
     if (UseCoreDisTools)
     {
-        corAsmDiff = NewDiffer(Target_Host, &CorPrinter, NearDiffer::compareOffsets);
+        const char* coreDisToolsLibrary = MAKEDLLNAME_A("coredistools");
+
+        HMODULE hCoreDisToolsLib = ::LoadLibraryA(coreDisToolsLibrary);
+        if (hCoreDisToolsLib == 0)
+        {
+            LogError("LoadLibrary(%s) failed (0x%08x)", coreDisToolsLibrary, ::GetLastError());
+            return false;
+        }
+        g_PtrNewDiffer = (NewDiffer_t*)::GetProcAddress(hCoreDisToolsLib, "NewDiffer");
+        if (g_PtrNewDiffer == nullptr)
+        {
+            LogError("GetProcAddress 'NewDiffer' failed (0x%08x)", ::GetLastError());
+            return false;
+        }
+        g_PtrFinishDiff = (FinishDiff_t*)::GetProcAddress(hCoreDisToolsLib, "FinishDiff");
+        if (g_PtrFinishDiff == nullptr)
+        {
+            LogError("GetProcAddress 'FinishDiff' failed (0x%08x)", ::GetLastError());
+            return false;
+        }
+        g_PtrNearDiffCodeBlocks = (NearDiffCodeBlocks_t*)::GetProcAddress(hCoreDisToolsLib, "NearDiffCodeBlocks");
+        if (g_PtrNearDiffCodeBlocks == nullptr)
+        {
+            LogError("GetProcAddress 'NearDiffCodeBlocks' failed (0x%08x)", ::GetLastError());
+            return false;
+        }
+        g_PtrDumpDiffBlocks = (DumpDiffBlocks_t*)::GetProcAddress(hCoreDisToolsLib, "DumpDiffBlocks");
+        if (g_PtrDumpDiffBlocks == nullptr)
+        {
+            LogError("GetProcAddress 'DumpDiffBlocks' failed (0x%08x)", ::GetLastError());
+            return false;
+        }
+
+        corAsmDiff = (*g_PtrNewDiffer)(Target_Host, &CorPrinter, NearDiffer::CoreDisCompareOffsetsCallback);
     }
 #endif // USE_COREDISTOOLS
+
+    return true;
 }
+
+#ifdef USE_COREDISTOOLS
+// static
+bool __cdecl NearDiffer::CoreDisCompareOffsetsCallback(
+        const void* payload, size_t blockOffset, size_t instrLen, uint64_t offset1, uint64_t offset2)
+{
+    return compareOffsets(payload, blockOffset, instrLen, offset1, offset2);
+}
+#endif // USE_COREDISTOOLS
 
 //
 // The NearDiff destructor
@@ -69,7 +120,7 @@ NearDiffer::~NearDiffer()
 #ifdef USE_COREDISTOOLS
     if (corAsmDiff != nullptr)
     {
-        FinishDiff(corAsmDiff);
+        (*g_PtrFinishDiff)(corAsmDiff);
     }
 #endif // USE_COREDISTOOLS
 }
@@ -403,12 +454,12 @@ bool NearDiffer::compareCodeSection(MethodContext* mc,
 #ifdef USE_COREDISTOOLS
     if (UseCoreDisTools)
     {
-        bool areSame = NearDiffCodeBlocks(corAsmDiff, &data, (const uint8_t*)originalBlock1, block1, blocksize1,
+        bool areSame = (*g_PtrNearDiffCodeBlocks)(corAsmDiff, &data, (const uint8_t*)originalBlock1, block1, blocksize1,
                                           (const uint8_t*)originalBlock2, block2, blocksize2);
 
         if (!areSame)
         {
-            DumpDiffBlocks(corAsmDiff, (const uint8_t*)originalBlock1, block1, blocksize1,
+            (*g_PtrDumpDiffBlocks)(corAsmDiff, (const uint8_t*)originalBlock1, block1, blocksize1,
                            (const uint8_t*)originalBlock2, block2, blocksize2);
         }
 
