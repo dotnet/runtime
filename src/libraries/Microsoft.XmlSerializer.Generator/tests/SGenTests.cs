@@ -12,13 +12,6 @@ namespace Microsoft.XmlSerializer.Generator.Tests
     public static class SgenTests
     {
         [Fact]
-        public static void BasicTest()
-        {
-            int n = Sgen.Main(new string[0]);
-            Assert.Equal(0, n);
-        }
-
-        [Fact]
         public static void SgenCommandTest()
         {
             string codefile = "Microsoft.XmlSerializer.Generator.Tests.XmlSerializers.cs";

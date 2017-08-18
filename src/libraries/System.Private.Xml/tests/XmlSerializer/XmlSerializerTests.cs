@@ -32,7 +32,13 @@ public static partial class XmlSerializerTests
             method.Invoke(null, new object[] { 1 });
 #endif
 #if XMLSERIALIZERGENERATORTESTS
-            method.Invoke(null, new object[] { 3 });
+            string path = Path.GetDirectoryName(typeof(XmlSerializerTests).Assembly.Location);
+            string serializername = typeof(TypeWithDateTimeStringProperty).Assembly.GetName().Name + ".XmlSerializers.dll";
+            string serializerPath = Path.Combine(path, serializername);
+            if (File.Exists(serializerPath))
+            {
+                method.Invoke(null, new object[] { 3 });
+            }
 #endif
         }
     }
