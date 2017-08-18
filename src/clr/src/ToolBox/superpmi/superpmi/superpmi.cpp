@@ -240,7 +240,10 @@ int __cdecl main(int argc, char* argv[])
 
     if (o.applyDiff)
     {
-        nearDiffer.InitAsmDiff();
+        if (!nearDiffer.InitAsmDiff())
+        {
+            return -1;
+        }
     }
 
     while (true)
