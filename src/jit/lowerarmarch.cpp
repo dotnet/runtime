@@ -215,6 +215,7 @@ void Lowering::LowerStoreLoc(GenTreeLclVarCommon* storeLoc)
             }
         }
     }
+    ContainCheckStoreLoc(storeLoc);
 }
 
 //------------------------------------------------------------------------
@@ -447,6 +448,9 @@ void Lowering::LowerCast(GenTree* tree)
         tree->gtOp.gtOp1 = tmp;
         BlockRange().InsertAfter(op1, tmp);
     }
+
+    // Now determine if we have operands that should be contained.
+    ContainCheckCast(tree->AsCast());
 }
 
 //------------------------------------------------------------------------
@@ -515,36 +519,6 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
                 MakeSrcContained(call, thisPtrNode->gtOp.gtOp1);
             }
         }
-    }
-    GenTreePtr args = call->gtCallArgs;
-    while (args)
-    {
-        GenTreePtr arg = args->gtOp.gtOp1;
-        if (!(args->gtFlags & GTF_LATE_ARG))
-        {
-            TreeNodeInfo* argInfo = &(arg->gtLsraInfo);
-            if (arg->gtOper == GT_PUTARG_STK)
-            {
-                GenTreePtr putArgChild = arg->gtOp.gtOp1;
-                if (putArgChild->OperGet() == GT_FIELD_LIST)
-                {
-                    MakeSrcContained(arg, putArgChild);
-                }
-                else if (putArgChild->OperGet() == GT_OBJ)
-                {
-                    MakeSrcContained(arg, putArgChild);
-                    GenTreePtr objChild = putArgChild->gtOp.gtOp1;
-                    if (objChild->OperGet() == GT_LCL_VAR_ADDR)
-                    {
-                        // We will generate all of the code for the GT_PUTARG_STK, the GT_OBJ and the GT_LCL_VAR_ADDR
-                        // as one contained operation
-                        //
-                        MakeSrcContained(putArgChild, objChild);
-                    }
-                }
-            }
-        }
-        args = args->gtOp.gtOp2;
     }
 }
 
