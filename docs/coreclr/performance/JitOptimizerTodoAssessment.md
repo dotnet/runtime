@@ -7,8 +7,10 @@ thoughts about their current state and prioritization, in an effort to capture
 the thinking about them that comes up in planning discussions.
 
 
-Improved Struct Handling
-------------------------
+Big-Ticket Items
+----------------
+
+### Improved Struct Handling
 
 This is an area that has received recent attention, with the [first-class structs](https://github.com/dotnet/coreclr/blob/master/Documentation/design-docs/first-class-structs.md)
 work and the struct promotion improvements that went in for `Span<T>`.  Work here
@@ -32,8 +34,7 @@ make sure we are expanding our span benchmarks appropriately to track and
 respond to any particular issues that come out of that work.
 
 
-Exception handling
-------------------
+### Exception handling
 
 This is increasingly important as C# language constructs like async/await and
 certain `foreach` incantations are implemented with EH constructs, making them
@@ -46,8 +47,7 @@ usage, but I don't think we have any particular data pointing to either as a
 high priority.
 
 
-Loop Optimizations
-------------------
+### Loop Optimizations
 
 We haven't been targeting benchmarks that spend a lot of time doing compuations
 in an inner loop.  Pursuing loop optimizations for the peanut butter effect
@@ -57,36 +57,7 @@ bound to eventually.  Obvious candidates include [IV widening](https://github.co
 and strength reduction.
 
 
-More Expression Optimizations
------------------------------
-
-We again don't have particular benchmarks pointing to key missing cases, and
-balancing the CQ vs TP will be delicate here, so it would really help to have
-an appropriate benchmark suite to evaluate this work against.
-
-
-Forward Substitution
---------------------
-
-This too needs an appropriate benchmark suite that I don't think we have at
-this time.  The tradeoffs against register pressure increase and throughput
-need to be evaluated.  This also might make more sense to do if/when we can
-handle SSA renames.
-
-
-Value Number Conservativism
----------------------------
-
-We have some frustrating phase-ordering issues resulting from this, but the
-opt-repeat experiment indicated that they're not prevalent enough to merit
-pursuing changing this right now.  Also, using SSA def as the proxy for value
-number would require handling SSA renaming, so there's a big dependency chained
-to this.
-Maybe it's worth reconsidering the priority based on throughput?
-
-
-High Tier Optimizations
------------------------
+### High Tier Optimization
 
 We don't have that many knobs we can "crank up" (though we do have the tracked
 assertion count and could switch inliner policies), nor do we have any sort of
@@ -99,18 +70,25 @@ some issues, particularly around spill placement, that could be exacerbated by
 very aggressive upstream optimizations.
 
 
-Low Tier Back-Off
------------------
+Mid-Scale Items
+---------------
 
-We have some changes we know we want to make here: morph does more than it needs
-to in minopts, and tier 0 should be doing throughput-improving inlines, as
-opposed to minopts which does no inlining.  It would be nice to have the
-benchmarking story set up to measure the effect of such changes when they go in,
-we should do that.
+### More Expression Optimizations
+
+We again don't have particular benchmarks pointing to key missing cases, and
+balancing the CQ vs TP will be delicate here, so it would really help to have
+an appropriate benchmark suite to evaluate this work against.
 
 
-Async
------
+### Forward Substitution
+
+This too needs an appropriate benchmark suite that I don't think we have at
+this time.  The tradeoffs against register pressure increase and throughput
+need to be evaluated.  This also might make more sense to do if/when we can
+handle SSA renames.
+
+
+### Async
 
 We've made note of the prevalence of async/await in modern code (and particularly
 in web server code such as TechEmpower), and have some opportunities listed in
@@ -119,8 +97,14 @@ async peanut butter to find more opportunities is probably in order, but what
 would that look like?
 
 
-Address Mode Building
----------------------
+### If-Conversion (cmov formation)
+
+This hits big in microbenchmarks where it hits.  There's some work in flight
+on this (see [#7447](https://github.com/dotnet/coreclr/issues/7447) and
+[#10861](https://github.com/dotnet/coreclr/pull/10861)).
+
+
+### Address Mode Building
 
 One opportunity that's frequently visible in asm dumps is that more address
 expressions could be folded into memory operands' address expressions.  This
@@ -129,25 +113,19 @@ to run in phase list and how aggressive to be about e.g. analyzing across
 statements.
 
 
-If-Conversion (cmov formation)
-------------------------------
+### Low Tier Back-Off
 
-This hits big in microbenchmarks where it hits.  There's some work in flight
-on this (see [#7447](https://github.com/dotnet/coreclr/issues/7447) and
-[#10861](https://github.com/dotnet/coreclr/pull/10861)).
-
-
-Mulshift
---------
-
-RyuJIT has an implementation that handles the valuable cases (see [analysis](https://gist.github.com/JosephTremoulet/c1246b17ea2803e93e203b9969ee5a25#file-mulshift-md)
-and [follow-up](https://github.com/dotnet/coreclr/pull/13128) for details).
-The current implementation is split across Morph and CodeGen; ideally it would
-be moved to Lower, which is tracked by [#13150](https://github.com/dotnet/coreclr/issues/13150).
+We have some changes we know we want to make here: morph does more than it needs
+to in minopts, and tier 0 should be doing throughput-improving inlines, as
+opposed to minopts which does no inlining.  It would be nice to have the
+benchmarking story set up to measure the effect of such changes when they go in,
+we should do that.
 
 
-Switch Lowering
----------------
+Low-Hanging Fruit
+-----------------
+
+### Switch Lowering
 
 The MSIL `switch` instruction is actually encoded as a jump table, so (for
 better or worse) intelligent optimization of source-level switch statements
@@ -159,9 +137,29 @@ the JIT needn't blindly emit these as jump tables in the native code.  Work is
 underway to address the latter case in [#12552](https://github.com/dotnet/coreclr/pull/12552).
 
 
-Write Barriers
---------------
+### Write Barriers
 
 A number of suggestions have been made for having the JIT recognize certain
 patterns and emit specialized write barriers that avoid various overheads --
 see [#13006](https://github.com/dotnet/coreclr/issues/13006) and [#12812](https://github.com/dotnet/coreclr/issues/12812).
+
+
+Miscellaneous
+-------------
+
+### Value Number Conservativism
+
+We have some frustrating phase-ordering issues resulting from this, but the
+opt-repeat experiment indicated that they're not prevalent enough to merit
+pursuing changing this right now.  Also, using SSA def as the proxy for value
+number would require handling SSA renaming, so there's a big dependency chained
+to this.
+Maybe it's worth reconsidering the priority based on throughput?
+
+
+### Mulshift
+
+RyuJIT has an implementation that handles the valuable cases (see [analysis](https://gist.github.com/JosephTremoulet/c1246b17ea2803e93e203b9969ee5a25#file-mulshift-md)
+and [follow-up](https://github.com/dotnet/coreclr/pull/13128) for details).
+The current implementation is split across Morph and CodeGen; ideally it would
+be moved to Lower, which is tracked by [#13150](https://github.com/dotnet/coreclr/issues/13150).
