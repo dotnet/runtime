@@ -3758,6 +3758,54 @@ verify_typeref_table_global_constraints (VerifyContext *ctx)
 	g_hash_table_destroy (unique_types);
 }
 
+typedef struct {
+	guint32 klass;
+	guint32 method_declaration;
+} MethodImplUniqueId;
+
+static guint
+methodimpl_hash (gconstpointer _key)
+{
+	const MethodImplUniqueId *key = (const MethodImplUniqueId *)_key;
+	return key->klass ^ key->method_declaration;
+}
+
+static gboolean
+methodimpl_equals (gconstpointer _a, gconstpointer _b)
+{
+	const MethodImplUniqueId *a = (const MethodImplUniqueId *)_a;
+	const MethodImplUniqueId *b = (const MethodImplUniqueId *)_b;
+	return a->klass == b->klass && a->method_declaration == b->method_declaration;
+}
+
+static void
+verify_methodimpl_table_global_constraints (VerifyContext *ctx)
+{
+	int i;
+	guint32 data [MONO_METHODIMPL_SIZE];
+	MonoTableInfo *table = &ctx->image->tables [MONO_TABLE_METHODIMPL];
+	GHashTable *unique_impls = g_hash_table_new_full (&methodimpl_hash, &methodimpl_equals, g_free, NULL);
+
+	for (i = 0; i < table->rows; ++i) {
+		MethodImplUniqueId *impl = g_new (MethodImplUniqueId, 1);
+		mono_metadata_decode_row (table, i, data, MONO_METHODIMPL_SIZE);
+
+		impl->klass = data [MONO_METHODIMPL_CLASS];
+		impl->method_declaration = data [MONO_METHODIMPL_DECLARATION];
+
+		if (g_hash_table_lookup (unique_impls, impl)) {
+			ADD_ERROR_NO_RETURN (ctx, g_strdup_printf ("MethodImpl table row %d has duplicate for tuple (0x%x, 0x%x)", impl->klass, impl->method_declaration));
+			g_hash_table_destroy (unique_impls);
+			g_free (impl);
+			return;
+		}
+		g_hash_table_insert (unique_impls, impl, GUINT_TO_POINTER (1));
+	}
+
+	g_hash_table_destroy (unique_impls);
+}
+
+
 static void
 verify_tables_data_global_constraints (VerifyContext *ctx)
 {
@@ -3769,6 +3817,7 @@ verify_tables_data_global_constraints_full (VerifyContext *ctx)
 {
 	verify_typeref_table (ctx);
 	verify_typeref_table_global_constraints (ctx);
+	verify_methodimpl_table_global_constraints (ctx);
 }
 
 static void
