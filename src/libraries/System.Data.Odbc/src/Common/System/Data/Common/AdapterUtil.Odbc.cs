@@ -306,6 +306,10 @@ namespace System.Data.Common
         {
             return InvalidOperation(SR.GetString(SR.ADP_UninitializedParameterSize, index.ToString(CultureInfo.InvariantCulture), dataType.Name));
         }
+        internal static InvalidOperationException QuotePrefixNotSet(string method)
+        {
+            return InvalidOperation(SR.GetString(SR.ADP_QuotePrefixNotSet, method));
+        }
 
         //
         // : ConnectionUtil
@@ -544,7 +548,6 @@ namespace System.Data.Common
             return Argument(SR.GetString(SR.MDF_UnsupportedVersion, collectionName));
         }
 
-
         // global constant strings
         internal const string BeginTransaction = "BeginTransaction";
         internal const string ChangeDatabase = "ChangeDatabase";
@@ -560,6 +563,8 @@ namespace System.Data.Common
         internal const string ParameterName = "ParameterName";
         internal const string Prepare = "Prepare";
         internal const string RollbackTransaction = "RollbackTransaction";
+        internal const string QuoteIdentifier = "QuoteIdentifier";
+        internal const string UnquoteIdentifier = "UnquoteIdentifier";
 
         internal const int DecimalMaxPrecision = 29;
         internal const int DecimalMaxPrecision28 = 28;  // there are some cases in Odbc where we need that ...
