@@ -809,61 +809,6 @@ namespace System.Data.Common
             return e;
         }
 
-        // the return value is true if the string was quoted and false if it was not
-        // this allows the caller to determine if it is an error or not for the quotedString to not be quoted
-        internal static bool RemoveStringQuotes(string quotePrefix, string quoteSuffix, string quotedString, out string unquotedString)
-        {
-            int prefixLength = quotePrefix != null ? quotePrefix.Length : 0;
-            int suffixLength = quoteSuffix != null ? quoteSuffix.Length : 0;
-
-            if ((suffixLength + prefixLength) == 0)
-            {
-                unquotedString = quotedString;
-                return true;
-            }
-
-            if (quotedString == null)
-            {
-                unquotedString = quotedString;
-                return false;
-            }
-
-            int quotedStringLength = quotedString.Length;
-
-            // is the source string too short to be quoted
-            if (quotedStringLength < prefixLength + suffixLength)
-            {
-                unquotedString = quotedString;
-                return false;
-            }
-
-            // is the prefix present?
-            if (prefixLength > 0)
-            {
-                if (!quotedString.StartsWith(quotePrefix, StringComparison.Ordinal))
-                {
-                    unquotedString = quotedString;
-                    return false;
-                }
-            }
-
-            // is the suffix present?
-            if (suffixLength > 0)
-            {
-                if (!quotedString.EndsWith(quoteSuffix, StringComparison.Ordinal))
-                {
-                    unquotedString = quotedString;
-                    return false;
-                }
-                unquotedString = quotedString.Substring(prefixLength, quotedStringLength - (prefixLength + suffixLength)).Replace(quoteSuffix + quoteSuffix, quoteSuffix);
-            }
-            else
-            {
-                unquotedString = quotedString.Substring(prefixLength, quotedStringLength - prefixLength);
-            }
-            return true;
-        }
-
         internal static ArgumentOutOfRangeException InvalidCommandBehavior(CommandBehavior value)
         {
             Debug.Assert((0 > (int)value) || ((int)value > 0x3F), "valid CommandType " + value.ToString());
