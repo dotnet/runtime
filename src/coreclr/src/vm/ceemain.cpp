@@ -1624,7 +1624,10 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         g_fEEShutDown |= ShutDown_Start;
 
 #ifdef FEATURE_TIERED_COMPILATION
-        TieredCompilationManager::ShutdownAllDomains();
+        {
+            GCX_PREEMP();
+            TieredCompilationManager::ShutdownAllDomains();
+        }
 #endif
 
         fFinalizeOK = TRUE;
