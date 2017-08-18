@@ -41,7 +41,6 @@ namespace System.Data.Tests.SqlTypes
 
         public SqlMoneyTest()
         {
-            CultureInfo.CurrentCulture = new CultureInfo("en-US");
             _test1 = new SqlMoney(6464.6464d);
             _test2 = new SqlMoney(90000.0m);
             _test3 = new SqlMoney(90000.0m);
