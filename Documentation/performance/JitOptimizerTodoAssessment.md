@@ -122,6 +122,15 @@ benchmarking story set up to measure the effect of such changes when they go in,
 we should do that.
 
 
+### Helper Call Register Kill Set Improvements
+
+We have some facility to allocate caller-save registers across calls to runtime
+helpers that are known not to trash them, but the information about which
+helpers trash which registers is spread across a few places in the codebase,
+and has some puzzling quirks like separate "GC" and "NoGC" kill sets for the
+same helper.  Unifying the information sources and then refining the recorded
+kill sets would help avoid more stack traffic.  See [#12940](https://github.com/dotnet/coreclr/issues/12940).
+
 Low-Hanging Fruit
 -----------------
 
@@ -143,6 +152,14 @@ A number of suggestions have been made for having the JIT recognize certain
 patterns and emit specialized write barriers that avoid various overheads --
 see [#13006](https://github.com/dotnet/coreclr/issues/13006) and [#12812](https://github.com/dotnet/coreclr/issues/12812).
 
+
+### Byref-Exposed Store/Load Value Propagation
+
+There are a few tweaks to our value-numbering for byref-exposed loads and stores
+to share some of the machinery we use for heap loads and stores that would
+allow better propagation through byref-exposed locals and out parameters --
+see [#13457](https://github.com/dotnet/coreclr/issues/13457) and
+[#13458](https://github.com/dotnet/coreclr/issues/13458).
 
 Miscellaneous
 -------------
