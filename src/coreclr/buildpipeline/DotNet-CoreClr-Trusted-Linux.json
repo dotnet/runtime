@@ -49,7 +49,7 @@
       },
       "inputs": {
         "filename": "docker",
-        "arguments": "run --rm $(DockerCommonRunArgs) git clone $(GitHubRepo) $(GitHubDirectory)",
+        "arguments": "run --rm $(DockerCommonRunArgs) git clone $(VsoCoreClrGitUrl) $(GitHubDirectory)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -372,6 +372,19 @@
     },
     "PB_AdditionalBuildArgs": {
       "value":""
+    },
+    "VsoAccountName": {
+      "value": "dn-bot"
+    },
+    "VsoCoreClrGitUrl": {
+      "value": "https://$(VsoAccountName):$(VsoPassword)@devdiv.visualstudio.com/DevDiv/_git/$(VsoRepositoryName)/"
+    },
+    "VsoPassword": {
+      "value": null,
+      "isSecret": true
+    },
+    "VsoRepositoryName": {
+      "value": "DotNet-CoreCLR-Trusted"
     }
   },
   "demands": [
