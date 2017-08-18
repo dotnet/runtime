@@ -239,6 +239,10 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(1, contentReadStream.Read(byteOnIndex5, 0, 1));
             Assert.Equal(data[5], byteOnIndex5[0]);
 
+            byte[] byteOnIndex6 = new byte[1];
+            Assert.Equal(1, contentReadStream.Read(new Span<byte>(byteOnIndex6, 0, 1)));
+            Assert.Equal(data[6], byteOnIndex6[0]);
+
             contentReadStream.ReadTimeout = 123;
             Assert.Equal(123, source.ReadTimeout);
             Assert.Equal(123, contentReadStream.ReadTimeout);
@@ -256,6 +260,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Throws<NotSupportedException>(() => contentReadStream.Flush());
             Assert.Throws<NotSupportedException>(() => contentReadStream.SetLength(1));
             Assert.Throws<NotSupportedException>(() => contentReadStream.Write(null, 0, 0));
+            Assert.Throws<NotSupportedException>(() => contentReadStream.Write(new Span<byte>(Array.Empty<byte>())));
             Assert.Throws<NotSupportedException>(() => contentReadStream.WriteByte(1));
 
             Assert.Equal(0, source.DisposeCount);
