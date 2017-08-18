@@ -13,9 +13,6 @@
     <Compile Include="CommandBuilderTests.cs" />
     <Compile Include="ReaderTests.cs" />
     <Compile Include="SmokeTest.cs" />
-    <Compile Include="$(CommonTestPath)\System\PlatformDetection.cs">
-      <Link>Common\System\PlatformDetection.cs</Link>
-    </Compile>
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
     <Compile Include="ConnectionStrings.Windows.cs" />
