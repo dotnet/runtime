@@ -31,7 +31,7 @@ using Xunit;
 
 namespace System.Data.Tests
 {
-    public class DataSetReadXmlTest : DataSetAssertion
+    public class DataSetReadXmlTest
     {
         private const string xml1 = "";
         private const string xml2 = "<root/>";
@@ -72,55 +72,55 @@ namespace System.Data.Tests
 
             // empty XML
             ds = new DataSet();
-            AssertReadXml(ds, "EmptyString", xml1,
+            DataSetAssertion.AssertReadXml(ds, "EmptyString", xml1,
                 XmlReadMode.Auto, XmlReadMode.Auto,
                 "NewDataSet", 0);
 
             // simple element
             ds = new DataSet();
-            AssertReadXml(ds, "EmptyElement", xml2,
+            DataSetAssertion.AssertReadXml(ds, "EmptyElement", xml2,
                 XmlReadMode.Auto, XmlReadMode.InferSchema,
                 "root", 0);
 
             // simple element2
             ds = new DataSet();
-            AssertReadXml(ds, "StartEndTag", xml3,
+            DataSetAssertion.AssertReadXml(ds, "StartEndTag", xml3,
                 XmlReadMode.Auto, XmlReadMode.InferSchema,
                 "root", 0);
 
             // whitespace in simple element
             ds = new DataSet();
-            AssertReadXml(ds, "Whitespace", xml4,
+            DataSetAssertion.AssertReadXml(ds, "Whitespace", xml4,
                 XmlReadMode.Auto, XmlReadMode.InferSchema,
                 "root", 0);
 
             // text in simple element
             ds = new DataSet();
-            AssertReadXml(ds, "SingleText", xml5,
+            DataSetAssertion.AssertReadXml(ds, "SingleText", xml5,
                 XmlReadMode.Auto, XmlReadMode.InferSchema,
                 "root", 0);
 
             // simple table pattern:
             // root becomes a table and test becomes a column.
             ds = new DataSet();
-            AssertReadXml(ds, "SimpleTable", xml6,
+            DataSetAssertion.AssertReadXml(ds, "SimpleTable", xml6,
                 XmlReadMode.Auto, XmlReadMode.InferSchema,
                 "NewDataSet", 1);
-            AssertDataTable("xml6", ds.Tables[0], "root", 1, 1, 0, 0, 0, 0);
+            DataSetAssertion.AssertDataTable("xml6", ds.Tables[0], "root", 1, 1, 0, 0, 0, 0);
 
             // simple table with 2 columns:
             ds = new DataSet();
-            AssertReadXml(ds, "SimpleTable2", xml7,
+            DataSetAssertion.AssertReadXml(ds, "SimpleTable2", xml7,
                 XmlReadMode.Auto, XmlReadMode.InferSchema,
                 "NewDataSet", 1);
-            AssertDataTable("xml7", ds.Tables[0], "root", 2, 1, 0, 0, 0, 0);
+            DataSetAssertion.AssertDataTable("xml7", ds.Tables[0], "root", 2, 1, 0, 0, 0, 0);
 
             // simple dataset with 1 table:
             ds = new DataSet();
-            AssertReadXml(ds, "SimpleDataSet", xml8,
+            DataSetAssertion.AssertReadXml(ds, "SimpleDataSet", xml8,
                 XmlReadMode.Auto, XmlReadMode.InferSchema,
                 "dataset", 1);
-            AssertDataTable("xml8", ds.Tables[0], "table", 2, 1, 0, 0, 0, 0);
+            DataSetAssertion.AssertDataTable("xml8", ds.Tables[0], "table", 2, 1, 0, 0, 0, 0);
         }
 
         [Fact]
@@ -130,49 +130,49 @@ namespace System.Data.Tests
 
             // empty XML
             ds = new DataSet();
-            AssertReadXml(ds, "EmptyString", xml1,
+            DataSetAssertion.AssertReadXml(ds, "EmptyString", xml1,
                 XmlReadMode.DiffGram, XmlReadMode.DiffGram,
                 "NewDataSet", 0);
 
             // simple element
             ds = new DataSet();
-            AssertReadXml(ds, "EmptyElement", xml2,
+            DataSetAssertion.AssertReadXml(ds, "EmptyElement", xml2,
                 XmlReadMode.DiffGram, XmlReadMode.DiffGram,
                 "NewDataSet", 0);
 
             // simple element2
             ds = new DataSet();
-            AssertReadXml(ds, "StartEndTag", xml3,
+            DataSetAssertion.AssertReadXml(ds, "StartEndTag", xml3,
                 XmlReadMode.DiffGram, XmlReadMode.DiffGram,
                 "NewDataSet", 0);
 
             // whitespace in simple element
             ds = new DataSet();
-            AssertReadXml(ds, "Whitespace", xml4,
+            DataSetAssertion.AssertReadXml(ds, "Whitespace", xml4,
                 XmlReadMode.DiffGram, XmlReadMode.DiffGram,
                 "NewDataSet", 0);
 
             // text in simple element
             ds = new DataSet();
-            AssertReadXml(ds, "SingleText", xml5,
+            DataSetAssertion.AssertReadXml(ds, "SingleText", xml5,
                 XmlReadMode.DiffGram, XmlReadMode.DiffGram,
                 "NewDataSet", 0);
 
             // simple table pattern:
             ds = new DataSet();
-            AssertReadXml(ds, "SimpleTable", xml6,
+            DataSetAssertion.AssertReadXml(ds, "SimpleTable", xml6,
                 XmlReadMode.DiffGram, XmlReadMode.DiffGram,
                 "NewDataSet", 0);
 
             // simple table with 2 columns:
             ds = new DataSet();
-            AssertReadXml(ds, "SimpleTable2", xml7,
+            DataSetAssertion.AssertReadXml(ds, "SimpleTable2", xml7,
                 XmlReadMode.DiffGram, XmlReadMode.DiffGram,
                 "NewDataSet", 0);
 
             // simple dataset with 1 table:
             ds = new DataSet();
-            AssertReadXml(ds, "SimpleDataSet", xml8,
+            DataSetAssertion.AssertReadXml(ds, "SimpleDataSet", xml8,
                 XmlReadMode.DiffGram, XmlReadMode.DiffGram,
                 "NewDataSet", 0);
         }
@@ -184,49 +184,49 @@ namespace System.Data.Tests
 
             // empty XML
             ds = new DataSet();
-            AssertReadXml(ds, "EmptyString", xml1,
+            DataSetAssertion.AssertReadXml(ds, "EmptyString", xml1,
                 XmlReadMode.Fragment, XmlReadMode.Fragment,
                 "NewDataSet", 0);
 
             // simple element
             ds = new DataSet();
-            AssertReadXml(ds, "EmptyElement", xml2,
+            DataSetAssertion.AssertReadXml(ds, "EmptyElement", xml2,
                 XmlReadMode.Fragment, XmlReadMode.Fragment,
                 "NewDataSet", 0);
 
             // simple element2
             ds = new DataSet();
-            AssertReadXml(ds, "StartEndTag", xml3,
+            DataSetAssertion.AssertReadXml(ds, "StartEndTag", xml3,
                 XmlReadMode.Fragment, XmlReadMode.Fragment,
                 "NewDataSet", 0);
 
             // whitespace in simple element
             ds = new DataSet();
-            AssertReadXml(ds, "Whitespace", xml4,
+            DataSetAssertion.AssertReadXml(ds, "Whitespace", xml4,
                 XmlReadMode.Fragment, XmlReadMode.Fragment,
                 "NewDataSet", 0);
 
             // text in simple element
             ds = new DataSet();
-            AssertReadXml(ds, "SingleText", xml5,
+            DataSetAssertion.AssertReadXml(ds, "SingleText", xml5,
                 XmlReadMode.Fragment, XmlReadMode.Fragment,
                 "NewDataSet", 0);
 
             // simple table pattern:
             ds = new DataSet();
-            AssertReadXml(ds, "SimpleTable", xml6,
+            DataSetAssertion.AssertReadXml(ds, "SimpleTable", xml6,
                 XmlReadMode.Fragment, XmlReadMode.Fragment,
                 "NewDataSet", 0);
 
             // simple table with 2 columns:
             ds = new DataSet();
-            AssertReadXml(ds, "SimpleTable2", xml7,
+            DataSetAssertion.AssertReadXml(ds, "SimpleTable2", xml7,
                 XmlReadMode.Fragment, XmlReadMode.Fragment,
                 "NewDataSet", 0);
 
             // simple dataset with 1 table:
             ds = new DataSet();
-            AssertReadXml(ds, "SimpleDataSet", xml8,
+            DataSetAssertion.AssertReadXml(ds, "SimpleDataSet", xml8,
                 XmlReadMode.Fragment, XmlReadMode.Fragment,
                 "NewDataSet", 0);
         }
@@ -238,49 +238,49 @@ namespace System.Data.Tests
 
             // empty XML
             ds = new DataSet();
-            AssertReadXml(ds, "EmptyString", xml1,
+            DataSetAssertion.AssertReadXml(ds, "EmptyString", xml1,
                 XmlReadMode.IgnoreSchema, XmlReadMode.IgnoreSchema,
                 "NewDataSet", 0);
 
             // simple element
             ds = new DataSet();
-            AssertReadXml(ds, "EmptyElement", xml2,
+            DataSetAssertion.AssertReadXml(ds, "EmptyElement", xml2,
                 XmlReadMode.IgnoreSchema, XmlReadMode.IgnoreSchema,
                 "NewDataSet", 0);
 
             // simple element2
             ds = new DataSet();
-            AssertReadXml(ds, "StartEndTag", xml3,
+            DataSetAssertion.AssertReadXml(ds, "StartEndTag", xml3,
                 XmlReadMode.IgnoreSchema, XmlReadMode.IgnoreSchema,
                 "NewDataSet", 0);
 
             // whitespace in simple element
             ds = new DataSet();
-            AssertReadXml(ds, "Whitespace", xml4,
+            DataSetAssertion.AssertReadXml(ds, "Whitespace", xml4,
                 XmlReadMode.IgnoreSchema, XmlReadMode.IgnoreSchema,
                 "NewDataSet", 0);
 
             // text in simple element
             ds = new DataSet();
-            AssertReadXml(ds, "SingleText", xml5,
+            DataSetAssertion.AssertReadXml(ds, "SingleText", xml5,
                 XmlReadMode.IgnoreSchema, XmlReadMode.IgnoreSchema,
                 "NewDataSet", 0);
 
             // simple table pattern:
             ds = new DataSet();
-            AssertReadXml(ds, "SimpleTable", xml6,
+            DataSetAssertion.AssertReadXml(ds, "SimpleTable", xml6,
                 XmlReadMode.IgnoreSchema, XmlReadMode.IgnoreSchema,
                 "NewDataSet", 0);
 
             // simple table with 2 columns:
             ds = new DataSet();
-            AssertReadXml(ds, "SimpleTable2", xml7,
+            DataSetAssertion.AssertReadXml(ds, "SimpleTable2", xml7,
                 XmlReadMode.IgnoreSchema, XmlReadMode.IgnoreSchema,
                 "NewDataSet", 0);
 
             // simple dataset with 1 table:
             ds = new DataSet();
-            AssertReadXml(ds, "SimpleDataSet", xml8,
+            DataSetAssertion.AssertReadXml(ds, "SimpleDataSet", xml8,
                 XmlReadMode.IgnoreSchema, XmlReadMode.IgnoreSchema,
                 "NewDataSet", 0);
         }
@@ -292,55 +292,55 @@ namespace System.Data.Tests
 
             // empty XML
             ds = new DataSet();
-            AssertReadXml(ds, "EmptyString", xml1,
+            DataSetAssertion.AssertReadXml(ds, "EmptyString", xml1,
                 XmlReadMode.InferSchema, XmlReadMode.InferSchema,
                 "NewDataSet", 0);
 
             // simple element
             ds = new DataSet();
-            AssertReadXml(ds, "EmptyElement", xml2,
+            DataSetAssertion.AssertReadXml(ds, "EmptyElement", xml2,
                 XmlReadMode.InferSchema, XmlReadMode.InferSchema,
                 "root", 0);
 
             // simple element2
             ds = new DataSet();
-            AssertReadXml(ds, "StartEndTag", xml3,
+            DataSetAssertion.AssertReadXml(ds, "StartEndTag", xml3,
                 XmlReadMode.InferSchema, XmlReadMode.InferSchema,
                 "root", 0);
 
             // whitespace in simple element
             ds = new DataSet();
-            AssertReadXml(ds, "Whitespace", xml4,
+            DataSetAssertion.AssertReadXml(ds, "Whitespace", xml4,
                 XmlReadMode.InferSchema, XmlReadMode.InferSchema,
                 "root", 0);
 
             // text in simple element
             ds = new DataSet();
-            AssertReadXml(ds, "SingleText", xml5,
+            DataSetAssertion.AssertReadXml(ds, "SingleText", xml5,
                 XmlReadMode.InferSchema, XmlReadMode.InferSchema,
                 "root", 0);
 
             // simple table pattern:
             // root becomes a table and test becomes a column.
             ds = new DataSet();
-            AssertReadXml(ds, "SimpleTable", xml6,
+            DataSetAssertion.AssertReadXml(ds, "SimpleTable", xml6,
                 XmlReadMode.InferSchema, XmlReadMode.InferSchema,
                 "NewDataSet", 1);
-            AssertDataTable("xml6", ds.Tables[0], "root", 1, 1, 0, 0, 0, 0);
+            DataSetAssertion.AssertDataTable("xml6", ds.Tables[0], "root", 1, 1, 0, 0, 0, 0);
 
             // simple table with 2 columns:
             ds = new DataSet();
-            AssertReadXml(ds, "SimpleTable2", xml7,
+            DataSetAssertion.AssertReadXml(ds, "SimpleTable2", xml7,
                 XmlReadMode.InferSchema, XmlReadMode.InferSchema,
                 "NewDataSet", 1);
-            AssertDataTable("xml7", ds.Tables[0], "root", 2, 1, 0, 0, 0, 0);
+            DataSetAssertion.AssertDataTable("xml7", ds.Tables[0], "root", 2, 1, 0, 0, 0, 0);
 
             // simple dataset with 1 table:
             ds = new DataSet();
-            AssertReadXml(ds, "SimpleDataSet", xml8,
+            DataSetAssertion.AssertReadXml(ds, "SimpleDataSet", xml8,
                 XmlReadMode.InferSchema, XmlReadMode.InferSchema,
                 "dataset", 1);
-            AssertDataTable("xml8", ds.Tables[0], "table", 2, 1, 0, 0, 0, 0);
+            DataSetAssertion.AssertDataTable("xml8", ds.Tables[0], "table", 2, 1, 0, 0, 0, 0);
         }
 
         [Fact]
@@ -350,49 +350,49 @@ namespace System.Data.Tests
 
             // empty XML
             ds = new DataSet();
-            AssertReadXml(ds, "EmptyString", xml1,
+            DataSetAssertion.AssertReadXml(ds, "EmptyString", xml1,
                 XmlReadMode.ReadSchema, XmlReadMode.ReadSchema,
                 "NewDataSet", 0);
 
             // simple element
             ds = new DataSet();
-            AssertReadXml(ds, "EmptyElement", xml2,
+            DataSetAssertion.AssertReadXml(ds, "EmptyElement", xml2,
                 XmlReadMode.ReadSchema, XmlReadMode.ReadSchema,
                 "NewDataSet", 0);
 
             // simple element2
             ds = new DataSet();
-            AssertReadXml(ds, "StartEndTag", xml3,
+            DataSetAssertion.AssertReadXml(ds, "StartEndTag", xml3,
                 XmlReadMode.ReadSchema, XmlReadMode.ReadSchema,
                 "NewDataSet", 0);
 
             // whitespace in simple element
             ds = new DataSet();
-            AssertReadXml(ds, "Whitespace", xml4,
+            DataSetAssertion.AssertReadXml(ds, "Whitespace", xml4,
                 XmlReadMode.ReadSchema, XmlReadMode.ReadSchema,
                 "NewDataSet", 0);
 
             // text in simple element
             ds = new DataSet();
-            AssertReadXml(ds, "SingleText", xml5,
+            DataSetAssertion.AssertReadXml(ds, "SingleText", xml5,
                 XmlReadMode.ReadSchema, XmlReadMode.ReadSchema,
                 "NewDataSet", 0);
 
             // simple table pattern:
             ds = new DataSet();
-            AssertReadXml(ds, "SimpleTable", xml6,
+            DataSetAssertion.AssertReadXml(ds, "SimpleTable", xml6,
                 XmlReadMode.ReadSchema, XmlReadMode.ReadSchema,
                 "NewDataSet", 0);
 
             // simple table with 2 columns:
             ds = new DataSet();
-            AssertReadXml(ds, "SimpleTable2", xml7,
+            DataSetAssertion.AssertReadXml(ds, "SimpleTable2", xml7,
                 XmlReadMode.ReadSchema, XmlReadMode.ReadSchema,
                 "NewDataSet", 0);
 
             // simple dataset with 1 table:
             ds = new DataSet();
-            AssertReadXml(ds, "SimpleDataSet", xml8,
+            DataSetAssertion.AssertReadXml(ds, "SimpleDataSet", xml8,
                 XmlReadMode.ReadSchema, XmlReadMode.ReadSchema,
                 "NewDataSet", 0);
         }
@@ -404,33 +404,33 @@ namespace System.Data.Tests
 
             // ignored
             ds = new DataSet();
-            AssertReadXml(ds, "Fragment", diff1,
+            DataSetAssertion.AssertReadXml(ds, "Fragment", diff1,
                 XmlReadMode.Fragment, XmlReadMode.Fragment,
                 "NewDataSet", 0);
 
             ds = new DataSet();
-            AssertReadXml(ds, "IgnoreSchema", diff1,
+            DataSetAssertion.AssertReadXml(ds, "IgnoreSchema", diff1,
                 XmlReadMode.IgnoreSchema, XmlReadMode.IgnoreSchema,
                 "NewDataSet", 0);
 
             ds = new DataSet();
-            AssertReadXml(ds, "InferSchema", diff1,
+            DataSetAssertion.AssertReadXml(ds, "InferSchema", diff1,
                 XmlReadMode.InferSchema, XmlReadMode.InferSchema,
                 "NewDataSet", 0);
 
             ds = new DataSet();
-            AssertReadXml(ds, "ReadSchema", diff1,
+            DataSetAssertion.AssertReadXml(ds, "ReadSchema", diff1,
                 XmlReadMode.ReadSchema, XmlReadMode.ReadSchema,
                 "NewDataSet", 0);
 
             // Auto, DiffGram ... treated as DiffGram
             ds = new DataSet();
-            AssertReadXml(ds, "Auto", diff1,
+            DataSetAssertion.AssertReadXml(ds, "Auto", diff1,
                 XmlReadMode.Auto, XmlReadMode.DiffGram,
                 "NewDataSet", 0);
 
             ds = new DataSet();
-            AssertReadXml(ds, "DiffGram", diff1,
+            DataSetAssertion.AssertReadXml(ds, "DiffGram", diff1,
                 XmlReadMode.DiffGram, XmlReadMode.DiffGram,
                 "NewDataSet", 0);
         }
@@ -442,34 +442,34 @@ namespace System.Data.Tests
 
             // Fragment ... skipped
             ds = new DataSet();
-            AssertReadXml(ds, "Fragment", diff2,
+            DataSetAssertion.AssertReadXml(ds, "Fragment", diff2,
                 XmlReadMode.Fragment, XmlReadMode.Fragment,
                 "NewDataSet", 0);
 
             // others ... kept 
             ds = new DataSet();
-            AssertReadXml(ds, "IgnoreSchema", diff2,
+            DataSetAssertion.AssertReadXml(ds, "IgnoreSchema", diff2,
                 XmlReadMode.IgnoreSchema, XmlReadMode.IgnoreSchema,
                 "NewDataSet", 0, ReadState.Interactive);
 
             ds = new DataSet();
-            AssertReadXml(ds, "InferSchema", diff2,
+            DataSetAssertion.AssertReadXml(ds, "InferSchema", diff2,
                 XmlReadMode.InferSchema, XmlReadMode.InferSchema,
                 "NewDataSet", 0, ReadState.Interactive);
 
             ds = new DataSet();
-            AssertReadXml(ds, "ReadSchema", diff2,
+            DataSetAssertion.AssertReadXml(ds, "ReadSchema", diff2,
                 XmlReadMode.ReadSchema, XmlReadMode.ReadSchema,
                 "NewDataSet", 0, ReadState.Interactive);
 
             // Auto, DiffGram ... treated as DiffGram
             ds = new DataSet();
-            AssertReadXml(ds, "Auto", diff2,
+            DataSetAssertion.AssertReadXml(ds, "Auto", diff2,
                 XmlReadMode.Auto, XmlReadMode.DiffGram,
                 "NewDataSet", 0, ReadState.Interactive);
 
             ds = new DataSet();
-            AssertReadXml(ds, "DiffGram", diff2,
+            DataSetAssertion.AssertReadXml(ds, "DiffGram", diff2,
                 XmlReadMode.DiffGram, XmlReadMode.DiffGram,
                 "NewDataSet", 0, ReadState.Interactive);
         }
@@ -481,36 +481,36 @@ namespace System.Data.Tests
 
             // ignored
             ds = new DataSet();
-            AssertReadXml(ds, "IgnoreSchema", schema1,
+            DataSetAssertion.AssertReadXml(ds, "IgnoreSchema", schema1,
                 XmlReadMode.IgnoreSchema, XmlReadMode.IgnoreSchema,
                 "NewDataSet", 0);
 
             ds = new DataSet();
-            AssertReadXml(ds, "InferSchema", schema1,
+            DataSetAssertion.AssertReadXml(ds, "InferSchema", schema1,
                 XmlReadMode.InferSchema, XmlReadMode.InferSchema,
                 "NewDataSet", 0);
 
             // misc ... consume schema
             ds = new DataSet();
-            AssertReadXml(ds, "Fragment", schema1,
+            DataSetAssertion.AssertReadXml(ds, "Fragment", schema1,
                 XmlReadMode.Fragment, XmlReadMode.Fragment,
                 "NewDataSet", 1);
-            AssertDataTable("fragment", ds.Tables[0], "Root", 1, 0, 0, 0, 0, 0);
+            DataSetAssertion.AssertDataTable("fragment", ds.Tables[0], "Root", 1, 0, 0, 0, 0, 0);
 
             ds = new DataSet();
-            AssertReadXml(ds, "ReadSchema", schema1,
+            DataSetAssertion.AssertReadXml(ds, "ReadSchema", schema1,
                 XmlReadMode.ReadSchema, XmlReadMode.ReadSchema,
                 "NewDataSet", 1);
-            AssertDataTable("readschema", ds.Tables[0], "Root", 1, 0, 0, 0, 0, 0);
+            DataSetAssertion.AssertDataTable("readschema", ds.Tables[0], "Root", 1, 0, 0, 0, 0, 0);
 
             ds = new DataSet();
-            AssertReadXml(ds, "Auto", schema1,
+            DataSetAssertion.AssertReadXml(ds, "Auto", schema1,
                 XmlReadMode.Auto, XmlReadMode.ReadSchema,
                 "NewDataSet", 1);
-            AssertDataTable("auto", ds.Tables[0], "Root", 1, 0, 0, 0, 0, 0);
+            DataSetAssertion.AssertDataTable("auto", ds.Tables[0], "Root", 1, 0, 0, 0, 0, 0);
 
             ds = new DataSet();
-            AssertReadXml(ds, "DiffGram", schema1,
+            DataSetAssertion.AssertReadXml(ds, "DiffGram", schema1,
                 XmlReadMode.DiffGram, XmlReadMode.DiffGram,
                 "NewDataSet", 1);
         }
@@ -522,37 +522,37 @@ namespace System.Data.Tests
 
             // ignored
             ds = new DataSet();
-            AssertReadXml(ds, "IgnoreSchema", schema2,
+            DataSetAssertion.AssertReadXml(ds, "IgnoreSchema", schema2,
                 XmlReadMode.IgnoreSchema, XmlReadMode.IgnoreSchema,
                 "NewDataSet", 0, ReadState.Interactive);
 
             ds = new DataSet();
-            AssertReadXml(ds, "InferSchema", schema2,
+            DataSetAssertion.AssertReadXml(ds, "InferSchema", schema2,
                 XmlReadMode.InferSchema, XmlReadMode.InferSchema,
                 "NewDataSet", 0, ReadState.Interactive);
 
             // Fragment ... consumed both
             ds = new DataSet();
-            AssertReadXml(ds, "Fragment", schema2,
+            DataSetAssertion.AssertReadXml(ds, "Fragment", schema2,
                 XmlReadMode.Fragment, XmlReadMode.Fragment,
                 "NewDataSet", 1);
-            AssertDataTable("fragment", ds.Tables[0], "Root", 1, 0, 0, 0, 0, 0);
+            DataSetAssertion.AssertDataTable("fragment", ds.Tables[0], "Root", 1, 0, 0, 0, 0, 0);
 
             // rest ... treated as schema
             ds = new DataSet();
-            AssertReadXml(ds, "Auto", schema2,
+            DataSetAssertion.AssertReadXml(ds, "Auto", schema2,
                 XmlReadMode.Auto, XmlReadMode.ReadSchema,
                 "NewDataSet", 1, ReadState.Interactive);
-            AssertDataTable("auto", ds.Tables[0], "Root", 1, 0, 0, 0, 0, 0);
+            DataSetAssertion.AssertDataTable("auto", ds.Tables[0], "Root", 1, 0, 0, 0, 0, 0);
 
             ds = new DataSet();
-            AssertReadXml(ds, "DiffGram", schema2,
+            DataSetAssertion.AssertReadXml(ds, "DiffGram", schema2,
                 XmlReadMode.DiffGram, XmlReadMode.DiffGram,
                 "NewDataSet", 1, ReadState.Interactive);
-            AssertDataTable("diffgram", ds.Tables[0], "Root", 1, 0, 0, 0, 0, 0);
+            DataSetAssertion.AssertDataTable("diffgram", ds.Tables[0], "Root", 1, 0, 0, 0, 0, 0);
 
             ds = new DataSet();
-            AssertReadXml(ds, "ReadSchema", schema2,
+            DataSetAssertion.AssertReadXml(ds, "ReadSchema", schema2,
                 XmlReadMode.ReadSchema, XmlReadMode.ReadSchema,
                 "NewDataSet", 1, ReadState.Interactive);
         }
@@ -563,14 +563,14 @@ namespace System.Data.Tests
             // simple element -> simple table
             var ds = new DataSet();
 
-            AssertReadXml(ds, "SingleText", xml5,
+            DataSetAssertion.AssertReadXml(ds, "SingleText", xml5,
                 XmlReadMode.Auto, XmlReadMode.InferSchema,
                 "root", 0);
 
-            AssertReadXml(ds, "SimpleTable", xml6,
+            DataSetAssertion.AssertReadXml(ds, "SimpleTable", xml6,
                 XmlReadMode.Auto, XmlReadMode.InferSchema,
                 "NewDataSet", 1);
-            AssertDataTable("seq1", ds.Tables[0], "root", 1, 1, 0, 0, 0, 0);
+            DataSetAssertion.AssertDataTable("seq1", ds.Tables[0], "root", 1, 1, 0, 0, 0, 0);
         }
 
         [Fact]
@@ -579,31 +579,31 @@ namespace System.Data.Tests
             // simple element -> simple dataset
             var ds = new DataSet();
 
-            AssertReadXml(ds, "SingleText", xml5,
+            DataSetAssertion.AssertReadXml(ds, "SingleText", xml5,
                 XmlReadMode.Auto, XmlReadMode.InferSchema,
                 "root", 0);
 
-            AssertReadXml(ds, "SimpleTable2", xml7,
+            DataSetAssertion.AssertReadXml(ds, "SimpleTable2", xml7,
                 XmlReadMode.Auto, XmlReadMode.InferSchema,
                 "NewDataSet", 1);
-            AssertDataTable("#1", ds.Tables[0], "root", 2, 1, 0, 0, 0, 0);
+            DataSetAssertion.AssertDataTable("#1", ds.Tables[0], "root", 2, 1, 0, 0, 0, 0);
 
             // simple table -> simple dataset
             ds = new DataSet();
 
-            AssertReadXml(ds, "SimpleTable", xml6,
+            DataSetAssertion.AssertReadXml(ds, "SimpleTable", xml6,
                 XmlReadMode.Auto, XmlReadMode.InferSchema,
                 "NewDataSet", 1);
-            AssertDataTable("#2", ds.Tables[0], "root", 1, 1, 0, 0, 0, 0);
+            DataSetAssertion.AssertDataTable("#2", ds.Tables[0], "root", 1, 1, 0, 0, 0, 0);
 
             // Return value became IgnoreSchema, since there is
             // already schema information in the dataset.
             // Columns are kept 1 as old table holds.
             // Rows are up to 2 because of accumulative read.
-            AssertReadXml(ds, "SimpleTable2-2", xml7,
+            DataSetAssertion.AssertReadXml(ds, "SimpleTable2-2", xml7,
                 XmlReadMode.Auto, XmlReadMode.IgnoreSchema,
                 "NewDataSet", 1);
-            AssertDataTable("#3", ds.Tables[0], "root", 1, 2, 0, 0, 0, 0);
+            DataSetAssertion.AssertDataTable("#3", ds.Tables[0], "root", 1, 2, 0, 0, 0, 0);
         }
 
         [Fact]
@@ -627,7 +627,7 @@ namespace System.Data.Tests
             ds.Tables.Add(dt);
             dt.Columns.Add("col");
             ds.ReadXml(new StringReader(xml1), XmlReadMode.IgnoreSchema);
-            AssertDataSet("ds", ds, "NewDataSet", 1, 0);
+            DataSetAssertion.AssertDataSet("ds", ds, "NewDataSet", 1, 0);
             Assert.Equal(1, dt.Rows.Count);
             dt.Clear();
 
@@ -727,7 +727,7 @@ namespace System.Data.Tests
             var ds = new DataSet();
             ds.ReadXml(new StringReader(xml));
 
-            AssertReadXml(ds, "SameNameParentChild", xml,
+            DataSetAssertion.AssertReadXml(ds, "SameNameParentChild", xml,
                 XmlReadMode.Auto, XmlReadMode.IgnoreSchema,
                 "NewDataSet", 1);
         }
@@ -739,7 +739,7 @@ namespace System.Data.Tests
             var ds = new DataSet();
             ds.ReadXml(new StringReader(xml));
 
-            AssertReadXml(ds, "SameColumnName", xml,
+            DataSetAssertion.AssertReadXml(ds, "SameColumnName", xml,
                 XmlReadMode.Auto, XmlReadMode.IgnoreSchema,
                 "NewDataSet", 1);
         }
