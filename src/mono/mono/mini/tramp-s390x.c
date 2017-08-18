@@ -526,7 +526,9 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 	g_free (rgctx_null_jumps);
 
 	/* move the rgctx pointer to the VTABLE register */
+#if MONO_ARCH_VTABLE_REG != s390_r2
 	s390_lgr (code, MONO_ARCH_VTABLE_REG, s390_r2);
+#endif
 
 	tramp = mono_arch_create_specific_trampoline (GUINT_TO_POINTER (slot),
 		MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), NULL);
