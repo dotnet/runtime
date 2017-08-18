@@ -27,6 +27,10 @@ We don't have specific benchmarks that we know would jump in response to any of
 these.  May well be able to find some with some looking, though this may be an
 area where current performance-sensitive code avoids structs.
 
+There's also work going on in corefx to use `Span<T>` more broadly.  We should
+make sure we are expanding our span benchmarks appropriately to track and
+respond to any particular issues that come out of that work.
+
 
 Exception handling
 ------------------
@@ -48,7 +52,9 @@ Loop Optimizations
 We haven't been targeting benchmarks that spend a lot of time doing compuations
 in an inner loop.  Pursuing loop optimizations for the peanut butter effect
 would seem odd.  So this simply hasn't bubbled up in priority yet, though it's
-bound to eventually.
+bound to eventually.  Obvious candidates include [IV widening](https://github.com/dotnet/coreclr/issues/9179),
+[unrolling](https://github.com/dotnet/coreclr/issues/11606), load/store motion,
+and strength reduction.
 
 
 More Expression Optimizations
@@ -88,6 +94,10 @@ benchmarking story set up to validate whether tiering changes are helping or
 hurting.  We should get that benchmarking story sorted out and at least hook
 up those two knobs.
 
+Some of this may depend on register allocation work, as the RA currently has
+some issues, particularly around spill placement, that could be exacerbated by
+very aggressive upstream optimizations.
+
 
 Low Tier Back-Off
 -----------------
@@ -123,12 +133,35 @@ If-Conversion (cmov formation)
 ------------------------------
 
 This hits big in microbenchmarks where it hits.  There's some work in flight
-on this (see #7447 and #10861).
+on this (see [#7447](https://github.com/dotnet/coreclr/issues/7447) and
+[#10861](https://github.com/dotnet/coreclr/pull/10861)).
 
 
 Mulshift
 --------
 
-Replacing multiplication by constants with shift/add/lea sequences is a
-classic optimization that keeps coming up in planning.  An [analysis](https://gist.github.com/JosephTremoulet/c1246b17ea2803e93e203b9969ee5a25#file-mulshift-md)
-indicates that RyuJIT is already capitalizing on most of the opportunity here.
+RyuJIT has an implementation that handles the valuable cases (see [analysis](https://gist.github.com/JosephTremoulet/c1246b17ea2803e93e203b9969ee5a25#file-mulshift-md)
+and [follow-up](https://github.com/dotnet/coreclr/pull/13128) for details).
+The current implementation is split across Morph and CodeGen; ideally it would
+be moved to Lower, which is tracked by [#13150](https://github.com/dotnet/coreclr/issues/13150).
+
+
+Switch Lowering
+---------------
+
+The MSIL `switch` instruction is actually encoded as a jump table, so (for
+better or worse) intelligent optimization of source-level switch statements
+largely falls to the MSIL generator (e.g. Roslyn), since encoding sparse
+switches as jump tables in MSIL would be impractical.  That said, when the MSIL
+has a switch of just a few cases (as in [#12868](https://github.com/dotnet/coreclr/issues/12868)),
+or just a few distinct cases that can be efficiently checked (as in [#12477](https://github.com/dotnet/coreclr/issues/12477)),
+the JIT needn't blindly emit these as jump tables in the native code.  Work is
+underway to address the latter case in [#12552](https://github.com/dotnet/coreclr/pull/12552).
+
+
+Write Barriers
+--------------
+
+A number of suggestions have been made for having the JIT recognize certain
+patterns and emit specialized write barriers that avoid various overheads --
+see [#13006](https://github.com/dotnet/coreclr/issues/13006) and [#12812](https://github.com/dotnet/coreclr/issues/12812).
