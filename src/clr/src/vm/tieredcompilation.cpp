@@ -110,7 +110,7 @@ void TieredCompilationManager::Init(ADID appDomainId)
 
     SpinLockHolder holder(&m_lock);
     m_domainId = appDomainId;
-    m_asyncWorkDoneEvent.CreateManualEvent(TRUE);
+    m_asyncWorkDoneEvent.CreateManualEventNoThrow(TRUE);
 }
 
 // Called each time code in this AppDomain has been run. This is our sole entrypoint to begin
