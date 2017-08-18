@@ -17,6 +17,20 @@
 
 __declspec(thread) bool tls_isSymReaderInProgress = false;
 
+#ifdef _DEBUG
+static void DumpElf(const char* methodName, const char *addr, size_t size)
+{
+    char dump[1024] = { 0, };
+
+    strcat(dump, methodName);
+    strcat(dump, ".o");
+
+    FILE *f = fopen(dump,  "wb");
+    fwrite(addr, sizeof(char), size, f);
+    fclose(f);
+}
+#endif
+
 TypeInfoBase*
 GetTypeInfoFromTypeHandle(TypeHandle typeHandle,
                           NotifyGdb::PTK_TypeInfoMap pTypeMap,
@@ -2067,7 +2081,7 @@ class Elf_Builder
         void Finalize(void);
 
     public:
-        char *Export(UINT64 *len);
+        char *Export(size_t *len);
 };
 
 Elf_Builder::Elf_Builder()
@@ -2167,7 +2181,7 @@ void Elf_Builder::CloseSection()
     m_Curr = nullptr;
 }
 
-char *Elf_Builder::Export(UINT64 *pLen)
+char *Elf_Builder::Export(size_t *pLen)
 {
     unsigned int len = m_Buffer.GetPos();
     const char  *src = m_Buffer.GetPtr();
@@ -2473,12 +2487,27 @@ void NotifyGdb::OnMethodPrepared(MethodDesc* methodDescPtr)
 
     elfBuilder.Finalize();
 
+    char   *symfile_addr = NULL;
+    size_t  symfile_size = 0;
+
+    symfile_addr = elfBuilder.Export(&symfile_size);
+
+#ifdef _DEBUG
+    LPCUTF8 methodName = methodDescPtr->GetName();
+
+    if (g_pConfig->ShouldDumpElfOnMethod(methodName))
+    {
+        DumpElf(methodName, symfile_addr, symfile_size);
+    }
+#endif
+
     /* Create GDB JIT structures */
     NewHolder<jit_code_entry> jit_symbols = new jit_code_entry;
 
     /* Fill the new entry */
     jit_symbols->next_entry = jit_symbols->prev_entry = 0;
-    jit_symbols->symfile_addr = elfBuilder.Export(&jit_symbols->symfile_size);
+    jit_symbols->symfile_addr = symfile_addr;
+    jit_symbols->symfile_size = symfile_size;
 
     /* Link into list */
     jit_code_entry *head = __jit_debug_descriptor.first_entry;
@@ -3265,19 +3294,6 @@ void NotifyGdb::SplitPathname(const char* path, const char*& pathName, const cha
         pathName = nullptr;
     }
 }
-
-#ifdef _DEBUG
-void NotifyGdb::DumpElf(const char* methodName, const MemBuf& elfFile)
-{
-    char dump[1024];
-    strcpy(dump, "./");
-    strcat(dump, methodName);
-    strcat(dump, ".o");
-    FILE *f = fopen(dump,  "wb");
-    fwrite(elfFile.MemPtr, sizeof(char),elfFile.MemSize, f);
-    fclose(f);
-}
-#endif
 
 /* ELF 32bit header */
 Elf32_Ehdr::Elf32_Ehdr()

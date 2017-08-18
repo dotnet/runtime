@@ -430,9 +430,6 @@ private:
     static void SplitPathname(const char* path, const char*& pathName, const char*& fileName);
     static bool CollectCalledMethods(CalledMethod* pCM, TADDR nativeCode, FunctionMemberPtrArrayHolder &method,
                                      NewArrayHolder<Elf_Symbol> &symbolNames, int &symbolCount);
-#ifdef _DEBUG
-    static void DumpElf(const char* methodName, const MemBuf& buf);
-#endif
 };
 
 class FunctionMember: public TypeMember
