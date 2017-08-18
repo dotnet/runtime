@@ -107,6 +107,11 @@
     <Compile Include="ManagedHandlerTest.cs" />
     <Compile Include="HttpClientHandlerTest.AcceptAllCerts.cs" />
   </ItemGroup>
+  <ItemGroup Condition="'$(TargetGroup)' == 'netstandard'">
+    <Compile Include="$(CommonTestPath)\System\IO\StreamSpanExtensions.netstandard.cs">
+      <Link>Common\System\IO\StreamSpanExtensions.netstandard.cs</Link>
+    </Compile>
+  </ItemGroup>
   <ItemGroup Condition="'$(TargetGroup)' == 'uap'">
     <Reference Include="Windows" />
     <Compile Include="MultiInterfaceNonRewindableReadOnlyStream.cs" />

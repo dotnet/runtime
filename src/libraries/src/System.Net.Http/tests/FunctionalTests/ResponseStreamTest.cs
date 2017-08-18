@@ -27,24 +27,82 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [OuterLoop] // TODO: Issue #11345
-        [Fact]
-        public async Task GetStreamAsync_ReadToEnd_Success()
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(2)]
+        [InlineData(3)]
+        [InlineData(4)]
+        [InlineData(5)]
+        public async Task GetStreamAsync_ReadToEnd_Success(int readMode)
         {
-            var customHeaderValue = Guid.NewGuid().ToString("N");
             using (var client = new HttpClient())
             {
+                string customHeaderValue = Guid.NewGuid().ToString("N");
                 client.DefaultRequestHeaders.Add("X-ResponseStreamTest", customHeaderValue);
 
-                Stream stream = await client.GetStreamAsync(Configuration.Http.RemoteEchoServer);
-                using (var reader = new StreamReader(stream))
+                using (Stream stream = await client.GetStreamAsync(Configuration.Http.RemoteEchoServer))
                 {
-                    string responseBody = reader.ReadToEnd();
-                    _output.WriteLine(responseBody);
+                    var ms = new MemoryStream();
+                    int bytesRead;
+                    var buffer = new byte[10];
+                    string responseBody;
+
+                    // Read all of the response content in various ways
+                    switch (readMode)
+                    {
+                        case 0:
+                            // StreamReader.ReadToEnd
+                            responseBody = new StreamReader(stream).ReadToEnd();
+                            break;
+
+                        case 1:
+                            // StreamReader.ReadToEndAsync
+                            responseBody = await new StreamReader(stream).ReadToEndAsync();
+                            break;
+
+                        case 2:
+                            // Individual calls to Read(Array)
+                            while ((bytesRead = stream.Read(buffer, 0, buffer.Length)) != 0)
+                            {
+                                ms.Write(buffer, 0, bytesRead);
+                            }
+                            responseBody = Encoding.UTF8.GetString(ms.ToArray());
+                            break;
+
+                        case 3:
+                            // Individual calls to ReadAsync(Array)
+                            while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length)) != 0)
+                            {
+                                ms.Write(buffer, 0, bytesRead);
+                            }
+                            responseBody = Encoding.UTF8.GetString(ms.ToArray());
+                            break;
+
+                        case 4:
+                            // Individual calls to Read(Span)
+                            while ((bytesRead = stream.Read(new Span<byte>(buffer))) != 0)
+                            {
+                                ms.Write(buffer, 0, bytesRead);
+                            }
+                            responseBody = Encoding.UTF8.GetString(ms.ToArray());
+                            break;
+
+                        case 5:
+                            // CopyToAsync
+                            await stream.CopyToAsync(ms);
+                            responseBody = Encoding.UTF8.GetString(ms.ToArray());
+                            break;
+
+                        default:
+                            throw new Exception($"Unexpected test mode {readMode}");
+                    }
 
                     // Calling GetStreamAsync() means we don't have access to the HttpResponseMessage.
                     // So, we can't use the MD5 hash validation to verify receipt of the response body.
                     // For this test, we can use a simpler verification of a custom header echo'ing back.
-                    Assert.True(responseBody.Contains(customHeaderValue));
+                    _output.WriteLine(responseBody);
+                    Assert.Contains(customHeaderValue, responseBody);
                 }
             }
         }
@@ -99,8 +157,9 @@ namespace System.Net.Http.Functional.Tests
             using (var client = new HttpClient())
             using (Stream stream = await client.GetStreamAsync(Configuration.Http.RemoteEchoServer))
             {
-                int bytesRead = await stream.ReadAsync(new byte[1], 0, 0);
-                Assert.Equal(0, bytesRead);
+                Assert.Equal(0, stream.Read(new byte[1], 0, 0));
+                Assert.Equal(0, stream.Read(new Span<byte>(new byte[1], 0, 0)));
+                Assert.Equal(0, await stream.ReadAsync(new byte[1], 0, 0));
             }
         }
 
