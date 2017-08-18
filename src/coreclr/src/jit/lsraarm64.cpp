@@ -384,7 +384,6 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             break;
 
         case GT_LOCKADD:
-            ContainCheckBinary(tree->AsOp());
             info->srcCount = tree->gtOp.gtOp2->isContained() ? 1 : 2;
             assert(info->dstCount == 1);
             break;
@@ -433,7 +432,6 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
 
         case GT_LCLHEAP:
         {
-            ContainCheckLclHeap(tree->AsOp());
             assert(info->dstCount == 1);
 
             // Need a variable number of temp regs (see genLclHeap() in codegenamd64.cpp):
@@ -575,7 +573,6 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             break;
 
         case GT_ARR_OFFSET:
-            ContainCheckArrOffset(tree->AsArrOffs());
             // This consumes the offset, if any, the arrObj and the effective index,
             // and produces the flattened offset for this dimension.
             info->srcCount = tree->gtArrOffs.gtOffset->isContained() ? 2 : 3;
@@ -685,8 +682,6 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
 //
 void Lowering::TreeNodeInfoInitReturn(GenTree* tree)
 {
-    ContainCheckRet(tree->AsOp());
-
     TreeNodeInfo* info     = &(tree->gtLsraInfo);
     LinearScan*   l        = m_lsra;
     Compiler*     compiler = comp;

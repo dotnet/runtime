@@ -859,6 +859,17 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
     isOnStack = info->regNum == REG_STK;
 #endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
 
+#ifdef _TARGET_ARMARCH_
+    if (varTypeIsStruct(type))
+    {
+        arg->SetContained();
+        if ((arg->OperGet() == GT_OBJ) && (arg->AsObj()->Addr()->OperGet() == GT_LCL_VAR_ADDR))
+        {
+            MakeSrcContained(arg, arg->AsObj()->Addr());
+        }
+    }
+#endif
+
 #ifdef _TARGET_ARM_
     // Struct can be split into register(s) and stack on ARM
     if (info->isSplit)
@@ -873,6 +884,7 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
         putArg = new (comp, GT_PUTARG_SPLIT)
             GenTreePutArgSplit(arg, info->slotNum PUT_STRUCT_ARG_STK_ONLY_ARG(info->numSlots), info->numRegs,
                                call->IsFastTailCall(), call);
+        putArg->gtRegNum = info->regNum;
 
         // If struct argument is morphed to GT_FIELD_LIST node(s),
         // we can know GC info by type of each GT_FIELD_LIST node.
@@ -1272,16 +1284,21 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
             GenTreePtr argLo = arg->gtGetOp1();
             GenTreePtr argHi = arg->gtGetOp2();
 
-            GenTreeFieldList* fieldList = new (comp, GT_FIELD_LIST) GenTreeFieldList(argLo, 0, TYP_INT, nullptr);
-            (void)new (comp, GT_FIELD_LIST) GenTreeFieldList(argHi, 4, TYP_INT, fieldList);
+            GenTreeFieldList* fieldListLow = new (comp, GT_FIELD_LIST) GenTreeFieldList(argLo, 0, TYP_INT, nullptr);
+            GenTreeFieldList* fieldListHigh =
+                new (comp, GT_FIELD_LIST) GenTreeFieldList(argHi, 4, TYP_INT, fieldListLow);
 
-            putArg           = NewPutArg(call, fieldList, info, TYP_VOID);
+            putArg           = NewPutArg(call, fieldListLow, info, TYP_INT);
             putArg->gtRegNum = info->regNum;
 
             BlockRange().InsertBefore(arg, putArg);
             BlockRange().Remove(arg);
-            *ppArg     = fieldList;
-            info->node = fieldList;
+            *ppArg     = fieldListLow;
+            info->node = fieldListLow;
+
+            // Clear the register assignments on the fieldList nodes, as these are contained.
+            fieldListLow->gtRegNum  = REG_NA;
+            fieldListHigh->gtRegNum = REG_NA;
         }
         else
         {
