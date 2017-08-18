@@ -18830,15 +18830,24 @@ regMaskTP CodeGen::genCodeForCall(GenTreeCall* call, bool valUsed)
                                                    (ssize_t)stubAddr);
                             // The stub will write-back to this register, so don't track it
                             regTracker.rsTrackRegTrash(compiler->virtualStubParamInfo->GetReg());
-                            getEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, REG_JUMP_THUNK_PARAM,
+                            regNumber indReg;
+                            if (compiler->IsTargetAbi(CORINFO_CORERT_ABI))
+                            {
+                                indReg = regSet.rsGrabReg(RBM_ALLINT & ~compiler->virtualStubParamInfo->GetRegMask());
+                            }
+                            else
+                            {
+                                indReg = REG_JUMP_THUNK_PARAM;
+                            }
+                            getEmitter()->emitIns_R_R_I(INS_ldr, EA_PTRSIZE, indReg,
                                                         compiler->virtualStubParamInfo->GetReg(), 0);
-                            regTracker.rsTrackRegTrash(REG_JUMP_THUNK_PARAM);
+                            regTracker.rsTrackRegTrash(indReg);
                             callTypeStubAddr = emitter::EC_INDIR_R;
                             getEmitter()->emitIns_Call(emitter::EC_INDIR_R,
                                                        NULL,                                // methHnd
                                                        INDEBUG_LDISASM_COMMA(sigInfo) NULL, // addr
                                                        args, retSize, gcInfo.gcVarPtrSetCur, gcInfo.gcRegGCrefSetCur,
-                                                       gcInfo.gcRegByrefSetCur, ilOffset, REG_JUMP_THUNK_PARAM);
+                                                       gcInfo.gcRegByrefSetCur, ilOffset, indReg);
 
 #else
                             // emit an indirect call
