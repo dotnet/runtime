@@ -286,6 +286,18 @@ public:
     bool          TieredCompilation(void)           const {LIMITED_METHOD_CONTRACT;  return fTieredCompilation; }
 #endif
 
+#if defined(FEATURE_GDBJIT) && defined(_DEBUG)
+    inline bool ShouldDumpElfOnMethod(LPCUTF8 methodName) const
+    {
+        CONTRACTL {
+            NOTHROW;
+            GC_NOTRIGGER;
+            PRECONDITION(CheckPointer(methodName, NULL_OK));
+        } CONTRACTL_END
+        return RegexOrExactMatch(pszGDBJitElfDump, methodName);
+    }
+#endif // FEATURE_GDBJIT && _DEBUG
+
     BOOL PInvokeRestoreEsp(BOOL fDefault) const
     {
         LIMITED_METHOD_CONTRACT;
@@ -1097,6 +1109,10 @@ private: //----------------------------------------------------------------
 #if defined(FEATURE_TIERED_COMPILATION)
     bool fTieredCompilation;
 #endif
+
+#if defined(FEATURE_GDBJIT) && defined(_DEBUG)
+    LPCUTF8 pszGDBJitElfDump;
+#endif // FEATURE_GDBJIT && _DEBUG
 
 public:
 
