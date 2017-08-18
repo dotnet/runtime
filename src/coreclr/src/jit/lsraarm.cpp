@@ -40,8 +40,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //
 void Lowering::TreeNodeInfoInitReturn(GenTree* tree)
 {
-    ContainCheckRet(tree->AsOp());
-
     TreeNodeInfo* info     = &(tree->gtLsraInfo);
     LinearScan*   l        = m_lsra;
     Compiler*     compiler = comp;
@@ -107,8 +105,6 @@ void Lowering::TreeNodeInfoInitReturn(GenTree* tree)
 
 void Lowering::TreeNodeInfoInitLclHeap(GenTree* tree)
 {
-    ContainCheckLclHeap(tree->AsOp());
-
     TreeNodeInfo* info     = &(tree->gtLsraInfo);
     LinearScan*   l        = m_lsra;
     Compiler*     compiler = comp;
@@ -276,7 +272,6 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
 
         case GT_CAST:
         {
-            ContainCheckCast(tree->AsCast());
             info->srcCount = 1;
             assert(info->dstCount == 1);
 
@@ -419,7 +414,6 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         case GT_AND:
         case GT_OR:
         case GT_XOR:
-            ContainCheckBinary(tree->AsOp());
             info->srcCount = tree->gtOp.gtOp2->isContained() ? 1 : 2;
             assert(info->dstCount == 1);
             break;
@@ -548,7 +542,6 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             break;
 
         case GT_ARR_OFFSET:
-            ContainCheckArrOffset(tree->AsArrOffs());
             // This consumes the offset, if any, the arrObj and the effective index,
             // and produces the flattened offset for this dimension.
             assert(info->dstCount == 1);
