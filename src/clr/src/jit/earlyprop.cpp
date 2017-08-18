@@ -296,6 +296,34 @@ bool Compiler::optEarlyPropRewriteTree(GenTreePtr tree)
                 // array length argument, but the type of GT_ARR_LENGTH is always INT32.
                 return false;
             }
+
+            // When replacing GT_ARR_LENGTH nodes with constants we can end up with GT_ARR_BOUNDS_CHECK
+            // nodes that have constant operands and thus can be trivially proved to be useless. It's
+            // better to remove these range checks here, otherwise they'll pass through assertion prop
+            // (creating useless (c1 < c2)-like assertions) and reach RangeCheck where they are finally
+            // removed. Common patterns like new int[] { x, y, z } benefit from this.
+
+            if ((tree->gtNext != nullptr) && tree->gtNext->OperIs(GT_ARR_BOUNDS_CHECK))
+            {
+                GenTreeBoundsChk* check = tree->gtNext->AsBoundsChk();
+
+                if ((check->gtArrLen == tree) && check->gtIndex->IsCnsIntOrI() &&
+                    (check->gtIndex->AsIntCon()->IconValue() >= 0) &&
+                    (check->gtIndex->AsIntCon()->IconValue() < actualVal->AsIntCon()->IconValue()))
+                {
+                    GenTree* comma = check->gtGetParent(nullptr);
+
+                    if ((comma != nullptr) && comma->OperIs(GT_COMMA) && (comma->gtGetOp1() == check))
+                    {
+                        GenTree* next = check->gtNext;
+                        optRemoveRangeCheck(comma, root);
+                        // Both `tree` and `check` have been removed from the statement. Ensure that optEarlyProp
+                        // can process the rest of the statment by changing tree->gtNext appropriately.
+                        tree->gtNext = next;
+                        return true;
+                    }
+                }
+            }
         }
         else if (propKind == optPropKind::OPK_OBJ_GETTYPE)
         {
