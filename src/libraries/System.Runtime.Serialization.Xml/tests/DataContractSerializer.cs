@@ -3533,8 +3533,7 @@ public static partial class DataContractSerializerTests
     }
 
     [Fact]
-    [ActiveIssue(22779, TargetFrameworkMonikers.UapAot)]
-    public static void DCS_BasicPerSerializerRoundTripAndCompare_Collections_FailedInuapaot_InCollections()
+    public static void DCS_BasicPerSerializerRoundTripAndCompare_CollectionDataContract()
     {
         string assemblyName = typeof(DataContractSerializerTests).Assembly.FullName;
         string corelibAssemblyName = typeof(String).Assembly.FullName;
