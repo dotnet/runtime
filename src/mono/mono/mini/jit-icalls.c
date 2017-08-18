@@ -1911,8 +1911,8 @@ mono_interruption_checkpoint_from_trampoline (void)
 void
 mono_throw_method_access (MonoMethod *caller, MonoMethod *callee)
 {
-	char *caller_name = mono_method_full_name (caller, 1);
-	char *callee_name = mono_method_full_name (callee, 1);
+	char *caller_name = mono_method_get_reflection_name (caller);
+	char *callee_name = mono_method_get_reflection_name (callee);
 	MonoError error;
 
 	error_init (&error);
