@@ -5,27 +5,37 @@ You can build .NET Core either via the command line or by using Visual Studio.
 
 ## Required Software
 
-Visual Studio must be installed. Supported versions:
-* [Visual Studio 2015](https://www.visualstudio.com/vs/older-downloads/) (Community, Professional, Enterprise).  The community version is completely free.  
-* [Visual Studio 2017](https://www.visualstudio.com/downloads/) (Community, Professional, Enterprise).  The community version is completely free.
+1. **Visual Studio** must be installed. Supported versions:
+    * [Visual Studio 2015](https://www.visualstudio.com/vs/older-downloads/) (Community, Professional, Enterprise).  The Community version is completely free.
+    * [Visual Studio 2017](https://www.visualstudio.com/downloads/) (Community, Professional, Enterprise).  The Community version is completely free.
+2. **[CMake](https://cmake.org/)** must be installed from [the CMake download page](https://cmake.org/download/#latest) and added to your path.
 
-For Visual Studio 2015:
-* In order to build our C++ projects be sure to select "Programming Languages | Visual C++ | Common Tools for Visual C++ 2015" while installing VS 2015 (or modify your install to include it).
-* We also require that [Visual Studio 2015 Update 1](https://www.visualstudio.com/en-us/news/vs2015-update1-vs.aspx) be installed.
+### Visual Studio 2015
 
-For Visual Studio 2017:
-* When doing a 'Workloads' based install, the following are the minimum requirements:
-  * .NET Desktop Development
+* [Visual Studio 2015 Update 1](https://www.visualstudio.com/en-us/news/vs2015-update1-vs.aspx) is required.
+* You must select **Programming Languages | Visual C++ | Common Tools for Visual C++ 2015** while installing VS 2015 (or modify your install to include it).
+
+### Visual Studio 2017
+
+#### Visual Studio 2017 - 'Workloads' based install
+
+The following are the minimum requirements:
+  * .NET desktop development
     * All Required Components
     * .NET Framework 4-4.6 Development Tools
-  * Desktop Development with C++
+  * Desktop development with C++
     * All Required Components
     * VC++ 2017 v141 Toolset (x86, x64)
     * Windows 8.1 SDK and UCRT SDK
     * VC++ 2015.3 v140 Toolset (x86, x64)
   * .NET Core cross-platform development
     * All Required Components
-* When doing an 'Individual Components' based install, the following are the minimum requirements:
+
+Note: If you have both VS 2017 and 2015 installed, you need to copy DIA SDK directory from VS 2015 installation into VS 2017 (VS installer bug).
+
+#### Visual Studio 2017 - 'Individual components' based install
+
+The following are the minimum requirements:
   * C# and Visual Basic Roslyn Compilers
   * Static Analysis Tools
   * .NET Portable Library Targeting Pack
@@ -36,13 +46,10 @@ For Visual Studio 2017:
   * .NET Framework 4.6 Targeting Pack
   * Windows Universal CRT SDK
   * VC++ 2015.3 v140 Toolset (x86, x64)
-* Ensure you are running from the "Developer Command Prompt for VS2017"; Otherwise, the build will attempt to locate and use the VS2015 toolset.
-
-[CMake](https://cmake.org/) is required to build the native libraries for Windows. To build these libraries cmake must be installed from [the CMake download page](https://cmake.org/download/#latest) and added to your path.
 
 ## Building From the Command Line
 
-Open a [Visual Studio Command Prompt](http://msdn.microsoft.com/en-us/library/ms229859(v=vs.110).aspx).
+From a (non-admin) Command Prompt window:
 
 - `build.cmd` - Will cause basic tool initialization and build the default configuration for refs, libs, and packages.
 - `build-tests.cmd` - Will build and run tests for the default configuration.
