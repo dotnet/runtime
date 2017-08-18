@@ -31,21 +31,8 @@ using Xunit;
 
 namespace System.Data.Tests.SqlTypes
 {
-    public class SqlXmlTest : IDisposable
+    public class SqlXmlTest
     {
-        private CultureInfo _originalCulture;
-
-        public SqlXmlTest()
-        {
-            _originalCulture = CultureInfo.CurrentCulture; ;
-            CultureInfo.CurrentCulture = new CultureInfo("en-US");
-        }
-
-        public void Dispose()
-        {
-            CultureInfo.CurrentCulture = _originalCulture;
-        }
-
         // Test constructor
         [Fact] // .ctor (Stream)
                //[Category ("NotDotNet")] // Name cannot begin with the '.' character, hexadecimal value 0x00. Line 1, position 2
