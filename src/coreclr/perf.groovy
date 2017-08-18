@@ -32,8 +32,7 @@ def static getOSGroup(def os) {
             [true, false].each { isSmoketest ->
                 ['ryujit', 'legacy_backend'].each { jit ->
 
-                    if (arch == 'x64' && jit == 'legacy_backend')
-                    {
+                    if (arch == 'x64' && jit == 'legacy_backend') {
                         return
                     }
 
@@ -42,8 +41,7 @@ def static getOSGroup(def os) {
                         def jobName = isSmoketest ? "perf_perflab_${os}_${arch}_${opt_level}_${jit}_smoketest" : "perf_perflab_${os}_${arch}_${opt_level}_${jit}"
                         def testEnv = ""
 
-                        if (jit == 'legacy_backend')
-                        {
+                        if (jit == 'legacy_backend') {
                             testEnv = '-testEnv %WORKSPACE%\\tests\\legacyjit_x86_testenv.cmd'
                         }
 
@@ -101,11 +99,17 @@ def static getOSGroup(def os) {
 
                                 // Run with just stopwatch: Profile=Off
                                 batchFile("tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\perflab\\Perflab -library")
+                                batchFile("xcopy.exe /VYQK bin\\sandbox\\Logs\\Perf-*.* bin\\toArchive\\sandbox\\Logs\\Perflab\\Off\\")
+
                                 batchFile("tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\Jit\\Performance\\CodeQuality")
+                                batchFile("xcopy.exe /VYQK bin\\sandbox\\Logs\\Perf-*.* bin\\toArchive\\sandbox\\Logs\\CodeQuality\\Off\\")
 
                                 // Run with the full set of counters enabled: Profile=On
                                 batchFile("tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\perflab\\Perflab -library -collectionFlags default+BranchMispredictions+CacheMisses+InstructionRetired+gcapi")
+                                batchFile("xcopy.exe /VYQK bin\\sandbox\\Logs\\Perf-*.* bin\\toArchive\\sandbox\\Logs\\Perflab\\On\\")
+
                                 batchFile("tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\Jit\\Performance\\CodeQuality -collectionFlags default+BranchMispredictions+CacheMisses+InstructionRetired+gcapi")
+                                batchFile("xcopy.exe /VYQK bin\\sandbox\\Logs\\Perf-*.* bin\\toArchive\\sandbox\\Logs\\CodeQuality\\On\\")
                             }
                         }
 
@@ -113,15 +117,20 @@ def static getOSGroup(def os) {
                             Utilities.setMachineAffinity(newJob, "Windows_NT", '20170427-elevated')
                         }
 
-                        // Save machinedata.json to /artifact/bin/ Jenkins dir
                         def archiveSettings = new ArchivalSettings()
-                archiveSettings.addFiles('bin/sandbox/Logs/Perf-*.*')
+                        archiveSettings.addFiles('bin/toArchive/**')
                         archiveSettings.addFiles('machinedata.json')
-                        Utilities.addArchival(newJob, archiveSettings)
 
+                        Utilities.addArchival(newJob, archiveSettings)
                         Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
 
                         newJob.with {
+                            logRotator {
+                                artifactDaysToKeep(30)
+                                daysToKeep(30)
+                                artifactNumToKeep(200)
+                                numToKeep(200)
+                            }
                             wrappers {
                                 timeout {
                                     absolute(240)
@@ -131,21 +140,18 @@ def static getOSGroup(def os) {
 
                         if (isPR) {
                             TriggerBuilder builder = TriggerBuilder.triggerOnPullRequest()
-                            if (isSmoketest)
-                            {
+                            if (isSmoketest) {
                                 builder.setGithubContext("${os} ${arch} ${opt_level} ${jit} CoreCLR Perf Tests Correctness")
                             }
-                            else
-                            {
+                            else {
                                 builder.setGithubContext("${os} ${arch} ${opt_level} ${jit} CoreCLR Perf Tests")
+
                                 def opts = ""
-                                if (opt_level == 'min_opts')
-                                {
+                                if (opt_level == 'min_opts') {
                                     opts = '\\W+min_opts'
                                 }
                                 def jitt = ""
-                                if (jit != 'ryujit')
-                                {
+                                if (jit != 'ryujit') {
                                     jitt = '\\W+${jit}'
                                 }
 
@@ -173,8 +179,7 @@ def static getOSGroup(def os) {
         ['x64', 'x86'].each { arch ->
             ['ryujit', 'legacy_backend'].each { jit ->
 
-                if (arch == 'x64' && jit == 'legacy_backend')
-                {
+                if (arch == 'x64' && jit == 'legacy_backend') {
                     return
                 }
 
@@ -229,13 +234,12 @@ def static getOSGroup(def os) {
 
                     if (isPR) {
                         def opts = ""
-                        if (opt_level == 'min_opts')
-                        {
+                        if (opt_level == 'min_opts') {
                             opts = '\\W+min_opts'
                         }
+
                         def jitt = ""
-                        if (jit != 'ryujit')
-                        {
+                        if (jit != 'ryujit') {
                             jitt = '\\W+${jit}'
                         }
 
@@ -332,25 +336,30 @@ def static getFullPerfJobName(def project, def os, def isPR) {
                 --generatebenchviewdata=\"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools\" \\
                 --stabilityPrefix=\"taskset 0x00000002 nice --adjustment=-10\" \\
                 --uploadToBenchview""")
+                shell("rsync -a bin/sandbox/Logs/Perf-*.* bin/toArchive/sandbox/Logs/")
             }
         }
 
-        // Save machinedata.json to /artifact/bin/ Jenkins dir
         def archiveSettings = new ArchivalSettings()
-        archiveSettings.addFiles('bin/sandbox/Logs/Perf-*.*')
+        archiveSettings.addFiles('bin/toArchive/**')
         archiveSettings.addFiles('machinedata.json')
-        Utilities.addArchival(newJob, archiveSettings)
 
+        Utilities.addArchival(newJob, archiveSettings)
         Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
 
         // For perf, we need to keep the run results longer
         newJob.with {
             // Enable the log rotator
             logRotator {
-                artifactDaysToKeep(7)
-                daysToKeep(300)
-                artifactNumToKeep(25)
-                numToKeep(1000)
+                artifactDaysToKeep(30)
+                daysToKeep(30)
+                artifactNumToKeep(200)
+                numToKeep(200)
+            }
+            wrappers {
+                timeout {
+                    absolute(240)
+                }
             }
         }
     } // os
@@ -439,10 +448,8 @@ def static getFullThroughputJobName(def project, def os, def isPR) {
                         }
                     }
 
-                if (isPR)
-                {
-                    parameters
-                    {
+                if (isPR) {
+                    parameters {
                         stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that will be used to build the full title of a run in Benchview.')
                     }
                 }
@@ -545,8 +552,7 @@ parallel(
         ['x64', 'x86'].each { arch ->
             ['ryujit', 'legacy_backend'].each { jit ->
 
-                if (arch == 'x64' && jit == 'legacy_backend')
-                {
+                if (arch == 'x64' && jit == 'legacy_backend') {
                     return
                 }
 
@@ -555,8 +561,7 @@ parallel(
                     def newJob = job(Utilities.getFullJobName(project, "perf_scenarios_${os}_${arch}_${opt_level}_${jit}", isPR)) {
 
                         def testEnv = ""
-                        if (jit == 'legacy_backend')
-                        {
+                        if (jit == 'legacy_backend') {
                             testEnv = '-testEnv %WORKSPACE%\\tests\\legacyjit_x86_testenv.cmd'
                         }
 
@@ -611,25 +616,32 @@ parallel(
 
                             // Scenario: JitBench
                             batchFile("tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\Scenario\\JitBench -group CoreCLR-Scenarios || (echo [ERROR] JitBench failed. 1>>\"${failedOutputLogFilename}\"& exit /b 0)")
+                            batchFile("xcopy.exe /VYQK bin\\sandbox\\Perf-*.* bin\\toArchive\\sandbox\\Logs\\Scenario\\JitBench\\")
 
                             // Scenario: ILLink
                             if (arch == 'x64' && opt_level == 'full_opt') {
                                 batchFile("tests\\scripts\\run-xunit-perf.cmd ${runXUnitPerfCommonArgs} -testBinLoc bin\\tests\\${os}.${architecture}.${configuration}\\performance\\linkbench\\linkbench -group ILLink -nowarmup || (echo [ERROR] IlLink failed. 1>>\"${failedOutputLogFilename}\"& exit /b 0)")
+                                batchFile("xcopy.exe /VYQK bin\\sandbox\\Perf-*.* bin\\toArchive\\sandbox\\Logs\\Scenario\\LinkBench\\")
                             }
 
                             batchFile("if exist \"${failedOutputLogFilename}\" (type \"${failedOutputLogFilename}\"& exit /b 1)")
                         }
-                     }
+                    }
 
-                     // Save machinedata.json to /artifact/bin/ Jenkins dir
                     def archiveSettings = new ArchivalSettings()
-            archiveSettings.addFiles('bin/sandbox/Perf-*.*')
+                    archiveSettings.addFiles('bin/toArchive/**')
                     archiveSettings.addFiles('machinedata.json')
-                    Utilities.addArchival(newJob, archiveSettings)
 
+                    Utilities.addArchival(newJob, archiveSettings)
                     Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
 
                     newJob.with {
+                        logRotator {
+                            artifactDaysToKeep(30)
+                            daysToKeep(30)
+                            artifactNumToKeep(200)
+                            numToKeep(200)
+                        }
                         wrappers {
                             timeout {
                                 absolute(240)
@@ -639,13 +651,11 @@ parallel(
 
                     if (isPR) {
                         def opts = ""
-                        if (opt_level == 'min_opts')
-                        {
+                        if (opt_level == 'min_opts') {
                             opts = '\\W+min_opts'
                         }
                         def jitt = ""
-                        if (jit != 'ryujit')
-                        {
+                        if (jit != 'ryujit') {
                             jitt = '\\W+${jit}'
                         }
 
