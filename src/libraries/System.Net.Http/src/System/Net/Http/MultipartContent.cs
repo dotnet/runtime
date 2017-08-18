@@ -417,6 +417,38 @@ namespace System.Net.Http
                 }
             }
 
+#if !NET46
+            public override int Read(Span<byte> destination)
+            {
+                if (destination.Length == 0)
+                {
+                    return 0;
+                }
+
+                while (true)
+                {
+                    if (_current != null)
+                    {
+                        int bytesRead = _current.Read(destination);
+                        if (bytesRead != 0)
+                        {
+                            _position += bytesRead;
+                            return bytesRead;
+                        }
+
+                        _current = null;
+                    }
+
+                    if (_next >= _streams.Length)
+                    {
+                        return 0;
+                    }
+
+                    _current = _streams[_next++];
+                }
+            }
+#endif
+
             public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
                 ValidateReadArgs(buffer, offset, count);
@@ -550,6 +582,9 @@ namespace System.Net.Http
             public override void Flush() { }
             public override void SetLength(long value) { throw new NotSupportedException(); }
             public override void Write(byte[] buffer, int offset, int count) { throw new NotSupportedException(); }
+#if !NET46
+            public override void Write(ReadOnlySpan<byte> source) { throw new NotSupportedException(); }
+#endif
             public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) { throw new NotSupportedException(); }
         }
         #endregion Serialization

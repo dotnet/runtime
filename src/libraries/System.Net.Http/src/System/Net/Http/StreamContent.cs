@@ -143,6 +143,13 @@ namespace System.Net.Http
                 throw new NotSupportedException(SR.net_http_content_readonly_stream);
             }
 
+#if !NET46
+            public override void Write(ReadOnlySpan<byte> source)
+            {
+                throw new NotSupportedException(SR.net_http_content_readonly_stream);
+            }
+#endif
+
             public override void WriteByte(byte value)
             {
                 throw new NotSupportedException(SR.net_http_content_readonly_stream);
