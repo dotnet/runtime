@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -11,10 +11,10 @@ namespace System.Tests
         [Fact]
         public static void SingleToInt32Bits()
         {
-            Single input = 12345.63f;
-            Int32 result = BitConverter.SingleToInt32Bits(input);
+            float input = 12345.63f;
+            int result = BitConverter.SingleToInt32Bits(input);
             Assert.Equal(1178658437, result);
-            Single roundtripped = BitConverter.Int32BitsToSingle(result);
+            float roundtripped = BitConverter.Int32BitsToSingle(result);
             Assert.Equal(input, roundtripped);
         }
     }

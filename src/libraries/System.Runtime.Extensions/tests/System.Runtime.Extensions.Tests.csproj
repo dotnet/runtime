@@ -17,7 +17,9 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Unix-Release|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netstandard-Windows_NT-Release|AnyCPU'" />
-  <ItemGroup Condition="'$(TargetGroup)'=='netstandard' or '$(TargetGroup)'=='netcoreapp'">
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Windows_NT-Release|AnyCPU'" />
+  <ItemGroup>
     <Compile Include="System\ApplicationIdTests.cs" />
     <Compile Include="System\Convert.cs" />
     <Compile Include="System\EnvironmentTests.cs" />
@@ -30,7 +32,8 @@
     <Compile Include="System\Reflection\AssemblyNameProxyTests.cs" />
     <Compile Include="System\MarshalByRefObjectTest.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)'=='netcoreapp'">
+  <ItemGroup Condition="'$(TargetGroup)'!='netstandard'">
+    <Compile Include="System\BitConverterSpan.cs" />
     <Compile Include="System\BitConverter.netcoreapp.cs" />
     <Compile Include="System\IO\Path.GetRelativePath.cs" />
     <Compile Include="System\MathTests.netcoreapp.cs" />
@@ -40,6 +43,8 @@
     <Compile Include="System\IO\Path.IsPathFullyQualified.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="System\BitConverterArray.cs" />
+    <Compile Include="System\BitConverterBase.cs" />
     <Compile Include="System\Environment.UserDomainName.cs" />
     <Compile Include="System\Environment.UserName.cs" />
     <Compile Include="System\Diagnostics\Stopwatch.cs" />
