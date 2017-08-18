@@ -823,7 +823,7 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
     }
     else
     {
-        getEmitter()->emitIns_R_R_I(ins, emitTypeSize(tree), targetReg, operandReg, 0);
+        getEmitter()->emitIns_R_R_I(ins, emitTypeSize(tree), targetReg, operandReg, 0, INS_FLAGS_SET);
     }
 
     genProduceReg(tree);
