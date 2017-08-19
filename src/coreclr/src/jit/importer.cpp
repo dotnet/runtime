@@ -825,14 +825,10 @@ void Compiler::impAssignTempGen(unsigned             tmpNum,
  *  prefixTree at the head of the list.
  */
 
-GenTreeArgList* Compiler::impPopList(unsigned          count,
-                                     unsigned*         flagsPtr,
-                                     CORINFO_SIG_INFO* sig,
-                                     GenTreeArgList*   prefixTree)
+GenTreeArgList* Compiler::impPopList(unsigned count, CORINFO_SIG_INFO* sig, GenTreeArgList* prefixTree)
 {
     assert(sig == nullptr || count == sig->numArgs);
 
-    unsigned             flags = 0;
     CORINFO_CLASS_HANDLE structType;
     GenTreeArgList*      treeList;
 
@@ -860,11 +856,8 @@ GenTreeArgList* Compiler::impPopList(unsigned          count,
         }
 
         /* NOTE: we defer bashing the type for I_IMPL to fgMorphArgs */
-        flags |= temp->gtFlags;
         treeList = gtNewListNode(temp, treeList);
     }
-
-    *flagsPtr = flags;
 
     if (sig != nullptr)
     {
@@ -954,15 +947,12 @@ GenTreeArgList* Compiler::impPopList(unsigned          count,
  *  The first "skipReverseCount" items are not reversed.
  */
 
-GenTreeArgList* Compiler::impPopRevList(unsigned          count,
-                                        unsigned*         flagsPtr,
-                                        CORINFO_SIG_INFO* sig,
-                                        unsigned          skipReverseCount)
+GenTreeArgList* Compiler::impPopRevList(unsigned count, CORINFO_SIG_INFO* sig, unsigned skipReverseCount)
 
 {
     assert(skipReverseCount <= count);
 
-    GenTreeArgList* list = impPopList(count, flagsPtr, sig);
+    GenTreeArgList* list = impPopList(count, sig);
 
     // reverse the list
     if (list == nullptr || skipReverseCount == count)
@@ -5512,7 +5502,7 @@ void Compiler::impImportNewObjArray(CORINFO_RESOLVED_TOKEN* pResolvedToken, CORI
         args = gtNewListNode(gtNewIconNode(pCallInfo->sig.numArgs), args);
 
         unsigned argFlags = 0;
-        args              = impPopList(pCallInfo->sig.numArgs, &argFlags, &pCallInfo->sig, args);
+        args              = impPopList(pCallInfo->sig.numArgs, &pCallInfo->sig, args);
 
         node = gtNewHelperCallNode(CORINFO_HELP_NEW_MDARR, TYP_REF, 0, args);
 
@@ -5926,9 +5916,7 @@ void Compiler::impPopArgsForUnmanagedCall(GenTreePtr call, CORINFO_SIG_INFO* sig
     /* The argument list is now "clean" - no out-of-order side effects
      * Pop the argument list in reverse order */
 
-    unsigned   argFlags = 0;
-    GenTreePtr args     = call->gtCall.gtCallArgs =
-        impPopRevList(sig->numArgs, &argFlags, sig, sig->numArgs - argsToReverse);
+    GenTreePtr args = call->gtCall.gtCallArgs = impPopRevList(sig->numArgs, sig, sig->numArgs - argsToReverse);
 
     if (call->gtCall.gtCallMoreFlags & GTF_CALL_M_UNMGD_THISCALL)
     {
@@ -6963,7 +6951,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 // OK, We've been told to call via LDVIRTFTN, so just
                 // take the call now....
 
-                args = impPopList(sig->numArgs, &argFlags, sig);
+                args = impPopList(sig->numArgs, sig);
 
                 GenTreePtr thisPtr = impPopStack().val;
                 thisPtr            = impTransformThis(thisPtr, pConstrainedResolvedToken, callInfo->thisTransform);
@@ -7515,7 +7503,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     //-------------------------------------------------------------------------
     // The main group of arguments
 
-    args = call->gtCall.gtCallArgs = impPopList(sig->numArgs, &argFlags, sig, extraArg);
+    args = call->gtCall.gtCallArgs = impPopList(sig->numArgs, sig, extraArg);
 
     if (args)
     {
@@ -11044,7 +11032,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             STELEM_REF_POST_VERIFY:
 
                 /* Call a helper function to do the assignment */
-                op1 = gtNewHelperCallNode(CORINFO_HELP_ARRADDR_ST, TYP_VOID, 0, impPopList(3, &flags, nullptr));
+                op1 = gtNewHelperCallNode(CORINFO_HELP_ARRADDR_ST, TYP_VOID, 0, impPopList(3, nullptr));
 
                 goto SPILL_APPEND;
 

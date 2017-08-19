@@ -3136,15 +3136,9 @@ private:
                 ((opcode >= CEE_STLOC_0) && (opcode <= CEE_STLOC_3)));
     }
 
-    GenTreeArgList* impPopList(unsigned          count,
-                               unsigned*         flagsPtr,
-                               CORINFO_SIG_INFO* sig,
-                               GenTreeArgList*   prefixTree = nullptr);
+    GenTreeArgList* impPopList(unsigned count, CORINFO_SIG_INFO* sig, GenTreeArgList* prefixTree = nullptr);
 
-    GenTreeArgList* impPopRevList(unsigned          count,
-                                  unsigned*         flagsPtr,
-                                  CORINFO_SIG_INFO* sig,
-                                  unsigned          skipReverseCount = 0);
+    GenTreeArgList* impPopRevList(unsigned count, CORINFO_SIG_INFO* sig, unsigned skipReverseCount = 0);
 
     /*
      * Get current IL offset with stack-empty info incoporated
