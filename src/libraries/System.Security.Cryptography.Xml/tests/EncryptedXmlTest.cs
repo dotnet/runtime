@@ -10,11 +10,9 @@
 // See the LICENSE file in the project root for more information.
 
 
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
-using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Xml;
@@ -47,28 +45,47 @@ namespace System.Security.Cryptography.Xml.Tests
             }
         }
 
+        private static readonly Encoding DefaultEncoding = Encoding.UTF8;
+        private const CipherMode DefaultCipherMode = CipherMode.CBC;
+        private const PaddingMode DefaultPaddingMode = PaddingMode.ISO10126;
+        private const string DefaultRecipient = "";
+        private static readonly XmlResolver DefaultXmlResolver = null;
+        private const int DefaultXmlDSigSearchDepth = 20;
+
         [Fact]
         public void Constructor_Default()
         {
             EncryptedXml encryptedXml = new EncryptedXml();
-            Assert.Equal(Encoding.UTF8, encryptedXml.Encoding);
-            Assert.Equal(CipherMode.CBC, encryptedXml.Mode);
-            Assert.Equal(PaddingMode.ISO10126, encryptedXml.Padding);
-            Assert.Equal(string.Empty, encryptedXml.Recipient);
-            Assert.Equal(null, encryptedXml.Resolver);
-            Assert.Equal(20, encryptedXml.XmlDSigSearchDepth);
+            Assert.Equal(DefaultEncoding, encryptedXml.Encoding);
+            Assert.Equal(DefaultCipherMode, encryptedXml.Mode);
+            Assert.Equal(DefaultPaddingMode, encryptedXml.Padding);
+            Assert.Equal(DefaultRecipient, encryptedXml.Recipient);
+            Assert.Equal(DefaultXmlResolver, encryptedXml.Resolver);
+            Assert.Equal(DefaultXmlDSigSearchDepth, encryptedXml.XmlDSigSearchDepth);
         }
 
         [Fact]
         public void Constructor_XmlDocument()
         {
             EncryptedXml encryptedXml = new EncryptedXml(null);
-            Assert.Equal(Encoding.UTF8, encryptedXml.Encoding);
-            Assert.Equal(CipherMode.CBC, encryptedXml.Mode);
-            Assert.Equal(PaddingMode.ISO10126, encryptedXml.Padding);
-            Assert.Equal(string.Empty, encryptedXml.Recipient);
-            Assert.Equal(null, encryptedXml.Resolver);
-            Assert.Equal(20, encryptedXml.XmlDSigSearchDepth);
+            Assert.Equal(DefaultEncoding, encryptedXml.Encoding);
+            Assert.Equal(DefaultCipherMode, encryptedXml.Mode);
+            Assert.Equal(DefaultPaddingMode, encryptedXml.Padding);
+            Assert.Equal(DefaultRecipient, encryptedXml.Recipient);
+            Assert.Equal(DefaultXmlResolver, encryptedXml.Resolver);
+            Assert.Equal(DefaultXmlDSigSearchDepth, encryptedXml.XmlDSigSearchDepth);
+        }
+
+        [Fact]
+        public void Constructor_XmlDocumentAndEvidence()
+        {
+            EncryptedXml encryptedXml = new EncryptedXml(null, null);
+            Assert.Equal(DefaultEncoding, encryptedXml.Encoding);
+            Assert.Equal(DefaultCipherMode, encryptedXml.Mode);
+            Assert.Equal(DefaultPaddingMode, encryptedXml.Padding);
+            Assert.Equal(DefaultRecipient, encryptedXml.Recipient);
+            Assert.Equal(DefaultXmlResolver, encryptedXml.Resolver);
+            Assert.Equal(DefaultXmlDSigSearchDepth, encryptedXml.XmlDSigSearchDepth);
         }
 
         [Theory]
