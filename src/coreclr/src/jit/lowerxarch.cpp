@@ -1938,6 +1938,7 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
                 // Require codegen of op1 to set the flags.
                 assert(!op1->gtSetFlags());
                 op1->gtFlags |= GTF_SET_FLAGS;
+                cmp->gtFlags |= GTF_USE_FLAGS;
             }
             else
             {
