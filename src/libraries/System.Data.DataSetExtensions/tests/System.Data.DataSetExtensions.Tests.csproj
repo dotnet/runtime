@@ -2,6 +2,8 @@
 <Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
+    <!-- Tests crash when running in ret mode, [ActiveIssue(23407)] -->
+    <ILCBuildType>chk</ILCBuildType>
     <ProjectGuid>{2B38992F-9979-485F-B104-38C476D0B706}</ProjectGuid>
     <TestCategories>InnerLoop;OuterLoop</TestCategories>
   </PropertyGroup>
