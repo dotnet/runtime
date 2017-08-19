@@ -1137,3 +1137,32 @@ public class TypeWithVirtualGenericPropertyDerived<T> : TypeWithVirtualGenericPr
 {
     public override T Value { get; set; }
 }
+
+public class DefaultValuesSetToNaN
+{
+    [DefaultValue(double.NaN)]
+    public double DoubleProp { get; set; }
+
+    [DefaultValue(float.NaN)]
+    public float FloatProp { get; set; }
+
+    [DefaultValue(Double.NaN)]
+    public Double DoubleField;
+
+    [DefaultValue(Single.NaN)]
+    public Single SingleField;
+
+    public override bool Equals(object obj)
+    {
+        var other = obj as DefaultValuesSetToNaN;
+        return other == null ? false :
+            other.DoubleProp == this.DoubleProp && other.FloatProp == this.FloatProp &&
+            other.DoubleField == this.DoubleField && other.SingleField == this.SingleField;
+    }
+
+    public override int GetHashCode()
+    {
+        return this.DoubleProp.GetHashCode() ^ this.FloatProp.GetHashCode() ^
+            this.DoubleField.GetHashCode() ^ this.SingleField.GetHashCode();
+    }
+}
