@@ -1603,6 +1603,22 @@ string.Format(@"<?xml version=""1.0"" encoding=""utf-8""?>
         Assert.True(value.Collection.SequenceEqual(actual.Collection));
     }
 
+    [Fact]
+    public static void Xml_DefaultValueAttributeSetToNaNTest()
+    {
+        var value = new DefaultValuesSetToNaN();
+        var actual = SerializeAndDeserialize(value,
+@"<?xml version=""1.0""?>
+<DefaultValuesSetToNaN xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"">
+  <DoubleField>0</DoubleField>
+  <SingleField>0</SingleField>
+  <DoubleProp>0</DoubleProp>
+  <FloatProp>0</FloatProp>
+</DefaultValuesSetToNaN>");
+        Assert.NotNull(actual);
+        Assert.Equal(value, actual);
+    }
+
     private static readonly string s_defaultNs = "http://tempuri.org/";
     private static T RoundTripWithXmlMembersMapping<T>(object requestBodyValue, string memberName, string baseline, bool skipStringCompare = false, string wrapperName = null)
     {
