@@ -2044,7 +2044,16 @@ namespace Microsoft.XmlSerializer.Generator
                 else if (type == typeof(Int32))
                     Writer.Write(((Int32)value).ToString(null, NumberFormatInfo.InvariantInfo));
                 else if (type == typeof(Double))
-                    Writer.Write(((Double)value).ToString("R", NumberFormatInfo.InvariantInfo));
+                {
+                    if (double.IsNaN((Double)value))
+                    {
+                        Writer.Write("double.NaN");
+                    }
+                    else
+                    {
+                        Writer.Write(((Double)value).ToString("R", NumberFormatInfo.InvariantInfo));
+                    }
+                }
                 else if (type == typeof(Boolean))
                     Writer.Write((bool)value ? "true" : "false");
                 else if ((type == typeof(Int16)) || (type == typeof(Int64)) || (type == typeof(UInt16)) || (type == typeof(UInt32)) || (type == typeof(UInt64)) || (type == typeof(Byte)) || (type == typeof(SByte)))
@@ -2058,8 +2067,15 @@ namespace Microsoft.XmlSerializer.Generator
                 }
                 else if (type == typeof(Single))
                 {
-                    Writer.Write(((Single)value).ToString("R", NumberFormatInfo.InvariantInfo));
-                    Writer.Write("f");
+                    if (Single.IsNaN((Single)value))
+                    {
+                        Writer.Write("System.Single.NaN");
+                    }
+                    else
+                    {
+                        Writer.Write(((Single)value).ToString("R", NumberFormatInfo.InvariantInfo));
+                        Writer.Write("f");
+                    }
                 }
                 else if (type == typeof(Decimal))
                 {

@@ -2037,22 +2037,6 @@ public static partial class XmlSerializerTests
     }
 
     [Fact]
-    public static void Xml_DefaultValueAttributeSetToNaNTest()
-    {
-        var value = new DefaultValuesSetToNaN();
-        var actual = SerializeAndDeserialize(value,
-@"<?xml version=""1.0""?>
-<DefaultValuesSetToNaN xmlns:xsd=""http://www.w3.org/2001/XMLSchema"" xmlns:xsi=""http://www.w3.org/2001/XMLSchema-instance"">
-  <DoubleField>0</DoubleField>
-  <SingleField>0</SingleField>
-  <DoubleProp>0</DoubleProp>
-  <FloatProp>0</FloatProp>
-</DefaultValuesSetToNaN>");
-        Assert.NotNull(actual);
-        Assert.Equal(value, actual);
-    }
-
-    [Fact]
     public static void XmlMembersMapping_SimpleType_HasWrapperElement()
     {
         string memberName = "GetData";
