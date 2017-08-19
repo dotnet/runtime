@@ -2351,7 +2351,7 @@ void Lowering::LowerCompare(GenTree* cmp)
             GenTree* jcc    = cmpUse.User();
             jcc->gtOp.gtOp1 = nullptr;
             jcc->ChangeOper(GT_JCC);
-            jcc->gtFlags |= (cmp->gtFlags & GTF_UNSIGNED);
+            jcc->gtFlags |= (cmp->gtFlags & GTF_UNSIGNED) | GTF_USE_FLAGS;
             jcc->AsCC()->gtCondition = condition;
         }
         else
@@ -2359,6 +2359,7 @@ void Lowering::LowerCompare(GenTree* cmp)
             cmp->gtOp.gtOp1 = nullptr;
             cmp->gtOp.gtOp2 = nullptr;
             cmp->ChangeOper(GT_SETCC);
+            cmp->gtFlags |= GTF_USE_FLAGS;
             cmp->AsCC()->gtCondition = condition;
         }
 
@@ -3045,6 +3046,7 @@ void Lowering::InsertPInvokeMethodProlog()
     GenTreeLclFld* storeSP = new (comp, GT_STORE_LCL_FLD)
         GenTreeLclFld(GT_STORE_LCL_FLD, TYP_I_IMPL, comp->lvaInlinedPInvokeFrameVar, callFrameInfo.offsetOfCallSiteSP);
     storeSP->gtOp1 = PhysReg(REG_SPBASE);
+    storeSP->gtFlags |= GTF_VAR_DEF;
 
     firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, storeSP));
     DISPTREERANGE(firstBlockRange, storeSP);
@@ -3061,6 +3063,7 @@ void Lowering::InsertPInvokeMethodProlog()
         new (comp, GT_STORE_LCL_FLD) GenTreeLclFld(GT_STORE_LCL_FLD, TYP_I_IMPL, comp->lvaInlinedPInvokeFrameVar,
                                                    callFrameInfo.offsetOfCalleeSavedFP);
     storeFP->gtOp1 = PhysReg(REG_FPBASE);
+    storeFP->gtFlags |= GTF_VAR_DEF;
 
     firstBlockRange.InsertBefore(insertionPoint, LIR::SeqTree(comp, storeFP));
     DISPTREERANGE(firstBlockRange, storeFP);
@@ -3262,6 +3265,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
             new (comp, GT_STORE_LCL_FLD) GenTreeLclFld(GT_STORE_LCL_FLD, TYP_I_IMPL, comp->lvaInlinedPInvokeFrameVar,
                                                        callFrameInfo.offsetOfCallTarget);
         store->gtOp1 = src;
+        store->gtFlags |= GTF_VAR_DEF;
 
         InsertTreeBeforeAndContainCheck(insertBefore, store);
     }
@@ -3275,6 +3279,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
         GenTreeLclFld(GT_STORE_LCL_FLD, TYP_I_IMPL, comp->lvaInlinedPInvokeFrameVar, callFrameInfo.offsetOfCallSiteSP);
 
     storeCallSiteSP->gtOp1 = PhysReg(REG_SPBASE);
+    storeCallSiteSP->gtFlags |= GTF_VAR_DEF;
 
     InsertTreeBeforeAndContainCheck(insertBefore, storeCallSiteSP);
 
@@ -3292,6 +3297,7 @@ void Lowering::InsertPInvokeCallProlog(GenTreeCall* call)
     GenTreeLabel* labelRef = new (comp, GT_LABEL) GenTreeLabel(nullptr);
     labelRef->gtType       = TYP_I_IMPL;
     storeLab->gtOp1        = labelRef;
+    storeLab->gtFlags |= GTF_VAR_DEF;
 
     InsertTreeBeforeAndContainCheck(insertBefore, storeLab);
 
@@ -3390,6 +3396,7 @@ void Lowering::InsertPInvokeCallEpilog(GenTreeCall* call)
     GenTreeIntCon* const constantZero = new (comp, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, 0);
 
     storeCallSiteTracker->gtOp1 = constantZero;
+    storeCallSiteTracker->gtFlags |= GTF_VAR_DEF;
 
     BlockRange().InsertBefore(insertionPoint, constantZero, storeCallSiteTracker);
     ContainCheckStoreLoc(storeCallSiteTracker);
@@ -4650,6 +4657,8 @@ GenTree* Lowering::LowerArrElem(GenTree* node)
     GenTree* arrObjNode = arrElem->gtArrObj;
     assert(arrObjNode->IsLocal());
 
+    LclVarDsc* const varDsc = &comp->lvaTable[arrElem->gtArrObj->AsLclVarCommon()->gtLclNum];
+
     GenTree* insertionPoint = arrElem;
 
     // The first ArrOffs node will have 0 for the offset of the previous dimension.
@@ -4670,6 +4679,7 @@ GenTree* Lowering::LowerArrElem(GenTree* node)
         else
         {
             idxArrObjNode = comp->gtClone(arrObjNode);
+            varDsc->incRefCnts(blockWeight, comp);
             BlockRange().InsertBefore(insertionPoint, idxArrObjNode);
         }
 
@@ -4680,6 +4690,7 @@ GenTree* Lowering::LowerArrElem(GenTree* node)
         BlockRange().InsertBefore(insertionPoint, arrMDIdx);
 
         GenTree* offsArrObjNode = comp->gtClone(arrObjNode);
+        varDsc->incRefCnts(blockWeight, comp);
         BlockRange().InsertBefore(insertionPoint, offsArrObjNode);
 
         GenTreeArrOffs* arrOffs =
@@ -4709,6 +4720,7 @@ GenTree* Lowering::LowerArrElem(GenTree* node)
     }
 
     GenTreePtr leaBase = comp->gtClone(arrObjNode);
+    varDsc->incRefCnts(blockWeight, comp);
     BlockRange().InsertBefore(insertionPoint, leaBase);
 
     GenTreePtr leaNode = new (comp, GT_LEA) GenTreeAddrMode(arrElem->TypeGet(), leaBase, leaIndexNode, scale, offset);
