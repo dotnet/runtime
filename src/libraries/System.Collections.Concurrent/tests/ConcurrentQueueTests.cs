@@ -97,10 +97,6 @@ namespace System.Collections.Concurrent.Tests
         [InlineData(3, 3, 1024)]
         public void MultipleProducerConsumer_AllItemsTransferred(int producers, int consumers, int itemsPerProducer)
         {
-            //ActiveIssue("https://github.com/dotnet/corefx/issues/22385 - Never terminates on Win10 RS3 - when built using CHK framework on ILC", TargetFrameworkMonikers.UapAot)
-            //if (PlatformDetection.IsNetNative && PlatformDetection.IsWindows10InsiderPreviewBuild16215OrGreater)
-            //    return;
-
             var cq = new ConcurrentQueue<int>();
             var tasks = new List<Task>();
 
@@ -110,7 +106,7 @@ namespace System.Collections.Concurrent.Tests
 
             for (int i = 0; i < consumers; i++)
             {
-                tasks.Add(Task.Run(() =>
+                tasks.Add(Task.Factory.StartNew(() =>
                 {
                     while (Volatile.Read(ref remainingItems) > 0)
                     {
@@ -121,18 +117,18 @@ namespace System.Collections.Concurrent.Tests
                             Interlocked.Decrement(ref remainingItems);
                         }
                     }
-                }));
+                }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default));
             }
 
             for (int i = 0; i < producers; i++)
             {
-                tasks.Add(Task.Run(() =>
+                tasks.Add(Task.Factory.StartNew(() =>
                 {
                     for (int item = 1; item <= itemsPerProducer; item++)
                     {
                         cq.Enqueue(item);
                     }
-                }));
+                }, CancellationToken.None, TaskCreationOptions.LongRunning, TaskScheduler.Default));
             }
 
             Task.WaitAll(tasks.ToArray());
