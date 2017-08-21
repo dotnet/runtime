@@ -4,7 +4,8 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.CoreLink
 {
-	[CoreLink ("copy")]
+	[SetupLinkerCoreAction ("copy")]
+
 	[KeptAssembly ("mscorlib.dll")]
 	// These types are normally removed when the core libraries are linked
 	[KeptTypeInAssembly ("mscorlib.dll", typeof (ConsoleKeyInfo))]

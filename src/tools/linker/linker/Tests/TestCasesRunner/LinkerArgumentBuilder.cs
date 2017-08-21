@@ -29,6 +29,12 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 			Append (value);
 		}
 
+		public virtual void LinkFromAssembly (string fileName)
+		{
+			Append ("-a");
+			Append (fileName);
+		}
+
 		public virtual void IncludeBlacklist (bool value)
 		{
 			Append ("-z");
@@ -47,6 +53,13 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 				Append ("-t");
 		}
 
+		public virtual void AddAssemblyAction (string action, string assembly)
+		{
+			Append ("-p");
+			Append (action);
+			Append (assembly);
+		}
+
 		public string [] ToArgs ()
 		{
 			return _arguments.ToArray ();
@@ -59,7 +72,13 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 		public virtual void ProcessOptions (TestCaseLinkerOptions options)
 		{
-			AddCoreLink (options.CoreLink);
+			if (options.CoreAssembliesAction != null)
+				AddCoreLink (options.CoreAssembliesAction);
+
+			if (options.AssembliesAction != null) {
+				foreach (var entry in options.AssembliesAction)
+					AddAssemblyAction (entry.Key, entry.Value);
+			}
 
 			// Running the blacklist step causes a ton of stuff to be preserved.  That's good for normal use cases, but for
 			// our test cases that pollutes the results

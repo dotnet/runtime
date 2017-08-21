@@ -6,7 +6,7 @@ using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.CoreLink
 {
-	[CoreLink ("link")]
+	[SetupLinkerCoreAction ("link")]
 
 	[KeptAssembly ("mscorlib.dll")]
 	[KeptMemberInAssembly ("mscorlib.dll", typeof (Stack), ".ctor(System.Int32)", "Pop()", "Push(System.Object)")]

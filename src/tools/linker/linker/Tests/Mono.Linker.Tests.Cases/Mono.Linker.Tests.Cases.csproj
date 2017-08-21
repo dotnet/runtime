@@ -138,6 +138,8 @@
     <Compile Include="VirtualMethods\TypeGetsMarkedThatImplementsAlreadyMarkedInterfaceMethod.cs" />
     <Compile Include="VirtualMethods\VirtualMethodGetsPerservedIfBaseMethodGetsInvoked.cs" />
     <Compile Include="VirtualMethods\VirtualMethodGetsStrippedIfImplementingMethodGetsInvokedDirectly.cs" />
+    <Compile Include="TypeForwarding\MissingTargetReference.cs" />
+    <None Include="TypeForwarding\Dependencies\TypeForwarderMissingReference.il" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="LinkXml\TypeWithPreserveFieldsHasBackingFieldsOfPropertiesRemoved.xml" />

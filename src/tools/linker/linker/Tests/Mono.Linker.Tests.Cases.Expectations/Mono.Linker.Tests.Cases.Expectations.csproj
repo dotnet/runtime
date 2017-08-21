@@ -53,7 +53,6 @@
     <Compile Include="Metadata\BaseMetadataAttribute.cs" />
     <Compile Include="Metadata\SetupCompileAfterAttribute.cs" />
     <Compile Include="Metadata\SetupCompileBeforeAttribute.cs" />
-    <Compile Include="Metadata\CoreLinkAttribute.cs" />
     <Compile Include="Metadata\DefineAttribute.cs" />
     <Compile Include="Metadata\IncludeBlacklistStepAttribute.cs" />
     <Compile Include="Metadata\Il8nAttribute.cs" />
@@ -64,6 +63,9 @@
     <Compile Include="Assertions\KeptBaseTypeAttribute.cs" />
     <Compile Include="Assertions\KeptInterfaceAttribute.cs" />
     <Compile Include="Assertions\KeptAttributeAttribute.cs" />
+    <Compile Include="Assertions\RemovedForwarderAttribute.cs" />
+    <Compile Include="Metadata\SetupLinkerActionAttribute.cs" />
+    <Compile Include="Metadata\SetupLinkerCoreActionAttribute.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

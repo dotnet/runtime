@@ -3,7 +3,7 @@ using Mono.Linker.Tests.Cases.Expectations.Assertions;
 using Mono.Linker.Tests.Cases.Expectations.Metadata;
 
 namespace Mono.Linker.Tests.Cases.References {
-	[CoreLink ("link")]
+	[SetupLinkerCoreAction ("link")]
 	// Il8n & the blacklist step pollute the results with extra stuff that didn't need to be
 	// preserved for this test case so we need to disable them
 	[Il8n ("none")]
