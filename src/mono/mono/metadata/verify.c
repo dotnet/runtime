@@ -3227,6 +3227,8 @@ do_invoke_method (VerifyContext *ctx, int method_token, gboolean virtual_)
 			value = stack_pop_safe (ctx);
 			if (IS_STRICT_MODE (ctx) && (value->stype & THIS_POINTER_MASK) != THIS_POINTER_MASK)
 				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Invalid 'this ptr' argument for constructor at 0x%04x", ctx->ip_offset));
+			if (!(value->stype & UNINIT_THIS_MASK))
+				CODE_NOT_VERIFIABLE (ctx, g_strdup_printf ("Calling the base constructor on an initialized this pointer at 0x%04x", ctx->ip_offset));
 		} else {
 			value = stack_pop (ctx);
 		}
