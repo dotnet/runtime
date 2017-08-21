@@ -15,7 +15,22 @@
 
 #include <glib.h>
 
-#ifdef _MSC_VER
+
+#ifdef TARGET_WASM
+
+static inline void mono_memory_barrier (void)
+{
+}
+
+static inline void mono_memory_read_barrier (void)
+{
+}
+
+static inline void mono_memory_write_barrier (void)
+{
+}
+
+#elif _MSC_VER
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
