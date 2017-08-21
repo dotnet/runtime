@@ -46,15 +46,10 @@ namespace System.Xml.Xsl
     public sealed class XslCompiledTransform
     {
         // Reader settings used when creating XmlReader from inputUri
-        private static readonly XmlReaderSettings s_readerSettings = null;
+        private static readonly XmlReaderSettings s_readerSettings = new XmlReaderSettings();
 
         // Version for GeneratedCodeAttribute
-        private readonly string _version = typeof(XslCompiledTransform).Assembly.GetName().Version.ToString();
-
-        static XslCompiledTransform()
-        {
-            s_readerSettings = new XmlReaderSettings();
-        }
+        private static readonly Version s_version = typeof(XslCompiledTransform).Assembly.GetName().Version;
 
         // Options of compilation
         private bool _enableDebug = false;
@@ -227,9 +222,9 @@ namespace System.Xml.Xsl
             // If GeneratedCodeAttribute is not there, it is not a compiled stylesheet class
             if (generatedCodeAttr != null && generatedCodeAttr.Tool == typeof(XslCompiledTransform).FullName)
             {
-                if (new Version(_version).CompareTo(new Version(generatedCodeAttr.Version)) < 0)
+                if (s_version < Version.Parse(generatedCodeAttr.Version))
                 {
-                    throw new ArgumentException(SR.Format(SR.Xslt_IncompatibleCompiledStylesheetVersion, generatedCodeAttr.Version, _version), nameof(compiledStylesheet));
+                    throw new ArgumentException(SR.Format(SR.Xslt_IncompatibleCompiledStylesheetVersion, generatedCodeAttr.Version, s_version), nameof(compiledStylesheet));
                 }
 
                 FieldInfo fldData = compiledStylesheet.GetField(XmlQueryStaticData.DataFieldName, BindingFlags.Static | BindingFlags.NonPublic);
