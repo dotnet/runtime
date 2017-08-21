@@ -170,7 +170,6 @@ namespace Microsoft.Win32
         internal const int MUI_LANG_NEUTRAL_PE_FILE = 0x100;
         internal const int MUI_NON_LANG_NEUTRAL_FILE = 0x200;
 
-        internal const int LOAD_LIBRARY_AS_DATAFILE = 0x00000002;
         internal const int LOAD_STRING_MAX_LENGTH = 500;
 
         [StructLayout(LayoutKind.Sequential)]
