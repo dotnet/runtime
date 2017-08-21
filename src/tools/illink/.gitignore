@@ -24,3 +24,5 @@ bin/
 
 *.force
 *.FileListAbsolute.txt
+
+**/Dependencies/*.dll
