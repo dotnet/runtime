@@ -59,6 +59,14 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 					continue;
 
 				foreach (var file in subDir.Files ("*.cs", true)) {
+
+					// Magic : Anything in a directory named Dependnecies is assumed to be a dependency to a test case
+					// and never a test itself
+					// This makes life a little easier when writing these supporting files as it removes some contraints you would previously have
+					// had to follow such as ensuring a class exists that matches the file name and putting [NotATestCase] on that class
+					if (file.Parent.FileName == "Dependencies")
+						continue;
+
 					yield return file;
 				}
 			}

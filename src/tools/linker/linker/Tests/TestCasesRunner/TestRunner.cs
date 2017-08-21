@@ -37,7 +37,7 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 		private ManagedCompilationResult Compile (TestCaseSandbox sandbox, TestCaseMetadaProvider metadataProvider)
 		{
-			var compiler = _factory.CreateCompiler ();
+			var compiler = _factory.CreateCompiler (sandbox, metadataProvider);
 			var sourceFiles = sandbox.SourceFiles.Select(s => s.ToString()).ToArray();
 
 			var references = metadataProvider.GetReferencedAssemblies(sandbox.InputDirectory);

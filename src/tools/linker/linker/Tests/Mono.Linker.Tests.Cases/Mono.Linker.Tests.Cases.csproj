@@ -60,6 +60,14 @@
     <Compile Include="LinkXml\UnusedAssemblyWithNoDefinedPreserveHasAllTypesPreserved.cs" />
     <Compile Include="LinkXml\UnusedEventPreservedByLinkXmlIsKept.cs" />
     <Compile Include="LinkXml\UnusedTypeWithNoDefinedPreserveHasAllMembersPreserved.cs" />
+    <Compile Include="TestFramework\CanCompileILAssembly.cs" />
+    <Compile Include="TestFramework\VerifyDefineAttributeBehavior.cs" />
+    <None Include="TypeForwarding\Dependencies\ForwarderLibrary.cs" />
+    <Compile Include="TypeForwarding\Dependencies\ImplementationLibrary.cs" />
+    <Compile Include="TypeForwarding\Dependencies\LibraryUsingForwarder.cs" />
+    <Compile Include="TypeForwarding\Dependencies\ReferenceImplementationLibrary.cs" />
+    <Compile Include="TypeForwarding\TypeForwarderOnlyAssembliesRemoved.cs" />
+    <Compile Include="TypeForwarding\TypeForwarderOnlyAssembliesKept.cs" />
     <Compile Include="VirtualMethods\ClassUsedFromConcreteTypeHasInterfaceMethodRemoved.cs" />
     <Compile Include="VirtualMethods\ClassUsedFromInterfaceHasInterfaceMethodKept.cs" />
     <Compile Include="VirtualMethods\StructUsedFromConcreteTypeHasInterfaceMethodRemoved.cs" />
@@ -153,6 +161,9 @@
       <Project>{2C26601F-3E2F-45B9-A02F-58EE9296E19E}</Project>
       <Name>Mono.Linker.Tests.Cases.Expectations</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="TestFramework\Dependencies\ILAssemblySample.il" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

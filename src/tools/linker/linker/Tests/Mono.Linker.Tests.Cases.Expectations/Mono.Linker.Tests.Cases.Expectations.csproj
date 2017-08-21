@@ -51,7 +51,10 @@
     <Compile Include="Assertions\RemovedTypeInAssemblyAttribute.cs" />
     <Compile Include="Assertions\SkipPeVerifyAttribute.cs" />
     <Compile Include="Metadata\BaseMetadataAttribute.cs" />
+    <Compile Include="Metadata\SetupCompileAfterAttribute.cs" />
+    <Compile Include="Metadata\SetupCompileBeforeAttribute.cs" />
     <Compile Include="Metadata\CoreLinkAttribute.cs" />
+    <Compile Include="Metadata\DefineAttribute.cs" />
     <Compile Include="Metadata\IncludeBlacklistStepAttribute.cs" />
     <Compile Include="Metadata\Il8nAttribute.cs" />
     <Compile Include="Metadata\KeepTypeForwarderOnlyAssembliesAttribute.cs" />
