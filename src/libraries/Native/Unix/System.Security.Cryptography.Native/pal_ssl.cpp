@@ -524,3 +524,23 @@ extern "C" int32_t CryptoNative_SslAddExtraChainCert(SSL* ssl, X509* x509)
 
     return 0;
 }
+
+extern "C" int32_t CryptoNative_SslSelectNextProto(unsigned char** out, unsigned char* outlen, const unsigned char* server, unsigned int server_len, const unsigned char* client, unsigned int client_len)
+{
+    return SSL_select_next_proto(out, outlen, server, server_len, client, client_len);
+}
+
+extern "C" void CryptoNative_SslCtxSetAplnSelectCb(SSL_CTX* ctx, SslCtxSetAplnCallback cb, void* arg)
+{
+    SSL_CTX_set_alpn_select_cb(ctx, cb, arg);
+}
+
+extern "C" int32_t CryptoNative_SslCtxSetAlpnProtos(SSL_CTX* ctx, const unsigned char* protos, unsigned protos_len)
+{
+    return SSL_CTX_set_alpn_protos(ctx, protos, protos_len);
+}
+
+extern "C" void CryptoNative_SslGet0AlpnSelected(SSL* ssl, const unsigned char** protocol, unsigned int* len)
+{
+    SSL_get0_alpn_selected(ssl, protocol, len);
+}

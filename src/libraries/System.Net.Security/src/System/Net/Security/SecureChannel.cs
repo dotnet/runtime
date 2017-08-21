@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.ExceptionServices;
+using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
@@ -29,7 +30,6 @@ namespace System.Net.Security
         private readonly bool _serverMode;
         private readonly bool _remoteCertRequired;
         private readonly SslProtocols _sslProtocols;
-        private readonly EncryptionPolicy _encryptionPolicy;
         private SslConnectionInfo _connectionInfo;
 
         private X509Certificate _serverCertificate;
@@ -37,7 +37,6 @@ namespace System.Net.Security
         private bool _isRemoteCertificateAvailable;
 
         private X509CertificateCollection _clientCertificates;
-        private LocalCertSelectionCallback _certSelectionDelegate;
 
         // These are the MAX encrypt buffer output sizes, not the actual sizes.
         private int _headerSize = 5; //ATTN must be set to at least 5 by default
@@ -49,16 +48,18 @@ namespace System.Net.Security
 
         private bool _refreshCredentialNeeded;
 
+        private SslAuthenticationOptions _sslAuthenticationOptions;
+
         private readonly Oid _serverAuthOid = new Oid("1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.1");
         private readonly Oid _clientAuthOid = new Oid("1.3.6.1.5.5.7.3.2", "1.3.6.1.5.5.7.3.2");
 
         internal SecureChannel(string hostname, bool serverMode, SslProtocols sslProtocols, X509Certificate serverCertificate, X509CertificateCollection clientCertificates, bool remoteCertRequired, bool checkCertName,
-                                                  bool checkCertRevocationStatus, EncryptionPolicy encryptionPolicy, LocalCertSelectionCallback certSelectionDelegate)
+                                                  bool checkCertRevocationStatus, SslAuthenticationOptions sslAuthenticationOptions)
         {
             if (NetEventSource.IsEnabled)
             {
                 NetEventSource.Enter(this, hostname, clientCertificates);
-                NetEventSource.Log.SecureChannelCtor(this, hostname, clientCertificates, encryptionPolicy);
+                NetEventSource.Log.SecureChannelCtor(this, hostname, clientCertificates, sslAuthenticationOptions.EncryptionPolicy);
             }
 
             SslStreamPal.VerifyPackageInfo();
@@ -80,9 +81,8 @@ namespace System.Net.Security
             _securityContext = null;
             _checkCertRevocation = checkCertRevocationStatus;
             _checkCertName = checkCertName;
-            _certSelectionDelegate = certSelectionDelegate;
             _refreshCredentialNeeded = true;
-            _encryptionPolicy = encryptionPolicy;
+            _sslAuthenticationOptions = sslAuthenticationOptions;
             
             if (NetEventSource.IsEnabled) NetEventSource.Exit(this);
         }
@@ -190,6 +190,14 @@ namespace System.Net.Security
             }
         }
 
+        internal string NegotiatedApplicationProtocol
+        {
+            get
+            {
+                return SslStreamPal.GetNegotiatedApplicationProtocol(_securityContext);
+            }
+        }
+
         internal void SetRefreshCredentialNeeded()
         {
             _refreshCredentialNeeded = true;
@@ -197,6 +205,11 @@ namespace System.Net.Security
 
         internal void Close()
         {
+            if (_sslAuthenticationOptions._alpnProtocolsHandle.IsAllocated)
+            {
+                _sslAuthenticationOptions._alpnProtocolsHandle.Free();
+            }
+
             if (_securityContext != null)
             {
                 _securityContext.Dispose();
@@ -365,7 +378,7 @@ namespace System.Net.Security
 
             bool sessionRestartAttempt = false; // If true and no cached creds we will use anonymous creds.
 
-            if (_certSelectionDelegate != null)
+            if (_sslAuthenticationOptions._certSelectionDelegate != null)
             {
                 issuers = GetRequestCertificateAuthorities();
 
@@ -380,7 +393,7 @@ namespace System.Net.Security
                     {
                         _clientCertificates = new X509CertificateCollection();
                     }
-                    clientCertificate = _certSelectionDelegate(_hostName, _clientCertificates, remoteCert, issuers);
+                    clientCertificate = _sslAuthenticationOptions._certSelectionDelegate(_hostName, _clientCertificates, remoteCert, issuers);
                 }
                 finally
                 {
@@ -564,7 +577,7 @@ namespace System.Net.Security
                 // SECURITY: selectedCert ref if not null is a safe object that does not depend on possible **user** inherited X509Certificate type.
                 //
                 byte[] guessedThumbPrint = selectedCert == null ? null : selectedCert.GetCertHash();
-                SafeFreeCredentials cachedCredentialHandle = SslSessionsCache.TryCachedCredential(guessedThumbPrint, _sslProtocols, _serverMode, _encryptionPolicy);
+                SafeFreeCredentials cachedCredentialHandle = SslSessionsCache.TryCachedCredential(guessedThumbPrint, _sslProtocols, _serverMode, _sslAuthenticationOptions.EncryptionPolicy);
 
                 // We can probably do some optimization here. If the selectedCert is returned by the delegate
                 // we can always go ahead and use the certificate to create our credential
@@ -600,7 +613,7 @@ namespace System.Net.Security
                 }
                 else
                 {
-                    _credentialsHandle = SslStreamPal.AcquireCredentialsHandle(selectedCert, _sslProtocols, _encryptionPolicy, _serverMode);
+                    _credentialsHandle = SslStreamPal.AcquireCredentialsHandle(selectedCert, _sslProtocols, _sslAuthenticationOptions.EncryptionPolicy, _serverMode);
 
                     thumbPrint = guessedThumbPrint; // Delay until here in case something above threw.
                     _selectedClientCertificate = clientCertificate;
@@ -630,11 +643,11 @@ namespace System.Net.Security
             X509Certificate localCertificate = null;
             bool cachedCred = false;
 
-            if (_certSelectionDelegate != null)
+            if (_sslAuthenticationOptions._certSelectionDelegate != null)
             {
                 X509CertificateCollection tempCollection = new X509CertificateCollection();
                 tempCollection.Add(_serverCertificate);
-                localCertificate = _certSelectionDelegate(string.Empty, tempCollection, null, Array.Empty<string>());
+                localCertificate = _sslAuthenticationOptions._certSelectionDelegate(string.Empty, tempCollection, null, Array.Empty<string>());
                 if (NetEventSource.IsEnabled) NetEventSource.Info(this, "Use delegate selected Cert");
             }
             else
@@ -668,7 +681,7 @@ namespace System.Net.Security
             byte[] guessedThumbPrint = selectedCert.GetCertHash();
             try
             {
-                SafeFreeCredentials cachedCredentialHandle = SslSessionsCache.TryCachedCredential(guessedThumbPrint, _sslProtocols, _serverMode, _encryptionPolicy);
+                SafeFreeCredentials cachedCredentialHandle = SslSessionsCache.TryCachedCredential(guessedThumbPrint, _sslProtocols, _serverMode, _sslAuthenticationOptions.EncryptionPolicy);
 
                 if (cachedCredentialHandle != null)
                 {
@@ -678,7 +691,7 @@ namespace System.Net.Security
                 }
                 else
                 {
-                    _credentialsHandle = SslStreamPal.AcquireCredentialsHandle(selectedCert, _sslProtocols, _encryptionPolicy, _serverMode);
+                    _credentialsHandle = SslStreamPal.AcquireCredentialsHandle(selectedCert, _sslProtocols, _sslAuthenticationOptions.EncryptionPolicy, _serverMode);
                     thumbPrint = guessedThumbPrint;
                     _serverCertificate = localCertificate;
                 }
@@ -793,7 +806,8 @@ namespace System.Net.Security
                                       ref _securityContext,
                                       incomingSecurity,
                                       outgoingSecurity,
-                                      _remoteCertRequired);
+                                      _remoteCertRequired,
+                                      _sslAuthenticationOptions);
                     }
                     else
                     {
@@ -804,7 +818,8 @@ namespace System.Net.Security
                                            ref _securityContext,
                                            _destination,
                                            incomingSecurity,
-                                           outgoingSecurity);
+                                           outgoingSecurity,
+                                           _sslAuthenticationOptions);
                         }
                         else
                         {
@@ -813,13 +828,19 @@ namespace System.Net.Security
                                            ref _securityContext,
                                            _destination,
                                            incomingSecurityBuffers,
-                                           outgoingSecurity);
+                                           outgoingSecurity,
+                                           _sslAuthenticationOptions);
                         }
                     }
                 } while (cachedCreds && _credentialsHandle == null);
             }
             finally
             {
+                if (_sslAuthenticationOptions._alpnProtocolsHandle.IsAllocated)
+                {
+                    _sslAuthenticationOptions._alpnProtocolsHandle.Free();
+                }
+
                 if (_refreshCredentialNeeded)
                 {
                     _refreshCredentialNeeded = false;
@@ -839,7 +860,7 @@ namespace System.Net.Security
                     //
                     if (!cachedCreds && _securityContext != null && !_securityContext.IsInvalid && _credentialsHandle != null && !_credentialsHandle.IsInvalid)
                     {
-                        SslSessionsCache.CacheCredential(_credentialsHandle, thumbPrint, _sslProtocols, _serverMode, _encryptionPolicy);
+                        SslSessionsCache.CacheCredential(_credentialsHandle, thumbPrint, _sslProtocols, _serverMode, _sslAuthenticationOptions.EncryptionPolicy);
                     }
                 }
             }

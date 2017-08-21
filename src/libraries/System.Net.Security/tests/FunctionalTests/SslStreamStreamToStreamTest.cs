@@ -23,6 +23,27 @@ namespace System.Net.Security.Tests
         protected abstract bool DoHandshake(SslStream clientSslStream, SslStream serverSslStream);
 
         [Fact]
+        [Trait("category", "alpn")]
+        public void SslStream_StreamToStream_Alpn_Success()
+        {
+            VirtualNetwork network = new VirtualNetwork();
+            SslAuthenticationOptions options1 = new SslAuthenticationOptions();
+            options1.ApplicationProtocols = new [] { "h2", "http/1.1"};
+            options1.UserCertificateValidationCallback = AllowAnyServerCertificate;
+            SslAuthenticationOptions options2 = new SslAuthenticationOptions();
+            options2.ApplicationProtocols = new [] { "h2"};
+            using (var clientStream = new VirtualNetworkStream(network, false))
+            using (var serverStream = new VirtualNetworkStream(network, true))
+            using (var client = new SslStream(clientStream, false, options1))
+            using (var server = new SslStream(serverStream, false, options2))
+            {
+                Assert.True(DoHandshake(client, server));
+                Assert.Equal("h2", client.NegotiatedApplicationProtocol);
+                Assert.Equal("h2", server.NegotiatedApplicationProtocol);
+            }
+        }
+
+        [Fact]
         public void SslStream_StreamToStream_Authentication_Success()
         {
             VirtualNetwork network = new VirtualNetwork();
