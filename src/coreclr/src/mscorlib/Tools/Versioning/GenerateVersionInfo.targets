@@ -25,37 +25,13 @@
     <CoreCompileDependsOn>$(CoreCompileDependsOn);GenerateAssemblyInfo</CoreCompileDependsOn>
   </PropertyGroup>
 
-  <Target Name="GenerateAssemblyInfo"
-          Inputs="$(MSBuildProjectFile)"
-          Outputs="$(AssemblyInfoFile)"
-          Condition="'$(GenerateAssemblyInfo)'=='true'">
-
-    <Error Condition="!Exists('$(IntermediateOutputPath)')" Text="GenerateAssemblyInfo failed because IntermediateOutputPath isn't set to a valid directory" />
-
-    <ItemGroup>
-      <AssemblyInfoUsings Include="using System%3B" />
-      <AssemblyInfoUsings Include="using System.Reflection%3B" />
-      <AssemblyInfoLines Include="[assembly:AssemblyTitle(&quot;$(AssemblyName)&quot;)]" />
-      <AssemblyInfoLines Include="[assembly:AssemblyDescription(&quot;$(AssemblyName)&quot;)]" />
-      <AssemblyInfoLines Include="[assembly:AssemblyDefaultAlias(&quot;$(AssemblyName)&quot;)]" />
-      <AssemblyInfoLines Include="[assembly:AssemblyCompany(&quot;Microsoft Corporation&quot;)]" />
-      <AssemblyInfoLines Include="[assembly:AssemblyProduct(&quot;Microsoft\x00ae .NET Framework&quot;)]" />
-      <AssemblyInfoLines Include="[assembly:AssemblyCopyright(&quot;\x00a9 Microsoft Corporation.  All rights reserved.&quot;)]" />
-      <AssemblyInfoLines Include="[assembly:AssemblyVersion(&quot;$(AssemblyVersion)&quot;)]" />
-      <AssemblyInfoLines Include="[assembly:AssemblyFileVersion(&quot;$(AssemblyFileVersion)&quot;)]" />
-      <AssemblyInfoLines Include="[assembly:AssemblyInformationalVersion(@&quot;$(AssemblyFileVersion)$(BuiltByString)&quot;)]" />
-      <AssemblyInfoLines Condition="'$(CLSCompliant)'=='true'" Include="[assembly:CLSCompliant(true)]" />
-    </ItemGroup>
-
-    <WriteLinesToFile File="$(AssemblyInfoFile)"
-                      Lines="@(AssemblyInfoUsings);@(AssemblyInfoLines)"
-                      Overwrite="true" />
-
-    <ItemGroup>
-      <Compile Include="$(AssemblyInfoFile)" />
-      <FileWrites Include="$(AssemblyInfoFile)" />
-    </ItemGroup>
-  </Target>
+  <ItemGroup>
+      <AssemblyInfoLines Include="[assembly:System.Resources.SatelliteContractVersion(&quot;$(AssemblyVersion)&quot;)]" />
+      <AssemblyInfoLines Include="[assembly:System.Security.AllowPartiallyTrustedCallers]" />
+      <AssemblyInfoLines Include="[assembly:System.Runtime.InteropServices.ComVisible(false)]" />
+      <AssemblyInfoLines Include="[assembly:System.Resources.NeutralResourcesLanguage(&quot;en-US&quot;)]" />
+      <AssemblyInfoLines Include="[assembly:System.Runtime.InteropServices.DefaultDllImportSearchPathsAttribute(System.Runtime.InteropServices.DllImportSearchPath.AssemblyDirectory | System.Runtime.InteropServices.DllImportSearchPath.System32)]" />
+  </ItemGroup>
 
   <!-- #################################### -->
   <!-- Generate Native Version Info -->
