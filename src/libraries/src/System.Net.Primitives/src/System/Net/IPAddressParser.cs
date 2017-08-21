@@ -11,43 +11,23 @@ namespace System.Net
 {
     internal class IPAddressParser
     {
-        internal static IPAddress Parse(string ipString, bool tryParse)
-        {
-            if (ipString == null)
-            {
-                if (tryParse)
-                {
-                    return null;
-                }
-                throw new ArgumentNullException(nameof(ipString));
-            }
- 
-            return ParseHelper(ipString.AsReadOnlySpan(), tryParse);
-        }
+        private const int MaxIPv4StringLength = 15; // 4 numbers separated by 3 periods, with up to 3 digits per number
 
-        internal static IPAddress Parse(ReadOnlySpan<char> ipSpan, bool tryParse)
-        {
-            return ParseHelper(ipSpan, tryParse);
-        }
-   
-        internal static unsafe IPAddress ParseHelper(ReadOnlySpan<char> ipSpan, bool tryParse)
+        internal static unsafe IPAddress Parse(ReadOnlySpan<char> ipSpan, bool tryParse)
         {
             if (ipSpan.IndexOf(':') >= 0)
             {
-                // If the address string contains the colon character then it can only be an IPv6 address.
-                // This is valid because we don't support/parse a port specification at the end of an IPv4 address.
+                // The address is parsed as IPv6 if and only if it contains a colon. This is valid because
+                // we don't support/parse a port specification at the end of an IPv4 address.
                 ushort* numbers = stackalloc ushort[IPAddressParserStatics.IPv6AddressShorts];
                 if (Ipv6StringToAddress(ipSpan, numbers, IPAddressParserStatics.IPv6AddressShorts, out uint scope))
                 {
                     return new IPAddress(numbers, IPAddressParserStatics.IPv6AddressShorts, scope);
                 }
             }
-            else
+            else if (Ipv4StringToAddress(ipSpan, out long address))
             {
-                if (Ipv4StringToAddress(ipSpan, out long address))
-                {
-                    return new IPAddress(address);
-                }
+                return new IPAddress(address);
             }
 
             if (tryParse)
@@ -60,30 +40,28 @@ namespace System.Net
 
         internal static unsafe string IPv4AddressToString(uint address)
         {
-            const int MaxLength = 15;
-            char* addressString = stackalloc char[MaxLength];
-
-            int charsWritten = IPv4AddressToStringHelper(address, new Span<char>(addressString, MaxLength));
-
+            char* addressString = stackalloc char[MaxIPv4StringLength];
+            int charsWritten = IPv4AddressToStringHelper(address, addressString);
             return new string(addressString, 0, charsWritten);
         }
 
         internal static unsafe bool IPv4AddressToString(uint address, Span<char> formatted, out int charsWritten)
         {
-            const int MaxLength = 15;
-
-            if (formatted.Length < MaxLength)
+            if (formatted.Length < MaxIPv4StringLength)
             {
                 charsWritten = 0;
                 return false;
             }
-     
-            charsWritten = IPv4AddressToStringHelper(address, formatted);
+
+            fixed (char* formattedPtr = &formatted.DangerousGetPinnableReference())
+            {
+                charsWritten = IPv4AddressToStringHelper(address, formattedPtr);
+            }
 
             return true;
         }
 
-        internal static int IPv4AddressToStringHelper(uint address, Span<char> addressString)
+        private static unsafe int IPv4AddressToStringHelper(uint address, char* addressString)
         {
             int offset = 0;
 
@@ -162,7 +140,7 @@ namespace System.Net
             return buffer;
         }
 
-        private static void FormatIPv4AddressNumber(int number, Span<char> addressString, ref int offset)
+        private static unsafe void FormatIPv4AddressNumber(int number, char* addressString, ref int offset)
         {
             // Math.DivRem has no overload for byte, assert here for safety
             Debug.Assert(number < 256);
