@@ -22,9 +22,6 @@ namespace System.Net.Security
         private static AsyncProtocolCallback s_readFrameCallback = new AsyncProtocolCallback(ReadFrameCallback);
         private static AsyncCallback s_writeCallback = new AsyncCallback(WriteCallback);
 
-        private RemoteCertValidationCallback _certValidationDelegate;
-        private LocalCertSelectionCallback _certSelectionDelegate;
-
         private Stream _innerStream;
 
         private SslStreamInternal _secureStream;
@@ -38,6 +35,8 @@ namespace System.Net.Security
 
         private SecurityStatusPal _securityStatus;
         private ExceptionDispatchInfo _exception;
+
+        private SslAuthenticationOptions _sslAuthenticationOptions;
 
         private enum CachedSessionStatus : byte
         {
@@ -70,18 +69,10 @@ namespace System.Net.Security
         private int _lockReadState;
         private object _queuedReadStateRequest;
 
-        private readonly EncryptionPolicy _encryptionPolicy;
-
-        //
-        //  The public Client and Server classes enforce the parameters rules before
-        //  calling into this .ctor.
-        //
-        internal SslState(Stream innerStream, RemoteCertValidationCallback certValidationCallback, LocalCertSelectionCallback certSelectionCallback, EncryptionPolicy encryptionPolicy)
+        internal SslState(Stream innerStream, SslAuthenticationOptions sslAuthenticationOptions)
         {
             _innerStream = innerStream;
-            _certValidationDelegate = certValidationCallback;
-            _certSelectionDelegate = certSelectionCallback;
-            _encryptionPolicy = encryptionPolicy;
+            _sslAuthenticationOptions = sslAuthenticationOptions;
         }
 
         internal void ValidateCreateContext(bool isServer, string targetHost, SslProtocols enabledSslProtocols, X509Certificate serverCertificate, X509CertificateCollection clientCertificates, bool remoteCertRequired, bool checkCertRevocationStatus)
@@ -129,11 +120,19 @@ namespace System.Net.Security
             try
             {
                 _context = new SecureChannel(targetHost, isServer, enabledSslProtocols, serverCertificate, clientCertificates, remoteCertRequired,
-                                                                 checkCertName, checkCertRevocationStatus, _encryptionPolicy, _certSelectionDelegate);
+                                                                 checkCertName, checkCertRevocationStatus, _sslAuthenticationOptions);
             }
             catch (Win32Exception e)
             {
                 throw new AuthenticationException(SR.net_auth_SSPI, e);
+            }
+        }
+
+        internal string NegotiatedApplicationProtocol
+        {
+            get
+            {
+                return _context.NegotiatedApplicationProtocol;
             }
         }
 
@@ -170,14 +169,6 @@ namespace System.Net.Security
             {
                 return Context != null && Context.IsServer;
             }
-        }
-
-        //
-        // SSL related properties
-        //
-        internal void SetCertValidationDelegate(RemoteCertValidationCallback certValidationCallback)
-        {
-            _certValidationDelegate = certValidationCallback;
         }
 
         //
@@ -1018,7 +1009,7 @@ namespace System.Net.Security
 
             Context.ProcessHandshakeSuccess();
 
-            if (!Context.VerifyRemoteCertificate(_certValidationDelegate, ref alertToken))
+            if (!Context.VerifyRemoteCertificate(_sslAuthenticationOptions._certValidationDelegate, ref alertToken))
             {
                 _handshakeCompleted = false;
                 _certValidationFailed = true;

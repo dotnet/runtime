@@ -5,6 +5,7 @@
 // Changes to this file must follow the http://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System.Collections.Generic;
 
 namespace System.Net.Security
 {
@@ -94,13 +95,23 @@ namespace System.Net.Security
         EncryptAndSign = 2
     }
     public delegate bool RemoteCertificateValidationCallback(object sender, System.Security.Cryptography.X509Certificates.X509Certificate certificate, System.Security.Cryptography.X509Certificates.X509Chain chain, System.Net.Security.SslPolicyErrors sslPolicyErrors);
+    public partial class SslAuthenticationOptions
+    {
+        public IList<string> ApplicationProtocols { get { throw null; } set { } }
+        public Dictionary<string, System.Security.Cryptography.X509Certificates.X509Certificate2> ServerCertificates { get { throw null; } set { } }
+        public RemoteCertificateValidationCallback RemoteCertificateValidationCallback { get { throw null; } set { } }
+        public LocalCertificateSelectionCallback UserCertificateSelectionCallback { get { throw null; } set { } }
+        public EncryptionPolicy EncryptionPolicy { get { throw null; } set { } }
+    }
     public partial class SslStream : AuthenticatedStream
     {
         public SslStream(System.IO.Stream innerStream) : base(innerStream, false) { }
+        public SslStream(System.IO.Stream innerStream, bool leaveInnerStreamOpen, SslAuthenticationOptions sslauthenticationOptions) : base(innerStream, leaveInnerStreamOpen) { }
         public SslStream(System.IO.Stream innerStream, bool leaveInnerStreamOpen) : base(innerStream, leaveInnerStreamOpen) { }
         public SslStream(System.IO.Stream innerStream, bool leaveInnerStreamOpen, System.Net.Security.RemoteCertificateValidationCallback userCertificateValidationCallback) : base(innerStream, leaveInnerStreamOpen) { }
         public SslStream(System.IO.Stream innerStream, bool leaveInnerStreamOpen, System.Net.Security.RemoteCertificateValidationCallback userCertificateValidationCallback, System.Net.Security.LocalCertificateSelectionCallback userCertificateSelectionCallback) : base(innerStream, leaveInnerStreamOpen) { }
         public SslStream(System.IO.Stream innerStream, bool leaveInnerStreamOpen, System.Net.Security.RemoteCertificateValidationCallback userCertificateValidationCallback, System.Net.Security.LocalCertificateSelectionCallback userCertificateSelectionCallback, System.Net.Security.EncryptionPolicy encryptionPolicy) : base(innerStream, leaveInnerStreamOpen) { }
+        public string NegotiatedApplicationProtocol { get { throw null; } }
         public override bool CanRead { get { throw null; } }
         public override bool CanSeek { get { throw null; } }
         public override bool CanTimeout { get { throw null; } }

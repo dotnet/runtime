@@ -12,6 +12,10 @@ internal static partial class Interop
 {
     internal static partial class Ssl
     {
+        internal const int OPENSSL_NPN_NEGOTIATED = 1;
+        internal const int SSL_TLSEXT_ERR_OK = 0;
+        internal const int SSL_TLSEXT_ERR_NOACK = 3;
+
         internal delegate int SslCtxSetVerifyCallback(int preverify_ok, IntPtr x509_ctx);
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_EnsureLibSslInitialized")]
@@ -43,6 +47,21 @@ internal static partial class Interop
 
         [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGetVersion")]
         private static extern IntPtr SslGetVersion(SafeSslHandle ssl);
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslSelectNextProto")]
+        internal static extern int SslSelectNextProto(out IntPtr outp, out byte outlen, IntPtr server, uint serverlen, IntPtr client, uint clientlen);
+
+        [DllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGet0AlpnSelected")]
+        internal static extern void SslGetAlpnSelected(SafeSslHandle ssl, out IntPtr protocol, out int len);
+
+        internal static unsafe string SslGetAlpnSelected(SafeSslHandle ssl)
+        {
+            IntPtr protocol;
+            int len;
+            SslGetAlpnSelected(ssl, out protocol, out len);
+            
+            return len == 0 ? null : Marshal.PtrToStringAnsi(protocol, len);
+        }
 
         internal static string GetProtocolVersion(SafeSslHandle ssl)
         {
