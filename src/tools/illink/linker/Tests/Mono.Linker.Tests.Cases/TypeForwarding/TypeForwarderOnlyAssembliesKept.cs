@@ -13,13 +13,11 @@ namespace Mono.Linker.Tests.Cases.TypeForwarding {
 	[SetupCompileAfter ("Implementation.dll", new[] { "Dependencies/ImplementationLibrary.cs" })]
 	[SetupCompileAfter ("Forwarder.dll", new[] { "Dependencies/ForwarderLibrary.cs" }, references: new[] { "Implementation.dll" })]
 
-	[KeptAssembly ("Library.dll")]
-	[KeptAssembly ("Implementation.dll")]
 	[KeptAssembly ("Forwarder.dll")]
 	[KeptMemberInAssembly ("Library.dll", typeof (LibraryUsingForwarder), "GetValueFromOtherAssembly()")]
 	[KeptMemberInAssembly ("Implementation.dll", typeof (ImplementationLibrary), "GetSomeValue()")]
 	public class TypeForwarderOnlyAssembliesKept {
-		static void Main ()
+		public static void Main ()
 		{
 			Console.WriteLine (new ImplementationLibrary ().GetSomeValue ());
 			Console.WriteLine (new LibraryUsingForwarder ().GetValueFromOtherAssembly ());

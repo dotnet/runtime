@@ -26,13 +26,20 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 
 		public virtual TestCaseLinkerOptions GetLinkerOptions ()
 		{
-			return new TestCaseLinkerOptions
-			{
-				CoreLink = GetOptionAttributeValue (nameof (CoreLinkAttribute), "skip"),
+			var tclo = new TestCaseLinkerOptions {
 				Il8n = GetOptionAttributeValue (nameof (Il8nAttribute), string.Empty),
 				IncludeBlacklistStep = GetOptionAttributeValue (nameof (IncludeBlacklistStepAttribute), false),
-				KeepTypeForwarderOnlyAssemblies = GetOptionAttributeValue (nameof (KeepTypeForwarderOnlyAssembliesAttribute), string.Empty)
+				KeepTypeForwarderOnlyAssemblies = GetOptionAttributeValue (nameof (KeepTypeForwarderOnlyAssembliesAttribute), string.Empty),
+				CoreAssembliesAction = GetOptionAttributeValue<string> (nameof (SetupLinkerCoreActionAttribute), null)
 			};
+
+			foreach (var assemblyAction in _testCaseTypeDefinition.CustomAttributes.Where (attr => attr.AttributeType.Name == nameof (SetupLinkerActionAttribute)))
+			{
+				var ca = assemblyAction.ConstructorArguments;
+				tclo.AssembliesAction.Add (new KeyValuePair<string, string> ((string)ca [0].Value, (string)ca [1].Value));
+			}
+
+			return tclo;
 		}
 
 		public virtual IEnumerable<string> GetReferencedAssemblies (NPath workingDirectory)

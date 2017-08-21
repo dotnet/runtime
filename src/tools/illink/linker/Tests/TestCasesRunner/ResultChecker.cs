@@ -107,24 +107,35 @@ namespace Mono.Linker.Tests.TestCasesRunner {
 						var expectedTypeName = checkAttrInAssembly.ConstructorArguments [1].Value.ToString ();
 						var linkedType = linkedAssembly.MainModule.GetType (expectedTypeName);
 
-						if (checkAttrInAssembly.AttributeType.Name == nameof (RemovedTypeInAssemblyAttribute)) {
+						switch (checkAttrInAssembly.AttributeType.Name) {
+						case nameof (RemovedTypeInAssemblyAttribute):
 							if (linkedType != null)
 								Assert.Fail ($"Type `{expectedTypeName}' should have been removed");
-						} else if (checkAttrInAssembly.AttributeType.Name == nameof (KeptTypeInAssemblyAttribute)) {
+							break;
+						case nameof (KeptTypeInAssemblyAttribute):
 							if (linkedType == null)
 								Assert.Fail ($"Type `{expectedTypeName}' should have been kept");
-						} else if (checkAttrInAssembly.AttributeType.Name == nameof (RemovedMemberInAssemblyAttribute)) {
+							break;
+						case nameof (RemovedMemberInAssemblyAttribute):
 							if (linkedType == null)
 								continue;
 
 							VerifyRemovedMemberInAssembly (checkAttrInAssembly, linkedType);
-						} else if (checkAttrInAssembly.AttributeType.Name == nameof (KeptMemberInAssemblyAttribute)) {
+							break;
+						case nameof (KeptMemberInAssemblyAttribute):
 							if (linkedType == null)
 								Assert.Fail ($"Type `{expectedTypeName}' should have been kept");
 
 							VerifyKeptMemberInAssembly (checkAttrInAssembly, linkedType);
-						} else {
+							break;
+						case nameof (RemovedForwarderAttribute):
+							if (linkedAssembly.MainModule.ExportedTypes.Any (l => l.Name == expectedTypeName))
+								Assert.Fail ($"Forwarder `{expectedTypeName}' should have been removed");
+							
+							break;
+						default:
 							UnhandledOtherAssemblyAssertion (expectedTypeName, checkAttrInAssembly, linkedType);
+							break;
 						}
 					}
 				}
