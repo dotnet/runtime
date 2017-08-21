@@ -361,4 +361,10 @@
   <data name="net_encryptionpolicy_notsupported" xml:space="preserve">
     <value>The '{0}' encryption policy is not supported on this platform.</value>
   </data>
+  <data name="net_alpn_notsupported" xml:space="preserve">
+    <value>ALPN is not supported on the current platform.</value>
+  </data>
+  <data name="net_ssl_app_protocols_invalid" xml:space="preserve">
+    <value>The application protocol list is invalid.</value>
+  </data>
 </root>

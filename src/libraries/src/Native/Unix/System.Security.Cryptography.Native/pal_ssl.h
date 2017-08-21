@@ -117,6 +117,14 @@ typedef int32_t (*SslCtxSetCertVerifyCallbackCallback)(X509_STORE_CTX*, void* ar
 
 // the function pointer definition for the callback used in SslCtxSetClientCertCallback
 typedef int32_t (*SslClientCertCallback)(SSL* ssl, X509** x509, EVP_PKEY** pkey);
+
+// the function pointer definition for the callback used in SslCtxSetAplnSelectCb
+typedef int32_t (*SslCtxSetAplnCallback)(SSL* ssl,
+    const unsigned char** out,
+    unsigned char* outlen,
+    const unsigned char* in,
+    unsigned int inlen,
+    void* arg);
 /*
 Ensures that libssl is correctly initialized and ready to use.
 */
@@ -365,3 +373,25 @@ libssl frees the x509 object.
 Returns 1 if success and 0 in case of failure
 */
 extern "C" int32_t CryptoNative_SslAddExtraChainCert(SSL* ssl, X509* x509);
+
+/*
+Shims the SSL_select_next_proto method.
+Returns 1 on success, 0 on failure.
+*/
+extern "C" int32_t CryptoNative_SslSelectNextProto(unsigned char** out, unsigned char* outlen, const unsigned char* server, unsigned int server_len, const unsigned char* client, unsigned int client_len);
+
+/*
+Shims the ssl_ctx_set_alpn_select_cb method.
+*/
+extern "C" void CryptoNative_SslCtxSetAplnSelectCb(SSL_CTX* ctx, SslCtxSetAplnCallback cb, void *arg);
+
+/*
+Shims the ssl_ctx_set_alpn_protos method.
+Returns 0 on success, non-zero on failure.
+*/
+extern "C" int32_t CryptoNative_SslCtxSetAlpnProtos(SSL_CTX* ctx, const unsigned char *protos, unsigned protos_len);
+
+/*
+Shims the ssl_get0_alpn_selected method.
+*/
+extern "C" void CryptoNative_SslGet0AlpnSelected(SSL* ssl, const unsigned char** protocol, unsigned int* len);

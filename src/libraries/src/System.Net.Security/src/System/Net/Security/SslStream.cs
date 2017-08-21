@@ -2,7 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Security.Authentication;
 using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
@@ -23,6 +25,19 @@ namespace System.Net.Security
         NoEncryption
     }
 
+    public class SslAuthenticationOptions
+    {
+        internal GCHandle _alpnProtocolsHandle { get; set; }
+        internal RemoteCertValidationCallback _certValidationDelegate { get; set; }
+        internal LocalCertSelectionCallback _certSelectionDelegate { get; set; }
+
+        public IList<string> ApplicationProtocols { get; set; }
+        public Dictionary<string, X509Certificate2> ServerCertificates { get; set; }
+        public RemoteCertificateValidationCallback RemoteCertificateValidationCallback { get; set; }
+        public LocalCertificateSelectionCallback UserCertificateSelectionCallback { get; set; }
+        public EncryptionPolicy EncryptionPolicy { get; set; }
+    }
+
     // A user delegate used to verify remote SSL certificate.
     public delegate bool RemoteCertificateValidationCallback(object sender, X509Certificate certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors);
 
@@ -36,9 +51,9 @@ namespace System.Net.Security
     public class SslStream : AuthenticatedStream
     {
         private SslState _sslState;
-        private RemoteCertificateValidationCallback _userCertificateValidationCallback;
-        private LocalCertificateSelectionCallback _userCertificateSelectionCallback;
         private object _remoteCertificateOrBytes;
+
+        private SslAuthenticationOptions _sslAuthenticationOptions;
 
         public SslStream(Stream innerStream)
                 : this(innerStream, false, null, null)
@@ -50,37 +65,69 @@ namespace System.Net.Security
         {
         }
 
-        public SslStream(Stream innerStream, bool leaveInnerStreamOpen, RemoteCertificateValidationCallback userCertificateValidationCallback)
-                : this(innerStream, leaveInnerStreamOpen, userCertificateValidationCallback, null, EncryptionPolicy.RequireEncryption)
+        public SslStream(Stream innerStream, bool leaveInnerStreamOpen, RemoteCertificateValidationCallback RemoteCertificateValidationCallback)
+                : this(innerStream, leaveInnerStreamOpen, RemoteCertificateValidationCallback, null, EncryptionPolicy.RequireEncryption)
         {
         }
 
-        public SslStream(Stream innerStream, bool leaveInnerStreamOpen, RemoteCertificateValidationCallback userCertificateValidationCallback,
+        public SslStream(Stream innerStream, bool leaveInnerStreamOpen, RemoteCertificateValidationCallback RemoteCertificateValidationCallback,
             LocalCertificateSelectionCallback userCertificateSelectionCallback)
-                : this(innerStream, leaveInnerStreamOpen, userCertificateValidationCallback, userCertificateSelectionCallback, EncryptionPolicy.RequireEncryption)
+                : this(innerStream, leaveInnerStreamOpen, RemoteCertificateValidationCallback, userCertificateSelectionCallback, EncryptionPolicy.RequireEncryption)
         {
         }
 
-        public SslStream(Stream innerStream, bool leaveInnerStreamOpen, RemoteCertificateValidationCallback userCertificateValidationCallback,
+        public SslStream(Stream innerStream, bool leaveInnerStreamOpen, RemoteCertificateValidationCallback RemoteCertificateValidationCallback,
             LocalCertificateSelectionCallback userCertificateSelectionCallback, EncryptionPolicy encryptionPolicy)
-            : base(innerStream, leaveInnerStreamOpen)
+                : this(innerStream, leaveInnerStreamOpen, GetSslAuthenticationOptions(RemoteCertificateValidationCallback, userCertificateSelectionCallback, encryptionPolicy))
+        {
+        }
+
+        public SslStream(Stream innerStream, bool leaveInnerStreamOpen, SslAuthenticationOptions sslAuthenticationOptions)
+               : base(innerStream, leaveInnerStreamOpen)
+        {
+            if (sslAuthenticationOptions.EncryptionPolicy != EncryptionPolicy.RequireEncryption &&
+                    sslAuthenticationOptions.EncryptionPolicy != EncryptionPolicy.AllowNoEncryption &&
+                    sslAuthenticationOptions.EncryptionPolicy != EncryptionPolicy.NoEncryption)
+            {
+                throw new ArgumentException(SR.Format(SR.net_invalid_enum, "EncryptionPolicy"), nameof(sslAuthenticationOptions.EncryptionPolicy));
+            }
+
+            _sslAuthenticationOptions = sslAuthenticationOptions;
+            _sslAuthenticationOptions._certValidationDelegate = new RemoteCertValidationCallback(UserCertValidationCallbackWrapper);
+            _sslAuthenticationOptions._certSelectionDelegate = _sslAuthenticationOptions.UserCertificateSelectionCallback == null ? null : new LocalCertSelectionCallback(UserCertSelectionCallbackWrapper);
+
+            _sslState = new SslState(innerStream, _sslAuthenticationOptions);
+        }
+
+        public string NegotiatedApplicationProtocol
+        {
+            get
+            {
+                return _sslState.NegotiatedApplicationProtocol;
+            }
+        }
+
+        private static SslAuthenticationOptions GetSslAuthenticationOptions(RemoteCertificateValidationCallback RemoteCertificateValidationCallback,
+            LocalCertificateSelectionCallback userCertificateSelectionCallback, EncryptionPolicy encryptionPolicy)
         {
             if (encryptionPolicy != EncryptionPolicy.RequireEncryption && encryptionPolicy != EncryptionPolicy.AllowNoEncryption && encryptionPolicy != EncryptionPolicy.NoEncryption)
             {
                 throw new ArgumentException(SR.Format(SR.net_invalid_enum, "EncryptionPolicy"), nameof(encryptionPolicy));
             }
 
-            _userCertificateValidationCallback = userCertificateValidationCallback;
-            _userCertificateSelectionCallback = userCertificateSelectionCallback;
-            RemoteCertValidationCallback _userCertValidationCallbackWrapper = new RemoteCertValidationCallback(UserCertValidationCallbackWrapper);
-            LocalCertSelectionCallback _userCertSelectionCallbackWrapper = userCertificateSelectionCallback == null ? null : new LocalCertSelectionCallback(UserCertSelectionCallbackWrapper);
-            _sslState = new SslState(innerStream, _userCertValidationCallbackWrapper, _userCertSelectionCallbackWrapper, encryptionPolicy);
-        }
+            SslAuthenticationOptions options = new SslAuthenticationOptions();
 
+            options.UserCertificateSelectionCallback = userCertificateSelectionCallback;
+            options.RemoteCertificateValidationCallback = RemoteCertificateValidationCallback;
+            options.EncryptionPolicy = encryptionPolicy;
+
+            return options;
+        }
+        
         private bool UserCertValidationCallbackWrapper(string hostName, X509Certificate2 certificate, X509Chain chain, SslPolicyErrors sslPolicyErrors)
         {
             _remoteCertificateOrBytes = certificate == null ? null : certificate.RawData;
-            if (_userCertificateValidationCallback == null)
+            if (_sslAuthenticationOptions.RemoteCertificateValidationCallback == null)
             {
                 if (!_sslState.RemoteCertRequired)
                 {
@@ -91,13 +138,13 @@ namespace System.Net.Security
             }
             else
             {
-                return _userCertificateValidationCallback(this, certificate, chain, sslPolicyErrors);
+                return _sslAuthenticationOptions.RemoteCertificateValidationCallback(this, certificate, chain, sslPolicyErrors);
             }
         }
 
         private X509Certificate UserCertSelectionCallbackWrapper(string targetHost, X509CertificateCollection localCertificates, X509Certificate remoteCertificate, string[] acceptableIssuers)
         {
-            return _userCertificateSelectionCallback(this, targetHost, localCertificates, remoteCertificate, acceptableIssuers);
+            return _sslAuthenticationOptions.UserCertificateSelectionCallback(this, targetHost, localCertificates, remoteCertificate, acceptableIssuers);
         }
 
         //

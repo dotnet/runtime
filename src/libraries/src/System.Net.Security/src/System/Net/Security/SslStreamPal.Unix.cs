@@ -29,22 +29,22 @@ namespace System.Net.Security
         }
 
         public static SecurityStatusPal AcceptSecurityContext(ref SafeFreeCredentials credential, ref SafeDeleteContext context,
-            SecurityBuffer inputBuffer, SecurityBuffer outputBuffer, bool remoteCertRequired)
+            SecurityBuffer inputBuffer, SecurityBuffer outputBuffer, bool remoteCertRequired, SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(credential, ref context, inputBuffer, outputBuffer, true, remoteCertRequired);
+            return HandshakeInternal(credential, ref context, inputBuffer, outputBuffer, true, remoteCertRequired, sslAuthenticationOptions);
         }
 
         public static SecurityStatusPal InitializeSecurityContext(ref SafeFreeCredentials credential, ref SafeDeleteContext context,
-            string targetName, SecurityBuffer inputBuffer, SecurityBuffer outputBuffer)
+            string targetName, SecurityBuffer inputBuffer, SecurityBuffer outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
         {
-            return HandshakeInternal(credential, ref context, inputBuffer, outputBuffer, false, false);
+            return HandshakeInternal(credential, ref context, inputBuffer, outputBuffer, false, false, sslAuthenticationOptions);
         }
 
-        public static SecurityStatusPal InitializeSecurityContext(SafeFreeCredentials credential, ref SafeDeleteContext context, string targetName, SecurityBuffer[] inputBuffers, SecurityBuffer outputBuffer)
+        public static SecurityStatusPal InitializeSecurityContext(SafeFreeCredentials credential, ref SafeDeleteContext context, string targetName, SecurityBuffer[] inputBuffers, SecurityBuffer outputBuffer, SslAuthenticationOptions sslAuthenticationOptions)
         {
             Debug.Assert(inputBuffers.Length == 2);
             Debug.Assert(inputBuffers[1].token == null);
-            return HandshakeInternal(credential, ref context, inputBuffers[0], outputBuffer, false, false);
+            return HandshakeInternal(credential, ref context, inputBuffers[0], outputBuffer, false, false, sslAuthenticationOptions);
         }
 
         public static SafeFreeCredentials AcquireCredentialsHandle(X509Certificate certificate,
@@ -103,7 +103,7 @@ namespace System.Net.Security
         }
 
         private static SecurityStatusPal HandshakeInternal(SafeFreeCredentials credential, ref SafeDeleteContext context,
-            SecurityBuffer inputBuffer, SecurityBuffer outputBuffer, bool isServer, bool remoteCertRequired)
+            SecurityBuffer inputBuffer, SecurityBuffer outputBuffer, bool isServer, bool remoteCertRequired, SslAuthenticationOptions sslAuthenticationOptions)
         {
             Debug.Assert(!credential.IsInvalid);
 
@@ -111,7 +111,7 @@ namespace System.Net.Security
             {
                 if ((null == context) || context.IsInvalid)
                 {
-                    context = new SafeDeleteSslContext(credential as SafeFreeSslCredentials, isServer, remoteCertRequired);
+                    context = new SafeDeleteSslContext(credential as SafeFreeSslCredentials, sslAuthenticationOptions);
                 }
 
                 byte[] output = null;
@@ -137,6 +137,11 @@ namespace System.Net.Security
             {
                 return new SecurityStatusPal(SecurityStatusPalErrorCode.InternalError, exc);
             }
+        }
+
+        internal static string GetNegotiatedApplicationProtocol(SafeDeleteContext context)
+        {
+            return Interop.Ssl.SslGetAlpnSelected(((SafeDeleteSslContext)context).SslContext);
         }
 
         private static SecurityStatusPal EncryptDecryptHelper(SafeDeleteContext securityContext, ReadOnlyMemory<byte> input, int offset, int size, bool encrypt, ref byte[] output, out int resultSize)
