@@ -70,3 +70,12 @@ samples/size @alexrp
 scripts @akoeplinger
 scripts/ci @akoeplinger
 scripts/ci/run-test-profiler-stress-tests.sh @alexrp
+tools/checker @tritao
+tools/crash-bisector @kumpera
+tools/locale-builder @marek-safar
+tools/monograph @vargaz
+tools/nuget-hash-extractor @marek-safar
+tools/offsets-tool @lewurm @rolfbjarne
+tools/pedump @kumpera
+tools/sgen @brzvlad
+tools/ @kumpera
