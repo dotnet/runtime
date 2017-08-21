@@ -59,6 +59,18 @@ namespace System
         public static bool IsMacOsHighSierraOrHigher { get; } =
             IsOSX && (s_osxProductVersion.Major > 10 || (s_osxProductVersion.Major == 10 && s_osxProductVersion.Minor >= 13));
 
+        private static readonly Version s_icuVersion = GetICUVersion();
+        public static Version ICUVersion => s_icuVersion;
+
+        private static Version GetICUVersion()
+        {
+            int ver = GlobalizationNative_GetICUVersion();
+            return new Version( ver & 0xFF,
+                               (ver >> 8)  & 0xFF,
+                               (ver >> 16) & 0xFF,
+                                ver >> 24);
+        }
+
         private static DistroInfo ParseOsReleaseFile()
         {
             Debug.Assert(RuntimeInformation.IsOSPlatform(OSPlatform.Linux));
@@ -204,6 +216,9 @@ namespace System
 
         [DllImport("libc", SetLastError = true)]
         internal static extern unsafe uint geteuid();
+
+        [DllImport("System.Globalization.Native", SetLastError = true)]
+        private static extern int GlobalizationNative_GetICUVersion();
 
         public static bool IsSuperUser => geteuid() == 0;
     }
