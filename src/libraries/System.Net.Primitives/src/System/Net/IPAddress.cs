@@ -4,6 +4,7 @@
 
 using System.Diagnostics;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 
 namespace System.Net
 {
@@ -122,7 +123,7 @@ namespace System.Net
         ///   </para>
         /// </devdoc>
         public IPAddress(byte[] address, long scopeid) :
-            this(new ReadOnlySpan<byte>(address ?? throw new ArgumentNullException(nameof(address))), scopeid)
+            this(new ReadOnlySpan<byte>(address ?? ThrowAddressNullException()), scopeid)
         {
         }
 
@@ -142,27 +143,6 @@ namespace System.Net
 
             _numbers = new ushort[NumberOfLabels];
 
-            for (int i = 0; i < NumberOfLabels; i++)
-            {
-                _numbers[i] = (ushort)(address[i * 2] * 256 + address[i * 2 + 1]);
-            }
-
-            PrivateScopeId = (uint)scopeid;
-        }
-
-        internal unsafe IPAddress(byte* address, int addressLength, long scopeid)
-        {
-            Debug.Assert(address != null);
-            Debug.Assert(addressLength == IPAddressParserStatics.IPv6AddressBytes);
-
-            // Consider: Since scope is only valid for link-local and site-local
-            //           addresses we could implement some more robust checking here
-            if (scopeid < 0 || scopeid > 0x00000000FFFFFFFF)
-            {
-                throw new ArgumentOutOfRangeException(nameof(scopeid));
-            }
-
-            _numbers = new ushort[NumberOfLabels];
             for (int i = 0; i < NumberOfLabels; i++)
             {
                 _numbers[i] = (ushort)(address[i * 2] * 256 + address[i * 2 + 1]);
@@ -201,22 +181,17 @@ namespace System.Net
         ///   </para>
         /// </devdoc>
         public IPAddress(byte[] address) :
-            this(new ReadOnlySpan<byte>(address ?? throw new ArgumentNullException(nameof(address))))
+            this(new ReadOnlySpan<byte>(address ?? ThrowAddressNullException()))
         {
         }
 
         public IPAddress(ReadOnlySpan<byte> address)
         {
-            if (address.Length != IPAddressParserStatics.IPv4AddressBytes && address.Length != IPAddressParserStatics.IPv6AddressBytes)
-            {
-                throw new ArgumentException(SR.dns_bad_ip_address, nameof(address));
-            }
-
             if (address.Length == IPAddressParserStatics.IPv4AddressBytes)
             {
                 PrivateAddress = (uint)((address[3] << 24 | address[2] << 16 | address[1] << 8 | address[0]) & 0x0FFFFFFFF);
             }
-            else
+            else if (address.Length == IPAddressParserStatics.IPv6AddressBytes)
             {
                 _numbers = new ushort[NumberOfLabels];
 
@@ -225,27 +200,9 @@ namespace System.Net
                     _numbers[i] = (ushort)(address[i * 2] * 256 + address[i * 2 + 1]);
                 }
             }
-        }
-
-        internal unsafe IPAddress(byte* address, int addressLength)
-        {
-            Debug.Assert(address != null);
-            Debug.Assert(addressLength > 0);
-            Debug.Assert(
-                addressLength == IPAddressParserStatics.IPv4AddressBytes ||
-                addressLength == IPAddressParserStatics.IPv6AddressBytes);
-
-            if (addressLength == IPAddressParserStatics.IPv4AddressBytes)
-            {
-                PrivateAddress = (uint)((address[3] << 24 | address[2] << 16 | address[1] << 8 | address[0]) & 0x0FFFFFFFF);
-            }
             else
             {
-                _numbers = new ushort[NumberOfLabels];
-                for (int i = 0; i < NumberOfLabels; i++)
-                {
-                    _numbers[i] = (ushort)(address[i * 2] * 256 + address[i * 2 + 1]);
-                }
+                throw new ArgumentException(SR.dns_bad_ip_address, nameof(address));
             }
         }
 
@@ -269,7 +226,7 @@ namespace System.Net
                 return false;
             }
 
-            address = IPAddressParser.Parse(ipString, tryParse: true);
+            address = IPAddressParser.Parse(ipString.AsReadOnlySpan(), tryParse: true);
             return (address != null);
         }
 
@@ -286,7 +243,7 @@ namespace System.Net
                 throw new ArgumentNullException(nameof(ipString));
             }
 
-            return IPAddressParser.Parse(ipString, tryParse: false);
+            return IPAddressParser.Parse(ipString.AsReadOnlySpan(), tryParse: false);
         }
 
         public static IPAddress Parse(ReadOnlySpan<char> ipSpan)
@@ -298,21 +255,13 @@ namespace System.Net
         {
             if (IsIPv6)
             {
-                Debug.Assert(_numbers != null && _numbers.Length == NumberOfLabels);
-
                 if (destination.Length < IPAddressParserStatics.IPv6AddressBytes)
                 {
                     bytesWritten = 0;
                     return false;
                 }
 
-                int j = 0;
-                for (int i = 0; i < NumberOfLabels; i++)
-                {
-                    destination[j++] = (byte)((_numbers[i] >> 8) & 0xFF);
-                    destination[j++] = (byte)((_numbers[i]) & 0xFF);
-                }
-
+                WriteIPv6Bytes(destination);
                 bytesWritten = IPAddressParserStatics.IPv6AddressBytes;
             }
             else
@@ -323,20 +272,35 @@ namespace System.Net
                     return false;
                 }
 
-                uint address = PrivateAddress;
-                unchecked
-                {
-                    destination[0] = (byte)(address);
-                    destination[1] = (byte)(address >> 8);
-                    destination[2] = (byte)(address >> 16);
-                    destination[3] = (byte)(address >> 24);
-                }
-
+                WriteIPv4Bytes(destination);
                 bytesWritten = IPAddressParserStatics.IPv4AddressBytes;
             }
 
             return true;
         }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void WriteIPv6Bytes(Span<byte> destination)
+        {
+            Debug.Assert(_numbers != null && _numbers.Length == NumberOfLabels);
+            int j = 0;
+            for (int i = 0; i < NumberOfLabels; i++)
+            {
+                destination[j++] = (byte)((_numbers[i] >> 8) & 0xFF);
+                destination[j++] = (byte)((_numbers[i]) & 0xFF);
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private void WriteIPv4Bytes(Span<byte> destination)
+        {
+            uint address = PrivateAddress;
+            destination[0] = (byte)(address);
+            destination[1] = (byte)(address >> 8);
+            destination[2] = (byte)(address >> 16);
+            destination[3] = (byte)(address >> 24);
+        }
+
         /// <devdoc>
         ///   <para>
         ///     Provides a copy of the IPAddress internals as an array of bytes.
@@ -347,16 +311,16 @@ namespace System.Net
             if (IsIPv6)
             {
                 Debug.Assert(_numbers != null && _numbers.Length == NumberOfLabels);
+                byte[] bytes = new byte[IPAddressParserStatics.IPv6AddressBytes];
+                WriteIPv6Bytes(bytes);
+                return bytes;
             }
-
-            int length = IsIPv6 ? IPAddressParserStatics.IPv6AddressBytes : IPAddressParserStatics.IPv4AddressBytes;
-            var bytes = new byte[length];
-
-            bool result = TryWriteBytes(new Span<byte>(bytes), out int bytesWritten);
-
-            Debug.Assert(result);
-
-            return bytes;
+            else
+            {
+                byte[] bytes = new byte[IPAddressParserStatics.IPv4AddressBytes];
+                WriteIPv4Bytes(bytes);
+                return bytes;
+            }
         }
 
         public AddressFamily AddressFamily
@@ -476,7 +440,7 @@ namespace System.Net
         {
             if (address == null)
             {
-                throw new ArgumentNullException(nameof(address));
+                ThrowAddressNullException();
             }
 
             if (address.IsIPv6)
@@ -704,5 +668,8 @@ namespace System.Net
 
             return new IPAddress(address);
         }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static byte[] ThrowAddressNullException() => throw new ArgumentNullException("address");
     }
 }
