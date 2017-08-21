@@ -13,6 +13,11 @@
     <TargetsUnix Condition="'$(TargetsUnix)' != 'true'">false</TargetsUnix>
     <TargetsOSX Condition="'$(TargetsOSX)' != 'true'">false</TargetsOSX>
   </PropertyGroup>
+  <ItemDefinitionGroup>
+    <Compile>
+      <Visible>true</Visible>
+    </Compile>
+  </ItemDefinitionGroup>
   <ItemGroup>
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\CriticalHandleMinusOneIsInvalid.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Microsoft\Win32\SafeHandles\CriticalHandleZeroOrMinusOneIsInvalid.cs" />
