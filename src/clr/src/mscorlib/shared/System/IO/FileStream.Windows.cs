@@ -1735,5 +1735,25 @@ namespace System.IO
                 throw Win32Marshal.GetExceptionForLastWin32Error();
             }
         }
+        private SafeFileHandle ValidateFileHandle(SafeFileHandle fileHandle)
+        {
+            if (fileHandle.IsInvalid)
+            {
+                // Return a meaningful exception with the full path.
+
+                // NT5 oddity - when trying to open "C:\" as a Win32FileStream,
+                // we usually get ERROR_PATH_NOT_FOUND from the OS.  We should
+                // probably be consistent w/ every other directory.
+                int errorCode = Marshal.GetLastWin32Error();
+
+                if (errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND && _path.Length == PathInternal.GetRootLength(_path))
+                    errorCode = Interop.Errors.ERROR_ACCESS_DENIED;
+
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
+            }
+
+            fileHandle.IsAsync = _useAsyncIO;
+            return fileHandle;
+        }
     }
 }
