@@ -107,7 +107,7 @@ namespace System.Globalization.Tests
                                                     "SAU", "SAU" };
             yield return new object[] { 0x412, 134, "South Korean Won", "Korean Won", PlatformDetection.IsWindows ? "\uc6d0" : "\ub300\ud55c\ubbfc\uad6d\u0020\uc6d0", "KOR", "KOR" };
             yield return new object[] { 0x40d, 117, "Israeli New Shekel", "Israeli New Sheqel", 
-                                                    PlatformDetection.IsWindows ? "\u05e9\u05e7\u05dc\u0020\u05d7\u05d3\u05e9" : "\u05e9\u05f4\u05d7", "ISR", "ISR" };
+                                                    PlatformDetection.IsWindows || PlatformDetection.ICUVersion.Major >= 59 ? "\u05e9\u05e7\u05dc\u0020\u05d7\u05d3\u05e9" : "\u05e9\u05f4\u05d7", "ISR", "ISR" };
         }
         
         [Theory]

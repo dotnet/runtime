@@ -68,6 +68,7 @@ namespace System
         public static bool IsSuperUser { get { throw null; } }
         public static bool IsTizen { get { throw null; } }
         public static bool IsUap { get { throw null; } }
+        public static Version ICUVersion { get { return null; } }
         public static bool IsUbuntu { get { throw null; } }
         public static bool IsUbuntu1404 { get { throw null; } }
         public static bool IsWindows { get { throw null; } }
