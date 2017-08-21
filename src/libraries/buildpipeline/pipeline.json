@@ -32,6 +32,23 @@
           }
         },
         {
+          "Name": "DotNet-CoreFx-Trusted-Linux",
+          "Parameters": {
+            "PB_DockerTag": "centos-6-c8c9b08-20174310104313",
+            "PB_BuildArguments": "-buildArch=x64 -Release -stripSymbols -RuntimeOS=rhel.6 -- /p:PortableBuild=false",
+            "PB_BuildTestsArguments": "-buildArch=x64 -Release -SkipTests -Outerloop -RuntimeOS=rhel.6 -- /p:ArchiveTests=true /p:EnableDumpling=true",
+            "PB_SyncArguments": "-p -RuntimeOS=rhel.6 -- /p:ArchGroup=x64",
+            "PB_TargetQueue": "RedHat.69.Amd64",
+            "PB_CreateHelixArguments": "/p:ArchGroup=x64 /p:ConfigurationGroup=Release /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Linux"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "RedHat6",
+            "Platform": "x64",
+            "Type": "build/product/",
+            "ConfigurationGroup": "Release"
+          }
+        },
+        {
           "Name": "DotNet-CoreFx-Trusted-Linux-Crossbuild",
           "Parameters": {
             "PB_DockerTag": "ubuntu-14.04-cross-0cd4667-20172211042239",
@@ -337,6 +354,23 @@
           },
           "ReportingParameters": {
             "OperatingSystem": "Linux",
+            "Platform": "x64",
+            "Type": "build/product/",
+            "ConfigurationGroup": "Debug"
+          }
+        },
+        {
+          "Name": "DotNet-CoreFx-Trusted-Linux",
+          "Parameters": {
+            "PB_DockerTag": "centos-6-c8c9b08-20174310104313",
+            "PB_BuildArguments": "-buildArch=x64 -Debug -RuntimeOS=rhel.6 -- /p:PortableBuild=false",
+            "PB_BuildTestsArguments": "-buildArch=x64 -Debug -SkipTests -Outerloop -RuntimeOS=rhel.6 -- /p:ArchiveTests=true /p:EnableDumpling=true",
+            "PB_SyncArguments": "-p -RuntimeOS=rhel.6 -- /p:ArchGroup=x64",
+            "PB_TargetQueue": "RedHat.69.Amd64",
+            "PB_CreateHelixArguments": "/p:ArchGroup=x64 /p:ConfigurationGroup=Debug /p:TestProduct=corefx /p:TimeoutInSeconds=1200 /p:TargetOS=Linux"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "RedHat6",
             "Platform": "x64",
             "Type": "build/product/",
             "ConfigurationGroup": "Debug"
