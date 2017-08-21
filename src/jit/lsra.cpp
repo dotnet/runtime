@@ -5681,8 +5681,8 @@ regNumber LinearScan::tryAllocateFreeReg(Interval* currentInterval, RefPosition*
     {
         if (isAssigned(availablePhysRegInterval ARM_ARG(currentInterval->registerType)))
         {
-            unassignPhysReg(availablePhysRegInterval ARM_ARG(currentInterval->registerType));
             intervalToUnassign = availablePhysRegInterval->assignedInterval;
+            unassignPhysReg(availablePhysRegInterval ARM_ARG(currentInterval->registerType));
 
             if ((bestScore & VALUE_AVAILABLE) != 0 && intervalToUnassign != nullptr)
             {
