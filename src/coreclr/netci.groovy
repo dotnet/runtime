@@ -642,6 +642,11 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
                 }
             }
 	    break
+        
+        case 'tieredcompilation':
+        case 'corefx_tieredcompilation':
+            // No periodic jobs just yet, still testing
+            break
 
         default:
             println("Unknown scenario: ${scenario}");
