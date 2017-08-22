@@ -209,14 +209,6 @@ typedef DWORD (WINAPI *PTHREAD_START_ROUTINE)(void* lpThreadParameter);
 
 #endif // _MSC_VER
 
-#ifndef YieldProcessor
- #error "Don't know how to YieldProcessor on this architecture"
-#endif
-
-#ifndef MemoryBarrier
- #error "Don't know how to MemoryBarrier on this architecture"
-#endif
-
 #ifdef _MSC_VER
 #pragma intrinsic(_BitScanForward)
 #if WIN64
