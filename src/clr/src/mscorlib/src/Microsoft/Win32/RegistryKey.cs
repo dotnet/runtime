@@ -458,9 +458,7 @@ namespace Microsoft.Win32
          * Note that <var>name</var> can be null or "", at which point the
          * unnamed or default value of this Registry key is returned, if any.
          * The default values for RegistryKeys are OS-dependent.  NT doesn't
-         * have them by default, but they can exist and be of any type.  On
-         * Win95, the default value is always an empty key of type REG_SZ.
-         * Win98 supports default values of any type, but defaults to REG_SZ.
+         * have them by default, but they can exist and be of any type. 
          *
          * @param name Name of value to retrieve.
          * @param defaultValue Value to return if <i>name</i> doesn't exist.
