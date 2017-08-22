@@ -25,7 +25,6 @@
 #cmakedefine01 HAVE_PTHREAD_NP_H
 
 #cmakedefine01 HAVE_KQUEUE
-#cmakedefine01 HAVE_GETPWUID_R
 #cmakedefine01 HAVE_PTHREAD_SUSPEND
 #cmakedefine01 HAVE_PTHREAD_SUSPEND_NP
 #cmakedefine01 HAVE_PTHREAD_CONTINUE

@@ -1272,31 +1272,6 @@ SetCurrentDirectoryW(
 #define SetCurrentDirectory SetCurrentDirectoryA
 #endif
 
-// maximum length of the NETBIOS name (not including NULL)
-#define MAX_COMPUTERNAME_LENGTH 15
-
-// maximum length of the username (not including NULL)
-#define UNLEN   256
-
-PALIMPORT
-BOOL
-PALAPI
-GetUserNameW(
-    OUT LPWSTR lpBuffer,      // address of name buffer
-    IN OUT LPDWORD nSize );   // address of size of name buffer
-
-PALIMPORT
-BOOL
-PALAPI
-GetComputerNameW(
-    OUT LPWSTR lpBuffer,     // address of name buffer
-    IN OUT LPDWORD nSize);   // address of size of name buffer
-
-#ifdef UNICODE
-#define GetUserName GetUserNameW
-#define GetComputerName GetComputerNameW
-#endif // UNICODE
-
 PALIMPORT
 HANDLE
 PALAPI
