@@ -147,26 +147,20 @@ namespace System
                     char c = *pCh;
 
                     if (c == value1 || c == value2)
-                        goto ReturnIndex;
+                        return (int)(pCh - pChars);
 
                     // Possibly reads outside of count and can include null terminator
                     // Handled in the return logic
                     c = *(pCh + 1);
 
                     if (c == value1 || c == value2)
-                        goto ReturnIndex1;
+                        return (count == 1 ? -1 : (int)(pCh - pChars) + 1);
 
                     pCh += 2;
                     count -= 2;
                 }
 
                 return -1;
-
-            ReturnIndex:
-                return (int)(pCh - pChars);
-
-            ReturnIndex1:
-                return (count == 1 ? -1 : (int)(pCh - pChars) + 1);
             }
         }
 
@@ -181,16 +175,13 @@ namespace System
                     char c = *pCh;
 
                     if (c == value1 || c == value2 || c == value3)
-                        goto ReturnIndex;
+                        return (int)(pCh - pChars);
 
                     pCh++;
                     count--;
                 }
 
                 return -1;
-
-            ReturnIndex:
-                return (int)(pCh - pChars);
             }
         }
 
