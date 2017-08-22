@@ -722,6 +722,8 @@ public:
         return (unsigned)(roundUp(lvExactSize, TARGET_POINTER_SIZE));
     }
 
+    const size_t lvArgStackSize() const;
+
     unsigned lvSlotNum; // original slot # (if remapped)
 
     typeInfo lvVerTypeInfo; // type info needed for verification
@@ -2028,7 +2030,7 @@ public:
 
     GenTree* gtNewBlkOpNode(GenTreePtr dst, GenTreePtr srcOrFillVal, unsigned size, bool isVolatile, bool isCopyBlock);
 
-    GenTree* gtNewPutArgReg(var_types type, GenTreePtr arg);
+    GenTree* gtNewPutArgReg(var_types type, GenTreePtr arg, regNumber argReg);
 
 protected:
     void gtBlockOpInit(GenTreePtr result, GenTreePtr dst, GenTreePtr srcOrFillVal, bool isVolatile);
@@ -2444,6 +2446,9 @@ public:
         DNER_DepField,    // It is a field of a dependently promoted struct
         DNER_NoRegVars,   // opts.compFlags & CLFLG_REGVAR is not set
         DNER_MinOptsGC,   // It is a GC Ref and we are compiling MinOpts
+#if !defined(LEGACY_BACKEND) && !defined(_TARGET_64BIT_)
+        DNER_LongParamField, // It is a decomposed field of a long parameter.
+#endif
 #ifdef JIT32_GCENCODER
         DNER_PinningRef,
 #endif
@@ -3133,15 +3138,9 @@ private:
                 ((opcode >= CEE_STLOC_0) && (opcode <= CEE_STLOC_3)));
     }
 
-    GenTreeArgList* impPopList(unsigned          count,
-                               unsigned*         flagsPtr,
-                               CORINFO_SIG_INFO* sig,
-                               GenTreeArgList*   prefixTree = nullptr);
+    GenTreeArgList* impPopList(unsigned count, CORINFO_SIG_INFO* sig, GenTreeArgList* prefixTree = nullptr);
 
-    GenTreeArgList* impPopRevList(unsigned          count,
-                                  unsigned*         flagsPtr,
-                                  CORINFO_SIG_INFO* sig,
-                                  unsigned          skipReverseCount = 0);
+    GenTreeArgList* impPopRevList(unsigned count, CORINFO_SIG_INFO* sig, unsigned skipReverseCount = 0);
 
     /*
      * Get current IL offset with stack-empty info incoporated
@@ -3777,6 +3776,16 @@ public:
 
     void fgComputeLifeCall(VARSET_TP& life, GenTreeCall* call);
 
+    void fgComputeLifeTrackedLocalUse(VARSET_TP& life, LclVarDsc& varDsc, GenTreeLclVarCommon* node);
+    bool fgComputeLifeTrackedLocalDef(VARSET_TP&           life,
+                                      VARSET_VALARG_TP     keepAliveVars,
+                                      LclVarDsc&           varDsc,
+                                      GenTreeLclVarCommon* node);
+    void fgComputeLifeUntrackedLocal(VARSET_TP&           life,
+                                     VARSET_VALARG_TP     keepAliveVars,
+                                     LclVarDsc&           varDsc,
+                                     GenTreeLclVarCommon* lclVarNode,
+                                     GenTree*             node);
     bool fgComputeLifeLocal(VARSET_TP& life, VARSET_VALARG_TP keepAliveVars, GenTree* lclVarNode, GenTree* node);
 
     void fgComputeLife(VARSET_TP&       life,
@@ -3792,8 +3801,6 @@ public:
                            VARSET_VALARG_TP life,
                            bool*            doAgain,
                            bool* pStmtInfoDirty DEBUGARG(bool* treeModf));
-
-    bool fgTryRemoveDeadLIRStore(LIR::Range& blockRange, GenTree* node, GenTree** next);
 
     // For updating liveset during traversal AFTER fgComputeLife has completed
     VARSET_VALRET_TP fgGetVarBits(GenTreePtr tree);
@@ -4112,11 +4119,11 @@ public:
     void vnPrint(ValueNum vn, unsigned level);
 #endif
 
+    bool fgDominate(BasicBlock* b1, BasicBlock* b2); // Return true if b1 dominates b2
+
     // Dominator computation member functions
     // Not exposed outside Compiler
 protected:
-    bool fgDominate(BasicBlock* b1, BasicBlock* b2); // Return true if b1 dominates b2
-
     bool fgReachable(BasicBlock* b1, BasicBlock* b2); // Returns true if block b1 can reach block b2
 
     void fgComputeDoms(); // Computes the immediate dominators for each basic block in the
@@ -5314,6 +5321,14 @@ public:
     LoopDsc       optLoopTable[MAX_LOOP_NUM]; // loop descriptor table
     unsigned char optLoopCount;               // number of tracked loops
 
+    bool optRecordLoop(BasicBlock*   head,
+                       BasicBlock*   first,
+                       BasicBlock*   top,
+                       BasicBlock*   entry,
+                       BasicBlock*   bottom,
+                       BasicBlock*   exit,
+                       unsigned char exitCnt);
+
 protected:
     unsigned optCallCount;         // number of calls made in the method
     unsigned optIndirectCallCount; // number of virtual, interface and indirect calls made in the method
@@ -5356,14 +5371,6 @@ protected:
                                 GenTreePtr* ppInit,
                                 GenTreePtr* ppTest,
                                 GenTreePtr* ppIncr);
-
-    void optRecordLoop(BasicBlock*   head,
-                       BasicBlock*   first,
-                       BasicBlock*   top,
-                       BasicBlock*   entry,
-                       BasicBlock*   bottom,
-                       BasicBlock*   exit,
-                       unsigned char exitCnt);
 
     void optFindNaturalLoops();
 
@@ -8282,7 +8289,14 @@ public:
         var_types compRetNativeType; // Normalized return type as per target arch ABI
         unsigned  compILargsCount;   // Number of arguments (incl. implicit but not hidden)
         unsigned  compArgsCount;     // Number of arguments (incl. implicit and     hidden)
-        unsigned  compRetBuffArg;    // position of hidden return param var (0, 1) (BAD_VAR_NUM means not present);
+
+#if FEATURE_FASTTAILCALL
+        unsigned compArgRegCount;      // Number of incoming integer argument registers used for incoming arguments
+        unsigned compFloatArgRegCount; // Number of incoming floating argument registers used for incoming arguments
+        size_t   compArgStackSize;     // Incoming argument stack size in bytes
+#endif                                 // FEATURE_FASTTAILCALL
+
+        unsigned compRetBuffArg; // position of hidden return param var (0, 1) (BAD_VAR_NUM means not present);
         int compTypeCtxtArg; // position of hidden param for type context for generic code (CORINFO_CALLCONV_PARAMTYPE)
         unsigned       compThisArg; // position of implicit this pointer param (not to be confused with lvaArg0Var)
         unsigned       compILlocalsCount; // Number of vars : args + locals (incl. implicit but not hidden)

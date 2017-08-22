@@ -10,6 +10,7 @@ using System.Security;
 using System.Text;
 using System.Threading;
 using Microsoft.Win32;
+using Microsoft.Win32.SafeHandles;
 
 namespace System
 {
@@ -851,14 +852,14 @@ namespace System
         private static string TryGetLocalizedNameByNativeResource(string filePath, int resource)
         {
             using (SafeLibraryHandle handle =
-                       UnsafeNativeMethods.LoadLibraryEx(filePath, IntPtr.Zero, Win32Native.LOAD_LIBRARY_AS_DATAFILE))
+                       Interop.Kernel32.LoadLibraryExW(filePath, IntPtr.Zero, Interop.Kernel32.LOAD_LIBRARY_AS_DATAFILE))
             {
                 if (!handle.IsInvalid)
                 {
                     StringBuilder localizedResource = StringBuilderCache.Acquire(Win32Native.LOAD_STRING_MAX_LENGTH);
                     localizedResource.Length = Win32Native.LOAD_STRING_MAX_LENGTH;
 
-                    int result = UnsafeNativeMethods.LoadString(handle, resource,
+                    int result = Interop.User32.LoadStringW(handle, resource,
                                      localizedResource, localizedResource.Length);
 
                     if (result != 0)

@@ -906,7 +906,7 @@ respin:
     }
 
     // Reverse join - first thread gets here does the work; other threads will only proceed
-    // afte the work is done.
+    // after the work is done.
     // Note that you cannot call this twice in a row on the same thread. Plus there's no 
     // need to call it twice in row - you should just merge the work.
     BOOL r_join (gc_heap* gch, int join_id)
@@ -5667,7 +5667,7 @@ public:
     // We also need to recover the saved info because we'll need to recover it later.
     // 
     // So we would call swap_p*_plug_and_saved once to recover the object info; then call 
-    // it again to recover the artifical gap.
+    // it again to recover the artificial gap.
     void swap_pre_plug_and_saved()
     {
         gap_reloc_pair temp;
@@ -9277,7 +9277,7 @@ void gc_heap::delete_heap_segment (heap_segment* seg, BOOL consider_hoarding)
     }
 }
 
-//resets the pages beyond alloctes size so they won't be swapped out and back in
+//resets the pages beyond allocates size so they won't be swapped out and back in
 
 void gc_heap::reset_heap_segment_pages (heap_segment* seg)
 {
@@ -12417,7 +12417,7 @@ BOOL gc_heap::allocate_small (int gen_number,
                         if (!commit_failed_p)
                         {
                             // some other threads already grabbed the more space lock and allocated
-                            // so we should attemp an ephemeral GC again.
+                            // so we should attempt an ephemeral GC again.
                             assert (heap_segment_allocated (ephemeral_heap_segment) < alloc_allocated);
                             soh_alloc_state = a_state_trigger_ephemeral_gc; 
                         }
@@ -12489,7 +12489,7 @@ BOOL gc_heap::allocate_small (int gen_number,
                             if (!commit_failed_p)
                             {
                                 // some other threads already grabbed the more space lock and allocated
-                                // so we should attemp an ephemeral GC again.
+                                // so we should attempt an ephemeral GC again.
                                 assert (heap_segment_allocated (ephemeral_heap_segment) < alloc_allocated);
                                 soh_alloc_state = a_state_trigger_ephemeral_gc;
                             }
@@ -22719,7 +22719,7 @@ void gc_heap::plan_phase (int condemned_gen_number)
                     assert (len >= Align (min_obj_size));
                     make_unused_array (arr, len);
                     // fix fully contained bricks + first one
-                    // if the array goes beyong the first brick
+                    // if the array goes beyond the first brick
                     size_t start_brick = brick_of (arr);
                     size_t end_brick = brick_of (arr + len);
                     if (end_brick != start_brick)
@@ -29345,7 +29345,7 @@ generation* gc_heap::expand_heap (int condemned_generation,
             eph_size += switch_alignment_size(FALSE);
 #endif //RESPECT_LARGE_ALIGNMENT
             //Since the generation start can be larger than min_obj_size
-            //Compare the alignemnt of the first object in gen1 
+            //Compare the alignment of the first object in gen1 
             if (grow_heap_segment (new_seg, heap_segment_mem (new_seg) + eph_size) == 0)
             {
                 fgm_result.set_fgm (fgm_commit_eph_segment, eph_size, FALSE);

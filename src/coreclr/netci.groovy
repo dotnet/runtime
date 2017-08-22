@@ -63,6 +63,7 @@ class Constants {
     // the values are the environment variables
     def static jitStressModeScenarios = [
                'minopts'                        : ['COMPlus_JITMinOpts' : '1'],
+               'tieredcompilation'              : ['COMPlus_EXPERIMENTAL_TieredCompilation' : '1'],
                'forcerelocs'                    : ['COMPlus_ForceRelocs' : '1'],
                'jitstress1'                     : ['COMPlus_JitStress' : '1'],
                'jitstress2'                     : ['COMPlus_JitStress' : '2'],
@@ -86,6 +87,7 @@ class Constants {
                'jitsse2only'                    : ['COMPlus_EnableAVX' : '0', 'COMPlus_EnableSSE3_4' : '0'],
                'corefx_baseline'                : [ : ], // corefx baseline
                'corefx_minopts'                 : ['COMPlus_JITMinOpts' : '1'],
+               'corefx_tieredcompilation'       : ['COMPlus_EXPERIMENTAL_TieredCompilation' : '1'],
                'corefx_jitstress1'              : ['COMPlus_JitStress' : '1'],
                'corefx_jitstress2'              : ['COMPlus_JitStress' : '2'],
                'corefx_jitstressregs1'          : ['COMPlus_JitStressRegs' : '1'],
@@ -396,7 +398,8 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
                     Utilities.addGithubPushTrigger(job)
                     break
                 case 'arm64':
-                    Utilities.addGithubPushTrigger(job)
+                    // We would normally want a per-push trigger, but with limited hardware we can't keep up
+                    Utilities.addPeriodicTrigger(job, "H H/4 * * *")
                     break
                 default:
                     println("Unknown architecture: ${architecture}");
@@ -639,6 +642,11 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
                 }
             }
 	    break
+        
+        case 'tieredcompilation':
+        case 'corefx_tieredcompilation':
+            // No periodic jobs just yet, still testing
+            break
 
         default:
             println("Unknown scenario: ${scenario}");
@@ -831,6 +839,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                             }
                             break
                         case 'minopts':
+                        case 'tieredcompilation':
                         case 'forcerelocs':
                         case 'jitstress1':
                         case 'jitstress2':
@@ -869,6 +878,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                             break
                         case 'corefx_baseline':
                         case 'corefx_minopts':
+                        case 'corefx_tieredcompilation':
                         case 'corefx_jitstress1':
                         case 'corefx_jitstress2':
                         case 'corefx_jitstressregs1':
@@ -1009,6 +1019,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                             }
                             break
                         case 'minopts':
+                        case 'tieredcompilation':
                         case 'forcerelocs':
                         case 'jitstress1':
                         case 'jitstress2':
@@ -1047,6 +1058,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                             break
                         case 'corefx_baseline':
                         case 'corefx_minopts':
+                        case 'corefx_tieredcompilation':
                         case 'corefx_jitstress1':
                         case 'corefx_jitstress2':
                         case 'corefx_jitstressregs1':
@@ -1320,6 +1332,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     }
                     break
                 case 'minopts':
+                case 'tieredcompilation':
                 case 'forcerelocs':
                 case 'jitstress1':
                 case 'jitstress2':
@@ -1357,6 +1370,7 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
                     break
                 case 'corefx_baseline':
                 case 'corefx_minopts':
+                case 'corefx_tieredcompilation':
                 case 'corefx_jitstress1':
                 case 'corefx_jitstress2':
                 case 'corefx_jitstressregs1':
@@ -1633,6 +1647,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                                                      "pri1r2r",
                                                      "zapdisable",
                                                      "minopts",
+                                                     "tieredcompilation",
                                                      "tailcallstress",
                                                      "jitstress1",
                                                      "jitstress2",
@@ -1957,6 +1972,7 @@ combinedScenarios.each { scenario ->
                                     (scenario != 'gcstress0xc_jitstress1') &&
                                     (scenario != 'gcstress0xc_jitstress2') &&
                                     (scenario != 'minopts') &&
+                                    (scenario != 'tieredcompilation') &&
                                     (scenario != 'tailcallstress') &&
                                     (scenario != 'zapdisable')) {
                                         return
@@ -2723,7 +2739,7 @@ combinedScenarios.each { scenario ->
                     setTestJobTimeOut(newJob, scenario)
 
                     if (architecture == 'arm64') {
-                        Utilities.setJobTimeout(newJob, 480)
+                        Utilities.setJobTimeout(newJob, 240)
                     }
 
                     Utilities.addXUnitDotNETResults(newJob, '**/coreclrtests.xml')

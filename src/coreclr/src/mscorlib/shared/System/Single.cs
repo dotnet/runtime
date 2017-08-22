@@ -268,67 +268,88 @@ namespace System
         //
         public static float Parse(String s)
         {
-            return Parse(s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo);
+            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            return Number.ParseSingle(s.AsSpan(), NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo);
         }
 
         public static float Parse(String s, NumberStyles style)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return Parse(s, style, NumberFormatInfo.CurrentInfo);
+            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            return Number.ParseSingle(s.AsSpan(), style, NumberFormatInfo.CurrentInfo);
         }
 
         public static float Parse(String s, IFormatProvider provider)
         {
-            return Parse(s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.GetInstance(provider));
+            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            return Number.ParseSingle(s.AsSpan(), NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.GetInstance(provider));
         }
 
         public static float Parse(String s, NumberStyles style, IFormatProvider provider)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return Parse(s, style, NumberFormatInfo.GetInstance(provider));
+            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            return Number.ParseSingle(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider));
         }
 
-        private static float Parse(String s, NumberStyles style, NumberFormatInfo info)
+        public static float Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)
         {
-            return Number.ParseSingle(s, style, info);
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            return Number.ParseSingle(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
         public static Boolean TryParse(String s, out Single result)
-        {
-            return TryParse(s, NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo, out result);
-        }
-
-        public static Boolean TryParse(String s, NumberStyles style, IFormatProvider provider, out Single result)
-        {
-            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
-            return TryParse(s, style, NumberFormatInfo.GetInstance(provider), out result);
-        }
-
-        private static Boolean TryParse(String s, NumberStyles style, NumberFormatInfo info, out Single result)
         {
             if (s == null)
             {
                 result = 0;
                 return false;
             }
+
+            return TryParse(s.AsSpan(), NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo, out result);
+        }
+
+        public static Boolean TryParse(String s, NumberStyles style, IFormatProvider provider, out Single result)
+        {
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+
+            if (s == null)
+            {
+                result = 0;
+                return false;
+            }
+
+            return TryParse(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result);
+        }
+
+        public static Boolean TryParse(ReadOnlySpan<char> s, out Single result, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)
+        {
+            NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
+            return TryParse(s, style, NumberFormatInfo.GetInstance(provider), out result);
+        }
+
+        private static Boolean TryParse(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info, out Single result)
+        {
             bool success = Number.TryParseSingle(s, style, info, out result);
             if (!success)
             {
-                String sTrim = s.Trim();
-                if (sTrim.Equals(info.PositiveInfinitySymbol))
+                ReadOnlySpan<char> sTrim = s.Trim();
+                if (StringSpanHelpers.Equals(sTrim, info.PositiveInfinitySymbol))
                 {
                     result = PositiveInfinity;
                 }
-                else if (sTrim.Equals(info.NegativeInfinitySymbol))
+                else if (StringSpanHelpers.Equals(sTrim, info.NegativeInfinitySymbol))
                 {
                     result = NegativeInfinity;
                 }
-                else if (sTrim.Equals(info.NaNSymbol))
+                else if (StringSpanHelpers.Equals(sTrim, info.NaNSymbol))
                 {
                     result = NaN;
                 }
                 else
+                {
                     return false; // We really failed
+                }
             }
             return true;
         }

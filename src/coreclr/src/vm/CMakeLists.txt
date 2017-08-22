@@ -30,7 +30,6 @@ if(FEATURE_GDBJIT)
     set(VM_SOURCES_GDBJIT
         gdbjit.cpp
     )
-    add_definitions(-DFEATURE_GDBJIT)
 endif(FEATURE_GDBJIT)
 
 if(FEATURE_JIT_PITCHING)

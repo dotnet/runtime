@@ -610,42 +610,6 @@ void Compiler::fgWalkAllTreesPre(fgWalkPreFn* visitor, void* pCallBackData)
     }
 }
 
-// ------------------------------------------------------------------------------------------
-// gtClearReg: Sets the register to the "no register assignment" value, depending upon
-// the type of the node, and whether it fits any of the special cases for register pairs
-// or multi-reg call nodes.
-//
-// Arguments:
-//     compiler  -  compiler instance
-//
-// Return Value:
-//     None
-void GenTree::gtClearReg(Compiler* compiler)
-{
-#if CPU_LONG_USES_REGPAIR
-    if (isRegPairType(TypeGet()) ||
-        // (IsLocal() && isRegPairType(compiler->lvaTable[gtLclVarCommon.gtLclNum].TypeGet())) ||
-        (OperGet() == GT_MUL && (gtFlags & GTF_MUL_64RSLT)))
-    {
-        gtRegPair = REG_PAIR_NONE;
-    }
-    else
-#endif // CPU_LONG_USES_REGPAIR
-    {
-        gtRegNum = REG_NA;
-    }
-
-    // Also clear multi-reg state if this is a call node
-    if (IsCall())
-    {
-        this->AsCall()->ClearOtherRegs();
-    }
-    else if (IsCopyOrReload())
-    {
-        this->AsCopyOrReload()->ClearOtherRegs();
-    }
-}
-
 //-----------------------------------------------------------
 // CopyReg: Copy the _gtRegNum/_gtRegPair/gtRegTag fields.
 //
@@ -704,56 +668,52 @@ bool GenTree::gtHasReg() const
     {
         assert(_gtRegNum != REG_NA);
         INDEBUG(assert(gtRegTag == GT_REGTAG_REGPAIR));
-        hasReg = (gtRegPair != REG_PAIR_NONE);
+        return (gtRegPair != REG_PAIR_NONE);
+    }
+    assert(_gtRegNum != REG_PAIR_NONE);
+    INDEBUG(assert(gtRegTag == GT_REGTAG_REG));
+#endif
+    if (IsMultiRegCall())
+    {
+        // Have to cast away const-ness because GetReturnTypeDesc() is a non-const method
+        GenTree*     tree     = const_cast<GenTree*>(this);
+        GenTreeCall* call     = tree->AsCall();
+        unsigned     regCount = call->GetReturnTypeDesc()->GetReturnRegCount();
+        hasReg                = false;
+
+        // A Multi-reg call node is said to have regs, if it has
+        // reg assigned to each of its result registers.
+        for (unsigned i = 0; i < regCount; ++i)
+        {
+            hasReg = (call->GetRegNumByIdx(i) != REG_NA);
+            if (!hasReg)
+            {
+                break;
+            }
+        }
+    }
+    else if (IsCopyOrReloadOfMultiRegCall())
+    {
+        GenTree*             tree         = const_cast<GenTree*>(this);
+        GenTreeCopyOrReload* copyOrReload = tree->AsCopyOrReload();
+        GenTreeCall*         call         = copyOrReload->gtGetOp1()->AsCall();
+        unsigned             regCount     = call->GetReturnTypeDesc()->GetReturnRegCount();
+        hasReg                            = false;
+
+        // A Multi-reg copy or reload node is said to have regs,
+        // if it has valid regs in any of the positions.
+        for (unsigned i = 0; i < regCount; ++i)
+        {
+            hasReg = (copyOrReload->GetRegNumByIdx(i) != REG_NA);
+            if (hasReg)
+            {
+                break;
+            }
+        }
     }
     else
-#endif
     {
-        assert(_gtRegNum != REG_PAIR_NONE);
-        INDEBUG(assert(gtRegTag == GT_REGTAG_REG));
-
-        if (IsMultiRegCall())
-        {
-            // Has to cast away const-ness because GetReturnTypeDesc() is a non-const method
-            GenTree*     tree     = const_cast<GenTree*>(this);
-            GenTreeCall* call     = tree->AsCall();
-            unsigned     regCount = call->GetReturnTypeDesc()->GetReturnRegCount();
-            hasReg                = false;
-
-            // A Multi-reg call node is said to have regs, if it has
-            // reg assigned to each of its result registers.
-            for (unsigned i = 0; i < regCount; ++i)
-            {
-                hasReg = (call->GetRegNumByIdx(i) != REG_NA);
-                if (!hasReg)
-                {
-                    break;
-                }
-            }
-        }
-        else if (IsCopyOrReloadOfMultiRegCall())
-        {
-            GenTree*             tree         = const_cast<GenTree*>(this);
-            GenTreeCopyOrReload* copyOrReload = tree->AsCopyOrReload();
-            GenTreeCall*         call         = copyOrReload->gtGetOp1()->AsCall();
-            unsigned             regCount     = call->GetReturnTypeDesc()->GetReturnRegCount();
-            hasReg                            = false;
-
-            // A Multi-reg copy or reload node is said to have regs,
-            // if it has valid regs in any of the positions.
-            for (unsigned i = 0; i < regCount; ++i)
-            {
-                hasReg = (copyOrReload->GetRegNumByIdx(i) != REG_NA);
-                if (hasReg)
-                {
-                    break;
-                }
-            }
-        }
-        else
-        {
-            hasReg = (gtRegNum != REG_NA);
-        }
+        hasReg = (gtRegNum != REG_NA);
     }
 
     return hasReg;
@@ -883,6 +843,55 @@ bool GenTreeCall::IsPure(Compiler* compiler) const
 {
     return (gtCallType == CT_HELPER) &&
            compiler->s_helperCallProperties.IsPure(compiler->eeGetHelperNum(gtCallMethHnd));
+}
+
+//-------------------------------------------------------------------------
+// HasSideEffects:
+//    Returns true if this call has any side effects. All non-helpers are considered to have side-effects. Only helpers
+//    that do not mutate the heap, do not run constructors, may not throw, and are either a) pure or b) non-finalizing
+//    allocation functions are considered side-effect-free.
+//
+// Arguments:
+//     compiler         - the compiler instance
+//     ignoreExceptions - when `true`, ignores exception side effects
+//     ignoreCctors     - when `true`, ignores class constructor side effects
+//
+// Return Value:
+//      true if this call has any side-effects; false otherwise.
+bool GenTreeCall::HasSideEffects(Compiler* compiler, bool ignoreExceptions, bool ignoreCctors) const
+{
+    // Generally all GT_CALL nodes are considered to have side-effects, but we may have extra information about helper
+    // calls that can prove them side-effect-free.
+    if (gtCallType != CT_HELPER)
+    {
+        return true;
+    }
+
+    CorInfoHelpFunc       helper           = compiler->eeGetHelperNum(gtCallMethHnd);
+    HelperCallProperties& helperProperties = compiler->s_helperCallProperties;
+
+    // We definitely care about the side effects if MutatesHeap is true
+    if (helperProperties.MutatesHeap(helper))
+    {
+        return true;
+    }
+
+    // Unless we have been instructed to ignore cctors (CSE, for example, ignores cctors), consider them side effects.
+    if (!ignoreCctors && helperProperties.MayRunCctor(helper))
+    {
+        return true;
+    }
+
+    // If we also care about exceptions then check if the helper can throw
+    if (!ignoreExceptions && !helperProperties.NoThrow(helper))
+    {
+        return true;
+    }
+
+    // If this is not a Pure helper call or an allocator (that will not need to run a finalizer)
+    // then this call has side effects.
+    return !helperProperties.IsPure(helper) &&
+           (!helperProperties.IsAllocator(helper) || helperProperties.MayFinalize(helper));
 }
 
 #ifndef LEGACY_BACKEND
@@ -7006,8 +7015,9 @@ GenTree* Compiler::gtNewBlkOpNode(
 // gtNewPutArgReg: Creates a new PutArgReg node.
 //
 // Arguments:
-//    type - The actual type of the argument
-//    arg  - The argument node
+//    type   - The actual type of the argument
+//    arg    - The argument node
+//    argReg - The register that the argument will be passed in
 //
 // Return Value:
 //    Returns the newly created PutArgReg node.
@@ -7015,7 +7025,7 @@ GenTree* Compiler::gtNewBlkOpNode(
 // Notes:
 //    The node is generated as GenTreeMultiRegOp on armel, as GenTreeOp on all the other archs
 //
-GenTreePtr Compiler::gtNewPutArgReg(var_types type, GenTreePtr arg)
+GenTreePtr Compiler::gtNewPutArgReg(var_types type, GenTreePtr arg, regNumber argReg)
 {
     assert(arg != nullptr);
 
@@ -7031,6 +7041,7 @@ GenTreePtr Compiler::gtNewPutArgReg(var_types type, GenTreePtr arg)
     {
         node = gtNewOperNode(GT_PUTARG_REG, type, arg);
     }
+    node->gtRegNum = argReg;
 
     return node;
 }
@@ -9548,8 +9559,8 @@ void Compiler::gtDispNode(GenTreePtr tree, IndentStack* indentStack, __in __in_z
             case GT_STORE_DYN_BLK:
 
             case GT_IND:
-                // We prefer printing R, V or U
-                if ((tree->gtFlags & (GTF_IND_REFARR_LAYOUT | GTF_IND_VOLATILE | GTF_IND_UNALIGNED)) == 0)
+                // We prefer printing V or U
+                if ((tree->gtFlags & (GTF_IND_VOLATILE | GTF_IND_UNALIGNED)) == 0)
                 {
                     if (tree->gtFlags & GTF_IND_TGTANYWHERE)
                     {
@@ -9576,7 +9587,7 @@ void Compiler::gtDispNode(GenTreePtr tree, IndentStack* indentStack, __in __in_z
 
                 if ((tree->gtFlags & (GTF_IND_VOLATILE | GTF_IND_UNALIGNED)) == 0) // We prefer printing V or U over R
                 {
-                    if (tree->gtFlags & GTF_IND_REFARR_LAYOUT)
+                    if (tree->gtFlags & GTF_INX_REFARR_LAYOUT)
                     {
                         printf("R");
                         --msgLength;
@@ -14117,62 +14128,31 @@ bool Compiler::gtNodeHasSideEffects(GenTreePtr tree, unsigned flags)
     {
         if (tree->OperGet() == GT_CALL)
         {
-            // Generally all GT_CALL nodes are considered to have side-effects.
-            // But we may have a helper call that doesn't have any important side effects.
-            //
-            if (tree->gtCall.gtCallType == CT_HELPER)
+            GenTreeCall* const call             = tree->AsCall();
+            const bool         ignoreExceptions = (flags & GTF_EXCEPT) == 0;
+            const bool         ignoreCctors     = (flags & GTF_IS_IN_CSE) != 0; // We can CSE helpers that run cctors.
+            if (!call->HasSideEffects(this, ignoreExceptions, ignoreCctors))
             {
-                // But if this tree is a helper call we may not care about the side-effects
-                //
-                CorInfoHelpFunc helper = eeGetHelperNum(tree->AsCall()->gtCallMethHnd);
-
-                // We definitely care about the side effects if MutatesHeap is true
-                //
-                if (s_helperCallProperties.MutatesHeap(helper))
+                // If this call is otherwise side effect free, check its arguments.
+                for (GenTreeArgList* args = call->gtCallArgs; args != nullptr; args = args->Rest())
                 {
-                    return true;
-                }
-
-                // with GTF_IS_IN_CSE we will CSE helper calls that can run cctors.
-                //
-                if (((flags & GTF_IS_IN_CSE) == 0) && (s_helperCallProperties.MayRunCctor(helper)))
-                {
-                    return true;
-                }
-
-                // If we also care about exceptions then check if the helper can throw
-                //
-                if (((flags & GTF_EXCEPT) != 0) && !s_helperCallProperties.NoThrow(helper))
-                {
-                    return true;
-                }
-
-                // If this is a Pure helper call or an allocator (that will not need to run a finalizer)
-                // then we don't need to preserve the side effects (of this call -- we may care about those of the
-                // arguments).
-                if (s_helperCallProperties.IsPure(helper) ||
-                    (s_helperCallProperties.IsAllocator(helper) && !s_helperCallProperties.MayFinalize(helper)))
-                {
-                    GenTreeCall* call = tree->AsCall();
-                    for (GenTreeArgList* args = call->gtCallArgs; args != nullptr; args = args->Rest())
+                    if (gtTreeHasSideEffects(args->Current(), flags))
                     {
-                        if (gtTreeHasSideEffects(args->Current(), flags))
-                        {
-                            return true;
-                        }
+                        return true;
                     }
-                    // I'm a little worried that args that assign to temps that are late args will look like
-                    // side effects...but better to be conservative for now.
-                    for (GenTreeArgList* args = call->gtCallLateArgs; args != nullptr; args = args->Rest())
-                    {
-                        if (gtTreeHasSideEffects(args->Current(), flags))
-                        {
-                            return true;
-                        }
-                    }
-                    // Otherwise:
-                    return false;
                 }
+                // I'm a little worried that args that assign to temps that are late args will look like
+                // side effects...but better to be conservative for now.
+                for (GenTreeArgList* args = call->gtCallLateArgs; args != nullptr; args = args->Rest())
+                {
+                    if (gtTreeHasSideEffects(args->Current(), flags))
+                    {
+                        return true;
+                    }
+                }
+
+                // Otherwise:
+                return false;
             }
 
             // Otherwise the GT_CALL is considered to have side-effects.
@@ -15233,10 +15213,13 @@ bool GenTree::isContained() const
     }
 
     // these actually produce a register (the flags reg, we just don't model it)
-    // and are a separate instruction from the branch that consumes the result
+    // and are a separate instruction from the branch that consumes the result.
+    // They can only produce a result if the child is a SIMD equality comparison.
     else if (OperKind() & GTK_RELOP)
     {
-        assert(!isMarkedContained);
+        // We have to cast away const-ness since AsOp() method is non-const.
+        GenTree* childNode = const_cast<GenTree*>(this)->AsOp()->gtOp1;
+        assert((isMarkedContained == false) || childNode->IsSIMDEqualityOrInequality());
     }
 
     // these either produce a result in register or set flags reg.
