@@ -986,7 +986,7 @@ HRESULT AllowObjectInspection()
 
 #endif // PROFILING_SUPPORTED
 
-#if defined(GC_PROFILING) || defined(FEATURE_EVENT_TRACE)
+#if defined(PROFILING_SUPPORTED) || defined(FEATURE_EVENT_TRACE)
 
 //---------------------------------------------------------------------------------------
 //
