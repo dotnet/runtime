@@ -727,9 +727,6 @@ public:
 
     // Copy the _gtRegNum/_gtRegPair/gtRegTag fields
     void CopyReg(GenTreePtr from);
-
-    void gtClearReg(Compiler* compiler);
-
     bool gtHasReg() const;
 
     regMaskTP gtGetRegMask() const;
@@ -865,6 +862,7 @@ public:
 
 #define GTF_ZSF_SET     0x00000400 // the zero(ZF) and sign(SF) flags set to the operand
 #define GTF_SET_FLAGS   0x00000800 // Requires that codegen for this node set the flags. Use gtSetFlags() to check this flag.
+#define GTF_USE_FLAGS   0x00001000 // Indicates that this node uses the flags bits.
 
 #define GTF_MAKE_CSE    0x00002000 // Hoisted expression: try hard to make this into CSE (see optPerformHoistExpr)
 #define GTF_DONT_CSE    0x00004000 // Don't bother CSE'ing this expr
@@ -945,9 +943,10 @@ public:
 #define GTF_INX_REFARR_LAYOUT       0x20000000 // GT_INDEX -- same as GTF_IND_REFARR_LAYOUT
 #define GTF_INX_STRING_LAYOUT       0x40000000 // GT_INDEX -- this uses the special string array layout
 
-#define GTF_IND_NONFAULTING      GTF_SET_FLAGS // GT_IND   -- An indir that cannot fault. GTF_SET_FLAGS is not used on indirs.
+#define GTF_IND_ARR_LEN             0x80000000 // GT_IND   -- the indirection represents an array length (of the REF
+                                               //             contribution to its argument).
 #define GTF_IND_VOLATILE            0x40000000 // GT_IND   -- the load or store must use volatile sematics (this is a nop on X86)
-#define GTF_IND_REFARR_LAYOUT       0x20000000 // GT_IND   -- the array holds object refs (only affects layout of Arrays)
+#define GTF_IND_NONFAULTING         0x20000000 // GT_IND   -- An indir that cannot fault.
 #define GTF_IND_TGTANYWHERE         0x10000000 // GT_IND   -- the target could be anywhere
 #define GTF_IND_TLS_REF             0x08000000 // GT_IND   -- the target is accessed via TLS
 #define GTF_IND_ASG_LHS             0x04000000 // GT_IND   -- this GT_IND node is (the effective val) of the LHS of an
@@ -961,12 +960,10 @@ public:
 #define GTF_IND_UNALIGNED           0x02000000 // GT_IND   -- the load or store is unaligned (we assume worst case
                                                //             alignment of 1 byte)
 #define GTF_IND_INVARIANT           0x01000000 // GT_IND   -- the target is invariant (a prejit indirection)
-#define GTF_IND_ARR_LEN             0x80000000 // GT_IND   -- the indirection represents an array length (of the REF
-                                               //             contribution to its argument).
 #define GTF_IND_ARR_INDEX           0x00800000 // GT_IND   -- the indirection represents an (SZ) array index
 
 #define GTF_IND_FLAGS \
-    (GTF_IND_VOLATILE | GTF_IND_REFARR_LAYOUT | GTF_IND_TGTANYWHERE | GTF_IND_NONFAULTING | GTF_IND_TLS_REF |          \
+    (GTF_IND_VOLATILE | GTF_IND_TGTANYWHERE | GTF_IND_NONFAULTING | GTF_IND_TLS_REF |          \
      GTF_IND_UNALIGNED | GTF_IND_INVARIANT | GTF_IND_ARR_INDEX)
 
 #define GTF_CLS_VAR_VOLATILE        0x40000000 // GT_FIELD/GT_CLS_VAR -- same as GTF_IND_VOLATILE
@@ -1436,6 +1433,20 @@ public:
 
                || OperIsShiftOrRotate(op);
     }
+
+#ifdef _TARGET_XARCH_
+    static bool OperIsRMWMemOp(genTreeOps gtOper)
+    {
+        // Return if binary op is one of the supported operations for RMW of memory.
+        return (gtOper == GT_ADD || gtOper == GT_SUB || gtOper == GT_AND || gtOper == GT_OR || gtOper == GT_XOR ||
+                gtOper == GT_NOT || gtOper == GT_NEG || OperIsShiftOrRotate(gtOper));
+    }
+    bool OperIsRMWMemOp() const
+    {
+        // Return if binary op is one of the supported operations for RMW of memory.
+        return OperIsRMWMemOp(gtOper);
+    }
+#endif // _TARGET_XARCH_
 
 #if !defined(LEGACY_BACKEND) && !defined(_TARGET_64BIT_)
     static bool OperIsHigh(genTreeOps gtOper)
@@ -1998,13 +2009,15 @@ public:
 
     void SetContained()
     {
+        assert(IsValue());
         gtFlags |= GTF_CONTAINED;
     }
 
     void ClearContained()
     {
+        assert(IsValue());
         gtFlags &= ~GTF_CONTAINED;
-        gtLsraInfo.regOptional = false;
+        ClearRegOptional();
     }
 
 #endif // !LEGACY_BACKEND
@@ -2114,6 +2127,12 @@ public:
     // that codegen can still generate code even if it wasn't allocated a
     // register.
     bool IsRegOptional() const;
+#ifndef LEGACY_BACKEND
+    void ClearRegOptional()
+    {
+        gtLsraInfo.regOptional = false;
+    }
+#endif
 
     // Returns "true" iff "this" is a phi-related node (i.e. a GT_PHI_ARG, GT_PHI, or a PhiDefn).
     bool IsPhiNode();
@@ -3112,6 +3131,11 @@ struct GenTreeFieldList : public GenTreeArgList
         {
             prevList->gtOp2 = this;
         }
+#ifndef LEGACY_BACKEND
+        // A GT_FIELD_LIST is always contained. Note that this should only matter for the head node, but
+        // the list may be reordered.
+        gtFlags |= GTF_CONTAINED;
+#endif
     }
 };
 
@@ -3804,6 +3828,8 @@ struct GenTreeCall final : public GenTree
     }
 
     bool IsPure(Compiler* compiler) const;
+
+    bool HasSideEffects(Compiler* compiler, bool ignoreExceptions = false, bool ignoreCctors = false) const;
 
     void ClearFatPointerCandidate()
     {

@@ -2846,7 +2846,6 @@ void InitializeClrNotifications()
 
 #if defined(FEATURE_GDBJIT)
 #include "gdbjit.h"
-__declspec(thread) bool tls_isSymReaderInProgress = false;
 #endif // FEATURE_GDBJIT
 
 // called from the runtime
@@ -2860,14 +2859,7 @@ void DACNotify::DoJITNotification(MethodDesc *MethodDescPtr)
         MODE_PREEMPTIVE;
     }
     CONTRACTL_END;
-#if defined(FEATURE_GDBJIT) && defined(FEATURE_PAL) && !defined(CROSSGEN_COMPILE)
-    if(!tls_isSymReaderInProgress)
-    {
-        tls_isSymReaderInProgress = true;
-        NotifyGdb::MethodCompiled(MethodDescPtr);
-        tls_isSymReaderInProgress = false;
-    }
-#endif    
+
     TADDR Args[2] = { JIT_NOTIFICATION, (TADDR) MethodDescPtr };
     DACNotifyExceptionHelper(Args, 2);
 }

@@ -1851,7 +1851,8 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
         case GT_LIST:
         case GT_FIELD_LIST:
         case GT_ARGPLACE:
-            // Nothing to do
+            // Should always be marked contained.
+            assert(!"LIST, FIELD_LIST and ARGPLACE nodes should always be marked contained.");
             break;
 
         case GT_SWAP:
@@ -6096,10 +6097,11 @@ void CodeGen::genCompareInt(GenTreePtr treeNode)
     // it was spilled after producing its result in a register.
     // Spill code too will not modify the flags set by op1.
     GenTree* realOp1 = op1->gtSkipReloadOrCopy();
-    if (realOp1->gtSetFlags())
+    if ((tree->gtFlags & GTF_USE_FLAGS) != 0)
     {
         // op1 must set ZF and SF flags
         assert(realOp1->gtSetZSFlags());
+        assert(realOp1->gtSetFlags());
 
         // Must be (in)equality against zero.
         assert(tree->OperIs(GT_EQ, GT_NE));

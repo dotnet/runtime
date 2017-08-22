@@ -452,7 +452,7 @@ namespace System.Globalization
             return ChangeCase(str, toUpper: true);
         }
 
-        private static Char ToUpperAsciiInvariant(Char c)
+        internal static Char ToUpperAsciiInvariant(Char c)
         {
             if ((uint)(c - 'a') <= (uint)('z' - 'a'))
             {
