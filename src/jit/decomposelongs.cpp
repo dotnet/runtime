@@ -992,10 +992,13 @@ GenTree* DecomposeLongs::DecomposeArith(LIR::Use& use)
 
     if ((oper == GT_ADD) || (oper == GT_SUB))
     {
+        loResult->gtFlags |= GTF_SET_FLAGS;
+        hiResult->gtFlags |= GTF_USE_FLAGS;
+
         if (loResult->gtOverflow())
         {
-            hiResult->gtFlags |= GTF_OVERFLOW;
-            loResult->gtFlags &= ~GTF_OVERFLOW;
+            hiResult->gtFlags |= GTF_OVERFLOW | GTF_EXCEPT;
+            loResult->gtFlags &= ~(GTF_OVERFLOW | GTF_EXCEPT);
         }
         if (loResult->gtFlags & GTF_UNSIGNED)
         {

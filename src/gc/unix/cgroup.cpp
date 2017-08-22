@@ -36,8 +36,8 @@ class CGroup
 public:
     CGroup()
     {
-        m_memory_cgroup_path = FindMemoryCgroupPath();
-        m_cpu_cgroup_path = FindCpuCgroupPath();
+        m_memory_cgroup_path = FindCgroupPath(&IsMemorySubsystem);
+        m_cpu_cgroup_path = FindCgroupPath(&IsCpuSubsystem);
     }
 
     ~CGroup()
@@ -110,65 +110,45 @@ private:
         return strcmp("cpu", strTok) == 0;
     }
 
-    static char* FindMemoryCgroupPath(){
-        char *memory_cgroup_path = nullptr;
-        char *memory_hierarchy_mount = nullptr;
-        char *mem_cgroup_path_relative_to_mount = nullptr;
+    static char* FindCgroupPath(bool (*is_subsystem)(const char *)){
+        char *cgroup_path = nullptr;
+        char *hierarchy_mount = nullptr;
+        char *hierarchy_root = nullptr;
+        char *cgroup_path_relative_to_mount = nullptr;
 
-        memory_hierarchy_mount = FindHierarchyMount(&IsMemorySubsystem);
-        if (memory_hierarchy_mount == nullptr)
+        FindHierarchyMount(is_subsystem, &hierarchy_mount, &hierarchy_root);
+        if (hierarchy_mount == nullptr || hierarchy_root == nullptr)
             goto done;
 
-        mem_cgroup_path_relative_to_mount = FindCGroupPathForSubsystem(&IsMemorySubsystem);
-        if (mem_cgroup_path_relative_to_mount == nullptr)
+        cgroup_path_relative_to_mount = FindCGroupPathForSubsystem(is_subsystem);
+        if (cgroup_path_relative_to_mount == nullptr)
             goto done;
 
-        memory_cgroup_path = (char*)malloc(strlen(memory_hierarchy_mount) + strlen(mem_cgroup_path_relative_to_mount) + 1);
-        if (memory_cgroup_path == nullptr)
+        cgroup_path = (char*)malloc(strlen(hierarchy_mount) + strlen(cgroup_path_relative_to_mount) + 1);
+        if (cgroup_path == nullptr)
            goto done;
 
-        strcpy(memory_cgroup_path, memory_hierarchy_mount);
-        strcat(memory_cgroup_path, mem_cgroup_path_relative_to_mount);        
+        strcpy(cgroup_path, hierarchy_mount);
+        // For a host cgroup, we need to append the relative path.
+        // In a docker container, the root and relative path are the same and we don't need to append.
+        if (strcmp(hierarchy_root, cgroup_path_relative_to_mount) != 0)
+            strcat(cgroup_path, cgroup_path_relative_to_mount);
 
     done:
-        free(memory_hierarchy_mount);
-        free(mem_cgroup_path_relative_to_mount);        
-        return memory_cgroup_path;
+        free(hierarchy_mount);
+        free(hierarchy_root);
+        free(cgroup_path_relative_to_mount);
+        return cgroup_path;
     }
 
-    static char* FindCpuCgroupPath(){
-        char *cpu_cgroup_path = nullptr;
-        char *cpu_hierarchy_mount = nullptr;     
-        char *cpu_cgroup_path_relative_to_mount = nullptr;
-
-        cpu_hierarchy_mount = FindHierarchyMount(&IsCpuSubsystem);
-        if (cpu_hierarchy_mount == nullptr)
-            goto done;
-
-        cpu_cgroup_path_relative_to_mount = FindCGroupPathForSubsystem(&IsCpuSubsystem);
-        if (cpu_cgroup_path_relative_to_mount == nullptr)
-            goto done;
-
-        cpu_cgroup_path = (char*)malloc(strlen(cpu_hierarchy_mount) + strlen(cpu_cgroup_path_relative_to_mount) + 1);
-        if (cpu_cgroup_path == nullptr)
-           goto done;
-
-        strcpy(cpu_cgroup_path, cpu_hierarchy_mount);
-        strcat(cpu_cgroup_path, cpu_cgroup_path_relative_to_mount);
-
-    done:
-        free(cpu_hierarchy_mount);
-        free(cpu_cgroup_path_relative_to_mount);
-        return cpu_cgroup_path;
-    }
-
-    static char* FindHierarchyMount(bool (*is_subsystem)(const char *))
+    static void FindHierarchyMount(bool (*is_subsystem)(const char *), char** pmountpath, char** pmountroot)
     {
         char *line = nullptr;
         size_t lineLen = 0, maxLineLen = 0;
         char *filesystemType = nullptr;
         char *options = nullptr;
         char *mountpath = nullptr;
+        char *mountroot = nullptr;
 
         FILE *mountinfofile = fopen(PROC_MOUNTINFO_FILENAME, "r");
         if (mountinfofile == nullptr)
@@ -189,11 +169,11 @@ private:
                 maxLineLen = lineLen;
             }
 
-            char* separatorChar = strchr(line, '-');
+            char* separatorChar = strstr(line, " - ");
 
             // See man page of proc to get format for /proc/self/mountinfo file
             int sscanfRet = sscanf(separatorChar, 
-                                   "- %s %*s %s",
+                                   " - %s %*s %s",
                                    filesystemType,
                                    options);
             if (sscanfRet != 2)
@@ -213,16 +193,21 @@ private:
                         mountpath = (char*)malloc(lineLen+1);
                         if (mountpath == nullptr)
                             goto done;
+                        mountroot = (char*)malloc(lineLen+1);
+                        if (mountroot == nullptr)
+                            goto done;
     
                         sscanfRet = sscanf(line,
-                                           "%*s %*s %*s %*s %s ",
+                                           "%*s %*s %*s %s %s ",
+                                           mountroot,
                                            mountpath);
-                        if (sscanfRet != 1)
-                        {
-                            free(mountpath);
-                            mountpath = nullptr;
+                        if (sscanfRet != 2)
                             assert(!"Failed to parse mount info file contents with sscanf.");
-                        }
+
+                        // assign the output arguments and clear the locals so we don't free them.
+                        *pmountpath = mountpath;
+                        *pmountroot = mountroot;
+                        mountpath = mountroot = nullptr;
                         goto done;
                     }
                     strTok = strtok_r(nullptr, ",", &context);
@@ -230,12 +215,13 @@ private:
             }
         }
     done:
+        free(mountpath);
+        free(mountroot);
         free(filesystemType);
         free(options);
         free(line);
         if (mountinfofile)
             fclose(mountinfofile);
-        return mountpath;
     }
     
     static char* FindCGroupPathForSubsystem(bool (*is_subsystem)(const char *))

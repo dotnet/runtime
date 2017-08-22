@@ -1194,16 +1194,22 @@ PAL_wcsstr(
         i = 0;
         while (1)
         {
-            if (*(string + i) == 0 || *(strCharSet + i) == 0)
+            if (*(strCharSet + i) == 0)
             {
                 ret = (wchar_16 *) string;
                 goto leave;
             }
-            if (*(string + i) != *(strCharSet + i))
+            else if (*(string + i) == 0)
+            {
+                ret = NULL;
+                goto leave;
+            }
+            else if (*(string + i) != *(strCharSet + i))
             {
                 break;
             }
-        i++;
+
+            i++;
         }
         string++;
     }

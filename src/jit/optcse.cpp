@@ -724,9 +724,14 @@ unsigned Compiler::optValnumCSE_Locate()
                 }
 
                 // Don't CSE constant values, instead let the Value Number
-                // based Assertion Prop phase handle them.
+                // based Assertion Prop phase handle them.  Here, unlike
+                // the rest of optCSE, we use the conservative value number
+                // rather than the liberal one, since the conservative one
+                // is what the Value Number based Assertion Prop will use
+                // and the point is to avoid optimizing cases that it will
+                // handle.
                 //
-                if (vnStore->IsVNConstant(vnlib))
+                if (vnStore->IsVNConstant(tree->GetVN(VNK_Conservative)))
                 {
                     continue;
                 }

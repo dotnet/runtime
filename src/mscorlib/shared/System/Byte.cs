@@ -84,22 +84,24 @@ namespace System
         [Pure]
         public static byte Parse(String s)
         {
-            return Parse(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
+            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            return Parse(s.AsSpan(), NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
         }
 
         [Pure]
         public static byte Parse(String s, NumberStyles style)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Parse(s, style, NumberFormatInfo.CurrentInfo);
+            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            return Parse(s.AsSpan(), style, NumberFormatInfo.CurrentInfo);
         }
 
         [Pure]
         public static byte Parse(String s, IFormatProvider provider)
         {
-            return Parse(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
+            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            return Parse(s.AsSpan(), NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
         }
-
 
         // Parses an unsigned byte from a String in the given style.  If
         // a NumberFormatInfo isn't specified, the current culture's 
@@ -108,10 +110,17 @@ namespace System
         public static byte Parse(String s, NumberStyles style, IFormatProvider provider)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
+            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            return Parse(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider));
+        }
+
+        public static byte Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
             return Parse(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
-        private static byte Parse(String s, NumberStyles style, NumberFormatInfo info)
+        private static byte Parse(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info)
         {
             int i = 0;
             try
@@ -129,16 +138,35 @@ namespace System
 
         public static bool TryParse(String s, out Byte result)
         {
-            return TryParse(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
+            if (s == null)
+            {
+                result = 0;
+                return false;
+            }
+
+            return TryParse(s.AsSpan(), NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
         }
 
         public static bool TryParse(String s, NumberStyles style, IFormatProvider provider, out Byte result)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
+
+            if (s == null)
+            {
+                result = 0;
+                return false;
+            }
+
+            return TryParse(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result);
+        }
+
+        public static bool TryParse(ReadOnlySpan<char> s, out byte result, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
             return TryParse(s, style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
-        private static bool TryParse(String s, NumberStyles style, NumberFormatInfo info, out Byte result)
+        private static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, NumberFormatInfo info, out Byte result)
         {
             result = 0;
             int i;

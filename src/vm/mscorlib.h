@@ -163,7 +163,9 @@ DEFINE_FIELD_U(_Minor,                     VersionBaseObject,    m_Minor)
 DEFINE_FIELD_U(_Build,                     VersionBaseObject,    m_Build)
 DEFINE_FIELD_U(_Revision,                  VersionBaseObject,    m_Revision)
 DEFINE_CLASS(VERSION,               System,                 Version)
-DEFINE_METHOD(VERSION,              CTOR,                   .ctor,                      IM_Int_Int_Int_Int_RetVoid)
+DEFINE_METHOD(VERSION,              CTOR_Ix2,               .ctor,                      IM_Int_Int_RetVoid)
+DEFINE_METHOD(VERSION,              CTOR_Ix3,               .ctor,                      IM_Int_Int_Int_RetVoid)
+DEFINE_METHOD(VERSION,              CTOR_Ix4,               .ctor,                      IM_Int_Int_Int_Int_RetVoid)
 
 DEFINE_CLASS(ASSEMBLY_VERSION_COMPATIBILITY, Assemblies,    AssemblyVersionCompatibility)
 

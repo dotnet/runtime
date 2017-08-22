@@ -427,7 +427,7 @@ void DumpStackInternal(DumpStackFlag *pDSFlag)
     DumpStackWorker(*pDSFlag);
 }
 
-#if defined(FEATURE_PAL) && defined(_TARGET_WIN64_)
+#if defined(FEATURE_PAL) && defined(_TARGET_AMD64_)
 static BOOL UnwindStackFrames(ULONG32 osThreadId);
 #endif
 
@@ -479,7 +479,7 @@ DECLARE_API(DumpStack)
     g_ExtSystem->GetCurrentThreadId(&id);
     ExtOut("(%d)\n", id);
 
-#if defined(FEATURE_PAL) && defined(_TARGET_WIN64_)
+#if defined(FEATURE_PAL) && defined(_TARGET_AMD64_)
     if (unwind)
     {
         UnwindStackFrames(sysId);
@@ -14656,7 +14656,7 @@ DECLARE_API(Help)
     return S_OK;
 }
 
-#if defined(FEATURE_PAL) && defined(_TARGET_WIN64_)
+#if defined(FEATURE_PAL) && defined(_TARGET_AMD64_)
 
 static BOOL 
 ReadMemoryAdapter(PVOID address, PVOID buffer, SIZE_T size)
@@ -14737,4 +14737,4 @@ UnwindStackFrames(ULONG32 osThreadId)
     return TRUE;
 }
 
-#endif // FEATURE_PAL && _TARGET_WIN64_
+#endif // FEATURE_PAL && _TARGET_AMD64_

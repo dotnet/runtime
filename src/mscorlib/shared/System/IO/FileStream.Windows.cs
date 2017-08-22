@@ -742,9 +742,8 @@ namespace System.IO
                 else
                 {
                     // ERROR_INVALID_PARAMETER may be returned for writes
-                    // where the position is too large (i.e. writing at Int64.MaxValue 
-                    // on Win9x) OR for synchronous writes to a handle opened 
-                    // asynchronously.
+                    // where the position is too large or for synchronous writes 
+                    // to a handle opened asynchronously.
                     if (errorCode == ERROR_INVALID_PARAMETER)
                         throw new IOException(SR.IO_FileTooLongOrHandleNotSync);
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode);
@@ -1734,6 +1733,26 @@ namespace System.IO
             {
                 throw Win32Marshal.GetExceptionForLastWin32Error();
             }
+        }
+        private SafeFileHandle ValidateFileHandle(SafeFileHandle fileHandle)
+        {
+            if (fileHandle.IsInvalid)
+            {
+                // Return a meaningful exception with the full path.
+
+                // NT5 oddity - when trying to open "C:\" as a Win32FileStream,
+                // we usually get ERROR_PATH_NOT_FOUND from the OS.  We should
+                // probably be consistent w/ every other directory.
+                int errorCode = Marshal.GetLastWin32Error();
+
+                if (errorCode == Interop.Errors.ERROR_PATH_NOT_FOUND && _path.Length == PathInternal.GetRootLength(_path))
+                    errorCode = Interop.Errors.ERROR_ACCESS_DENIED;
+
+                throw Win32Marshal.GetExceptionForWin32Error(errorCode, _path);
+            }
+
+            fileHandle.IsAsync = _useAsyncIO;
+            return fileHandle;
         }
     }
 }

@@ -326,11 +326,12 @@ public:
 };
 
 struct Elf_Symbol;
+class Elf_Builder;
 
 class NotifyGdb
 {
 public:
-    static void MethodCompiled(MethodDesc* methodDescPtr);
+    static void MethodPrepared(MethodDesc* methodDescPtr);
     static void MethodPitched(MethodDesc* methodDescPtr);
     template <typename PARENT_TRAITS>
     class DeleteValuesOnDestructSHashTraits : public PARENT_TRAITS
@@ -404,13 +405,16 @@ private:
         }
     };
 
-    static void OnMethodCompiled(MethodDesc* methodDescPtr);
+    static void OnMethodPrepared(MethodDesc* methodDescPtr);
 
-    static int GetSectionIndex(const char *sectName);
-    static void BuildSectionTables(MemBuf& sectBuf, MemBuf& strBuf, FunctionMemberPtrArrayHolder &method,
-                                   int symbolCount);
+#ifdef FEATURE_GDBJIT_FRAME
+    static bool EmitFrameInfo(Elf_Builder &, PCODE pCode, TADDR codeSzie);
+#endif // FEATURE_GDBJIT_FRAME
+    static bool EmitDebugInfo(Elf_Builder &, MethodDesc* methodDescPtr, PCODE pCode, TADDR codeSize, const char *szModuleFile);
+
     static bool BuildSymbolTableSection(MemBuf& buf, PCODE addr, TADDR codeSize, FunctionMemberPtrArrayHolder &method,
-                                        NewArrayHolder<Elf_Symbol> &symbolNames, int symbolCount);
+                                        NewArrayHolder<Elf_Symbol> &symbolNames, int symbolCount,
+                                        unsigned int thunkIndexBase);
     static bool BuildStringTableSection(MemBuf& strTab, NewArrayHolder<Elf_Symbol> &symbolNames, int symbolCount);
     static bool BuildDebugStrings(MemBuf& buf, PTK_TypeInfoMap pTypeMap, FunctionMemberPtrArrayHolder &method);
     static bool BuildDebugAbbrev(MemBuf& buf);
@@ -426,9 +430,6 @@ private:
     static void SplitPathname(const char* path, const char*& pathName, const char*& fileName);
     static bool CollectCalledMethods(CalledMethod* pCM, TADDR nativeCode, FunctionMemberPtrArrayHolder &method,
                                      NewArrayHolder<Elf_Symbol> &symbolNames, int &symbolCount);
-#ifdef _DEBUG
-    static void DumpElf(const char* methodName, const MemBuf& buf);
-#endif
 };
 
 class FunctionMember: public TypeMember

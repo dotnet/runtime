@@ -265,7 +265,8 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
         case GT_LIST:
         case GT_FIELD_LIST:
         case GT_ARGPLACE:
-            // Nothing to do
+            // Should always be marked contained.
+            assert(!"LIST, FIELD_LIST and ARGPLACE nodes should always be marked contained.");
             break;
 
         case GT_PUTARG_STK:
@@ -1554,11 +1555,13 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     emitAttr    attr       = emitTypeSize(tree);
     instruction ins        = ins_Load(targetType);
 
-    assert((attr != EA_1BYTE) || !(tree->gtFlags & GTF_IND_UNALIGNED));
-
     genConsumeAddress(tree->Addr());
-    if (tree->gtFlags & GTF_IND_VOLATILE)
+    if ((tree->gtFlags & GTF_IND_VOLATILE) != 0)
     {
+        bool isAligned = ((tree->gtFlags & GTF_IND_UNALIGNED) == 0);
+
+        assert((attr != EA_1BYTE) || isAligned);
+
 #ifdef _TARGET_ARM64_
         GenTree* addr           = tree->Addr();
         bool     useLoadAcquire = genIsValidIntReg(targetReg) && !addr->isContained() &&
@@ -3235,7 +3238,10 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
             }
             else // offset is zero
             {
-                emit->emitIns_R_R(INS_mov, size, lea->gtRegNum, memBase->gtRegNum);
+                if (lea->gtRegNum != memBase->gtRegNum)
+                {
+                    emit->emitIns_R_R(INS_mov, size, lea->gtRegNum, memBase->gtRegNum);
+                }
             }
         }
         else
