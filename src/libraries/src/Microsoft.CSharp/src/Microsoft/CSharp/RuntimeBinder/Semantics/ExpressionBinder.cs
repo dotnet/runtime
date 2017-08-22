@@ -408,48 +408,23 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return GenerateOptimizedAssignment(op1, op2);
         }
 
-        internal Expr BindArrayIndexCore(BindingFlag bindFlags, Expr pOp1, Expr pOp2)
+        internal Expr BindArrayIndexCore(Expr pOp1, Expr pOp2)
         {
-            Expr pExpr;
-            bool bIsError = false;
-            if (!pOp1.IsOK || !pOp2.IsOK)
-            {
-                bIsError = true;
-            }
+            bool bIsError = !pOp1.IsOK || !pOp2.IsOK;
 
             CType pIntType = GetPredefindType(PredefinedType.PT_INT);
 
-            // Array indexing must occur on an array type.
-            if (!(pOp1.Type is ArrayType pArrayType))
-            {
-                Debug.Assert(!(pOp1.Type is PointerType));
-                pExpr = bindIndexer(pOp1, pOp2, bindFlags);
-                if (bIsError)
-                {
-                    pExpr.SetError();
-                }
-                return pExpr;
-            }
-
-            checkUnsafe(pArrayType.GetElementType()); // added to the binder so we don't bind to pointer ops
+            ArrayType pArrayType = pOp1.Type as ArrayType;
+            Debug.Assert(pArrayType != null);
+            CType elementType = pArrayType.GetElementType();
+            checkUnsafe(elementType); // added to the binder so we don't bind to pointer ops
             // Check the rank of the array against the number of indices provided, and
             // convert the indexes to ints
 
-            CType pDestType = chooseArrayIndexType(pOp2);
-
-            if (null == pDestType)
-            {
-                // using int as the type will allow us to give a better error...
-                pDestType = pIntType;
-            }
-
-            int rank = pArrayType.rank;
-            int cIndices = 0;
-
+            CType pDestType = ChooseArrayIndexType(pOp2);
             Expr transformedIndices = pOp2.Map(GetExprFactory(),
-                (Expr x) =>
+                x =>
                 {
-                    cIndices++;
                     Expr pTemp = mustConvert(x, pDestType);
                     if (pDestType == pIntType)
                         return pTemp;
@@ -457,15 +432,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     return GetExprFactory().CreateCast(EXPRFLAG.EXF_INDEXEXPR, exprType, pTemp);
                 });
 
-            if (cIndices != rank)
-            {
-                throw ErrorContext.Error(ErrorCode.ERR_BadIndexCount, rank);
-            }
-
             // Allocate a new expression, the type is the element type of the array.
             // Array index operations are always lvalues.
-            pExpr = GetExprFactory().CreateArrayIndex(pOp1, transformedIndices);
-            pExpr.Flags |= EXPRFLAG.EXF_LVALUE | EXPRFLAG.EXF_ASSGOP;
+            Expr pExpr = GetExprFactory().CreateArrayIndex(elementType, pOp1, transformedIndices);
 
             if (bIsError)
             {
@@ -473,48 +442,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             }
 
             return pExpr;
-        }
-
-        private Expr bindIndexer(Expr pObject, Expr args, BindingFlag bindFlags)
-        {
-            CType type = pObject.Type;
-
-            if (!(type is AggregateType) && !(type is TypeParameterType))
-            {
-                throw ErrorContext.Error(ErrorCode.ERR_BadIndexLHS, type);
-            }
-
-            Name pName = NameManager.GetPredefinedName(PredefinedName.PN_INDEXERINTERNAL);
-
-            MemberLookup mem = new MemberLookup();
-            if (!mem.Lookup(GetSemanticChecker(), type, pObject, ContextForMemberLookup(), pName, 0,
-                            MemLookFlags.Indexer))
-            {
-                throw mem.ReportErrors();
-            }
-
-            Debug.Assert(mem.SymFirst() is IndexerSymbol);
-
-            ExprMemberGroup grp = GetExprFactory().CreateMemGroup((EXPRFLAG)mem.GetFlags(),
-                pName, BSYMMGR.EmptyTypeArray(), mem.SymFirst().getKind(), mem.GetSourceType(), null/*pMPS*/, mem.GetObject(), mem.GetResults());
-
-            Expr pResult = BindMethodGroupToArguments(bindFlags, grp, args);
-            IExprWithObject exprWithObject = pResult as IExprWithObject;
-            Debug.Assert(exprWithObject != null);
-            if (exprWithObject?.OptionalObject == null)
-            {
-                // We must be in an error scenario where the object was not allowed. 
-                // This can happen if the user tries to access the indexer off the
-                // type and not an instance or if the incorrect type/number of arguments 
-                // were passed for binding.
-                if (exprWithObject != null)
-                {
-                    exprWithObject.OptionalObject = pObject;
-                }
-
-                pResult.SetError();
-            }
-            return pResult;
         }
 
         ////////////////////////////////////////////////////////////////////////////////
@@ -1768,12 +1695,12 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
 
 
-        internal CType chooseArrayIndexType(Expr args)
+        internal CType ChooseArrayIndexType(Expr args)
         {
             // first, select the allowable types
-            for (int ipt = 0; ipt < s_rgptIntOp.Length; ipt++)
+            foreach (PredefinedType predef in s_rgptIntOp)
             {
-                CType type = GetPredefindType(s_rgptIntOp[ipt]);
+                CType type = GetPredefindType(predef);
                 foreach (Expr arg in args.ToEnumerable())
                 {
                     if (!canConvert(arg, type))
@@ -1781,11 +1708,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         goto NEXTI;
                     }
                 }
+
                 return type;
-            NEXTI:
+
+             NEXTI:
                 ;
             }
-            return null;
+
+            // Provide better error message in attempting cast to int.
+            return GetPredefindType(PredefinedType.PT_INT);
         }
 
         internal void FillInArgInfoFromArgList(ArgInfos argInfo, Expr args)
