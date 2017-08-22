@@ -25,7 +25,7 @@
     <Compile Include="SqlConnectionTest.RetrieveStatistics.cs" />
     <Compile Include="SqlErrorCollectionTest.cs" />
     <Compile Include="TcpDefaultForAzureTest.cs" />
-    <Compile Include="SqlConnectionTest.cs" />
+    <Compile Include="SqlConnectionBasicTests.cs" />
     <Compile Include="TestTdsServer.cs" />
     <Compile Include="..\ManualTests\DataCommon\DataTestUtility.cs" />
   </ItemGroup>

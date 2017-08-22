@@ -18,6 +18,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Data.SqlClient.Tests
 {
+    [ActiveIssue("dotnet/corefx #17925", TestPlatforms.Any)]
     public class DiagnosticTest : RemoteExecutorTestBase
     {
         private const string BadConnectionString = "data source = bad; initial catalog = bad; uid = bad; password = bad; connection timeout = 1;";
@@ -26,7 +27,6 @@ namespace System.Data.SqlClient.Tests
         public static bool IsConnectionStringConfigured() => s_tcpConnStr != string.Empty;
 
         [Fact]
-        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot)] // Internals reflection not supported on uapaot
         public void ExecuteScalarTest()
         {
@@ -49,7 +49,6 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot)] // Internals reflection not supported on uapaot
         public void ExecuteScalarErrorTest()
         {
@@ -74,7 +73,6 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot)] // Internals reflection not supported on uapaot
         public void ExecuteNonQueryTest()
         {
@@ -97,7 +95,6 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot)] // Internals reflection not supported on uapaot
         public void ExecuteNonQueryErrorTest()
         {
@@ -136,7 +133,6 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot)] // Internals reflection not supported on uapaot
         public void ExecuteReaderTest()
         {
@@ -160,7 +156,6 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot)] // Internals reflection not supported on uapaot
         public void ExecuteReaderErrorTest()
         {
@@ -187,7 +182,6 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot)] // Internals reflection not supported on uapaot
         public void ExecuteReaderWithCommandBehaviorTest()
         {
@@ -234,7 +228,6 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot)] // Internals reflection not supported on uapaot
         public void ExecuteXmlReaderErrorTest()
         {
@@ -261,7 +254,6 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot)] // Internals reflection not supported on uapaot
         public void ExecuteScalarAsyncTest()
         {
@@ -284,7 +276,6 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot)] // Internals reflection not supported on uapaot
         public void ExecuteScalarAsyncErrorTest()
         {
@@ -309,7 +300,6 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot)] // Internals reflection not supported on uapaot
         public void ExecuteNonQueryAsyncTest()
         {
@@ -332,7 +322,6 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot)] // Internals reflection not supported on uapaot
         public void ExecuteNonQueryAsyncErrorTest()
         {
@@ -356,7 +345,6 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot)] // Internals reflection not supported on uapaot
         public void ExecuteReaderAsyncTest()
         {
@@ -380,7 +368,6 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot)] // Internals reflection not supported on uapaot
         public void ExecuteReaderAsyncErrorTest()
         {
@@ -456,7 +443,6 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot)] // Internals reflection not supported on uapaot
         public void ConnectionOpenTest()
         {
@@ -478,7 +464,6 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot)] // Internals reflection not supported on uapaot
         public void ConnectionOpenErrorTest()
         {
@@ -496,7 +481,6 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot)] // Internals reflection not supported on uapaot
         public void ConnectionOpenAsyncTest()
         {
@@ -514,7 +498,6 @@ namespace System.Data.SqlClient.Tests
         }
 
         [Fact]
-        [ActiveIssue("dotnet/corefx #17925", TargetFrameworkMonikers.NetFramework)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot)] // Internals reflection not supported on uapaot
         public void ConnectionOpenAsyncErrorTest()
         {
