@@ -17,11 +17,12 @@ mono_dl_get_so_prefix (void)
 {
 	return "";
 }
+
 const char **
 mono_dl_get_so_suffixes (void)
 {
 	static const char *suffixes[] = {
-		".wasm",
+		".wasm", //we only recognize .wasm files for DSOs.
 		"",
 	};
 	return suffixes;
@@ -30,7 +31,7 @@ mono_dl_get_so_suffixes (void)
 int
 mono_dl_get_executable_path (char *buf, int buflen)
 {
-	strncpy (buf, "/managed", buflen);
+	strncpy (buf, "/managed", buflen); //This is a packaging convertion that our tooling should enforce
 	return 0;
 }
 
