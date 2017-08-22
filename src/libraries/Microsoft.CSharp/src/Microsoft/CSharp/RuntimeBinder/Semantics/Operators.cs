@@ -154,11 +154,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(rgbofs != null);
 
-            int ibos;
-            int ibosMinLift;
-
-            ibosMinLift = GetSymbolLoader().FCanLift() ? 0 : g_binopSignatures.Length;
-            for (ibos = 0; ibos < g_binopSignatures.Length; ibos++)
+            int ibosMinLift = 0;
+            for (int ibos = 0; ibos < g_binopSignatures.Length; ibos++)
             {
                 BinOpSig bos = g_binopSignatures[ibos];
                 if ((bos.mask & info.mask) == 0)
@@ -704,8 +701,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             else
             {
                 pgrflt = LiftFlags.None;
-                if (!GetSymbolLoader().FCanLift())
-                    return false;
                 typeDst = GetSymbolLoader().GetTypeManager().GetNullable(typeDst);
                 if (!canConvert(info.arg1, typeDst))
                     return false;
@@ -740,8 +735,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             else
             {
                 pgrflt = LiftFlags.None;
-                if (!GetSymbolLoader().FCanLift())
-                    return false;
                 typeDst = GetSymbolLoader().GetTypeManager().GetNullable(typeDst);
                 if (!canConvert(info.arg2, typeDst))
                     return false;
@@ -1490,7 +1483,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Debug.Assert(pArgument != null);
             Debug.Assert(pArgument.Type != null);
 
-            long iuosMinLift = GetSymbolLoader().FCanLift() ? 0 : g_rguos.Length;
+            long iuosMinLift = 0;
 
             CType pArgumentType = pArgument.Type;
             CType pRawType = pArgumentType.StripNubs();
@@ -2630,8 +2623,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     false));
                 return true;
             }
-            if (fDontLift || !GetSymbolLoader().FCanLift() ||
-                !UserDefinedBinaryOperatorCanBeLifted(ek, method, ats, paramsCur))
+            if (fDontLift || !UserDefinedBinaryOperatorCanBeLifted(ek, method, ats, paramsCur))
             {
                 return false;
             }

@@ -719,11 +719,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return pSource is TypeParameterType srcParType && HasImplicitTypeParameterBaseConversion(srcParType, pDest);
         }
 
-        public bool FCanLift()
-        {
-            return null != GetPredefAgg(PredefinedType.PT_G_OPTIONAL);
-        }
-
         public bool IsBaseAggregate(AggregateSymbol derived, AggregateSymbol @base)
         {
             Debug.Assert(!derived.IsEnum() && !@base.IsEnum());
