@@ -241,44 +241,38 @@ namespace System
         {
             char[] block = null;
 
-            // Make sure pStrings is not leaked with async exceptions
             RuntimeHelpers.PrepareConstrainedRegions();
+
+            char* pStrings = null;
+
             try
             {
+                pStrings = Win32Native.GetEnvironmentStrings();
+                if (pStrings == null)
+                {
+                    throw new OutOfMemoryException();
+                }
+
+                // Format for GetEnvironmentStrings is:
+                // [=HiddenVar=value\0]* [Variable=value\0]* \0
+                // See the description of Environment Blocks in MSDN's
+                // CreateProcess page (null-terminated array of null-terminated strings).
+
+                // Search for terminating \0\0 (two unicode \0's).
+                char* p = pStrings;
+                while (!(*p == '\0' && *(p + 1) == '\0'))
+                    p++;
+
+                int len = (int)(p - pStrings + 1);
+                block = new char[len];
+
+                fixed (char* pBlock = block)
+                    string.wstrcpy(pBlock, pStrings, len);
             }
             finally
             {
-                char* pStrings = null;
-
-                try
-                {
-                    pStrings = Win32Native.GetEnvironmentStrings();
-                    if (pStrings == null)
-                    {
-                        throw new OutOfMemoryException();
-                    }
-
-                    // Format for GetEnvironmentStrings is:
-                    // [=HiddenVar=value\0]* [Variable=value\0]* \0
-                    // See the description of Environment Blocks in MSDN's
-                    // CreateProcess page (null-terminated array of null-terminated strings).
-
-                    // Search for terminating \0\0 (two unicode \0's).
-                    char* p = pStrings;
-                    while (!(*p == '\0' && *(p + 1) == '\0'))
-                        p++;
-
-                    int len = (int)(p - pStrings + 1);
-                    block = new char[len];
-
-                    fixed (char* pBlock = block)
-                        string.wstrcpy(pBlock, pStrings, len);
-                }
-                finally
-                {
-                    if (pStrings != null)
-                        Win32Native.FreeEnvironmentStrings(pStrings);
-                }
+                if (pStrings != null)
+                    Win32Native.FreeEnvironmentStrings(pStrings);
             }
 
             return block;
