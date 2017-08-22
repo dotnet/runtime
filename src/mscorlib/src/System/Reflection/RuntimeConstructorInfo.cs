@@ -57,8 +57,7 @@ namespace System.Reflection
                         // this should be an invocable method, determine the other flags that participate in invocation
                         invocationFlags |= RuntimeMethodHandle.GetSecurityFlags(this);
 
-                        // Check for attempt to create a delegate class, we demand unmanaged
-                        // code permission for this since it's hard to validate the target address.
+                        // Check for attempt to create a delegate class.
                         if (typeof(Delegate).IsAssignableFrom(DeclaringType))
                             invocationFlags |= INVOCATION_FLAGS.INVOCATION_FLAGS_IS_DELEGATE_CTOR;
                     }

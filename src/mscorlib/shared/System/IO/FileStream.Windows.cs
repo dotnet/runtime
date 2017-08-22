@@ -742,9 +742,8 @@ namespace System.IO
                 else
                 {
                     // ERROR_INVALID_PARAMETER may be returned for writes
-                    // where the position is too large (i.e. writing at Int64.MaxValue 
-                    // on Win9x) OR for synchronous writes to a handle opened 
-                    // asynchronously.
+                    // where the position is too large or for synchronous writes 
+                    // to a handle opened asynchronously.
                     if (errorCode == ERROR_INVALID_PARAMETER)
                         throw new IOException(SR.IO_FileTooLongOrHandleNotSync);
                     throw Win32Marshal.GetExceptionForWin32Error(errorCode);
