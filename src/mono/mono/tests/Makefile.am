@@ -676,11 +676,6 @@ PLATFORM_DISABLED_TESTS += async-exc-compilation.exe finally_guard.exe finally_b
 	unhandled-exception-5.exe unhandled-exception-6.exe unhandled-exception-7.exe unhandled-exception-8.exe
 endif
 
-if HOST_DARWIN
-# TODO: remove once https://bugzilla.xamarin.com/show_bug.cgi?id=58901 is fixed
-PLATFORM_DISABLED_TESTS += pinvoke2.exe
-endif
-
 endif
 
 if POWERPC
