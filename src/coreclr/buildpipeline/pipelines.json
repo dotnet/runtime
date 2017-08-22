@@ -132,7 +132,8 @@
         "TreatWarningsAsErrors": "false"
       },
       "BuildParameters": {
-        "PB_BuildType": "Release"
+        "PB_BuildType": "Release",
+        "PB_EnforcePGO": "enforcepgo"
       },
       "ReportingParameters": {
         "PB_BuildType": "Release"

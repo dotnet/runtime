@@ -86,7 +86,7 @@
       },
       "inputs": {
         "filename": "build.cmd",
-        "arguments": "$(Architecture) $(PB_BuildType) skiptests skipbuildpackages -OfficialBuildId=$(OfficialBuildId) -skiprestore -Priority=$(Priority)",
+        "arguments": "$(Architecture) $(PB_BuildType) skiptests skipbuildpackages $(PB_EnforcePGO) -OfficialBuildId=$(OfficialBuildId) -skiprestore -Priority=$(Priority)",
         "workingFolder": "",
         "failOnStandardError": "false"
       }
@@ -294,6 +294,10 @@
     "VsoPassword": {
       "value": null,
       "isSecret": true
+    },
+    "PB_EnforcePGO": {
+      "value": "",
+      "allowOverride": true
     }
   },
   "retentionRules": [
