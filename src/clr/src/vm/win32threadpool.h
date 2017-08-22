@@ -963,11 +963,11 @@ public:
     //
     class RecycledListsWrapper
     {
-        DWORD                        CacheGuardPre[64/sizeof(DWORD)];
+        DWORD                        CacheGuardPre[MAX_CACHE_LINE_SIZE/sizeof(DWORD)];
         
         RecycledListInfo            (*pRecycledListPerProcessor)[MEMTYPE_COUNT];  // RecycledListInfo [numProc][MEMTYPE_COUNT]
 
-        DWORD                        CacheGuardPost[64/sizeof(DWORD)];
+        DWORD                        CacheGuardPost[MAX_CACHE_LINE_SIZE/sizeof(DWORD)];
 
     public:
         void Initialize( unsigned int numProcs );
