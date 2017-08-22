@@ -77,11 +77,9 @@
       "alwaysRun": false,
       "displayName": "Download docker files",
       "timeoutInMinutes": 0,
-      "condition": "succeeded()",
-      "refName": "Shell1",
       "task": {
         "id": "10f1f9a1-74b0-47ab-87bf-e3c9c68e8b0d",
-        "versionSpec": "1.*",
+        "versionSpec": "0.*",
         "definitionType": "task"
       },
       "inputs": {
