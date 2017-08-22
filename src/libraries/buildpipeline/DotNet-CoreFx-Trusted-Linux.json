@@ -71,21 +71,26 @@
       }
     },
     {
+      "environment": {},
       "enabled": true,
       "continueOnError": false,
       "alwaysRun": false,
-      "displayName": "Initialize tools",
+      "displayName": "Download docker files",
       "timeoutInMinutes": 0,
+      "condition": "succeeded()",
+      "refName": "Shell1",
       "task": {
-        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "id": "10f1f9a1-74b0-47ab-87bf-e3c9c68e8b0d",
         "versionSpec": "1.*",
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(PB_GitDirectory)/init-tools.sh",
-        "arguments": "",
-        "workingFolder": "$(PB_GitDirectory)",
-        "failOnStandardError": "false"
+        "type": "InlineScript",
+        "scriptPath": "",
+        "args": "",
+        "cwd": "",
+        "failOnStandardError": "false",
+        "script": "if [[ ! -d $(DockerFileDir) ]]; then\n    mkdir -p $(DockerFileDir)\nfi\n\nif command -v curl > /dev/null; then\n    curl --retry 10 -sSL -o $(DockerFileDir)/cleanup-docker.sh $(VsoDockerFileDirUrl)cleanup-docker.sh\n    curl --retry 10 -sSL -o $(DockerFileDir)/init-docker.sh $(VsoDockerFileDirUrl)init-docker.sh\nelse\n    wget $(VsoDockerFileDirUrl)cleanup-docker.sh -q -O $(DockerFileDir)/cleanup-docker.sh\n    wget $(VsoDockerFileDirUrl)init-docker.sh -q -O $(DockerFileDir)/init-docker.sh\nfi"
       }
     },
     {
@@ -100,7 +105,7 @@
         "definitionType": "task"
       },
       "inputs": {
-        "filename": "$(Build.SourcesDirectory)/corefx/Tools/scripts/docker/init-docker.sh",
+        "filename": "$(DockerFileDir)/init-docker.sh",
         "arguments": "$(PB_DockerImageName)",
         "workingFolder": "",
         "failOnStandardError": "false"
@@ -401,6 +406,12 @@
     },
     "PB_VsoRepositoryName": {
       "value": "DotNet-CoreFX-Trusted"
+    },
+    "DockerFileDir": {
+      "value": "tools/dockerscripts"
+    },
+    "VsoDockerFileDirUrl": {
+      "value": "https://$(PB_VsoAccountName):$(VsoPassword)@devdiv.visualstudio.com/DevDiv/_git/DotNet-Buildtools-Trusted/src/Microsoft.DotNet.Build.Tasks/PackageFiles/scripts/docker/"
     },
     "SourceVersion": {
       "value": "HEAD",
