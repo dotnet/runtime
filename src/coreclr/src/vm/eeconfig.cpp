@@ -385,6 +385,10 @@ HRESULT EEConfig::Init()
     pszGDBJitElfDump = NULL;
 #endif // FEATURE_GDBJIT && _DEBUG
 
+#if defined(FEATURE_GDBJIT_FRAME)
+    fGDBJitEmitDebugFrame = false;
+#endif
+
     // After initialization, register the code:#GetConfigValueCallback method with code:CLRConfig to let
     // CLRConfig access config files. This is needed because CLRConfig lives outside the VM and can't
     // statically link to EEConfig.
@@ -1248,6 +1252,9 @@ HRESULT EEConfig::sync()
     }
 #endif // FEATURE_GDBJIT && _DEBUG
 
+#if defined(FEATURE_GDBJIT_FRAME)
+    fGDBJitEmitDebugFrame = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_GDBJitEmitDebugFrame) != 0;
+#endif
     return hr;
 }
 

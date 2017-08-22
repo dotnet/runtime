@@ -2468,6 +2468,7 @@ void NotifyGdb::OnMethodPrepared(MethodDesc* methodDescPtr)
     elfBuilder.Initialize(pCode, codeSize);
 
 #ifdef FEATURE_GDBJIT_FRAME
+    if (g_pConfig->ShouldEmitDebugFrame())
     {
         bool bEmitted = EmitFrameInfo(elfBuilder, pCode, codeSize);
         bNotify = bNotify || bEmitted;
