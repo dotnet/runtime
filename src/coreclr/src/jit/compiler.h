@@ -1543,6 +1543,7 @@ class Compiler
     friend class TempDsc;
     friend class LIR;
     friend class ObjectAllocator;
+	friend class CallImporter;
 
 #ifndef _TARGET_64BIT_
     friend class DecomposeLongs;
@@ -10371,6 +10372,19 @@ GenTreeStmt* dFindStmt(unsigned id);
 BasicBlock* dFindBlock(unsigned bbNum);
 
 #endif // DEBUG
+
+// For prefixFlags
+enum
+{
+	PREFIX_TAILCALL_EXPLICIT = 0x00000001, // call has "tail" IL prefix
+	PREFIX_TAILCALL_IMPLICIT =
+	0x00000010, // call is treated as having "tail" prefix even though there is no "tail" IL prefix
+	PREFIX_TAILCALL = (PREFIX_TAILCALL_EXPLICIT | PREFIX_TAILCALL_IMPLICIT),
+	PREFIX_VOLATILE = 0x00000100,
+	PREFIX_UNALIGNED = 0x00001000,
+	PREFIX_CONSTRAINED = 0x00010000,
+	PREFIX_READONLY = 0x00100000
+};
 
 #include "compiler.hpp" // All the shared inline functions
 
