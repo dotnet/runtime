@@ -206,9 +206,6 @@
 #undef CommConfigDialog
 #undef GetDefaultCommConfig
 #undef SetDefaultCommConfig
-#undef GetComputerName
-#undef SetComputerName
-#undef GetUserName
 #undef LogonUser
 #undef CreateProcessAsUser
 #undef GetCurrentHwProfile
@@ -478,9 +475,6 @@
 #define WszCommConfigDialog CommConfigDialogW
 #define WszGetDefaultCommConfig GetDefaultCommConfigW
 #define WszSetDefaultCommConfig SetDefaultCommConfigW
-#define WszGetComputerName GetComputerNameW
-#define WszSetComputerName SetComputerNameW
-#define WszGetUserName GetUserNameW
 #define WszLogonUser LogonUserW
 #define WszCreateProcessAsUser CreateProcessAsUserW
 #define WszGetCurrentHwProfile GetCurrentHwProfileW
