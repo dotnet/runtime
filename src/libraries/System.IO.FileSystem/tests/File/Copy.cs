@@ -9,7 +9,7 @@ using Xunit;
 
 namespace System.IO.Tests
 {
-    public class File_Copy_str_str : FileSystemTest
+    public partial class File_Copy_str_str : FileSystemTest
     {
         #region Utilities
 
@@ -184,7 +184,6 @@ namespace System.IO.Tests
             Assert.True(File.Exists(testFile));
             Assert.True(File.Exists(Path.Combine(TestDirectory, valid)));
         }
-
         #endregion
     }
 
