@@ -46,11 +46,7 @@ namespace System.IO
 
         public override void ReplaceFile(string sourceFullPath, string destFullPath, string destBackupFullPath, bool ignoreMetadataErrors)
         {
-            int flags = Interop.Kernel32.REPLACEFILE_WRITE_THROUGH;
-            if (ignoreMetadataErrors)
-            {
-                flags |= Interop.Kernel32.REPLACEFILE_IGNORE_MERGE_ERRORS;
-            }
+            int flags = ignoreMetadataErrors ? Interop.Kernel32.REPLACEFILE_IGNORE_MERGE_ERRORS : 0;
 
             if (!Interop.Kernel32.ReplaceFile(destFullPath, sourceFullPath, destBackupFullPath, flags, IntPtr.Zero, IntPtr.Zero))
             {

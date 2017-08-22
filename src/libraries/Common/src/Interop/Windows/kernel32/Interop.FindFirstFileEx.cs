@@ -24,20 +24,5 @@ internal partial class Interop
             // use FindExInfoBasic since we don't care about short name and it has better perf
             return FindFirstFileExPrivate(fileName, FINDEX_INFO_LEVELS.FindExInfoBasic, ref data, FINDEX_SEARCH_OPS.FindExSearchNameMatch, IntPtr.Zero, 0);
         }
-
-        internal enum FINDEX_INFO_LEVELS : uint
-        {
-            FindExInfoStandard = 0x0u,
-            FindExInfoBasic = 0x1u,
-            FindExInfoMaxInfoLevel = 0x2u,
-        }
-
-        internal enum FINDEX_SEARCH_OPS : uint
-        {
-            FindExSearchNameMatch = 0x0u,
-            FindExSearchLimitToDirectories = 0x1u,
-            FindExSearchLimitToDevices = 0x2u,
-            FindExSearchMaxSearchOp = 0x3u,
-        }
     }
 }

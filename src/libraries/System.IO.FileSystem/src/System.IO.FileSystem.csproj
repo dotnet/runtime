@@ -6,11 +6,7 @@
     <AssemblyName>System.IO.FileSystem</AssemblyName>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <!--
-      Currently the uap build is broken so forcing UWPCompatible = false to use Win32 code
-      https://github.com/dotnet/corefx/issues/16422
-    -->
-    <UWPCompatible>false</UWPCompatible>
+    <UWPCompatible Condition="'$(TargetGroup)' == 'uap' or '$(TargetGroup)' == 'uapaot'">true</UWPCompatible>
   </PropertyGroup>
   <PropertyGroup Condition="'$(TargetsUnix)' == 'true'">
     <NoWarn>$(NoWarn);414</NoWarn>
@@ -101,9 +97,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SECURITY_ATTRIBUTES.cs">
       <Link>Common\Interop\Windows\Interop.SECURITY_ATTRIBUTES.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CreateDirectory.cs">
-      <Link>Common\Interop\Windows\Interop.CreateDirectory.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SecurityOptions.cs">
       <Link>Common\Interop\Windows\Interop.SecurityOptions.cs</Link>
     </Compile>
@@ -137,20 +130,8 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.WriteFile_SafeHandle_IntPtr.cs">
       <Link>Common\Interop\Windows\Interop.WriteFile_IntPtr.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.DeleteFile.cs">
-      <Link>Common\Interop\Windows\Interop.DeleteFile.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetFileInformationByHandle.cs">
       <Link>Common\Interop\Windows\Interop.SetFileInformationByHandle.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetFileAttributesEx.cs">
-      <Link>Common\Interop\Windows\Interop.GetFileAttributesEx.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetFileAttributes.cs">
-      <Link>Common\Interop\Windows\Interop.SetFileAttributes.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.MoveFileEx.cs">
-      <Link>Common\Interop\Windows\Interop.MoveFileEx.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetCurrentDirectory.cs">
       <Link>Common\Interop\Windows\Interop.GetCurrentDirectory.cs</Link>
@@ -160,12 +141,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetLongPathName.cs">
       <Link>Common\Interop\Windows\Interop.GetLongPathName.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.RemoveDirectory.cs">
-      <Link>Common\Interop\Windows\Interop.RemoveDirectory.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FindFirstFileEx.cs">
-      <Link>Common\Interop\Windows\Interop.FindFirstFileEx.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FindNextFile.cs">
       <Link>Common\Interop\Windows\Interop.FindNextFile.cs</Link>
@@ -188,8 +163,34 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SafeCreateFile.cs">
       <Link>Common\Interop\Windows\Interop.SafeCreateFile.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.ReplaceFile.cs">
-      <Link>Common\Interop\Windows\Interop.ReplaceFile.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.WIN32_FIND_DATA.cs">
+      <Link>Common\Interop\Windows\Interop.WIN32_FIND_DATA.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FILE_TIME.cs">
+      <Link>Common\Interop\Windows\Interop.FILE_TIME.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FINDEX_INFO_LEVELS.cs">
+      <Link>Common\Interop\Windows\Interop.FINDEX_INFO_LEVELS.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FINDEX_SEARCH_OPS.cs">
+      <Link>Common\Interop\Windows\Interop.FINDEX_SEARCH_OPS.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.WIN32_FILE_ATTRIBUTE_DATA.cs">
+      <Link>Common\Interop\Windows\Interop.WIN32_FILE_ATTRIBUTE_DATA.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GET_FILEEX_INFO_LEVELS.cs">
+      <Link>Common\Interop\Windows\Interop.GET_FILEEX_INFO_LEVELS.cs</Link>
+    </Compile>
+    <Compile Include="System\IO\FileSystem.Current.Win32.cs" />
+    <Compile Include="System\IO\FileSystemInfo.Win32.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetThreadErrorMode.cs">
+      <Link>Common\Interop\Windows\Interop.SetThreadErrorMode.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetLogicalDrive.cs">
+      <Link>Common\Interop\Windows\Interop.GetLogicalDrive.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.DeleteVolumeMountPoint.cs">
+      <Link>Common\Interop\Windows\Interop.DeleteVolumeMountPoint.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\System\Memory\FixedBufferExtensions.cs">
       <Link>Common\System\Memory\FixedBufferExtensions.cs</Link>
@@ -197,54 +198,51 @@
   </ItemGroup>
   <!-- Windows : Win32 only -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(UWPCompatible)' != 'true'">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.DeleteFile.cs">
+      <Link>Common\Interop\Windows\Interop.DeleteFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CreateDirectory.cs">
+      <Link>Common\Interop\Windows\Interop.CreateDirectory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetFileAttributes.cs">
+      <Link>Common\Interop\Windows\Interop.SetFileAttributes.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.MoveFileEx.cs">
+      <Link>Common\Interop\Windows\Interop.MoveFileEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetFileAttributesEx.cs">
+      <Link>Common\Interop\Windows\Interop.GetFileAttributesEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.RemoveDirectory.cs">
+      <Link>Common\Interop\Windows\Interop.RemoveDirectory.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.FindFirstFileEx.cs">
+      <Link>Common\Interop\Windows\Interop.FindFirstFileEx.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.ReplaceFile.cs">
+      <Link>Common\Interop\Windows\Interop.ReplaceFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CreateFile.cs">
+      <Link>Common\Interop\Windows\Interop.CreateFile.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.UnsafeCreateFile.cs">
       <Link>Common\Interop\Windows\Interop.UnsafeCreateFile.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CopyFile.cs">
       <Link>Common\Interop\Windows\Interop.CopyFile.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.GetLogicalDrive.cs">
-      <Link>Common\Interop\Windows\Interop.GetLogicalDrive.cs</Link>
-    </Compile>
-    <Compile Include="System\IO\FileSystem.Current.Win32.cs" />
-    <Compile Include="System\IO\FileSystemInfo.Win32.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CreateFile.cs">
-      <Link>Common\Interop\Windows\Interop.CreateFile.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CopyFileEx.cs">
       <Link>Common\Interop\Windows\Interop.CopyFileEx.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.DeleteVolumeMountPoint.cs">
-      <Link>Common\Interop\Windows\Interop.DeleteVolumeMountPoint.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetThreadErrorMode.cs">
-      <Link>Common\Interop\Windows\Interop.SetThreadErrorMode.cs</Link>
-    </Compile>
   </ItemGroup>
   <!-- Windows : UAP - Win32 + WinRT -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' AND '$(UWPCompatible)' == 'true'">
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.UnsafeCreateFile.Uap.cs">
-      <Link>Common\Interop\Windows\Interop.UnsafeCreateFile.Uap.cs</Link>
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(UWPCompatible)' == 'true'">
+    <Compile Include="System\IO\FromApp.Interop.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.COPYFILE2_EXTENDED_PARAMETERS.cs">
+      <Link>Common\Interop\Windows\Interop.COPYFILE2_EXTENDED_PARAMETERS.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CopyFile.Uap.cs">
-      <Link>Common\Interop\Windows\Interop.CopyFile.Uap.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.DeleteVolumeMountPoint.Uap.cs">
-      <Link>Common\Interop\Windows\Interop.DeleteVolumeMountPoint.Uap.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.SetThreadErrorMode.Uap.cs">
-      <Link>Common\Interop\Windows\Interop.SetThreadErrorMode.Uap.cs</Link>
-    </Compile>
-    <Compile Include="System\IO\FileSystem.Current.MuxWin32WinRT.cs" />
-    <Compile Include="System\IO\FileSystemInfo.WinRT.cs" />
-    <Compile Include="System\IO\MultiplexingWin32WinRTFileSystem.cs" />
-    <Compile Include="System\IO\WinRTIOExtensions.cs" />
-    <Compile Include="System\IO\WinRTFileSystem.cs" />
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CopyFile2.cs">
-      <Link>Common\Interop\Windows\Interop.CopyFile2.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CreateFile2.cs">
-      <Link>Common\Interop\Windows\Interop.CreateFile2.cs</Link>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CREATEFILE2_EXTENDED_PARAMETERS.cs">
+      <Link>Common\Interop\Windows\Interop.CREATEFILE2_EXTENDED_PARAMETERS.cs</Link>
     </Compile>
   </ItemGroup>
   <!-- Unix -->
@@ -376,10 +374,6 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <Reference Include="System.Threading" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(UWPCompatible)' == 'true'">
-    <Reference Include="mscorlib" />
-    <Reference Include="Windows" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
