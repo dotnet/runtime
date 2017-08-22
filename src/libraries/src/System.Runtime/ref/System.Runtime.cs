@@ -7151,14 +7151,17 @@ namespace System.Text
         [System.CLSCompliantAttribute(false)]
         public unsafe virtual void Convert(byte* bytes, int byteCount, char* chars, int charCount, bool flush, out int bytesUsed, out int charsUsed, out bool completed) { throw null; }
         public virtual void Convert(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex, int charCount, bool flush, out int bytesUsed, out int charsUsed, out bool completed) { throw null; }
+        public virtual void Convert(ReadOnlySpan<byte> bytes, Span<char> chars, bool flush, out int bytesUsed, out int charsUsed, out bool completed) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public unsafe virtual int GetCharCount(byte* bytes, int count, bool flush) { throw null; }
         public abstract int GetCharCount(byte[] bytes, int index, int count);
         public virtual int GetCharCount(byte[] bytes, int index, int count, bool flush) { throw null; }
+        public virtual int GetCharCount(System.ReadOnlySpan<byte> bytes, bool flush) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public unsafe virtual int GetChars(byte* bytes, int byteCount, char* chars, int charCount, bool flush) { throw null; }
         public abstract int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex);
         public virtual int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex, bool flush) { throw null; }
+        public virtual int GetChars(System.ReadOnlySpan<byte> bytes, System.Span<char> chars, bool flush) { throw null; }
         public virtual void Reset() { }
     }
     public sealed partial class DecoderExceptionFallback : System.Text.DecoderFallback
@@ -7231,12 +7234,15 @@ namespace System.Text
         [System.CLSCompliantAttribute(false)]
         public unsafe virtual void Convert(char* chars, int charCount, byte* bytes, int byteCount, bool flush, out int charsUsed, out int bytesUsed, out bool completed) { throw null; }
         public virtual void Convert(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex, int byteCount, bool flush, out int charsUsed, out int bytesUsed, out bool completed) { throw null; }
+        public virtual void Convert(System.ReadOnlySpan<char> chars, System.Span<byte> bytes, bool flush, out int charsUsed, out int bytesUsed, out bool completed) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public unsafe virtual int GetByteCount(char* chars, int count, bool flush) { throw null; }
         public abstract int GetByteCount(char[] chars, int index, int count, bool flush);
+        public virtual int GetByteCount(System.ReadOnlySpan<char> chars, bool flush) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public unsafe virtual int GetBytes(char* chars, int charCount, byte* bytes, int byteCount, bool flush) { throw null; }
         public abstract int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex, bool flush);
+        public virtual int GetBytes(System.ReadOnlySpan<char> chars, System.Span<byte> bytes, bool flush) { throw null; }
         public virtual void Reset() { }
     }
     public sealed partial class EncoderExceptionFallback : System.Text.EncoderFallback
