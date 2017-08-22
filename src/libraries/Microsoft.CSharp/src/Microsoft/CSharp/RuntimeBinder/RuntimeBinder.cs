@@ -769,7 +769,7 @@ namespace Microsoft.CSharp.RuntimeBinder
 
         private Expr CreateArray(Expr callingObject, Expr optionalIndexerArguments)
         {
-            return _binder.BindArrayIndexCore(0, callingObject, optionalIndexerArguments);
+            return _binder.BindArrayIndexCore(callingObject, optionalIndexerArguments);
         }
 
         /////////////////////////////////////////////////////////////////////////////////
@@ -1360,13 +1360,15 @@ namespace Microsoft.CSharp.RuntimeBinder
                     int numIndexArguments = ExpressionIterator.Count(optionalIndexerArguments);
                     // We could have an array access here. See if its just an array.
                     Type type = argument.Type;
-                    if (type.IsArray || type == typeof(string))
+                    Debug.Assert(type != typeof(string));
+                    if (type.IsArray)
                     {
                         if (type.IsArray && type.GetArrayRank() != numIndexArguments)
                         {
                             throw _semanticChecker.ErrorContext.Error(ErrorCode.ERR_BadIndexCount, type.GetArrayRank());
                         }
                         
+                        Debug.Assert(callingObject.Type is ArrayType);
                         return CreateArray(callingObject, optionalIndexerArguments);
                     }
                 }
@@ -1433,12 +1435,7 @@ namespace Microsoft.CSharp.RuntimeBinder
                 // user defined conversions (since the convert is guaranteed to return one of
                 // the primitive types), and we check for overflow since we don't want truncation.
 
-                CType pDestType = _binder.chooseArrayIndexType(argument);
-                if (null == pDestType)
-                {
-                    pDestType = SymbolLoader.GetPredefindType(PredefinedType.PT_INT);
-                }
-
+                CType pDestType = _binder.ChooseArrayIndexType(argument);
                 return _binder.mustCast(
                     _binder.mustConvert(argument, pDestType),
                     destinationType,

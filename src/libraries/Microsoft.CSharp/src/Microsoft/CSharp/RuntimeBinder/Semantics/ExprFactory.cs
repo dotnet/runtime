@@ -158,20 +158,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         public ExprBlock CreateBlock(ExprStatement pOptionalStatements) => new ExprBlock(pOptionalStatements);
 
-        public ExprArrayIndex CreateArrayIndex(Expr array, Expr index)
-        {
-            CType type = array.Type;
-            if (type is ArrayType arr)
-            {
-                type = arr.GetElementType();
-            }
-            else if (type == null)
-            {
-                type = Types.GetPredefAgg(PredefinedType.PT_INT).getThisType();
-            }
-
-            return new ExprArrayIndex(type, array, index);
-        }
+        public ExprArrayIndex CreateArrayIndex(CType type, Expr array, Expr index) =>
+            new ExprArrayIndex(type, array, index);
 
         public ExprBinOp CreateBinop(ExpressionKind exprKind, CType type, Expr left, Expr right) => 
             new ExprBinOp(exprKind, type, left, right);

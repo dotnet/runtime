@@ -75,5 +75,29 @@ namespace Microsoft.CSharp.RuntimeBinder.Tests
             string answer = ifaceTyped[d];
             Assert.Equal("23", answer);
         }
+
+        [Fact]
+        public void ArrayLongIndexed()
+        {
+            dynamic arr = new[] {1, 2, 3};
+            dynamic ind = 2L;
+            Assert.Equal(3, arr[ind]);
+        }
+
+        [Fact]
+        public void BadArrayIndexer()
+        {
+            dynamic arr = new[] {1, 2, 3};
+            dynamic ind = "a";
+            Assert.Throws<RuntimeBinderException>(() => arr[ind]);
+        }
+
+        [Fact]
+        public void BadArrayIndexerCouldHaveCast()
+        {
+            dynamic arr = new[] { 1, 2, 3 };
+            dynamic ind = 2m;
+            Assert.Throws<RuntimeBinderException>(() => arr[ind]);
+        }
     }
 }
