@@ -795,6 +795,10 @@ static InterpMethodArguments* build_args_from_sig (MonoMethodSignature *sig, Int
 	int i8_align = mono_arm_i8_align ();
 #endif
 
+#ifdef TARGET_WASM
+	margs->sig = sig;
+#endif
+
 	if (sig->hasthis)
 		margs->ilen++;
 
