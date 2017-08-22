@@ -452,6 +452,17 @@ namespace System
             if (IsUnmanagedFunctionPtr())
                 return ValueType.GetHashCodeOfPtr(_methodPtr) ^ ValueType.GetHashCodeOfPtr(_methodPtrAux);
 
+            if (_invocationCount != (IntPtr)0)
+            {
+                var t = _invocationList as Delegate;
+
+                if (t != null)
+                {
+                    // this is a secure/wrapper delegate so we need to unwrap and check the inner one
+                    return t.GetHashCode();
+                }
+            }
+
             Object[] invocationList = _invocationList as Object[];
             if (invocationList == null)
             {
