@@ -2216,14 +2216,6 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 				}
 				break;
 			}
-#if 0
-			if ((sig->call_convention == MONO_CALL_VARARG) && 
-			    (cinfo->args[iParm].regtype != RegTypeGeneral) &&
-			    (iParm < sig->sentinelpos)) 
-				cfg->sig_cookie += size;
-printf("%s %4d cookine %x\n",__FUNCTION__,__LINE__,cfg->sig_cookie);
-#endif
-
 			offset += MAX(size, 8);
 		}
 		curinst++;
@@ -2554,27 +2546,6 @@ mono_arch_emit_call (MonoCompile *cfg, MonoCallInst *call)
 				ins->inst_destbasereg = STK_BASE;
 				ins->inst_offset = ainfo->offset;
 				ins->sreg1 = in->dreg;
-
-#if 0
-				/* This is needed by MonoTypedRef->value to point to the correct data */
-				if ((sig->call_convention == MONO_CALL_VARARG) &&
-					(i >= sig->sentinelpos)) {
-					switch (ainfo->size) {
-					case 1:
-						ins->opcode = OP_STOREI1_MEMBASE_REG;
-						break;
-					case 2:
-						ins->opcode = OP_STOREI2_MEMBASE_REG;
-						break;
-					case 4:
-						ins->opcode = OP_STOREI4_MEMBASE_REG;
-						break;
-					default:
-						break;
-					}
-				}
-#endif
-
 				MONO_ADD_INS (cfg->cbb, ins);
 			}
 			break;
@@ -5998,14 +5969,6 @@ mono_arch_emit_prolog (MonoCompile *cfg)
 	s390_stmg (code, s390_r6, s390_r14, STK_BASE, S390_REG_SAVE_OFFSET);
 	mono_emit_unwind_op_offset (cfg, code, s390_r14, S390_RET_ADDR_OFFSET);
 	mini_gc_set_slot_type_from_cfa (cfg, S390_RET_ADDR_OFFSET, SLOT_NOREF);
-
-#if 0
-if ((strcmp(method->klass->name, "Tests") == 0) && 
-    (strcmp(method->name,"test_5_jmp") == 0)) {
-printf("Found!\n"); fflush(stdout);
-s390_j (code, 0);
-}
-#endif
 
 	if (cfg->arch.bkchain_reg != -1)
 		s390_lgr (code, cfg->arch.bkchain_reg, STK_BASE);
