@@ -911,7 +911,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                                     0,
                                     false));
                 }
-                else if (GetSymbolLoader().FCanLift() && typeParam.IsNonNubValType() &&
+                else if (typeParam.IsNonNubValType() &&
                          GetTypes().SubstType(methCur.RetType, atsCur).IsNonNubValType() &&
                          canConvert(arg, nubParam = GetTypes().GetNullable(typeParam)))
                 {
