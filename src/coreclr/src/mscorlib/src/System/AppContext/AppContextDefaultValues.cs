@@ -114,7 +114,7 @@ namespace System
                     {
                         value = value.Substring(1);
                     }
-                    Version realVersion = new Version(value);
+                    Version realVersion = Version.Parse(value);
                     // The version class will represent some unset values as -1 internally (instead of 0).
                     version = realVersion.Major * 10000;
                     if (realVersion.Minor > 0)
