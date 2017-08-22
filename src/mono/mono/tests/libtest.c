@@ -1356,7 +1356,10 @@ mono_test_return_empty_struct (int a)
 
 	memset (&s, 0, sizeof (s));
 
+#if !(defined(__i386__) && defined(__clang__))
+	/* https://bugzilla.xamarin.com/show_bug.cgi?id=58901 */
 	g_assert (a == 42);
+#endif
 
 	return s;
 }
