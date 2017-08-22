@@ -3064,7 +3064,6 @@ if test "x$enable_wasm" = "xyes"; then
 TARGET=WASM
 HOST=WASM
 arch_target=wasm
-AC_DEFINE(MONO_CROSS_COMPILE,1,[The runtime is compiled for cross-compiling mode])
 AC_DEFINE(TARGET_WASM, 1, [Target wasm])
 BTLS_SUPPORTED=no
 with_tls=pthread
