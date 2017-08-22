@@ -197,11 +197,6 @@ struct alloc_context : gc_alloc_context
 };
 
 class IGCHeapInternal : public IGCHeap {
-    friend struct ::_DacGlobals;
-#ifdef DACCESS_COMPILE
-    friend class ClrDataAccess;
-#endif
-    
 public:
 
     virtual ~IGCHeapInternal() {}

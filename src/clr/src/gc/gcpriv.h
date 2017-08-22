@@ -1016,12 +1016,6 @@ enum interesting_data_point
 //class definition of the internal class
 class gc_heap
 {
-    friend struct ::_DacGlobals;
-#ifdef DACCESS_COMPILE
-    friend class ::ClrDataAccess;
-    friend class ::DacHeapWalker;
-#endif //DACCESS_COMPILE
-
     friend class GCHeap;
 #ifdef FEATURE_PREMORTEM_FINALIZATION
     friend class CFinalize;
@@ -3627,7 +3621,7 @@ protected:
 }; // class gc_heap
 
 #define ASSERT_OFFSETS_MATCH(field) \
-  static_assert_no_msg(offsetof(dac_gc_heap, field) == offsetof(gc_heap, field))
+  static_assert(offsetof(dac_gc_heap, field) == offsetof(gc_heap, field), #field " offset mismatch")
 
 #ifdef MULTIPLE_HEAPS
 ASSERT_OFFSETS_MATCH(alloc_allocated);
