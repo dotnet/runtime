@@ -5143,6 +5143,8 @@ no_trampolines (void)
 	g_assert_not_reached ();
 }
 
+
+#ifndef TARGET_WASM
 /*
  * Return the trampoline identified by NAME from the mscorlib AOT file.
  * On ppc64, this returns a function descriptor.
@@ -5159,6 +5161,8 @@ mono_aot_get_trampoline_full (const char *name, MonoTrampInfo **out_tinfo)
 
 	return mono_create_ftnptr_malloc ((guint8 *)load_function_full (amodule, name, out_tinfo));
 }
+#endif
+
 
 gpointer
 mono_aot_get_trampoline (const char *name)
