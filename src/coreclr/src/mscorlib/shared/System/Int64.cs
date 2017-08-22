@@ -110,18 +110,21 @@ namespace System
 
         public static long Parse(String s)
         {
-            return Number.ParseInt64(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
+            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            return Number.ParseInt64(s.AsSpan(), NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
         }
 
         public static long Parse(String s, NumberStyles style)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
-            return Number.ParseInt64(s, style, NumberFormatInfo.CurrentInfo);
+            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            return Number.ParseInt64(s.AsSpan(), style, NumberFormatInfo.CurrentInfo);
         }
 
         public static long Parse(String s, IFormatProvider provider)
         {
-            return Number.ParseInt64(s, NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
+            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            return Number.ParseInt64(s.AsSpan(), NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
         }
 
 
@@ -132,15 +135,41 @@ namespace System
         public static long Parse(String s, NumberStyles style, IFormatProvider provider)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
+            if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
+            return Number.ParseInt64(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider));
+        }
+
+        public static long Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
             return Number.ParseInt64(s, style, NumberFormatInfo.GetInstance(provider));
         }
 
         public static Boolean TryParse(String s, out Int64 result)
         {
-            return Number.TryParseInt64(s, NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
+            if (s == null)
+            {
+                result = 0;
+                return false;
+            }
+
+            return Number.TryParseInt64(s.AsSpan(), NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
         }
 
         public static Boolean TryParse(String s, NumberStyles style, IFormatProvider provider, out Int64 result)
+        {
+            NumberFormatInfo.ValidateParseStyleInteger(style);
+
+            if (s == null)
+            {
+                result = 0;
+                return false;
+            }
+
+            return Number.TryParseInt64(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result);
+        }
+
+        public static bool TryParse(ReadOnlySpan<char> s, out long result, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             return Number.TryParseInt64(s, style, NumberFormatInfo.GetInstance(provider), out result);

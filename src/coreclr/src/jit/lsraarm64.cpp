@@ -53,9 +53,15 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
     TreeNodeInfo* info         = &(tree->gtLsraInfo);
     RegisterType  registerType = TypeGet(tree);
 
-    JITDUMP("TreeNodeInfoInit for: ");
-    DISPNODE(tree);
-    JITDUMP("\n");
+    if (tree->isContained())
+    {
+        info->dstCount = 0;
+        assert(info->srcCount == 0);
+        return;
+    }
+
+    // Set the default dstCount. This may be modified below.
+    info->dstCount = tree->IsValue() ? 1 : 0;
 
     switch (tree->OperGet())
     {
@@ -63,7 +69,6 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         GenTree* op2;
 
         default:
-            info->dstCount = tree->IsValue() ? 1 : 0;
             if (kind & (GTK_CONST | GTK_LEAF))
             {
                 info->srcCount = 0;
@@ -88,7 +93,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         case GT_STORE_LCL_FLD:
         case GT_STORE_LCL_VAR:
             info->srcCount = 1;
-            info->dstCount = 0;
+            assert(info->dstCount == 0);
             TreeNodeInfoInitStoreLoc(tree->AsLclVarCommon());
             break;
 
@@ -99,12 +104,12 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         case GT_START_NONGC:
         case GT_PROF_HOOK:
             info->srcCount = 0;
-            info->dstCount = 0;
+            assert(info->dstCount == 0);
             break;
 
         case GT_CNS_DBL:
             info->srcCount = 0;
-            info->dstCount = 1;
+            assert(info->dstCount == 1);
             {
                 GenTreeDblCon* dblConst   = tree->AsDblCon();
                 double         constValue = dblConst->gtDblCon.gtDconVal;
@@ -126,7 +131,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         case GT_QMARK:
         case GT_COLON:
             info->srcCount = 0;
-            info->dstCount = 0;
+            assert(info->dstCount == 0);
             unreached();
             break;
 
@@ -138,14 +143,14 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             if (tree->TypeGet() == TYP_VOID)
             {
                 info->srcCount = 0;
-                info->dstCount = 0;
+                assert(info->dstCount == 0);
             }
             else
             {
                 assert(tree->TypeGet() == TYP_INT);
 
                 info->srcCount = 1;
-                info->dstCount = 0;
+                assert(info->dstCount == 0);
 
                 info->setSrcCandidates(l, RBM_INTRET);
                 tree->gtOp.gtOp1->gtLsraInfo.setSrcCandidates(l, RBM_INTRET);
@@ -159,42 +164,40 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             info->srcCount = 0;
             if (tree->TypeGet() != TYP_VOID && tree->gtOp.gtOp1 == nullptr)
             {
-                info->dstCount = 1;
+                assert(info->dstCount == 1);
             }
             else
             {
-                info->dstCount = 0;
+                assert(info->dstCount == 0);
             }
             break;
 
         case GT_JTRUE:
             info->srcCount = 0;
-            info->dstCount = 0;
-            l->clearDstCount(tree->gtOp.gtOp1);
+            assert(info->dstCount == 0);
             break;
 
         case GT_JMP:
             info->srcCount = 0;
-            info->dstCount = 0;
+            assert(info->dstCount == 0);
             break;
 
         case GT_SWITCH:
             // This should never occur since switch nodes must not be visible at this
             // point in the JIT.
             info->srcCount = 0;
-            info->dstCount = 0; // To avoid getting uninit errors.
             noway_assert(!"Switch must be lowered at this point");
             break;
 
         case GT_JMPTABLE:
             info->srcCount = 0;
-            info->dstCount = 1;
+            assert(info->dstCount == 1);
             break;
 
         case GT_SWITCH_TABLE:
             info->srcCount         = 2;
             info->internalIntCount = 1;
-            info->dstCount         = 0;
+            assert(info->dstCount == 0);
             break;
 
         case GT_ASG:
@@ -202,7 +205,6 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         case GT_ASG_SUB:
             noway_assert(!"We should never hit any assignment operator in lowering");
             info->srcCount = 0;
-            info->dstCount = 0;
             break;
 
         case GT_ADD:
@@ -217,9 +219,6 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
                 assert(tree->gtOp.gtOp1->TypeGet() == tree->gtOp.gtOp2->TypeGet());
 
                 info->srcCount = 2;
-                info->dstCount = 1;
-
-                break;
             }
 
             __fallthrough;
@@ -227,16 +226,15 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         case GT_AND:
         case GT_OR:
         case GT_XOR:
-            ContainCheckBinary(tree->AsOp());
             info->srcCount = tree->gtOp.gtOp2->isContained() ? 1 : 2;
-            info->dstCount = 1;
+            assert(info->dstCount == 1);
             break;
 
         case GT_RETURNTRAP:
             // this just turns into a compare of its child with an int
             // + a conditional call
             info->srcCount = 1;
-            info->dstCount = 0;
+            assert(info->dstCount == 0);
             break;
 
         case GT_MOD:
@@ -259,7 +257,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         case GT_UDIV:
         {
             info->srcCount = 2;
-            info->dstCount = 1;
+            assert(info->dstCount == 1);
         }
         break;
 
@@ -277,7 +275,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             assert(op1->TypeGet() == tree->TypeGet());
 
             info->srcCount = 1;
-            info->dstCount = 1;
+            assert(info->dstCount == 1);
         }
         break;
 
@@ -294,7 +292,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             //         see CodeGen::genIntToIntCast()
 
             info->srcCount = 1;
-            info->dstCount = 1;
+            assert(info->dstCount == 1);
 
             // Non-overflow casts to/from float/double are done using SSE2 instructions
             // and that allow the source operand to be either a reg or memop. Given the
@@ -347,12 +345,12 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
 
         case GT_NEG:
             info->srcCount = 1;
-            info->dstCount = 1;
+            assert(info->dstCount == 1);
             break;
 
         case GT_NOT:
             info->srcCount = 1;
-            info->dstCount = 1;
+            assert(info->dstCount == 1);
             break;
 
         case GT_LSH:
@@ -372,14 +370,14 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             break;
 
         case GT_CKFINITE:
-            info->srcCount         = 1;
-            info->dstCount         = 1;
+            info->srcCount = 1;
+            assert(info->dstCount == 1);
             info->internalIntCount = 1;
             break;
 
         case GT_CMPXCHG:
             info->srcCount = 3;
-            info->dstCount = 1;
+            assert(info->dstCount == 1);
 
             // TODO-ARM64-NYI
             NYI("CMPXCHG");
@@ -388,7 +386,15 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         case GT_LOCKADD:
             ContainCheckBinary(tree->AsOp());
             info->srcCount = tree->gtOp.gtOp2->isContained() ? 1 : 2;
-            info->dstCount = 1;
+            assert(info->dstCount == 1);
+            break;
+
+        case GT_PUTARG_STK:
+            TreeNodeInfoInitPutArgStk(tree->AsPutArgStk());
+            break;
+
+        case GT_PUTARG_REG:
+            TreeNodeInfoInitPutArgReg(tree->AsUnOp());
             break;
 
         case GT_CALL:
@@ -402,7 +408,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             assert(!l->isCandidateLocalRef(child));
             MakeSrcContained(tree, child);
             info->srcCount = 0;
-            info->dstCount = 1;
+            assert(info->dstCount == 1);
         }
         break;
 
@@ -411,7 +417,6 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             // These should all be eliminated prior to Lowering.
             assert(!"Non-store block node in Lowering");
             info->srcCount = 0;
-            info->dstCount = 0;
             break;
 
         case GT_STORE_BLK:
@@ -423,14 +428,13 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
 
         case GT_INIT_VAL:
             // Always a passthrough of its child's value.
-            info->srcCount = 0;
-            info->dstCount = 0;
+            assert(!"INIT_VAL should always be contained");
             break;
 
         case GT_LCLHEAP:
         {
             ContainCheckLclHeap(tree->AsOp());
-            info->dstCount = 1;
+            assert(info->dstCount == 1);
 
             // Need a variable number of temp regs (see genLclHeap() in codegenamd64.cpp):
             // Here '-' means don't care.
@@ -536,7 +540,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             GenTreeBoundsChk* node = tree->AsBoundsChk();
             // Consumes arrLen & index - has no result
             info->srcCount = 2;
-            info->dstCount = 0;
+            assert(info->dstCount == 0);
 
             GenTree* intCns = nullptr;
             GenTree* other  = nullptr;
@@ -555,12 +559,12 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             // These must have been lowered to GT_ARR_INDEX
             noway_assert(!"We should never see a GT_ARR_ELEM in lowering");
             info->srcCount = 0;
-            info->dstCount = 0;
+            assert(info->dstCount == 0);
             break;
 
         case GT_ARR_INDEX:
-            info->srcCount               = 2;
-            info->dstCount               = 1;
+            info->srcCount = 2;
+            assert(info->dstCount == 1);
             info->internalIntCount       = 1;
             info->isInternalRegDelayFree = true;
 
@@ -574,8 +578,8 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             ContainCheckArrOffset(tree->AsArrOffs());
             // This consumes the offset, if any, the arrObj and the effective index,
             // and produces the flattened offset for this dimension.
-            info->srcCount         = tree->gtArrOffs.gtOffset->isContained() ? 2 : 3;
-            info->dstCount         = 1;
+            info->srcCount = tree->gtArrOffs.gtOffset->isContained() ? 2 : 3;
+            assert(info->dstCount == 1);
             info->internalIntCount = 1;
             break;
 
@@ -587,8 +591,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             GenTree* index = lea->Index();
             unsigned cns   = lea->gtOffset;
 
-            // This LEA is instantiating an address,
-            // so we set up the srcCount and dstCount here.
+            // This LEA is instantiating an address, so we set up the srcCount here.
             info->srcCount = 0;
             if (base != nullptr)
             {
@@ -598,7 +601,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             {
                 info->srcCount++;
             }
-            info->dstCount = 1;
+            assert(info->dstCount == 1);
 
             // On ARM64 we may need a single internal register
             // (when both conditions are true then we still only need a single internal register)
@@ -617,7 +620,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
 
         case GT_STOREIND:
         {
-            info->dstCount = 0;
+            assert(info->dstCount == 0);
 
             if (compiler->codeGen->gcInfo.gcIsWriteBarrierAsgNode(tree))
             {
@@ -635,7 +638,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         break;
 
         case GT_NULLCHECK:
-            info->dstCount      = 0;
+            assert(info->dstCount == 0);
             info->srcCount      = 1;
             info->isLocalDefUse = true;
             // null check is an indirection on an addr
@@ -643,14 +646,14 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             break;
 
         case GT_IND:
-            info->dstCount = 1;
+            assert(info->dstCount == 1);
             info->srcCount = 1;
             TreeNodeInfoInitIndir(tree->AsIndir());
             break;
 
         case GT_CATCH_ARG:
             info->srcCount = 0;
-            info->dstCount = 1;
+            assert(info->dstCount == 1);
             info->setDstCandidates(l, RBM_EXCEPTION_OBJECT);
             break;
 
@@ -661,7 +664,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             // It will produce a result of the type of the
             // node, and use an internal register for the address.
 
-            info->dstCount = 1;
+            assert(info->dstCount == 1);
             assert((tree->gtFlags & (GTF_VAR_DEF | GTF_VAR_USEASG)) == 0);
             info->internalIntCount = 1;
             break;
@@ -692,7 +695,7 @@ void Lowering::TreeNodeInfoInitReturn(GenTree* tree)
     regMaskTP useCandidates = RBM_NONE;
 
     info->srcCount = ((tree->TypeGet() == TYP_VOID) || op1->isContained()) ? 0 : 1;
-    info->dstCount = 0;
+    assert(info->dstCount == 0);
 
     if (varTypeIsStruct(tree))
     {

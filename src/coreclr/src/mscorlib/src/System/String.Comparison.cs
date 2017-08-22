@@ -44,7 +44,7 @@ namespace System
 
                     //Return the (case-insensitive) difference between them.
                     if (charA != charB)
-                        goto ReturnCharAMinusCharB; // TODO: Workaround for https://github.com/dotnet/coreclr/issues/9692
+                        return charA - charB;
 
                     // Next char
                     a++; b++;
@@ -52,9 +52,6 @@ namespace System
                 }
 
                 return strA.Length - strB.Length;
-
-                ReturnCharAMinusCharB:
-                return charA - charB;
             }
         }
 
@@ -168,14 +165,11 @@ namespace System
                     }
                     else
                     {
-                        goto ReturnFalse;
+                        return false;
                     }
                 }
 
                 return true;
-
-            ReturnFalse:
-                return false;
             }
         }
 

@@ -173,15 +173,10 @@ namespace System.Runtime.InteropServices
 
             pointer = null;
             RuntimeHelpers.PrepareConstrainedRegions();
-            try
-            {
-            }
-            finally
-            {
-                bool junk = false;
-                DangerousAddRef(ref junk);
-                pointer = (byte*)handle;
-            }
+
+            bool junk = false;
+            DangerousAddRef(ref junk);
+            pointer = (byte*)handle;
         }
 
         public void ReleasePointer()

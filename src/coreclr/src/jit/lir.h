@@ -112,12 +112,12 @@ public:
         GenTree* m_firstNode;
         GenTree* m_lastNode;
 
-        ReadOnlyRange(GenTree* firstNode, GenTree* lastNode);
-
         ReadOnlyRange(const ReadOnlyRange& other) = delete;
         ReadOnlyRange& operator=(const ReadOnlyRange& other) = delete;
 
     public:
+        ReadOnlyRange(GenTree* firstNode, GenTree* lastNode);
+
         class Iterator
         {
             friend class ReadOnlyRange;
@@ -312,6 +312,9 @@ public:
 inline void GenTree::SetUnusedValue()
 {
     gtLIRFlags |= LIR::Flags::UnusedValue;
+#ifndef LEGACY_BACKEND
+    ClearContained();
+#endif
 }
 
 inline void GenTree::ClearUnusedValue()

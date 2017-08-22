@@ -211,7 +211,7 @@ generate_event_logging_sources()
         __PythonWarningFlags="$__PythonWarningFlags -Werror"
     fi
 
-    
+
     if [[ $__SkipCoreCLR == 0 || $__ConfigureOnly == 1 ]]; then
         echo "Laying out dynamically generated files consumed by the build system "
         echo "Laying out dynamically generated Event Logging Test files"
@@ -360,8 +360,8 @@ build_cross_arch_component()
     else
         # not supported
         return
-    fi    
-    
+    fi
+
     export __CMakeBinDir="$__CrossComponentBinDir"
     export CROSSCOMPONENT=1
     __IncludeTests=
@@ -377,8 +377,8 @@ build_cross_arch_component()
 
     __ExtraCmakeArgs="-DCLR_CMAKE_TARGET_ARCH=$__BuildArch -DCLR_CMAKE_TARGET_OS=$__BuildOS -DCLR_CMAKE_PACKAGES_DIR=$__PackagesDir -DCLR_CMAKE_PGO_INSTRUMENT=$__PgoInstrument -DCLR_CMAKE_OPTDATA_VERSION=$__PgoOptDataVersion -DCLR_CMAKE_PGO_OPTIMIZE=$__PgoOptimize"
     build_native $__SkipCrossArchBuild "$__CrossArch" "$__CrossCompIntermediatesDir" "$__ExtraCmakeArgs" "cross-architecture component"
-   
-    # restore ROOTFS_DIR, CROSSCOMPONENT, and CROSSCOMPILE 
+
+    # restore ROOTFS_DIR, CROSSCOMPONENT, and CROSSCOMPILE
     if [ -n "$TARGET_ROOTFS" ]; then
         export ROOTFS_DIR="$TARGET_ROOTFS"
     fi
@@ -398,7 +398,7 @@ isMSBuildOnNETCoreSupported()
         if [ "$__HostOS" == "Linux" ]; then
             __isMSBuildOnNETCoreSupported=1
             # note: the RIDs below can use globbing patterns
-            UNSUPPORTED_RIDS=("debian.9-x64" "ubuntu.17.04-x64" "alpine.3.6.*-x64" "rhel.6-x64" "")
+            UNSUPPORTED_RIDS=("debian.9-x64" "ubuntu.17.04-x64" "alpine.3.6.*-x64")
             for UNSUPPORTED_RID in "${UNSUPPORTED_RIDS[@]}"
             do
                 if [[ $__HostDistroRid == $UNSUPPORTED_RID ]]; then
@@ -477,10 +477,10 @@ build_CoreLib()
            build_CoreLib_ni
        elif [[ ( "$__HostArch" == "arm64" ) && ( "$__BuildArch" == "arm" ) ]]; then
            build_CoreLib_ni
-       else 
+       else
            exit 1
        fi
-    fi 
+    fi
 }
 
 generate_NugetPackages()
@@ -700,7 +700,7 @@ while :; do
         cross|-cross)
             __CrossBuild=1
             ;;
-            
+
         -portablebuild=false)
             __PortableBuild=0
             ;;
