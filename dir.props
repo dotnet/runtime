@@ -146,7 +146,6 @@
          pulling in different packaging dependencies.
      -->
     <PackagingTaskDir Condition="'$(TargetsWindows)' == 'true'">$(ToolsDir)net46/</PackagingTaskDir>
-    <BuildNumberMajor Condition="'$(BuildNumberMajor)' == ''">00001</BuildNumberMajor>
     <!-- defined in buildtools packaging.targets, but we need this before targets are imported -->
     <PackagePlatform Condition="'$(PackagePlatform)' == ''">$(Platform)</PackagePlatform>
     <PackagePlatform Condition="'$(PackagePlatform)' == 'amd64'">x64</PackagePlatform>
