@@ -298,6 +298,9 @@ public:
     }
 #endif // FEATURE_GDBJIT && _DEBUG
 
+#if defined(FEATURE_GDBJIT_FRAME)
+    inline bool ShouldEmitDebugFrame(void) const {LIMITED_METHOD_CONTRACT; return fGDBJitEmitDebugFrame;}
+#endif // FEATURE_GDBJIT_FRAME
     BOOL PInvokeRestoreEsp(BOOL fDefault) const
     {
         LIMITED_METHOD_CONTRACT;
@@ -1114,6 +1117,9 @@ private: //----------------------------------------------------------------
     LPCUTF8 pszGDBJitElfDump;
 #endif // FEATURE_GDBJIT && _DEBUG
 
+#if defined(FEATURE_GDBJIT_FRAME)
+    bool fGDBJitEmitDebugFrame;
+#endif
 public:
 
     HRESULT GetConfiguration_DontUse_(__in_z LPCWSTR pKey, ConfigSearch direction, __deref_out_opt LPCWSTR* value);
