@@ -39,6 +39,7 @@ namespace System.Threading
         public static readonly ThreadPoolWorkQueue workQueue = new ThreadPoolWorkQueue();
     }
 
+    [StructLayout(LayoutKind.Sequential)] // enforce layout so that padding reduces false sharing
     internal sealed class ThreadPoolWorkQueue
     {
         internal static class WorkStealingQueueList
@@ -384,7 +385,11 @@ namespace System.Threading
         internal bool loggingEnabled;
         internal readonly ConcurrentQueue<IThreadPoolWorkItem> workItems = new ConcurrentQueue<IThreadPoolWorkItem>();
 
+        private System.Threading.Tasks.PaddingFor32 pad1;
+
         private volatile int numOutstandingThreadRequests = 0;
+
+        private System.Threading.Tasks.PaddingFor32 pad2;
 
         public ThreadPoolWorkQueue()
         {
@@ -395,15 +400,20 @@ namespace System.Threading
             ThreadPoolWorkQueueThreadLocals.threadLocals ??
             (ThreadPoolWorkQueueThreadLocals.threadLocals = new ThreadPoolWorkQueueThreadLocals(this));
 
+        internal bool ThreadRequestNeeded(int count) => (count < ThreadPoolGlobals.processorCount) &&
+            (!workItems.IsEmpty || (WorkStealingQueueList.wsqActive > 0));
+
         internal void EnsureThreadRequested()
         {
             //
-            // If we have not yet requested #procs threads from the VM, then request a new thread.
+            // If we have not yet requested #procs threads from the VM, then request a new thread
+            // as needed
+            //
             // Note that there is a separate count in the VM which will also be incremented in this case, 
             // which is handled by RequestWorkerThread.
             //
             int count = numOutstandingThreadRequests;
-            while (count < ThreadPoolGlobals.processorCount)
+            while (ThreadRequestNeeded(count))
             {
                 int prev = Interlocked.CompareExchange(ref numOutstandingThreadRequests, count + 1, count);
                 if (prev == count)
@@ -415,7 +425,7 @@ namespace System.Threading
             }
         }
 
-        internal void MarkThreadRequestSatisfied()
+        internal void MarkThreadRequestSatisfied(bool dequeueSuccessful)
         {
             //
             // The VM has called us, so one of our outstanding thread requests has been satisfied.
@@ -424,8 +434,17 @@ namespace System.Threading
             // by the time we reach this point.
             //
             int count = numOutstandingThreadRequests;
+
             while (count > 0)
             {
+                if (dequeueSuccessful && (count == ThreadPoolGlobals.processorCount) && ThreadRequestNeeded(count - 1))
+                {
+                    // If we gated threads due to too many outstanding requests and queue was not empty
+                    // Request another thread.
+                    ThreadPool.RequestWorkerThread();
+                    return;
+                }
+
                 int prev = Interlocked.CompareExchange(ref numOutstandingThreadRequests, count - 1, count);
                 if (prev == count)
                 {
@@ -539,15 +558,7 @@ namespace System.Threading
             //
             int quantumStartTime = Environment.TickCount;
 
-            //
-            // Update our records to indicate that an outstanding request for a thread has now been fulfilled.
-            // From this point on, we are responsible for requesting another thread if we stop working for any
-            // reason, and we believe there might still be work in the queue.
-            //
-            // Note that if this thread is aborted before we get a chance to request another one, the VM will
-            // record a thread request on our behalf.  So we don't need to worry about getting aborted right here.
-            //
-            workQueue.MarkThreadRequestSatisfied();
+            bool markThreadRequestSatisfied = true;
 
             // Has the desire for logging changed since the last time we entered?
             workQueue.loggingEnabled = FrameworkEventSource.Log.IsEnabled(EventLevel.Verbose, FrameworkEventSource.Keywords.ThreadPool | FrameworkEventSource.Keywords.ThreadTransfer);
@@ -596,7 +607,21 @@ namespace System.Threading
                     // If we found work, there may be more work.  Ask for another thread so that the other work can be processed
                     // in parallel.  Note that this will only ask for a max of #procs threads, so it's safe to call it for every dequeue.
                     //
-                    workQueue.EnsureThreadRequested();
+                    if (markThreadRequestSatisfied)
+                    {
+                        //
+                        // Update our records to indicate that an outstanding request for a thread has now been fulfilled
+                        // and that an item was successfully dispatched and another thread may be needed
+                        //
+                        // From this point on, we are responsible for requesting another thread if we stop working for any
+                        // reason, and we believe there might still be work in the queue.
+                        //
+                        // Note that if this thread is aborted before we get a chance to request another one, the VM will
+                        // record a thread request on our behalf.  So we don't need to worry about getting aborted right here.
+                        //
+                        workQueue.MarkThreadRequestSatisfied(true);
+                        markThreadRequestSatisfied = false;
+                    }
 
                     //
                     // Execute the workitem outside of any finally blocks, so that it can be aborted if needed.
@@ -651,6 +676,15 @@ namespace System.Threading
             }
             finally
             {
+                if (markThreadRequestSatisfied)
+                {
+                    //
+                    // Update our records to indicate that an outstanding request for a thread has now been fulfilled
+                    // and that an item was not successfully dispatched.  We will request thread below if needed
+                    //
+                    workQueue.MarkThreadRequestSatisfied(false);
+                }
+
                 //
                 // If we are exiting for any reason other than that the queue is definitely empty, ask for another
                 // thread to pick up where we left off.
