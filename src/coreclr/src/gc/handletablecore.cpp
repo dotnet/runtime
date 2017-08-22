@@ -14,6 +14,7 @@
 #include "common.h"
 
 #include "gcenv.h"
+#include "gcenv.inl"
 #include "gc.h"
 
 #ifndef FEATURE_REDHAWK

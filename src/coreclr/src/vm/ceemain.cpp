@@ -2509,6 +2509,7 @@ void LoadGarbageCollector()
 
 #endif // FEATURE_STANDALONE_GC
 
+#ifndef FEATURE_STANDALONE_GC_ONLY
 void LoadStaticGarbageCollector()
 {
     CONTRACTL{
@@ -2531,6 +2532,7 @@ void LoadStaticGarbageCollector()
     g_pGCHandleManager = pGcHandleManager;
     g_gcDacGlobals = &g_gc_dac_vars;
 }
+#endif // FEATURE_STANDALONE_GC_ONLY
 
 
 void InitializeGarbageCollector()
@@ -2567,7 +2569,9 @@ void InitializeGarbageCollector()
     else
 #endif // FEATURE_STANDALONE_GC
     {
+#ifndef FEATURE_STANDALONE_GC_ONLY
         LoadStaticGarbageCollector();
+#endif // FEATURE_STANDALONE_GC_ONLY
     }
 
     // Apparently the Windows linker removes global variables if they are never

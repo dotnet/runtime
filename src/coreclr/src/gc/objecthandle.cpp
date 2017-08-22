@@ -21,12 +21,14 @@
 
 #include "gchandletableimpl.h"
 
+#ifndef BUILD_AS_STANDALONE
 #ifdef FEATURE_COMINTEROP
 #include "comcallablewrapper.h"
 #endif // FEATURE_COMINTEROP
 #ifndef FEATURE_REDHAWK
 #include "nativeoverlapped.h"
 #endif // FEATURE_REDHAWK
+#endif // BUILD_AS_STANDALONE
 
 HandleTableMap g_HandleTableMap;
 
@@ -137,7 +139,7 @@ void CALLBACK TraceDependentHandle(_UNCHECKED_OBJECTREF *pObjRef, uintptr_t *pEx
     // At this point, it's possible that either or both of the primary and secondary
     // objects are NULL.  However, if the secondary object is non-NULL, then the primary
     // object should also be non-NULL.
-    _ASSERTE(*pExtraInfo == NULL || *pObjRef != NULL);
+    _ASSERTE(*pExtraInfo == 0 || *pObjRef != NULL);
 
     struct DIAG_DEPSCANINFO *pInfo = (struct DIAG_DEPSCANINFO*)lp2;
 

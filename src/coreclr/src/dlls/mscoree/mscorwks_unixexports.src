@@ -112,5 +112,3 @@ SetThreadAffinityMask
 GetThreadGroupAffinity
 GetCurrentProcessorNumberEx
 
-; Function for initializing a standalone GC
-InitializeGarbageCollector
