@@ -49,10 +49,10 @@ So, with that, we logged the metric to the `EventCounter`, but unless we can act
 There is an extra keyword that you will need to specify the turn on the EventCounters.
 
 ```
-PerfView /onlyProviders=*Samples-EventCounterDemos-Minimal:**EventCounterIntervalSec=1** collect
+PerfView /onlyProviders=*Samples-EventCounterDemos-Minimal:EventCounterIntervalSec=1 collect
 ```
 
-Note the bold part about `EventCounterIntervalSec`, that indicate the frequency of the sampling.
+Note the part about `EventCounterIntervalSec`, that indicate the frequency of the sampling.
 
 As usual, turn on PerfView, and then run the sample code, we will have something like this
 
