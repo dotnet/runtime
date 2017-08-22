@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using Xunit;
 
 namespace System.Tests
 {
-    public class BooleanTests
+    public partial class BooleanTests
     {
         [Fact]
         public void TrueString_Get_ReturnsTrue()
@@ -20,21 +21,26 @@ namespace System.Tests
             Assert.Equal("False", bool.FalseString);
         }
 
+        public static IEnumerable<object[]> Parse_Valid_TestData()
+        {
+            yield return new object[] { "True", true };
+            yield return new object[] { "true", true };
+            yield return new object[] { "TRUE", true };
+            yield return new object[] { "tRuE", true };
+            yield return new object[] { "  True  ", true };
+            yield return new object[] { "True\0", true };
+            yield return new object[] { " \0 \0  True   \0 ", true };
+            yield return new object[] { "False", false };
+            yield return new object[] { "false", false };
+            yield return new object[] { "FALSE", false };
+            yield return new object[] { "fAlSe", false };
+            yield return new object[] { "False  ", false };
+            yield return new object[] { "False\0", false };
+            yield return new object[] { "  False \0\0\0  ", false };
+        }
+
         [Theory]
-        [InlineData("True", true)]
-        [InlineData("true", true)]
-        [InlineData("TRUE", true)]
-        [InlineData("tRuE", true)]
-        [InlineData("  True  ", true)]
-        [InlineData("True\0", true)]
-        [InlineData(" \0 \0  True   \0 ", true)]
-        [InlineData("False", false)]
-        [InlineData("false", false)]
-        [InlineData("FALSE", false)]
-        [InlineData("fAlSe", false)]
-        [InlineData("False  ", false)]
-        [InlineData("False\0", false)]
-        [InlineData("  False \0\0\0  ", false)]
+        [MemberData(nameof(Parse_Valid_TestData))]
         public void Parse_ValidValue_ReturnsExpected(string value, bool expected)
         {
             Assert.True(bool.TryParse(value, out bool result));
@@ -43,20 +49,25 @@ namespace System.Tests
             Assert.Equal(expected, bool.Parse(value));
         }
 
+        public static IEnumerable<object[]> Parse_Invalid_TestData()
+        {
+            yield return new object[] { null, typeof(ArgumentNullException) };
+            yield return new object[] { "", typeof(FormatException) };
+            yield return new object[] { " ", typeof(FormatException) };
+            yield return new object[] { "Garbage", typeof(FormatException) };
+            yield return new object[] { "True\0Garbage", typeof(FormatException) };
+            yield return new object[] { "True\0True", typeof(FormatException) };
+            yield return new object[] { "True True", typeof(FormatException) };
+            yield return new object[] { "True False", typeof(FormatException) };
+            yield return new object[] { "False True", typeof(FormatException) };
+            yield return new object[] { "Fa lse", typeof(FormatException) };
+            yield return new object[] { "T", typeof(FormatException) };
+            yield return new object[] { "0", typeof(FormatException) };
+            yield return new object[] { "1", typeof(FormatException) };
+    }
+
         [Theory]
-        [InlineData(null, typeof(ArgumentNullException))]
-        [InlineData("", typeof(FormatException))]
-        [InlineData(" ", typeof(FormatException))]
-        [InlineData("Garbage", typeof(FormatException))]
-        [InlineData("True\0Garbage", typeof(FormatException))]
-        [InlineData("True\0True", typeof(FormatException))]
-        [InlineData("True True", typeof(FormatException))]
-        [InlineData("True False", typeof(FormatException))]
-        [InlineData("False True", typeof(FormatException))]
-        [InlineData("Fa lse", typeof(FormatException))]
-        [InlineData("T", typeof(FormatException))]
-        [InlineData("0", typeof(FormatException))]
-        [InlineData("1", typeof(FormatException))]
+        [MemberData(nameof(Parse_Invalid_TestData))]
         public void Parse_InvalidValue_ThrowsException(string value, Type exceptionType)
         {
             Assert.Throws(exceptionType, () => bool.Parse(value));

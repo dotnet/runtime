@@ -86,5 +86,28 @@ namespace System.Tests
         {
             Assert.Equal(expected, float.IsSubnormal(d));
         }
+
+        [Theory]
+        [MemberData(nameof(Parse_Valid_TestData))]
+        public static void Parse_Span_Valid(string value, NumberStyles style, IFormatProvider provider, float expected)
+        {
+            Assert.Equal(expected, float.Parse(value.AsReadOnlySpan(), style, provider));
+
+            Assert.True(float.TryParse(value.AsReadOnlySpan(), out float result, style, provider));
+            Assert.Equal(expected, result);
+        }
+
+        [Theory]
+        [MemberData(nameof(Parse_Invalid_TestData))]
+        public static void Parse_Span_Invalid(string value, NumberStyles style, IFormatProvider provider, Type exceptionType)
+        {
+            if (value != null)
+            {
+                Assert.Throws(exceptionType, () => float.Parse(value.AsReadOnlySpan(), style, provider));
+
+                Assert.False(float.TryParse(value.AsReadOnlySpan(), out float result, style, provider));
+                Assert.Equal(0, result);
+            }
+        }
     }
 }
