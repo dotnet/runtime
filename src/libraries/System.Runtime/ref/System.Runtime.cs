@@ -471,6 +471,7 @@ namespace System
         public override bool Equals(object obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool Parse(string value) { throw null; }
+        public static bool Parse(System.ReadOnlySpan<char> value) { throw null; }
         public int CompareTo(object obj) { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
@@ -491,6 +492,7 @@ namespace System
         ulong System.IConvertible.ToUInt64(System.IFormatProvider provider) { throw null; }
         public override string ToString() { throw null; }
         public static bool TryParse(string value, out bool result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> value, out bool result) { throw null; }
     }
     public static partial class Buffer
     {
@@ -518,6 +520,7 @@ namespace System
         public static byte Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static byte Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { throw null; }
         public static byte Parse(string s, System.IFormatProvider provider) { throw null; }
+        public static byte Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { throw null; }
         public int CompareTo(object value) { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
@@ -541,6 +544,7 @@ namespace System
         public string ToString(string format, System.IFormatProvider provider) { throw null; }
         public static bool TryParse(string s, out byte result) { throw null; }
         public static bool TryParse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out byte result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, out byte result, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider provider = null) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct Char : System.IComparable, System.IComparable<char>, System.IConvertible, System.IEquatable<char>
@@ -961,6 +965,7 @@ namespace System
         public static decimal Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static decimal Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { throw null; }
         public static decimal Parse(string s, System.IFormatProvider provider) { throw null; }
+        public static decimal Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider provider = null) { throw null; }
         public static decimal Remainder(decimal d1, decimal d2) { throw null; }
         public static decimal Round(decimal d) { throw null; }
         public static decimal Round(decimal d, int decimals) { throw null; }
@@ -1006,6 +1011,7 @@ namespace System
         public static decimal Truncate(decimal d) { throw null; }
         public static bool TryParse(string s, out decimal result) { throw null; }
         public static bool TryParse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out decimal result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, out decimal result, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider provider = null) { throw null; }
     }
     public abstract partial class Delegate: System.ICloneable, System.Runtime.Serialization.ISerializable
     {
@@ -1073,6 +1079,7 @@ namespace System
         public static double Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static double Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { throw null; }
         public static double Parse(string s, System.IFormatProvider provider) { throw null; }
+        public static double Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider provider = null) { throw null; }
         public int CompareTo(object value) { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
@@ -1096,6 +1103,7 @@ namespace System
         public string ToString(string format, System.IFormatProvider provider) { throw null; }
         public static bool TryParse(string s, out double result) { throw null; }
         public static bool TryParse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out double result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, out double result, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider provider = null) { throw null; }
     }
     public partial class DuplicateWaitObjectException : System.ArgumentException, System.Runtime.Serialization.ISerializable
     {
@@ -1403,6 +1411,7 @@ namespace System
         public static short Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static short Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { throw null; }
         public static short Parse(string s, System.IFormatProvider provider) { throw null; }
+        public static short Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider provider = null) { throw null; }
         public int CompareTo(object value) { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
@@ -1426,6 +1435,7 @@ namespace System
         public string ToString(string format, System.IFormatProvider provider) { throw null; }
         public static bool TryParse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out short result) { throw null; }
         public static bool TryParse(string s, out short result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, out short result, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider provider = null) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct Int32 : System.IComparable, System.IComparable<int>, System.IConvertible, System.IEquatable<int>, System.IFormattable
@@ -1440,6 +1450,7 @@ namespace System
         public static int Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static int Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { throw null; }
         public static int Parse(string s, System.IFormatProvider provider) { throw null; }
+        public static int Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider provider = null) { throw null; }
         public int CompareTo(object value) { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
@@ -1463,6 +1474,7 @@ namespace System
         public string ToString(string format, System.IFormatProvider provider) { throw null; }
         public static bool TryParse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out int result) { throw null; }
         public static bool TryParse(string s, out int result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, out int result, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider provider = null) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct Int64 : System.IComparable, System.IComparable<long>, System.IConvertible, System.IEquatable<long>, System.IFormattable
@@ -1477,6 +1489,7 @@ namespace System
         public static long Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static long Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { throw null; }
         public static long Parse(string s, System.IFormatProvider provider) { throw null; }
+        public static long Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider provider = null) { throw null; }
         public int CompareTo(object value) { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
@@ -1500,6 +1513,7 @@ namespace System
         public string ToString(string format, System.IFormatProvider provider) { throw null; }
         public static bool TryParse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out long result) { throw null; }
         public static bool TryParse(string s, out long result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, out long result, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider provider = null) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct IntPtr : System.Runtime.Serialization.ISerializable, IEquatable<IntPtr>
@@ -1915,6 +1929,8 @@ namespace System
         public static sbyte Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static sbyte Parse(string s, System.IFormatProvider provider) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static sbyte Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider provider = null) { throw null; }
         public int CompareTo(object obj) { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
@@ -1940,6 +1956,8 @@ namespace System
         public static bool TryParse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out sbyte result) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static bool TryParse(string s, out sbyte result) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static bool TryParse(ReadOnlySpan<char> s, out sbyte result, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider provider = null) { throw null; }
     }
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct | AttributeTargets.Enum | AttributeTargets.Delegate, Inherited = false)]
     public sealed class SerializableAttribute : Attribute
@@ -1973,6 +1991,7 @@ namespace System
         public static float Parse(string s, System.Globalization.NumberStyles style) { throw null; }
         public static float Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { throw null; }
         public static float Parse(string s, System.IFormatProvider provider) { throw null; }
+        public static float Parse(ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider provider = null) { throw null; }
         public int CompareTo(object value) { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
@@ -1996,6 +2015,7 @@ namespace System
         public string ToString(string format, System.IFormatProvider provider) { throw null; }
         public static bool TryParse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out float result) { throw null; }
         public static bool TryParse(string s, out float result) { throw null; }
+        public static bool TryParse(ReadOnlySpan<char> s, out float result, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider provider = null) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
     public partial struct Span<T>
@@ -2915,6 +2935,8 @@ namespace System
         public static ushort Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ushort Parse(string s, System.IFormatProvider provider) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ushort Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider provider = null) { throw null; }
         public int CompareTo(object value) { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
@@ -2940,6 +2962,8 @@ namespace System
         public static bool TryParse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out ushort result) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static bool TryParse(string s, out ushort result) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static bool TryParse(System.ReadOnlySpan<char> s, out ushort result, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider provider = null) { throw null; }
     }
     [System.CLSCompliantAttribute(false)]
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
@@ -2959,6 +2983,8 @@ namespace System
         public static uint Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static uint Parse(string s, System.IFormatProvider provider) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static uint Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider provider = null) { throw null; }
         public int CompareTo(object value) { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
@@ -2984,6 +3010,8 @@ namespace System
         public static bool TryParse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out uint result) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static bool TryParse(string s, out uint result) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static bool TryParse(System.ReadOnlySpan<char> s, out uint result, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider provider = null) { throw null; }
     }
     [System.CLSCompliantAttribute(false)]
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
@@ -3003,6 +3031,8 @@ namespace System
         public static ulong Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static ulong Parse(string s, System.IFormatProvider provider) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static ulong Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider provider = null) { throw null; }
         public int CompareTo(object value) { throw null; }
         public System.TypeCode GetTypeCode() { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider provider) { throw null; }
@@ -3028,6 +3058,8 @@ namespace System
         public static bool TryParse(string s, System.Globalization.NumberStyles style, System.IFormatProvider provider, out ulong result) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static bool TryParse(string s, out ulong result) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static bool TryParse(System.ReadOnlySpan<char> s, out ulong result, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider provider = null) { throw null; }
     }
     [System.CLSCompliantAttribute(false)]
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential)]
