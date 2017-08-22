@@ -17,15 +17,5 @@ internal partial class Interop
             System.IO.FileShare dwShareMode,
             System.IO.FileMode dwCreationDisposition,
             [In] ref CREATEFILE2_EXTENDED_PARAMETERS parameters);
-
-        internal struct CREATEFILE2_EXTENDED_PARAMETERS
-        {
-            internal uint dwSize;
-            internal uint dwFileAttributes;
-            internal uint dwFileFlags;
-            internal uint dwSecurityQosFlags;
-            internal IntPtr lpSecurityAttributes;
-            internal IntPtr hTemplateFile;
-        }
     }
 }
