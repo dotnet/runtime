@@ -52,7 +52,6 @@
         <CppCompile Include="..\GSChecks.cpp" />
         <CppCompile Include="..\hashbv.cpp" />
         <CppCompile Include="..\Importer.cpp" />
-        <CppCompile Include="..\importcall.cpp" />
         <CppCompile Include="..\Instr.cpp" />
         <CppCompile Include="..\JitTelemetry.cpp" />
         <CppCompile Include="..\LclVars.cpp" />
