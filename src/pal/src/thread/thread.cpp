@@ -636,15 +636,21 @@ CorUnix::InternalCreateThread(
 
     fAttributesInitialized = TRUE;
 
+    if (alignedStackSize == 0)
+    {
+        // The thread is to be created with default stack size. Use the default stack size
+        // override that was determined during the PAL initialization.
+        alignedStackSize = g_defaultStackSize;
+    }
+
     /* adjust the stack size if necessary */
     if (alignedStackSize != 0)
     {
 #ifdef PTHREAD_STACK_MIN
-        const size_t MinStackSize = PTHREAD_STACK_MIN;
+        size_t MinStackSize = ALIGN_UP(PTHREAD_STACK_MIN, GetVirtualPageSize());
 #else // !PTHREAD_STACK_MIN
-        const size_t MinStackSize = 64 * 1024; // this value is typically accepted by pthread_attr_setstacksize()
+        size_t MinStackSize = 64 * 1024; // this value is typically accepted by pthread_attr_setstacksize()
 #endif // PTHREAD_STACK_MIN
-        _ASSERTE(IS_ALIGNED(MinStackSize, GetVirtualPageSize()));
         if (alignedStackSize < MinStackSize)
         {
             // Adjust the stack size to a minimum value that is likely to be accepted by pthread_attr_setstacksize(). If this
