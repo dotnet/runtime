@@ -13855,13 +13855,33 @@ DONE:
 #pragma warning(pop)
 #endif
 
-/*****************************************************************************
- *
- *  Create an assignment of the given value to a temp.
- */
+//------------------------------------------------------------------------
+// gtNewTempAssign: Create an assignment of the given value to a temp.
+//
+// Arguments:
+//    tmp - local number for a compiler temp
+//    val - value to assign to the temp
+//
+// Return Value:
+//    Normally a new assignment node.
+//    However may return a nop node if val is simply a reference to the temp.
+//
+// Notes:
+//    Self-assignments may be represented via NOPs.
+//
+//    May update the type of the temp, if it was previously unknown.
+//
+//    May set compFloatingPointUsed.
+//
 
 GenTreePtr Compiler::gtNewTempAssign(unsigned tmp, GenTreePtr val)
 {
+    // Self-assignment is a nop.
+    if (val->OperGet() == GT_LCL_VAR && val->gtLclVarCommon.gtLclNum == tmp)
+    {
+        return gtNewNothingNode();
+    }
+
     LclVarDsc* varDsc = lvaTable + tmp;
 
     if (varDsc->TypeGet() == TYP_I_IMPL && val->TypeGet() == TYP_BYREF)
