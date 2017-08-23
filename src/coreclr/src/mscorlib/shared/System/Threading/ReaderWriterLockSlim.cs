@@ -4,7 +4,6 @@
 
 using Internal.Runtime.Augments;
 using System.Diagnostics; // for TraceInformation
-using System.Threading;
 using System.Runtime.CompilerServices;
 
 namespace System.Threading
@@ -54,8 +53,10 @@ namespace System.Threading
     /// </summary>
     public class ReaderWriterLockSlim : IDisposable
     {
+        private static readonly int ProcessorCount = Environment.ProcessorCount;
+
         //Specifying if locked can be reacquired recursively.
-        private bool _fIsReentrant;
+        private readonly bool _fIsReentrant;
 
         // Lock specification for myLock:  This lock protects exactly the local fields associated with this
         // instance of ReaderWriterLockSlim.  It does NOT protect the memory associated with 
@@ -74,8 +75,7 @@ namespace System.Threading
         private uint _numWriteUpgradeWaiters;      // maximum number of threads that can be doing a WaitOne on the upgradeEvent (at most 1). 
         private uint _numUpgradeWaiters;
 
-        //Variable used for quick check when there are no waiters.
-        private bool _fNoWaiters;
+        private WaiterStates _waiterStates;
 
         private int _upgradeLockOwnerId;
         private int _writeLockOwnerId;
@@ -146,8 +146,35 @@ namespace System.Threading
                 _fIsReentrant = true;
             }
             InitializeThreadCounts();
-            _fNoWaiters = true;
+            _waiterStates = WaiterStates.NoWaiters;
             _lockID = Interlocked.Increment(ref s_nextLockID);
+        }
+
+        private bool HasNoWaiters
+        {
+            get
+            {
+#if DEBUG
+                Debug.Assert(MyLockHeld);
+#endif
+
+                return (_waiterStates & WaiterStates.NoWaiters) != WaiterStates.None;
+            }
+            set
+            {
+#if DEBUG
+                Debug.Assert(MyLockHeld);
+#endif
+
+                if (value)
+                {
+                    _waiterStates |= WaiterStates.NoWaiters;
+                }
+                else
+                {
+                    _waiterStates &= ~WaiterStates.NoWaiters;
+                }
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -352,8 +379,7 @@ namespace System.Threading
             }
 
             bool retVal = true;
-
-            int spincount = 0;
+            int spinCount = 0;
 
             for (; ;)
             {
@@ -368,13 +394,17 @@ namespace System.Threading
                     break;
                 }
 
-                if (spincount < MaxSpinCount)
+                if (timeout.IsExpired)
                 {
                     ExitMyLock();
-                    if (timeout.IsExpired)
-                        return false;
-                    spincount++;
-                    SpinWait(spincount);
+                    return false;
+                }
+
+                if (spinCount < MaxSpinCount && ShouldSpinForEnterAnyRead())
+                {
+                    ExitMyLock();
+                    spinCount++;
+                    SpinWait(spinCount);
                     EnterMyLock();
                     //The per-thread structure may have been recycled as the lock is acquired (due to message pumping), load again.
                     if (IsRwHashEntryChanged(lrwc))
@@ -391,7 +421,13 @@ namespace System.Threading
                     continue;   // since we left the lock, start over. 
                 }
 
-                retVal = WaitOnEvent(_readEvent, ref _numReadWaiters, timeout, isWriteWaiter: false);
+                retVal =
+                    WaitOnEvent(
+                        _readEvent,
+                        ref _numReadWaiters,
+                        timeout,
+                        isWriteWaiter: false,
+                        waiterSignaledState: WaiterStates.None);
                 if (!retVal)
                 {
                     return false;
@@ -480,8 +516,8 @@ namespace System.Threading
                 }
             }
 
-            int spincount = 0;
             bool retVal = true;
+            int spinCount = 0;
 
             for (; ;)
             {
@@ -528,13 +564,17 @@ namespace System.Threading
                     }
                 }
 
-                if (spincount < MaxSpinCount)
+                if (timeout.IsExpired)
                 {
                     ExitMyLock();
-                    if (timeout.IsExpired)
-                        return false;
-                    spincount++;
-                    SpinWait(spincount);
+                    return false;
+                }
+
+                if (spinCount < MaxSpinCount && ShouldSpinForEnterAnyWrite(upgradingToWrite))
+                {
+                    ExitMyLock();
+                    spinCount++;
+                    SpinWait(spinCount);
                     EnterMyLock();
                     continue;
                 }
@@ -549,7 +589,13 @@ namespace System.Threading
 
                     Debug.Assert(_numWriteUpgradeWaiters == 0, "There can be at most one thread with the upgrade lock held.");
 
-                    retVal = WaitOnEvent(_waitUpgradeEvent, ref _numWriteUpgradeWaiters, timeout, isWriteWaiter: true);
+                    retVal =
+                        WaitOnEvent(
+                            _waitUpgradeEvent,
+                            ref _numWriteUpgradeWaiters,
+                            timeout,
+                            isWriteWaiter: true,
+                            waiterSignaledState: WaiterStates.None);
 
                     //The lock is not held in case of failure.
                     if (!retVal)
@@ -564,7 +610,13 @@ namespace System.Threading
                         continue;   // since we left the lock, start over. 
                     }
 
-                    retVal = WaitOnEvent(_writeEvent, ref _numWriteWaiters, timeout, isWriteWaiter: true);
+                    retVal =
+                        WaitOnEvent(
+                            _writeEvent,
+                            ref _numWriteWaiters,
+                            timeout,
+                            isWriteWaiter: true,
+                            waiterSignaledState: WaiterStates.WriteWaiterSignaled);
                     //The lock is not held in case of failure.
                     if (!retVal)
                         return false;
@@ -671,8 +723,7 @@ namespace System.Threading
             }
 
             bool retVal = true;
-
-            int spincount = 0;
+            int spinCount = 0;
 
             for (; ;)
             {
@@ -686,13 +737,17 @@ namespace System.Threading
                     break;
                 }
 
-                if (spincount < MaxSpinCount)
+                if (timeout.IsExpired)
                 {
                     ExitMyLock();
-                    if (timeout.IsExpired)
-                        return false;
-                    spincount++;
-                    SpinWait(spincount);
+                    return false;
+                }
+
+                if (spinCount < MaxSpinCount && ShouldSpinForEnterAnyRead())
+                {
+                    ExitMyLock();
+                    spinCount++;
+                    SpinWait(spinCount);
                     EnterMyLock();
                     continue;
                 }
@@ -705,7 +760,13 @@ namespace System.Threading
                 }
 
                 //Only one thread with the upgrade lock held can proceed.
-                retVal = WaitOnEvent(_upgradeEvent, ref _numUpgradeWaiters, timeout, isWriteWaiter: false);
+                retVal =
+                    WaitOnEvent(
+                        _upgradeEvent,
+                        ref _numUpgradeWaiters,
+                        timeout,
+                        isWriteWaiter: false,
+                        waiterSignaledState: WaiterStates.UpgradeableReadWaiterSignaled);
                 if (!retVal)
                     return false;
             }
@@ -890,14 +951,20 @@ namespace System.Threading
             EventWaitHandle waitEvent,
             ref uint numWaiters,
             TimeoutTracker timeout,
-            bool isWriteWaiter)
+            bool isWriteWaiter,
+            WaiterStates waiterSignaledState)
         {
 #if DEBUG
             Debug.Assert(MyLockHeld);
 #endif
+            Debug.Assert(
+                waiterSignaledState == WaiterStates.None ||
+                waiterSignaledState == WaiterStates.WriteWaiterSignaled ||
+                waiterSignaledState == WaiterStates.UpgradeableReadWaiterSignaled);
+
             waitEvent.Reset();
             numWaiters++;
-            _fNoWaiters = false;
+            HasNoWaiters = false;
 
             //Setting these bits will prevent new readers from getting in.
             if (_numWriteWaiters == 1)
@@ -917,8 +984,19 @@ namespace System.Threading
                 EnterMyLock();
                 --numWaiters;
 
+                if (waitSuccessful && waiterSignaledState != WaiterStates.None)
+                {
+                    // Indicate that a signaled waiter of this type has woken. Since non-read waiters are signaled to wake one
+                    // at a time, we avoid waking up more than one waiter of that type upon successive enter/exit loops until
+                    // the signaled thread actually wakes up. For example, if there are multiple write waiters and one thread is
+                    // repeatedly entering and exiting a write lock, every exit would otherwise signal a different write waiter
+                    // to wake up unnecessarily when only one woken waiter may actually succeed in entering the write lock.
+                    Debug.Assert((_waiterStates & waiterSignaledState) != WaiterStates.None);
+                    _waiterStates &= ~waiterSignaledState;
+                }
+
                 if (_numWriteWaiters == 0 && _numWriteUpgradeWaiters == 0 && _numUpgradeWaiters == 0 && _numReadWaiters == 0)
-                    _fNoWaiters = true;
+                    HasNoWaiters = true;
 
                 if (_numWriteWaiters == 0)
                     ClearWritersWaiting();
@@ -948,7 +1026,7 @@ namespace System.Threading
 #if DEBUG
             Debug.Assert(MyLockHeld);
 #endif
-            if (_fNoWaiters)
+            if (HasNoWaiters)
             {
                 ExitMyLock();
                 return;
@@ -984,8 +1062,20 @@ namespace System.Threading
             }
             else if (readercount == 0 && _numWriteWaiters > 0)
             {
+                // Check if a waiter of the same type has already been signaled but hasn't woken yet. If so, avoid signaling
+                // and waking another waiter unnecessarily.
+                WaiterStates signaled = _waiterStates & WaiterStates.WriteWaiterSignaled;
+                if (signaled == WaiterStates.None)
+                {
+                    _waiterStates |= WaiterStates.WriteWaiterSignaled;
+                }
+
                 ExitMyLock();      // Exit before signaling to improve efficiency (wakee will need the lock)
-                _writeEvent.Set();   // release one writer. 
+
+                if (signaled == WaiterStates.None)
+                {
+                    _writeEvent.Set();   // release one writer. 
+                }
             }
             else
             {
@@ -999,7 +1089,7 @@ namespace System.Threading
             Debug.Assert(MyLockHeld);
 #endif
 
-            if (_numWriteWaiters != 0 || _numWriteUpgradeWaiters != 0 || _fNoWaiters)
+            if (_numWriteWaiters != 0 || _numWriteUpgradeWaiters != 0 || HasNoWaiters)
             {
                 ExitMyLock();
                 return;
@@ -1009,6 +1099,19 @@ namespace System.Threading
 
             bool setReadEvent = _numReadWaiters != 0;
             bool setUpgradeEvent = _numUpgradeWaiters != 0 && _upgradeLockOwnerId == -1;
+            if (setUpgradeEvent)
+            {
+                // Check if a waiter of the same type has already been signaled but hasn't woken yet. If so, avoid signaling
+                // and waking another waiter unnecessarily.
+                if ((_waiterStates & WaiterStates.UpgradeableReadWaiterSignaled) == WaiterStates.None)
+                {
+                    _waiterStates |= WaiterStates.UpgradeableReadWaiterSignaled;
+                }
+                else
+                {
+                    setUpgradeEvent = false;
+                }
+            }
 
             ExitMyLock();    // Exit before signaling to improve efficiency (wakee will need the lock)
 
@@ -1059,33 +1162,62 @@ namespace System.Threading
             return _owners & READER_MASK;
         }
 
+        private bool ShouldSpinForEnterAnyRead()
+        {
+            // If there is a write waiter or write upgrade waiter, the waiter would block a reader from acquiring the RW lock
+            // because the waiter takes precedence. In that case, the reader is not likely to make progress by spinning.
+            // Although another thread holding a write lock would prevent this thread from acquiring a read lock, it is by
+            // itself not a good enough reason to skip spinning.
+            return HasNoWaiters || (_numWriteWaiters == 0 && _numWriteUpgradeWaiters == 0);
+        }
+
+        private bool ShouldSpinForEnterAnyWrite(bool isUpgradeToWrite)
+        {
+            // If there is a write upgrade waiter, the waiter would block a writer from acquiring the RW lock because the waiter
+            // holds a read lock. In that case, the writer is not likely to make progress by spinning. Regarding upgrading to a
+            // write lock, there is no type of waiter that would block the upgrade from happening. Although another thread
+            // holding a read or write lock would prevent this thread from acquiring the write lock, it is by itself not a good
+            // enough reason to skip spinning.
+            return isUpgradeToWrite || _numWriteUpgradeWaiters == 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private bool TryEnterMyLock()
+        {
+            return Interlocked.CompareExchange(ref _myLock, 1, 0) == 0;
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void EnterMyLock()
         {
-            if (Interlocked.CompareExchange(ref _myLock, 1, 0) != 0)
+            if (!TryEnterMyLock())
+            {
                 EnterMyLockSpin();
+            }
         }
 
         private void EnterMyLockSpin()
         {
-            int pc = Environment.ProcessorCount;
-            for (int i = 0; ; i++)
+            int processorCount = ProcessorCount;
+            for (int spinIndex = 0; ; spinIndex++)
             {
-                if (i < LockSpinCount && pc > 1)
+                if (spinIndex < LockSpinCount && processorCount > 1)
                 {
-                    RuntimeThread.SpinWait(LockSpinCycles * (i + 1)); // Wait a few dozen instructions to let another processor release lock.
+                    RuntimeThread.SpinWait(LockSpinCycles * (spinIndex + 1)); // Wait a few dozen instructions to let another processor release lock.
                 }
-                else if (i < (LockSpinCount + LockSleep0Count))
+                else if (spinIndex < (LockSpinCount + LockSleep0Count))
                 {
-                    RuntimeThread.Sleep(0);   // Give up my quantum.  
+                    RuntimeThread.Sleep(0);   // Give up my quantum.
                 }
                 else
                 {
-                    RuntimeThread.Sleep(1);   // Give up my quantum.  
+                    RuntimeThread.Sleep(1);   // Give up my quantum.
                 }
 
-                if (_myLock == 0 && Interlocked.CompareExchange(ref _myLock, 1, 0) == 0)
+                if (_myLock == 0 && TryEnterMyLock())
+                {
                     return;
+                }
             }
         }
 
@@ -1099,12 +1231,12 @@ namespace System.Threading
         private bool MyLockHeld { get { return _myLock != 0; } }
 #endif
 
-        private static void SpinWait(int SpinCount)
+        private static void SpinWait(int spinCount)
         {
             //Exponential back-off
-            if ((SpinCount < 5) && (Environment.ProcessorCount > 1))
+            if ((spinCount < 5) && (ProcessorCount > 1))
             {
-                RuntimeThread.SpinWait(LockSpinCycles * SpinCount);
+                RuntimeThread.SpinWait(LockSpinCycles * spinCount);
             }
             else
             {
@@ -1306,6 +1438,20 @@ namespace System.Threading
             {
                 return (int)_numWriteWaiters;
             }
+        }
+
+        [Flags]
+        private enum WaiterStates : byte
+        {
+            None = 0x0,
+
+            // Used for quick check when there are no waiters
+            NoWaiters = 0x1,
+
+            // Used to avoid signaling more than one waiter to wake up when only one can make progress, see WaitOnEvent
+            WriteWaiterSignaled = 0x2,
+            UpgradeableReadWaiterSignaled = 0x4
+            // Write upgrade waiters are excluded because there can only be one at any given time
         }
     }
 }
