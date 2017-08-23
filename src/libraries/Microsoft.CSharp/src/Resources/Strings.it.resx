@@ -180,9 +180,6 @@
   <data name="GenericConstraintNotSatisfiedNullableInterface" xml:space="preserve">
     <value>Impossibile utilizzare il tipo '{3}' come parametro di tipo '{2}' nel tipo o metodo generico '{0}'. Il tipo nullable '{3}' non soddisfa il vincolo di '{1}'. I tipi nullable non soddisfano i vincoli di interfaccia.</value>
   </data>
-  <data name="GenericConstraintNotSatisfiedTyVar" xml:space="preserve">
-    <value>Impossibile utilizzare il tipo '{3}' come parametro di tipo '{2}' nel metodo o nel tipo generico '{0}'. Nessuna conversione boxing o conversione di parametri di tipo da '{3}' a '{1}'.</value>
-  </data>
   <data name="GenericConstraintNotSatisfiedValType" xml:space="preserve">
     <value>Impossibile utilizzare il tipo '{3}' come parametro di tipo '{2}' nel metodo o nel tipo generico '{0}'. Nessuna conversione boxing da '{3}' a '{1}'.</value>
   </data>

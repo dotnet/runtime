@@ -193,18 +193,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 // To check whether or not its a nullable type, we need to get the resolved
                 // bound from the type argument and check against that.
 
-                bool bIsValueType = arg.IsValType();
-                bool bIsNullable = arg is NullableType;
-                if (bIsValueType && arg is TypeParameterType typeArg)
-                {
-                    TypeArray pArgBnds = typeArg.GetBounds();
-                    if (pArgBnds.Count > 0)
-                    {
-                        bIsNullable = pArgBnds[0] is NullableType;
-                    }
-                }
-
-                if (!bIsValueType || bIsNullable)
+                if (!arg.IsValType() || arg is NullableType)
                 {
                     if (fReportErrors)
                     {
@@ -269,12 +258,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                                 error = ErrorCode.ERR_GenericConstraintNotSatisfiedNullableInterface;
                             }
                         }
-                        else if (arg is TypeParameterType)
-                        {
-                            // Type variables can satisfy bounds through boxing and type variable conversions
-                            Debug.Assert(!arg.IsRefType());
-                            error = ErrorCode.ERR_GenericConstraintNotSatisfiedTyVar;
-                        }
                         else
                         {
                             // Value types can only satisfy bounds through boxing conversions.
@@ -309,10 +292,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 {
                     return !fError;
                 }
-            }
-            else if (arg is TypeParameterType typeArg && typeArg.HasNewConstraint())
-            {
-                return !fError;
             }
 
             if (fReportErrors)

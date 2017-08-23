@@ -180,9 +180,6 @@
   <data name="GenericConstraintNotSatisfiedNullableInterface" xml:space="preserve">
     <value>类型“{3}”不能用作泛型类型或方法“{0}”中的类型参数“{2}”。可以为 null 的类型“{3}”不满足“{1}”的约束。可以为 null 的类型不能满足任何接口约束。</value>
   </data>
-  <data name="GenericConstraintNotSatisfiedTyVar" xml:space="preserve">
-    <value>类型“{3}”不能用作泛型类型或方法“{0}”中的类型参数“{2}”。没有从“{3}”到“{1}”的装箱转换或类型参数转换。</value>
-  </data>
   <data name="GenericConstraintNotSatisfiedValType" xml:space="preserve">
     <value>类型“{3}”不能用作泛型类型或方法“{0}”中的类型参数“{2}”。没有从“{3}”到“{1}”的装箱转换。</value>
   </data>
