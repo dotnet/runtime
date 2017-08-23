@@ -148,6 +148,17 @@ Once you find the version number (for this example assume it is `4.4.0-beta-2510
   </ItemGroup>
 ```
 
+Because assets in `Microsoft.Private.CoreFx.NETCoreApp` conflict with the normal `Microsoft.NETCore.App` package,
+you need to tell the tooling to use the assets from your local package. To do this, add the following property to your project file:
+
+```xml
+  <PropertyGroup>
+    <PackageConflictPreferredPackages>Microsoft.Private.CoreFx.NETCoreApp;runtime.win-x64.Microsoft.Private.CoreFx.NETCoreApp;$(PackageConflictPreferredPackages)</PackageConflictPreferredPackages>
+  </PropertyGroup>
+```
+
+Replacing the RID in `runtime.win-x64.Microsoft.Private.CoreFx.NETCoreApp` with the RID of your current build.
+
 #### 2 - Add your bin directory to the Nuget feed list
 
 By default the dogfooding dotnet SDK will create a Nuget.Config file next to your project, if it doesn't
