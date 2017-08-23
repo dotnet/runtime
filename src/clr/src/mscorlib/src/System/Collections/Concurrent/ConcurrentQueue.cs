@@ -5,7 +5,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
-using System.Runtime.Serialization;
 using System.Threading;
 
 namespace System.Collections.Concurrent
@@ -53,16 +52,11 @@ namespace System.Collections.Concurrent
         /// Lock used to protect cross-segment operations, including any updates to <see cref="_tail"/> or <see cref="_head"/>
         /// and any operations that need to get a consistent view of them.
         /// </summary>
-        [NonSerialized]
         private object _crossSegmentLock;
         /// <summary>The current tail segment.</summary>
-        [NonSerialized]
         private volatile Segment _tail;
         /// <summary>The current head segment.</summary>
-        [NonSerialized]
         private volatile Segment _head;
-        /// <summary>Field used to temporarily store the contents of the queue for serialization.</summary>
-        private T[] _serializationArray;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ConcurrentQueue{T}"/> class.
@@ -71,29 +65,6 @@ namespace System.Collections.Concurrent
         {
             _crossSegmentLock = new object();
             _tail = _head = new Segment(InitialSegmentLength);
-        }
-
-        /// <summary>Set the data array to be serialized.</summary>
-        [OnSerializing]
-        private void OnSerializing(StreamingContext context)
-        {
-            _serializationArray = ToArray();
-        }
-
-        /// <summary>Clear the data array that was serialized.</summary>
-        [OnSerialized]
-        private void OnSerialized(StreamingContext context)
-        {
-            _serializationArray = null;
-        }
-
-        /// <summary>Construct the queue from the deserialized <see cref="_serializationArray"/>.</summary>
-        [OnDeserialized]
-        private void OnDeserialized(StreamingContext context)
-        {
-            Debug.Assert(_serializationArray != null);
-            InitializeFromCollection(_serializationArray);
-            _serializationArray = null;
         }
 
         /// <summary>
