@@ -3537,8 +3537,10 @@ struct GenTreeCall final : public GenTree
             bits |= PACKED_GTF_SPILLED;
         }
 
+        const unsigned char packedFlags = PACKED_GTF_SPILL | PACKED_GTF_SPILLED;
+
         // Clear anything that was already there by masking out the bits before 'or'ing in what we want there.
-        gtSpillFlags = (unsigned char)((gtSpillFlags & ~(0xffU << (idx * 2))) | (bits << (idx * 2)));
+        gtSpillFlags = (unsigned char)((gtSpillFlags & ~(packedFlags << (idx * 2))) | (bits << (idx * 2)));
 #else
         unreached();
 #endif
@@ -4030,8 +4032,10 @@ struct GenTreeMultiRegOp : public GenTreeOp
             bits |= PACKED_GTF_SPILLED;
         }
 
+        const unsigned char packedFlags = PACKED_GTF_SPILL | PACKED_GTF_SPILLED;
+
         // Clear anything that was already there by masking out the bits before 'or'ing in what we want there.
-        gtSpillFlags = (unsigned char)((gtSpillFlags & ~(0xffU << (idx * 2))) | (bits << (idx * 2)));
+        gtSpillFlags = (unsigned char)((gtSpillFlags & ~(packedFlags << (idx * 2))) | (bits << (idx * 2)));
     }
 
     //--------------------------------------------------------------------------
@@ -5333,8 +5337,10 @@ struct GenTreePutArgSplit : public GenTreePutArgStk
             bits |= PACKED_GTF_SPILLED;
         }
 
+        const unsigned char packedFlags = PACKED_GTF_SPILL | PACKED_GTF_SPILLED;
+
         // Clear anything that was already there by masking out the bits before 'or'ing in what we want there.
-        gtSpillFlags = (unsigned char)((gtSpillFlags & ~(0xffU << (idx * 2))) | (bits << (idx * 2)));
+        gtSpillFlags = (unsigned char)((gtSpillFlags & ~(packedFlags << (idx * 2))) | (bits << (idx * 2)));
     }
 
     //--------------------------------------------------------------------------
