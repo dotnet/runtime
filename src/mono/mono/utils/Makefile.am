@@ -39,6 +39,7 @@ monoutils_sources = \
 	mono-dl-windows.c	\
 	mono-dl-darwin.c	\
 	mono-dl-posix.c		\
+	mono-dl-wasm.c	\
 	mono-dl.h		\
 	mono-dl-windows-internals.h	\
 	mono-log-windows.c	\
@@ -136,6 +137,7 @@ monoutils_sources = \
 	mono-threads-openbsd.c	\
 	mono-threads-android.c	\
 	mono-threads-haiku.c	\
+	mono-threads-wasm.c	\
 	mono-threads.h	\
 	mono-threads-debug.h	\
 	mono-threads-api.h	\
@@ -244,6 +246,10 @@ endif
 
 if S390X
 arch_sources += mono-hwcap-s390x.c
+endif
+
+if HOST_WASM
+arch_sources += mono-hwcap-wasm.c
 endif
 
 else

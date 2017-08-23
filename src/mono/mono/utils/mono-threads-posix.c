@@ -30,7 +30,7 @@
 extern int tkill (pid_t tid, int signal);
 #endif
 
-#if defined(_POSIX_VERSION)
+#if defined(_POSIX_VERSION) && !defined (TARGET_WASM)
 
 #include <pthread.h>
 

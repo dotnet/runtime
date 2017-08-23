@@ -34,7 +34,25 @@ typedef struct __darwin_xmm_reg MonoContextSimdReg;
  * MONO_CONTEXT_GET_CURRENT captures the current context as close as possible. One reg might be clobbered
  *  to hold the address of the target MonoContext. It will be a caller save one, so should not be a problem.
  */
-#if (defined(__i386__) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_X86))
+#if defined (TARGET_WASM)
+
+typedef struct {
+	mgreg_t wasm_sp;
+	mgreg_t wasm_bp;
+	mgreg_t llvm_exc_reg;
+	mgreg_t wasm_ip;
+	mgreg_t wasm_pc;
+} MonoContext;
+
+#define MONO_CONTEXT_SET_IP(ctx,ip) do { (ctx)->wasm_ip = (mgreg_t)(ip); } while (0);
+#define MONO_CONTEXT_SET_BP(ctx,bp) do { (ctx)->wasm_bp = (mgreg_t)(bp); } while (0);
+#define MONO_CONTEXT_SET_SP(ctx,sp) do { (ctx)->wasm_sp = (mgreg_t)(sp); } while (0);
+
+#define MONO_CONTEXT_GET_IP(ctx) ((gpointer)((ctx)->wasm_ip))
+#define MONO_CONTEXT_GET_BP(ctx) ((gpointer)((ctx)->wasm_bp))
+#define MONO_CONTEXT_GET_SP(ctx) ((gpointer)((ctx)->wasm_sp))
+
+#elif (defined(__i386__) && !defined(MONO_CROSS_COMPILE)) || (defined(TARGET_X86))
 
 /*HACK, move this to an eventual mono-signal.c*/
 #if defined( __linux__) || defined(__sun) || defined(__APPLE__) || defined(__NetBSD__) || \
