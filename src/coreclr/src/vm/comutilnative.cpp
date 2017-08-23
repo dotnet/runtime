@@ -2624,14 +2624,146 @@ FCIMPL6(INT32, ManagedLoggingHelper::GetRegistryLoggingValues, CLR_BOOL* bLoggin
 }
 FCIMPLEND
 
-// Return true if the valuetype does not contain pointer and is tightly packed
+static BOOL HasOverriddenMethod(MethodTable* mt, MethodTable* classMT, WORD methodSlot)
+{
+    CONTRACTL{
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+        SO_TOLERANT;
+    } CONTRACTL_END;
+
+    _ASSERTE(mt != NULL);
+    _ASSERTE(classMT != NULL);
+    _ASSERTE(methodSlot != 0);
+
+    PCODE actual = mt->GetRestoredSlot(methodSlot);
+    PCODE base = classMT->GetRestoredSlot(methodSlot);
+
+    if (actual == base)
+    {
+        return FALSE;
+    }
+
+    if (!classMT->IsZapped())
+    {
+        // If mscorlib is JITed, the slots can be patched and thus we need to compare the actual MethodDescs
+        // to detect match reliably
+        if (MethodTable::GetMethodDescForSlotAddress(actual) == MethodTable::GetMethodDescForSlotAddress(base))
+        {
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
+
+static BOOL CanCompareBitsOrUseFastGetHashCode(MethodTable* mt)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_COOPERATIVE;
+    } CONTRACTL_END;
+
+    _ASSERTE(mt != NULL);
+
+    if (mt->HasCheckedCanCompareBitsOrUseFastGetHashCode())
+    {
+        return mt->CanCompareBitsOrUseFastGetHashCode();
+    }
+
+    if (mt->ContainsPointers()
+        || mt->IsNotTightlyPacked())
+    {
+        mt->SetHasCheckedCanCompareBitsOrUseFastGetHashCode();
+        return FALSE;
+    }
+
+    MethodTable* valueTypeMT = MscorlibBinder::GetClass(CLASS__VALUE_TYPE);
+    WORD slotEquals = MscorlibBinder::GetMethod(METHOD__VALUE_TYPE__EQUALS)->GetSlot();
+    WORD slotGetHashCode = MscorlibBinder::GetMethod(METHOD__VALUE_TYPE__GET_HASH_CODE)->GetSlot();
+
+    // Check the input type.
+    if (HasOverriddenMethod(mt, valueTypeMT, slotEquals)
+        || HasOverriddenMethod(mt, valueTypeMT, slotGetHashCode))
+    {
+        mt->SetHasCheckedCanCompareBitsOrUseFastGetHashCode();
+
+        // If overridden Equals or GetHashCode found, stop searching further.
+        return FALSE;
+    }
+
+    BOOL canCompareBitsOrUseFastGetHashCode = TRUE;
+
+    // The type itself did not override Equals or GetHashCode, go for its fields.
+    ApproxFieldDescIterator iter = ApproxFieldDescIterator(mt, ApproxFieldDescIterator::INSTANCE_FIELDS);
+    for (FieldDesc* pField = iter.Next(); pField != NULL; pField = iter.Next())
+    {
+        if (pField->GetFieldType() == ELEMENT_TYPE_VALUETYPE)
+        {
+            // Check current field type.
+            MethodTable* fieldMethodTable = pField->GetApproxFieldTypeHandleThrowing().GetMethodTable();
+            if (!CanCompareBitsOrUseFastGetHashCode(fieldMethodTable))
+            {
+                canCompareBitsOrUseFastGetHashCode = FALSE;
+                break;
+            }
+        }
+        else if (pField->GetFieldType() == ELEMENT_TYPE_R8
+                || pField->GetFieldType() == ELEMENT_TYPE_R4)
+        {
+            // We have double/single field, cannot compare in fast path.
+            canCompareBitsOrUseFastGetHashCode = FALSE;
+            break;
+        }
+    }
+
+    // We've gone through all instance fields. It's time to cache the result.
+    // Note SetCanCompareBitsOrUseFastGetHashCode(BOOL) ensures the checked flag
+    // and canCompare flag being set atomically to avoid race.
+    mt->SetCanCompareBitsOrUseFastGetHashCode(canCompareBitsOrUseFastGetHashCode);
+
+    return canCompareBitsOrUseFastGetHashCode;
+}
+
+NOINLINE static FC_BOOL_RET CanCompareBitsHelper(MethodTable* mt, OBJECTREF objRef)
+{
+    FC_INNER_PROLOG(ValueTypeHelper::CanCompareBits);
+
+    _ASSERTE(mt != NULL);
+    _ASSERTE(objRef != NULL);
+
+    BOOL ret = FALSE;
+
+    HELPER_METHOD_FRAME_BEGIN_RET_ATTRIB_1(Frame::FRAME_ATTR_EXACT_DEPTH|Frame::FRAME_ATTR_CAPTURE_DEPTH_2, objRef);
+
+    ret = CanCompareBitsOrUseFastGetHashCode(mt);
+
+    HELPER_METHOD_FRAME_END();
+    FC_INNER_EPILOG();
+
+    FC_RETURN_BOOL(ret);
+}
+
+// Return true if the valuetype does not contain pointer, is tightly packed, 
+// does not have floating point number field and does not override Equals method.
 FCIMPL1(FC_BOOL_RET, ValueTypeHelper::CanCompareBits, Object* obj)
 {
     FCALL_CONTRACT;
 
     _ASSERTE(obj != NULL);
     MethodTable* mt = obj->GetMethodTable();
-    FC_RETURN_BOOL(!mt->ContainsPointers() && !mt->IsNotTightlyPacked());
+
+    if (mt->HasCheckedCanCompareBitsOrUseFastGetHashCode())
+    {
+        FC_RETURN_BOOL(mt->CanCompareBitsOrUseFastGetHashCode());
+    }
+
+    OBJECTREF objRef(obj);
+
+    FC_INNER_RETURN(FC_BOOL_RET, CanCompareBitsHelper(mt, objRef));
 }
 FCIMPLEND
 
@@ -2650,12 +2782,6 @@ FCIMPL2(FC_BOOL_RET, ValueTypeHelper::FastEqualsCheck, Object* obj1, Object* obj
 }
 FCIMPLEND
 
-static BOOL CanUseFastGetHashCodeHelper(MethodTable *mt)
-{
-    LIMITED_METHOD_CONTRACT;
-    return !mt->ContainsPointers() && !mt->IsNotTightlyPacked();
-}
-
 static INT32 FastGetValueTypeHashCodeHelper(MethodTable *mt, void *pObjRef)
 {
     CONTRACTL
@@ -2664,7 +2790,6 @@ static INT32 FastGetValueTypeHashCodeHelper(MethodTable *mt, void *pObjRef)
         GC_NOTRIGGER;
         MODE_COOPERATIVE;
         SO_TOLERANT;
-        PRECONDITION(CanUseFastGetHashCodeHelper(mt));
     } CONTRACTL_END;
 
     INT32 hashCode = 0;
@@ -2690,9 +2815,19 @@ static INT32 RegularGetValueTypeHashCode(MethodTable *mt, void *pObjRef)
     INT32 hashCode = 0;
     INT32 *pObj = (INT32*)pObjRef;
 
+    BOOL canUseFastGetHashCodeHelper = FALSE;
+    if (mt->HasCheckedCanCompareBitsOrUseFastGetHashCode())
+    {
+        canUseFastGetHashCodeHelper = mt->CanCompareBitsOrUseFastGetHashCode();
+    }
+    else
+    {
+        canUseFastGetHashCodeHelper = CanCompareBitsOrUseFastGetHashCode(mt);
+    }
+
     // While we shouln't get here directly from ValueTypeHelper::GetHashCode, if we recurse we need to 
     // be able to handle getting the hashcode for an embedded structure whose hashcode is computed by the fast path.
-    if (CanUseFastGetHashCodeHelper(mt))
+    if (canUseFastGetHashCodeHelper)
     {
         return FastGetValueTypeHashCodeHelper(mt, pObjRef);
     }
@@ -2797,17 +2932,29 @@ FCIMPL1(INT32, ValueTypeHelper::GetHashCode, Object* objUNSAFE)
     // we munge the class index with two big prime numbers
     hashCode = typeID * 711650207 + 2506965631U;
 
-    if (CanUseFastGetHashCodeHelper(pMT))
+    BOOL canUseFastGetHashCodeHelper = FALSE;
+    if (pMT->HasCheckedCanCompareBitsOrUseFastGetHashCode())
+    {
+        canUseFastGetHashCodeHelper = pMT->CanCompareBitsOrUseFastGetHashCode();
+    }
+    else
+    {
+        HELPER_METHOD_FRAME_BEGIN_RET_1(obj);
+        canUseFastGetHashCodeHelper = CanCompareBitsOrUseFastGetHashCode(pMT);
+        HELPER_METHOD_FRAME_END();
+    }
+
+    if (canUseFastGetHashCodeHelper)
     {
         hashCode ^= FastGetValueTypeHashCodeHelper(pMT, obj->UnBox());
     }
     else
     {
-        HELPER_METHOD_FRAME_BEGIN_RET_1(obj);        
+        HELPER_METHOD_FRAME_BEGIN_RET_1(obj);
         hashCode ^= RegularGetValueTypeHashCode(pMT, obj->UnBox());
         HELPER_METHOD_FRAME_END();
     }
-    
+
     return hashCode;
 }
 FCIMPLEND

@@ -405,6 +405,9 @@ struct MethodTableWriteableData
 
         enum_flag_SkipWinRTOverride         = 0x00000100,     // No WinRT override is needed
 
+        enum_flag_CanCompareBitsOrUseFastGetHashCode       = 0x00000200,     // Is any field type or sub field type overrode Equals or GetHashCode
+        enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode   = 0x00000400,  // Whether we have checked the overridden Equals or GetHashCode
+
 #ifdef FEATURE_PREJIT
         // These flags are used only at ngen time. We store them here since
         // we are running out of available flags in MethodTable. They may eventually 
@@ -1249,6 +1252,41 @@ public:
     {
         WRAPPER_NO_CONTRACT;
         FastInterlockOr(EnsureWritablePages(&GetWriteableDataForWrite_NoLogging()->m_dwFlags), MethodTableWriteableData::enum_flag_SkipWinRTOverride);
+    }
+
+    inline BOOL CanCompareBitsOrUseFastGetHashCode()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (GetWriteableData_NoLogging()->m_dwFlags & MethodTableWriteableData::enum_flag_CanCompareBitsOrUseFastGetHashCode);
+    }
+
+    // If canCompare is true, this method ensure an atomic operation for setting
+    // enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode and enum_flag_CanCompareBitsOrUseFastGetHashCode flags.
+    inline void SetCanCompareBitsOrUseFastGetHashCode(BOOL canCompare)
+    {
+        WRAPPER_NO_CONTRACT
+        if (canCompare)
+        {
+            // Set checked and canCompare flags in one interlocked operation.
+            FastInterlockOr(EnsureWritablePages(&GetWriteableDataForWrite_NoLogging()->m_dwFlags),
+                MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode | MethodTableWriteableData::enum_flag_CanCompareBitsOrUseFastGetHashCode);
+        }
+        else
+        {
+            SetHasCheckedCanCompareBitsOrUseFastGetHashCode();
+        }
+    }
+
+    inline BOOL HasCheckedCanCompareBitsOrUseFastGetHashCode()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return (GetWriteableData_NoLogging()->m_dwFlags & MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode);
+    }
+
+    inline void SetHasCheckedCanCompareBitsOrUseFastGetHashCode()
+    {
+        WRAPPER_NO_CONTRACT;
+        FastInterlockOr(EnsureWritablePages(&GetWriteableDataForWrite_NoLogging()->m_dwFlags), MethodTableWriteableData::enum_flag_HasCheckedCanCompareBitsOrUseFastGetHashCode);
     }
     
     inline void SetIsDependenciesLoaded()
