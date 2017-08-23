@@ -1639,7 +1639,8 @@ void RegSet::rsSpillTree(regNumber reg, GenTreePtr tree, unsigned regIdx /* =0 *
     }
 #elif defined(_TARGET_ARM_)
     assert(tree->gtRegNum == reg || (call != nullptr && call->GetRegNumByIdx(regIdx) == reg) ||
-           (splitArg != nullptr && splitArg->GetRegNumByIdx(regIdx) == reg));
+           (splitArg != nullptr && splitArg->GetRegNumByIdx(regIdx) == reg) ||
+           (multiReg != nullptr && multiReg->GetRegNumByIdx(regIdx) == reg));
 #else
     assert(tree->gtRegNum == reg || (call != nullptr && call->GetRegNumByIdx(regIdx) == reg));
 #endif // !CPU_LONG_USES_REGPAIR && !_TARGET_ARM_
