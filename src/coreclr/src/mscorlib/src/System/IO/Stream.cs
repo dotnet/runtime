@@ -736,11 +736,6 @@ namespace System.IO
 
         public virtual int Read(Span<byte> destination)
         {
-            if (destination.Length == 0)
-            {
-                return 0;
-            }
-
             byte[] buffer = ArrayPool<byte>.Shared.Rent(destination.Length);
             try
             {
@@ -777,11 +772,6 @@ namespace System.IO
 
         public virtual void Write(ReadOnlySpan<byte> source)
         {
-            if (source.Length == 0)
-            {
-                return;
-            }
-
             byte[] buffer = ArrayPool<byte>.Shared.Rent(source.Length);
             try
             {
