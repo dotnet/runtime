@@ -32,6 +32,7 @@
 #include <mono/utils/mono-time.h>
 #include <mono/utils/atomic.h>
 #include <mono/utils/w32api.h>
+#include <mono/utils/mono-os-wait.h>
 
 /*
  * Pull the list of opcodes
@@ -1387,7 +1388,7 @@ ves_icall_System_Threading_Monitor_Monitor_wait (MonoObject *obj, guint32 ms)
 	 */
 	MONO_ENTER_GC_SAFE;
 #ifdef HOST_WIN32
-	ret = mono_w32handle_convert_wait_ret (WaitForSingleObjectEx (event, ms, TRUE), 1);
+	ret = mono_w32handle_convert_wait_ret (mono_win32_wait_for_single_object_ex (event, ms, TRUE), 1);
 #else
 	ret = mono_w32handle_wait_one (event, ms, TRUE);
 #endif /* HOST_WIN32 */
@@ -1416,7 +1417,7 @@ ves_icall_System_Threading_Monitor_Monitor_wait (MonoObject *obj, guint32 ms)
 		 */
 		MONO_ENTER_GC_SAFE;
 #ifdef HOST_WIN32
-		ret = mono_w32handle_convert_wait_ret (WaitForSingleObjectEx (event, 0, FALSE), 1);
+		ret = mono_w32handle_convert_wait_ret (mono_win32_wait_for_single_object_ex (event, 0, FALSE), 1);
 #else
 		ret = mono_w32handle_wait_one (event, 0, FALSE);
 #endif /* HOST_WIN32 */

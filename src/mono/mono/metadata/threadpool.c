@@ -46,6 +46,7 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-time.h>
 #include <mono/utils/refcount.h>
+#include <mono/utils/mono-os-wait.h>
 
 typedef struct {
 	MonoDomain *domain;
@@ -495,7 +496,7 @@ mono_threadpool_end_invoke (MonoAsyncResult *ares, MonoArray **out_args, MonoObj
 		mono_monitor_exit ((MonoObject*) ares);
 		MONO_ENTER_GC_SAFE;
 #ifdef HOST_WIN32
-		WaitForSingleObjectEx (wait_event, INFINITE, TRUE);
+		mono_win32_wait_for_single_object_ex (wait_event, INFINITE, TRUE);
 #else
 		mono_w32handle_wait_one (wait_event, MONO_INFINITE_WAIT, TRUE);
 #endif

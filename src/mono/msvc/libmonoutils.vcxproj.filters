@@ -193,6 +193,9 @@
     <ClCompile Include="..\mono\utils\mono-os-mutex.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\mono\utils\mono-os-wait-win32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\mono\utils\atomic.h">
@@ -418,6 +421,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\mono\utils\unlocked.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\mono\utils\mono-os-wait.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

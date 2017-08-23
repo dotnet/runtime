@@ -45,6 +45,7 @@
 #include <mono/utils/hazard-pointer.h>
 #include <mono/utils/w32api.h>
 #include <mono/utils/unlocked.h>
+#include <mono/utils/mono-os-wait.h>
 
 #ifndef HOST_WIN32
 #include <pthread.h>
@@ -598,7 +599,7 @@ ves_icall_System_GC_WaitForPendingFinalizers (void)
 	mono_gc_finalize_notify ();
 	/* g_print ("Waiting for pending finalizers....\n"); */
 	MONO_ENTER_GC_SAFE;
-	WaitForSingleObjectEx (pending_done_event, INFINITE, TRUE);
+	mono_win32_wait_for_single_object_ex (pending_done_event, INFINITE, TRUE);
 	MONO_EXIT_GC_SAFE;
 	/* g_print ("Done pending....\n"); */
 #else
