@@ -46,13 +46,13 @@ namespace Layout
             test2 = new string('A', length);
         }
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount = 20000000)]
         public void LoopReturn()
         {
             Benchmark.Iterate(() => LoopReturn(test1, test2));
         }
 
-        [Benchmark]
+        [Benchmark(InnerIterationCount = 20000000)]
         public void LoopGoto()
         {
             Benchmark.Iterate(() => LoopGoto(test1, test2));
