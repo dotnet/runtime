@@ -88,7 +88,7 @@
         "args": "",
         "cwd": "",
         "failOnStandardError": "false",
-        "script": "if [[ ! -d $(DockerFileDir) ]]; then\n    mkdir -p $(DockerFileDir)\nfi\n\nif command -v curl > /dev/null; then\n    curl --retry 10 -sSL -o $(DockerFileDir)/cleanup-docker.sh $(VsoDockerFileDirUrl)cleanup-docker.sh\n    curl --retry 10 -sSL -o $(DockerFileDir)/init-docker.sh $(VsoDockerFileDirUrl)init-docker.sh\nelse\n    wget $(VsoDockerFileDirUrl)cleanup-docker.sh -q -O $(DockerFileDir)/cleanup-docker.sh\n    wget $(VsoDockerFileDirUrl)init-docker.sh -q -O $(DockerFileDir)/init-docker.sh\nfi\n\nsudo chmod +x $(VsoDockerFileDirUrl)cleanup-docker.sh\nsudo chmod +x $(VsoDockerFileDirUrl)init-docker.sh"
+        "script": "if [[ ! -d $(DockerFileDir) ]]; then\n    mkdir -p $(DockerFileDir)\nfi\n\nif command -v curl > /dev/null; then\n    curl --retry 10 -sSL -o $(DockerFileDir)/cleanup-docker.sh $(VsoDockerFileDirUrl)cleanup-docker.sh\n    curl --retry 10 -sSL -o $(DockerFileDir)/init-docker.sh $(VsoDockerFileDirUrl)init-docker.sh\nelse\n    wget $(VsoDockerFileDirUrl)cleanup-docker.sh -q -O $(DockerFileDir)/cleanup-docker.sh\n    wget $(VsoDockerFileDirUrl)init-docker.sh -q -O $(DockerFileDir)/init-docker.sh\nfi\n\nsudo chmod +x $(DockerFileDir)/cleanup-docker.sh\nsudo chmod +x $(DockerFileDir)/init-docker.sh"
       }
     },
     {
