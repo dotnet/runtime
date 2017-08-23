@@ -144,7 +144,13 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 string runtimeComparableBlob = CreateComparableBlobInfo(runtimeBlob);
 
                 Assert.True(storedComparableBlob == runtimeComparableBlob,
-                    $"The stored blob for type {obj.GetType().FullName} is outdated and needs to be updated.{Environment.NewLine}Stored blob: {blobs[frameworkBlobNumber]}{Environment.NewLine}Generated runtime blob: {runtimeBlob}");
+                    $"The stored blob for type {obj.GetType().FullName} is outdated and needs to be updated.{Environment.NewLine}{Environment.NewLine}" +
+                    $"-------------------- Stored blob ---------------------{Environment.NewLine}" +
+                    $"Encoded: {blobs[frameworkBlobNumber]}{Environment.NewLine}" +
+                    $"Decoded: {storedComparableBlob}{Environment.NewLine}{Environment.NewLine}" +
+                    $"--------------- Runtime generated blob ---------------{Environment.NewLine}" +
+                    $"Encoded: {runtimeBlob}{Environment.NewLine}" +
+                    $"Decoded: {runtimeComparableBlob}");
             }
         }
 
