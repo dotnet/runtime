@@ -349,18 +349,15 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         }
         else // CopyBlk
         {
-#ifdef _TARGET_ARM64_
             // In case of a CpBlk with a constant size and less than CPBLK_UNROLL_LIMIT size
             // we should unroll the loop to improve CQ.
             // For reference see the code in lowerxarch.cpp.
-            // TODO-ARM-CQ: cpblk loop unrolling is currently not implemented.
 
             if ((size != 0) && (size <= INITBLK_UNROLL_LIMIT))
             {
                 blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
             }
             else
-#endif // _TARGET_ARM64_
             {
                 // In case we have a constant integer this means we went beyond
                 // CPBLK_UNROLL_LIMIT bytes of size, still we should never have the case of
