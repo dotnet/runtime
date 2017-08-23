@@ -177,6 +177,7 @@
 #include <errno.h>
 #include <assert.h>
 #include <stdlib.h>
+#include <glib.h>
 
 #include "mono/sgen/sgen-gc.h"
 #include "mono/sgen/sgen-cardtable.h"
@@ -1701,7 +1702,7 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 	TV_GETTIME (last_minor_collection_start_tv);
 	atv = last_minor_collection_start_tv;
 
-	binary_protocol_collection_begin (gc_stats.minor_gc_count, GENERATION_NURSERY);
+	binary_protocol_collection_begin (InterlockedRead (&gc_stats.minor_gc_count), GENERATION_NURSERY);
 
 	object_ops_nopar = sgen_concurrent_collection_in_progress ()
 				? &sgen_minor_collector.serial_ops_with_concurrent_major
@@ -1729,7 +1730,7 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 	degraded_mode = 0;
 	objects_pinned = 0;
 
-	SGEN_LOG (1, "Start nursery collection %d %p-%p, size: %d", gc_stats.minor_gc_count, nursery_section->data, nursery_section->end_data, (int)(nursery_section->end_data - nursery_section->data));
+	SGEN_LOG (1, "Start nursery collection %" G_GINT32_FORMAT " %p-%p, size: %d", InterlockedRead (&gc_stats.minor_gc_count), nursery_section->data, nursery_section->end_data, (int)(nursery_section->end_data - nursery_section->data));
 
 	/* world must be stopped already */
 	TV_GETTIME (btv);
@@ -1744,7 +1745,7 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 	init_gray_queue (&gc_thread_gray_queue);
 	ctx = CONTEXT_FROM_OBJECT_OPERATIONS (object_ops_nopar, &gc_thread_gray_queue);
 
-	gc_stats.minor_gc_count ++;
+	InterlockedIncrement (&gc_stats.minor_gc_count);
 
 	sgen_process_fin_stage_entries ();
 
@@ -1861,9 +1862,9 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 	major_collector.finish_nursery_collection ();
 
 	TV_GETTIME (last_minor_collection_end_tv);
-	gc_stats.minor_gc_time += TV_ELAPSED (last_minor_collection_start_tv, last_minor_collection_end_tv);
+	InterlockedAdd64 (&gc_stats.minor_gc_time, TV_ELAPSED (last_minor_collection_start_tv, last_minor_collection_end_tv));
 
-	sgen_debug_dump_heap ("minor", gc_stats.minor_gc_count - 1, NULL);
+	sgen_debug_dump_heap ("minor", InterlockedRead (&gc_stats.minor_gc_count) - 1, NULL);
 
 	/* prepare the pin queue for the next collection */
 	sgen_finish_pinning ();
@@ -1896,7 +1897,7 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 			time_minor_scan_los - los_scan_start,
 			time_minor_finish_gray_stack - finish_gray_start);
 
-	binary_protocol_collection_end (gc_stats.minor_gc_count - 1, GENERATION_NURSERY, 0, 0);
+	binary_protocol_collection_end (InterlockedRead (&gc_stats.minor_gc_count) - 1, GENERATION_NURSERY, 0, 0);
 
 	if (check_nursery_objects_pinned && !sgen_minor_collector.is_split)
 		sgen_check_nursery_objects_pinned (unpin_queue != NULL);
@@ -2147,7 +2148,7 @@ major_start_collection (SgenGrayQueue *gc_thread_gray_queue, const char *reason,
 {
 	SgenObjectOperations *object_ops_nopar, *object_ops_par = NULL;
 
-	binary_protocol_collection_begin (gc_stats.major_gc_count, GENERATION_OLD);
+	binary_protocol_collection_begin (InterlockedRead (&gc_stats.major_gc_count), GENERATION_OLD);
 
 	current_collection_generation = GENERATION_OLD;
 
@@ -2178,8 +2179,8 @@ major_start_collection (SgenGrayQueue *gc_thread_gray_queue, const char *reason,
 	check_scan_starts ();
 
 	degraded_mode = 0;
-	SGEN_LOG (1, "Start major collection %d", gc_stats.major_gc_count);
-	gc_stats.major_gc_count ++;
+	SGEN_LOG (1, "Start major collection %" G_GINT32_FORMAT, InterlockedRead (&gc_stats.major_gc_count));
+	InterlockedIncrement (&gc_stats.major_gc_count);
 
 	if (major_collector.start_major_collection)
 		major_collector.start_major_collection ();
@@ -2295,7 +2296,7 @@ major_finish_collection (SgenGrayQueue *gc_thread_gray_queue, const char *reason
 	TV_GETTIME (atv);
 	time_major_sweep += TV_ELAPSED (btv, atv);
 
-	sgen_debug_dump_heap ("major", gc_stats.major_gc_count - 1, reason);
+	sgen_debug_dump_heap ("major", InterlockedRead (&gc_stats.major_gc_count) - 1, reason);
 
 	if (sgen_have_pending_finalizers ()) {
 		SGEN_LOG (4, "Finalizer-thread wakeup");
@@ -2327,7 +2328,7 @@ major_finish_collection (SgenGrayQueue *gc_thread_gray_queue, const char *reason
                         time_major_scan_mod_union_los - los_scan_start,
                         time_major_finish_gray_stack - finish_gray_start);
 
-	binary_protocol_collection_end (gc_stats.major_gc_count - 1, GENERATION_OLD, counts.num_scanned_objects, counts.num_unique_scanned_objects);
+	binary_protocol_collection_end (InterlockedRead (&gc_stats.major_gc_count) - 1, GENERATION_OLD, counts.num_scanned_objects, counts.num_unique_scanned_objects);
 }
 
 static gboolean
@@ -2355,7 +2356,7 @@ major_do_collection (const char *reason, gboolean is_overflow, gboolean forced)
 	sgen_gray_object_queue_dispose (&gc_thread_gray_queue);
 
 	TV_GETTIME (time_end);
-	gc_stats.major_gc_time += TV_ELAPSED (time_start, time_end);
+	InterlockedAdd64 (&gc_stats.major_gc_time, TV_ELAPSED (time_start, time_end));
 
 	/* FIXME: also report this to the user, preferably in gc-end. */
 	if (major_collector.get_and_reset_num_major_objects_marked)
@@ -2391,7 +2392,7 @@ major_start_concurrent_collection (const char *reason)
 	num_objects_marked = major_collector.get_and_reset_num_major_objects_marked ();
 
 	TV_GETTIME (time_end);
-	gc_stats.major_gc_time += TV_ELAPSED (time_start, time_end);
+	InterlockedAdd64 (&gc_stats.major_gc_time, TV_ELAPSED (time_start, time_end));
 
 	current_collection_generation = -1;
 }
@@ -2419,7 +2420,7 @@ major_update_concurrent_collection (void)
 	sgen_los_update_cardtable_mod_union ();
 
 	TV_GETTIME (total_end);
-	gc_stats.major_gc_time += TV_ELAPSED (total_start, total_end);
+	InterlockedAdd64 (&gc_stats.major_gc_time, TV_ELAPSED (total_start, total_end));
 }
 
 static void
@@ -2441,7 +2442,7 @@ major_finish_concurrent_collection (gboolean forced)
 	sgen_workers_stop_all_workers (GENERATION_OLD);
 
 	SGEN_TV_GETTIME (time_major_conc_collection_end);
-	gc_stats.major_gc_time_concurrent += SGEN_TV_ELAPSED (time_major_conc_collection_start, time_major_conc_collection_end);
+	InterlockedAdd64 (&gc_stats.major_gc_time_concurrent, SGEN_TV_ELAPSED (time_major_conc_collection_start, time_major_conc_collection_end));
 
 	major_collector.update_cardtable_mod_union ();
 	sgen_los_update_cardtable_mod_union ();
@@ -2456,7 +2457,7 @@ major_finish_concurrent_collection (gboolean forced)
 	sgen_gray_object_queue_dispose (&gc_thread_gray_queue);
 
 	TV_GETTIME (total_end);
-	gc_stats.major_gc_time += TV_ELAPSED (total_start, total_end);
+	InterlockedAdd64 (&gc_stats.major_gc_time, TV_ELAPSED (total_start, total_end));
 
 	current_collection_generation = -1;
 }
@@ -3053,9 +3054,7 @@ sgen_gc_collect (int generation)
 int
 sgen_gc_collection_count (int generation)
 {
-	if (generation == 0)
-		return gc_stats.minor_gc_count;
-	return gc_stats.major_gc_count;
+	return InterlockedRead (generation == GENERATION_NURSERY ? &gc_stats.minor_gc_count : &gc_stats.major_gc_count);
 }
 
 size_t

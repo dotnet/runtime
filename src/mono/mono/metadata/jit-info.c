@@ -28,6 +28,7 @@
 #include <mono/utils/mono-tls.h>
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-threads.h>
+#include <mono/utils/unlocked.h>
 #include <mono/metadata/object.h>
 #include <mono/metadata/object-internals.h>
 #include <mono/metadata/domain-internals.h>
@@ -263,7 +264,7 @@ mono_jit_info_table_find_internal (MonoDomain *domain, char *addr, gboolean try_
 	MonoJitInfo *ji, *module_ji;
 	MonoThreadHazardPointers *hp = mono_hazard_pointer_get ();
 
-	++mono_stats.jit_info_table_lookup_count;
+	UnlockedIncrement (&mono_stats.jit_info_table_lookup_count);
 
 	/* First we have to get the domain's jit_info_table.  This is
 	   complicated by the fact that a writer might substitute a
@@ -654,7 +655,7 @@ mono_jit_info_table_add (MonoDomain *domain, MonoJitInfo *ji)
 
 	mono_domain_lock (domain);
 
-	++mono_stats.jit_info_table_insert_count;
+	UnlockedIncrement (&mono_stats.jit_info_table_insert_count);
 
 	jit_info_table_add (domain, &domain->jit_info_table, ji);
 
@@ -738,7 +739,7 @@ mono_jit_info_table_remove (MonoDomain *domain, MonoJitInfo *ji)
 	mono_domain_lock (domain);
 	table = domain->jit_info_table;
 
-	++mono_stats.jit_info_table_remove_count;
+	UnlockedIncrement (&mono_stats.jit_info_table_remove_count);
 
 	jit_info_table_remove (table, ji);
 

@@ -3125,9 +3125,9 @@ mini_method_compile (MonoMethod *method, guint32 opts, MonoDomain *domain, JitFl
 
 	if (opts & MONO_OPT_GSHARED) {
 		if (try_generic_shared)
-			mono_stats.generics_sharable_methods++;
+			InterlockedIncrement (&mono_stats.generics_sharable_methods);
 		else if (mono_method_is_generic_impl (method))
-			mono_stats.generics_unsharable_methods++;
+			InterlockedIncrement (&mono_stats.generics_unsharable_methods);
 	}
 
 #ifdef ENABLE_LLVM
@@ -4236,9 +4236,9 @@ mono_jit_compile_method_inner (MonoMethod *method, MonoDomain *target_domain, in
 		code = cfg->native_code;
 
 		if (cfg->gshared && mono_method_is_generic_sharable (method, FALSE))
-			mono_stats.generics_shared_methods++;
+			InterlockedIncrement (&mono_stats.generics_shared_methods);
 		if (cfg->gsharedvt)
-			mono_stats.gsharedvt_methods++;
+			InterlockedIncrement (&mono_stats.gsharedvt_methods);
 	}
 
 	jinfo = cfg->jit_info;

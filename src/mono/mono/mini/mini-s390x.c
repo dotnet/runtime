@@ -268,6 +268,7 @@ if (ins->inst_target_bb->native_offset) { 					\
 #include <mono/utils/mono-mmap.h>
 #include <mono/utils/mono-hwcap.h>
 #include <mono/utils/mono-threads.h>
+#include <mono/utils/unlocked.h>
 
 #include "mini-s390x.h"
 #include "cpu-s390x.h"
@@ -6678,7 +6679,7 @@ mono_arch_build_imt_trampoline (MonoVTable *vtable, MonoDomain *domain,
 	MONO_PROFILER_RAISE (jit_code_buffer, (start, code - start, MONO_PROFILER_CODE_BUFFER_IMT_TRAMPOLINE, NULL));
 
 	if (!fail_tramp) 
-		mono_stats.imt_trampolines_size += (code - start);
+		UnlockedAdd (&mono_stats.imt_trampolines_size, code - start);
 
 	g_assert (code - start <= size);
 

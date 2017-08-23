@@ -1420,7 +1420,7 @@ mono_jit_parse_options (int argc, char * argv[])
 			opt->break_on_exc = TRUE;
 		} else if (strcmp (argv [i], "--stats") == 0) {
 			mono_counters_enable (-1);
-			mono_stats.enabled = TRUE;
+			InterlockedWriteBool (&mono_stats.enabled, TRUE);
 			mono_jit_stats.enabled = TRUE;
 		} else if (strcmp (argv [i], "--break") == 0) {
 			if (i+1 >= argc){
@@ -1767,7 +1767,7 @@ mono_main (int argc, char* argv[])
 			mono_print_vtable = TRUE;
 		} else if (strcmp (argv [i], "--stats") == 0) {
 			mono_counters_enable (-1);
-			mono_stats.enabled = TRUE;
+			InterlockedWriteBool (&mono_stats.enabled, TRUE);
 			mono_jit_stats.enabled = TRUE;
 #ifndef DISABLE_AOT
 		} else if (strcmp (argv [i], "--aot") == 0) {

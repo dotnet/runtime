@@ -1658,7 +1658,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 		methods_size += sizeof (MonoMethod);
 	}
 
-	mono_stats.method_count ++;
+	InterlockedIncrement (&mono_stats.method_count);
 
 	result->slot = -1;
 	result->klass = klass;

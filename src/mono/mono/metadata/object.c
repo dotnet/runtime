@@ -49,6 +49,7 @@
 #include <mono/utils/mono-threads-coop.h>
 #include "cominterop.h"
 #include <mono/utils/w32api.h>
+#include <mono/utils/unlocked.h>
 
 static void
 get_default_field_value (MonoDomain* domain, MonoClassField *field, void *value, MonoError *error);
@@ -1217,12 +1218,12 @@ add_imt_builder_entry (MonoImtBuilderEntry **imt_builder, MonoMethod *method, gu
 	if (imt_builder [imt_slot] != NULL) {
 		entry->children = imt_builder [imt_slot]->children + 1;
 		if (entry->children == 1) {
-			mono_stats.imt_slots_with_collisions++;
+			UnlockedIncrement (&mono_stats.imt_slots_with_collisions);
 			*imt_collisions_bitmap |= (1 << imt_slot);
 		}
 	} else {
 		entry->children = 0;
-		mono_stats.imt_used_slots++;
+		UnlockedIncrement (&mono_stats.imt_used_slots);
 	}
 	imt_builder [imt_slot] = entry;
 #if DEBUG_IMT
@@ -1477,17 +1478,17 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, MonoDomain *domain, gpointer*
 
 		if (imt_builder [i] != NULL) {
 			int methods_in_slot = imt_builder [i]->children + 1;
-			if (methods_in_slot > mono_stats.imt_max_collisions_in_slot) {
-				mono_stats.imt_max_collisions_in_slot = methods_in_slot;
+			if (methods_in_slot > UnlockedRead (&mono_stats.imt_max_collisions_in_slot)) {
+				UnlockedWrite (&mono_stats.imt_max_collisions_in_slot, methods_in_slot);
 				record_method_count_for_max_collisions = TRUE;
 			}
 			method_count += methods_in_slot;
 		}
 	}
 	
-	mono_stats.imt_number_of_methods += method_count;
+	UnlockedAdd (&mono_stats.imt_number_of_methods, method_count);
 	if (record_method_count_for_max_collisions) {
-		mono_stats.imt_method_count_when_max_collisions = method_count;
+		UnlockedWrite (&mono_stats.imt_method_count_when_max_collisions, method_count);
 	}
 	
 	for (i = 0; i < MONO_IMT_SIZE; i++) {
@@ -1900,16 +1901,16 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 
 	if (klass->interface_offsets_count) {
 		imt_table_bytes = sizeof (gpointer) * (MONO_IMT_SIZE);
-		mono_stats.imt_number_of_tables++;
-		mono_stats.imt_tables_size += imt_table_bytes;
+		UnlockedIncrement (&mono_stats.imt_number_of_tables);
+		UnlockedAdd (&mono_stats.imt_tables_size, imt_table_bytes);
 	} else {
 		imt_table_bytes = 0;
 	}
 
 	vtable_size = imt_table_bytes + MONO_SIZEOF_VTABLE + vtable_slots * sizeof (gpointer);
 
-	mono_stats.used_class_count++;
-	mono_stats.class_vtable_size += vtable_size;
+	UnlockedIncrement (&mono_stats.used_class_count);
+	UnlockedAdd (&mono_stats.class_vtable_size, vtable_size);
 
 	interface_offsets = alloc_vtable (domain, vtable_size, imt_table_bytes);
 	vt = (MonoVTable*) ((char*)interface_offsets + imt_table_bytes);
@@ -1961,7 +1962,7 @@ mono_class_create_runtime_vtable (MonoDomain *domain, MonoClass *klass, MonoErro
 			vt->vtable [klass->vtable_size] = mono_domain_alloc0 (domain, class_size);
 		}
 		vt->has_static_fields = TRUE;
-		mono_stats.class_static_data_size += class_size;
+		UnlockedAdd (&mono_stats.class_static_data_size, class_size);
 	}
 
 	iter = NULL;
@@ -2248,12 +2249,12 @@ mono_class_proxy_vtable (MonoDomain *domain, MonoRemoteClass *remote_class, Mono
 	}
 
 	imt_table_bytes = sizeof (gpointer) * MONO_IMT_SIZE;
-	mono_stats.imt_number_of_tables++;
-	mono_stats.imt_tables_size += imt_table_bytes;
+	UnlockedIncrement (&mono_stats.imt_number_of_tables);
+	UnlockedAdd (&mono_stats.imt_tables_size, imt_table_bytes);
 
 	vtsize = imt_table_bytes + MONO_SIZEOF_VTABLE + klass->vtable_size * sizeof (gpointer);
 
-	mono_stats.class_vtable_size += vtsize + extra_interface_vtsize;
+	UnlockedAdd (&mono_stats.class_vtable_size, vtsize + extra_interface_vtsize);
 
 	interface_offsets = alloc_vtable (domain, vtsize + extra_interface_vtsize, imt_table_bytes);
 	pvt = (MonoVTable*) ((char*)interface_offsets + imt_table_bytes);
@@ -7866,7 +7867,7 @@ mono_delegate_ctor_with_method (MonoObjectHandle this_obj, MonoObjectHandle targ
 	if (method)
 		MONO_HANDLE_SETVAL (delegate, method, MonoMethod*, method);
 
-	mono_stats.delegate_creations++;
+	UnlockedIncrement (&mono_stats.delegate_creations);
 
 #ifndef DISABLE_REMOTING
 	if (!MONO_HANDLE_IS_NULL (target) && mono_class_is_transparent_proxy (mono_handle_class (target))) {

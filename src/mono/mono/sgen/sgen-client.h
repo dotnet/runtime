@@ -122,7 +122,7 @@ void sgen_client_pinned_los_object (GCObject *obj);
 /*
  * Called for every degraded allocation.  No action is necessary.
  */
-void sgen_client_degraded_allocation (size_t size);
+void sgen_client_degraded_allocation (void);
 
 /*
  * Called whenever the amount of memory allocated for the managed heap changes.  No action

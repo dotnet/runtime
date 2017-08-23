@@ -69,7 +69,7 @@ alloc_degraded (GCVTable vtable, size_t size, gboolean for_mature)
 	GCObject *p;
 
 	if (!for_mature) {
-		sgen_client_degraded_allocation (size);
+		sgen_client_degraded_allocation ();
 		SGEN_ATOMIC_ADD_P (degraded_mode, size);
 		sgen_ensure_free_space (size, GENERATION_OLD);
 	} else {

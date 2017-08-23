@@ -464,4 +464,13 @@ extern void InterlockedWritePointer(volatile gpointer *dst, gpointer val);
 #define InterlockedAddP(p,add) InterlockedAdd64 ((volatile gint64*)p, (gint64)add)
 #endif
 
+/* The following functions cannot be found on any platform, and thus they can be declared without further existence checks */
+
+static inline void
+InterlockedWriteBool (volatile gboolean *dest, gboolean val)
+{
+	/* both, gboolean and gint32, are int32_t; the purpose of these casts is to make things explicit */
+	InterlockedWrite ((volatile gint32 *)dest, (gint32)val);
+}
+
 #endif /* _WAPI_ATOMIC_H_ */

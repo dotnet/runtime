@@ -2799,18 +2799,19 @@ mono_gc_add_memory_pressure (gint64 value)
  */
 
 void
-sgen_client_degraded_allocation (size_t size)
+sgen_client_degraded_allocation (void)
 {
-	static int last_major_gc_warned = -1;
-	static int num_degraded = 0;
+	static gint32 last_major_gc_warned = -1;
+	static gint32 num_degraded = 0;
 
-	if (last_major_gc_warned < (int)gc_stats.major_gc_count) {
-		++num_degraded;
-		if (num_degraded == 1 || num_degraded == 3)
+	gint32 major_gc_count = InterlockedRead (&gc_stats.major_gc_count);
+	if (InterlockedRead (&last_major_gc_warned) < major_gc_count) {
+		gint32 num = InterlockedIncrement (&num_degraded);
+		if (num == 1 || num == 3)
 			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "Warning: Degraded allocation.  Consider increasing nursery-size if the warning persists.");
-		else if (num_degraded == 10)
+		else if (num == 10)
 			mono_trace (G_LOG_LEVEL_INFO, MONO_TRACE_GC, "Warning: Repeated degraded allocation.  Consider increasing nursery-size.");
-		last_major_gc_warned = gc_stats.major_gc_count;
+		InterlockedWrite (&last_major_gc_warned, major_gc_count);
 	}
 }
 

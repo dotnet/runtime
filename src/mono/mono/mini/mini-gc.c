@@ -42,6 +42,7 @@ get_provenance_func (void)
 #include <mono/metadata/sgen-conf.h>
 #include <mono/metadata/gc-internals.h>
 #include <mono/utils/mono-counters.h>
+#include <mono/utils/unlocked.h>
 
 #define SIZEOF_SLOT ((int)sizeof (mgreg_t))
 
@@ -254,27 +255,27 @@ static gboolean precise_frame_limit_inited;
 
 /* Stats */
 typedef struct {
-	int scanned_stacks;
-	int scanned;
-	int scanned_precisely;
-	int scanned_conservatively;
-	int scanned_registers;
-	int scanned_native;
-	int scanned_other;
+	gint32 scanned_stacks;
+	gint32 scanned;
+	gint32 scanned_precisely;
+	gint32 scanned_conservatively;
+	gint32 scanned_registers;
+	gint32 scanned_native;
+	gint32 scanned_other;
 	
-	int all_slots;
-	int noref_slots;
-	int ref_slots;
-	int pin_slots;
+	gint32 all_slots;
+	gint32 noref_slots;
+	gint32 ref_slots;
+	gint32 pin_slots;
 
-	int gc_maps_size;
-	int gc_callsites_size;
-	int gc_callsites8_size;
-	int gc_callsites16_size;
-	int gc_callsites32_size;
-	int gc_bitmaps_size;
-	int gc_map_struct_size;
-	int tlsdata_size;
+	gint32 gc_maps_size;
+	gint32 gc_callsites_size;
+	gint32 gc_callsites8_size;
+	gint32 gc_callsites16_size;
+	gint32 gc_callsites32_size;
+	gint32 gc_bitmaps_size;
+	gint32 gc_map_struct_size;
+	gint32 tlsdata_size;
 } JITGCStats;
 
 static JITGCStats stats;
@@ -601,7 +602,7 @@ thread_attach_func (void)
 	tls = g_new0 (TlsData, 1);
 	tls->tid = mono_native_thread_id_get ();
 	tls->info = mono_thread_info_current ();
-	stats.tlsdata_size += sizeof (TlsData);
+	UnlockedAdd (&stats.tlsdata_size, sizeof (TlsData));
 
 	return tls;
 }
@@ -762,7 +763,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 	/* tls == NULL can happen during startup */
 	if (mono_thread_internal_current () == NULL || !tls) {
 		mono_gc_conservatively_scan_area (stack_start, stack_end);
-		stats.scanned_stacks += stack_end - stack_start;
+		UnlockedAdd (&stats.scanned_stacks, stack_end - stack_start);
 		return;
 	}
 
@@ -993,7 +994,7 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 			/* This scans the previously skipped frames as well */
 			DEBUG (fprintf (logfile, "\tscan area %p-%p (%d).\n", stack_limit, real_frame_start, (int)(real_frame_start - stack_limit)));
 			mono_gc_conservatively_scan_area (stack_limit, real_frame_start);
-			stats.scanned_other += real_frame_start - stack_limit;
+			UnlockedAdd (&stats.scanned_other, real_frame_start - stack_limit);
 		}
 
 		/* Mark stack slots */
@@ -1119,16 +1120,16 @@ conservative_pass (TlsData *tls, guint8 *stack_start, guint8 *stack_end)
 	if (stack_limit < stack_end) {
 		DEBUG (fprintf (logfile, "\tscan remaining stack %p-%p (%d).\n", stack_limit, stack_end, (int)(stack_end - stack_limit)));
 		mono_gc_conservatively_scan_area (stack_limit, stack_end);
-		stats.scanned_native += stack_end - stack_limit;
+		UnlockedAdd (&stats.scanned_native, stack_end - stack_limit);
 	}
 
 	DEBUG (fprintf (logfile, "Marked %d bytes, p=%d,c=%d out of %d.\n", scanned, scanned_precisely, scanned_conservatively, (int)(stack_end - stack_start)));
 
-	stats.scanned_stacks += stack_end - stack_start;
-	stats.scanned += scanned;
-	stats.scanned_precisely += scanned_precisely;
-	stats.scanned_conservatively += scanned_conservatively;
-	stats.scanned_registers += scanned_registers;
+	UnlockedAdd (&stats.scanned_stacks, stack_end - stack_start);
+	UnlockedAdd (&stats.scanned, scanned);
+	UnlockedAdd (&stats.scanned_precisely, scanned_precisely);
+	UnlockedAdd (&stats.scanned_conservatively, scanned_conservatively);
+	UnlockedAdd (&stats.scanned_registers, scanned_registers);
 
 	//mono_gc_conservatively_scan_area (stack_start, stack_end);
 }
@@ -2423,17 +2424,17 @@ create_map (MonoCompile *cfg)
 			guint8 *offsets = p;
 			for (i = 0; i < ncallsites; ++i)
 				offsets [i] = callsites [i]->pc_offset;
-			stats.gc_callsites8_size += ncallsites * sizeof (guint8);
+			UnlockedAdd (&stats.gc_callsites8_size, ncallsites * sizeof (guint8));
 		} else if (map->callsite_entry_size == 2) {
 			guint16 *offsets = (guint16*)p;
 			for (i = 0; i < ncallsites; ++i)
 				offsets [i] = callsites [i]->pc_offset;
-			stats.gc_callsites16_size += ncallsites * sizeof (guint16);
+			UnlockedAdd (&stats.gc_callsites16_size, ncallsites * sizeof (guint16));
 		} else {
 			guint32 *offsets = (guint32*)p;
 			for (i = 0; i < ncallsites; ++i)
 				offsets [i] = callsites [i]->pc_offset;
-			stats.gc_callsites32_size += ncallsites * sizeof (guint32);
+			UnlockedAdd (&stats.gc_callsites32_size, ncallsites * sizeof (guint32));
 		}
 		p += ncallsites * map->callsite_entry_size;
 
@@ -2443,10 +2444,10 @@ create_map (MonoCompile *cfg)
 
 		g_assert ((guint8*)p - (guint8*)emap <= alloc_size);
 
-		stats.gc_maps_size += alloc_size;
-		stats.gc_callsites_size += ncallsites * map->callsite_entry_size;
-		stats.gc_bitmaps_size += bitmaps_size;
-		stats.gc_map_struct_size += sizeof (GCEncodedMap) + encoded_size;
+		UnlockedAdd (&stats.gc_maps_size, alloc_size);
+		UnlockedAdd (&stats.gc_callsites_size, ncallsites * map->callsite_entry_size);
+		UnlockedAdd (&stats.gc_bitmaps_size, bitmaps_size);
+		UnlockedAdd (&stats.gc_map_struct_size, sizeof (GCEncodedMap) + encoded_size);
 
 		cfg->jit_info->gc_info = emap;
 
@@ -2454,10 +2455,10 @@ create_map (MonoCompile *cfg)
 		cfg->gc_map_size = alloc_size;
 	}
 
-	stats.all_slots += nslots;
-	stats.ref_slots += ntypes [SLOT_REF];
-	stats.noref_slots += ntypes [SLOT_NOREF];
-	stats.pin_slots += ntypes [SLOT_PIN];
+	UnlockedAdd (&stats.all_slots, nslots);
+	UnlockedAdd (&stats.ref_slots, ntypes [SLOT_REF]);
+	UnlockedAdd (&stats.noref_slots, ntypes [SLOT_NOREF]);
+	UnlockedAdd (&stats.pin_slots, ntypes [SLOT_PIN]);
 }
 
 void
