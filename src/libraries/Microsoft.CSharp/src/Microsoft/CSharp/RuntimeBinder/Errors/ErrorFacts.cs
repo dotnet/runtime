@@ -143,9 +143,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 case ErrorCode.ERR_GenericConstraintNotSatisfiedNullableInterface:
                     codeStr = SR.GenericConstraintNotSatisfiedNullableInterface;
                     break;
-                case ErrorCode.ERR_GenericConstraintNotSatisfiedTyVar:
-                    codeStr = SR.GenericConstraintNotSatisfiedTyVar;
-                    break;
                 case ErrorCode.ERR_GenericConstraintNotSatisfiedValType:
                     codeStr = SR.GenericConstraintNotSatisfiedValType;
                     break;

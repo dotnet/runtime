@@ -234,10 +234,6 @@
           <source>The type '{3}' cannot be used as type parameter '{2}' in the generic type or method '{0}'. The nullable type '{3}' does not satisfy the constraint of '{1}'. Nullable types can not satisfy any interface constraints.</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">类型“{3}”不能用作泛型类型或方法“{0}”中的类型参数“{2}”。可以为 null 的类型“{3}”不满足“{1}”的约束。可以为 null 的类型不能满足任何接口约束。</target>
         </trans-unit>
-        <trans-unit id="GenericConstraintNotSatisfiedTyVar" translate="yes" xml:space="preserve">
-          <source>The type '{3}' cannot be used as type parameter '{2}' in the generic type or method '{0}'. There is no boxing conversion or type parameter conversion from '{3}' to '{1}'.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">类型“{3}”不能用作泛型类型或方法“{0}”中的类型参数“{2}”。没有从“{3}”到“{1}”的装箱转换或类型参数转换。</target>
-        </trans-unit>
         <trans-unit id="GenericConstraintNotSatisfiedValType" translate="yes" xml:space="preserve">
           <source>The type '{3}' cannot be used as type parameter '{2}' in the generic type or method '{0}'. There is no boxing conversion from '{3}' to '{1}'.</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">类型“{3}”不能用作泛型类型或方法“{0}”中的类型参数“{2}”。没有从“{3}”到“{1}”的装箱转换。</target>

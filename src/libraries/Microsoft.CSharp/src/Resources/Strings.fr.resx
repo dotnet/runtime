@@ -180,9 +180,6 @@
   <data name="GenericConstraintNotSatisfiedNullableInterface" xml:space="preserve">
     <value>Impossible d'utiliser le type '{3}' comme paramètre de type '{2}' dans le type ou la méthode générique '{0}'. Le type Nullable '{3}' ne satisfait pas la contrainte de '{1}'. Les types Nullable ne peuvent pas satisfaire les contraintes d'interface.</value>
   </data>
-  <data name="GenericConstraintNotSatisfiedTyVar" xml:space="preserve">
-    <value>Impossible d'utiliser le type '{3}' comme paramètre de type '{2}' dans le type ou la méthode générique '{0}'. Il n'y a pas de conversion boxing ou de conversion de paramètre de type de '{3}' en '{1}'.</value>
-  </data>
   <data name="GenericConstraintNotSatisfiedValType" xml:space="preserve">
     <value>Impossible d'utiliser le type '{3}' comme paramètre de type '{2}' dans le type ou la méthode générique '{0}'. Il n'y a pas de conversion boxing de '{3}' en '{1}'.</value>
   </data>

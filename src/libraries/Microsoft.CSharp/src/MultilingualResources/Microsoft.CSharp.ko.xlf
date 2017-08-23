@@ -230,10 +230,6 @@
           <source>The type '{3}' cannot be used as type parameter '{2}' in the generic type or method '{0}'. The nullable type '{3}' does not satisfy the constraint of '{1}'. Nullable types can not satisfy any interface constraints.</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">'{3}' 형식은 제네릭 형식 또는 메서드 '{0}'에서 형식 매개 변수 '{2}'(으)로 사용할 수 없습니다. nullable 형식 '{3}'이(가) '{1}' 제약 조건을 충족하지 않습니다. nullable 형식은 어떠한 인터페이스 제약 조건도 만족할 수 없습니다.</target>
         </trans-unit>
-        <trans-unit id="GenericConstraintNotSatisfiedTyVar" translate="yes" xml:space="preserve">
-          <source>The type '{3}' cannot be used as type parameter '{2}' in the generic type or method '{0}'. There is no boxing conversion or type parameter conversion from '{3}' to '{1}'.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">'{3}' 형식은 제네릭 형식 또는 메서드 '{0}'에서 형식 매개 변수 '{2}'(으)로 사용할 수 없습니다. '{3}'에서 '{1}'(으)로의 boxing 변환 또는 형식 매개 변수 변환이 없습니다.</target>
-        </trans-unit>
         <trans-unit id="GenericConstraintNotSatisfiedValType" translate="yes" xml:space="preserve">
           <source>The type '{3}' cannot be used as type parameter '{2}' in the generic type or method '{0}'. There is no boxing conversion from '{3}' to '{1}'.</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">'{3}' 형식은 제네릭 형식 또는 메서드 '{0}'에서 형식 매개 변수 '{2}'(으)로 사용할 수 없습니다. '{3}'에서 '{1}'(으)로의 boxing 변환이 없습니다.</target>
