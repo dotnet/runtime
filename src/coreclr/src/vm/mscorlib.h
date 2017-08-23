@@ -967,6 +967,8 @@ DEFINE_CLASS(UNKNOWN_WRAPPER,       Interop,                UnknownWrapper)
 #endif
 
 DEFINE_CLASS(VALUE_TYPE,            System,                 ValueType)
+DEFINE_METHOD(VALUE_TYPE,           GET_HASH_CODE,          GetHashCode,            IM_RetInt)
+DEFINE_METHOD(VALUE_TYPE,           EQUALS,                 Equals,                 IM_Obj_RetBool)
 
 #ifdef FEATURE_COMINTEROP
 DEFINE_CLASS(VARIANT_WRAPPER,       Interop,                VariantWrapper)
