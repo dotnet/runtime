@@ -2264,7 +2264,7 @@ namespace System.Xml.Xsl.IlGen
             XmlILStorageMethods methods = XmlILMethods.StorageMethods[itemStorageType];
             locCache = _helper.DeclareLocal("$$$cache", methods.SeqType);
             _helper.Emit(OpCodes.Ldloc, locCache);
-            _helper.CallToken(methods.SeqReuse);
+            _helper.Call(methods.SeqReuse);
             _helper.Emit(OpCodes.Stloc, locCache);
             _helper.Emit(OpCodes.Ldloc, locCache);
 
@@ -4869,14 +4869,14 @@ namespace System.Xml.Xsl.IlGen
             {
                 // cache = XmlQuerySequence.CreateOrReuse(cache, item);
                 NestedVisitEnsureStack(nd, cacheType, false);
-                _helper.CallToken(methods.SeqReuseSgl);
+                _helper.Call(methods.SeqReuseSgl);
                 _helper.Emit(OpCodes.Stloc, locCache);
             }
             else
             {
                 // XmlQuerySequence<T> cache;
                 // cache = XmlQuerySequence.CreateOrReuse(cache);
-                _helper.CallToken(methods.SeqReuse);
+                _helper.Call(methods.SeqReuse);
                 _helper.Emit(OpCodes.Stloc, locCache);
                 _helper.Emit(OpCodes.Ldloc, locCache);
 
