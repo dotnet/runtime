@@ -209,6 +209,13 @@
       <Imports>net462</Imports>
       <CompatibleWith>netstandard</CompatibleWith>
     </TargetGroups>
+    <TargetGroups Include="net471">
+      <TargetingPackNugetPackageId>Microsoft.TargetingPack.NETFramework.v4.7.1</TargetingPackNugetPackageId>
+      <NuGetTargetMoniker>.NETFramework,Version=v4.7.1</NuGetTargetMoniker>
+      <NuGetTargetMonikerShort>net471</NuGetTargetMonikerShort>
+      <Imports>net47</Imports>
+      <CompatibleWith>netstandard</CompatibleWith>
+    </TargetGroups>
     <TargetGroups Include="win8">
       <NuGetTargetMoniker>Windows,Version=v8.0</NuGetTargetMoniker>
       <NuGetTargetMonikerShort>win8</NuGetTargetMonikerShort>
