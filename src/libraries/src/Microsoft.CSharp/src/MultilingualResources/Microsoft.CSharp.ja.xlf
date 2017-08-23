@@ -230,10 +230,6 @@
           <source>The type '{3}' cannot be used as type parameter '{2}' in the generic type or method '{0}'. The nullable type '{3}' does not satisfy the constraint of '{1}'. Nullable types can not satisfy any interface constraints.</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">型 '{3}' はジェネリック型またはメソッド '{0}' 内で型パラメーター '{2}' として使用できません。Null 許容型 '{3}' は、'{1}' の制約を満たしていません。Null 許容型はインターフェイス制約を満たすことはできません。</target>
         </trans-unit>
-        <trans-unit id="GenericConstraintNotSatisfiedTyVar" translate="yes" xml:space="preserve">
-          <source>The type '{3}' cannot be used as type parameter '{2}' in the generic type or method '{0}'. There is no boxing conversion or type parameter conversion from '{3}' to '{1}'.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">型 '{3}' はジェネリック型またはメソッド '{0}' 内で型パラメーター '{2}' として使用できません。'{3}' から '{1}' へのボックス変換または型パラメーター変換がありません。</target>
-        </trans-unit>
         <trans-unit id="GenericConstraintNotSatisfiedValType" translate="yes" xml:space="preserve">
           <source>The type '{3}' cannot be used as type parameter '{2}' in the generic type or method '{0}'. There is no boxing conversion from '{3}' to '{1}'.</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">型 '{3}' はジェネリック型またはメソッド '{0}' 内で型パラメーター '{2}' として使用できません。'{3}' から '{1}' へのボックス変換がありません。</target>

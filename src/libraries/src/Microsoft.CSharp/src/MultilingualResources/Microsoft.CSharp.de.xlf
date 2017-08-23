@@ -230,10 +230,6 @@
           <source>The type '{3}' cannot be used as type parameter '{2}' in the generic type or method '{0}'. The nullable type '{3}' does not satisfy the constraint of '{1}'. Nullable types can not satisfy any interface constraints.</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Der {3}-Typ kann nicht als {2}-Typparameter im generischen Typ oder in der generischen {0}-Methode verwendet werden. Der {3}-Typ, der NULL-Werte zulässt, entspricht nicht der Einschränkung von {1}. Typen, die NULL-Werte zulassen, können Schnittstelleneinschränkungen nicht entsprechen.</target>
         </trans-unit>
-        <trans-unit id="GenericConstraintNotSatisfiedTyVar" translate="yes" xml:space="preserve">
-          <source>The type '{3}' cannot be used as type parameter '{2}' in the generic type or method '{0}'. There is no boxing conversion or type parameter conversion from '{3}' to '{1}'.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der {3}-Typ kann nicht als {2}-Typparameter im generischen Typ oder in der generischen {0}-Methode verwendet werden. Es ist keine Boxing-Konvertierung oder Typparameterkonvertierung von {3} in {1} vorhanden.</target>
-        </trans-unit>
         <trans-unit id="GenericConstraintNotSatisfiedValType" translate="yes" xml:space="preserve">
           <source>The type '{3}' cannot be used as type parameter '{2}' in the generic type or method '{0}'. There is no boxing conversion from '{3}' to '{1}'.</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Der {3}-Typ kann nicht als {2}-Typparameter im generischen Typ oder in der generischen {0}-Methode verwendet werden. Es ist keine Boxing-Konvertierung von {3} in {1} vorhanden.</target>

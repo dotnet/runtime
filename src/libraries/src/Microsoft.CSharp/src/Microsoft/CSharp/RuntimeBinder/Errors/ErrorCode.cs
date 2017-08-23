@@ -49,7 +49,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
         ERR_GenericConstraintNotSatisfiedRefType = 311,
         ERR_GenericConstraintNotSatisfiedNullableEnum = 312,
         ERR_GenericConstraintNotSatisfiedNullableInterface = 313,
-        ERR_GenericConstraintNotSatisfiedTyVar = 314,
         ERR_GenericConstraintNotSatisfiedValType = 315,
         ERR_TypeVarCantBeNull = 403,
         ERR_BadRetType = 407,

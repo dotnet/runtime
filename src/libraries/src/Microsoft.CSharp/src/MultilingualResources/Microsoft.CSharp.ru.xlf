@@ -230,10 +230,6 @@
           <source>The type '{3}' cannot be used as type parameter '{2}' in the generic type or method '{0}'. The nullable type '{3}' does not satisfy the constraint of '{1}'. Nullable types can not satisfy any interface constraints.</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Невозможно использовать тип "{3}" в качестве параметра типа "{2}" в универсальном типе или методе "{0}". Для типа "{3}", допускающего значение null, не выполняется ограничение "{1}". Типы, допускающие значение null, не могут удовлетворять ни одному интерфейсному ограничению.</target>
         </trans-unit>
-        <trans-unit id="GenericConstraintNotSatisfiedTyVar" translate="yes" xml:space="preserve">
-          <source>The type '{3}' cannot be used as type parameter '{2}' in the generic type or method '{0}'. There is no boxing conversion or type parameter conversion from '{3}' to '{1}'.</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Невозможно использовать тип "{3}" в качестве параметра типа "{2}" в универсальном типе или методе "{0}". Нет преобразования-упаковки или преобразования типа параметра из "{3}" в "{1}".</target>
-        </trans-unit>
         <trans-unit id="GenericConstraintNotSatisfiedValType" translate="yes" xml:space="preserve">
           <source>The type '{3}' cannot be used as type parameter '{2}' in the generic type or method '{0}'. There is no boxing conversion from '{3}' to '{1}'.</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Невозможно использовать тип "{3}" в качестве параметра типа "{2}" в универсальном типе или методе "{0}". Нет преобразования-упаковки из "{3}" в "{1}".</target>
