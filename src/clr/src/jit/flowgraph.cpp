@@ -22625,13 +22625,10 @@ GenTreePtr Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                     impAssignTempGen(tmpNum, argNode, structHnd, (unsigned)CHECK_SPILL_NONE, &afterStmt, callILOffset,
                                      block);
 
-                    // If we know the argument's value can't be
-                    // changed within the method body, try and improve
-                    // the type of the temp.
-                    if (argIsSingleDef && (argType == TYP_REF))
-                    {
-                        lvaUpdateClass(tmpNum, argNode);
-                    }
+                    // We used to refine the temp type here based on
+                    // the actual arg, but we now do this up front, when
+                    // creating the temp, over in impInlineFetchArg.
+                    CLANG_FORMAT_COMMENT_ANCHOR;
 
 #ifdef DEBUG
                     if (verbose)

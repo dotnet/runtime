@@ -18165,11 +18165,22 @@ GenTreePtr Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, 
 
             lvaTable[tmpNum].lvType = lclTyp;
 
-            // Copy over class handle for ref types. Note this may be
-            // further improved if it is a shared type and we know the exact context.
+            // For ref types, determine the type of the temp.
             if (lclTyp == TYP_REF)
             {
-                lvaSetClass(tmpNum, lclInfo.lclVerTypeInfo.GetClassHandleForObjRef());
+                if (!argCanBeModified)
+                {
+                    // If the arg can't be modified in the method
+                    // body, use the type of the value, if
+                    // known. Otherwise, use the declared type.
+                    lvaSetClass(tmpNum, argInfo.argNode, lclInfo.lclVerTypeInfo.GetClassHandleForObjRef());
+                }
+                else
+                {
+                    // Arg might be modified, use the delcared type of
+                    // the argument.
+                    lvaSetClass(tmpNum, lclInfo.lclVerTypeInfo.GetClassHandleForObjRef());
+                }
             }
 
             assert(lvaTable[tmpNum].lvAddrExposed == 0);
