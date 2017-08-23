@@ -5137,7 +5137,7 @@ GenTreePtr CodeGen::genCodeForCommaTree(GenTreePtr tree)
     while (tree->OperGet() == GT_COMMA)
     {
         GenTreePtr op1 = tree->gtOp.gtOp1;
-        genCodeForTree(op1, RBM_NONE);
+        genEvalSideEffects(op1);
         gcInfo.gcMarkRegPtrVal(op1);
 
         tree = tree->gtOp.gtOp2;
