@@ -10,11 +10,19 @@ namespace Tracing.Tests
     {
         private static int allocIterations = 10000;
         private static int trivialSize = 0x100000;
-        private static bool keepOutput = false;
 
         static int Main(string[] args)
         {
-            string outputFilename = System.IO.Path.GetTempPath() + Guid.NewGuid().ToString() + ".netperf";
+            bool keepOutput = false;
+            // Use the first arg as an output filename if there is one
+            string outputFilename = null;
+            if (args.Length >= 1) {
+                outputFilename = args[0];
+                keepOutput = true;
+            }
+            else {
+                outputFilename = System.IO.Path.GetTempPath() + Guid.NewGuid().ToString() + ".netperf";
+            }
 
             Console.WriteLine("\tStart: Enable tracing.");
             TraceControl.EnableDefault(outputFilename);
@@ -49,7 +57,7 @@ namespace Tracing.Tests
                 System.IO.File.Delete(outputFilename);
             }
 
-            return pass ? 100 : 0;
+            return pass ? 100 : -1;
         }
     }
 }
