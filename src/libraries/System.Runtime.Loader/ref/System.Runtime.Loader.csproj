@@ -4,6 +4,8 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <ProjectGuid>{FB507A82-ACDD-4809-A030-6F9372A71194}</ProjectGuid>
+    <!-- CS0067: unused event, reference assembly does not care -->
+    <NoWarn>$(NoWarn);0067</NoWarn>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
