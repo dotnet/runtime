@@ -526,7 +526,9 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 	g_free (rgctx_null_jumps);
 
 	/* move the rgctx pointer to the VTABLE register */
+#if MONO_ARCH_VTABLE_REG != s390_r2
 	s390_lgr (code, MONO_ARCH_VTABLE_REG, s390_r2);
+#endif
 
 	tramp = mono_arch_create_specific_trampoline (GUINT_TO_POINTER (slot),
 		MONO_TRAMPOLINE_RGCTX_LAZY_FETCH, mono_get_root_domain (), NULL);
@@ -559,8 +561,7 @@ mono_arch_create_rgctx_lazy_fetch_trampoline (guint32 slot, MonoTrampInfo **info
 /*------------------------------------------------------------------*/
 
 gpointer
-mono_arch_get_static_rgctx_trampoline (gpointer arg,
-									   gpointer addr)
+mono_arch_get_static_rgctx_trampoline (gpointer arg, gpointer addr)
 {
 	guint8 *code, *start;
 	gint32 displace;
@@ -584,5 +585,22 @@ mono_arch_get_static_rgctx_trampoline (gpointer arg,
 
 	return(start);
 }	
+
+/*========================= End of Function ========================*/
+
+/*------------------------------------------------------------------*/
+/*                                                                  */
+/* Name	    - mono_arch_get_enter_icall_trampoline.                 */
+/*                                                                  */
+/* Function - 							    */
+/*                                                                  */
+/*------------------------------------------------------------------*/
+
+gpointer
+mono_arch_get_enter_icall_trampoline (MonoTrampInfo **info)
+{
+	g_assert_not_reached ();
+	return NULL;
+}
 
 /*========================= End of Function ========================*/

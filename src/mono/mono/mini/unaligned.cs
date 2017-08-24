@@ -70,33 +70,58 @@ class Tests {
 		return 0;
 	}
 
+
 	public static unsafe int test_0_ldobj ()
 	{
 		byte *ptr = stackalloc byte [20];
 		for (int i = 0; i < 20; ++i)
 			ptr [i] = (byte)i;
 
+		if (BitConverter.IsLittleEndian) {
 
-		if (Intrinsics.UnalignedLdobj<short> (ptr + 0) != 0x0100)
-			return 1;
+			if (Intrinsics.UnalignedLdobj<short> (ptr + 0) != 0x0100)
+				return 1;
 
-		if (Intrinsics.UnalignedLdobj<short> (ptr + 1) != 0x0201)
-			return 2;
+			if (Intrinsics.UnalignedLdobj<short> (ptr + 1) != 0x0201)
+				return 2;
 
-		if (Intrinsics.UnalignedLdobj<short> (ptr + 2) != 0x0302)
-			return 3;
+			if (Intrinsics.UnalignedLdobj<short> (ptr + 2) != 0x0302)
+				return 3;
 
-		if (Intrinsics.UnalignedLdobj<int> (ptr + 1) != 0x04030201)
-			return 4;
+			if (Intrinsics.UnalignedLdobj<int> (ptr + 1) != 0x04030201)
+				return 4;
 
-		if (Intrinsics.UnalignedLdobj<int> (ptr + 2) != 0x05040302)
-			return 5;
+			if (Intrinsics.UnalignedLdobj<int> (ptr + 2) != 0x05040302)
+				return 5;
 
-		if (Intrinsics.UnalignedLdobj<long> (ptr + 1) != 0x0807060504030201)
-			return 6;
+			if (Intrinsics.UnalignedLdobj<long> (ptr + 1) != 0x0807060504030201)
+				return 6;
 
-		if (Intrinsics.UnalignedLdobj<long> (ptr + 6) != 0xD0C0B0A09080706)
-			return 7;
+			if (Intrinsics.UnalignedLdobj<long> (ptr + 6) != 0xD0C0B0A09080706)
+				return 7;
+		} else {
+
+			if (Intrinsics.UnalignedLdobj<short> (ptr + 0) != 0x0001)
+				return 1;
+
+			if (Intrinsics.UnalignedLdobj<short> (ptr + 1) != 0x0102)
+				return 2;
+
+			if (Intrinsics.UnalignedLdobj<short> (ptr + 2) != 0x0203)
+				return 3;
+
+			if (Intrinsics.UnalignedLdobj<int> (ptr + 1) != 0x01020304)
+				return 4;
+
+			if (Intrinsics.UnalignedLdobj<int> (ptr + 2) != 0x02030405)
+				return 5;
+
+			if (Intrinsics.UnalignedLdobj<long> (ptr + 1) != 0x0102030405060708)
+				return 6;
+
+			if (Intrinsics.UnalignedLdobj<long> (ptr + 6) != 0x60708090A0B0C0D)
+				return 7;
+		}
 
 		return 0;
 	}
@@ -108,26 +133,51 @@ class Tests {
 			ptr [i] = (byte)i;
 
 
-		if (Intrinsics.UnalignedLdInd2 (ptr + 0) != 0x0100)
-			return 1;
+		if (BitConverter.IsLittleEndian) {
 
-		if (Intrinsics.UnalignedLdInd2 (ptr + 1) != 0x0201)
-			return 2;
+			if (Intrinsics.UnalignedLdInd2 (ptr + 0) != 0x0100)
+				return 1;
 
-		if (Intrinsics.UnalignedLdInd2 (ptr + 2) != 0x0302)
-			return 3;
+			if (Intrinsics.UnalignedLdInd2 (ptr + 1) != 0x0201)
+				return 2;
 
-		if (Intrinsics.UnalignedLdInd4 (ptr + 1) != 0x04030201)
-			return 4;
+			if (Intrinsics.UnalignedLdInd2 (ptr + 2) != 0x0302)
+				return 3;
 
-		if (Intrinsics.UnalignedLdInd4 (ptr + 2) != 0x05040302)
-			return 5;
+			if (Intrinsics.UnalignedLdInd4 (ptr + 1) != 0x04030201)
+				return 4;
 
-		if (Intrinsics.UnalignedLdInd8 (ptr + 1) != 0x0807060504030201)
-			return 6;
+			if (Intrinsics.UnalignedLdInd4 (ptr + 2) != 0x05040302)
+				return 5;
 
-		if (Intrinsics.UnalignedLdInd8 (ptr + 6) != 0xD0C0B0A09080706)
-			return 7;
+			if (Intrinsics.UnalignedLdInd8 (ptr + 1) != 0x0807060504030201)
+				return 6;
+
+			if (Intrinsics.UnalignedLdInd8 (ptr + 6) != 0xD0C0B0A09080706)
+				return 7;
+		} else {
+
+			if (Intrinsics.UnalignedLdInd2 (ptr + 0) != 0x0001)
+				return 1;
+
+			if (Intrinsics.UnalignedLdInd2 (ptr + 1) != 0x0102)
+				return 2;
+
+			if (Intrinsics.UnalignedLdInd2 (ptr + 2) != 0x0203)
+				return 3;
+
+			if (Intrinsics.UnalignedLdInd4 (ptr + 1) != 0x01020304)
+				return 4;
+
+			if (Intrinsics.UnalignedLdInd4 (ptr + 2) != 0x02030405)
+				return 5;
+
+			if (Intrinsics.UnalignedLdInd8 (ptr + 1) != 0x0102030405060708)
+				return 6;
+
+			if (Intrinsics.UnalignedLdInd8 (ptr + 6) != 0x60708090A0B0C0D)
+				return 7;
+		}
 
 		return 0;
 	}
@@ -185,21 +235,41 @@ class Tests {
 	{
 		byte *ptr = stackalloc byte [20];
 
-		Intrinsics.UnalignedStobj <short> (ptr + 0, 0x6688);
-		if (ptr [0] != 0x88 || ptr [1] != 0x66)
-			return 1;
+		if (BitConverter.IsLittleEndian) {
+			Intrinsics.UnalignedStobj <short> (ptr + 0, 0x6688);
+			if (ptr [0] != 0x88 || ptr [1] != 0x66)
+				return 1;
 
-		Intrinsics.UnalignedStobj <short> (ptr + 1, 0x6589);
-		if (ptr [1] != 0x89 || ptr [2] != 0x65)
-			return 2;
+			Intrinsics.UnalignedStobj <short> (ptr + 1, 0x6589);
+			if (ptr [1] != 0x89 || ptr [2] != 0x65)
+				return 2;
 
-		Intrinsics.UnalignedStobj <int> (ptr + 1, 0x60708090);
-		if (ptr [1] != 0x90 || ptr [2] != 0x80 || ptr [3] != 0x70 || ptr [4] != 0x60)
-			return 3;
+			Intrinsics.UnalignedStobj <int> (ptr + 1, 0x60708090);
+			if (ptr [1] != 0x90 || ptr [2] != 0x80 || ptr [3] != 0x70 || ptr [4] != 0x60)
+				return 3;
 
-		Intrinsics.UnalignedStobj <long> (ptr + 1, 0x405060708090);
-		if (ptr [1] != 0x90 || ptr [2] != 0x80 || ptr [3] != 0x70 || ptr [4] != 0x60 || ptr [5] != 0x50 || ptr [6] != 0x40)
-			return 4;
+			Intrinsics.UnalignedStobj <long> (ptr + 1, 0x405060708090);
+			if (ptr [1] != 0x90 || ptr [2] != 0x80 || ptr [3] != 0x70 || 
+			    ptr [4] != 0x60 || ptr [5] != 0x50 || ptr [6] != 0x40)
+				return 4;
+		} else {
+			Intrinsics.UnalignedStobj <short> (ptr + 0, 0x6688);
+			if (ptr [0] != 0x66 || ptr [1] != 0x88)
+				return 1;
+
+			Intrinsics.UnalignedStobj <short> (ptr + 1, 0x6589);
+			if (ptr [1] != 0x65 || ptr [2] != 0x89)
+				return 2;
+
+			Intrinsics.UnalignedStobj <int> (ptr + 1, 0x60708090);
+			if (ptr [1] != 0x60 || ptr [2] != 0x70 || ptr [3] != 0x80 || ptr [4] != 0x90)
+				return 3;
+
+			Intrinsics.UnalignedStobj <long> (ptr + 1, 0x2030405060708090);
+			if (ptr [1] != 0x20 || ptr [2] != 0x30 || ptr [3] != 0x40 || 
+			    ptr [4] != 0x50 || ptr [5] != 0x60 || ptr [6] != 0x70)
+				return 4;
+		}
 
 		return 0;
 	}
