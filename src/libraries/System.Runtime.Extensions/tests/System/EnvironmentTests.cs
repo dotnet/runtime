@@ -274,9 +274,8 @@ namespace System.Tests
             }
         }
 
-        // Requires recent RS3 builds
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version16251OrGreater))]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.UapNotUapAot)]
+        // Requires recent RS3 builds and needs to run inside AppContainer
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version16251OrGreater), nameof(PlatformDetection.IsWinRT))]
         [InlineData(Environment.SpecialFolder.LocalApplicationData)]
         [InlineData(Environment.SpecialFolder.Cookies)]
         [InlineData(Environment.SpecialFolder.History)]
@@ -291,9 +290,8 @@ namespace System.Tests
             AssertDirectoryExists(knownFolder);
         }
 
-        // Requires recent RS3 builds
-        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version16251OrGreater))]
-        [SkipOnTargetFramework(~TargetFrameworkMonikers.UapNotUapAot)]
+        // Requires recent RS3 builds and needs to run inside AppContainer
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsWindows10Version16251OrGreater), nameof(PlatformDetection.IsWinRT))]
         [InlineData(Environment.SpecialFolder.ApplicationData)]
         [InlineData(Environment.SpecialFolder.MyMusic)]
         [InlineData(Environment.SpecialFolder.MyPictures)]
