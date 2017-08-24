@@ -29,6 +29,69 @@ typedef void (*EventPipeCallback)(
     void *FilterData,
     void *CallbackContext);
 
+struct EventData
+{
+public:
+    unsigned long Ptr;
+    unsigned int Size;
+    unsigned int Reserved;
+};
+
+class EventPipeEventPayload
+{
+private:
+    BYTE *m_pData;
+    EventData **m_pEventData;
+    unsigned int m_eventDataCount;
+    unsigned int m_size;
+    bool m_allocatedData;
+
+    // If the data is stored only as an array of EventData objects, create a flat buffer and copy into it
+    void Flatten();
+
+public:
+    // Build this payload with a flat buffer inside
+    EventPipeEventPayload(BYTE *pData, unsigned int length);
+
+    // Build this payload to contain an array of EventData objects
+    EventPipeEventPayload(EventData **pEventData, unsigned int eventDataCount);
+
+    // If a buffer was allocated internally, delete it
+    ~EventPipeEventPayload();
+    
+    // Copy the data (whether flat or array of objects) into a flat buffer at pDst
+    // Assumes that pDst points to an appropriatly sized buffer
+    void CopyData(BYTE *pDst);
+
+    // Get the flat formatted data in this payload
+    // This method will allocate a buffer if it does not already contain flattened data
+    // This method will return NULL on OOM if a buffer needed to be allocated
+    BYTE* GetFlatData();
+
+    // Return true is the data is stored in a flat buffer
+    bool IsFlattened() const
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return m_pData != NULL;
+    }
+
+    // The the size of buffer needed to contain the stored data
+    unsigned int GetSize() const
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return m_size;
+    }
+
+    EventData** GetEventDataArray() const
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        return m_pEventData;
+    }
+};
+
 class StackContents
 {
 private:
@@ -186,9 +249,13 @@ class EventPipe
         // Delete a provider.
         static void DeleteProvider(EventPipeProvider *pProvider);
 
-        // Write out an event.
+        // Write out an event from a flat buffer.
         // Data is written as a serialized blob matching the ETW serialization conventions.
         static void WriteEvent(EventPipeEvent &event, BYTE *pData, unsigned int length, LPCGUID pActivityId = NULL, LPCGUID pRelatedActivityId = NULL);
+
+        // Write out an event from an EventData array.
+        // Data is written as a serialized blob matching the ETW serialization conventions.
+        static void WriteEvent(EventPipeEvent &event, EventData **pEventData, unsigned int eventDataCount, LPCGUID pActivityId = NULL, LPCGUID pRelatedActivityId = NULL);
 
         // Write out a sample profile event.
         static void WriteSampleProfileEvent(Thread *pSamplingThread, EventPipeEvent *pEvent, Thread *pTargetThread, StackContents &stackContents, BYTE *pData = NULL, unsigned int length = 0);
@@ -198,6 +265,11 @@ class EventPipe
 
         // Get the managed call stack for the specified thread.
         static bool WalkManagedStackForThread(Thread *pThread, StackContents &stackContents);
+
+    protected:
+
+        // The counterpart to WriteEvent which after the payload is constructed
+        static void WriteEventInternal(EventPipeEvent &event, EventPipeEventPayload &payload, LPCGUID pActivityId = NULL, LPCGUID pRelatedActivityId = NULL);
 
     private:
 
@@ -306,6 +378,13 @@ public:
         unsigned int eventID,
         void *pData,
         unsigned int length,
+        LPCGUID pActivityId, LPCGUID pRelatedActivityId);
+
+    static void QCALLTYPE WriteEventData(
+        INT_PTR eventHandle,
+        unsigned int eventID,
+        EventData **pEventData,
+        unsigned int eventDataCount,
         LPCGUID pActivityId, LPCGUID pRelatedActivityId);
 };
 

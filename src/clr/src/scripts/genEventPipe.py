@@ -110,7 +110,7 @@ def generateClrEventPipeWriteEventsImpl(
             WriteEventImpl.append(
                 "    EventPipe::WriteEvent(*EventPipeEvent" +
                 eventName +
-                ", nullptr, 0);\n")
+                ", (BYTE*) nullptr, 0);\n")
 
         WriteEventImpl.append("\n    return ERROR_SUCCESS;\n}\n\n")
 
