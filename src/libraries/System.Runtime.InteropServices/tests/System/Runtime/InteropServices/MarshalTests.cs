@@ -246,6 +246,24 @@ namespace System.Runtime.InteropServices
         }
 
         [Fact]
+        public static void ValidateExceptionForHRAPI()
+        {
+            int errorCode = -2146231029;
+            COMException getHRException = Marshal.GetExceptionForHR(errorCode) as COMException;
+            Assert.NotNull(getHRException);
+            Assert.Equal(errorCode, getHRException.HResult);
+            try
+            {
+                Marshal.ThrowExceptionForHR(errorCode);
+            }
+            catch (COMException e)
+            {             
+                Assert.Equal(errorCode, e.HResult);
+                Assert.Equal(e.HResult, getHRException.HResult);
+            }
+        }
+
+        [Fact]
         public static void GetHRForException()
         {
             Exception e = new Exception();
@@ -254,7 +272,7 @@ namespace System.Runtime.InteropServices
             {
                 Assert.Equal(0, Marshal.GetHRForException(null));
                 
-                Assert.InRange(Marshal.GetHRForException(e), int.MinValue, -1);            
+                Assert.InRange(Marshal.GetHRForException(e), int.MinValue, -1);
                 Assert.Equal(e.HResult, Marshal.GetHRForException(e));
             }
             finally
