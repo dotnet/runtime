@@ -2795,7 +2795,7 @@ GenTree* Lowering::LowerDelegateInvoke(GenTreeCall* call)
     // [originalThis + offsetOfDelegateInstance]
 
     GenTree* newThisAddr = new (comp, GT_LEA)
-        GenTreeAddrMode(TYP_REF, thisExpr, nullptr, 0, comp->eeGetEEInfo()->offsetOfDelegateInstance);
+        GenTreeAddrMode(TYP_BYREF, thisExpr, nullptr, 0, comp->eeGetEEInfo()->offsetOfDelegateInstance);
 
     GenTree* newThis = comp->gtNewOperNode(GT_IND, TYP_REF, newThisAddr);
 
