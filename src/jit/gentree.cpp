@@ -7030,17 +7030,12 @@ GenTreePtr Compiler::gtNewPutArgReg(var_types type, GenTreePtr arg, regNumber ar
     assert(arg != nullptr);
 
     GenTreePtr node = nullptr;
-#if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
+#if !defined(LEGACY_BACKEND) && defined(ARM_SOFTFP)
     // A PUTARG_REG could be a MultiRegOp on armel since we could move a double register to two int registers.
-    if (opts.compUseSoftFP)
-    {
-        node = new (this, GT_PUTARG_REG) GenTreeMultiRegOp(GT_PUTARG_REG, type, arg, nullptr);
-    }
-    else
+    node = new (this, GT_PUTARG_REG) GenTreeMultiRegOp(GT_PUTARG_REG, type, arg, nullptr);
+#else
+    node            = gtNewOperNode(GT_PUTARG_REG, type, arg);
 #endif
-    {
-        node = gtNewOperNode(GT_PUTARG_REG, type, arg);
-    }
     node->gtRegNum = argReg;
 
     return node;
@@ -9975,7 +9970,7 @@ void Compiler::gtDispRegVal(GenTree* tree)
 #endif
 
 #if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
-    if (tree->IsMultiReg() && tree->AsMultiRegOp()->gtOtherReg != REG_NA)
+    if (tree->OperIsMultiRegOp() && tree->AsMultiRegOp()->gtOtherReg != REG_NA)
     {
         printf(",%s", compRegVarName(tree->AsMultiRegOp()->gtOtherReg));
     }
