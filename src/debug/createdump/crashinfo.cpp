@@ -4,6 +4,9 @@
 
 #include "createdump.h"
 
+// This is for the PAL_VirtualUnwindOutOfProc read memory adapter.
+CrashInfo* g_crashInfo;
+
 CrashInfo::CrashInfo(pid_t pid, ICLRDataTarget* dataTarget, bool sos) :
     m_ref(1),
     m_pid(pid),
@@ -12,6 +15,7 @@ CrashInfo::CrashInfo(pid_t pid, ICLRDataTarget* dataTarget, bool sos) :
     m_sos(sos),
     m_dataTarget(dataTarget)
 {
+    g_crashInfo = this;
     dataTarget->AddRef();
     m_auxvValues.fill(0);
 }
@@ -57,7 +61,7 @@ CrashInfo::QueryInterface(
     }
     else
     {
-        *Interface = NULL;
+        *Interface = nullptr;
         return E_NOINTERFACE;
     }
 }
@@ -172,6 +176,12 @@ CrashInfo::GatherCrashInfo(const char* programPath, MINIDUMP_TYPE minidumpType)
     {
         return false;
     }
+ 
+    for (const MemoryRegion& region : m_moduleAddresses)
+    {
+        region.Trace();
+    }
+
     // If full memory dump, include everything regardless of permissions
     if (minidumpType & MiniDumpWithFullMemory)
     {
@@ -205,15 +215,8 @@ CrashInfo::GatherCrashInfo(const char* programPath, MINIDUMP_TYPE minidumpType)
         // Add the thread's stack and some code memory to core
         for (ThreadInfo* thread : m_threads)
         {
-            uint64_t start;
-            size_t size;
-
-            // Add the thread's stack and some of the code 
-            thread->GetThreadStack(*this, &start, &size);
-            InsertMemoryRegion(start, size);
-
-            thread->GetThreadCode(&start, &size);
-            InsertMemoryRegion(start, size);
+            // Add the thread's stack
+            thread->GetThreadStack(*this);
         }
         // All the regions added so far has been backed by memory. Now add the rest of 
         // mappings so the debuggers like lldb see that an address is code (PF_X) even
@@ -302,7 +305,7 @@ CrashInfo::EnumerateModuleMappings()
     // 35b1dac000-35b1fac000 ---p 001ac000 08:02 135870  /usr/lib64/libc-2.15.so
     // 35b1fac000-35b1fb0000 r--p 001ac000 08:02 135870  /usr/lib64/libc-2.15.so
     // 35b1fb0000-35b1fb2000 rw-p 001b0000 08:02 135870  /usr/lib64/libc-2.15.so
-    char* line = NULL;
+    char* line = nullptr;
     size_t lineLen = 0;
     int count = 0;
     ssize_t read;
@@ -313,7 +316,7 @@ CrashInfo::EnumerateModuleMappings()
     assert(chars > 0 && chars <= sizeof(mapPath));
 
     FILE* mapsFile = fopen(mapPath, "r");
-    if (mapsFile == NULL)
+    if (mapsFile == nullptr)
     {
         fprintf(stderr, "fopen(%s) FAILED %s\n", mapPath, strerror(errno));
         return false;
@@ -408,7 +411,8 @@ CrashInfo::GetDSOInfo()
     if (phnum <= 0 || phdrAddr == nullptr) {
         return false;
     }
-    TRACE("DSO: phdr %p phnum %d\n", phdrAddr, phnum);
+    uint64_t baseAddress = (uint64_t)phdrAddr - sizeof(Ehdr);
+    TRACE("DSO: base %" PRIA PRIx64 " phdr %p phnum %d\n", baseAddress, phdrAddr, phnum);
 
     // Search for the program PT_DYNAMIC header 
     ElfW(Dyn)* dynamicAddr = nullptr;
@@ -422,16 +426,23 @@ CrashInfo::GetDSOInfo()
         TRACE("DSO: phdr %p type %d (%x) vaddr %" PRIxA " memsz %" PRIxA " offset %" PRIxA "\n",
             phdrAddr, ph.p_type, ph.p_type, ph.p_vaddr, ph.p_memsz, ph.p_offset);
 
-        if (ph.p_type == PT_DYNAMIC) 
+        switch (ph.p_type)
         {
+        case PT_DYNAMIC:
             dynamicAddr = reinterpret_cast<ElfW(Dyn)*>(ph.p_vaddr);
-        }
-        else if (ph.p_type == PT_NOTE || ph.p_type == PT_GNU_EH_FRAME)
-        {
-            if (ph.p_vaddr != 0 && ph.p_memsz != 0)
-            {
+            break;
+
+        case PT_NOTE:
+        case PT_GNU_EH_FRAME:
+            if (ph.p_vaddr != 0 && ph.p_memsz != 0) {
                 InsertMemoryRegion(ph.p_vaddr, ph.p_memsz);
             }
+            break;
+
+        case PT_LOAD:
+            MemoryRegion region(0, ph.p_vaddr, ph.p_vaddr + ph.p_memsz, baseAddress);
+            m_moduleAddresses.insert(region);
+            break;
         }
     }
 
@@ -542,12 +553,20 @@ CrashInfo::GetELFInfo(uint64_t baseAddress)
             TRACE("ELF: phdr %p type %d (%x) vaddr %" PRIxA " memsz %" PRIxA " paddr %" PRIxA " filesz %" PRIxA " offset %" PRIxA " align %" PRIxA "\n",
                 phdrAddr, ph.p_type, ph.p_type, ph.p_vaddr, ph.p_memsz, ph.p_paddr, ph.p_filesz, ph.p_offset, ph.p_align);
 
-            if (ph.p_type == PT_DYNAMIC || ph.p_type == PT_NOTE || ph.p_type == PT_GNU_EH_FRAME)
+            switch (ph.p_type)
             {
-                if (ph.p_vaddr != 0 && ph.p_memsz != 0)
-                {
+            case PT_DYNAMIC:
+            case PT_NOTE:
+            case PT_GNU_EH_FRAME:
+                if (ph.p_vaddr != 0 && ph.p_memsz != 0) {
                     InsertMemoryRegion(baseAddress + ph.p_vaddr, ph.p_memsz);
                 }
+                break;
+
+            case PT_LOAD:
+                MemoryRegion region(0, baseAddress + ph.p_vaddr, baseAddress + ph.p_vaddr + ph.p_memsz, baseAddress);
+                m_moduleAddresses.insert(region);
+                break;
             }
         }
     }
@@ -562,8 +581,8 @@ bool
 CrashInfo::EnumerateMemoryRegionsWithDAC(const char* programPath, MINIDUMP_TYPE minidumpType)
 {
     PFN_CLRDataCreateInstance pfnCLRDataCreateInstance = nullptr;
-    ICLRDataEnumMemoryRegions* clrDataEnumRegions = nullptr;
-    IXCLRDataProcess* clrDataProcess = nullptr;
+    ICLRDataEnumMemoryRegions* pClrDataEnumRegions = nullptr;
+    IXCLRDataProcess* pClrDataProcess = nullptr;
     HMODULE hdac = nullptr;
     HRESULT hr = S_OK;
     bool result = false;
@@ -589,39 +608,43 @@ CrashInfo::EnumerateMemoryRegionsWithDAC(const char* programPath, MINIDUMP_TYPE 
     }
     if ((minidumpType & MiniDumpWithFullMemory) == 0)
     {
-        hr = pfnCLRDataCreateInstance(__uuidof(ICLRDataEnumMemoryRegions), m_dataTarget, (void**)&clrDataEnumRegions);
+        hr = pfnCLRDataCreateInstance(__uuidof(ICLRDataEnumMemoryRegions), m_dataTarget, (void**)&pClrDataEnumRegions);
         if (FAILED(hr))
         {
             fprintf(stderr, "CLRDataCreateInstance(ICLRDataEnumMemoryRegions) FAILED %08x\n", hr);
             goto exit;
         }
         // Calls CrashInfo::EnumMemoryRegion for each memory region found by the DAC
-        hr = clrDataEnumRegions->EnumMemoryRegions(this, minidumpType, CLRDATA_ENUM_MEM_DEFAULT);
+        hr = pClrDataEnumRegions->EnumMemoryRegions(this, minidumpType, CLRDATA_ENUM_MEM_DEFAULT);
         if (FAILED(hr))
         {
             fprintf(stderr, "EnumMemoryRegions FAILED %08x\n", hr);
             goto exit;
         }
     }
-    hr = pfnCLRDataCreateInstance(__uuidof(IXCLRDataProcess), m_dataTarget, (void**)&clrDataProcess);
+    hr = pfnCLRDataCreateInstance(__uuidof(IXCLRDataProcess), m_dataTarget, (void**)&pClrDataProcess);
     if (FAILED(hr))
     {
         fprintf(stderr, "CLRDataCreateInstance(IXCLRDataProcess) FAILED %08x\n", hr);
         goto exit;
     }
-    if (!EnumerateManagedModules(clrDataProcess))
+    if (!EnumerateManagedModules(pClrDataProcess))
+    {
+        goto exit;
+    }
+    if (!UnwindAllThreads(pClrDataProcess))
     {
         goto exit;
     }
     result = true;
 exit:
-    if (clrDataEnumRegions != nullptr)
+    if (pClrDataEnumRegions != nullptr)
     {
-        clrDataEnumRegions->Release();
+        pClrDataEnumRegions->Release();
     }
-    if (clrDataProcess != nullptr)
+    if (pClrDataProcess != nullptr)
     {
-        clrDataProcess->Release();
+        pClrDataProcess->Release();
     }
     if (hdac != nullptr)
     {
@@ -631,24 +654,29 @@ exit:
 }
 
 //
-// Enumerate all the managed modules and replace the module 
-// mapping with the module name found.
+// Enumerate all the managed modules and replace the module mapping with the module name found.
 //
 bool
-CrashInfo::EnumerateManagedModules(IXCLRDataProcess* clrDataProcess)
+CrashInfo::EnumerateManagedModules(IXCLRDataProcess* pClrDataProcess)
 {
-    IXCLRDataModule* clrDataModule = nullptr;
     CLRDATA_ENUM enumModules = 0;
+    bool result = true;
     HRESULT hr = S_OK;
 
-    if (FAILED(hr = clrDataProcess->StartEnumModules(&enumModules))) {
+    if (FAILED(hr = pClrDataProcess->StartEnumModules(&enumModules))) {
         fprintf(stderr, "StartEnumModules FAILED %08x\n", hr);
         return false;
     }
-    while ((hr = clrDataProcess->EnumModule(&enumModules, &clrDataModule)) == S_OK)
+
+    while (true)
     {
+        ReleaseHolder<IXCLRDataModule> pClrDataModule;
+        if ((hr = pClrDataProcess->EnumModule(&enumModules, &pClrDataModule)) != S_OK) {
+            break;
+        }
+
         DacpGetModuleData moduleData;
-        if (SUCCEEDED(hr = moduleData.Request(clrDataModule)))
+        if (SUCCEEDED(hr = moduleData.Request(pClrDataModule.GetPtr())))
         {
             TRACE("MODULE: %" PRIA PRIx64 " dyn %d inmem %d file %d pe %" PRIA PRIx64 " pdb %" PRIA PRIx64, moduleData.LoadedPEAddress, moduleData.IsDynamic, 
                 moduleData.IsInMemory, moduleData.IsFileLayout, moduleData.PEFile, moduleData.InMemoryPdbAddress);
@@ -656,12 +684,13 @@ CrashInfo::EnumerateManagedModules(IXCLRDataProcess* clrDataProcess)
             if (!moduleData.IsDynamic && moduleData.LoadedPEAddress != 0)
             {
                 ArrayHolder<WCHAR> wszUnicodeName = new WCHAR[MAX_LONGPATH + 1];
-                if (SUCCEEDED(hr = clrDataModule->GetFileName(MAX_LONGPATH, NULL, wszUnicodeName)))
+                if (SUCCEEDED(hr = pClrDataModule->GetFileName(MAX_LONGPATH, nullptr, wszUnicodeName)))
                 {
                     char* pszName = (char*)malloc(MAX_LONGPATH + 1);
                     if (pszName == nullptr) {
                         fprintf(stderr, "Allocating module name FAILED\n");
-                        return false;
+                        result = false;
+                        break;
                     }
                     sprintf_s(pszName, MAX_LONGPATH, "%S", (WCHAR*)wszUnicodeName);
                     TRACE(" %s\n", pszName);
@@ -680,12 +709,27 @@ CrashInfo::EnumerateManagedModules(IXCLRDataProcess* clrDataProcess)
         else {
             TRACE("moduleData.Request FAILED %08x\n", hr);
         }
-        if (clrDataModule != nullptr) {
-            clrDataModule->Release();
-        }
     }
+
     if (enumModules != 0) {
-        clrDataProcess->EndEnumModules(enumModules);
+        pClrDataProcess->EndEnumModules(enumModules);
+    }
+
+    return result;
+}
+
+//
+// Unwind all the native threads to ensure that the dwarf unwind info is added to the core dump.
+//
+bool
+CrashInfo::UnwindAllThreads(IXCLRDataProcess* pClrDataProcess)
+{
+    // For each native and managed thread
+    for (ThreadInfo* thread : m_threads)
+    {
+        if (!thread->UnwindThread(*this, pClrDataProcess)) {
+            return false;
+        }
     }
     return true;
 }
@@ -726,6 +770,20 @@ CrashInfo::ReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, const char* pszName
             newRegion.Trace();
         }
     }
+}
+
+//
+// Returns the module base address for the IP or 0.
+//
+uint64_t CrashInfo::GetBaseAddress(uint64_t ip)
+{
+    MemoryRegion search(0, ip, ip, 0);
+    const MemoryRegion* found = SearchMemoryRegions(m_moduleAddresses, search);
+    if (found == nullptr) {
+        return 0;
+    }
+    // The memory region Offset() is the base address of the module
+    return found->Offset();
 }
 
 //
@@ -828,11 +886,12 @@ CrashInfo::InsertMemoryRegion(const MemoryRegion& region)
 uint32_t 
 CrashInfo::GetMemoryRegionFlags(uint64_t start)
 {
-    const MemoryRegion* region = SearchMemoryRegions(m_moduleMappings, start);
+    MemoryRegion search(0, start, start + PAGE_SIZE);
+    const MemoryRegion* region = SearchMemoryRegions(m_moduleMappings, search);
     if (region != nullptr) {
         return region->Flags();
     }
-    region = SearchMemoryRegions(m_otherMappings, start);
+    region = SearchMemoryRegions(m_otherMappings, search);
     if (region != nullptr) {
         return region->Flags();
     }
@@ -922,12 +981,12 @@ CrashInfo::CombineMemoryRegions()
 // Searches for a memory region given an address.
 //
 const MemoryRegion* 
-CrashInfo::SearchMemoryRegions(const std::set<MemoryRegion>& regions, uint64_t start)
+CrashInfo::SearchMemoryRegions(const std::set<MemoryRegion>& regions, const MemoryRegion& search)
 {
-    std::set<MemoryRegion>::iterator found = regions.find(MemoryRegion(0, start, start + PAGE_SIZE));
+    std::set<MemoryRegion>::iterator found = regions.find(search);
     for (; found != regions.end(); found++)
     {
-        if (start >= found->StartAddress() && start < found->EndAddress())
+        if (search.StartAddress() >= found->StartAddress() && search.StartAddress() < found->EndAddress())
         {
             return &*found;
         }
