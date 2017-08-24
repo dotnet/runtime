@@ -1246,6 +1246,30 @@ namespace System.IO
             _stream.SetLength(value);
         }
 
+        public override void CopyTo(Stream destination, int bufferSize)
+        {
+            StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
+
+            int readBytes = _readLen - _readPos;
+            Debug.Assert(readBytes >= 0, $"Expected a non-negative number of bytes in buffer, got {readBytes}");
+
+            if (readBytes > 0)
+            {
+                // If there's any read data in the buffer, write it all to the destination stream.
+                Debug.Assert(_writePos == 0, "Write buffer must be empty if there's data in the read buffer");
+                destination.Write(_buffer, _readPos, readBytes);
+                _readPos = _readLen = 0;
+            }
+            else if (_writePos > 0)
+            {
+                // If there's write data in the buffer, flush it back to the underlying stream, as does ReadAsync.
+                FlushWrite();
+            }
+
+            // Our buffer is now clear. Copy data directly from the source stream to the destination stream.
+            _stream.CopyTo(destination, bufferSize);
+        }
+
         public override Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
             StreamHelpers.ValidateCopyToArgs(this, destination, bufferSize);
@@ -1262,6 +1286,7 @@ namespace System.IO
             {
                 int readBytes = _readLen - _readPos;
                 Debug.Assert(readBytes >= 0, $"Expected a non-negative number of bytes in buffer, got {readBytes}");
+                
                 if (readBytes > 0)
                 {
                     // If there's any read data in the buffer, write it all to the destination stream.
