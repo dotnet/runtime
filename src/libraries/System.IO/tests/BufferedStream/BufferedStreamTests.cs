@@ -54,8 +54,10 @@ namespace System.IO.Tests
             Assert.Equal(TaskStatus.Faulted, stream.FlushAsync().Status);
         }
 
-        [Fact]
-        public async Task CopyToAsyncTest_RequiresAsyncFlushingOfWrites()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task CopyToTest_RequiresFlushingOfWrites(bool copyAsynchronously)
         {
             byte[] data = Enumerable.Range(0, 1000).Select(i => (byte)(i % 256)).ToArray();
 
@@ -70,17 +72,27 @@ namespace System.IO.Tests
             src.WriteByte(42);
             dst.WriteByte(42);
 
-            Task copyTask = src.CopyToAsync(dst);
-            manualReleaseStream.Release();
-            await copyTask;
+            if (copyAsynchronously)
+            {
+                Task copyTask = src.CopyToAsync(dst);
+                manualReleaseStream.Release();
+                await copyTask;
+            }
+            else
+            {
+                manualReleaseStream.Release();
+                src.CopyTo(dst);
+            }
 
             Assert.Equal(data, dst.ToArray());
         }
 
         [Theory]
-        [InlineData(false)]
-        [InlineData(true)]
-        public async Task CopyToAsyncTest_ReadBeforeCopy_CopiesAllData(bool wrappedStreamCanSeek)
+        [InlineData(false, false)]
+        [InlineData(false, true)]
+        [InlineData(true, false)]
+        [InlineData(true, true)]
+        public async Task CopyToTest_ReadBeforeCopy_CopiesAllData(bool copyAsynchronously, bool wrappedStreamCanSeek)
         {
             byte[] data = Enumerable.Range(0, 1000).Select(i => (byte)(i % 256)).ToArray();
 
@@ -94,7 +106,14 @@ namespace System.IO.Tests
             src.ReadByte();
 
             var dst = new MemoryStream();
-            await src.CopyToAsync(dst);
+            if (copyAsynchronously)
+            {
+                await src.CopyToAsync(dst);
+            }
+            else
+            {
+                src.CopyTo(dst);
+            }
 
             var expected = new byte[data.Length - 1];
             Array.Copy(data, 1, expected, 0, expected.Length);
