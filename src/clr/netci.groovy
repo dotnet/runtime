@@ -1590,6 +1590,10 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                                 // Archive and process (only) the test results
                                 Utilities.addArchival(newJob, "${workspaceRelativeFxRoot}/bin/**/testResults.xml")
                                 Utilities.addXUnitDotNETResults(newJob, "${workspaceRelativeFxRoot}/bin/**/testResults.xml")
+
+                                //Archive additional build stuff to diagnose why my attempt at fault injection isn't causing CI to fail
+                                Utilities.addArchival(newJob, "SetStressModes.bat")
+                                Utilities.addArchival(newJob, "${workspaceRelativeFxRoot}/bin/testhost/**")
                             }
                             else {
                                 buildCommands += "%WORKSPACE%\\tests\\runtest.cmd ${runtestArguments} TestEnv ${stepScriptLocation}"
