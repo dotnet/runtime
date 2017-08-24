@@ -3,6 +3,7 @@
 // See the LICENSE file in the project root for more information.
 
 #include "common.h"
+#include "eventpipe.h"
 #include "eventpipeconfiguration.h"
 #include "eventpipebuffer.h"
 #include "eventpipebuffermanager.h"
@@ -217,7 +218,7 @@ void EventPipeBufferManager::DeAllocateBuffer(EventPipeBuffer *pBuffer)
     }
 }
 
-bool EventPipeBufferManager::WriteEvent(Thread *pThread, EventPipeEvent &event, BYTE *pData, unsigned int length, LPCGUID pActivityId, LPCGUID pRelatedActivityId, Thread *pEventThread, StackContents *pStack)
+bool EventPipeBufferManager::WriteEvent(Thread *pThread, EventPipeEvent &event, EventPipeEventPayload &payload, LPCGUID pActivityId, LPCGUID pRelatedActivityId, Thread *pEventThread, StackContents *pStack)
 {
     CONTRACTL
     {
@@ -276,7 +277,7 @@ bool EventPipeBufferManager::WriteEvent(Thread *pThread, EventPipeEvent &event, 
         else
         {
             // Attempt to write the event to the buffer.  If this fails, we should allocate a new buffer.
-            allocNewBuffer = !pBuffer->WriteEvent(pEventThread, event, pData, length, pActivityId, pRelatedActivityId, pStack);
+            allocNewBuffer = !pBuffer->WriteEvent(pEventThread, event, payload, pActivityId, pRelatedActivityId, pStack);
         }
     }
 
@@ -290,7 +291,7 @@ bool EventPipeBufferManager::WriteEvent(Thread *pThread, EventPipeEvent &event, 
         // However, the GC is waiting on this call to return so that it can make forward progress.  Thus it is not safe
         // to switch to preemptive mode here.
 
-        unsigned int requestSize = sizeof(EventPipeEventInstance) + length;
+        unsigned int requestSize = sizeof(EventPipeEventInstance) + payload.GetSize();
         pBuffer = AllocateBufferForThread(pThread, requestSize);
     }
 
@@ -299,7 +300,7 @@ bool EventPipeBufferManager::WriteEvent(Thread *pThread, EventPipeEvent &event, 
     // This is the second time if this thread did have one or more buffers, but they were full.
     if(allocNewBuffer && pBuffer != NULL)
     {
-        allocNewBuffer = !pBuffer->WriteEvent(pEventThread, event, pData, length, pActivityId, pRelatedActivityId, pStack);
+        allocNewBuffer = !pBuffer->WriteEvent(pEventThread, event, payload, pActivityId, pRelatedActivityId, pStack);
     }
 
     // Mark that the thread is no longer writing an event.
