@@ -385,11 +385,11 @@ namespace System.Threading
         internal bool loggingEnabled;
         internal readonly ConcurrentQueue<IThreadPoolWorkItem> workItems = new ConcurrentQueue<IThreadPoolWorkItem>();
 
-        private System.Threading.Tasks.PaddingFor32 pad1;
+        private Internal.PaddingFor32 pad1;
 
         private volatile int numOutstandingThreadRequests = 0;
 
-        private System.Threading.Tasks.PaddingFor32 pad2;
+        private Internal.PaddingFor32 pad2;
 
         public ThreadPoolWorkQueue()
         {
