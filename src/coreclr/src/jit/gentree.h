@@ -1332,7 +1332,7 @@ public:
 
     bool OperIsMultiRegOp() const
     {
-#if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
+#if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_) && defined(ARM_SOFTFP)
         if (gtOper == GT_MUL_LONG || gtOper == GT_PUTARG_REG || gtOper == GT_COPY)
         {
             return true;
