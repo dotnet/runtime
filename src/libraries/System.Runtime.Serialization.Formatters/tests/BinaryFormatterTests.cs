@@ -19,7 +19,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         [MemberData(nameof(BasicObjectsRoundtrip_MemberData))]
         public void ValidateBasicObjectsRoundtrip(object obj, FormatterAssemblyStyle assemblyFormat, TypeFilterLevel filterLevel, FormatterTypeStyle typeFormat)
         {
-            object clone = FormatterClone(obj, null, assemblyFormat, filterLevel, typeFormat);
+            object clone = BinaryFormatterHelpers.Clone(obj, null, assemblyFormat, filterLevel, typeFormat);
             if (!ReferenceEquals(obj, string.Empty)) // "" is interned and will roundtrip as the same object
             {
                 Assert.NotSame(obj, clone);
@@ -150,7 +150,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         {
             object o = new object();
             object[] arr = new[] { o, o, o, o, o };
-            object[] result = FormatterClone(arr);
+            object[] result = BinaryFormatterHelpers.Clone(arr);
 
             Assert.Equal(arr.Length, result.Length);
             Assert.NotSame(arr, result);
@@ -159,13 +159,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
             {
                 Assert.Same(result[0], result[i]);
             }
-        }
-
-        [Theory]
-        [MemberData(nameof(SerializableExceptions_MemberData))]
-        public void Roundtrip_Exceptions(Exception expected)
-        {
-            BinaryFormatterHelpers.AssertRoundtrips(expected);
         }
 
         [Theory]
@@ -189,9 +182,9 @@ namespace System.Runtime.Serialization.Formatters.Tests
         {
             var p = new NonSerializablePair<int, string>() { Value1 = 1, Value2 = "2" };
             Assert.False(p.GetType().IsSerializable);
-            Assert.Throws<SerializationException>(() => FormatterClone(p));
+            Assert.Throws<SerializationException>(() => BinaryFormatterHelpers.Clone(p));
 
-            NonSerializablePair<int, string> result = FormatterClone(p, new NonSerializablePairSurrogate());
+            NonSerializablePair<int, string> result = BinaryFormatterHelpers.Clone(p, new NonSerializablePairSurrogate());
             Assert.NotSame(p, result);
             Assert.Equal(p.Value1, result.Value1);
             Assert.Equal(p.Value2, result.Value2);
@@ -374,7 +367,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         public void ObjectReference_RealObjectSerialized()
         {
             var obj = new ObjRefReturnsObj { Real = 42 };
-            object real = FormatterClone<object>(obj);
+            object real = BinaryFormatterHelpers.Clone<object>(obj);
             Assert.Equal(42, real);
         }
 
@@ -470,7 +463,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
         [SkipOnTargetFramework(TargetFrameworkMonikers.UapAot, "UAPAOT does not support non-zero lower bounds")]
         public void Roundtrip_ArrayContainingArrayAtNonZeroLowerBound()
         {
-            FormatterClone(Array.CreateInstance(typeof(uint[]), new[] { 5 }, new[] { 1 }));
+            BinaryFormatterHelpers.Clone(Array.CreateInstance(typeof(uint[]), new[] { 5 }, new[] { 1 }));
         }
     }
 }

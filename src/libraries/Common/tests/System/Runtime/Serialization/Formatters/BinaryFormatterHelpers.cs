@@ -4,7 +4,6 @@
 
 using System.IO;
 using System.Reflection;
-using System.Runtime.InteropServices;
 using System.Runtime.Serialization.Formatters.Binary;
 
 using Xunit;
@@ -13,47 +12,34 @@ namespace System.Runtime.Serialization.Formatters.Tests
 {
     public static class BinaryFormatterHelpers
     {
-        internal static T Clone<T>(T obj)
+        internal static T Clone<T>(T obj,
+            ISerializationSurrogate surrogate = null,
+            FormatterAssemblyStyle assemblyFormat = FormatterAssemblyStyle.Full,
+            TypeFilterLevel filterLevel = TypeFilterLevel.Full,
+            FormatterTypeStyle typeFormat = FormatterTypeStyle.TypesAlways)
         {
-            var f = new BinaryFormatter();
+            BinaryFormatter f;
+            if (surrogate == null)
+            {
+                f = new BinaryFormatter();
+            }
+            else
+            {
+                var c = new StreamingContext();
+                var s = new SurrogateSelector();
+                s.AddSurrogate(obj.GetType(), c, surrogate);
+                f = new BinaryFormatter(s, c);
+            }
+            f.AssemblyFormat = assemblyFormat;
+            f.FilterLevel = filterLevel;
+            f.TypeFormat = typeFormat;
+
             using (var s = new MemoryStream())
             {
                 f.Serialize(s, obj);
+                Assert.NotEqual(0, s.Position);
                 s.Position = 0;
                 return (T)f.Deserialize(s);
-            }
-        }
-
-        public static void AssertRoundtrips<T>(T expected, params Func<T, object>[] additionalGetters)
-            where T : Exception
-        {
-            for (int i = 0; i < 2; i++)
-            {
-                if (i > 0) // first time without stack trace, second time with
-                {
-                    try { throw expected; }
-                    catch { }
-                }
-
-                // Serialize/deserialize the exception
-                T actual = Clone(expected);
-
-                // Verify core state
-                if (!PlatformDetection.IsFullFramework) // On full framework, line number may be method body start
-                {
-                    Assert.Equal(expected.StackTrace, actual.StackTrace);
-                    Assert.Equal(expected.ToString(), actual.ToString()); // includes stack trace
-                }
-                Assert.Equal(expected.Data, actual.Data);
-                Assert.Equal(expected.Message, actual.Message);
-                Assert.Equal(expected.Source, actual.Source);
-                Assert.Equal(expected.HResult, actual.HResult);
-
-                // Verify optional additional state
-                foreach (Func<T, object> getter in additionalGetters)
-                {
-                    Assert.Equal(getter(expected), getter(actual));
-                }
             }
         }
 
