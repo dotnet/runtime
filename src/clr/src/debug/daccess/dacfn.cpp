@@ -220,8 +220,29 @@ DacWriteAll(TADDR addr, PVOID buffer, ULONG32 size, bool throwEx)
 
 static BOOL DacReadAllAdapter(PVOID address, PVOID buffer, SIZE_T size)
 {
-    HRESULT hr = DacReadAll((TADDR)address, (PVOID)buffer, size, false);
-    return SUCCEEDED(hr);
+    DAC_INSTANCE* inst = g_dacImpl->m_instances.Find((TADDR)address);
+    if (inst == nullptr || inst->size < size)
+    {
+        inst = g_dacImpl->m_instances.Alloc((TADDR)address, size, DAC_PAL);
+        if (inst == nullptr)
+        {
+            return FALSE;
+        }
+        inst->noReport = 0;
+        HRESULT hr = DacReadAll((TADDR)address, inst + 1, size, false);
+        if (FAILED(hr))
+        {
+            g_dacImpl->m_instances.ReturnAlloc(inst);
+            return FALSE;
+        }
+        if (!g_dacImpl->m_instances.Add(inst))
+        {
+            g_dacImpl->m_instances.ReturnAlloc(inst);
+            return FALSE;
+        }
+    }
+    memcpy(buffer, inst + 1, size);
+    return TRUE;
 }
 
 HRESULT 

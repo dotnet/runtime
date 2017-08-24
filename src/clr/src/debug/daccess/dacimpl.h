@@ -125,6 +125,7 @@ enum DAC_USAGE_TYPE
     DAC_VPTR,
     DAC_STRA,
     DAC_STRW,
+    DAC_PAL,
 };
 
 // mscordacwks's module handle 

@@ -5,6 +5,10 @@
 #include "createdump.h"
 #include <asm/ptrace.h>
 
+#ifndef THUMB_CODE
+#define THUMB_CODE 1
+#endif
+
 #ifndef __GLIBC__
 typedef int __ptrace_request;
 #endif
@@ -13,6 +17,8 @@ typedef int __ptrace_request;
 #define FPREG_ErrorSelector(fpregs) *(((WORD*)&((fpregs).rip)) + 2)
 #define FPREG_DataOffset(fpregs) *(DWORD*)&((fpregs).rdp)
 #define FPREG_DataSelector(fpregs) *(((WORD*)&((fpregs).rdp)) + 2)
+
+extern CrashInfo* g_crashInfo;
 
 ThreadInfo::ThreadInfo(pid_t tid) :
     m_tid(tid)
@@ -24,15 +30,15 @@ ThreadInfo::~ThreadInfo()
 }
 
 bool
-ThreadInfo::Initialize(ICLRDataTarget* dataTarget)
+ThreadInfo::Initialize(ICLRDataTarget* pDataTarget)
 {
     if (!CrashInfo::GetStatus(m_tid, &m_ppid, &m_tgid, nullptr)) 
     {
         return false;
     }
-    if (dataTarget != nullptr)
+    if (pDataTarget != nullptr)
     {
-        if (!GetRegistersWithDataTarget(dataTarget))
+        if (!GetRegistersWithDataTarget(pDataTarget))
         {
             return false;
         }
@@ -60,6 +66,108 @@ ThreadInfo::ResumeThread()
         int waitStatus;
         waitpid(m_tid, &waitStatus, __WALL);
     }
+}
+
+// Helper for UnwindNativeFrames
+static void
+GetFrameLocation(CONTEXT* pContext, uint64_t* ip, uint64_t* sp)
+{
+#if defined(__x86_64__)
+    *ip = pContext->Rip;
+    *sp = pContext->Rsp;
+#elif defined(__i386__)
+    *ip = pContext->Eip;
+    *sp = pContext->Esp;
+#elif defined(__arm__)
+    *ip = pContext->Pc & ~THUMB_CODE;
+    *sp = pContext->Sp;
+#endif
+}
+
+// Helper for UnwindNativeFrames
+static BOOL 
+ReadMemoryAdapter(PVOID address, PVOID buffer, SIZE_T size)
+{
+    return g_crashInfo->ReadMemory(address, buffer, size);
+}
+
+void
+ThreadInfo::UnwindNativeFrames(CrashInfo& crashInfo, CONTEXT* pContext)
+{
+    // For each native frame
+    while (true)
+    {
+        uint64_t ip = 0, sp = 0;
+        GetFrameLocation(pContext, &ip, &sp);
+
+        TRACE("Unwind: sp %" PRIA PRIx64 " ip %" PRIA PRIx64 "\n", sp, ip);
+        if (ip == 0) {
+            break;
+        }
+        // Add two pages around the instruction pointer to the core dump
+        crashInfo.InsertMemoryRegion(ip - PAGE_SIZE, PAGE_SIZE * 2);
+
+        // Look up the ip address to get the module base address
+        uint64_t baseAddress = crashInfo.GetBaseAddress(ip);
+        if (baseAddress == 0) {
+            TRACE("Unwind: module base not found ip %" PRIA PRIx64 "\n", ip);
+            break;
+        }
+
+        // Unwind the native frame adding all the memory accessed to the 
+        // core dump via the read memory adapter.
+        if (!PAL_VirtualUnwindOutOfProc(pContext, nullptr, baseAddress, ReadMemoryAdapter)) {
+            TRACE("Unwind: PAL_VirtualUnwindOutOfProc returned false\n");
+            break;
+        }
+    }
+}
+
+bool
+ThreadInfo::UnwindThread(CrashInfo& crashInfo, IXCLRDataProcess* pClrDataProcess)
+{
+    ReleaseHolder<IXCLRDataTask> pTask;
+    ReleaseHolder<IXCLRDataStackWalk> pStackwalk;
+
+    TRACE("Unwind: thread %04x\n", Tid());
+
+    // Get starting native context for the thread
+    CONTEXT context;
+    GetThreadContext(CONTEXT_ALL, &context);
+
+    // Unwind the native frames at the top of the stack
+    UnwindNativeFrames(crashInfo, &context);
+
+    // Get the managed stack walker for this thread
+    if (SUCCEEDED(pClrDataProcess->GetTaskByOSThreadID(Tid(), &pTask)))
+    {
+        pTask->CreateStackWalk(
+            CLRDATA_SIMPFRAME_UNRECOGNIZED |
+            CLRDATA_SIMPFRAME_MANAGED_METHOD |
+            CLRDATA_SIMPFRAME_RUNTIME_MANAGED_CODE |
+            CLRDATA_SIMPFRAME_RUNTIME_UNMANAGED_CODE,
+            &pStackwalk);
+    }
+
+    // For each managed frame (if any)
+    if (pStackwalk != nullptr) 
+    {
+        TRACE("Unwind: managed frames\n");
+        do
+        {
+            // Get the managed stack frame context
+            if (pStackwalk->GetContext(CONTEXT_ALL, sizeof(context), nullptr, (BYTE *)&context) != S_OK) {
+                TRACE("Unwind: stack walker GetContext FAILED\n");
+                break;
+            }
+
+            // Unwind all the native frames after the managed frame
+            UnwindNativeFrames(crashInfo, &context);
+
+        } while (pStackwalk->Next() == S_OK);
+    }
+
+    return true;
 }
 
 bool 
@@ -97,11 +205,11 @@ ThreadInfo::GetRegistersWithPTrace()
 }
 
 bool 
-ThreadInfo::GetRegistersWithDataTarget(ICLRDataTarget* dataTarget)
+ThreadInfo::GetRegistersWithDataTarget(ICLRDataTarget* pDataTarget)
 {
     CONTEXT context;
     context.ContextFlags = CONTEXT_ALL;
-    if (dataTarget->GetThreadContext(m_tid, context.ContextFlags, sizeof(context), reinterpret_cast<PBYTE>(&context)) != S_OK)
+    if (pDataTarget->GetThreadContext(m_tid, context.ContextFlags, sizeof(context), reinterpret_cast<PBYTE>(&context)) != S_OK)
     {
         return false;
     }
@@ -188,39 +296,32 @@ ThreadInfo::GetRegistersWithDataTarget(ICLRDataTarget* dataTarget)
 }
 
 void
-ThreadInfo::GetThreadStack(const CrashInfo& crashInfo, uint64_t* startAddress, size_t* size) const
+ThreadInfo::GetThreadStack(CrashInfo& crashInfo)
 {
-#if defined(__arm__)
-    *startAddress = m_gpRegisters.ARM_sp & PAGE_MASK;
-#else
-    *startAddress = m_gpRegisters.rsp & PAGE_MASK;
-#endif
-    *size = 4 * PAGE_SIZE;
+    uint64_t startAddress;
+    size_t size;
 
-    const MemoryRegion* region = CrashInfo::SearchMemoryRegions(crashInfo.OtherMappings(), *startAddress);
+#if defined(__arm__)
+    startAddress = m_gpRegisters.ARM_sp & PAGE_MASK;
+#else
+    startAddress = m_gpRegisters.rsp & PAGE_MASK;
+#endif
+    size = 4 * PAGE_SIZE;
+
+    MemoryRegion search(0, startAddress, startAddress + PAGE_SIZE);
+    const MemoryRegion* region = CrashInfo::SearchMemoryRegions(crashInfo.OtherMappings(), search);
     if (region != nullptr) {
 
         // Use the mapping found for the size of the thread's stack
-        *size = region->EndAddress() - *startAddress;
+        size = region->EndAddress() - startAddress;
 
         if (g_diagnostics)
         {
-            TRACE("Thread %04x stack found in other mapping (size %08zx): ", m_tid, *size);
+            TRACE("Thread %04x stack found in other mapping (size %08zx): ", m_tid, size);
             region->Trace();
         }
     }
-    
-}
-
-void
-ThreadInfo::GetThreadCode(uint64_t* startAddress, size_t* size) const
-{
-#if defined(__arm__)
-    *startAddress = m_gpRegisters.ARM_pc & PAGE_MASK;
-#elif defined(__x86_64__)
-    *startAddress = m_gpRegisters.rip & PAGE_MASK;
-#endif
-    *size = PAGE_SIZE;
+    crashInfo.InsertMemoryRegion(startAddress, size);
 }
 
 void 
