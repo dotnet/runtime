@@ -5867,6 +5867,19 @@ GenTreePtr Compiler::fgMorphArrayIndex(GenTreePtr tree)
     // Furthermore, this representation typically saves on code size in minopts w.r.t. the complete expansion
     // performed when optimizing, as it does not require LclVar nodes (which are always stack loads/stores in
     // minopts).
+    //
+    // When we *are* optimizing, we fully expand GT_INDEX to:
+    // 1. Evaluate the array address expression and store the result in a temp if the expression is complex or
+    //    side-effecting.
+    // 2. Evaluate the array index expression and store the result in a temp if the expression is complex or
+    //    side-effecting.
+    // 3. Perform an explicit bounds check: GT_ARR_BOUNDS_CHK(index, GT_ARR_LENGTH(array))
+    // 4. Compute the address of the element that will be accessed:
+    //    GT_ADD(GT_ADD(array, firstElementOffset), GT_MUL(index, elementSize))
+    // 5. Dereference the address with a GT_IND.
+    //
+    // This expansion explicitly exposes the bounds check and the address calculation to the optimizer, which allows
+    // for more straightforward bounds-check removal, CSE, etc.
     if (opts.MinOpts())
     {
         GenTree* const array = fgMorphTree(asIndex->Arr());
