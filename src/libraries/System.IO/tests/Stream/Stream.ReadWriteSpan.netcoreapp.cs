@@ -25,9 +25,6 @@ namespace System.IO.Tests
                     return 10;
                 });
 
-            Assert.Equal(0, s.Read(new Span<byte>(new byte[0])));
-            Assert.False(readInvoked);
-
             Span<byte> totalSpan = new byte[30];
             Span<byte> targetSpan = totalSpan.Slice(5, 20);
 
@@ -53,9 +50,6 @@ namespace System.IO.Tests
 
                     for (int i = 0; i < count; i++) Assert.Equal(i, array[offset + i]);
                 });
-
-            s.Write(new Span<byte>(new byte[0]));
-            Assert.False(writeInvoked);
 
             Span<byte> span = new byte[10];
             span[3] = 1;
