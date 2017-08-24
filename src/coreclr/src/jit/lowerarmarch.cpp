@@ -568,7 +568,7 @@ void Lowering::ContainCheckIndir(GenTreeIndir* indirNode)
         GenTreeAddrMode* lea   = addr->AsAddrMode();
         GenTree*         base  = lea->Base();
         GenTree*         index = lea->Index();
-        unsigned         cns   = lea->gtOffset;
+        int              cns   = lea->Offset();
 
 #ifdef _TARGET_ARM_
         // ARM floating-point load/store doesn't support a form similar to integer

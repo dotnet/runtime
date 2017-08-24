@@ -5134,7 +5134,7 @@ bool Lowering::IndirsAreEquivalent(GenTreePtr candidate, GenTreePtr storeInd)
             GenTreeAddrMode* gtAddr2 = pTreeB->AsAddrMode();
             return NodesAreEquivalentLeaves(gtAddr1->Base(), gtAddr2->Base()) &&
                    NodesAreEquivalentLeaves(gtAddr1->Index(), gtAddr2->Index()) &&
-                   gtAddr1->gtScale == gtAddr2->gtScale && gtAddr1->gtOffset == gtAddr2->gtOffset;
+                   (gtAddr1->gtScale == gtAddr2->gtScale) && (gtAddr1->Offset() == gtAddr2->Offset());
         }
         default:
             // We don't handle anything that is not either a constant,

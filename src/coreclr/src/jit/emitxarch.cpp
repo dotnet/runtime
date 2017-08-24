@@ -2599,7 +2599,7 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
         id->idInsFmt(emitMapFmtForIns(fmt, ins));
 
         // disp must have already been set in the instrDesc constructor.
-        assert(emitGetInsAmdAny(id) == ssize_t(indir->Offset())); // make sure "disp" is stored properly
+        assert(emitGetInsAmdAny(id) == indir->Offset()); // make sure "disp" is stored properly
     }
 }
 
@@ -2670,7 +2670,7 @@ void emitter::emitInsLoadInd(instruction ins, emitAttr attr, regNumber dstReg, G
     }
 
     assert(addr->OperIsAddrMode() || (addr->IsCnsIntOrI() && addr->isContained()) || !addr->isContained());
-    size_t     offset = mem->Offset();
+    ssize_t    offset = mem->Offset();
     instrDesc* id     = emitNewInstrAmd(attr, offset);
     id->idIns(ins);
     id->idReg1(dstReg);
@@ -2727,7 +2727,7 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
         return;
     }
 
-    size_t         offset = mem->Offset();
+    ssize_t        offset = mem->Offset();
     UNATIVE_OFFSET sz;
     instrDesc*     id;
 
@@ -3101,8 +3101,8 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
     }
     else // [mem], reg OR reg, [mem]
     {
-        size_t offset = mem->Offset();
-        id            = emitNewInstrAmd(attr, offset);
+        ssize_t offset = mem->Offset();
+        id             = emitNewInstrAmd(attr, offset);
         id->idIns(ins);
 
         GenTree* regTree = (src == mem) ? dst : src;
@@ -3218,7 +3218,7 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
     instrDesc*     id = nullptr;
     UNATIVE_OFFSET sz;
 
-    size_t offset = 0;
+    ssize_t offset = 0;
     if (addr->OperGet() != GT_CLS_VAR_ADDR)
     {
         offset = storeInd->Offset();
@@ -3279,7 +3279,7 @@ void emitter::emitInsRMW(instruction ins, emitAttr attr, GenTreeStoreInd* storeI
     assert(addr->OperGet() == GT_LCL_VAR || addr->OperGet() == GT_LCL_VAR_ADDR || addr->OperGet() == GT_CLS_VAR_ADDR ||
            addr->OperGet() == GT_LEA || addr->OperGet() == GT_CNS_INT);
 
-    size_t offset = 0;
+    ssize_t offset = 0;
     if (addr->OperGet() != GT_CLS_VAR_ADDR)
     {
         offset = storeInd->Offset();
