@@ -86,6 +86,19 @@ mono_btls_ssl_set_server_name (MonoBtlsSsl *ptr, const char *name);
 const char *
 mono_btls_ssl_get_server_name (MonoBtlsSsl *ptr);
 
+typedef enum {
+    MONO_BTLS_SSL_RENEGOTIATE_NEVER = 0,
+    MONO_BTLS_SSL_RENEGOTIATE_ONCE,
+    MONO_BTLS_SSL_RENEGOTIATE_FREELY,
+    MONO_BTLS_SSL_RENEGOTIATE_IGNORE
+} MonoBtlsSslRenegotiateMode;
+
+void
+mono_btls_ssl_set_renegotiate_mode (MonoBtlsSsl *ptr, MonoBtlsSslRenegotiateMode mode);
+
+int
+mono_btls_ssl_renegotiate_pending (MonoBtlsSsl *ptr);
+
 void
 mono_btls_ssl_destroy (MonoBtlsSsl *ptr);
 
