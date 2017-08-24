@@ -10966,7 +10966,7 @@ void cNodeIR(Compiler* comp, GenTree* tree)
             GenTree*         base   = lea->Base();
             GenTree*         index  = lea->Index();
             unsigned         scale  = lea->gtScale;
-            unsigned         offset = lea->gtOffset;
+            int              offset = lea->Offset();
 
             chars += printf(" [");
             if (base != nullptr)
@@ -10991,7 +10991,7 @@ void cNodeIR(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("+");
                 }
-                chars += printf("%u", offset);
+                chars += printf("%d", offset);
             }
             chars += printf("]");
             break;

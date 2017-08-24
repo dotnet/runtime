@@ -586,7 +586,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
 
             GenTree* base  = lea->Base();
             GenTree* index = lea->Index();
-            unsigned cns   = lea->gtOffset;
+            int      cns   = lea->Offset();
 
             // This LEA is instantiating an address, so we set up the srcCount here.
             info->srcCount = 0;

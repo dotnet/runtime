@@ -5826,16 +5826,16 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
     {
         regNumber baseReg  = lea->Base()->gtRegNum;
         regNumber indexReg = lea->Index()->gtRegNum;
-        getEmitter()->emitIns_R_ARX(INS_lea, size, lea->gtRegNum, baseReg, indexReg, lea->gtScale, lea->gtOffset);
+        getEmitter()->emitIns_R_ARX(INS_lea, size, lea->gtRegNum, baseReg, indexReg, lea->gtScale, lea->Offset());
     }
     else if (lea->Base())
     {
-        getEmitter()->emitIns_R_AR(INS_lea, size, lea->gtRegNum, lea->Base()->gtRegNum, lea->gtOffset);
+        getEmitter()->emitIns_R_AR(INS_lea, size, lea->gtRegNum, lea->Base()->gtRegNum, lea->Offset());
     }
     else if (lea->Index())
     {
         getEmitter()->emitIns_R_ARX(INS_lea, size, lea->gtRegNum, REG_NA, lea->Index()->gtRegNum, lea->gtScale,
-                                    lea->gtOffset);
+                                    lea->Offset());
     }
 
     genProduceReg(lea);
