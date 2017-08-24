@@ -331,17 +331,14 @@ namespace System.Net.Http.Headers
                     tmpResult > int.MaxValue / 10 || // will overflow when shifting digits
                     (tmpResult == int.MaxValue / 10 && digit > 7)) // will overflow when adding in digit
                 {
-                    goto ReturnFalse; // Remove goto once https://github.com/dotnet/coreclr/issues/9692 is addressed
+                    result = 0;
+                    return false;
                 }
                 tmpResult = (tmpResult * 10) + digit;
             }
 
             result = tmpResult;
             return true;
-
-            ReturnFalse:
-            result = 0;
-            return false;
         }
 
         internal static bool TryParseInt64(string value, int offset, int length, out long result) // TODO #21281: Replace with int.TryParse(Span<char>) once it's available
@@ -362,17 +359,14 @@ namespace System.Net.Http.Headers
                     tmpResult > long.MaxValue / 10 || // will overflow when shifting digits
                     (tmpResult == long.MaxValue / 10 && digit > 7)) // will overflow when adding in digit
                 {
-                    goto ReturnFalse; // Remove goto once https://github.com/dotnet/coreclr/issues/9692 is addressed
+                    result = 0;
+                    return false;
                 }
                 tmpResult = (tmpResult * 10) + digit;
             }
 
             result = tmpResult;
             return true;
-
-            ReturnFalse:
-            result = 0;
-            return false;
         }
 
         internal static string DumpHeaders(params HttpHeaders[] headers)
