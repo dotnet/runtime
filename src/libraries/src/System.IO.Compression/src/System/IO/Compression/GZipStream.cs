@@ -129,6 +129,12 @@ namespace System.IO.Compression
             }
         }
 
+        public override void CopyTo(Stream destination, int bufferSize)
+        {
+            CheckDeflateStream();
+            _deflateStream.CopyTo(destination, bufferSize);
+        }
+
         protected override void Dispose(bool disposing)
         {
             try
