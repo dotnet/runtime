@@ -66,6 +66,11 @@
   </Choose>
 
   <PropertyGroup>
+    <TargetRid Condition="'$(__RuntimeId)' != ''">$(__RuntimeId)</TargetRid>
+    <TargetRid Condition="'$(__RuntimeId)' == ''">$(TestNugetRuntimeId)</TargetRid>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <TargetsUnknownUnix Condition="'$(TargetsUnix)' == 'true' AND '$(OSGroup)' != 'FreeBSD' AND '$(OSGroup)' != 'Linux' AND '$(OSGroup)' != 'OSX'">true</TargetsUnknownUnix>
     <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.csproj'">C#</Language>
     <Language Condition="'$(Language)' == '' and  '$(MSBuildProjectExtension)' == '.ilproj'">IL</Language>
