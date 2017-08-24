@@ -3148,7 +3148,7 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
     genConsumeOperands(lea);
     emitter* emit   = getEmitter();
     emitAttr size   = emitTypeSize(lea);
-    unsigned offset = lea->gtOffset;
+    int      offset = lea->Offset();
 
     // In ARM we can only load addresses of the form:
     //
@@ -3168,7 +3168,6 @@ void CodeGen::genLeaInstruction(GenTreeAddrMode* lea)
     {
         GenTree* memBase = lea->Base();
         GenTree* index   = lea->Index();
-        unsigned offset  = lea->gtOffset;
 
         DWORD lsl;
 
