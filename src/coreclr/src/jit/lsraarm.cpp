@@ -562,7 +562,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         case GT_LEA:
         {
             GenTreeAddrMode* lea    = tree->AsAddrMode();
-            unsigned         offset = lea->gtOffset;
+            int              offset = lea->Offset();
 
             // This LEA is instantiating an address, so we set up the srcCount and dstCount here.
             info->srcCount = 0;
