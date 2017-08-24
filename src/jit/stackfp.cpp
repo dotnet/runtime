@@ -911,18 +911,7 @@ void CodeGen::genLoadStackFP(GenTreePtr tree, regNumber reg)
     }
     else
     {
-        // Since FP register allocator doesn't work well with
-        // RyuJIT CSE optimizer it makes possible situation when
-        // CSE'ed value gets mapped many times.
-        if (compCurFPState.Mapped(reg))
-        {
-            assert(tree->OperGet() == GT_LCL_VAR);
-            assert(compiler->lclNumIsTrueCSE(tree->gtLclVarCommon.gtLclNum));
-        }
-        else
-        {
-            FlatFPX87_PushVirtual(&compCurFPState, reg);
-        }
+        FlatFPX87_PushVirtual(&compCurFPState, reg);
         inst_FS_TT(INS_fld, tree);
     }
 }
