@@ -3517,6 +3517,15 @@ static int ComputeOperandDstCount(GenTree* operand)
         // pointers to argument setup stores.
         return 0;
     }
+#ifdef _TARGET_ARMARCH_
+    else if (operand->OperIsPutArgStk())
+    {
+        // A PUTARG_STK argument is an operand of a call, but is neither contained, nor does it produce
+        // a result.
+        assert(!operand->isContained());
+        return 0;
+    }
+#endif // _TARGET_ARMARCH_
     else
     {
         // If a field list or non-void-typed operand is not an unused value and does not have source registers,
