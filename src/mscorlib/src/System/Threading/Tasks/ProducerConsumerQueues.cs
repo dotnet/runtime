@@ -332,7 +332,7 @@ namespace System.Threading.Tasks
         private struct SegmentState
         {
             /// <summary>Padding to reduce false sharing between the segment's array and m_first.</summary>
-            internal PaddingFor32 m_pad0;
+            internal Internal.PaddingFor32 m_pad0;
 
             /// <summary>The index of the current head in the segment.</summary>
             internal volatile int m_first;
@@ -340,7 +340,7 @@ namespace System.Threading.Tasks
             internal int m_lastCopy; // not volatile as read and written by the producer, except for IsEmpty, and there m_lastCopy is only read after reading the volatile m_first
 
             /// <summary>Padding to reduce false sharing between the first and last.</summary>
-            internal PaddingFor32 m_pad1;
+            internal Internal.PaddingFor32 m_pad1;
 
             /// <summary>A copy of the current head index.</summary>
             internal int m_firstCopy; // not voliatle as only read and written by the consumer thread
@@ -348,7 +348,7 @@ namespace System.Threading.Tasks
             internal volatile int m_last;
 
             /// <summary>Padding to reduce false sharing with the last and what's after the segment.</summary>
-            internal PaddingFor32 m_pad2;
+            internal Internal.PaddingFor32 m_pad2;
         }
 
         /// <summary>Debugger type proxy for a SingleProducerSingleConsumerQueue of T.</summary>
@@ -365,18 +365,5 @@ namespace System.Threading.Tasks
                 m_queue = queue;
             }
         }
-    }
-
-    /// <summary>A placeholder class for common padding constants and eventually routines.</summary>
-    internal static class PaddingHelpers
-    {
-        /// <summary>A size greater than or equal to the size of the most common CPU cache lines.</summary>
-        internal const int CACHE_LINE_SIZE = 128;
-    }
-
-    /// <summary>Padding structure used to minimize false sharing in SingleProducerSingleConsumerQueue{T}.</summary>
-    [StructLayout(LayoutKind.Explicit, Size = PaddingHelpers.CACHE_LINE_SIZE - sizeof(Int32))] // Based on common case of 64-byte cache lines
-    internal struct PaddingFor32
-    {
     }
 }

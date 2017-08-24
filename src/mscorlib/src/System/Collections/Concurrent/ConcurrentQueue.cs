@@ -1111,10 +1111,10 @@ namespace System.Collections.Concurrent
 
     /// <summary>Padded head and tail indices, to avoid false sharing between producers and consumers.</summary>
     [DebuggerDisplay("Head = {Head}, Tail = {Tail}")]
-    [StructLayout(LayoutKind.Explicit, Size = 192)] // padding before/between/after fields based on typical cache line size of 64
+    [StructLayout(LayoutKind.Explicit, Size = 3*Internal.PaddingHelpers.CACHE_LINE_SIZE)] // padding before/between/after fields
     internal struct PaddedHeadAndTail
     {
-        [FieldOffset(64)] public int Head;
-        [FieldOffset(128)] public int Tail;
+        [FieldOffset(1*Internal.PaddingHelpers.CACHE_LINE_SIZE)] public int Head;
+        [FieldOffset(2*Internal.PaddingHelpers.CACHE_LINE_SIZE)] public int Tail;
     }
 }
