@@ -300,38 +300,6 @@ namespace System.Runtime.Serialization.Formatters.Tests
             return DeserializeRawToObject(raw, assemblyStyle);
         }
 
-        private static T FormatterClone<T>(
-            T obj,
-            ISerializationSurrogate surrogate = null,
-            FormatterAssemblyStyle assemblyFormat = FormatterAssemblyStyle.Full,
-            TypeFilterLevel filterLevel = TypeFilterLevel.Full,
-            FormatterTypeStyle typeFormat = FormatterTypeStyle.TypesAlways)
-        {
-            BinaryFormatter f;
-            if (surrogate == null)
-            {
-                f = new BinaryFormatter();
-            }
-            else
-            {
-                var c = new StreamingContext();
-                var s = new SurrogateSelector();
-                s.AddSurrogate(obj.GetType(), c, surrogate);
-                f = new BinaryFormatter(s, c);
-            }
-            f.AssemblyFormat = assemblyFormat;
-            f.FilterLevel = filterLevel;
-            f.TypeFormat = typeFormat;
-
-            using (var s = new MemoryStream())
-            {
-                f.Serialize(s, obj);
-                Assert.NotEqual(0, s.Position);
-                s.Position = 0;
-                return (T)(f.Deserialize(s));
-            }
-        }
-
         private class DelegateBinder : SerializationBinder
         {
             public Func<string, string, Type> BindToTypeDelegate = null;
