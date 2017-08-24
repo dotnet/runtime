@@ -136,12 +136,8 @@ namespace System
                 index += 1;
             }
 #if !netstandard10
-            if (Vector.IsHardwareAccelerated)
+            if (Vector.IsHardwareAccelerated && ((int)(byte*)index < length))
             {
-                if ((int)(byte*)index >= length)
-                {
-                    goto NotFound;
-                }
                 nLength = (IntPtr)(uint)((length - (uint)index) & ~(Vector<byte>.Count - 1));
                 // Get comparison Vector
                 Vector<byte> vComparison = GetVector(value);
@@ -153,17 +149,11 @@ namespace System
                         index += Vector<byte>.Count;
                         continue;
                     }
-                    // Found match, reuse Vector vComparison to keep register pressure low
-                    vComparison = vMatches;
-                    // goto rather than inline return to keep function smaller https://github.com/dotnet/coreclr/issues/9692
-                    goto VectorFound;
+                    // Find offset of first match
+                    return (int)(byte*)index + LocateFirstFoundByte(vMatches);
                 }
 
-                if ((int)(byte*)index >= length)
-                {
-                    goto NotFound;
-                }
-                else
+                if ((int)(byte*)index < length)
                 {
                     unchecked
                     {
@@ -171,14 +161,10 @@ namespace System
                     }
                     goto SequentialScan;
                 }
-            VectorFound:
-                // Find offset of first match
-                return (int)(byte*)index + LocateFirstFoundByte(vComparison);
             }
-        NotFound: // Workaround for https://github.com/dotnet/coreclr/issues/9692
 #endif
             return -1;
-        Found: // Workaround for https://github.com/dotnet/coreclr/issues/9692
+        Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
             return (int)(byte*)index;
         Found1:
             return (int)(byte*)(index + 1);
@@ -279,12 +265,8 @@ namespace System
                 index += 1;
             }
 #if !netstandard10
-            if (Vector.IsHardwareAccelerated)
+            if (Vector.IsHardwareAccelerated && ((int)(byte*)index < length))
             {
-                if ((int)(byte*)index >= length)
-                {
-                    goto NotFound;
-                }
                 nLength = (IntPtr)(uint)((length - (uint)index) & ~(Vector<byte>.Count - 1));
                 // Get comparison Vector
                 Vector<byte> values0 = GetVector(value0);
@@ -301,17 +283,11 @@ namespace System
                         index += Vector<byte>.Count;
                         continue;
                     }
-                    // Found match, reuse Vector vComparison to keep register pressure low
-                    values0 = vMatches;
-                    // goto rather than inline return to keep function smaller https://github.com/dotnet/coreclr/issues/9692
-                    goto VectorFound;
+                    // Find offset of first match
+                    return (int)(byte*)index + LocateFirstFoundByte(vMatches);
                 }
 
-                if ((int)(byte*)index >= length)
-                {
-                    goto NotFound;
-                }
-                else
+                if ((int)(byte*)index < length)
                 {
                     unchecked
                     {
@@ -319,14 +295,10 @@ namespace System
                     }
                     goto SequentialScan;
                 }
-            VectorFound:
-                // Find offset of first match
-                return (int)(byte*)index + LocateFirstFoundByte(values0);
             }
-        NotFound: // Workaround for https://github.com/dotnet/coreclr/issues/9692
 #endif
             return -1;
-        Found: // Workaround for https://github.com/dotnet/coreclr/issues/9692
+        Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
             return (int)(byte*)index;
         Found1:
             return (int)(byte*)(index + 1);
@@ -428,12 +400,8 @@ namespace System
                 index += 1;
             }
 #if !netstandard10
-            if (Vector.IsHardwareAccelerated)
+            if (Vector.IsHardwareAccelerated && ((int)(byte*)index < length))
             {
-                if ((int)(byte*)index >= length)
-                {
-                    goto NotFound;
-                }
                 nLength = (IntPtr)(uint)((length - (uint)index) & ~(Vector<byte>.Count - 1));
                 // Get comparison Vector
                 Vector<byte> values0 = GetVector(value0);
@@ -454,17 +422,11 @@ namespace System
                         index += Vector<byte>.Count;
                         continue;
                     }
-                    // Found match, reuse Vector vComparison to keep register pressure low
-                    values0 = vMatches;
-                    // goto rather than inline return to keep function smaller https://github.com/dotnet/coreclr/issues/9692
-                    goto VectorFound;
+                    // Find offset of first match
+                    return (int)(byte*)index + LocateFirstFoundByte(vMatches);
                 }
 
-                if ((int)(byte*)index >= length)
-                {
-                    goto NotFound;
-                }
-                else
+                if ((int)(byte*)index < length)
                 {
                     unchecked
                     {
@@ -472,14 +434,10 @@ namespace System
                     }
                     goto SequentialScan;
                 }
-            VectorFound:
-                // Find offset of first match
-                return (int)(byte*)index + LocateFirstFoundByte(values0);
             }
-        NotFound: // Workaround for https://github.com/dotnet/coreclr/issues/9692
 #endif
             return -1;
-        Found: // Workaround for https://github.com/dotnet/coreclr/issues/9692
+        Found: // Workaround for https://github.com/dotnet/coreclr/issues/13549
             return (int)(byte*)index;
         Found1:
             return (int)(byte*)(index + 1);
@@ -551,7 +509,7 @@ namespace System
         Equal:
             return true;
 
-        NotEqual: // Workaround for https://github.com/dotnet/coreclr/issues/9692
+        NotEqual: // Workaround for https://github.com/dotnet/coreclr/issues/13549
             return false;
         }
 
