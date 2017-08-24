@@ -236,8 +236,6 @@ void Lowering::TreeNodeInfoInitIndir(GenTreeIndir* indirTree)
 //
 void Lowering::TreeNodeInfoInitShiftRotate(GenTree* tree)
 {
-    ContainCheckShiftRotate(tree->AsOp());
-
     TreeNodeInfo* info = &(tree->gtLsraInfo);
     LinearScan*   l    = m_lsra;
 
@@ -534,6 +532,7 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
         else if (argNode->OperGet() == GT_PUTARG_SPLIT)
         {
             fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(call, argNode);
+            info->srcCount += argNode->AsPutArgSplit()->gtNumRegs;
         }
 #endif
         else
@@ -665,7 +664,7 @@ void Lowering::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode)
                 }
             }
 
-            // We will generate all of the code for the GT_PUTARG_STK and it's child node
+            // We will generate all of the code for the GT_PUTARG_STK and its child node
             // as one contained operation
             //
             argNode->gtLsraInfo.srcCount = putArgChild->gtLsraInfo.srcCount;
@@ -928,7 +927,7 @@ void Lowering::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
                 {
                     // The block size argument is a third argument to GT_STORE_DYN_BLK
                     assert(blkNode->gtOper == GT_STORE_DYN_BLK);
-                    blkNode->gtLsraInfo.setSrcCount(3);
+                    blkNode->gtLsraInfo.srcCount++;
                     GenTree* blockSize = blkNode->AsDynBlk()->gtDynamicSize;
                     blockSize->gtLsraInfo.setSrcCandidates(l, RBM_ARG_2);
                 }
