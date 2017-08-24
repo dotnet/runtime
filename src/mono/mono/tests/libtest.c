@@ -7488,7 +7488,7 @@ mono_test_marshal_pointer_array (int *arr[])
 
 #ifndef WIN32
 
-typedef void (*NativeToManagedExceptionRethrowFunc) ();
+typedef void (*NativeToManagedExceptionRethrowFunc) (void);
 
 void *mono_test_native_to_managed_exception_rethrow_thread (void *arg)
 {
