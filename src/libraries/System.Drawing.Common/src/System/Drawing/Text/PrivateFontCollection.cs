@@ -12,7 +12,7 @@ namespace System.Drawing.Text
     /// <summary>
     /// Encapsulates a collection of <see cref='System.Drawing.Font'/> objecs.
     /// </summary>
-    public sealed class PrivateFontCollection : FontCollection
+    public sealed partial class PrivateFontCollection : FontCollection
     {
         /// <summary>
         /// Initializes a new instance of the <see cref='System.Drawing.Text.PrivateFontCollection'/> class.
@@ -57,13 +57,35 @@ namespace System.Drawing.Text
         /// </summary>
         public void AddFontFile(string filename)
         {
-            Path.GetFullPath(filename);
+            if (_nativeFontCollection == IntPtr.Zero)
+            {
+                // This is the default behavior on Desktop. The ArgumentException originates from GdipPrivateAddFontFile which would
+                // refuse the null pointer.
+                throw new ArgumentException();
+            }
 
-            int status = SafeNativeMethods.Gdip.GdipPrivateAddFontFile(new HandleRef(this, _nativeFontCollection), filename);
+            if (filename == null)
+            {
+                // This is the default behavior on Desktop. The name "path" originates from Path.GetFullPath or similar which would refuse
+                // a null value.
+                throw new ArgumentNullException("path");
+            }
+
+            // this ensure the filename is valid (or throw the correct exception)
+            string fullPath = Path.GetFullPath(filename);
+
+            if (!File.Exists(fullPath))
+            {
+                throw new FileNotFoundException();
+            }
+
+            int status = SafeNativeMethods.Gdip.GdipPrivateAddFontFile(new HandleRef(this, _nativeFontCollection), fullPath);
             SafeNativeMethods.Gdip.CheckStatus(status);
 
             // Register private font with GDI as well so pure GDI-based controls (TextBox, Button for instance) can access it.
-            SafeNativeMethods.AddFontFile(filename);
+            // This is a no-op on Unix which has GDI+ (libgdiplus), not GDI; and we don't have System.Windows.Forms
+            // on Unix.
+            this.GdiAddFontFile(filename);
         }
 
         /// <summary>
