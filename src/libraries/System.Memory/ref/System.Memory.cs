@@ -13,7 +13,6 @@ namespace System
     {
         public static ReadOnlySpan<T> Empty { get { throw null; } }
         public ReadOnlySpan(T[] array) { throw null;}
-        public ReadOnlySpan(T[] array, int start) { throw null;}
         public ReadOnlySpan(T[] array, int start, int length) { throw null;}
         public unsafe ReadOnlySpan(void* pointer, int length) { throw null;}
         public bool IsEmpty { get { throw null; } }
@@ -43,7 +42,6 @@ namespace System
     {
         public static Span<T> Empty { get { throw null; } }
         public Span(T[] array) { throw null;}
-        public Span(T[] array, int start) { throw null;}
         public Span(T[] array, int start, int length) { throw null;}
         public unsafe Span(void* pointer, int length) { throw null;}
         public bool IsEmpty { get { throw null; } }

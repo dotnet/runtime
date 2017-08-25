@@ -23,9 +23,6 @@ namespace System.SpanTests
             span = new Span<int>(a);
             span.Validate<int>(91, 92, -93, 94);
 
-            span = new Span<int>(a, 0);
-            span.Validate<int>(91, 92, -93, 94);
-
             span = new Span<int>(a, 0, a.Length);
             span.Validate<int>(91, 92, -93, 94);
         }
@@ -37,9 +34,6 @@ namespace System.SpanTests
             Span<long> span;
 
             span = new Span<long>(a);
-            span.Validate<long>(91, -92, 93, 94, -95);
-
-            span = new Span<long>(a, 0);
             span.Validate<long>(91, -92, 93, 94, -95);
 
             span = new Span<long>(a, 0, a.Length);
@@ -57,9 +51,6 @@ namespace System.SpanTests
             span = new Span<object>(a);
             span.Validate<object>(o1, o2);
 
-            span = new Span<object>(a, 0);
-            span.Validate<object>(o1, o2);
-
             span = new Span<object>(a, 0, a.Length);
             span.Validate<object>(o1, o2);
         }
@@ -73,9 +64,6 @@ namespace System.SpanTests
             span = new Span<int>(empty);
             span.Validate<int>();
 
-            span = new Span<int>(empty, 0);
-            span.Validate<int>();
-
             span = new Span<int>(empty, 0, empty.Length);
             span.Validate<int>();
         }
@@ -84,7 +72,6 @@ namespace System.SpanTests
         public static void CtorArrayNullArray()
         {
             Assert.Throws<ArgumentNullException>(() => new Span<int>((int[])null).DontBox());
-            Assert.Throws<ArgumentNullException>(() => new Span<int>((int[])null, 0).DontBox());
             Assert.Throws<ArgumentNullException>(() => new Span<int>((int[])null, 0, 0).DontBox());
         }
 
@@ -94,7 +81,6 @@ namespace System.SpanTests
             // Cannot pass variant array, if array type is not a valuetype.
             string[] a = { "Hello" };
             Assert.Throws<ArrayTypeMismatchException>(() => new Span<object>(a).DontBox());
-            Assert.Throws<ArrayTypeMismatchException>(() => new Span<object>(a, 0).DontBox());
             Assert.Throws<ArrayTypeMismatchException>(() => new Span<object>(a, 0, a.Length).DontBox());
         }
 
@@ -108,9 +94,6 @@ namespace System.SpanTests
             Span<int> span;
 
             span = new Span<int>(aAsIntArray);
-            span.Validate<int>(42, -1);
-
-            span = new Span<int>(aAsIntArray, 0);
             span.Validate<int>(42, -1);
 
             span = new Span<int>(aAsIntArray, 0, aAsIntArray.Length);
