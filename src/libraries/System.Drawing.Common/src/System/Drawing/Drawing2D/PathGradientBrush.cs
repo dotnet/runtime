@@ -237,7 +237,8 @@ namespace System.Drawing.Drawing2D
         public Blend Blend
         {
             get
-            {    // Figure out the size of blend factor array
+            {
+                // Figure out the size of blend factor array
                 int status = SafeNativeMethods.Gdip.GdipGetPathGradientBlendCount(new HandleRef(this, NativeBrush), out int retval);
 
                 if (status != SafeNativeMethods.Gdip.Ok)
@@ -290,11 +291,44 @@ namespace System.Drawing.Drawing2D
             }
             set
             {
-                // Allocate temporary native memory buffer
-                // and copy input blend factors into it.
+                if (value == null || value.Factors == null)
+                {
+                    // This is the behavior on Desktop
+                    throw new NullReferenceException();
+                }
+
+                // The Desktop implementation throws ArgumentNullException("source") because it never validates the value of value.Positions, and then passes it
+                // on to Marshal.Copy(value.Positions, 0, positions, count);. The first argument of Marshal.Copy is source, hence this exception.
+                if (value.Positions == null)
+                {
+                    throw new ArgumentNullException("source");
+                }
 
                 int count = value.Factors.Length;
 
+                // Explicit argument validation, because libgdiplus does not correctly validate all parameters.
+                if (count == 0 || value.Positions.Length == 0)
+                {
+                    throw new ArgumentException(SR.BlendObjectMustHaveTwoElements);
+                }
+
+                if (count >= 2 && count != value.Positions.Length)
+                {
+                    throw new ArgumentOutOfRangeException();
+                }
+
+                if (count >= 2 && value.Positions[0] != 0.0F)
+                {
+                    throw new ArgumentException(SR.BlendObjectFirstElementInvalid);
+                }
+
+                if (count >= 2 && value.Positions[count - 1] != 1.0F)
+                {
+                    throw new ArgumentException(SR.BlendObjectLastElementInvalid);
+                }
+
+                // Allocate temporary native memory buffer
+                // and copy input blend factors into it.
                 IntPtr factors = IntPtr.Zero;
                 IntPtr positions = IntPtr.Zero;
 

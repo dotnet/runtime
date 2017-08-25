@@ -73,10 +73,12 @@
     <Compile Include="System\Drawing\Drawing2D\HatchStyle.cs" />
     <Compile Include="System\Drawing\Drawing2D\InterpolationMode.cs" />
     <Compile Include="System\Drawing\Drawing2D\LinearGradientMode.cs" />
+    <Compile Include="System\Drawing\Drawing2D\LinearGradientBrush.cs" />
     <Compile Include="System\Drawing\Drawing2D\LineCap.cs" />
     <Compile Include="System\Drawing\Drawing2D\LineJoin.cs" />
     <Compile Include="System\Drawing\Drawing2D\MatrixOrder.cs" />
     <Compile Include="System\Drawing\Drawing2D\PathData.cs" />
+    <Compile Include="System\Drawing\Drawing2D\PathGradientBrush.cs" />
     <Compile Include="System\Drawing\Drawing2D\PathPointType.cs" />
     <Compile Include="System\Drawing\Drawing2D\PenAlignment.cs" />
     <Compile Include="System\Drawing\Drawing2D\PenType.cs" />
@@ -196,9 +198,7 @@
     <Compile Include="System\Drawing\CopyPixelOperation.cs" />
     <Compile Include="System\Drawing\Drawing2D\CustomLineCap.Windows.cs" />
     <Compile Include="System\Drawing\Drawing2D\GraphicsPath.cs" />
-    <Compile Include="System\Drawing\Drawing2D\LinearGradientBrush.cs" />
     <Compile Include="System\Drawing\Drawing2D\Matrix.cs" />
-    <Compile Include="System\Drawing\Drawing2D\PathGradientBrush.cs" />
     <Compile Include="System\Drawing\Font.cs" />
     <Compile Include="System\Drawing\Font.NotSerializable.cs" />
     <Compile Include="System\Drawing\FontFamily.cs" />
@@ -317,9 +317,7 @@
     <Compile Include="System\Drawing\Drawing2D\AdjustableArrowCap.Unix.cs" />
     <Compile Include="System\Drawing\Drawing2D\CustomLineCap.Unix.cs" />
     <Compile Include="Unix\System.Drawing.Drawing2D\GraphicsPath.cs" />
-    <Compile Include="Unix\System.Drawing.Drawing2D\LinearGradientBrush.cs" />
     <Compile Include="Unix\System.Drawing.Drawing2D\Matrix.cs" />
-    <Compile Include="Unix\System.Drawing.Drawing2D\PathGradientBrush.cs" />
     <Compile Include="Unix\System.Drawing.Imaging\BitmapData.cs" />
     <Compile Include="Unix\System.Drawing.Imaging\ImageFormat.cs" />
     <Compile Include="Unix\System.Drawing.Imaging\Metafile.cs" />
