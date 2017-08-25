@@ -40,6 +40,9 @@
     <Compile Include="$(CommonPath)\System\Net\Sockets\SocketType.cs">
       <Link>Common\System\Net\Sockets\SocketType.cs</Link>
     </Compile>
+    <Compile Include="$(CommonPath)\System\Net\IPAddressParserStatics.cs">
+      <Link>Common\System\Net\IPAddressParserStatics.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\System\Net\IPEndPointStatics.cs">
       <Link>Common\System\Net\IPEndPointStatics.cs</Link>
     </Compile>

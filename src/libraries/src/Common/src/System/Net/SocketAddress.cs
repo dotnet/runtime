@@ -103,7 +103,17 @@ namespace System.Net.Internals
 
             if (ipAddress.AddressFamily == AddressFamily.InterNetworkV6)
             {
-                SocketAddressPal.SetIPv6Address(Buffer, ipAddress.GetAddressBytes(), (uint)ipAddress.ScopeId);
+                Span<byte> addressBytes;
+                unsafe
+                {
+                    // TODO https://github.com/dotnet/roslyn/issues/17287: Clean up once we can stackalloc into a span
+                    byte* mem = stackalloc byte[IPAddressParserStatics.IPv6AddressBytes];
+                    addressBytes = new Span<byte>(mem, IPAddressParserStatics.IPv6AddressBytes);
+                }
+                ipAddress.TryWriteBytes(addressBytes, out int bytesWritten);
+                Debug.Assert(bytesWritten == IPAddressParserStatics.IPv6AddressBytes);
+
+                SocketAddressPal.SetIPv6Address(Buffer, addressBytes, (uint)ipAddress.ScopeId);
             }
             else
             {
@@ -128,7 +138,13 @@ namespace System.Net.Internals
             {
                 Debug.Assert(Size >= IPv6AddressSize);
 
-                byte[] address = new byte[IPAddressParserStatics.IPv6AddressBytes];
+                Span<byte> address;
+                unsafe
+                {
+                    // TODO https://github.com/dotnet/roslyn/issues/17287: Clean up once we can stackalloc into a span
+                    byte* mem = stackalloc byte[IPAddressParserStatics.IPv6AddressBytes];
+                    address = new Span<byte>(mem, IPAddressParserStatics.IPv6AddressBytes);
+                }
                 uint scope;
                 SocketAddressPal.GetIPv6Address(Buffer, address, out scope);
 
