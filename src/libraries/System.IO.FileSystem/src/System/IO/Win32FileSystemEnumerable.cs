@@ -161,7 +161,7 @@ namespace System.IO
 
             Interop.Kernel32.WIN32_FIND_DATA data = new Interop.Kernel32.WIN32_FIND_DATA();
 
-            using (new DisableMediaInsertionPrompt())
+            using (DisableMediaInsertionPrompt.Create())
             {
                 // Open a Find handle
                 _hnd = Interop.Kernel32.FindFirstFile(searchPath, ref data);
@@ -302,7 +302,7 @@ namespace System.IO
                             // Execute searchCriteria against the current directory
                             string searchPath = Path.Combine(_searchData.FullPath, _searchCriteria);
 
-                            using (new DisableMediaInsertionPrompt())
+                            using (DisableMediaInsertionPrompt.Create())
                             {
                                 // Open a Find handle
                                 _hnd = Interop.Kernel32.FindFirstFile(searchPath, ref data);
@@ -343,7 +343,7 @@ namespace System.IO
                     {
                         if (_hnd != null)
                         {
-                            using (new DisableMediaInsertionPrompt())
+                            using (DisableMediaInsertionPrompt.Create())
                             {
                                 // Keep asking for more matching files/dirs, add it to the list
                                 while (Interop.Kernel32.FindNextFile(_hnd, ref data))
@@ -420,7 +420,7 @@ namespace System.IO
             Interop.Kernel32.WIN32_FIND_DATA data = new Interop.Kernel32.WIN32_FIND_DATA();
             try
             {
-                using (new DisableMediaInsertionPrompt())
+                using (DisableMediaInsertionPrompt.Create())
                 {
                     // Get all files and dirs
                     hnd = Interop.Kernel32.FindFirstFile(searchPath, ref data);
