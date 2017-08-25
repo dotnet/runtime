@@ -135,29 +135,46 @@ namespace BasicEventSourceTests
 
 
                 /*************************************************************************/
+                int num100msecTimerTicks = 0;
                 tests.Add(new SubTest("EventCounter: Log multiple events in multiple periods",
                     delegate ()
                     {
-                        listener.EnableTimer(logger, .1); /* Poll every .1 s */
-                                                          // logs at 0 seconds because of EnableTimer command
-                        Sleep(100);
-                        logger.Request(1);
-                        Sleep(100);
-                        logger.Request(2);
-                        logger.Error();
-                        Sleep(100);
-                        logger.Request(4);
-                        Sleep(100);
-                        logger.Error();
-                        logger.Request(8);
-                        Sleep(100);
-                        logger.Request(16);
-                        Sleep(200);
-                        listener.EnableTimer(logger, 0);
+                        // We have had problems with timer ticks not being called back 100% reliably.  
+                        // However timers really don't have a strong guarentee (only that the happen eventually)
+                        // So what we do is create a timer callback that simply counts the number of callbacks.
+                        // This acts as a marker to show whether the timer callbacks are happening promptly.  
+                        // If we don't get enough of these tick callbacks then we don't require EventCounter to
+                        // be sending periodic callbacks either.   
+                        num100msecTimerTicks = 0;
+                        using (var timer = new System.Threading.Timer(state => num100msecTimerTicks++, null, 100, 100))
+                        {
+                            Console.WriteLine("EventCounter Multi-event: Enabling logger at {0:mm:ss.fff}, thread {1}", DateTime.UtcNow, Thread.CurrentThread.ManagedThreadId);
+                            listener.EnableTimer(logger, .1); /* Poll every .1 s */
+                                                              // logs at 0 seconds because of EnableTimer command
+                            Sleep(100);
+                            Console.WriteLine("EventCounter Multi-event: logger.Request(1) at {0:mm:ss.fff}, thread {1}", DateTime.UtcNow, Thread.CurrentThread.ManagedThreadId);
+                            logger.Request(1);
+                            Sleep(100);
+                            Console.WriteLine("EventCounter Multi-event: logger.Request(2);logger.Error() at {0:mm:ss.fff}, thread {1}", DateTime.UtcNow, Thread.CurrentThread.ManagedThreadId);
+                            logger.Request(2);
+                            logger.Error();
+                            Sleep(100);
+                            Console.WriteLine("EventCounter Multi-event: logger.Request(4) at {0:mm:ss.fff}, thread {1}", DateTime.UtcNow, Thread.CurrentThread.ManagedThreadId);
+                            logger.Request(4);
+                            Sleep(100);
+                            Console.WriteLine("EventCounter Multi-event: logger.Request(8);logger.Error() at {0:mm:ss.fff}, thread {1}", DateTime.UtcNow, Thread.CurrentThread.ManagedThreadId);
+                            logger.Request(8);
+                            logger.Error();
+                            Sleep(100);
+                            Console.WriteLine("EventCounter Multi-event: logger.Request(16) at {0:mm:ss.fff}, thread {1}", DateTime.UtcNow, Thread.CurrentThread.ManagedThreadId);
+                            logger.Request(16);
+                            Sleep(220);
+                            Console.WriteLine("EventCounter Multi-event: Disabling logger at {0:mm:ss.fff}, thread {1}", DateTime.UtcNow, Thread.CurrentThread.ManagedThreadId);
+                            listener.EnableTimer(logger, 0);
+                        }
                     },
                     delegate (List<Event> evts)
                     {
-
                         int requestCount = 0;
                         float requestSum = 0;
                         float requestMin = float.MaxValue;
@@ -207,8 +224,8 @@ namespace BasicEventSourceTests
                         Assert.Equal(errorMin, 1);
                         Assert.Equal(errorMax, 1);
 
-                        Assert.True(.4 < timeSum, $"FAILURE: .4 < {timeSum}");  // We should have at least 400 msec 
-                        Assert.True(timeSum < 2, $"FAILURE: {timeSum} < 2");    // But well under 2 sec.  
+                        Assert.True(.4 < timeSum, $"FAILURE EventCounter Multi-event: .4 < {timeSum} thread: {Thread.CurrentThread.ManagedThreadId}");  // We should have at least 400 msec 
+                        Assert.True(timeSum < 2, $"FAILURE EventCounter Multi-event: {timeSum} < 2 thread: {Thread.CurrentThread.ManagedThreadId}");    // But well under 2 sec.  
 
                         // Do all the things that depend on the count of events last so we know everything else is sane 
                         Assert.True(4 <= evts.Count, "We expect two metrices at the begining trigger and two at the end trigger.  evts.Count = " + evts.Count);
@@ -217,13 +234,19 @@ namespace BasicEventSourceTests
                         ValidateSingleEventCounter(evts[0], "Request", 0, 0, 0, float.PositiveInfinity, float.NegativeInfinity);
                         ValidateSingleEventCounter(evts[1], "Error", 0, 0, 0, float.PositiveInfinity, float.NegativeInfinity);
 
+                        // We shoudl always get the unconditional callback at the start and end of the trace.  
+                        Assert.True(4 <= evts.Count, $"FAILURE EventCounter Multi-event: 4 <= {evts.Count} ticks: {num100msecTimerTicks} thread: {Thread.CurrentThread.ManagedThreadId}");
+
+                        Console.WriteLine("EventCounter Multi-event: Received {0} EventCounter Updates (expect 16 - 18)", evts.Count);
+                        Console.WriteLine("EventCounter Multi-event: We recieved {0} 100 msec timer ticks (expect 7)", num100msecTimerTicks);
                         // We expect the timer to have gone off at least twice, plus the explicit poll at the begining and end.
                         // Each one fires two events (one for requests, one for errors). so that is (2 + 2)*2 = 8
                         // We expect about 7 timer requests, but we don't get picky about the exact count
-                        // Putting in a generous buffer, we double7 to say we don't expect more than  14 timer fires 
+                        // Putting in a generous buffer, we double 7 to say we don't expect more than 14 timer fires 
                         // so that is (2 + 14) * 2 = 32
-                        Assert.True(8 <= evts.Count, $"FAILURE: 8 <= {evts.Count}");
-                        Assert.True(evts.Count <= 32, $"FAILURE: {evts.Count} <= 32");
+                        if (num100msecTimerTicks > 3)       // We seem to have problems with timer events going off 100% reliably.  To avoid failures here we only check if in the 700 msec test we get at least 3 100 msec ticks.  
+                            Assert.True(8 <= evts.Count, $"FAILURE EventCounter Multi-event: 8 <= {evts.Count} ticks: {num100msecTimerTicks} thread: {Thread.CurrentThread.ManagedThreadId}");
+                        Assert.True(evts.Count <= 32, $"FAILURE EventCounter Multi-event: {evts.Count} <= 32 thread: {Thread.CurrentThread.ManagedThreadId}");
                     }));
 
 
