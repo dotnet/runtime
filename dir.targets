@@ -20,7 +20,7 @@
       <DependencyModelTFM>netstandard1.3</DependencyModelTFM>
       <DependencyModelTFM Condition="'$(MSBuildRuntimeType)' != 'Core'">net451</DependencyModelTFM>
     </PropertyGroup>
-    
+
       <ItemGroup>
         <CustomTaskDependencies Include="$(BuildToolsTaskDir)Newtonsoft.Json.dll" />
         <CustomTaskDependencies Include="$(BuildToolsTaskDir)Microsoft.DotNet.PlatformAbstractions.dll" />
