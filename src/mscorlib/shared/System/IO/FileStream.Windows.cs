@@ -681,13 +681,13 @@ namespace System.IO
                 {
                     if (numBytes >= source.Length)
                     {
-                        source.CopyTo(new Span<byte>(GetBuffer(), _writePos));
+                        source.CopyTo(new Span<byte>(GetBuffer()).Slice(_writePos));
                         _writePos += source.Length;
                         return;
                     }
                     else
                     {
-                        source.Slice(0, numBytes).CopyTo(new Span<byte>(GetBuffer(), _writePos));
+                        source.Slice(0, numBytes).CopyTo(new Span<byte>(GetBuffer()).Slice(_writePos));
                         _writePos += numBytes;
                         source = source.Slice(numBytes);
                     }
@@ -712,7 +712,7 @@ namespace System.IO
             }
 
             // Copy remaining bytes into buffer, to write at a later date.
-            source.CopyTo(new Span<byte>(GetBuffer(), _writePos));
+            source.CopyTo(new Span<byte>(GetBuffer()).Slice(_writePos));
             _writePos = source.Length;
             return;
         }
