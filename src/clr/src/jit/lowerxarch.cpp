@@ -1534,11 +1534,11 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
     {
         assert(node->OperGet() == GT_MUL);
 
-        if (m_lsra->isContainableMemoryOp(op2) || op2->IsCnsNonZeroFltOrDbl())
+        if (IsContainableMemoryOp(op2) || op2->IsCnsNonZeroFltOrDbl())
         {
             MakeSrcContained(node, op2);
         }
-        else if (op1->IsCnsNonZeroFltOrDbl() || (m_lsra->isContainableMemoryOp(op1) && IsSafeToContainMem(node, op1)))
+        else if (op1->IsCnsNonZeroFltOrDbl() || (IsContainableMemoryOp(op1) && IsSafeToContainMem(node, op1)))
         {
             // Since  GT_MUL is commutative, we will try to re-order operands if it is safe to
             // generate more efficient code sequence for the case of GT_MUL(op1=memOp, op2=non-memOp)
@@ -1602,7 +1602,7 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
         }
 
         MakeSrcContained(node, imm); // The imm is always contained
-        if (m_lsra->isContainableMemoryOp(other))
+        if (IsContainableMemoryOp(other))
         {
             memOp = other; // memOp may be contained below
         }
@@ -1615,11 +1615,11 @@ void Lowering::ContainCheckMul(GenTreeOp* node)
     //
     if (memOp == nullptr)
     {
-        if (m_lsra->isContainableMemoryOp(op2) && (op2->TypeGet() == node->TypeGet()) && IsSafeToContainMem(node, op2))
+        if (IsContainableMemoryOp(op2) && (op2->TypeGet() == node->TypeGet()) && IsSafeToContainMem(node, op2))
         {
             memOp = op2;
         }
-        else if (m_lsra->isContainableMemoryOp(op1) && (op1->TypeGet() == node->TypeGet()) && IsSafeToContainMem(node, op1))
+        else if (IsContainableMemoryOp(op1) && (op1->TypeGet() == node->TypeGet()) && IsSafeToContainMem(node, op1))
         {
             memOp = op1;
         }
@@ -1761,7 +1761,7 @@ void Lowering::ContainCheckCast(GenTreeCast* node)
         // U8 -> R8 conversion requires that the operand be in a register.
         if (srcType != TYP_ULONG)
         {
-            if (m_lsra->isContainableMemoryOp(castOp) || castOp->IsCnsNonZeroFltOrDbl())
+            if (IsContainableMemoryOp(castOp) || castOp->IsCnsNonZeroFltOrDbl())
             {
                 MakeSrcContained(node, castOp);
             }
@@ -1836,7 +1836,7 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
         {
             MakeSrcContained(cmp, otherOp);
         }
-        else if (m_lsra->isContainableMemoryOp(otherOp) && ((otherOp == op2) || IsSafeToContainMem(cmp, otherOp)))
+        else if (IsContainableMemoryOp(otherOp) && ((otherOp == op2) || IsSafeToContainMem(cmp, otherOp)))
         {
             MakeSrcContained(cmp, otherOp);
         }
@@ -1859,7 +1859,7 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
         // we can treat the MemoryOp as contained.
         if (op1Type == op2Type)
         {
-            if (m_lsra->isContainableMemoryOp(op1))
+            if (IsContainableMemoryOp(op1))
             {
                 MakeSrcContained(cmp, op1);
             }
@@ -1909,11 +1909,11 @@ void Lowering::ContainCheckCompare(GenTreeOp* cmp)
         // Note that TEST does not have a r,rm encoding like CMP has but we can still
         // contain the second operand because the emitter maps both r,rm and rm,r to
         // the same instruction code. This avoids the need to special case TEST here.
-        if (m_lsra->isContainableMemoryOp(op2))
+        if (IsContainableMemoryOp(op2))
         {
             MakeSrcContained(cmp, op2);
         }
-        else if (m_lsra->isContainableMemoryOp(op1) && IsSafeToContainMem(cmp, op1))
+        else if (IsContainableMemoryOp(op1) && IsSafeToContainMem(cmp, op1))
         {
             MakeSrcContained(cmp, op1);
         }
@@ -1997,7 +1997,7 @@ bool Lowering::LowerRMWMemOp(GenTreeIndir* storeInd)
         // On Xarch RMW operations require the source to be an immediate or in a register.
         // Therefore, if we have previously marked the indirOpSource as contained while lowering
         // the binary node, we need to reset that now.
-        if (m_lsra->isContainableMemoryOp(indirOpSource))
+        if (IsContainableMemoryOp(indirOpSource))
         {
             indirOpSource->ClearContained();
         }
@@ -2103,7 +2103,7 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
         if (!binOpInRMW)
         {
             const unsigned operatorSize = genTypeSize(node->TypeGet());
-            if (m_lsra->isContainableMemoryOp(op2) && (genTypeSize(op2->TypeGet()) == operatorSize))
+            if (IsContainableMemoryOp(op2) && (genTypeSize(op2->TypeGet()) == operatorSize))
             {
                 directlyEncodable = true;
                 operand           = op2;
@@ -2111,7 +2111,7 @@ void Lowering::ContainCheckBinary(GenTreeOp* node)
             else if (node->OperIsCommutative())
             {
                 if (IsContainableImmed(node, op1) ||
-                    (m_lsra->isContainableMemoryOp(op1) && (genTypeSize(op1->TypeGet()) == operatorSize) &&
+                    (IsContainableMemoryOp(op1) && (genTypeSize(op1->TypeGet()) == operatorSize) &&
                      IsSafeToContainMem(node, op1)))
                 {
                     // If it is safe, we can reverse the order of operands of commutative operations for efficient
@@ -2155,7 +2155,7 @@ void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
     {
         other = node->gtIndex;
     }
-    else if (m_lsra->isContainableMemoryOp(node->gtIndex))
+    else if (IsContainableMemoryOp(node->gtIndex))
     {
         other = node->gtIndex;
     }
@@ -2166,7 +2166,7 @@ void Lowering::ContainCheckBoundsChk(GenTreeBoundsChk* node)
 
     if (node->gtIndex->TypeGet() == node->gtArrLen->TypeGet())
     {
-        if (m_lsra->isContainableMemoryOp(other))
+        if (IsContainableMemoryOp(other))
         {
             MakeSrcContained(node, other);
         }
@@ -2190,7 +2190,7 @@ void Lowering::ContainCheckIntrinsic(GenTreeOp* node)
     if (node->gtIntrinsic.gtIntrinsicId == CORINFO_INTRINSIC_Sqrt)
     {
         GenTree* op1 = node->gtGetOp1();
-        if (m_lsra->isContainableMemoryOp(op1) || op1->IsCnsNonZeroFltOrDbl())
+        if (IsContainableMemoryOp(op1) || op1->IsCnsNonZeroFltOrDbl())
         {
             MakeSrcContained(node, op1);
         }
@@ -2288,7 +2288,7 @@ void Lowering::ContainCheckSIMD(GenTreeSIMD* simdNode)
             // If the index is a constant, mark it as contained.
             CheckImmedAndMakeContained(simdNode, op2);
 
-            if (m_lsra->isContainableMemoryOp(op1))
+            if (IsContainableMemoryOp(op1))
             {
                 MakeSrcContained(simdNode, op1);
                 if (op1->OperGet() == GT_IND)
@@ -2331,12 +2331,12 @@ void Lowering::ContainCheckFloatBinary(GenTreeOp* node)
     // everything is made explicit by adding casts.
     assert(op1->TypeGet() == op2->TypeGet());
 
-    if (m_lsra->isContainableMemoryOp(op2) || op2->IsCnsNonZeroFltOrDbl())
+    if (IsContainableMemoryOp(op2) || op2->IsCnsNonZeroFltOrDbl())
     {
         MakeSrcContained(node, op2);
     }
     else if (node->OperIsCommutative() &&
-             (op1->IsCnsNonZeroFltOrDbl() || (m_lsra->isContainableMemoryOp(op1) && IsSafeToContainMem(node, op1))))
+             (op1->IsCnsNonZeroFltOrDbl() || (IsContainableMemoryOp(op1) && IsSafeToContainMem(node, op1))))
     {
         // Though we have GT_ADD(op1=memOp, op2=non-memOp, we try to reorder the operands
         // as long as it is safe so that the following efficient code sequence is generated:

@@ -2399,7 +2399,7 @@ void Lowering::LowerCompare(GenTree* cmp)
         GenTreeIntCon* op2      = cmp->gtGetOp2()->AsIntCon();
         ssize_t        op2Value = op2->IconValue();
 
-        if (m_lsra->isContainableMemoryOp(op1) && varTypeIsSmall(op1Type) && genTypeCanRepresentValue(op1Type, op2Value))
+        if (IsContainableMemoryOp(op1) && varTypeIsSmall(op1Type) && genTypeCanRepresentValue(op1Type, op2Value))
         {
             //
             // If op1's type is small then try to narrow op2 so it has the same type as op1.
@@ -2429,7 +2429,7 @@ void Lowering::LowerCompare(GenTree* cmp)
                 // the result of bool returning calls.
                 //
 
-                if (castOp->OperIs(GT_CALL, GT_LCL_VAR) || castOp->OperIsLogical() || m_lsra->isContainableMemoryOp(castOp))
+                if (castOp->OperIs(GT_CALL, GT_LCL_VAR) || castOp->OperIsLogical() || IsContainableMemoryOp(castOp))
                 {
                     assert(!castOp->gtOverflowEx()); // Must not be an overflow checking operation
 
@@ -2491,7 +2491,7 @@ void Lowering::LowerCompare(GenTree* cmp)
                 andOp1->ClearContained();
                 andOp2->ClearContained();
 
-                if (m_lsra->isContainableMemoryOp(andOp1) && andOp2->IsIntegralConst())
+                if (IsContainableMemoryOp(andOp1) && andOp2->IsIntegralConst())
                 {
                     //
                     // For "test" we only care about the bits that are set in the second operand (mask).
@@ -5404,7 +5404,7 @@ void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
         // everything is made explicit by adding casts.
         assert(dividend->TypeGet() == divisor->TypeGet());
 
-        if (m_lsra->isContainableMemoryOp(divisor) || divisor->IsCnsNonZeroFltOrDbl())
+        if (IsContainableMemoryOp(divisor) || divisor->IsCnsNonZeroFltOrDbl())
         {
             MakeSrcContained(node, divisor);
         }
@@ -5426,7 +5426,7 @@ void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
 #endif
 
     // divisor can be an r/m, but the memory indirection must be of the same size as the divide
-    if (m_lsra->isContainableMemoryOp(divisor) && (divisor->TypeGet() == node->TypeGet()))
+    if (IsContainableMemoryOp(divisor) && (divisor->TypeGet() == node->TypeGet()))
     {
         MakeSrcContained(node, divisor);
     }

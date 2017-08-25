@@ -781,9 +781,9 @@ void LinearScan::TreeNodeInfoInitPutArgSplit(GenTreePutArgSplit* argNode)
 //
 void LinearScan::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
 {
-    GenTree*    dstAddr  = blkNode->Addr();
-    unsigned    size     = blkNode->gtBlkSize;
-    GenTree*    source   = blkNode->Data();
+    GenTree* dstAddr = blkNode->Addr();
+    unsigned size    = blkNode->gtBlkSize;
+    GenTree* source  = blkNode->Data();
 
     // Sources are dest address and initVal or source.
     // We may require an additional source or temp register for the size.

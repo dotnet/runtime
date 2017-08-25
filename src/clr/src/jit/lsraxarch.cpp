@@ -709,7 +709,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
                 delayUseSrc = op1;
             }
             else if ((op2 != nullptr) &&
-                (!tree->OperIsCommutative() || (isContainableMemoryOp(op2) && (op2->gtLsraInfo.srcCount == 0))))
+                     (!tree->OperIsCommutative() || (isContainableMemoryOp(op2) && (op2->gtLsraInfo.srcCount == 0))))
             {
                 delayUseSrc = op2;
             }
@@ -838,19 +838,19 @@ bool LinearScan::isRMWRegOper(GenTreePtr tree)
     switch (tree->OperGet())
     {
         // These Opers either support a three op form (i.e. GT_LEA), or do not read/write their first operand
-    case GT_LEA:
-    case GT_STOREIND:
-    case GT_ARR_INDEX:
-    case GT_STORE_BLK:
-    case GT_STORE_OBJ:
-        return false;
+        case GT_LEA:
+        case GT_STOREIND:
+        case GT_ARR_INDEX:
+        case GT_STORE_BLK:
+        case GT_STORE_OBJ:
+            return false;
 
         // x86/x64 does support a three op multiply when op2|op1 is a contained immediate
-    case GT_MUL:
-        return (!tree->gtOp.gtOp2->isContainedIntOrIImmed() && !tree->gtOp.gtOp1->isContainedIntOrIImmed());
+        case GT_MUL:
+            return (!tree->gtOp.gtOp2->isContainedIntOrIImmed() && !tree->gtOp.gtOp1->isContainedIntOrIImmed());
 
-    default:
-        return true;
+        default:
+            return true;
     }
 }
 
@@ -902,8 +902,8 @@ void LinearScan::TreeNodeInfoInitSimple(GenTree* tree)
 //
 void LinearScan::TreeNodeInfoInitReturn(GenTree* tree)
 {
-    TreeNodeInfo* info     = &(tree->gtLsraInfo);
-    GenTree*      op1      = tree->gtGetOp1();
+    TreeNodeInfo* info = &(tree->gtLsraInfo);
+    GenTree*      op1  = tree->gtGetOp1();
 
 #if !defined(_TARGET_64BIT_)
     if (tree->TypeGet() == TYP_LONG)
@@ -1365,9 +1365,9 @@ void LinearScan::TreeNodeInfoInitCall(GenTreeCall* call)
 //
 void LinearScan::TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode)
 {
-    GenTree*    dstAddr  = blkNode->Addr();
-    unsigned    size     = blkNode->gtBlkSize;
-    GenTree*    source   = blkNode->Data();
+    GenTree* dstAddr = blkNode->Addr();
+    unsigned size    = blkNode->gtBlkSize;
+    GenTree* source  = blkNode->Data();
 
     // Sources are dest address, initVal or source.
     // We may require an additional source or temp register for the size.
@@ -1754,7 +1754,7 @@ void LinearScan::TreeNodeInfoInitPutArgStk(GenTreePutArgStk* putArgStk)
 //
 void LinearScan::TreeNodeInfoInitLclHeap(GenTree* tree)
 {
-    TreeNodeInfo* info     = &(tree->gtLsraInfo);
+    TreeNodeInfo* info = &(tree->gtLsraInfo);
 
     info->srcCount = 1;
     assert(info->dstCount == 1);
@@ -2203,7 +2203,8 @@ void LinearScan::TreeNodeInfoInitSIMD(GenTreeSIMD* simdTree)
             }
             else
             {
-                assert(simdTree->gtSIMDBaseType == TYP_INT && compiler->getSIMDInstructionSet() >= InstructionSet_SSE3_4);
+                assert(simdTree->gtSIMDBaseType == TYP_INT &&
+                       compiler->getSIMDInstructionSet() >= InstructionSet_SSE3_4);
 
                 // No need to set isInternalRegDelayFree since targetReg is a
                 // an int type reg and guaranteed to be different from xmm/ymm
@@ -2358,7 +2359,8 @@ void LinearScan::TreeNodeInfoInitSIMD(GenTreeSIMD* simdTree)
             }
             else
 #endif
-                if ((compiler->getSIMDInstructionSet() == InstructionSet_AVX) || (simdTree->gtSIMDBaseType == TYP_ULONG))
+                if ((compiler->getSIMDInstructionSet() == InstructionSet_AVX) ||
+                    (simdTree->gtSIMDBaseType == TYP_ULONG))
             {
                 info->internalFloatCount = 2;
             }
