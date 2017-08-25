@@ -672,6 +672,8 @@ public:
     // Used by Lowering when considering whether to split Longs, as well as by identifyCandidates().
     bool isRegCandidate(LclVarDsc* varDsc);
 
+    bool isContainableMemoryOp(GenTree* node);
+
 private:
     // Determine which locals are candidates for allocation
     void identifyCandidates();
@@ -1212,6 +1214,57 @@ private:
     // Set of large vector (TYP_SIMD32 on AVX) variables to consider for callee-save registers.
     VARSET_TP largeVectorCalleeSaveCandidateVars;
 #endif // FEATURE_PARTIAL_SIMD_CALLEE_SAVE
+
+    //-----------------------------------------------------------------------
+    // TreeNodeInfo methods
+    //-----------------------------------------------------------------------
+
+    void TreeNodeInfoInit(GenTree* stmt);
+
+    void TreeNodeInfoInitCheckByteable(GenTree* tree);
+
+    void SetDelayFree(GenTree* delayUseSrc);
+
+    void TreeNodeInfoInitSimple(GenTree* tree);
+    int GetOperandSourceCount(GenTree* node);
+    int GetIndirSourceCount(GenTreeIndir* indirTree);
+    void HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* callHasFloatRegArgs);
+
+    void TreeNodeInfoInitStoreLoc(GenTree* tree);
+    void TreeNodeInfoInitReturn(GenTree* tree);
+    void TreeNodeInfoInitShiftRotate(GenTree* tree);
+    void TreeNodeInfoInitPutArgReg(GenTreeUnOp* node);
+    void TreeNodeInfoInitCall(GenTreeCall* call);
+    void TreeNodeInfoInitCmp(GenTreePtr tree);
+    void TreeNodeInfoInitStructArg(GenTreePtr structArg);
+    void TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode);
+    void TreeNodeInfoInitModDiv(GenTree* tree);
+    void TreeNodeInfoInitIntrinsic(GenTree* tree);
+    void TreeNodeInfoInitStoreLoc(GenTreeLclVarCommon* tree);
+    void TreeNodeInfoInitIndir(GenTreeIndir* indirTree);
+    void TreeNodeInfoInitGCWriteBarrier(GenTree* tree);
+    void TreeNodeInfoInitCast(GenTree* tree);
+
+#ifdef _TARGET_X86_
+    bool ExcludeNonByteableRegisters(GenTree* tree);
+#endif
+
+#if defined(_TARGET_XARCH_)
+    // returns true if the tree can use the read-modify-write memory instruction form
+    bool isRMWRegOper(GenTreePtr tree);
+    void TreeNodeInfoInitMul(GenTreePtr tree);
+    void SetContainsAVXFlags(bool isFloatingPointType = true, unsigned sizeOfSIMDVector = 0);
+#endif // defined(_TARGET_XARCH_)
+
+#ifdef FEATURE_SIMD
+    void TreeNodeInfoInitSIMD(GenTreeSIMD* tree);
+#endif // FEATURE_SIMD
+
+    void TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode);
+#ifdef _TARGET_ARM_
+    void TreeNodeInfoInitPutArgSplit(GenTreePutArgSplit* tree);
+#endif
+    void TreeNodeInfoInitLclHeap(GenTree* tree);
 };
 
 /*XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX

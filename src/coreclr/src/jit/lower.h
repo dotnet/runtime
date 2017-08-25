@@ -210,25 +210,10 @@ private:
         return oldUseNode->AsLclVarCommon()->gtLclNum;
     }
 
-    // returns true if the tree can use the read-modify-write memory instruction form
-    bool isRMWRegOper(GenTreePtr tree);
-
     // return true if this call target is within range of a pc-rel call on the machine
     bool IsCallTargetInRange(void* addr);
 
-#ifdef _TARGET_X86_
-    bool ExcludeNonByteableRegisters(GenTree* tree);
-#endif
-
-    void TreeNodeInfoInit(GenTree* stmt);
-
-    void TreeNodeInfoInitCheckByteable(GenTree* tree);
-
-    void SetDelayFree(GenTree* delayUseSrc);
-
 #if defined(_TARGET_XARCH_)
-    void TreeNodeInfoInitSimple(GenTree* tree);
-
     //----------------------------------------------------------------------
     // SetRegOptional - sets a bit to indicate to LSRA that register
     // for a given tree node is optional for codegen purpose.  If no
@@ -289,51 +274,6 @@ private:
     }
 #endif // defined(_TARGET_XARCH_)
 
-    // TreeNodeInfoInit methods
-
-    int GetOperandSourceCount(GenTree* node);
-    int GetIndirSourceCount(GenTreeIndir* indirTree);
-    void HandleFloatVarArgs(GenTreeCall* call, GenTree* argNode, bool* callHasFloatRegArgs);
-
-    void TreeNodeInfoInitStoreLoc(GenTree* tree);
-    void TreeNodeInfoInitReturn(GenTree* tree);
-    void TreeNodeInfoInitShiftRotate(GenTree* tree);
-    void TreeNodeInfoInitPutArgReg(GenTreeUnOp* node);
-    void TreeNodeInfoInitCall(GenTreeCall* call);
-    void TreeNodeInfoInitCmp(GenTreePtr tree);
-    void TreeNodeInfoInitStructArg(GenTreePtr structArg);
-    void TreeNodeInfoInitBlockStore(GenTreeBlk* blkNode);
-    void TreeNodeInfoInitModDiv(GenTree* tree);
-    void TreeNodeInfoInitIntrinsic(GenTree* tree);
-    void TreeNodeInfoInitStoreLoc(GenTreeLclVarCommon* tree);
-    void TreeNodeInfoInitIndir(GenTreeIndir* indirTree);
-    void TreeNodeInfoInitGCWriteBarrier(GenTree* tree);
-    void TreeNodeInfoInitCast(GenTree* tree);
-
-#if defined(_TARGET_XARCH_)
-    void TreeNodeInfoInitMul(GenTreePtr tree);
-    void SetContainsAVXFlags(bool isFloatingPointType = true, unsigned sizeOfSIMDVector = 0);
-#endif // defined(_TARGET_XARCH_)
-
-#ifdef FEATURE_SIMD
-    void TreeNodeInfoInitSIMD(GenTreeSIMD* tree);
-#endif // FEATURE_SIMD
-
-    void TreeNodeInfoInitPutArgStk(GenTreePutArgStk* argNode);
-#ifdef _TARGET_ARM64_
-    void LowerPutArgStk(GenTreePutArgStk* argNode, fgArgTabEntryPtr info);
-#endif // _TARGET_ARM64_
-#ifdef _TARGET_ARM_
-    void LowerPutArgStk(GenTreePutArgStk* argNode, fgArgTabEntryPtr info);
-#endif // _TARGET_ARM64_
-    void LowerPutArgStk(GenTreePutArgStk* tree);
-#ifdef _TARGET_ARM_
-    void TreeNodeInfoInitPutArgSplit(GenTreePutArgSplit* tree);
-#endif
-    void TreeNodeInfoInitLclHeap(GenTree* tree);
-
-    void DumpNodeInfoMap();
-
     // Per tree node member functions
     void LowerStoreIndir(GenTreeIndir* node);
     GenTree* LowerAdd(GenTree* node);
@@ -341,6 +281,14 @@ private:
     GenTree* LowerConstIntDivOrMod(GenTree* node);
     GenTree* LowerSignedDivOrMod(GenTree* node);
     void LowerBlockStore(GenTreeBlk* blkNode);
+#ifdef _TARGET_ARM64_
+    void LowerPutArgStk(GenTreePutArgStk* argNode, fgArgTabEntryPtr info);
+#endif // _TARGET_ARM64_
+#ifdef _TARGET_ARM_
+    void LowerPutArgStk(GenTreePutArgStk* argNode, fgArgTabEntryPtr info);
+#endif // _TARGET_ARM64_
+    void LowerPutArgStk(GenTreePutArgStk* tree);
+    void DumpNodeInfoMap();
 
     GenTree* TryCreateAddrMode(LIR::Use&& use, bool isIndir);
     void AddrModeCleanupHelper(GenTreeAddrMode* addrMode, GenTree* node);
@@ -379,9 +327,6 @@ private:
     //  by the 'parentNode' (i.e. folded into an instruction)
     //  for example small enough and non-relocatable
     bool IsContainableImmed(GenTree* parentNode, GenTree* childNode);
-
-    // Return true if 'node' is a containable memory op.
-    bool IsContainableMemoryOp(GenTree* node);
 
     // Makes 'childNode' contained in the 'parentNode'
     void MakeSrcContained(GenTreePtr parentNode, GenTreePtr childNode);
