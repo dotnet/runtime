@@ -18,17 +18,19 @@ namespace System.Net.Sockets
 #pragma warning restore CS0618
 
                 case AddressFamily.InterNetworkV6:
-                    return new IPAddress(original.GetAddressBytes(), (uint)original.ScopeId);
+                    Span<byte> addressBytes;
+                    unsafe
+                    {
+                        // TODO https://github.com/dotnet/roslyn/issues/17287: Clean up once we can stackalloc into a span
+                        byte* mem = stackalloc byte[IPAddressParserStatics.IPv6AddressBytes];
+                        addressBytes = new Span<byte>(mem, IPAddressParserStatics.IPv6AddressBytes);
+                    }
+                    original.TryWriteBytes(addressBytes, out int bytesWritten);
+                    Debug.Assert(bytesWritten == IPAddressParserStatics.IPv6AddressBytes);
+                    return new IPAddress(addressBytes, (uint)original.ScopeId);
             }
 
             throw new InternalException();
-        }
-
-        public static long GetAddress(this IPAddress thisObj)
-        {
-            byte[] addressBytes = thisObj.GetAddressBytes();
-            Debug.Assert(addressBytes.Length == 4);
-            return (long)BitConverter.ToInt32(addressBytes, 0);
         }
     }
 }
