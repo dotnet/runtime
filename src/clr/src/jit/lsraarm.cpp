@@ -38,11 +38,9 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 // Return Value:
 //    None.
 //
-void Lowering::TreeNodeInfoInitReturn(GenTree* tree)
+void LinearScan::TreeNodeInfoInitReturn(GenTree* tree)
 {
     TreeNodeInfo* info     = &(tree->gtLsraInfo);
-    LinearScan*   l        = m_lsra;
-    Compiler*     compiler = comp;
     GenTree*      op1      = tree->gtGetOp1();
 
     assert(info->dstCount == 0);
@@ -52,8 +50,8 @@ void Lowering::TreeNodeInfoInitReturn(GenTree* tree)
         GenTree* loVal = op1->gtGetOp1();
         GenTree* hiVal = op1->gtGetOp2();
         info->srcCount = 2;
-        loVal->gtLsraInfo.setSrcCandidates(l, RBM_LNGRET_LO);
-        hiVal->gtLsraInfo.setSrcCandidates(l, RBM_LNGRET_HI);
+        loVal->gtLsraInfo.setSrcCandidates(this, RBM_LNGRET_LO);
+        hiVal->gtLsraInfo.setSrcCandidates(this, RBM_LNGRET_HI);
     }
     else
     {
@@ -98,16 +96,14 @@ void Lowering::TreeNodeInfoInitReturn(GenTree* tree)
 
         if (useCandidates != RBM_NONE)
         {
-            tree->gtOp.gtOp1->gtLsraInfo.setSrcCandidates(l, useCandidates);
+            tree->gtOp.gtOp1->gtLsraInfo.setSrcCandidates(this, useCandidates);
         }
     }
 }
 
-void Lowering::TreeNodeInfoInitLclHeap(GenTree* tree)
+void LinearScan::TreeNodeInfoInitLclHeap(GenTree* tree)
 {
     TreeNodeInfo* info     = &(tree->gtLsraInfo);
-    LinearScan*   l        = m_lsra;
-    Compiler*     compiler = comp;
 
     assert(info->dstCount == 1);
 
@@ -204,11 +200,8 @@ void Lowering::TreeNodeInfoInitLclHeap(GenTree* tree)
 //    requirements needed by LSRA to build the Interval Table (source,
 //    destination and internal [temp] register counts).
 //
-void Lowering::TreeNodeInfoInit(GenTree* tree)
+void LinearScan::TreeNodeInfoInit(GenTree* tree)
 {
-    LinearScan* l        = m_lsra;
-    Compiler*   compiler = comp;
-
     unsigned      kind         = tree->OperKind();
     TreeNodeInfo* info         = &(tree->gtLsraInfo);
     RegisterType  registerType = TypeGet(tree);
@@ -264,7 +257,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
                     assert(info->dstCount == 1);
                     break;
                 default:
-                    NYI_ARM("Lowering::TreeNodeInfoInit for GT_INTRINSIC");
+                    NYI_ARM("LinearScan::TreeNodeInfoInit for GT_INTRINSIC");
                     break;
             }
         }
@@ -307,15 +300,15 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
             // FloatToIntCast needs a temporary register
             if (varTypeIsFloating(castOpType) && varTypeIsIntOrI(tree))
             {
-                info->setInternalCandidates(m_lsra, RBM_ALLFLOAT);
+                info->setInternalCandidates(this, RBM_ALLFLOAT);
                 info->internalFloatCount     = 1;
                 info->isInternalRegDelayFree = true;
             }
 
-            CastInfo castInfo;
+            Lowering::CastInfo castInfo;
 
             // Get information about the cast.
-            getCastDescription(tree, &castInfo);
+            Lowering::getCastDescription(tree, &castInfo);
 
             if (castInfo.requiresOverflowCheck)
             {
@@ -506,8 +499,8 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
                 assert(tree->TypeGet() == TYP_INT);
 
                 info->srcCount = 1;
-                info->setSrcCandidates(l, RBM_INTRET);
-                tree->gtOp.gtOp1->gtLsraInfo.setSrcCandidates(l, RBM_INTRET);
+                info->setSrcCandidates(this, RBM_INTRET);
+                tree->gtOp.gtOp1->gtLsraInfo.setSrcCandidates(this, RBM_INTRET);
             }
             break;
 
@@ -639,7 +632,6 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         case GT_STORE_BLK:
         case GT_STORE_OBJ:
         case GT_STORE_DYN_BLK:
-            LowerBlockStore(tree->AsBlk());
             TreeNodeInfoInitBlockStore(tree->AsBlk());
             break;
 
@@ -687,7 +679,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         case GT_CATCH_ARG:
             info->srcCount = 0;
             assert(info->dstCount == 1);
-            info->setDstCandidates(l, RBM_EXCEPTION_OBJECT);
+            info->setDstCandidates(this, RBM_EXCEPTION_OBJECT);
             break;
 
         case GT_CLS_VAR:
