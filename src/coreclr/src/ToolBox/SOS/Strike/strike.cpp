@@ -320,15 +320,20 @@ DECLARE_API(IP2MD)
 // (MAX_STACK_FRAMES is also used by x86 to prevent infinite loops in _EFN_StackTrace)
 #define MAX_STACK_FRAMES 1000
 
-#ifdef _TARGET_WIN64_
+#if defined(_TARGET_WIN64_)
+#define DEBUG_STACK_CONTEXT AMD64_CONTEXT
+#elif defined(_TARGET_ARM_) // _TARGET_WIN64_
+#define DEBUG_STACK_CONTEXT ARM_CONTEXT
+#endif // _TARGET_ARM_
 
+#ifdef DEBUG_STACK_CONTEXT
 // I use a global set of frames for stack walking on win64 because the debugger's
 // GetStackTrace function doesn't provide a way to find out the total size of a stackwalk,
 // and I'd like to have a reasonably big maximum without overflowing the stack by declaring
 // the buffer locally and I also want to get a managed trace in a low memory environment
 // (so no dynamic allocation if possible).
 DEBUG_STACK_FRAME g_Frames[MAX_STACK_FRAMES];
-AMD64_CONTEXT g_X64FrameContexts[MAX_STACK_FRAMES];
+DEBUG_STACK_CONTEXT g_FrameContexts[MAX_STACK_FRAMES];
 
 static HRESULT
 GetContextStackTrace(ULONG osThreadId, PULONG pnumFrames)
@@ -347,7 +352,7 @@ GetContextStackTrace(ULONG osThreadId, PULONG pnumFrames)
         }
         g_ExtSystem->SetCurrentThreadId(id);
 
-        // GetContextStackTrace fills g_X64FrameContexts as an array of 
+        // GetContextStackTrace fills g_FrameContexts as an array of
         // contexts packed as target architecture contexts. We cannot 
         // safely cast this as an array of CROSS_PLATFORM_CONTEXT, since 
         // sizeof(CROSS_PLATFORM_CONTEXT) != sizeof(TGT_CONTEXT)
@@ -356,7 +361,7 @@ GetContextStackTrace(ULONG osThreadId, PULONG pnumFrames)
             0,
             g_Frames,
             MAX_STACK_FRAMES,
-            g_X64FrameContexts,
+            g_FrameContexts,
             MAX_STACK_FRAMES*g_targetMachine->GetContextSize(),
             g_targetMachine->GetContextSize(),
             pnumFrames);
@@ -367,7 +372,7 @@ GetContextStackTrace(ULONG osThreadId, PULONG pnumFrames)
     return hr;
 }
 
-#endif // _TARGET_WIN64_
+#endif // DEBUG_STACK_CONTEXT
 
 /**********************************************************************\
 * Routine Description:                                                 *
@@ -12063,7 +12068,7 @@ public:
             return;
         }
 
-#ifdef _TARGET_WIN64_
+#ifdef DEBUG_STACK_CONTEXT
         PDEBUG_STACK_FRAME currentNativeFrame = NULL;
         ULONG numNativeFrames = 0;
         if (bFull)
@@ -12076,7 +12081,7 @@ public:
             }
             currentNativeFrame = &g_Frames[0];
         }
-#endif // _TARGET_WIN64_
+#endif // DEBUG_STACK_CONTEXT
         
         unsigned int refCount = 0, errCount = 0;
         ArrayHolder<SOSStackRefData> pRefs = NULL;
@@ -12102,7 +12107,7 @@ public:
             if (SUCCEEDED(frameDataResult) && FrameData.frameAddr)
                 sp = FrameData.frameAddr;
 
-#ifdef _TARGET_WIN64_
+#ifdef DEBUG_STACK_CONTEXT
             while ((numNativeFrames > 0) && (currentNativeFrame->StackOffset <= sp))
             {
                 if (currentNativeFrame->StackOffset != sp)
@@ -12112,7 +12117,7 @@ public:
                 currentNativeFrame++;
                 numNativeFrames--;
             }
-#endif // _TARGET_WIN64_
+#endif // DEBUG_STACK_CONTEXT
 
             // Print the stack pointer.
             out.WriteColumn(0, sp);
@@ -12161,14 +12166,14 @@ public:
 
         } while (pStackWalk->Next() == S_OK);
 
-#ifdef _TARGET_WIN64_
+#ifdef DEBUG_STACK_CONTEXT
         while (numNativeFrames > 0)
         {
             PrintNativeStackFrame(out, currentNativeFrame, bSuppressLines);
             currentNativeFrame++;
             numNativeFrames--;
         }
-#endif // _TARGET_WIN64_
+#endif // DEBUG_STACK_CONTEXT
     }
     
     static HRESULT PrintManagedFrameContext(IXCLRDataStackWalk *pStackWalk)
@@ -13379,7 +13384,7 @@ HRESULT CALLBACK ImplementEFNStackTrace(
                 {
                     // below we cast the i-th AMD64_CONTEXT to CROSS_PLATFORM_CONTEXT
                     AppendContext (pTransitionContexts, *puiTransitionContextCount, 
-                        &transitionContextCount, uiSizeOfContext, (CROSS_PLATFORM_CONTEXT*)(&(g_X64FrameContexts[i])));
+                        &transitionContextCount, uiSizeOfContext, (CROSS_PLATFORM_CONTEXT*)(&(g_FrameContexts[i])));
                 }
                 else
                 {
@@ -13412,7 +13417,7 @@ HRESULT CALLBACK ImplementEFNStackTrace(
                 if (puiTransitionContextCount)
                 {
                     AppendContext (pTransitionContexts, *puiTransitionContextCount, 
-                        &transitionContextCount, uiSizeOfContext, (CROSS_PLATFORM_CONTEXT*)(&(g_X64FrameContexts[i])));
+                        &transitionContextCount, uiSizeOfContext, (CROSS_PLATFORM_CONTEXT*)(&(g_FrameContexts[i])));
                 }
                 else
                 {
@@ -14683,7 +14688,7 @@ GetStackFrame(CONTEXT* context, ULONG numNativeFrames)
                 if ((i + 1) >= numNativeFrames) {
                     return FALSE;
                 }
-                memcpy(context, &(g_X64FrameContexts[i + 1]), sizeof(*context));
+                memcpy(context, &(g_FrameContexts[i + 1]), sizeof(*context));
                 return TRUE;
             }
         }
