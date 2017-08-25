@@ -28,23 +28,14 @@ setlocal ENABLEDELAYEDEXPANSION
   call :parse_command_line_arguments %*
   if defined USAGE_DISPLAYED exit /b %ERRORLEVEL%
 
-  call :set_test_architecture  || exit /b 1
-  call :set_collection_config  || exit /b 1
-  call :verify_benchview_tools || exit /b 1
-  call :verify_core_overlay    || exit /b 1
-  call :set_perf_run_log       || exit /b 1
-  call :setup_sandbox          || exit /b 1
+  call :set_test_architecture   || exit /b 1
+  call :set_collection_config   || exit /b 1
+  call :verify_benchview_tools  || exit /b 1
+  call :verify_core_overlay     || exit /b 1
+  call :set_perf_run_log        || exit /b 1
+  call :setup_sandbox           || exit /b 1
+  call :build_perfharness       || exit /b 1
 
-  call :run_cmd "%CORECLR_REPO%\Tools\dotnetcli\dotnet.exe" restore "%CORECLR_REPO%\tests\src\Common\PerfHarness\PerfHarness.csproj" || (
-    call :print_error Failed to restore PerfHarness.csproj
-    exit /b 1
-  )
-  call :run_cmd "%CORECLR_REPO%\Tools\dotnetcli\dotnet.exe" publish "%CORECLR_REPO%\tests\src\Common\PerfHarness\PerfHarness.csproj" -c Release -o "%LV_SANDBOX_DIR%" || (
-    call :print_error Failed to publish PerfHarness.csproj
-    exit /b 1
-  )
-
-  rem TODO: Remove the version of the package to copy. e.g.) if multiple version exist, then error out?
   call :run_cmd xcopy /sy "%CORECLR_REPO%\bin\tests\Windows_NT.%TEST_ARCH%.%TEST_CONFIG%\Tests\Core_Root"\* . >> %RUNLOG% || exit /b 1
 
   rem find and stage the tests
@@ -295,7 +286,6 @@ rem ****************************************************************************
   )
   exit /b 0
 
-
 :set_perf_run_log
 rem ****************************************************************************
 rem   Sets the script's output log file.
@@ -335,6 +325,20 @@ rem ****************************************************************************
   cd "%LV_SANDBOX_DIR%"
   exit /b %ERRORLEVEL%
 
+:build_perfharness
+rem ****************************************************************************
+rem   Restores and publish the PerfHarness.
+rem ****************************************************************************
+  call :run_cmd "%CORECLR_REPO%\Tools\dotnetcli\dotnet.exe" restore "%CORECLR_REPO%\tests\src\Common\PerfHarness\PerfHarness.csproj" || (
+    call :print_error Failed to restore PerfHarness.csproj
+    exit /b 1
+  )
+  call :run_cmd "%CORECLR_REPO%\Tools\dotnetcli\dotnet.exe" publish "%CORECLR_REPO%\tests\src\Common\PerfHarness\PerfHarness.csproj" -c Release -o "%LV_SANDBOX_DIR%" || (
+    call :print_error Failed to publish PerfHarness.csproj
+    exit /b 1
+  )
+  exit /b 0
+
 :generate_results_for_benchview
 rem ****************************************************************************
 rem   Generates results for BenchView, by appending new data to the existing
@@ -356,7 +360,8 @@ rem ****************************************************************************
   rem Currently xUnit Performance Api saves the scenario output
   rem   files on the current working directory.
   set LV_PATTERN="%LV_BENCHMARKS_OUTPUT_DIR%\%LV_RUNID%-%BENCHNAME%.xml"
-  if defined IS_SCENARIO_TEST set LV_PATTERN="%LV_RUNID%-*-%BENCHNAME%.xml"
+  rem The first pattern is the general case, the second is used by IlLink
+  if defined IS_SCENARIO_TEST set LV_PATTERN="%LV_RUNID%-%BENCHNAME%.xml" "%LV_RUNID%-*-%BENCHNAME%.xml"
 
   for %%f in (%LV_PATTERN%) do (
     call :run_cmd py.exe "%BENCHVIEW_PATH%\measurement.py" %LV_MEASUREMENT_ARGS% "%%~f"
