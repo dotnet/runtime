@@ -223,7 +223,7 @@ namespace System.IO
             // Neither GetFileAttributes or FindFirstFile like trailing separators
             path = path.TrimEnd(PathHelpers.DirectorySeparatorChars);
 
-            using (new DisableMediaInsertionPrompt())
+            using (DisableMediaInsertionPrompt.Create())
             {
                 if (!Interop.Kernel32.GetFileAttributesEx(path, Interop.Kernel32.GET_FILEEX_INFO_LEVELS.GetFileExInfoStandard, ref data))
                 {
