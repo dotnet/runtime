@@ -6,7 +6,7 @@
   <PropertyGroup>
     <SerializeProjects>true</SerializeProjects>
   </PropertyGroup>
-  
+
   <PropertyGroup>
     <!-- To disable the restoration of packages, set RestoreDuringBuild=false or pass /p:RestoreDuringBuild=false.-->
     <RestoreDuringBuild Condition="'$(RestoreDuringBuild)'==''">true</RestoreDuringBuild>
