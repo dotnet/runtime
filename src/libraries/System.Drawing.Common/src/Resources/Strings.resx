@@ -334,4 +334,13 @@
   <data name="LibgdiplusNotFound" xml:space="preserve">
     <value>The native library "libgdiplus" is not installed on the system, or was otherwise unable to be loaded.</value>
   </data>
+  <data name="BlendObjectMustHaveTwoElements" xml:space="preserve">
+    <value>Invalid Blend object. It should have at least 2 elements in each of the factors and positions arrays.</value>
+  </data>
+  <data name="BlendObjectFirstElementInvalid" xml:space="preserve">
+    <value>Invalid Blend object. The positions array must have 0.0 as its first element.</value>
+  </data>
+  <data name="BlendObjectLastElementInvalid" xml:space="preserve">
+    <value>Invalid Blend object. The positions array must have 1.0 as its last element.</value>
+  </data>
 </root>
