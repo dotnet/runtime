@@ -10,22 +10,22 @@
   -->
   <PropertyGroup>
     <CoreFxCurrentRef>dbce6b2140b3334a0d3d7d095b3b267e9c45af9f</CoreFxCurrentRef>
-    <CoreClrCurrentRef>dbce6b2140b3334a0d3d7d095b3b267e9c45af9f</CoreClrCurrentRef>
+    <CoreClrCurrentRef>c116a7cebb8afe4fcc4c8be151a994404bf11710</CoreClrCurrentRef>
     <StandardCurrentRef>dbce6b2140b3334a0d3d7d095b3b267e9c45af9f</StandardCurrentRef>
     <WCFCurrentRef>dbce6b2140b3334a0d3d7d095b3b267e9c45af9f</WCFCurrentRef>
   </PropertyGroup>
-  
+
   <PropertyGroup>
     <CoreFxVersion>4.5.0-preview2-25624-01</CoreFxVersion>
     <PlatformPackageVersion>2.1.0-preview2-25624-01</PlatformPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview2-25624-02</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview2-25610-02</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <MicrosoftNETCoreRuntimeJitPackageVersion>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</MicrosoftNETCoreRuntimeJitPackageVersion>
     <MicrosoftNetNativeCompilerPackageVersion>2.0.0-preview-25524-00</MicrosoftNetNativeCompilerPackageVersion>
     <NETStandardVersion>2.1.0-preview1-25624-01</NETStandardVersion>
     <DiaSymReaderNativeVersion>1.4.1</DiaSymReaderNativeVersion>
     <WcfVersion>4.5.0-preview2-25624-01</WcfVersion>
   </PropertyGroup>
-  
+
   <!-- Package dependency verification/auto-upgrade configuration. -->
   <PropertyGroup>
     <BaseDotNetBuildInfo>build-info/dotnet/</BaseDotNetBuildInfo>
@@ -54,7 +54,7 @@
     <DependencyBuildInfo Include="@(RemoteDependencyBuildInfo)">
       <RawVersionsBaseUrl>https://raw.githubusercontent.com/dotnet/versions</RawVersionsBaseUrl>
     </DependencyBuildInfo>
-    
+
     <XmlUpdateStep Include="CoreFx">
       <Path>$(MSBuildThisFileFullPath)</Path>
       <ElementName>CoreFxVersion</ElementName>
