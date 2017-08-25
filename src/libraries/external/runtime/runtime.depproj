@@ -36,10 +36,10 @@
       <Version>$(PackageVersion)-$(CoreFxExpectedPrerelease)</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.DotNetHost">
-      <Version>2.0.0-preview2-25310-02</Version>
+      <Version>2.0.1-servicing-25615-03</Version>
     </PackageReference>
     <PackageReference Include="Microsoft.NETCore.DotNetHostPolicy">
-      <Version>2.0.0-preview2-25310-02</Version>
+      <Version>2.0.1-servicing-25615-03</Version>
     </PackageReference>
   </ItemGroup>
 
