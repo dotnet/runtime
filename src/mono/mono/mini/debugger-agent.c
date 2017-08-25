@@ -3662,13 +3662,10 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 			return;
 
 		if (agent_config.defer) {
-			/* Make sure the thread id is always set when doing deferred debugging */
 			if (is_debugger_thread ()) {
 				/* Don't suspend on events from the debugger thread */
 				suspend_policy = SUSPEND_POLICY_NONE;
-				thread = mono_thread_get_main ();
 			}
-			else thread = mono_thread_current ();
 		} else {
 			if (is_debugger_thread () && event != EVENT_KIND_VM_DEATH)
 				// FIXME: Send these with a NULL thread, don't suspend the current thread
@@ -3691,7 +3688,7 @@ process_event (EventKind event, gpointer arg, gint32 il_offset, MonoContext *ctx
 			thread = NULL;
 		} else {
 			if (!thread)
-				thread = mono_thread_current ();
+				thread = is_debugger_thread () ? mono_thread_get_main () : mono_thread_current ();
 
 			if (event == EVENT_KIND_VM_START && arg != NULL)
 				thread = (MonoThread *)arg;
