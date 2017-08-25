@@ -865,9 +865,6 @@
   <data name="Argument_CannotSetParentToInterface" xml:space="preserve">
     <value>Cannot set parent to an interface.</value>
   </data>
-  <data name="Argument_CantCallSecObjFunc" xml:space="preserve">
-    <value>Cannot evaluate a security function.</value>
-  </data>
   <data name="Argument_CodepageNotSupported" xml:space="preserve">
     <value>{0} is not a supported code page.</value>
   </data>
