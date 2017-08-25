@@ -23,9 +23,6 @@ namespace System.SpanTests
             span = new ReadOnlySpan<int>(a);
             span.Validate<int>(91, 92, -93, 94);
 
-            span = new ReadOnlySpan<int>(a, 0);
-            span.Validate<int>(91, 92, -93, 94);
-
             span = new ReadOnlySpan<int>(a, 0, a.Length);
             span.Validate<int>(91, 92, -93, 94);
         }
@@ -37,9 +34,6 @@ namespace System.SpanTests
             ReadOnlySpan<long> span;
 
             span = new ReadOnlySpan<long>(a);
-            span.Validate<long>(91, -92, 93, 94, -95);
-
-            span = new ReadOnlySpan<long>(a, 0);
             span.Validate<long>(91, -92, 93, 94, -95);
 
             span = new ReadOnlySpan<long>(a, 0, a.Length);
@@ -57,9 +51,6 @@ namespace System.SpanTests
             span = new ReadOnlySpan<object>(a);
             span.Validate<object>(o1, o2);
 
-            span = new ReadOnlySpan<object>(a, 0);
-            span.Validate<object>(o1, o2);
-
             span = new ReadOnlySpan<object>(a, 0, a.Length);
             span.Validate<object>(o1, o2);
         }
@@ -73,9 +64,6 @@ namespace System.SpanTests
             span = new ReadOnlySpan<int>(empty);
             span.Validate<int>();
 
-            span = new ReadOnlySpan<int>(empty, 0);
-            span.Validate<int>();
-
             span = new ReadOnlySpan<int>(empty, 0, empty.Length);
             span.Validate<int>();
         }
@@ -84,7 +72,6 @@ namespace System.SpanTests
         public static void CtorArrayNullArray()
         {
             Assert.Throws<ArgumentNullException>(() => new ReadOnlySpan<int>((int[])null).DontBox());
-            Assert.Throws<ArgumentNullException>(() => new ReadOnlySpan<int>((int[])null, 0).DontBox());
             Assert.Throws<ArgumentNullException>(() => new ReadOnlySpan<int>((int[])null, 0, 0).DontBox());
         }
 
@@ -98,9 +85,6 @@ namespace System.SpanTests
             ReadOnlySpan<int> span;
 
             span = new ReadOnlySpan<int>(aAsIntArray);
-            span.Validate<int>(42, -1);
-
-            span = new ReadOnlySpan<int>(aAsIntArray, 0);
             span.Validate<int>(42, -1);
 
             span = new ReadOnlySpan<int>(aAsIntArray, 0, aAsIntArray.Length);
@@ -118,8 +102,6 @@ namespace System.SpanTests
             string[] strArray = { "Hello" };
             span = new ReadOnlySpan<object>(strArray);
             span.Validate("Hello");
-            span = new ReadOnlySpan<object>(strArray, 0);
-            span.Validate("Hello");
             span = new ReadOnlySpan<object>(strArray, 0, strArray.Length);
             span.Validate("Hello");
 
@@ -127,8 +109,6 @@ namespace System.SpanTests
             TestClass c2 = new TestClass();
             TestClass[] clsArray = { c1, c2 };
             span = new ReadOnlySpan<object>(clsArray);
-            span.Validate(c1, c2);
-            span = new ReadOnlySpan<object>(clsArray, 0);
             span.Validate(c1, c2);
             span = new ReadOnlySpan<object>(clsArray, 0, clsArray.Length);
             span.Validate(c1, c2);

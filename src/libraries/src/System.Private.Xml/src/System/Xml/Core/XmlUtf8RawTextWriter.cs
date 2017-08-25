@@ -128,7 +128,7 @@ namespace System.Xml
                 ReadOnlySpan<byte> bom = encoding.Preamble;
                 if (bom.Length != 0)
                 {
-                    bom.CopyTo(new Span<byte>(bufBytes, 1));
+                    bom.CopyTo(new Span<byte>(bufBytes).Slice(1));
                     bufPos += bom.Length;
                     textPos += bom.Length;
                 }
