@@ -95,7 +95,7 @@ namespace System.IO.IsolatedStorage
 /*
  *      Template for Store test method
  * 
-        [Theory MemberData(nameof(ValidStores))]
+        [Theory, MemberData(nameof(ValidStores))]
         public void ExampleTest(PresetScopes scope)
         {
             // If a dirty state will fail the test, use this
