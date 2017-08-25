@@ -43,7 +43,7 @@ namespace System.IO.Tests
             Assert.Throws<FileNotFoundException>(() => Move(Path.Combine(TestDirectory, GetTestFileName(), GetTestFileName()), testFile.FullName));
         }
 
-        [Theory MemberData(nameof(PathsWithInvalidCharacters))]
+        [Theory, MemberData(nameof(PathsWithInvalidCharacters))]
         public void PathWithIllegalCharacters(string invalidPath)
         {
             FileInfo testFile = new FileInfo(GetTestFilePath());
@@ -223,7 +223,7 @@ namespace System.IO.Tests
 
         #region PlatformSpecific
 
-        [Theory MemberData(nameof(PathsWithInvalidColons))]
+        [Theory, MemberData(nameof(PathsWithInvalidColons))]
         [PlatformSpecific(TestPlatforms.Windows)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Versions of netfx older than 4.6.2 throw an ArgumentException instead of NotSupportedException. Until all of our machines run netfx against the actual latest version, these will fail.")]
         public void WindowsPathWithIllegalColons(string invalidPath)
