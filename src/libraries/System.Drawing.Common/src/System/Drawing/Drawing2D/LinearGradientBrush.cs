@@ -266,9 +266,41 @@ namespace System.Drawing.Drawing2D
             }
             set
             {
-                // Allocate temporary native memory buffer and copy input blend factors into it.
+                // Do explicit parameter validation here; libgdiplus does not correctly validate the arguments
+                if (value == null || value.Factors == null)
+                {
+                    // This is the original behavior on Desktop .NET
+                    throw new NullReferenceException();
+                }
+
+                if (value.Positions == null)
+                {
+                    throw new ArgumentNullException("source");
+                }
+
                 int count = value.Factors.Length;
 
+                if (count == 0 || value.Positions.Length == 0)
+                {
+                    throw new ArgumentException(SR.BlendObjectMustHaveTwoElements);
+                }
+
+                if (count >=2 && count != value.Positions.Length)
+                {
+                    throw new ArgumentOutOfRangeException();
+                }
+
+                if (count >= 2 && value.Positions[0] != 0.0F)
+                {
+                    throw new ArgumentException(SR.BlendObjectFirstElementInvalid);
+                }
+	
+                if (count >= 2 && value.Positions[count - 1] != 1.0F)
+                {
+                    throw new ArgumentException(SR.BlendObjectLastElementInvalid);
+                }
+
+                // Allocate temporary native memory buffer and copy input blend factors into it.
                 IntPtr factors = IntPtr.Zero;
                 IntPtr positions = IntPtr.Zero;
 
@@ -323,6 +355,13 @@ namespace System.Drawing.Drawing2D
 
             int status = SafeNativeMethods.Gdip.GdipSetLineLinearBlend(new HandleRef(this, NativeBrush), focus, scale);
             SafeNativeMethods.Gdip.CheckStatus(status);
+
+            // Setting a triangular shape overrides the explicitly set interpolation colors. libgdiplus correctly clears
+            // the interpolation colors (https://github.com/mono/libgdiplus/blob/master/src/lineargradientbrush.c#L959) but
+            // returns WrongState instead of ArgumentException (https://github.com/mono/libgdiplus/blob/master/src/lineargradientbrush.c#L814)
+            // when calling GdipGetLinePresetBlend, so it is important we set this to false. This way, we are sure get_InterpolationColors
+            // will return an ArgumentException.
+            _interpolationColorsWasSet = false;
         }
 
         public ColorBlend InterpolationColors
