@@ -323,13 +323,9 @@ namespace System.Net.Sockets
 
         public static unsafe IPPacketInformation GetIPPacketInformation(Interop.Winsock.ControlDataIPv6* controlBuffer)
         {
-            IPAddress address = IPAddress.IPv6None;
-            if (controlBuffer->length != UIntPtr.Zero)
-            {
-                var addressArray = new byte[Interop.Winsock.IPv6AddressLength];
-                Marshal.Copy((IntPtr)(controlBuffer->address), addressArray, 0, Interop.Winsock.IPv6AddressLength);
-                address = new IPAddress(addressArray);
-            }
+            IPAddress address = controlBuffer->length != UIntPtr.Zero ?
+                new IPAddress(new Span<byte>(controlBuffer->address, Interop.Winsock.IPv6AddressLength)) :
+                IPAddress.IPv6None;
 
             return new IPPacketInformation(address, (int)controlBuffer->index);
         }
@@ -491,11 +487,15 @@ namespace System.Net.Sockets
         {
             Interop.Winsock.IPMulticastRequest ipmr = new Interop.Winsock.IPMulticastRequest();
 
-            ipmr.MulticastAddress = unchecked((int)optionValue.Group.GetAddress());
+#pragma warning disable CS0618 // Address is marked obsolete
+            ipmr.MulticastAddress = unchecked((int)optionValue.Group.Address);
+#pragma warning restore CS0618
 
             if (optionValue.LocalAddress != null)
             {
-                ipmr.InterfaceAddress = unchecked((int)optionValue.LocalAddress.GetAddress());
+#pragma warning disable CS0618 // Address is marked obsolete
+                ipmr.InterfaceAddress = unchecked((int)optionValue.LocalAddress.Address);
+#pragma warning restore CS0618
             }
             else
             {  //this structure works w/ interfaces as well

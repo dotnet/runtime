@@ -1130,11 +1130,14 @@ namespace System.Net.Sockets
 
             IPAddress localAddress = optionValue.LocalAddress ?? IPAddress.Any;
 
-            var opt = new Interop.Sys.IPv4MulticastOption {
-                MulticastAddress = unchecked((uint)optionValue.Group.GetAddress()),
-                LocalAddress = unchecked((uint)localAddress.GetAddress()),
+#pragma warning disable CS0618 // Address is marked obsolete
+            var opt = new Interop.Sys.IPv4MulticastOption
+            {
+                MulticastAddress = unchecked((uint)optionValue.Group.Address),
+                LocalAddress = unchecked((uint)localAddress.Address),
                 InterfaceIndex = optionValue.InterfaceIndex
             };
+#pragma warning restore CS0618
 
             Interop.Error err = Interop.Sys.SetIPv4MulticastOption(handle, optName, &opt);
             return GetErrorAndTrackSetting(handle, SocketOptionLevel.IP, optionName, err);
