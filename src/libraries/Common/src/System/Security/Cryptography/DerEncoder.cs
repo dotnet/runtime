@@ -160,7 +160,7 @@ namespace System.Security.Cryptography
             int length = end - start;
             int writeStart = bigEndianBytes[start] > 0x7F ? 1 : 0;
             var dataBytes = new byte[length + writeStart];
-            bigEndianBytes.Slice(start, length).CopyTo(new Span<byte>(dataBytes, writeStart));
+            bigEndianBytes.Slice(start, length).CopyTo(new Span<byte>(dataBytes).Slice(writeStart));
 
             return new[]
             {
