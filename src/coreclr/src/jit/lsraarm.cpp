@@ -712,12 +712,11 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
                 info->dstCount = 2;
             }
             else
-#else
+#endif
             {
                 assert(info->dstCount == 1);
             }
-#endif
-                break;
+            break;
 
         case GT_PUTARG_SPLIT:
             TreeNodeInfoInitPutArgSplit(tree->AsPutArgSplit());
