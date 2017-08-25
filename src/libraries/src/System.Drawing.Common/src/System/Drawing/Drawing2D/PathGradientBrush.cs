@@ -297,6 +297,8 @@ namespace System.Drawing.Drawing2D
                     throw new NullReferenceException();
                 }
 
+                // The Desktop implementation throws ArgumentNullException("source") because it never validates the value of value.Positions, and then passes it
+                // on to Marshal.Copy(value.Positions, 0, positions, count);. The first argument of Marshal.Copy is source, hence this exception.
                 if (value.Positions == null)
                 {
                     throw new ArgumentNullException("source");
@@ -307,7 +309,7 @@ namespace System.Drawing.Drawing2D
                 // Explicit argument validation, because libgdiplus does not correctly validate all parameters.
                 if (count == 0 || value.Positions.Length == 0)
                 {
-                    throw new ArgumentException("Invalid Blend object. It should have at least 2 elements in each of the factors and positions arrays.");
+                    throw new ArgumentException(SR.BlendObjectMustHaveTwoElements);
                 }
 
                 if (count >= 2 && count != value.Positions.Length)
@@ -317,12 +319,12 @@ namespace System.Drawing.Drawing2D
 
                 if (count >= 2 && value.Positions[0] != 0.0F)
                 {
-                    throw new ArgumentException("Invalid Blend object. The positions array must have 0.0 as its first element.");
+                    throw new ArgumentException(SR.BlendObjectFirstElementInvalid);
                 }
 
                 if (count >= 2 && value.Positions[count - 1] != 1.0F)
                 {
-                    throw new ArgumentException("Invalid Blend object. The positions array must have 1.0 as its last element.");
+                    throw new ArgumentException(SR.BlendObjectLastElementInvalid);
                 }
 
                 // Allocate temporary native memory buffer
