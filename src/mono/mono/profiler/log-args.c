@@ -262,7 +262,7 @@ usage (void)
 		mono_profiler_printf ("\t                         %s", event_list [i].event_name);
 
 	mono_profiler_printf ("\t[no]alloc            enable/disable recording allocation info");
-	mono_profiler_printf ("\t[no]legacy           enable/disable pre mono 5.4 default profiler events");
+	mono_profiler_printf ("\t[no]legacy           enable/disable pre Mono 5.6 default profiler events");
 	mono_profiler_printf ("\tsample[-real][=FREQ] enable/disable statistical sampling of threads");
 	mono_profiler_printf ("\t                     FREQ in Hz, 100 by default");
 	mono_profiler_printf ("\t                     the -real variant uses wall clock time instead of process time");
