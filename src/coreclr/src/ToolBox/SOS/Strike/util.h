@@ -2519,8 +2519,8 @@ typedef struct{
 
 /// ARM Context
 #define ARM_MAX_BREAKPOINTS_CONST     8
-#define ARM_MAX_WATCHPOINTS_CONST     4
-typedef struct {
+#define ARM_MAX_WATCHPOINTS_CONST     1
+typedef DECLSPEC_ALIGN(8) struct {
 
     DWORD ContextFlags;
 
@@ -2544,6 +2544,7 @@ typedef struct {
     DWORD Cpsr;
 
     DWORD Fpscr;
+    DWORD Padding;
     union {
         M128A_XPLAT Q[16];
         ULONGLONG D[32];
@@ -2554,6 +2555,8 @@ typedef struct {
     DWORD Bcr[ARM_MAX_BREAKPOINTS_CONST];
     DWORD Wvr[ARM_MAX_WATCHPOINTS_CONST];
     DWORD Wcr[ARM_MAX_WATCHPOINTS_CONST];
+
+    DWORD Padding2[2];
 
 } ARM_CONTEXT;
 
