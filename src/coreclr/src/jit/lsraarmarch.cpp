@@ -565,12 +565,12 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
 #endif
             if (arg->gtOper == GT_PUTARG_STK)
             {
-                INDEBUG(assert(curArgTabEntry->regNum == REG_STK));
+                assert(curArgTabEntry->regNum == REG_STK);
             }
 #ifdef _TARGET_ARM_
             else if (arg->OperGet() == GT_PUTARG_SPLIT)
             {
-                INDEBUG(assert(arg->AsPutArgSplit()->gtNumRegs == curArgTabEntry->numRegs));
+                assert(arg->AsPutArgSplit()->gtNumRegs == curArgTabEntry->numRegs);
                 info->srcCount += arg->gtLsraInfo.dstCount;
             }
 #endif
