@@ -98,44 +98,6 @@ bool Lowering::IsSafeToContainMem(GenTree* parentNode, GenTree* childNode)
 }
 
 //------------------------------------------------------------------------
-// IsContainableMemoryOp: Checks whether this is a memory op that can be contained.
-//
-// Arguments:
-//    node        - the node of interest.
-//
-// Return value:
-//    True if this will definitely be a memory reference that could be contained.
-//
-// Notes:
-//    This differs from the isMemoryOp() method on GenTree because it checks for
-//    the case of doNotEnregister local. This won't include locals that
-//    for some other reason do not become register candidates, nor those that get
-//    spilled.
-//    Also, because we usually call this before we redo dataflow, any new lclVars
-//    introduced after the last dataflow analysis will not yet be marked lvTracked,
-//    so we don't use that.
-//
-bool Lowering::IsContainableMemoryOp(GenTree* node)
-{
-#ifdef _TARGET_XARCH_
-    if (node->isMemoryOp())
-    {
-        return true;
-    }
-    if (node->IsLocal())
-    {
-        if (!m_lsra->enregisterLocalVars)
-        {
-            return true;
-        }
-        LclVarDsc* varDsc = &comp->lvaTable[node->AsLclVar()->gtLclNum];
-        return varDsc->lvDoNotEnregister;
-    }
-#endif // _TARGET_XARCH_
-    return false;
-}
-
-//------------------------------------------------------------------------
 
 // This is the main entry point for Lowering.
 GenTree* Lowering::LowerNode(GenTree* node)
@@ -2437,7 +2399,7 @@ void Lowering::LowerCompare(GenTree* cmp)
         GenTreeIntCon* op2      = cmp->gtGetOp2()->AsIntCon();
         ssize_t        op2Value = op2->IconValue();
 
-        if (IsContainableMemoryOp(op1) && varTypeIsSmall(op1Type) && genTypeCanRepresentValue(op1Type, op2Value))
+        if (m_lsra->isContainableMemoryOp(op1) && varTypeIsSmall(op1Type) && genTypeCanRepresentValue(op1Type, op2Value))
         {
             //
             // If op1's type is small then try to narrow op2 so it has the same type as op1.
@@ -2467,7 +2429,7 @@ void Lowering::LowerCompare(GenTree* cmp)
                 // the result of bool returning calls.
                 //
 
-                if (castOp->OperIs(GT_CALL, GT_LCL_VAR) || castOp->OperIsLogical() || IsContainableMemoryOp(castOp))
+                if (castOp->OperIs(GT_CALL, GT_LCL_VAR) || castOp->OperIsLogical() || m_lsra->isContainableMemoryOp(castOp))
                 {
                     assert(!castOp->gtOverflowEx()); // Must not be an overflow checking operation
 
@@ -2529,7 +2491,7 @@ void Lowering::LowerCompare(GenTree* cmp)
                 andOp1->ClearContained();
                 andOp2->ClearContained();
 
-                if (IsContainableMemoryOp(andOp1) && andOp2->IsIntegralConst())
+                if (m_lsra->isContainableMemoryOp(andOp1) && andOp2->IsIntegralConst())
                 {
                     //
                     // For "test" we only care about the bits that are set in the second operand (mask).
@@ -4844,8 +4806,6 @@ void Lowering::DoPhase()
     }
 #endif
 
-    // The initialization code for the TreeNodeInfo map was initially part of a single full IR
-    // traversal and it has been split because the order of traversal performed by fgWalkTreePost
     // does not necessarily lower nodes in execution order and also, it could potentially
     // add new BasicBlocks on the fly as part of the Lowering pass so the traversal won't be complete.
     //
@@ -4893,7 +4853,7 @@ void Lowering::DoPhase()
 
             currentLoc += 2;
 
-            TreeNodeInfoInit(node);
+            m_lsra->TreeNodeInfoInit(node);
 
             // Only nodes that produce values should have a non-zero dstCount.
             assert((node->gtLsraInfo.dstCount == 0) || node->IsValue());
@@ -5425,43 +5385,6 @@ void Lowering::ContainCheckNode(GenTree* node)
 }
 
 //------------------------------------------------------------------------
-// GetIndirSourceCount: Get the source registers for an indirection that might be contained.
-//
-// Arguments:
-//    node      - The node of interest
-//
-// Return Value:
-//    The number of source registers used by the *parent* of this node.
-//
-int Lowering::GetIndirSourceCount(GenTreeIndir* indirTree)
-{
-    GenTree* const addr = indirTree->gtOp1;
-    if (!addr->isContained())
-    {
-        return 1;
-    }
-    if (!addr->OperIs(GT_LEA))
-    {
-        return 0;
-    }
-
-    GenTreeAddrMode* const addrMode = addr->AsAddrMode();
-
-    unsigned srcCount = 0;
-    if ((addrMode->Base() != nullptr) && !addrMode->Base()->isContained())
-    {
-        srcCount++;
-    }
-    if (addrMode->Index() != nullptr)
-    {
-        // We never have a contained index.
-        assert(!addrMode->Index()->isContained());
-        srcCount++;
-    }
-    return srcCount;
-}
-
-//------------------------------------------------------------------------
 // ContainCheckDivOrMod: determine which operands of a div/mod should be contained.
 //
 // Arguments:
@@ -5481,7 +5404,7 @@ void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
         // everything is made explicit by adding casts.
         assert(dividend->TypeGet() == divisor->TypeGet());
 
-        if (IsContainableMemoryOp(divisor) || divisor->IsCnsNonZeroFltOrDbl())
+        if (m_lsra->isContainableMemoryOp(divisor) || divisor->IsCnsNonZeroFltOrDbl())
         {
             MakeSrcContained(node, divisor);
         }
@@ -5503,7 +5426,7 @@ void Lowering::ContainCheckDivOrMod(GenTreeOp* node)
 #endif
 
     // divisor can be an r/m, but the memory indirection must be of the same size as the divide
-    if (IsContainableMemoryOp(divisor) && (divisor->TypeGet() == node->TypeGet()))
+    if (m_lsra->isContainableMemoryOp(divisor) && (divisor->TypeGet() == node->TypeGet()))
     {
         MakeSrcContained(node, divisor);
     }
