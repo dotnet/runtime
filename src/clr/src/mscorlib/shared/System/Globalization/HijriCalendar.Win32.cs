@@ -67,10 +67,9 @@ namespace System.Globalization
                             hijriAdvance = -1;
                         else
                         {
-                            str = str.Substring(HijriAdvanceRegKeyEntry.Length);
                             try
                             {
-                                int advance = Int32.Parse(str.ToString(), CultureInfo.InvariantCulture);
+                                int advance = Int32.Parse(str.AsSpan().Slice(HijriAdvanceRegKeyEntry.Length), provider:CultureInfo.InvariantCulture);
                                 if ((advance >= MinAdvancedHijri) && (advance <= MaxAdvancedHijri))
                                 {
                                     hijriAdvance = advance;
