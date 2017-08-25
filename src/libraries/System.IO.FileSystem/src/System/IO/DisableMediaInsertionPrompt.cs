@@ -14,14 +14,16 @@ namespace System.IO
     /// prompt won't happen. You have to have had media in at least once to get
     /// the file system to load and then have removed it.
     /// </remarks>
-    public sealed class DisableMediaInsertionPrompt : IDisposable
+    internal struct DisableMediaInsertionPrompt : IDisposable
     {
         private bool _disableSuccess;
         private uint _oldMode;
 
-        public DisableMediaInsertionPrompt()
+        public static DisableMediaInsertionPrompt Create()
         {
-            _disableSuccess = Interop.Kernel32.SetThreadErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS, out _oldMode);
+            DisableMediaInsertionPrompt prompt = new DisableMediaInsertionPrompt();
+            prompt._disableSuccess = Interop.Kernel32.SetThreadErrorMode(Interop.Kernel32.SEM_FAILCRITICALERRORS, out prompt._oldMode);
+            return prompt;
         }
 
         public void Dispose()
