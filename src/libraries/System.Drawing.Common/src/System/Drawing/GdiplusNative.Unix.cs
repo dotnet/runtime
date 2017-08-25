@@ -81,9 +81,6 @@ namespace System.Drawing
                 GdipDeleteGraphics_ptr = LoadFunction<GdipDeleteGraphics_delegate>("GdipDeleteGraphics");
                 GdipRestoreGraphics_ptr = LoadFunction<GdipRestoreGraphics_delegate>("GdipRestoreGraphics");
                 GdipSaveGraphics_ptr = LoadFunction<GdipSaveGraphics_delegate>("GdipSaveGraphics");
-                GdipMultiplyWorldTransform_ptr = LoadFunction<GdipMultiplyWorldTransform_delegate>("GdipMultiplyWorldTransform");
-                GdipRotateWorldTransform_ptr = LoadFunction<GdipRotateWorldTransform_delegate>("GdipRotateWorldTransform");
-                GdipTranslateWorldTransform_ptr = LoadFunction<GdipTranslateWorldTransform_delegate>("GdipTranslateWorldTransform");
                 GdipDrawArc_ptr = LoadFunction<GdipDrawArc_delegate>("GdipDrawArc");
                 GdipDrawArcI_ptr = LoadFunction<GdipDrawArcI_delegate>("GdipDrawArcI");
                 GdipDrawBezier_ptr = LoadFunction<GdipDrawBezier_delegate>("GdipDrawBezier");
@@ -121,10 +118,6 @@ namespace System.Drawing
                 GdipSetRenderingOrigin_ptr = LoadFunction<GdipSetRenderingOrigin_delegate>("GdipSetRenderingOrigin");
                 GdipCloneBitmapArea_ptr = LoadFunction<GdipCloneBitmapArea_delegate>("GdipCloneBitmapArea");
                 GdipCloneBitmapAreaI_ptr = LoadFunction<GdipCloneBitmapAreaI_delegate>("GdipCloneBitmapAreaI");
-                GdipResetWorldTransform_ptr = LoadFunction<GdipResetWorldTransform_delegate>("GdipResetWorldTransform");
-                GdipSetWorldTransform_ptr = LoadFunction<GdipSetWorldTransform_delegate>("GdipSetWorldTransform");
-                GdipGetWorldTransform_ptr = LoadFunction<GdipGetWorldTransform_delegate>("GdipGetWorldTransform");
-                GdipScaleWorldTransform_ptr = LoadFunction<GdipScaleWorldTransform_delegate>("GdipScaleWorldTransform");
                 GdipGraphicsClear_ptr = LoadFunction<GdipGraphicsClear_delegate>("GdipGraphicsClear");
                 GdipDrawClosedCurve_ptr = LoadFunction<GdipDrawClosedCurve_delegate>("GdipDrawClosedCurve");
                 GdipDrawClosedCurveI_ptr = LoadFunction<GdipDrawClosedCurveI_delegate>("GdipDrawClosedCurveI");
@@ -576,18 +569,6 @@ namespace System.Drawing
             private static FunctionWrapper<GdipSaveGraphics_delegate> GdipSaveGraphics_ptr;
             internal static Status GdipSaveGraphics(IntPtr graphics, out uint state) => GdipSaveGraphics_ptr.Delegate(graphics, out state);
 
-            private delegate Status GdipMultiplyWorldTransform_delegate(IntPtr graphics, IntPtr matrix, MatrixOrder order);
-            private static FunctionWrapper<GdipMultiplyWorldTransform_delegate> GdipMultiplyWorldTransform_ptr;
-            internal static Status GdipMultiplyWorldTransform(IntPtr graphics, IntPtr matrix, MatrixOrder order) => GdipMultiplyWorldTransform_ptr.Delegate(graphics, matrix, order);
-
-            private delegate Status GdipRotateWorldTransform_delegate(IntPtr graphics, float angle, MatrixOrder order);
-            private static FunctionWrapper<GdipRotateWorldTransform_delegate> GdipRotateWorldTransform_ptr;
-            internal static Status GdipRotateWorldTransform(IntPtr graphics, float angle, MatrixOrder order) => GdipRotateWorldTransform_ptr.Delegate(graphics, angle, order);
-
-            private delegate Status GdipTranslateWorldTransform_delegate(IntPtr graphics, float dx, float dy, MatrixOrder order);
-            private static FunctionWrapper<GdipTranslateWorldTransform_delegate> GdipTranslateWorldTransform_ptr;
-            internal static Status GdipTranslateWorldTransform(IntPtr graphics, float dx, float dy, MatrixOrder order) => GdipTranslateWorldTransform_ptr.Delegate(graphics, dx, dy, order);
-
             private delegate Status GdipDrawArc_delegate(IntPtr graphics, IntPtr pen, float x, float y, float width, float height, float startAngle, float sweepAngle);
             private static FunctionWrapper<GdipDrawArc_delegate> GdipDrawArc_ptr;
             internal static Status GdipDrawArc(IntPtr graphics, IntPtr pen, float x, float y, float width, float height, float startAngle, float sweepAngle) => GdipDrawArc_ptr.Delegate(graphics, pen, x, y, width, height, startAngle, sweepAngle);
@@ -736,22 +717,6 @@ namespace System.Drawing
             private delegate Status GdipCloneBitmapAreaI_delegate(int x, int y, int width, int height, PixelFormat format, IntPtr original, out IntPtr bitmap);
             private static FunctionWrapper<GdipCloneBitmapAreaI_delegate> GdipCloneBitmapAreaI_ptr;
             internal static Status GdipCloneBitmapAreaI(int x, int y, int width, int height, PixelFormat format, IntPtr original, out IntPtr bitmap) => GdipCloneBitmapAreaI_ptr.Delegate(x, y, width, height, format, original, out bitmap);
-
-            private delegate Status GdipResetWorldTransform_delegate(IntPtr graphics);
-            private static FunctionWrapper<GdipResetWorldTransform_delegate> GdipResetWorldTransform_ptr;
-            internal static Status GdipResetWorldTransform(IntPtr graphics) => GdipResetWorldTransform_ptr.Delegate(graphics);
-
-            private delegate Status GdipSetWorldTransform_delegate(IntPtr graphics, IntPtr matrix);
-            private static FunctionWrapper<GdipSetWorldTransform_delegate> GdipSetWorldTransform_ptr;
-            internal static Status GdipSetWorldTransform(IntPtr graphics, IntPtr matrix) => GdipSetWorldTransform_ptr.Delegate(graphics, matrix);
-
-            private delegate Status GdipGetWorldTransform_delegate(IntPtr graphics, IntPtr matrix);
-            private static FunctionWrapper<GdipGetWorldTransform_delegate> GdipGetWorldTransform_ptr;
-            internal static Status GdipGetWorldTransform(IntPtr graphics, IntPtr matrix) => GdipGetWorldTransform_ptr.Delegate(graphics, matrix);
-
-            private delegate Status GdipScaleWorldTransform_delegate(IntPtr graphics, float sx, float sy, MatrixOrder order);
-            private static FunctionWrapper<GdipScaleWorldTransform_delegate> GdipScaleWorldTransform_ptr;
-            internal static Status GdipScaleWorldTransform(IntPtr graphics, float sx, float sy, MatrixOrder order) => GdipScaleWorldTransform_ptr.Delegate(graphics, sx, sy, order);
 
             private delegate Status GdipGraphicsClear_delegate(IntPtr graphics, int argb);
             private static FunctionWrapper<GdipGraphicsClear_delegate> GdipGraphicsClear_ptr;
