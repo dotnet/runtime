@@ -1787,6 +1787,10 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
             genLeaInstruction(treeNode->AsAddrMode());
             break;
 
+        case GT_INDEX_ADDR:
+            genCodeForIndexAddr(treeNode->AsIndexAddr());
+            break;
+
         case GT_IND:
             genCodeForIndir(treeNode->AsIndir());
             break;
@@ -4492,6 +4496,87 @@ void CodeGen::genCodeForStoreLclVar(GenTreeLclVar* tree)
     {
         genProduceReg(tree);
     }
+}
+
+//------------------------------------------------------------------------
+// genCodeForIndexAddr: Produce code for a GT_INDEX_ADDR node.
+//
+// Arguments:
+//    tree - the GT_INDEX_ADDR node
+//
+void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
+{
+    GenTree* const base  = node->Arr();
+    GenTree* const index = node->Index();
+
+    genConsumeReg(base);
+    genConsumeReg(index);
+
+    regNumber tmpReg = REG_NA;
+
+    // Generate the bounds check if necessary.
+    if ((node->gtFlags & GTF_INX_RNGCHK) != 0)
+    {
+        // Create a GT_IND(GT_LEA)) tree for the array length access.
+        GenTreeAddrMode arrLenAddr(base->TypeGet(), base, nullptr, 0, node->gtLenOffset);
+        arrLenAddr.gtRegNum = REG_NA;
+        arrLenAddr.SetContained();
+        arrLenAddr.gtNext = (GenTree*)(-1);
+
+        GenTreeIndir arrLen = indirForm(TYP_INT, &arrLenAddr);
+
+#ifdef _TARGET_64BIT_
+        // The CLI Spec allows an array to be indexed by either an int32 or a native int.  In the case that the index
+        // is a native int on a 64-bit platform, we will need to widen the array length and the compare.
+        if (index->TypeGet() == TYP_I_IMPL)
+        {
+            // Load the array length into a register.
+            tmpReg          = node->GetSingleTempReg();
+            arrLen.gtRegNum = tmpReg;
+            arrLen.ClearContained();
+            getEmitter()->emitInsLoadInd(ins_Load(TYP_INT), EA_4BYTE, arrLen.gtRegNum, &arrLen);
+        }
+        else
+#endif
+        {
+            assert(varTypeIsIntegral(index->TypeGet()));
+
+            arrLen.gtRegNum = REG_NA;
+            arrLen.SetContained();
+            arrLen.gtNext = (GenTree*)(-1);
+        }
+
+        // Generate the range check.
+        getEmitter()->emitInsBinary(INS_cmp, emitTypeSize(TYP_I_IMPL), index, &arrLen);
+        genJumpToThrowHlpBlk(EJ_jae, SCK_RNGCHK_FAIL, node->gtIndRngFailBB);
+    }
+
+    // Compute the address of the array element.
+    switch (node->gtElemSize)
+    {
+        case 1:
+        case 2:
+        case 4:
+        case 8:
+            getEmitter()->emitIns_R_ARX(INS_lea, emitTypeSize(node), node->gtRegNum, base->gtRegNum, index->gtRegNum,
+                                        node->gtElemSize, static_cast<int>(node->gtElemOffset));
+            break;
+
+        default:
+        {
+            // Multiply the index by the element size.
+            //
+            // TODO-CQ: this should really just use `imul index, index, #gtElemSize`
+            tmpReg = (tmpReg == REG_NA) ? node->GetSingleTempReg() : tmpReg;
+            CodeGen::genSetRegToIcon(tmpReg, (ssize_t)node->gtElemSize, TYP_INT);
+            inst_RV_RV(INS_imul, tmpReg, index->gtRegNum);
+            getEmitter()->emitIns_R_ARX(INS_lea, emitTypeSize(node), node->gtRegNum, base->gtRegNum, tmpReg, 1,
+                                        static_cast<int>(node->gtElemOffset));
+            break;
+        }
+    }
+
+    genProduceReg(node);
 }
 
 //------------------------------------------------------------------------
