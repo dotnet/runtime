@@ -203,6 +203,10 @@ namespace System.Drawing
                 GdipGetFontCollectionFamilyList_ptr = LoadFunction<GdipGetFontCollectionFamilyList_delegate>("GdipGetFontCollectionFamilyList");
                 GdipCloneFontFamily_ptr = LoadFunction<GdipCloneFontFamily_delegate>("GdipCloneFontFamily");
                 GdipNewInstalledFontCollection_ptr = LoadFunction<GdipNewInstalledFontCollection_delegate>("GdipNewInstalledFontCollection");
+                GdipNewPrivateFontCollection_ptr = LoadFunction<GdipNewPrivateFontCollection_delegate>("GdipNewPrivateFontCollection");
+                GdipDeletePrivateFontCollection_ptr = LoadFunction<GdipDeletePrivateFontCollection_delegate>("GdipDeletePrivateFontCollection");
+                GdipPrivateAddFontFile_ptr = LoadFunction<GdipPrivateAddFontFile_delegate>("GdipPrivateAddFontFile");
+                GdipPrivateAddMemoryFont_ptr = LoadFunction<GdipPrivateAddMemoryFont_delegate>("GdipPrivateAddMemoryFont");
                 GdipCreatePen1_ptr = LoadFunction<GdipCreatePen1_delegate>("GdipCreatePen1");
                 GdipCreatePen2_ptr = LoadFunction<GdipCreatePen2_delegate>("GdipCreatePen2");
                 GdipClonePen_ptr = LoadFunction<GdipClonePen_delegate>("GdipClonePen");
@@ -823,6 +827,22 @@ namespace System.Drawing
             private delegate int GdipNewInstalledFontCollection_delegate(out IntPtr fontCollection);
             private static FunctionWrapper<GdipNewInstalledFontCollection_delegate> GdipNewInstalledFontCollection_ptr;
             internal static int GdipNewInstalledFontCollection(out IntPtr fontCollection) => GdipNewInstalledFontCollection_ptr.Delegate(out fontCollection);
+
+            private delegate int GdipNewPrivateFontCollection_delegate(out IntPtr fontCollection);
+            private static FunctionWrapper<GdipNewPrivateFontCollection_delegate> GdipNewPrivateFontCollection_ptr;
+            internal static int GdipNewPrivateFontCollection(out IntPtr fontCollection) => GdipNewPrivateFontCollection_ptr.Delegate(out fontCollection);
+
+            private delegate int GdipDeletePrivateFontCollection_delegate(ref IntPtr fontCollection);
+            private static FunctionWrapper<GdipDeletePrivateFontCollection_delegate> GdipDeletePrivateFontCollection_ptr;
+            internal static int IntGdipDeletePrivateFontCollection(ref IntPtr fontCollection) => GdipDeletePrivateFontCollection_ptr.Delegate(ref fontCollection);
+
+            private delegate int GdipPrivateAddFontFile_delegate(HandleRef fontCollection, [MarshalAs(UnmanagedType.LPWStr)]string filename);
+            private static FunctionWrapper<GdipPrivateAddFontFile_delegate> GdipPrivateAddFontFile_ptr;
+            internal static int GdipPrivateAddFontFile(HandleRef fontCollection, string filename) => GdipPrivateAddFontFile_ptr.Delegate(fontCollection, filename);
+
+            private delegate int GdipPrivateAddMemoryFont_delegate(HandleRef fontCollection, HandleRef memory, int length);
+            private static FunctionWrapper<GdipPrivateAddMemoryFont_delegate> GdipPrivateAddMemoryFont_ptr;
+            internal static int GdipPrivateAddMemoryFont(HandleRef fontCollection, HandleRef memory, int length) => GdipPrivateAddMemoryFont_ptr.Delegate(fontCollection, memory, length);
 
             private delegate int GdipCreatePen1_delegate(int argb, float width, int unit, out IntPtr pen);
             private static FunctionWrapper<GdipCreatePen1_delegate> GdipCreatePen1_ptr;

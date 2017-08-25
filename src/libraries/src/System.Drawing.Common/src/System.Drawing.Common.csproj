@@ -88,6 +88,7 @@
     <Compile Include="System\Drawing\Drawing2D\SmoothingMode.cs" />
     <Compile Include="System\Drawing\Drawing2D\WrapMode.cs" />
     <Compile Include="System\Drawing\Drawing2D\WarpMode.cs" />
+    <Compile Include="System\Drawing\CopyPixelOperation.cs" />
     <Compile Include="System\Drawing\Imaging\ColorAdjustType.cs" />
     <Compile Include="System\Drawing\Imaging\ColorChannelFlags.cs" />
     <Compile Include="System\Drawing\Imaging\ColorMap.cs" />
@@ -118,6 +119,7 @@
     <Compile Include="System\Drawing\Text\GenericFontFamilies.cs" />
     <Compile Include="System\Drawing\Text\HotkeyPrefix.cs" />
     <Compile Include="System\Drawing\Text\TextRenderingHint.cs" />
+    <Compile Include="System\Drawing\Text\PrivateFontCollection.cs" />
     <Compile Include="System\Drawing\ClientUtils.cs" />
     <Compile Include="misc\CompModSwitches.cs" />
     <Compile Include="misc\DebugHandleTracker.cs" />
@@ -195,7 +197,6 @@
     <Compile Include="System\Drawing\BufferedGraphicsManager.cs" />
     <Compile Include="System\Drawing\ColorTranslator.cs" />
     <Compile Include="System\Drawing\ContentAlignment.cs" />
-    <Compile Include="System\Drawing\CopyPixelOperation.cs" />
     <Compile Include="System\Drawing\Drawing2D\CustomLineCap.Windows.cs" />
     <Compile Include="System\Drawing\Drawing2D\GraphicsPath.cs" />
     <Compile Include="System\Drawing\Drawing2D\Matrix.cs" />
@@ -238,8 +239,8 @@
     <Compile Include="System\Drawing\SystemColors.cs" />
     <Compile Include="System\Drawing\SystemFonts.cs" />
     <Compile Include="System\Drawing\SystemIcons.cs" />
-    <Compile Include="System\Drawing\Text\PrivateFontCollection.cs" />
     <Compile Include="System\Drawing\ToolboxBitmapAttribute.cs" />
+    <Compile Include="System\Drawing\Text\PrivateFontCollection.Windows.cs" />
     <Compile Include="System\Drawing\Unit.cs" />
     <Compile Include="misc\DbgUtil.cs" />
     <Compile Include="misc\DpiHelper.cs" />
@@ -293,7 +294,6 @@
     <Compile Include="Unix\System.Drawing\ComIStreamMarshaler.cs" />
     <Compile Include="Unix\System.Drawing\ComIStreamWrapper.cs" />
     <Compile Include="Unix\System.Drawing\ContentAlignment.cs" />
-    <Compile Include="Unix\System.Drawing\CopyPixelOperation.cs" />
     <Compile Include="Unix\System.Drawing\Font.cs" />
     <Compile Include="Unix\System.Drawing\FontFamily.cs" />
     <Compile Include="Unix\System.Drawing\Graphics.cs" />
@@ -336,7 +336,7 @@
     <Compile Include="Unix\System.Drawing.Printing\PrintEventArgs.cs" />
     <Compile Include="Unix\System.Drawing.Printing\PrintPageEventArgs.cs" />
     <Compile Include="Unix\System.Drawing.Printing\StandardPrintController.cs" />
-    <Compile Include="Unix\System.Drawing.Text\PrivateFontCollection.cs" />
+    <Compile Include="System\Drawing\Text\PrivateFontCollection.Unix.cs" />
     <Compile Include="Unix\MonoTODOAttribute.cs" />
     <Compile Include="misc\ExternDll.Unix.cs" />
     <Compile Include="$(CommonPath)\Interop\Unix\Interop.Libraries.cs">

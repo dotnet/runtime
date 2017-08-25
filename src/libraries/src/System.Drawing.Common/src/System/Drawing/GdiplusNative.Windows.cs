@@ -352,10 +352,6 @@ namespace System.Drawing
                 GdipRecordMetafileStream2_ptr = LoadFunction<GdipRecordMetafileStream2_delegate>("GdipRecordMetafileStream");
                 GdipRecordMetafileStreamI_ptr = LoadFunction<GdipRecordMetafileStreamI_delegate>("GdipRecordMetafileStreamI");
                 GdipComment_ptr = LoadFunction<GdipComment_delegate>("GdipComment");
-                GdipNewPrivateFontCollection_ptr = LoadFunction<GdipNewPrivateFontCollection_delegate>("GdipNewPrivateFontCollection");
-                GdipDeletePrivateFontCollection_ptr = LoadFunction<GdipDeletePrivateFontCollection_delegate>("GdipDeletePrivateFontCollection");
-                GdipPrivateAddFontFile_ptr = LoadFunction<GdipPrivateAddFontFile_delegate>("GdipPrivateAddFontFile");
-                GdipPrivateAddMemoryFont_ptr = LoadFunction<GdipPrivateAddMemoryFont_delegate>("GdipPrivateAddMemoryFont");
                 GdipCreateFontFamilyFromName_ptr = LoadFunction<GdipCreateFontFamilyFromName_delegate>("GdipCreateFontFamilyFromName");
                 GdipGetGenericFontFamilySansSerif_ptr = LoadFunction<GdipGetGenericFontFamilySansSerif_delegate>("GdipGetGenericFontFamilySansSerif");
                 GdipGetGenericFontFamilySerif_ptr = LoadFunction<GdipGetGenericFontFamilySerif_delegate>("GdipGetGenericFontFamilySerif");
@@ -1701,22 +1697,6 @@ namespace System.Drawing
             private delegate int GdipComment_delegate(HandleRef graphics, int sizeData, byte[] data);
             private static FunctionWrapper<GdipComment_delegate> GdipComment_ptr;
             internal static int GdipComment(HandleRef graphics, int sizeData, byte[] data) => GdipComment_ptr.Delegate(graphics, sizeData, data);
-
-            private delegate int GdipNewPrivateFontCollection_delegate(out IntPtr fontCollection);
-            private static FunctionWrapper<GdipNewPrivateFontCollection_delegate> GdipNewPrivateFontCollection_ptr;
-            internal static int GdipNewPrivateFontCollection(out IntPtr fontCollection) => GdipNewPrivateFontCollection_ptr.Delegate(out fontCollection);
-
-            private delegate int GdipDeletePrivateFontCollection_delegate(ref IntPtr fontCollection);
-            private static FunctionWrapper<GdipDeletePrivateFontCollection_delegate> GdipDeletePrivateFontCollection_ptr;
-            internal static int IntGdipDeletePrivateFontCollection(ref IntPtr fontCollection) => GdipDeletePrivateFontCollection_ptr.Delegate(ref fontCollection);
-
-            private delegate int GdipPrivateAddFontFile_delegate(HandleRef fontCollection, [MarshalAs(UnmanagedType.LPWStr)]string filename);
-            private static FunctionWrapper<GdipPrivateAddFontFile_delegate> GdipPrivateAddFontFile_ptr;
-            internal static int GdipPrivateAddFontFile(HandleRef fontCollection, string filename) => GdipPrivateAddFontFile_ptr.Delegate(fontCollection, filename);
-
-            private delegate int GdipPrivateAddMemoryFont_delegate(HandleRef fontCollection, HandleRef memory, int length);
-            private static FunctionWrapper<GdipPrivateAddMemoryFont_delegate> GdipPrivateAddMemoryFont_ptr;
-            internal static int GdipPrivateAddMemoryFont(HandleRef fontCollection, HandleRef memory, int length) => GdipPrivateAddMemoryFont_ptr.Delegate(fontCollection, memory, length);
 
             private delegate int GdipCreateFontFamilyFromName_delegate([MarshalAs(UnmanagedType.LPWStr)]string name, HandleRef fontCollection, out IntPtr FontFamily);
             private static FunctionWrapper<GdipCreateFontFamilyFromName_delegate> GdipCreateFontFamilyFromName_ptr;
