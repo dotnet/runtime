@@ -40,8 +40,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //
 void LinearScan::TreeNodeInfoInitReturn(GenTree* tree)
 {
-    TreeNodeInfo* info     = &(tree->gtLsraInfo);
-    GenTree*      op1      = tree->gtGetOp1();
+    TreeNodeInfo* info = &(tree->gtLsraInfo);
+    GenTree*      op1  = tree->gtGetOp1();
 
     assert(info->dstCount == 0);
     if (tree->TypeGet() == TYP_LONG)
@@ -103,7 +103,7 @@ void LinearScan::TreeNodeInfoInitReturn(GenTree* tree)
 
 void LinearScan::TreeNodeInfoInitLclHeap(GenTree* tree)
 {
-    TreeNodeInfo* info     = &(tree->gtLsraInfo);
+    TreeNodeInfo* info = &(tree->gtLsraInfo);
 
     assert(info->dstCount == 1);
 

@@ -328,6 +328,12 @@ private:
     //  for example small enough and non-relocatable
     bool IsContainableImmed(GenTree* parentNode, GenTree* childNode);
 
+    // Return true if 'node' is a containable memory op.
+    bool IsContainableMemoryOp(GenTree* node)
+    {
+        return m_lsra->isContainableMemoryOp(node);
+    }
+
     // Makes 'childNode' contained in the 'parentNode'
     void MakeSrcContained(GenTreePtr parentNode, GenTreePtr childNode);
 
