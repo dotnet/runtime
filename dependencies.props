@@ -10,7 +10,7 @@
   -->
   <PropertyGroup>
     <CoreFxCurrentRef>dbce6b2140b3334a0d3d7d095b3b267e9c45af9f</CoreFxCurrentRef>
-    <CoreClrCurrentRef>c116a7cebb8afe4fcc4c8be151a994404bf11710</CoreClrCurrentRef>
+    <CoreClrCurrentRef>6754f08a49e100a11d5a5d8077ada88390bcfbed</CoreClrCurrentRef>
     <StandardCurrentRef>dbce6b2140b3334a0d3d7d095b3b267e9c45af9f</StandardCurrentRef>
     <WCFCurrentRef>dbce6b2140b3334a0d3d7d095b3b267e9c45af9f</WCFCurrentRef>
   </PropertyGroup>
@@ -18,7 +18,7 @@
   <PropertyGroup>
     <CoreFxVersion>4.5.0-preview2-25624-01</CoreFxVersion>
     <PlatformPackageVersion>2.1.0-preview2-25624-01</PlatformPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview2-25610-02</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview2-25622-01</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <MicrosoftNETCoreRuntimeJitPackageVersion>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</MicrosoftNETCoreRuntimeJitPackageVersion>
     <MicrosoftNetNativeCompilerPackageVersion>2.0.0-preview-25524-00</MicrosoftNetNativeCompilerPackageVersion>
     <NETStandardVersion>2.1.0-preview1-25624-01</NETStandardVersion>
