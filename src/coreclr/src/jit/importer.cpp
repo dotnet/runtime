@@ -7462,7 +7462,19 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             }
             else
             {
-                instParam = impParentClassTokenToHandle(pResolvedToken, &runtimeLookup, TRUE /*mustRestoreHandle*/);
+                // If the EE was able to resolve a constrained call, the instantiating parameter to use is the type
+                // by which the call was constrained with. We embed pConstrainedResolvedToken as the extra argument
+                // because pResolvedToken is an interface method and interface types make a poor generic context.
+                if (pConstrainedResolvedToken)
+                {
+                    instParam = impTokenToHandle(pConstrainedResolvedToken, &runtimeLookup, TRUE /*mustRestoreHandle*/,
+                                                 FALSE /* importParent */);
+                }
+                else
+                {
+                    instParam = impParentClassTokenToHandle(pResolvedToken, &runtimeLookup, TRUE /*mustRestoreHandle*/);
+                }
+
                 if (instParam == nullptr)
                 {
                     return callRetTyp;
