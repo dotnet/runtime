@@ -67,6 +67,8 @@ For your convenience, here are a few quick links to popular chapters:
 - [Garbage Collection Design](botr/garbage-collection.md)
 - [Type System](botr/type-system.md)
 
+For additional information, see this list of blog posts that provide a ['deep-dive' into the CoreCLR source code](deep-dive-blog-posts.md)
+
 Decoder Rings
 =============
 
