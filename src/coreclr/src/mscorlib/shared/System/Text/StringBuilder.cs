@@ -833,7 +833,7 @@ namespace System.Text
             }
             Contract.EndContractBlock();
 
-            CopyTo(sourceIndex, new Span<char>(destination, destinationIndex), count);
+            CopyTo(sourceIndex, new Span<char>(destination).Slice(destinationIndex), count);
         }
 
         public void CopyTo(int sourceIndex, Span<char> destination, int count)
