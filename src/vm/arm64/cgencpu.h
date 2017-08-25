@@ -79,6 +79,18 @@ typedef INT64 StackElemType;
 // !! This expression assumes STACK_ELEM_SIZE is a power of 2.
 #define StackElemSize(parmSize) (((parmSize) + STACK_ELEM_SIZE - 1) & ~((ULONG)(STACK_ELEM_SIZE - 1)))
 
+
+#ifdef FEATURE_PAL // TODO-ARM64-WINDOWS Add JIT_Stelem_Ref support
+//
+// JIT HELPERS.
+//
+// Create alias for optimized implementations of helpers provided on this platform
+//
+// optimized static helpers
+#define JIT_Stelem_Ref                      JIT_Stelem_Ref
+#endif
+
+
 //**********************************************************************
 // Frames
 //**********************************************************************
