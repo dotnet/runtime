@@ -924,7 +924,9 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
             {
                 var_types regType          = fieldListPtr->gtGetOp1()->TypeGet();
                 argSplit->m_regType[index] = regType;
-                fieldListPtr->gtRegNum     = REG_NA;
+
+                // Clear the register assignments on the fieldList nodes, as these are contained.
+                fieldListPtr->gtRegNum = REG_NA;
             }
         }
     }
@@ -1293,12 +1295,8 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
 
             BlockRange().InsertBefore(arg, putArg);
             BlockRange().Remove(arg);
-
             *ppArg     = fieldList;
             info->node = fieldList;
-
-            // Clear the register assignments on the fieldList nodes, as these are contained.
-            fieldList->gtRegNum = REG_NA;
         }
         else
         {
