@@ -343,7 +343,6 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(Constructor_String_InvalidVersionTest_MemberData))]
-        [ActiveIssue("https://github.com/dotnet/corert/issues/4321", TargetFrameworkMonikers.UapAot)]
         [SkipOnTargetFramework(
             TargetFrameworkMonikers.NetFramework,
             ".NET Core behavior differs from .NET Framework since it does not want to replicate some bugs")]
@@ -387,7 +386,6 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(Constructor_String_VersionTest_MemberData))]
-        [ActiveIssue("https://github.com/dotnet/corert/issues/4321", TargetFrameworkMonikers.UapAot)]
         [SkipOnTargetFramework(
             TargetFrameworkMonikers.NetFramework,
             ".NET Core behavior differs from .NET Framework since it does not want to replicate some bugs")]
@@ -430,7 +428,6 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/corert/issues/4321", TargetFrameworkMonikers.UapAot)]
         [SkipOnTargetFramework(
             TargetFrameworkMonikers.NetFramework,
             ".NET Core behavior differs from .NET Framework since it does not want to replicate some bugs")]
