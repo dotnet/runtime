@@ -767,6 +767,7 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
         {
             // Note that the switch value is unsigned so the cast should be unsigned as well.
             switchValue = comp->gtNewCastNode(TYP_I_IMPL, switchValue, TYP_U_IMPL);
+            switchValue->gtFlags |= GTF_UNSIGNED;
         }
 #endif
         GenTreePtr gtTableSwitch =
