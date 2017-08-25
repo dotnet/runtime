@@ -249,7 +249,7 @@ namespace JitBench
 
         private const string MusicStoreRedirectedStandardOutputFileName = "measures.txt";
         private const string JitBenchRepoUrl = "https://github.com/aspnet/JitBench";
-        private const string JitBenchCommitSha1Id = "a44cd96e4ff8d7c1b43fe3c96a597919bb1544bd";
+        private const string JitBenchCommitSha1Id = "f4a56adc31e08368ef927c4273eded38e158646b";
         private const string JitBenchTargetFramework = "netcoreapp2.0";
 
         private static void PostIteration()
