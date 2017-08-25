@@ -584,7 +584,7 @@ namespace System.Threading
                         }
                         else
                         {
-                            Thread.SpinWait(PlatformHelper.ProcessorCount * (4 << i));
+                            Thread.SpinWait(4 << i);
                         }
                     }
                     else if (i % HOW_MANY_YIELD_EVERY_SLEEP_1 == 0)
