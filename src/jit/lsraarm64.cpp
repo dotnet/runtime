@@ -683,7 +683,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
 //
 void LinearScan::TreeNodeInfoInitReturn(GenTree* tree)
 {
-    TreeNodeInfo* info     = &(tree->gtLsraInfo);
+    TreeNodeInfo* info = &(tree->gtLsraInfo);
 
     GenTree*  op1           = tree->gtGetOp1();
     regMaskTP useCandidates = RBM_NONE;
