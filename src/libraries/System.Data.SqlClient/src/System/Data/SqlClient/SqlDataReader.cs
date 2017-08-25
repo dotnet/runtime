@@ -1297,7 +1297,7 @@ namespace System.Data.SqlClient
 
                 if (metaData.type == SqlDbType.Udt)
                 {
-                    throw ADP.DbTypeNotSupported(SqlDbType.Udt.ToString());
+                    providerSpecificFieldType = MetaType.MetaMaxVarBinary.SqlType;
                 }
                 else
                 { // For all other types, including Xml - use data in MetaType.
