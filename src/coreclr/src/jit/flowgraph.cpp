@@ -21809,8 +21809,8 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
 
         if ((parentTree != nullptr) && (parentTree->gtOper == GT_CALL))
         {
-            GenTreeCall* call          = parentTree->AsCall();
-            bool         tryLateDevirt = call->IsVirtual() && (call->gtCallObjp == tree);
+            GenTreeCall* call  = parentTree->AsCall();
+            bool tryLateDevirt = call->IsVirtual() && (call->gtCallObjp == tree) && (call->gtCallType == CT_USER_FUNC);
 
 #ifdef DEBUG
             tryLateDevirt = tryLateDevirt && (JitConfig.JitEnableLateDevirtualization() == 1);
