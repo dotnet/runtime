@@ -282,7 +282,7 @@ namespace System.Drawing.Drawing2D
 
                 if (count == 0 || value.Positions.Length == 0)
                 {
-                    throw new ArgumentException("Invalid Blend object. It should have at least 2 elements in each of the factors and positions arrays.");
+                    throw new ArgumentException(SR.BlendObjectMustHaveTwoElements);
                 }
 
                 if (count >=2 && count != value.Positions.Length)
@@ -292,12 +292,12 @@ namespace System.Drawing.Drawing2D
 
                 if (count >= 2 && value.Positions[0] != 0.0F)
                 {
-                    throw new ArgumentException("Invalid Blend object. The positions array must have 0.0 as its first element.");
+                    throw new ArgumentException(SR.BlendObjectFirstElementInvalid);
                 }
 	
                 if (count >= 2 && value.Positions[count - 1] != 1.0F)
                 {
-                    throw new ArgumentException("Invalid Blend object. The positions array must have 1.0 as its last element.");
+                    throw new ArgumentException(SR.BlendObjectLastElementInvalid);
                 }
 
                 // Allocate temporary native memory buffer and copy input blend factors into it.
