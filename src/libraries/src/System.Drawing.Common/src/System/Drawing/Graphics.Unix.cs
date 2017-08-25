@@ -42,7 +42,7 @@ using System.Text;
 
 namespace System.Drawing
 {
-    public sealed class Graphics : MarshalByRefObject, IDisposable
+    public sealed partial class Graphics : MarshalByRefObject, IDisposable
     , IDeviceContext
     {
         internal IntPtr nativeObject = IntPtr.Zero;
@@ -2046,20 +2046,6 @@ namespace System.Drawing
             return new SizeF(boundingBox.Width, boundingBox.Height);
         }
 
-        public void MultiplyTransform(Matrix matrix)
-        {
-            MultiplyTransform(matrix, MatrixOrder.Prepend);
-        }
-
-        public void MultiplyTransform(Matrix matrix, MatrixOrder order)
-        {
-            if (matrix == null)
-                throw new ArgumentNullException("matrix");
-
-            Status status = SafeNativeMethods.Gdip.GdipMultiplyWorldTransform(nativeObject, matrix.nativeMatrix, order);
-            SafeNativeMethods.Gdip.CheckStatus(status);
-        }
-
         [EditorBrowsable(EditorBrowsableState.Advanced)]
         public void ReleaseHdc(IntPtr hdc)
         {
@@ -2090,27 +2076,10 @@ namespace System.Drawing
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
-        public void ResetTransform()
-        {
-            Status status = SafeNativeMethods.Gdip.GdipResetWorldTransform(nativeObject);
-            SafeNativeMethods.Gdip.CheckStatus(status);
-        }
-
         public void Restore(GraphicsState gstate)
         {
             // the possible NRE thrown by gstate.nativeState match MS behaviour
             Status status = SafeNativeMethods.Gdip.GdipRestoreGraphics(nativeObject, (uint)gstate.nativeState);
-            SafeNativeMethods.Gdip.CheckStatus(status);
-        }
-
-        public void RotateTransform(float angle)
-        {
-            RotateTransform(angle, MatrixOrder.Prepend);
-        }
-
-        public void RotateTransform(float angle, MatrixOrder order)
-        {
-            Status status = SafeNativeMethods.Gdip.GdipRotateWorldTransform(nativeObject, angle, order);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -2123,18 +2092,6 @@ namespace System.Drawing
             GraphicsState state = new GraphicsState((int)saveState);
             return state;
         }
-
-        public void ScaleTransform(float sx, float sy)
-        {
-            ScaleTransform(sx, sy, MatrixOrder.Prepend);
-        }
-
-        public void ScaleTransform(float sx, float sy, MatrixOrder order)
-        {
-            Status status = SafeNativeMethods.Gdip.GdipScaleWorldTransform(nativeObject, sx, sy, order);
-            SafeNativeMethods.Gdip.CheckStatus(status);
-        }
-
 
         public void SetClip(RectangleF rect)
         {
@@ -2239,18 +2196,6 @@ namespace System.Drawing
         public void TranslateClip(float dx, float dy)
         {
             Status status = SafeNativeMethods.Gdip.GdipTranslateClip(nativeObject, dx, dy);
-            SafeNativeMethods.Gdip.CheckStatus(status);
-        }
-
-        public void TranslateTransform(float dx, float dy)
-        {
-            TranslateTransform(dx, dy, MatrixOrder.Prepend);
-        }
-
-
-        public void TranslateTransform(float dx, float dy, MatrixOrder order)
-        {
-            Status status = SafeNativeMethods.Gdip.GdipTranslateWorldTransform(nativeObject, dx, dy, order);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -2499,25 +2444,6 @@ namespace System.Drawing
             set
             {
                 Status status = SafeNativeMethods.Gdip.GdipSetTextRenderingHint(nativeObject, value);
-                SafeNativeMethods.Gdip.CheckStatus(status);
-            }
-        }
-
-        public Matrix Transform
-        {
-            get
-            {
-                Matrix matrix = new Matrix();
-                Status status = SafeNativeMethods.Gdip.GdipGetWorldTransform(nativeObject, matrix.nativeMatrix);
-                SafeNativeMethods.Gdip.CheckStatus(status);
-                return matrix;
-            }
-            set
-            {
-                if (value == null)
-                    throw new ArgumentNullException("value");
-
-                Status status = SafeNativeMethods.Gdip.GdipSetWorldTransform(nativeObject, value.nativeMatrix);
                 SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }

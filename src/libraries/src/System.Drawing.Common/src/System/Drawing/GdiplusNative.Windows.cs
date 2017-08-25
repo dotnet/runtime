@@ -224,13 +224,6 @@ namespace System.Drawing
                 GdipGetTextRenderingHint_ptr = LoadFunction<GdipGetTextRenderingHint_delegate>("GdipGetTextRenderingHint");
                 GdipGetTextContrast_ptr = LoadFunction<GdipGetTextContrast_delegate>("GdipGetTextContrast");
                 GdipGetInterpolationMode_ptr = LoadFunction<GdipGetInterpolationMode_delegate>("GdipGetInterpolationMode");
-                GdipSetWorldTransform_ptr = LoadFunction<GdipSetWorldTransform_delegate>("GdipSetWorldTransform");
-                GdipResetWorldTransform_ptr = LoadFunction<GdipResetWorldTransform_delegate>("GdipResetWorldTransform");
-                GdipMultiplyWorldTransform_ptr = LoadFunction<GdipMultiplyWorldTransform_delegate>("GdipMultiplyWorldTransform");
-                GdipTranslateWorldTransform_ptr = LoadFunction<GdipTranslateWorldTransform_delegate>("GdipTranslateWorldTransform");
-                GdipScaleWorldTransform_ptr = LoadFunction<GdipScaleWorldTransform_delegate>("GdipScaleWorldTransform");
-                GdipRotateWorldTransform_ptr = LoadFunction<GdipRotateWorldTransform_delegate>("GdipRotateWorldTransform");
-                GdipGetWorldTransform_ptr = LoadFunction<GdipGetWorldTransform_delegate>("GdipGetWorldTransform");
                 GdipGetPageUnit_ptr = LoadFunction<GdipGetPageUnit_delegate>("GdipGetPageUnit");
                 GdipGetPageScale_ptr = LoadFunction<GdipGetPageScale_delegate>("GdipGetPageScale");
                 GdipSetPageUnit_ptr = LoadFunction<GdipSetPageUnit_delegate>("GdipSetPageUnit");
@@ -1189,34 +1182,6 @@ namespace System.Drawing
             private delegate int GdipGetInterpolationMode_delegate(HandleRef graphics, out int mode);
             private static FunctionWrapper<GdipGetInterpolationMode_delegate> GdipGetInterpolationMode_ptr;
             internal static int GdipGetInterpolationMode(HandleRef graphics, out int mode) => GdipGetInterpolationMode_ptr.Delegate(graphics, out mode);
-
-            private delegate int GdipSetWorldTransform_delegate(HandleRef graphics, HandleRef matrix);
-            private static FunctionWrapper<GdipSetWorldTransform_delegate> GdipSetWorldTransform_ptr;
-            internal static int GdipSetWorldTransform(HandleRef graphics, HandleRef matrix) => GdipSetWorldTransform_ptr.Delegate(graphics, matrix);
-
-            private delegate int GdipResetWorldTransform_delegate(HandleRef graphics);
-            private static FunctionWrapper<GdipResetWorldTransform_delegate> GdipResetWorldTransform_ptr;
-            internal static int GdipResetWorldTransform(HandleRef graphics) => GdipResetWorldTransform_ptr.Delegate(graphics);
-
-            private delegate int GdipMultiplyWorldTransform_delegate(HandleRef graphics, HandleRef matrix, MatrixOrder order);
-            private static FunctionWrapper<GdipMultiplyWorldTransform_delegate> GdipMultiplyWorldTransform_ptr;
-            internal static int GdipMultiplyWorldTransform(HandleRef graphics, HandleRef matrix, MatrixOrder order) => GdipMultiplyWorldTransform_ptr.Delegate(graphics, matrix, order);
-
-            private delegate int GdipTranslateWorldTransform_delegate(HandleRef graphics, float dx, float dy, MatrixOrder order);
-            private static FunctionWrapper<GdipTranslateWorldTransform_delegate> GdipTranslateWorldTransform_ptr;
-            internal static int GdipTranslateWorldTransform(HandleRef graphics, float dx, float dy, MatrixOrder order) => GdipTranslateWorldTransform_ptr.Delegate(graphics, dx, dy, order);
-
-            private delegate int GdipScaleWorldTransform_delegate(HandleRef graphics, float sx, float sy, MatrixOrder order);
-            private static FunctionWrapper<GdipScaleWorldTransform_delegate> GdipScaleWorldTransform_ptr;
-            internal static int GdipScaleWorldTransform(HandleRef graphics, float sx, float sy, MatrixOrder order) => GdipScaleWorldTransform_ptr.Delegate(graphics, sx, sy, order);
-
-            private delegate int GdipRotateWorldTransform_delegate(HandleRef graphics, float angle, MatrixOrder order);
-            private static FunctionWrapper<GdipRotateWorldTransform_delegate> GdipRotateWorldTransform_ptr;
-            internal static int GdipRotateWorldTransform(HandleRef graphics, float angle, MatrixOrder order) => GdipRotateWorldTransform_ptr.Delegate(graphics, angle, order);
-
-            private delegate int GdipGetWorldTransform_delegate(HandleRef graphics, HandleRef matrix);
-            private static FunctionWrapper<GdipGetWorldTransform_delegate> GdipGetWorldTransform_ptr;
-            internal static int GdipGetWorldTransform(HandleRef graphics, HandleRef matrix) => GdipGetWorldTransform_ptr.Delegate(graphics, matrix);
 
             private delegate int GdipGetPageUnit_delegate(HandleRef graphics, out int unit);
             private static FunctionWrapper<GdipGetPageUnit_delegate> GdipGetPageUnit_ptr;
