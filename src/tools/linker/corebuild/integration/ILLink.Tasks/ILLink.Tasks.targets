@@ -243,9 +243,10 @@
          assembly, because we root it separately using an xml file,
          which lets us explicitly root everything. -->
     <ItemGroup>
-      <LinkerRootAssemblies Include="@(_ManagedResolvedAssembliesToPublish->'%(Filename)')" />
-      <LinkerRootAssemblies Remove="@(PlatformLibraries->'%(Filename)')" />
-      <LinkerRootAssemblies Include="System.Private.CoreLib" />
+      <_LinkerRootAssemblies Include="@(_ManagedResolvedAssembliesToPublish->'%(Filename)')" />
+      <_LinkerRootAssemblies Remove="@(PlatformLibraries->'%(Filename)')" />
+      <_LinkerRootAssemblies Include="System.Private.CoreLib" />
+      <LinkerRootAssemblies Include="@(_LinkerRootAssemblies)" />
     </ItemGroup>
   </Target>
 
