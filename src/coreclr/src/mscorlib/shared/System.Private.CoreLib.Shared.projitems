@@ -577,9 +577,9 @@
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\User32\Interop.SendMessageTimeout.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\User32\Interop.LoadStringW.cs" />
   </ItemGroup>
-  <ItemGroup Condition="$(TargetsWindows) and ('$(ClrProduct)' == 'core_clr' or '$(EnableWinRT)' == 'true')">
+  <ItemGroup Condition="$(TargetsWindows) and '$(EnableWinRT)' == 'true'">
     <Compile Include="$(MSBuildThisFileDirectory)System\IO\FileStream.WinRT.cs" />
-    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\FileApiInterop\Interop.CreateFile2FromApp.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.CreateFile2.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Interop\Windows\Kernel32\Interop.CREATEFILE2_EXTENDED_PARAMETERS.cs" />
   </ItemGroup>
   <ItemGroup Condition="$(TargetsUnix)">
