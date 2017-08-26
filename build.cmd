@@ -294,6 +294,7 @@ REM ============================================================================
 
 echo %__MsgPrefix%Using environment: "%__VSToolsRoot%\VsDevCmd.bat"
 call                                 "%__VSToolsRoot%\VsDevCmd.bat"
+@if defined _echo @echo on
 
 @call %__ProjectDir%\run.cmd build -Project=%__ProjectDir%\build.proj -generateHeaderWindows -NativeVersionHeaderFile="%__RootBinDir%\obj\_version.h" %__RunArgs% %__UnprocessedBuildArgs% 
 
@@ -315,7 +316,7 @@ if %__RestoreOptData% EQU 1 if %__BuildTypeRelease% EQU 1 (
 REM Parse the optdata package versions out of msbuild so that we can pass them on to CMake
 set DotNetCli=%__ProjectDir%\Tools\dotnetcli\dotnet.exe
 if not exist "%DotNetCli%" (
-    echo Assertion failed: dotnet.exe not found at path "%DotNetCli%"
+    echo %__MsgPrefix%Assertion failed: dotnet.exe not found at path "%DotNetCli%"
     exit /b 1
 )
 set OptDataProjectFilePath=%__ProjectDir%\src\.nuget\optdata\optdata.csproj
@@ -332,15 +333,14 @@ REM === Build the CLR VM
 REM ===
 REM =========================================================================================
 
-if %__BuildNative% EQU 1 ( 
+if %__BuildNative% EQU 1 (
+    REM Scope environment changes start {
+    setlocal
+
     echo %__MsgPrefix%Commencing build of native components for %__BuildOS%.%__BuildArch%.%__BuildType%
 
-	set nativePlatfromArgs=-platform=%__BuildArch%
+    set nativePlatfromArgs=-platform=%__BuildArch%
     if /i "%__BuildArch%" == "arm64" ( set nativePlatfromArgs=-useEnv )
-
-    set __MsbuildLog=/flp:Verbosity=normal;LogFile="%__LogsDir%\CoreCLR_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-    set __MsbuildWrn=/flp1:WarningsOnly;LogFile="%__LogsDir%\CoreCLR_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
-    set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__LogsDir%\CoreCLR_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
 
     if /i "%__BuildArch%" == "arm64" ( 
         rem arm64 builds currently use private toolset which has not been released yet
@@ -361,7 +361,7 @@ if %__BuildNative% EQU 1 (
 
     echo %__MsgPrefix%Using environment: "%__VCToolsRoot%\vcvarsall.bat" !__VCBuildArch!
     call                                 "%__VCToolsRoot%\vcvarsall.bat" !__VCBuildArch!
-	@if defined _echo @echo on
+    @if defined _echo @echo on
 
     if not defined VSINSTALLDIR (
         echo %__MsgPrefix%Error: VSINSTALLDIR variable not defined.
@@ -377,8 +377,9 @@ if %__BuildNative% EQU 1 (
     pushd "%__IntermediatesDir%"
     set __ExtraCmakeArgs=!___SDKVersion! "-DCLR_CMAKE_TARGET_OS=%__BuildOs%" "-DCLR_CMAKE_PACKAGES_DIR=%__PackagesDir%" "-DCLR_CMAKE_PGO_INSTRUMENT=%__PgoInstrument%" "-DCLR_CMAKE_OPTDATA_VERSION=%__PgoOptDataVersion%" "-DCLR_CMAKE_PGO_OPTIMIZE=%__PgoOptimize%"
     call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectDir%" %__VSVersion% %__BuildArch% %__BuildStandaloneGC% %__BuildStandaloneGCOnly% !__ExtraCmakeArgs!
-	@if defined _echo @echo on
+    @if defined _echo @echo on
     popd
+
 :SkipConfigure
     if defined __ConfigureOnly goto SkipNativeBuild
 
@@ -387,17 +388,28 @@ if %__BuildNative% EQU 1 (
         exit /b 1
     )
 
+    set __BuildLogRootName=CoreCLR
+    set __BuildLog="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
+    set __BuildWrn="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
+    set __BuildErr="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
+    set __MsbuildLog=/flp:Verbosity=normal;LogFile=!__BuildLog!
+    set __MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!
+    set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
+
     @call %__ProjectDir%\run.cmd build -Project=%__IntermediatesDir%\install.vcxproj -MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr! -configuration=%__BuildType% %nativePlatfromArgs% %__RunArgs% %__UnprocessedBuildArgs%
 
     if not !errorlevel! == 0 (
         echo %__MsgPrefix%Error: native component build failed. Refer to the build log files for details:
-        echo     "%__LogsDir%\CoreCLR_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-        echo     "%__LogsDir%\CoreCLR_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
-        echo     "%__LogsDir%\CoreCLR_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
+        echo     !__BuildLog!
+        echo     !__BuildWrn!
+        echo     !__BuildErr!
         exit /b 1
-    )   
-)
+    )
+
 :SkipNativeBuild
+    REM } Scope environment changes end
+    endlocal
+)
 
 REM =========================================================================================
 REM ===
@@ -414,13 +426,17 @@ if /i "%__BuildArch%"=="arm" (
     )
 
 if /i "%__DoCrossArchBuild%"=="1" (
+    REM Scope environment changes start {
+    setlocal
 
     echo %__MsgPrefix%Commencing build of cross architecture native components for %__BuildOS%.%__BuildArch%.%__BuildType%
 
     :: Set the environment for the native build
     set __VCBuildArch=x86_amd64
     if /i "%__CrossArch%" == "x86" ( set __VCBuildArch=x86 )
-    @call "%__VCToolsRoot%\vcvarsall.bat" !__VCBuildArch!
+
+    echo %__MsgPrefix%Using environment: "%__VCToolsRoot%\vcvarsall.bat" !__VCBuildArch!
+    call                                 "%__VCToolsRoot%\vcvarsall.bat" !__VCBuildArch!
     @if defined _echo @echo on
 
     if not exist "%__CrossCompIntermediatesDir%" md "%__CrossCompIntermediatesDir%"
@@ -433,6 +449,7 @@ if /i "%__DoCrossArchBuild%"=="1" (
     call "%__SourceDir%\pal\tools\gen-buildsys-win.bat" "%__ProjectDir%" %__VSVersion% %__CrossArch% !__ExtraCmakeArgs!
     @if defined _echo @echo on
     popd
+
 :SkipConfigureCrossBuild
     if not exist "%__CrossCompIntermediatesDir%\install.vcxproj" (
         echo %__MsgPrefix%Error: failed to generate cross-arch components build project!
@@ -441,22 +458,28 @@ if /i "%__DoCrossArchBuild%"=="1" (
 
     if defined __ConfigureOnly goto SkipCrossCompBuild
 
-    echo %__MsgPrefix%Invoking msbuild
+    set __BuildLogRootName=Cross
+    set __BuildLog="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
+    set __BuildWrn="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
+    set __BuildErr="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
+    set __MsbuildLog=/flp:Verbosity=normal;LogFile=!__BuildLog!
+    set __MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!
+    set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
 
-    set __MsbuildLog=/flp:Verbosity=normal;LogFile="%__LogsDir%\Cross_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-    set __MsbuildWrn=/flp1:WarningsOnly;LogFile="%__LogsDir%\Cross_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
-    set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__LogsDir%\Cross_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
     @call %__ProjectDir%\run.cmd build -Project=%__CrossCompIntermediatesDir%\install.vcxproj -configuration=%__BuildType% -platform=%__CrossArch% -MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr! %__RunArgs% %__UnprocessedBuildArgs%
+
     if not !errorlevel! == 0 (
         echo %__MsgPrefix%Error: cross-arch components build failed. Refer to the build log files for details:
-        echo     "%__LogsDir%\Cross_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-        echo     "%__LogsDir%\Cross_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
-        echo     "%__LogsDir%\Cross_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
+        echo     !__BuildLog!
+        echo     !__BuildWrn!
+        echo     !__BuildErr!
         exit /b 1
     )    
-)
 
 :SkipCrossCompBuild
+    REM } Scope environment changes end
+    endlocal
+)
 
 REM =========================================================================================
 REM ===
@@ -464,15 +487,13 @@ REM === CoreLib and NuGet package build section.
 REM ===
 REM =========================================================================================
 
-if %__BuildCoreLib% EQU 1 (  
-	
-	echo %__MsgPrefix%Commencing build of System.Private.CoreLib for %__BuildOS%.%__BuildArch%.%__BuildType%
+if %__BuildCoreLib% EQU 1 (
+    REM Scope environment changes start {
+    setlocal
+
+    echo %__MsgPrefix%Commencing build of System.Private.CoreLib for %__BuildOS%.%__BuildArch%.%__BuildType%
     rem Explicitly set Platform causes conflicts in CoreLib project files. Clear it to allow building from VS x64 Native Tools Command Prompt
     set Platform=
-
-    set __MsbuildLog=/flp:Verbosity=normal;LogFile="%__LogsDir%\System.Private.CoreLib_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-    set __MsbuildWrn=/flp1:WarningsOnly;LogFile="%__LogsDir%\System.Private.CoreLib_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
-    set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__LogsDir%\System.Private.CoreLib_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
 
     set __ExtraBuildArgs=
     if not defined __IbcTuning (
@@ -481,22 +502,37 @@ if %__BuildCoreLib% EQU 1 (
     )
 
     if /i "%__BuildArch%" == "arm64" (
-		set __nugetBuildArgs=-buildNugetPackage=false
+        set __nugetBuildArgs=-buildNugetPackage=false
     ) else if "%__SkipNugetPackage%" == "1" (
-		set __nugetBuildArgs=-buildNugetPackage=false
+        set __nugetBuildArgs=-buildNugetPackage=false
     ) else (
-		set __nugetBuildArgs=-buildNugetPackage=true
-	)
+        set __nugetBuildArgs=-buildNugetPackage=true
+    )
+
+    set __BuildLogRootName=System.Private.CoreLib
+    set __BuildLog="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
+    set __BuildWrn="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
+    set __BuildErr="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
+    set __MsbuildLog=/flp:Verbosity=normal;LogFile=!__BuildLog!
+    set __MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!
+    set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
 
     @call %__ProjectDir%\run.cmd build -Project=%__ProjectDir%\build.proj -MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr! !__nugetBuildArgs! %__RunArgs% !__ExtraBuildArgs! %__UnprocessedBuildArgs%
+
     if not !errorlevel! == 0 (
         echo %__MsgPrefix%Error: System.Private.CoreLib build failed. Refer to the build log files for details:
-        echo     "%__LogsDir%\System.Private.CoreLib_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-        echo     "%__LogsDir%\System.Private.CoreLib_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
-        echo     "%__LogsDir%\System.Private.CoreLib_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
+        echo     !__BuildLog!
+        echo     !__BuildWrn!
+        echo     !__BuildErr!
         exit /b 1
     )
+
+    REM } Scope environment changes end
+    endlocal
 )
+
+REM Scope environment changes start {
+setlocal
 
 REM Need diasymreader.dll on your path for /CreatePdb
 set PATH=%PATH%;%WinDir%\Microsoft.Net\Framework64\V4.0.30319;%WinDir%\Microsoft.Net\Framework\V4.0.30319
@@ -504,16 +540,19 @@ set PATH=%PATH%;%WinDir%\Microsoft.Net\Framework64\V4.0.30319;%WinDir%\Microsoft
 if %__BuildNativeCoreLib% EQU 1 (
     echo %__MsgPrefix%Generating native image of System.Private.CoreLib for %__BuildOS%.%__BuildArch%.%__BuildType%
 
-    echo "%__CrossgenExe%" %__IbcTuning% /Platform_Assemblies_Paths "%__BinDir%"\IL /out "%__BinDir%\System.Private.CoreLib.dll" "%__BinDir%\IL\System.Private.CoreLib.dll"
-    "%__CrossgenExe%" %__IbcTuning% /Platform_Assemblies_Paths "%__BinDir%"\IL /out "%__BinDir%\System.Private.CoreLib.dll" "%__BinDir%\IL\System.Private.CoreLib.dll" > "%__CrossGenCoreLibLog%" 2>&1
+    set NEXTCMD="%__CrossgenExe%" %__IbcTuning% /Platform_Assemblies_Paths "%__BinDir%"\IL /out "%__BinDir%\System.Private.CoreLib.dll" "%__BinDir%\IL\System.Private.CoreLib.dll"
+    echo %__MsgPrefix%!NEXTCMD!
+    !NEXTCMD! > "%__CrossGenCoreLibLog%" 2>&1
     if NOT !errorlevel! == 0 (
         echo %__MsgPrefix%Error: CrossGen System.Private.CoreLib build failed. Refer to %__CrossGenCoreLibLog%
         :: Put it in the same log, helpful for Jenkins
         type %__CrossGenCoreLibLog%
         goto CrossgenFailure
     )
-    echo "%__CrossgenExe%" /Platform_Assemblies_Paths "%__BinDir%" /CreatePdb "%__BinDir%\PDB" "%__BinDir%\System.Private.CoreLib.dll"
-    "%__CrossgenExe%" /Platform_Assemblies_Paths "%__BinDir%" /CreatePdb "%__BinDir%\PDB" "%__BinDir%\System.Private.CoreLib.dll" >> "%__CrossGenCoreLibLog%" 2>&1
+
+    set NEXTCMD="%__CrossgenExe%" /Platform_Assemblies_Paths "%__BinDir%" /CreatePdb "%__BinDir%\PDB" "%__BinDir%\System.Private.CoreLib.dll"
+    echo %__MsgPrefix%!NEXTCMD!
+    !NEXTCMD! >> "%__CrossGenCoreLibLog%" 2>&1
     if NOT !errorlevel! == 0 (
         echo %__MsgPrefix%Error: CrossGen /CreatePdb System.Private.CoreLib build failed. Refer to %__CrossGenCoreLibLog%
         :: Put it in the same log, helpful for Jenkins
@@ -522,23 +561,37 @@ if %__BuildNativeCoreLib% EQU 1 (
     )
 )
 
+REM } Scope environment changes end
+endlocal
+
+
 if %__BuildPackages% EQU 1 (
+    REM Scope environment changes start {
+    setlocal
+
     echo %__MsgPrefix%Building Packages for %__BuildOS%.%__BuildArch%.%__BuildType%
 
-    set __MsbuildLog=/flp:Verbosity=normal;LogFile="%__LogsDir%\Nuget_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-	set __MsbuildWrn=/flp1:WarningsOnly;LogFile="%__LogsDir%\Nuget_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
-	set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__LogsDir%\Nuget_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
+    set __BuildLogRootName=Nuget
+    set __BuildLog="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
+    set __BuildWrn="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
+    set __BuildErr="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
+    set __MsbuildLog=/flp:Verbosity=normal;LogFile=!__BuildLog!
+    set __MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!
+    set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
 
     REM The conditions as to what to build are captured in the builds file.
     @call %__ProjectDir%\run.cmd build -Project=%__SourceDir%\.nuget\packages.builds -platform=%__BuildArch% -MsBuildLog=!__MsbuildLog! -MsBuildWrn=!__MsbuildWrn! -MsBuildErr=!__MsbuildErr! %__RunArgs% %__UnprocessedBuildArgs%
 
     if not !errorlevel! == 0 (
         echo %__MsgPrefix%Error: Nuget package generation failed build failed. Refer to the build log files for details:
-        echo     "%__LogsDir%\Nuget_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
-        echo     "%__LogsDir%\Nuget_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
-        echo     "%__LogsDir%\Nuget_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
+        echo     !__BuildLog!
+        echo     !__BuildWrn!
+        echo     !__BuildErr!
         exit /b 1
     )
+
+    REM } Scope environment changes end
+    endlocal
 )
 
 REM =========================================================================================
@@ -556,8 +609,9 @@ if %__BuildTests% EQU 1 (
     REM TODO, remove once the toolset is open.
     if /i "%__BuildArch%" == "arm64" call :PrivateToolSet 
 
-    echo "%__ProjectDir%\build-test.cmd %__BuildArch% %__BuildType% %__UnprocessedBuildArgs%"
-    @call %__ProjectDir%\build-test.cmd %__BuildArch% %__BuildType% %__UnprocessedBuildArgs%
+    set NEXTCMD=call %__ProjectDir%\build-test.cmd %__BuildArch% %__BuildType% %__UnprocessedBuildArgs%
+    echo %__MsgPrefix%!NEXTCMD!
+    !NEXTCMD!
 
     if not !errorlevel! == 0 (
         REM buildtest.cmd has already emitted an error message and mentioned the build log file to examine.
