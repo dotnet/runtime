@@ -10,10 +10,6 @@ namespace System.IO
     {
         private SafeFileHandle OpenHandle(FileMode mode, FileShare share, FileOptions options)
         {
-#if CORECLR
-            if (AppDomain.IsAppXModel())
-                return CreateFile2OpenHandle(mode, share, options);
-#endif
             return CreateFileOpenHandle(mode, share, options);
         }
 
