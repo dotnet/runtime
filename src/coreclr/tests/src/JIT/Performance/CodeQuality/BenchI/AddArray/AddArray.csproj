@@ -11,6 +11,7 @@
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <NuGetTargetMoniker>.NETStandard,Version=v1.4</NuGetTargetMoniker>
     <NuGetTargetMonikerShort>netstandard1.4</NuGetTargetMonikerShort>
+    <CLRTestPriority>1</CLRTestPriority>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' "></PropertyGroup>

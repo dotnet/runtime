@@ -219,7 +219,7 @@ def static isGcReliabilityFramework(def scenario) {
 }
 
 def static scenarioNeedsPri1Build(def scenario) {
-    return (scenario == 'pri1' || scenario == 'pri1r2r' || scenario == 'gcstress15_pri1r2r'|| scenario == 'coverage' || isGcReliabilityFramework(scenario))
+    return (scenario == 'pri1' || scenario == 'pri1r2r' || scenario == 'gcstress15_pri1r2r'|| scenario == 'coverage' || isGcReliabilityFramework(scenario) || isLongGc(scenario))
 }
 
 def static setTestJobTimeOut(newJob, scenario) {
