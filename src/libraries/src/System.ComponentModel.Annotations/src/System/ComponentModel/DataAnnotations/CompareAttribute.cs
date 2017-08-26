@@ -53,14 +53,16 @@ namespace System.ComponentModel.DataAnnotations
             {
                 if (OtherPropertyDisplayName == null)
                 {
-                    OtherPropertyDisplayName = GetDisplayNameForProperty(validationContext.ObjectType, otherPropertyInfo);
+                    OtherPropertyDisplayName = GetDisplayNameForProperty(otherPropertyInfo);
                 }
+
                 return new ValidationResult(FormatErrorMessage(validationContext.DisplayName));
             }
+
             return null;
         }
 
-        private string GetDisplayNameForProperty(Type containerType, PropertyInfo property)
+        private string GetDisplayNameForProperty(PropertyInfo property)
         {
             var attributes = CustomAttributeExtensions.GetCustomAttributes(property, true);
             var display = attributes.OfType<DisplayAttribute>().FirstOrDefault();
