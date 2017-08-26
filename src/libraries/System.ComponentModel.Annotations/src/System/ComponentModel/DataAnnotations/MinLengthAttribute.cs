@@ -30,7 +30,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <summary>
         ///     Gets the minimum allowable length of the collection/string data.
         /// </summary>
-        public int Length { get; private set; }
+        public int Length { get; }
 
         /// <summary>
         ///     Determines whether a specified object is valid. (Overrides <see cref="ValidationAttribute.IsValid(object)" />)
