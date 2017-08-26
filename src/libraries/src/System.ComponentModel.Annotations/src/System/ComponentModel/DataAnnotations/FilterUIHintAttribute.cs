@@ -23,7 +23,7 @@ namespace System.ComponentModel.DataAnnotations
         {
             get
             {
-                return this._implementation.UIHint;
+                return _implementation.UIHint;
             }
         }
 
@@ -35,7 +35,7 @@ namespace System.ComponentModel.DataAnnotations
         {
             get
             {
-                return this._implementation.PresentationLayer;
+                return _implementation.PresentationLayer;
             }
         }
 
@@ -48,7 +48,7 @@ namespace System.ComponentModel.DataAnnotations
         {
             get
             {
-                return this._implementation.ControlParameters;
+                return _implementation.ControlParameters;
             }
         }
 
@@ -84,7 +84,7 @@ namespace System.ComponentModel.DataAnnotations
         public FilterUIHintAttribute(string filterUIHint, string presentationLayer,
             params object[] controlParameters)
         {
-            this._implementation = new UIHintAttribute.UIHintImplementation(
+            _implementation = new UIHintAttribute.UIHintImplementation(
                 filterUIHint, presentationLayer, controlParameters);
         }
 
@@ -94,7 +94,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <returns>A 32-bit signed integer hash code.</returns>
         public override int GetHashCode()
         {
-            return this._implementation.GetHashCode();
+            return _implementation.GetHashCode();
         }
 
         /// <summary>
@@ -112,7 +112,7 @@ namespace System.ComponentModel.DataAnnotations
                 return false;
             }
 
-            return this._implementation.Equals(otherAttribute._implementation);
+            return _implementation.Equals(otherAttribute._implementation);
         }
     }
 }
