@@ -58,13 +58,7 @@ namespace System.ComponentModel.DataAnnotations
         public string ShortName
         {
             get { return _shortName.Value; }
-            set
-            {
-                if (_shortName.Value != value)
-                {
-                    _shortName.Value = value;
-                }
-            }
+            set { _shortName.Value = value; }
         }
 
         /// <summary>
@@ -89,13 +83,7 @@ namespace System.ComponentModel.DataAnnotations
         public string Name
         {
             get { return _name.Value; }
-            set
-            {
-                if (_name.Value != value)
-                {
-                    _name.Value = value;
-                }
-            }
+            set { _name.Value = value; }
         }
 
         /// <summary>
@@ -120,13 +108,7 @@ namespace System.ComponentModel.DataAnnotations
         public string Description
         {
             get { return _description.Value; }
-            set
-            {
-                if (_description.Value != value)
-                {
-                    _description.Value = value;
-                }
-            }
+            set { _description.Value = value; }
         }
 
         /// <summary>
@@ -151,13 +133,7 @@ namespace System.ComponentModel.DataAnnotations
         public string Prompt
         {
             get { return _prompt.Value; }
-            set
-            {
-                if (_prompt.Value != value)
-                {
-                    _prompt.Value = value;
-                }
-            }
+            set { _prompt.Value = value; }
         }
 
         /// <summary>
@@ -182,13 +158,7 @@ namespace System.ComponentModel.DataAnnotations
         public string GroupName
         {
             get { return _groupName.Value; }
-            set
-            {
-                if (_groupName.Value != value)
-                {
-                    _groupName.Value = value;
-                }
-            }
+            set { _groupName.Value = value; }
         }
 
         /// <summary>
