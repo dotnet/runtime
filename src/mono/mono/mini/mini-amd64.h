@@ -237,9 +237,10 @@ static AMD64_XMM_Reg_No float_return_regs [] = { AMD64_XMM0 };
 #define PARAM_REGS 6
 #define FLOAT_PARAM_REGS 8
 
-static AMD64_Reg_No param_regs [] = { AMD64_RDI, AMD64_RSI, AMD64_RDX, AMD64_RCX, AMD64_R8, AMD64_R9 };
+static const AMD64_Reg_No param_regs [] = {AMD64_RDI, AMD64_RSI, AMD64_RDX,
+					   AMD64_RCX, AMD64_R8,  AMD64_R9};
 
-static AMD64_Reg_No return_regs [] = { AMD64_RAX, AMD64_RDX };
+static const AMD64_Reg_No return_regs [] = {AMD64_RAX, AMD64_RDX};
 #endif
 
 typedef struct {
