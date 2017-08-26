@@ -20,7 +20,7 @@ namespace System.ComponentModel.DataAnnotations
             EnumType = enumType;
         }
 
-        public Type EnumType { get; private set; }
+        public Type EnumType { get; }
 
         public override bool IsValid(object value)
         {

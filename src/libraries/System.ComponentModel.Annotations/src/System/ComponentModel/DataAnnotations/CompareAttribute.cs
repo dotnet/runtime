@@ -21,7 +21,7 @@ namespace System.ComponentModel.DataAnnotations
             OtherProperty = otherProperty;
         }
 
-        public string OtherProperty { get; private set; }
+        public string OtherProperty { get; }
 
         public string OtherPropertyDisplayName { get; internal set; }
 

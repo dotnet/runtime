@@ -628,11 +628,11 @@ nameof(value));
                 Value = value;
             }
 
-            internal object Value { get; set; }
+            internal object Value { get; }
 
-            internal ValidationAttribute ValidationAttribute { get; set; }
+            internal ValidationAttribute ValidationAttribute { get; }
 
-            internal ValidationResult ValidationResult { get; set; }
+            internal ValidationResult ValidationResult { get; }
 
             internal Exception ThrowValidationException() => throw new ValidationException(ValidationResult, ValidationAttribute, Value);
         }

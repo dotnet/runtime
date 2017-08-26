@@ -163,7 +163,7 @@ namespace System.ComponentModel.DataAnnotations
 
             internal IEnumerable<ValidationAttribute> ValidationAttributes { get; }
 
-            internal DisplayAttribute DisplayAttribute { get; set; }
+            internal DisplayAttribute DisplayAttribute { get; }
         }
 
         /// <summary>

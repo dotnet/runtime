@@ -34,7 +34,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <summary>
         ///     Gets the regular expression pattern to use
         /// </summary>
-        public string Pattern { get; private set; }
+        public string Pattern { get; }
 
         private Regex Regex { get; set; }
 

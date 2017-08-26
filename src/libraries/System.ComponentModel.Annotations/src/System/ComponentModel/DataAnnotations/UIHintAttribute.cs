@@ -107,12 +107,12 @@ namespace System.ComponentModel.DataAnnotations
             /// <summary>
             ///     Gets the name of the control that is most appropriate for this associated property or field
             /// </summary>
-            public string UIHint { get; private set; }
+            public string UIHint { get; }
 
             /// <summary>
             ///     Gets the name of the presentation layer that supports the control type in <see cref="UIHint" />
             /// </summary>
-            public string PresentationLayer { get; private set; }
+            public string PresentationLayer { get; }
 
             public IDictionary<string, object> ControlParameters
             {
