@@ -76,7 +76,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     specified type.
         /// </summary>
         /// <remarks>
-        ///     An invalid <paramref name="validatorType" /> or <paramref name="Method" /> will be cause
+        ///     An invalid <paramref name="validatorType" /> or <paramref name="method" /> will be cause
         ///     <see cref="IsValid(object, ValidationContext)" />> to return a <see cref="ValidationResult" />
         ///     and <see cref="ValidationAttribute.FormatErrorMessage" /> to return a summary error message.
         /// </remarks>
