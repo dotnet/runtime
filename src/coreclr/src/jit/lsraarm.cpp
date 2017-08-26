@@ -639,7 +639,6 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         case GT_STORE_BLK:
         case GT_STORE_OBJ:
         case GT_STORE_DYN_BLK:
-            LowerBlockStore(tree->AsBlk());
             TreeNodeInfoInitBlockStore(tree->AsBlk());
             break;
 
