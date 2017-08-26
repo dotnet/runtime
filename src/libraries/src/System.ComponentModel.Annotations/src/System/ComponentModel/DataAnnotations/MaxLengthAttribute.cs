@@ -42,7 +42,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <summary>
         ///     Gets the maximum allowable length of the collection/string data.
         /// </summary>
-        public int Length { get; private set; }
+        public int Length { get; }
 
         private static string DefaultErrorMessageString
         {
