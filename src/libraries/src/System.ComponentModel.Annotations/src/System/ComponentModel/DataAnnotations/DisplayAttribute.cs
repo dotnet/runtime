@@ -240,7 +240,7 @@ namespace System.ComponentModel.DataAnnotations
                         "GetAutoGenerateField"));
                 }
 
-                return _autoGenerateField.Value;
+                return _autoGenerateField.GetValueOrDefault();
             }
             set { _autoGenerateField = value; }
         }
@@ -270,7 +270,7 @@ namespace System.ComponentModel.DataAnnotations
                         "GetAutoGenerateFilter"));
                 }
 
-                return _autoGenerateFilter.Value;
+                return _autoGenerateFilter.GetValueOrDefault();
             }
             set { _autoGenerateFilter = value; }
         }
@@ -297,7 +297,7 @@ namespace System.ComponentModel.DataAnnotations
                         SR.DisplayAttribute_PropertyNotSet, "Order", "GetOrder"));
                 }
 
-                return _order.Value;
+                return _order.GetValueOrDefault();
             }
             set { _order = value; }
         }
