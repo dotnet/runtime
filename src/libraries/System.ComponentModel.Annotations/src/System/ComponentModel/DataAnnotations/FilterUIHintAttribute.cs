@@ -13,7 +13,7 @@ namespace System.ComponentModel.DataAnnotations
     [Obsolete("This attribute is no longer in use and will be ignored if applied.")]
     public sealed class FilterUIHintAttribute : Attribute
     {
-        private UIHintAttribute.UIHintImplementation _implementation;
+        private readonly UIHintAttribute.UIHintImplementation _implementation;
 
         /// <summary>
         /// Gets the name of the control that is most appropriate for this associated
