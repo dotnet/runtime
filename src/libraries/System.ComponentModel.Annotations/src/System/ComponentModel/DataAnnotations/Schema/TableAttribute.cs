@@ -12,7 +12,6 @@ namespace System.ComponentModel.DataAnnotations.Schema
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
     public class TableAttribute : Attribute
     {
-        private readonly string _name;
         private string _schema;
 
         /// <summary>
@@ -26,16 +25,14 @@ namespace System.ComponentModel.DataAnnotations.Schema
                 throw new ArgumentException(string.Format(CultureInfo.CurrentCulture,
                     SR.ArgumentIsNullOrWhitespace, nameof(name)));
             }
-            _name = name;
+
+            Name = name;
         }
 
         /// <summary>
         ///     The name of the table the class is mapped to.
         /// </summary>
-        public string Name
-        {
-            get { return _name; }
-        }
+        public string Name { get; }
 
         /// <summary>
         ///     The schema of the table the class is mapped to.

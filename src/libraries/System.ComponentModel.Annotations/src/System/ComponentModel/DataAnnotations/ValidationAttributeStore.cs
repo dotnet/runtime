@@ -20,16 +20,12 @@ namespace System.ComponentModel.DataAnnotations
     /// </remarks>
     internal class ValidationAttributeStore
     {
-        private static readonly ValidationAttributeStore _singleton = new ValidationAttributeStore();
         private readonly Dictionary<Type, TypeStoreItem> _typeStoreItems = new Dictionary<Type, TypeStoreItem>();
 
         /// <summary>
         ///     Gets the singleton <see cref="ValidationAttributeStore" />
         /// </summary>
-        internal static ValidationAttributeStore Instance
-        {
-            get { return _singleton; }
-        }
+        internal static ValidationAttributeStore Instance { get; } = new ValidationAttributeStore();
 
         /// <summary>
         ///     Retrieves the type level validation attributes for the given type.
@@ -159,18 +155,13 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         private abstract class StoreItem
         {
-            private readonly IEnumerable<ValidationAttribute> _validationAttributes;
-
             internal StoreItem(IEnumerable<Attribute> attributes)
             {
-                _validationAttributes = attributes.OfType<ValidationAttribute>();
+                ValidationAttributes = attributes.OfType<ValidationAttribute>();
                 DisplayAttribute = attributes.OfType<DisplayAttribute>().SingleOrDefault();
             }
 
-            internal IEnumerable<ValidationAttribute> ValidationAttributes
-            {
-                get { return _validationAttributes; }
-            }
+            internal IEnumerable<ValidationAttribute> ValidationAttributes { get; }
 
             internal DisplayAttribute DisplayAttribute { get; set; }
         }
@@ -248,19 +239,14 @@ nameof(propertyName));
         /// </summary>
         private class PropertyStoreItem : StoreItem
         {
-            private readonly Type _propertyType;
-
             internal PropertyStoreItem(Type propertyType, IEnumerable<Attribute> attributes)
                 : base(attributes)
             {
                 Debug.Assert(propertyType != null);
-                _propertyType = propertyType;
+                PropertyType = propertyType;
             }
 
-            internal Type PropertyType
-            {
-                get { return _propertyType; }
-            }
+            internal Type PropertyType { get; }
         }
     }
 }
