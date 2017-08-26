@@ -633,3 +633,21 @@ mono_thread_state_name (int state)
 {
 	return state_name (state);
 }
+
+gboolean
+mono_thread_is_gc_unsafe_mode (void)
+{
+	MonoThreadInfo *cur = mono_thread_info_current ();
+
+	if (!cur)
+		return FALSE;
+
+	switch (mono_thread_info_current_state (cur)) {
+	case STATE_RUNNING:
+	case STATE_ASYNC_SUSPEND_REQUESTED:
+	case STATE_SELF_SUSPEND_REQUESTED:
+		return TRUE;
+	default:
+		return FALSE;
+	}
+}

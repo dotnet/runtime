@@ -824,19 +824,19 @@ gpointer
 mono_magic_trampoline (mgreg_t *regs, guint8 *code, gpointer arg, guint8* tramp)
 {
 	gpointer res;
-
-	MONO_ENTER_GC_UNSAFE_UNBALANCED;
-
 	MonoError error;
+
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	g_assert (mono_thread_is_gc_unsafe_mode ());
 
 	trampoline_calls ++;
 
 	res = common_call_trampoline (regs, code, (MonoMethod *)arg, NULL, NULL, &error);
-	mono_error_set_pending_exception (&error);
-
-	mono_interruption_checkpoint_from_trampoline ();
-
-	MONO_EXIT_GC_UNSAFE_UNBALANCED;
+	if (!is_ok (&error)) {
+		mono_error_set_pending_exception (&error);
+		return NULL;
+	}
 
 	return res;
 }
