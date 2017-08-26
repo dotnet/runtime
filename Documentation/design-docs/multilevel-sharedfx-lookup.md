@@ -17,7 +17,7 @@ It’s also possible to append a dash followed by a string after the version num
 Versions that are not pre-releases are called productions.
 
 	For instance, a valid Semantic Versioning number sort would be:
-	1.0.0 -> 1.0.1 -> 1.0.1-alpha -> 1.1.0 -> 1.1.1 -> 2.0.0.
+	1.0.0 -> 1.0.1-alpha -> 1.0.1 -> 1.1.0-alpha -> 1.1.0-rc1 -> 1.1.0 -> 1.1.1 -> 2.0.0.
 
 ## Executable
 
