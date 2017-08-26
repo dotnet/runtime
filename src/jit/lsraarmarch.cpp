@@ -559,20 +559,18 @@ void Lowering::TreeNodeInfoInitCall(GenTreeCall* call)
         // Skip arguments that have been moved to the Late Arg list
         if (!(args->gtFlags & GTF_LATE_ARG))
         {
+#ifdef DEBUG
+            fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(call, arg);
+            assert(curArgTabEntry);
+#endif
             if (arg->gtOper == GT_PUTARG_STK)
             {
-                fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(call, arg);
-                assert(curArgTabEntry);
-
                 assert(curArgTabEntry->regNum == REG_STK);
             }
 #ifdef _TARGET_ARM_
             else if (arg->OperGet() == GT_PUTARG_SPLIT)
             {
-#ifdef DEBUG
-                fgArgTabEntryPtr curArgTabEntry = compiler->gtArgEntryByNode(call, arg);
                 assert(arg->AsPutArgSplit()->gtNumRegs == curArgTabEntry->numRegs);
-#endif
                 info->srcCount += arg->gtLsraInfo.dstCount;
             }
 #endif
