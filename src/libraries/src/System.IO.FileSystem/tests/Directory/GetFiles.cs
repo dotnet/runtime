@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Linq;
-using System.Runtime.InteropServices;
 using Xunit;
 
 namespace System.IO.Tests
@@ -41,6 +40,45 @@ namespace System.IO.Tests
             // The symlink is gone
             File.Delete(linkPath);
             Assert.Equal(0, GetEntries(containingFolder.FullName).Count());
+        }
+
+        [ConditionalFact(nameof(AreAllLongPathsAvailable))]
+        public void EnumerateFilesOverLegacyMaxPath()
+        {
+            // We want to test that directories under the legacy MAX_PATH (260 characters, including the null) can iterate files
+            // even if the full path is over 260.
+
+            string directory = IOServices.GetPath(GetTestFilePath(), 250);
+            Assert.Equal(250, directory.Length);
+            Assert.True(Directory.CreateDirectory(directory).Exists);
+
+            for (int i = 0; i < 6; i++)
+            {
+                string testFile = Path.Combine(directory, new string((char)('0' + i), i + 7));
+                File.Create(testFile).Dispose();
+            }
+
+            string[] files = GetEntries(directory);
+            Assert.Equal(6, files.Length);
+        }
+
+        [ConditionalFact(nameof(AreAllLongPathsAvailable))]
+        public void EnumerateFilesDirectoryOverLegacyMaxPath()
+        {
+            // Check enumerating when the entire path is over MAX_PATH
+
+            string directory = IOServices.GetPath(GetTestFilePath(), 270);
+            Assert.Equal(270, directory.Length);
+            Assert.True(Directory.CreateDirectory(directory).Exists);
+
+            for (int i = 0; i < 6; i++)
+            {
+                string testFile = Path.Combine(directory, new string((char)('0' + i), i + 7));
+                File.Create(testFile).Dispose();
+            }
+
+            string[] files = GetEntries(directory);
+            Assert.Equal(6, files.Length);
         }
     }
 
