@@ -39,7 +39,7 @@ namespace System.IO
 
             using (DisableMediaInsertionPrompt.Create())
             {
-                return ValidateFileHandle(Interop.FileApiInterop.CreateFile2FromApp(
+                return ValidateFileHandle(Interop.FileApiInterop.CreateFile2(
                     lpFileName: _path,
                     dwDesiredAccess: access,
                     dwShareMode: share,
