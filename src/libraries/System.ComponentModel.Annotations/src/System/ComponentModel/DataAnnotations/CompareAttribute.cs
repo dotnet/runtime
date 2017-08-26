@@ -73,10 +73,5 @@ namespace System.ComponentModel.DataAnnotations
 
             return OtherProperty;
         }
-
-        private static bool IsPublic(PropertyInfo p)
-        {
-            return (p.GetMethod != null && p.GetMethod.IsPublic) || (p.SetMethod != null && p.SetMethod.IsPublic);
-        }
     }
 }
