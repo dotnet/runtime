@@ -244,15 +244,8 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         /// <param name="serviceType">The type of the service needed.</param>
         /// <returns>An instance of that service or null if it is not available.</returns>
-        public object GetService(Type serviceType)
-        {
-            if (_serviceProvider != null)
-            {
-                return _serviceProvider(serviceType);
-            }
+        public object GetService(Type serviceType) => _serviceProvider?.Invoke(serviceType);
 
-            return null;
-        }
         #endregion
     }
 }

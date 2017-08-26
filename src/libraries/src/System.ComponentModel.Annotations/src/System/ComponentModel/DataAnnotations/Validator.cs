@@ -64,10 +64,7 @@ namespace System.ComponentModel.DataAnnotations
             {
                 result = false;
 
-                if (validationResults != null)
-                {
-                    validationResults.Add(err.ValidationResult);
-                }
+                validationResults?.Add(err.ValidationResult);
             }
 
             return result;
@@ -157,10 +154,7 @@ namespace System.ComponentModel.DataAnnotations
             {
                 result = false;
 
-                if (validationResults != null)
-                {
-                    validationResults.Add(err.ValidationResult);
-                }
+                validationResults?.Add(err.ValidationResult);
             }
 
             return result;
@@ -207,10 +201,7 @@ namespace System.ComponentModel.DataAnnotations
             {
                 result = false;
 
-                if (validationResults != null)
-                {
-                    validationResults.Add(err.ValidationResult);
-                }
+                validationResults?.Add(err.ValidationResult);
             }
 
             return result;
@@ -234,11 +225,8 @@ namespace System.ComponentModel.DataAnnotations
 
             var attributes = _store.GetPropertyValidationAttributes(validationContext);
 
-            var err = GetValidationErrors(value, validationContext, attributes, false).FirstOrDefault();
-            if (err != null)
-            {
-                err.ThrowValidationException();
-            }
+            GetValidationErrors(value, validationContext, attributes, false).FirstOrDefault()
+                ?.ThrowValidationException();
         }
 
         /// <summary>
@@ -301,12 +289,7 @@ namespace System.ComponentModel.DataAnnotations
                     SR.Validator_InstanceMustMatchValidationContextInstance, nameof(instance));
             }
 
-            var err =
-                GetObjectValidationErrors(instance, validationContext, validateAllProperties, false).FirstOrDefault();
-            if (err != null)
-            {
-                err.ThrowValidationException();
-            }
+            GetObjectValidationErrors(instance, validationContext, validateAllProperties, false).FirstOrDefault()?.ThrowValidationException();
         }
 
         /// <summary>
@@ -334,12 +317,7 @@ namespace System.ComponentModel.DataAnnotations
                 throw new ArgumentNullException(nameof(validationContext));
             }
 
-            var err =
-                GetValidationErrors(value, validationContext, validationAttributes, false).FirstOrDefault();
-            if (err != null)
-            {
-                err.ThrowValidationException();
-            }
+            GetValidationErrors(value, validationContext, validationAttributes, false).FirstOrDefault()?.ThrowValidationException();
         }
 
         /// <summary>
