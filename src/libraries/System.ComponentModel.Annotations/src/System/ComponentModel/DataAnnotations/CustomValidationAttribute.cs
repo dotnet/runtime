@@ -204,10 +204,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     Checks whether the current attribute instance itself is valid for use.
         /// </summary>
         /// <returns>The error message why it is not well-formed, null if it is well-formed.</returns>
-        private string CheckAttributeWellFormed()
-        {
-            return ValidateValidatorTypeParameter() ?? ValidateMethodParameter();
-        }
+        private string CheckAttributeWellFormed() => ValidateValidatorTypeParameter() ?? ValidateMethodParameter();
 
         /// <summary>
         ///     Internal helper to determine whether <see cref="ValidatorType" /> is legal for use.

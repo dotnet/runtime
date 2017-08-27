@@ -27,11 +27,9 @@ namespace System.ComponentModel.DataAnnotations
 
         public override bool RequiresValidationContext => true;
 
-        public override string FormatErrorMessage(string name)
-        {
-            return string.Format(CultureInfo.CurrentCulture, ErrorMessageString, name,
-                OtherPropertyDisplayName ?? OtherProperty);
-        }
+        public override string FormatErrorMessage(string name) =>
+            string.Format(
+                CultureInfo.CurrentCulture, ErrorMessageString, name, OtherPropertyDisplayName ?? OtherProperty);
 
         protected override ValidationResult IsValid(object value, ValidationContext validationContext)
         {

@@ -47,7 +47,7 @@ namespace System.ComponentModel.DataAnnotations.Schema
         /// </summary>
         public int Order
         {
-            get { return _order; }
+            get => _order;
             set
             {
                 if (value < 0)
@@ -64,7 +64,7 @@ namespace System.ComponentModel.DataAnnotations.Schema
         /// </summary>
         public string TypeName
         {
-            get { return _typeName; }
+            get => _typeName;
             set
             {
                 if (string.IsNullOrWhiteSpace(value))

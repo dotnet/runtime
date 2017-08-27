@@ -44,10 +44,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         public int Length { get; }
 
-        private static string DefaultErrorMessageString
-        {
-            get { return SR.MaxLengthAttribute_ValidationError; }
-        }
+        private static string DefaultErrorMessageString => SR.MaxLengthAttribute_ValidationError;
 
         /// <summary>
         ///     Determines whether a specified object is valid. (Overrides <see cref="ValidationAttribute.IsValid(object)" />)
@@ -96,11 +93,9 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         /// <param name="name">The name to include in the formatted string.</param>
         /// <returns>A localized string to describe the maximum acceptable length.</returns>
-        public override string FormatErrorMessage(string name)
-        {
+        public override string FormatErrorMessage(string name) =>
             // An error occurred, so we know the value is greater than the maximum if it was specified
-            return string.Format(CultureInfo.CurrentCulture, ErrorMessageString, name, Length);
-        }
+            string.Format(CultureInfo.CurrentCulture, ErrorMessageString, name, Length);
 
         /// <summary>
         ///     Checks that Length has a legal value.
