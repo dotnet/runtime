@@ -87,6 +87,6 @@ g_mkdtemp (char *tmp_template)
 
 	return mkdtemp (template_copy);
 #else
-	g_error("Function not supported");
+	g_error("Function mkdtemp not supported");
 #endif
 }
