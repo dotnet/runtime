@@ -59,22 +59,21 @@ namespace System.Web
 
         private static void ParseQueryString(string query, Encoding encoding, NameValueCollection result)
         {
-            if (query.Length == 0)
+            int queryLength = query.Length;
+            if (queryLength == 0)
                 return;
 
-            var decoded = HtmlDecode(query);
-            var decodedLength = decoded.Length;
             var namePos = 0;
             var first = true;
-            while (namePos <= decodedLength)
+            while (namePos <= queryLength)
             {
                 int valuePos = -1, valueEnd = -1;
-                for (var q = namePos; q < decodedLength; q++)
-                    if ((valuePos == -1) && (decoded[q] == '='))
+                for (var q = namePos; q < queryLength; q++)
+                    if ((valuePos == -1) && (query[q] == '='))
                     {
                         valuePos = q + 1;
                     }
-                    else if (decoded[q] == '&')
+                    else if (query[q] == '&')
                     {
                         valueEnd = q;
                         break;
@@ -83,7 +82,7 @@ namespace System.Web
                 if (first)
                 {
                     first = false;
-                    if (decoded[namePos] == '?')
+                    if (query[namePos] == '?')
                         namePos++;
                 }
 
@@ -95,18 +94,18 @@ namespace System.Web
                 }
                 else
                 {
-                    name = UrlDecode(decoded.Substring(namePos, valuePos - namePos - 1), encoding);
+                    name = UrlDecode(query.Substring(namePos, valuePos - namePos - 1), encoding);
                 }
                 if (valueEnd < 0)
                 {
                     namePos = -1;
-                    valueEnd = decoded.Length;
+                    valueEnd = query.Length;
                 }
                 else
                 {
                     namePos = valueEnd + 1;
                 }
-                var value = UrlDecode(decoded.Substring(valuePos, valueEnd - valuePos), encoding);
+                var value = UrlDecode(query.Substring(valuePos, valueEnd - valuePos), encoding);
 
                 result.Add(name, value);
                 if (namePos == -1)
