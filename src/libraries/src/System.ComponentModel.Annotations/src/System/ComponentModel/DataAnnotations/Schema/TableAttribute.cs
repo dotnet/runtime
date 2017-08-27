@@ -39,7 +39,7 @@ namespace System.ComponentModel.DataAnnotations.Schema
         /// </summary>
         public string Schema
         {
-            get { return _schema; }
+            get => _schema;
             set
             {
                 if (string.IsNullOrWhiteSpace(value))
@@ -47,6 +47,7 @@ namespace System.ComponentModel.DataAnnotations.Schema
                     throw new ArgumentException(string.Format(CultureInfo.CurrentCulture,
                         SR.ArgumentIsNullOrWhitespace, nameof(value)));
                 }
+
                 _schema = value;
             }
         }

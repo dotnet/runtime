@@ -49,8 +49,8 @@ namespace System.ComponentModel.DataAnnotations
         /// </value>
         public string NullDisplayText
         {
-            get { return _nullDisplayText.Value; }
-            set { _nullDisplayText.Value = value; }
+            get => _nullDisplayText.Value;
+            set => _nullDisplayText.Value = value;
         }
 
         /// <summary>
@@ -75,8 +75,8 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
 		public Type NullDisplayTextResourceType
         {
-            get { return _nullDisplayText.ResourceType; }
-            set { _nullDisplayText.ResourceType = value; }
+            get => _nullDisplayText.ResourceType;
+            set => _nullDisplayText.ResourceType = value;
         }
 
         /// <summary>
@@ -103,9 +103,6 @@ namespace System.ComponentModel.DataAnnotations
         ///     but a public static property with a name matching the <see cref="NullDisplayText" /> value couldn't be found
         ///     on the <see cref="NullDisplayTextResourceType" />.
         /// </exception>
-        public string GetNullDisplayText()
-        {
-            return _nullDisplayText.GetLocalizableValue();
-        }
+        public string GetNullDisplayText() => _nullDisplayText.GetLocalizableValue();
     }
 }

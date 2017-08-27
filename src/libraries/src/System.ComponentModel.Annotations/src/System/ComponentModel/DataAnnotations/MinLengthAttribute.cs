@@ -80,11 +80,9 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         /// <param name="name">The name to include in the formatted string.</param>
         /// <returns>A localized string to describe the minimum acceptable length.</returns>
-        public override string FormatErrorMessage(string name)
-        {
+        public override string FormatErrorMessage(string name) =>
             // An error occurred, so we know the value is less than the minimum
-            return string.Format(CultureInfo.CurrentCulture, ErrorMessageString, name, Length);
-        }
+            string.Format(CultureInfo.CurrentCulture, ErrorMessageString, name, Length);
 
         /// <summary>
         ///     Checks that Length has a legal value.

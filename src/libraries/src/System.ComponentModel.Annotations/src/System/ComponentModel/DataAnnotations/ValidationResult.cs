@@ -108,10 +108,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     The <see cref="ErrorMessage" /> property value if specified,
         ///     otherwise, the base <see cref="Object.ToString" /> result.
         /// </returns>
-        public override string ToString()
-        {
-            return ErrorMessage ?? base.ToString();
-        }
+        public override string ToString() => ErrorMessage ?? base.ToString();
         #endregion Methods
     }
 }

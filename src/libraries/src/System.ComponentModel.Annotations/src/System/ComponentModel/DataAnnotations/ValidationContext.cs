@@ -122,10 +122,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <summary>
         ///     Gets the type of the object being validated.  It will not be null.
         /// </summary>
-        public Type ObjectType
-        {
-            get { return ObjectInstance.GetType(); }
-        }
+        public Type ObjectType => ObjectInstance.GetType();
 
         /// <summary>
         ///     Gets or sets the user-visible name of the type or property being validated.
@@ -176,10 +173,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     This property will never be null, but the dictionary may be empty.  Changes made
         ///     to items in this dictionary will never affect the original dictionary specified in the constructor.
         /// </value>
-        public IDictionary<object, object> Items
-        {
-            get { return _items; }
-        }
+        public IDictionary<object, object> Items => _items;
 
         #endregion
 

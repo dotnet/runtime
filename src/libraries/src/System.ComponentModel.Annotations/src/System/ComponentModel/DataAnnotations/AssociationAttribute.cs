@@ -57,33 +57,18 @@ namespace System.ComponentModel.DataAnnotations
         /// <summary>
         /// Gets the collection of individual key members specified in the ThisKey string.
         /// </summary>
-        public IEnumerable<string> ThisKeyMembers
-        {
-            get
-            {
-                return GetKeyMembers(ThisKey);
-            }
-        }
+        public IEnumerable<string> ThisKeyMembers => GetKeyMembers(ThisKey);
 
         /// <summary>
         /// Gets the collection of individual key members specified in the OtherKey string.
         /// </summary>
-        public IEnumerable<string> OtherKeyMembers
-        {
-            get
-            {
-                return GetKeyMembers(OtherKey);
-            }
-        }
+        public IEnumerable<string> OtherKeyMembers => GetKeyMembers(OtherKey);
 
         /// <summary>
         /// Parses the comma delimited key specified
         /// </summary>
         /// <param name="key">The key to parse</param>
         /// <returns>Array of individual key members</returns>
-        private static string[] GetKeyMembers(string key)
-        {
-            return key.Replace(" ", string.Empty).Split(',');
-        }
+        private static string[] GetKeyMembers(string key) => key.Replace(" ", string.Empty).Split(',');
     }
 }
