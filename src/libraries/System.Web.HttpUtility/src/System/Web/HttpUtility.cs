@@ -44,31 +44,29 @@ namespace System.Web
         public static NameValueCollection ParseQueryString(string query, Encoding encoding)
         {
             if (query == null)
+            {
                 throw new ArgumentNullException(nameof(query));
+            }
 
             if (encoding == null)
+            {
                 throw new ArgumentNullException(nameof(encoding));
+            }
 
-            if ((query.Length > 0) && (query[0] == '?'))
-                query = query.Substring(1);
-
-            var result = new HttpQSCollection();
-            ParseQueryString(query, encoding, result);
-            return result;
-        }
-
-        private static void ParseQueryString(string query, Encoding encoding, NameValueCollection result)
-        {
+            HttpQSCollection result = new HttpQSCollection();
             int queryLength = query.Length;
-            if (queryLength == 0)
-                return;
+            int namePos = queryLength > 0 && query[0] == '?' ? 1 : 0;
+            if (queryLength == namePos)
+            {
+                return result;
+            }
 
-            var namePos = 0;
             while (namePos <= queryLength)
             {
                 int valuePos = -1, valueEnd = -1;
-                for (var q = namePos; q < queryLength; q++)
-                    if ((valuePos == -1) && (query[q] == '='))
+                for (int q = namePos; q < queryLength; q++)
+                {
+                    if (valuePos == -1 && query[q] == '=')
                     {
                         valuePos = q + 1;
                     }
@@ -77,6 +75,7 @@ namespace System.Web
                         valueEnd = q;
                         break;
                     }
+                }
 
                 string name;
                 if (valuePos == -1)
@@ -95,9 +94,11 @@ namespace System.Web
                 }
 
                 namePos = valueEnd + 1;
-                var value = UrlDecode(query.Substring(valuePos, valueEnd - valuePos), encoding);
+                string value = UrlDecode(query.Substring(valuePos, valueEnd - valuePos), encoding);
                 result.Add(name, value);
             }
+
+            return result;
         }
 
         public static string HtmlDecode(string s)
