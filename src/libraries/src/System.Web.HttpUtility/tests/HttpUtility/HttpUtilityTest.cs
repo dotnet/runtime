@@ -365,6 +365,8 @@ namespace System.Web.Tests
                     new[] {new[] {UnicodeStr}}
                 },
                 new object[] {"name=value=test", new[] {"name"}, new[] {new[] {"value=test"}}},
+                new object[] { "name=value&#xe9;", new[] {"name", null}, new[] {new[] {"value"}, new[] { "#xe9;" } }},
+                new object[] { "name=value&amp;name2=value2", new[] {"name", "amp;name2"}, new[] {new[] {"value"}, new[] { "value2" } }}
             };
 
         public static IEnumerable<object[]> ParseQueryStringDataQ =>
