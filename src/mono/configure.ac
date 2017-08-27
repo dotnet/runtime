@@ -1502,6 +1502,8 @@ if test x$host_win32 = xno; then
 		AC_CHECK_FUNCS(getpwuid_r)
 	fi
 
+	AC_FUNC_STRERROR_R()
+
 	dnl ****************************************************************
 	dnl *** Check for sched_setaffinity from glibc versions before   ***
 	dnl *** 2.3.4. The older versions of the function only take 2    ***

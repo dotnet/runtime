@@ -38,16 +38,6 @@
 
 #include <errno.h>
 
-/*
- *  Linux knows two different versions of strerror_r () that can only be distinguished
- *  by using feature test macros.  Please check the man pages for more details.
- */
-#if defined (_POSIX_C_SOURCE) && defined (_GNU_SOURCE)
-#if (_POSIX_C_SOURCE >= 200112L) && !_GNU_SOURCE
-#define USE_STRERROR_R_XSI
-#endif
-#endif
-
 /* 
  * g_strndup and g_vasprintf need to allocate memory with g_malloc if 
  * ENABLE_OVERRIDABLE_ALLOCATORS is defined so that it can be safely freed with g_free 
@@ -244,7 +234,7 @@ g_strerror (gint errnum)
 		size_t buff_len = sizeof (tmp_buff);
 		buff [0] = 0;
 
-#ifdef USE_STRERROR_R_XSI
+#ifndef STRERROR_R_CHAR_P
 		int r;
 		while ((r = strerror_r (errnum, buff, buff_len - 1))) {
 			if (r != ERANGE) {
@@ -262,11 +252,11 @@ g_strerror (gint errnum)
 			error_messages [errnum] = g_strdup (buff);
 		if (buff != tmp_buff)
 			g_free (buff);
-#else /* USE_STRERROR_R_XSI */
+#else /* STRERROR_R_CHAR_P */
 		buff = strerror_r (errnum, buff, buff_len);
 		if (!error_messages [errnum])
 			error_messages [errnum] = g_strdup (buff);
-#endif /* USE_STRERROR_R_XSI */
+#endif /* STRERROR_R_CHAR_P */
 
 #else /* HAVE_STRERROR_R */
 		if (!error_messages [errnum])
