@@ -22,6 +22,7 @@
     <Compile Include="StreamWriter\StreamWriter.StringCtorTests.cs" />
     <Compile Include="Stream\Stream.APMMethodsTests.cs" />
     <Compile Include="BinaryWriter\BinaryWriter.WriteByteCharTests.cs" />
+    <Compile Include="BinaryWriter\BinaryWriter.WriteByteCharTests.netcoreapp.cs" Condition="'$(TargetGroup)' == 'netcoreapp'" />
     <Compile Include="BinaryWriter\BinaryWriter.WriteTests.cs" />
     <Compile Include="BinaryWriter\BinaryWriterTests.cs" />
     <Compile Include="BufferedStream\BufferedStream.FlushTests.cs" />
