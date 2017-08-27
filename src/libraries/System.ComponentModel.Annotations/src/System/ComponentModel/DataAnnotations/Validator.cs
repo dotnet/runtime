@@ -92,11 +92,9 @@ namespace System.ComponentModel.DataAnnotations
         ///     When <paramref name="instance" /> doesn't match the
         ///     <see cref="ValidationContext.ObjectInstance" />on <paramref name="validationContext" />.
         /// </exception>
-        public static bool TryValidateObject(object instance, ValidationContext validationContext,
-            ICollection<ValidationResult> validationResults)
-        {
-            return TryValidateObject(instance, validationContext, validationResults, false /*validateAllProperties*/);
-        }
+        public static bool TryValidateObject(
+            object instance, ValidationContext validationContext, ICollection<ValidationResult> validationResults) =>
+            TryValidateObject(instance, validationContext, validationResults, false /*validateAllProperties*/);
 
         /// <summary>
         ///     Tests whether the given object instance is valid.

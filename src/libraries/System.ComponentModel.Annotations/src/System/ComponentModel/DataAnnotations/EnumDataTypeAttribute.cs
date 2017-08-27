@@ -107,16 +107,10 @@ namespace System.ComponentModel.DataAnnotations
             return Enum.IsDefined(EnumType, convertedValue);
         }
 
-        private static bool IsEnumTypeInFlagsMode(Type enumType)
-        {
-            return enumType.GetCustomAttributes(typeof(FlagsAttribute), false).Any();
-        }
+        private static bool IsEnumTypeInFlagsMode(Type enumType) =>
+            enumType.GetCustomAttributes(typeof(FlagsAttribute), false).Any();
 
-
-        private static string GetUnderlyingTypeValueString(Type enumType, object enumValue)
-        {
-            return
-                Convert.ChangeType(enumValue, Enum.GetUnderlyingType(enumType), CultureInfo.InvariantCulture).ToString();
-        }
+        private static string GetUnderlyingTypeValueString(Type enumType, object enumValue) =>
+            Convert.ChangeType(enumValue, Enum.GetUnderlyingType(enumType), CultureInfo.InvariantCulture).ToString();
     }
 }
