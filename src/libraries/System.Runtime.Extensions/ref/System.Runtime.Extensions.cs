@@ -1280,6 +1280,8 @@ namespace System.IO
         public virtual void Write(uint value) { }
         [System.CLSCompliantAttribute(false)]
         public virtual void Write(ulong value) { }
+        public virtual void Write(ReadOnlySpan<byte> span) { }
+        public virtual void Write(ReadOnlySpan<char> span) { }
         protected void Write7BitEncodedInt(int value) { }
     }
     public sealed partial class BufferedStream : System.IO.Stream
