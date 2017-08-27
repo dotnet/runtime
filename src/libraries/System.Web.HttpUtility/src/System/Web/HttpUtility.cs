@@ -64,7 +64,6 @@ namespace System.Web
                 return;
 
             var namePos = 0;
-            var first = true;
             while (namePos <= queryLength)
             {
                 int valuePos = -1, valueEnd = -1;
@@ -78,13 +77,6 @@ namespace System.Web
                         valueEnd = q;
                         break;
                     }
-
-                if (first)
-                {
-                    first = false;
-                    if (query[namePos] == '?')
-                        namePos++;
-                }
 
                 string name;
                 if (valuePos == -1)
