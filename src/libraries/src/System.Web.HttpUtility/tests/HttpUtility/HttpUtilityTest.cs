@@ -383,8 +383,11 @@ namespace System.Web.Tests
 
         public static IEnumerable<object[]> ParseQueryStringDataQ =>
             ParseQueryStringData.Select(a => new object[] { "?" + (string)a[0] }.Concat(a.Skip(1)).ToArray())
-                .Append(new object[] { "??name=value=test", new[] { "?name" }, new[] { new[] { "value=test" }}})
-                .Append(new object[] { "?", Array.Empty<string>(), Array.Empty<IList<string>>()} );
+                .Concat(new[]
+                    {
+                        new object[] { "??name=value=test", new[] { "?name" }, new[] { new[] { "value=test" }}},
+                        new object[] { "?", Array.Empty<string>(), Array.Empty<IList<string>>()}
+                    });
 
         [Theory]
         [MemberData(nameof(ParseQueryStringData))]
