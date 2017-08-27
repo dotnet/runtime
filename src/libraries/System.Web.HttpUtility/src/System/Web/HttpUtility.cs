@@ -88,20 +88,15 @@ namespace System.Web
                 {
                     name = UrlDecode(query.Substring(namePos, valuePos - namePos - 1), encoding);
                 }
+
                 if (valueEnd < 0)
                 {
-                    namePos = -1;
                     valueEnd = query.Length;
                 }
-                else
-                {
-                    namePos = valueEnd + 1;
-                }
-                var value = UrlDecode(query.Substring(valuePos, valueEnd - valuePos), encoding);
 
+                namePos = valueEnd + 1;
+                var value = UrlDecode(query.Substring(valuePos, valueEnd - valuePos), encoding);
                 result.Add(name, value);
-                if (namePos == -1)
-                    break;
             }
         }
 
