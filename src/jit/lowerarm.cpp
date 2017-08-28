@@ -29,18 +29,6 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 #include "sideeffects.h"
 #include "lower.h"
 
-//------------------------------------------------------------------------
-// isRMWRegOper: Can use the read-mofify-write memory instruction form?
-//
-// Return Value:
-//    True if the tree can use the read-modify-write memory instruction form
-//
-bool Lowering::isRMWRegOper(GenTreePtr tree)
-{
-    NYI_ARM("isRMWRegOper() is never used and tested for ARM");
-    return false;
-}
-
 #endif // _TARGET_ARM_
 
 #endif // !LEGACY_BACKEND
