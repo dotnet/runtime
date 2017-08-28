@@ -445,8 +445,6 @@
     <Compile Include="$(BclSourcesRoot)\System\Globalization\IdnMapping.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\RegionInfo.cs" />
     <Compile Include="$(BclSourcesRoot)\System\Globalization\TextInfo.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\TimeSpanFormat.cs" />
-    <Compile Include="$(BclSourcesRoot)\System\Globalization\TimeSpanParse.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(FeatureCoreFxGlobalization)' != 'true'">
     <Compile Include="$(BclSourcesRoot)\System\Globalization\EncodingDataItem.cs" />
