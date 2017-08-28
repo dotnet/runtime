@@ -36,6 +36,29 @@ namespace System.Globalization
         // 
         internal static String Format(TimeSpan value, String format, IFormatProvider formatProvider)
         {
+            return StringBuilderCache.GetStringAndRelease(FormatToBuilder(value, format, formatProvider));
+        }
+
+        internal static bool TryFormat(TimeSpan value, Span<char> destination, out int charsWritten, string format, IFormatProvider formatProvider)
+        {
+            StringBuilder sb = FormatToBuilder(value, format, formatProvider);
+            if (sb.Length <= destination.Length)
+            {
+                charsWritten = sb.Length;
+                sb.CopyTo(0, destination, sb.Length);
+                StringBuilderCache.Release(sb);
+                return true;
+            }
+            else
+            {
+                StringBuilderCache.Release(sb);
+                charsWritten = 0;
+                return false;
+            }
+        }
+
+        internal static StringBuilder FormatToBuilder(TimeSpan value, String format, IFormatProvider formatProvider)
+        {
             if (format == null || format.Length == 0)
                 format = "c";
 
@@ -73,7 +96,7 @@ namespace System.Globalization
         //
         //  Actions: Format the TimeSpan instance using the specified format.
         // 
-        private static String FormatStandard(TimeSpan value, bool isInvariant, String format, Pattern pattern)
+        private static StringBuilder FormatStandard(TimeSpan value, bool isInvariant, String format, Pattern pattern)
         {
             StringBuilder sb = StringBuilderCache.Acquire();
             int day = (int)(value._ticks / TimeSpan.TicksPerDay);
@@ -149,7 +172,7 @@ namespace System.Globalization
             }                                                   //
             sb.Append(literal.End);                             //
 
-            return StringBuilderCache.GetStringAndRelease(sb);
+            return sb;
         }
 
 
@@ -160,7 +183,7 @@ namespace System.Globalization
         //
         //  Actions: Format the TimeSpan instance using the specified format.
         // 
-        internal static String FormatCustomized(TimeSpan value, String format, DateTimeFormatInfo dtfi)
+        internal static StringBuilder FormatCustomized(TimeSpan value, String format, DateTimeFormatInfo dtfi)
         {
             Debug.Assert(dtfi != null, "dtfi == null");
 
@@ -304,7 +327,7 @@ namespace System.Globalization
                 }
                 i += tokenLen;
             }
-            return StringBuilderCache.GetStringAndRelease(result);
+            return result;
         }
 
 
