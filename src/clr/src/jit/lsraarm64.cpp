@@ -44,11 +44,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 //    requirements needed by LSRA to build the Interval Table (source,
 //    destination and internal [temp] register counts).
 //
-void Lowering::TreeNodeInfoInit(GenTree* tree)
+void LinearScan::TreeNodeInfoInit(GenTree* tree)
 {
-    LinearScan* l        = m_lsra;
-    Compiler*   compiler = comp;
-
     unsigned      kind         = tree->OperKind();
     TreeNodeInfo* info         = &(tree->gtLsraInfo);
     RegisterType  registerType = TypeGet(tree);
@@ -152,8 +149,8 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
                 info->srcCount = 1;
                 assert(info->dstCount == 0);
 
-                info->setSrcCandidates(l, RBM_INTRET);
-                tree->gtOp.gtOp1->gtLsraInfo.setSrcCandidates(l, RBM_INTRET);
+                info->setSrcCandidates(this, RBM_INTRET);
+                tree->gtOp.gtOp1->gtLsraInfo.setSrcCandidates(this, RBM_INTRET);
             }
             break;
 
@@ -318,10 +315,9 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
 #endif // DEBUG
             // Some overflow checks need a temp reg
 
-            CastInfo castInfo;
-
+            Lowering::CastInfo castInfo;
             // Get information about the cast.
-            getCastDescription(tree, &castInfo);
+            Lowering::getCastDescription(tree, &castInfo);
 
             if (castInfo.requiresOverflowCheck)
             {
@@ -404,10 +400,10 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         {
             // For a GT_ADDR, the child node should not be evaluated into a register
             GenTreePtr child = tree->gtOp.gtOp1;
-            assert(!l->isCandidateLocalRef(child));
-            MakeSrcContained(tree, child);
-            info->srcCount = 0;
+            assert(!isCandidateLocalRef(child));
+            assert(child->isContained());
             assert(info->dstCount == 1);
+            info->srcCount = 0;
         }
         break;
 
@@ -650,7 +646,7 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
         case GT_CATCH_ARG:
             info->srcCount = 0;
             assert(info->dstCount == 1);
-            info->setDstCandidates(l, RBM_EXCEPTION_OBJECT);
+            info->setDstCandidates(this, RBM_EXCEPTION_OBJECT);
             break;
 
         case GT_CLS_VAR:
@@ -685,11 +681,9 @@ void Lowering::TreeNodeInfoInit(GenTree* tree)
 // Return Value:
 //    None.
 //
-void Lowering::TreeNodeInfoInitReturn(GenTree* tree)
+void LinearScan::TreeNodeInfoInitReturn(GenTree* tree)
 {
-    TreeNodeInfo* info     = &(tree->gtLsraInfo);
-    LinearScan*   l        = m_lsra;
-    Compiler*     compiler = comp;
+    TreeNodeInfo* info = &(tree->gtLsraInfo);
 
     GenTree*  op1           = tree->gtGetOp1();
     regMaskTP useCandidates = RBM_NONE;
@@ -734,7 +728,7 @@ void Lowering::TreeNodeInfoInitReturn(GenTree* tree)
 
     if (useCandidates != RBM_NONE)
     {
-        tree->gtOp.gtOp1->gtLsraInfo.setSrcCandidates(l, useCandidates);
+        tree->gtOp.gtOp1->gtLsraInfo.setSrcCandidates(this, useCandidates);
     }
 }
 

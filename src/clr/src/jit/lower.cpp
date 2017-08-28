@@ -98,44 +98,6 @@ bool Lowering::IsSafeToContainMem(GenTree* parentNode, GenTree* childNode)
 }
 
 //------------------------------------------------------------------------
-// IsContainableMemoryOp: Checks whether this is a memory op that can be contained.
-//
-// Arguments:
-//    node        - the node of interest.
-//
-// Return value:
-//    True if this will definitely be a memory reference that could be contained.
-//
-// Notes:
-//    This differs from the isMemoryOp() method on GenTree because it checks for
-//    the case of doNotEnregister local. This won't include locals that
-//    for some other reason do not become register candidates, nor those that get
-//    spilled.
-//    Also, because we usually call this before we redo dataflow, any new lclVars
-//    introduced after the last dataflow analysis will not yet be marked lvTracked,
-//    so we don't use that.
-//
-bool Lowering::IsContainableMemoryOp(GenTree* node)
-{
-#ifdef _TARGET_XARCH_
-    if (node->isMemoryOp())
-    {
-        return true;
-    }
-    if (node->IsLocal())
-    {
-        if (!m_lsra->enregisterLocalVars)
-        {
-            return true;
-        }
-        LclVarDsc* varDsc = &comp->lvaTable[node->AsLclVar()->gtLclNum];
-        return varDsc->lvDoNotEnregister;
-    }
-#endif // _TARGET_XARCH_
-    return false;
-}
-
-//------------------------------------------------------------------------
 
 // This is the main entry point for Lowering.
 GenTree* Lowering::LowerNode(GenTree* node)
@@ -4844,8 +4806,6 @@ void Lowering::DoPhase()
     }
 #endif
 
-    // The initialization code for the TreeNodeInfo map was initially part of a single full IR
-    // traversal and it has been split because the order of traversal performed by fgWalkTreePost
     // does not necessarily lower nodes in execution order and also, it could potentially
     // add new BasicBlocks on the fly as part of the Lowering pass so the traversal won't be complete.
     //
@@ -4893,7 +4853,7 @@ void Lowering::DoPhase()
 
             currentLoc += 2;
 
-            TreeNodeInfoInit(node);
+            m_lsra->TreeNodeInfoInit(node);
 
             // Only nodes that produce values should have a non-zero dstCount.
             assert((node->gtLsraInfo.dstCount == 0) || node->IsValue());
@@ -5422,43 +5382,6 @@ void Lowering::ContainCheckNode(GenTree* node)
         default:
             break;
     }
-}
-
-//------------------------------------------------------------------------
-// GetIndirSourceCount: Get the source registers for an indirection that might be contained.
-//
-// Arguments:
-//    node      - The node of interest
-//
-// Return Value:
-//    The number of source registers used by the *parent* of this node.
-//
-int Lowering::GetIndirSourceCount(GenTreeIndir* indirTree)
-{
-    GenTree* const addr = indirTree->gtOp1;
-    if (!addr->isContained())
-    {
-        return 1;
-    }
-    if (!addr->OperIs(GT_LEA))
-    {
-        return 0;
-    }
-
-    GenTreeAddrMode* const addrMode = addr->AsAddrMode();
-
-    unsigned srcCount = 0;
-    if ((addrMode->Base() != nullptr) && !addrMode->Base()->isContained())
-    {
-        srcCount++;
-    }
-    if (addrMode->Index() != nullptr)
-    {
-        // We never have a contained index.
-        assert(!addrMode->Index()->isContained());
-        srcCount++;
-    }
-    return srcCount;
 }
 
 //------------------------------------------------------------------------
