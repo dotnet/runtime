@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <!-- we intentionally don't want to produce output -->
+    <OutputPath>unused</OutputPath>
+    <!-- we don't want any analyzers by ResolveNuGetPackageAssets 
+         null-refs when this isn't set and an analyzer is in the packages -->
+    <Language>unused</Language>
+    <NuGetTargetMoniker>$(UAPvNextTFMFull)</NuGetTargetMoniker>
+    <NuGetTargetMonikerShort>$(UAPvNextTFM)</NuGetTargetMonikerShort>
+    <PackageTargetFramework>$(UAPvNextTFM)</PackageTargetFramework>
+    <ContainsPackageReferences>false</ContainsPackageReferences>
+    <RidSpecificAssets Condition="'$(NuGetRuntimeIdentifier)' != ''">true</RidSpecificAssets>
+    <IntermediateOutputPath>$(IntermediateOutputPath)$(NuGetRuntimeIdentifier)</IntermediateOutputPath>
+    <RestoreOutputPath>$(IntermediateOutputPath)</RestoreOutputPath>
+    <CoreRuntimeSettingsTemplate>$(MSBuildProjectDirectory)\..\contents\identity\Microsoft.Net.CoreRuntime.settings.targets.template</CoreRuntimeSettingsTemplate>
+    <CoreRuntimeSettings>$(IntermediateOutputPath)Microsoft.Net.CoreRuntime.settings.targets</CoreRuntimeSettings>
+
+    <AppxDisplayName>Microsoft.NET.CoreRuntime.$(MajorVersion).$(MinorVersion)</AppxDisplayName>
+    <BuildVersionAppX>$([System.Int32]::Parse($(BuildNumberMajor)))</BuildVersionAppX>
+    <RevisionVersionAppX>$([System.Int32]::Parse($(BuildNumberMinor)))</RevisionVersionAppX>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <RidPackageTransformations Include="$(MSBuildProjectDirectory)\..\contents\rid-templates\Microsoft.Net.UWPCoreRuntimeSdk.props.template">
+      <OutputPath>$(IntermediateOutputPath)runtime.$(NuGetRuntimeIdentifier).Microsoft.Net.UWPCoreRuntimeSdk.props</OutputPath>
+    </RidPackageTransformations>
+    <RidPackageTransformations Include="$(MSBuildProjectDirectory)\..\contents\rid-templates\Microsoft.Net.UWPCoreRuntimeSdk.targets.template">
+      <OutputPath>$(IntermediateOutputPath)runtime.$(NuGetRuntimeIdentifier).Microsoft.Net.UWPCoreRuntimeSdk.targets</OutputPath>
+    </RidPackageTransformations>
+
+    <ProjectReference Include="..\..\Microsoft.Net.CoreRuntime\Microsoft.Net.CoreRuntime.depproj" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+
+  <Target Name="GenerateCoreRuntimeSettingsFromTemplate"
+          BeforeTargets="GetFilesToPackage"
+          Inputs="$(CoreRuntimeSettingsTemplate)"
+          Outputs="$(CoreRuntimeSettings)"
+          Condition="'$(PackageTargetRuntime)' == ''">
+    <MakeDir Directories="$(IntermediateOutputPath)" />
+    <WriteLinesToFile File="$(CoreRuntimeSettings)"
+                      Lines="$([System.IO.File]::ReadAllText($(CoreRuntimeSettingsTemplate)).Replace('[AppxVersion]',$(MajorVersion).$(MinorVersion)))"
+                      Overwrite="true" />
+    <ItemGroup>
+      <FileWrites Include="$(CoreRuntimeSettings)" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="GenerateRidPackageTargetsFromTemplate"
+          BeforeTargets="GetFilesToPackage"
+          Inputs="@(RidPackageTransformations)"
+          Outputs="@(RidPackageTransformations -> %(OutputPath)')"
+          Condition="'$(PackageTargetRuntime)' != ''">
+    <MakeDir Directories="$(IntermediateOutputPath)" />
+    <WriteLinesToFile File="%(RidPackageTransformations.OutputPath)"
+                      Lines="$([System.IO.File]::ReadAllText(%(RidPackageTransformations.FullPath)).Replace('[AppxBuildArch]',$(Platform)).Replace('[AppxVersion]',$(MajorVersion).$(MinorVersion).$(BuildVersionAppX).$(RevisionVersionAppX)).Replace('[AppxDisplayName]',$(AppxDisplayName)))"
+                      Overwrite="true" />
+    <ItemGroup>
+      <FileWrites Include="@(RidPackageTransformations -> %(OutputPath)')" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="GetFilesToPackage" AfterTargets="Build" Returns="@(FilesToPackage)">
+    <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' == ''">
+      <FilesToPackage Include="$(CoreRuntimeSettings)">
+        <TargetPath>tools/CoreRuntime</TargetPath>
+      </FilesToPackage>
+      <FilesToPackage Include="$(CoreRuntimeTaskDir)\*.dll">
+        <TargetPath>tools/CoreRuntime</TargetPath>
+      </FilesToPackage>
+    </ItemGroup>
+    <ItemGroup Condition="'$(NuGetRuntimeIdentifier)' != ''">
+      <!-- RID-specific: include targets files generated per runtime package -->
+      <FilesToPackage Include="$(IntermediateOutputPath)\*.props">
+        <TargetPath>build</TargetPath>
+      </FilesToPackage>
+      <FilesToPackage Include="$(IntermediateOutputPath)\*.targets">
+        <TargetPath>build</TargetPath>
+      </FilesToPackage>
+      <!-- RID-specific: include all runtime files -->
+      <FilesToPackage Include="$(UWPOutputDir)\copywin32resources.exe">
+        <TargetPath>tools/CoreRuntime</TargetPath>
+      </FilesToPackage>
+      <FilesToPackage Include="$(UWPOutputDir)\uwpshim.exe">
+        <TargetPath>tools/AppLocal</TargetPath>
+      </FilesToPackage>
+      <FilesToPackage Include="$(MicrosoftNetCoreRuntimeAppxOutputPath)">
+        <TargetPath>tools/Appx</TargetPath>
+      </FilesToPackage>
+    </ItemGroup>
+  </Target>
+ 
+  <!-- only calculate paths from this project, don't copy -->
+  <Target Name="Build" />
+  
+  <!-- remove when fixing https://github.com/dotnet/buildtools/issues/1273 -->
+  <Target Name="DetermineRuntimeDependencies" />
+</Project>

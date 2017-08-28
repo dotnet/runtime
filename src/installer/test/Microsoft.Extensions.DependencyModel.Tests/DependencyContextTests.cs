@@ -1,10 +1,9 @@
-﻿using FluentAssertions;
-using System;
-using System.Collections.Generic;
+﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using FluentAssertions;
 using System.IO;
 using System.Linq;
-using System.Reflection;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace Microsoft.Extensions.DependencyModel.Tests
@@ -135,9 +134,185 @@ namespace Microsoft.Extensions.DependencyModel.Tests
                     new RuntimeFallbacks("ubuntu-x64", "ubuntu", "linux-x64", "linux", "unix", "any", "base"),
                     new RuntimeFallbacks("ubuntu.16.04-x64", "ubuntu", "linux-x64", "linux", "unix", "any", "base"),
                     new RuntimeFallbacks("rhel-x64", "rhel", "linux-x64", "linux", "unix", "any", "base"),
-                    new RuntimeFallbacks("fedora.23-x64", "fedora", "linux-x64", "linux", "unix", "any", "base"),
                     new RuntimeFallbacks("osx-x64", "osx", "unix", "any", "base"),
                 });
+        }
+
+        [Fact]
+        public void MergeMergesLibraries()
+        {
+            var compilationLibraries = new[]
+            {
+                CreateCompilation("PackageA"),
+                CreateCompilation("PackageB"),
+            };
+
+            var runtimeLibraries = new[]
+            {
+                CreateRuntime("PackageA"),
+                CreateRuntime("PackageB"),
+            };
+
+            var compilationLibrariesRedist = new[]
+            {
+                CreateCompilation("PackageB"),
+                CreateCompilation("PackageC"),
+            };
+
+            var runtimeLibrariesRedist = new[]
+            {
+                CreateRuntime("PackageB"),
+                CreateRuntime("PackageC"),
+            };
+
+            var context = new DependencyContext(
+                CreateTargetInfo(),
+                CompilationOptions.Default,
+                compilationLibraries,
+                runtimeLibraries,
+                new RuntimeFallbacks[] { });
+
+            var contextRedist = new DependencyContext(
+                CreateTargetInfo(),
+                CompilationOptions.Default,
+                compilationLibrariesRedist,
+                runtimeLibrariesRedist,
+                new RuntimeFallbacks[] { });
+
+            var result = context.Merge(contextRedist);
+
+            result.CompileLibraries.Should().BeEquivalentTo(new[]
+            {
+                compilationLibraries[0],
+                compilationLibraries[1],
+                compilationLibrariesRedist[1],
+            });
+
+            result.RuntimeLibraries.Should().BeEquivalentTo(new[]
+            {
+                runtimeLibraries[0],
+                runtimeLibraries[1],
+                runtimeLibrariesRedist[1],
+            });
+        }
+
+        [Fact]
+        public void MergeMergesLibrariesWithDifferentCasing()
+        {
+            var compilationLibraries = new[]
+            {
+                CreateCompilation("PaCkAgEA"),
+            };
+
+            var runtimeLibraries = new[]
+            {
+                CreateRuntime("PaCkAgEA"),
+            };
+
+            var compilationLibrariesRedist = new[]
+            {
+                CreateCompilation("PackageA"),
+            };
+
+            var runtimeLibrariesRedist = new[]
+            {
+                CreateRuntime("PackageA"),
+            };
+
+            var context = new DependencyContext(
+                CreateTargetInfo(),
+                CompilationOptions.Default,
+                compilationLibraries,
+                runtimeLibraries,
+                new RuntimeFallbacks[] { });
+
+            var contextRedist = new DependencyContext(
+                CreateTargetInfo(),
+                CompilationOptions.Default,
+                compilationLibrariesRedist,
+                runtimeLibrariesRedist,
+                new RuntimeFallbacks[] { });
+
+            var result = context.Merge(contextRedist);
+
+            result.CompileLibraries.Should().BeEquivalentTo(new[]
+            {
+                compilationLibraries[0]
+            });
+
+            result.RuntimeLibraries.Should().BeEquivalentTo(new[]
+            {
+                runtimeLibraries[0]
+            });
+        }
+
+        [Fact]
+        public void MergeMergesRuntimeGraph()
+        {
+            var context = new DependencyContext(
+                CreateTargetInfo(),
+                CompilationOptions.Default,
+                Enumerable.Empty<CompilationLibrary>(),
+                Enumerable.Empty<RuntimeLibrary>(),
+                new RuntimeFallbacks[]
+                {
+                    new RuntimeFallbacks("win8-x64", new [] { "win8" }),
+                });
+
+            var contextRedist = new DependencyContext(
+                CreateTargetInfo(),
+                CompilationOptions.Default,
+                Enumerable.Empty<CompilationLibrary>(),
+                Enumerable.Empty<RuntimeLibrary>(),
+                new RuntimeFallbacks[]
+                {
+                    new RuntimeFallbacks("win8", new [] { "win7-x64", "win7-x86" }),
+                });
+
+            var result = context.Merge(contextRedist);
+            result.RuntimeGraph.Should().Contain(g => g.Runtime == "win8-x64").
+                Subject.Fallbacks.Should().BeEquivalentTo("win8");
+            result.RuntimeGraph.Should().Contain(g => g.Runtime == "win8").
+                Subject.Fallbacks.Should().BeEquivalentTo("win7-x64", "win7-x86");
+        }
+
+        private TargetInfo CreateTargetInfo()
+        {
+            return new TargetInfo(
+                "Framework",
+                "runtime",
+                "runtimeSignature",
+                true);
+        }
+
+        private CompilationLibrary CreateCompilation(string name)
+        {
+            return new CompilationLibrary(
+                "project",
+                name,
+                "1.1.1",
+                "HASH",
+                new string[] { },
+                new Dependency[] { },
+                false,
+                "path",
+                "hashPath");
+        }
+
+        private RuntimeLibrary CreateRuntime(string name)
+        {
+            return new RuntimeLibrary(
+                "project",
+                name,
+                "1.1.1",
+                "HASH",
+                new RuntimeAssetGroup[] { },
+                new RuntimeAssetGroup[] { },
+                new ResourceAssembly[] { },
+                new Dependency[] { },
+                false,
+                "path",
+                "hashPath");
         }
     }
 }

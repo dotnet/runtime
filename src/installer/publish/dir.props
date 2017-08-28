@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\dir.props" />
+
+  <PropertyGroup>
+    <BaseUrl Condition="'$(BaseUrl)' == ''">https://dotnetcli.blob.core.windows.net/</BaseUrl>
+    <NuGetPushTimeoutSeconds Condition="'$(NuGetPushTimeoutSeconds)' == ''">3600</NuGetPushTimeoutSeconds>
+
+    <ChecksumsRelativePath>Runtime/$(ProductVersion)</ChecksumsRelativePath>
+    <ChecksumExtension>.sha512</ChecksumExtension>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <ProductMoniker>$(DistroRid).$(SharedFrameworkNugetVersion)</ProductMoniker>
+    <HostResolverVersionMoniker>$(DistroRid).$(HostResolverVersion)</HostResolverVersionMoniker>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- IgnorableErrorMessages applies to the "ExectWithRetriesForNuGetPush" task.
+          There's a very special failure scenario that we want to ignore.  That scenario is
+          when NuGet hits a timeout on one "push" attempt, and then gets a "Forbidden" response
+          because the package "already exists" on the next response.  This indicates that the
+          timeout occurred, but the push was actually successful.
+    -->
+    <IgnorableErrorMessages Include="Overwriting existing packages is forbidden according to the package retention settings for this feed.">
+      <ConditionalErrorMessage>Pushing took too long</ConditionalErrorMessage>
+    </IgnorableErrorMessages>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <CompressedFile Include="$(PackagesOutDir)**/*$(CompressedFileExtension)">
+      <RelativeBlobPath>$(BinariesRelativePath)</RelativeBlobPath>
+    </CompressedFile>
+    <RuntimePackageFile Include="$(PackagesOutDir)**/runtime.*.nupkg" >
+      <RelativeBlobPath>$(BinariesRelativePath)</RelativeBlobPath>
+    </RuntimePackageFile>
+    <UWPArtifactsToUpload Include="$(MicrosoftNetCoreRuntimeAppxOutputPath)" Condition="Exists('$(MicrosoftNetCoreRuntimeAppxOutputPath)')" >
+      <RelativeBlobPath>$(BinariesRelativePath)</RelativeBlobPath>
+    </UWPArtifactsToUpload>
+    <RidAgnosticPackageFile Include="$(PackagesOutDir)**/*.nupkg" Exclude="@(RuntimePackageFile)" >
+      <RelativeBlobPath>$(BinariesRelativePath)</RelativeBlobPath>
+    </RidAgnosticPackageFile>
+    <InstallerFile Include="$(PackagesOutDir)**/*$(InstallerExtension)" Condition="'$(InstallerExtension)' != ''" >
+      <RelativeBlobPath>$(InstallersRelativePath)</RelativeBlobPath>
+    </InstallerFile>
+    <InstallerFile Include="$(PackagesOutDir)**/*$(CombinedInstallerExtension)" Condition="'$(CombinedInstallerExtension)' != ''">
+      <RelativeBlobPath>$(InstallersRelativePath)</RelativeBlobPath>
+    </InstallerFile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PublishRid Include="ubuntu.14.04-x64" />
+    <PublishRid Include="ubuntu.16.04-x64" />
+    <PublishRid Include="ubuntu.16.10-x64" />
+    <PublishRid Include="debian.8-x64" />
+    <PublishRid Include="debian.9-x64" />
+    <PublishRid Include="linux-x64" />
+    <PublishRid Include="win-x86" />
+    <PublishRid Include="win-x64" />
+    <PublishRid Include="osx-x64" />
+    <PublishRid Include="win-arm" />
+    <PublishRid Include="win-arm64" />
+    <PublishRid Include="linux-arm" />
+    <PublishRid Include="rhel.7-x64" />
+  </ItemGroup>
+</Project>

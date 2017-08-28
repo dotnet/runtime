@@ -51,7 +51,7 @@ bool pal::touch_file(const pal::string_t& path)
 bool pal::getcwd(pal::string_t* recv)
 {
     recv->clear();
-    pal::char_t* buf = ::getcwd(nullptr, PATH_MAX + 1);
+    pal::char_t* buf = ::getcwd(nullptr, 0);
     if (buf == nullptr)
     {
         if (errno == ENOENT)
@@ -66,9 +66,9 @@ bool pal::getcwd(pal::string_t* recv)
     return true;
 }
 
-bool pal::load_library(const char_t* path, dll_t* dll)
+bool pal::load_library(const string_t* path, dll_t* dll)
 {
-    *dll = dlopen(path, RTLD_LAZY);
+    *dll = dlopen(path->c_str(), RTLD_LAZY);
     if (*dll == nullptr)
     {
         trace::error(_X("Failed to load %s, error: %s"), path, dlerror());
@@ -182,69 +182,10 @@ bool is_executable(const pal::string_t& file_path)
     return ((st.st_mode & S_IEXEC) != 0);
 }
 
-static
-bool locate_dotnet_on_path(pal::string_t* dotnet_exe)
+ bool pal::get_global_dotnet_dirs(std::vector<pal::string_t>* recv)
 {
-    pal::string_t path;
-    if (!pal::getenv(_X("PATH"), &path))
-    {
-        return false;
-    }
-    
-    pal::string_t tok;
-    pal::stringstream_t ss(path);
-    while (std::getline(ss, tok, PATH_SEPARATOR))
-    {
-        size_t start_pos = tok.find_first_not_of(_X(" \t"));
-        if (start_pos == pal::string_t::npos)
-        {
-            continue;
-        }
-
-        append_path(&tok, _X("dotnet"));
-        if (pal::realpath(&tok) && is_executable(tok))
-        {
-            *dotnet_exe = tok;
-            return true;
-        }
-        tok.clear();
-    }
+    // No support for global directories in Unix.
     return false;
-}
-
-bool pal::get_local_dotnet_dir(pal::string_t* recv)
-{
-    recv->clear();
-    pal::string_t dir;
-    if (!pal::getenv("HOME", &dir))
-    {
-        struct passwd* pw = getpwuid(getuid());
-        if (pw && pw->pw_dir)
-        {
-            dir.assign(pw->pw_dir);
-        }
-    }
-    if (dir.empty())
-    {
-        return false;
-    }
-    append_path(&dir, _X(".dotnet"));
-    append_path(&dir, get_arch());
-    recv->assign(dir);
-    return true;
-}
-
- bool pal::get_global_dotnet_dir(pal::string_t* recv)
-{
-    recv->clear();
-    pal::string_t dotnet_exe;
-    if (!locate_dotnet_on_path(&dotnet_exe))
-    {
-        return false;
-    }
-    pal::string_t dir = get_directory(dotnet_exe);
-    recv->assign(dir);
-    return true;
 }
 
 pal::string_t trim_quotes(pal::string_t stringToCleanup)
@@ -292,8 +233,8 @@ pal::string_t pal::get_current_os_rid_platform()
             int minorVersion = stoi(release.substr(0, pos)) - 4;
             if (minorVersion < 10)
             {
-                // On OSX, our minimum supported RID is 10.10.
-                minorVersion = 10;
+                // On OSX, our minimum supported RID is 10.12.
+                minorVersion = 12;
             }
 
             ridOS.append(_X("osx.10."));
@@ -304,6 +245,31 @@ pal::string_t pal::get_current_os_rid_platform()
     return ridOS;
 }
 #else
+// For some distros, we don't want to use the full version from VERSION_ID. One example is
+// Red Hat Enterprise Linux, which includes a minor version in their VERSION_ID but minor
+// versions are backwards compatable.
+//
+// In this case, we'll normalized RIDs like 'rhel.7.2' and 'rhel.7.3' to a generic
+// 'rhel.7'. This brings RHEL in line with other distros like CentOS or Debian which
+// don't put minor version numbers in their VERSION_ID fields because all minor versions
+// are backwards compatible.
+static
+pal::string_t normalize_linux_rid(pal::string_t rid)
+{
+    pal::string_t rhelPrefix(_X("rhel."));
+
+    if (rid.compare(0, rhelPrefix.length(), rhelPrefix) == 0)
+    {
+        size_t minorVersionSeparatorIndex = rid.find(_X("."), rhelPrefix.length());
+        if (minorVersionSeparatorIndex != std::string::npos)
+        {
+            rid.erase(minorVersionSeparatorIndex, rid.length() - minorVersionSeparatorIndex);
+        }
+    }
+
+    return rid;
+}
+
 pal::string_t pal::get_current_os_rid_platform()
 {
     pal::string_t ridOS;
@@ -322,7 +288,9 @@ pal::string_t pal::get_current_os_rid_platform()
         {
             pal::string_t line;
             pal::string_t strID(_X("ID="));
+            pal::string_t valID;
             pal::string_t strVersionID(_X("VERSION_ID="));
+            pal::string_t valVersionID;
 
             bool fFoundID = false, fFoundVersion = false;
 
@@ -332,25 +300,31 @@ pal::string_t pal::get_current_os_rid_platform()
             // Loop until we are at the end of file
             while (!fsVersionFile.eof())
             {
-                size_t pos = line.find(strID);
-                if ((pos != std::string::npos) && (pos == 0))
+                // Look for ID if we have not found it already
+                if (!fFoundID)
                 {
-                    ridOS.append(line.substr(3));
-                    ridOS.append(_X("."));
-                    fFoundID = true;
+                    size_t pos = line.find(strID);
+                    if ((pos != std::string::npos) && (pos == 0))
+                    {
+                        valID.append(line.substr(3));
+                        fFoundID = true;
+                    }
                 }
 
-                pos = line.find(strVersionID);
-                if ((pos != std::string::npos) && (pos == 0))
+                // Look for VersionID if we have not found it already
+                if (!fFoundVersion)
                 {
-                    ridOS.append(line.substr(11));
-                    fFoundVersion = true;
+                    size_t pos = line.find(strVersionID);
+                    if ((pos != std::string::npos) && (pos == 0))
+                    {
+                        valVersionID.append(line.substr(11));
+                        fFoundVersion = true;
+                    }
                 }
 
                 if (fFoundID && fFoundVersion)
                 {
-                    // Remove any double-quotes
-                    ridOS = trim_quotes(ridOS);
+                    // We have everything we need to form the RID - break out of the loop.
                     break;
                 }
 
@@ -360,10 +334,27 @@ pal::string_t pal::get_current_os_rid_platform()
 
             // Close the file now that we are done with it.
             fsVersionFile.close();
+
+            if (fFoundID)
+            {
+                ridOS.append(valID);
+            }
+            
+            if (fFoundVersion)
+            {
+                ridOS.append(_X("."));
+                ridOS.append(valVersionID);
+            }
+
+            if (fFoundID || fFoundVersion)
+            {
+                // Remove any double-quotes
+                ridOS = trim_quotes(ridOS);
+            }
         }
     }
 
-    return ridOS;
+    return normalize_linux_rid(ridOS);
 }
 #endif
 
@@ -392,12 +383,32 @@ bool pal::get_own_executable_path(pal::string_t* recv)
     mib[3] = -1;
     char buf[PATH_MAX];
     size_t cb = sizeof(buf);
-    if (sysctl(mib, 4, buf, &cb, NULL, 0) == 0)
+    int error_code = 0;
+    error_code = sysctl(mib, 4, buf, &cb, NULL, 0);
+    if (error_code == 0)
     {
         recv->assign(buf);
         return true;
     }
+    
     // ENOMEM
+    if (error_code == ENOMEM)
+    {
+        size_t len = sysctl(mib, 4, NULL, NULL, NULL, 0);
+        std::unique_ptr<char[]> buffer = new (std::nothrow) char[len];
+
+        if (buffer == NULL)
+        {
+            return false;
+        }
+
+        error_code = sysctl(mib, 4, buffer, &len, NULL, 0);
+        if (error_code == 0)
+        {
+            recv->assign(buffer);
+            return true;
+        }
+    }
     return false;
 }
 #else

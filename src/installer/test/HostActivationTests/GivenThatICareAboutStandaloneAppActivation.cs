@@ -1,4 +1,4 @@
-﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -12,6 +12,7 @@ using Microsoft.DotNet.CoreSetup.Test;
 using Microsoft.DotNet.Cli.Build.Framework;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.DotNet.InternalAbstractions;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
 {
@@ -27,12 +28,12 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
 
             var buildFixture = new TestProjectFixture("StandaloneApp", RepoDirectories);
             buildFixture
-                .EnsureRestoredForRid(buildFixture.CurrentRid, RepoDirectories.CorehostPackages, RepoDirectories.CorehostDummyPackages)
+                .EnsureRestoredForRid(buildFixture.CurrentRid, RepoDirectories.CorehostPackages)
                 .BuildProject(runtime: buildFixture.CurrentRid);
 
             var publishFixture = new TestProjectFixture("StandaloneApp", RepoDirectories);
             publishFixture
-                .EnsureRestoredForRid(publishFixture.CurrentRid, RepoDirectories.CorehostPackages, RepoDirectories.CorehostDummyPackages)
+                .EnsureRestoredForRid(publishFixture.CurrentRid, RepoDirectories.CorehostPackages)
                 .PublishProject(runtime: publishFixture.CurrentRid);
 
             ReplaceTestProjectOutputHostInTestProjectFixture(buildFixture);
@@ -48,6 +49,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
                 .Copy();
 
             var appExe = fixture.TestProject.AppExe;
+
+            // TODO: Use FS.Chmod when build utility project is converted to csproj.
+            // See https://github.com/NuGet/Home/issues/4424
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Command.Create("chmod", "u+x", appExe).Execute().EnsureSuccessful();
+            }
 
             Command.Create(appExe)
                 .CaptureStdErr()
@@ -66,6 +74,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
                 .Copy();
 
             var appExe = fixture.TestProject.AppExe;
+
+            // TODO: Use FS.Chmod when build utility project is converted to csproj.
+            // See https://github.com/NuGet/Home/issues/4424
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Command.Create("chmod", "u+x", appExe).Execute().EnsureSuccessful();
+            }
 
             Command.Create(appExe)
                 .CaptureStdErr()
@@ -95,7 +110,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
                 .Execute(fExpectedToFail:true)
                 .ExitCode;
 
-            if (CurrentPlatform.IsWindows)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 exitCode.Should().Be(-2147450731);
             }
@@ -103,6 +118,35 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
             {
                 // Some Unix flavors filter exit code to ubyte.
                 (exitCode & 0xFF).Should().Be(0x95);
+            }
+        }
+
+        [Fact]
+        public void Running_Publish_Output_Standalone_EXE_By_Renaming_dotnet_exe_Fails()
+        {
+            var fixture = PreviouslyPublishedAndRestoredStandaloneTestProjectFixture
+                .Copy();
+
+            var appExe = fixture.TestProject.AppExe;
+
+            string hostExeName = $"dotnet{Constants.ExeSuffix}";
+            string builtHost = Path.Combine(RepoDirectories.HostArtifacts, hostExeName);
+            File.Copy(builtHost, appExe, true);
+
+            int exitCode = Command.Create(appExe)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute(fExpectedToFail:true)
+                .ExitCode;
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                exitCode.Should().Be(-2147450748);
+            }
+            else
+            {
+                // Some Unix flavors filter exit code to ubyte.
+                (exitCode & 0xFF).Should().Be(0x84);
             }
         }
 
@@ -154,20 +198,17 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.StandaloneApp
         {
             var dotnet = testProjectFixture.BuiltDotnet;
 
-            var testProjectHost = testProjectFixture.TestProject.AppExe;
             var testProjectHostPolicy = testProjectFixture.TestProject.HostPolicyDll;
             var testProjectHostFxr = testProjectFixture.TestProject.HostFxrDll;
 
-            if (!File.Exists(testProjectHost) || !File.Exists(testProjectHostPolicy))
+            if (!File.Exists(testProjectHostPolicy))
             {
                 throw new Exception("host or hostpolicy does not exist in test project output. Is this a standalone app?");
             }
 
-            var dotnetHost = Path.Combine(dotnet.GreatestVersionSharedFxPath, $"dotnet{testProjectFixture.ExeExtension}");
             var dotnetHostPolicy = Path.Combine(dotnet.GreatestVersionSharedFxPath, $"{testProjectFixture.SharedLibraryPrefix}hostpolicy{testProjectFixture.SharedLibraryExtension}");
-            var dotnetHostFxr = Path.Combine(dotnet.GreatestVersionSharedFxPath, $"{testProjectFixture.SharedLibraryPrefix}hostfxr{testProjectFixture.SharedLibraryExtension}");
+            var dotnetHostFxr = Path.Combine(dotnet.GreatestVersionHostFxrPath, $"{testProjectFixture.SharedLibraryPrefix}hostfxr{testProjectFixture.SharedLibraryExtension}");
 
-            File.Copy(dotnetHost, testProjectHost, true);
             File.Copy(dotnetHostPolicy, testProjectHostPolicy, true);
 
             if (File.Exists(testProjectHostFxr))

@@ -1,0 +1,29 @@
+<Project ToolsVersion="12.0" DefaultTargets="DownloadBlobsFromAzureTargets" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <UsingTask TaskName="DownloadFromAzure" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.CloudTestTasks.dll"/>
+  <UsingTask TaskName="ListAzureBlobs" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.CloudTestTasks.dll" />
+  <UsingTask TaskName="ListAzureContainers" AssemblyFile="$(BuildToolsTaskDir)Microsoft.DotNet.Build.CloudTestTasks.dll"/>
+
+  <PropertyGroup>
+    <DownloadDirectory Condition="'$(DownloadDirectory)' == ''">$(PackagesDir)/AzureTransfer</DownloadDirectory>
+  </PropertyGroup>
+
+  <Target Name="DownloadBlobsFromAzureTargets" Condition="'$(ContainerName)' != ''">
+    <ListAzureBlobs AccountName="$(AzureAccount)"
+                    AccountKey="$(AzureToken)"
+                    ContainerName="$(ContainerName)"
+                    FilterBlobNames="$(BlobName)">
+      <Output TaskParameter="BlobNames" ItemName="_BlobList" />
+    </ListAzureBlobs>
+
+    <ItemGroup>
+      <_CoreHostPackages Include="%(_BlobList.Identity)" Condition="'%(_BlobList.Extension)' == '.nupkg'" />
+    </ItemGroup>
+
+    <DownloadFromAzure AccountName="$(AzureAccount)"
+                        AccountKey="$(AzureToken)"
+                        ContainerName="$(ContainerName)"
+                        BlobNames="@(_CoreHostPackages)"
+                        BlobNamePrefix="$(BlobName)"
+                        DownloadDirectory="$(DownloadDirectory)" />
+  </Target>
+</Project>

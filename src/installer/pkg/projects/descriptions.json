@@ -44,4 +44,9 @@
         "Description": "Provides a set of packages that can be used when building Universal Windows applications on .NETCore.",
         "CommonTypes": [ ]
     },
+    {
+        "Name": "Microsoft.Net.UWPCoreRuntimeSdk",
+        "Description": "Provides the CoreCLR runtime and build tools to build and run Universal Windows applications using CoreCLR.",
+        "CommonTypes": [ ]
+    },
 ]

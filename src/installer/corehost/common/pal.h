@@ -11,6 +11,7 @@
 #include <iostream>
 #include <cstring>
 #include <cstdarg>
+#include <cstdint>
 #include <tuple>
 #include <unordered_map>
 #include <unordered_set>
@@ -76,6 +77,8 @@
 #define LIBCORECLR_FILENAME (LIB_PREFIX _X("coreclr"))
 #define LIBCORECLR_NAME MAKE_LIBNAME("coreclr")
 
+#define CORELIB_NAME _X("System.Private.CoreLib.dll")
+
 #define LIBHOSTPOLICY_FILENAME (LIB_PREFIX _X("hostpolicy"))
 #define LIBHOSTPOLICY_NAME MAKE_LIBNAME("hostpolicy")
 
@@ -112,8 +115,6 @@ namespace pal
     typedef FARPROC proc_t;
 
     inline string_t exe_suffix() { return _X(".exe"); }
-    inline bool need_api_sets() { return true; }
-    void setup_api_sets(const std::unordered_set<pal::string_t>& api_sets);
 
     pal::string_t to_string(int value);
 
@@ -128,8 +129,8 @@ namespace pal
     pal::string_t to_lower(const pal::string_t& in);
 
     inline size_t strlen(const char_t* str) { return ::wcslen(str); }
-    inline void err_vprintf(const char_t* format, va_list vl) { ::vfwprintf(stderr, format, vl); ::fputws(_X("\r\n"), stderr); }
-    inline void out_vprintf(const char_t* format, va_list vl) { ::vfwprintf(stdout, format, vl); ::fputws(_X("\r\n"), stdout); }
+    inline void err_vprintf(const char_t* format, va_list vl) { ::vfwprintf(stderr, format, vl); ::fputwc(_X('\n'), stderr); }
+    inline void out_vprintf(const char_t* format, va_list vl) { ::vfwprintf(stdout, format, vl); ::fputwc(_X('\n'), stdout); }
 
     bool pal_utf8string(const pal::string_t& str, std::vector<char>* out);
     bool utf8_palstring(const std::string& str, pal::string_t* out);
@@ -164,8 +165,6 @@ namespace pal
     typedef void* proc_t;
 
     inline string_t exe_suffix() { return _X(""); }
-    inline bool need_api_sets() { return false; }
-    inline void setup_api_sets(const std::unordered_set<pal::string_t>& api_sets) { }
 
     pal::string_t to_string(int value);
 
@@ -211,14 +210,15 @@ namespace pal
     bool get_own_executable_path(string_t* recv);
     bool getenv(const char_t* name, string_t* recv);
     bool get_default_servicing_directory(string_t* recv);
-    bool get_local_dotnet_dir(string_t* recv);
-    bool get_global_dotnet_dir(string_t* recv);
+    //On Linux, we determine global location by enumerating the location where dotnet is present on path, hence there could be multiple such locations
+    //On Windows there will be only one global location
+    bool get_global_dotnet_dirs(std::vector<pal::string_t>* recv);
     bool get_default_breadcrumb_store(string_t* recv);
     bool is_path_rooted(const string_t& path);
 
     int xtoi(const char_t* input);
 
-    bool load_library(const char_t* path, dll_t* dll);
+    bool load_library(const string_t* path, dll_t* dll);
     proc_t get_symbol(dll_t library, const char* name);
     void unload_library(dll_t library);
 }

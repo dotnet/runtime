@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- Don't import props files above this folder since they don't work with the .NET Core SDK. -->
+  <!--<Import Project="..\dir.props" />-->
+
+  <Import Project="$(MSBuildThisFileDirectory)../../RepoDirectories.props" />
+  <Import Project="$(RepoRoot)BranchInfo.props" />
+
+  <PropertyGroup>
+    <VersionPrefix>$(MajorVersion).$(MinorVersion).$(PatchVersion)</VersionPrefix>
+    <AssemblyFileVersion>$(VersionPrefix)</AssemblyFileVersion>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
+    <IncludeSymbols>true</IncludeSymbols>
+    <Serviceable>true</Serviceable>
+    <PackageLicenseUrl>https://github.com/dotnet/core-setup/blob/master/LICENSE.TXT</PackageLicenseUrl>
+    <PackageProjectUrl>https://dot.net</PackageProjectUrl>
+    <PackageLicenseFile>$(RepoRoot)LICENSE.TXT</PackageLicenseFile>
+    <PackageThirdPartyNoticesFile>$(RepoRoot)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
+  </PropertyGroup>
+
+  <!--
+  Once https://github.com/dotnet/buildtools/issues/1548 is fixed, the following version sections should be simply
+  <Import Condition="Exists('$(ToolsDir)BuildVersion.targets')" Project="$(ToolsDir)BuildVersion.targets" />
+  -->
+  <PropertyGroup>
+    <TodayTimeStamp>$([System.DateTime]::Now.ToString(yyyyMMdd))</TodayTimeStamp>
+    <BuildVersionFile Condition="'$(BuildVersionFile)'==''">$(ObjDir)BuildVersion-$(TodayTimeStamp).props</BuildVersionFile>
+  </PropertyGroup>
+
+  <Import Condition="Exists('$(BuildVersionFile)')" Project="$(BuildVersionFile)" />
+
+  <PropertyGroup Condition="'$(StabilizePackageVersion)' != 'true'">
+    <!-- 
+    Ensure VersionSuffix is set (especially during 'dotnet restore')
+    to work around https://github.com/NuGet/Home/issues/4337
+     -->
+    <VersionSuffix Condition="'$(PreReleaseLabel)' != ''">$(PreReleaseLabel)-</VersionSuffix>
+    <VersionSuffix>$(VersionSuffix)$(BuildNumberMajor)-$(BuildNumberMinor)</VersionSuffix>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>$(RepoRoot)tools-local/setuptools/Key.snk</AssemblyOriginatorKeyFile>
+    <SignAssembly>true</SignAssembly>
+    <PublicSign Condition=" '$(OS)' != 'Windows_NT' ">true</PublicSign>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>git://github.com/dotnet/core-setup</RepositoryUrl>
+  </PropertyGroup>
+
+  <ItemGroup Condition=" '$(TargetFrameworkIdentifier)' == '.NETFramework' ">
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+  </ItemGroup>
+
+  <!-- Add required legal files to packages -->
+  <ItemGroup>
+    <Content Condition="Exists('$(PackageLicenseFile)')"
+             Include="$(PackageLicenseFile)">
+      <PackagePath />
+    </Content>
+    <Content Condition="Exists('$(PackageThirdPartyNoticesFile)')"
+             Include="$(PackageThirdPartyNoticesFile)">
+      <PackagePath />
+    </Content>
+  </ItemGroup>
+
+  <Import Condition="Exists('$(ToolsDir)versioning.props')" Project="$(ToolsDir)versioning.props" />
+</Project>

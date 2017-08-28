@@ -1,0 +1,13 @@
+#!/bin/sh
+#
+# Copyright (c) .NET Foundation and contributors. All rights reserved.
+# Licensed under the MIT license. See LICENSE file in the project root for full license information.
+#
+
+PACKAGE=$1
+INSTALL_DESTINATION=$2
+
+# A temporary fix for the permissions issue(s)
+chmod -R 755 $INSTALL_DESTINATION/shared
+
+exit 0

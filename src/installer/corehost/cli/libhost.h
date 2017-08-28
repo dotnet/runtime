@@ -49,6 +49,8 @@ struct host_interface_t
     size_t prerelease_roll_forward;
     size_t host_mode;
     const pal::char_t* tfm;
+    const pal::char_t* additional_deps_serialized;
+    const pal::char_t* fx_ver;
     // !! WARNING / WARNING / WARNING / WARNING / WARNING / WARNING / WARNING / WARNING / WARNING
     // !! 1. Only append to this structure to maintain compat.
     // !! 2. Any nested structs should not use compiler specific padding (pack with _HOST_INTERFACE_PACK)
@@ -72,7 +74,9 @@ static_assert(offsetof(host_interface_t, patch_roll_forward) == 12 * sizeof(size
 static_assert(offsetof(host_interface_t, prerelease_roll_forward) == 13 * sizeof(size_t), "Struct offset breaks backwards compatibility");
 static_assert(offsetof(host_interface_t, host_mode) == 14 * sizeof(size_t), "Struct offset breaks backwards compatibility");
 static_assert(offsetof(host_interface_t, tfm) == 15 * sizeof(size_t), "Struct offset breaks backwards compatibility");
-static_assert(sizeof(host_interface_t) == 16 * sizeof(size_t), "Did you add static asserts for the newly added fields?");
+static_assert(offsetof(host_interface_t, additional_deps_serialized) == 16 * sizeof(size_t), "Struct offset breaks backwards compatibility");
+static_assert(offsetof(host_interface_t, fx_ver) == 17 * sizeof(size_t), "Struct offset breaks backwards compatibility");
+static_assert(sizeof(host_interface_t) == 18 * sizeof(size_t), "Did you add static asserts for the newly added fields?");
 
 #define HOST_INTERFACE_LAYOUT_VERSION_HI 0x16041101 // YYMMDD:nn always increases when layout breaks compat.
 #define HOST_INTERFACE_LAYOUT_VERSION_LO sizeof(host_interface_t)
@@ -88,6 +92,7 @@ private:
     const pal::string_t m_fx_dir;
     const pal::string_t m_fx_name;
     const pal::string_t m_deps_file;
+    const pal::string_t m_additional_deps_serialized;
     bool m_portable;
     std::vector<pal::string_t> m_probe_paths;
     std::vector<const pal::char_t*> m_probe_paths_cstr;
@@ -99,6 +104,7 @@ private:
 public:
     corehost_init_t(
         const pal::string_t& deps_file,
+        const pal::string_t& additional_deps_serialized,
         const std::vector<pal::string_t>& probe_paths,
         const pal::string_t& fx_dir,
         const host_mode_t mode,
@@ -106,6 +112,7 @@ public:
         : m_fx_dir(fx_dir)
         , m_fx_name(runtime_config.get_fx_name())
         , m_deps_file(deps_file)
+        , m_additional_deps_serialized(additional_deps_serialized)
         , m_portable(runtime_config.get_portable())
         , m_probe_paths(probe_paths)
         , m_patch_roll_forward(runtime_config.get_patch_roll_fwd())
@@ -156,7 +163,9 @@ public:
 
         hi.fx_dir = m_fx_dir.c_str();
         hi.fx_name = m_fx_name.c_str();
+        hi.fx_ver = m_fx_ver.c_str();
         hi.deps_file = m_deps_file.c_str();
+        hi.additional_deps_serialized = m_additional_deps_serialized.c_str();
         hi.is_portable = m_portable;
 
         hi.probe_paths.len = m_probe_paths_cstr.size();
@@ -189,10 +198,12 @@ struct hostpolicy_init_t
     std::vector<std::vector<char>> cfg_keys;
     std::vector<std::vector<char>> cfg_values;
     pal::string_t deps_file;
+    pal::string_t additional_deps_serialized;
     std::vector<pal::string_t> probe_paths;
     pal::string_t tfm;
     pal::string_t fx_dir;
     pal::string_t fx_name;
+    pal::string_t fx_ver;
     host_mode_t host_mode;
     bool patch_roll_forward;
     bool prerelease_roll_forward;
@@ -233,11 +244,17 @@ struct hostpolicy_init_t
                 offsetof(host_interface_t, host_mode) + sizeof(input->host_mode));
         }
 
-		//An old hostfxr before we added TFM struct field, will not provide it. 
-		//The version_lo (sizeof) the old hostfxr saw at build time would be smaller and we should not attempt to read tfm in that case.
+        //An old hostfxr may not provide these fields.
+        //The version_lo (sizeof) the old hostfxr saw at build time will be
+        //smaller and we should not attempt to read the fields in that case.
         if (input->version_lo >= offsetof(host_interface_t, tfm) + sizeof(input->tfm))
         {
             init->tfm = input->tfm;
+        }
+        if (input->version_lo >= offsetof(host_interface_t, fx_ver) + sizeof(input->fx_ver))
+        {
+            init->additional_deps_serialized = input->additional_deps_serialized;
+            init->fx_ver = input->fx_ver;
         }
 
         return true;

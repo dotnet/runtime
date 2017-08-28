@@ -4,11 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using Microsoft.Extensions.EnvironmentAbstractions;
 using Microsoft.Extensions.DependencyModel.Resolution;
 using Xunit;
 using FluentAssertions;
-
 
 namespace Microsoft.Extensions.DependencyModel.Tests
 {
@@ -20,7 +18,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         private static string SharedFxPath = Path.Combine("shared", "fx");
         private static string SharedFxPathRefs = Path.Combine(SharedFxPath, "refs");
 
-        private static DependencyContextPaths DependencyContextPaths = new DependencyContextPaths(null, Path.Combine(SharedFxPath, "deps.json"));
+        private static DependencyContextPaths DependencyContextPaths =
+            new DependencyContextPaths(null, Path.Combine(SharedFxPath, "deps.json"), null);
 
         [Fact]
         public void ResolvesProjectType()
@@ -91,6 +90,23 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         }
 
         [Fact]
+        public void ResolvesReferenceType()
+        {
+            var fileSystem = FileSystemMockBuilder
+                .Create()
+                .AddFiles(BasePathRefs, TestLibraryFactory.DefaultAssembly)
+                .Build();
+            var resolver = CreateResolver(fileSystem);
+            var library = TestLibraryFactory.Create(
+                TestLibraryFactory.ReferenceType,
+                assemblies: TestLibraryFactory.EmptyAssemblies);
+
+            var result = resolver.TryResolveAssemblyPaths(library, null);
+
+            Assert.True(result);
+        }
+
+        [Fact]
         public void RequiresExistingRefsFolderForNonProjects()
         {
             var fileSystem = FileSystemMockBuilder
@@ -131,6 +147,27 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         }
 
         [Fact]
+        public void ResolvesDirectReferenceWithoutRefsFolder()
+        {
+            var fileSystem = FileSystemMockBuilder
+                .Create()
+                .AddFiles(BasePath, TestLibraryFactory.DefaultAssembly, TestLibraryFactory.SecondAssembly)
+                .Build();
+            var library = TestLibraryFactory.Create(
+                TestLibraryFactory.ReferenceType,
+                assemblies: TestLibraryFactory.TwoAssemblies);
+            var resolver = CreateResolver(fileSystem);
+            var assemblies = new List<string>();
+
+            var result = resolver.TryResolveAssemblyPaths(library, assemblies);
+
+            Assert.True(result);
+            assemblies.Should().HaveCount(2);
+            assemblies.Should().Contain(Path.Combine(BasePath, TestLibraryFactory.DefaultAssembly));
+            assemblies.Should().Contain(Path.Combine(BasePath, TestLibraryFactory.SecondAssembly));
+        }
+
+        [Fact]
         public void RequiresAllLibrariesToExist()
         {
             var fileSystem = FileSystemMockBuilder
@@ -144,11 +181,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             var resolver = CreateResolver(fileSystem);
             var assemblies = new List<string>();
 
-            var exception = Assert.Throws<InvalidOperationException>(() => resolver.TryResolveAssemblyPaths(library, assemblies));
-            exception.Message.Should()
-                .Contain(BasePath)
-                .And.Contain(BasePathRefs)
-                .And.Contain(TestLibraryFactory.SecondAssembly);
+            resolver.TryResolveAssemblyPaths(library, assemblies).Should().Be(false);
+            assemblies.Should().BeEmpty();
         }
 
         [Fact]
@@ -329,7 +363,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         }
 
         [Fact]
-        public void ShouldThrowForNonResolvedInPublishedApps()
+        public void ShouldReturnFalseForNonResolvedInPublishedApps()
         {
             var fileSystem = FileSystemMockBuilder
                 .Create()
@@ -342,7 +376,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             var resolver = CreateResolver(fileSystem);
             var assemblies = new List<string>();
 
-            Assert.Throws<InvalidOperationException>(() => resolver.TryResolveAssemblyPaths(library, assemblies));
+            resolver.TryResolveAssemblyPaths(library, assemblies).Should().Be(false);
+            assemblies.Should().BeEmpty();
         }
 
         [Fact]

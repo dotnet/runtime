@@ -443,7 +443,8 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             ""serviceable"": false,
             ""sha512"": ""HASH-System.Banana"",
             ""path"": ""PackagePath"",
-            ""hashPath"": ""PackageHashPath""
+            ""hashPath"": ""PackageHashPath"",
+            ""runtimeStoreManifestName"": ""placeHolderManifest.xml""
         },
     }
 }");
@@ -461,6 +462,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
             package.Serviceable.Should().Be(false);
             package.Path.Should().Be("PackagePath");
             package.HashPath.Should().Be("PackageHashPath");
+            package.RuntimeStoreManifestName.Should().Be("placeHolderManifest.xml");
             package.ResourceAssemblies.Should().Contain(a => a.Path == "System.Banana.resources.dll")
                 .Subject.Locale.Should().Be("en-US");
 

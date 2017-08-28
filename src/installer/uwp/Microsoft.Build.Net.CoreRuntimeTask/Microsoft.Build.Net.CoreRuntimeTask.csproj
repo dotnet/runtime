@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <PropertyGroup>
+    <AllowCrossTargeting>true</AllowCrossTargeting>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+  </PropertyGroup>
+  
+  <PropertyGroup>
+    <ProjectGuid>{49082C55-62B7-4DEC-BC9E-3F57945AC37E}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Microsoft.Build.Net.CoreRuntimeTask</RootNamespace>
+    <AssemblyName>Microsoft.Build.Net.CoreRuntimeTask</AssemblyName>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <SccProjectName>SAK</SccProjectName>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccProvider>SAK</SccProvider>
+    
+    <!-- turn off CLS compliant check to make it work with CCI code -->
+    <AssemblyAttributeClsCompliant>false</AssemblyAttributeClsCompliant>
+
+    <AssemblyVersion>$(MajorVersion).$(MinorVersion).$(PatchVersion).0</AssemblyVersion>
+    <AssemblyComVisible>false</AssemblyComVisible>
+    <OutputType>Library</OutputType>
+    <NuGetTargetMoniker>.NETFramework,Version=v4.6</NuGetTargetMoniker>
+    <NuGetTargetMonikerShort>net46</NuGetTargetMonikerShort>
+    <CLSCompliant>false</CLSCompliant>
+    <ProjectGuid>{49082C55-62B7-4DEC-BC9E-3F57945AC37E}</ProjectGuid>
+    <PackageTargetFallback>dnxcore50;portable-net45+win8+wpa81</PackageTargetFallback>
+    <ContainsPackageReferences>true</ContainsPackageReferences>
+    <TargetFrameworkIdentifier>.NETStandard</TargetFrameworkIdentifier>
+    <RestoreOutputPath>obj</RestoreOutputPath>
+    <AssemblyKey>MSFT</AssemblyKey>
+    <RestorePackages>true</RestorePackages>
+  </PropertyGroup>
+  <!-- Default configurations to help VS understand the options -->
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|amd64' ">
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|amd64' ">
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="ErrorCodes.cs" />
+    <Compile Include="Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="WireUpCoreRuntime.cs" />
+    <Compile Include="MergePriConfigTask.cs" />
+    <Compile Include="MergeResWFilesTask.cs" />
+    <Compile Include="ResourceHandlingTask.cs" />
+  </ItemGroup>  
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Cci">
+      <Version>4.0.0-rc4-24217-00</Version>
+    </PackageReference>
+    <PackageReference Include="Microsoft.TargetingPack.NETFramework.v4.6">
+      <Version>1.0.1</Version>
+    </PackageReference>
+    <TargetingPackReference Include="System" />
+    <TargetingPackReference Include="System.Core" />
+    <TargetingPackReference Include="System.Xml" />
+    <TargetingPackReference Include="System.Xml.Linq" />
+    <TargetingPackReference Include="System.Runtime" />
+    <TargetingPackReference Include="System.Runtime.Serialization" />
+    <TargetingPackReference Include="System.Windows.Forms" />
+    <TargetingPackReference Include="Microsoft.Build" />
+    <TargetingPackReference Include="Microsoft.Build.Framework" />
+    <TargetingPackReference Include="Microsoft.Build.Utilities.v4.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+
+  <Target Name="CopyLocalMicrosoftCci" BeforeTargets="ResolveAssemblyReferences">
+    <ItemGroup>
+      <ModifiedCci Include="@(Reference)" Condition="'%(NuGetPackageId)' == 'Microsoft.Cci'">
+        <Private>true</Private>
+      </ModifiedCci>
+      <Reference Remove="@(Reference)" Condition="'%(NuGetPackageId)' == 'Microsoft.Cci'" />
+      <Reference Include="@(ModifiedCci)" />
+    </ItemGroup>
+  </Target>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

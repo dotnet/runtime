@@ -13,16 +13,22 @@
       <Version>4.0.1</Version>
     </NETCoreApp10Dependency>
     <NETCoreApp10Dependency Include="Microsoft.NETCore.DotNetHostPolicy">
-      <Version>1.0.1</Version>
+      <Version>1.0.5</Version>
+    </NETCoreApp10Dependency>
+    <NETCoreApp10Dependency Include="Microsoft.NETCore.Platforms">
+      <Version>1.0.2</Version>
     </NETCoreApp10Dependency>
     <NETCoreApp10Dependency Include="Microsoft.NETCore.Runtime.CoreCLR">
-      <Version>1.0.4</Version>
+      <Version>1.0.7</Version>
     </NETCoreApp10Dependency>
     <NETCoreApp10Dependency Include="Microsoft.VisualBasic">
       <Version>10.0.1</Version>
     </NETCoreApp10Dependency>
     <NETCoreApp10Dependency Include="NETStandard.Library">
       <Version>1.6.0</Version>
+    </NETCoreApp10Dependency>
+    <NETCoreApp10Dependency Include="runtime.native.System.Security.Cryptography">
+      <Version>4.0.1</Version>
     </NETCoreApp10Dependency>
     <NETCoreApp10Dependency Include="System.Buffers">
       <Version>4.0.0</Version>
@@ -58,13 +64,16 @@
       <Version>4.0.1</Version>
     </NETCoreApp10Dependency>
     <NETCoreApp10Dependency Include="System.Linq.Expressions">
-      <Version>4.1.0</Version>
+      <Version>4.1.1</Version>
     </NETCoreApp10Dependency>
     <NETCoreApp10Dependency Include="System.Linq.Parallel">
       <Version>4.0.1</Version>
     </NETCoreApp10Dependency>
     <NETCoreApp10Dependency Include="System.Linq.Queryable">
       <Version>4.0.1</Version>
+    </NETCoreApp10Dependency>
+    <NETCoreApp10Dependency Include="System.Net.Http">
+      <Version>4.1.2</Version>
     </NETCoreApp10Dependency>
     <NETCoreApp10Dependency Include="System.Net.NameResolution">
       <Version>4.0.0</Version>
@@ -73,7 +82,7 @@
       <Version>4.0.11</Version>
     </NETCoreApp10Dependency>
     <NETCoreApp10Dependency Include="System.Net.Security">
-      <Version>4.0.0</Version>
+      <Version>4.0.1</Version>
     </NETCoreApp10Dependency>
     <NETCoreApp10Dependency Include="System.Net.WebHeaderCollection">
       <Version>4.0.1</Version>

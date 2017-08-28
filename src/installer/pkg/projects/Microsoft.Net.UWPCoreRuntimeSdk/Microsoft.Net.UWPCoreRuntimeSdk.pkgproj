@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="dir.props" />
+
+  <PropertyGroup>
+    <Version>$(ProductVersion)</Version>
+    <OmitDependencies>true</OmitDependencies>
+
+  <!-- Reference runtime packages directly so that MSBuild .props / .targets get imported correctly in VS" -->
+    <IsLineupPackage>false</IsLineupPackage>
+    <IncludeRuntimeJson>false</IncludeRuntimeJson>
+    <ExcludeLineupReference>true</ExcludeLineupReference>
+  </PropertyGroup>
+
+  <!-- Redistributed package content from other nuget packages-->
+  <ItemGroup>
+    <ProjectReference Include="src\Microsoft.Net.UWPCoreRuntimeSdk.depproj">
+      <AdditionalProperties Condition="'$(PackageTargetRuntime)' != ''">NuGetRuntimeIdentifier=$(PackageTargetRuntime)</AdditionalProperties>
+    </ProjectReference>
+  </ItemGroup>
+
+  <!-- Identity / Reference package content -->
+  <ItemGroup Condition="'$(PackageTargetRuntime)' == ''">
+    <File Include="contents\identity\Microsoft.Net.UWPCoreRuntimeSdk.props">
+      <TargetPath>build</TargetPath>
+    </File>
+    <File Include="contents\identity\Microsoft.Net.CoreRuntime.targets">
+      <TargetPath>tools/CoreRuntime</TargetPath>
+    </File>
+  </ItemGroup>
+
+  <!-- Reference runtime packages directly so that MSBuild .props / .targets get imported correctly in VS" -->
+  <Target Name="InjectNuGetDependencyOnRuntimePackages"
+          BeforeTargets="GenerateNuSpec"
+          DependsOnTargets="DetermineRuntimeDependencies"
+          Condition="'$(PackageTargetRuntime)' == ''">
+    <ItemGroup>
+      <Dependency Include="@(RuntimeDependency)">
+        <TargetFramework>$(UAPvNextTFM)</TargetFramework>
+      </Dependency>
+    </ItemGroup>
+  </Target>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+</Project>

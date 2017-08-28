@@ -55,7 +55,7 @@ void append_path(pal::string_t* path1, const pal::char_t* path2)
     }
     else
     {
-        if (path1->empty() || path1->back() != DIR_SEPARATOR)
+        if (!path1->empty() && path1->back() != DIR_SEPARATOR)
         {
             path1->push_back(DIR_SEPARATOR);
         }
@@ -190,7 +190,7 @@ pal::string_t get_last_known_arg(
 bool parse_known_args(
     const int argc,
     const pal::char_t* argv[],
-    const std::vector<pal::string_t>& known_opts,
+    const std::vector<host_option>& known_opts,
     // Although multimap would provide this functionality the order of kv, values are
     // not preserved in C++ < C++0x
     std::unordered_map<pal::string_t, std::vector<pal::string_t>>* opts,
@@ -201,7 +201,10 @@ bool parse_known_args(
     {
         pal::string_t arg = argv[arg_i];
         pal::string_t arg_lower = pal::to_lower(arg);
-        if (std::find(known_opts.begin(), known_opts.end(), arg_lower) == known_opts.end())
+        if (std::find_if(known_opts.begin(), known_opts.end(), 
+                        [&value_to_look = arg_lower]
+                        (const host_option& hostoption) -> bool { return value_to_look == hostoption.option; })
+            == known_opts.end())
         {
             // Unknown argument.
             break;
@@ -253,10 +256,10 @@ bool skip_utf8_bom(pal::ifstream_t* stream)
     return true;
 }
 
-bool get_env_shared_package_dirs(std::vector<pal::string_t>* dirs, const pal::string_t& arch, const pal::string_t& tfm)
+bool get_env_shared_store_dirs(std::vector<pal::string_t>* dirs, const pal::string_t& arch, const pal::string_t& tfm)
 {
     pal::string_t path;
-    if (!pal::getenv(_X("DOTNET_SHARED_PACKAGES"), &path))
+    if (!pal::getenv(_X("DOTNET_SHARED_STORE"), &path))
     {
         return false;
     }
@@ -275,23 +278,20 @@ bool get_env_shared_package_dirs(std::vector<pal::string_t>* dirs, const pal::st
     return true;
 }
 
-bool get_global_shared_package_dir(pal::string_t* dir)
+bool get_global_shared_store_dirs(std::vector<pal::string_t>*  dirs, const pal::string_t& arch, const pal::string_t& tfm)
 {
-    if (!pal::get_global_dotnet_dir(dir))
-    {
-        return false;
-    }
-    append_path(dir, _X("packages"));
-    return true;
-}
-
-bool get_local_shared_package_dir(pal::string_t* dir)
-{
-    if (!pal::get_local_dotnet_dir(dir))
+    std::vector<pal::string_t> global_dirs;
+    if (!pal::get_global_dotnet_dirs(&global_dirs))
     {
         return false;
     }
 
-    append_path(dir, _X("packages"));
+    for (pal::string_t dir : global_dirs)
+    {
+        append_path(&dir, RUNTIME_STORE_DIRECTORY_NAME);
+        append_path(&dir, arch.c_str());
+        append_path(&dir, tfm.c_str());
+        dirs->push_back(dir);
+    }
     return true;
 }

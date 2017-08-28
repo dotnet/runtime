@@ -1,0 +1,30 @@
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <RepoRoot>$(MSBuildThisFileDirectory)</RepoRoot>
+    <!-- ProjectDir needs to be set for build-tools and legacy usages. New usages should use RepoRoot -->
+    <ProjectDir>$(RepoRoot)</ProjectDir>
+    <SourceDir>$(RepoRoot)src/</SourceDir>
+
+    <!-- Output directories -->
+    <BinDir Condition="'$(BinDir)'==''">$(RepoRoot)Bin/</BinDir>
+    <BaseOutputPath Condition="'$(BaseOutputPath)'==''">$(BinDir)</BaseOutputPath>
+    <ObjDir Condition="'$(ObjDir)'==''">$(BinDir)obj/</ObjDir>
+    <BaseIntermediateOutputPath Condition="'$(BaseIntermediateOutputPath)'==''">$(ObjDir)</BaseIntermediateOutputPath>
+
+    <!-- Input Directories -->
+    <PackagesDir Condition="'$(PackagesDir)'==''">$(RepoRoot)packages/</PackagesDir>
+    <ToolRuntimePath Condition="'$(ToolRuntimePath)'==''">$(RepoRoot)Tools/</ToolRuntimePath>
+    <LocalToolRuntimePath Condition="'$(LocalToolRuntimePath)' == ''">$(ToolRuntimePath)local/</LocalToolRuntimePath>
+
+    <ToolsDir Condition="'$(UseToolRuntimeForToolsDir)'=='true'">$(ToolRuntimePath)</ToolsDir>
+    <ToolsDir Condition="'$(ToolsDir)'==''">$(RepoRoot)Tools/</ToolsDir>
+    <BuildToolsTaskCoreDir>$(ToolsDir)</BuildToolsTaskCoreDir>
+    <BuildToolsTaskDesktopDir>$(ToolsDir)net46/</BuildToolsTaskDesktopDir>
+    <BuildToolsTaskDir>$(BuildToolsTaskCoreDir)</BuildToolsTaskDir>
+    <BuildToolsTaskDir Condition="'$(MSBuildRuntimeType)' != 'Core'">$(BuildToolsTaskDesktopDir)</BuildToolsTaskDir>
+    <LocalBuildToolsTaskDir>$(LocalToolRuntimePath)</LocalBuildToolsTaskDir>
+    <LocalBuildToolsTaskDir Condition="'$(MSBuildRuntimeType)' != 'Core'">$(LocalToolRuntimePath)net46/</LocalBuildToolsTaskDir>
+    <PackagingTaskDir Condition="'$(BuildToolsTaskDir)' != ''">$(BuildToolsTaskDir)</PackagingTaskDir>
+    <DotnetCliPath Condition="'$(DotnetCliPath)'==''">$(ToolsDir)dotnetcli/</DotnetCliPath>
+  </PropertyGroup>
+</Project>

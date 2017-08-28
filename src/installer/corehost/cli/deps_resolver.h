@@ -49,6 +49,8 @@ public:
             m_deps = std::unique_ptr<deps_json_t>(new deps_json_t(false, m_deps_file));
         }
 
+        resolve_additional_deps(init);
+
         setup_additional_probes(args.probe_paths);
         setup_probe_config(init, args);
     }
@@ -74,9 +76,11 @@ public:
         return true;
     }
 
-    void setup_shared_package_probes(
+    void setup_shared_store_probes(
         const hostpolicy_init_t& init,
         const arguments_t& args);
+
+    pal::string_t get_lookup_probe_directories();
 
     void setup_probe_config(
         const hostpolicy_init_t& init,
@@ -93,6 +97,9 @@ public:
         const deps_entry_t& entry,
         const pal::string_t& path);
 
+    void resolve_additional_deps(
+        const hostpolicy_init_t& init);
+
     const pal::string_t& get_fx_deps_file() const
     {
         return m_fx_deps_file;
@@ -103,10 +110,6 @@ public:
         return m_deps_file;
     }
 
-    const std::unordered_set<pal::string_t>& get_api_sets() const
-    {
-        return m_api_set_paths;
-    }
 private:
 
     static pal::string_t get_fx_deps(const pal::string_t& fx_dir, const pal::string_t& fx_name)
@@ -171,6 +174,9 @@ private:
 
     // The filepath for the app deps
     pal::string_t m_deps_file;
+
+    // The filepaths for the app custom deps
+    std::vector<pal::string_t> m_additional_deps_files;
     
     // The filepath for the fx deps
     pal::string_t m_fx_deps_file;
@@ -180,6 +186,9 @@ private:
 
     // Deps files for the app
     std::unique_ptr<deps_json_t>  m_deps;
+
+    // Custom deps files for the app
+    std::vector< std::unique_ptr<deps_json_t> > m_additional_deps;
 
     // Various probe configurations.
     std::vector<probe_config_t> m_probes;

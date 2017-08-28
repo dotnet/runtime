@@ -21,12 +21,14 @@ struct deps_entry_t
 
     static const std::array<const pal::char_t*, deps_entry_t::asset_types::count> s_known_asset_types;
 
+    pal::string_t deps_file;
     pal::string_t library_type;
     pal::string_t library_name;
     pal::string_t library_version;
     pal::string_t library_hash;
     pal::string_t library_path;
     pal::string_t library_hash_path;
+    pal::string_t runtime_store_manifest_list;
     asset_types asset_type;
     pal::string_t asset_name;
     pal::string_t relative_path;

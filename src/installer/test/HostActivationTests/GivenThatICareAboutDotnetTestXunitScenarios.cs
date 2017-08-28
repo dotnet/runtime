@@ -23,7 +23,7 @@ namespace Microsoft.DotNet.Tools.Publish.Tests
         public void Muxer_activation_of_dotnet_test_XUnit_on_Portable_Test_App_Succeeds()
         {
             var portableTestAppFixture = new TestProjectFixture("PortableTestApp", RepoDirectories)
-                .EnsureRestored(RepoDirectories.CorehostPackages, RepoDirectories.CorehostDummyPackages)
+                .EnsureRestored(RepoDirectories.CorehostPackages)
                 .BuildProject();
 
             ActivateDotnetTestXunitOnTestProject(RepoDirectories, portableTestAppFixture);
@@ -34,7 +34,7 @@ namespace Microsoft.DotNet.Tools.Publish.Tests
         {
             var standaloneTestAppFixture = new TestProjectFixture("StandaloneTestApp", RepoDirectories);
             standaloneTestAppFixture
-                .EnsureRestoredForRid(standaloneTestAppFixture.CurrentRid, RepoDirectories.CorehostPackages, RepoDirectories.CorehostDummyPackages)
+                .EnsureRestoredForRid(standaloneTestAppFixture.CurrentRid, RepoDirectories.CorehostPackages)
                 .BuildProject(runtime: standaloneTestAppFixture.CurrentRid);
 
             ActivateDotnetTestXunitOnTestProject(RepoDirectories, standaloneTestAppFixture);

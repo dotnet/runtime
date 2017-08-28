@@ -23,11 +23,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.PortableApp
             RepoDirectories = new RepoDirectoriesProvider();
 
             PreviouslyBuiltAndRestoredPortableTestProjectFixture = new TestProjectFixture("PortableApp", RepoDirectories)
-                .EnsureRestored(RepoDirectories.CorehostPackages, RepoDirectories.CorehostDummyPackages)
+                .EnsureRestored(RepoDirectories.CorehostPackages)
                 .BuildProject();
 
             PreviouslyPublishedAndRestoredPortableTestProjectFixture = new TestProjectFixture("PortableApp", RepoDirectories)
-                .EnsureRestored(RepoDirectories.CorehostPackages, RepoDirectories.CorehostDummyPackages)
+                .EnsureRestored(RepoDirectories.CorehostPackages)
                 .PublishProject();
         }
 
@@ -58,7 +58,25 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.PortableApp
                 .And
                 .HaveStdOutContaining("Hello World");
         }
-        
+
+        [Fact]
+        public void Muxer_activation_of_Apps_with_AltDirectorySeparatorChar()
+        {
+            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+                .Copy();
+
+            var dotnet = fixture.BuiltDotnet;
+            var appDll = fixture.TestProject.AppDll.Replace(Path.DirectorySeparatorChar,Path.AltDirectorySeparatorChar);
+
+            dotnet.Exec(appDll)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdOutContaining("Hello World");
+        }
         [Fact]
         public void Muxer_Exec_activation_of_Build_Output_Portable_DLL_with_DepsJson_Local_and_RuntimeConfig_Remote_Without_AdditionalProbingPath_Fails()
         {
@@ -104,6 +122,40 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.PortableApp
                 .Pass()
                 .And
                 .HaveStdOutContaining("Hello World");
+        }
+
+        [Fact]
+        public void Muxer_Activation_With_Templated_AdditionalProbingPath_Succeeds()
+        {
+            var fixture = PreviouslyBuiltAndRestoredPortableTestProjectFixture
+                .Copy();
+            
+            var store_path = CreateAStore(fixture);
+            var dotnet = fixture.BuiltDotnet;
+            var appDll = fixture.TestProject.AppDll;
+
+            var destRuntimeDevConfig = fixture.TestProject.RuntimeDevConfigJson;
+            if (File.Exists(destRuntimeDevConfig))
+            {
+                File.Delete(destRuntimeDevConfig);
+            }
+
+            var additionalProbingPath = store_path + "/|arch|/|tfm|";
+
+            dotnet.Exec(
+                    "exec",
+                    "--additionalprobingpath", additionalProbingPath,
+                    appDll)
+                .EnvironmentVariable("COREHOST_TRACE", "1")
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should()
+                .Pass()
+                .And
+                .HaveStdOutContaining("Hello World")
+                .And
+                .HaveStdErrContaining($"Adding tpa entry: {Path.Combine(store_path,fixture.RepoDirProvider.BuildArchitecture, fixture.Framework)}");
         }
 
         [Fact]
@@ -236,6 +288,19 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.PortableApp
             File.Move(testProjectFixture.TestProject.RuntimeConfigJson, destRuntimeConfig);
 
             testProjectFixture.TestProject.RuntimeConfigJson = destRuntimeConfig;
+        }
+
+         private string CreateAStore(TestProjectFixture testProjectFixture)
+        {
+            var storeoutputDirectory = Path.Combine(testProjectFixture.TestProject.ProjectDirectory, "store");
+            if (!Directory.Exists(storeoutputDirectory))
+            {
+                Directory.CreateDirectory(storeoutputDirectory);
+            }
+
+            testProjectFixture.StoreProject(outputDirectory :storeoutputDirectory);
+            
+            return storeoutputDirectory;
         }
     }
 }

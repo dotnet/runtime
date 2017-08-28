@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\dir.props" />
+
+  <PropertyGroup>
+    <PackagingRoot>$(ProjectDir)src/pkg/packaging/</PackagingRoot>
+
+    <!-- Package prebuilt binaries -->
+    <UsePrebuiltPortableBinariesForInstallers>false</UsePrebuiltPortableBinariesForInstallers>
+    
+    <PackagesIntermediateDir>$(IntermediateOutputRootPath)packages/</PackagesIntermediateDir>
+    <SharedHostPublishRoot>$(IntermediateOutputRootPath)sharedHost/</SharedHostPublishRoot>
+    <HostFxrPublishRoot>$(IntermediateOutputRootPath)hostFxr/</HostFxrPublishRoot>
+    <SharedFrameworkPublishRoot>$(IntermediateOutputRootPath)sharedFx/</SharedFrameworkPublishRoot>
+    <CombinedPublishRoot>$(IntermediateOutputRootPath)combined-framework-host/</CombinedPublishRoot>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <CombinedCompressedFile>dotnet-runtime-$(ProductMoniker)$(CompressedFileExtension)</CombinedCompressedFile>
+    <HostFxrCompressedFile>dotnet-hostfxr-internal-$(PackageTargetRid).$(HostResolverVersion)$(CompressedFileExtension)</HostFxrCompressedFile>
+    <SharedFrameworkCompressedFile>dotnet-runtime-internal-$(ProductMoniker)$(CompressedFileExtension)</SharedFrameworkCompressedFile>
+    <SharedFrameworkSymbolsCompressedFile>dotnet-runtime-symbols-$(ProductMoniker)$(CompressedFileExtension)</SharedFrameworkSymbolsCompressedFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <ProductBrandPrefix>Microsoft .NET Core</ProductBrandPrefix>
+    <ProductBrandSuffix>$(ProductionVersion)</ProductBrandSuffix>
+    <ProductBrandSuffix Condition="'$(ReleaseBrandSuffix)'!=''">$(ProductionVersion) $(ReleaseBrandSuffix)</ProductBrandSuffix>
+    <SharedHostBrandName>$(ProductBrandPrefix) Host - $(ProductBrandSuffix)</SharedHostBrandName>
+    <HostFxrBrandName>$(ProductBrandPrefix) Host FX Resolver - $(ProductBrandSuffix)</HostFxrBrandName>
+    <SharedFrameworkBrandName>$(ProductBrandPrefix) Runtime - $(ProductBrandSuffix)</SharedFrameworkBrandName>
+  </PropertyGroup>
+</Project>

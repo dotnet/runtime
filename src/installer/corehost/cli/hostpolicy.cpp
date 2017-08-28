@@ -49,6 +49,22 @@ int run(const arguments_t& args)
         return StatusCode::CoreClrResolveFailure;
     }
 
+    // Get path in which CoreCLR is present.
+    pal::string_t clr_dir = get_directory(clr_path);
+
+    // System.Private.CoreLib.dll is expected to be next to CoreCLR.dll - add its path to the TPA list.
+    pal::string_t corelib_path = clr_dir;
+    append_path(&corelib_path, CORELIB_NAME);
+
+    // Append CoreLib path
+    if (probe_paths.tpa.back() != PATH_SEPARATOR)
+    {
+        probe_paths.tpa.push_back(PATH_SEPARATOR);
+    }
+
+    probe_paths.tpa.append(corelib_path);
+    probe_paths.tpa.push_back(PATH_SEPARATOR);
+
     pal::string_t clrjit_path = probe_paths.clrjit;
     if (clrjit_path.empty())
     {
@@ -73,11 +89,12 @@ int run(const arguments_t& args)
         // Workaround: mscorlib does not resolve symlinks for AppContext.BaseDirectory dotnet/coreclr/issues/2128
         "APP_CONTEXT_BASE_DIRECTORY",
         "APP_CONTEXT_DEPS_FILES",
-        "FX_DEPS_FILE"
+        "FX_DEPS_FILE",
+        "PROBING_DIRECTORIES"
     };
 
     // Note: these variables' lifetime should be longer than coreclr_initialize.
-    std::vector<char> tpa_paths_cstr, app_base_cstr, native_dirs_cstr, resources_dirs_cstr, fx_deps, deps, clrjit_path_cstr;
+    std::vector<char> tpa_paths_cstr, app_base_cstr, native_dirs_cstr, resources_dirs_cstr, fx_deps, deps, clrjit_path_cstr, probe_directories;
     pal::pal_clrstring(probe_paths.tpa, &tpa_paths_cstr);
     pal::pal_clrstring(args.app_dir, &app_base_cstr);
     pal::pal_clrstring(probe_paths.native, &native_dirs_cstr);
@@ -85,6 +102,8 @@ int run(const arguments_t& args)
 
     pal::pal_clrstring(resolver.get_fx_deps_file(), &fx_deps);
     pal::pal_clrstring(resolver.get_deps_file() + _X(";") + resolver.get_fx_deps_file(), &deps);
+
+    pal::pal_clrstring(resolver.get_lookup_probe_directories(), &probe_directories);
 
     std::vector<const char*> property_values = {
         // TRUSTED_PLATFORM_ASSEMBLIES
@@ -100,7 +119,9 @@ int run(const arguments_t& args)
         // APP_CONTEXT_DEPS_FILES,
         deps.data(),
         // FX_DEPS_FILE
-        fx_deps.data()
+        fx_deps.data(),
+        //PROBING_DIRECTORIES
+        probe_directories.data()
     };
 
     if (!clrjit_path.empty())
@@ -137,11 +158,7 @@ int run(const arguments_t& args)
     size_t property_size = property_keys.size();
     assert(property_keys.size() == property_values.size());
 
-    // Add API sets to the process DLL search
-    pal::setup_api_sets(resolver.get_api_sets());
-
     // Bind CoreCLR
-    pal::string_t clr_dir = get_directory(clr_path);
     trace::verbose(_X("CoreCLR path = '%s', CoreCLR dir = '%s'"), clr_path.c_str(), clr_dir.c_str());
     if (!coreclr::bind(clr_dir))
     {
@@ -231,7 +248,7 @@ int run(const arguments_t& args)
     }
 
     // Shut down the CoreCLR
-    hr = coreclr::shutdown(host_handle, domain_id);
+    hr = coreclr::shutdown(host_handle, domain_id, (int*)&exit_code);
     if (!SUCCEEDED(hr))
     {
         trace::warning(_X("Failed to shut down CoreCLR, HRESULT: 0x%X"), hr);

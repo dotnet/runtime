@@ -126,13 +126,7 @@ pal::string_t resolve_fxr_path(const pal::string_t& own_dir)
             return ret_path;
         }
     }
-    // TODO: Issue #215 Do not allow dotnet to load hostfxr side-by-side.
-    pal::string_t fxr_path;
-    if (library_exists_in_dir(own_dir, LIBFXR_NAME, &fxr_path))
-    {
-        trace::info(_X("Resolved fxr [%s]..."), fxr_path.c_str());
-        return fxr_path;
-    }
+
     return pal::string_t();
 #endif
 }
@@ -152,6 +146,29 @@ int run(const int argc, const pal::char_t* argv[])
         trace::error(_X("A fatal error was encountered. This executable was not bound to load a managed DLL."));
         return StatusCode::AppHostExeNotBoundFailure;
     }
+#else
+    pal::string_t own_name = get_executable(get_filename(own_path));
+
+    if (pal::strcasecmp(own_name.c_str(), CURHOST_TYPE) != 0)
+    {
+        trace::error(_X("A fatal error :Cannot execute %s when renamed to  %s."), CURHOST_TYPE,own_name.c_str());
+        return StatusCode::CoreHostEntryPointFailure;
+    }
+
+    if (argc <= 1)
+    {
+        trace::println();
+        trace::println(_X("Usage: dotnet [options]"));
+        trace::println(_X("Usage: dotnet [path-to-application]"));
+        trace::println();
+        trace::println(_X("Options:"));
+        trace::println(_X("  -h|--help            Display help."));
+        trace::println(_X("  --version         Display version."));
+        trace::println();
+        trace::println(_X("path-to-application:"));
+        trace::println(_X("  The path to an application .dll file to execute."));
+        return StatusCode::InvalidArgFailure;
+    }
 #endif
 
     pal::dll_t fxr;
@@ -166,7 +183,7 @@ int run(const int argc, const pal::char_t* argv[])
         return StatusCode::CoreHostLibMissingFailure;
     }
 
-    if (!pal::load_library(fxr_path.c_str(), &fxr))
+    if (!pal::load_library(&fxr_path, &fxr))
     {
         trace::error(_X("The library %s was found, but loading it from %s failed"), LIBFXR_NAME, fxr_path.c_str());
         trace::error(_X("  - Installing .NET Core prerequisites might help resolve this problem."));
