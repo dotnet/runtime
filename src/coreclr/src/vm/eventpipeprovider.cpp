@@ -65,7 +65,9 @@ EventPipeProvider::~EventPipeProvider()
             EventPipeEvent *pEvent = pElem->GetValue();
             delete pEvent;
 
+            SListElem<EventPipeEvent*> *pCurElem = pElem;
             pElem = m_pEventList->GetNext(pElem);
+            delete pCurElem;
         }
 
         delete m_pEventList;
