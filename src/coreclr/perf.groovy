@@ -57,6 +57,7 @@ def static getOSGroup(def os) {
                             if (isPR) {
                                 parameters {
                                     stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
+                                    stringParam('BenchviewCommitUser', '\${ghprbTriggerAuthorEmail}', 'The email that will be used to build the alias of a run in Benchview')
                                 }
                             }
                             if (isSmoketest) {
@@ -75,6 +76,7 @@ def static getOSGroup(def os) {
                             def configuration = 'Release'
                             def runType = isPR ? 'private' : 'rolling'
                             def benchViewName = isPR ? 'coreclr private %BenchviewCommitName%' : 'coreclr rolling %GIT_BRANCH_WITHOUT_ORIGIN% %GIT_COMMIT%'
+                            def benchViewUser = isPR ? '%BenchviewCommitUser%' : 'dotnet-bot@microsoft.com'
                             def uploadString = isSmoketest ? '' : '-uploadToBenchview'
 
                             steps {
@@ -88,7 +90,7 @@ def static getOSGroup(def os) {
                                 batchFile("if \"%GIT_BRANCH:~0,7%\" == \"origin/\" (set \"GIT_BRANCH_WITHOUT_ORIGIN=%GIT_BRANCH:origin/=%\") else (set \"GIT_BRANCH_WITHOUT_ORIGIN=%GIT_BRANCH%\")\n" +
                                 "set \"BENCHVIEWNAME=${benchViewName}\"\n" +
                                 "set \"BENCHVIEWNAME=%BENCHVIEWNAME:\"=%\"\n" +
-                                "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\submission-metadata.py\" --name \"%BENCHVIEWNAME%\" --user \"dotnet-bot@microsoft.com\"\n" +
+                                "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\submission-metadata.py\" --name \"%BENCHVIEWNAME%\" --user \"${benchViewUser}\"\n" +
                                 "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\build.py\" git --branch %GIT_BRANCH_WITHOUT_ORIGIN% --type ${runType}")
                                 batchFile("py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\machinedata.py\"")
                                 batchFile("set __TestIntermediateDir=int&&build.cmd ${configuration} ${architecture}")
@@ -198,12 +200,14 @@ def static getOSGroup(def os) {
                         if (isPR) {
                             parameters {
                                 stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that will be used to build the full title of a run in Benchview.')
+                                stringParam('BenchviewCommitUser', '\${ghprbTriggerAuthorEmail}', 'The email that will be used to build the alias of a run in Benchview')
                             }
                         }
 
                         def configuration = 'Release'
                         def runType = isPR ? 'private' : 'rolling'
                         def benchViewName = isPR ? 'coreclr-throughput private %BenchviewCommitName%' : 'coreclr-throughput rolling %GIT_BRANCH_WITHOUT_ORIGIN% %GIT_COMMIT%'
+                        def benchViewUser = isPR ? '%BenchviewCommitUser%' : 'dotnet-bot@microsoft.com'
 
                         steps {
                             // Batch
@@ -216,7 +220,7 @@ def static getOSGroup(def os) {
                             batchFile("if \"%GIT_BRANCH:~0,7%\" == \"origin/\" (set \"GIT_BRANCH_WITHOUT_ORIGIN=%GIT_BRANCH:origin/=%\") else (set \"GIT_BRANCH_WITHOUT_ORIGIN=%GIT_BRANCH%\")\n" +
                             "set \"BENCHVIEWNAME=${benchViewName}\"\n" +
                             "set \"BENCHVIEWNAME=%BENCHVIEWNAME:\"=%\"\n" +
-                            "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\submission-metadata.py\" --name \"${benchViewName}\" --user \"dotnet-bot@microsoft.com\"\n" +
+                            "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\submission-metadata.py\" --name \"${benchViewName}\" --user \"${benchViewUser}\"\n" +
                             "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\build.py\" git --branch %GIT_BRANCH_WITHOUT_ORIGIN% --type ${runType}")
                             batchFile("py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\machinedata.py\"")
                             batchFile("set __TestIntermediateDir=int&&build.cmd ${configuration} ${architecture} skiptests")
@@ -298,7 +302,8 @@ def static getFullPerfJobName(def project, def os, def isPR) {
 
             if (isPR) {
                 parameters {
-                    stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
+                    stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
+                    stringParam('BenchviewCommitUser', '\${ghprbTriggerAuthorEmail}', 'The email that will be used to build the alias of a run in Benchview')
                 }
             }
 
@@ -312,6 +317,7 @@ def static getFullPerfJobName(def project, def os, def isPR) {
             def osGroup = getOSGroup(os)
             def runType = isPR ? 'private' : 'rolling'
             def benchViewName = isPR ? 'coreclr private \$BenchviewCommitName' : 'coreclr rolling \$GIT_BRANCH_WITHOUT_ORIGIN \$GIT_COMMIT'
+            def benchViewUser = isPR ? '\$BenchviewCommitUser' : 'dotnet-bot@microsoft.com'
 
             steps {
                 shell("./tests/scripts/perf-prep.sh")
@@ -323,7 +329,7 @@ def static getFullPerfJobName(def project, def os, def isPR) {
                     }
                 }
                 shell("GIT_BRANCH_WITHOUT_ORIGIN=\$(echo \$GIT_BRANCH | sed \"s/[^/]*\\/\\(.*\\)/\\1 /\")\n" +
-                "python3.5 \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools/submission-metadata.py\" --name \" ${benchViewName} \" --user \"dotnet-bot@microsoft.com\"\n" +
+                "python3.5 \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools/submission-metadata.py\" --name \" ${benchViewName} \" --user \"${benchViewUser}\"\n" +
                 "python3.5 \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools/build.py\" git --branch \$GIT_BRANCH_WITHOUT_ORIGIN --type ${runType}")
                 shell("""./tests/scripts/run-xunit-perf.sh \\
                 --testRootDir=\"\${WORKSPACE}/bin/tests/Windows_NT.${architecture}.${configuration}\" \\
@@ -371,6 +377,7 @@ def static getFullPerfJobName(def project, def os, def isPR) {
         if (isPR) {
             parameters {
                 stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
+                stringParam('BenchviewCommitUser', '\${ghprbTriggerAuthorEmail}', 'The email that will be used to build the alias of a run in Benchview')
             }
         }
         buildFlow("""
@@ -451,6 +458,7 @@ def static getFullThroughputJobName(def project, def os, def isPR) {
                 if (isPR) {
                     parameters {
                         stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that will be used to build the full title of a run in Benchview.')
+                        stringParam('BenchviewCommitUser', '\${ghprbTriggerAuthorEmail}', 'The email that will be used to build the alias of a run in Benchview')
                     }
                 }
 
@@ -461,6 +469,7 @@ def static getFullThroughputJobName(def project, def os, def isPR) {
                 def osGroup = getOSGroup(os)
                 def runType = isPR ? 'private' : 'rolling'
                 def benchViewName = isPR ? 'coreclr-throughput private \$BenchviewCommitName' : 'coreclr-throughput rolling \$GIT_BRANCH_WITHOUT_ORIGIN \$GIT_COMMIT'
+                def benchViewUser = isPR ? '\$BenchviewCommitUser' : 'dotnet-bot@microsoft.com'
 
                 steps {
                     shell("bash ./tests/scripts/perf-prep.sh --throughput")
@@ -472,7 +481,7 @@ def static getFullThroughputJobName(def project, def os, def isPR) {
                         }
                     }
                     shell("GIT_BRANCH_WITHOUT_ORIGIN=\$(echo \$GIT_BRANCH | sed \"s/[^/]*\\/\\(.*\\)/\\1 /\")\n" +
-                    "python3.5 \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools/submission-metadata.py\" --name \" ${benchViewName} \" --user \"dotnet-bot@microsoft.com\"\n" +
+                    "python3.5 \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools/submission-metadata.py\" --name \" ${benchViewName} \" --user \"${benchViewUser}\"\n" +
                     "python3.5 \"\${WORKSPACE}/tests/scripts/Microsoft.BenchView.JSONFormat/tools/build.py\" git --branch \$GIT_BRANCH_WITHOUT_ORIGIN --type ${runType}")
                     shell("""python3.5 ./tests/scripts/run-throughput-perf.py \\
                     -arch \"${architecture}\" \\
@@ -514,6 +523,7 @@ def static getFullThroughputJobName(def project, def os, def isPR) {
         if (isPR) {
             parameters {
                 stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
+                stringParam('BenchviewCommitUser', '\${ghprbTriggerAuthorEmail}', 'The email that will be used to build the alias of a run in Benchview')
             }
         }
         buildFlow("""
@@ -576,6 +586,7 @@ parallel(
                         if (isPR) {
                             parameters {
                                 stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
+                                stringParam('BenchviewCommitUser', '\${ghprbTriggerAuthorEmail}', 'The email that will be used to build the alias of a run in Benchview')
                             }
                         }
 
@@ -587,6 +598,7 @@ parallel(
                         def configuration = 'Release'
                         def runType = isPR ? 'private' : 'rolling'
                         def benchViewName = isPR ? 'CoreCLR-Scenarios private %BenchviewCommitName%' : 'CoreCLR-Scenarios rolling %GIT_BRANCH_WITHOUT_ORIGIN% %GIT_COMMIT%'
+                        def benchViewUser = isPR ? '%BenchviewCommitUser%' : 'dotnet-bot@microsoft.com'
                         def uploadString = '-uploadToBenchview'
 
                         steps {
@@ -600,7 +612,7 @@ parallel(
                             batchFile("if \"%GIT_BRANCH:~0,7%\" == \"origin/\" (set \"GIT_BRANCH_WITHOUT_ORIGIN=%GIT_BRANCH:origin/=%\") else (set \"GIT_BRANCH_WITHOUT_ORIGIN=%GIT_BRANCH%\")\n" +
                             "set \"BENCHVIEWNAME=${benchViewName}\"\n" +
                             "set \"BENCHVIEWNAME=%BENCHVIEWNAME:\"=%\"\n" +
-                            "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\submission-metadata.py\" --name \"%BENCHVIEWNAME%\" --user \"dotnet-bot@microsoft.com\"\n" +
+                            "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\submission-metadata.py\" --name \"%BENCHVIEWNAME%\" --user \"${benchViewUser}\"\n" +
                             "py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\build.py\" git --branch %GIT_BRANCH_WITHOUT_ORIGIN% --type ${runType}")
                             batchFile("py \"%WORKSPACE%\\Microsoft.BenchView.JSONFormat\\tools\\machinedata.py\"")
                             batchFile("set __TestIntermediateDir=int&&build.cmd ${configuration} ${architecture}")
