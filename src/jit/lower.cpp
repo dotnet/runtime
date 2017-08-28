@@ -860,7 +860,9 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
 #endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
 
 #ifdef _TARGET_ARMARCH_
-    if (varTypeIsStruct(type) || arg->OperGet() == GT_FIELD_LIST)
+    // Mark contained when we pass struct
+    // GT_FIELD_LIST is always marked conatained when it is generated
+    if (varTypeIsStruct(type))
     {
         arg->SetContained();
         if ((arg->OperGet() == GT_OBJ) && (arg->AsObj()->Addr()->OperGet() == GT_LCL_VAR_ADDR))
