@@ -44,7 +44,6 @@ FlushFileBuffers
 FormatMessageW
 FreeEnvironmentStringsW
 GetACP
-GetConsoleCP
 GetConsoleOutputCP
 GetCurrentDirectoryW
 GetCurrentProcess
@@ -54,7 +53,6 @@ GetEnvironmentStringsW
 GetEnvironmentVariableW
 GetFileAttributesExW
 GetFileSize
-GetFileType
 GetFullPathNameW
 GetLongPathNameW
 GetProcAddress
@@ -66,7 +64,6 @@ GetTempPathW
 LocalAlloc
 LocalReAlloc
 LocalFree
-LockFile
 lstrlenA
 lstrlenW
 MapViewOfFile
@@ -86,7 +83,6 @@ ReleaseMutex
 ReleaseSemaphore
 RemoveDirectoryW
 ResetEvent
-RtlZeroMemory
 SetCurrentDirectoryW
 SetEndOfFile
 SetEnvironmentVariableW
@@ -94,11 +90,9 @@ SetErrorMode
 SetEvent
 SetFileAttributesW
 SetFilePointer
-SetFileTime
 SysAllocStringLen
 SysFreeString
 SysStringLen
-UnlockFile
 UnmapViewOfFile
 VirtualAlloc
 VirtualFree

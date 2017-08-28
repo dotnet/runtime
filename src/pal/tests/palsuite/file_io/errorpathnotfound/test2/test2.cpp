@@ -18,7 +18,7 @@
 
 **            Functions covered by this test are: 
 
-**            MoveFileW, FindFirstFileA, FindFirstFileW,
+**            FindFirstFileA, FindFirstFileW,
 
 **            GetFileAttributesA, GetFileAttributesW,
 
@@ -90,80 +90,6 @@ int __cdecl main(int argc, char *argv[])
     {
 
         return FAIL;
-
-    }
-
-
-
-    /*...................Test MoveFileW.............................*/
-
-
-
-    /* test with an invalid path */
-
-    bRc = MoveFileW(wBadFilePath,wDest);
-
-    if(!bRc)
-
-    {
-
-        if(GetLastError()!= ERROR_PATH_NOT_FOUND)
-
-        {
-
-            Trace("MoveFileW: calling GetLastError() after moving a file"
-
-                " with wrong path returned [%u] while it should return [%u]\n"
-
-                ,GetLastError(), ERROR_PATH_NOT_FOUND);
-
-            testPass = FALSE;
-
-        }
-
-    }
-
-    else
-
-    {
-
-        testPass = FALSE; 
-
-    }
-
-
-
-    /* test with invalid file name */
-
-    bRc = MoveFileW(wBadFileName,wDest);
-
-    if(!bRc)
-
-    { 
-
-        if(GetLastError()!= ERROR_FILE_NOT_FOUND)
-
-        {
-
-            Trace("MoveFileW: calling GetLastError() after moving a file"
-
-                " with wrong name returned [%u] while it should return [%u]\n"
-
-                ,GetLastError(), ERROR_FILE_NOT_FOUND);
-
-            testPass = FALSE;
-
-        }
-
-    }
-
-    else
-
-    {
-
-        Trace("MoveFileW: managed to move a file with wrong name\n");     
-
-        testPass = FALSE;
 
     }
 
