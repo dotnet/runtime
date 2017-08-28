@@ -9,14 +9,7 @@ namespace System.IO
 {
     public partial class FileStream : Stream
     {
-#if !CORECLR
         private unsafe SafeFileHandle OpenHandle(FileMode mode, FileShare share, FileOptions options)
-        {
-            return CreateFile2OpenHandle(mode, share, options);
-        }
-#endif
-
-        private unsafe SafeFileHandle CreateFile2OpenHandle(FileMode mode, FileShare share, FileOptions options)
         {
             Interop.Kernel32.SECURITY_ATTRIBUTES secAttrs = GetSecAttrs(share);
 
@@ -39,7 +32,7 @@ namespace System.IO
 
             using (DisableMediaInsertionPrompt.Create())
             {
-                return ValidateFileHandle(Interop.FileApiInterop.CreateFile2(
+                return ValidateFileHandle(Interop.Kernel32.CreateFile2(
                     lpFileName: _path,
                     dwDesiredAccess: access,
                     dwShareMode: share,
