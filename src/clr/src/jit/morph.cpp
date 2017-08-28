@@ -8484,8 +8484,8 @@ GenTreePtr Compiler::fgMorphCall(GenTreeCall* call)
         // a recursive call into a loop.  Another option is to modify gtIsRecursiveCall() to check that the
         // generic type parameters of both caller and callee generic method are the same.
         if (opts.compTailCallLoopOpt && canFastTailCall && gtIsRecursiveCall(call) && !lvaReportParamTypeArg() &&
-            !lvaKeepAliveAndReportThis() && !call->IsVirtual() && !hasStructParam && !varTypeIsStruct(call->TypeGet()) &&
-            ((info.compClassAttr & CORINFO_FLG_MARSHAL_BYREF) == 0))
+            !lvaKeepAliveAndReportThis() && !call->IsVirtual() && !hasStructParam &&
+            !varTypeIsStruct(call->TypeGet()) && ((info.compClassAttr & CORINFO_FLG_MARSHAL_BYREF) == 0))
         {
             call->gtCallMoreFlags |= GTF_CALL_M_TAILCALL_TO_LOOP;
             fastTailCallToLoop = true;
