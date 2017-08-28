@@ -14,9 +14,26 @@ namespace System.Globalization
 {
     internal static class TimeSpanFormat
     {
-        private static String IntToString(int n, int digits)
+        private static unsafe void AppendNonNegativeInt32(StringBuilder sb, int n, int digits)
         {
-            return ParseNumbers.IntToString(n, 10, digits, '0', 0);
+            Debug.Assert(n >= 0);
+            uint value = (uint)n;
+
+            const int MaxUInt32Digits = 10;
+            char* buffer = stackalloc char[MaxUInt32Digits];
+
+            int index = 0;
+            do
+            {
+                uint div = value / 10;
+                buffer[index++] = (char)(value - (div * 10) + '0');
+                value = div;
+            }
+            while (value != 0);
+            Debug.Assert(index <= MaxUInt32Digits);
+
+            for (int i = digits - index; i > 0; --i) sb.Append('0');
+            for (int i = index - 1; i >= 0; --i) sb.Append(buffer[i]);
         }
 
         internal static readonly FormatLiterals PositiveInvariantFormatLiterals = TimeSpanFormat.FormatLiterals.InitInvariant(false /*isNegative*/);
@@ -135,15 +152,15 @@ namespace System.Globalization
 
             sb.Append(literal.Start);                           // [-]
             if (pattern == Pattern.Full || day != 0)
-            {          //
+            {
                 sb.Append(day);                                 // [dd]
                 sb.Append(literal.DayHourSep);                  // [.]
             }                                                   //
-            sb.Append(IntToString(hours, literal.hh));          // hh
+            AppendNonNegativeInt32(sb, hours, literal.hh);      // hh
             sb.Append(literal.HourMinuteSep);                   // :
-            sb.Append(IntToString(minutes, literal.mm));        // mm
+            AppendNonNegativeInt32(sb, minutes, literal.mm);    // mm
             sb.Append(literal.MinuteSecondSep);                 // :
-            sb.Append(IntToString(seconds, literal.ss));        // ss
+            AppendNonNegativeInt32(sb, seconds, literal.ss);    // ss
             if (!isInvariant && pattern == Pattern.Minimum)
             {
                 int effectiveDigits = literal.ff;
@@ -167,10 +184,10 @@ namespace System.Globalization
             }
             else if (pattern == Pattern.Full || fraction != 0)
             {
-                sb.Append(literal.SecondFractionSep);           // [.]
-                sb.Append(IntToString(fraction, literal.ff));   // [fffffff]
-            }                                                   //
-            sb.Append(literal.End);                             //
+                sb.Append(literal.SecondFractionSep);             // [.]
+                AppendNonNegativeInt32(sb, fraction, literal.ff); // [fffffff]
+            }
+            sb.Append(literal.End);
 
             return sb;
         }
