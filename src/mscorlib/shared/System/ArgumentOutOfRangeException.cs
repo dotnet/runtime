@@ -27,25 +27,25 @@ namespace System
         public ArgumentOutOfRangeException()
             : base(SR.Arg_ArgumentOutOfRangeException)
         {
-            HResult = __HResults.COR_E_ARGUMENTOUTOFRANGE;
+            HResult = HResults.COR_E_ARGUMENTOUTOFRANGE;
         }
 
         public ArgumentOutOfRangeException(String paramName)
             : base(SR.Arg_ArgumentOutOfRangeException, paramName)
         {
-            HResult = __HResults.COR_E_ARGUMENTOUTOFRANGE;
+            HResult = HResults.COR_E_ARGUMENTOUTOFRANGE;
         }
 
         public ArgumentOutOfRangeException(String paramName, String message)
             : base(message, paramName)
         {
-            HResult = __HResults.COR_E_ARGUMENTOUTOFRANGE;
+            HResult = HResults.COR_E_ARGUMENTOUTOFRANGE;
         }
 
         public ArgumentOutOfRangeException(String message, Exception innerException)
             : base(message, innerException)
         {
-            HResult = __HResults.COR_E_ARGUMENTOUTOFRANGE;
+            HResult = HResults.COR_E_ARGUMENTOUTOFRANGE;
         }
 
         // We will not use this in the classlibs, but we'll provide it for
@@ -55,7 +55,7 @@ namespace System
             : base(message, paramName)
         {
             _actualValue = actualValue;
-            HResult = __HResults.COR_E_ARGUMENTOUTOFRANGE;
+            HResult = HResults.COR_E_ARGUMENTOUTOFRANGE;
         }
 
         protected ArgumentOutOfRangeException(SerializationInfo info, StreamingContext context)

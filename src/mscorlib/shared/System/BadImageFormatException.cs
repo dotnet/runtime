@@ -25,31 +25,31 @@ namespace System
         public BadImageFormatException()
             : base(SR.Arg_BadImageFormatException)
         {
-            HResult = __HResults.COR_E_BADIMAGEFORMAT;
+            HResult = HResults.COR_E_BADIMAGEFORMAT;
         }
 
         public BadImageFormatException(String message)
             : base(message)
         {
-            HResult = __HResults.COR_E_BADIMAGEFORMAT;
+            HResult = HResults.COR_E_BADIMAGEFORMAT;
         }
 
         public BadImageFormatException(String message, Exception inner)
             : base(message, inner)
         {
-            HResult = __HResults.COR_E_BADIMAGEFORMAT;
+            HResult = HResults.COR_E_BADIMAGEFORMAT;
         }
 
         public BadImageFormatException(String message, String fileName) : base(message)
         {
-            HResult = __HResults.COR_E_BADIMAGEFORMAT;
+            HResult = HResults.COR_E_BADIMAGEFORMAT;
             _fileName = fileName;
         }
 
         public BadImageFormatException(String message, String fileName, Exception inner)
             : base(message, inner)
         {
-            HResult = __HResults.COR_E_BADIMAGEFORMAT;
+            HResult = HResults.COR_E_BADIMAGEFORMAT;
             _fileName = fileName;
         }
 
@@ -78,7 +78,7 @@ namespace System
             if (_message == null)
             {
                 if ((_fileName == null) &&
-                    (HResult == __HResults.COR_E_EXCEPTION))
+                    (HResult == HResults.COR_E_EXCEPTION))
                     _message = SR.Arg_BadImageFormatException;
 
                 else

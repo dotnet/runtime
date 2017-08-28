@@ -11,19 +11,19 @@ namespace System.Security
         public VerificationException()
             : base(SR.Verification_Exception)
         {
-            HResult = __HResults.COR_E_VERIFICATION;
+            HResult = HResults.COR_E_VERIFICATION;
         }
 
         public VerificationException(string message)
             : base(message)
         {
-            HResult = __HResults.COR_E_VERIFICATION;
+            HResult = HResults.COR_E_VERIFICATION;
         }
 
         public VerificationException(string message, Exception innerException)
             : base(message, innerException)
         {
-            HResult = __HResults.COR_E_VERIFICATION;
+            HResult = HResults.COR_E_VERIFICATION;
         }
 
         protected VerificationException(SerializationInfo info, StreamingContext context)
