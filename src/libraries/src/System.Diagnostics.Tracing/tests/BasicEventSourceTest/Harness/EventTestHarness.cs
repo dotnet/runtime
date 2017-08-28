@@ -6,7 +6,7 @@ using System.Diagnostics.Tracing;
 using Xunit;
 using System;
 using System.Collections.Generic;
-ng System.IO;
+using System.IO;
 
 namespace BasicEventSourceTests
 {
