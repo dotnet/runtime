@@ -164,9 +164,6 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_NetFx45_LegacyManagedDeflateStream, W("NetFx45
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_DateTime_NetFX35ParseMode, W("DateTime_NetFX35ParseMode"), 0, "Flag to enable the .NET 3.5 System.DateTime Token Replacement Policy")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_ThrowUnobservedTaskExceptions, W("ThrowUnobservedTaskExceptions"), 0, "Flag to propagate unobserved task exceptions on the finalizer thread.")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_DateTime_NetFX40AmPmParseAdjustment, W("EnableAmPmParseAdjustment"), 0, "Flag to enable the .NET 4.0 DateTimeParse to correctly parse AM/PM cases")
-#ifdef FEATURE_RANDOMIZED_STRING_HASHING
-RETAIL_CONFIG_DWORD_INFO(EXTERNAL_UseRandomizedStringHashAlgorithm, W("UseRandomizedStringHashAlgorithm"), 0, "Flag to use a string hashing algorithm who's behavior differs between AppDomains")
-#endif // FEATURE_RANDOMIZED_STRING_HASHING
 
 // 
 // Conditional breakpoints

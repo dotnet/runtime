@@ -636,11 +636,7 @@ namespace System.Collections.Concurrent
                 //
                 if (resizeDesired)
                 {
-#if FEATURE_RANDOMIZED_STRING_HASHING
                     GrowTable(tables, tables.m_comparer, false, m_keyRehashCount);
-#else
-                    GrowTable(tables, tables.m_comparer, false, m_keyRehashCount);
-#endif
                 }
 
                 resultingValue = value;
