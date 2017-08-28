@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <Target Name="EnsureNETCoreAppRuntime" 
+          Condition="'$(RuntimeIdentifier)' != '' AND '$(EnsureNETCoreAppRuntime)' != 'false'" 
+          AfterTargets="RunResolvePackageDependencies">
+    <ItemGroup>
+      <_netCoreAppPackageDependencies 
+          Include="@(PackageDependencies->WithMetadataValue('ParentPackage', '$(MSBuildThisFileName)/$(_Microsoft_NETCore_App_Version)'))" />
+      <_activeRIDNetCoreAppPackageDependencies 
+          Include="@(_netCoreAppPackageDependencies->WithMetadataValue('ParentTarget', '$(NuGetTargetMoniker)/$(RuntimeIdentifier)'))" />
+      <_activeTFMNetCoreAppPackageDependencies 
+          Include="@(_netCoreAppPackageDependencies->WithMetadataValue('ParentTarget', '$(NuGetTargetMoniker)'))" />
+      <_ridSpecificNetCoreAppPackageDependencies 
+          Include="@(_activeRIDNetCoreAppPackageDependencies)" 
+          Exclude="@(_activeTFMNetCoreAppPackageDependencies)" />
+    </ItemGroup>
+    
+    <Error Condition="'@(_ridSpecificNetCoreAppPackageDependencies)' == ''"
+           Text="Project is targeting runtime '$(RuntimeIdentifier)' but did not resolve any runtime-specific packages for the '$(MSBuildThisFileName)' package.  This runtime may not be supported by .NET Core." />
+  </Target>
+</Project>

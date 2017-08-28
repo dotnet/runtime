@@ -16,151 +16,177 @@
       },
       "Definitions": [
         {
-          "Name": "Core-Setup-CentOS-x64",
+          "Name": "Core-Setup-Linux-BT",
+          "Parameters": {
+            "PB_DistroRid": "rhel.7.2-x64",
+            "PB_DockerTag": "rhel7_prereqs_2",
+            "PB_AdditionalBuildArguments":"-PortableBuild=true -strip-symbols",
+            "PB_PortableBuild": "true"
+          },
           "ReportingParameters": {
-            "OperatingSystem": "CentOS 7.1",
+            "SubType": "PortableBuild",
+            "OperatingSystem": "RedHat 7",
             "Type": "build/product/",
             "Platform": "x64"
           }
         },
         {
-          "Name": "Core-Setup-Debian8-x64",
+          "Name": "Core-Setup-Linux-Arm-BT",
+          "Parameters": {
+            "PB_DistroRid": "rhel.6-x64",
+            "PB_DockerTag": "centos-6-c8c9b08-20174310104313",
+            "PB_TargetArchitecture": "x64",
+            "PB_AdditionalBuildArguments":"-TargetArchitecture=x64 -DistroRid=rhel.6-x64 -PortableBuild=false -strip-symbols",
+            "PB_PortableBuild": "false"
+          },
           "ReportingParameters": {
-            "OperatingSystem": "Debian 8.2",
+            "OperatingSystem": "RedHat6",
             "Type": "build/product/",
             "Platform": "x64"
           }
         },
         {
-          "Name": "Core-Setup-Fedora23-x64",
+          "Name": "Core-Setup-Linux-Arm-BT",
+          "Parameters": {
+            "PB_DistroRid": "ubuntu.14.04-arm",
+            "PB_DockerTag": "ubuntu-14.04-cross-0cd4667-20172211042239",
+            "PB_TargetArchitecture": "arm",
+            "PB_AdditionalBuildArguments":"-TargetArchitecture=arm -DistroRid=linux-arm -DisableCrossgen=true -PortableBuild=true -SkipTests=true -CrossBuild=true -strip-symbols",
+            "PB_CrossBuildArgs": "-e ROOTFS_DIR ",
+            "PB_PortableBuild": "true"
+          },
           "ReportingParameters": {
-            "OperatingSystem": "Fedora 23",
+            "SubType": "PortableBuild",
+            "OperatingSystem": "Ubuntu 14.04",
             "Type": "build/product/",
-            "Platform": "x64"
+            "Platform": "arm"
           }
         },
         {
-          "Name": "Core-Setup-Fedora24-x64",
+          "Name": "Core-Setup-OSX-BT",
+          "Parameters": {
+            "PB_PortableBuildArg": "-PortableBuild=true -strip-symbols",
+            "PB_PortableBuild": "true"
+          },
           "ReportingParameters": {
-            "OperatingSystem": "Fedora 24",
-            "Type": "build/product/",
-            "Platform": "x64"
-          }
-        },
-        {
-          "Name": "Core-Setup-OpenSuse42.1-x64",
-          "ReportingParameters": {
-            "OperatingSystem": "OpenSuse 42.1",
-            "Type": "build/product/",
-            "Platform": "x64"
-          }
-        },
-        {
-          "Name": "Core-Setup-OSX-x64",
-          "ReportingParameters": {
+            "SubType": "PortableBuild",
             "OperatingSystem": "OSX",
             "Type": "build/product/",
             "Platform": "x64"
           }
         },
         {
-          "Name": "Core-Setup-PortableLinux-x64",
-          "ReportingParameters": {
-            "SubType": "PortableLinux",
-            "OperatingSystem": "RedHat 7",
-            "Type": "build/product/",
-            "Platform": "x64"
-          }
-        },
-        {
-          "Name": "Core-Setup-RHEL7-x64",
-          "ReportingParameters": {
-            "SubType": "Native",
-            "OperatingSystem": "RedHat 7",
-            "Type": "build/product/",
-            "Platform": "x64"
-          }
-        },
-        {
-          "Name": "Core-Setup-Signing-Windows-x64",
-          "ReportingParameters": {
-            "OperatingSystem": "Windows",
-            "Type": "build/product/",
-            "Platform": "x64"
-          }
-        },
-        {
-          "Name": "Core-Setup-Signing-Windows-x86",
-          "ReportingParameters": {
-            "OperatingSystem": "Windows",
-            "Type": "build/product/",
-            "Platform": "x86"
-          }
-        },
-        {
-          "Name": "Core-Setup-Ubuntu14.04-x64",
-          "ReportingParameters": {
-            "OperatingSystem": "Ubuntu 14.04",
-            "Type": "build/product/",
-            "Platform": "x64"
-          }
-        },
-        {
-          "Name": "Core-Setup-Ubuntu16.04-x64",
-          "ReportingParameters": {
-            "OperatingSystem": "Ubuntu 16.04",
-            "Type": "build/product/",
-            "Platform": "x64"
-          }
-        },
-        {
-          "Name": "Core-Setup-Ubuntu16.10-x64",
-          "ReportingParameters": {
-            "OperatingSystem": "Ubuntu 16.10",
-            "Type": "build/product/",
-            "Platform": "x64"
-          }
-        },
-        {
-          "Name": "Core-Setup-CrossBuild",
+          "Name": "Core-Setup-Windows-Arm-BT",
           "Parameters": {
-            "PB_DockerTag": "ubuntu1404_cross_prereqs_v2",
-            "PB_Architecture": "arm",
-            "TargetRid": "ubuntu.14.04-arm"
+            "PB_AdditionalBuildArguments": "/p:SkipTests=true",
+            "PB_TargetArchitecture": "arm",
+            "PB_DistroRid": "win-arm",
+            "PB_PortableBuild": "true"
           },
           "ReportingParameters": {
-            "OperatingSystem": "Ubuntu 14.04",
-            "Type": "build/product/",
-          }
-        },
-        {
-          "Name": "Core-Setup-CrossBuild",
-          "Parameters": {
-            "PB_DockerTag": "ubuntu1604_cross_prereqs_v2",
-            "PB_Architecture": "arm",
-            "TargetRid": "ubuntu.16.04-arm"
-          },
-          "ReportingParameters": {
-            "OperatingSystem": "Ubuntu 16.04",
-            "Type": "build/product/",
-          }
-        },
-        {
-          "Name": "Core-Setup-Windows-arm32",
-          "ReportingParameters": {
+            "SubType": "PortableBuild",
             "OperatingSystem": "Windows",
             "Type": "build/product/",
             "Platform": "arm"
           }
         },
         {
-          "Name": "Core-Setup-Windows-arm64",
+          "Name": "Core-Setup-Windows-Arm-BT",
+          "Parameters": {
+            "PB_AdditionalBuildArguments": "/p:SkipTests=true /p:NativeToolSetDir=C:\\tools\\clr",
+            "PB_TargetArchitecture": "arm64",
+            "PB_DistroRid": "win-arm64",
+            "PB_PortableBuild": "true"
+          },
           "ReportingParameters": {
+            "SubType": "PortableBuild",
             "OperatingSystem": "Windows",
             "Type": "build/product/",
             "Platform": "arm64"
           }
+        },
+        {
+          "Name": "Core-Setup-Windows-BT",
+          "Parameters": {
+            "PB_DistroRid": "win7-x64",
+            "PB_TargetArchitecture": "x64",
+            "PB_PortableBuild": "true",
+            "PB_PublishRidAgnosticPackages": "true",
+            "PB_BuildFullPlatformManifest": "true"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Windows",
+            "SubType": "PortableBuild",
+            "Type": "build/product/",
+            "Platform": "x64"
+          }
+        },
+        {
+          "Name": "Core-Setup-Windows-BT",
+          "Parameters": {
+            "PB_DistroRid": "win7-x86",
+            "PB_TargetArchitecture": "x86",
+            "PB_PortableBuild": "true"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Windows",
+            "SubType": "PortableBuild",
+            "Type": "build/product/",
+            "Platform": "x86"
+          }
         }
+      ]
+    },
+    {
+      "Name": "Publish finalized build",
+      "Parameters": {
+        "TreatWarningsAsErrors": "false"
+      },
+      "BuildParameters": {
+        "BuildConfiguration": "Release"
+      },
+      "Definitions": [
+        {
+          "Name": "Core-Setup-Publish",
+          "Parameters": {
+            "PB_TargetArchitecture": "x64"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Windows",
+            "SubType": "Publish",
+            "Type": "build/product/",
+            "Platform": "x64"
+          }
+        }
+      ],
+      "DependsOn": [
+        "Trusted-All-Release"
+      ]
+    },
+    {
+      "Name": "Signing validation",
+      "Parameters": {
+        "TreatWarningsAsErrors": "false"
+      },
+      "BuildParameters": {
+        "BuildConfiguration": "Release"
+      },
+      "Definitions": [
+        {
+          "Name": "Core-Setup-Signing-Validation",
+          "Parameters": {
+            "PB_TargetArchitecture": "x64"
+          },
+          "ReportingParameters": {
+            "OperatingSystem": "Windows",
+            "SubType": "Validation",
+            "Type": "build/product/",
+            "Platform": "x64"
+          }
+        }
+      ],
+      "DependsOn": [
+        "Trusted-All-Release"
       ]
     }
   ]

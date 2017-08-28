@@ -13,6 +13,16 @@
 #include "fx_ver.h"
 #include "libhost.h"
 
+const pal::string_t MissingAssemblyMessage = _X(
+    "%s:\n"
+    "  An assembly specified in the application dependencies manifest (%s) was not found:\n"
+    "    package: '%s', version: '%s'\n"
+    "    path: '%s'");
+
+const pal::string_t ManifestListMessage = _X(
+    "  This assembly was expected to be in the local runtime store as the application was published using the following target manifest files:\n"
+    "    %s");
+
 namespace
 {
 // -----------------------------------------------------------------------------
@@ -126,42 +136,61 @@ void deps_resolver_t::get_dir_assemblies(
             }
 
             // Add entry for this asset
-            pal::string_t file_path = dir + DIR_SEPARATOR + file;
+            pal::string_t file_path = dir;
+            if (!file_path.empty() && file_path.back() != DIR_SEPARATOR)
+            {
+                file_path.push_back(DIR_SEPARATOR);
+            }
+            file_path.append(file);
+
             trace::verbose(_X("Adding %s to %s assembly set from %s"), file_name.c_str(), dir_name.c_str(), file_path.c_str());
             dir_assemblies->emplace(file_name, file_path);
         }
     }
 }
 
-void deps_resolver_t::setup_shared_package_probes(
+void deps_resolver_t::setup_shared_store_probes(
     const hostpolicy_init_t& init,
     const arguments_t& args)
 {
-    for (const auto& shared : args.env_shared_packages)
+    for (const auto& shared : args.env_shared_store)
     {
         if (pal::directory_exists(shared))
         {
-            // Shared Packages probe: DOTNET_SHARED_PACKAGES
+            // Shared Store probe: DOTNET_SHARED_STORE
             m_probes.push_back(probe_config_t::lookup(shared));
         }
     }
 
-    if (pal::directory_exists(args.local_shared_packages))
+    if (pal::directory_exists(args.dotnet_shared_store))
     {
-        // Shared Packages probe: $HOME/.dotnet/packages or %USERPROFILE%\.dotnet\packages
-        m_probes.push_back(probe_config_t::lookup(args.local_shared_packages));
+        m_probes.push_back(probe_config_t::lookup(args.dotnet_shared_store));
     }
 
-    if (pal::directory_exists(args.dotnet_shared_packages))
+    
+    for (const auto& global_shared : args.global_shared_stores)
     {
-        m_probes.push_back(probe_config_t::lookup(args.dotnet_shared_packages));
+        if (global_shared != args.dotnet_shared_store && pal::directory_exists(global_shared))
+        {
+            // Shared Store probe: DOTNET_SHARED_STORE
+            m_probes.push_back(probe_config_t::lookup(global_shared));
+        }
+    }
+}
+
+pal::string_t deps_resolver_t::get_lookup_probe_directories()
+{
+    pal::string_t directories;
+    for (const auto& pc : m_probes)
+    {
+        if (pc.is_lookup())
+        {
+            directories.append(pc.probe_dir);
+            directories.push_back(PATH_SEPARATOR);
+        }
     }
 
-    if (args.global_shared_packages != args.dotnet_shared_packages && pal::directory_exists(args.global_shared_packages))
-    {
-        // Shared Packages probe: /usr/share/dotnet/packages or C:\Program Files (x86)\dotnet\packages
-        m_probes.push_back(probe_config_t::lookup(args.global_shared_packages));
-    }
+    return directories;
 }
 
 void deps_resolver_t::setup_probe_config(
@@ -194,7 +223,7 @@ void deps_resolver_t::setup_probe_config(
     // The probe directory will be available at probe time.
     m_probes.push_back(probe_config_t::published_deps_dir());
 
-    setup_shared_package_probes(init, args);
+    setup_shared_store_probes(init, args);
 
     for (const auto& probe : m_additional_probes)
     {
@@ -215,18 +244,6 @@ void deps_resolver_t::setup_probe_config(
 void deps_resolver_t::setup_additional_probes(const std::vector<pal::string_t>& probe_paths)
 {
     m_additional_probes.assign(probe_paths.begin(), probe_paths.end());
-
-    for (auto iter = m_additional_probes.begin(); iter != m_additional_probes.end(); )
-    {
-        if (pal::directory_exists(*iter))
-        {
-            ++iter;
-        }
-        else
-        {
-            iter = m_additional_probes.erase(iter);
-        }
-    }
 }
 
 /**
@@ -255,8 +272,8 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
             continue;
         }
         pal::string_t probe_dir = config.probe_dir;
-       
-		if (config.probe_deps_json)
+
+        if (config.probe_deps_json)
         {
             // If the deps json has the package name and version, then someone has already done rid selection and
             // put the right asset in the dir. So checking just package name and version would suffice.
@@ -294,6 +311,47 @@ bool deps_resolver_t::probe_deps_entry(const deps_entry_t& entry, const pal::str
         // continue to try next probe config
     }
     return false;
+}
+
+bool report_missing_assembly_in_manifest(const deps_entry_t& entry, bool continueResolving = false)
+{
+    bool showManifestListMessage = !entry.runtime_store_manifest_list.empty();
+
+    if (entry.asset_type == deps_entry_t::asset_types::resources)
+    {
+        // Treat missing resource assemblies as informational.
+        continueResolving = true;
+
+        trace::info(MissingAssemblyMessage.c_str(), _X("Info"),
+            entry.deps_file.c_str(), entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str());
+
+        if (showManifestListMessage)
+        {
+            trace::info(ManifestListMessage.c_str(), entry.runtime_store_manifest_list.c_str());
+        }
+    }
+    else if (continueResolving)
+    {
+        trace::warning(MissingAssemblyMessage.c_str(), _X("Warning"),
+            entry.deps_file.c_str(), entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str());
+
+        if (showManifestListMessage)
+        {
+            trace::warning(ManifestListMessage.c_str(), entry.runtime_store_manifest_list.c_str());
+        }
+    }
+    else
+    {
+        trace::error(MissingAssemblyMessage.c_str(), _X("Error"),
+            entry.deps_file.c_str(), entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str());
+
+        if (showManifestListMessage)
+        {
+            trace::error(ManifestListMessage.c_str(), entry.runtime_store_manifest_list.c_str());
+        }
+    }
+
+    return continueResolving;
 }
 
 /**
@@ -334,9 +392,7 @@ bool deps_resolver_t::resolve_tpa_list(
         }
         else
         {
-            trace::error(_X("Error: assembly specified in the dependencies manifest was not found -- package: '%s', version: '%s', path: '%s'"), 
-                entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str());
-            return false;
+            return report_missing_assembly_in_manifest(entry);
         }
     };
 
@@ -355,7 +411,7 @@ bool deps_resolver_t::resolve_tpa_list(
         }
     }
 
-    // Finally, if the deps file wasn't present or has missing entries, then
+    // If the deps file wasn't present or has missing entries, then
     // add the app local assemblies to the TPA.
     if (!m_deps->exists())
     {
@@ -366,6 +422,20 @@ bool deps_resolver_t::resolve_tpa_list(
         for (const auto& kv : local_assemblies)
         {
             add_tpa_asset(kv.first, kv.second, &items, output);
+        }
+    }
+
+    // If additional deps files were specified that need to be treated as part of the
+    // application, then add them to the mix as well.
+    for (const auto& additional_deps : m_additional_deps)
+    {
+        auto additional_deps_entries = additional_deps->get_entries(deps_entry_t::asset_types::runtime);
+        for (auto entry : additional_deps_entries)
+        {
+            if (!process_entry(m_app_dir, additional_deps.get(), entry))
+            {
+                return false;
+            }
         }
     }
 
@@ -400,6 +470,79 @@ void deps_resolver_t::init_known_entry_path(const deps_entry_t& entry, const pal
     {
         m_clrjit_path = path;
         return;
+    }
+}
+
+void deps_resolver_t::resolve_additional_deps(const hostpolicy_init_t& init)
+{
+    if (!m_portable)
+    {
+        // Additional deps.json support is only available for portable apps due to the following constraints:
+        //
+        // 1) Unlike Portable Apps, Standalone apps do not have details of the SharedFX and Version they target.
+        // 2) Unlike Portable Apps, Standalone apps do not have RID fallback graph that is required for looking up
+        //    the correct native assets from nuget packages.
+
+        return;
+    }
+
+    pal::string_t additional_deps_serialized = init.additional_deps_serialized;
+    pal::string_t fx_name = init.fx_name;
+    pal::string_t fx_ver = init.fx_ver;
+
+    if (additional_deps_serialized.empty())
+    {
+        return;
+    }
+
+    pal::string_t additional_deps_path;
+    pal::stringstream_t ss(additional_deps_serialized);
+
+    // Process the delimiter separated custom deps files.
+    while (std::getline(ss, additional_deps_path, PATH_SEPARATOR))
+    {
+        // If it's a single deps file, insert it in 'm_additional_deps_files'
+        if (ends_with(additional_deps_path, _X(".deps.json"), false))
+        {
+            if (pal::file_exists(additional_deps_path))
+            {
+                trace::verbose(_X("Using specified additional deps.json: '%s'"), 
+                    additional_deps_path.c_str());
+                    
+                m_additional_deps_files.push_back(additional_deps_path);
+            }
+            else
+            {
+                trace::warning(_X("Warning: Specified additional deps.json does not exist: '%s'"), 
+                    additional_deps_path.c_str());
+            }
+        }
+        else
+        {
+            // We'll search deps files in 'base_dir'/shared/fx_name/fx_ver
+            append_path(&additional_deps_path, _X("shared"));
+            append_path(&additional_deps_path, fx_name.c_str());
+            append_path(&additional_deps_path, fx_ver.c_str());
+
+            // The resulting list will be empty if 'additional_deps_path' is not a valid directory path
+            std::vector<pal::string_t> list;
+            pal::readdir(additional_deps_path, _X("*.deps.json"), &list);
+            for (pal::string_t json_file : list)
+            {
+                pal::string_t json_full_path = additional_deps_path;
+                append_path(&json_full_path, json_file.c_str());
+                m_additional_deps_files.push_back(json_full_path);
+
+                trace::verbose(_X("Using specified additional deps.json: '%s'"), 
+                    json_full_path.c_str());
+            }
+        }
+    }
+
+    for (pal::string_t json_file : m_additional_deps_files)
+    {
+        m_additional_deps.push_back(std::unique_ptr<deps_json_t>(
+            new deps_json_t(true, json_file, m_fx_deps->get_rid_fallback_graph())));
     }
 }
 
@@ -470,21 +613,12 @@ bool deps_resolver_t::resolve_probe_dirs(
         {
             // For standalone apps, apphost.exe will be renamed. Do not use the full package name
             // because of rid-fallback could happen (ex: CentOS falling back to RHEL)
-            if (ends_with(entry.library_name, _X(".Microsoft.NETCore.App"), false) && (entry.asset_name == _X("dotnet") || entry.asset_name == _X("apphost")))
+            if ((entry.asset_name == _X("apphost")) && ends_with(entry.library_name, _X(".Microsoft.NETCore.DotNetAppHost"), false))
             {
-                trace::warning(_X("Warning: assembly specified in the dependencies manifest was not found -- package: '%s', version: '%s', path: '%s'"), 
-                    entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str());
-                return true;
+                return report_missing_assembly_in_manifest(entry, true);
             }
-            trace::error(_X("Error: assembly specified in the dependencies manifest was not found -- package: '%s', version: '%s', path: '%s'"), 
-                entry.library_name.c_str(), entry.library_version.c_str(), entry.relative_path.c_str());
-            return false;
-        }
 
-        if (m_api_set_paths.empty() && pal::need_api_sets() &&
-                ends_with(entry.library_name, _X("Microsoft.NETCore.App"), false))
-        {
-            m_api_set_paths.insert(action(candidate));
+            return report_missing_assembly_in_manifest(entry);
         }
 
         return true;
@@ -507,6 +641,19 @@ bool deps_resolver_t::resolve_probe_dirs(
         (void) library_exists_in_dir(m_app_dir, LIBCORECLR_NAME, &m_coreclr_path);
 
         (void) library_exists_in_dir(m_app_dir, LIBCLRJIT_NAME, &m_clrjit_path);
+    }
+
+    // Handle any additional deps.json that were specified.
+    for (const auto& additional_deps : m_additional_deps)
+    {
+        const auto additional_deps_entries = additional_deps->get_entries(deps_entry_t::asset_types::runtime);
+        for (const auto entry : additional_deps_entries)
+        {
+            if (!add_package_cache_entry(entry, m_app_dir))
+            {
+                return false;
+            }
+        }
     }
     
     for (const auto& entry : fx_entries)

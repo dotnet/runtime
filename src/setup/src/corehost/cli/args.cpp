@@ -19,16 +19,16 @@ arguments_t::arguments_t() :
 
 /**
  *
- * Setup the shared package directories.
+ * Setup the shared store directories.
  *
- *  o %DOTNET_SHARED_PACKAGES% -- multiple delimited paths
- *  o $HOME/.dotnet/{x86|x64}/ or %USERPROFILE%\.dotnet\{x86|x64}
- *  o dotnet.exe relative shared packages
+ *  o %DOTNET_SHARED_STORE% -- multiple delimited paths
+ *  o $HOME/.dotnet/{x86|x64}/store/arch/tfm or %USERPROFILE%\.dotnet\{x86|x64}\store\<arch>\<tfm>
+ *  o dotnet.exe relative shared store\<arch>\<tfm>
  *  o Global location
  *      Windows: C:\Program Files (x86) or
- *      Unix: directory of dotnet on the path.
+ *      Unix: directory of dotnet on the path.\<arch>\<tfm>
  */
-void setup_shared_package_paths(const hostpolicy_init_t& init, const pal::string_t& own_dir, arguments_t* args)
+void setup_shared_store_paths(const hostpolicy_init_t& init, const pal::string_t& own_dir, arguments_t* args)
 {
     if (init.tfm.empty())
     {
@@ -36,30 +36,20 @@ void setup_shared_package_paths(const hostpolicy_init_t& init, const pal::string
         return;
     }
 
-    // Environment variable DOTNET_SHARED_PACKAGES
-    (void) get_env_shared_package_dirs(&args->env_shared_packages, get_arch(), init.tfm);
+    // Environment variable DOTNET_SHARED_STORE
+    (void) get_env_shared_store_dirs(&args->env_shared_store, get_arch(), init.tfm);
 
-    // User profile based packages
-    pal::string_t local_shared_packages;
-    if (get_local_shared_package_dir(&local_shared_packages))
-    {
-        append_path(&local_shared_packages, init.tfm.c_str());
-        args->local_shared_packages = local_shared_packages;
-    }
-
-    // "dotnet.exe" relative shared packages folder
+    // "dotnet.exe" relative shared store folder
     if (init.host_mode == host_mode_t::muxer)
     {
-        args->dotnet_shared_packages = own_dir;
-        append_path(&args->dotnet_shared_packages, _X("packages"));
-        append_path(&args->dotnet_shared_packages, init.tfm.c_str());
+        args->dotnet_shared_store = own_dir;
+        append_path(&args->dotnet_shared_store, RUNTIME_STORE_DIRECTORY_NAME);
+        append_path(&args->dotnet_shared_store, get_arch());
+        append_path(&args->dotnet_shared_store, init.tfm.c_str());
     }
 
-    // Global shared package dir
-    if (get_global_shared_package_dir(&args->global_shared_packages))
-    {
-        append_path(&args->global_shared_packages, init.tfm.c_str());
-    }
+    // Global shared store dir
+    get_global_shared_store_dirs(&args->global_shared_stores, get_arch(), init.tfm);
 }
 
 bool parse_arguments(
@@ -98,7 +88,7 @@ bool parse_arguments(
     {
         // coreconsole mode. Find the managed app in the same directory
         pal::string_t managed_app(own_dir);
-        managed_app.push_back(DIR_SEPARATOR);
+
         managed_app.append(get_executable(own_name));
         managed_app.append(_X(".dll"));
         args.managed_application = managed_app;
@@ -130,14 +120,18 @@ bool parse_arguments(
 
         args.deps_path.reserve(app_base.length() + 1 + app_name.length() + 5);
         args.deps_path.append(app_base);
-        args.deps_path.push_back(DIR_SEPARATOR);
+
+        if (!app_base.empty() && app_base.back() != DIR_SEPARATOR)
+        {
+            args.deps_path.push_back(DIR_SEPARATOR);
+        }
         args.deps_path.append(app_name, 0, app_name.find_last_of(_X(".")));
         args.deps_path.append(_X(".deps.json"));
     }
 
     pal::get_default_servicing_directory(&args.core_servicing);
 
-    setup_shared_package_paths(init, own_dir, &args);
+    setup_shared_store_paths(init, own_dir, &args);
 
     return true;
 }

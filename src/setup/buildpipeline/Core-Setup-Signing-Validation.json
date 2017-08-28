@@ -1,0 +1,303 @@
+{
+  "build": [
+    {
+      "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": false,
+      "displayName": "Cleanup previous build if present",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "e213ff0f-5d5c-4791-802d-52ea3e7be1f1",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "scriptType": "inlineScript",
+        "scriptName": "",
+        "arguments": "-path $(PB_SourcesDirectory) -rootPath $(Build.SourcesDirectory)",
+        "inlineScript": "param($path, $rootPath)\n\nif (Test-Path $path){\n    Remove-Item -Recurse -Force $path\n\n    if(Test-Path $path){\n        $DeleteFolder = \"$rootPath\\deleteme\"\n        if((Test-Path $DeleteFolder ) -eq 0) {\n            New-Item -ItemType Directory -Force -Path $DeleteFolder\n        }\n        robocopy $DeleteFolder $path /purge\n        Remove-Item -Recurse -Force $path\n    }\n }",
+        "workingFolder": "",
+        "failOnStandardError": "true"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Clone repo",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "git",
+        "arguments": "clone $(PB_VsoRepoUrl) $(PB_SourcesDirectory)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "git checkout",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "git",
+        "arguments": "checkout $(SourceVersion)",
+        "workingFolder": "$(PB_SourcesDirectory)",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Signing validation",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "$(PB_SourcesDirectory)\\build.cmd",
+        "arguments": "-signing-validation -- /p:AzureAccessToken=$(PB_AzureAccessToken) /p:AzureAccountName=$(PB_AzureAccountName) /p:ContainerName=$(PB_ContainerName) /p:OptionalToolSource=$(PB_OptionalToolSource) /p:OptionalToolSourceUser=$(PB_OptionalToolSourceUser) /p:OptionalToolSourcePassword=$(PB_OptionalToolSourcePassword) /p:OfficialBuildId=$(OfficialBuildId) /flp:v=detailed",
+        "workingFolder": "$(PB_SourcesDirectory)",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": false,
+      "displayName": "Cleanup agent",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "c6c4c611-aa2e-4a33-b606-5eaba2196824",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "solution": "$(PB_SourcesDirectory)\\Tools\\scripts\\vstsagent\\cleanupagent.proj",
+        "msbuildLocationMethod": "version",
+        "msbuildVersion": "latest",
+        "msbuildArchitecture": "x64",
+        "msbuildLocation": "",
+        "platform": "",
+        "configuration": "",
+        "msbuildArguments": "/p:AgentDirectory=$(Agent.HomeDirectory) /p:DoClean=$(PB_CleanAgent)",
+        "clean": "false",
+        "maximumCpuCount": "false",
+        "restoreNugetPackages": "false",
+        "logProjectEvents": "false",
+        "createLogFile": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": false,
+      "displayName": "Copy Publish Artifact: Logs",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "1d341bb0-2106-458c-8422-d00bcea6512a",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "CopyRoot": "$(PB_SourcesDirectory)",
+        "Contents": "*.log\nBin\\SigningValidation\\Logs\\**",
+        "ArtifactName": "Logs",
+        "ArtifactType": "Container",
+        "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)"
+      }
+    }
+  ],
+  "options": [
+    {
+      "enabled": false,
+      "definition": {
+        "id": "5d58cc01-7c75-450c-be18-a388ddb129ec"
+      },
+      "inputs": {
+        "branchFilters": "[\"+refs/heads/*\"]",
+        "additionalFields": "{}"
+      }
+    },
+    {
+      "enabled": false,
+      "definition": {
+        "id": "5bc3cfb7-6b54-4a4b-b5d2-a3905949f8a6"
+      },
+      "inputs": {
+        "additionalFields": "{}"
+      }
+    },
+    {
+      "enabled": false,
+      "definition": {
+        "id": "7c555368-ca64-4199-add6-9ebaf0b0137d"
+      },
+      "inputs": {
+        "multipliers": "[]",
+        "parallel": "false",
+        "continueOnError": "true",
+        "additionalFields": "{}"
+      }
+    },
+    {
+      "enabled": false,
+      "definition": {
+        "id": "a9db38f9-9fdc-478c-b0f9-464221e58316"
+      },
+      "inputs": {
+        "workItemType": "4777",
+        "assignToRequestor": "true",
+        "additionalFields": "{}"
+      }
+    },
+    {
+      "enabled": false,
+      "definition": {
+        "id": "57578776-4c22-4526-aeb0-86b6da17ee9c"
+      },
+      "inputs": {
+        "additionalFields": "{}"
+      }
+    }
+  ],
+  "variables": {
+    "BuildConfiguration": {
+      "value": "Release"
+    },
+    "system.debug": {
+      "value": "false"
+    },
+    "ReleaseToolsGitUrl": {
+      "value": "https://$(PB_VsoAccountName):$(PB_VsoPassword)@devdiv.visualstudio.com/DevDiv/_git/DotNet-Core-Release-Tools"
+    },
+    "PB_SourcesDirectory": {
+      "value": "$(Build.SourcesDirectory)\\core-setup"
+    },
+    "PB_VsoRepoUrl": {
+      "value": "--branch $(PB_Branch) https://$(PB_VsoAccountName):$(PB_VsoPassword)@devdiv.visualstudio.com/DevDiv/_git/DotNet-Core-Setup-Trusted"
+    },
+    "PB_Branch": {
+      "value": "master",
+      "allowOverride": true
+    },
+    "PB_VsoAccountName": {
+      "value": "dn-bot"
+    },
+    "PB_VsoPassword": {
+      "value": null,
+      "isSecret": true
+    },
+    "OfficialBuildId": {
+      "value": "xxxxx-xx",
+      "allowOverride": true
+    },
+    "PB_AzureAccountName": {
+      "value": "dotnetcli"
+    },
+    "PB_ContainerName": {
+      "value": "dotnet"
+    },
+    "PB_AzureAccessToken": {
+      "value": null,
+      "isSecret": true
+    },
+    "SourceVersion": {
+      "value": "HEAD",
+      "allowOverride": true
+    },
+    "PB_ReleaseToolsDirectory": {
+      "value": "$(Build.SourcesDirectory)\\releasetools"
+    },
+    "PB_CleanAgent": {
+      "value": "true"
+    },
+    "PB_OptionalToolSource": {
+      "value": "https://devdiv.pkgs.visualstudio.com/_packaging/dotnet-core-internal-tooling/nuget/v3/index.json "
+    },
+    "PB_OptionalToolSourceUser": {
+      "value": "dn-bot"
+    },
+    "PB_OptionalToolSourcePassword": {
+      "value": null,
+      "isSecret": true
+    }
+  },
+  "demands": [
+    "Agent.OS -equals Windows_NT"
+  ],
+  "retentionRules": [
+    {
+      "branches": [
+        "+refs/heads/*"
+      ],
+      "artifacts": [],
+      "artifactTypesToDelete": [
+        "FilePath",
+        "SymbolStore"
+      ],
+      "daysToKeep": 10,
+      "minimumToKeep": 1,
+      "deleteBuildRecord": true,
+      "deleteTestResults": true
+    }
+  ],
+  "buildNumberFormat": "$(Date:yyyMMdd)$(Rev:-rr)",
+  "jobAuthorizationScope": "projectCollection",
+  "jobTimeoutInMinutes": 120,
+  "jobCancelTimeoutInMinutes": 5,
+  "badgeEnabled": true,
+  "repository": {
+    "properties": {
+      "labelSources": "0",
+      "reportBuildStatus": "true",
+      "fetchDepth": "0",
+      "gitLfsSupport": "false",
+      "skipSyncSource": "true",
+      "cleanOptions": "0"
+    },
+    "id": "c19ea379-feb7-4ca5-8f7f-5f2b5095ea62",
+    "type": "TfsGit",
+    "name": "DotNet-Core-Setup-Trusted",
+    "url": "https://devdiv.visualstudio.com/DevDiv/_git/DotNet-Core-Setup-Trusted",
+    "defaultBranch": "refs/heads/release/1.1.0",
+    "clean": "false",
+    "checkoutSubmodules": false
+  },
+  "processParameters": {},
+  "quality": "definition",
+  "queue": {
+    "id": 36,
+    "name": "DotNet-Build",
+    "pool": {
+      "id": 39,
+      "name": "DotNet-Build"
+    }
+  },
+  "id": 6475,
+  "name": "Core-Setup-Signing-Validation",
+  "path": "\\",
+  "type": "build",
+  "project": {
+    "id": "0bdbc590-a062-4c3f-b0f6-9383f67865ee",
+    "name": "DevDiv",
+    "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
+    "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
+    "state": "wellFormed",
+    "revision": 418097695,
+    "visibility": "private"
+  }
+}

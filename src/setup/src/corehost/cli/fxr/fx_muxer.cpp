@@ -171,7 +171,7 @@ pal::string_t get_deps_from_app_binary(const pal::string_t& app)
     // First append directory.
     pal::string_t deps_file;
     deps_file.assign(get_directory(app));
-    deps_file.push_back(DIR_SEPARATOR);
+
 
     // Then the app name and the file extension
     pal::string_t app_name = get_filename(app);
@@ -222,8 +222,14 @@ pal::string_t get_deps_file(
 {
     if (config.get_portable())
     {
+        pal::string_t deps_file = fx_dir;
+        
+        if (!deps_file.empty() && deps_file.back() != DIR_SEPARATOR)
+        {
+            deps_file.push_back(DIR_SEPARATOR);
+        }
         // Portable app's hostpolicy is resolved from FX deps
-        return fx_dir + DIR_SEPARATOR + config.get_fx_name() + _X(".deps.json");
+        return deps_file + config.get_fx_name() + _X(".deps.json");
     }
     else
     {
@@ -327,7 +333,7 @@ bool fx_muxer_t::resolve_hostpolicy_dir(host_mode_t mode,
     return false;
 }
 
-void fx_muxer_t::resolve_roll_forward(pal::string_t& fx_dir,
+fx_ver_t fx_muxer_t::resolve_framework_version(const std::vector<fx_ver_t>& version_list,
     const pal::string_t& fx_ver,
     const fx_ver_t& specified,
     const bool& patch_roll_fwd,
@@ -335,8 +341,7 @@ void fx_muxer_t::resolve_roll_forward(pal::string_t& fx_dir,
 {
     trace::verbose(_X("Attempting FX roll forward starting from [%s]"), fx_ver.c_str());
 
-    std::vector<pal::string_t> list;
-    pal::readdir(fx_dir, &list);
+
     fx_ver_t most_compatible = specified;
     if (!specified.is_prerelease())
     {
@@ -344,10 +349,10 @@ void fx_muxer_t::resolve_roll_forward(pal::string_t& fx_dir,
         {
             trace::verbose(_X("'Roll forward on no candidate fx' enabled. Looking for the least production greater than or equal to [%s]"), fx_ver.c_str());
             fx_ver_t next_lowest(-1, -1, -1);
-            for (const auto& version : list)
+            for (const auto& ver : version_list)
             {
-                fx_ver_t ver(-1, -1, -1);
-                if (fx_ver_t::parse(version, &ver, true) && (ver >= specified))
+                
+                if (!ver.is_prerelease() && ver >= specified)
                 {
                     next_lowest = (next_lowest == fx_ver_t(-1, -1, -1)) ? ver : std::min(next_lowest, ver);
                 }
@@ -365,12 +370,11 @@ void fx_muxer_t::resolve_roll_forward(pal::string_t& fx_dir,
         if (patch_roll_fwd)
         {
             trace::verbose(_X("Applying patch roll forward from [%s]"), most_compatible.as_str().c_str());
-            for (const auto& version : list)
+            for (const auto& ver : version_list)
             {
-                trace::verbose(_X("Inspecting version... [%s]"), version.c_str());
-                fx_ver_t ver(-1, -1, -1);
+                trace::verbose(_X("Inspecting version... [%s]"), ver.as_str().c_str());
 
-                if (fx_ver_t::parse(version, &ver, true) && // true -- only prod. prevents roll forward to prerelease.
+                if (!ver.is_prerelease() && //  only prod. prevents roll forward to prerelease.
                     ver.get_major() == most_compatible.get_major() &&
                     ver.get_minor() == most_compatible.get_minor())
                 {
@@ -382,13 +386,12 @@ void fx_muxer_t::resolve_roll_forward(pal::string_t& fx_dir,
     }
     else
     {
-        for (const auto& version : list)
+        for (const auto& ver : version_list)
         {
-            trace::verbose(_X("Inspecting version... [%s]"), version.c_str());
-            fx_ver_t ver(-1, -1, -1);
+            trace::verbose(_X("Inspecting version... [%s]"), ver.as_str().c_str());
 
-            if (fx_ver_t::parse(version, &ver, false) && // false -- implies both production and prerelease.
-                ver.is_prerelease() && // prevent roll forward to production.
+            //both production and prerelease.
+            if (ver.is_prerelease() && // prevent roll forward to production.
                 ver.get_major() == specified.get_major() &&
                 ver.get_minor() == specified.get_minor() &&
                 ver.get_patch() == specified.get_patch() &&
@@ -399,8 +402,8 @@ void fx_muxer_t::resolve_roll_forward(pal::string_t& fx_dir,
             }
         }
     }
-    pal::string_t most_compatible_str = most_compatible.as_str();
-    append_path(&fx_dir, most_compatible_str.c_str());
+
+    return most_compatible;
 }
 
 pal::string_t fx_muxer_t::resolve_fx_dir(host_mode_t mode,
@@ -431,37 +434,28 @@ pal::string_t fx_muxer_t::resolve_fx_dir(host_mode_t mode,
     }
 
     // Multi-level SharedFX lookup will look for the most appropriate version in several locations
-    // by following the priority rank below (from 1 to 4):
-    // 1. Current working directory
-    // 2. User directory
-    // 3. .exe directory
-    // 4. Global .NET directory
+    // by following the priority rank below:
+    // .exe directory
+    //  Global .NET directory
     // If it is not activated, then only .exe directory will be considered
 
     std::vector<pal::string_t> hive_dir;
-    pal::string_t cwd;
     pal::string_t local_dir;
-    pal::string_t global_dir;
+    std::vector<pal::string_t> global_dirs;
     bool multilevel_lookup = multilevel_lookup_enabled();
 
-    if (multilevel_lookup)
-    {
-        if (pal::getcwd(&cwd))
-        {
-            hive_dir.push_back(cwd);
-        }
-        if (pal::get_local_dotnet_dir(&local_dir))
-        {
-            hive_dir.push_back(local_dir);
-        }
-    }
     hive_dir.push_back(own_dir);
-    if (multilevel_lookup && pal::get_global_dotnet_dir(&global_dir))
+    if (multilevel_lookup && pal::get_global_dotnet_dirs(&global_dirs))
     {
-        hive_dir.push_back(global_dir);
+        for (pal::string_t dir : global_dirs)
+        {
+            hive_dir.push_back(dir);
+        }
     }
 
     bool patch_roll_fwd_enabled = config.get_patch_roll_fwd();
+    pal::string_t selected_fx_dir;
+    fx_ver_t selected_ver(-1, -1, -1);
 
     for (pal::string_t dir : hive_dir)
     {
@@ -492,22 +486,60 @@ pal::string_t fx_muxer_t::resolve_fx_dir(host_mode_t mode,
         {
             trace::verbose(_X("Did not roll forward because specified version='%s', patch_roll_fwd=%d, roll_fwd_on_no_candidate_fx=%d, chose [%s]"),
                 specified_fx_version.c_str(), patch_roll_fwd_enabled, roll_fwd_on_no_candidate_fx_val, fx_ver.c_str());
+            
             append_path(&fx_dir, fx_ver.c_str());
+            if (pal::directory_exists(fx_dir))
+            {
+                trace::verbose(_X("Chose FX version [%s]"), fx_dir.c_str());
+                return fx_dir;
+            }
         }
         else
         {
-            resolve_roll_forward(fx_dir, fx_ver, specified, patch_roll_fwd_enabled, roll_fwd_on_no_candidate_fx_val);
-        }
+            std::vector<pal::string_t> list;
+            std::vector<fx_ver_t> version_list;
+            pal::readdir(fx_dir, &list);
 
-        if (pal::directory_exists(fx_dir))
-        {
-            trace::verbose(_X("Chose FX version [%s]"), fx_dir.c_str());
-            return fx_dir;
+            for (const auto& version : list)
+            {
+                fx_ver_t ver(-1, -1, -1);
+                if (fx_ver_t::parse(version, &ver, false))
+                {
+                    version_list.push_back(ver);
+                }
+            }
+
+            fx_ver_t resolved_ver = resolve_framework_version(version_list, fx_ver, specified, patch_roll_fwd_enabled, roll_fwd_on_no_candidate_fx_val);
+
+            pal::string_t resolved_ver_str = resolved_ver.as_str();
+            append_path(&fx_dir, resolved_ver_str.c_str());
+
+            if (pal::directory_exists(fx_dir))
+            {
+                //Continue to search for a better match if available
+                std::vector<fx_ver_t> version_list;
+                version_list.push_back(resolved_ver);
+                version_list.push_back(selected_ver);
+                resolved_ver = resolve_framework_version(version_list, fx_ver, specified, patch_roll_fwd_enabled, roll_fwd_on_no_candidate_fx_val);
+
+                if (resolved_ver != selected_ver)
+                {
+                    trace::verbose(_X("Changing Selected FX version from [%s] to [%s]"), selected_fx_dir.c_str(), fx_dir.c_str());
+                    selected_ver = resolved_ver;
+                    selected_fx_dir = fx_dir;
+                }
+            }
         }
     }
 
-    trace::error(_X("It was not possible to find any compatible framework version"));
-    return pal::string_t();
+    if (selected_fx_dir.empty())
+    {
+        trace::error(_X("It was not possible to find any compatible framework version"));
+        return pal::string_t();
+    }
+
+    trace::verbose(_X("Chose FX version [%s]"), selected_fx_dir.c_str());
+    return selected_fx_dir;
 }
 
 pal::string_t fx_muxer_t::resolve_cli_version(const pal::string_t& global_json)
@@ -563,8 +595,20 @@ pal::string_t fx_muxer_t::resolve_cli_version(const pal::string_t& global_json)
     return retval;
 }
 
-pal::string_t resolve_sdk_version(pal::string_t sdk_path)
+pal::string_t resolve_sdk_version(pal::string_t sdk_path, bool parse_only_production, pal::string_t global_cli_version)
 {
+    fx_ver_t specified(-1, -1, -1);
+
+    //   Validate the global cli version if specified
+    if (!global_cli_version.empty())
+    {
+        if (!fx_ver_t::parse(global_cli_version, &specified, false))
+        {
+            trace::error(_X("The specified SDK version '%s' could not be parsed"), global_cli_version.c_str());
+            return pal::string_t();
+        }
+    }
+
     trace::verbose(_X("--- Resolving SDK version from SDK dir [%s]"), sdk_path.c_str());
 
     pal::string_t retval;
@@ -572,27 +616,20 @@ pal::string_t resolve_sdk_version(pal::string_t sdk_path)
 
     pal::readdir(sdk_path, &versions);
     fx_ver_t max_ver(-1, -1, -1);
-    fx_ver_t max_pre(-1, -1, -1);
     for (const auto& version : versions)
     {
         trace::verbose(_X("Considering version... [%s]"), version.c_str());
 
         fx_ver_t ver(-1, -1, -1);
-        if (fx_ver_t::parse(version, &ver, true))
+        if (fx_ver_t::parse(version, &ver, parse_only_production))
         {
-            max_ver = std::max(ver, max_ver);
+            if (global_cli_version.empty() || 
+                    // Pick the greatest version that differs only in patch if a global cli version is specified.
+                    (ver.get_major() == specified.get_major() && ver.get_minor() == specified.get_minor()))
+            {
+                max_ver = std::max(ver, max_ver);
+            }
         }
-        if (fx_ver_t::parse(version, &ver, false))
-        {
-            max_pre = std::max(ver, max_pre);
-        }
-    }
-
-    // No production, use the max pre-release.
-    if (max_ver == fx_ver_t(-1, -1, -1))
-    {
-        trace::verbose(_X("No production version found, so using latest prerelease"));
-        max_ver = max_pre;
     }
 
     pal::string_t max_ver_str = max_ver.as_str();
@@ -601,10 +638,10 @@ pal::string_t resolve_sdk_version(pal::string_t sdk_path)
     trace::verbose(_X("Checking if resolved SDK dir [%s] exists"), sdk_path.c_str());
     if (pal::directory_exists(sdk_path))
     {
-        retval = sdk_path;
+        trace::verbose(_X("Resolved SDK dir is [%s]"), sdk_path.c_str());
+        retval = max_ver_str;
     }
 
-    trace::verbose(_X("Resolved SDK dir is [%s]"), retval.c_str());
     return retval;
 }
 
@@ -612,8 +649,38 @@ bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, pal::stri
 {
     trace::verbose(_X("--- Resolving dotnet from working dir"));
     pal::string_t cwd;
+    if (!pal::getcwd(&cwd))
+    {
+        trace::verbose(_X("Failed to obtain current working dir"));
+        assert(cwd.empty());
+    }
+
+    return resolve_sdk_dotnet_path(own_dir, cwd, cli_sdk);
+}
+
+bool higher_sdk_version(const pal::string_t& new_version, pal::string_t* version, bool parse_only_production)
+{
+    bool retval = false;
+    fx_ver_t ver(-1, -1, -1);
+    fx_ver_t new_ver(-1, -1, -1);
+
+    if (fx_ver_t::parse(new_version, &new_ver, parse_only_production))
+    {
+       if (!fx_ver_t::parse(*version, &ver, parse_only_production) || (new_ver > ver))
+       {
+           version->assign(new_version);
+           retval = true;
+       }
+    }
+
+    return retval;
+}
+
+bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, const pal::string_t& cwd, pal::string_t* cli_sdk)
+{
     pal::string_t global;
-    if (pal::getcwd(&cwd))
+
+    if (!cwd.empty())
     {
         for (pal::string_t parent_dir, cur_dir = cwd; true; cur_dir = parent_dir)
         {
@@ -635,72 +702,89 @@ bool fx_muxer_t::resolve_sdk_dotnet_path(const pal::string_t& own_dir, pal::stri
             }
         }
     }
-    else
-    {
-        trace::verbose(_X("Failed to obtain current working dir"));
-    }
 
     std::vector<pal::string_t> hive_dir;
     pal::string_t local_dir;
-    pal::string_t global_dir;
+    std::vector<pal::string_t> global_dirs;
     bool multilevel_lookup = multilevel_lookup_enabled();
 
-    if (multilevel_lookup)
+    if (!own_dir.empty())
     {
-        if (pal::getcwd(&cwd))
-        {
-            hive_dir.push_back(cwd);
-        }
-        if (pal::get_local_dotnet_dir(&local_dir))
-        {
-            hive_dir.push_back(local_dir);
-        }
-    }
-    hive_dir.push_back(own_dir);
-    if (multilevel_lookup && pal::get_global_dotnet_dir(&global_dir))
-    {
-        hive_dir.push_back(global_dir);
+        hive_dir.push_back(own_dir);
     }
 
-    pal::string_t retval;
+    if (multilevel_lookup && pal::get_global_dotnet_dirs(&global_dirs))
+    {
+        for (pal::string_t dir : global_dirs)
+        {
+            hive_dir.push_back(dir);
+        }
+    }
+
+    pal::string_t cli_version;
+    pal::string_t sdk_path;
+    pal::string_t global_cli_version;
+
+    if (!global.empty())
+    {
+        global_cli_version = resolve_cli_version(global);
+    }
+
     for (pal::string_t dir : hive_dir)
     {
         trace::verbose(_X("Searching SDK directory in [%s]"), dir.c_str());
-        if (!global.empty())
-        {
-            pal::string_t cli_version = resolve_cli_version(global);
-            if (!cli_version.empty())
-            {
-                pal::string_t sdk_path = dir;
-                append_path(&sdk_path, _X("sdk"));
-                append_path(&sdk_path, cli_version.c_str());
+        pal::string_t current_sdk_path = dir;
+        append_path(&current_sdk_path, _X("sdk"));
+        bool parse_only_production = false;  // false -- implies both production and prerelease.
 
-                if (pal::directory_exists(sdk_path))
+        if (global_cli_version.empty())
+        {
+            pal::string_t new_cli_version = resolve_sdk_version(current_sdk_path, parse_only_production, global_cli_version);
+            if (higher_sdk_version(new_cli_version, &cli_version, parse_only_production))
+            {
+                sdk_path = current_sdk_path;
+            }
+        }
+        else
+        {
+            pal::string_t probing_sdk_path = current_sdk_path;
+            append_path(&probing_sdk_path, global_cli_version.c_str());
+
+            if (pal::directory_exists(probing_sdk_path))
+            {
+                trace::verbose(_X("CLI directory [%s] from global.json exists"), probing_sdk_path.c_str());
+                cli_version = global_cli_version;
+                sdk_path = current_sdk_path;
+                //  Use the first matching version
+                break;
+            }
+            else
+            {
+                pal::string_t new_cli_version = resolve_sdk_version(current_sdk_path, parse_only_production, global_cli_version);
+                if (higher_sdk_version(new_cli_version, &cli_version, parse_only_production))
                 {
-                    trace::verbose(_X("CLI directory [%s] from global.json exists"), sdk_path.c_str());
-                    retval = sdk_path;
-                }
-                else
-                {
-                    trace::verbose(_X("CLI directory [%s] from global.json doesn't exist"), sdk_path.c_str());
+                    sdk_path = current_sdk_path;
                 }
             }
         }
-        if (retval.empty())
-        {
-            pal::string_t sdk_path = dir;
-            append_path(&sdk_path, _X("sdk"));
-            retval = resolve_sdk_version(sdk_path);
-        }
-        if (!retval.empty())
-        {
-            cli_sdk->assign(retval);
-            trace::verbose(_X("Found CLI SDK in: %s"), cli_sdk->c_str());
-            return true;
-        }
     }
-    
-    trace::verbose(_X("It was not possible to find any SDK version"));
+
+    if (!cli_version.empty())
+    {
+        append_path(&sdk_path, cli_version.c_str());
+        cli_sdk->assign(sdk_path);
+        trace::verbose(_X("Found CLI SDK in: %s"), cli_sdk->c_str());
+        return true;
+    }
+
+    if (global_cli_version.empty())
+    {
+        trace::verbose(_X("It was not possible to find any SDK version"));
+    }
+    else
+    {
+        trace::error(_X("A compatible SDK version for global.json version: [%s] from [%s] was not found"), global_cli_version.c_str(), global.c_str());
+    }
     return false;
 }
 
@@ -711,7 +795,7 @@ bool is_sdk_dir_present(const pal::string_t& own_dir)
     return pal::directory_exists(sdk_path);
 }
 
-int muxer_usage(bool is_sdk_present)
+int muxer_info()
 {
     trace::println();
     trace::println(_X("Microsoft .NET Core Shared Framework Host"));
@@ -719,30 +803,40 @@ int muxer_usage(bool is_sdk_present)
     trace::println(_X("  Version  : %s"), _STRINGIFY(HOST_FXR_PKG_VER));
     trace::println(_X("  Build    : %s"), _STRINGIFY(REPO_COMMIT_HASH));
     trace::println();
-    trace::println(_X("Usage: dotnet [common-options] [[options] path-to-application]"));
+
+    return StatusCode::Success;
+}
+
+int muxer_usage(bool is_sdk_present)
+{
+
+    std::vector<host_option> known_opts = fx_muxer_t::get_known_opts(true, host_mode_t::invalid, true);
+
+    if (!is_sdk_present)
+    {
+        trace::println();
+        trace::println(_X("Usage: dotnet [host-options] [path-to-application]"));
+        trace::println();
+        trace::println(_X("path-to-application:"));
+        trace::println(_X("  The path to an application .dll file to execute."));
+    }
     trace::println();
-    trace::println(_X("Common Options:"));
-    trace::println(_X("  --help                           Display .NET Core Shared Framework Host help."));
-    trace::println(_X("  --version                        Display .NET Core Shared Framework Host version."));
-    trace::println();
-    trace::println(_X("Options:"));
-    trace::println(_X("  --fx-version <version>           Version of the installed Shared Framework to use to run the application."));
-    trace::println(_X("  --additionalprobingpath <path>   Path containing probing policy and assemblies to probe for."));
-    trace::println();
-    trace::println(_X("Path to Application:"));
-    trace::println(_X("  The path to a .NET Core managed application, dll or exe file to execute."));
-    trace::println();
-    trace::println(_X("If you are debugging the Shared Framework Host, set 'COREHOST_TRACE' to '1' in your environment."));
+    trace::println(_X("host-options:"));
+
+    for (const auto& arg : known_opts)
+    {
+        trace::println(_X("  %-34s  %s"), (arg.option + _X(" ") + arg.argument).c_str(), arg.description.c_str());
+    }
 
     trace::println();
-    if (is_sdk_present)
+
+    trace::println();
+    if (!is_sdk_present)
     {
-        trace::println(_X("Use dotnet --help to get help with the SDK"));
-    }
-    else
-    {
-        trace::println(_X("To get started on developing applications for .NET Core, install the SDK from:"));
-        trace::println(_X("  %s"), DOTNET_CORE_URL);
+        trace::println(_X("Common Options:"));
+        trace::println(_X("  -h|--help                           Displays this help."));
+        trace::println(_X("  --info                              Displays the host information"));
+        trace::println();
     }
 
     
@@ -750,13 +844,62 @@ int muxer_usage(bool is_sdk_present)
 }
 
 // Convert "path" to realpath (merging working dir if needed) and append to "realpaths" out param.
-void append_realpath(const pal::string_t& path, std::vector<pal::string_t>* realpaths)
+void append_probe_realpath(const pal::string_t& path, std::vector<pal::string_t>* realpaths, const pal::string_t& tfm)
 {
-    pal::string_t real = path;
-    if (pal::realpath(&real))
+    pal::string_t probe_path = path;
+
+    if (pal::realpath(&probe_path) && pal::directory_exists(probe_path))
     {
-        realpaths->push_back(real);
+        realpaths->push_back(probe_path);
     }
+    else
+    {
+        //Check if we can extrapolate |arch|<DIR_SEPARATOR>|tfm| for probing stores
+        pal::string_t placeholder = _X("|arch|");
+        placeholder.push_back(DIR_SEPARATOR);
+        placeholder.append(_X("|tfm|"));
+        auto pos_placeholder = probe_path.find_last_of(placeholder);
+
+        if (pos_placeholder != pal::string_t::npos)
+        {
+            pal::string_t segment = get_arch();
+            segment.push_back(DIR_SEPARATOR);
+            segment.append(tfm);
+            probe_path.replace(pos_placeholder - placeholder.length() + 1, placeholder.length(), segment);
+
+            if (pal::directory_exists(probe_path))
+            {
+                realpaths->push_back(probe_path);
+            }
+            else
+            {
+                trace::verbose(_X("Ignoring host interpreted additional probing path %s as it does not exist."),probe_path.c_str());
+            }
+        }
+        else
+        {
+            trace::verbose(_X("Ignoring additional probing path %s as it does not exist."),probe_path.c_str());
+        }
+    }
+}
+
+std::vector<host_option> fx_muxer_t::get_known_opts(bool exec_mode, host_mode_t mode, bool get_all_options)
+{
+    std::vector<host_option> known_opts = { { _X("--additionalprobingpath"), _X("<path>"), _X("Path containing probing policy and assemblies to probe for") } };
+    if (get_all_options || exec_mode || mode == host_mode_t::split_fx || mode == host_mode_t::standalone)
+    {
+        known_opts.push_back({ _X("--depsfile"), _X("<path>"),  _X("Path to <application>.deps.json file") });
+        known_opts.push_back({ _X("--runtimeconfig"), _X("<path>"), _X("Path to <application>.runtimeconfig.json file") });
+    }
+
+    if (get_all_options || mode == host_mode_t::muxer)
+    {
+        known_opts.push_back({ _X("--fx-version"), _X("<version>"), _X("Version of the installed Shared Framework to use to run the application.") });
+        known_opts.push_back({ _X("--roll-forward-on-no-candidate-fx"), _X(""), _X("Roll forward on no candidate shared framework is enabled") });
+        known_opts.push_back({ _X("--additional-deps"), _X("<path>"), _X("Path to additonal deps.json file") });
+    }
+
+    return known_opts;
 }
 
 int fx_muxer_t::parse_args_and_execute(
@@ -766,17 +909,7 @@ int fx_muxer_t::parse_args_and_execute(
 {
     *is_an_app = true;
 
-    std::vector<pal::string_t> known_opts = { _X("--additionalprobingpath") };
-    if (exec_mode || mode == host_mode_t::split_fx || mode == host_mode_t::standalone)
-    {
-        known_opts.push_back(_X("--depsfile"));
-        known_opts.push_back(_X("--runtimeconfig"));
-    }
-    if (mode == host_mode_t::muxer)
-    {
-        known_opts.push_back(_X("--fx-version"));
-        known_opts.push_back(_X("--roll-forward-on-no-candidate-fx"));
-    }
+    std::vector<host_option> known_opts = get_known_opts(exec_mode, mode);
 
     // Parse the known arguments if any.
     int num_parsed = 0;
@@ -786,7 +919,7 @@ int fx_muxer_t::parse_args_and_execute(
         trace::error(_X("Failed to parse supported options or their values:"));
         for (const auto& arg : known_opts)
         {
-            trace::error(_X("  %s"), arg.c_str());
+            trace::error(_X("  %s"), arg.option.c_str());
         }
         return InvalidArgFailure;
     }
@@ -835,9 +968,9 @@ int fx_muxer_t::parse_args_and_execute(
 
     if (cur_i != 1)
     {
-        vec_argv.resize(argc - cur_i + 1, 0); // +1 for dotnet
-        memcpy(vec_argv.data() + 1, argv + cur_i, (argc - cur_i) * sizeof(pal::char_t*));
-        vec_argv[0] = argv[0];
+        vec_argv.reserve(argc - cur_i + 1); // +1 for dotnet
+        vec_argv.push_back(argv[0]);
+        vec_argv.insert(vec_argv.end(), argv + cur_i, argv + argc);
         new_argv = vec_argv.data();
         new_argc = vec_argv.size();
     }
@@ -856,11 +989,13 @@ int fx_muxer_t::read_config_and_execute(
     pal::string_t opts_roll_fwd_on_no_candidate_fx = _X("--roll-forward-on-no-candidate-fx");
     pal::string_t opts_deps_file = _X("--depsfile");
     pal::string_t opts_probe_path = _X("--additionalprobingpath");
+    pal::string_t opts_additional_deps = _X("--additional-deps");
     pal::string_t opts_runtime_config = _X("--runtimeconfig");
 
     pal::string_t fx_version = get_last_known_arg(opts, opts_fx_version, _X(""));
     pal::string_t roll_fwd_on_no_candidate_fx = get_last_known_arg(opts, opts_roll_fwd_on_no_candidate_fx, _X(""));
     pal::string_t deps_file = get_last_known_arg(opts, opts_deps_file, _X(""));
+    pal::string_t additional_deps = get_last_known_arg(opts, opts_additional_deps, _X(""));
     pal::string_t runtime_config = get_last_known_arg(opts, opts_runtime_config, _X(""));
     std::vector<pal::string_t> spec_probe_paths = opts.count(opts_probe_path) ? opts.find(opts_probe_path)->second : std::vector<pal::string_t>();
 
@@ -899,11 +1034,11 @@ int fx_muxer_t::read_config_and_execute(
     std::vector<pal::string_t> probe_realpaths;
     for (const auto& path : spec_probe_paths)
     {
-        append_realpath(path, &probe_realpaths);
+        append_probe_realpath(path, &probe_realpaths, config.get_tfm());
     }
     for (const auto& path : config.get_probe_paths())
     {
-        append_realpath(path, &probe_realpaths);
+        append_probe_realpath(path, &probe_realpaths, config.get_tfm());
     }
 
     // 'Roll forward on no candidate fx' is disabled by default. It can be enabled through:
@@ -918,7 +1053,18 @@ int fx_muxer_t::read_config_and_execute(
         roll_fwd_on_no_candidate_fx_val = pal::xtoi(roll_fwd_on_no_candidate_fx.c_str());
     }
 
+    pal::string_t additional_deps_serialized;
+    
     bool is_portable = config.get_portable();
+    if (is_portable) {
+        additional_deps_serialized = additional_deps;
+        if (additional_deps_serialized.empty())
+        {
+            // additional_deps_serialized stays empty if DOTNET_ADDITIONAL_DEPS env var is not defined
+            pal::getenv(_X("DOTNET_ADDITIONAL_DEPS"), &additional_deps_serialized);
+        }
+    }
+
     pal::string_t fx_dir = is_portable ? resolve_fx_dir(mode, own_dir, config, fx_version, roll_fwd_on_no_candidate_fx_val) : _X("");
 
     trace::verbose(_X("Executing as a %s app as per config file [%s]"),
@@ -930,7 +1076,7 @@ int fx_muxer_t::read_config_and_execute(
         return CoreHostLibMissingFailure;
     }
 
-    corehost_init_t init(deps_file, probe_realpaths, fx_dir, mode, config);
+    corehost_init_t init(deps_file, additional_deps_serialized, probe_realpaths, fx_dir, mode, config);
     return execute_app(impl_dir, &init, new_argc, new_argv);
 }
 
@@ -1000,6 +1146,8 @@ int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
     }
 
     int result = parse_args_and_execute(own_dir, own_dll, 1, argc, argv, false, host_mode_t::muxer, &is_an_app); // arg offset 1 for dotnet
+   
+
     if (is_an_app)
     {
         return result;
@@ -1013,12 +1161,14 @@ int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
     if (!resolve_sdk_dotnet_path(own_dir, &sdk_dotnet))
     {
         assert(argc > 1);
-        if (pal::strcasecmp(_X("--help"), argv[1]) == 0 ||
-            pal::strcasecmp(_X("--version"), argv[1]) == 0 ||
-            pal::strcasecmp(_X("-h"), argv[1]) == 0 ||
-            pal::strcasecmp(_X("-v"), argv[1]) == 0)
+        if ( pal::strcasecmp(_X("-h"), argv[1]) == 0 ||
+             pal::strcasecmp(_X("--help"), argv[1]) == 0 )
         {
-            return muxer_usage(true);
+            return muxer_usage(false);
+        }
+        else if (pal::strcasecmp(_X("--info"), argv[1]) == 0)
+        {
+            return muxer_info();
         }
         trace::error(_X("Did you mean to run dotnet SDK commands? Please install dotnet SDK from: "));
         trace::error(_X("  %s"), DOTNET_CORE_URL);
@@ -1034,13 +1184,21 @@ int fx_muxer_t::execute(const int argc, const pal::char_t* argv[])
 
     // Transform dotnet [command] [args] -> dotnet dotnet.dll [command] [args]
 
-    std::vector<const pal::char_t*> new_argv(argc + 1);
-    memcpy(&new_argv.data()[2], argv + 1, (argc - 1) * sizeof(pal::char_t*));
-    new_argv[0] = argv[0];
-    new_argv[1] = sdk_dotnet.c_str();
+    std::vector<const pal::char_t*> new_argv;
+    new_argv.reserve(argc + 1);
+    new_argv.push_back(argv[0]);
+    new_argv.push_back(sdk_dotnet.c_str());
+    new_argv.insert(new_argv.end(), argv + 1, argv + argc);
 
     trace::verbose(_X("Using dotnet SDK dll=[%s]"), sdk_dotnet.c_str());
-    return parse_args_and_execute(own_dir, own_dll, 1, new_argv.size(), new_argv.data(), false, host_mode_t::muxer, &is_an_app);
+    result = parse_args_and_execute(own_dir, own_dll, 1, new_argv.size(), new_argv.data(), false, host_mode_t::muxer, &is_an_app);
+
+    if (pal::strcasecmp(_X("--info"), argv[1]) == 0)
+    {
+        muxer_info();
+    }
+
+    return result;
 }
 
 

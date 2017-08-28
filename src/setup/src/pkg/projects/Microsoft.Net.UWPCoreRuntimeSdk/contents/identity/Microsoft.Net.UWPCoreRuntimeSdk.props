@@ -1,0 +1,6 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <NetfxCoreRuntimeTargets>$(MSBuildThisFileDirectory)..\tools\CoreRuntime\Microsoft.Net.CoreRuntime.targets</NetfxCoreRuntimeTargets>
+    <NetfxCoreRuntimeSettingsTargets>$(MSBuildThisFileDirectory)..\tools\CoreRuntime\Microsoft.Net.CoreRuntime.settings.targets</NetfxCoreRuntimeSettingsTargets>
+  </PropertyGroup>
+</Project>

@@ -14,28 +14,39 @@ init_rid_plat()
         else
             if [ -e $ROOTFS_DIR/etc/os-release ]; then
                 source $ROOTFS_DIR/etc/os-release
-                export __rid_plat="$ID.$VERSION_ID"
+                __rid_plat="$ID.$VERSION_ID"
             fi
             echo "__rid_plat is $__rid_plat"
         fi
     else
+        __rid_plat=""
         if [ -e /etc/os-release ]; then
             source /etc/os-release
-
             if [[ "$ID" == "rhel" && $VERSION_ID = 7* ]]; then
-                export __rid_plat="rhel.7"
+                __rid_plat="rhel.7"
             elif [[ "$ID" == "centos" && "$VERSION_ID" = "7" ]]; then
-                export __rid_plat="rhel.7"
+                __rid_plat="rhel.7"
             else
-                export __rid_plat="$ID.$VERSION_ID"
+                __rid_plat="$ID.$VERSION_ID"
             fi
-        else
-            export __rid_plat=
+        elif [ -e /etc/redhat-release ]; then
+            local redhatRelease=$(</etc/redhat-release)
+            if [[ $redhatRelease == "CentOS release 6."* || $redhatRelease == "Red Hat Enterprise Linux Server release 6."* ]]; then
+               __rid_plat="rhel.6"
+            fi
         fi
     fi
 
+    if [ "$(uname -s)" == "Darwin" ]; then
+        __rid_plat=osx.10.12
+    fi
+
     if [ $__linkPortable == 1 ]; then
-        export __rid_plat="linux"
+        if [ "$(uname -s)" == "Darwin" ]; then
+            __rid_plat="osx"
+        else
+            __rid_plat="linux"
+        fi
     fi
 }
 
@@ -49,10 +60,11 @@ usage()
     echo "  --apphostver <app host version>   Version of the apphost executable"
     echo "  --fxrver <HostFxr version>        Version of the hostfxr library"
     echo "  --policyver <HostPolicy version>  Version of the hostpolicy library"
-    echo "  --commithash <Git commit hash>   Current commit hash of the repo at build time"
-    echo "  --portableLinux                      Optional argument to build native libraries portable over GLIBC based Linux distros."
+    echo "  --commithash <Git commit hash>    Current commit hash of the repo at build time"
+    echo "  -portable                         Optional argument to build portable platform packages."
     echo "  --cross                           Optional argument to signify cross compilation,"
     echo "                                    and use ROOTFS_DIR environment variable to find rootfs."
+    echo "  --stripsymbols                    Optional argument to strip native symbols during the build"
 
     exit 1
 }
@@ -66,6 +78,7 @@ while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symli
   [[ "$SOURCE" != /* ]] && SOURCE="$DIR/$SOURCE" # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
 done
 DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+RootRepo="$DIR/../.."
 
 __build_arch=
 __host_ver=
@@ -74,8 +87,10 @@ __policy_ver=
 __fxr_ver=
 __CrossBuild=0
 __commit_hash=
-__linkPortable=0
+__portableBuildArgs=
 __configuration=Debug
+__linkPortable=0
+__cmake_defines="-DCMAKE_BUILD_TYPE=${__configuration} ${__portableBuildArgs}"
 
 while [ "$1" != "" ]; do
         lowerI="$(echo $1 | awk '{print tolower($0)}')"
@@ -112,19 +127,21 @@ while [ "$1" != "" ]; do
             shift
             __commit_hash=$1
             ;;
-        --portablelinux)
+        -portable)
+            __portableBuildArgs="-DCLI_CMAKE_PORTABLE_BUILD=1"
             __linkPortable=1
             ;;
         --cross)
             __CrossBuild=1
+            ;;
+        --stripsymbols)
+            __cmake_defines="${__cmake_defines} -DSTRIP_SYMBOLS=true"
             ;;
         *)
         echo "Unknown argument to build.sh $1"; usage; exit 1
     esac
     shift
 done
-
-__cmake_defines="-DCMAKE_BUILD_TYPE=${__configuration}"
 
 case $__build_arch in
     amd64|x64)
@@ -145,16 +162,19 @@ case $__build_arch in
 esac
 __cmake_defines="${__cmake_defines} ${__arch_define}"
 
-# __rid_plat is the base RID that corehost is shipped for, effectively, the name of the folder in "runtimes/{__rid_plat}/native/" inside the nupkgs.
-__rid_plat=
-if [ "$(uname -s)" == "Darwin" ]; then
-    __rid_plat=osx.10.10
-else
-    init_rid_plat
+# Configure environment if we are doing a cross compile.
+if [ "$__CrossBuild" == 1 ]; then
+    if ! [[ -n $ROOTFS_DIR ]]; then
+        export ROOTFS_DIR="$RootRepo/cross/rootfs/$__build_arch"
+    fi
 fi
 
+# __rid_plat is the base RID that corehost is shipped for, effectively, the name of the folder in "runtimes/{__rid_plat}/native/" inside the nupkgs.
+__rid_plat=
+init_rid_plat
+
 if [ -z $__rid_plat ]; then
-    echo "Unknown base rid (eg.: osx.10.10, ubuntu.14.04) being targeted"
+    echo "Unknown base rid (eg.: osx.10.12, ubuntu.14.04) being targeted"
     exit -1
 fi
 
@@ -165,34 +185,38 @@ fi
 
 __build_arch_lowcase=$(echo "$__build_arch" | tr '[:upper:]' '[:lower:]')
 __base_rid=$__rid_plat-$__build_arch_lowcase
+echo "Computed RID for native build is $__base_rid"
 export __CrossToolChainTargetRID=$__base_rid
 
 # Set up the environment to be used for building with clang.
-if which "clang-3.5" > /dev/null 2>&1; then
-    export CC="$(which clang-3.5)"
-    export CXX="$(which clang++-3.5)"
-elif which "clang-3.6" > /dev/null 2>&1; then
-    export CC="$(which clang-3.6)"
-    export CXX="$(which clang++-3.6)"
-elif which clang > /dev/null 2>&1; then
-    export CC="$(which clang)"
-    export CXX="$(which clang++)"
+if command -v "clang-3.5" > /dev/null 2>&1; then
+    export CC="$(command -v clang-3.5)"
+    export CXX="$(command -v clang++-3.5)"
+elif command -v "clang-3.6" > /dev/null 2>&1; then
+    export CC="$(command -v clang-3.6)"
+    export CXX="$(command -v clang++-3.6)"
+elif command -v "clang-3.9" > /dev/null 2>&1; then
+    export CC="$(command -v clang-3.9)"
+    export CXX="$(command -v clang++-3.9)"
+elif command -v clang > /dev/null 2>&1; then
+    export CC="$(command -v clang)"
+    export CXX="$(command -v clang++)"
 else
     echo "Unable to find Clang Compiler"
-    echo "Install clang-3.5 or clang3.6"
+    echo "Install clang-3.5 or clang3.6 or clang3.9"
     exit 1
 fi
 
 echo "Building Corehost from $DIR to $(pwd)"
 set -x # turn on trace
 if [ $__CrossBuild == 1 ]; then
-    # clang-3.6 is default compiler for cross compilation
-    if which "clang-3.6" > /dev/null 2>&1; then
-        export CC="$(which clang-3.6)"
-        export CXX="$(which clang++-3.6)"
+    # clang-3.9 is default compiler for cross compilation
+    if command -v "clang-3.9" > /dev/null 2>&1; then
+        export CC="$(command -v clang-3.9)"
+        export CXX="$(command -v clang++-3.9)"
     else
-        echo "Unable to find Clang 3.6 Compiler"
-        echo "Install clang-3.6 for cross compilation"
+        echo "Unable to find Clang 3.9 Compiler"
+        echo "Install clang-3.9 for cross compilation"
         exit 1
     fi
     cmake "$DIR" -G "Unix Makefiles" $__cmake_defines -DCLI_CMAKE_HOST_VER:STRING=$__host_ver -DCLI_CMAKE_APPHOST_VER:STRING=$__apphost_ver -DCLI_CMAKE_HOST_FXR_VER:STRING=$__fxr_ver -DCLI_CMAKE_HOST_POLICY_VER:STRING=$__policy_ver -DCLI_CMAKE_PKG_RID:STRING=$__base_rid -DCLI_CMAKE_COMMIT_HASH:STRING=$__commit_hash -DCMAKE_TOOLCHAIN_FILE=$DIR/../../cross/$__build_arch_lowcase/toolchain.cmake

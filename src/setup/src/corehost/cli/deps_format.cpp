@@ -47,10 +47,13 @@ pal::string_t deps_json_t::get_optional_path(
 }
 
 void deps_json_t::reconcile_libraries_with_targets(
+    const pal::string_t& deps_path,
     const json_value& json,
     const std::function<bool(const pal::string_t&)>& library_exists_fn,
     const std::function<const std::vector<pal::string_t>&(const pal::string_t&, int, bool*)>& get_rel_paths_by_asset_type_fn)
 {
+    pal::string_t deps_file = get_filename(deps_path);
+
     const auto& libraries = json.at(_X("libraries")).as_object();
     for (const auto& library : libraries)
     {
@@ -69,6 +72,7 @@ void deps_json_t::reconcile_libraries_with_targets(
 
         pal::string_t library_path = get_optional_path(properties, _X("path"));
         pal::string_t library_hash_path = get_optional_path(properties, _X("hashPath"));
+        pal::string_t runtime_store_manifest_list = get_optional_path(properties, _X("runtimeStoreManifestName"));
 
         for (int i = 0; i < deps_entry_t::s_known_asset_types.size(); ++i)
         {
@@ -91,11 +95,13 @@ void deps_json_t::reconcile_libraries_with_targets(
                 entry.library_hash = hash;
                 entry.library_path = library_path;
                 entry.library_hash_path = library_hash_path;
+                entry.runtime_store_manifest_list = runtime_store_manifest_list;
                 entry.asset_name = asset_name;
                 entry.asset_type = (deps_entry_t::asset_types) i;
                 entry.relative_path = rel_path;
                 entry.is_serviceable = serviceable;
                 entry.is_rid_specific = rid_specific;
+                entry.deps_file = deps_file;
 
                 // TODO: Deps file does not follow spec. It uses '\\', should use '/'
                 replace_char(&entry.relative_path, _X('\\'), _X('/'));
@@ -258,7 +264,7 @@ bool deps_json_t::process_targets(const json_value& json, const pal::string_t& t
     return true;
 }
 
-bool deps_json_t::load_portable(const json_value& json, const pal::string_t& target_name, const rid_fallback_graph_t& rid_fallback_graph)
+bool deps_json_t::load_portable(const pal::string_t& deps_path, const json_value& json, const pal::string_t& target_name, const rid_fallback_graph_t& rid_fallback_graph)
 {
     if (!process_runtime_targets(json, target_name, rid_fallback_graph, &m_rid_assets))
     {
@@ -300,12 +306,12 @@ bool deps_json_t::load_portable(const json_value& json, const pal::string_t& tar
         return empty;
     };
 
-    reconcile_libraries_with_targets(json, package_exists, get_relpaths);
+    reconcile_libraries_with_targets(deps_path, json, package_exists, get_relpaths);
 
     return true;
 }
 
-bool deps_json_t::load_standalone(const json_value& json, const pal::string_t& target_name)
+bool deps_json_t::load_standalone(const pal::string_t& deps_path, const json_value& json, const pal::string_t& target_name)
 {
     if (!process_targets(json, target_name, &m_assets))
     {
@@ -321,7 +327,7 @@ bool deps_json_t::load_standalone(const json_value& json, const pal::string_t& t
         return m_assets.libs[package].by_type[type_index].vec;
     };
 
-    reconcile_libraries_with_targets(json, package_exists, get_relpaths);
+    reconcile_libraries_with_targets(deps_path, json, package_exists, get_relpaths);
 
     const auto& json_object = json.as_object();
     const auto iter = json_object.find(_X("runtimes"));
@@ -412,7 +418,7 @@ bool deps_json_t::load(bool portable, const pal::string_t& deps_path, const rid_
 
         trace::verbose(_X("Loading deps file... %s as portable=[%d]"), deps_path.c_str(), portable);
 
-        return (portable) ? load_portable(json, name, rid_fallback_graph) : load_standalone(json, name);
+        return (portable) ? load_portable(deps_path, json, name, rid_fallback_graph) : load_standalone(deps_path, json, name);
     }
     catch (const std::exception& je)
     {

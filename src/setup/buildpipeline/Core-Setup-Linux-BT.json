@@ -1,0 +1,1112 @@
+{
+  "build": [
+    {
+      "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": false,
+      "displayName": "Cleanup previous build",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "sudo",
+        "arguments": "rm -dfr $(PB_SourcesDirectory)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Clone repo",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "git",
+        "arguments": "clone $(PB_VsoRepoUrl) $(PB_SourcesDirectory)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "git checkout",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "git",
+        "arguments": "checkout $(SourceVersion)",
+        "workingFolder": "$(PB_SourcesDirectory)",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Create host machine tools sandbox",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "5bfb729a-a7c8-4a78-a7c3-8d717bb7c13c",
+        "versionSpec": "2.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "SourceFolder": "$(PB_SourcesDirectory)",
+        "Contents": "init-tools.sh\nBuildToolsVersion.txt\nDotnetCLIVersion.txt\ninit-tools.msbuild",
+        "TargetFolder": "$(PB_DockerHost_Sandbox)",
+        "CleanTargetFolder": "false",
+        "OverWrite": "false",
+        "flattenFolders": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Initialize tools in sandbox for host machine",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "$(PB_DockerHost_Sandbox)/init-tools.sh",
+        "arguments": "",
+        "workingFolder": "$(PB_DockerHost_Sandbox)",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Initialize docker",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "$(PB_DockerHost_ToolsDirectory)/scripts/docker/init-docker.sh",
+        "arguments": "$(PB_DockerImageName)",
+        "workingFolder": "$(PB_DockerHost_Sandbox)",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Build",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(PB_CrossBuildArgs)$(DockerCommonRunArgs) $(PB_GitDirectory)/build.sh -OfficialBuildId=$(OfficialBuildId) $(PB_BuildArguments)",
+        "workingFolder": "$(PB_SourcesDirectory)",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Publish",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --privileged --rm $(DockerCommonRunArgs) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:ChecksumAzureAccountName=$(PB_ChecksumAzureAccountName) /p:ChecksumAzureAccessToken=$(PB_ChecksumAzureAccessToken) /p:DistroRid=$(PB_DistroRid) /p:TargetArchitecture=$(PB_TargetArchitecture) /p:ConfigurationGroup=$(BuildConfiguration) /p:PortableBuild=$(PB_PortableBuild) /p:OSGroup=Linux /p:DebRepoUser=$(PB_DebRepoUser) /p:DebRepoServer=$(PB_DebRepoServer) /p:DebRepoPass=$(DEB_REPO_PASSWORD) /p:DebianId_ubuntu1404-x64=$(PB_DebianId_ubuntu1404-x64) /p:DebianId_debian8-x64=$(PB_DebianId_debian8-x64) /p:DebianId_ubuntu1604-x64=$(PB_DebianId_ubuntu1604-x64) /p:DebianId_ubuntu1610-x64=$(PB_DebianId_ubuntu1610-x64)",
+        "workingFolder": "$(PB_SourcesDirectory)",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Copy built Portable binaries to staging directory",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "5bfb729a-a7c8-4a78-a7c3-8d717bb7c13c",
+        "versionSpec": "2.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "SourceFolder": "$(PB_SourcesDirectory)/Bin/obj/linux-x64.$(BuildConfiguration)/sharedFrameworkPublish",
+        "Contents": "**",
+        "TargetFolder": "$(Build.StagingDirectory)/sharedFrameworkPublish",
+        "CleanTargetFolder": "false",
+        "OverWrite": "false",
+        "flattenFolders": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Initialize docker - Ubuntu14.04",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "$(PB_DockerHost_ToolsDirectory)/scripts/docker/init-docker.sh",
+        "arguments": "$(DockerImageName_Ubuntu1404)",
+        "workingFolder": "$(PB_DockerHost_Sandbox)",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Init tools - Ubuntu14.04",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1404) /bin/bash -c \"HOME=$(PB_GitDirectory); git clean -X -d -f; $(PB_GitDirectory)/init-tools.sh\"",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Build traversal build dependencies - Ubuntu 14.04",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1404) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/build.proj /t:BuildTraversalBuildDependencies /p:DistroRid=$(DistroRid_Ubuntu1404) $(DistroSpecificMSBuildArguments)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Package - Ubuntu 14.04 ",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1404) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/src/pkg/packaging/dir.proj $(AdditionalMSBuildProperties) /p:DistroRid=$(DistroRid_Ubuntu1404) $(DistroSpecificMSBuildArguments)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Publish - Ubuntu 14.04 ",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1404) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:DistroRid=$(DistroRid_Ubuntu1404) /p:PublishDebToolToFeed=true /p:CliNuGetFeedUrl=$(CLI_NUGET_FEED_URL) /p:CliNuGetApiKey=$(CLI_NUGET_API_KEY) $(DistroSpecificMSBuildArguments) $(DistroSpecificMSBuildPublishArgs)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Initialize docker - Ubuntu16.04",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "$(PB_DockerHost_ToolsDirectory)/scripts/docker/init-docker.sh",
+        "arguments": "$(DockerImageName_Ubuntu1604)",
+        "workingFolder": "$(PB_DockerHost_Sandbox)",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Init tools - Ubuntu16.04 ",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1604) /bin/bash -c \"HOME=$(PB_GitDirectory); git clean -X -d -f; $(PB_GitDirectory)/init-tools.sh\"",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Build traversal build dependencies -Ubuntu 16.04 ",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1604) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/build.proj /t:BuildTraversalBuildDependencies /p:DistroRid=$(DistroRid_Ubuntu1604) $(DistroSpecificMSBuildArguments)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Package - Ubuntu 16.04",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1604) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/src/pkg/packaging/dir.proj $(AdditionalMSBuildProperties) /p:DistroRid=$(DistroRid_Ubuntu1604) $(DistroSpecificMSBuildArguments)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Publish - Ubuntu 16.04 ",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1604) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:DistroRid=$(DistroRid_Ubuntu1604) $(DistroSpecificMSBuildArguments) $(DistroSpecificMSBuildPublishArgs)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Initialize docker - Ubuntu16.10",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "$(PB_DockerHost_ToolsDirectory)/scripts/docker/init-docker.sh",
+        "arguments": "$(DockerImageName_Ubuntu1610)",
+        "workingFolder": "$(PB_DockerHost_Sandbox)",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Init tools - Ubuntu16.10",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1610) /bin/bash -c \"HOME=$(PB_GitDirectory); git clean -X -d -f; $(PB_GitDirectory)/init-tools.sh\"",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Build traversal build dependencies - Ubuntu 16.10",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1610) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/build.proj /t:BuildTraversalBuildDependencies /p:DistroRid=$(DistroRid_Ubuntu1610) $(DistroSpecificMSBuildArguments)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Package - Ubuntu 16.10",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1610) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/src/pkg/packaging/dir.proj $(AdditionalMSBuildProperties) /p:DistroRid=$(DistroRid_Ubuntu1610) $(DistroSpecificMSBuildArguments)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Publish - Ubuntu 16.10",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Ubuntu1610) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:DistroRid=$(DistroRid_Ubuntu1610) $(DistroSpecificMSBuildArguments) $(DistroSpecificMSBuildPublishArgs)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Initialize docker - Debian 8",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "$(PB_DockerHost_ToolsDirectory)/scripts/docker/init-docker.sh",
+        "arguments": "$(DockerImageName_Debian8)",
+        "workingFolder": "$(PB_DockerHost_Sandbox)",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Init tools - Debian 8 container",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Debian8) /bin/bash -c \"HOME=$(PB_GitDirectory); git clean -X -d -f; $(PB_GitDirectory)/init-tools.sh\"",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Build traversal build dependencies - Debian 8",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Debian8) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/build.proj /t:BuildTraversalBuildDependencies /p:DistroRid=$(DistroRid_Debian8) $(DistroSpecificMSBuildArguments)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Package - Debian 8",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Debian8) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/src/pkg/packaging/dir.proj $(AdditionalMSBuildProperties) /p:DistroRid=$(DistroRid_Debian8) $(DistroSpecificMSBuildArguments)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Publish - Debian 8",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Debian8) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:DistroRid=$(DistroRid_Debian8) $(DistroSpecificMSBuildArguments) $(DistroSpecificMSBuildPublishArgs)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+	{
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Initialize docker - Debian 9",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "$(PB_DockerHost_ToolsDirectory)/scripts/docker/init-docker.sh",
+        "arguments": "$(DockerImageName_Debian9)",
+        "workingFolder": "$(PB_DockerHost_Sandbox)",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Init tools - Debian 9 container",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Debian9) /bin/bash -c \"HOME=$(PB_GitDirectory); git clean -X -d -f; $(PB_GitDirectory)/init-tools.sh\"",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Build traversal build dependencies - Debian 9",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Debian9) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/build.proj /t:BuildTraversalBuildDependencies /p:DistroRid=$(DistroRid_Debian9) $(DistroSpecificMSBuildArguments)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Package - Debian 9",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Debian9) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/src/pkg/packaging/dir.proj $(AdditionalMSBuildProperties) /p:DistroRid=$(DistroRid_Debian9) $(DistroSpecificMSBuildArguments)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Publish - Debian 9",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Debian9) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:DistroRid=$(DistroRid_Debian9) $(DistroSpecificMSBuildArguments) $(DistroSpecificMSBuildPublishArgs)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Initialize docker - Rhel7",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "$(PB_DockerHost_ToolsDirectory)/scripts/docker/init-docker.sh",
+        "arguments": "$(DockerImageName_Rhel7)",
+        "workingFolder": "$(PB_DockerHost_Sandbox)",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Init tools - Rhel7",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Rhel7) /bin/bash -c \"HOME=$(PB_GitDirectory); git clean -X -d -f; $(PB_GitDirectory)/init-tools.sh\"",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Build traversal build dependencies - Rhel7",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Rhel7) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/build.proj /t:BuildTraversalBuildDependencies /p:DistroRid=$(DistroRid_Rhel7) $(DistroSpecificMSBuildArguments)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Package - Rhel7",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Rhel7) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/src/pkg/packaging/dir.proj $(AdditionalMSBuildProperties) /p:DistroRid=$(DistroRid_Rhel7) $(DistroSpecificMSBuildArguments)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": false,
+      "alwaysRun": false,
+      "displayName": "Publish - Rhel7",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "docker",
+        "arguments": "run --rm $(DockerCommonRunArgs_Rhel7) $(PB_GitDirectory)/Tools/msbuild.sh $(PB_GitDirectory)/publish/publish.proj /p:DistroRid=$(DistroRid_Rhel7) $(DistroSpecificMSBuildArguments) $(DistroSpecificMSBuildPublishArgs)",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": false,
+      "displayName": "Cleanup Docker",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "perl",
+        "arguments": "$(PB_DockerHost_ToolsDirectory)/scripts/docker/cleanup-docker.sh",
+        "workingFolder": "",
+        "failOnStandardError": "false"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": false,
+      "displayName": "Copy Publish Artifact: Build Logs",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "1d341bb0-2106-458c-8422-d00bcea6512a",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "CopyRoot": "",
+        "Contents": "**/*.log",
+        "ArtifactName": "Build Logs",
+        "ArtifactType": "Container",
+        "TargetPath": "\\\\my\\share\\$(Build.DefinitionName)\\$(Build.BuildNumber)"
+      }
+    },
+    {
+      "enabled": true,
+      "continueOnError": true,
+      "alwaysRun": false,
+      "displayName": "Cleanup VSTS Agent",
+      "timeoutInMinutes": 0,
+      "task": {
+        "id": "d9bafed4-0b18-4f58-968d-86655b4d2ce9",
+        "versionSpec": "1.*",
+        "definitionType": "task"
+      },
+      "inputs": {
+        "filename": "$(PB_DockerHost_ToolsDirectory)/msbuild.sh",
+        "arguments": "$(PB_DockerHost_ToolsDirectory)/scripts/vstsagent/cleanupagent.proj /p:AgentDirectory=$(Agent.HomeDirectory) /p:DoClean=$(PB_CleanAgent)",
+        "workingFolder": "$(DockerHost_ToolsDirectory)/scripts/vstsagent/",
+        "failOnStandardError": "false"
+      }
+    }
+  ],
+  "options": [
+    {
+      "enabled": false,
+      "definition": {
+        "id": "5d58cc01-7c75-450c-be18-a388ddb129ec"
+      },
+      "inputs": {
+        "branchFilters": "[\"+refs/heads/*\"]",
+        "additionalFields": "{}"
+      }
+    },
+    {
+      "enabled": false,
+      "definition": {
+        "id": "5bc3cfb7-6b54-4a4b-b5d2-a3905949f8a6"
+      },
+      "inputs": {
+        "additionalFields": "{}"
+      }
+    },
+    {
+      "enabled": false,
+      "definition": {
+        "id": "7c555368-ca64-4199-add6-9ebaf0b0137d"
+      },
+      "inputs": {
+        "multipliers": "[]",
+        "parallel": "false",
+        "continueOnError": "true",
+        "additionalFields": "{}"
+      }
+    },
+    {
+      "enabled": false,
+      "definition": {
+        "id": "a9db38f9-9fdc-478c-b0f9-464221e58316"
+      },
+      "inputs": {
+        "workItemType": "4777",
+        "assignToRequestor": "true",
+        "additionalFields": "{}"
+      }
+    },
+    {
+      "enabled": false,
+      "definition": {
+        "id": "57578776-4c22-4526-aeb0-86b6da17ee9c"
+      },
+      "inputs": {
+        "additionalFields": "{}"
+      }
+    }
+  ],
+  "variables": {
+    "BuildConfiguration": {
+      "value": "Release",
+      "allowOverride": true
+    },
+    "PB_BuildArguments": {
+      "value": "-ConfigurationGroup=$(BuildConfiguration) $(PB_AdditionalBuildArguments)",
+      "allowOverride": true
+    },
+    "CONNECTION_STRING": {
+      "value": "PassedViaPipeBuild"
+    },
+    "DEB_REPO_PASSWORD": {
+      "value": null,
+      "isSecret": true
+    },
+    "PB_DebianId_ubuntu1404-x64": {
+      "value": null,
+      "isSecret": true
+    },
+    "PB_DebianId_debian8-x64": {
+      "value": null,
+      "isSecret": true
+    },
+	"PB_DebianId_debian9-x64": {
+      "value": null,
+      "isSecret": true
+    },
+    "PB_DebianId_ubuntu1604-x64": {
+      "value": null,
+      "isSecret": true
+    },
+    "PB_DebianId_ubuntu1610-x64": {
+      "value": null,
+      "isSecret": true
+    },
+    "PB_ChecksumAzureAccountName": {
+      "value": "dotnetclichecksums"
+    },
+    "PB_ChecksumAzureAccessToken": {
+      "value": null,
+      "isSecret": true
+    },
+    "PUBLISH_TO_AZURE_BLOB": {
+      "value": "true",
+      "allowOverride": true
+    },
+    "DOTNET_BUILD_CONTAINER_TAG": {
+      "value": "core-setup-$(PB_DockerOS)-$(Build.BuildId)"
+    },
+    "PB_DockerOS": {
+      "value": "debian8",
+      "allowOverride": true
+    },
+    "PB_CleanAgent": {
+      "value": "true"
+    },
+    "PB_DockerHost_ToolsDirectory": {
+      "value": "$(PB_DockerHost_Sandbox)/Tools"
+    },
+    "PB_DockerImageName": {
+      "value": "$(PB_DockerRepository):$(PB_DockerTag)"
+    },
+    "PB_DockerRepository": {
+      "value": "microsoft/dotnet-buildtools-prereqs"
+    },
+    "PB_DockerContainerName": {
+      "value": "coresetup-$(Build.BuildId)"
+    },
+    "PB_DockerTag": {
+      "value": "ubuntu1404_prereqs_v3"
+    },
+    "OfficialBuildId": {
+      "value": "$(Build.BuildNumber)"
+    },
+    "PB_GitDirectory": {
+      "value": "/root/coresetup"
+    },
+    "SourceVersion": {
+      "value": "HEAD"
+    },
+    "ROOTFS_DIR": {
+      "value": "/crossrootfs/$(PB_TargetArchitecture)"
+    },
+    "PB_CrossBuildArgs": {
+      "value": "",
+      "allowOverride": true
+    },
+    "DockerCommonRunArgs": {
+      "value": "--name $(PB_DockerContainerName) -v \"$(PB_SourcesDirectory):$(PB_GitDirectory)\" -w=\"$(PB_GitDirectory)\" $(PB_DockerImageName)"
+    },
+    "PB_VsoRepoUrl": {
+      "value": "--branch $(PB_Branch) https://$(PB_VsoAccountName):$(PB_VsoPassword)@devdiv.visualstudio.com/DevDiv/_git/DotNet-Core-Setup-Trusted"
+    },
+    "PB_VsoAccountName": {
+      "value": "dn-bot"
+    },
+    "PB_VsoPassword": {
+      "value": null,
+      "isSecret": true
+    },
+    "PB_SourcesDirectory": {
+      "value": "$(Build.SourcesDirectory)/core-setup"
+    },
+    "PB_Branch": {
+      "value": "master"
+    },
+    "PB_DockerHost_Sandbox": {
+      "value": "$(Build.StagingDirectory)/HostSandbox"
+    },
+    "PB_AzureAccountName": {
+      "value": "sourcebuild"
+    },
+    "PB_AzureAccessToken": {
+      "value": null,
+      "isSecret": true
+    },
+    "PB_DistroRid": {
+      "value": "ubuntu.14.04-$(PB_TargetArchitecture)"
+    },
+    "PB_TargetArchitecture": {
+      "value": "x64"
+    },
+    "PB_AdditionalBuildArguments": {
+      "value": ""
+    },
+    "PB_PortableBuild": {
+      "value": "false"
+    },
+    "PB_DebRepoUser": {
+      "value": "dotnet"
+    },
+    "PB_DebRepoServer": {
+      "value": "azure-apt-cat.cloudapp.net"
+    },
+    "AdditionalMSBuildProperties": {
+      "value": "/p:UsePrebuiltPortableBinariesForInstallers=true /p:SharedFrameworkPublishDir=/root/sharedFrameworkPublish/"
+    },
+    "DistroSpecificMSBuildArguments": {
+      "value": "/flp:v=diag /p:TargetArchitecture=$(PB_TargetArchitecture) /p:PortableBuild=false /p:ConfigurationGroup=$(BuildConfiguration) /p:OSGroup=Linux /p:OfficialBuildId=$(OfficialBuildId)"
+    },
+    "DistroSpecificMSBuildPublishArgs": {
+      "value": "/p:AzureAccountName=$(PB_AzureAccountName) /p:AzureAccessToken=$(PB_AzureAccessToken) /p:ChecksumAzureAccountName=$(PB_ChecksumAzureAccountName) /p:ChecksumAzureAccessToken=$(PB_ChecksumAzureAccessToken) /p:DebRepoUser=$(PB_DebRepoUser) /p:DebRepoServer=$(PB_DebRepoServer) /p:DebRepoPass=$(DEB_REPO_PASSWORD) $(PB_DebianKeys)"
+    },
+    "PB_DebianKeys": {
+      "value": "/p:DebianId_ubuntu1404-x64=$(PB_DebianId_ubuntu1404-x64) /p:DebianId_debian8-x64=$(PB_DebianId_debian8-x64) /p:DebianId_debian9-x64=$(PB_DebianId_debian9-x64) /p:DebianId_ubuntu1604-x64=$(PB_DebianId_ubuntu1604-x64) /p:DebianId_ubuntu1610-x64=$(PB_DebianId_ubuntu1610-x64)"
+    },
+    "DockerTag_Ubuntu1404": {
+      "value": "ubuntu-14.04-debpkg-e5cf912-20175003025046"
+    },
+    "DistroRid_Ubuntu1404": {
+      "value": "ubuntu.14.04-x64"
+    },
+    "DockerImageName_Ubuntu1404": {
+      "value": "$(PB_DockerRepository):$(DockerTag_Ubuntu1404)"
+    },
+    "DockerCommonRunArgs_Ubuntu1404": {
+      "value": "--name $(PB_DockerContainerName)$(DockerTag_Ubuntu1404) -v \"$(PB_SourcesDirectory):$(PB_GitDirectory)\" -v $(Build.StagingDirectory)/sharedFrameworkPublish/:/root/sharedFrameworkPublish/ -w=\"$(PB_GitDirectory)\" $(DockerImageName_Ubuntu1404)"
+    },
+    "DockerTag_Ubuntu1604": {
+      "value": "ubuntu-16.04-debpkg-e5cf912-20174703024721"
+    },
+    "DistroRid_Ubuntu1604": {
+      "value": "ubuntu.16.04-$(PB_TargetArchitecture)"
+    },
+    "DockerImageName_Ubuntu1604": {
+      "value": "$(PB_DockerRepository):$(DockerTag_Ubuntu1604)"
+    },
+    "DockerCommonRunArgs_Ubuntu1604": {
+      "value": "--name $(PB_DockerContainerName)$(DockerTag_Ubuntu1604) -v \"$(PB_SourcesDirectory):$(PB_GitDirectory)\" -v $(Build.StagingDirectory)/sharedFrameworkPublish/:/root/sharedFrameworkPublish/ -w=\"$(PB_GitDirectory)\" $(DockerImageName_Ubuntu1604)"
+    },
+    "DockerTag_Ubuntu1610": {
+      "value": "ubuntu-16.10-debpkg-ec863bb-20170003030028"
+    },
+    "DistroRid_Ubuntu1610": {
+      "value": "ubuntu.16.10-$(PB_TargetArchitecture)"
+    },
+    "DockerImageName_Ubuntu1610": {
+      "value": "$(PB_DockerRepository):$(DockerTag_Ubuntu1610)"
+    },
+    "DockerCommonRunArgs_Ubuntu1610": {
+      "value": "--name $(PB_DockerContainerName)$(DockerTag_Ubuntu1610) -v \"$(PB_SourcesDirectory):$(PB_GitDirectory)\" -v $(Build.StagingDirectory)/sharedFrameworkPublish/:/root/sharedFrameworkPublish/ -w=\"$(PB_GitDirectory)\" $(DockerImageName_Ubuntu1610)"
+    },
+    "DockerTag_Debian8": {
+      "value": "debian-8.2-debpkg-9f87c3c-20173003023006"
+    },
+    "DistroRid_Debian8": {
+      "value": "debian.8-$(PB_TargetArchitecture)"
+    },
+    "DockerImageName_Debian8": {
+      "value": "$(PB_DockerRepository):$(DockerTag_Debian8)"
+    },
+    "DockerCommonRunArgs_Debian8": {
+      "value": "--name $(PB_DockerContainerName)$(DockerTag_Debian8) -v \"$(PB_SourcesDirectory):$(PB_GitDirectory)\" -v $(Build.StagingDirectory)/sharedFrameworkPublish/:/root/sharedFrameworkPublish/ -w=\"$(PB_GitDirectory)\" $(DockerImageName_Debian8)"
+    },
+    "DockerTag_Debian9": {
+      "value": "debian-8.2-debpkg-9f87c3c-20173003023006"
+    },
+    "DistroRid_Debian9": {
+      "value": "debian.9-$(PB_TargetArchitecture)"
+    },
+    "DockerImageName_Debian9": {
+      "value": "$(PB_DockerRepository):$(DockerTag_Debian9)"
+    },
+    "DockerCommonRunArgs_Debian9": {
+      "value": "--name $(PB_DockerContainerName)$(DockerTag_Debian9) -v \"$(PB_SourcesDirectory):$(PB_GitDirectory)\" -v $(Build.StagingDirectory)/sharedFrameworkPublish/:/root/sharedFrameworkPublish/ -w=\"$(PB_GitDirectory)\" $(DockerImageName_Debian9)"
+    },
+    "DockerTag_Rhel7": {
+      "value": "rhel-7-rpmpkg-c982313-20174116044113"
+    },
+    "DistroRid_Rhel7": {
+      "value": "rhel.7-$(PB_TargetArchitecture)"
+    },
+    "DockerImageName_Rhel7": {
+      "value": "$(PB_DockerRepository):$(DockerTag_Rhel7)"
+    },
+    "DockerCommonRunArgs_Rhel7": {
+      "value": "--name $(PB_DockerContainerName)$(DockerTag_Rhel7) -v \"$(PB_SourcesDirectory):$(PB_GitDirectory)\" -v $(Build.StagingDirectory)/sharedFrameworkPublish/:/root/sharedFrameworkPublish/ -w=\"$(PB_GitDirectory)\" $(DockerImageName_Rhel7)"
+    },
+    "CLI_NUGET_FEED_URL": {
+      "value": "https:%2F%2Fdotnet.myget.org/F/cli-deps/api/v2/package"
+    },
+    "CLI_NUGET_SYMBOLS_FEED_URL": {
+      "value": "https:%2F%2Fdotnet.myget.org/F/cli-deps/symbols/api/v2/package"
+    },
+    "CliNuGetApiKey": {
+      "value": null,
+      "isSecret": true
+    }
+  },
+  "demands": [
+    "Agent.OS -equals linux"
+  ],
+  "retentionRules": [
+    {
+      "branches": [
+        "+refs/heads/*"
+      ],
+      "artifacts": [],
+      "artifactTypesToDelete": [
+        "FilePath",
+        "SymbolStore"
+      ],
+      "daysToKeep": 2,
+      "minimumToKeep": 10,
+      "deleteBuildRecord": true,
+      "deleteTestResults": true
+    }
+  ],
+  "buildNumberFormat": "$(date:yyyyMMdd)$(rev:-rr)",
+  "jobAuthorizationScope": "projectCollection",
+  "jobTimeoutInMinutes": 90,
+  "jobCancelTimeoutInMinutes": 5,
+  "badgeEnabled": true,
+  "repository": {
+    "properties": {
+      "labelSources": "0",
+      "reportBuildStatus": "true",
+      "fetchDepth": "0",
+      "gitLfsSupport": "false",
+      "skipSyncSource": "true",
+      "cleanOptions": "3"
+    },
+    "id": "c19ea379-feb7-4ca5-8f7f-5f2b5095ea62",
+    "type": "TfsGit",
+    "name": "DotNet-Core-Setup-Trusted",
+    "url": "https://devdiv.visualstudio.com/DevDiv/_git/DotNet-Core-Setup-Trusted",
+    "defaultBranch": "refs/heads/buildtools",
+    "clean": "false",
+    "checkoutSubmodules": false
+  },
+  "processParameters": {},
+  "quality": "definition",
+  "queue": {
+    "id": 36,
+    "name": "DotNet-Build",
+    "pool": {
+      "id": 39,
+      "name": "DotNet-Build"
+    }
+  },
+  "id": 6057,
+  "name": "Core-Setup-Linux-BT",
+  "path": "\\",
+  "type": "build",
+  "project": {
+    "id": "0bdbc590-a062-4c3f-b0f6-9383f67865ee",
+    "name": "DevDiv",
+    "description": "Visual Studio and DevDiv team project for git source code repositories.  Work items will be added for Adams, Dev14 work items are tracked in vstfdevdiv.  ",
+    "url": "https://devdiv.visualstudio.com/DefaultCollection/_apis/projects/0bdbc590-a062-4c3f-b0f6-9383f67865ee",
+    "state": "wellFormed",
+    "revision": 418097676,
+    "visibility": "private"
+  }
+}
