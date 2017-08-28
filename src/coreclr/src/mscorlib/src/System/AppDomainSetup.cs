@@ -63,10 +63,6 @@ namespace System
         // to an AppDomain. We only use the keys, the values are ignored.
         private Dictionary<string, object> _CompatFlags;
 
-#if FEATURE_RANDOMIZED_STRING_HASHING
-        private bool _UseRandomizedStringHashing;
-#endif
-
         internal AppDomainSetup(AppDomainSetup copy, bool copyDomainBoundData)
         {
             string[] mine = Value;
@@ -92,11 +88,6 @@ namespace System
                 {
                     SetCompatibilitySwitches(copy._CompatFlags.Keys);
                 }
-
-#if FEATURE_RANDOMIZED_STRING_HASHING
-                _UseRandomizedStringHashing = copy._UseRandomizedStringHashing;
-#endif
-
             }
         }
 
@@ -157,20 +148,11 @@ namespace System
 
         public void SetCompatibilitySwitches(IEnumerable<String> switches)
         {
-#if FEATURE_RANDOMIZED_STRING_HASHING
-            _UseRandomizedStringHashing = false;
-#endif
             if (switches != null)
             {
                 _CompatFlags = new Dictionary<string, object>();
                 foreach (String str in switches)
                 {
-#if FEATURE_RANDOMIZED_STRING_HASHING
-                    if (StringComparer.OrdinalIgnoreCase.Equals("UseRandomizedStringHashAlgorithm", str))
-                    {
-                        _UseRandomizedStringHashing = true;
-                    }
-#endif
                     _CompatFlags.Add(str, null);
                 }
             }

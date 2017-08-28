@@ -78,12 +78,10 @@
 #include "clrprivtypecachewinrt.h"
 
 
-#ifdef FEATURE_RANDOMIZED_STRING_HASHING
 #pragma warning(push)
 #pragma warning(disable:4324) 
 #include "marvin32.h"
 #pragma warning(pop)
-#endif
 
 // this file handles string conversion errors for itself
 #undef  MAKE_TRANSLATIONFAILED
@@ -709,10 +707,6 @@ OBJECTHANDLE ThreadStaticHandleTable::AllocateHandles(DWORD nRequested)
 //*****************************************************************************
 void BaseDomain::Attach()
 {
-#ifdef  FEATURE_RANDOMIZED_STRING_HASHING
-    // Randomized string hashing is on by default for String.GetHashCode in coreclr.
-    COMNlsHashProvider::s_NlsHashProvider.SetUseRandomHashing((CorHost2::GetStartupFlags() & STARTUP_DISABLE_RANDOMIZED_STRING_HASHING) == 0);
-#endif // FEATURE_RANDOMIZED_STRING_HASHING
     m_SpecialStaticsCrst.Init(CrstSpecialStatics);
 }
 
