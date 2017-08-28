@@ -107,7 +107,11 @@ GTSTRUCT_1(SIMD        , GT_SIMD)
 GTSTRUCT_1(AllocObj    , GT_ALLOCOBJ)
 GTSTRUCT_2(CC          , GT_JCC, GT_SETCC)
 #if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
-GTSTRUCT_2(MultiRegOp  , GT_MUL_LONG, GT_PUTARG_REG)
+#ifdef ARM_SOFTFP
+GTSTRUCT_3(MultiRegOp  , GT_MUL_LONG, GT_PUTARG_REG, GT_COPY)
+#else
+GTSTRUCT_2(MultiRegOp  , GT_MUL_LONG, GT_COPY)
+#endif
 #endif
 /*****************************************************************************/
 #undef  GTSTRUCT_0
