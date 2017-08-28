@@ -375,8 +375,8 @@ mono_marshal_init (void)
 		register_icall (mono_marshal_free_asany, "mono_marshal_free_asany", "void object ptr int32 int32", FALSE);
 		register_icall (ves_icall_marshal_alloc, "ves_icall_marshal_alloc", "ptr ptr", FALSE);
 		register_icall (mono_marshal_free, "mono_marshal_free", "void ptr", FALSE);
-		register_icall (mono_marshal_set_last_error, "mono_marshal_set_last_error", "void", FALSE);
-		register_icall (mono_marshal_set_last_error_windows, "mono_marshal_set_last_error_windows", "void int32", FALSE);
+		register_icall (mono_marshal_set_last_error, "mono_marshal_set_last_error", "void", TRUE);
+		register_icall (mono_marshal_set_last_error_windows, "mono_marshal_set_last_error_windows", "void int32", TRUE);
 		register_icall (mono_string_utf8_to_builder, "mono_string_utf8_to_builder", "void ptr ptr", FALSE);
 		register_icall (mono_string_utf8_to_builder2, "mono_string_utf8_to_builder2", "object ptr", FALSE);
 		register_icall (mono_string_utf16_to_builder, "mono_string_utf16_to_builder", "void ptr ptr", FALSE);
@@ -10936,6 +10936,9 @@ mono_marshal_string_to_utf16_copy (MonoString *s)
 void
 mono_marshal_set_last_error (void)
 {
+	/* This icall is called just after a P/Invoke call before the P/Invoke
+	 * wrapper transitions the runtime back to running mode. */
+	MONO_REQ_GC_SAFE_MODE;
 #ifdef WIN32
 	mono_native_tls_set_value (last_error_tls_id, GINT_TO_POINTER (GetLastError ()));
 #else
@@ -10947,6 +10950,9 @@ static void
 mono_marshal_set_last_error_windows (int error)
 {
 #ifdef WIN32
+	/* This icall is called just after a P/Invoke call before the P/Invoke
+	 * wrapper transitions the runtime back to running mode. */
+	MONO_REQ_GC_SAFE_MODE;
 	mono_native_tls_set_value (last_error_tls_id, GINT_TO_POINTER (error));
 #endif
 }
