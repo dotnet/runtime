@@ -65,11 +65,7 @@ namespace BasicEventSourceTests
 
         private void Test_Write_Metric(Listener listener)
         {
-
-            Console.WriteLine("Version of Runtime {0}", Environment.Version);
-            Console.WriteLine("Version of OS {0}", Environment.OSVersion);
             TestUtilities.CheckNoEventSourcesRunning("Start");
-
             using (var logger = new MyEventSource())
             {
                 var tests = new List<SubTest>();
@@ -83,8 +79,8 @@ namespace BasicEventSourceTests
                     },
                     delegate (List<Event> evts)
                     {
-                        // There will be two events (request and error) for time 0 and 2 more at 1 second and 2 more when we shut it off.  
-                        Assert.Equal(4, evts.Count);
+                            // There will be two events (request and error) for time 0 and 2 more at 1 second and 2 more when we shut it off.  
+                            Assert.Equal(4, evts.Count);
                         ValidateSingleEventCounter(evts[0], "Request", 0, 0, 0, float.PositiveInfinity, float.NegativeInfinity);
                         ValidateSingleEventCounter(evts[1], "Error", 0, 0, 0, float.PositiveInfinity, float.NegativeInfinity);
                         ValidateSingleEventCounter(evts[2], "Request", 1, 5, 0, 5, 5);
@@ -146,30 +142,23 @@ namespace BasicEventSourceTests
                         // If we don't get enough of these tick callbacks then we don't require EventCounter to
                         // be sending periodic callbacks either.   
                         num100msecTimerTicks = 0;
-                        using (var timer = new System.Threading.Timer(state => num100msecTimerTicks++, null, 100, 100))
+                        using (var timer = new System.Threading.Timer(delegate(object state) { num100msecTimerTicks++; EventTestHarness.LogWriteLine("Tick"); }, null, 100, 100))
                         {
-                            Console.WriteLine("EventCounter Multi-event: Enabling logger at {0:mm:ss.fff}, thread {1}", DateTime.UtcNow, Thread.CurrentThread.ManagedThreadId);
                             listener.EnableTimer(logger, .1); /* Poll every .1 s */
                                                               // logs at 0 seconds because of EnableTimer command
                             Sleep(100);
-                            Console.WriteLine("EventCounter Multi-event: logger.Request(1) at {0:mm:ss.fff}, thread {1}", DateTime.UtcNow, Thread.CurrentThread.ManagedThreadId);
                             logger.Request(1);
                             Sleep(100);
-                            Console.WriteLine("EventCounter Multi-event: logger.Request(2);logger.Error() at {0:mm:ss.fff}, thread {1}", DateTime.UtcNow, Thread.CurrentThread.ManagedThreadId);
                             logger.Request(2);
                             logger.Error();
                             Sleep(100);
-                            Console.WriteLine("EventCounter Multi-event: logger.Request(4) at {0:mm:ss.fff}, thread {1}", DateTime.UtcNow, Thread.CurrentThread.ManagedThreadId);
                             logger.Request(4);
                             Sleep(100);
-                            Console.WriteLine("EventCounter Multi-event: logger.Request(8);logger.Error() at {0:mm:ss.fff}, thread {1}", DateTime.UtcNow, Thread.CurrentThread.ManagedThreadId);
                             logger.Request(8);
                             logger.Error();
                             Sleep(100);
-                            Console.WriteLine("EventCounter Multi-event: logger.Request(16) at {0:mm:ss.fff}, thread {1}", DateTime.UtcNow, Thread.CurrentThread.ManagedThreadId);
                             logger.Request(16);
                             Sleep(220);
-                            Console.WriteLine("EventCounter Multi-event: Disabling logger at {0:mm:ss.fff}, thread {1}", DateTime.UtcNow, Thread.CurrentThread.ManagedThreadId);
                             listener.EnableTimer(logger, 0);
                         }
                     },
@@ -214,6 +203,8 @@ namespace BasicEventSourceTests
                             Assert.Equal(requestIntevalSec, errorIntevalSec);
                             timeSum += requestIntevalSec;
                         }
+
+                        EventTestHarness.LogWriteLine("Validating: Count={0} RequestSum={1:n3} TimeSum={2:n3} ", evts.Count, requestSum, timeSum);
                         Assert.Equal(requestCount, 5);
                         Assert.Equal(requestSum, 31);
                         Assert.Equal(requestMin, 1);
@@ -224,11 +215,11 @@ namespace BasicEventSourceTests
                         Assert.Equal(errorMin, 1);
                         Assert.Equal(errorMax, 1);
 
-                        Assert.True(.4 < timeSum, $"FAILURE EventCounter Multi-event: .4 < {timeSum} thread: {Thread.CurrentThread.ManagedThreadId}");  // We should have at least 400 msec 
-                        Assert.True(timeSum < 2, $"FAILURE EventCounter Multi-event: {timeSum} < 2 thread: {Thread.CurrentThread.ManagedThreadId}");    // But well under 2 sec.  
+                        Assert.True(.4 < timeSum, $"FAILURE: .4 < {timeSum}");  // We should have at least 400 msec 
+                        Assert.True(timeSum < 2, $"FAILURE: {timeSum} < 2");    // But well under 2 sec.  
 
-                        // Do all the things that depend on the count of events last so we know everything else is sane 
-                        Assert.True(4 <= evts.Count, "We expect two metrices at the begining trigger and two at the end trigger.  evts.Count = " + evts.Count);
+                            // Do all the things that depend on the count of events last so we know everything else is sane 
+                            Assert.True(4 <= evts.Count, "We expect two metrices at the begining trigger and two at the end trigger.  evts.Count = " + evts.Count);
                         Assert.True(evts.Count % 2 == 0, "We expect two metrics for every trigger.  evts.Count = " + evts.Count);
 
                         ValidateSingleEventCounter(evts[0], "Request", 0, 0, 0, float.PositiveInfinity, float.NegativeInfinity);
@@ -236,17 +227,15 @@ namespace BasicEventSourceTests
 
                         // We shoudl always get the unconditional callback at the start and end of the trace.  
                         Assert.True(4 <= evts.Count, $"FAILURE EventCounter Multi-event: 4 <= {evts.Count} ticks: {num100msecTimerTicks} thread: {Thread.CurrentThread.ManagedThreadId}");
-
-                        Console.WriteLine("EventCounter Multi-event: Received {0} EventCounter Updates (expect 16 - 18)", evts.Count);
-                        Console.WriteLine("EventCounter Multi-event: We recieved {0} 100 msec timer ticks (expect 7)", num100msecTimerTicks);
                         // We expect the timer to have gone off at least twice, plus the explicit poll at the begining and end.
                         // Each one fires two events (one for requests, one for errors). so that is (2 + 2)*2 = 8
                         // We expect about 7 timer requests, but we don't get picky about the exact count
                         // Putting in a generous buffer, we double 7 to say we don't expect more than 14 timer fires 
                         // so that is (2 + 14) * 2 = 32
                         if (num100msecTimerTicks > 3)       // We seem to have problems with timer events going off 100% reliably.  To avoid failures here we only check if in the 700 msec test we get at least 3 100 msec ticks.  
-                            Assert.True(8 <= evts.Count, $"FAILURE EventCounter Multi-event: 8 <= {evts.Count} ticks: {num100msecTimerTicks} thread: {Thread.CurrentThread.ManagedThreadId}");
-                        Assert.True(evts.Count <= 32, $"FAILURE EventCounter Multi-event: {evts.Count} <= 32 thread: {Thread.CurrentThread.ManagedThreadId}");
+                            Assert.True(8 <= evts.Count, $"FAILURE: 8 <= {evts.Count}");
+                        Assert.True(evts.Count <= 32, $"FAILURE: {evts.Count} <= 32");
+                        Assert.Equal(3, 4);
                     }));
 
 
@@ -255,8 +244,8 @@ namespace BasicEventSourceTests
                 tests.Add(new SubTest("EventCounter: Dispose()",
                     delegate ()
                     {
-                        // Creating and destroying 
-                        var myCounter = new EventCounter("counter for a transient object", logger);
+                            // Creating and destroying 
+                            var myCounter = new EventCounter("counter for a transient object", logger);
                         myCounter.WriteMetric(10);
                         listener.EnableTimer(logger, 0);  /* Turn off (but also poll once) */
                         myCounter.Dispose();
@@ -264,9 +253,9 @@ namespace BasicEventSourceTests
                     },
                     delegate (List<Event> evts)
                     {
-                        // The static counters (Request and Error), should not log any counts and stay at zero.
-                        // The new counter will exist for the first poll but will not exist for the second.  
-                        Assert.Equal(5, evts.Count);
+                            // The static counters (Request and Error), should not log any counts and stay at zero.
+                            // The new counter will exist for the first poll but will not exist for the second.  
+                            Assert.Equal(5, evts.Count);
                         ValidateSingleEventCounter(evts[0], "Request", 0, 0, 0, float.PositiveInfinity, float.NegativeInfinity);
                         ValidateSingleEventCounter(evts[1], "Error", 0, 0, 0, float.PositiveInfinity, float.NegativeInfinity);
                         ValidateSingleEventCounter(evts[2], "counter for a transient object", 1, 10, 0, 10, 10);
@@ -285,15 +274,12 @@ namespace BasicEventSourceTests
         private static void Sleep(int minMSec)
         {
             var startTime = DateTime.UtcNow;
-            for(;;)
+            for (; ; )
             {
                 DateTime endTime = DateTime.UtcNow;
                 double delta = (endTime - startTime).TotalMilliseconds;
                 if (delta >= minMSec)
-                {
-                    Console.WriteLine("Sleep asked to wait {0} msec, actually waited {1:n2} msec Start: {2:mm:ss.fff} End: {3:mm:ss.fff} ", minMSec, delta, startTime, endTime);
                     break;
-                }
                 Thread.Sleep(1);
             }
         }
@@ -310,7 +296,7 @@ namespace BasicEventSourceTests
             Assert.NotNull(evt.PayloadNames);
             Assert.Equal(1, evt.PayloadNames.Count);
             Assert.Equal("Payload", evt.PayloadNames[0]);
-            var ret  = (IDictionary < string, object > ) evt.PayloadValue(0, "Payload");
+            var ret = (IDictionary<string, object>)evt.PayloadValue(0, "Payload");
             Assert.NotNull(ret);
             return ret;
         }
