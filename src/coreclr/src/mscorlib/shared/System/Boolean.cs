@@ -166,7 +166,7 @@ namespace System
         public static Boolean Parse(String value)
         {
             if (value == null) throw new ArgumentNullException(nameof(value));
-            return Parse(value.AsSpan());
+            return Parse(value.AsReadOnlySpan());
         }
 
         public static bool Parse(ReadOnlySpan<char> value) =>
@@ -182,19 +182,19 @@ namespace System
                 return false;
             }
 
-            return TryParse(value.AsSpan(), out result);
+            return TryParse(value.AsReadOnlySpan(), out result);
         }
 
         public static bool TryParse(ReadOnlySpan<char> value, out bool result)
         {
-            ReadOnlySpan<char> trueSpan = TrueLiteral.AsSpan();
+            ReadOnlySpan<char> trueSpan = TrueLiteral.AsReadOnlySpan();
             if (StringSpanHelpers.Equals(trueSpan, value, StringComparison.OrdinalIgnoreCase))
             {
                 result = true;
                 return true;
             }
 
-            ReadOnlySpan<char> falseSpan = FalseLiteral.AsSpan();
+            ReadOnlySpan<char> falseSpan = FalseLiteral.AsReadOnlySpan();
             if (StringSpanHelpers.Equals(falseSpan, value, StringComparison.OrdinalIgnoreCase))
             {
                 result = false;

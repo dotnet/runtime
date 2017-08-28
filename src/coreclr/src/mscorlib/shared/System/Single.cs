@@ -269,27 +269,27 @@ namespace System
         public static float Parse(String s)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseSingle(s.AsSpan(), NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo);
+            return Number.ParseSingle(s.AsReadOnlySpan(), NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo);
         }
 
         public static float Parse(String s, NumberStyles style)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseSingle(s.AsSpan(), style, NumberFormatInfo.CurrentInfo);
+            return Number.ParseSingle(s.AsReadOnlySpan(), style, NumberFormatInfo.CurrentInfo);
         }
 
         public static float Parse(String s, IFormatProvider provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseSingle(s.AsSpan(), NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseSingle(s.AsReadOnlySpan(), NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.GetInstance(provider));
         }
 
         public static float Parse(String s, NumberStyles style, IFormatProvider provider)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseSingle(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseSingle(s.AsReadOnlySpan(), style, NumberFormatInfo.GetInstance(provider));
         }
 
         public static float Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)
@@ -306,7 +306,7 @@ namespace System
                 return false;
             }
 
-            return TryParse(s.AsSpan(), NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo, out result);
+            return TryParse(s.AsReadOnlySpan(), NumberStyles.Float | NumberStyles.AllowThousands, NumberFormatInfo.CurrentInfo, out result);
         }
 
         public static Boolean TryParse(String s, NumberStyles style, IFormatProvider provider, out Single result)
@@ -319,7 +319,7 @@ namespace System
                 return false;
             }
 
-            return TryParse(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result);
+            return TryParse(s.AsReadOnlySpan(), style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
         public static Boolean TryParse(ReadOnlySpan<char> s, out Single result, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)

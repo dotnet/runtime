@@ -115,7 +115,7 @@ namespace System
         public static uint Parse(String s)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseUInt32(s.AsSpan(), NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
+            return Number.ParseUInt32(s.AsReadOnlySpan(), NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
         }
 
         [CLSCompliant(false)]
@@ -123,7 +123,7 @@ namespace System
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseUInt32(s.AsSpan(), style, NumberFormatInfo.CurrentInfo);
+            return Number.ParseUInt32(s.AsReadOnlySpan(), style, NumberFormatInfo.CurrentInfo);
         }
 
 
@@ -131,7 +131,7 @@ namespace System
         public static uint Parse(String s, IFormatProvider provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseUInt32(s.AsSpan(), NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseUInt32(s.AsReadOnlySpan(), NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
         }
 
         [CLSCompliant(false)]
@@ -139,7 +139,7 @@ namespace System
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseUInt32(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseUInt32(s.AsReadOnlySpan(), style, NumberFormatInfo.GetInstance(provider));
         }
 
         [CLSCompliant(false)]
@@ -158,7 +158,7 @@ namespace System
                 return false;
             }
 
-            return Number.TryParseUInt32(s.AsSpan(), NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
+            return Number.TryParseUInt32(s.AsReadOnlySpan(), NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
         }
 
         [CLSCompliant(false)]
@@ -172,7 +172,7 @@ namespace System
                 return false;
             }
 
-            return Number.TryParseUInt32(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseUInt32(s.AsReadOnlySpan(), style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
         [CLSCompliant(false)]
