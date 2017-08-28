@@ -2,13 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
-// 
-
 using System.Text;
-using System;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
-using System.Globalization;
 
 namespace System.Globalization
 {
@@ -36,8 +31,8 @@ namespace System.Globalization
             for (int i = index - 1; i >= 0; --i) sb.Append(buffer[i]);
         }
 
-        internal static readonly FormatLiterals PositiveInvariantFormatLiterals = TimeSpanFormat.FormatLiterals.InitInvariant(false /*isNegative*/);
-        internal static readonly FormatLiterals NegativeInvariantFormatLiterals = TimeSpanFormat.FormatLiterals.InitInvariant(true  /*isNegative*/);
+        internal static readonly FormatLiterals PositiveInvariantFormatLiterals = TimeSpanFormat.FormatLiterals.InitInvariant(isNegative: false);
+        internal static readonly FormatLiterals NegativeInvariantFormatLiterals = TimeSpanFormat.FormatLiterals.InitInvariant(isNegative: true);
 
         internal enum Pattern
         {
@@ -46,16 +41,11 @@ namespace System.Globalization
             Full = 2,
         }
 
-        //
-        //  Format
-        //
-        //  Actions: Main method called from TimeSpan.ToString
-        // 
-        internal static String Format(TimeSpan value, String format, IFormatProvider formatProvider)
-        {
-            return StringBuilderCache.GetStringAndRelease(FormatToBuilder(value, format, formatProvider));
-        }
+        /// <summary>Main method called from TimeSpan.ToString.</summary>
+        internal static string Format(TimeSpan value, string format, IFormatProvider formatProvider) =>
+            StringBuilderCache.GetStringAndRelease(FormatToBuilder(value, format, formatProvider));
 
+        /// <summary>Main method called from TimeSpan.TryFormat.</summary>
         internal static bool TryFormat(TimeSpan value, Span<char> destination, out int charsWritten, string format, IFormatProvider formatProvider)
         {
             StringBuilder sb = FormatToBuilder(value, format, formatProvider);
@@ -74,52 +64,54 @@ namespace System.Globalization
             }
         }
 
-        internal static StringBuilder FormatToBuilder(TimeSpan value, String format, IFormatProvider formatProvider)
+        private static StringBuilder FormatToBuilder(TimeSpan value, string format, IFormatProvider formatProvider)
         {
             if (format == null || format.Length == 0)
+            {
                 format = "c";
+            }
 
-            // standard formats
+            // Standard formats
             if (format.Length == 1)
             {
                 char f = format[0];
-
-                if (f == 'c' || f == 't' || f == 'T')
-                    return FormatStandard(value, true, format, Pattern.Minimum);
-                if (f == 'g' || f == 'G')
+                switch (f)
                 {
-                    Pattern pattern;
-                    DateTimeFormatInfo dtfi = DateTimeFormatInfo.GetInstance(formatProvider);
+                    case 'c':
+                    case 't':
+                    case 'T':
+                        return FormatStandard(
+                            value,
+                            isInvariant: true,
+                            format: format,
+                            pattern: Pattern.Minimum);
 
-                    if (value._ticks < 0)
-                        format = dtfi.FullTimeSpanNegativePattern;
-                    else
-                        format = dtfi.FullTimeSpanPositivePattern;
-                    if (f == 'g')
-                        pattern = Pattern.Minimum;
-                    else
-                        pattern = Pattern.Full;
+                    case 'g':
+                    case 'G':
+                        DateTimeFormatInfo dtfi = DateTimeFormatInfo.GetInstance(formatProvider);
+                        return FormatStandard(
+                            value, 
+                            isInvariant: false,
+                            format: value.Ticks < 0 ? dtfi.FullTimeSpanNegativePattern : dtfi.FullTimeSpanPositivePattern,
+                            pattern: f == 'g' ? Pattern.Minimum : Pattern.Full);
 
-                    return FormatStandard(value, false, format, pattern);
+                    default:
+                        throw new FormatException(SR.Format_InvalidString);
                 }
-                throw new FormatException(SR.Format_InvalidString);
             }
 
+            // Custom formats
             return FormatCustomized(value, format, DateTimeFormatInfo.GetInstance(formatProvider));
         }
 
-        //
-        //  FormatStandard
-        //
-        //  Actions: Format the TimeSpan instance using the specified format.
-        // 
-        private static StringBuilder FormatStandard(TimeSpan value, bool isInvariant, String format, Pattern pattern)
+        /// <summary>Format the TimeSpan instance using the specified format.</summary>
+        private static StringBuilder FormatStandard(TimeSpan value, bool isInvariant, string format, Pattern pattern)
         {
-            StringBuilder sb = StringBuilderCache.Acquire();
-            int day = (int)(value._ticks / TimeSpan.TicksPerDay);
-            long time = value._ticks % TimeSpan.TicksPerDay;
+            StringBuilder sb = StringBuilderCache.Acquire(InternalGlobalizationHelper.StringBuilderDefaultCapacity);
+            int day = (int)(value.Ticks / TimeSpan.TicksPerDay);
+            long time = value.Ticks % TimeSpan.TicksPerDay;
 
-            if (value._ticks < 0)
+            if (value.Ticks < 0)
             {
                 day = -day;
                 time = -time;
@@ -132,19 +124,20 @@ namespace System.Globalization
             FormatLiterals literal;
             if (isInvariant)
             {
-                if (value._ticks < 0)
-                    literal = NegativeInvariantFormatLiterals;
-                else
-                    literal = PositiveInvariantFormatLiterals;
+                literal = value.Ticks < 0 ?
+                    NegativeInvariantFormatLiterals :
+                    PositiveInvariantFormatLiterals;
             }
             else
             {
                 literal = new FormatLiterals();
                 literal.Init(format, pattern == Pattern.Full);
             }
+
             if (fraction != 0)
-            { // truncate the partial second to the specified length
-                fraction = (int)((long)fraction / (long)Math.Pow(10, DateTimeFormat.MaxSecondsFractionDigits - literal.ff));
+            {
+                // truncate the partial second to the specified length
+                fraction = (int)(fraction / TimeSpanParse.Pow10(DateTimeFormat.MaxSecondsFractionDigits - literal.ff));
             }
 
             // Pattern.Full: [-]dd.hh:mm:ss.fffffff
@@ -192,22 +185,15 @@ namespace System.Globalization
             return sb;
         }
 
-
-
-
-        //
-        //  FormatCustomized
-        //
-        //  Actions: Format the TimeSpan instance using the specified format.
-        // 
-        internal static StringBuilder FormatCustomized(TimeSpan value, String format, DateTimeFormatInfo dtfi)
+        /// <summary>Format the TimeSpan instance using the specified format.</summary>
+        private static StringBuilder FormatCustomized(TimeSpan value, string format, DateTimeFormatInfo dtfi)
         {
-            Debug.Assert(dtfi != null, "dtfi == null");
+            Debug.Assert(dtfi != null);
 
-            int day = (int)(value._ticks / TimeSpan.TicksPerDay);
-            long time = value._ticks % TimeSpan.TicksPerDay;
+            int day = (int)(value.Ticks / TimeSpan.TicksPerDay);
+            long time = value.Ticks % TimeSpan.TicksPerDay;
 
-            if (value._ticks < 0)
+            if (value.Ticks < 0)
             {
                 day = -day;
                 time = -time;
@@ -220,7 +206,7 @@ namespace System.Globalization
             long tmp = 0;
             int i = 0;
             int tokenLen;
-            StringBuilder result = StringBuilderCache.Acquire();
+            StringBuilder result = StringBuilderCache.Acquire(InternalGlobalizationHelper.StringBuilderDefaultCapacity);
 
             while (i < format.Length)
             {
@@ -231,19 +217,25 @@ namespace System.Globalization
                     case 'h':
                         tokenLen = DateTimeFormat.ParseRepeatPattern(format, i, ch);
                         if (tokenLen > 2)
+                        {
                             throw new FormatException(SR.Format_InvalidString);
+                        }
                         DateTimeFormat.FormatDigits(result, hours, tokenLen);
                         break;
                     case 'm':
                         tokenLen = DateTimeFormat.ParseRepeatPattern(format, i, ch);
                         if (tokenLen > 2)
+                        {
                             throw new FormatException(SR.Format_InvalidString);
+                        }
                         DateTimeFormat.FormatDigits(result, minutes, tokenLen);
                         break;
                     case 's':
                         tokenLen = DateTimeFormat.ParseRepeatPattern(format, i, ch);
                         if (tokenLen > 2)
+                        {
                             throw new FormatException(SR.Format_InvalidString);
+                        }
                         DateTimeFormat.FormatDigits(result, seconds, tokenLen);
                         break;
                     case 'f':
@@ -252,10 +244,12 @@ namespace System.Globalization
                         //
                         tokenLen = DateTimeFormat.ParseRepeatPattern(format, i, ch);
                         if (tokenLen > DateTimeFormat.MaxSecondsFractionDigits)
+                        {
                             throw new FormatException(SR.Format_InvalidString);
+                        }
 
-                        tmp = (long)fraction;
-                        tmp /= (long)Math.Pow(10, DateTimeFormat.MaxSecondsFractionDigits - tokenLen);
+                        tmp = fraction;
+                        tmp /= TimeSpanParse.Pow10(DateTimeFormat.MaxSecondsFractionDigits - tokenLen);
                         result.Append((tmp).ToString(DateTimeFormat.fixedNumberFormats[tokenLen - 1], CultureInfo.InvariantCulture));
                         break;
                     case 'F':
@@ -264,10 +258,12 @@ namespace System.Globalization
                         //
                         tokenLen = DateTimeFormat.ParseRepeatPattern(format, i, ch);
                         if (tokenLen > DateTimeFormat.MaxSecondsFractionDigits)
+                        {
                             throw new FormatException(SR.Format_InvalidString);
+                        }
 
-                        tmp = (long)fraction;
-                        tmp /= (long)Math.Pow(10, DateTimeFormat.MaxSecondsFractionDigits - tokenLen);
+                        tmp = fraction;
+                        tmp /= TimeSpanParse.Pow10(DateTimeFormat.MaxSecondsFractionDigits - tokenLen);
                         int effectiveDigits = tokenLen;
                         while (effectiveDigits > 0)
                         {
@@ -293,7 +289,10 @@ namespace System.Globalization
                         //
                         tokenLen = DateTimeFormat.ParseRepeatPattern(format, i, ch);
                         if (tokenLen > 8)
+                        {
                             throw new FormatException(SR.Format_InvalidString);
+                        }
+
                         DateTimeFormat.FormatDigits(result, day, tokenLen, true);
                         break;
                     case '\'':
@@ -347,74 +346,35 @@ namespace System.Globalization
             return result;
         }
 
-
-
-
         internal struct FormatLiterals
         {
-            internal String Start
-            {
-                get
-                {
-                    return literals[0];
-                }
-            }
-            internal String DayHourSep
-            {
-                get
-                {
-                    return literals[1];
-                }
-            }
-            internal String HourMinuteSep
-            {
-                get
-                {
-                    return literals[2];
-                }
-            }
-            internal String MinuteSecondSep
-            {
-                get
-                {
-                    return literals[3];
-                }
-            }
-            internal String SecondFractionSep
-            {
-                get
-                {
-                    return literals[4];
-                }
-            }
-            internal String End
-            {
-                get
-                {
-                    return literals[5];
-                }
-            }
-            internal String AppCompatLiteral;
+            internal string AppCompatLiteral;
             internal int dd;
             internal int hh;
             internal int mm;
             internal int ss;
             internal int ff;
 
-            private String[] literals;
+            private string[] _literals;
 
+            internal string Start => _literals[0];
+            internal string DayHourSep => _literals[1];
+            internal string HourMinuteSep => _literals[2];
+            internal string MinuteSecondSep => _literals[3];
+            internal string SecondFractionSep => _literals[4];
+            internal string End => _literals[5];
 
             /* factory method for static invariant FormatLiterals */
             internal static FormatLiterals InitInvariant(bool isNegative)
             {
                 FormatLiterals x = new FormatLiterals();
-                x.literals = new String[6];
-                x.literals[0] = isNegative ? "-" : String.Empty;
-                x.literals[1] = ".";
-                x.literals[2] = ":";
-                x.literals[3] = ":";
-                x.literals[4] = ".";
-                x.literals[5] = String.Empty;
+                x._literals = new string[6];
+                x._literals[0] = isNegative ? "-" : string.Empty;
+                x._literals[1] = ".";
+                x._literals[2] = ":";
+                x._literals[3] = ":";
+                x._literals[4] = ".";
+                x._literals[5] = string.Empty;
                 x.AppCompatLiteral = ":."; // MinuteSecondSep+SecondFractionSep;       
                 x.dd = 2;
                 x.hh = 2;
@@ -428,18 +388,16 @@ namespace System.Globalization
             // the constants guaranteed to include DHMSF ordered greatest to least significant.
             // Once the data becomes more complex than this we will need to write a proper tokenizer for
             // parsing and formatting
-            internal void Init(String format, bool useInvariantFieldLengths)
+            internal void Init(string format, bool useInvariantFieldLengths)
             {
-                literals = new String[6];
-                for (int i = 0; i < literals.Length; i++)
-                    literals[i] = String.Empty;
-                dd = 0;
-                hh = 0;
-                mm = 0;
-                ss = 0;
-                ff = 0;
+                dd = hh = mm = ss = ff = 0;
+                _literals = new string[6];
+                for (int i = 0; i < _literals.Length; i++)
+                {
+                    _literals[i] = string.Empty;
+                }
 
-                StringBuilder sb = StringBuilderCache.Acquire();
+                StringBuilder sb = StringBuilderCache.Acquire(InternalGlobalizationHelper.StringBuilderDefaultCapacity);
                 bool inQuote = false;
                 char quote = '\'';
                 int field = 0;
@@ -453,15 +411,15 @@ namespace System.Globalization
                             if (inQuote && (quote == format[i]))
                             {
                                 /* we were in a quote and found a matching exit quote, so we are outside a quote now */
-                                Debug.Assert(field >= 0 && field <= 5, "field >= 0 && field <= 5");
                                 if (field >= 0 && field <= 5)
                                 {
-                                    literals[field] = sb.ToString();
+                                    _literals[field] = sb.ToString();
                                     sb.Length = 0;
                                     inQuote = false;
                                 }
                                 else
                                 {
+                                    Debug.Fail($"Unexpected field value: {field}");
                                     return; // how did we get here?
                                 }
                             }
@@ -477,7 +435,7 @@ namespace System.Globalization
                             }
                             break;
                         case '%':
-                            Debug.Assert(false, "Unexpected special token '%', Bug in DateTimeFormatInfo.FullTimeSpan[Positive|Negative]Pattern");
+                            Debug.Fail("Unexpected special token '%', Bug in DateTimeFormatInfo.FullTimeSpan[Positive|Negative]Pattern");
                             goto default;
                         case '\\':
                             if (!inQuote)
@@ -489,8 +447,7 @@ namespace System.Globalization
                         case 'd':
                             if (!inQuote)
                             {
-                                Debug.Assert((field == 0 && sb.Length == 0) || field == 1,
-                                                "field == 0 || field == 1, Bug in DateTimeFormatInfo.FullTimeSpan[Positive|Negative]Pattern");
+                                Debug.Assert((field == 0 && sb.Length == 0) || field == 1, "field == 0 || field == 1, Bug in DateTimeFormatInfo.FullTimeSpan[Positive|Negative]Pattern");
                                 field = 1; // DayHourSep
                                 dd++;
                             }
@@ -498,8 +455,7 @@ namespace System.Globalization
                         case 'h':
                             if (!inQuote)
                             {
-                                Debug.Assert((field == 1 && sb.Length == 0) || field == 2,
-                                                "field == 1 || field == 2, Bug in DateTimeFormatInfo.FullTimeSpan[Positive|Negative]Pattern");
+                                Debug.Assert((field == 1 && sb.Length == 0) || field == 2, "field == 1 || field == 2, Bug in DateTimeFormatInfo.FullTimeSpan[Positive|Negative]Pattern");
                                 field = 2; // HourMinuteSep
                                 hh++;
                             }
@@ -507,8 +463,7 @@ namespace System.Globalization
                         case 'm':
                             if (!inQuote)
                             {
-                                Debug.Assert((field == 2 && sb.Length == 0) || field == 3,
-                                                "field == 2 || field == 3, Bug in DateTimeFormatInfo.FullTimeSpan[Positive|Negative]Pattern");
+                                Debug.Assert((field == 2 && sb.Length == 0) || field == 3, "field == 2 || field == 3, Bug in DateTimeFormatInfo.FullTimeSpan[Positive|Negative]Pattern");
                                 field = 3; // MinuteSecondSep
                                 mm++;
                             }
@@ -516,8 +471,7 @@ namespace System.Globalization
                         case 's':
                             if (!inQuote)
                             {
-                                Debug.Assert((field == 3 && sb.Length == 0) || field == 4,
-                                                "field == 3 || field == 4, Bug in DateTimeFormatInfo.FullTimeSpan[Positive|Negative]Pattern");
+                                Debug.Assert((field == 3 && sb.Length == 0) || field == 4, "field == 3 || field == 4, Bug in DateTimeFormatInfo.FullTimeSpan[Positive|Negative]Pattern");
                                 field = 4; // SecondFractionSep
                                 ss++;
                             }
@@ -526,8 +480,7 @@ namespace System.Globalization
                         case 'F':
                             if (!inQuote)
                             {
-                                Debug.Assert((field == 4 && sb.Length == 0) || field == 5,
-                                                "field == 4 || field == 5, Bug in DateTimeFormatInfo.FullTimeSpan[Positive|Negative]Pattern");
+                                Debug.Assert((field == 4 && sb.Length == 0) || field == 5, "field == 4 || field == 5, Bug in DateTimeFormatInfo.FullTimeSpan[Positive|Negative]Pattern");
                                 field = 5; // End
                                 ff++;
                             }
@@ -565,6 +518,6 @@ namespace System.Globalization
                 }
                 StringBuilderCache.Release(sb);
             }
-        } //end of struct FormatLiterals
+        }
     }
 }
