@@ -846,38 +846,42 @@ namespace System.Tests
             Assert.Throws<OverflowException>(() => TimeSpan.MinValue - new TimeSpan(1)); // Result < TimeSpan.MinValue
         }
 
-        [Fact]
-        public static void ToStringTest()
+        public static IEnumerable<object[]> ToString_MemberData()
         {
-            var timeSpan1 = new TimeSpan(1, 2, 3);
-            var timeSpan2 = new TimeSpan(1, 2, 3);
-            var timeSpan3 = new TimeSpan(1, 2, 4);
+            var input = new TimeSpan(123456789101112);
 
-            var timeSpan4 = new TimeSpan(1, 2, 3, 4);
-            var timeSpan5 = new TimeSpan(1, 2, 3, 4);
-            var timeSpan6 = new TimeSpan(1, 2, 3, 5);
+            yield return new object[] { input, null, "142.21:21:18.9101112" };
+            yield return new object[] { input, "c", "142.21:21:18.9101112" };
+            yield return new object[] { input, "t", "142.21:21:18.9101112" };
+            yield return new object[] { input, "T", "142.21:21:18.9101112" };
+            yield return new object[] { input, "g", "142:21:21:18.9101112" };
+            yield return new object[] { input, "%d", "142" };
+            yield return new object[] { input, "dd", "142" };
+            yield return new object[] { input, "%h", "21" };
+            yield return new object[] { input, "hh", "21" };
+            yield return new object[] { input, "%m", "21" };
+            yield return new object[] { input, "mm", "21" };
+            yield return new object[] { input, "%s", "18" };
+            yield return new object[] { input, "ss", "18" };
+            yield return new object[] { input, "%f", "9" };
+            yield return new object[] { input, "ff", "91" };
+            yield return new object[] { input, "fff", "910" };
+            yield return new object[] { input, "ffff", "9101" };
+            yield return new object[] { input, "fffff", "91011" };
+            yield return new object[] { input, "ffffff", "910111" };
+            yield return new object[] { input, "fffffff", "9101112" };
+            yield return new object[] { input, "dd\\.ss", "142.18" };
+        }
 
-            var timeSpan7 = new TimeSpan(1, 2, 3, 4, 5);
-            var timeSpan8 = new TimeSpan(1, 2, 3, 4, 5);
-            var timeSpan9 = new TimeSpan(1, 2, 3, 4, 6);
-
-            Assert.Equal(timeSpan1.ToString(), timeSpan2.ToString());
-            Assert.Equal(timeSpan1.ToString("c"), timeSpan2.ToString("c"));
-            Assert.Equal(timeSpan1.ToString("c", null), timeSpan2.ToString("c", null));
-            Assert.NotEqual(timeSpan1.ToString(), timeSpan3.ToString());
-            Assert.NotEqual(timeSpan1.ToString(), timeSpan4.ToString());
-            Assert.NotEqual(timeSpan1.ToString(), timeSpan7.ToString());
-
-            Assert.Equal(timeSpan4.ToString(), timeSpan5.ToString());
-            Assert.Equal(timeSpan4.ToString("c"), timeSpan5.ToString("c"));
-            Assert.Equal(timeSpan4.ToString("c", null), timeSpan5.ToString("c", null));
-            Assert.NotEqual(timeSpan4.ToString(), timeSpan6.ToString());
-            Assert.NotEqual(timeSpan4.ToString(), timeSpan7.ToString());
-
-            Assert.Equal(timeSpan7.ToString(), timeSpan8.ToString());
-            Assert.Equal(timeSpan7.ToString("c"), timeSpan8.ToString("c"));
-            Assert.Equal(timeSpan7.ToString("c", null), timeSpan8.ToString("c", null));
-            Assert.NotEqual(timeSpan7.ToString(), timeSpan9.ToString());
+        [Theory]
+        [MemberData(nameof(ToString_MemberData))]
+        public static void ToString_Valid(TimeSpan input, string format, string expected)
+        {
+            Assert.Equal(expected, input.ToString(format));
+            if (format == null)
+            {
+                Assert.Equal(expected, input.ToString());
+            }
         }
 
         [Fact]
