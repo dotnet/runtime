@@ -431,7 +431,8 @@ namespace System
         pHandle,
         values,
         task,
-        s
+        s,
+        input
     }
 
     //
