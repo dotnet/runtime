@@ -155,15 +155,13 @@ FCIMPL4(Object *, COMString::StringInitCharPtrPartial, StringObject *stringThis,
 }
 FCIMPLEND
 
-#ifdef FEATURE_RANDOMIZED_STRING_HASHING
-
 inline COMNlsHashProvider * GetCurrentNlsHashProvider()
 {
     LIMITED_METHOD_CONTRACT;
     return &COMNlsHashProvider::s_NlsHashProvider;
 }
 
-FCIMPL3(INT32, COMString::Marvin32HashString, StringObject* thisRefUNSAFE, INT32 strLen, INT64 additionalEntropy) {
+FCIMPL1(INT32, COMString::Marvin32HashString, StringObject* thisRefUNSAFE) {
     FCALL_CONTRACT;
 
     int iReturnHash = 0;
@@ -173,7 +171,7 @@ FCIMPL3(INT32, COMString::Marvin32HashString, StringObject* thisRefUNSAFE, INT32
     }
 
     BEGIN_SO_INTOLERANT_CODE_NOTHROW(GetThread(), FCThrow(kStackOverflowException));
-    iReturnHash = GetCurrentNlsHashProvider()->HashString(thisRefUNSAFE->GetBuffer(), thisRefUNSAFE->GetStringLength(), TRUE, additionalEntropy);
+    iReturnHash = GetCurrentNlsHashProvider()->HashString(thisRefUNSAFE->GetBuffer(), thisRefUNSAFE->GetStringLength());
     END_SO_INTOLERANT_CODE;
 
     FC_GC_POLL_RET();
@@ -181,21 +179,6 @@ FCIMPL3(INT32, COMString::Marvin32HashString, StringObject* thisRefUNSAFE, INT32
     return iReturnHash;
 }
 FCIMPLEND
-
-BOOL QCALLTYPE COMString::UseRandomizedHashing() {
-    QCALL_CONTRACT;
-
-    BOOL bUseRandomizedHashing = FALSE;
-
-    BEGIN_QCALL;
-
-    bUseRandomizedHashing = GetCurrentNlsHashProvider()->GetUseRandomHashing();
-
-    END_QCALL;
-
-    return bUseRandomizedHashing;
-}
-#endif
 
 /*===============================IsFastSort===============================
 **Action: Call the helper to walk the string and see if we have any high chars.

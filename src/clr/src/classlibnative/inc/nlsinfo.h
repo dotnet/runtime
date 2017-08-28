@@ -54,7 +54,7 @@ public:
     //  Native helper functions for CultureData
     //
 
-    static INT32 QCALLTYPE InternalGetGlobalizedHashCode(INT_PTR handle, LPCWSTR localeName, LPCWSTR pString, INT32 length, INT32 dwFlagsIn, INT64 additionalEntropy);
+    static INT32 QCALLTYPE InternalGetGlobalizedHashCode(INT_PTR handle, LPCWSTR localeName, LPCWSTR pString, INT32 length, INT32 dwFlagsIn);
 
     //
     //  Native helper function for methods in EncodingTable
