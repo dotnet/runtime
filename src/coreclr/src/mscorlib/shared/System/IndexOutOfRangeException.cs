@@ -20,19 +20,19 @@ namespace System
         public IndexOutOfRangeException()
             : base(SR.Arg_IndexOutOfRangeException)
         {
-            HResult = __HResults.COR_E_INDEXOUTOFRANGE;
+            HResult = HResults.COR_E_INDEXOUTOFRANGE;
         }
 
         public IndexOutOfRangeException(String message)
             : base(message)
         {
-            HResult = __HResults.COR_E_INDEXOUTOFRANGE;
+            HResult = HResults.COR_E_INDEXOUTOFRANGE;
         }
 
         public IndexOutOfRangeException(String message, Exception innerException)
             : base(message, innerException)
         {
-            HResult = __HResults.COR_E_INDEXOUTOFRANGE;
+            HResult = HResults.COR_E_INDEXOUTOFRANGE;
         }
     }
 }

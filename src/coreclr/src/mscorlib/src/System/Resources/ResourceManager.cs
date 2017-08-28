@@ -1035,7 +1035,7 @@ namespace System.Resources
                                         // In this case _PRIExceptionInfo is now null and we will just throw the generic
                                         // MissingManifestResource_NoPRIresources exception.
                                         // See the implementation of GetString for more details.
-                                        if (e.HResult != __HResults.ERROR_MRM_MAP_NOT_FOUND)
+                                        if (e.HResult != HResults.ERROR_MRM_MAP_NOT_FOUND)
                                             throw; // Unexpected exception code. Bubble it up to the caller.
                                     }
 

@@ -27,19 +27,19 @@ namespace System
         public TypeLoadException()
             : base(SR.Arg_TypeLoadException)
         {
-            HResult = __HResults.COR_E_TYPELOAD;
+            HResult = HResults.COR_E_TYPELOAD;
         }
 
         public TypeLoadException(String message)
             : base(message)
         {
-            HResult = __HResults.COR_E_TYPELOAD;
+            HResult = HResults.COR_E_TYPELOAD;
         }
 
         public TypeLoadException(String message, Exception inner)
             : base(message, inner)
         {
-            HResult = __HResults.COR_E_TYPELOAD;
+            HResult = HResults.COR_E_TYPELOAD;
         }
 
         public override String Message
@@ -91,7 +91,7 @@ namespace System
                                   int resourceId)
         : base(null)
         {
-            HResult = __HResults.COR_E_TYPELOAD;
+            HResult = HResults.COR_E_TYPELOAD;
             ClassName = className;
             AssemblyName = assemblyName;
             MessageArg = messageArg;

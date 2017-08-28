@@ -24,19 +24,19 @@ namespace System.Runtime.InteropServices
         public SEHException()
             : base()
         {
-            HResult = __HResults.E_FAIL;
+            HResult = HResults.E_FAIL;
         }
 
         public SEHException(String message)
             : base(message)
         {
-            HResult = __HResults.E_FAIL;
+            HResult = HResults.E_FAIL;
         }
 
         public SEHException(String message, Exception inner)
             : base(message, inner)
         {
-            HResult = __HResults.E_FAIL;
+            HResult = HResults.E_FAIL;
         }
 
         protected SEHException(SerializationInfo info, StreamingContext context) : base(info, context)

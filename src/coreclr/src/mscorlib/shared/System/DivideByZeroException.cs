@@ -20,19 +20,19 @@ namespace System
         public DivideByZeroException()
             : base(SR.Arg_DivideByZero)
         {
-            HResult = __HResults.COR_E_DIVIDEBYZERO;
+            HResult = HResults.COR_E_DIVIDEBYZERO;
         }
 
         public DivideByZeroException(String message)
             : base(message)
         {
-            HResult = __HResults.COR_E_DIVIDEBYZERO;
+            HResult = HResults.COR_E_DIVIDEBYZERO;
         }
 
         public DivideByZeroException(String message, Exception innerException)
             : base(message, innerException)
         {
-            HResult = __HResults.COR_E_DIVIDEBYZERO;
+            HResult = HResults.COR_E_DIVIDEBYZERO;
         }
 
         protected DivideByZeroException(SerializationInfo info, StreamingContext context) : base(info, context)
