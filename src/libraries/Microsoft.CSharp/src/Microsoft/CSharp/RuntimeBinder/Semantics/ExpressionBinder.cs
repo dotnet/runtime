@@ -263,11 +263,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public BindingContext GetContext() { return Context; }
         private CNullable m_nullable;
 
-        private static void VSFAIL(string s)
-        {
-            Debug.Assert(false, s);
-        }
-
         public ExpressionBinder(BindingContext context)
         {
             Context = context;
@@ -1087,17 +1082,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
         private static ErrorCode GetStandardLvalueError(CheckLvalueKind kind)
         {
+            Debug.Assert(kind >= CheckLvalueKind.Assignment && kind <= CheckLvalueKind.Increment);
             switch (kind)
             {
-                default:
-                    VSFAIL("bad kind");
-                    return ErrorCode.ERR_AssgLvalueExpected;
-                case CheckLvalueKind.Assignment:
-                    return ErrorCode.ERR_AssgLvalueExpected;
                 case CheckLvalueKind.OutParameter:
                     return ErrorCode.ERR_RefLvalueExpected;
                 case CheckLvalueKind.Increment:
                     return ErrorCode.ERR_IncrementLvalueExpected;
+                default:
+                    return ErrorCode.ERR_AssgLvalueExpected;
             }
         }
 

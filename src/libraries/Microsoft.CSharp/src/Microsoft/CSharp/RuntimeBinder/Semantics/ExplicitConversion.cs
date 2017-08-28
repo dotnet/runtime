@@ -135,7 +135,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 switch (_typeDest.GetTypeKind())
                 {
                     default:
-                        VSFAIL("Bad type kind");
+                        Debug.Fail($"Bad type kind: {_typeDest.GetTypeKind()}");
                         return false;
                     case TypeKind.TK_VoidType:
                         return false; // Can't convert to a method group or anon method.
@@ -203,7 +203,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         Debug.Assert(valueSrc.Type == _typeSrc.StripNubs());
                         if (!_binder.BindExplicitConversion(valueSrc, valueSrc.Type, _exprTypeDest, _pDestinationTypeForLambdaErrorReporting, _needsExprDest, out _exprDest, _flags | CONVERTTYPE.NOUDC))
                         {
-                            VSFAIL("BindExplicitConversion failed unexpectedly");
+                            Debug.Fail("BindExplicitConversion failed unexpectedly");
                             return false;
                         }
                         if (_exprDest is ExprUserDefinedConversion udc)

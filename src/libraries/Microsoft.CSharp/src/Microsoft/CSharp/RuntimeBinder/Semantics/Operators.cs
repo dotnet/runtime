@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.CSharp.RuntimeBinder.Errors;
@@ -175,7 +176,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 switch (cv1)
                 {
                     default:
-                        VSFAIL("Shouldn't happen!");
+                        Debug.Fail("Shouldn't happen!");
                         continue;
 
                     case ConvKind.None:
@@ -258,7 +259,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 switch (cv2)
                 {
                     default:
-                        VSFAIL("Shouldn't happen!");
+                        Debug.Fail("Shouldn't happen!");
                         continue;
                     case ConvKind.None:
                         continue;
@@ -1109,35 +1110,31 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 bt2 = WhichTypeIsBetter(bofs1.Type2(), bofs2.Type2(), type2);
             }
 
-            int res = 0;
+            int res;
 
+            Debug.Assert(Enum.IsDefined(typeof(BetterType), bt1));
+            Debug.Assert(Enum.IsDefined(typeof(BetterType), bt2));
             switch (bt1)
             {
-                default:
-                    VSFAIL("Shouldn't happen");
-                    break;
-                case BetterType.Same:
-                case BetterType.Neither:
-                    break;
                 case BetterType.Left:
-                    res--;
+                    res = -1;
                     break;
+
                 case BetterType.Right:
-                    res++;
+                    res = 1;
+                    break;
+
+                default:
+                    res = 0;
                     break;
             }
 
             switch (bt2)
             {
-                default:
-                    VSFAIL("Shouldn't happen");
-                    break;
-                case BetterType.Same:
-                case BetterType.Neither:
-                    break;
                 case BetterType.Left:
                     res--;
                     break;
+
                 case BetterType.Right:
                     res++;
                     break;
@@ -1226,7 +1223,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     break;
 
                 default:
-                    VSFAIL("Bad op");
+                    Debug.Fail($"Bad op: {op}");
                     return false;
             }
             return true;
@@ -1504,7 +1501,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 switch (cv)
                 {
                     default:
-                        VSFAIL("Shouldn't happen!");
+                        Debug.Fail("Shouldn't happen!");
                         continue;
 
                     case ConvKind.None:
@@ -1640,18 +1637,15 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 bt = WhichTypeIsBetter(uofs1.GetType(), uofs2.GetType(), typeArg);
             }
 
+            Debug.Assert(Enum.IsDefined(typeof(BetterType), bt));
             switch (bt)
             {
-                default:
-                    VSFAIL("Shouldn't happen");
-                    return 0;
-                case BetterType.Same:
-                case BetterType.Neither:
-                    return 0;
                 case BetterType.Left:
                     return -1;
                 case BetterType.Right:
                     return +1;
+                default:
+                    return 0;
             }
         }
 
@@ -1870,7 +1864,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             switch (ek)
             {
                 default:
-                    VSFAIL("Bad kind");
+                    Debug.Fail($"Bad kind: {ek}");
                     typeRet = null;
                     break;
                 case ExpressionKind.Add:
@@ -2326,7 +2320,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     pBinopKind = BinOpKind.Equal;
                     break;
                 default:
-                    VSFAIL("Bad ek");
+                    Debug.Fail($"Bad ek: {ek}");
                     pBinopKind = BinOpKind.Add;
                     return false;
             }
