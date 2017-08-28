@@ -2870,6 +2870,11 @@ emit_call_body (MonoCompile *cfg, guint8 *code, MonoJumpInfoType patch_type, gco
 			amd64_call_code (code, 0);
 		}
 		else {
+			if (!no_patch && ((guint32)(code + 2 - cfg->native_code) % 8) != 0) {
+				guint32 pad_size = 8 - ((guint32)(code + 2 - cfg->native_code) % 8);
+				amd64_padding (code, pad_size);
+				g_assert ((guint64)(code + 2 - cfg->native_code) % 8 == 0);
+			}
 			mono_add_patch_info (cfg, code - cfg->native_code, patch_type, data);
 			amd64_set_reg_template (code, GP_SCRATCH_REG);
 			amd64_call_reg (code, GP_SCRATCH_REG);

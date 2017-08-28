@@ -144,6 +144,7 @@ mono_arch_patch_callsite (guint8 *method_start, guint8 *orig_code, guint8 *addr)
 	if (((code [-13] == 0x49) && (code [-12] == 0xbb)) || (code [-5] == 0xe8)) {
 		if (code [-5] != 0xe8) {
 			if (can_write) {
+				g_assert ((guint64)(orig_code - 11) % 8 == 0);
 				InterlockedExchangePointer ((gpointer*)(orig_code - 11), addr);
 				VALGRIND_DISCARD_TRANSLATIONS (orig_code - 11, sizeof (gpointer));
 			}
