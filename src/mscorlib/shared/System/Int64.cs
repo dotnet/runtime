@@ -111,20 +111,20 @@ namespace System
         public static long Parse(String s)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseInt64(s.AsSpan(), NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
+            return Number.ParseInt64(s.AsReadOnlySpan(), NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
         }
 
         public static long Parse(String s, NumberStyles style)
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseInt64(s.AsSpan(), style, NumberFormatInfo.CurrentInfo);
+            return Number.ParseInt64(s.AsReadOnlySpan(), style, NumberFormatInfo.CurrentInfo);
         }
 
         public static long Parse(String s, IFormatProvider provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseInt64(s.AsSpan(), NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseInt64(s.AsReadOnlySpan(), NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
         }
 
 
@@ -136,7 +136,7 @@ namespace System
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseInt64(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseInt64(s.AsReadOnlySpan(), style, NumberFormatInfo.GetInstance(provider));
         }
 
         public static long Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)
@@ -153,7 +153,7 @@ namespace System
                 return false;
             }
 
-            return Number.TryParseInt64(s.AsSpan(), NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
+            return Number.TryParseInt64(s.AsReadOnlySpan(), NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
         }
 
         public static Boolean TryParse(String s, NumberStyles style, IFormatProvider provider, out Int64 result)
@@ -166,7 +166,7 @@ namespace System
                 return false;
             }
 
-            return Number.TryParseInt64(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseInt64(s.AsReadOnlySpan(), style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, out long result, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)

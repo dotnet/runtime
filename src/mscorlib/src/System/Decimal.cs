@@ -511,27 +511,27 @@ namespace System
         public static Decimal Parse(String s)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseDecimal(s.AsSpan(), NumberStyles.Number, NumberFormatInfo.CurrentInfo);
+            return Number.ParseDecimal(s.AsReadOnlySpan(), NumberStyles.Number, NumberFormatInfo.CurrentInfo);
         }
 
         public static Decimal Parse(String s, NumberStyles style)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseDecimal(s.AsSpan(), style, NumberFormatInfo.CurrentInfo);
+            return Number.ParseDecimal(s.AsReadOnlySpan(), style, NumberFormatInfo.CurrentInfo);
         }
 
         public static Decimal Parse(String s, IFormatProvider provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseDecimal(s.AsSpan(), NumberStyles.Number, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseDecimal(s.AsReadOnlySpan(), NumberStyles.Number, NumberFormatInfo.GetInstance(provider));
         }
 
         public static Decimal Parse(String s, NumberStyles style, IFormatProvider provider)
         {
             NumberFormatInfo.ValidateParseStyleFloatingPoint(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseDecimal(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseDecimal(s.AsReadOnlySpan(), style, NumberFormatInfo.GetInstance(provider));
         }
 
         public static decimal Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)
@@ -548,7 +548,7 @@ namespace System
                 return false;
             }
 
-            return Number.TryParseDecimal(s.AsSpan(), NumberStyles.Number, NumberFormatInfo.CurrentInfo, out result);
+            return Number.TryParseDecimal(s.AsReadOnlySpan(), NumberStyles.Number, NumberFormatInfo.CurrentInfo, out result);
         }
 
         public static Boolean TryParse(String s, NumberStyles style, IFormatProvider provider, out Decimal result)
@@ -561,7 +561,7 @@ namespace System
                 return false;
             }
 
-            return Number.TryParseDecimal(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseDecimal(s.AsReadOnlySpan(), style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
         public static bool TryParse(ReadOnlySpan<char> s, out decimal result, NumberStyles style = NumberStyles.Integer, IFormatProvider provider = null)
