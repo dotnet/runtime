@@ -823,6 +823,8 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
 #endif // !FEATURE_UNIX_AMD64_STRUCT_PASSING
 
 #ifdef _TARGET_ARMARCH_
+    // Mark contained when we pass struct
+    // GT_FIELD_LIST is always marked conatained when it is generated
     if (varTypeIsStruct(type))
     {
         arg->SetContained();
@@ -887,6 +889,9 @@ GenTreePtr Lowering::NewPutArg(GenTreeCall* call, GenTreePtr arg, fgArgTabEntryP
             {
                 var_types regType          = fieldListPtr->gtGetOp1()->TypeGet();
                 argSplit->m_regType[index] = regType;
+
+                // Clear the register assignments on the fieldList nodes, as these are contained.
+                fieldListPtr->gtRegNum = REG_NA;
             }
         }
     }
@@ -1247,21 +1252,16 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
             GenTreePtr argLo = arg->gtGetOp1();
             GenTreePtr argHi = arg->gtGetOp2();
 
-            GenTreeFieldList* fieldListLow = new (comp, GT_FIELD_LIST) GenTreeFieldList(argLo, 0, TYP_INT, nullptr);
-            GenTreeFieldList* fieldListHigh =
-                new (comp, GT_FIELD_LIST) GenTreeFieldList(argHi, 4, TYP_INT, fieldListLow);
+            GenTreeFieldList* fieldList = new (comp, GT_FIELD_LIST) GenTreeFieldList(argLo, 0, TYP_INT, nullptr);
+            (void)new (comp, GT_FIELD_LIST) GenTreeFieldList(argHi, 4, TYP_INT, fieldList);
 
-            putArg           = NewPutArg(call, fieldListLow, info, TYP_INT);
+            putArg           = NewPutArg(call, fieldList, info, TYP_VOID);
             putArg->gtRegNum = info->regNum;
 
             BlockRange().InsertBefore(arg, putArg);
             BlockRange().Remove(arg);
-            *ppArg     = fieldListLow;
-            info->node = fieldListLow;
-
-            // Clear the register assignments on the fieldList nodes, as these are contained.
-            fieldListLow->gtRegNum  = REG_NA;
-            fieldListHigh->gtRegNum = REG_NA;
+            *ppArg     = fieldList;
+            info->node = fieldList;
         }
         else
         {
