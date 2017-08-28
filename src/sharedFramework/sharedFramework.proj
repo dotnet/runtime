@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
+
+  <UsingTask TaskName="ChangeEntryPointLibraryName" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
+  <UsingTask TaskName="ReplaceFileContents" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
+  <UsingTask TaskName="ProcessSharedFrameworkDeps" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll" />
+
+  <PropertyGroup>
+    <BuildTargets>
+      PublishSharedFrameworkAndSharedHost;
+      GenerateRuntimeGraph;
+      CopyHostArtifactsToSharedFramework;
+      GenerateVersionFile;
+    </BuildTargets>
+  </PropertyGroup>
+
+  <Target Name="Build" DependsOnTargets="$(BuildTargets)" />
+
+  <Target Name="PublishSharedFrameworkAndSharedHost"
+          DependsOnTargets="RestoreLockedCoreHost">
+    
+    <PropertyGroup>
+      <SharedFrameworkSourceRoot>$(MSBuildThisFileDirectory)framework</SharedFrameworkSourceRoot>
+      <CommonSharedFrameworkArgs>/p:TargetFramework=$(Framework) /p:RuntimeIdentifier=$(PackageTargetRid) /p:RuntimeFrameworkVersion=$(SharedFrameworkNugetVersion)</CommonSharedFrameworkArgs>
+    </PropertyGroup>  
+
+    <RemoveDir Directories="$(SharedFrameworkNameAndVersionRoot)" />
+
+    <Exec Command="$(DotnetRestoreCommand) --source $(PackagesOutDir) $(CommonSharedFrameworkArgs)"
+          WorkingDirectory="$(SharedFrameworkSourceRoot)" />
+
+    <!-- We publish to a sub folder of the PublishRoot so tools like heat and zip can generate folder structures easier. -->
+    <Exec Command="$(DotnetToolCommand) publish --output $(SharedFrameworkNameAndVersionRoot) $(CommonSharedFrameworkArgs)"
+          WorkingDirectory="$(SharedFrameworkSourceRoot)"
+          EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir)" />
+
+    <!-- Clean deps.json -->
+    <ChangeEntryPointLibraryName DepsFile="$(SharedFrameworkNameAndVersionRoot)/framework.deps.json" />
+
+    <!-- Clean up artifacts that dotnet-publish generates which we don't need -->
+    <ItemGroup>
+      <ToDelete Include="$(SharedFrameworkNameAndVersionRoot)\framework" />
+      <ToDelete Include="$(SharedFrameworkNameAndVersionRoot)\framework.exe" />
+      <ToDelete Include="$(SharedFrameworkNameAndVersionRoot)\framework.dll" />
+      <ToDelete Include="$(SharedFrameworkNameAndVersionRoot)\framework.pdb" />
+      <ToDelete Include="$(SharedFrameworkNameAndVersionRoot)\framework.runtimeconfig.json" />
+      <ToDelete Include="$(SharedFrameworkNameAndVersionRoot)\apphost$(ExeSuffix)" />
+      <ToDelete Include="$(SharedFrameworkNameAndVersionRoot)\$(LibPrefix)hostfxr$(LibSuffix)" />
+    </ItemGroup>
+
+    <Message Text="To delete: @(ToDelete)" />
+    <Delete Files="@(ToDelete)" />
+
+    <!-- Rename deps file -->
+    <Move SourceFiles="$(SharedFrameworkNameAndVersionRoot)\framework.deps.json" 
+          DestinationFiles="$(SharedFrameworkNameAndVersionRoot)\$(SharedFrameworkName).deps.json" />
+    
+    <!-- Use the muxer we intended to consume (either restored a shipped version or the one we built) -->
+    <!-- Ensure the host is executable.  See https://github.com/NuGet/Home/issues/4424 -->
+    <Exec Command="chmod u+x $(CoreHostLockedDir)dotnet$(ExeSuffix)"
+          Condition="'$(OSGroup)' != 'Windows_NT'" />
+    <Copy SourceFiles="$(CoreHostLockedDir)dotnet$(ExeSuffix)" DestinationFolder="$(SharedFrameworkPublishDir)" />
+
+    <!--  Use the FXR Resolver we intended to consume (either restored a shipped version or the one we built) -->
+    <Copy SourceFiles="$(CoreHostLockedDir)$(LibPrefix)hostfxr$(LibSuffix)" DestinationFolder="$(SharedFrameworkPublishDir)\host\fxr\$(HostResolverVersion)" />
+
+    <!-- Copy symbols to publish folder -->
+    <ItemGroup>
+      <SharedFrameworkSymbols Include="$(PackageSymbolsBinDir)Microsoft.NETCore.App/**/*.pdb" />
+      <SharedFrameworkSymbols Include="$(PackageSymbolsBinDir)Microsoft.NETCore.App/**/*$(SymbolFileExtension)" />
+      <SharedFrameworkSymbols Include="$(PackageSymbolsBinDir)Microsoft.NETCore.App/**/*$(CrossGenSymbolExtension)" 
+                              Condition="'$(CrossGenSymbolExtension)' != ''" />
+    </ItemGroup>
+    <RemoveDir Directories="$(SharedFrameworkPublishSymbolsDir)"
+               Condition="Exists('$(SharedFrameworkPublishSymbolsDir)')" />
+    <MakeDir Directories="$(SharedFrameworkPublishSymbolsDir)" />
+    <Copy SourceFiles="@(SharedFrameworkSymbols)" DestinationFolder="$(SharedFrameworkPublishSymbolsDir)" />
+  </Target>
+
+  <Target Name="GenerateVersionFile"
+          DependsOnTargets="GetLatestCommitHash">
+
+    <!-- Generate .version file -->
+    <ItemGroup>
+      <VersionLines Include="$(LatestCommit)" />
+      <VersionLines Include="$(SharedFrameworkNugetVersion)" />
+    </ItemGroup>
+
+    <WriteLinesToFile
+      File="$(SharedFrameworkNameAndVersionRoot)\.version"
+      Lines="@(VersionLines)"
+      Overwrite="true" />
+  </Target>
+
+  <!-- TODO: Why do we need to have this is M.N.App references the expected version? However,
+             I have noticed that without this, M.N.App publish results in having an older (1.1.x)
+             hostpolicy binary.
+  -->
+  <Target Name="CopyHostArtifactsToSharedFramework">
+    <ItemGroup>
+      <!-- Hostpolicy should be the latest and not the locked version as it is supposed to evolve for -->
+      <!-- the framework and has a tight coupling with coreclr's API in the framework. -->
+      <HostArtifacts Include="$(CoreHostOutputDir)\$(HostPolicyBaseName)" />
+    </ItemGroup>
+    <Copy SourceFiles="@(HostArtifacts)" DestinationFolder="$(SharedFrameworkNameAndVersionRoot)" />
+  </Target>
+
+  <Target Name="GenerateRuntimeGraph">
+    <PropertyGroup>
+      <SharedFrameworkAssetsFile>$(SharedFrameworkSourceRoot)/obj/project.assets.json</SharedFrameworkAssetsFile>
+      <SharedFrameworkDepsFile>$(SharedFrameworkNameAndVersionRoot)\$(SharedFrameworkName).deps.json</SharedFrameworkDepsFile>
+      <RuntimeGraphGeneratorRuntime Condition="'$(OSGroup)'=='Windows_NT'">win</RuntimeGraphGeneratorRuntime>
+      <RuntimeGraphGeneratorRuntime Condition="'$(OSGroup)'=='OSX'">osx</RuntimeGraphGeneratorRuntime>
+      <RuntimeGraphGeneratorRuntime Condition="'$(RuntimeGraphGeneratorRuntime)'==''">linux</RuntimeGraphGeneratorRuntime>      
+    </PropertyGroup>
+
+    <ItemGroup>
+      <TrimPkgsFromDeps Include="runtime.$(PackageTargetRid).microsoft.netcore.dotnetapphost" />
+      <TrimPkgsFromDeps Include="runtime.$(PackageTargetRid).microsoft.netcore.dotnethostresolver" />
+      <TrimPkgsFromDeps Include="microsoft.netcore.dotnetapphost" />
+      <TrimPkgsFromDeps Include="microsoft.netcore.dotnethostresolver" />
+    </ItemGroup>
+    
+    <ProcessSharedFrameworkDeps AssetsFilePath="$(SharedFrameworkAssetsFile)"
+                                DepsFilePath="$(SharedFrameworkDepsFile)"
+                                PackagesToRemove="@(TrimPkgsFromDeps)"
+                                Runtime="$(RuntimeGraphGeneratorRuntime)"
+                                BuildToolsTaskDir="$(BuildToolsTaskDir)" />
+  </Target>
+
+  <Target Name="RestoreLockedCoreHost">
+    <PropertyGroup>
+      <LockedHostSourceRoot>$(MSBuildThisFileDirectory)lockedhost</LockedHostSourceRoot>
+      <CommonLockedHostArgs>/p:TargetFramework=$(Framework) /p:RuntimeIdentifier=$(PackageTargetRid) /p:HostResolverVersion=$(HostResolverVersion) /p:HostVersion=$(HostVersion)</CommonLockedHostArgs>
+    </PropertyGroup>
+
+    <RemoveDir Directories="$(CoreHostLockedDir)" />
+
+    <Exec Command="$(DotnetRestoreCommand) --source $(PackagesOutDir) $(CommonLockedHostArgs)"
+          WorkingDirectory="$(LockedHostSourceRoot)" />
+
+
+    <Exec Command="$(DotnetToolCommand) publish --output $(CoreHostLockedDir) $(CommonLockedHostArgs)"
+          WorkingDirectory="$(LockedHostSourceRoot)"
+          EnvironmentVariables="NUGET_PACKAGES=$(PackagesDir)" />
+  </Target>
+
+</Project>

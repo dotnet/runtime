@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+***********************************************************************************************
+Microsoft.Net.CoreRuntime.targets
+
+WARNING:  DO NOT MODIFY this file unless you are knowledgeable about MSBuild and have
+          created a backup copy.  Incorrect changes to this file will make it
+          impossible to load or build your projects from the command-line or the IDE.
+
+Copyright (C) Microsoft Corporation. All rights reserved.
+***********************************************************************************************
+-->
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+
+  <!-- Provides a default target platform for finding the ilc.exe version when
+       the project is configured to AnyCPU -->
+  <PropertyGroup>
+    <_PlatformTargetForCoreRuntime Condition="'$(PlatformTarget)'!='AnyCPU'">$(PlatformTarget)</_PlatformTargetForCoreRuntime>
+    <_PlatformTargetForCoreRuntime Condition="'$(PlatformTarget)'=='AnyCPU'">x86</_PlatformTargetForCoreRuntime>
+  </PropertyGroup>
+
+
+  <!--
+       _TargetsCoreRuntime is one of the main flags that decides whether the toolchain needs to kick-in. It implies:
+       - This is a UAP app (including those that are pure C++ or JS)
+       - .NetNativeToolchain is not going to be used (i.e.: the default debug configuration)
+
+       The second flag will narrow the condition further to UAP apps that has some managed code in their dependency closure.
+       (See _AppContainsManagedCodeInItsClosure)
+
+       This flag (_TargetsCoreRuntime) is also being consumed by project system to decide which debugger guid needs to be used,
+       hence if you intend to rename this flag make sure that project system is also updated
+  -->
+
+  <PropertyGroup Condition="'$(AppxPackage)' == 'true' and '$(TargetPlatformIdentifier)' == 'UAP' and '$(UseDotNetNativeToolchain)' != 'true'">
+    <_TargetsCoreRuntime>true</_TargetsCoreRuntime>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <BeforeRunGatekeeperTargets>ComputeWireUpCoreRuntimeGates</BeforeRunGatekeeperTargets>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <_CoreRuntimeMSBuildTaskAssembly>$(MSBuildThisFileDirectory)\Microsoft.Build.Net.CoreRuntimeTask.dll</_CoreRuntimeMSBuildTaskAssembly>
+    <_AppxMSBuildToolsPath Condition="'$(_AppxMSBuildToolsPath)' == ''">$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\AppxPackage\</_AppxMSBuildToolsPath>
+    <_AppxMSBuildTaskAssembly Condition="'$(_AppxMSBuildTaskAssembly)' == ''">$(_AppxMSBuildToolsPath)Microsoft.Build.AppxPackage.dll</_AppxMSBuildTaskAssembly>
+    <CoreRuntimeSDKName>Microsoft.NET.CoreRuntime, Version=$(_CoreRuntimeVersion)</CoreRuntimeSDKName>
+    <VCLibs14SDKName>Microsoft.VCLibs, Version=14.0</VCLibs14SDKName>
+  </PropertyGroup>
+
+  <UsingTask AssemblyFile="$(_CoreRuntimeMSBuildTaskAssembly)" TaskName="Microsoft.Build.Net.CoreRuntimeTask.WireUpCoreRuntime" />
+  <UsingTask AssemblyFile="$(_CoreRuntimeMSBuildTaskAssembly)" TaskName="Microsoft.Build.Net.CoreRuntimeTask.MergePriConfigTask" />
+  <UsingTask AssemblyFile="$(_CoreRuntimeMSBuildTaskAssembly)" TaskName="Microsoft.Build.Net.CoreRuntimeTask.MergeResWFilesTask" />
+  <UsingTask AssemblyFile="$(_CoreRuntimeMSBuildTaskAssembly)" TaskName="Microsoft.Build.Net.CoreRuntimeTask.ResourceHandlingTask" />
+  <UsingTask AssemblyFile="$(_AppxMSBuildTaskAssembly)" TaskName="Microsoft.Build.AppxPackage.GetFrameworkSdkPackages" />
+
+
+  <!-- Adds a <build:Item> tag for OptimizingToolset and TargetRuntime properties
+       WireUpCoreRuntime needs these metadata -->
+
+  <ItemGroup Condition="'$(_TargetsCoreRuntime)'=='true'">
+    <AppxManifestMetadata Include="OptimizingToolset">
+      <Value>None</Value>
+    </AppxManifestMetadata>
+    <AppxManifestMetadata Include="TargetRuntime" Condition="'$(TargetRuntime)'!=''">
+        <Value>$(TargetRuntime)</Value>
+    </AppxManifestMetadata>
+  </ItemGroup>
+
+  <Target Name="ComputeWireUpCoreRuntimeGates"
+          AfterTargets="AfterGenerateAppxManifest">
+    <!--
+         _AppContainsManagedCodeInItsClosure is going to be used as a gate to invoking the toolchain. As name suggests,
+         it implies that the app or one of the dependencies in its closure has managed code in it.
+
+         ASSUMPTION: In deciding whether an unmanaged app has a managed dependency we'll defer to the computation of
+         whether UnionWinMD needs to be included in the PackagingOutputs or not.
+         (See the target _AddUnionWinmd in Microsoft.AppxPackage.Targets)
+         Briefly, UnionWinMD is going to be included if any of the winmds that the app is referencing is managed.
+         So existance of UnionWinMD is being used as an indicator to existance of managed code.
+         This way the cost of computing managed dependency is avoided.
+    -->
+    <ItemGroup>
+      <_UnionMetadataWinMD Include="@(PackagingOutputs)" Condition="'%(Identity)' == '$(_TargetPlatformSdkDir)UnionMetadata\Windows.winmd'" />
+      <_UnionMetadataWinMD Include="@(PackagingOutputs)" Condition="'%(Identity)' == '$(WindowsSDK_UnionMetadataPath)\Windows.winmd'" />
+    </ItemGroup>
+
+    <PropertyGroup Condition="'$(TargetRuntime)' == 'Managed' or '@(_UnionMetadataWinMD)' != ''">
+      <_AppContainsManagedCodeInItsClosure>true</_AppContainsManagedCodeInItsClosure>
+    </PropertyGroup>
+
+    <!--
+         WireUpCoreRuntimeGates is the property that ultimately controls triggering the toolchain. It implies:
+         - This is a UAP app that has some managed code in its dependency closure
+         - .NetNativeToolchain is not going to be used (i.e.: the default debug configuration)
+    -->
+    <PropertyGroup Condition="'$(_TargetsCoreRuntime)' == 'true' and '$(_AppContainsManagedCodeInItsClosure)' == 'true'">
+      <WireUpCoreRuntimeGates>Satisfied</WireUpCoreRuntimeGates>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="ComputeWireUpCoreRuntimeParameters"
+          DependsOnTargets="ComputeWireUpCoreRuntimeGates"
+          Condition="'$(WireUpCoreRuntimeGates)'=='Satisfied'">
+
+    <!-- Compute the input/output location of the WireUpCoreRuntime-->
+    <PropertyGroup Condition="'$(WireUpCoreRuntimeOutputPath)'==''">
+      <WireUpCoreRuntimeOutputPath>$(OutputPath.TrimEnd('\'))\Core\</WireUpCoreRuntimeOutputPath>
+    </PropertyGroup>
+    <ConvertToAbsolutePath Paths="$(WireUpCoreRuntimeOutputPath)">
+      <Output TaskParameter="AbsolutePaths" PropertyName="_WireUpCoreRuntimeOutputPath"/>
+    </ConvertToAbsolutePath>
+
+    <PropertyGroup>
+      <_WireUpCoreRuntimeExitCode>0</_WireUpCoreRuntimeExitCode>
+      <_WireUpCoreRuntimeTaskExecuted>false</_WireUpCoreRuntimeTaskExecuted>
+    </PropertyGroup>
+
+    <GetInstalledSDKLocations
+           SDKDirectoryRoots="$(SDKReferenceDirectoryRoot)"
+           SDKExtensionDirectoryRoots="$(SDKExtensionDirectoryRoot)"
+           SDKRegistryRoot="$(SDKReferenceRegistryRoot)"
+           TargetPlatformVersion="$(TargetPlatformVersion)"
+           TargetPlatformIdentifier="$(TargetPlatformIdentifier)"
+           Condition="'@(InstalledSDKLocations)' == ''"
+           >
+      <Output TaskParameter="InstalledSDKs" ItemName="InstalledSDKLocations"/>
+    </GetInstalledSDKLocations>
+
+
+    <ItemGroup>
+      <DependencySDKs Include="$(VCLibs14SDKName)" />  <!--UWPShim is built against dev14 CRT-->
+    </ItemGroup>
+
+    <ResolveSDKReference
+      SDKReferences="@(DependencySDKs)"
+      TargetPlatformVersion="$(TargetPlatformVersion)"
+      TargetPlatformIdentifier="$(TargetPlatformIdentifier)"
+      TargetedSDKConfiguration="$(TargetedSDKConfiguration)"
+      TargetedSDKArchitecture="$(TargetedSDKArchitecture)"
+      ProjectName="$(ProjectName)"
+      InstalledSDKs ="@(InstalledSDKLocations)"
+    >
+      <Output TaskParameter="ResolvedSDKReferences" ItemName="ResolvedDependencySDKs"/>
+    </ResolveSDKReference>
+
+    <ItemGroup>
+      <CoreRuntimeSDK Include="@(ResolvedDependencySDKs)" Condition="'%(ResolvedDependencySDKs.SDKName)' == '$(CoreRuntimeSDKName)'" />
+    </ItemGroup>
+
+    <GetFrameworkSdkPackages FrameworkSdkReferences="@(ResolvedDependencySDKs)"
+        TargetPlatformIdentifier="$(TargetPlatformIdentifier)">
+      <Output TaskParameter="FrameworkSdkPackages" ItemName="FrameworkPackageDependencies" />
+    </GetFrameworkSdkPackages>
+
+
+    <ItemGroup>
+      <FrameworkPackagesForTargetArchitecture Include="@(FrameworkPackageDependencies)" Condition="'%(Architecture)' == '$(_PlatformTargetForCoreRuntime)'" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <!-- Name of manifest file is predefined -->
+      <_AppxManifestXmlFileName>AppxManifest.xml</_AppxManifestXmlFileName>
+      <!-- Expected location of result manifest file where it supposed to be dropped by WireUpCoreRuntime -->
+      <_TransformedAppxManifestXmlFile>$(_WireUpCoreRuntimeOutputPath)$(_AppxManifestXmlFileName)</_TransformedAppxManifestXmlFile>
+
+      <CoreRuntimeSDKLocation Condition="'$(PlatformTarget)' == 'x86'">$(CoreRuntimeSDKRootX86)</CoreRuntimeSDKLocation>
+      <CoreRuntimeSDKLocation Condition="'$(PlatformTarget)' == 'x64'">$(CoreRuntimeSDKRootX64)</CoreRuntimeSDKLocation>
+      <CoreRuntimeSDKLocation Condition="'$(PlatformTarget)' == 'arm'">$(CoreRuntimeSDKRootArm)</CoreRuntimeSDKLocation>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="_GetLibrariesToGeneratePrisForUWPApps"
+          BeforeTargets="_GeneratePrisForPortableLibraries"
+          Condition="'$(TargetPlatformIdentifier)'=='UAP'">
+
+        <ItemGroup>
+          <_FullAppLibrariesUnfiltered Include="@(PackagingOutputs)" Condition="'%(Extension)' == '.dll'" />
+        </ItemGroup>
+
+        <ConvertToAbsolutePath Paths="$(IntermediateOutputPath)">
+          <Output TaskParameter="AbsolutePaths" PropertyName="ResWOutputFullPath"/>
+        </ConvertToAbsolutePath>
+
+        <PropertyGroup Condition="'$(SkipMergingFrameworkResources)' == ''">
+          <!--
+            When building ProjectN apps in retail mode we need to skip including the framework resources in the app because we optimize the exception stack
+            and we use the resource keys instead of the exception messages.
+          -->
+          <SkipMergingFrameworkResources Condition="'$(_ProjectNToolchainEnabled)'=='true' And '$(Optimize)'=='true' And '$(EnableNetNativeDeveloperExperienceMode)'!='true'">true</SkipMergingFrameworkResources>
+          <SkipMergingFrameworkResources Condition="'$(SkipMergingFrameworkResources)' == ''">false</SkipMergingFrameworkResources>
+        </PropertyGroup>
+
+        <ResourceHandlingTask
+          AssemblyList="@(_FullAppLibrariesUnfiltered)"
+          OutResWPath="$(ResWOutputFullPath)"
+          SkipFrameworkResources="$(SkipMergingFrameworkResources)"
+          StateFile="$(ResWOutputFullPath.TrimEnd('\'))\ResourceHandlingTask.state">
+
+          <!--
+              Explicitly using CreatedResWFiles and _LibrariesUnfiltered item group
+              names because we are feeding them into the existing item groups that are
+              used as part of _GeneratePrisForPortableLibraries.
+          -->
+          <Output TaskParameter="ReswFileList" ItemName="CreatedResWFiles"/>
+          <Output TaskParameter="UnprocessedAssemblyList" ItemName="_LibrariesUnfiltered"/>
+        </ResourceHandlingTask>
+        <ItemGroup>
+          <FileWrites Include="$(ResWOutputFullPath.TrimEnd('\'))\ResourceHandlingTask.state" />
+          <FileWrites Include="@(CreatedResWFiles)" />
+        </ItemGroup>
+  </Target>
+
+  <!-- We will always inject the CLR from the framework SDK, so remove it if it was contributed through NuGet -->
+  <Target Name="FilterCoreRuntimePayloadFromNuGet" AfterTargets="ResolveReferences" DependsOnTargets="ResolveNuGetPackageAssets" Condition="'$(ResolveNuGetPackages)' == 'true' AND '$(_TargetsCoreRuntime)' == 'true'">
+    <PropertyGroup>
+      <_CoreRuntimePackageId Condition="'%(ReferenceCopyLocalPaths.FileName)%(ReferenceCopyLocalPaths.Extension)' == 'System.Private.CoreLib.dll' OR '%(ReferenceCopyLocalPaths.FileName)%(ReferenceCopyLocalPaths.Extension)' == 'System.Private.CoreLib.ni.dll'">%(ReferenceCopyLocalPaths.NuGetPackageId)</_CoreRuntimePackageId>
+    </PropertyGroup>
+    <ItemGroup>
+      <ReferenceCopyLocalPaths Remove="@(ReferenceCopyLocalPaths)" Condition="'$(UseAppLocalCoreCLR)' != 'true' AND '%(ReferenceCopyLocalPaths.NuGetPackageId)' == '$(_CoreRuntimePackageId)' AND '$(_CoreRuntimePackageId)' != ''"/>
+    </ItemGroup>
+  </Target>
+
+  <!-- Wire up the CoreRuntime -->
+  <Target Name="_WireUpCoreRuntime"
+          Inputs="@(AppxPackagePayload);@(FinalAppxManifest);@(MSBuildAllProjects)"
+          Outputs="$(_TransformedAppxManifestXmlFile)"
+          DependsOnTargets="ComputeWireUpCoreRuntimeParameters"
+          AfterTargets="ComputeWireUpCoreRuntimeGates"
+          Condition="'$(WireUpCoreRuntimeGates)'=='Satisfied'">
+
+
+    <CreateProperty Value="true">
+      <Output PropertyName="_WireUpCoreRuntimeTaskExecuted" TaskParameter="ValueSetByTask"/>
+    </CreateProperty>
+
+    <WireUpCoreRuntime
+        AppxManifest="@(FinalAppxManifest)"
+        AppxPackagePayload="@(AppxPackagePayload)"
+        OutputPath="$(_WireUpCoreRuntimeOutputPath.TrimEnd('\'))"
+        TargetRuntime="$(TargetRuntime)"
+        TargetArch="$(_PlatformTargetForCoreRuntime)"
+        FrameworkPackages="@(FrameworkPackagesForTargetArchitecture)"
+        CoreRuntimeSDKLocation="$(CoreRuntimeSDKLocation)"
+        CopyWin32ResourcesLocation="$(CopyWin32ResourcesX86Path)"
+    >
+      <Output TaskParameter="ErrorCode" PropertyName="_WireUpCoreRuntimeExitCode"/>
+      <Output TaskParameter="FrameworkPackagesNeedsToBeDeployed" PropertyName="FrameworkPackagesNeedsToBeDeployed" />
+      <Output TaskParameter="TransformedAppxPackagePayload" ItemName="_TransformedAppxPackagePayload" />
+    </WireUpCoreRuntime>
+
+    <!-- Record output files as file writes -->
+    <ItemGroup>
+      <FileWrites Include="$(_WireUpCoreRuntimeOutputPath)**\*"/>
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(_WireUpCoreRuntimeTaskExecuted)' == 'true'">
+      <FrameworkSdkPackage Include="@(FrameworkPackageDependencies)" Condition="'$(FrameworkPackagesNeedsToBeDeployed)'=='true'" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(_WireUpCoreRuntimeTaskExecuted)' == 'true'">
+      <AppxPackagePayload Remove="@(AppxPackagePayload)" />
+      <AppxPackagePayload Include="@(_TransformedAppxPackagePayload)" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(_WireUpCoreRuntimeTaskExecuted)' == 'true' and Exists('$(_TransformedAppxManifestXmlFile)')">
+      <FinalAppxManifest Remove="@(FinalAppxManifest)"/>
+      <FinalAppxManifest Include="$(_TransformedAppxManifestXmlFile)" />
+    </ItemGroup>
+
+    <PropertyGroup>
+      <_WireUpCoreRuntimeMsg>WireUpCoreRuntime has encountered an error</_WireUpCoreRuntimeMsg>
+    </PropertyGroup>
+
+    <Error Condition="'$(_WireUpCoreRuntimeExitCode)' &gt; 0" Text="$(_WireUpCoreRuntimeMsg)" />
+  </Target>
+</Project>

@@ -1,4 +1,4 @@
-# Multi-level SharedFX Lookup
+﻿# Multi-level SharedFX Lookup
 
 ## Introduction
 
@@ -17,7 +17,7 @@ It’s also possible to append a dash followed by a string after the version num
 Versions that are not pre-releases are called productions.
 
 	For instance, a valid Semantic Versioning number sort would be:
-	1.0.0 -> 1.0.1 -> 1.0.1-alpha -> 1.1.0 -> 1.1.1 -> 2.0.0.
+	1.0.0 -> 1.0.1-alpha -> 1.0.1 -> 1.1.0-alpha -> 1.1.0-rc1 -> 1.1.0 -> 1.1.1 -> 2.0.0.
 
 ## Executable
 
@@ -41,7 +41,7 @@ There are two possibilities for a muxer: it can be a portable app or a .NET Core
 
 In the first case the app file path should have been specified as an argument to the dotnet.exe.
 
-In the second case the dotnet.dll from SDK must be invoked as a portable app. At first the running program searches for the global.json file which may have specified a CLI version. It starts from the current working directory and looks for it inside all parent folder hierarchy. After that, it searches for the dotnet.dll file inside the sdk\CLI_version subfolder in the executable directory. If the version defined in the global.json file or the specified version folder cannot be found, then it must choose the most appropriate one. The most appropriate version is defined as the latest production version according to the Semantic Versioning system. If no production version is available, then the latest pre-release must be chosen.
+In the second case the dotnet.dll from SDK must be invoked as a portable app. At first the running program searches for the global.json file which may have specified a CLI version. It starts from the current working directory and looks for it inside all parent folder hierarchy. After that, it searches for the dotnet.dll file inside the sdk\CLI_version subfolder in the executable directory. If the version defined in the global.json file or the specified version folder cannot be found, then it must choose the most appropriate one. The most appropriate version is defined as the latest version according to the Semantic Versioning system.
 
 ### Framework search and rolling forward
 
@@ -80,14 +80,7 @@ At last, the coreclr is loaded into memory and called to run the application.
 
 ## Proposed changes
 
-Almost every file search is done in relation to the executable directory. It would be better to be able to search for some files in other directories as well. Suggested folders are the current working directory, the user location and the global .NET location. The user and global folders may vary depending on the running operational system. They are defined as follows:
-
-User location:
-
-	Windows 32-bit: %SystemDrive%\Users\username\.dotnet\x86
-	Windows 64-bit: %SystemDrive%\Users\username\.dotnet\x64
-	Unix 32-bit: /home/username/.dotnet/x86
-	Unix 64-bit: /home/username/.dotnet/x64
+Almost every file search is done in relation to the executable directory. It would be better to be able to search for some files in other directories as well, namely the global .NET location. The  global folders may vary depending on the running operational system. They are defined as follows:
 
 Global .NET location:
 
@@ -102,17 +95,13 @@ It’s being proposed that, if the specified version is defined through the conf
 
 - For productions:
 
-	1. In relation to the current working directory: search for the most appropriate version by rolling forward. If it cannot be found, proceed to the next step.
-	2.	In relation to the user location: search for the most appropriate version by rolling forward. If it cannot be found, proceed to the next step.
-	3.	In relation to the executable directory: search for the most appropriate version by rolling forward. If it cannot be found, proceed to the next step.
-	4.	In relation to the global location: search for the most appropriate version by rolling forward. If it cannot be found, then we were not able to locate any compatible version.
+	1.	In relation to the executable directory: search for the most appropriate version by rolling forward. If it cannot be found, proceed to the next step.
+	2.	In relation to the global location: search for the most appropriate version by rolling forward. If it cannot be found, then we were not able to locate any compatible version.
 
 - For pre-releases:
 	
-	1.	In relation to the current working directory: search for the specified version. If it cannot be found, search for the most appropriate version by rolling forward. If no compatible version can be found, proceed to the next step.
-	2.	In relation to the user location: search for the specified version. If it cannot be found, search for the most appropriate version by rolling forward. If no compatible version can be found, proceed to the next step.
-	3.	In relation to the executable directory: search for the specified version. If it cannot be found, search for the most appropriate version by rolling forward. If no compatible version can be found, proceed to the next step.
-	4.	In relation to the global location: search for the specified version. If it cannot be found, search for the most appropriate version by rolling forward. If no compatible version can be found, then we were not able to locate any compatible version.
+	1.	In relation to the executable directory: search for the specified version. If it cannot be found, search for the most appropriate version by rolling forward. If no compatible version can be found, proceed to the next step.
+	2.	In relation to the global location: search for the specified version. If it cannot be found, search for the most appropriate version by rolling forward. If no compatible version can be found, then we were not able to locate any compatible version.
 
 In the case that the desired version is defined through an argument, the multi-level lookup will happen as well but it will only consider the exact specified version (it will not roll forward).
 
@@ -134,7 +123,5 @@ By following similar logic, it will be possible to implement future changes in t
 
 The search would be conducted as follows:
 
-1.	In relation to the current working directory: search for the specified version. If it cannot be found, choose the most appropriate available version. If there’s no available version, proceed to the next step.
-2.	In relation to the user location: search for the specified version. If it cannot be found, choose the most appropriate available version. If there’s no available version, proceed to the next step.
-3.	In relation to the executable directory: search for the specified version. If it cannot be found, choose the most appropriate available version. If there’s no available version, proceed to the next step.
-4.	In relation to the global location: search for the specified version. If it cannot be found, choose the most appropriate available version. If there’s no available version, then we were not able to find any version folder and an error message must be returned.
+1.	In relation to the executable directory: search for the specified version. If it cannot be found, choose the most appropriate available version. If there’s no available version, proceed to the next step.
+2.	In relation to the global location: search for the specified version. If it cannot be found, choose the most appropriate available version. If there’s no available version, then we were not able to find any version folder and an error message must be returned.

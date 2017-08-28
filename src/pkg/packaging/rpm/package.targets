@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Import Project='package.props' />
+
+  <UsingTask TaskName="ReplaceFileContents" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
+  <UsingTask TaskName="BuildFPMToolPreReqs" AssemblyFile="$(LocalBuildToolsTaskDir)core-setup.tasks.dll"/>
+
+  <PropertyGroup>
+    <IsRPMBasedDistro Condition="$(PackageTargetRid.StartsWith('rhel')) or
+                                    $(PackageTargetRid.StartsWith('centos'))">true</IsRPMBasedDistro>
+    <BuildRpmPackage Condition="'$(IsRPMBasedDistro)' == true and '$(TargetArchitecture)' == 'x64'">true</BuildRpmPackage>
+  </PropertyGroup>
+
+  <Target Name="GenerateRpms"
+          DependsOnTargets="TestFPMTool;BuildRpms;"
+          Condition="'$(BuildRpmPackage)'=='true'" />
+
+  <Target Name="BuildRpms"
+          DependsOnTargets="GenerateSharedHostRpm;GenerateHostFxrRpm;GenerateSharedFrameworkRpm"
+          Condition="'$(BuildRpmPackage)'=='true' and '$(FPMPresent)'=='true'" />
+
+  <Target Name="GenerateSharedHostRpm">
+    <PropertyGroup>
+      <RpmPackageName>$(SharedHostRpmPkgName)</RpmPackageName>
+      <RpmPackageVersion>$(HostVersion)</RpmPackageVersion>
+      <InputRoot>$(SharedHostPublishRoot)</InputRoot>
+      <RpmFile>$(SharedHostInstallerFile)</RpmFile>
+      <ManPagesDir>$(ProjectDir)Documentation/manpages</ManPagesDir>
+      <ConfigJsonName>dotnet-sharedhost-rpm_config.json</ConfigJsonName>
+      <ConfigJsonFile>$(rpmPackagingConfigPath)$(ConfigJsonName)</ConfigJsonFile>
+      <RpmIntermediatesDir>$(PackagesIntermediateDir)$(RpmPackageName)/$(RpmPackageVersion)</RpmIntermediatesDir>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <rpmLayoutDirectory>$(RpmIntermediatesDir)/rpmLayoutDirectory/</rpmLayoutDirectory>
+      <rpmLayoutPackageRoot>$(rpmLayoutDirectory)package_root</rpmLayoutPackageRoot>
+      <rpmLayoutDocs>$(rpmLayoutDirectory)docs</rpmLayoutDocs>                <!-- Man Pages -->
+      <rpmLayoutTemplates>$(rpmLayoutDirectory)templates</rpmLayoutTemplates> <!-- Copyright, Changelog -->
+      <rpmLayoutScripts>$(rpmLayoutDirectory)scripts</rpmLayoutScripts>
+    </PropertyGroup>
+
+    <RemoveDir Condition="Exists('$(RpmIntermediatesDir)')" Directories="$(RpmIntermediatesDir)" />
+    <MakeDir Directories="$(RpmIntermediatesDir)" />
+    
+    <!-- Create empty rpm layout -->
+    <RemoveDir Condition="Exists('$(rpmLayoutDirectory)')" Directories="$(rpmLayoutDirectory)" />
+    <MakeDir Directories="$(rpmLayoutDirectory)" />
+    <MakeDir Directories="$(rpmLayoutPackageRoot)" />
+    <MakeDir Directories="$(rpmLayoutDocs)" />
+    <MakeDir Directories="$(rpmLayoutTemplates)" />
+    <MakeDir Directories="$(rpmLayoutScripts)" />
+
+    <!-- Copy files to rpm layout -->
+    <ItemGroup>
+        <SHFiles Include="$(InputRoot)/**/*" />
+        <SHManpages Include="$(ManPagesDir)/**/*" />
+        <SHTemplatesFiles Include="$(TemplatesDir)/**/*" />
+        <SHScriptsFiles Include="$(ScriptsDir)/**/*" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(SHFiles)" DestinationFiles="@(SHFiles->'$(rpmLayoutPackageRoot)/%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Copy SourceFiles="@(SHManpages)" DestinationFiles="@(SHManpages->'$(rpmLayoutDocs)/%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Copy SourceFiles="@(SHTemplatesFiles)" DestinationFiles="@(SHTemplatesFiles->'$(rpmLayoutTemplates)/%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Copy SourceFiles="@(SHScriptsFiles)" DestinationFiles="@(SHScriptsFiles->'$(rpmLayoutScripts)/%(RecursiveDir)%(Filename)%(Extension)')" />
+    
+    <!-- Replace config json variables -->
+    <ItemGroup>
+      <SharedHostTokenValue Include="%SHARED_HOST_BRAND_NAME%">
+        <ReplacementString>$(SharedHostBrandName)</ReplacementString>
+      </SharedHostTokenValue>
+    </ItemGroup>
+
+    <ReplaceFileContents InputFile="$(ConfigJsonFile)"
+                         DestinationFile="$(rpmLayoutDirectory)$(rpmConfigJsonName)"
+                         ReplacementItems="@(SharedHostTokenValue)" />
+    
+    <!-- Call the task to build the pre-reqs (parameters, copyright, changelog) for calling the FPM tool -->
+    <BuildFPMToolPreReqs  InputDir="$(rpmLayoutDirectory)"
+                          OutputDir="$(RpmIntermediatesDir)"
+                          PackageVersion="$(RpmPackageVersion)"
+                          ConfigJsonFile="$(rpmLayoutDirectory)$(rpmConfigJsonName)">
+                          <Output TaskParameter="FPMParameters" PropertyName="FPMCmdParameters" />
+    </BuildFPMToolPreReqs>
+
+    <!-- Build the RPM package by calling the FPM tool and passing the parameter list -->
+    <Exec Command="fpm $(FPMCmdParameters)" WorkingDirectory="$(RpmIntermediatesDir)" />
+
+   <!-- Copy package to output -->   
+    <ItemGroup>
+      <GeneratedRpmFiles Remove="@(GeneratedRpmFiles)" />
+      <GeneratedRpmFiles Include="$(RpmIntermediatesDir)/*.rpm" />
+    </ItemGroup>
+
+    <Error Text="@(GeneratedRpmFiles->Count()) .rpm files generated." Condition="'@(GeneratedRpmFiles->Count())' != 1" />
+
+    <Copy SourceFiles="@(GeneratedRpmFiles)"
+          DestinationFiles="$(RpmFile)"
+          OverwriteReadOnlyFiles="True"
+          SkipUnchangedFiles="False"
+          UseHardlinksIfPossible="False" />
+
+  </Target>
+
+  <Target Name="GenerateHostFxrRpm">
+    <PropertyGroup>
+      <RpmPackageName>$(HostFxrRpmPkgName)</RpmPackageName>
+      <RpmPackageVersion>$(HostResolverVersion)</RpmPackageVersion>
+      <InputRoot>$(HostFxrPublishRoot)</InputRoot>
+      <RpmFile>$(HostFxrInstallerFile)</RpmFile>
+      <ConfigJsonName>dotnet-hostfxr-rpm_config.json</ConfigJsonName>
+      <ConfigJsonFile>$(rpmPackagingConfigPath)$(ConfigJsonName)</ConfigJsonFile>
+      <RpmIntermediatesDir>$(PackagesIntermediateDir)$(RpmPackageName)/$(RpmPackageVersion)</RpmIntermediatesDir>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <rpmLayoutDirectory>$(RpmIntermediatesDir)/rpmLayoutDirectory/</rpmLayoutDirectory>
+      <rpmLayoutPackageRoot>$(rpmLayoutDirectory)package_root</rpmLayoutPackageRoot>
+      <rpmLayoutDocs>$(rpmLayoutDirectory)docs</rpmLayoutDocs>
+      <rpmLayoutTemplates>$(rpmLayoutDirectory)templates</rpmLayoutTemplates> <!-- Copyright, Changelog -->
+    </PropertyGroup>
+
+    <RemoveDir Condition="Exists('$(RpmIntermediatesDir)')" Directories="$(RpmIntermediatesDir)" />
+    <MakeDir Directories="$(RpmIntermediatesDir)" />
+
+    <!-- Create empty rpm layout -->
+    <RemoveDir Condition="Exists('$(rpmLayoutDirectory)')" Directories="$(rpmLayoutDirectory)" />
+    <MakeDir Directories="$(rpmLayoutDirectory)" />
+    <MakeDir Directories="$(rpmLayoutPackageRoot)" />
+    <MakeDir Directories="$(rpmLayoutDocs)" />
+    <MakeDir Directories="$(rpmLayoutTemplates)" />
+
+    <!-- Copy files to rpm layout -->
+    <ItemGroup>
+        <HFFiles Include="$(InputRoot)/**/*" />
+        <HFTemplatesFiles Include="$(TemplatesDir)/**/*" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(HFFiles)" DestinationFiles="@(HFFiles->'$(rpmLayoutPackageRoot)/%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Copy SourceFiles="@(HFTemplatesFiles)" DestinationFiles="@(HFTemplatesFiles->'$(rpmLayoutTemplates)/%(RecursiveDir)%(Filename)%(Extension)')" />
+
+    <!-- Replace config json variables -->
+    <ItemGroup>
+      <HostFxrTokenValue Include="%HOSTFXR_BRAND_NAME%">
+        <ReplacementString>$(HostFxrBrandName)</ReplacementString>
+      </HostFxrTokenValue>
+      <HostFxrTokenValue Include="%SHARED_HOST_RPM_VERSION%">
+        <ReplacementString>$(HostVersion)</ReplacementString>
+      </HostFxrTokenValue>
+      <HostFxrTokenValue Include="%HOSTFXR_NUGET_VERSION%">
+        <ReplacementString>$(HostResolverVersion)</ReplacementString>
+      </HostFxrTokenValue>
+      <HostFxrTokenValue Include="%HOSTFXR_RPM_PACKAGE_NAME%">
+        <ReplacementString>$(RpmPackageName)</ReplacementString>
+      </HostFxrTokenValue>
+    </ItemGroup>
+
+    <ReplaceFileContents InputFile="$(ConfigJsonFile)"
+                         DestinationFile="$(rpmLayoutDirectory)$(rpmConfigJsonName)"
+                         ReplacementItems="@(HostFxrTokenValue)" />
+
+    <!-- Call the task to build the pre-reqs (parameters, copyright, changelog) for calling the FPM tool -->
+    <BuildFPMToolPreReqs  InputDir="$(rpmLayoutDirectory)"
+                          OutputDir="$(RpmIntermediatesDir)"
+                          PackageVersion="$(RpmPackageVersion)"
+                          ConfigJsonFile="$(rpmLayoutDirectory)$(rpmConfigJsonName)">
+                          <Output TaskParameter="FPMParameters" PropertyName="FPMCmdParameters" />
+    </BuildFPMToolPreReqs>
+
+    <!-- Build the RPM package by calling the FPM tool and passing the parameter list -->
+    <Exec Command="fpm $(FPMCmdParameters)"  WorkingDirectory="$(RpmIntermediatesDir)" />
+    
+    <!-- Copy package to output -->
+    <ItemGroup>
+      <GeneratedRpmFiles Remove="@(GeneratedRpmFiles)" />
+      <GeneratedRpmFiles Include="$(RpmIntermediatesDir)/*.rpm" />
+    </ItemGroup>
+
+    <Error Text="@(GeneratedRpmFiles->Count()) .rpm files generated." Condition="'@(GeneratedRpmFiles->Count())' != 1" />
+
+    <Copy SourceFiles="@(GeneratedRpmFiles)"
+          DestinationFiles="$(RpmFile)"
+          OverwriteReadOnlyFiles="True"
+          SkipUnchangedFiles="False"
+          UseHardlinksIfPossible="False" />
+
+  </Target>
+
+  <Target Name="GenerateSharedFrameworkRpm">
+    <PropertyGroup>
+      <RpmPackageName>$(SharedFxRpmPkgName)</RpmPackageName>
+      <RpmPackageVersion>$(SharedFrameworkNugetVersion)</RpmPackageVersion>
+      <InputRoot>$(SharedFrameworkPublishRoot)</InputRoot>
+      <RpmFile>$(SharedFrameworkInstallerFile)</RpmFile>
+      <ConfigJsonName>dotnet-sharedframework-rpm_config.json</ConfigJsonName>
+      <ConfigJsonFile>$(rpmPackagingConfigPath)$(ConfigJsonName)</ConfigJsonFile>
+      <RpmIntermediatesDir>$(PackagesIntermediateDir)$(RpmPackageName)/$(RpmPackageVersion)</RpmIntermediatesDir>
+    </PropertyGroup>
+
+    <PropertyGroup>
+      <rpmLayoutDirectory>$(RpmIntermediatesDir)/rpmLayoutDirectory/</rpmLayoutDirectory>
+      <rpmLayoutPackageRoot>$(rpmLayoutDirectory)package_root</rpmLayoutPackageRoot>
+      <rpmLayoutDocs>$(rpmLayoutDirectory)docs</rpmLayoutDocs>
+      <rpmLayoutTemplates>$(rpmLayoutDirectory)templates</rpmLayoutTemplates> <!-- Copyright, Changelog -->
+    </PropertyGroup>
+
+    <RemoveDir Condition="Exists('$(RpmIntermediatesDir)')" Directories="$(RpmIntermediatesDir)" />
+    <MakeDir Directories="$(RpmIntermediatesDir)" />
+
+    <!-- Create empty rpm layout -->
+    <RemoveDir Condition="Exists('$(rpmLayoutDirectory)')" Directories="$(rpmLayoutDirectory)" />
+    <MakeDir Directories="$(rpmLayoutDirectory)" />
+    <MakeDir Directories="$(rpmLayoutPackageRoot)" />
+    <MakeDir Directories="$(rpmLayoutDocs)" />
+    <MakeDir Directories="$(rpmLayoutTemplates)" />
+
+    <!-- Copy files to rpm layout -->
+    <ItemGroup>
+        <SFFiles Include="$(InputRoot)/**/*" />
+        <SFTemplatesFiles Include="$(TemplatesDir)/**/*" />
+    </ItemGroup>
+
+    <Copy SourceFiles="@(SFFiles)" DestinationFiles="@(SFFiles->'$(rpmLayoutPackageRoot)/%(RecursiveDir)%(Filename)%(Extension)')" />
+    <Copy SourceFiles="@(SFTemplatesFiles)" DestinationFiles="@(SFTemplatesFiles->'$(rpmLayoutTemplates)/%(RecursiveDir)%(Filename)%(Extension)')" />
+
+    <!-- Replace config json variables -->
+    <ItemGroup>
+      <SharedFrameworkTokenValue Include="%HOSTFXR_RPM_PACKAGE_NAME%">
+        <ReplacementString>$(HostFxrRpmPkgName)</ReplacementString>
+      </SharedFrameworkTokenValue>
+      <SharedFrameworkTokenValue Include="%SHARED_FRAMEWORK_RPM_PACKAGE_NAME%">
+        <ReplacementString>$(SharedFxRpmPkgName)</ReplacementString>
+      </SharedFrameworkTokenValue>
+      <SharedFrameworkTokenValue Include="%SHARED_FRAMEWORK_NUGET_NAME%">
+        <ReplacementString>$(SharedFrameworkName)</ReplacementString>
+      </SharedFrameworkTokenValue>
+      <SharedFrameworkTokenValue Include="%SHARED_FRAMEWORK_NUGET_VERSION%">
+        <ReplacementString>$(SharedFrameworkNugetVersion)</ReplacementString>
+      </SharedFrameworkTokenValue>
+      <SharedFrameworkTokenValue Include="%SHARED_FRAMEWORK_BRAND_NAME%">
+        <ReplacementString>$(SharedFrameworkBrandName)</ReplacementString>
+      </SharedFrameworkTokenValue>
+    </ItemGroup>
+
+    <ReplaceFileContents InputFile="$(ConfigJsonFile)"
+                         DestinationFile="$(rpmLayoutDirectory)$(rpmConfigJsonName)"
+                         ReplacementItems="@(SharedFrameworkTokenValue)" />
+
+    <!-- Call the task to build the pre-reqs (parameters, copyright, changelog) for calling the FPM tool -->
+    <BuildFPMToolPreReqs  InputDir="$(rpmLayoutDirectory)"
+                          OutputDir="$(RpmIntermediatesDir)"
+                          PackageVersion="$(RpmPackageVersion)"
+                          ConfigJsonFile="$(rpmLayoutDirectory)$(rpmConfigJsonName)">
+                          <Output TaskParameter="FPMParameters" PropertyName="FPMCmdParameters" />
+    </BuildFPMToolPreReqs>
+
+    <!-- Build the RPM package by calling the FPM tool and passing the parameter list -->
+    <Exec Command="fpm $(FPMCmdParameters)"  WorkingDirectory="$(RpmIntermediatesDir)" />
+    
+    <!-- Copy package to output -->
+    <ItemGroup>
+      <GeneratedRpmFiles Remove="@(GeneratedRpmFiles)" />
+      <GeneratedRpmFiles Include="$(RpmIntermediatesDir)/*.rpm" />
+    </ItemGroup>
+
+    <Error Text="@(GeneratedRpmFiles->Count()) .rpm files generated." Condition="'@(GeneratedRpmFiles->Count())' != 1" />
+
+    <Copy SourceFiles="@(GeneratedRpmFiles)"
+          DestinationFiles="$(RpmFile)"
+          OverwriteReadOnlyFiles="True"
+          SkipUnchangedFiles="False"
+          UseHardlinksIfPossible="False" />
+
+  </Target>
+
+  <Target Name="TestFPMTool">
+
+    <!-- run FPM  -->
+    <Exec Command="/usr/bin/env fpm -h" ContinueOnError="true">
+      <Output TaskParameter="ExitCode" PropertyName="FPMExitCode" />
+    </Exec>
+
+    <!-- Check if it returned 0 -->
+    <PropertyGroup>
+      <FPMPresent>false</FPMPresent>
+      <FPMPresent Condition=" '$(FPMExitCode)' == '0' ">true</FPMPresent>
+    </PropertyGroup>
+
+    <!-- Workaround for Jenkins machines that don't have the necessary packages https://github.com/dotnet/core-setup/issues/2260 -->
+    <Message Condition=" '$(FPMPresent)'  != 'true' "
+             Text="FPM tool Not found, RPM packages will not be built."
+             Importance="High" />
+  </Target>
+</Project>

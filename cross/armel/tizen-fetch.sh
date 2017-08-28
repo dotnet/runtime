@@ -51,7 +51,7 @@ if [ ! -d $TMPDIR ]; then
 	mkdir -p $TMPDIR 
 fi
 
-TIZEN_URL=http://download.tizen.org/releases/weekly/tizen
+TIZEN_URL=http://download.tizen.org/releases/daily/tizen
 BUILD_XML=build.xml
 REPOMD_XML=repomd.xml
 PRIMARY_XML=primary.xml
@@ -120,19 +120,21 @@ fetch_tizen_pkgs_init()
 
 fetch_tizen_pkgs()
 {
-	PROFILE=$1
-	PACKAGE_XPATH_TPL='string(//*[local-name()="metadata"]/*[local-name()="package"][*[local-name()="name"][text()="_PKG_"]]/*[local-name()="location"]/@href)'
+	ARCH=$1
+	PACKAGE_XPATH_TPL='string(//*[local-name()="metadata"]/*[local-name()="package"][*[local-name()="name"][text()="_PKG_"]][*[local-name()="arch"][text()="_ARCH_"]]/*[local-name()="location"]/@href)'
 
-	PACKAGE_CHECKSUM_XPATH_TPL='string(//*[local-name()="metadata"]/*[local-name()="package"][*[local-name()="name"][text()="_PKG_"]]/*[local-name()="checksum"]/text())'
+	PACKAGE_CHECKSUM_XPATH_TPL='string(//*[local-name()="metadata"]/*[local-name()="package"][*[local-name()="name"][text()="_PKG_"]][*[local-name()="arch"][text()="_ARCH_"]]/*[local-name()="checksum"]/text())'
 
 	for pkg in ${@:2}
 	do
 		Inform "Fetching... $pkg"
 		XPATH=${PACKAGE_XPATH_TPL/_PKG_/$pkg}
+		XPATH=${XPATH/_ARCH_/$ARCH}
 		Xpath_get $XPATH $TMP_PRIMARY
 		PKG_PATH=$XPATH_RESULT
 
 		XPATH=${PACKAGE_CHECKSUM_XPATH_TPL/_PKG_/$pkg}
+		XPATH=${XPATH/_ARCH_/$ARCH}
 		Xpath_get $XPATH $TMP_PRIMARY
 		CHECKSUM=$XPATH_RESULT
 
@@ -142,33 +144,33 @@ fetch_tizen_pkgs()
 
 		Debug "Download $PKG_URL to $PKG_PATH"
 		Fetch $PKG_URL $PKG_PATH true
-		
+
 		echo "$CHECKSUM $PKG_PATH" | sha256sum -c - > /dev/null
 		if [ $? -ne 0 ]; then
 			Error "Fail to fetch $PKG_URL to $PKG_PATH"
 			Debug "Checksum = $CHECKSUM"
 			exit 1
 		fi
-
 	done
 }
 
-Inform "Initialize arm base"
+Inform "Initialize base"
 fetch_tizen_pkgs_init arm base
-Inform "fetch base common packages"
-fetch_tizen_pkgs base gcc glibc glibc-devel linux-glibc-devel
-Inform "fetch base coreclr packages"
-fetch_tizen_pkgs base lldb lldb-devel libuuid libuuid-devel libgcc libstdc++ libstdc++-devel
-Inform "fetch base corefx packages"
-fetch_tizen_pkgs base libcom_err libcom_err-devel zlib zlib-devel libopenssl libopenssl-devel
+Inform "fetch common packages"
+fetch_tizen_pkgs armv7l gcc glibc glibc-devel
+fetch_tizen_pkgs noarch linux-glibc-devel
+Inform "fetch coreclr packages"
+fetch_tizen_pkgs armv7l lldb lldb-devel libuuid libuuid-devel libgcc libstdc++ libstdc++-devel libunwind libunwind-devel
+Inform "fetch corefx packages"
+fetch_tizen_pkgs armv7l libcom_err libcom_err-devel zlib zlib-devel libopenssl libopenssl-devel
 
-Inform "initialize arm mobile"
-fetch_tizen_pkgs_init arm-wayland mobile
-Inform "fetch mobile common packages"
-fetch_tizen_pkgs mobile libicu-devel
-Inform "fetch mobile coreclr packages"
-fetch_tizen_pkgs mobile libunwind libunwind-devel tizen-release
-Inform "fetch mobile corefx packages"
-fetch_tizen_pkgs mobile gssdp gssdp-devel krb5 krb5-devel libcurl libcurl-devel
+Inform "Initialize unified"
+fetch_tizen_pkgs_init standard unified
+Inform "fetch common packages"
+fetch_tizen_pkgs armv7l libicu-devel
+Inform "fetch coreclr packages"
+fetch_tizen_pkgs armv7l tizen-release
+Inform "fetch corefx packages"
+fetch_tizen_pkgs armv7l gssdp gssdp-devel krb5 krb5-devel libcurl libcurl-devel
 
 

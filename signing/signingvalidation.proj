@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildThisFileDirectory)..\dir.props" />
+
+  <Target Name="Build"
+          DependsOnTargets="BuildPrerequisites;
+                            Validate" />
+
+  <Target Name="BuildPrerequisites"
+          DependsOnTargets="CreateVersionInfoFile;
+                            BuildCustomTasks;
+                            RestoreOptionalToolingPackages" />
+
+  <Target Name="Validate">
+    <MSBuild Projects="$(MSBuildThisFileDirectory)\validation.targets" />
+  </Target>
+  <Import Project="$(MSBuildThisFileDirectory)..\dir.targets" />
+</Project>

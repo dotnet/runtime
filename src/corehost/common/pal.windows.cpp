@@ -4,11 +4,33 @@
 #include "pal.h"
 #include "trace.h"
 #include "utils.h"
+#include "longfile.h"
 
 #include <cassert>
 #include <locale>
 #include <codecvt>
 #include <ShlObj.h>
+
+bool GetModuleFileNameWrapper(HMODULE hModule, pal::string_t* recv)
+{
+    pal::string_t path;
+    DWORD dwModuleFileName = MAX_PATH / 2;
+
+    do
+    {
+        path.resize(dwModuleFileName * 2);
+        dwModuleFileName = GetModuleFileNameW(hModule, (LPWSTR)path.data(), path.size());
+    } while (dwModuleFileName == path.size());
+
+    if (dwModuleFileName != 0)
+    {
+        *recv = path;
+        return true;
+    }
+
+    return false;
+
+}
 
 pal::string_t pal::to_lower(const pal::string_t& in)
 {
@@ -32,38 +54,6 @@ bool pal::touch_file(const pal::string_t& path)
     }
     ::CloseHandle(hnd);
     return true;
-}
-
-void pal::setup_api_sets(const std::unordered_set<pal::string_t>& api_sets)
-{
-    if (api_sets.empty())
-    {
-        return;
-    }
-
-    pal::string_t path;
-
-    (void) getenv(_X("PATH"), &path);
-
-    // We need this ugly hack, as the PInvoked DLL's static dependencies can come from
-    // some other NATIVE_DLL_SEARCH_DIRECTORIES and not necessarily side by side. However,
-    // CoreCLR.dll loads PInvoke DLLs with LOAD_WITH_ALTERED_SEARCH_PATH. Note that this
-    // option cannot be combined with LOAD_LIBRARY_SEARCH_USER_DIRS, so the AddDllDirectory
-    // doesn't help much in telling CoreCLR where to load the PInvoke DLLs from.
-    // So we resort to modifying the PATH variable on our own hoping Windows loader will do the right thing.
-    for (const auto& as : api_sets)
-    {
-        // AddDllDirectory is still needed for Standalone App's CoreCLR load.
-        ::AddDllDirectory(as.c_str());
-
-        // Path patch is needed for static dependencies of a PInvoked DLL load out of the nuget cache.
-        path.push_back(PATH_SEPARATOR);
-        path.append(as);
-    }
-
-    trace::verbose(_X("Setting PATH=%s"), path.c_str());
-
-    ::SetEnvironmentVariableW(_X("PATH"), path.c_str());
 }
 
 bool pal::getcwd(pal::string_t* recv)
@@ -94,12 +84,27 @@ bool pal::getcwd(pal::string_t* recv)
     return false;
 }
 
-bool pal::load_library(const char_t* path, dll_t* dll)
+bool pal::load_library(const string_t* in_path, dll_t* dll)
 {
+    string_t path = *in_path;
+
     // LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR:
     //   In portable apps, coreclr would come from another directory than the host,
     //   so make sure coreclr dependencies can be resolved from coreclr.dll load dir.
-    *dll = ::LoadLibraryExW(path, NULL, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
+
+    if (LongFile::IsPathNotFullyQualified(path))
+    {
+        if (!pal::realpath(&path))
+        {
+            trace::error(_X("Failed to load the dll from [%s], HRESULT: 0x%X"), path, HRESULT_FROM_WIN32(GetLastError()));
+            return false;
+        }
+    }
+    
+    //Adding the assert to ensure relative paths which are not just filenames are not used for LoadLibrary Calls
+    assert(!LongFile::IsPathNotFullyQualified(path) || !LongFile::ContainsDirectorySeparator(path));
+
+    *dll = ::LoadLibraryExW(path.c_str(), NULL, LOAD_LIBRARY_SEARCH_DLL_LOAD_DIR | LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
     if (*dll == nullptr)
     {
         trace::error(_X("Failed to load the dll from [%s], HRESULT: 0x%X"), path, HRESULT_FROM_WIN32(GetLastError()));
@@ -108,7 +113,7 @@ bool pal::load_library(const char_t* path, dll_t* dll)
 
     // Pin the module
     HMODULE dummy_module;
-    if (!::GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_PIN, path, &dummy_module))
+    if (!::GetModuleHandleExW(GET_MODULE_HANDLE_EX_FLAG_PIN, path.c_str(), &dummy_module))
     {
         trace::error(_X("Failed to pin library [%s] in [%s]"), path, _STRINGIFY(__FUNCTION__));
         return false;
@@ -116,8 +121,8 @@ bool pal::load_library(const char_t* path, dll_t* dll)
 
     if (trace::is_enabled())
     {
-        pal::char_t buf[PATH_MAX];
-        ::GetModuleFileNameW(*dll, buf, PATH_MAX);
+        string_t buf;
+        GetModuleFileNameWrapper(*dll, &buf);
         trace::info(_X("Loaded library from %s"), buf);
     }
 
@@ -134,36 +139,19 @@ void pal::unload_library(dll_t library)
     // No-op. On windows, we pin the library, so it can't be unloaded.
 }
 
-bool pal::get_default_breadcrumb_store(string_t* recv)
-{
-    recv->clear();
-
-    pal::char_t* prog_dat;
-    HRESULT hr = ::SHGetKnownFolderPath(FOLDERID_ProgramData, 0,  NULL, &prog_dat);
-    if (hr != S_OK)
-    {
-        trace::verbose(_X("Failed to read default breadcrumb store 0x%X"), hr);
-        return false;
-    }
-    recv->assign(prog_dat);
-    append_path(recv, _X("Microsoft"));
-    append_path(recv, _X("NetFramework"));
-    append_path(recv, _X("BreadcrumbStore"));
-    return true;
-}
-
 static
-bool get_program_files_by_id(KNOWNFOLDERID kfid, pal::string_t* recv)
+bool get_file_path_from_env(const pal::char_t* env_key, pal::string_t* recv)
 {
     recv->clear();
-    pal::char_t* prog_files;
-    HRESULT hr = ::SHGetKnownFolderPath(kfid, 0,  NULL, &prog_files);
-    if (hr != S_OK)
+    pal::string_t file_path;
+    if (!(pal::getenv(env_key, &file_path) && pal::realpath(&file_path)))
     {
-        trace::verbose(_X("Failed to obtain Program Files directory, HRESULT: 0x%X"), hr);
+        // We should have the path in file_path.
+        trace::verbose(_X("Failed to obtain [%s] directory,[%s]"),env_key, file_path.c_str());
         return false;
     }
-    recv->assign(prog_files);
+
+    recv->assign(file_path);
     return true;
 }
 
@@ -171,11 +159,30 @@ static
 bool get_wow_mode_program_files(pal::string_t* recv)
 {
 #if defined(_TARGET_AMD64_)
-    KNOWNFOLDERID kfid = FOLDERID_ProgramFilesX86;
+    pal::char_t* env_key = _X("ProgramFiles(x86)");
 #else
-    KNOWNFOLDERID kfid = FOLDERID_ProgramFiles;
+    pal::char_t* env_key = _X("ProgramFiles");
 #endif
-    return get_program_files_by_id(kfid, recv);
+
+    return get_file_path_from_env(env_key,recv);
+}
+
+bool pal::get_default_breadcrumb_store(string_t* recv)
+{
+    recv->clear();
+
+    pal::string_t prog_dat;
+    if (!get_file_path_from_env(_X("ProgramData"), &prog_dat))
+    {
+        // We should have the path in prog_dat.
+        trace::verbose(_X("Failed to read default breadcrumb store [%s]"), prog_dat.c_str());
+        return false;
+    }
+    recv->assign(prog_dat);
+    append_path(recv, _X("Microsoft"));
+    append_path(recv, _X("NetFramework"));
+    append_path(recv, _X("BreadcrumbStore"));
+    return true;
 }
 
 bool pal::get_default_servicing_directory(string_t* recv)
@@ -188,30 +195,16 @@ bool pal::get_default_servicing_directory(string_t* recv)
     return true;
 }
 
-bool pal::get_global_dotnet_dir(pal::string_t* dir)
+bool pal::get_global_dotnet_dirs(std::vector<pal::string_t>* dirs)
 {
-    if (!get_program_files_by_id(FOLDERID_ProgramFiles, dir))
+    pal::string_t dir;
+    if (!get_file_path_from_env(_X("ProgramFiles"), &dir))
     {
         return false;
     }
 
-    append_path(dir, _X("dotnet"));
-    return true;
-}
-
-bool pal::get_local_dotnet_dir(pal::string_t* dir)
-{
-    pal::char_t* profile;
-    HRESULT hr = ::SHGetKnownFolderPath(FOLDERID_Profile, 0, NULL, &profile);
-    if (hr != S_OK)
-    {
-        trace::verbose(_X("Failed to obtain user profile directory, HRESULT: 0x%X"), hr);
-        return false;
-    }
-
-    dir->assign(profile);
-    append_path(dir, _X(".dotnet"));
-    append_path(dir, get_arch());
+    append_path(&dir, _X("dotnet"));
+    dirs->push_back(dir);
     return true;
 }
 
@@ -323,13 +316,7 @@ int pal::xtoi(const char_t* input)
 
 bool pal::get_own_executable_path(string_t* recv)
 {
-    char_t program_path[MAX_PATH];
-    DWORD dwModuleFileName = ::GetModuleFileNameW(NULL, program_path, MAX_PATH);
-    if (dwModuleFileName == 0 || dwModuleFileName >= MAX_PATH) {
-        return false;
-    }
-    recv->assign(program_path);
-    return true;
+    return GetModuleFileNameWrapper(NULL, recv);
 }
 
 static bool wchar_convert_helper(DWORD code_page, const char* cstr, int len, pal::string_t* out)
@@ -377,14 +364,53 @@ bool pal::clr_palstring(const char* cstr, pal::string_t* out)
 
 bool pal::realpath(string_t* path)
 {
+
+    if (LongFile::IsNormalized(*path))
+    {
+        return true;
+    }
+
     char_t buf[MAX_PATH];
-    auto res = ::GetFullPathNameW(path->c_str(), MAX_PATH, buf, nullptr);
-    if (res == 0 || res > MAX_PATH)
+    auto size = ::GetFullPathNameW(path->c_str(), MAX_PATH, buf, nullptr);
+    
+    if (size == 0)
     {
         trace::error(_X("Error resolving full path [%s]"), path->c_str());
         return false;
     }
-    path->assign(buf);
+
+    if (size < MAX_PATH)
+    {
+        path->assign(buf);
+        return true;
+    }
+
+    string_t str;
+    str.resize(size + LongFile::UNCExtendedPathPrefix.length(), 0);
+
+    size = ::GetFullPathNameW(path->c_str() , size, (LPWSTR)str.data() , nullptr);
+    assert(size <= str.size());
+    
+    if (size == 0)
+    {
+        trace::error(_X("Error resolving full path [%s]"), path->c_str());
+        return false;
+    }
+
+    const string_t* prefix = &LongFile::ExtendedPrefix;
+    //Check if the resolved path is a UNC. By default we assume relative path to resolve to disk 
+    if (str.compare(0, LongFile::UNCPathPrefix.length(), LongFile::UNCPathPrefix) == 0)
+    {
+        prefix = &LongFile::UNCExtendedPathPrefix;
+        str.erase(0, LongFile::UNCPathPrefix.length());
+        size = size - LongFile::UNCPathPrefix.length();
+    }
+
+    str.insert(0, *prefix);
+    str.resize(size + prefix->length());
+    str.shrink_to_fit();
+    *path = str;
+
     return true;
 }
 
@@ -395,11 +421,22 @@ bool pal::file_exists(const string_t& path)
         return false;
     }
 
+    auto pathstring = path.c_str();
+    string_t normalized_path;
+    if (LongFile::ShouldNormalize(path))
+    {
+        normalized_path = path;
+        if (!pal::realpath(&normalized_path))
+        {
+            return false;
+        }
+        pathstring = normalized_path.c_str();
+    }
 
     // We will attempt to fetch attributes for the file or folder in question that are
     // returned only if they exist.
     WIN32_FILE_ATTRIBUTE_DATA data;
-    if (GetFileAttributesExW(path.c_str(), GetFileExInfoStandard, &data) != 0) {
+    if (GetFileAttributesExW(pathstring, GetFileExInfoStandard, &data) != 0) {
         return true;
     }
     
@@ -411,11 +448,21 @@ void pal::readdir(const string_t& path, const string_t& pattern, std::vector<pal
     assert(list != nullptr);
 
     std::vector<string_t>& files = *list;
+    string_t normalized_path(path);
 
-    string_t search_string(path);
+    if (LongFile::ShouldNormalize(normalized_path))
+    {
+        if (!pal::realpath(&normalized_path))
+        {
+            return;
+        }
+    }
+
+    string_t search_string(normalized_path);
     append_path(&search_string, pattern.c_str());
 
     WIN32_FIND_DATAW data = { 0 };
+
     auto handle = ::FindFirstFileExW(search_string.c_str(), FindExInfoStandard, &data, FindExSearchNameMatch, NULL, 0);
     if (handle == INVALID_HANDLE_VALUE)
     {

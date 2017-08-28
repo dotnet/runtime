@@ -1,0 +1,84 @@
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!-- Source of truth for dependency tooling: the commit hash of the dotnet/versions master branch as of the last auto-upgrade. -->
+
+  <!-- For detailed explanation of the reference versions see:
+
+        https://github.com/dotnet/buildtools/blob/master/Documentation/project-nuget-dependencies.md
+        https://github.com/dotnet/buildtools/blob/master/Documentation/annotated-dependency-props.md
+
+       These ref versions are pulled from https://github.com/dotnet/versions.
+  -->
+  <PropertyGroup>
+    <CoreFxCurrentRef>dbce6b2140b3334a0d3d7d095b3b267e9c45af9f</CoreFxCurrentRef>
+    <CoreClrCurrentRef>6754f08a49e100a11d5a5d8077ada88390bcfbed</CoreClrCurrentRef>
+    <StandardCurrentRef>dbce6b2140b3334a0d3d7d095b3b267e9c45af9f</StandardCurrentRef>
+    <WCFCurrentRef>dbce6b2140b3334a0d3d7d095b3b267e9c45af9f</WCFCurrentRef>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <CoreFxVersion>4.5.0-preview2-25624-01</CoreFxVersion>
+    <PlatformPackageVersion>2.1.0-preview2-25624-01</PlatformPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview2-25622-01</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftNETCoreRuntimeJitPackageVersion>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</MicrosoftNETCoreRuntimeJitPackageVersion>
+    <MicrosoftNetNativeCompilerPackageVersion>2.0.0-preview-25524-00</MicrosoftNetNativeCompilerPackageVersion>
+    <NETStandardVersion>2.1.0-preview1-25624-01</NETStandardVersion>
+    <DiaSymReaderNativeVersion>1.4.1</DiaSymReaderNativeVersion>
+    <WcfVersion>4.5.0-preview2-25624-01</WcfVersion>
+  </PropertyGroup>
+
+  <!-- Package dependency verification/auto-upgrade configuration. -->
+  <PropertyGroup>
+    <BaseDotNetBuildInfo>build-info/dotnet/</BaseDotNetBuildInfo>
+    <DependencyBranch>master</DependencyBranch>
+    <CurrentRefXmlPath>$(MSBuildThisFileFullPath)</CurrentRefXmlPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <RemoteDependencyBuildInfo Include="CoreFx">
+      <BuildInfoPath>$(BaseDotNetBuildInfo)corefx/$(DependencyBranch)</BuildInfoPath>
+      <CurrentRef>$(CoreFxCurrentRef)</CurrentRef>
+    </RemoteDependencyBuildInfo>
+    <RemoteDependencyBuildInfo Include="CoreClr">
+      <BuildInfoPath>$(BaseDotNetBuildInfo)coreclr/$(DependencyBranch)</BuildInfoPath>
+      <CurrentRef>$(CoreClrCurrentRef)</CurrentRef>
+    </RemoteDependencyBuildInfo>
+    <RemoteDependencyBuildInfo Include="Standard">
+      <BuildInfoPath>$(BaseDotNetBuildInfo)standard/$(DependencyBranch)</BuildInfoPath>
+      <CurrentRef>$(StandardCurrentRef)</CurrentRef>
+    </RemoteDependencyBuildInfo>
+    <RemoteDependencyBuildInfo Include="WCF">
+      <BuildInfoPath>$(BaseDotNetBuildInfo)wcf/$(DependencyBranch)</BuildInfoPath>
+      <CurrentRef>$(WCFCurrentRef)</CurrentRef>
+    </RemoteDependencyBuildInfo>
+
+    <DependencyBuildInfo Include="@(RemoteDependencyBuildInfo)">
+      <RawVersionsBaseUrl>https://raw.githubusercontent.com/dotnet/versions</RawVersionsBaseUrl>
+    </DependencyBuildInfo>
+
+    <XmlUpdateStep Include="CoreFx">
+      <Path>$(MSBuildThisFileFullPath)</Path>
+      <ElementName>CoreFxVersion</ElementName>
+      <PackageId>Microsoft.Private.CoreFx.NETCoreApp</PackageId>
+    </XmlUpdateStep>
+    <XmlUpdateStep Include="CoreFx">
+      <Path>$(MSBuildThisFileFullPath)</Path>
+      <ElementName>PlatformPackageVersion</ElementName>
+      <PackageId>Microsoft.NETCore.Platforms</PackageId>
+    </XmlUpdateStep>
+    <XmlUpdateStep Include="CoreClr">
+      <Path>$(MSBuildThisFileFullPath)</Path>
+      <ElementName>MicrosoftNETCoreRuntimeCoreCLRPackageVersion</ElementName>
+      <PackageId>Microsoft.NETCore.Runtime.CoreCLR</PackageId>
+    </XmlUpdateStep>
+    <XmlUpdateStep Include="Standard">
+      <Path>$(MSBuildThisFileFullPath)</Path>
+      <ElementName>NETStandardVersion</ElementName>
+      <PackageId>NETStandard.Library</PackageId>
+    </XmlUpdateStep>
+    <XmlUpdateStep Include="WCF">
+      <Path>$(MSBuildThisFileFullPath)</Path>
+      <ElementName>WcfVersion</ElementName>
+      <PackageId>System.ServiceModel.Duplex</PackageId>
+    </XmlUpdateStep>
+  </ItemGroup>
+</Project>

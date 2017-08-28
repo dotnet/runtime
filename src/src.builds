@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
+
+  <!-- required to build the projects in their specified order -->
+  <PropertyGroup>
+    <SerializeProjects>true</SerializeProjects>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Project Include="$(MSBuildThisFileDirectory)corehost/build.proj" />
+    <Project Include="$(MSBuildThisFileDirectory)uwp/build.proj" Condition="'$(_BuildUwpDependencies)' == 'true'"/>
+    <Project Include="$(MSBuildThisFileDirectory)managed/dir.proj" />
+    <Project Include="$(MSBuildThisFileDirectory)pkg/appx/**/*.builds" Condition="'$(_BuildUwpDependencies)' == 'true' and '$(BuildAppx)' != 'false'" />
+    <Project Include="$(MSBuildThisFileDirectory)pkg/**/src/*.builds" />
+  </ItemGroup>
+
+  <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.traversal.targets))\dir.traversal.targets" />
+</Project>

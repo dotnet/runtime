@@ -1,0 +1,17 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <AppxPackageRegistration
+        Include="$(MSBuildThisFileDirectory)..\tools\Appx\[AppxDisplayName].appx"
+        Condition="'$(_TargetsCoreRuntime)' == 'true'">
+        <Architecture>[AppxBuildArch]</Architecture>
+        <Version>[AppxVersion]</Version>
+        <Publisher>'CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US'</Publisher>
+    </AppxPackageRegistration>
+    <DesignTimeAppxPackageRegistration
+        Include="$(MSBuildThisFileDirectory)..\tools\Appx\[AppxDisplayName].appx">
+        <Architecture>[AppxBuildArch]</Architecture>
+        <Version>[AppxVersion]</Version>
+        <Publisher>'CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US'</Publisher>
+    </DesignTimeAppxPackageRegistration>
+  </ItemGroup>
+</Project>

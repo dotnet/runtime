@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <!-- apphost is not signed, by design -->
+    <BinInspectBaselineFile Include=".%2A\\apphost\.exe" />
+    <!-- wixstdba is internal to the engine bundle and does not get signed -->
+    <BinInspectBaselineFile Include=".%2A\\wixstdba\.dll" />
+    <!--
+        Baseline Microsoft.NET.CoreRuntime.#.#.appx we place in Microsoft.Net.UWPCoreRuntimeSdk.2.1.0-preview1-25429-03.nupkg.
+        BinInspect cannot handle .appx files. The contents of the Appx in this case are signed CoreCLR binaries.
+    -->
+    <BinInspectBaselineFile Include=".%2A\\Microsoft.NET.CoreRuntime\..%2A\.appx" />
+  </ItemGroup>
+</Project>

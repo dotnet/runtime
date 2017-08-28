@@ -5,7 +5,7 @@ usage()
     echo "Usage: $0 [BuildArch] [LinuxCodeName] [lldbx.y] [--skipunmount]"
     echo "BuildArch can be: arm(default), armel, arm64, x86"
     echo "LinuxCodeName - optional, Code name for Linux, can be: trusty(default), vivid, wily, xenial. If BuildArch is armel, LinuxCodeName is jessie(default) or tizen."
-    echo "lldbx.y - optional, LLDB version, can be: lldb3.6(default), lldb3.8, no-lldb"
+    echo "lldbx.y - optional, LLDB version, can be: lldb3.6(default), lldb3.8, lldb3.9, no-lldb"
     echo "--skipunmount - optional, will skip the unmount of rootfs folder."
     exit 1
 }
@@ -70,6 +70,9 @@ for i in "$@" ; do
         lldb3.8)
             __LLDB_Package="lldb-3.8-dev"
             ;;
+        lldb3.9)
+            __LLDB_Package="lldb-3.9-dev"
+            ;;
         no-lldb)
             unset __LLDB_Package
             ;;
@@ -131,14 +134,36 @@ fi
 
 if [[ -n $__LinuxCodeName ]]; then
     qemu-debootstrap --arch $__UbuntuArch $__LinuxCodeName $__RootfsDir $__UbuntuRepo
+    if [ $? -ne 0 ]; then
+        install_Failed
+    fi
     cp $__CrossDir/$__BuildArch/sources.list.$__LinuxCodeName $__RootfsDir/etc/apt/sources.list
+    if [ $? -ne 0 ]; then
+        install_Failed
+    fi
     chroot $__RootfsDir apt-get update
+    if [ $? -ne 0 ]; then
+        install_Failed
+    fi
     chroot $__RootfsDir apt-get -f -y install
+    if [ $? -ne 0 ]; then
+        install_Failed
+    fi
     chroot $__RootfsDir apt-get -y install $__UbuntuPackages
+    if [ $? -ne 0 ]; then
+        install_Failed
+    fi
     chroot $__RootfsDir symlinks -cr /usr
+    if [ $? -ne 0 ]; then
+        install_Failed
+    fi
 
     if [ $__SkipUnmount == 0 ]; then
         umount $__RootfsDir/*
+        if [ $? -ne 0 ]; then
+            echo "Failed to unmount RootfsDir."
+            exit 1
+        fi
     fi
 
     if [[ "$__BuildArch" == "arm" && "$__LinuxCodeName" == "trusty" ]]; then
@@ -153,3 +178,9 @@ else
     usage;
     exit 1
 fi
+
+install_Failed()
+{
+    echo "Failed to install/symlink packages."
+    exit 1
+}
