@@ -112,7 +112,7 @@ namespace System
         public static ulong Parse(String s)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseUInt64(s.AsSpan(), NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
+            return Number.ParseUInt64(s.AsReadOnlySpan(), NumberStyles.Integer, NumberFormatInfo.CurrentInfo);
         }
 
         [CLSCompliant(false)]
@@ -120,14 +120,14 @@ namespace System
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseUInt64(s.AsSpan(), style, NumberFormatInfo.CurrentInfo);
+            return Number.ParseUInt64(s.AsReadOnlySpan(), style, NumberFormatInfo.CurrentInfo);
         }
 
         [CLSCompliant(false)]
         public static ulong Parse(string s, IFormatProvider provider)
         {
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseUInt64(s.AsSpan(), NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseUInt64(s.AsReadOnlySpan(), NumberStyles.Integer, NumberFormatInfo.GetInstance(provider));
         }
 
         [CLSCompliant(false)]
@@ -135,7 +135,7 @@ namespace System
         {
             NumberFormatInfo.ValidateParseStyleInteger(style);
             if (s == null) ThrowHelper.ThrowArgumentNullException(ExceptionArgument.s);
-            return Number.ParseUInt64(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider));
+            return Number.ParseUInt64(s.AsReadOnlySpan(), style, NumberFormatInfo.GetInstance(provider));
         }
 
         [CLSCompliant(false)]
@@ -154,7 +154,7 @@ namespace System
                 return false;
             }
 
-            return Number.TryParseUInt64(s.AsSpan(), NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
+            return Number.TryParseUInt64(s.AsReadOnlySpan(), NumberStyles.Integer, NumberFormatInfo.CurrentInfo, out result);
         }
 
         [CLSCompliant(false)]
@@ -168,7 +168,7 @@ namespace System
                 return false;
             }
 
-            return Number.TryParseUInt64(s.AsSpan(), style, NumberFormatInfo.GetInstance(provider), out result);
+            return Number.TryParseUInt64(s.AsReadOnlySpan(), style, NumberFormatInfo.GetInstance(provider), out result);
         }
 
         [CLSCompliant(false)]

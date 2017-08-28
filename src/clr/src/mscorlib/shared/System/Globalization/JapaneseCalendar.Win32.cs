@@ -159,7 +159,7 @@ namespace System.Globalization
             int month;
             int day;
 
-            ReadOnlySpan<char> valueSpan = value.AsSpan();
+            ReadOnlySpan<char> valueSpan = value.AsReadOnlySpan();
             if (!Int32.TryParse(valueSpan.Slice(0, 4), out year, style:NumberStyles.None, provider: NumberFormatInfo.InvariantInfo) ||
                 !Int32.TryParse(valueSpan.Slice(5, 2), out month, style:NumberStyles.None, provider: NumberFormatInfo.InvariantInfo) ||
                 !Int32.TryParse(valueSpan.Slice(8, 2), out day, style:NumberStyles.None, provider: NumberFormatInfo.InvariantInfo))

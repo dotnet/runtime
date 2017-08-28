@@ -1268,7 +1268,7 @@ namespace System
         [System.Runtime.CompilerServices.FriendAccessAllowed]
         internal unsafe static Boolean TryStringToNumber(String str, NumberStyles options, ref NumberBuffer number, StringBuilder sb, NumberFormatInfo numfmt, Boolean parseDecimal) =>
             str != null ?
-                TryStringToNumber(str.AsSpan(), options, ref number, numfmt, parseDecimal) :
+                TryStringToNumber(str.AsReadOnlySpan(), options, ref number, numfmt, parseDecimal) :
                 false;
 
         internal static unsafe Boolean TryStringToNumber(ReadOnlySpan<char> str, NumberStyles options, ref NumberBuffer number, NumberFormatInfo numfmt, Boolean parseDecimal)
