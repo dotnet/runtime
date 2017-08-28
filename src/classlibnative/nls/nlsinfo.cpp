@@ -91,7 +91,7 @@ INT32 COMNlsInfo::CallGetUserDefaultUILanguage()
 //  InternalGetGlobalizedHashCode
 //
 ////////////////////////////////////////////////////////////////////////////
-INT32 QCALLTYPE COMNlsInfo::InternalGetGlobalizedHashCode(INT_PTR handle, LPCWSTR localeName, LPCWSTR string, INT32 length, INT32 dwFlagsIn, INT64 additionalEntropy)
+INT32 QCALLTYPE COMNlsInfo::InternalGetGlobalizedHashCode(INT_PTR handle, LPCWSTR localeName, LPCWSTR string, INT32 length, INT32 dwFlagsIn)
 {
     CONTRACTL
     {
@@ -140,7 +140,7 @@ INT32 QCALLTYPE COMNlsInfo::InternalGetGlobalizedHashCode(INT_PTR handle, LPCWST
             NewApis::LCMapStringEx(handle != NULL ? NULL : localeName, dwFlags, string, length, (LPWSTR)pByte, byteCount, NULL,NULL, (LPARAM) handle);
         }
 
-        iReturnHash = COMNlsHashProvider::s_NlsHashProvider.HashSortKey(pByte, byteCount, true, additionalEntropy);
+        iReturnHash = COMNlsHashProvider::s_NlsHashProvider.HashSortKey(pByte, byteCount);
     }
     END_QCALL;
     return(iReturnHash);

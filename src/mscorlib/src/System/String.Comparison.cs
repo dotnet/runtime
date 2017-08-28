@@ -1002,34 +1002,14 @@ namespace System
             return !String.Equals(a, b);
         }
 
-#if FEATURE_RANDOMIZED_STRING_HASHING
-        // Do not remove!
-        // This method is called by reflection in System.Xml
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern int InternalMarvin32HashString(string s, int strLen, long additionalEntropy);
-
-        internal static bool UseRandomizedHashing()
-        {
-            return InternalUseRandomizedHashing();
-        }
-
-        [System.Security.SuppressUnmanagedCodeSecurity]
-        [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
-        private static extern bool InternalUseRandomizedHashing();
-#endif
+        private static extern int InternalMarvin32HashString(string s);
 
         // Gets a hash code for this string.  If strings A and B are such that A.Equals(B), then
         // they will return the same hash code.
         public override int GetHashCode()
         {
-#if FEATURE_RANDOMIZED_STRING_HASHING
-            if (HashHelpers.s_UseRandomizedStringHashing)
-            {
-                return InternalMarvin32HashString(this, this.Length, 0);
-            }
-#endif // FEATURE_RANDOMIZED_STRING_HASHING
-
-            return GetLegacyNonRandomizedHashCode();
+            return InternalMarvin32HashString(this);
         }
 
         // Gets a hash code for this string and this comparison. If strings A and B and comparition C are such
