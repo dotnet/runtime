@@ -37,25 +37,25 @@ namespace System
         public DuplicateWaitObjectException()
             : base(DuplicateWaitObjectMessage)
         {
-            HResult = __HResults.COR_E_DUPLICATEWAITOBJECT;
+            HResult = HResults.COR_E_DUPLICATEWAITOBJECT;
         }
 
         public DuplicateWaitObjectException(String parameterName)
             : base(DuplicateWaitObjectMessage, parameterName)
         {
-            HResult = __HResults.COR_E_DUPLICATEWAITOBJECT;
+            HResult = HResults.COR_E_DUPLICATEWAITOBJECT;
         }
 
         public DuplicateWaitObjectException(String parameterName, String message)
             : base(message, parameterName)
         {
-            HResult = __HResults.COR_E_DUPLICATEWAITOBJECT;
+            HResult = HResults.COR_E_DUPLICATEWAITOBJECT;
         }
 
         public DuplicateWaitObjectException(String message, Exception innerException)
             : base(message, innerException)
         {
-            HResult = __HResults.COR_E_DUPLICATEWAITOBJECT;
+            HResult = HResults.COR_E_DUPLICATEWAITOBJECT;
         }
         
         protected DuplicateWaitObjectException(SerializationInfo info, StreamingContext context) : base(info, context)

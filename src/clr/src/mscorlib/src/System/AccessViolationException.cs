@@ -21,19 +21,19 @@ namespace System
         public AccessViolationException()
             : base(SR.Arg_AccessViolationException)
         {
-            HResult = __HResults.E_POINTER;
+            HResult = HResults.E_POINTER;
         }
 
         public AccessViolationException(String message)
             : base(message)
         {
-            HResult = __HResults.E_POINTER;
+            HResult = HResults.E_POINTER;
         }
 
         public AccessViolationException(String message, Exception innerException)
             : base(message, innerException)
         {
-            HResult = __HResults.E_POINTER;
+            HResult = HResults.E_POINTER;
         }
 
         protected AccessViolationException(SerializationInfo info, StreamingContext context) : base(info, context)
