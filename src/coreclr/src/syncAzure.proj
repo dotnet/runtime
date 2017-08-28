@@ -3,13 +3,9 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
 
   <PropertyGroup>
-    <ContainerNamePrefix Condition="'$(ContainerNamePrefix)' == ''">coreclr-$(PreReleaseLabel)</ContainerNamePrefix>
-    <ContainerName Condition="'$(__Container)' == '' and '$(ContainerNamePrefix)' != '' and '$(BuildNumberMajor)' != '' and '$(BuildNumberMinor)' != ''">$(ContainerNamePrefix)-$(BuildNumberMajor)-$(BuildNumberMinor)</ContainerName>
-    <ContainerName Condition="'$(__Container)' != ''">$(__Container)</ContainerName>
     <ContainerName>$(ContainerName.Replace(".","-"))</ContainerName>
     <BlobNamePrefix>$(__BlobNamePrefix)</BlobNamePrefix>
-    <DownloadDirectory Condition="'$(PublishTestNativeBins)' != 'true'">$(PackagesDir)AzureTransfer</DownloadDirectory>
-    <DownloadDirectory Condition="'$(PublishTestNativeBins)' == 'true'">$(PackagesDir)TestNativeBins\$(RuntimeId)</DownloadDirectory>
+    <DownloadDirectory Condition="'$(DownloadDirectory)' == ''">$(PackagesDir)AzureTransfer</DownloadDirectory>
   </PropertyGroup>
 
   <Import Project="$(ToolsDir)SyncCloudContent.targets" />
@@ -17,10 +13,10 @@
   <Target Name="ValidateRequiredProperties">
     <Error Condition="'$(CloudDropAccountName)' == ''" Text="Missing property CloudDropAccountName." />
     <Error Condition="'$(CloudDropAccessToken)' == ''" Text="Missing property CloudDropAccessToken." />
-    <Error Condition="'$(__Container)' == '' and '$(PublishTestNativeBins)' == 'true'" Text="Missing property Container." />
+    <Error Condition="'$(ContainerName)' == '' and '$(PublishTestNativeBins)' == 'true'" Text="Missing property Container." />
     <Error Condition="'$(RuntimeId)' == '' and '$(PublishTestNativeBins)' == 'true'" Text="Missing property RuntimeId." />
   </Target>
 
   <!-- We don't want to run sync on test native binaries for Windows, since those don't get published -->
-  <Target Name="Build" DependsOnTargets="ValidateRequiredProperties;DownloadBlobsFromAzureTargets" Condition="'$(PublishTestNativeBins)' != 'true' or !$(RuntimeId.ToLower().StartsWith('win'))"/>
+  <Target Name="Build" DependsOnTargets="ValidateRequiredProperties;DownloadBlobsFromAzureTargets" Condition="!$(RuntimeId.ToLower().StartsWith('win'))"/>
 </Project>

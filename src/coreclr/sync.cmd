@@ -28,11 +28,7 @@ echo              To download from a specific container, specify:
 echo                 -Container="container name"
 echo              To download blobs starting with a specific prefix, specify:
 echo                 -BlobNamePrefix="Blob name prefix"
-echo     -n     - Downloads test native binaries from the specified container
-echo              The following properties are required:
-echo                 -AzureAccount="Account name"
-echo                 -AzureToken="Access token"
-echo                 -Container="Container name"
+echo              To specify which RID you are downloading binaries for (optional):
 echo                 -RuntimeId="RID" (Needs to match what's in the container)
 echo.
 echo.
