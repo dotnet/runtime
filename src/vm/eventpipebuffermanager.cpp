@@ -33,6 +33,49 @@ EventPipeBufferManager::EventPipeBufferManager()
 #endif // _DEBUG
 }
 
+EventPipeBufferManager::~EventPipeBufferManager()
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_TRIGGERS;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    if(m_pPerThreadBufferList != NULL)
+    {
+        SListElem<EventPipeBufferList*> *pElem = m_pPerThreadBufferList->GetHead();
+        while(pElem != NULL)
+        {
+            SListElem<EventPipeBufferList*> *pCurElem = pElem;
+
+            EventPipeBufferList *pThreadBufferList = pCurElem->GetValue();
+            if (!pThreadBufferList->OwnedByThread())
+            {
+                Thread *pThread = NULL;
+                while ((pThread = ThreadStore::GetThreadList(pThread)) != NULL)
+                {
+                    if (pThread->GetEventPipeBufferList() == pThreadBufferList)
+                    {
+                        pThread->SetEventPipeBufferList(NULL);
+                        break;
+                    }
+                }
+
+                // We don't delete buffers themself because they can be in-use
+                delete(pThreadBufferList);
+            }
+
+            pElem = m_pPerThreadBufferList->GetNext(pElem);
+            delete(pCurElem);
+        }
+
+        delete(m_pPerThreadBufferList);
+        m_pPerThreadBufferList = NULL;
+    }
+}
+
 EventPipeBuffer* EventPipeBufferManager::AllocateBufferForThread(Thread *pThread, unsigned int requestSize)
 {
     CONTRACTL
@@ -436,8 +479,15 @@ void EventPipeBufferManager::DeAllocateBuffers()
 
                             // In DEBUG, make sure that the element was found and removed.
                             _ASSERTE(pElem != NULL);
+
+                            SListElem<EventPipeBufferList*> *pCurElem = pElem;
+                            pElem = m_pPerThreadBufferList->GetNext(pElem);
+                            delete(pCurElem);
                         }
-                        pElem = m_pPerThreadBufferList->GetNext(pElem);
+                        else
+                        {
+                            pElem = m_pPerThreadBufferList->GetNext(pElem);
+                        }
                     }
 
                     // Remove the list reference from the thread.
@@ -483,12 +533,18 @@ void EventPipeBufferManager::DeAllocateBuffers()
             pElem = m_pPerThreadBufferList->FindAndRemove(pElem);
             _ASSERTE(pElem != NULL);
 
+            SListElem<EventPipeBufferList*> *pCurElem = pElem;
+            pElem = m_pPerThreadBufferList->GetNext(pElem);
+            delete(pCurElem);
+
             // Now that all of the list elements have been freed, free the list itself.
             delete(pBufferList);
             pBufferList = NULL;
         }
-
-        pElem = m_pPerThreadBufferList->GetNext(pElem);
+        else
+        {
+            pElem = m_pPerThreadBufferList->GetNext(pElem);
+        }
     } 
 }
 

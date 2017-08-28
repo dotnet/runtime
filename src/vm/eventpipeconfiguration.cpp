@@ -35,6 +35,12 @@ EventPipeConfiguration::~EventPipeConfiguration()
     }
     CONTRACTL_END;
 
+    if(m_pConfigProvider != NULL)
+    {
+        delete(m_pConfigProvider);
+        m_pConfigProvider = NULL;
+    }
+
     if(m_pEnabledProviderList != NULL)
     {
         delete(m_pEnabledProviderList);
@@ -43,6 +49,15 @@ EventPipeConfiguration::~EventPipeConfiguration()
 
     if(m_pProviderList != NULL)
     {
+        SListElem<EventPipeProvider*> *pElem = m_pProviderList->GetHead();
+        while(pElem != NULL)
+        {
+            // We don't delete provider itself because it can be in-use
+            SListElem<EventPipeProvider*> *pCurElem = pElem;
+            pElem = m_pProviderList->GetNext(pElem);
+            delete(pCurElem);
+        }
+
         delete(m_pProviderList);
         m_pProviderList = NULL;
     }
@@ -139,6 +154,7 @@ bool EventPipeConfiguration::UnregisterProvider(EventPipeProvider &provider)
     {
         if(m_pProviderList->FindAndRemove(pElem) != NULL)
         {
+            delete(pElem);
             return true;
         }
     }
@@ -402,9 +418,14 @@ void EventPipeConfiguration::DeleteDeferredProviders()
         {
             // The act of deleting the provider unregisters it and removes it from the list.
             delete(pProvider);
+            SListElem<EventPipeProvider*> *pCurElem = pElem;
+            pElem = m_pProviderList->GetNext(pElem);
+            delete(pCurElem);
         }
-
-        pElem = m_pProviderList->GetNext(pElem);
+        else
+        {
+            pElem = m_pProviderList->GetNext(pElem);
+        }
     }
 }
 

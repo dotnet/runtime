@@ -62,6 +62,7 @@ private:
 public:
 
     EventPipeBufferManager();
+    ~EventPipeBufferManager();
 
     // Write an event to the input thread's current event buffer.
     // An optional eventThread can be provided for sample profiler events.
