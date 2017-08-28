@@ -51,12 +51,9 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
-using System.Text;
-using System;
 using System.Diagnostics;
-using System.Diagnostics.Contracts;
-using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Text;
 
 namespace System.Globalization
 {
@@ -73,13 +70,7 @@ namespace System.Globalization
         internal const int maxFraction = 9999999;
 
         #region InternalSupport
-        private enum TimeSpanThrowStyle
-        {
-            None = 0,
-            All = 1,
-        }
-
-        private enum ParseFailureKind
+        private enum ParseFailureKind : byte
         {
             None = 0,
             ArgumentNull = 1,
@@ -89,7 +80,7 @@ namespace System.Globalization
         }
 
         [Flags]
-        private enum TimeSpanStandardStyles
+        private enum TimeSpanStandardStyles : byte
         {     // Standard Format Styles
             None = 0x00000000,
             Invariant = 0x00000001, //Allow Invariant Culture
@@ -99,7 +90,7 @@ namespace System.Globalization
         }
 
         // TimeSpan Token Types
-        private enum TTT
+        private enum TTT : byte
         {
             None = 0,    // None of the TimeSpanToken fields are set
             End = 1,    // '\0'
@@ -116,40 +107,33 @@ namespace System.Globalization
             internal int zeroes;        // Store the number of leading zeroes (if any)
             internal ReadOnlySpan<char> sep;        // Store the literal that we are parsing (if any)
 
-            public TimeSpanToken(int number)
-            {
-                ttt = TTT.Num;
-                num = number;
-                zeroes = 0;
-                sep = default(ReadOnlySpan<char>);
-            }
+            public TimeSpanToken(TTT type) : this(type, 0, 0, default(ReadOnlySpan<char>)) { }
 
-            public TimeSpanToken(int leadingZeroes, int number)
+            public TimeSpanToken(int number) : this(TTT.Num, number, 0, default(ReadOnlySpan<char>)) { }
+
+            public TimeSpanToken(int number, int leadingZeroes) : this(TTT.Num, number, leadingZeroes, default(ReadOnlySpan<char>)) { }
+
+            public TimeSpanToken(TTT type, int number, int leadingZeroes, ReadOnlySpan<char> separator)
             {
-                ttt = TTT.Num;
+                ttt = type;
                 num = number;
                 zeroes = leadingZeroes;
-                sep = default(ReadOnlySpan<char>);
+                sep = separator;
             }
 
-            public bool IsInvalidNumber(int maxValue, int maxPrecision)
+            public bool IsInvalidFraction()
             {
                 Debug.Assert(ttt == TTT.Num);
                 Debug.Assert(num > -1);
-                Debug.Assert(maxValue > 0);
-                Debug.Assert(maxPrecision == maxFractionDigits || maxPrecision == unlimitedDigits);
 
-                if (num > maxValue)
+                if (num > maxFraction || zeroes > maxFractionDigits)
                     return true;
-                if (maxPrecision == unlimitedDigits)
-                    return false; // all validation past this point applies only to fields with precision limits
-                if (zeroes > maxPrecision)
-                    return true;
+
                 if (num == 0 || zeroes == 0)
                     return false;
 
                 // num > 0 && zeroes > 0 && num <= maxValue && zeroes <= maxPrecision
-                return (num >= (maxValue / (long)Math.Pow(10, zeroes - 1)));
+                return num >= maxFraction / Pow10(zeroes - 1);
             }
         }
 
@@ -161,69 +145,90 @@ namespace System.Globalization
         [IsByRefLike]
         private struct TimeSpanTokenizer
         {
-            private int m_pos;
             private ReadOnlySpan<char> m_value;
+            private int m_pos;
 
-            internal void Init(ReadOnlySpan<char> input)
+            internal TimeSpanTokenizer(ReadOnlySpan<char> input) : this(input, 0) { }
+
+            internal TimeSpanTokenizer(ReadOnlySpan<char> input, int startPosition)
             {
-                Init(input, 0);
-            }
-            internal void Init(ReadOnlySpan<char> input, int startPosition)
-            {
-                m_pos = startPosition;
                 m_value = input;
+                m_pos = startPosition;
             }
+
             // used by the parsing routines that operate on standard-formats
             internal TimeSpanToken GetNextToken()
             {
-                Debug.Assert(m_pos > -1);
-
-                TimeSpanToken tok = new TimeSpanToken();
-                char ch = CurrentChar;
-
-                if (ch == (char)0)
+                // Get the position of the next character to be processed.  If there is no
+                // next character, we're at the end.
+                int pos = m_pos;
+                Debug.Assert(pos > -1);
+                if (pos >= m_value.Length)
                 {
-                    tok.ttt = TTT.End;
-                    return tok;
+                    return new TimeSpanToken(TTT.End);
                 }
 
-                if (ch >= '0' && ch <= '9')
+                // Now retrieve that character. If it's a digit, we're processing a number.
+                int num = m_value[pos] - '0';
+                if ((uint)num <= 9)
                 {
-                    tok.ttt = TTT.Num;
-                    tok.num = 0;
-                    tok.zeroes = 0;
-                    do
+                    int zeroes = 0;
+                    if (num == 0)
                     {
-                        if ((tok.num & 0xF0000000) != 0)
+                        // Read all leading zeroes.
+                        zeroes = 1;
+                        while (true)
                         {
-                            tok.ttt = TTT.NumOverflow;
-                            return tok;
-                        }
-                        tok.num = tok.num * 10 + ch - '0';
-                        if (tok.num == 0) tok.zeroes++;
-                        if (tok.num < 0)
-                        {
-                            tok.ttt = TTT.NumOverflow;
-                            return tok;
-                        }
-                        ch = NextChar;
-                    } while (ch >= '0' && ch <= '9');
-                    return tok;
-                }
-                else
-                {
-                    tok.ttt = TTT.Sep;
-                    int startIndex = m_pos;
-                    int length = 0;
+                            int digit;
+                            if (++m_pos >= m_value.Length || (uint)(digit = m_value[m_pos] - '0') > 9)
+                            {
+                                return new TimeSpanToken(TTT.Num, 0, zeroes, default(ReadOnlySpan<char>));
+                            }
 
-                    while (ch != (char)0 && (ch < '0' || '9' < ch))
-                    {
-                        ch = NextChar;
-                        length++;
+                            if (digit == 0)
+                            {
+                                zeroes++;
+                                continue;
+                            }
+
+                            num = digit;
+                            break;
+                        }
                     }
-                    tok.sep = m_value.Slice(startIndex, length);
-                    return tok;
+
+                    // Continue to read as long as we're reading digits.
+                    while (++m_pos < m_value.Length)
+                    {
+                        int digit = m_value[m_pos] - '0';
+                        if ((uint)digit > 9)
+                        {
+                            break;
+                        }
+
+                        num = num * 10 + digit;
+                        if ((num & 0xF0000000) != 0)
+                        {
+                            return new TimeSpanToken(TTT.NumOverflow);
+                        }
+                    }
+
+                    return new TimeSpanToken(TTT.Num, num, zeroes, default(ReadOnlySpan<char>));
                 }
+
+                // Otherwise, we're processing a separator, and we've already processed the first
+                // character of it.  Continue processing characters as long as they're not digits.
+                int length = 1;
+                while (true)
+                {
+                    if (++m_pos >= m_value.Length || (uint)(m_value[m_pos] - '0') <= 9)
+                    {
+                        break;
+                    }
+                    length++;
+                }
+
+                // Return the separator.
+                return new TimeSpanToken(TTT.Sep, 0, 0, m_value.Slice(pos, length));
             }
 
             internal Boolean EOL
@@ -233,6 +238,7 @@ namespace System.Globalization
                     return m_pos >= (m_value.Length - 1);
                 }
             }
+
             // BackOne, NextChar, CurrentChar - used by ParseExact (ParseByFormat) to operate
             // on custom-formats where exact character-by-character control is allowed
             internal void BackOne()
@@ -244,27 +250,13 @@ namespace System.Globalization
             {
                 get
                 {
-                    m_pos++;
-                    return CurrentChar;
-                }
-            }
-            internal char CurrentChar
-            {
-                get
-                {
-                    if (m_pos > -1 && m_pos < m_value.Length)
-                    {
-                        return m_value[m_pos];
-                    }
-                    else
-                    {
-                        return (char)0;
-                    }
+                    int pos = ++m_pos;
+                    return (uint)pos < (uint)m_value.Length ?
+                        m_value[pos] :
+                        (char)0;
                 }
             }
         }
-
-
 
         // This stores intermediary parsing state for the standard formats
         [IsByRefLike]
@@ -440,23 +432,8 @@ namespace System.Globalization
 
             internal Boolean ProcessToken(ref TimeSpanToken tok, ref TimeSpanResult result)
             {
-                if (tok.ttt == TTT.NumOverflow)
-                {
-                    result.SetFailure(ParseFailureKind.Overflow, "Overflow_TimeSpanElementTooLarge", null);
-                    return false;
-                }
-                if (tok.ttt != TTT.Sep && tok.ttt != TTT.Num)
-                {
-                    // Some unknown token or a repeat token type in the input
-                    result.SetFailure(ParseFailureKind.Format, "Format_BadTimeSpan", null);
-                    return false;
-                }
-
                 switch (tok.ttt)
                 {
-                    case TTT.Sep:
-                        if (!AddSep(tok.sep, ref result)) return false;
-                        break;
                     case TTT.Num:
                         if (tokenCount == 0)
                         {
@@ -464,8 +441,16 @@ namespace System.Globalization
                         }
                         if (!AddNum(tok, ref result)) return false;
                         break;
-                    default:
+                    case TTT.Sep:
+                        if (!AddSep(tok.sep, ref result)) return false;
                         break;
+                    case TTT.NumOverflow:
+                        result.SetFailure(ParseFailureKind.Overflow, "Overflow_TimeSpanElementTooLarge", null);
+                        return false;
+                    default:
+                        // Some unknown token or a repeat token type in the input
+                        result.SetFailure(ParseFailureKind.Format, "Format_BadTimeSpan", null);
+                        return false;
                 }
 
                 lastSeenTTT = tok.ttt;
@@ -488,10 +473,7 @@ namespace System.Globalization
                     case 2: literals2 = sep; break;
                     case 3: literals3 = sep; break;
                     case 4: literals4 = sep; break;
-                    case 5: literals5 = sep; break;
-#if DEBUG
-                    default: Debug.Fail($"Expected MaxLiteralTokens == 6"); break;
-#endif
+                    default: literals5 = sep; break;
                 }
 
                 tokenCount++;
@@ -511,10 +493,7 @@ namespace System.Globalization
                     case 1: numbers1 = num; break;
                     case 2: numbers2 = num; break;
                     case 3: numbers3 = num; break;
-                    case 4: numbers4 = num; break;
-#if DEBUG
-                    default: Debug.Fail($"Expected MaxNumericTokens == 5"); break;
-#endif
+                    default: numbers4 = num; break;
                 }
 
                 tokenCount++;
@@ -526,69 +505,69 @@ namespace System.Globalization
         private struct TimeSpanResult
         {
             internal TimeSpan parsedTimeSpan;
-            internal TimeSpanThrowStyle throwStyle;
+            internal readonly bool throwOnFailure;
 
-            internal ParseFailureKind m_failure;
-            internal string m_failureMessageID;
-            internal object m_failureMessageFormatArgument;
-            internal string m_failureArgumentName;
-
-            internal void Init(TimeSpanThrowStyle canThrow)
+            internal TimeSpanResult(bool canThrow) : this()
             {
-                parsedTimeSpan = default(TimeSpan);
-                throwStyle = canThrow;
+                throwOnFailure = canThrow;
             }
+
             internal void SetFailure(ParseFailureKind failure, string failureMessageID)
             {
                 SetFailure(failure, failureMessageID, null, null);
             }
+
             internal void SetFailure(ParseFailureKind failure, string failureMessageID, object failureMessageFormatArgument)
             {
                 SetFailure(failure, failureMessageID, failureMessageFormatArgument, null);
             }
-            internal void SetFailure(ParseFailureKind failure, string failureMessageID, object failureMessageFormatArgument,
-                                     string failureArgumentName)
+
+            internal void SetFailure(ParseFailureKind failure, string failureMessageID, object failureMessageFormatArgument, string failureArgumentName)
             {
-                m_failure = failure;
-                m_failureMessageID = failureMessageID;
-                m_failureMessageFormatArgument = failureMessageFormatArgument;
-                m_failureArgumentName = failureArgumentName;
-                if (throwStyle != TimeSpanThrowStyle.None)
+                if (throwOnFailure)
                 {
-                    throw GetTimeSpanParseException();
+                    switch (failure)
+                    {
+                        case ParseFailureKind.ArgumentNull:
+                            throw new ArgumentNullException(failureArgumentName, SR.GetResourceString(failureMessageID));
+
+                        case ParseFailureKind.FormatWithParameter:
+                            throw new FormatException(SR.Format(SR.GetResourceString(failureMessageID), failureMessageFormatArgument));
+
+                        case ParseFailureKind.Overflow:
+                            throw new OverflowException(SR.GetResourceString(failureMessageID));
+
+                        default:
+                            Debug.Assert(failure == ParseFailureKind.Format, $"Unexpected failure {failure}");
+                            throw new FormatException(SR.GetResourceString(failureMessageID));
+                    }
                 }
             }
+        }
 
-            internal Exception GetTimeSpanParseException()
+        private static long Pow10(int pow)
+        {
+            switch (pow)
             {
-                switch (m_failure)
-                {
-                    case ParseFailureKind.ArgumentNull:
-                        return new ArgumentNullException(m_failureArgumentName, SR.GetResourceString(m_failureMessageID));
-
-                    case ParseFailureKind.FormatWithParameter:
-                        return new FormatException(SR.Format(SR.GetResourceString(m_failureMessageID), m_failureMessageFormatArgument));
-
-                    case ParseFailureKind.Format:
-                        return new FormatException(SR.GetResourceString(m_failureMessageID));
-
-                    case ParseFailureKind.Overflow:
-                        return new OverflowException(SR.GetResourceString(m_failureMessageID));
-
-                    default:
-                        Debug.Assert(false, "Unknown TimeSpanParseFailure: " + m_failure);
-                        return new FormatException(SR.Format_InvalidString);
-                }
+                case 0:  return 1;
+                case 1:  return 10;
+                case 2:  return 100;
+                case 3:  return 1000;
+                case 4:  return 10000;
+                case 5:  return 100000;
+                case 6:  return 1000000;
+                case 7:  return 10000000;
+                default: return (long)Math.Pow(10, pow);
             }
         }
 
         private static bool TryTimeToTicks(bool positive, TimeSpanToken days, TimeSpanToken hours, TimeSpanToken minutes, TimeSpanToken seconds, TimeSpanToken fraction, out long result)
         {
-            if (days.IsInvalidNumber(maxDays, unlimitedDigits)
-             || hours.IsInvalidNumber(maxHours, unlimitedDigits)
-             || minutes.IsInvalidNumber(maxMinutes, unlimitedDigits)
-             || seconds.IsInvalidNumber(maxSeconds, unlimitedDigits)
-             || fraction.IsInvalidNumber(maxFraction, maxFractionDigits))
+            if (days.num > maxDays ||
+                hours.num > maxHours ||
+                minutes.num > maxMinutes ||
+                seconds.num > maxSeconds ||
+                fraction.IsInvalidFraction())
             {
                 result = 0;
                 return false;
@@ -615,7 +594,7 @@ namespace System.Globalization
                 long lowerLimit = TimeSpan.TicksPerTenthSecond;
                 if (fraction.zeroes > 0)
                 {
-                    long divisor = (long)Math.Pow(10, fraction.zeroes);
+                    long divisor = Pow10(fraction.zeroes);
                     lowerLimit = lowerLimit / divisor;
                 }
                 while (f < lowerLimit)
@@ -642,22 +621,14 @@ namespace System.Globalization
         #region ParseMethods
         internal static TimeSpan Parse(ReadOnlySpan<char> input, IFormatProvider formatProvider)
         {
-            TimeSpanResult parseResult = new TimeSpanResult();
-            parseResult.Init(TimeSpanThrowStyle.All);
-
-            if (TryParseTimeSpan(input, TimeSpanStandardStyles.Any, formatProvider, ref parseResult))
-            {
-                return parseResult.parsedTimeSpan;
-            }
-            else
-            {
-                throw parseResult.GetTimeSpanParseException();
-            }
+            TimeSpanResult parseResult = new TimeSpanResult(canThrow: true);
+            bool success = TryParseTimeSpan(input, TimeSpanStandardStyles.Any, formatProvider, ref parseResult);
+            Debug.Assert(success, "Should have thrown on failure");
+            return parseResult.parsedTimeSpan;
         }
         internal static Boolean TryParse(ReadOnlySpan<char> input, IFormatProvider formatProvider, out TimeSpan result)
         {
-            TimeSpanResult parseResult = new TimeSpanResult();
-            parseResult.Init(TimeSpanThrowStyle.None);
+            TimeSpanResult parseResult = new TimeSpanResult(canThrow: false);
 
             if (TryParseTimeSpan(input, TimeSpanStandardStyles.Any, formatProvider, ref parseResult))
             {
@@ -670,22 +641,14 @@ namespace System.Globalization
         }
         internal static TimeSpan ParseExact(ReadOnlySpan<char> input, String format, IFormatProvider formatProvider, TimeSpanStyles styles)
         {
-            TimeSpanResult parseResult = new TimeSpanResult();
-            parseResult.Init(TimeSpanThrowStyle.All);
-
-            if (TryParseExactTimeSpan(input, format, formatProvider, styles, ref parseResult))
-            {
-                return parseResult.parsedTimeSpan;
-            }
-            else
-            {
-                throw parseResult.GetTimeSpanParseException();
-            }
+            TimeSpanResult parseResult = new TimeSpanResult(canThrow: true);
+            bool success = TryParseExactTimeSpan(input, format, formatProvider, styles, ref parseResult);
+            Debug.Assert(success, "Should have thrown on failure");
+            return parseResult.parsedTimeSpan;
         }
         internal static Boolean TryParseExact(ReadOnlySpan<char> input, String format, IFormatProvider formatProvider, TimeSpanStyles styles, out TimeSpan result)
         {
-            TimeSpanResult parseResult = new TimeSpanResult();
-            parseResult.Init(TimeSpanThrowStyle.None);
+            TimeSpanResult parseResult = new TimeSpanResult(canThrow: false);
 
             if (TryParseExactTimeSpan(input, format, formatProvider, styles, ref parseResult))
             {
@@ -698,22 +661,14 @@ namespace System.Globalization
         }
         internal static TimeSpan ParseExactMultiple(ReadOnlySpan<char> input, String[] formats, IFormatProvider formatProvider, TimeSpanStyles styles)
         {
-            TimeSpanResult parseResult = new TimeSpanResult();
-            parseResult.Init(TimeSpanThrowStyle.All);
-
-            if (TryParseExactMultipleTimeSpan(input, formats, formatProvider, styles, ref parseResult))
-            {
-                return parseResult.parsedTimeSpan;
-            }
-            else
-            {
-                throw parseResult.GetTimeSpanParseException();
-            }
+            TimeSpanResult parseResult = new TimeSpanResult(canThrow: true);
+            bool success = TryParseExactMultipleTimeSpan(input, formats, formatProvider, styles, ref parseResult);
+            Debug.Assert(success, "Should have thrown on failure");
+            return parseResult.parsedTimeSpan;
         }
         internal static Boolean TryParseExactMultiple(ReadOnlySpan<char> input, String[] formats, IFormatProvider formatProvider, TimeSpanStyles styles, out TimeSpan result)
         {
-            TimeSpanResult parseResult = new TimeSpanResult();
-            parseResult.Init(TimeSpanThrowStyle.None);
+            TimeSpanResult parseResult = new TimeSpanResult(canThrow: false);
 
             if (TryParseExactMultipleTimeSpan(input, formats, formatProvider, styles, ref parseResult))
             {
@@ -743,8 +698,7 @@ namespace System.Globalization
                 return false;
             }
 
-            TimeSpanTokenizer tokenizer = new TimeSpanTokenizer();
-            tokenizer.Init(input);
+            TimeSpanTokenizer tokenizer = new TimeSpanTokenizer(input);
 
             TimeSpanRawInfo raw = new TimeSpanRawInfo();
             raw.Init(DateTimeFormatInfo.GetInstance(formatProvider));
@@ -762,12 +716,8 @@ namespace System.Globalization
                 }
                 tok = tokenizer.GetNextToken();
             }
-            if (!tokenizer.EOL)
-            {
-                // embedded nulls in the input string
-                result.SetFailure(ParseFailureKind.Format, "Format_BadTimeSpan");
-                return false;
-            }
+            Debug.Assert(tokenizer.EOL);
+
             if (!ProcessTerminalState(ref raw, style, ref result))
             {
                 result.SetFailure(ParseFailureKind.Format, "Format_BadTimeSpan");
@@ -833,11 +783,12 @@ namespace System.Globalization
         // 
         private static Boolean ProcessTerminal_DHMSF(ref TimeSpanRawInfo raw, TimeSpanStandardStyles style, ref TimeSpanResult result)
         {
-            if (raw.SepCount != 6 || raw.NumCount != 5)
+            if (raw.SepCount != 6)
             {
                 result.SetFailure(ParseFailureKind.Format, "Format_BadTimeSpan");
                 return false;
             }
+            Debug.Assert(raw.NumCount == 5);
 
             bool inv = ((style & TimeSpanStandardStyles.Invariant) != 0);
             bool loc = ((style & TimeSpanStandardStyles.Localized) != 0);
@@ -904,11 +855,12 @@ namespace System.Globalization
         // 
         private static Boolean ProcessTerminal_HMS_F_D(ref TimeSpanRawInfo raw, TimeSpanStandardStyles style, ref TimeSpanResult result)
         {
-            if (raw.SepCount != 5 || raw.NumCount != 4 || (style & TimeSpanStandardStyles.RequireFull) != 0)
+            if (raw.SepCount != 5 || (style & TimeSpanStandardStyles.RequireFull) != 0)
             {
                 result.SetFailure(ParseFailureKind.Format, "Format_BadTimeSpan");
                 return false;
             }
+            Debug.Assert(raw.NumCount == 4);
 
             bool inv = ((style & TimeSpanStandardStyles.Invariant) != 0);
             bool loc = ((style & TimeSpanStandardStyles.Localized) != 0);
@@ -1034,11 +986,12 @@ namespace System.Globalization
         // 
         private static Boolean ProcessTerminal_HM_S_D(ref TimeSpanRawInfo raw, TimeSpanStandardStyles style, ref TimeSpanResult result)
         {
-            if (raw.SepCount != 4 || raw.NumCount != 3 || (style & TimeSpanStandardStyles.RequireFull) != 0)
+            if (raw.SepCount != 4 || (style & TimeSpanStandardStyles.RequireFull) != 0)
             {
                 result.SetFailure(ParseFailureKind.Format, "Format_BadTimeSpan");
                 return false;
             }
+            Debug.Assert(raw.NumCount == 3);
 
             bool inv = ((style & TimeSpanStandardStyles.Invariant) != 0);
             bool loc = ((style & TimeSpanStandardStyles.Localized) != 0);
@@ -1165,11 +1118,12 @@ namespace System.Globalization
         // 
         private static Boolean ProcessTerminal_HM(ref TimeSpanRawInfo raw, TimeSpanStandardStyles style, ref TimeSpanResult result)
         {
-            if (raw.SepCount != 3 || raw.NumCount != 2 || (style & TimeSpanStandardStyles.RequireFull) != 0)
+            if (raw.SepCount != 3 || (style & TimeSpanStandardStyles.RequireFull) != 0)
             {
                 result.SetFailure(ParseFailureKind.Format, "Format_BadTimeSpan");
                 return false;
             }
+            Debug.Assert(raw.NumCount == 2);
 
             bool inv = ((style & TimeSpanStandardStyles.Invariant) != 0);
             bool loc = ((style & TimeSpanStandardStyles.Localized) != 0);
@@ -1238,11 +1192,12 @@ namespace System.Globalization
         // 
         private static Boolean ProcessTerminal_D(ref TimeSpanRawInfo raw, TimeSpanStandardStyles style, ref TimeSpanResult result)
         {
-            if (raw.SepCount != 2 || raw.NumCount != 1 || (style & TimeSpanStandardStyles.RequireFull) != 0)
+            if (raw.SepCount != 2 || (style & TimeSpanStandardStyles.RequireFull) != 0)
             {
                 result.SetFailure(ParseFailureKind.Format, "Format_BadTimeSpan");
                 return false;
             }
+            Debug.Assert(raw.NumCount == 1);
 
             bool inv = ((style & TimeSpanStandardStyles.Invariant) != 0);
             bool loc = ((style & TimeSpanStandardStyles.Localized) != 0);
@@ -1317,6 +1272,7 @@ namespace System.Globalization
                 result.SetFailure(ParseFailureKind.ArgumentNull, "ArgumentNull_String", null, nameof(format));
                 return false;
             }
+
             if (format.Length == 0)
             {
                 result.SetFailure(ParseFailureKind.Format, "Format_BadFormatSpecifier");
@@ -1325,27 +1281,23 @@ namespace System.Globalization
 
             if (format.Length == 1)
             {
-                TimeSpanStandardStyles style = TimeSpanStandardStyles.None;
+                switch (format[0])
+                {
+                    case 'c':
+                    case 't':
+                    case 'T':
+                        return TryParseTimeSpanConstant(input, ref result); // fast path for legacy style TimeSpan formats.
 
-                if (format[0] == 'c' || format[0] == 't' || format[0] == 'T')
-                {
-                    // fast path for legacy style TimeSpan formats.
-                    return TryParseTimeSpanConstant(input, ref result);
+                    case 'g':
+                        return TryParseTimeSpan(input, TimeSpanStandardStyles.Localized, formatProvider, ref result);
+
+                    case 'G':
+                        return TryParseTimeSpan(input, TimeSpanStandardStyles.Localized | TimeSpanStandardStyles.RequireFull, formatProvider, ref result);
+
+                    default:
+                        result.SetFailure(ParseFailureKind.Format, "Format_BadFormatSpecifier");
+                        return false;
                 }
-                else if (format[0] == 'g')
-                {
-                    style = TimeSpanStandardStyles.Localized;
-                }
-                else if (format[0] == 'G')
-                {
-                    style = TimeSpanStandardStyles.Localized | TimeSpanStandardStyles.RequireFull;
-                }
-                else
-                {
-                    result.SetFailure(ParseFailureKind.Format, "Format_BadFormatSpecifier");
-                    return false;
-                }
-                return TryParseTimeSpan(input, style, formatProvider, ref result);
             }
 
             return TryParseByFormat(input, format, styles, ref result);
@@ -1374,8 +1326,7 @@ namespace System.Globalization
             int i = 0;                // format string position
             int tokenLen = 0;         // length of current format token, used to update index 'i'
 
-            TimeSpanTokenizer tokenizer = new TimeSpanTokenizer();
-            tokenizer.Init(input, -1);
+            TimeSpanTokenizer tokenizer = new TimeSpanTokenizer(input, -1);
 
             while (i < format.Length)
             {
@@ -1509,7 +1460,7 @@ namespace System.Globalization
                                          new TimeSpanToken(hh),
                                          new TimeSpanToken(mm),
                                          new TimeSpanToken(ss),
-                                         new TimeSpanToken(leadingZeroes, ff),
+                                         new TimeSpanToken(ff, leadingZeroes),
                                          out ticks))
             {
                 if (!positive) ticks = -ticks;
@@ -1794,8 +1745,7 @@ namespace System.Globalization
                 }
 
                 // Create a new non-throwing result each time to ensure the runs are independent.
-                TimeSpanResult innerResult = new TimeSpanResult();
-                innerResult.Init(TimeSpanThrowStyle.None);
+                TimeSpanResult innerResult = new TimeSpanResult(canThrow: false);
 
                 if (TryParseExactTimeSpan(input, formats[i], formatProvider, styles, ref innerResult))
                 {
