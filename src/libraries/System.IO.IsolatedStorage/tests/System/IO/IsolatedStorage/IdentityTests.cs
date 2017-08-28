@@ -37,8 +37,8 @@ namespace System.IO.IsolatedStorage
             Assert.Throws<InvalidOperationException>(() => storage.DomainIdentity);
         }
 
-        [Theory
-            InlineData(IsolatedStorageScope.Application | IsolatedStorageScope.User)
+        [Theory,
+            InlineData(IsolatedStorageScope.Application | IsolatedStorageScope.User),
             InlineData(IsolatedStorageScope.Application | IsolatedStorageScope.User | IsolatedStorageScope.Roaming)
             // https://github.com/dotnet/corefx/issues/12628
             // InlineData(IsolatedStorageScope.Application | IsolatedStorageScope.Machine)
@@ -51,8 +51,8 @@ namespace System.IO.IsolatedStorage
             Assert.Throws<InvalidOperationException>(() => storage.DomainIdentity);
         }
 
-        [Theory
-            InlineData(IsolatedStorageScope.Assembly | IsolatedStorageScope.User)
+        [Theory,
+            InlineData(IsolatedStorageScope.Assembly | IsolatedStorageScope.User),
             InlineData(IsolatedStorageScope.Assembly | IsolatedStorageScope.User | IsolatedStorageScope.Roaming)
             // https://github.com/dotnet/corefx/issues/12628
             // InlineData(IsolatedStorageScope.Assembly | IsolatedStorageScope.Machine)
@@ -65,8 +65,8 @@ namespace System.IO.IsolatedStorage
             Assert.Throws<InvalidOperationException>(() => storage.DomainIdentity);
         }
 
-        [Theory
-            InlineData(IsolatedStorageScope.Assembly | IsolatedStorageScope.User | IsolatedStorageScope.Domain)
+        [Theory,
+            InlineData(IsolatedStorageScope.Assembly | IsolatedStorageScope.User | IsolatedStorageScope.Domain),
             InlineData(IsolatedStorageScope.Assembly | IsolatedStorageScope.User | IsolatedStorageScope.Roaming | IsolatedStorageScope.Domain)
             // https://github.com/dotnet/corefx/issues/12628
             // InlineData(IsolatedStorageScope.Assembly | IsolatedStorageScope.Machine | IsolatedStorageScope.Domain)
