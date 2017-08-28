@@ -1191,48 +1191,6 @@ bool Lowering::IsRMWMemOpRootedAtStoreInd(GenTreePtr tree, GenTreePtr* outIndirC
     return true;
 }
 
-//------------------------------------------------------------------------------
-// isRMWRegOper: Can this binary tree node be used in a Read-Modify-Write format
-//
-// Arguments:
-//    tree      - a binary tree node
-//
-// Return Value:
-//    Returns true if we can use the read-modify-write instruction form
-//
-// Notes:
-//    This is used to determine whether to preference the source to the destination register.
-//
-bool Lowering::isRMWRegOper(GenTreePtr tree)
-{
-    // TODO-XArch-CQ: Make this more accurate.
-    // For now, We assume that most binary operators are of the RMW form.
-    assert(tree->OperIsBinary());
-
-    if (tree->OperIsCompare() || tree->OperIs(GT_CMP))
-    {
-        return false;
-    }
-
-    switch (tree->OperGet())
-    {
-        // These Opers either support a three op form (i.e. GT_LEA), or do not read/write their first operand
-        case GT_LEA:
-        case GT_STOREIND:
-        case GT_ARR_INDEX:
-        case GT_STORE_BLK:
-        case GT_STORE_OBJ:
-            return false;
-
-        // x86/x64 does support a three op multiply when op2|op1 is a contained immediate
-        case GT_MUL:
-            return (!IsContainableImmed(tree, tree->gtOp.gtOp2) && !IsContainableImmed(tree, tree->gtOp.gtOp1));
-
-        default:
-            return true;
-    }
-}
-
 // anything is in range for AMD64
 bool Lowering::IsCallTargetInRange(void* addr)
 {
