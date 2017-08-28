@@ -456,14 +456,15 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
             {
                 // An unused GT_LONG node needs to consume its sources.
                 info->srcCount = 2;
+                info->dstCount = 0;
             }
             else
             {
-                // Passthrough
+                // Passthrough. Should have been marked contained.
                 info->srcCount = 0;
+                assert(info->dstCount == 0);
             }
 
-            assert(info->dstCount == 0);
             break;
 
         case GT_CNS_DBL:
