@@ -195,6 +195,7 @@
 
 #include <mono/utils/memcheck.h>
 #include <mono/utils/mono-mmap-internals.h>
+#include <mono/utils/unlocked.h>
 
 #undef pthread_create
 #undef pthread_join
@@ -1862,7 +1863,7 @@ collect_nursery (const char *reason, gboolean is_overflow, SgenGrayQueue *unpin_
 	major_collector.finish_nursery_collection ();
 
 	TV_GETTIME (last_minor_collection_end_tv);
-	InterlockedAdd64 (&gc_stats.minor_gc_time, TV_ELAPSED (last_minor_collection_start_tv, last_minor_collection_end_tv));
+	UnlockedAdd64 (&gc_stats.minor_gc_time, TV_ELAPSED (last_minor_collection_start_tv, last_minor_collection_end_tv));
 
 	sgen_debug_dump_heap ("minor", InterlockedRead (&gc_stats.minor_gc_count) - 1, NULL);
 
@@ -2356,7 +2357,7 @@ major_do_collection (const char *reason, gboolean is_overflow, gboolean forced)
 	sgen_gray_object_queue_dispose (&gc_thread_gray_queue);
 
 	TV_GETTIME (time_end);
-	InterlockedAdd64 (&gc_stats.major_gc_time, TV_ELAPSED (time_start, time_end));
+	UnlockedAdd64 (&gc_stats.major_gc_time, TV_ELAPSED (time_start, time_end));
 
 	/* FIXME: also report this to the user, preferably in gc-end. */
 	if (major_collector.get_and_reset_num_major_objects_marked)
@@ -2392,7 +2393,7 @@ major_start_concurrent_collection (const char *reason)
 	num_objects_marked = major_collector.get_and_reset_num_major_objects_marked ();
 
 	TV_GETTIME (time_end);
-	InterlockedAdd64 (&gc_stats.major_gc_time, TV_ELAPSED (time_start, time_end));
+	UnlockedAdd64 (&gc_stats.major_gc_time, TV_ELAPSED (time_start, time_end));
 
 	current_collection_generation = -1;
 }
@@ -2420,7 +2421,7 @@ major_update_concurrent_collection (void)
 	sgen_los_update_cardtable_mod_union ();
 
 	TV_GETTIME (total_end);
-	InterlockedAdd64 (&gc_stats.major_gc_time, TV_ELAPSED (total_start, total_end));
+	UnlockedAdd64 (&gc_stats.major_gc_time, TV_ELAPSED (total_start, total_end));
 }
 
 static void
@@ -2442,7 +2443,7 @@ major_finish_concurrent_collection (gboolean forced)
 	sgen_workers_stop_all_workers (GENERATION_OLD);
 
 	SGEN_TV_GETTIME (time_major_conc_collection_end);
-	InterlockedAdd64 (&gc_stats.major_gc_time_concurrent, SGEN_TV_ELAPSED (time_major_conc_collection_start, time_major_conc_collection_end));
+	UnlockedAdd64 (&gc_stats.major_gc_time_concurrent, SGEN_TV_ELAPSED (time_major_conc_collection_start, time_major_conc_collection_end));
 
 	major_collector.update_cardtable_mod_union ();
 	sgen_los_update_cardtable_mod_union ();
@@ -2457,7 +2458,7 @@ major_finish_concurrent_collection (gboolean forced)
 	sgen_gray_object_queue_dispose (&gc_thread_gray_queue);
 
 	TV_GETTIME (total_end);
-	InterlockedAdd64 (&gc_stats.major_gc_time, TV_ELAPSED (total_start, total_end));
+	UnlockedAdd64 (&gc_stats.major_gc_time, TV_ELAPSED (total_start, total_end));
 
 	current_collection_generation = -1;
 }

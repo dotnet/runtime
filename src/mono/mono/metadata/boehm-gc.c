@@ -36,6 +36,7 @@
 #include <mono/utils/mono-os-mutex.h>
 #include <mono/utils/mono-counters.h>
 #include <mono/utils/mono-compiler.h>
+#include <mono/utils/unlocked.h>
 
 #if HAVE_BOEHM_GC
 
@@ -482,7 +483,7 @@ on_gc_notification (GC_EventType event)
 			mono_perfcounters->gc_gen0size = heap_size;
 		}
 #endif
-		InterlockedAdd64 (&gc_stats.major_gc_time, mono_100ns_ticks () - gc_start_time);
+		UnlockedAdd64 (&gc_stats.major_gc_time, mono_100ns_ticks () - gc_start_time);
 		mono_trace_message (MONO_TRACE_GC, "gc took %" G_GINT64_FORMAT " usecs", (mono_100ns_ticks () - gc_start_time) / 10);
 		break;
 	default:
