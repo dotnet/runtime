@@ -56,6 +56,7 @@ using System;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
 using System.Globalization;
+using System.Runtime.CompilerServices;
 
 namespace System.Globalization
 {
@@ -107,20 +108,20 @@ namespace System.Globalization
             NumOverflow = 4,    // Number that overflowed
         }
 
-        private static readonly TimeSpanToken zero = new TimeSpanToken(0);
+        [IsByRefLike]
         private struct TimeSpanToken
         {
             internal TTT ttt;
             internal int num;           // Store the number that we are parsing (if any)
             internal int zeroes;        // Store the number of leading zeroes (if any)
-            internal String sep;        // Store the literal that we are parsing (if any)
+            internal ReadOnlySpan<char> sep;        // Store the literal that we are parsing (if any)
 
             public TimeSpanToken(int number)
             {
                 ttt = TTT.Num;
                 num = number;
                 zeroes = 0;
-                sep = null;
+                sep = default(ReadOnlySpan<char>);
             }
 
             public TimeSpanToken(int leadingZeroes, int number)
@@ -128,7 +129,7 @@ namespace System.Globalization
                 ttt = TTT.Num;
                 num = number;
                 zeroes = leadingZeroes;
-                sep = null;
+                sep = default(ReadOnlySpan<char>);
             }
 
             public bool IsInvalidNumber(int maxValue, int maxPrecision)
@@ -157,16 +158,17 @@ namespace System.Globalization
         //
         //  Actions: TimeSpanTokenizer.GetNextToken() returns the next token in the input string.
         // 
+        [IsByRefLike]
         private struct TimeSpanTokenizer
         {
             private int m_pos;
-            private String m_value;
+            private ReadOnlySpan<char> m_value;
 
-            internal void Init(String input)
+            internal void Init(ReadOnlySpan<char> input)
             {
                 Init(input, 0);
             }
-            internal void Init(String input, int startPosition)
+            internal void Init(ReadOnlySpan<char> input, int startPosition)
             {
                 m_pos = startPosition;
                 m_value = input;
@@ -219,7 +221,7 @@ namespace System.Globalization
                         ch = NextChar;
                         length++;
                     }
-                    tok.sep = m_value.Substring(startIndex, length);
+                    tok.sep = m_value.Slice(startIndex, length);
                     return tok;
                 }
             }
@@ -265,6 +267,7 @@ namespace System.Globalization
 
 
         // This stores intermediary parsing state for the standard formats
+        [IsByRefLike]
         private struct TimeSpanRawInfo
         {
             internal TimeSpanFormat.FormatLiterals PositiveInvariant
@@ -313,100 +316,98 @@ namespace System.Globalization
             {
                 return SepCount == 5
                     && NumCount == 4
-                    && pattern.Start == literals[0]
-                    && pattern.DayHourSep == literals[1]
-                    && pattern.HourMinuteSep == literals[2]
-                    && pattern.AppCompatLiteral == literals[3]
-                    && pattern.End == literals[4];
+                    && StringSpanHelpers.Equals(literals0, pattern.Start)
+                    && StringSpanHelpers.Equals(literals1, pattern.DayHourSep)
+                    && StringSpanHelpers.Equals(literals2, pattern.HourMinuteSep)
+                    && StringSpanHelpers.Equals(literals3, pattern.AppCompatLiteral)
+                    && StringSpanHelpers.Equals(literals4, pattern.End);
             }
 
             internal Boolean PartialAppCompatMatch(TimeSpanFormat.FormatLiterals pattern)
             {
                 return SepCount == 4
                     && NumCount == 3
-                    && pattern.Start == literals[0]
-                    && pattern.HourMinuteSep == literals[1]
-                    && pattern.AppCompatLiteral == literals[2]
-                    && pattern.End == literals[3];
+                    && StringSpanHelpers.Equals(literals0, pattern.Start)
+                    && StringSpanHelpers.Equals(literals1, pattern.HourMinuteSep)
+                    && StringSpanHelpers.Equals(literals2, pattern.AppCompatLiteral)
+                    && StringSpanHelpers.Equals(literals3, pattern.End);
             }
             // DHMSF (all values matched)
             internal Boolean FullMatch(TimeSpanFormat.FormatLiterals pattern)
             {
                 return SepCount == MaxLiteralTokens
                     && NumCount == MaxNumericTokens
-                    && pattern.Start == literals[0]
-                    && pattern.DayHourSep == literals[1]
-                    && pattern.HourMinuteSep == literals[2]
-                    && pattern.MinuteSecondSep == literals[3]
-                    && pattern.SecondFractionSep == literals[4]
-                    && pattern.End == literals[5];
+                    && StringSpanHelpers.Equals(literals0, pattern.Start)
+                    && StringSpanHelpers.Equals(literals1, pattern.DayHourSep)
+                    && StringSpanHelpers.Equals(literals2, pattern.HourMinuteSep)
+                    && StringSpanHelpers.Equals(literals3, pattern.MinuteSecondSep)
+                    && StringSpanHelpers.Equals(literals4, pattern.SecondFractionSep)
+                    && StringSpanHelpers.Equals(literals5, pattern.End);
             }
             // D (no hours, minutes, seconds, or fractions)
             internal Boolean FullDMatch(TimeSpanFormat.FormatLiterals pattern)
             {
                 return SepCount == 2
                     && NumCount == 1
-                    && pattern.Start == literals[0]
-                    && pattern.End == literals[1];
+                    && StringSpanHelpers.Equals(literals0, pattern.Start)
+                    && StringSpanHelpers.Equals(literals1, pattern.End);
             }
             // HM (no days, seconds, or fractions)
             internal Boolean FullHMMatch(TimeSpanFormat.FormatLiterals pattern)
             {
                 return SepCount == 3
                     && NumCount == 2
-                    && pattern.Start == literals[0]
-                    && pattern.HourMinuteSep == literals[1]
-                    && pattern.End == literals[2];
+                    && StringSpanHelpers.Equals(literals0, pattern.Start)
+                    && StringSpanHelpers.Equals(literals1, pattern.HourMinuteSep)
+                    && StringSpanHelpers.Equals(literals2, pattern.End);
             }
             // DHM (no seconds or fraction)
             internal Boolean FullDHMMatch(TimeSpanFormat.FormatLiterals pattern)
             {
                 return SepCount == 4
                     && NumCount == 3
-                    && pattern.Start == literals[0]
-                    && pattern.DayHourSep == literals[1]
-                    && pattern.HourMinuteSep == literals[2]
-                    && pattern.End == literals[3];
+                    && StringSpanHelpers.Equals(literals0, pattern.Start)
+                    && StringSpanHelpers.Equals(literals1, pattern.DayHourSep)
+                    && StringSpanHelpers.Equals(literals2, pattern.HourMinuteSep)
+                    && StringSpanHelpers.Equals(literals3, pattern.End);
             }
             // HMS (no days or fraction)
             internal Boolean FullHMSMatch(TimeSpanFormat.FormatLiterals pattern)
             {
                 return SepCount == 4
                     && NumCount == 3
-                    && pattern.Start == literals[0]
-                    && pattern.HourMinuteSep == literals[1]
-                    && pattern.MinuteSecondSep == literals[2]
-                    && pattern.End == literals[3];
+                    && StringSpanHelpers.Equals(literals0, pattern.Start)
+                    && StringSpanHelpers.Equals(literals1, pattern.HourMinuteSep)
+                    && StringSpanHelpers.Equals(literals2, pattern.MinuteSecondSep)
+                    && StringSpanHelpers.Equals(literals3, pattern.End);
             }
             // DHMS (no fraction)
             internal Boolean FullDHMSMatch(TimeSpanFormat.FormatLiterals pattern)
             {
                 return SepCount == 5
                     && NumCount == 4
-                    && pattern.Start == literals[0]
-                    && pattern.DayHourSep == literals[1]
-                    && pattern.HourMinuteSep == literals[2]
-                    && pattern.MinuteSecondSep == literals[3]
-                    && pattern.End == literals[4];
+                    && StringSpanHelpers.Equals(literals0, pattern.Start)
+                    && StringSpanHelpers.Equals(literals1, pattern.DayHourSep)
+                    && StringSpanHelpers.Equals(literals2, pattern.HourMinuteSep)
+                    && StringSpanHelpers.Equals(literals3, pattern.MinuteSecondSep)
+                    && StringSpanHelpers.Equals(literals4, pattern.End);
             }
             // HMSF (no days)
             internal Boolean FullHMSFMatch(TimeSpanFormat.FormatLiterals pattern)
             {
                 return SepCount == 5
                     && NumCount == 4
-                    && pattern.Start == literals[0]
-                    && pattern.HourMinuteSep == literals[1]
-                    && pattern.MinuteSecondSep == literals[2]
-                    && pattern.SecondFractionSep == literals[3]
-                    && pattern.End == literals[4];
+                    && StringSpanHelpers.Equals(literals0, pattern.Start)
+                    && StringSpanHelpers.Equals(literals1, pattern.HourMinuteSep)
+                    && StringSpanHelpers.Equals(literals2, pattern.MinuteSecondSep)
+                    && StringSpanHelpers.Equals(literals3, pattern.SecondFractionSep)
+                    && StringSpanHelpers.Equals(literals4, pattern.End);
             }
 
             internal TTT lastSeenTTT;
             internal int tokenCount;
             internal int SepCount;
             internal int NumCount;
-            internal String[] literals;
-            internal TimeSpanToken[] numbers;  // raw numbers
 
             private TimeSpanFormat.FormatLiterals m_posLoc;
             private TimeSpanFormat.FormatLiterals m_negLoc;
@@ -419,6 +420,9 @@ namespace System.Globalization
             private const int MaxLiteralTokens = 6;
             private const int MaxNumericTokens = 5;
 
+            internal TimeSpanToken numbers0, numbers1, numbers2, numbers3, numbers4; // MaxNumbericTokens = 5
+            internal ReadOnlySpan<char> literals0, literals1, literals2, literals3, literals4, literals5; // MaxLiteralTokens=6
+
             internal void Init(DateTimeFormatInfo dtfi)
             {
                 Debug.Assert(dtfi != null);
@@ -427,9 +431,6 @@ namespace System.Globalization
                 tokenCount = 0;
                 SepCount = 0;
                 NumCount = 0;
-
-                literals = new String[MaxLiteralTokens];
-                numbers = new TimeSpanToken[MaxNumericTokens];
 
                 m_fullPosPattern = dtfi.FullTimeSpanPositivePattern;
                 m_fullNegPattern = dtfi.FullTimeSpanNegativePattern;
@@ -459,7 +460,7 @@ namespace System.Globalization
                     case TTT.Num:
                         if (tokenCount == 0)
                         {
-                            if (!AddSep(String.Empty, ref result)) return false;
+                            if (!AddSep(default(ReadOnlySpan<char>), ref result)) return false;
                         }
                         if (!AddNum(tok, ref result)) return false;
                         break;
@@ -472,14 +473,27 @@ namespace System.Globalization
                 return true;
             }
 
-            private bool AddSep(String sep, ref TimeSpanResult result)
+            private bool AddSep(ReadOnlySpan<char> sep, ref TimeSpanResult result)
             {
                 if (SepCount >= MaxLiteralTokens || tokenCount >= MaxTokens)
                 {
                     result.SetFailure(ParseFailureKind.Format, "Format_BadTimeSpan", null);
                     return false;
                 }
-                literals[SepCount++] = sep;
+
+                switch (SepCount++)
+                {
+                    case 0: literals0 = sep; break;
+                    case 1: literals1 = sep; break;
+                    case 2: literals2 = sep; break;
+                    case 3: literals3 = sep; break;
+                    case 4: literals4 = sep; break;
+                    case 5: literals5 = sep; break;
+#if DEBUG
+                    default: Debug.Fail($"Expected MaxLiteralTokens == 6"); break;
+#endif
+                }
+
                 tokenCount++;
                 return true;
             }
@@ -490,7 +504,19 @@ namespace System.Globalization
                     result.SetFailure(ParseFailureKind.Format, "Format_BadTimeSpan", null);
                     return false;
                 }
-                numbers[NumCount++] = num;
+
+                switch (NumCount++)
+                {
+                    case 0: numbers0 = num; break;
+                    case 1: numbers1 = num; break;
+                    case 2: numbers2 = num; break;
+                    case 3: numbers3 = num; break;
+                    case 4: numbers4 = num; break;
+#if DEBUG
+                    default: Debug.Fail($"Expected MaxNumericTokens == 5"); break;
+#endif
+                }
+
                 tokenCount++;
                 return true;
             }
@@ -614,7 +640,7 @@ namespace System.Globalization
         //
         //  Actions: Main methods called from TimeSpan.Parse
         #region ParseMethods
-        internal static TimeSpan Parse(String input, IFormatProvider formatProvider)
+        internal static TimeSpan Parse(ReadOnlySpan<char> input, IFormatProvider formatProvider)
         {
             TimeSpanResult parseResult = new TimeSpanResult();
             parseResult.Init(TimeSpanThrowStyle.All);
@@ -628,7 +654,7 @@ namespace System.Globalization
                 throw parseResult.GetTimeSpanParseException();
             }
         }
-        internal static Boolean TryParse(String input, IFormatProvider formatProvider, out TimeSpan result)
+        internal static Boolean TryParse(ReadOnlySpan<char> input, IFormatProvider formatProvider, out TimeSpan result)
         {
             TimeSpanResult parseResult = new TimeSpanResult();
             parseResult.Init(TimeSpanThrowStyle.None);
@@ -638,13 +664,11 @@ namespace System.Globalization
                 result = parseResult.parsedTimeSpan;
                 return true;
             }
-            else
-            {
-                result = default(TimeSpan);
-                return false;
-            }
+
+            result = default(TimeSpan);
+            return false;
         }
-        internal static TimeSpan ParseExact(String input, String format, IFormatProvider formatProvider, TimeSpanStyles styles)
+        internal static TimeSpan ParseExact(ReadOnlySpan<char> input, String format, IFormatProvider formatProvider, TimeSpanStyles styles)
         {
             TimeSpanResult parseResult = new TimeSpanResult();
             parseResult.Init(TimeSpanThrowStyle.All);
@@ -658,7 +682,7 @@ namespace System.Globalization
                 throw parseResult.GetTimeSpanParseException();
             }
         }
-        internal static Boolean TryParseExact(String input, String format, IFormatProvider formatProvider, TimeSpanStyles styles, out TimeSpan result)
+        internal static Boolean TryParseExact(ReadOnlySpan<char> input, String format, IFormatProvider formatProvider, TimeSpanStyles styles, out TimeSpan result)
         {
             TimeSpanResult parseResult = new TimeSpanResult();
             parseResult.Init(TimeSpanThrowStyle.None);
@@ -668,13 +692,11 @@ namespace System.Globalization
                 result = parseResult.parsedTimeSpan;
                 return true;
             }
-            else
-            {
-                result = default(TimeSpan);
-                return false;
-            }
+
+            result = default(TimeSpan);
+            return false;
         }
-        internal static TimeSpan ParseExactMultiple(String input, String[] formats, IFormatProvider formatProvider, TimeSpanStyles styles)
+        internal static TimeSpan ParseExactMultiple(ReadOnlySpan<char> input, String[] formats, IFormatProvider formatProvider, TimeSpanStyles styles)
         {
             TimeSpanResult parseResult = new TimeSpanResult();
             parseResult.Init(TimeSpanThrowStyle.All);
@@ -688,7 +710,7 @@ namespace System.Globalization
                 throw parseResult.GetTimeSpanParseException();
             }
         }
-        internal static Boolean TryParseExactMultiple(String input, String[] formats, IFormatProvider formatProvider, TimeSpanStyles styles, out TimeSpan result)
+        internal static Boolean TryParseExactMultiple(ReadOnlySpan<char> input, String[] formats, IFormatProvider formatProvider, TimeSpanStyles styles, out TimeSpan result)
         {
             TimeSpanResult parseResult = new TimeSpanResult();
             parseResult.Init(TimeSpanThrowStyle.None);
@@ -698,11 +720,9 @@ namespace System.Globalization
                 result = parseResult.parsedTimeSpan;
                 return true;
             }
-            else
-            {
-                result = default(TimeSpan);
-                return false;
-            }
+
+            result = default(TimeSpan);
+            return false;
         }
         #endregion
 
@@ -714,16 +734,10 @@ namespace System.Globalization
         //
         //  Actions: Common private Parse method called by both Parse and TryParse
         // 
-        private static Boolean TryParseTimeSpan(String input, TimeSpanStandardStyles style, IFormatProvider formatProvider, ref TimeSpanResult result)
+        private static Boolean TryParseTimeSpan(ReadOnlySpan<char> input, TimeSpanStandardStyles style, IFormatProvider formatProvider, ref TimeSpanResult result)
         {
-            if (input == null)
-            {
-                result.SetFailure(ParseFailureKind.ArgumentNull, "ArgumentNull_String", null, nameof(input));
-                return false;
-            }
-
             input = input.Trim();
-            if (input == String.Empty)
+            if (input.IsEmpty)
             {
                 result.SetFailure(ParseFailureKind.Format, "Format_BadTimeSpan");
                 return false;
@@ -786,7 +800,6 @@ namespace System.Globalization
             {
                 TimeSpanToken tok = new TimeSpanToken();
                 tok.ttt = TTT.Sep;
-                tok.sep = String.Empty;
                 if (!raw.ProcessToken(ref tok, ref result))
                 {
                     result.SetFailure(ParseFailureKind.Format, "Format_BadTimeSpan");
@@ -861,7 +874,7 @@ namespace System.Globalization
             long ticks;
             if (match)
             {
-                if (!TryTimeToTicks(positive, raw.numbers[0], raw.numbers[1], raw.numbers[2], raw.numbers[3], raw.numbers[4], out ticks))
+                if (!TryTimeToTicks(positive, raw.numbers0, raw.numbers1, raw.numbers2, raw.numbers3, raw.numbers4, out ticks))
                 {
                     result.SetFailure(ParseFailureKind.Overflow, "Overflow_TimeSpanElementTooLarge");
                     return false;
@@ -904,43 +917,44 @@ namespace System.Globalization
             bool positive = false;
             bool match = false;
             bool overflow = false;
+            var zero = new TimeSpanToken(0);
 
             if (inv)
             {
                 if (raw.FullHMSFMatch(raw.PositiveInvariant))
                 {
                     positive = true;
-                    match = TryTimeToTicks(positive, zero, raw.numbers[0], raw.numbers[1], raw.numbers[2], raw.numbers[3], out ticks);
+                    match = TryTimeToTicks(positive, zero, raw.numbers0, raw.numbers1, raw.numbers2, raw.numbers3, out ticks);
                     overflow = overflow || !match;
                 }
                 if (!match && raw.FullDHMSMatch(raw.PositiveInvariant))
                 {
                     positive = true;
-                    match = TryTimeToTicks(positive, raw.numbers[0], raw.numbers[1], raw.numbers[2], raw.numbers[3], zero, out ticks);
+                    match = TryTimeToTicks(positive, raw.numbers0, raw.numbers1, raw.numbers2, raw.numbers3, zero, out ticks);
                     overflow = overflow || !match;
                 }
                 if (!match && raw.FullAppCompatMatch(raw.PositiveInvariant))
                 {
                     positive = true;
-                    match = TryTimeToTicks(positive, raw.numbers[0], raw.numbers[1], raw.numbers[2], zero, raw.numbers[3], out ticks);
+                    match = TryTimeToTicks(positive, raw.numbers0, raw.numbers1, raw.numbers2, zero, raw.numbers3, out ticks);
                     overflow = overflow || !match;
                 }
                 if (!match && raw.FullHMSFMatch(raw.NegativeInvariant))
                 {
                     positive = false;
-                    match = TryTimeToTicks(positive, zero, raw.numbers[0], raw.numbers[1], raw.numbers[2], raw.numbers[3], out ticks);
+                    match = TryTimeToTicks(positive, zero, raw.numbers0, raw.numbers1, raw.numbers2, raw.numbers3, out ticks);
                     overflow = overflow || !match;
                 }
                 if (!match && raw.FullDHMSMatch(raw.NegativeInvariant))
                 {
                     positive = false;
-                    match = TryTimeToTicks(positive, raw.numbers[0], raw.numbers[1], raw.numbers[2], raw.numbers[3], zero, out ticks);
+                    match = TryTimeToTicks(positive, raw.numbers0, raw.numbers1, raw.numbers2, raw.numbers3, zero, out ticks);
                     overflow = overflow || !match;
                 }
                 if (!match && raw.FullAppCompatMatch(raw.NegativeInvariant))
                 {
                     positive = false;
-                    match = TryTimeToTicks(positive, raw.numbers[0], raw.numbers[1], raw.numbers[2], zero, raw.numbers[3], out ticks);
+                    match = TryTimeToTicks(positive, raw.numbers0, raw.numbers1, raw.numbers2, zero, raw.numbers3, out ticks);
                     overflow = overflow || !match;
                 }
             }
@@ -949,37 +963,37 @@ namespace System.Globalization
                 if (!match && raw.FullHMSFMatch(raw.PositiveLocalized))
                 {
                     positive = true;
-                    match = TryTimeToTicks(positive, zero, raw.numbers[0], raw.numbers[1], raw.numbers[2], raw.numbers[3], out ticks);
+                    match = TryTimeToTicks(positive, zero, raw.numbers0, raw.numbers1, raw.numbers2, raw.numbers3, out ticks);
                     overflow = overflow || !match;
                 }
                 if (!match && raw.FullDHMSMatch(raw.PositiveLocalized))
                 {
                     positive = true;
-                    match = TryTimeToTicks(positive, raw.numbers[0], raw.numbers[1], raw.numbers[2], raw.numbers[3], zero, out ticks);
+                    match = TryTimeToTicks(positive, raw.numbers0, raw.numbers1, raw.numbers2, raw.numbers3, zero, out ticks);
                     overflow = overflow || !match;
                 }
                 if (!match && raw.FullAppCompatMatch(raw.PositiveLocalized))
                 {
                     positive = true;
-                    match = TryTimeToTicks(positive, raw.numbers[0], raw.numbers[1], raw.numbers[2], zero, raw.numbers[3], out ticks);
+                    match = TryTimeToTicks(positive, raw.numbers0, raw.numbers1, raw.numbers2, zero, raw.numbers3, out ticks);
                     overflow = overflow || !match;
                 }
                 if (!match && raw.FullHMSFMatch(raw.NegativeLocalized))
                 {
                     positive = false;
-                    match = TryTimeToTicks(positive, zero, raw.numbers[0], raw.numbers[1], raw.numbers[2], raw.numbers[3], out ticks);
+                    match = TryTimeToTicks(positive, zero, raw.numbers0, raw.numbers1, raw.numbers2, raw.numbers3, out ticks);
                     overflow = overflow || !match;
                 }
                 if (!match && raw.FullDHMSMatch(raw.NegativeLocalized))
                 {
                     positive = false;
-                    match = TryTimeToTicks(positive, raw.numbers[0], raw.numbers[1], raw.numbers[2], raw.numbers[3], zero, out ticks);
+                    match = TryTimeToTicks(positive, raw.numbers0, raw.numbers1, raw.numbers2, raw.numbers3, zero, out ticks);
                     overflow = overflow || !match;
                 }
                 if (!match && raw.FullAppCompatMatch(raw.NegativeLocalized))
                 {
                     positive = false;
-                    match = TryTimeToTicks(positive, raw.numbers[0], raw.numbers[1], raw.numbers[2], zero, raw.numbers[3], out ticks);
+                    match = TryTimeToTicks(positive, raw.numbers0, raw.numbers1, raw.numbers2, zero, raw.numbers3, out ticks);
                     overflow = overflow || !match;
                 }
             }
@@ -1032,6 +1046,7 @@ namespace System.Globalization
             bool positive = false;
             bool match = false;
             bool overflow = false;
+            var zero = new TimeSpanToken(0);
 
             long ticks = 0;
 
@@ -1040,37 +1055,37 @@ namespace System.Globalization
                 if (raw.FullHMSMatch(raw.PositiveInvariant))
                 {
                     positive = true;
-                    match = TryTimeToTicks(positive, zero, raw.numbers[0], raw.numbers[1], raw.numbers[2], zero, out ticks);
+                    match = TryTimeToTicks(positive, zero, raw.numbers0, raw.numbers1, raw.numbers2, zero, out ticks);
                     overflow = overflow || !match;
                 }
                 if (!match && raw.FullDHMMatch(raw.PositiveInvariant))
                 {
                     positive = true;
-                    match = TryTimeToTicks(positive, raw.numbers[0], raw.numbers[1], raw.numbers[2], zero, zero, out ticks);
+                    match = TryTimeToTicks(positive, raw.numbers0, raw.numbers1, raw.numbers2, zero, zero, out ticks);
                     overflow = overflow || !match;
                 }
                 if (!match && raw.PartialAppCompatMatch(raw.PositiveInvariant))
                 {
                     positive = true;
-                    match = TryTimeToTicks(positive, zero, raw.numbers[0], raw.numbers[1], zero, raw.numbers[2], out ticks);
+                    match = TryTimeToTicks(positive, zero, raw.numbers0, raw.numbers1, zero, raw.numbers2, out ticks);
                     overflow = overflow || !match;
                 }
                 if (!match && raw.FullHMSMatch(raw.NegativeInvariant))
                 {
                     positive = false;
-                    match = TryTimeToTicks(positive, zero, raw.numbers[0], raw.numbers[1], raw.numbers[2], zero, out ticks);
+                    match = TryTimeToTicks(positive, zero, raw.numbers0, raw.numbers1, raw.numbers2, zero, out ticks);
                     overflow = overflow || !match;
                 }
                 if (!match && raw.FullDHMMatch(raw.NegativeInvariant))
                 {
                     positive = false;
-                    match = TryTimeToTicks(positive, raw.numbers[0], raw.numbers[1], raw.numbers[2], zero, zero, out ticks);
+                    match = TryTimeToTicks(positive, raw.numbers0, raw.numbers1, raw.numbers2, zero, zero, out ticks);
                     overflow = overflow || !match;
                 }
                 if (!match && raw.PartialAppCompatMatch(raw.NegativeInvariant))
                 {
                     positive = false;
-                    match = TryTimeToTicks(positive, zero, raw.numbers[0], raw.numbers[1], zero, raw.numbers[2], out ticks);
+                    match = TryTimeToTicks(positive, zero, raw.numbers0, raw.numbers1, zero, raw.numbers2, out ticks);
                     overflow = overflow || !match;
                 }
             }
@@ -1079,37 +1094,37 @@ namespace System.Globalization
                 if (!match && raw.FullHMSMatch(raw.PositiveLocalized))
                 {
                     positive = true;
-                    match = TryTimeToTicks(positive, zero, raw.numbers[0], raw.numbers[1], raw.numbers[2], zero, out ticks);
+                    match = TryTimeToTicks(positive, zero, raw.numbers0, raw.numbers1, raw.numbers2, zero, out ticks);
                     overflow = overflow || !match;
                 }
                 if (!match && raw.FullDHMMatch(raw.PositiveLocalized))
                 {
                     positive = true;
-                    match = TryTimeToTicks(positive, raw.numbers[0], raw.numbers[1], raw.numbers[2], zero, zero, out ticks);
+                    match = TryTimeToTicks(positive, raw.numbers0, raw.numbers1, raw.numbers2, zero, zero, out ticks);
                     overflow = overflow || !match;
                 }
                 if (!match && raw.PartialAppCompatMatch(raw.PositiveLocalized))
                 {
                     positive = true;
-                    match = TryTimeToTicks(positive, zero, raw.numbers[0], raw.numbers[1], zero, raw.numbers[2], out ticks);
+                    match = TryTimeToTicks(positive, zero, raw.numbers0, raw.numbers1, zero, raw.numbers2, out ticks);
                     overflow = overflow || !match;
                 }
                 if (!match && raw.FullHMSMatch(raw.NegativeLocalized))
                 {
                     positive = false;
-                    match = TryTimeToTicks(positive, zero, raw.numbers[0], raw.numbers[1], raw.numbers[2], zero, out ticks);
+                    match = TryTimeToTicks(positive, zero, raw.numbers0, raw.numbers1, raw.numbers2, zero, out ticks);
                     overflow = overflow || !match;
                 }
                 if (!match && raw.FullDHMMatch(raw.NegativeLocalized))
                 {
                     positive = false;
-                    match = TryTimeToTicks(positive, raw.numbers[0], raw.numbers[1], raw.numbers[2], zero, zero, out ticks);
+                    match = TryTimeToTicks(positive, raw.numbers0, raw.numbers1, raw.numbers2, zero, zero, out ticks);
                     overflow = overflow || !match;
                 }
                 if (!match && raw.PartialAppCompatMatch(raw.NegativeLocalized))
                 {
                     positive = false;
-                    match = TryTimeToTicks(positive, zero, raw.numbers[0], raw.numbers[1], zero, raw.numbers[2], out ticks);
+                    match = TryTimeToTicks(positive, zero, raw.numbers0, raw.numbers1, zero, raw.numbers2, out ticks);
                     overflow = overflow || !match;
                 }
             }
@@ -1192,7 +1207,8 @@ namespace System.Globalization
             long ticks = 0;
             if (match)
             {
-                if (!TryTimeToTicks(positive, zero, raw.numbers[0], raw.numbers[1], zero, zero, out ticks))
+                var zero = new TimeSpanToken(0);
+                if (!TryTimeToTicks(positive, zero, raw.numbers0, raw.numbers1, zero, zero, out ticks))
                 {
                     result.SetFailure(ParseFailureKind.Overflow, "Overflow_TimeSpanElementTooLarge");
                     return false;
@@ -1264,7 +1280,8 @@ namespace System.Globalization
             long ticks = 0;
             if (match)
             {
-                if (!TryTimeToTicks(positive, raw.numbers[0], zero, zero, zero, zero, out ticks))
+                var zero = new TimeSpanToken(0);
+                if (!TryTimeToTicks(positive, raw.numbers0, zero, zero, zero, zero, out ticks))
                 {
                     result.SetFailure(ParseFailureKind.Overflow, "Overflow_TimeSpanElementTooLarge");
                     return false;
@@ -1293,13 +1310,8 @@ namespace System.Globalization
         //
         //  Actions: Common private ParseExact method called by both ParseExact and TryParseExact
         // 
-        private static Boolean TryParseExactTimeSpan(String input, String format, IFormatProvider formatProvider, TimeSpanStyles styles, ref TimeSpanResult result)
+        private static Boolean TryParseExactTimeSpan(ReadOnlySpan<char> input, String format, IFormatProvider formatProvider, TimeSpanStyles styles, ref TimeSpanResult result)
         {
-            if (input == null)
-            {
-                result.SetFailure(ParseFailureKind.ArgumentNull, "ArgumentNull_String", null, nameof(input));
-                return false;
-            }
             if (format == null)
             {
                 result.SetFailure(ParseFailureKind.ArgumentNull, "ArgumentNull_String", null, nameof(format));
@@ -1344,9 +1356,8 @@ namespace System.Globalization
         //
         //  Actions: Parse the TimeSpan instance using the specified format.  Used by TryParseExactTimeSpan.
         // 
-        private static Boolean TryParseByFormat(String input, String format, TimeSpanStyles styles, ref TimeSpanResult result)
+        private static Boolean TryParseByFormat(ReadOnlySpan<char> input, String format, TimeSpanStyles styles, ref TimeSpanResult result)
         {
-            Debug.Assert(input != null, "input != null");
             Debug.Assert(format != null, "format != null");
 
             bool seenDD = false;      // already processed days?
@@ -1557,14 +1568,15 @@ namespace System.Globalization
         // Actions: Parses the "c" (constant) format.  This code is 100% identical to the non-globalized v1.0-v3.5 TimeSpan.Parse() routine
         //          and exists for performance/appcompat with legacy callers who cannot move onto the globalized Parse overloads.
         //
-        private static Boolean TryParseTimeSpanConstant(String input, ref TimeSpanResult result)
+        private static Boolean TryParseTimeSpanConstant(ReadOnlySpan<char> input, ref TimeSpanResult result)
         {
             return (new StringParser().TryParse(input, ref result));
         }
 
+        [IsByRefLike]
         private struct StringParser
         {
-            private String str;
+            private ReadOnlySpan<char> str;
             private char ch;
             private int pos;
             private int len;
@@ -1587,15 +1599,10 @@ namespace System.Globalization
                 return (char)0;
             }
 
-            internal bool TryParse(String input, ref TimeSpanResult result)
+            internal bool TryParse(ReadOnlySpan<char> input, ref TimeSpanResult result)
             {
                 result.parsedTimeSpan._ticks = 0;
 
-                if (input == null)
-                {
-                    result.SetFailure(ParseFailureKind.ArgumentNull, "ArgumentNull_String", null, nameof(input));
-                    return false;
-                }
                 str = input;
                 len = input.Length;
                 pos = -1;
@@ -1754,13 +1761,8 @@ namespace System.Globalization
         //
         //  Actions: Common private ParseExactMultiple method called by both ParseExactMultiple and TryParseExactMultiple
         // 
-        private static Boolean TryParseExactMultipleTimeSpan(String input, String[] formats, IFormatProvider formatProvider, TimeSpanStyles styles, ref TimeSpanResult result)
+        private static Boolean TryParseExactMultipleTimeSpan(ReadOnlySpan<char> input, String[] formats, IFormatProvider formatProvider, TimeSpanStyles styles, ref TimeSpanResult result)
         {
-            if (input == null)
-            {
-                result.SetFailure(ParseFailureKind.ArgumentNull, "ArgumentNull_String", null, nameof(input));
-                return false;
-            }
             if (formats == null)
             {
                 result.SetFailure(ParseFailureKind.ArgumentNull, "ArgumentNull_String", null, nameof(formats));
