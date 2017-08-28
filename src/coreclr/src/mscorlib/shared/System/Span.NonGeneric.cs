@@ -111,6 +111,10 @@ namespace System
                 checked((int)((long)source.Length * Unsafe.SizeOf<TFrom>() / Unsafe.SizeOf<TTo>())));
         }
 
+        [Obsolete("This method is obsolete. Use AsReadOnlySpan instead.", false)]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static ReadOnlySpan<char> AsSpan(this string text) => AsReadOnlySpan(text);
+
         /// <summary>
         /// Creates a new readonly span over the portion of the target string.
         /// </summary>
@@ -118,7 +122,7 @@ namespace System
         /// <exception cref="System.ArgumentNullException">Thrown when <paramref name="text"/> is a null
         /// reference (Nothing in Visual Basic).</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static ReadOnlySpan<char> AsSpan(this string text)
+        public static ReadOnlySpan<char> AsReadOnlySpan(this string text)
         {
             if (text == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.text);
