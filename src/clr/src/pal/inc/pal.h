@@ -591,7 +591,6 @@ CharNextExA(
 #define MB_TOPMOST              0x00040000L
 
 #define MB_NOFOCUS                  0x00008000L
-#define MB_SETFOREGROUND            0x00010000L
 #define MB_DEFAULT_DESKTOP_ONLY     0x00020000L
 
 // Note: this is the NT 4.0 and greater value.
@@ -626,34 +625,6 @@ MessageBoxW(
 #define MessageBox MessageBoxA
 #endif
 
-/***************** wincon.h Entrypoints **********************************/
-
-#define CTRL_C_EVENT        0
-#define CTRL_BREAK_EVENT    1
-#define CTRL_CLOSE_EVENT    2
-// 3 is reserved!
-// 4 is reserved!
-#define CTRL_LOGOFF_EVENT   5
-#define CTRL_SHUTDOWN_EVENT 6
-
-typedef
-BOOL
-(PALAPI *PHANDLER_ROUTINE)(
-    DWORD CtrlType
-    );
-
-#ifndef CORECLR
-PALIMPORT
-BOOL
-PALAPI
-GenerateConsoleCtrlEvent(
-    IN DWORD dwCtrlEvent,
-    IN DWORD dwProcessGroupId
-    );
-#endif // !CORECLR
-
-//end wincon.h Entrypoints
-
 // From win32.h
 #ifndef _CRTIMP
 #ifdef __llvm__
@@ -664,12 +635,6 @@ GenerateConsoleCtrlEvent(
 #endif // _CRTIMP
 
 /******************* winbase.h Entrypoints and defines ************************/
-PALIMPORT
-BOOL
-PALAPI
-AreFileApisANSI(
-        VOID);
-
 typedef struct _SECURITY_ATTRIBUTES {
             DWORD nLength;
             LPVOID lpSecurityDescriptor;
@@ -735,28 +700,6 @@ CreateFileW(
 #define CreateFile CreateFileA
 #endif
 
-PALIMPORT
-BOOL
-PALAPI
-LockFile(
-    IN HANDLE hFile,
-    IN DWORD dwFileOffsetLow,
-    IN DWORD dwFileOffsetHigh,
-    IN DWORD nNumberOfBytesToLockLow,
-    IN DWORD nNumberOfBytesToLockHigh
-    );
-
-PALIMPORT
-BOOL
-PALAPI
-UnlockFile(
-    IN HANDLE hFile,
-    IN DWORD dwFileOffsetLow,
-    IN DWORD dwFileOffsetHigh,
-    IN DWORD nNumberOfBytesToUnlockLow,
-    IN DWORD nNumberOfBytesToUnlockHigh
-    );
-
 
 PALIMPORT
 DWORD
@@ -805,19 +748,6 @@ DeleteFileW(
 #endif
 
 
-
-PALIMPORT
-BOOL
-PALAPI
-MoveFileW(
-     IN LPCWSTR lpExistingFileName,
-     IN LPCWSTR lpNewFileName);
-
-#ifdef UNICODE
-#define MoveFile MoveFileW
-#else
-#define MoveFile MoveFileA
-#endif
 
 #define MOVEFILE_REPLACE_EXISTING      0x00000001
 #define MOVEFILE_COPY_ALLOWED          0x00000002
@@ -1090,24 +1020,6 @@ CompareFileTime(
         IN CONST FILETIME *lpFileTime2);
 
 PALIMPORT
-BOOL
-PALAPI
-SetFileTime(
-        IN HANDLE hFile,
-        IN CONST FILETIME *lpCreationTime,
-        IN CONST FILETIME *lpLastAccessTime,
-        IN CONST FILETIME *lpLastWriteTime);
-
-PALIMPORT
-BOOL
-PALAPI
-GetFileTime(
-        IN HANDLE hFile,
-        OUT LPFILETIME lpCreationTime,
-        OUT LPFILETIME lpLastAccessTime,
-        OUT LPFILETIME lpLastWriteTime);
-
-PALIMPORT
 VOID
 PALAPI
 GetSystemTimeAsFileTime(
@@ -1137,15 +1049,6 @@ FileTimeToSystemTime(
             IN CONST FILETIME *lpFileTime,
             OUT LPSYSTEMTIME lpSystemTime);
 
-PALIMPORT
-BOOL
-PALAPI
-FileTimeToDosDateTime(
-    IN CONST FILETIME *lpFileTime,
-    OUT LPWORD lpFatDate,
-    OUT LPWORD lpFatTime
-    );
-
 
 
 PALIMPORT
@@ -1153,24 +1056,6 @@ BOOL
 PALAPI
 FlushFileBuffers(
          IN HANDLE hFile);
-
-#define FILE_TYPE_UNKNOWN         0x0000
-#define FILE_TYPE_DISK            0x0001
-#define FILE_TYPE_CHAR            0x0002
-#define FILE_TYPE_PIPE            0x0003
-#define FILE_TYPE_REMOTE          0x8000
-
-PALIMPORT
-DWORD
-PALAPI
-GetFileType(
-        IN HANDLE hFile);
-
-PALIMPORT
-UINT
-PALAPI
-GetConsoleCP(
-         VOID);
 
 PALIMPORT
 UINT
@@ -1662,13 +1547,6 @@ VOID
 PALAPI
 ExitThread(
        IN DWORD dwExitCode);
-
-PALIMPORT
-BOOL
-PALAPI
-GetExitCodeThread(
-           IN HANDLE hThread,
-           IN LPDWORD lpExitCode);
 
 PALIMPORT
 DWORD
@@ -2697,13 +2575,6 @@ MapViewOfFileEx(
           IN DWORD dwFileOffsetLow,
           IN SIZE_T dwNumberOfBytesToMap,
           IN LPVOID lpBaseAddress);
-          
-PALIMPORT
-BOOL
-PALAPI
-FlushViewOfFile(
-        IN LPVOID lpBaseAddress,
-        IN SIZE_T dwNumberOfBytesToFlush);
 
 PALIMPORT
 BOOL
@@ -2921,13 +2792,6 @@ RtlMoveMemory(
           IN PVOID Destination,
           IN CONST VOID *Source,
           IN SIZE_T Length);
-
-PALIMPORT
-VOID
-PALAPI
-RtlZeroMemory(
-    IN PVOID Destination,
-    IN SIZE_T Length);
 
 #define MoveMemory memmove
 #define CopyMemory memcpy
@@ -4788,53 +4652,12 @@ GetSystemInfo(
 PALIMPORT
 BOOL
 PALAPI
-GetDiskFreeSpaceW(
-          LPCWSTR lpDirectoryName,
-          LPDWORD lpSectorsPerCluster,
-          LPDWORD lpBytesPerSector,
-          LPDWORD lpNumberOfFreeClusters,
-          LPDWORD lpTotalNumberOfClusters);
-
-#ifdef UNICODE
-#define GetDiskFreeSpace GetDiskFreeSpaceW
-#endif
-
-PALIMPORT
-BOOL
-PALAPI
 CreatePipe(
     OUT PHANDLE hReadPipe,
     OUT PHANDLE hWritePipe,
     IN LPSECURITY_ATTRIBUTES lpPipeAttributes,
     IN DWORD nSize
     );
-
-PALIMPORT
-BOOL
-PALAPI
-DeregisterEventSource (
-    IN HANDLE hEventLog
-    );
-
-PALIMPORT
-HANDLE
-PALAPI
-RegisterEventSourceA (
-    IN OPTIONAL LPCSTR lpUNCServerName,
-    IN     LPCSTR lpSourceName
-    );
-PALIMPORT
-HANDLE
-PALAPI
-RegisterEventSourceW (
-    IN OPTIONAL LPCWSTR lpUNCServerName,
-    IN     LPCWSTR lpSourceName
-    );
-#ifdef UNICODE
-#define RegisterEventSource  RegisterEventSourceW
-#else
-#define RegisterEventSource  RegisterEventSourceA
-#endif // !UNICODE
 
 //
 // NUMA related APIs
@@ -5008,40 +4831,6 @@ GetProcessAffinityMask(
 #define EVENTLOG_INFORMATION_TYPE       0x0004
 #define EVENTLOG_AUDIT_SUCCESS          0x0008
 #define EVENTLOG_AUDIT_FAILURE          0x0010
-
-PALIMPORT
-BOOL
-PALAPI
-ReportEventA (
-    IN     HANDLE     hEventLog,
-    IN     WORD       wType,
-    IN     WORD       wCategory,
-    IN     DWORD      dwEventID,
-    IN OPTIONAL PSID       lpUserSid,
-    IN     WORD       wNumStrings,
-    IN     DWORD      dwDataSize,
-    IN OPTIONAL LPCSTR *lpStrings,
-    IN OPTIONAL LPVOID lpRawData
-    );
-PALIMPORT
-BOOL
-PALAPI
-ReportEventW (
-    IN     HANDLE     hEventLog,
-    IN     WORD       wType,
-    IN     WORD       wCategory,
-    IN     DWORD      dwEventID,
-    IN OPTIONAL PSID       lpUserSid,
-    IN     WORD       wNumStrings,
-    IN     DWORD      dwDataSize,
-    IN OPTIONAL LPCWSTR *lpStrings,
-    IN OPTIONAL LPVOID lpRawData
-    );
-#ifdef UNICODE
-#define ReportEvent  ReportEventW
-#else
-#define ReportEvent  ReportEventA
-#endif // !UNICODE
 
 PALIMPORT
 HRESULT
