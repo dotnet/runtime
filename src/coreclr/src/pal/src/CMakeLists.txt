@@ -149,7 +149,6 @@ set(SOURCES
   exception/signal.cpp
   exception/remote-unwind.cpp
   file/directory.cpp
-  file/disk.cpp
   file/file.cpp
   file/filetime.cpp
   file/find.cpp

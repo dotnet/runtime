@@ -26,7 +26,7 @@ Description
 
 = Functions covered by this test are: 
 
-= MoveFileW, FindFirstFileA, FindFirstFileW,
+= FindFirstFileA, FindFirstFileW,
 
 = GetFileAttributesA, GetFileAttributesW,
 

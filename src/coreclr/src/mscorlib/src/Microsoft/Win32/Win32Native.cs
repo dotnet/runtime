@@ -584,14 +584,6 @@ namespace Microsoft.Win32
         [DllImport(KERNEL32, SetLastError = true)]
         internal static extern IntPtr GetStdHandle(int nStdHandle);  // param is NOT a handle, but it returns one!
 
-        // From wincon.h
-        internal const int CTRL_C_EVENT = 0;
-        internal const int CTRL_BREAK_EVENT = 1;
-        internal const int CTRL_CLOSE_EVENT = 2;
-        internal const int CTRL_LOGOFF_EVENT = 5;
-        internal const int CTRL_SHUTDOWN_EVENT = 6;
-        internal const short KEY_EVENT = 1;
-
         // From WinBase.h
         internal const int FILE_TYPE_DISK = 0x0001;
         internal const int FILE_TYPE_CHAR = 0x0002;
