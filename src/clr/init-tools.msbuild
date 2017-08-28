@@ -3,14 +3,30 @@
     <TargetFramework>netcoreapp1.0</TargetFramework>
     <EnableDefaultItems>false</EnableDefaultItems>
     <DisableImplicitFrameworkReferences>true</DisableImplicitFrameworkReferences>
-    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)Tools/$(BuildToolsPackageVersion)</BaseIntermediateOutputPath>
+    <BaseIntermediateOutputPath>$(ToolsDir)/$(BuildToolsPackageVersion)</BaseIntermediateOutputPath>
+    <FeedTasksVersion>1.0.0-prerelease-02111-01</FeedTasksVersion>
+    <FeedTasksPackage>microsoft.dotnet.build.tasks.feed</FeedTasksPackage>
+    <PackageTargetFallback>$(PackageTargetFallback);netframework</PackageTargetFallback>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Microsoft.DotNet.BuildTools">
+    <PackageReference Include="microsoft.dotnet.buildtools">
       <Version>$(BuildToolsPackageVersion)</Version>
     </PackageReference>
-    <PackageReference Include="Microsoft.DotNet.BuildTools.Coreclr">
+    <PackageReference Include="microsoft.dotnet.buildtools.coreclr">
       <Version>1.0.4-prerelease</Version>
     </PackageReference>
+    <PackageReference Include="$(FeedTasksPackage)">
+      <Version>$(FeedTasksVersion)</Version>
+    </PackageReference>
   </ItemGroup>
+
+  <Target Name="CopyFeedTasks" AfterTargets="Restore" >
+    <ItemGroup>  
+      <FilesToCopy Include="$(MSBuildThisFileDirectory)\packages\$(FeedTasksPackage)\$(FeedTasksVersion)\lib\**\*.*"/>  
+    </ItemGroup>  
+
+    <Copy SourceFiles="@(FilesToCopy)"
+          DestinationFiles="@(FilesToCopy->'$(ToolsDir)\$(FeedTasksPackage)\%(RecursiveDir)%(Filename)%(Extension)')"
+    />
+  </Target>
 </Project>
