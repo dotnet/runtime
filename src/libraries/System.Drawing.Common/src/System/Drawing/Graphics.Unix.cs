@@ -1459,7 +1459,7 @@ namespace System.Drawing
         {
             if (region == null)
                 throw new ArgumentNullException("region");
-            Status status = SafeNativeMethods.Gdip.GdipSetClipRegion(nativeObject, region.NativeObject, CombineMode.Exclude);
+            Status status = SafeNativeMethods.Gdip.GdipSetClipRegion(nativeObject, region._nativeRegion, CombineMode.Exclude);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1689,7 +1689,7 @@ namespace System.Drawing
             if (region == null)
                 throw new ArgumentNullException("region");
 
-            Status status = SafeNativeMethods.Gdip.GdipFillRegion(nativeObject, brush.NativeBrush, region.NativeObject);
+            Status status = (Status)SafeNativeMethods.Gdip.GdipFillRegion(new HandleRef(this, nativeObject), new HandleRef(brush, brush.NativeBrush), new HandleRef(region, region._nativeRegion));
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1851,7 +1851,7 @@ namespace System.Drawing
         {
             if (region == null)
                 throw new ArgumentNullException("region");
-            Status status = SafeNativeMethods.Gdip.GdipSetClipRegion(nativeObject, region.NativeObject, CombineMode.Intersect);
+            Status status = SafeNativeMethods.Gdip.GdipSetClipRegion(nativeObject, region._nativeRegion, CombineMode.Intersect);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1951,7 +1951,7 @@ namespace System.Drawing
             for (int i = 0; i < regcount; i++)
             {
                 regions[i] = new Region();
-                native_regions[i] = regions[i].NativeObject;
+                native_regions[i] = regions[i]._nativeRegion;
             }
 
             Status status = SafeNativeMethods.Gdip.GdipMeasureCharacterRanges(nativeObject, text, text.Length,
@@ -2145,7 +2145,7 @@ namespace System.Drawing
         {
             if (region == null)
                 throw new ArgumentNullException("region");
-            Status status = SafeNativeMethods.Gdip.GdipSetClipRegion(nativeObject, region.NativeObject, combineMode);
+            Status status = SafeNativeMethods.Gdip.GdipSetClipRegion(nativeObject, region._nativeRegion, combineMode);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -2204,7 +2204,7 @@ namespace System.Drawing
             get
             {
                 Region reg = new Region();
-                Status status = SafeNativeMethods.Gdip.GdipGetClip(nativeObject, reg.NativeObject);
+                Status status = SafeNativeMethods.Gdip.GdipGetClip(nativeObject, reg._nativeRegion);
                 SafeNativeMethods.Gdip.CheckStatus(status);
                 return reg;
             }
