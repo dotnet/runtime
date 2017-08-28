@@ -87673,7 +87673,7 @@ RelativePath=JIT\Methodical\tailcall_v4\smallFrame\smallFrame.cmd
 WorkingDir=JIT\Methodical\tailcall_v4\smallFrame
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=Pri0;JIT;9462;EXPECTED_FAIL;6881;EXCLUDED;ILLEGAL_IL_TAILCALL_POP_RET
+Categories=JIT;9462;EXPECTED_FAIL;6881;EXCLUDED;ILLEGAL_IL_TAILCALL_POP_RET
 HostStyle=0
 
 [b99222.cmd_10958]
