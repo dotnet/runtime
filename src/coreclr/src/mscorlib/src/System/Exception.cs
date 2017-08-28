@@ -36,7 +36,7 @@ namespace System
             _message = null;
             _stackTrace = null;
             _dynamicMethods = null;
-            HResult = __HResults.COR_E_EXCEPTION;
+            HResult = HResults.COR_E_EXCEPTION;
             _xcode = _COMPlusExceptionCode;
             _xptrs = (IntPtr)0;
 
