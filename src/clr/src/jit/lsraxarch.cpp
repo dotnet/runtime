@@ -587,8 +587,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
 
         case GT_NULLCHECK:
             assert(info->dstCount == 0);
-            info->srcCount      = 1;
-            info->isLocalDefUse = true;
+            info->srcCount = 1;
             break;
 
         case GT_IND:
