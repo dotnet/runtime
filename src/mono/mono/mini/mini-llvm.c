@@ -2465,7 +2465,7 @@ emit_get_method (MonoLLVMModule *module)
 	func = LLVMAddFunction (lmodule, module->get_method_symbol, LLVMFunctionType1 (rtype, LLVMInt32Type (), FALSE));
 	LLVMSetLinkage (func, LLVMExternalLinkage);
 	LLVMSetVisibility (func, LLVMHiddenVisibility);
-	mono_llvm_add_func_attr (func, LLVM_ATTR_NO_UNWIND);
+	LLVMAddFunctionAttr (func, LLVMNoUnwindAttribute);
 	module->get_method = func;
 
 	entry_bb = LLVMAppendBasicBlock (func, "ENTRY");
@@ -2545,7 +2545,7 @@ emit_get_unbox_tramp (MonoLLVMModule *module)
 	func = LLVMAddFunction (lmodule, module->get_unbox_tramp_symbol, LLVMFunctionType1 (rtype, LLVMInt32Type (), FALSE));
 	LLVMSetLinkage (func, LLVMExternalLinkage);
 	LLVMSetVisibility (func, LLVMHiddenVisibility);
-	mono_llvm_add_func_attr (func, LLVM_ATTR_NO_UNWIND);
+	LLVMAddFunctionAttr (func, LLVMNoUnwindAttribute);
 	module->get_unbox_tramp = func;
 
 	entry_bb = LLVMAppendBasicBlock (func, "ENTRY");
@@ -2596,7 +2596,7 @@ emit_llvm_code_start (MonoLLVMModule *module)
 
 	func = LLVMAddFunction (lmodule, "llvm_code_start", LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE));
 	LLVMSetLinkage (func, LLVMInternalLinkage);
-	mono_llvm_add_func_attr (func, LLVM_ATTR_NO_UNWIND);
+	LLVMAddFunctionAttr (func, LLVMNoUnwindAttribute);
 	module->code_start = func;
 	entry_bb = LLVMAppendBasicBlock (func, "ENTRY");
 	builder = LLVMCreateBuilder ();
@@ -2635,7 +2635,7 @@ emit_init_icall_wrapper (MonoLLVMModule *module, const char *name, const char *i
 		g_assert_not_reached ();
 	}
 	LLVMSetLinkage (func, LLVMInternalLinkage);
-	mono_llvm_add_func_attr (func, LLVM_ATTR_NO_INLINE);
+	LLVMAddFunctionAttr (func, LLVMNoInlineAttribute);
 	mono_llvm_set_preserveall_cc (func);
 	entry_bb = LLVMAppendBasicBlock (func, "ENTRY");
 	builder = LLVMCreateBuilder ();
@@ -2704,7 +2704,7 @@ emit_llvm_code_end (MonoLLVMModule *module)
 
 	func = LLVMAddFunction (lmodule, "llvm_code_end", LLVMFunctionType (LLVMVoidType (), NULL, 0, FALSE));
 	LLVMSetLinkage (func, LLVMInternalLinkage);
-	mono_llvm_add_func_attr (func, LLVM_ATTR_NO_UNWIND);
+	LLVMAddFunctionAttr (func, LLVMNoUnwindAttribute);
 	module->code_end = func;
 	entry_bb = LLVMAppendBasicBlock (func, "ENTRY");
 	builder = LLVMCreateBuilder ();
@@ -2857,17 +2857,17 @@ emit_unbox_tramp (EmitContext *ctx, const char *method_name, LLVMTypeRef method_
 	tramp_name = g_strdup_printf ("ut_%s", method_name);
 	tramp = LLVMAddFunction (ctx->module->lmodule, tramp_name, method_type);
 	LLVMSetLinkage (tramp, LLVMInternalLinkage);
-	mono_llvm_add_func_attr (tramp, LLVM_ATTR_OPTIMIZE_FOR_SIZE);
-	//mono_llvm_add_func_attr (tramp, LLVM_ATTR_NO_UNWIND);
+	LLVMAddFunctionAttr (tramp, LLVMOptimizeForSizeAttribute);
+	//LLVMAddFunctionAttr (tramp, LLVMNoUnwindAttribute);
 	linfo = ctx->linfo;
 	// FIXME: Reduce code duplication with mono_llvm_compile_method () etc.
 	if (!ctx->llvm_only && ctx->rgctx_arg_pindex != -1)
-		mono_llvm_add_param_attr (LLVMGetParam (tramp, ctx->rgctx_arg_pindex), LLVM_ATTR_IN_REG);
+		LLVMAddAttribute (LLVMGetParam (tramp, ctx->rgctx_arg_pindex), LLVMInRegAttribute);
 	if (ctx->cfg->vret_addr) {
 		LLVMSetValueName (LLVMGetParam (tramp, linfo->vret_arg_pindex), "vret");
 		if (linfo->ret.storage == LLVMArgVtypeByRef) {
-			mono_llvm_add_param_attr (LLVMGetParam (tramp, linfo->vret_arg_pindex), LLVM_ATTR_STRUCT_RET);
-			mono_llvm_add_param_attr (LLVMGetParam (tramp, linfo->vret_arg_pindex), LLVM_ATTR_NO_ALIAS);
+			LLVMAddAttribute (LLVMGetParam (tramp, linfo->vret_arg_pindex), LLVMStructRetAttribute);
+			LLVMAddAttribute (LLVMGetParam (tramp, linfo->vret_arg_pindex), LLVMNoAliasAttribute);
 		}
 	}
 
@@ -2889,9 +2889,9 @@ emit_unbox_tramp (EmitContext *ctx, const char *method_name, LLVMTypeRef method_
 	}
 	call = LLVMBuildCall (builder, method, args, nargs, "");
 	if (!ctx->llvm_only && ctx->rgctx_arg_pindex != -1)
-		mono_llvm_add_instr_attr (call, 1 + ctx->rgctx_arg_pindex, LLVM_ATTR_IN_REG);
+		LLVMAddInstrAttribute (call, 1 + ctx->rgctx_arg_pindex, LLVMInRegAttribute);
 	if (linfo->ret.storage == LLVMArgVtypeByRef)
-		mono_llvm_add_instr_attr (call, 1 + linfo->vret_arg_pindex, LLVM_ATTR_STRUCT_RET);
+		LLVMAddInstrAttribute (call, 1 + linfo->vret_arg_pindex, LLVMStructRetAttribute);
 
 	// FIXME: This causes assertions in clang
 	//mono_llvm_set_must_tail (call);
@@ -3541,18 +3541,18 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		mono_llvm_set_call_preserveall_cc (lcall);
 
 	if (cinfo->ret.storage == LLVMArgVtypeByRef)
-		mono_llvm_add_instr_attr (lcall, 1 + cinfo->vret_arg_pindex, LLVM_ATTR_STRUCT_RET);
+		LLVMAddInstrAttribute (lcall, 1 + cinfo->vret_arg_pindex, LLVMStructRetAttribute);
 	if (!ctx->llvm_only && call->rgctx_arg_reg)
-		mono_llvm_add_instr_attr (lcall, 1 + cinfo->rgctx_arg_pindex, LLVM_ATTR_IN_REG);
+		LLVMAddInstrAttribute (lcall, 1 + cinfo->rgctx_arg_pindex, LLVMInRegAttribute);
 	if (call->imt_arg_reg)
-		mono_llvm_add_instr_attr (lcall, 1 + cinfo->imt_arg_pindex, LLVM_ATTR_IN_REG);
+		LLVMAddInstrAttribute (lcall, 1 + cinfo->imt_arg_pindex, LLVMInRegAttribute);
 
 	/* Add byval attributes if needed */
 	for (i = 0; i < sig->param_count; ++i) {
 		LLVMArgInfo *ainfo = &call->cinfo->args [i + sig->hasthis];
 
 		if (ainfo && ainfo->storage == LLVMArgVtypeByVal)
-			mono_llvm_add_instr_attr (lcall, 1 + ainfo->pindex, LLVM_ATTR_BY_VAL);
+			LLVMAddInstrAttribute (lcall, 1 + ainfo->pindex, LLVMByValAttribute);
 	}
 
 	/*
@@ -4011,15 +4011,18 @@ emit_handler_start (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef builder
 		g_assert (personality);
 	} else {
 #if LLVM_API_VERSION > 100
-		/* Can't cache this as each method is in its own llvm module */
-		LLVMTypeRef personality_type = LLVMFunctionType (LLVMInt32Type (), NULL, 0, TRUE);
-		personality = LLVMAddFunction (ctx->lmodule, "mono_personality", personality_type);
-		mono_llvm_add_func_attr (personality, LLVM_ATTR_NO_UNWIND);
-		LLVMBasicBlockRef entry_bb = LLVMAppendBasicBlock (personality, "ENTRY");
-		LLVMBuilderRef builder2 = LLVMCreateBuilder ();
-		LLVMPositionBuilderAtEnd (builder2, entry_bb);
-		LLVMBuildRet (builder2, LLVMConstInt (LLVMInt32Type (), 0, FALSE));
-		LLVMDisposeBuilder (builder2);
+		personality = ctx->module->personality;
+		if (!personality) {
+			LLVMTypeRef personality_type = LLVMFunctionType (LLVMInt32Type (), NULL, 0, TRUE);
+			personality = LLVMAddFunction (ctx->lmodule, "mono_personality", personality_type);
+			LLVMAddFunctionAttr (personality, LLVMNoUnwindAttribute);
+			LLVMBasicBlockRef entry_bb = LLVMAppendBasicBlock (personality, "ENTRY");
+			LLVMBuilderRef builder2 = LLVMCreateBuilder ();
+			LLVMPositionBuilderAtEnd (builder2, entry_bb);
+			LLVMBuildRet (builder2, LLVMConstInt (LLVMInt32Type (), 0, FALSE));
+			ctx->module->personality = personality;
+			LLVMDisposeBuilder (builder2);
+		}
 #else
 		static gint32 mapping_inited;
 
@@ -6463,11 +6466,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 			args [0] = lhs;
 			args [1] = rhs;
 			/* 0xf1 == multiply all 4 elements, add them together, and store the result to the lowest element */
-#if LLVM_API_VERSION >= 500
-			args [2] = LLVMConstInt (LLVMInt8Type (), 0xf1, FALSE);
-#else
 			args [2] = LLVMConstInt (LLVMInt32Type (), 0xf1, FALSE);
-#endif
 
 			values [ins->dreg] = LLVMBuildCall (builder, get_intrinsic (ctx, simd_op_to_intrins (ins->opcode)), args, 3, dname);
 			break;
@@ -6876,7 +6875,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	if (cfg->compile_aot)
 		ctx->lmodule = ctx->module->lmodule;
 	else
-		ctx->lmodule = LLVMModuleCreateWithName (g_strdup_printf ("jit-module-%s", cfg->method->name));
+		ctx->lmodule = LLVMModuleCreateWithName ("jit-module");
 #else
 	ctx->lmodule = ctx->module->lmodule;
 #endif
@@ -6977,7 +6976,7 @@ emit_method_inner (EmitContext *ctx)
 		LLVMSetFunctionCallConv (method, LLVMMono1CallConv);
 	LLVMSetLinkage (method, LLVMPrivateLinkage);
 
-	mono_llvm_add_func_attr (method, LLVM_ATTR_UW_TABLE);
+	LLVMAddFunctionAttr (method, LLVMUWTable);
 
 	if (cfg->compile_aot) {
 		LLVMSetLinkage (method, LLVMInternalLinkage);
@@ -7017,7 +7016,7 @@ emit_method_inner (EmitContext *ctx)
 	}
 	if (header->num_clauses || (cfg->method->iflags & METHOD_IMPL_ATTRIBUTE_NOINLINING) || cfg->no_inline)
 		/* We can't handle inlined methods with clauses */
-		mono_llvm_add_func_attr (method, LLVM_ATTR_NO_INLINE);
+		LLVMAddFunctionAttr (method, LLVMNoInlineAttribute);
 
 	if (linfo->rgctx_arg) {
 		ctx->rgctx_arg = LLVMGetParam (method, linfo->rgctx_arg_pindex);
@@ -7028,7 +7027,7 @@ emit_method_inner (EmitContext *ctx)
 		 * CC_X86_64_Mono in X86CallingConv.td.
 		 */
 		if (!ctx->llvm_only)
-			mono_llvm_add_param_attr (ctx->rgctx_arg, LLVM_ATTR_IN_REG);
+			LLVMAddAttribute (ctx->rgctx_arg, LLVMInRegAttribute);
 		LLVMSetValueName (ctx->rgctx_arg, "rgctx");
 	} else {
 		ctx->rgctx_arg_pindex = -1;
@@ -7037,8 +7036,8 @@ emit_method_inner (EmitContext *ctx)
 		values [cfg->vret_addr->dreg] = LLVMGetParam (method, linfo->vret_arg_pindex);
 		LLVMSetValueName (values [cfg->vret_addr->dreg], "vret");
 		if (linfo->ret.storage == LLVMArgVtypeByRef) {
-			mono_llvm_add_param_attr (LLVMGetParam (method, linfo->vret_arg_pindex), LLVM_ATTR_STRUCT_RET);
-			mono_llvm_add_param_attr (LLVMGetParam (method, linfo->vret_arg_pindex), LLVM_ATTR_NO_ALIAS);
+			LLVMAddAttribute (LLVMGetParam (method, linfo->vret_arg_pindex), LLVMStructRetAttribute);
+			LLVMAddAttribute (LLVMGetParam (method, linfo->vret_arg_pindex), LLVMNoAliasAttribute);
 		}
 	}
 
@@ -7083,7 +7082,7 @@ emit_method_inner (EmitContext *ctx)
 		LLVMSetValueName (values [cfg->args [i + sig->hasthis]->dreg], name);
 		g_free (name);
 		if (ainfo->storage == LLVMArgVtypeByVal)
-			mono_llvm_add_param_attr (LLVMGetParam (method, pindex), LLVM_ATTR_BY_VAL);
+			LLVMAddAttribute (LLVMGetParam (method, pindex), LLVMByValAttribute);
 
 		if (ainfo->storage == LLVMArgVtypeByRef) {
 			/* For OP_LDADDR */
@@ -8216,11 +8215,7 @@ add_intrinsic (LLVMModuleRef module, int id)
 		ret_type = type_to_simd_type (MONO_TYPE_R4);
 		arg_types [0] = type_to_simd_type (MONO_TYPE_R4);
 		arg_types [1] = type_to_simd_type (MONO_TYPE_R4);
-#if LLVM_API_VERSION >= 500
-		arg_types [2] = LLVMInt8Type ();
-#else
 		arg_types [2] = LLVMInt32Type ();
-#endif
 		AddFunc (module, name, ret_type, arg_types, 3);
 		break;
 #endif
