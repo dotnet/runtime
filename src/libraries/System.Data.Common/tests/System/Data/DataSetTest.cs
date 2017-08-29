@@ -1673,7 +1673,7 @@ namespace System.Data.Tests
         }
 
         /// <summary>
-        /// Test for testing DataSet.Clear method with foriegn key relations
+        /// Test for testing DataSet.Clear method with foreign key relations
         /// This is expected to clear all the related datatable rows also
         /// </summary>
         [Fact]

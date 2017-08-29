@@ -203,7 +203,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         }
 
         /// <summary>
-        /// Add methods do miminal validation to avoid overhead.
+        /// Add methods do minimal validation to avoid overhead.
         /// </summary>
         [Fact]
         public void Add_ArgumentErrors()

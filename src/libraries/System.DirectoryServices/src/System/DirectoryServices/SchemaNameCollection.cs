@@ -148,7 +148,7 @@ namespace System.DirectoryServices
         }
 
         /// <devdoc>
-        /// nserts an item at the specified position in the collection.
+        /// Inserts an item at the specified position in the collection.
         /// </devdoc>
         public void Insert(int index, string value)
         {

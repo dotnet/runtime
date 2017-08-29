@@ -915,8 +915,8 @@ namespace System.Security.Principal
         }
 
         /// <summary>
-        /// Intenal method to initialize the claim collection.
-        /// Lazy init is used so claims are not initialzed until needed
+        /// Internal method to initialize the claim collection.
+        /// Lazy init is used so claims are not initialized until needed
         /// </summary>        
         private void InitializeClaims()
         {

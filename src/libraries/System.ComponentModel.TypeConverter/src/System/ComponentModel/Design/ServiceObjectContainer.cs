@@ -56,7 +56,7 @@ namespace System.ComponentModel.Design
         /// <summary>
         ///     This property returns the default services that are implemented directly on this IServiceContainer.
         ///     the default implementation of this property is to return the IServiceContainer and ServiceContainer
-        ///     types.  You may override this proeprty and return your own types, modifying the default behavior
+        ///     types.  You may override this property and return your own types, modifying the default behavior
         ///     of GetService.
         /// </summary>
         protected virtual Type[] DefaultServices => s_defaultServices;

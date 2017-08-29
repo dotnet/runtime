@@ -179,7 +179,7 @@ namespace System.Data
         }
 
         /// <summary>
-        /// Intitalizes a new instance of the <see cref='System.Data.DataTable'/> class with the specified table
+        /// Initializes a new instance of the <see cref='System.Data.DataTable'/> class with the specified table
         ///    name.
         /// </summary>
         public DataTable(string tableName) : this()

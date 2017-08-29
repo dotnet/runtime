@@ -398,7 +398,7 @@ namespace System.DirectoryServices
         public bool Asynchronous { get; set; }
 
         /// <devdoc>
-        /// Gets or sets a value indicateing whether the search should also return deleted objects that match the search  
+        /// Gets or sets a value indicating whether the search should also return deleted objects that match the search  
         /// filter.
         /// </devdoc>
         [DefaultValue(false)]

@@ -1030,7 +1030,7 @@ namespace System.Security.Cryptography.Xml
         }
 
         /// <summary>
-        /// Write informaiton when user hits the Signed XML recursion depth limit issue.
+        /// Write information when user hits the Signed XML recursion depth limit issue.
         /// This is helpful in debugging this kind of issues.
         /// </summary>
         /// <param name="signedXml">SignedXml object verifying the signature</param>

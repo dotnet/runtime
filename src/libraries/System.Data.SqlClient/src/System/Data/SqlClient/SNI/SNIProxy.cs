@@ -473,7 +473,7 @@ namespace System.Data.SqlClient.SNI
         /// Gets the Local db Named pipe data source if the input is a localDB server. 
         /// </summary>
         /// <param name="fullServerName">The data source</param>
-        /// <param name="error">Set true when an error occured while getting LocalDB up</param>
+        /// <param name="error">Set true when an error occurred while getting LocalDB up</param>
         /// <returns></returns>
         private string GetLocalDBDataSource(string fullServerName, out bool error)
         {

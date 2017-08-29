@@ -38,8 +38,8 @@ namespace Stress.Data.SqlClient
         /// This significantly increases the probability of hitting some bugs, such as:
         ///     vstfdevdiv 674236 (SqlConnection.Open() throws InvalidOperationException for absolutely valid connection request)
         ///     sqlbuvsts 328845 (InvalidOperationException: The requested operation cannot be completed because the connection has been broken.) (this is LSE QFE)
-        /// However, calling ClearAllPools all the time might also significantly decrease te probability of hitting some other bug,
-        /// so this thread will alternate between hammering on ClearAllPools for several minutes, and then doing nother for several minutes.
+        /// However, calling ClearAllPools all the time might also significantly decrease the probability of hitting some other bug,
+        /// so this thread will alternate between hammering on ClearAllPools for several minutes, and then doing nothing for several minutes.
         /// </summary>
         private static Thread s_clearAllPoolsThread;
 

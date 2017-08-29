@@ -47,7 +47,7 @@ namespace System.Drawing
         ///
         /// The <paramref name="createDefaultOnFail"/> parameter determines how errors are handled when creating a
         /// font based on a font family that does not exist on the end user's system at run time. If this parameter is
-        /// true, then a fall-back fontwill always be used instead. If this parameter is false, an exception will be thrown.
+        /// true, then a fall-back font will always be used instead. If this parameter is false, an exception will be thrown.
         /// </summary>
         internal FontFamily(string name, bool createDefaultOnFail)
         {
