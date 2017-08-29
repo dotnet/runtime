@@ -26,6 +26,7 @@ namespace LightupClient
             catch(FileNotFoundException ex)
             {               
                 Console.WriteLine("Exception: Failed to load the lightup assembly!");
+                Console.WriteLine(ex.ToString());
                 iRetVal = -1;
             }
 
