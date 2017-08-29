@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
@@ -8,7 +8,10 @@
     <!-- do not binplace, this is only used to help compile references
          against Windows.winmd.  The real mscorlib comes from src/shims/shims.proj -->
     <BinPlaceRef>false</BinPlaceRef>
+    <ProjectGuid>{4773F3C0-646E-4542-9FD5-D07A7737403A}</ProjectGuid>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'uap-Release|AnyCPU'" />
   <ItemGroup>
     <Compile Include="TypeForwards.cs" />
   </ItemGroup>
