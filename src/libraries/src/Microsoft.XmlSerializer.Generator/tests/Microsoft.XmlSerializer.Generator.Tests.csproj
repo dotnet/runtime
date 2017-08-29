@@ -24,7 +24,7 @@
     <Compile Include=".\AlwaysPassTest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\src\Microsoft.XmlSerializer.Generator.csproj" />
+    <ReferenceFromRuntime Include="Microsoft.XmlSerializer.Generator" />
   </ItemGroup>
   <Target Name="GenerateSerializationAssembly" AfterTargets="Build" Condition=" '$(SkipTestsOnPlatform)' != 'true' " >
     <PropertyGroup>
