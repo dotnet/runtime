@@ -15,9 +15,6 @@ namespace System.Drawing
     /// Defines an object used to draw lines and curves.
     /// </summary>
     public sealed partial class Pen : MarshalByRefObject, ICloneable, IDisposable
-#if FEATURE_SYSTEM_EVENTS
-        , ISystemColorTracker
-#endif
     {
 #if FINALIZATION_WATCH
         private string allocationSite = Graphics.GetAllocationStack();
@@ -60,13 +57,6 @@ namespace System.Drawing
             SafeNativeMethods.Gdip.CheckStatus(status);
 
             SetNativePen(pen);
-
-#if FEATURE_SYSTEM_EVENTS
-            if (this.color.IsSystemColor)
-            {
-                SystemColorTracker.Add(this);
-            }
-#endif
         }
 
         /// <summary>
@@ -577,15 +567,6 @@ namespace System.Drawing
                     Color oldColor = _color;
                     _color = value;
                     InternalSetColor(value);
-
-#if FEATURE_SYSTEM_EVENTS
-                    // NOTE: We never remove pens from the active list, so if someone is
-                    // changing their pen colors a lot, this could be a problem.
-                    if (value.IsSystemColor && !oldColor.IsSystemColor)
-                    {
-                        SystemColorTracker.Add(this);
-                    }
-#endif
                 }
             }
         }
@@ -840,15 +821,5 @@ namespace System.Drawing
                 SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
-
-#if FEATURE_SYSTEM_EVENTS
-        void ISystemColorTracker.OnSystemColorChanged()
-        {
-            if (NativePen != IntPtr.Zero)
-            {
-                InternalSetColor(_color);
-            }
-        }
-#endif
     }
 }
