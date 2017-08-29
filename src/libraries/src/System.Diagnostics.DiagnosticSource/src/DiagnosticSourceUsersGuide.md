@@ -1,4 +1,4 @@
-﻿# DiagnosticSource Users Guide
+# DiagnosticSource Users Guide
 
 This document describes DiagnosticSource, a simple module that allows code 
 to be instrumented for production-time logging of **rich data payloads** for 
@@ -151,7 +151,7 @@ Thus the event names only need to be unique within a component.
 
 #### EventNames 
 
- * DO - keep the names reasonably short (< 16 characters).   Keep in mind that that event names 
+ * DO - keep the names reasonably short (< 16 characters).   Keep in mind that event names 
    are already qualified by the Listener so the name only needs to be unique within a listener. 
    Short names make the 'IsEnabled' faster.  
 

@@ -28,7 +28,7 @@ namespace System.ComponentModel.Design.Serialization
         /// <summary>
         ///     Determines if the given name is valid.  A name 
         ///     creation service may have rules defining a valid
-        ///     name, and this method allows the sevice to enforce
+        ///     name, and this method allows the service to enforce
         ///     those rules.
         /// </summary>
         bool IsValidName(string name);
@@ -36,7 +36,7 @@ namespace System.ComponentModel.Design.Serialization
         /// <summary>
         ///     Determines if the given name is valid.  A name 
         ///     creation service may have rules defining a valid
-        ///     name, and this method allows the sevice to enforce
+        ///     name, and this method allows the service to enforce
         ///     those rules.  It is similar to IsValidName, except
         ///     that this method will throw an exception if the
         ///     name is invalid.  This allows implementors to provide

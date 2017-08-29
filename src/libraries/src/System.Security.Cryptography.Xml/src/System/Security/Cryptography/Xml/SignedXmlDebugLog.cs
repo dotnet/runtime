@@ -70,7 +70,7 @@ namespace System.Security.Cryptography.Xml
             BeginCanonicalization,
 
             /// <summary>
-            ///     Verificaiton of the signature format itself is beginning
+            ///     Verification of the signature format itself is beginning
             /// </summary>
             BeginCheckSignatureFormat,
 
@@ -544,10 +544,10 @@ namespace System.Security.Cryptography.Xml
         }
 
         /// <summary>
-        ///     Log namespaces which are being propigated into the singature
+        ///     Log namespaces which are being propagated into the signature
         /// </summary>
         /// <param name="signedXml">SignedXml doing the signing or verification</param>
-        /// <param name="namespaces">namespaces being propigated</param>
+        /// <param name="namespaces">namespaces being propagated</param>
         internal static void LogNamespacePropagation(SignedXml signedXml, XmlNodeList namespaces)
         {
             Debug.Assert(signedXml != null, "signedXml != null");

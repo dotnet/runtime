@@ -19,7 +19,7 @@ namespace System.Data
         /// Nullable when the generic type is nullable. 
         /// </summary>
         /// <param name="row">The input DataRow</param>
-        /// <param name="columnName">The input column name specificy which row value to retrieve.</param>
+        /// <param name="columnName">The input column name specifying which row value to retrieve.</param>
         /// <returns>The DataRow value for the column specified.</returns> 
         public static T Field<T>(this DataRow row, string columnName)
         {
@@ -34,7 +34,7 @@ namespace System.Data
         /// Nullable when the generic type is nullable. 
         /// </summary>
         /// <param name="row">The input DataRow</param>
-        /// <param name="column">The input DataColumn specificy which row value to retrieve.</param>
+        /// <param name="column">The input DataColumn specifying which row value to retrieve.</param>
         /// <returns>The DataRow value for the column specified.</returns> 
         public static T Field<T>(this DataRow row, DataColumn column)
         {
@@ -49,7 +49,7 @@ namespace System.Data
         /// Nullable when the generic type is nullable. 
         /// </summary>
         /// <param name="row">The input DataRow</param>
-        /// <param name="columnIndex">The input ordinal specificy which row value to retrieve.</param>
+        /// <param name="columnIndex">The input ordinal specifying which row value to retrieve.</param>
         /// <returns>The DataRow value for the column specified.</returns> 
         public static T Field<T>(this DataRow row, int columnIndex)
         {
@@ -64,7 +64,7 @@ namespace System.Data
         /// Nullable when the generic type is nullable. 
         /// </summary>
         /// <param name="row">The input DataRow</param>
-        /// <param name="columnIndex">The input ordinal specificy which row value to retrieve.</param>
+        /// <param name="columnIndex">The input ordinal specifying which row value to retrieve.</param>
         /// <param name="version">The DataRow version for which row value to retrieve.</param>
         /// <returns>The DataRow value for the column specified.</returns> 
         public static T Field<T>(this DataRow row, int columnIndex, DataRowVersion version)
@@ -80,7 +80,7 @@ namespace System.Data
         /// Nullable when the generic type is nullable. 
         /// </summary>
         /// <param name="row">The input DataRow</param>
-        /// <param name="columnName">The input column name specificy which row value to retrieve.</param>
+        /// <param name="columnName">The input column name specifying which row value to retrieve.</param>
         /// <param name="version">The DataRow version for which row value to retrieve.</param>
         /// <returns>The DataRow value for the column specified.</returns> 
         public static T Field<T>(this DataRow row, string columnName, DataRowVersion version)
@@ -96,7 +96,7 @@ namespace System.Data
         /// Nullable when the generic type is nullable. 
         /// </summary>
         /// <param name="row">The input DataRow</param>
-        /// <param name="column">The input DataColumn specificy which row value to retrieve.</param>
+        /// <param name="column">The input DataColumn specifying which row value to retrieve.</param>
         /// <param name="version">The DataRow version for which row value to retrieve.</param>
         /// <returns>The DataRow value for the column specified.</returns> 
         public static T Field<T>(this DataRow row, DataColumn column, DataRowVersion version)
@@ -121,7 +121,7 @@ namespace System.Data
         /// This method sets a new value for the specified column for the DataRow it�s called on. 
         /// </summary>
         /// <param name="row">The input DataRow.</param>
-        /// <param name="columnName">The input column name specificy which row value to retrieve.</param>
+        /// <param name="columnName">The input column name specifying which row value to retrieve.</param>
         /// <param name="value">The new row value for the specified column.</param>
         public static void SetField<T>(this DataRow row, string columnName, T value)
         {
@@ -133,7 +133,7 @@ namespace System.Data
         /// This method sets a new value for the specified column for the DataRow it�s called on. 
         /// </summary>
         /// <param name="row">The input DataRow.</param>
-        /// <param name="column">The input DataColumn specificy which row value to retrieve.</param>
+        /// <param name="column">The input DataColumn specifying which row value to retrieve.</param>
         /// <param name="value">The new row value for the specified column.</param>
         public static void SetField<T>(this DataRow row, DataColumn column, T value)
         {

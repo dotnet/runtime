@@ -26,7 +26,7 @@ namespace System.ComponentModel
     ///     These two filters specify that ReportElement toolbox items will only be 
     ///     enabled when a ReportDesigner is visible.  By specifying a filter type of
     ///     Require on the report designer class, this will disable any toolbox items
-    ///     that are not report elements.  If the report designer specifed a filter type
+    ///     that are not report elements.  If the report designer specified a filter type
     ///     of "Allow" instead of "Require", other components would be enabled when the
     ///     report designer was active.  ReportElements would still be disabled when 
     ///     other designers were active, however, because ReportElement requires designers

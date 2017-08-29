@@ -452,7 +452,7 @@ namespace System.Transactions
         /// 
         /// If the transaction has not already been promoted, retrieving this value will cause promotion. Before retrieving the
         /// PromotedToken, the Transaction.PromoterType value should be checked to see if it is a promoter type (Guid) that the
-        /// caller understands. If the caller does not recognize the PromoterType value, retreiving the PromotedToken doesn't
+        /// caller understands. If the caller does not recognize the PromoterType value, retrieving the PromotedToken doesn't
         /// have much value because the caller doesn't know how to utilize it. But if the PromoterType is recognized, the
         /// caller should know how to utilize the PromotedToken to communicate with the promoting distributed transaction
         /// coordinator to enlist on the distributed transaction.
@@ -951,7 +951,7 @@ namespace System.Transactions
         /// 
         /// False if the transaction already has a durable enlistment or promotable single phase enlistment or
         /// if the transaction has already promoted. In this case, the caller will need to enlist in the transaction through other
-        /// means, such as Transaction.EnlistDurable or retreive the MSDTC export cookie or propagation token to enlist with MSDTC.
+        /// means, such as Transaction.EnlistDurable or retrieve the MSDTC export cookie or propagation token to enlist with MSDTC.
         /// </returns>
         // We apparently didn't spell Promotable like FXCop thinks it should be spelled.
         public bool EnlistPromotableSinglePhase(IPromotableSinglePhaseNotification promotableSinglePhaseNotification)

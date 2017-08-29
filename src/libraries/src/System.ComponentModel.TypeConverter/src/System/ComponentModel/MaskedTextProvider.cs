@@ -455,12 +455,12 @@ namespace System.ComponentModel
         public bool AllowPromptAsInput => _flagState[s_ALLOW_PROMPT_AS_INPUT];
 
         /// <summary>
-        ///     Retreives the number of editable characters that have been set.
+        ///     Retrieves the number of editable characters that have been set.
         /// </summary>
         public int AssignedEditPositionCount { get; private set; }
 
         /// <summary>
-        ///     Retreives the number of editable characters that have been set.
+        ///     Retrieves the number of editable characters that have been set.
         /// </summary>
         public int AvailableEditPositionCount => EditPositionCount - AssignedEditPositionCount;
 
@@ -468,7 +468,7 @@ namespace System.ComponentModel
         ///     Creates a 'clean' (no text assigned) MaskedTextProvider instance with the same property values as the 
         ///     current instance.
         ///     Derived classes can override this method and call base.Clone to get proper cloning semantics but must
-        ///     implement the full-paramter constructor (passing parameters to the base constructor as well).
+        ///     implement the full-parameter constructor (passing parameters to the base constructor as well).
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2113:SecureLateBindingMethods")]
         public object Clone()
@@ -1436,7 +1436,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///     Checks wheteher the specified position is available for assignment.  Returns false if it is assigned
+        ///     Checks whether the specified position is available for assignment.  Returns false if it is assigned
         ///     or it is not editable, true otherwise.
         /// </summary>
         public bool IsAvailablePosition(int position)
@@ -1452,7 +1452,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///     Checks wheteher the specified position in the test string is editable.
+        ///     Checks whether the specified position in the test string is editable.
         /// </summary>
         public bool IsEditPosition(int position)
         {
@@ -1472,7 +1472,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///     Checks wheteher the character in the specified position is a literal and the same as the specified character.
+        ///     Checks whether the character in the specified position is a literal and the same as the specified character.
         /// </summary>
         private static bool IsLiteralPosition(CharDescriptor charDescriptor)
         {
@@ -1480,7 +1480,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///     Checks wheteher the specified character is valid as part of a mask or an input string.  
+        ///     Checks whether the specified character is valid as part of a mask or an input string.  
         /// </summary>
         private static bool IsPrintableChar(char c)
         {
@@ -1488,7 +1488,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///     Checks wheteher the specified character is a valid input char.  
+        ///     Checks whether the specified character is a valid input char.  
         /// </summary>
         public static bool IsValidInputChar(char c)
         {
@@ -1496,7 +1496,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///     Checks wheteher the specified character is a valid input char.  
+        ///     Checks whether the specified character is a valid input char.  
         /// </summary>
         public static bool IsValidMaskChar(char c)
         {
@@ -1504,7 +1504,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///     Checks wheteher the specified character is a valid password char.
+        ///     Checks whether the specified character is a valid password char.
         /// </summary>
         public static bool IsValidPasswordChar(char c)
         {
