@@ -104,6 +104,11 @@
     <OutputPath Condition="'$(OutputPath)' == ''">$(BinDir)</OutputPath>
   </PropertyGroup>
 
+  <!-- Explicitly set BuildVersionFile before importing common. This is used by BuildVersion.targets. -->
+  <PropertyGroup Condition="'$(OfficialBuildId)' != ''">
+    <BuildVersionFile>$(BaseIntermediateOutputPath)BuildVersion-$(OfficialBuildId).props</BuildVersionFile>
+  </PropertyGroup>
+
   <!-- Import Build tools common props file where repo-independent properties are found -->
   <Import Condition="Exists('$(ToolsDir)Build.Common.props')" Project="$(ToolsDir)Build.Common.props" />
 
@@ -180,10 +185,6 @@
     </File>
     <PackageIndex Include="$(PackageIndexFile)" />
   </ItemGroup>
-
-  <PropertyGroup Condition="'$(OfficialBuildId)' != ''">
-    <BuildVersionFile>$(BaseIntermediateOutputPath)BuildVersion-$(OfficialBuildId).props</BuildVersionFile>
-  </PropertyGroup>
 
   <!-- Use Roslyn Compilers to build -->
   <Import Project="$(RoslynPropsFile)" Condition="'$(RunningOnUnix)'!='true' and Exists('$(RoslynPropsFile)') and '$(UseRoslynCompilers)'!='false'" />
