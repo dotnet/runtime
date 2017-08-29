@@ -1,0 +1,28 @@
+<Project>
+
+  <PropertyGroup>
+    <!--
+    NOTE: This .props file assumes it is only imported by projects that use the SDK="Microsoft.NET.Sdk" in their project.
+    We are currently on too old of an SDK to detect - it doesn't have https://github.com/dotnet/sdk/pull/1242.
+    But once we move to a new version, we can remove this property setting, and everything else will work correctly.
+    -->
+    <UsingMicrosoftNETSdk>true</UsingMicrosoftNETSdk>
+  </PropertyGroup>
+  
+  <PropertyGroup Condition="'$(UsingMicrosoftNETSdk)' == 'true'">
+    <UsingNETSdkCompiler>true</UsingNETSdkCompiler>
+    <DisableBuildToolsRoslynVersion>true</DisableBuildToolsRoslynVersion>
+  </PropertyGroup>
+
+  <Import Project="dir.props" />
+
+  <PropertyGroup Condition="'$(UsingMicrosoftNETSdk)' == 'true'">
+    <!--
+    The Microsoft.NET.Sdk changed the definition of what it assumes $(BaseIntermediateOutputPath) is.
+    In the "old" .csproj files, BaseIntermediateOutputPath could be shared with many projects.
+    In the SDK-based .csproj files, BaseIntermediateOutputPath is assumed to be project-specific.
+    -->
+    <BaseIntermediateOutputPath>$(IntermediateOutputPath)</BaseIntermediateOutputPath>
+  </PropertyGroup>
+
+</Project>
