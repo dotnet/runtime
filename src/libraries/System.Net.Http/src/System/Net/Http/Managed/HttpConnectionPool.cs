@@ -398,7 +398,7 @@ namespace System.Net.Http
             public bool IsUsable() => !_connection.ReadAheadCompleted;
 
             /// <summary>Gets whether the connection is currently usable, factoring in expiration time.</summary>
-            /// <param name="now">The current time.  Passed in to ammortize the cost of calling DateTime.UtcNow.</param>
+            /// <param name="now">The current time.  Passed in to amortize the cost of calling DateTime.UtcNow.</param>
             /// <returns>
             /// true if we believe the connection can be reused; otherwise, false.  There is an inherent race condition here,
             /// in that the server could terminate the connection or otherwise make it unusable immediately after we check it,

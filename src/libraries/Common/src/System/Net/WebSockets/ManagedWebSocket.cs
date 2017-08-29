@@ -22,7 +22,7 @@ namespace System.Net.WebSockets
     /// Thread-safety:
     /// - It's acceptable to call ReceiveAsync and SendAsync in parallel.  One of each may run concurrently.
     /// - It's acceptable to have a pending ReceiveAsync while CloseOutputAsync or CloseAsync is called.
-    /// - Attemping to invoke any other operations in parallel may corrupt the instance.  Attempting to invoke
+    /// - Attempting to invoke any other operations in parallel may corrupt the instance.  Attempting to invoke
     ///   a send operation while another is in progress or a receive operation while another is in progress will
     ///   result in an exception.
     /// </remarks>

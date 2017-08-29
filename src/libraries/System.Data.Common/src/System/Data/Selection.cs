@@ -63,7 +63,7 @@ namespace System.Data
         private readonly DataTable _table;
         internal readonly IndexField[] _indexFields;
 
-        /// <summary>Allow a user implemented comparision of two DataRow</summary>
+        /// <summary>Allow a user implemented comparison of two DataRow</summary>
         /// <remarks>User must use correct DataRowVersion in comparison or index corruption will happen</remarks>
         private readonly System.Comparison<DataRow> _comparison;
 

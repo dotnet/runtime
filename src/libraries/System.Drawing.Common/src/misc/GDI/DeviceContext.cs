@@ -23,9 +23,9 @@ namespace System.Drawing.Internal
         /// 
         /// The hDc is released/deleted only when owned by the object, meaning it was created internally; 
         /// in this case, the object is responsible for releasing/deleting it. 
-        /// In the case the object is created from an exisiting hdc, it is not released; this is consistent 
+        /// In the case the object is created from an existing hdc, it is not released; this is consistent 
         /// with the Win32 guideline that says if you call GetDC/CreateDC/CreatIC/CreateEnhMetafile, you are 
-        /// responsible for calling ReleaseDC/DeleteDC/DeleteEnhMetafile respectivelly.
+        /// responsible for calling ReleaseDC/DeleteDC/DeleteEnhMetafile respectively.
         /// 
         /// This class implements some of the operations commonly performed on the properties of a dc in WinForms, 
         /// specially for interacting with GDI+, like clipping and coordinate transformation.  
@@ -36,7 +36,7 @@ namespace System.Drawing.Internal
         /// Other properties are persisted from operation to operation until they are reset, like clipping, 
         /// one can make several calls to Graphics or WindowsGraphics obect after setting the dc clip area and 
         /// before resetting it; these kinds of properties are the ones implemented in this class.
-        /// This kind of properties place an extra chanllenge in the scenario where a DeviceContext is obtained 
+        /// This kind of properties place an extra challenge in the scenario where a DeviceContext is obtained 
         /// from a Graphics object that has been used with GDI+, because GDI+ saves the hdc internally, rendering the 
         /// DeviceContext underlying hdc out of sync.  DeviceContext needs to support these kind of properties to 
         /// be able to keep the GDI+ and GDI HDCs in sync.
@@ -49,7 +49,7 @@ namespace System.Drawing.Internal
         /// 5. View port origin.
         /// 6. Window extent
         /// 
-        /// Other non-persisted properties just for information: Background/Forground color, Palette, Color adjustment,
+        /// Other non-persisted properties just for information: Background/Foreground color, Palette, Color adjustment,
         /// Color space, ICM mode and profile, Current pen position, Binary raster op (not supported by GDI+), 
         /// Background mode, Logical Pen, DC pen color, ARc direction, Miter limit, Logical brush, DC brush color,
         /// Brush origin, Polygon filling mode, Bitmap stretching mode, Logical font, Intercharacter spacing, 
@@ -132,7 +132,7 @@ namespace System.Drawing.Internal
 
 
         /// <summary>
-        /// Constructor to contruct a DeviceContext object from an window handle.
+        /// Constructor to construct a DeviceContext object from an window handle.
         /// </summary>
         private DeviceContext(IntPtr hWnd)
         {
@@ -149,7 +149,7 @@ namespace System.Drawing.Internal
         }
 
         /// <summary>
-        /// Constructor to contruct a DeviceContext object from an existing Win32 device context handle.
+        /// Constructor to construct a DeviceContext object from an existing Win32 device context handle.
         /// </summary>
         private DeviceContext(IntPtr hDC, DeviceContextType dcType)
         {

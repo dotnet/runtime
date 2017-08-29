@@ -16,7 +16,7 @@ namespace System.Drawing
     ///     A common pattern for using this class is as follows (See PictureBox control):
     ///     1. The winform app (user's code) calls ImageAnimator.Animate() from the main thread.
     ///     2. Animate() spawns the animating (worker) thread in the background, which will update the image 
-    ///        frames and raise the OnFrameChanged event, which handler will be executed in the main thred.
+    ///        frames and raise the OnFrameChanged event, which handler will be executed in the main thread.
     ///     3. The main thread triggers a paint event (Invalidate()) from the OnFrameChanged handler.
     ///     4. From the OnPaint event, the main thread calls ImageAnimator.UpdateFrames() and then paints the 
     ///        image (updated frame).
@@ -29,7 +29,7 @@ namespace System.Drawing
     ///     
     ///     This class is safe for multi-threading but Image is not; multithreaded applications must use a critical
     ///     section lock using the image ref the image access is not from the same thread that executes ImageAnimator
-    ///     code.  If the user code locks on the image ref forever a deadlock will happen preventing the animiation 
+    ///     code.  If the user code locks on the image ref forever a deadlock will happen preventing the animation 
     ///     from occurring.
     /// </summary>                                
     public sealed partial class ImageAnimator
@@ -60,7 +60,7 @@ namespace System.Drawing
         private static ReaderWriterLock s_rwImgListLock = new ReaderWriterLock();
 
         /// <summary>
-        ///     Flag to avoid a deadlock when waiting on a write-lock and a an attemp to acquire a read-lock is 
+        ///     Flag to avoid a deadlock when waiting on a write-lock and a an attempt to acquire a read-lock is 
         ///     made in the same thread. If RWLock is currently owned by another thread, the current thread is going to wait on an 
         ///     event using CoWaitForMultipleHandles while pumps message. 
         ///     The comment above refers to the COM STA message pump, not to be confused with the UI message pump.
@@ -74,7 +74,7 @@ namespace System.Drawing
         ///     waiting for finalizer thread. RWLock is a fair lock. If a thread waits for a writer lock, then it needs
         ///     a reader lock while pumping message, the thread is blocked forever.
         ///     This TLS variable is used to flag the above situation and avoid the deadlock, it is ThreadStatic so each
-        ///     thread calling into ImageAnimator is garded against this problem.
+        ///     thread calling into ImageAnimator is guarded against this problem.
         /// </summary>
 
 

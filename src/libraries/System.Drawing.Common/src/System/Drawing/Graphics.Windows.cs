@@ -433,7 +433,7 @@ namespace System.Drawing
         }
 
         /// <summary>
-        /// Represents an object used in conection with the printing API, it is used to hold a reference to a
+        /// Represents an object used in connection with the printing API, it is used to hold a reference to a
         /// PrintPreviewGraphics (fake graphics) or a printer DeviceContext (and maybe more in the future).
         /// </summary>
         internal object PrintingHelper

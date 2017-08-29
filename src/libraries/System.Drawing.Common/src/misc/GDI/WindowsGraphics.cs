@@ -15,7 +15,7 @@ namespace System.Drawing.Internal
     /// and compatibility issues found in GDI+ Graphics class.
     ///
     /// Note: WindowsGraphics is a stateful component, DC properties are persisted from method calls, as opposed to
-    /// Graphics (GDI+) which performs attomic operations and always restores the hdc. The underlying hdc is always
+    /// Graphics (GDI+) which performs atomic operations and always restores the hdc. The underlying hdc is always
     /// saved and restored on dispose so external HDCs won't be modified by WindowsGraphics. So we don't need to
     /// restore previous objects into the dc in method calls.
     ///</summary>
