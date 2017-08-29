@@ -939,7 +939,7 @@ namespace System.Collections.Concurrent
         /// <summary>
         /// Gets the number of key/value pairs contained in the <see
         /// cref="ConcurrentDictionary{TKey,TValue}"/>. Should only be used after all locks
-        /// have been aquired.
+        /// have been acquired.
         /// </summary>
         /// <exception cref="T:System.OverflowException">The dictionary contains too many
         /// elements.</exception>

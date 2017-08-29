@@ -18,7 +18,7 @@ namespace System.IO
     /// we want the <c>ReadAsync</c> / <c>WriteAsync</c> / <c>FlushAsync</c> / etc. operation to be implemented
     /// differently. This is for best performance as we can take advantage of the specifics of particular stream
     /// types. For instance, <c>ReadAsync</c> currently has a special implementation for memory streams.
-    /// Moreover, knowledge about the actual runtime type of the <c>IBuffer</c> can also help chosing the optimal
+    /// Moreover, knowledge about the actual runtime type of the <c>IBuffer</c> can also help choosing the optimal
     /// implementation. This type provides static methods that encapsulate the performance logic and can be used
     /// by <c>NetFxToWinRtStreamAdapter</c>.</summary>
     internal static class StreamOperationsImplementation

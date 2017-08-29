@@ -1020,7 +1020,7 @@ namespace System.Collections.Tests
     ///        (3) compare the key, if equal, go to step 4. Otherwise end.
     ///        (4) return the value contained in the bucket.
     ///     The problem is that after step 3 and before step 4. A writer can kick in a remove the old item and add a new one 
-    ///     in the same bukcet. In order to make this happen easily, I created two long with same hashcode.
+    ///     in the same bucket. In order to make this happen easily, I created two long with same hashcode.
     /// </summary>
     public class Hashtable_ItemThreadSafetyTests
     {

@@ -171,7 +171,7 @@ namespace System.Drawing
         }
 
         /// <summary>
-        /// Constructor to initialize fields from an exisiting native GDI+ object reference. Used by ToLogFont.
+        /// Constructor to initialize fields from an existing native GDI+ object reference. Used by ToLogFont.
         /// </summary>
         private Font(IntPtr nativeFont, byte gdiCharSet, bool gdiVerticalFont)
         {
@@ -424,17 +424,17 @@ namespace System.Drawing
         /// be valid if this font was created from a classic GDI font definition,
         /// like a LOGFONT or HFONT, or it was passed into the constructor.
         ///
-        /// This is here for compatability with native Win32 intrinsic controls
+        /// This is here for compatibility with native Win32 intrinsic controls
         /// on non-Unicode platforms.
         /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public byte GdiCharSet => _gdiCharSet;
 
         /// <summary>
-        /// Determines if this font was created to represt a GDI vertical font. This will only be valid if this font
+        /// Determines if this font was created to represent a GDI vertical font. This will only be valid if this font
         /// was created from a classic GDIfont definition, like a LOGFONT or HFONT, or it was passed into the constructor.
         ///
-        /// This is here for compatability with native Win32 intrinsic controls on non-Unicode platforms.
+        /// This is here for compatibility with native Win32 intrinsic controls on non-Unicode platforms.
         /// </summary>
         [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
         public bool GdiVerticalFont => _gdiVerticalFont;

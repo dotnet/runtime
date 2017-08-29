@@ -130,7 +130,7 @@ namespace System.Data
 
         /// <summary>
         /// This method compares to DataRows by doing a column by column value based
-        /// comparision.
+        /// comparison.
         /// </summary>
         /// <param name="leftRow">The first input DataRow</param>
         /// <param name="rightRow">The second input DataRow</param>
