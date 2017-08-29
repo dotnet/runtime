@@ -682,14 +682,14 @@ parallel(
     }
 }
 
-// Setup CoreCLR-Scenarios tests
+// Setup IlLink tests
 [true, false].each { isPR ->
     ['Windows_NT'].each { os ->
         ['x64'].each { arch ->
             ['ryujit'].each { jit ->
                 ['full_opt'].each { opt_level ->
                     def architecture = arch
-                    def newJob = job(Utilities.getFullJobName(project, "perf_scenarios_${os}_${arch}_${opt_level}_${jit}", isPR)) {
+                    def newJob = job(Utilities.getFullJobName(project, "perf_illink_${os}_${arch}_${opt_level}_${jit}", isPR)) {
 
                         def testEnv = ""
 
