@@ -30,6 +30,7 @@
 #include <llvm/IR/IRBuilder.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/DIBuilder.h>
+#include <llvm/IR/CallSite.h>
 
 #include "mini-llvm-cpp.h"
 
@@ -56,7 +57,11 @@ mono_llvm_build_alloca (LLVMBuilderRef builder, LLVMTypeRef Ty,
 						LLVMValueRef ArraySize,
 						int alignment, const char *Name)
 {
+#if LLVM_API_VERSION >= 500
+	return wrap (unwrap (builder)->Insert (new AllocaInst (unwrap (Ty), 0, unwrap (ArraySize), alignment), Name));
+#else
 	return wrap (unwrap (builder)->Insert (new AllocaInst (unwrap (Ty), unwrap (ArraySize), alignment), Name));
+#endif
 }
 
 LLVMValueRef 
@@ -244,6 +249,71 @@ mono_llvm_set_call_notail (LLVMValueRef func)
 #endif
 }
 
+static Attribute::AttrKind
+convert_attr (AttrKind kind)
+{
+	switch (kind) {
+	case LLVM_ATTR_NO_UNWIND:
+		return Attribute::NoUnwind;
+	case LLVM_ATTR_NO_INLINE:
+		return Attribute::NoInline;
+	case LLVM_ATTR_OPTIMIZE_FOR_SIZE:
+		return Attribute::OptimizeForSize;
+	case LLVM_ATTR_IN_REG:
+		return Attribute::InReg;
+	case LLVM_ATTR_STRUCT_RET:
+		return Attribute::StructRet;
+	case LLVM_ATTR_NO_ALIAS:
+		return Attribute::NoAlias;
+	case LLVM_ATTR_BY_VAL:
+		return Attribute::ByVal;
+	case LLVM_ATTR_UW_TABLE:
+		return Attribute::UWTable;
+	default:
+		assert (0);
+		return Attribute::NoUnwind;
+	}
+}
+
+void
+mono_llvm_add_func_attr (LLVMValueRef func, AttrKind kind)
+{
+#if LLVM_API_VERSION > 100
+	unwrap<Function> (func)->addAttribute (AttributeList::FunctionIndex, convert_attr (kind));
+#else
+	unwrap<Function> (func)->addFnAttr (convert_attr (kind));
+#endif
+}
+
+void
+mono_llvm_add_param_attr (LLVMValueRef param, AttrKind kind)
+{
+#if LLVM_API_VERSION > 100
+	Function *func = unwrap<Argument> (param)->getParent ();
+	int n = unwrap<Argument> (param)->getArgNo ();
+	func->addParamAttr (n, convert_attr (kind));
+#else
+	Argument *A = unwrap<Argument>(param);
+	AttrBuilder B(convert_attr (kind));
+	A->addAttr(AttributeSet::get(A->getContext(), A->getArgNo() + 1,  B));
+#endif
+}
+
+void
+mono_llvm_add_instr_attr (LLVMValueRef val, int index, AttrKind kind)
+{
+#if LLVM_API_VERSION > 100
+	CallSite (unwrap<Instruction> (val)).addAttribute (index, convert_attr (kind));
+#else
+  CallSite Call = CallSite(unwrap<Instruction>(val));
+  AttrBuilder B(convert_attr (kind));
+  Call.setAttributes(
+    Call.getAttributes().addAttributes(Call->getContext(), index,
+                                       AttributeSet::get(Call->getContext(),
+                                                         index, B)));
+#endif
+}
+
 #if LLVM_API_VERSION > 100
 
 void*
@@ -257,7 +327,14 @@ mono_llvm_di_create_compile_unit (void *di_builder, const char *cu_name, const c
 {
 	DIBuilder *builder = (DIBuilder*)di_builder;
 
+#if LLVM_API_VERSION >= 500
+	DIFile *di_file;
+
+	di_file = builder->createFile (cu_name, dir);
+	return builder->createCompileUnit (dwarf::DW_LANG_C99, di_file, producer, true, "", 0);
+#else
 	return builder->createCompileUnit (dwarf::DW_LANG_C99, cu_name, dir, producer, true, "", 0);
+#endif
 }
 
 void*

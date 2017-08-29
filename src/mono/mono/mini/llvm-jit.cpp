@@ -32,7 +32,13 @@
 #include "llvm/ExecutionEngine/Orc/CompileUtils.h"
 #include "llvm/ExecutionEngine/Orc/IRCompileLayer.h"
 #include "llvm/ExecutionEngine/Orc/LambdaResolver.h"
+#if LLVM_API_VERSION >= 500
+#include "llvm/ExecutionEngine/RTDyldMemoryManager.h"
+#include "llvm/ExecutionEngine/Orc/RTDyldObjectLinkingLayer.h"
+#include "llvm/ExecutionEngine/JITSymbol.h"
+#else
 #include "llvm/ExecutionEngine/Orc/ObjectLinkingLayer.h"
+#endif
 
 #include <cstdlib>
 
@@ -121,21 +127,46 @@ MonoJitMemoryManager::finalizeMemory(std::string *ErrMsg)
 class MonoLLVMJIT {
 public:
 	/* We use our own trampoline infrastructure instead of the Orc one */
+#if LLVM_API_VERSION >= 500
+	typedef RTDyldObjectLinkingLayer ObjLayerT;
+	typedef IRCompileLayer<ObjLayerT, SimpleCompiler> CompileLayerT;
+	typedef CompileLayerT::ModuleHandleT ModuleHandleT;
+#else
 	typedef ObjectLinkingLayer<> ObjLayerT;
 	typedef IRCompileLayer<ObjLayerT> CompileLayerT;
 	typedef CompileLayerT::ModuleSetHandleT ModuleHandleT;
+#endif
 
-	MonoLLVMJIT (TargetMachine *TM)
+	MonoLLVMJIT (TargetMachine *TM, MonoJitMemoryManager *mm)
+#if LLVM_API_VERSION >= 500
+		: TM(TM), ObjectLayer([=] { return std::shared_ptr<RuntimeDyld::MemoryManager> (mm); }),
+#else
 		: TM(TM),
-		  CompileLayer (ObjectLayer, SimpleCompiler (*TM)) {
+#endif
+		  CompileLayer (ObjectLayer, SimpleCompiler (*TM)),
+		  modules() {
 	}
 
-	ModuleHandleT addModule(Module *M) {
+#if LLVM_API_VERSION >= 500
+	ModuleHandleT addModule(Function *F, std::shared_ptr<Module> M) {
+#else
+	ModuleHandleT addModule(Function *F, Module *M) {
+#endif
 		auto Resolver = createLambdaResolver(
                       [&](const std::string &Name) {
 						  const char *name = Name.c_str ();
-						  if (!strcmp (name, "___bzero"))
-							  return RuntimeDyld::SymbolInfo((uint64_t)(gssize)(void*)bzero, (JITSymbolFlags)0);
+#if LLVM_API_VERSION >= 500
+						  JITSymbolFlags flags = JITSymbolFlags ();
+#else
+						  JITSymbolFlags flags = (JITSymbolFlags)0;
+#endif
+						  if (!strcmp (name, "___bzero")) {
+#if LLVM_API_VERSION >= 500
+							  return JITSymbol((uint64_t)(gssize)(void*)bzero, flags);
+#else
+							  return RuntimeDyld::SymbolInfo((uint64_t)(gssize)(void*)bzero, flags);
+#endif
+						  }
 
 						  MonoDl *current;
 						  char *err;
@@ -150,7 +181,11 @@ public:
 						  if (!symbol)
 							  outs () << "R: " << Name << "\n";
 						  assert (symbol);
-						  return RuntimeDyld::SymbolInfo((uint64_t)(gssize)symbol, (JITSymbolFlags)0);
+#if LLVM_API_VERSION >= 500
+						  return JITSymbol((uint64_t)(gssize)symbol, flags);
+#else
+						  return RuntimeDyld::SymbolInfo((uint64_t)(gssize)symbol, flags);
+#endif
                       },
                       [](const std::string &S) {
 						  outs () << "R2: " << S << "\n";
@@ -158,9 +193,15 @@ public:
 						  return nullptr;
 					  } );
 
+#if LLVM_API_VERSION >= 500
+		ModuleHandleT m = CompileLayer.addModule(M,
+												 std::move(Resolver));
+		return m;
+#else
 		return CompileLayer.addModuleSet(singletonSet(M),
 										  make_unique<MonoJitMemoryManager>(),
 										  std::move(Resolver));
+#endif
 	}
 
 	std::string mangle(const std::string &Name) {
@@ -186,8 +227,14 @@ public:
 
 	gpointer compile (Function *F, int nvars, LLVMValueRef *callee_vars, gpointer *callee_addrs, gpointer *eh_frame) {
 		F->getParent ()->setDataLayout (TM->createDataLayout ());
-		auto ModuleHandle = addModule (F->getParent ());
-
+#if LLVM_API_VERSION >= 500
+		// Orc uses a shared_ptr to refer to modules so we have to save them ourselves to keep a ref
+		std::shared_ptr<Module> m (F->getParent ());
+		modules.push_back (m);
+		auto ModuleHandle = addModule (F, m);
+#else
+		auto ModuleHandle = addModule (F, F->getParent ());
+#endif
 		auto BodySym = CompileLayer.findSymbolIn(ModuleHandle, mangle (F), false);
 		auto BodyAddr = BodySym.getAddress();
 		assert (BodyAddr);
@@ -213,9 +260,11 @@ private:
 	TargetMachine *TM;
 	ObjLayerT ObjectLayer;
 	CompileLayerT CompileLayer;
+	std::vector<std::shared_ptr<Module>> modules;
 };
 
 static MonoLLVMJIT *jit;
+static MonoJitMemoryManager *mono_mm;
 
 MonoEERef
 mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, FunctionEmittedCb *emitted_cb, ExceptionTableCb *exception_cb, DlSymCb *dlsym_cb, LLVMExecutionEngineRef *ee)
@@ -239,7 +288,8 @@ mono_llvm_create_ee (LLVMModuleProviderRef MP, AllocCodeMemoryCb *alloc_cb, Func
 	auto TM = EB.selectTarget ();
 	assert (TM);
 
-	jit = new MonoLLVMJIT (TM);
+	mono_mm = new MonoJitMemoryManager ();
+	jit = new MonoLLVMJIT (TM, mono_mm);
 
 	return NULL;
 }
