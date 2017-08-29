@@ -299,6 +299,7 @@ void LinearScan::TreeNodeInfoInitPutArgReg(GenTreeUnOp* node)
     if (node->TypeGet() == TYP_LONG)
     {
         node->gtLsraInfo.srcCount++;
+        node->gtLsraInfo.dstCount = node->gtLsraInfo.srcCount;
         assert(genRegArgNext(argReg) == REG_NEXT(argReg));
         argMask |= genRegMask(REG_NEXT(argReg));
     }
@@ -538,6 +539,14 @@ void LinearScan::TreeNodeInfoInitCall(GenTreeCall* call)
             assert(argNode->gtRegNum == argReg);
             HandleFloatVarArgs(call, argNode, &callHasFloatRegArgs);
             info->srcCount++;
+#ifdef ARM_SOFTFP
+            // The `double` types have been transformed to `long` on armel,
+            // while the actual long types have been decomposed.
+            if (argNode->TypeGet() == TYP_LONG)
+            {
+                info->srcCount++;
+            }
+#endif // ARM_SOFTFP
         }
     }
 
