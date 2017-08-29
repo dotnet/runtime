@@ -95,7 +95,7 @@ namespace System.Security.Cryptography.Xml
         }
 
         /// <summary>
-        /// This mentod validates the _xmlDsigSearchDepthCounter counter
+        /// This method validates the _xmlDsigSearchDepthCounter counter
         /// if the counter is over the limit defined by admin or developer.
         /// </summary>
         /// <returns>returns true if the limit has reached otherwise false</returns>

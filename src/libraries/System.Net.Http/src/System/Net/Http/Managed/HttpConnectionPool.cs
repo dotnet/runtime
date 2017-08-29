@@ -454,7 +454,7 @@ namespace System.Net.Http
         /// </summary>
         /// <remarks>
         /// Implemented as a non-generic base type with a generic derived type to support
-        /// passing in arbitrary funcs and associated state while mininimizing allocations.
+        /// passing in arbitrary funcs and associated state while minimizing allocations.
         /// The <see cref="CreateConnectionAsync"/> method will be implemented on the derived
         /// type that is able to work with the supplied state generically.
         /// </remarks>

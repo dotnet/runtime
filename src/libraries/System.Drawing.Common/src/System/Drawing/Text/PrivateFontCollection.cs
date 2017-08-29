@@ -10,7 +10,7 @@ using System.IO;
 namespace System.Drawing.Text
 {
     /// <summary>
-    /// Encapsulates a collection of <see cref='System.Drawing.Font'/> objecs.
+    /// Encapsulates a collection of <see cref='System.Drawing.Font'/> objects.
     /// </summary>
     public sealed partial class PrivateFontCollection : FontCollection
     {

@@ -9,7 +9,7 @@ namespace System.Data
 {
 
     /// <summary>
-    /// This class represents a combined sort expression build using mutiple sort expressions.
+    /// This class represents a combined sort expression build using multiple sort expressions.
     /// </summary>
     /// <typeparam name="T"></typeparam>
     internal class SortExpressionBuilder<T> : IComparer<List<object>>

@@ -125,7 +125,7 @@ Thus the event names only need to be unique within a component.
    most important scenarios involve turning on whole listeners and not needing to filter
    for particular events.    You may need to split
    a source into multiple smaller ones to achieve this, and this is OK.   For example there
-   are both incomming Http request and outgoing Http requests and you may only need one 
+   are both incoming HTTP requests and outgoing HTTP requests and you may only need one 
    or the other, so having a System.Net.Http.Incomming and System.Net.Http.OutGoing for
    each sub-case is good.  
 
@@ -406,7 +406,7 @@ And consumers may use such properties to filter events more precisely.
 ```
 
 Note that producer is not aware of filter consumer has provided. DiagnosticListener 
-will invoke provided filter ommiting additional arguments if necessary, thus the filter
+will invoke provided filter omitting additional arguments if necessary, thus the filter
 should expect to receive null context.
 Producers should enclose IsEnabled call with event name and context with pure IsEnabled
 call for event name, so consumers must ensure that filter allows events without context

@@ -398,7 +398,7 @@ namespace Microsoft.SqlServer.TDS.Servers
         }
 
         /// <summary>
-        /// Indlate recovery data
+        /// Inflate recovery data
         /// </summary>
         private void _InflateRecoveryData(TDSSessionRecoveryData data)
         {
