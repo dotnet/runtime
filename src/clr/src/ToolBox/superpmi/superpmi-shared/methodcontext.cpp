@@ -6061,3 +6061,46 @@ OnError:
 
 #endif // !FEATURE_PAL
 }
+
+DenseLightWeightMap<MethodContext::Agnostic_Environment>* MethodContext::prevEnviroment = nullptr;
+
+bool MethodContext::wasEnviromentChanged()
+{
+    bool changed = false;
+    if (prevEnviroment == nullptr)
+    {
+        changed = true;
+    }
+    else if (Environment->GetCount() != prevEnviroment->GetCount())
+    {
+        changed = true;
+    }
+    else
+    {
+        for (unsigned int i = 0; i < Environment->GetCount(); i++)
+        {
+            Agnostic_Environment currEnvValue = Environment->Get(i);
+            LPCSTR currKey = (LPCSTR)Environment->GetBuffer(currEnvValue.name_index);
+            LPCSTR currVal = (LPCSTR)Environment->GetBuffer(currEnvValue.val_index);
+
+            Agnostic_Environment prevEnvValue = prevEnviroment->Get(i);
+            LPCSTR prevKey = (LPCSTR)prevEnviroment->GetBuffer(prevEnvValue.name_index);
+            LPCSTR prevVal = (LPCSTR)prevEnviroment->GetBuffer(prevEnvValue.val_index);
+            if (strcmp(currKey, prevKey) != 0 || strcmp(currVal, prevVal) != 0)
+            {
+                changed = true;
+                break;
+            }
+        }
+    }
+    if (changed)
+    {
+        if (prevEnviroment == nullptr)
+        {
+            delete prevEnviroment;
+        }
+        prevEnviroment = new DenseLightWeightMap<Agnostic_Environment>(*Environment);
+        return true;
+    }
+    return false;
+}
