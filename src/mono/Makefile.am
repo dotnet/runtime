@@ -109,23 +109,6 @@ monotouch-do-clean:
 
 endif
 
-win32getdeps:
-	wget http://www.go-mono.com/archive/pkgconfig-0.11-20020310.zip
-	wget http://www.go-mono.com/archive/glib-2.0.4-20020703.zip 
-	wget http://www.go-mono.com/archive/glib-dev-2.0.4-20020703.zip 
-	wget http://www.go-mono.com/archive/libiconv-1.7.zip 
-	wget http://www.go-mono.com/archive/libiconv-dev-1.7.zip 
-	wget http://www.go-mono.com/archive/libintl-0.10.40-20020101.zip
-	unzip -n -d / pkgconfig-0.11-20020310.zip
-	unzip -n -d / glib-2.0.4-20020703.zip
-	unzip -n -d / glib-dev-2.0.4-20020703.zip
-	unzip -n -d / libiconv-1.7.zip
-	unzip -n -d / libiconv-dev-1.7.zip
-	unzip -n -d / libintl-0.10.40-20020101.zip
-
-win32setup:
-	makensis /DMILESTONE=$(VERSION) /DSOURCE_INSTALL_DIR=$(SOURCE_INSTALL_DIR) /DBUILDNUM=$(BUILDNUM) monowiz.win32.nsi
-
 update-csproj:
 	-rm msvc/scripts/order 
 	-rm msvc/scripts/order.xml
