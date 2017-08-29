@@ -7671,12 +7671,13 @@ void Compiler::fgMorphTailCall(GenTreeCall* call)
         call->gtFlags |= GTF_EXCEPT;
     }
 
-    // Now inject a placeholder for the real call target that codegen
-    // will generate
-    GenTreePtr arg = new (this, GT_NOP) GenTreeOp(GT_NOP, TYP_I_IMPL);
+    // Now inject a placeholder for the real call target that codegen will generate
 #ifdef LEGACY_BACKEND
+    GenTreePtr arg = new (this, GT_NOP) GenTreeOp(GT_NOP, TYP_I_IMPL);
     codeGen->genMarkTreeInReg(arg, REG_TAILCALL_ADDR);
-#endif
+#else // !LEGACY_BACKEND
+    GenTreePtr arg = gtNewIconNode(0, TYP_I_IMPL);
+#endif // !LEGACY_BACKEND
     call->gtCallArgs = gtNewListNode(arg, call->gtCallArgs);
 
     // Lastly inject the pointer for the copy routine
@@ -7686,7 +7687,11 @@ void Compiler::fgMorphTailCall(GenTreeCall* call)
     call->gtCallArgs  = gtNewListNode(arg, call->gtCallArgs);
 
     // It is now a varargs tail call
+#ifdef LEGACY_BACKEND
     call->gtCallMoreFlags = GTF_CALL_M_VARARGS | GTF_CALL_M_TAILCALL;
+#else // !LEGACY_BACKEND
+    call->gtCallMoreFlags |= GTF_CALL_M_VARARGS | GTF_CALL_M_TAILCALL | GTF_CALL_M_TAILCALL_VIA_HELPER;
+#endif // !LEGACY_BACKEND
     call->gtFlags &= ~GTF_CALL_POP_ARGS;
 
 #elif defined(_TARGET_XARCH_) && !defined(LEGACY_BACKEND)
