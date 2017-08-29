@@ -141,7 +141,7 @@ class Constants {
     def static configurationList = ['Debug', 'Checked', 'Release']
 
     // This is the set of architectures
-    def static architectureList = ['arm', 'arm64', 'x64', 'x86', 'x86lb']
+    def static architectureList = ['arm', 'armlb', 'arm64', 'x64', 'x86', 'x86lb']
 }
 
 def static setMachineAffinity(def job, def os, def architecture, def options = null) {
@@ -153,9 +153,9 @@ def static setMachineAffinity(def job, def os, def architecture, def options = n
         Utilities.setMachineAffinity(job, os, 'arm64-huge-page-size');
     } else if (architecture == 'arm64' && os != 'Windows_NT' && options['is_build_only'] == true) {
         Utilities.setMachineAffinity(job, os, 'arm64-cross-latest');
-    } else if ((architecture == 'arm') && (os == 'Ubuntu' || os == 'Ubuntu16.04' || os == 'Tizen')) {
+    } else if ((architecture == 'armlb') && (os == 'Ubuntu' || os == 'Ubuntu16.04' || os == 'Tizen')) {
         Utilities.setMachineAffinity(job, 'Ubuntu', 'arm-cross-latest');
-    } else if ((architecture == 'arm') && (os == 'Windows_NT') && options['use_arm64_build_machine'] == true) {
+    } else if ((architecture == 'arm' || architecture == 'armlb') && (os == 'Windows_NT') && options['use_arm64_build_machine'] == true) {
         Utilities.setMachineAffinity(job, os, 'latest-arm64');
     }else {
         Utilities.setMachineAffinity(job, os, 'latest-or-auto');
@@ -353,6 +353,9 @@ def static getJobName(def configuration, def architecture, def os, def scenario,
             }
             break
         case 'arm':
+            baseName = architecture.toLowerCase() + '_cross_' + configuration.toLowerCase() + '_' + os.toLowerCase()
+            break
+        case 'armlb':
             // These are cross builds
             if (os == 'Tizen') {
                 // ABI: softfp
@@ -391,6 +394,7 @@ def static addNonPRTriggers(def job, def branch, def isPR, def architecture, def
                     }
                     break
                 case 'arm':
+                case 'armlb':
                     Utilities.addGithubPushTrigger(job)
                     break
                 case 'arm64':
@@ -686,18 +690,14 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
         'JosephTremoulet',
         'pgodeq',
         'pgavlin',
+        'rartemev',
         'russellhadley',
         'RussKeldorph',
         'sandreenko',
         'sdmaclea',
-        'sivarv',
         'swaroop-sridhar',
-        'gkhanna79',
         'jkotas',
         'markwilkie',
-        'rahku',
-        'ramarag',
-        'tzwlai',
         'weshaggard'
     ]
     
@@ -1086,42 +1086,47 @@ def static addTriggers(def job, def branch, def isPR, def architecture, def os, 
             }
             break
         // editor brace matching: }
+        case 'armlb':
         case 'arm': // editor brace matching: {
             switch (os) {
                 case 'Ubuntu':
                 case 'Ubuntu16.04':
-                    assert scenario == 'default'
-                    job.with {
-                        publishers {
-                            azureVMAgentPostBuildAction {
-                                agentPostBuildAction('Delete agent if the build was not successful (when idle).')
+                    if (architecture == 'armlb') { // Ubuntu arm is only for armlb currently
+                        assert scenario == 'default'
+                        job.with {
+                            publishers {
+                                azureVMAgentPostBuildAction {
+                                    agentPostBuildAction('Delete agent if the build was not successful (when idle).')
+                                }
                             }
                         }
+                        if ((os == 'Ubuntu' && configuration == 'Release') || (os == 'Ubuntu16.04' && configuration == 'Debug')) {
+                            Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build")
+                        }
+                        else {
+                            Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build", "(?i).*test\\W+${os}\\W+${architecture}\\W+Cross\\W+${configuration}\\W+Build.*")
+                        }
                     }
-                    if ((os == 'Ubuntu' && configuration == 'Release') || (os == 'Ubuntu16.04' && configuration == 'Debug')) {
-                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build")
-                    }
-                    else {
-                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build", "(?i).*test\\W+${os}\\W+${architecture}\\W+Cross\\W+${configuration}\\W+Build.*")
-                    }
-                    break;
+                    break
                 case 'Tizen':
-                    architecture='armel'
-                    job.with {
-                        publishers {
-                            azureVMAgentPostBuildAction {
-                                agentPostBuildAction('Delete agent if the build was not successful (when idle).')
+                    if (architecture == 'armlb') { // Ubuntu arm is only for armlb currently
+                        architecture='armel'
+                        job.with {
+                            publishers {
+                                azureVMAgentPostBuildAction {
+                                    agentPostBuildAction('Delete agent if the build was not successful (when idle).')
+                                }
                             }
                         }
+                        // Removing the regex will cause this to run on each PR.
+                        if (configuration == 'Release' || configuration == 'Debug') {
+                            Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build")
+                        }
+                        else {
+                            Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build", "(?i).*test\\W+${os}\\W+${architecture}\\W+Cross\\W+${configuration}\\W+Build.*")
+                        }
                     }
-                    // Removing the regex will cause this to run on each PR.
-                    if (configuration == 'Release' || configuration == 'Debug') {
-                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build")
-                    }
-                    else {
-                        Utilities.addGithubPRTriggerForBranch(job, branch, "${os} ${architecture} Cross ${configuration} Build", "(?i).*test\\W+${os}\\W+${architecture}\\W+Cross\\W+${configuration}\\W+Build.*")
-                    }
-                    break;
+                    break
                 case 'Windows_NT':
                     // Set up a private trigger
                     def contextString = "${os} ${architecture} Cross ${configuration}"
@@ -1649,6 +1654,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         }
                     }
                     break
+                case 'armlb':
                 case 'arm':
                     def validArmWindowsScenarios = [ "default",
                                                      "pri1r2r",
@@ -1670,9 +1676,11 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                     // Set time out
                     setTestJobTimeOut(newJob, scenario)
 
+                    def buildArchitecture = 'arm'
+
                     if ( lowerConfiguration == "debug" ) {
                         // For Debug builds, we will do a P1 test build
-                        buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} -priority=1"
+                        buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${buildArchitecture} -priority=1"
                     }
                     else if (lowerConfiguration == "checked") {
 
@@ -1686,11 +1694,11 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         def machineAffinityOptions = ['use_arm64_build_machine' : true]
                         setMachineAffinity(newJob, os, architecture, machineAffinityOptions)
                         // For checked runs we will also run testing.
-                        buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} -priority=1"
-                        buildCommands += "python tests\\scripts\\arm64_post_build.py -repo_root %WORKSPACE% -arch ${architecture} -build_type ${lowerConfiguration} -scenario ${scenario} -key_location C:\\tools\\key.txt"
+                        buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${buildArchitecture} -priority=1"
+                        buildCommands += "python tests\\scripts\\arm64_post_build.py -repo_root %WORKSPACE% -arch ${buildArchitecture} -build_type ${lowerConfiguration} -scenario ${scenario} -testarch ${architecture} -key_location C:\\tools\\key.txt"
                     }
                     else if (lowerConfiguration == "release") {
-                        buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture}"
+                        buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${buildArchitecture}"
                     }
                     // Add archival.
                     Utilities.addArchival(newJob, "bin/Product/**", "bin/Product/**/.nuget/**")
@@ -1715,7 +1723,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
 
                        buildCommands += "set __TestIntermediateDir=int&&build.cmd ${lowerConfiguration} ${architecture} toolset_dir C:\\ats2 -priority=1"
                        // Test build and run are launched together.
-                       buildCommands += "python tests\\scripts\\arm64_post_build.py -repo_root %WORKSPACE% -arch ${architecture} -build_type ${lowerConfiguration} -scenario ${scenario} -key_location C:\\tools\\key.txt"
+                       buildCommands += "python tests\\scripts\\arm64_post_build.py -repo_root %WORKSPACE% -arch ${architecture} -build_type ${lowerConfiguration} -scenario ${scenario} -testarch ${architecture} -key_location C:\\tools\\key.txt"
                        //Utilities.addXUnitDotNETResults(newJob, 'bin/tests/testResults.xml')
                     }
 
@@ -1745,7 +1753,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         // build and PAL test
                         buildCommands += "./tests/scripts/x86_ci_script.sh --buildConfig=${lowerConfiguration}"
                         Utilities.addXUnitDotNETResults(newJob, '**/pal_tests.xml')
-                        break;
+                        break
                     }
 
                     if (scenario == 'formatting') {
@@ -1826,7 +1834,7 @@ def static calculateBuildCommands(def newJob, def scenario, def branch, def isPR
                         Utilities.addArchival(newJob, "bin/Product/**,bin/obj/*/tests/**/*.dylib,bin/obj/*/tests/**/*.so", "bin/Product/**/.nuget/**")
                     }
                     break
-                case 'arm':
+                case 'armlb':
                     // Cross builds for ARM runs on Ubuntu, Ubuntu16.04 and Tizen currently
                     assert (os == 'Ubuntu') || (os == 'Ubuntu16.04') || (os == 'Tizen')
 
@@ -1901,8 +1909,8 @@ combinedScenarios.each { scenario ->
                         os = 'Windows_NT'
                     }
 
-                    // Tizen is only supported for arm architecture
-                    if (os == 'Tizen' && architecture != 'arm') {
+                    // Tizen is only supported for arm legacy_backend architecture
+                    if (os == 'Tizen' && architecture != 'armlb') {
                         return
                     }
 
@@ -1918,8 +1926,13 @@ combinedScenarios.each { scenario ->
                                 return
                             }
                             break
-                        case 'arm':
+                        case 'armlb':
                             if ((os != 'Ubuntu') && (os != 'Ubuntu16.04') && (os != 'Tizen') && (os != 'Windows_NT')) {
+                                return
+                            }
+                            break
+                        case 'arm':
+                            if (os != 'Windows_NT') {
                                 return
                             }
                             break
@@ -1960,6 +1973,7 @@ combinedScenarios.each { scenario ->
                         }
 
                         switch (architecture) {
+                            case 'armlb':
                             case 'arm':
                                 if ((scenario != 'gcstress0x3') &&
                                     (scenario != 'gcstress0xc') &&
@@ -2060,7 +2074,7 @@ combinedScenarios.each { scenario ->
                                     return
                                 }
                                 if (architecture != 'x64') {
-                                    if ((architecture != 'arm64' && architecture != 'arm') || (configuration == 'Debug')) {
+                                    if ((architecture != 'arm64' && architecture != 'armlb' && architecture != 'arm') || (configuration == 'Debug')) {
                                         return
                                     }
                                 }
@@ -2170,7 +2184,7 @@ combinedScenarios.each { scenario ->
                     def newJob = job(Utilities.getFullJobName(project, jobName, isPR, folderName)) {}
 
                     def machineAffinityOptions = architecture == 'arm64' ? ['is_build_only': true] : null
-                    machineAffinityOptions = architecture == 'arm' ? ['use_arm64_build_machine': false] : machineAffinityOptions
+                    machineAffinityOptions = (architecture == 'arm' || architecture == 'armlb') ? ['use_arm64_build_machine': false] : machineAffinityOptions
                     setMachineAffinity(newJob, os, architecture, machineAffinityOptions)
 
                     // Add all the standard options
@@ -2189,7 +2203,7 @@ combinedScenarios.each { scenario ->
                             }
                             else {
                                 // Setup corefx and Windows test binaries for Linux cross build for ubuntu-arm, ubuntu16.04-arm and tizen-armel
-                                if ( architecture == 'arm' && ( os == 'Ubuntu' || os == 'Ubuntu16.04' || os == 'Tizen')) {
+                                if ( architecture == 'armlb' && ( os == 'Ubuntu' || os == 'Ubuntu16.04' || os == 'Tizen')) {
                                     // Cross build for ubuntu-arm, ubuntu16.04-arm and tizen-armel
                                     // Define the Windows Tests and Corefx build job names
                                     def WindowTestsName = projectFolder + '/' +
