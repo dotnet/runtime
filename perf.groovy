@@ -61,7 +61,7 @@ def static getOSGroup(def os) {
                             if (isPR) {
                                 parameters {
                                     stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
-                                    stringParam('BenchviewCommitUser', '\${ghprbTriggerAuthorEmail}', 'The email that will be used to build the alias of a run in Benchview')
+                                    stringParam('BenchviewCommitUser', '\${ghprbPullAuthorEmail}', 'The email that will be used to build the alias of a run in Benchview')
                                 }
                             }
                             if (isSmoketest) {
@@ -206,7 +206,7 @@ def static getOSGroup(def os) {
                         if (isPR) {
                             parameters {
                                 stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that will be used to build the full title of a run in Benchview.')
-                                stringParam('BenchviewCommitUser', '\${ghprbTriggerAuthorEmail}', 'The email that will be used to build the alias of a run in Benchview')
+                                stringParam('BenchviewCommitUser', '\${ghprbPullAuthorEmail}', 'The email that will be used to build the alias of a run in Benchview')
                             }
                         }
 
@@ -309,7 +309,7 @@ def static getFullPerfJobName(def project, def os, def isPR) {
             if (isPR) {
                 parameters {
                     stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
-                    stringParam('BenchviewCommitUser', '\${ghprbTriggerAuthorEmail}', 'The email that will be used to build the alias of a run in Benchview')
+                    stringParam('BenchviewCommitUser', '\${ghprbPullAuthorEmail}', 'The email that will be used to build the alias of a run in Benchview')
                 }
             }
 
@@ -383,7 +383,7 @@ def static getFullPerfJobName(def project, def os, def isPR) {
         if (isPR) {
             parameters {
                 stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
-                stringParam('BenchviewCommitUser', '\${ghprbTriggerAuthorEmail}', 'The email that will be used to build the alias of a run in Benchview')
+                stringParam('BenchviewCommitUser', '\${ghprbPullAuthorEmail}', 'The email that will be used to build the alias of a run in Benchview')
             }
         }
         buildFlow("""
@@ -464,7 +464,7 @@ def static getFullThroughputJobName(def project, def os, def isPR) {
                 if (isPR) {
                     parameters {
                         stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that will be used to build the full title of a run in Benchview.')
-                        stringParam('BenchviewCommitUser', '\${ghprbTriggerAuthorEmail}', 'The email that will be used to build the alias of a run in Benchview')
+                        stringParam('BenchviewCommitUser', '\${ghprbPullAuthorEmail}', 'The email that will be used to build the alias of a run in Benchview')
                     }
                 }
 
@@ -529,7 +529,7 @@ def static getFullThroughputJobName(def project, def os, def isPR) {
         if (isPR) {
             parameters {
                 stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
-                stringParam('BenchviewCommitUser', '\${ghprbTriggerAuthorEmail}', 'The email that will be used to build the alias of a run in Benchview')
+                stringParam('BenchviewCommitUser', '\${ghprbPullAuthorEmail}', 'The email that will be used to build the alias of a run in Benchview')
             }
         }
         buildFlow("""
@@ -592,7 +592,7 @@ parallel(
                         if (isPR) {
                             parameters {
                                 stringParam('BenchviewCommitName', '\${ghprbPullTitle}', 'The name that you will be used to build the full title of a run in Benchview.  The final name will be of the form <branch> private BenchviewCommitName')
-                                stringParam('BenchviewCommitUser', '\${ghprbTriggerAuthorEmail}', 'The email that will be used to build the alias of a run in Benchview')
+                                stringParam('BenchviewCommitUser', '\${ghprbPullAuthorEmail}', 'The email that will be used to build the alias of a run in Benchview')
                             }
                         }
 
