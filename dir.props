@@ -2,6 +2,11 @@
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <Import Condition="Exists('..\dir.props')" Project="..\dir.props" />
 
+  <PropertyGroup>
+    <!-- Directory.Build.props imports this .props file, so ensure it isn't imported again -->
+    <ImportDirectoryBuildProps>false</ImportDirectoryBuildProps>
+  </PropertyGroup>
+  
   <!-- Define vNext UAP Moniker -->
   <PropertyGroup>
     <UAPvNextVersion>10.0.15138</UAPvNextVersion>
@@ -272,7 +277,7 @@
   </PropertyGroup>
 
   <!-- Disable some standard properties for building our projects -->
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(UsingNETSdkCompiler)' != 'true'">
     <NoStdLib>true</NoStdLib>
     <NoExplicitReferenceToStdLib>true</NoExplicitReferenceToStdLib>
     <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
@@ -388,7 +393,7 @@
     <MicrosoftNetCoreRuntimeAppxOutputPath>$(UWPOutputDir)Microsoft.NET.CoreRuntime.$(MajorVersion).$(MinorVersion).appx</MicrosoftNetCoreRuntimeAppxOutputPath>
   </PropertyGroup>
 
-  <PropertyGroup>
+  <PropertyGroup Condition="'$(UsingNETSdkCompiler)' != 'true'">
     <!-- We don't use any of MSBuild's resolution logic for resolving the framework, so just set these two properties to any folder that exists to skip
          the GenerateReferenceAssemblyPaths task (not target) and to prevent it from outputting a warning (MSB3644). -->
     <_TargetFrameworkDirectories>$(MSBuildThisFileDirectory)documentation</_TargetFrameworkDirectories>
@@ -400,7 +405,17 @@
     <PortableNuGetMode>true</PortableNuGetMode>
   </PropertyGroup>
 
-  <!-- Use Roslyn Compilers to build --> 
-  <Import Project="$(RoslynPropsFile)" Condition="'$(OsEnvironment)'!='Windows_NT' and Exists('$(RoslynPropsFile)') and '$(UseRoslynCompilers)'!='false'" /> 
-  <Import Project="$(RoslynPropsFile)" Condition="'$(OsEnvironment)'=='Windows_NT' and Exists('$(RoslynPropsFile)')" /> 
+  <PropertyGroup>
+    <!--
+    Never use the NuGet fallback folder that comes with the SDK we use to build. 
+    The NuGet fallback folder can/will contain packages we are building in this repo, and we
+    want to ensure we use the correct packages.
+    -->
+    <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder>
+  </PropertyGroup>
+
+
+  <!-- Use Roslyn Compilers to build, if we are not using the .NET SDK to build --> 
+  <Import Project="$(RoslynPropsFile)" Condition="'$(UsingNETSdkCompiler)' != 'true' and '$(OsEnvironment)'!='Windows_NT' and Exists('$(RoslynPropsFile)') and '$(UseRoslynCompilers)'!='false'" /> 
+  <Import Project="$(RoslynPropsFile)" Condition="'$(UsingNETSdkCompiler)' != 'true' and '$(OsEnvironment)'=='Windows_NT' and Exists('$(RoslynPropsFile)')" /> 
 </Project>
