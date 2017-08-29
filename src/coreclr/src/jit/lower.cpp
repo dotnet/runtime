@@ -5163,7 +5163,7 @@ void Lowering::getCastDescription(GenTreePtr treeNode, CastInfo* castInfo)
     GenTreePtr castOp = treeNode->gtCast.CastOp();
 
     var_types dstType = treeNode->CastToType();
-    var_types srcType = castOp->TypeGet();
+    var_types srcType = genActualType(castOp->TypeGet());
 
     castInfo->unsignedDest   = varTypeIsUnsigned(dstType);
     castInfo->unsignedSource = varTypeIsUnsigned(srcType);
