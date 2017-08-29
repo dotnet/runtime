@@ -43,6 +43,7 @@
     <Compile Include="misc\InvalidEnumArgumentException.cs" />
     <Compile Include="System\Drawing\BitmapSuffixInSameAssemblyAttribute.cs" />
     <Compile Include="System\Drawing\BitmapSuffixInSatelliteAssemblyAttribute.cs" />
+    <Compile Include="System\Drawing\Brushes.cs" />
     <Compile Include="System\Drawing\IDeviceContext.cs" />
     <Compile Include="System\Drawing\GdiplusNative.cs" />
     <Compile Include="System\Drawing\Graphics.cs" />
@@ -194,7 +195,6 @@
     <Compile Include="SRDescriptionAttribute.cs" />
     <Compile Include="System\Drawing\Bitmap.cs" />
     <Compile Include="System\Drawing\BitmapSelector.cs" />
-    <Compile Include="System\Drawing\Brushes.cs" />
     <Compile Include="System\Drawing\BufferedGraphics.cs" />
     <Compile Include="System\Drawing\BufferedGraphicsContext.cs" />
     <Compile Include="System\Drawing\BufferedGraphicsManager.cs" />
@@ -287,7 +287,6 @@
     <!-- Unix-specific -->
     <Compile Include="System\Drawing\Graphics.Unix.cs" />
     <Compile Include="Unix\System.Drawing\Bitmap.cs" />
-    <Compile Include="Unix\System.Drawing\Brushes.cs" />
     <Compile Include="Unix\System.Drawing\BufferedGraphics.cs" />
     <Compile Include="Unix\System.Drawing\BufferedGraphicsManager.cs" />
     <Compile Include="Unix\System.Drawing\BufferedGraphicsContext.cs" />
