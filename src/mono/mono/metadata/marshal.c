@@ -7658,6 +7658,9 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 	int i, argnum, *tmp_locals;
 	int type, param_shift = 0;
 	int coop_gc_stack_dummy, coop_gc_var;
+#ifndef DISABLE_COM
+	int coop_cominterop_fnptr;
+#endif
 
 	memset (&m, 0, sizeof (m));
 	m.mb = mb;
@@ -7700,6 +7703,11 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 		coop_gc_stack_dummy = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
 		/* local 5, the local to be used when calling the suspend funcs */
 		coop_gc_var = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+#ifndef DISABLE_COM
+		if (!func_param && MONO_CLASS_IS_IMPORT (mb->method->klass)) {
+			coop_cominterop_fnptr = mono_mb_add_local (mb, &mono_defaults.int_class->byval_arg);
+		}
+#endif
 	}
 
 	/*
@@ -7745,6 +7753,13 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 			mono_mb_emit_byte (mb, CEE_POP); // Result not needed yet
 		}
 
+#ifndef DISABLE_COM
+		if (!func_param && MONO_CLASS_IS_IMPORT (mb->method->klass)) {
+			mono_mb_emit_cominterop_get_function_pointer (mb, &piinfo->method);
+			mono_mb_emit_stloc (mb, coop_cominterop_fnptr);
+		}
+#endif
+
 		mono_mb_emit_ldloc_addr (mb, coop_gc_stack_dummy);
 		mono_mb_emit_icall (mb, mono_threads_enter_gc_safe_region_unbalanced);
 		mono_mb_emit_stloc (mb, coop_gc_var);
@@ -7767,7 +7782,12 @@ mono_marshal_emit_native_wrapper (MonoImage *image, MonoMethodBuilder *mb, MonoM
 		mono_mb_emit_calli (mb, csig);
 	} else if (MONO_CLASS_IS_IMPORT (mb->method->klass)) {
 #ifndef DISABLE_COM
-		mono_mb_emit_cominterop_call (mb, csig, &piinfo->method);
+		if (!mono_threads_is_blocking_transition_enabled ()) {
+			mono_mb_emit_cominterop_call (mb, csig, &piinfo->method);
+		} else {
+			mono_mb_emit_ldloc (mb, coop_cominterop_fnptr);
+			mono_mb_emit_cominterop_call_function_pointer (mb, csig);
+		}
 #else
 		g_assert_not_reached ();
 #endif

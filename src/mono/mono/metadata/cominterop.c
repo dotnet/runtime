@@ -640,19 +640,36 @@ mono_cominterop_cleanup (void)
 }
 
 void
-mono_mb_emit_cominterop_call (MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethod* method)
+mono_mb_emit_cominterop_get_function_pointer (MonoMethodBuilder *mb, MonoMethod *method)
 {
 #ifndef DISABLE_JIT
 	// get function pointer from 1st arg, the COM interface pointer
 	mono_mb_emit_ldarg (mb, 0);
 	mono_mb_emit_icon (mb, cominterop_get_com_slot_for_method (method));
 	mono_mb_emit_icall (mb, cominterop_get_function_pointer);
+	/* Leaves the function pointer on top of the stack */
+#endif
+}
 
+void
+mono_mb_emit_cominterop_call_function_pointer (MonoMethodBuilder *mb, MonoMethodSignature *sig)
+{
+#ifndef DISABLE_JIT
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (mb, CEE_MONO_SAVE_LMF);
 	mono_mb_emit_calli (mb, sig);
 	mono_mb_emit_byte (mb, MONO_CUSTOM_PREFIX);
 	mono_mb_emit_byte (mb, CEE_MONO_RESTORE_LMF);
+#endif /* DISABLE_JIT */
+}
+
+void
+mono_mb_emit_cominterop_call (MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethod* method)
+{
+#ifndef DISABLE_JIT
+	mono_mb_emit_cominterop_get_function_pointer (mb, method);
+
+	mono_mb_emit_cominterop_call_function_pointer (mb, sig);
 #endif /* DISABLE_JIT */
 }
 

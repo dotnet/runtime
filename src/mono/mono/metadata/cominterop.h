@@ -20,6 +20,12 @@ void
 mono_cominterop_cleanup (void);
 
 void
+mono_mb_emit_cominterop_get_function_pointer (MonoMethodBuilder *mb, MonoMethod* method);
+
+void
+mono_mb_emit_cominterop_call_function_pointer (MonoMethodBuilder *mb, MonoMethodSignature *sig);
+
+void
 mono_mb_emit_cominterop_call (MonoMethodBuilder *mb, MonoMethodSignature *sig, MonoMethod* method);
 
 void
