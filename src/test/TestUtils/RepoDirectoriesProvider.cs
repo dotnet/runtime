@@ -43,7 +43,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
             string corehostPackages = null,
             string dotnetSdk = null)
         {
-            _repoRoot = repoRoot ?? Directory.GetParent(Directory.GetCurrentDirectory()).Parent.Parent.Parent.Parent.Parent.FullName;
+            _repoRoot = repoRoot ?? GetRepoRootDirectory();
 
             string baseArtifactsFolder = artifacts ?? Path.Combine(_repoRoot, "Bin");
             
@@ -70,6 +70,28 @@ namespace Microsoft.DotNet.CoreSetup.Test
             _builtDotnet = builtDotnet ?? Path.Combine(baseArtifactsFolder, "obj", _buildRID+".Debug", "sharedFrameworkPublish");
             if(!Directory.Exists(_builtDotnet))
                 _builtDotnet = builtDotnet ?? Path.Combine(baseArtifactsFolder, "obj", _buildRID+".Release", "sharedFrameworkPublish");
+        }
+
+        private static string GetRepoRootDirectory()
+        {
+            string currentDirectory = Directory.GetCurrentDirectory();
+
+            while (currentDirectory != null)
+            {
+                var gitDirOrFile = Path.Combine(currentDirectory, ".git");
+                if (Directory.Exists(gitDirOrFile) || File.Exists(gitDirOrFile))
+                {
+                    break;
+                }
+                currentDirectory = Directory.GetParent(currentDirectory)?.FullName;
+            }
+
+            if (currentDirectory == null)
+            {
+                throw new Exception("Cannot find the git repository root");
+            }
+
+            return currentDirectory;
         }
     }
 }

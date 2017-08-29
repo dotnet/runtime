@@ -109,7 +109,7 @@
 
   <Target Name="GenerateRuntimeGraph">
     <PropertyGroup>
-      <SharedFrameworkAssetsFile>$(SharedFrameworkSourceRoot)/obj/project.assets.json</SharedFrameworkAssetsFile>
+      <SharedFrameworkAssetsFile>$(IntermediateOutputRootPath)/framework/project.assets.json</SharedFrameworkAssetsFile>
       <SharedFrameworkDepsFile>$(SharedFrameworkNameAndVersionRoot)\$(SharedFrameworkName).deps.json</SharedFrameworkDepsFile>
       <RuntimeGraphGeneratorRuntime Condition="'$(OSGroup)'=='Windows_NT'">win</RuntimeGraphGeneratorRuntime>
       <RuntimeGraphGeneratorRuntime Condition="'$(OSGroup)'=='OSX'">osx</RuntimeGraphGeneratorRuntime>
