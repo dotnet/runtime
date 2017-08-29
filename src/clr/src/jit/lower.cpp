@@ -1937,7 +1937,7 @@ void Lowering::LowerFastTailCall(GenTreeCall* call)
 // has already inserted tailcall helper special arguments. This function
 // inserts actual data for some placeholders.
 //
-// For AMD64, lower
+// For ARM32, AMD64, lower
 //      tail.call(void* copyRoutine, void* dummyArg, ...)
 // as
 //      Jit_TailCall(void* copyRoutine, void* callTarget, ...)
@@ -2006,9 +2006,9 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
 
     fgArgTabEntry* argEntry;
 
-#if defined(_TARGET_AMD64_)
+#if defined(_TARGET_AMD64_) || defined(_TARGET_ARM_)
 
-// For AMD64, first argument is CopyRoutine and second argument is a place holder node.
+// For ARM32 and AMD64, first argument is CopyRoutine and second argument is a place holder node.
 
 #ifdef DEBUG
     argEntry = comp->gtArgEntryByArgNum(call, 0);
