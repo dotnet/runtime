@@ -196,7 +196,7 @@ namespace Stress.Data.SqlClient
         /// <param name="com"> The Sql Command to Execute</param>
         /// <param name="query">Indicates if data is being queried and where ExecuteQuery or Non-query to be used with the reader</param>
         /// <param name="xml">Indicates if the query should be executed as an Xml</param>
-        /// <param name="cancelled">Indicates if command was cancelled and is used to throw exception if a Command cancelation related exception is encountered</param>
+        /// <param name="cancelled">Indicates if command was cancelled and is used to throw exception if a Command cancellation related exception is encountered</param>
         /// <param name="cts">The Cancellation Token Source</param>
         private void SqlCommandEndExecute(Random rnd, IAsyncResult result, SqlCommand com, bool query, bool xml, bool cancelled, CancellationTokenSource cts = null)
         {

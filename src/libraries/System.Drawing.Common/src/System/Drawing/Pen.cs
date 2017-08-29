@@ -734,7 +734,7 @@ namespace System.Drawing
         }
 
         /// <summary>
-        /// Gets or sets an array of cutom dashes and spaces. The dashes are made up of line segments.
+        /// Gets or sets an array of custom dashes and spaces. The dashes are made up of line segments.
         /// </summary>
         public float[] DashPattern
         {
@@ -800,7 +800,7 @@ namespace System.Drawing
         }
 
         /// <summary>
-        /// Gets or sets an array of cutom dashes and spaces. The dashes are made up of line segments.
+        /// Gets or sets an array of custom dashes and spaces. The dashes are made up of line segments.
         /// </summary>
         public float[] CompoundArray
         {

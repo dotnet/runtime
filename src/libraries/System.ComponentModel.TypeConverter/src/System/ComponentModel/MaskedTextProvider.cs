@@ -178,7 +178,7 @@ namespace System.ComponentModel
 
         /// <summary>
         ///     Creates a MaskedTextProvider object from the specified mask.
-        ///     'culture' is used to set the separator characters to the correspondig locale character; if null, the current
+        ///     'culture' is used to set the separator characters to the corresponding locale character; if null, the current
         ///               culture is used.
         /// </summary>
         public MaskedTextProvider(string mask, CultureInfo culture)
@@ -188,7 +188,7 @@ namespace System.ComponentModel
 
         /// <summary>
         ///     Creates a MaskedTextProvider object from the specified mask.
-        ///     'culture' is used to set the separator characters to the correspondig locale character; if null, the current
+        ///     'culture' is used to set the separator characters to the corresponding locale character; if null, the current
         ///               culture is used.
         ///     'restrictToAscii' specifies whether the input characters should be restricted to ASCII characters only.
         /// </summary>
@@ -219,7 +219,7 @@ namespace System.ComponentModel
 
         /// <summary>
         ///     Creates a MaskedTextProvider object from the specified mask.
-        ///     'culture' is used to set the separator characters to the correspondig locale character; if null, the current
+        ///     'culture' is used to set the separator characters to the corresponding locale character; if null, the current
         ///               culture is used.
         ///     'allowPromptAsInput' specifies whether the prompt character should be accepted as a valid input or not.
         ///     'promptChar' specifies the character to be used for the prompt.
@@ -468,7 +468,7 @@ namespace System.ComponentModel
         ///     Creates a 'clean' (no text assigned) MaskedTextProvider instance with the same property values as the 
         ///     current instance.
         ///     Derived classes can override this method and call base.Clone to get proper cloning semantics but must
-        ///     implement the full-paramter contructor (passing parameters to the base constructor as well).
+        ///     implement the full-paramter constructor (passing parameters to the base constructor as well).
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA2113:SecureLateBindingMethods")]
         public object Clone()
@@ -2470,7 +2470,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///     Test the characters in the specified string agaist the test string, starting from the specified position.
+        ///     Test the characters in the specified string against the test string, starting from the specified position.
         ///     If the test is successful, the characters in the test string are set appropriately.
         ///     On exit the testPosition contains last position where the primary operation was actually performed if successful, 
         ///     otherwise the first position that made the test fail. This position is relative to the test string.
@@ -2489,7 +2489,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///     Test the characters in the specified string agaist the test string, starting from the specified position.
+        ///     Test the characters in the specified string against the test string, starting from the specified position.
         ///     On exit the testPosition contains last position where the primary operation was actually performed if successful, 
         ///     otherwise the first position that made the test fail. This position is relative to the test string.
         ///     The successCount out param contains the number of characters that would be actually set (not escaped).
