@@ -490,7 +490,7 @@ namespace System.Xml.Schema
 
         /// <summary>
         /// This method is called when a valid conversion cannot be found.  By default, this method throws an error.  It can
-        /// be overriden in derived classes to support list conversions.
+        /// be overridden in derived classes to support list conversions.
         /// </summary>
         protected virtual object ChangeListType(object value, Type destinationType, IXmlNamespaceResolver nsResolver)
         {

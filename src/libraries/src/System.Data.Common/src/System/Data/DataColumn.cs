@@ -79,7 +79,7 @@ namespace System.Data
         }
 
         /// <summary>
-        /// Inititalizes a new instance of the <see cref='System.Data.DataColumn'/> class
+        /// Initializes a new instance of the <see cref='System.Data.DataColumn'/> class
         /// using the specified column name.
         /// </summary>
         public DataColumn(string columnName) : this(columnName, typeof(string), null, MappingType.Element)
@@ -87,7 +87,7 @@ namespace System.Data
         }
 
         /// <summary>
-        /// Inititalizes a new instance of the <see cref='System.Data.DataColumn'/> class
+        /// Initializes a new instance of the <see cref='System.Data.DataColumn'/> class
         /// using the specified column name and data type.
         /// </summary>
         public DataColumn(string columnName, Type dataType) : this(columnName, dataType, null, MappingType.Element)

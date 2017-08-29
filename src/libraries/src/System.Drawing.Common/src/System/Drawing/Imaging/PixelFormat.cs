@@ -33,7 +33,7 @@ namespace System.Drawing.Imaging
         /// </summary>
         Alpha = 0x00040000,
         /// <summary>
-        /// Specifies that pixel format contains pre-multipled alpha values.
+        /// Specifies that pixel format contains pre-multiplied alpha values.
         /// </summary>
         PAlpha = 0x00080000, // What's this?
         Extended = 0x00100000,

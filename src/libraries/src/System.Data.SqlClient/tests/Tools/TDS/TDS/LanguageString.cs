@@ -7,7 +7,7 @@ using System;
 namespace Microsoft.SqlServer.TDS
 {
     /// <summary>
-    /// Class that contains langauge names and can convert between enumeration and strings
+    /// Class that contains language names and can convert between enumeration and strings
     /// </summary>
     public static class LanguageString
     {

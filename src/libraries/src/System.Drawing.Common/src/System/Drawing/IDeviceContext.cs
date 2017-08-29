@@ -13,7 +13,7 @@ namespace System.Drawing
     /// special care, for instance using other Win32 functions like CreateDC or CreateCompatibleDC require 
     /// DeleteDC instead of ReleaseDC to properly free the dc handle.  
     /// 
-    /// See the DeviceContext class for an implemenation of this interface, it uses the Dispose method
+    /// See the DeviceContext class for an implementation of this interface, it uses the Dispose method
     /// for freeing non-display dc handles.
     /// 
     /// This is a low-level API that is expected to be used with TextRenderer or PInvoke calls.
