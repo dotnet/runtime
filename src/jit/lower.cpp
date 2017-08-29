@@ -1253,10 +1253,9 @@ void Lowering::LowerArg(GenTreeCall* call, GenTreePtr* ppArg)
             GenTreePtr argHi = arg->gtGetOp2();
 
             GenTreeFieldList* fieldList = new (comp, GT_FIELD_LIST) GenTreeFieldList(argLo, 0, TYP_INT, nullptr);
+            // Only the first fieldList node (GTF_FIELD_LIST_HEAD) is in the instruction sequence.
             (void)new (comp, GT_FIELD_LIST) GenTreeFieldList(argHi, 4, TYP_INT, fieldList);
-
-            putArg           = NewPutArg(call, fieldList, info, TYP_VOID);
-            putArg->gtRegNum = info->regNum;
+            putArg = NewPutArg(call, fieldList, info, TYP_VOID);
 
             BlockRange().InsertBefore(arg, putArg);
             BlockRange().Remove(arg);
