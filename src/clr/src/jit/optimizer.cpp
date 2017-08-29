@@ -1907,25 +1907,33 @@ private:
                     return false;
                 }
 
+                bool isFirstVisit;
                 if (pred == entry)
                 {
                     // We have indeed found a cycle in the flow graph.
-                    foundCycle = true;
+                    isFirstVisit = !foundCycle;
+                    foundCycle   = true;
                     assert(loopBlocks.IsMember(pred->bbNum));
                 }
-                else if (!loopBlocks.TestAndInsert(pred->bbNum))
+                else if (loopBlocks.TestAndInsert(pred->bbNum))
+                {
+                    // Already visited this pred
+                    isFirstVisit = false;
+                }
+                else
                 {
                     // Add this pred to the worklist
                     worklist.push_back(pred);
+                    isFirstVisit = true;
+                }
 
-                    if ((pred->bbNext != nullptr) && (PositionNum(pred->bbNext) == pred->bbNum))
-                    {
-                        // We've created a new block immediately after `pred` to
-                        // reconnect what was fall-through.  Mark it as in-loop also;
-                        // it needs to stay with `prev` and if it exits the loop we'd
-                        // just need to re-create it if we tried to move it out.
-                        loopBlocks.Insert(pred->bbNext->bbNum);
-                    }
+                if (isFirstVisit && (pred->bbNext != nullptr) && (PositionNum(pred->bbNext) == pred->bbNum))
+                {
+                    // We've created a new block immediately after `pred` to
+                    // reconnect what was fall-through.  Mark it as in-loop also;
+                    // it needs to stay with `prev` and if it exits the loop we'd
+                    // just need to re-create it if we tried to move it out.
+                    loopBlocks.Insert(pred->bbNext->bbNum);
                 }
             }
         }

@@ -247,6 +247,90 @@ namespace N
             return true;
         }
 
+        // Repro case for a specific corner case in loop processing code
+        // (chunk of blocks moved after entry of another loop leading to
+        // a new block immediately following the entry, which subsequently
+        // gets moved to a third loop where its PredecessorNum is evaluated).
+        static int MoveAfterEntry(int n, int m, int x, int k)
+        {
+            int result = 0;
+
+            try
+            {
+
+                do  // Loop 1
+                {
+                    CallSomeMethod(1);
+
+                    if (n == 5)  // The body of this `if` will get moved out of Loop 1
+                    {
+                        MaybeThrow(k);
+                        result += 6;
+                        goto Finish;
+                    }
+
+                    result += 3;
+                } while (--n > 0);
+
+                CallSomeMethod(3);
+
+                do // Loop 2
+                {
+                    CallSomeMethod(4);
+
+                    if (m == 3)
+                    {
+                        // Code moved out of Loop 1 will end up here; all of the above
+                        // blocks have fallthrough, and we don't want to move into the `try` region
+                        // That means we'll need to insert a new block just before the moved code
+                        // that jumps around it to enter the `try`.
+                        // Subsequently we'll want to move the same chunk of code out of Loop 2;
+                        // the new block should stay with CallSomeMethod(4), not move with the
+                        // chunk pulled down from Loop 1, even if this is an exit path.
+
+                        try
+                        {
+                            CallSomeMethod(5);
+                            result += 8;
+                        }
+                        catch
+                        {
+                            // Getting an exception here means something failed
+                            result -= 100;
+                        }
+                        goto Finish;
+                    }
+                    result += 9;
+                } while (--m > 0);
+
+                CallSomeMethod(6);
+
+                do // Loop 3
+                {
+                    result += 13;
+                    try { CallSomeMethod(); } catch { goto Finish; } // EH here to trigger right path processing Loop 3
+                    if (k == 88)
+                    {
+                        CallSomeMethod(7);
+                        goto Finish;
+                        // Blocks moved out of Loop 2 will get moved here.  Processing of Loop 3
+                        // will then trip over the new block if we moved it out of Loop 2, while
+                        // checking to see if these can be considered part of Loop 3.
+                    }
+
+                    CallSomeMethod(8);
+                } while (--x > 0);
+
+                CallSomeMethod(9);
+            }
+            catch {
+                // Getting an exception here is expected when k == 21
+            }
+
+            Finish:
+            return result;
+        }
+
 
         // Test to make sure we can safely handle single-exit loops when the
         // algorithm to compact loops decrements the exit count from two back
@@ -392,6 +476,10 @@ namespace N
             }
 
             if (!FallThroughExit(8, 5, 7, 22))
+            {
+                ++result;
+            }
+            if ((MoveAfterEntry(15, 16, 17, 18) != 36) || (MoveAfterEntry(8, 15, 20, 21) != 9))
             {
                 ++result;
             }
