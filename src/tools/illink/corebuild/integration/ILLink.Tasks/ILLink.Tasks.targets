@@ -213,6 +213,11 @@
     <ItemGroup>
       <_ManagedResolvedAssembliesToPublish Remove="@(_ManagedResolvedAssembliesToPublish->WithMetadataValue('Filename', 'System.Private.CoreLib.ni'))" />
     </ItemGroup>
+    <!-- Some of the managed dlls are satellite assemblies containing
+         binary resources that we don't want to link. -->
+    <ItemGroup>
+      <_ManagedResolvedAssembliesToPublish Remove="@(_ManagedResolvedAssembliesToPublish->WithMetadataValue('AssetType', 'resources'))" />
+    </ItemGroup>
   </Target>
 
 
