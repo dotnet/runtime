@@ -19,7 +19,7 @@ namespace System.Diagnostics
         /// <param name="args">The arguments to pass to the method.</param>
         /// <param name="start">true if this function should Start the Process; false if that responsibility is left up to the caller.</param>
         /// <param name="psi">The ProcessStartInfo to use, or null for a default.</param>
-        /// <param name="pasteArguments">true if this function should paste the arguments (e.g. surrounding with quotes); false if that reponsibility is left up to the caller.</param>
+        /// <param name="pasteArguments">true if this function should paste the arguments (e.g. surrounding with quotes); false if that responsibility is left up to the caller.</param>
         private static RemoteInvokeHandle RemoteInvoke(MethodInfo method, string[] args, RemoteInvokeOptions options, bool pasteArguments = true)
         {
             options = options ?? new RemoteInvokeOptions();

@@ -10,7 +10,7 @@ namespace System.DirectoryServices
     public enum ReferralChasingOption
     {
         /// <devdoc>
-        /// Never chase the referred-to server. Setthing this option 
+        /// Never chase the referred-to server. Setting this option 
         /// prevents a client from contacting other servers in a referral process.
         /// </devdoc>
         None = 0,

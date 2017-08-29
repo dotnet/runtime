@@ -11,7 +11,7 @@ namespace System.ComponentModel
     ///     to be either cancelled or committed.
     ///
     ///     Note: In some scenarios, specifically Windows Forms complex data binding,
-    ///     the list may recieve CancelNew or EndNew calls for items other than the
+    ///     the list may receive CancelNew or EndNew calls for items other than the
     ///     new item. These calls should be ignored, ie. the new item should only be
     ///     cancelled or committed when that item's index is specified.
     /// </summary>

@@ -200,7 +200,7 @@ namespace System.Drawing
         public string Name => GetName(CurrentLanguage);
 
         /// <summary>
-        /// Retuns the name of this <see cref='FontFamily'/> in the specified language.
+        /// Returns the name of this <see cref='FontFamily'/> in the specified language.
         /// </summary>
         public string GetName(int language)
         {

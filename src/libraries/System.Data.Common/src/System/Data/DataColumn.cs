@@ -468,7 +468,7 @@ namespace System.Data
         internal DataExpression DataExpression => _expression;
 
         /// <summary>
-        /// The type of data stored in thecolumn.
+        /// The type of data stored in the column.
         /// </summary>
         [DefaultValue(typeof(string))]
         [RefreshProperties(RefreshProperties.All)]

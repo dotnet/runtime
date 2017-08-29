@@ -153,7 +153,7 @@ namespace System.Security.Claims
         /// <para>All <see cref="Claim"/>s are copied into this instance in a <see cref="List{Claim}"/>. Each Claim is examined and if Claim.Subject != this, then Claim.Clone(this) is called before the claim is added.</para>
         /// <para>Any 'External' claims are ignored.</para>
         /// </remarks>
-        /// <exception cref="InvalidOperationException">if 'identity' is a <see cref="ClaimsIdentity"/> and <see cref="ClaimsIdentity.Actor"/> results in a circular refrence back to 'this'.</exception>
+        /// <exception cref="InvalidOperationException">if 'identity' is a <see cref="ClaimsIdentity"/> and <see cref="ClaimsIdentity.Actor"/> results in a circular reference back to 'this'.</exception>
         public ClaimsIdentity(IIdentity identity, IEnumerable<Claim> claims, string authenticationType, string nameType, string roleType)
         {
             ClaimsIdentity claimsIdentity = identity as ClaimsIdentity;
@@ -450,7 +450,7 @@ namespace System.Security.Claims
         /// Adds a <see cref="IEnumerable{Claim}"/> to the internal list.
         /// </summary>
         /// <param name="claims">Enumeration of claims to add.</param>
-        /// <remarks>Each claim is examined and if <see cref="Claim.Subject"/> != this, then then Claim.Clone(this) is called before the claim is added.</remarks>
+        /// <remarks>Each claim is examined and if <see cref="Claim.Subject"/> != this, then Claim.Clone(this) is called before the claim is added.</remarks>
         /// <exception cref="ArgumentNullException">if 'claims' is null.</exception>
         public virtual void AddClaims(IEnumerable<Claim> claims)
         {

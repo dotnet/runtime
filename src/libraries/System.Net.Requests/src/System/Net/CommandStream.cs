@@ -177,7 +177,7 @@ namespace System.Net
             }
         }
 
-        ///     Pipelined command resoluton.
+        ///     Pipelined command resolution.
         ///     How this works:
         ///     A list of commands that need to be sent to the FTP server are spliced together into a array,
         ///     each command such STOR, PORT, etc, is sent to the server, then the response is parsed into a string,

@@ -18,7 +18,7 @@ namespace System.Threading
         /// Indicates whether the object has been disposed.
         /// </param>
         /// <remarks>
-        /// If the refount reaches zero before the object is disposed, this method will be called with
+        /// If the refcount reaches zero before the object is disposed, this method will be called with
         /// <paramref name="disposed"/> set to false.  If the object is then disposed, this method will be
         /// called again, with <paramref name="disposed"/> set to true.  If the refcount reaches zero
         /// after the object has already been disposed, this will be called a single time, with 

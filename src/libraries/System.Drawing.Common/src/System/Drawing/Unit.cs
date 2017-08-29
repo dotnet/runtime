@@ -30,7 +30,7 @@ namespace System.Drawing
         /// </summary>
         Inch = 4,
         /// <summary>
-        /// Specifes the document unit (1/300 inch) as the unit of measure.
+        /// Specifies the document unit (1/300 inch) as the unit of measure.
         /// </summary>
         Document = 5,
         /// <summary>

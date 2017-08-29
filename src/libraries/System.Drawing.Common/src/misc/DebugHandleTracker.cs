@@ -429,7 +429,7 @@ namespace System.Internal
                     }
 
                     /// <summary>
-                    /// Rereives the string of the parsed stack trace
+                    /// Retrieves the string of the parsed stack trace
                     /// </summary>
                     public override string ToString()
                     {
