@@ -968,10 +968,14 @@ void sgen_null_links_if (SgenObjectPredicateFunc predicate, void *data, int gene
 
 typedef gpointer (*SgenGCHandleIterateCallback) (gpointer hidden, GCHandleType handle_type, int max_generation, gpointer user);
 
+guint32 sgen_gchandle_new (GCObject *obj, gboolean pinned);
+guint32 sgen_gchandle_new_weakref (GCObject *obj, gboolean track_resurrection);
 void sgen_gchandle_iterate (GCHandleType handle_type, int max_generation, SgenGCHandleIterateCallback callback, gpointer user);
 void sgen_gchandle_set_target (guint32 gchandle, GCObject *obj);
 void sgen_mark_normal_gc_handles (void *addr, SgenUserMarkFunc mark_func, void *gc_data);
 gpointer sgen_gchandle_get_metadata (guint32 gchandle);
+GCObject *sgen_gchandle_get_target (guint32 gchandle);
+void sgen_gchandle_free (guint32 gchandle);
 
 /* Other globals */
 

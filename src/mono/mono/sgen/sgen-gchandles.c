@@ -202,50 +202,14 @@ sgen_gchandle_iterate (GCHandleType handle_type, int max_generation, SgenGCHandl
 	} SGEN_ARRAY_LIST_END_FOREACH_SLOT;
 }
 
-/**
- * mono_gchandle_new:
- * \param obj managed object to get a handle for
- * \param pinned whether the object should be pinned
- * This returns a handle that wraps the object, this is used to keep a
- * reference to a managed object from the unmanaged world and preventing the
- * object from being disposed.
- * 
- * If \p pinned is false the address of the object can not be obtained, if it is
- * true the address of the object can be obtained.  This will also pin the
- * object so it will not be possible by a moving garbage collector to move the
- * object. 
- * 
- * \returns a handle that can be used to access the object from unmanaged code.
- */
 guint32
-mono_gchandle_new (GCObject *obj, gboolean pinned)
+sgen_gchandle_new (GCObject *obj, gboolean pinned)
 {
 	return alloc_handle (gc_handles_for_type (pinned ? HANDLE_PINNED : HANDLE_NORMAL), obj, FALSE);
 }
 
-/**
- * mono_gchandle_new_weakref:
- * \param obj managed object to get a handle for
- * \param track_resurrection Determines how long to track the object, if this is set to TRUE, the object is tracked after finalization, if FALSE, the object is only tracked up until the point of finalization.
- *
- * This returns a weak handle that wraps the object, this is used to
- * keep a reference to a managed object from the unmanaged world.
- * Unlike the \c mono_gchandle_new the object can be reclaimed by the
- * garbage collector.  In this case the value of the GCHandle will be
- * set to zero.
- * 
- * If \p track_resurrection is TRUE the object will be tracked through
- * finalization and if the object is resurrected during the execution
- * of the finalizer, then the returned weakref will continue to hold
- * a reference to the object.   If \p track_resurrection is FALSE, then
- * the weak reference's target will become NULL as soon as the object
- * is passed on to the finalizer.
- * 
- * \returns a handle that can be used to access the object from
- * unmanaged code.
- */
 guint32
-mono_gchandle_new_weakref (GCObject *obj, gboolean track_resurrection)
+sgen_gchandle_new_weakref (GCObject *obj, gboolean track_resurrection)
 {
 	return alloc_handle (gc_handles_for_type (track_resurrection ? HANDLE_WEAK_TRACK : HANDLE_WEAK), obj, track_resurrection);
 }
@@ -292,18 +256,8 @@ retry:
 	return obj;
 }
 
-/**
- * mono_gchandle_get_target:
- * \param gchandle a GCHandle's handle.
- *
- * The handle was previously created by calling \c mono_gchandle_new or
- * \c mono_gchandle_new_weakref. 
- *
- * \returns a pointer to the \c MonoObject* represented by the handle or
- * NULL for a collected object if using a weakref handle.
- */
 GCObject*
-mono_gchandle_get_target (guint32 gchandle)
+sgen_gchandle_get_target (guint32 gchandle)
 {
 	guint index = MONO_GC_HANDLE_SLOT (gchandle);
 	GCHandleType type = MONO_GC_HANDLE_TYPE (gchandle);
@@ -382,16 +336,8 @@ sgen_gchandle_get_metadata (guint32 gchandle)
 	return mono_gchandle_slot_metadata (slot, MONO_GC_HANDLE_TYPE_IS_WEAK (type));
 }
 
-/**
- * mono_gchandle_free:
- * \param gchandle a GCHandle's handle.
- *
- * Frees the \p gchandle handle.  If there are no outstanding
- * references, the garbage collector can reclaim the memory of the
- * object wrapped. 
- */
 void
-mono_gchandle_free (guint32 gchandle)
+sgen_gchandle_free (guint32 gchandle)
 {
 	guint32 index = MONO_GC_HANDLE_SLOT (gchandle);
 	GCHandleType type = MONO_GC_HANDLE_TYPE (gchandle);
