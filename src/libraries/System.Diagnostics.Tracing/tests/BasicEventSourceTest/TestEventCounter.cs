@@ -235,7 +235,6 @@ namespace BasicEventSourceTests
                         if (num100msecTimerTicks > 3)       // We seem to have problems with timer events going off 100% reliably.  To avoid failures here we only check if in the 700 msec test we get at least 3 100 msec ticks.  
                             Assert.True(8 <= evts.Count, $"FAILURE: 8 <= {evts.Count}");
                         Assert.True(evts.Count <= 32, $"FAILURE: {evts.Count} <= 32");
-                        Assert.Equal(3, 4);
                     }));
 
 
