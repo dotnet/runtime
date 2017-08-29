@@ -3492,7 +3492,7 @@ public static partial class DataContractSerializerTests
     }
 
     /// <summary>
-    /// This case is a part of DCS_BasicPerSerializerRoundTripAndCompare_SampleTypes, but in thease scenarios it was not support in current version.
+    /// This case is a part of DCS_BasicPerSerializerRoundTripAndCompare_SampleTypes, but in these scenarios it was not support in current version.
     /// </summary>
     [Fact]
     [ActiveIssue("Not support")]

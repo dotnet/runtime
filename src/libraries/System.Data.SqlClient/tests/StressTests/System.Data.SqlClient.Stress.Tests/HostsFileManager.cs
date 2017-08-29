@@ -25,7 +25,7 @@ namespace Microsoft.Test.Data.SqlClient
     /// using (var hostsFile = new HostsFileManager())
     /// {
     ///     // use the hostsFile methods to add/remove entries
-    ///     // simultanious usage of HostsFileManager in two app domains or processes on the same machine is not allowed
+    ///     // simultaneous usage of HostsFileManager in two app domains or processes on the same machine is not allowed
     /// }
     /// </summary>
     public sealed class HostsFileManager : IDisposable

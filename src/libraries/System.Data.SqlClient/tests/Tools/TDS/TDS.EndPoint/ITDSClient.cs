@@ -33,26 +33,26 @@ namespace Microsoft.SqlServer.TDS.EndPoint
         /// <summary>
         /// It is called when pre-login response arrives
         /// </summary>
-        /// <param name="message">TDS message recieved</param>
+        /// <param name="message">TDS message received</param>
         /// <returns>TDS message to send to the server</returns>
         TDSMessage OnPreLoginResponse(TDSMessage message);
 
         /// <summary>
         /// It is called when SPNEGO response arrives
         /// </summary>
-        /// <param name="packet">TDS message recieved</param>		
+        /// <param name="packet">TDS message received</param>		
         TDSMessage OnSSPIResponse(TDSMessage message);
 
         /// <summary>
         /// It is called when FedAuthInfoToken response arrives
         /// </summary>
-        /// <param name="packet">TDS message recieved</param>		
+        /// <param name="packet">TDS message received</param>		
         TDSMessage OnFedAuthInfoTokenResponse(TDSMessage message);
 
         /// <summary>
         /// It is called when login acknowledgement arrives.
         /// </summary>
-        /// <param name="packet">TDS message recieved</param>		
+        /// <param name="packet">TDS message received</param>		
         void OnLoginResponse(TDSMessage message);
 
         /// <summary>

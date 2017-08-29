@@ -12,7 +12,7 @@ namespace System.Drawing.Internal
     /// Represents a Win32 device context.  Provides operations for setting some of the properties of a device context.
     /// It's the managed wrapper for an HDC.
     ///
-    /// This class is divided into two files separating the code that needs to be compiled into reatail builds and
+    /// This class is divided into two files separating the code that needs to be compiled into retail builds and
     /// debugging code.
     /// </summary>
     internal sealed partial class DeviceContext : MarshalByRefObject, IDeviceContext, IDisposable
@@ -34,7 +34,7 @@ namespace System.Drawing.Internal
         /// DrawString (GDI+).  
         /// 
         /// Other properties are persisted from operation to operation until they are reset, like clipping, 
-        /// one can make several calls to Graphics or WindowsGraphics obect after setting the dc clip area and 
+        /// one can make several calls to Graphics or WindowsGraphics object after setting the dc clip area and 
         /// before resetting it; these kinds of properties are the ones implemented in this class.
         /// This kind of properties place an extra challenge in the scenario where a DeviceContext is obtained 
         /// from a Graphics object that has been used with GDI+, because GDI+ saves the hdc internally, rendering the 

@@ -17,7 +17,7 @@ namespace System.Drawing
         private int _length;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref='CharacterRange'/> class with the specifiedcoordinates.
+        /// Initializes a new instance of the <see cref='CharacterRange'/> class with the specified coordinates.
         /// </summary>
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Naming", "CA1704:IdentifiersShouldBeSpelledCorrectly")]
         public CharacterRange(int First, int Length)

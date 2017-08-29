@@ -9,7 +9,7 @@ namespace System.ComponentModel.Design
 {
     /// <summary>
     ///     Identifies a transaction within a designer.  Transactions are
-    ///     used to wrap serveral changes into one unit of work, which 
+    ///     used to wrap several changes into one unit of work, which 
     ///     helps performance.
     /// </summary>
     public abstract class DesignerTransaction : IDisposable

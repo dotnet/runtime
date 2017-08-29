@@ -53,7 +53,7 @@ namespace System.Diagnostics
         /// IsEnabled(string)  to check if consumer wants to get notifications for such events at all. 
         /// Based on it, producer may call IsEnabled(string, object, object) again with non-null context </param>
         /// <param name="arg2">Optional. An object that represents the additional context for IsEnabled. 
-        /// Null by default. Consumers shoud expect to receive null which may indicate that producer 
+        /// Null by default. Consumers should expect to receive null which may indicate that producer 
         /// called pure IsEnabled(string) or producer passed all necessary context in arg1</param>
         /// <seealso cref="IsEnabled(string)"/>
         public virtual bool IsEnabled(string name, object arg1, object arg2 = null)

@@ -28,9 +28,9 @@ namespace System.Diagnostics
     ///   list that will be forwarded to the EventSource.    If it is empty, values of properties of the 
     ///   diagnostic source payload are dumped as strings (using ToString()) and forwarded to the EventSource.  
     ///   For what people think of as serializable object strings, primitives this gives you want you want. 
-    ///   (the value of the property in string form) for what people think of as non-serialiable objects 
+    ///   (the value of the property in string form) for what people think of as non-serializable objects 
     ///   (e.g. HttpContext) the ToString() method is typically not defined, so you get the Object.ToString() 
-    ///   implemenation that prints the type name.  This is useful since this is the information you need 
+    ///   implementation that prints the type name.  This is useful since this is the information you need 
     ///   (the type of the property) to discover the field names so you can create a transform specification
     ///   that will pick off the properties you desire.  
     ///   

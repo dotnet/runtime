@@ -66,7 +66,7 @@ namespace System.Data
         /// <param name="options">The target DataTable to load.</param>
         /// <param name="errorHandler">Error handler for recoverable errors.
         /// Recoverable errors include:
-        ///   A source DataRow is in the deleted or detached state state.
+        ///   A source DataRow is in the deleted or detached state.
         ///   DataTable.LoadDataRow threw an exception, i.e. wrong # of columns in source row
         /// Unrecoverable errors include:
         ///   exceptions from IEnumerator, DataTable.BeginLoadData or DataTable.EndLoadData</param>
