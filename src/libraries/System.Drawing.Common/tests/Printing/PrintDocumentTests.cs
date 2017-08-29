@@ -244,16 +244,32 @@ namespace System.Drawing.Printing.Tests
 
         private void AssertDefaultPageSettings(PageSettings pageSettings)
         {
-            Assert.Equal(new Rectangle(0, 0, 850, 1100), pageSettings.Bounds);
+            // A4 and Letter are both common default sizes for systems to have.
+            switch (pageSettings.PaperSize.Kind)
+            {
+                case PaperKind.A4:
+                    Assert.Equal(new Rectangle(0, 0, 827, 1169), pageSettings.Bounds);
+                    Assert.Equal(827, pageSettings.PrintableArea.Width, 0);
+                    Assert.Equal(1169, pageSettings.PrintableArea.Height, 0);
+                    break;
+
+                case PaperKind.Letter:
+                    Assert.Equal(new Rectangle(0, 0, 850, 1100), pageSettings.Bounds);
+                    Assert.Equal(850, pageSettings.PrintableArea.Width, 0);
+                    Assert.Equal(1100, pageSettings.PrintableArea.Height, 0);
+                    break;
+
+                default:
+                    Assert.False(true, "Unexpected default paper size");
+                    break;
+            }
+
             Assert.True(pageSettings.Color);
             Assert.Equal(0, pageSettings.HardMarginX);
             Assert.Equal(0, pageSettings.HardMarginY);
             Assert.False(pageSettings.Landscape);
-            Assert.Equal(PaperKind.Letter, pageSettings.PaperSize.Kind);
             Assert.Equal(PaperSourceKind.FormSource, pageSettings.PaperSource.Kind);
             Assert.Equal(new PointF(0f, 0f), pageSettings.PrintableArea.Location);
-            Assert.Equal(850, pageSettings.PrintableArea.Width, 0);
-            Assert.Equal(1100, pageSettings.PrintableArea.Height, 0);
             Assert.Equal(PrinterResolutionKind.Custom, pageSettings.PrinterResolution.Kind);
             Assert.True(pageSettings.PrinterSettings.IsDefaultPrinter);
         }
