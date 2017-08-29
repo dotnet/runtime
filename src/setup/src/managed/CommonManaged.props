@@ -1,10 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <!-- Don't import props files above this folder since they don't work with the .NET Core SDK. -->
-  <!--<Import Project="..\dir.props" />-->
 
-  <Import Project="$(MSBuildThisFileDirectory)../../RepoDirectories.props" />
-  <Import Project="$(RepoRoot)BranchInfo.props" />
 
   <PropertyGroup>
     <VersionPrefix>$(MajorVersion).$(MinorVersion).$(PatchVersion)</VersionPrefix>
@@ -18,17 +14,6 @@
     <PackageLicenseFile>$(RepoRoot)LICENSE.TXT</PackageLicenseFile>
     <PackageThirdPartyNoticesFile>$(RepoRoot)THIRD-PARTY-NOTICES.TXT</PackageThirdPartyNoticesFile>
   </PropertyGroup>
-
-  <!--
-  Once https://github.com/dotnet/buildtools/issues/1548 is fixed, the following version sections should be simply
-  <Import Condition="Exists('$(ToolsDir)BuildVersion.targets')" Project="$(ToolsDir)BuildVersion.targets" />
-  -->
-  <PropertyGroup>
-    <TodayTimeStamp>$([System.DateTime]::Now.ToString(yyyyMMdd))</TodayTimeStamp>
-    <BuildVersionFile Condition="'$(BuildVersionFile)'==''">$(ObjDir)BuildVersion-$(TodayTimeStamp).props</BuildVersionFile>
-  </PropertyGroup>
-
-  <Import Condition="Exists('$(BuildVersionFile)')" Project="$(BuildVersionFile)" />
 
   <PropertyGroup Condition="'$(StabilizePackageVersion)' != 'true'">
     <!-- 
