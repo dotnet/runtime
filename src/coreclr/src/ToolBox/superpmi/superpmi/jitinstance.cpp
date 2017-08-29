@@ -429,3 +429,18 @@ void JitInstance::freeLongLivedArray(void* array)
 {
     HeapFree(ourHeap, 0, array);
 }
+
+// Reset JitConfig, that stores Enviroment variables.
+bool JitInstance::resetConfig(MethodContext* firstContext)
+{
+    if (pnjitStartup != nullptr)
+    {
+        mc = firstContext;
+        ICorJitHost* newHost = new JitHost(*this);
+        pnjitStartup(newHost);
+        delete static_cast<JitHost*>(jitHost);
+        jitHost = newHost;
+        return true;
+    }
+    return false;
+}

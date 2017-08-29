@@ -1233,6 +1233,9 @@ public:
     void dmpGetStringConfigValue(DWORD nameIndex, DWORD result);
     const wchar_t* repGetStringConfigValue(const wchar_t* name);
 
+    bool wasEnviromentChanged();
+    static DenseLightWeightMap<Agnostic_Environment>* prevEnviroment;
+
     CompileResult* cr;
     CompileResult* originalCR;
     int            index;
