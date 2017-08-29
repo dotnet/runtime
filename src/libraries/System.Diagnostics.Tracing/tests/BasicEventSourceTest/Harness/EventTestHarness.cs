@@ -6,6 +6,7 @@ using System.Diagnostics.Tracing;
 using Xunit;
 using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace BasicEventSourceTests
 {
@@ -18,6 +19,24 @@ namespace BasicEventSourceTests
     /// </summary>
     public static class EventTestHarness
     {
+        /// <summary>
+        /// LogWriteLine will dump its output into a string that will be appended to any exception 
+        /// that happened during a test the harness is running.  
+        /// </summary>
+        /// <param name="format"></param>
+        /// <param name="arg"></param>
+        public static void LogWriteLine(string format, params object[] arg)
+        {
+            if (_log == null)
+                return;
+
+            _log.Write("{0:mm:ss.fff} : ", DateTime.UtcNow);
+            _log.WriteLine(format, arg);
+        }
+
+        // Use to log things in the test itself if needed 
+        private static StringWriter _log = null;
+
         /// <summary>
         /// Runs a series of tests 'tests' using the listener (either an ETWListener or an EventListenerListener) on 
         /// an EventSource 'source' passing it the filter parameters=options (by default source turn on completely
@@ -66,6 +85,8 @@ namespace BasicEventSourceTests
                         currentTest = tests[testNumber];
                         Assert.Equal(currentTest.Name, data.PayloadValue(0, "name"));
                         expectedTestNumber++;
+                        _log = new StringWriter();
+                        LogWriteLine("STARTING Sub-Test {0}", currentTest.Name);
                     }
                     else
                     {
@@ -77,8 +98,7 @@ namespace BasicEventSourceTests
                 }
                 else
                 {
-                    Console.WriteLine("Received Event {0}  thread: {1} time: {2:mm:ss.fff}",
-                        data.EventName, System.Threading.Thread.CurrentThread.ManagedThreadId, DateTime.UtcNow);
+                    LogWriteLine("Received Event {0}", data);
                     // If expectedTestNumber is 0 then this is before the first test
                     // If expectedTestNumber is count then it is after the last test
                     Assert.NotNull(currentTest);
@@ -101,8 +121,6 @@ namespace BasicEventSourceTests
                     int testNumber = 0;
                     foreach (var test in tests)
                     {
-                        Console.WriteLine("Starting Sub-Test {0}  thread: {1} time: {2:mm:ss.fff}",
-                            test.Name, System.Threading.Thread.CurrentThread.ManagedThreadId, DateTime.UtcNow);
                         testHarnessEventSource.StartTest(test.Name, testNumber);
                         test.EventGenerator();
                         testNumber++;
@@ -117,17 +135,43 @@ namespace BasicEventSourceTests
                     testHarnessEventSource.IgnoreEvent();
                 }
             }
-            finally
+            catch (Exception e)
             {
-                // Run the tests. collecting and validating the results. 
-                Console.WriteLine("Stopped running tests thread: {0} time: {1:mm:ss.fff}",
-                    System.Threading.Thread.CurrentThread.ManagedThreadId, DateTime.UtcNow);
+                if (e is EventSourceException)
+                    e = e.InnerException;
+                LogWriteLine("Exception thrown: {0}", e.Message);
+
+                var exceptionText = new StringWriter();
+                exceptionText.WriteLine("Error Detected in EventTestHarness.RunTest");
+                if (currentTest != null)
+                    exceptionText.WriteLine("FAILURE IN SUBTEST: \"{0}\"", currentTest.Name);
+
+                exceptionText.WriteLine("************* EXCEPTION INFO ***************");
+                exceptionText.WriteLine(e.ToString());
+                exceptionText.WriteLine("*********** END EXCEPTION INFO *************");
+
+                if (_log != null)
+                {
+                    exceptionText.WriteLine("************* LOGGING MESSAGES ***************");
+                    exceptionText.WriteLine(_log.ToString());
+                    exceptionText.WriteLine("*********** END LOGGING MESSAGES *************");
+                }
+
+                exceptionText.WriteLine("Version of Runtime {0}", Environment.Version);
+                exceptionText.WriteLine("Version of OS {0}", Environment.OSVersion);
+                exceptionText.WriteLine("**********************************************");
+                throw new EventTestHarnessException(exceptionText.ToString(), e);
             }
 
             listener.Dispose();         // Indicate we are done listening.  For the ETW file based cases, we do all the processing here
 
             // expectedTetst number are the number of tests we successfully ran.  
             Assert.Equal(expectedTestNumber, tests.Count);
+        }
+
+        public class EventTestHarnessException : Exception
+        {
+            public EventTestHarnessException(string message, Exception exception) : base(message, exception) { }
         }
 
         /// <summary>
