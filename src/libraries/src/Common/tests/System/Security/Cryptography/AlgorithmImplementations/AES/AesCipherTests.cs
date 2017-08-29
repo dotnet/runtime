@@ -4,6 +4,7 @@
 
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 using Test.Cryptography;
 using Xunit;
 
@@ -628,6 +629,86 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
 
                 return output.ToArray();
             }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void EncryptWithLargeOutputBuffer(bool blockAlignedOutput)
+        {
+            using (Aes alg = AesFactory.Create())
+            using (ICryptoTransform xform = alg.CreateEncryptor())
+            {
+                // 8 blocks, plus maybe three bytes
+                int outputPadding = blockAlignedOutput ? 0 : 3;
+                byte[] output = new byte[alg.BlockSize + outputPadding];
+                // 2 blocks of 0x00
+                byte[] input = new byte[alg.BlockSize / 4];
+                int outputOffset = 0;
+
+                outputOffset += xform.TransformBlock(input, 0, input.Length, output, outputOffset);
+                byte[] overflow = xform.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+                Buffer.BlockCopy(overflow, 0, output, outputOffset, overflow.Length);
+                outputOffset += overflow.Length;
+
+                Assert.Equal(3 * (alg.BlockSize / 8), outputOffset);
+                string outputAsHex = output.ByteArrayToHex();
+                Assert.NotEqual(new string('0', outputOffset * 2), outputAsHex.Substring(0, outputOffset * 2));
+                Assert.Equal(new string('0', (output.Length - outputOffset) * 2), outputAsHex.Substring(outputOffset * 2));
+            }
+        }
+
+        [Theory]
+        [InlineData(true, true)]
+        [InlineData(true, false)]
+        [InlineData(false, true)]
+        [InlineData(false, false)]
+        public static void TransformWithTooShortOutputBuffer(bool encrypt, bool blockAlignedOutput)
+        {
+            // The CreateDecryptor call reads the Key/IV property to initialize them, bypassing an
+            // uninitialized state protection.
+            using (Aes alg = AesFactory.Create())
+            using (ICryptoTransform xform = encrypt ? alg.CreateEncryptor() : alg.CreateDecryptor(alg.Key, alg.IV))
+            {
+                // 1 block, plus maybe three bytes
+                int outputPadding = blockAlignedOutput ? 0 : 3;
+                byte[] output = new byte[alg.BlockSize / 8 + outputPadding];
+                // 3 blocks of 0x00
+                byte[] input = new byte[3 * (alg.BlockSize / 8)];
+
+                Assert.Throws<ArgumentOutOfRangeException>(
+                    () => xform.TransformBlock(input, 0, input.Length, output, 0));
+
+                Assert.Equal(new byte[output.Length], output);
+            }
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public static void MultipleBlockDecryptTransform(bool blockAlignedOutput)
+        {
+            const string ExpectedOutput = "This is a 128-bit block test";
+
+            int outputPadding = blockAlignedOutput ? 0 : 3;
+            byte[] key = "0123456789ABCDEFFEDCBA9876543210".HexToByteArray();
+            byte[] iv = "0123456789ABCDEF0123456789ABCDEF".HexToByteArray();
+            byte[] outputBytes = new byte[iv.Length * 2 + outputPadding];
+            byte[] input = "D1BF87C650FCD10B758445BE0E0A99D14652480DF53423A8B727D30C8C010EDE".HexToByteArray();
+            int outputOffset = 0;
+
+            using (Aes alg = AesFactory.Create())
+            using (ICryptoTransform xform = alg.CreateDecryptor(key, iv))
+            {
+                Assert.Equal(2 * alg.BlockSize, (outputBytes.Length - outputPadding) * 8);
+                outputOffset += xform.TransformBlock(input, 0, input.Length, outputBytes, outputOffset);
+                byte[] overflow = xform.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+                Buffer.BlockCopy(overflow, 0, outputBytes, outputOffset, overflow.Length);
+                outputOffset += overflow.Length;
+            }
+
+            string decrypted = Encoding.ASCII.GetString(outputBytes, 0, outputOffset);
+            Assert.Equal(ExpectedOutput, decrypted);
         }
     }
 }
