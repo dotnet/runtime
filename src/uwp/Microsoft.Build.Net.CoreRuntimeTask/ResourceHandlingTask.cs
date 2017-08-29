@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
+using System.Diagnostics;
 using System.IO;
 using System.Xml.Linq;
 using System.Collections;
@@ -20,11 +21,19 @@ namespace Microsoft.Build.Net.CoreRuntimeTask
     public sealed class ResourceHandlingTask : Task
     {
         [Serializable()]
+        public sealed class ResWInfo
+        {
+            public DateTime ResWTimeUtc;
+            public string   ResWPath;
+            public string   ResourceIndexName;
+            public string   NeutralResourceLanguage;
+        }
+        [Serializable()]
         public sealed class PortableLibraryResourceStateInfo
         {
             public DateTime PLibTimeUtc;
-            public DateTime ResWTimeUtc;
-            public string   ResWPath;
+            public bool ContainsFrameworkResources;
+            public List<ResWInfo> ResWInfoList;
         }
 
         [Serializable()]
@@ -36,9 +45,11 @@ namespace Microsoft.Build.Net.CoreRuntimeTask
 
             public void SetLogger(TaskLoggingHelper logger) { _logger = logger; } 
 
-            public bool IsUpToDate(string assemblyPath, out string reswFilePath)
+            public bool IsUpToDate(string assemblyPath, out bool containsFrameworkResources, out List<ResWInfo> reswInfoList)
             {
-                reswFilePath = null;
+                reswInfoList = null;
+                containsFrameworkResources = false;
+
                 if (PortableLibraryStatesLookup == null)
                 {
                     PortableLibraryStatesLookup = new Dictionary<string, PortableLibraryResourceStateInfo>();
@@ -66,21 +77,37 @@ namespace Microsoft.Build.Net.CoreRuntimeTask
                         _logger.LogMessage(MessageImportance.Low, Resources.Message_CachedReswNotUpToDateAssemblyNewer, assemblyPath); 
                         return false;
                     }
-                    if (info.ResWPath == null || !File.Exists(info.ResWPath))
+                    if (info.ResWInfoList == null)
                     {
-                        _logger.LogMessage(MessageImportance.Low, Resources.Message_CachedReswNotExists, assemblyPath, info.ResWPath); 
                         return false;
                     }
-    
-                    FileInfo fiResW = new FileInfo(info.ResWPath);
-                    if (!fiResW.LastWriteTimeUtc.Equals(info.ResWTimeUtc))
+                    else
                     {
-                        _logger.LogMessage(MessageImportance.Low, Resources.Message_CachedReswNotUpToDate, info.ResWPath); 
-                        return false;
+                        foreach (ResWInfo reswInfo in info.ResWInfoList)
+                        {
+                            if (reswInfo.ResWPath == null || !File.Exists(reswInfo.ResWPath))
+                            {
+                                _logger.LogMessage(MessageImportance.Low, Resources.Message_CachedReswNotExists, assemblyPath, reswInfo.ResWPath);
+                                return false;
+                            }
+
+                            FileInfo fiResW = new FileInfo(reswInfo.ResWPath);
+                            if (!fiResW.LastWriteTimeUtc.Equals(reswInfo.ResWTimeUtc))
+                            {
+                                _logger.LogMessage(MessageImportance.Low, Resources.Message_CachedReswNotUpToDate, reswInfo.ResWPath);
+                                return false;
+                            }
+                        }
+
                     }
 
-                    _logger.LogMessage(MessageImportance.Low, Resources.Message_UsingCachedResw, info.ResWPath, assemblyPath); 
-                    reswFilePath = info.ResWPath;
+                    foreach (ResWInfo reswInfo in info.ResWInfoList)
+                    {
+                        _logger.LogMessage(MessageImportance.Low, Resources.Message_UsingCachedResw, reswInfo.ResWPath, assemblyPath);
+                    }
+
+                    reswInfoList = info.ResWInfoList;
+                    containsFrameworkResources = info.ContainsFrameworkResources;
                     return true;
                 }
                 catch (Exception e)
@@ -90,11 +117,11 @@ namespace Microsoft.Build.Net.CoreRuntimeTask
                 }
             }
 
-            public void Save(string assemblyPath, string reswPath, DateTime plibTimeUtc, DateTime reswTimeUtc)
+            public void Save(string assemblyPath, DateTime plibTimeUtc, bool containsFrameworkResources, List<ResWInfo> reswInfoList)
             {
                 try
                 {
-                    PortableLibraryStatesLookup[assemblyPath] = new PortableLibraryResourceStateInfo() { PLibTimeUtc = plibTimeUtc, ResWTimeUtc = reswTimeUtc, ResWPath = reswPath};
+                    PortableLibraryStatesLookup[assemblyPath] = new PortableLibraryResourceStateInfo() { PLibTimeUtc = plibTimeUtc, ContainsFrameworkResources = containsFrameworkResources, ResWInfoList = reswInfoList};
                 }
                 catch (Exception e) 
                 {
@@ -124,6 +151,9 @@ namespace Microsoft.Build.Net.CoreRuntimeTask
         private MetadataReaderHost _host; 
 
         private ResourceHandlingState _state = null;
+        private List<ITaskItem> _mainAssemblies;
+        private List<ITaskItem> _satelliteAssemblies;
+        private HashSet<String> _processedAssemblies;
 
         public override bool Execute()
         {
@@ -144,57 +174,74 @@ namespace Microsoft.Build.Net.CoreRuntimeTask
             {
                 try
                 {
-                    ITaskItem firstNonFrameworkAssembly = null;
-                    foreach (ITaskItem assemblyFilePath in AssemblyList)
+                    // Separate main assemblies and satellite assemblies so main assemblies get processed first
+                    _mainAssemblies = new List<ITaskItem>();
+                    _satelliteAssemblies = new List<ITaskItem>();
+                    _processedAssemblies = new HashSet<String>(StringComparer.OrdinalIgnoreCase);
+
+                    foreach (ITaskItem item in AssemblyList)
                     {
-                        string reswPath = null;
-                        bool containsResources = false;
-                        if (!_state.IsUpToDate(assemblyFilePath.ItemSpec, out reswPath) || 
-                            !IsAtOutputFolder(reswPath) )
+                        if (_processedAssemblies.Contains(item.ItemSpec))
                         {
-                            reswPath = ExtractFrameworkAssemblyResW(assemblyFilePath.ItemSpec, out containsResources);
-                            if (reswPath != null)
+                            continue;
+                        }
+                        _processedAssemblies.Add(item.ItemSpec);
+
+                        if (item.ItemSpec.EndsWith(".dll", StringComparison.OrdinalIgnoreCase))
+                        {
+                            if (item.ItemSpec.EndsWith(".resources.dll", StringComparison.OrdinalIgnoreCase))
+                            {
+                                _satelliteAssemblies.Add(item);
+                            }
+                            else
+                            {
+                                _mainAssemblies.Add(item);
+                            }
+                        }
+                    }
+
+                    foreach (ITaskItem assemblyFilePath in _mainAssemblies.Concat(_satelliteAssemblies))
+                    {
+                        List<ResWInfo> resWInfoList = null;
+                        bool containsFrameworkResources = false;
+                        if (!_state.IsUpToDate(assemblyFilePath.ItemSpec, out containsFrameworkResources, out resWInfoList))
+                        {
+                            resWInfoList = ExtractAssemblyResWList(assemblyFilePath.ItemSpec, out containsFrameworkResources);
+
+                            if (resWInfoList != null)
                             {
                                 FileInfo fiAssembly = new FileInfo(assemblyFilePath.ItemSpec);
-                                FileInfo fiResW = new FileInfo(reswPath);
-                                _state.Save(assemblyFilePath.ItemSpec, reswPath, fiAssembly.LastWriteTimeUtc, fiResW.LastWriteTimeUtc);
+                                _state.Save(assemblyFilePath.ItemSpec, fiAssembly.LastWriteTimeUtc, containsFrameworkResources, resWInfoList);
                             }
                         }
 
-                        if (reswPath == null)
+                        if (resWInfoList != null)
                         {
-                            if (containsResources)
-                                unprocessedAssemblyList.Add(assemblyFilePath);
-                            
-                            if (unprocessedAssemblyList.Count == 0)
-                                firstNonFrameworkAssembly = assemblyFilePath;
+                            foreach (ResWInfo reswInfo in resWInfoList)
+                            {
+                                TaskItem newTaskItem = new TaskItem(reswInfo.ResWPath);
+                                newTaskItem.SetMetadata("ResourceIndexName", reswInfo.ResourceIndexName);
+                                if (!String.IsNullOrEmpty(reswInfo.NeutralResourceLanguage))
+                                {
+                                    newTaskItem.SetMetadata("NeutralResourceLanguage", reswInfo.NeutralResourceLanguage);
+                                }
+
+                                if (!containsFrameworkResources)
+                                {
+                                    newTaskItem.SetMetadata("OriginalItemSpec", reswInfo.ResWPath); // Original GenerateResource behavior creates this additional metadata item on processed non-framework assemblies
+                                    reswList.Add(newTaskItem);
+                                }
+                                else if (!SkipFrameworkResources)
+                                {
+                                    reswList.Add(newTaskItem);
+                                }
+                            }
                         }
-                        else
-                        {
-                            TaskItem newTaskItem = new TaskItem(reswPath);
-                            newTaskItem.SetMetadata("NeutralResourceLanguage","en-US");
-                            newTaskItem.SetMetadata("ResourceIndexName",Path.GetFileNameWithoutExtension(reswPath));
-                            reswList.Add(newTaskItem);
-                        }
 
                     }
 
-                    UnprocessedAssemblyList = unprocessedAssemblyList.ToArray();
-                    
-                    if (!SkipFrameworkResources)
-                    {
-                        ReswFileList = reswList.ToArray();
-                    }
-
-                    // we make sure unprocessedAssemblyList has at least one item if ReswFileList is empty to avoid having _GeneratePrisForPortableLibraries
-                    // repopulate the assembly list and reprocess them
-                    if ((ReswFileList == null || ReswFileList.Length == 0) && 
-                        UnprocessedAssemblyList.Length == 0 && 
-                        firstNonFrameworkAssembly != null)
-                    {
-                        UnprocessedAssemblyList = new ITaskItem[1] { firstNonFrameworkAssembly };
-                    }
-
+                    UnprocessedAssemblyList = unprocessedAssemblyList.ToArray(); // For now this list will always be empty
+                    ReswFileList = reswList.ToArray();
                     WriteStateFile(StateFile, _state);
                 } 
                 catch (Exception e)
@@ -267,18 +314,84 @@ namespace Microsoft.Build.Net.CoreRuntimeTask
             }
         }
 
-        private string ExtractFrameworkAssemblyResW(string assemblyFilePath, out bool containsResources)
+        private ResWInfo ExtractResourcesFromStream(Stream stream, IAssembly assembly, string resourceFileName, bool containsFrameworkResources)
         {
-            string assemblyName;
-            using (Stream stream = ExtractFromAssembly(assemblyFilePath, out assemblyName, out containsResources))
-            {
-                if (stream == null)
-                    return null;
+            string reswFilePath;
+            string resourceIndexName;
+            string neutralResourceLanguage = "";
 
-                string reswFilePath = OutResWPath + Path.AltDirectorySeparatorChar + "FxResources." + assemblyName + ".SR.resw";
-                WriteResW(stream, reswFilePath);
-                return reswFilePath;
+            if (containsFrameworkResources)
+            {
+                reswFilePath = OutResWPath + Path.AltDirectorySeparatorChar + resourceFileName + ".resw";
+                resourceIndexName = resourceFileName;
+                neutralResourceLanguage = "en-US";
             }
+            else
+            {
+                string culturePath = "";
+                string culture = assembly.Culture;
+                string assemblyName = assembly.Name.Value;
+
+                if (!String.IsNullOrEmpty(culture))
+                {
+                    culturePath = culture + Path.DirectorySeparatorChar;
+                }
+                else if (TryGetNeutralResourcesLanguageAttribute(assembly, out neutralResourceLanguage))
+                {
+                    culturePath = neutralResourceLanguage + Path.DirectorySeparatorChar;
+                }
+                // Do not handle the case where culture is Invariant and no NeutralResourcesLanguageAttribute is declared
+                // This should already be taken care of in method ExtractAssemblyResWList
+                else
+                {
+                    Debug.Assert(false, "Assembly with the Invariant culture and no NeutralResourcesLanguageAttribute is being extracted for embedded resources. This should have been caught by earlier checks.");
+                }
+
+                if (resourceFileName.EndsWith("." + culture, StringComparison.OrdinalIgnoreCase))
+                {
+                    resourceFileName = resourceFileName.Remove(resourceFileName.Length - (culture.Length + 1));
+                }
+
+                resourceIndexName = assemblyName.EndsWith(".resources", StringComparison.OrdinalIgnoreCase) ? assemblyName.Remove(assemblyName.Length - 10) : assemblyName;
+                reswFilePath = OutResWPath + resourceIndexName + Path.DirectorySeparatorChar + culturePath + resourceFileName + ".resw";
+                if (!Directory.Exists(Directory.GetParent(reswFilePath).ToString()))
+                {
+                    Directory.CreateDirectory(Directory.GetParent(reswFilePath).ToString());
+                }
+            }
+
+            WriteResW(stream, reswFilePath);
+
+            FileInfo fiResW = new FileInfo(reswFilePath);
+            return new ResWInfo() { ResWPath = reswFilePath, ResWTimeUtc = fiResW.LastWriteTimeUtc, ResourceIndexName = resourceIndexName, NeutralResourceLanguage = neutralResourceLanguage };
+        }
+
+        private bool TryGetNeutralResourcesLanguageAttribute(IAssembly assembly, out String neutralResourceLanguage)
+        {
+            neutralResourceLanguage = "";
+            foreach (ICustomAttribute attribute in assembly.AssemblyAttributes)
+            {
+                if (TypeHelper.GetTypeName(attribute.Type, NameFormattingOptions.None).Equals("System.Resources.NeutralResourcesLanguageAttribute"))
+                {
+                    if (attribute.Arguments.Count() > 0)
+                    {
+                        IMetadataConstant metadataConstant = attribute.Arguments.ElementAt(0) as IMetadataConstant;
+                        if (metadataConstant == null)
+                        {
+                            return false; // Unable to parse
+                        }
+
+                        Object value = metadataConstant.Value;
+                        if (!(value is String))
+                        {
+                            return false; // Expected to be a string
+                        }
+                        neutralResourceLanguage = (String)value;
+                        return true;
+                    }
+                }
+            }
+            return false;
         }
 
         private void WriteResW(Stream stream, string reswFilePath)
@@ -295,61 +408,70 @@ namespace Microsoft.Build.Net.CoreRuntimeTask
             }
         }
 
-        private Stream ExtractFromAssembly(string assemblyFilePath, out string assemblyName, out bool containsResources)
+        private List<ResWInfo> ExtractAssemblyResWList(string assemblyFilePath, out bool containsFrameworkResources)
         {
-            assemblyName = null;
-            containsResources = true;
+            containsFrameworkResources = false;
 
             IAssembly assembly = _host.LoadUnitFrom(assemblyFilePath) as IAssembly;
             if (assembly == null || assembly == Dummy.Assembly)
             {
-                containsResources = false;
                 return null;
             }
 
             if (assembly.Resources == null)
             {
-                containsResources = false;
                 return null;
             }
 
-            assemblyName = assembly.Name.Value;
-            string resourcesName = "FxResources." + assemblyName + ".SR.resources";
-            int resourceCount = 0;
+            string neutralResourceLanguage;
+            if (String.IsNullOrEmpty(assembly.Culture) && !TryGetNeutralResourcesLanguageAttribute(assembly, out neutralResourceLanguage))
+            {
+                // Must have NeutralResourcesLanguageAttribute
+                // warning MSB3817: The assembly "<FullPath>\ClassLibrary1.dll" does not have a NeutralResourcesLanguageAttribute on it. To be used in an app package, portable libraries must define a NeutralResourcesLanguageAttribute on their main assembly (ie, the one containing code, not a satellite assembly).
+                return null;
+            }
+
+            List<ResWInfo> reswInfoList = new List<ResWInfo>();
+            string frameworkResourcesName = "FxResources." + assembly.Name.Value + ".SR.resources";
 
             foreach (IResourceReference resourceReference in assembly.Resources)
             {
-                resourceCount++;
-                if (!resourceReference.Resource.IsInExternalFile && resourceReference.Name.Value.Equals(resourcesName, StringComparison.OrdinalIgnoreCase))
+                if (!resourceReference.Resource.IsInExternalFile && resourceReference.Name.Value.EndsWith(".resources", StringComparison.OrdinalIgnoreCase))
                 {
                     const int BUFFERSIZE = 4096;
                     byte[] buffer = new byte[BUFFERSIZE];
                     int index = 0;
 
-                    MemoryStream ms = new MemoryStream(BUFFERSIZE);
-
-                    foreach (byte b in resourceReference.Resource.Data)
+                    using (MemoryStream ms = new MemoryStream(BUFFERSIZE))
                     {
-                        if (index == BUFFERSIZE)
+                        foreach (byte b in resourceReference.Resource.Data)
                         {
-                            ms.Write(buffer, 0, BUFFERSIZE);
-                            index = 0;
+                            if (index == BUFFERSIZE)
+                            {
+                                ms.Write(buffer, 0, BUFFERSIZE);
+                                index = 0;
+                            }
+                            buffer[index++] = b;
                         }
-                        buffer[index++] = b;
+                        ms.Write(buffer, 0, index);
+                        ms.Seek(0, SeekOrigin.Begin);
+                        
+                        string resourceFileName = resourceReference.Name.Value.Remove(resourceReference.Name.Value.Length - 10);
+                        if (resourceReference.Name.Value.Equals(frameworkResourcesName, StringComparison.OrdinalIgnoreCase))
+                        {
+                            containsFrameworkResources = true;
+                            reswInfoList.Add(ExtractResourcesFromStream(ms, assembly, resourceFileName, true));
+                            return reswInfoList;
+                        }
+                        else
+                        {
+                            reswInfoList.Add(ExtractResourcesFromStream(ms, assembly, resourceFileName, false));
+                        }
                     }
-                    ms.Write(buffer, 0, index);
-                    ms.Seek(0, SeekOrigin.Begin);
-                    return ms;
                 }
             }
 
-            if (resourceCount == 0) // no resources
-            {
-                containsResources = false;
-            }
-
-            return null;
+            return reswInfoList;
         }
-
     }
 }
