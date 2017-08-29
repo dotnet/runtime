@@ -49,7 +49,9 @@ The following are the minimum requirements:
 
 ## Building From the Command Line
 
-From a (non-admin) Command Prompt window:
+You must use the Developer Command Prompt. It will have a name like "Developer Command Prompt for VS 2017" or similar in your start menu. 
+
+From a (non-admin) Developer Command Prompt window:
 
 - `build.cmd` - Will cause basic tool initialization and build the default configuration for refs, libs, and packages.
 - `build-tests.cmd` - Will build and run tests for the default configuration.
