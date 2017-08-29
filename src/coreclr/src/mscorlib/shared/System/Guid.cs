@@ -403,14 +403,14 @@ namespace System
         {
             if (g == null)
             {
-                result.SetFailure(ParseFailureKind.Format, "Format_GuidUnrecognized");
+                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_GuidUnrecognized));
                 return false;
             }
             String guidString = g.Trim();  //Remove Whitespace
 
             if (guidString.Length == 0)
             {
-                result.SetFailure(ParseFailureKind.Format, "Format_GuidUnrecognized");
+                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_GuidUnrecognized));
                 return false;
             }
 
@@ -422,7 +422,7 @@ namespace System
                 if ((flags & (GuidStyles.AllowDashes | GuidStyles.RequireDashes)) == 0)
                 {
                     // dashes are not allowed
-                    result.SetFailure(ParseFailureKind.Format, "Format_GuidUnrecognized");
+                    result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_GuidUnrecognized));
                     return false;
                 }
             }
@@ -431,7 +431,7 @@ namespace System
                 if ((flags & GuidStyles.RequireDashes) != 0)
                 {
                     // dashes are required
-                    result.SetFailure(ParseFailureKind.Format, "Format_GuidUnrecognized");
+                    result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_GuidUnrecognized));
                     return false;
                 }
             }
@@ -444,7 +444,7 @@ namespace System
                 if ((flags & (GuidStyles.AllowBraces | GuidStyles.RequireBraces)) == 0)
                 {
                     // braces are not allowed
-                    result.SetFailure(ParseFailureKind.Format, "Format_GuidUnrecognized");
+                    result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_GuidUnrecognized));
                     return false;
                 }
             }
@@ -453,7 +453,7 @@ namespace System
                 if ((flags & GuidStyles.RequireBraces) != 0)
                 {
                     // braces are required
-                    result.SetFailure(ParseFailureKind.Format, "Format_GuidUnrecognized");
+                    result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_GuidUnrecognized));
                     return false;
                 }
             }
@@ -466,7 +466,7 @@ namespace System
                 if ((flags & (GuidStyles.AllowParenthesis | GuidStyles.RequireParenthesis)) == 0)
                 {
                     // parenthesis are not allowed
-                    result.SetFailure(ParseFailureKind.Format, "Format_GuidUnrecognized");
+                    result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_GuidUnrecognized));
                     return false;
                 }
             }
@@ -475,7 +475,7 @@ namespace System
                 if ((flags & GuidStyles.RequireParenthesis) != 0)
                 {
                     // parenthesis are required
-                    result.SetFailure(ParseFailureKind.Format, "Format_GuidUnrecognized");
+                    result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_GuidUnrecognized));
                     return false;
                 }
             }
@@ -501,12 +501,12 @@ namespace System
             }
             catch (IndexOutOfRangeException ex)
             {
-                result.SetFailure(ParseFailureKind.FormatWithInnerException, "Format_GuidUnrecognized", null, null, ex);
+                result.SetFailure(ParseFailureKind.FormatWithInnerException, nameof(SR.Format_GuidUnrecognized), null, null, ex);
                 return false;
             }
             catch (ArgumentException ex)
             {
-                result.SetFailure(ParseFailureKind.FormatWithInnerException, "Format_GuidUnrecognized", null, null, ex);
+                result.SetFailure(ParseFailureKind.FormatWithInnerException, nameof(SR.Format_GuidUnrecognized), null, null, ex);
                 return false;
             }
         }
@@ -524,14 +524,14 @@ namespace System
             // Check for leading '{'
             if (String.IsNullOrEmpty(guidString) || guidString[0] != '{')
             {
-                result.SetFailure(ParseFailureKind.Format, "Format_GuidBrace");
+                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_GuidBrace));
                 return false;
             }
 
             // Check for '0x'
             if (!IsHexPrefix(guidString, 1))
             {
-                result.SetFailure(ParseFailureKind.Format, "Format_GuidHexPrefix", "{0xdddddddd, etc}");
+                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_GuidHexPrefix), "{0xdddddddd, etc}");
                 return false;
             }
 
@@ -540,7 +540,7 @@ namespace System
             numLen = guidString.IndexOf(',', numStart) - numStart;
             if (numLen <= 0)
             {
-                result.SetFailure(ParseFailureKind.Format, "Format_GuidComma");
+                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_GuidComma));
                 return false;
             }
 
@@ -551,7 +551,7 @@ namespace System
             // Check for '0x'
             if (!IsHexPrefix(guidString, numStart + numLen + 1))
             {
-                result.SetFailure(ParseFailureKind.Format, "Format_GuidHexPrefix", "{0xdddddddd, 0xdddd, etc}");
+                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_GuidHexPrefix), "{0xdddddddd, 0xdddd, etc}");
                 return false;
             }
             // +3 to get by ',0x'
@@ -559,7 +559,7 @@ namespace System
             numLen = guidString.IndexOf(',', numStart) - numStart;
             if (numLen <= 0)
             {
-                result.SetFailure(ParseFailureKind.Format, "Format_GuidComma");
+                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_GuidComma));
                 return false;
             }
 
@@ -569,7 +569,7 @@ namespace System
             // Check for '0x'
             if (!IsHexPrefix(guidString, numStart + numLen + 1))
             {
-                result.SetFailure(ParseFailureKind.Format, "Format_GuidHexPrefix", "{0xdddddddd, 0xdddd, 0xdddd, etc}");
+                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_GuidHexPrefix), "{0xdddddddd, 0xdddd, 0xdddd, etc}");
                 return false;
             }
             // +3 to get by ',0x'
@@ -577,7 +577,7 @@ namespace System
             numLen = guidString.IndexOf(',', numStart) - numStart;
             if (numLen <= 0)
             {
-                result.SetFailure(ParseFailureKind.Format, "Format_GuidComma");
+                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_GuidComma));
                 return false;
             }
 
@@ -588,7 +588,7 @@ namespace System
             // Check for '{'
             if (guidString.Length <= numStart + numLen + 1 || guidString[numStart + numLen + 1] != '{')
             {
-                result.SetFailure(ParseFailureKind.Format, "Format_GuidBrace");
+                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_GuidBrace));
                 return false;
             }
 
@@ -601,7 +601,7 @@ namespace System
                 // Check for '0x'
                 if (!IsHexPrefix(guidString, numStart + numLen + 1))
                 {
-                    result.SetFailure(ParseFailureKind.Format, "Format_GuidHexPrefix", "{... { ... 0xdd, ...}}");
+                    result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_GuidHexPrefix), "{... { ... 0xdd, ...}}");
                     return false;
                 }
 
@@ -614,7 +614,7 @@ namespace System
                     numLen = guidString.IndexOf(',', numStart) - numStart;
                     if (numLen <= 0)
                     {
-                        result.SetFailure(ParseFailureKind.Format, "Format_GuidComma");
+                        result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_GuidComma));
                         return false;
                     }
                 }
@@ -623,7 +623,7 @@ namespace System
                     numLen = guidString.IndexOf('}', numStart) - numStart;
                     if (numLen <= 0)
                     {
-                        result.SetFailure(ParseFailureKind.Format, "Format_GuidBraceAfterLastNumber");
+                        result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_GuidBraceAfterLastNumber));
                         return false;
                     }
                 }
@@ -639,7 +639,7 @@ namespace System
                 // check for overflow
                 if (number > 255)
                 {
-                    result.SetFailure(ParseFailureKind.Format, "Overflow_Byte");
+                    result.SetFailure(ParseFailureKind.Format, nameof(SR.Overflow_Byte));
                     return false;
                 }
                 bytes[i] = (byte)number;
@@ -657,14 +657,14 @@ namespace System
             // Check for last '}'
             if (numStart + numLen + 1 >= guidString.Length || guidString[numStart + numLen + 1] != '}')
             {
-                result.SetFailure(ParseFailureKind.Format, "Format_GuidEndBrace");
+                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_GuidEndBrace));
                 return false;
             }
 
             // Check if we have extra characters at the end
             if (numStart + numLen + 1 != guidString.Length - 1)
             {
-                result.SetFailure(ParseFailureKind.Format, "Format_ExtraJunkAtEnd");
+                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_ExtraJunkAtEnd));
                 return false;
             }
 
@@ -681,7 +681,7 @@ namespace System
 
             if (guidString.Length != 32)
             {
-                result.SetFailure(ParseFailureKind.Format, "Format_GuidInvLen");
+                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_GuidInvLen));
                 return false;
             }
 
@@ -701,7 +701,7 @@ namespace System
                     }
                 }
 
-                result.SetFailure(ParseFailureKind.Format, "Format_GuidInvalidChar");
+                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_GuidInvalidChar));
                 return false;
             }
 
@@ -728,7 +728,7 @@ namespace System
 
             if (currentPos - startPos != 12)
             {
-                result.SetFailure(ParseFailureKind.Format, "Format_GuidInvLen");
+                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_GuidInvLen));
                 return false;
             }
 
@@ -760,7 +760,7 @@ namespace System
             {
                 if (guidString.Length != 38 || guidString[37] != '}')
                 {
-                    result.SetFailure(ParseFailureKind.Format, "Format_GuidInvLen");
+                    result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_GuidInvLen));
                     return false;
                 }
                 startPos = 1;
@@ -769,14 +769,14 @@ namespace System
             {
                 if (guidString.Length != 38 || guidString[37] != ')')
                 {
-                    result.SetFailure(ParseFailureKind.Format, "Format_GuidInvLen");
+                    result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_GuidInvLen));
                     return false;
                 }
                 startPos = 1;
             }
             else if (guidString.Length != 36)
             {
-                result.SetFailure(ParseFailureKind.Format, "Format_GuidInvLen");
+                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_GuidInvLen));
                 return false;
             }
 
@@ -785,7 +785,7 @@ namespace System
                 guidString[18 + startPos] != '-' ||
                 guidString[23 + startPos] != '-')
             {
-                result.SetFailure(ParseFailureKind.Format, "Format_GuidDashes");
+                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_GuidDashes));
                 return false;
             }
 
@@ -815,7 +815,7 @@ namespace System
 
             if (currentPos - startPos != 12)
             {
-                result.SetFailure(ParseFailureKind.Format, "Format_GuidInvLen");
+                result.SetFailure(ParseFailureKind.Format, nameof(SR.Format_GuidInvLen));
                 return false;
             }
             result._parsedGuid._d = (byte)(temp >> 8);
@@ -895,7 +895,7 @@ namespace System
             //If we didn't parse enough characters, there's clearly an error.
             if (requiredLength != -1 && parsePos - currStart != requiredLength)
             {
-                parseResult.SetFailure(ParseFailureKind.Format, "Format_GuidInvalidChar");
+                parseResult.SetFailure(ParseFailureKind.Format, nameof(SR.Format_GuidInvalidChar));
                 return false;
             }
             return true;
