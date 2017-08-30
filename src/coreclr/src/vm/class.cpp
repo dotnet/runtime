@@ -1900,11 +1900,10 @@ VOID EEClass::CheckForNativeHFA()
         return;
 
     CorElementType hfaType = GetLayoutInfo()->GetNativeHFATypeRaw();
-    if (hfaType != ELEMENT_TYPE_END)
+    if (hfaType == ELEMENT_TYPE_END)
     {
         return;
     }
-
 
     // All the above tests passed. It's HFA!
     GetLayoutInfo()->SetNativeHFAType(hfaType);
