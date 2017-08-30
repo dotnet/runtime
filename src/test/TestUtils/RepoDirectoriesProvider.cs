@@ -52,6 +52,9 @@ namespace Microsoft.DotNet.CoreSetup.Test
             _buildArchitecture = Environment.GetEnvironmentVariable("BUILD_ARCHITECTURE");
             _mnaVersion = Environment.GetEnvironmentVariable("MNA_VERSION");
 
+            string configuration = Environment.GetEnvironmentVariable("BUILD_CONFIGURATION");
+            string osPlatformConfig = $"{_buildRID}.{configuration}";
+
             _dotnetSDK = dotnetSdk ?? Environment.GetEnvironmentVariable("DOTNET_SDK_PATH");
 
             if (!Directory.Exists(_dotnetSDK))
@@ -59,17 +62,13 @@ namespace Microsoft.DotNet.CoreSetup.Test
                 throw new InvalidOperationException("ERROR: Test SDK folder not found.");
             }
 
-            _artifacts = Path.Combine(baseArtifactsFolder, _buildRID+".Debug");
-            if(!Directory.Exists(_artifacts))
-                _artifacts = Path.Combine(baseArtifactsFolder, _buildRID+".Release");
+            _artifacts = Path.Combine(baseArtifactsFolder, osPlatformConfig);
             _hostArtifacts = artifacts ?? Path.Combine(_artifacts, "corehost");
 
             _nugetPackages = nugetPackages ?? Path.Combine(_repoRoot, "packages");
 
             _corehostPackages = corehostPackages ?? Path.Combine(_artifacts, "corehost");
-            _builtDotnet = builtDotnet ?? Path.Combine(baseArtifactsFolder, "obj", _buildRID+".Debug", "sharedFrameworkPublish");
-            if(!Directory.Exists(_builtDotnet))
-                _builtDotnet = builtDotnet ?? Path.Combine(baseArtifactsFolder, "obj", _buildRID+".Release", "sharedFrameworkPublish");
+            _builtDotnet = builtDotnet ?? Path.Combine(baseArtifactsFolder, "obj", osPlatformConfig, "sharedFrameworkPublish");
         }
 
         private static string GetRepoRootDirectory()
@@ -78,7 +77,7 @@ namespace Microsoft.DotNet.CoreSetup.Test
 
             while (currentDirectory != null)
             {
-                var gitDirOrFile = Path.Combine(currentDirectory, ".git");
+                string gitDirOrFile = Path.Combine(currentDirectory, ".git");
                 if (Directory.Exists(gitDirOrFile) || File.Exists(gitDirOrFile))
                 {
                     break;
