@@ -134,8 +134,6 @@ namespace System.Drawing
                 GdipCreateFromHWND_ptr = LoadFunction<GdipCreateFromHWND_delegate>("GdipCreateFromHWND");
                 GdipMeasureString_ptr = LoadFunction<GdipMeasureString_delegate>("GdipMeasureString");
                 GdipMeasureCharacterRanges_ptr = LoadFunction<GdipMeasureCharacterRanges_delegate>("GdipMeasureCharacterRanges");
-                GdipSetStringFormatMeasurableCharacterRanges_ptr = LoadFunction<GdipSetStringFormatMeasurableCharacterRanges_delegate>("GdipSetStringFormatMeasurableCharacterRanges");
-                GdipGetStringFormatMeasurableCharacterRangeCount_ptr = LoadFunction<GdipGetStringFormatMeasurableCharacterRangeCount_delegate>("GdipGetStringFormatMeasurableCharacterRangeCount");
                 GdipCreateBitmapFromScan0_ptr = LoadFunction<GdipCreateBitmapFromScan0_delegate>("GdipCreateBitmapFromScan0");
                 GdipCreateBitmapFromGraphics_ptr = LoadFunction<GdipCreateBitmapFromGraphics_delegate>("GdipCreateBitmapFromGraphics");
                 GdipBitmapLockBits_ptr = LoadFunction<GdipBitmapLockBits_delegate>("GdipBitmapLockBits");
@@ -194,7 +192,6 @@ namespace System.Drawing
                 GdipDrawImageRect_ptr = LoadFunction<GdipDrawImageRect_delegate>("GdipDrawImageRect");
                 GdipDrawImagePointRect_ptr = LoadFunction<GdipDrawImagePointRect_delegate>("GdipDrawImagePointRect");
                 GdipDrawImagePointRectI_ptr = LoadFunction<GdipDrawImagePointRectI_delegate>("GdipDrawImagePointRectI");
-                GdipCreateStringFormat_ptr = LoadFunction<GdipCreateStringFormat_delegate>("GdipCreateStringFormat");
                 GdipCreateHBITMAPFromBitmap_ptr = LoadFunction<GdipCreateHBITMAPFromBitmap_delegate>("GdipCreateHBITMAPFromBitmap");
                 GdipCreateBitmapFromFile_ptr = LoadFunction<GdipCreateBitmapFromFile_delegate>("GdipCreateBitmapFromFile");
                 GdipCreateBitmapFromFileICM_ptr = LoadFunction<GdipCreateBitmapFromFileICM_delegate>("GdipCreateBitmapFromFileICM");
@@ -281,26 +278,6 @@ namespace System.Drawing
                 GdipGetFontSize_ptr = LoadFunction<GdipGetFontSize_delegate>("GdipGetFontSize");
                 GdipGetFontHeight_ptr = LoadFunction<GdipGetFontHeight_delegate>("GdipGetFontHeight");
                 GdipGetFontHeightGivenDPI_ptr = LoadFunction<GdipGetFontHeightGivenDPI_delegate>("GdipGetFontHeightGivenDPI");
-                GdipCreateStringFormat2_ptr = LoadFunction<GdipCreateStringFormat2_delegate>("GdipCreateStringFormat");
-                GdipStringFormatGetGenericDefault_ptr = LoadFunction<GdipStringFormatGetGenericDefault_delegate>("GdipStringFormatGetGenericDefault");
-                GdipStringFormatGetGenericTypographic_ptr = LoadFunction<GdipStringFormatGetGenericTypographic_delegate>("GdipStringFormatGetGenericTypographic");
-                GdipDeleteStringFormat_ptr = LoadFunction<GdipDeleteStringFormat_delegate>("GdipDeleteStringFormat");
-                GdipCloneStringFormat_ptr = LoadFunction<GdipCloneStringFormat_delegate>("GdipCloneStringFormat");
-                GdipSetStringFormatFlags_ptr = LoadFunction<GdipSetStringFormatFlags_delegate>("GdipSetStringFormatFlags");
-                GdipGetStringFormatFlags_ptr = LoadFunction<GdipGetStringFormatFlags_delegate>("GdipGetStringFormatFlags");
-                GdipSetStringFormatAlign_ptr = LoadFunction<GdipSetStringFormatAlign_delegate>("GdipSetStringFormatAlign");
-                GdipGetStringFormatAlign_ptr = LoadFunction<GdipGetStringFormatAlign_delegate>("GdipGetStringFormatAlign");
-                GdipSetStringFormatLineAlign_ptr = LoadFunction<GdipSetStringFormatLineAlign_delegate>("GdipSetStringFormatLineAlign");
-                GdipGetStringFormatLineAlign_ptr = LoadFunction<GdipGetStringFormatLineAlign_delegate>("GdipGetStringFormatLineAlign");
-                GdipSetStringFormatTrimming_ptr = LoadFunction<GdipSetStringFormatTrimming_delegate>("GdipSetStringFormatTrimming");
-                GdipGetStringFormatTrimming_ptr = LoadFunction<GdipGetStringFormatTrimming_delegate>("GdipGetStringFormatTrimming");
-                GdipSetStringFormatHotkeyPrefix_ptr = LoadFunction<GdipSetStringFormatHotkeyPrefix_delegate>("GdipSetStringFormatHotkeyPrefix");
-                GdipGetStringFormatHotkeyPrefix_ptr = LoadFunction<GdipGetStringFormatHotkeyPrefix_delegate>("GdipGetStringFormatHotkeyPrefix");
-                GdipSetStringFormatTabStops_ptr = LoadFunction<GdipSetStringFormatTabStops_delegate>("GdipSetStringFormatTabStops");
-                GdipGetStringFormatDigitSubstitution_ptr = LoadFunction<GdipGetStringFormatDigitSubstitution_delegate>("GdipGetStringFormatDigitSubstitution");
-                GdipSetStringFormatDigitSubstitution_ptr = LoadFunction<GdipSetStringFormatDigitSubstitution_delegate>("GdipSetStringFormatDigitSubstitution");
-                GdipGetStringFormatTabStopCount_ptr = LoadFunction<GdipGetStringFormatTabStopCount_delegate>("GdipGetStringFormatTabStopCount");
-                GdipGetStringFormatTabStops_ptr = LoadFunction<GdipGetStringFormatTabStops_delegate>("GdipGetStringFormatTabStops");
                 GdipCreateMetafileFromFile_ptr = LoadFunction<GdipCreateMetafileFromFile_delegate>("GdipCreateMetafileFromFile");
                 GdipCreateMetafileFromEmf_ptr = LoadFunction<GdipCreateMetafileFromEmf_delegate>("GdipCreateMetafileFromEmf");
                 GdipCreateMetafileFromWmf_ptr = LoadFunction<GdipCreateMetafileFromWmf_delegate>("GdipCreateMetafileFromWmf");
@@ -712,14 +689,6 @@ namespace System.Drawing
             private static FunctionWrapper<GdipMeasureCharacterRanges_delegate> GdipMeasureCharacterRanges_ptr;
             internal static Status GdipMeasureCharacterRanges(IntPtr graphics, string str, int length, IntPtr font, ref RectangleF layoutRect, IntPtr stringFormat, int regcount, out IntPtr regions) => GdipMeasureCharacterRanges_ptr.Delegate(graphics, str, length, font, ref layoutRect, stringFormat, regcount, out regions);
 
-            private delegate Status GdipSetStringFormatMeasurableCharacterRanges_delegate(IntPtr native, int cnt, CharacterRange[] range);
-            private static FunctionWrapper<GdipSetStringFormatMeasurableCharacterRanges_delegate> GdipSetStringFormatMeasurableCharacterRanges_ptr;
-            internal static Status GdipSetStringFormatMeasurableCharacterRanges(IntPtr native, int cnt, CharacterRange[] range) => GdipSetStringFormatMeasurableCharacterRanges_ptr.Delegate(native, cnt, range);
-
-            private delegate Status GdipGetStringFormatMeasurableCharacterRangeCount_delegate(IntPtr native, out int cnt);
-            private static FunctionWrapper<GdipGetStringFormatMeasurableCharacterRangeCount_delegate> GdipGetStringFormatMeasurableCharacterRangeCount_ptr;
-            internal static Status GdipGetStringFormatMeasurableCharacterRangeCount(IntPtr native, out int cnt) => GdipGetStringFormatMeasurableCharacterRangeCount_ptr.Delegate(native, out cnt);
-
             private delegate Status GdipCreateBitmapFromScan0_delegate(int width, int height, int stride, PixelFormat format, IntPtr scan0, out IntPtr bmp);
             private static FunctionWrapper<GdipCreateBitmapFromScan0_delegate> GdipCreateBitmapFromScan0_ptr;
             internal static Status GdipCreateBitmapFromScan0(int width, int height, int stride, PixelFormat format, IntPtr scan0, out IntPtr bmp) => GdipCreateBitmapFromScan0_ptr.Delegate(width, height, stride, format, scan0, out bmp);
@@ -952,10 +921,6 @@ namespace System.Drawing
             private delegate Status GdipDrawImagePointRectI_delegate(IntPtr graphics, IntPtr image, int x, int y, int srcx, int srcy, int srcwidth, int srcheight, GraphicsUnit srcUnit);
             private static FunctionWrapper<GdipDrawImagePointRectI_delegate> GdipDrawImagePointRectI_ptr;
             internal static Status GdipDrawImagePointRectI(IntPtr graphics, IntPtr image, int x, int y, int srcx, int srcy, int srcwidth, int srcheight, GraphicsUnit srcUnit) => GdipDrawImagePointRectI_ptr.Delegate(graphics, image, x, y, srcx, srcy, srcwidth, srcheight, srcUnit);
-
-            private delegate Status GdipCreateStringFormat_delegate(StringFormatFlags formatAttributes, int language, out IntPtr native);
-            private static FunctionWrapper<GdipCreateStringFormat_delegate> GdipCreateStringFormat_ptr;
-            internal static Status GdipCreateStringFormat(StringFormatFlags formatAttributes, int language, out IntPtr native) => GdipCreateStringFormat_ptr.Delegate(formatAttributes, language, out native);
 
             private delegate Status GdipCreateHBITMAPFromBitmap_delegate(IntPtr bmp, out IntPtr HandleBmp, int clrbackground);
             private static FunctionWrapper<GdipCreateHBITMAPFromBitmap_delegate> GdipCreateHBITMAPFromBitmap_ptr;
@@ -1316,87 +1281,6 @@ namespace System.Drawing
             private delegate Status GdipGetFontHeightGivenDPI_delegate(IntPtr font, float dpi, out float height);
             private static FunctionWrapper<GdipGetFontHeightGivenDPI_delegate> GdipGetFontHeightGivenDPI_ptr;
             internal static Status GdipGetFontHeightGivenDPI(IntPtr font, float dpi, out float height) => GdipGetFontHeightGivenDPI_ptr.Delegate(font, dpi, out height);
-
-            private delegate Status GdipCreateStringFormat2_delegate(int formatAttributes, int language, out IntPtr format);
-            private static FunctionWrapper<GdipCreateStringFormat2_delegate> GdipCreateStringFormat2_ptr;
-            internal static Status GdipCreateStringFormat(int formatAttributes, int language, out IntPtr format) => GdipCreateStringFormat2_ptr.Delegate(formatAttributes, language, out format);
-
-            private delegate Status GdipStringFormatGetGenericDefault_delegate(out IntPtr format);
-            private static FunctionWrapper<GdipStringFormatGetGenericDefault_delegate> GdipStringFormatGetGenericDefault_ptr;
-            internal static Status GdipStringFormatGetGenericDefault(out IntPtr format) => GdipStringFormatGetGenericDefault_ptr.Delegate(out format);
-
-            private delegate Status GdipStringFormatGetGenericTypographic_delegate(out IntPtr format);
-            private static FunctionWrapper<GdipStringFormatGetGenericTypographic_delegate> GdipStringFormatGetGenericTypographic_ptr;
-            internal static Status GdipStringFormatGetGenericTypographic(out IntPtr format) => GdipStringFormatGetGenericTypographic_ptr.Delegate(out format);
-
-            private delegate Status GdipDeleteStringFormat_delegate(IntPtr format);
-            private static FunctionWrapper<GdipDeleteStringFormat_delegate> GdipDeleteStringFormat_ptr;
-            internal static Status GdipDeleteStringFormat(IntPtr format) => GdipDeleteStringFormat_ptr.Delegate(format);
-            internal static int IntGdipDeleteStringFormat(HandleRef format) => (int)GdipDeleteStringFormat_ptr.Delegate(format.Handle);
-
-            private delegate Status GdipCloneStringFormat_delegate(IntPtr srcformat, out IntPtr format);
-            private static FunctionWrapper<GdipCloneStringFormat_delegate> GdipCloneStringFormat_ptr;
-            internal static Status GdipCloneStringFormat(IntPtr srcformat, out IntPtr format) => GdipCloneStringFormat_ptr.Delegate(srcformat, out format);
-
-            private delegate Status GdipSetStringFormatFlags_delegate(IntPtr format, StringFormatFlags flags);
-            private static FunctionWrapper<GdipSetStringFormatFlags_delegate> GdipSetStringFormatFlags_ptr;
-            internal static Status GdipSetStringFormatFlags(IntPtr format, StringFormatFlags flags) => GdipSetStringFormatFlags_ptr.Delegate(format, flags);
-
-            private delegate Status GdipGetStringFormatFlags_delegate(IntPtr format, out StringFormatFlags flags);
-            private static FunctionWrapper<GdipGetStringFormatFlags_delegate> GdipGetStringFormatFlags_ptr;
-            internal static Status GdipGetStringFormatFlags(IntPtr format, out StringFormatFlags flags) => GdipGetStringFormatFlags_ptr.Delegate(format, out flags);
-
-            private delegate Status GdipSetStringFormatAlign_delegate(IntPtr format, StringAlignment align);
-            private static FunctionWrapper<GdipSetStringFormatAlign_delegate> GdipSetStringFormatAlign_ptr;
-            internal static Status GdipSetStringFormatAlign(IntPtr format, StringAlignment align) => GdipSetStringFormatAlign_ptr.Delegate(format, align);
-
-            private delegate Status GdipGetStringFormatAlign_delegate(IntPtr format, out StringAlignment align);
-            private static FunctionWrapper<GdipGetStringFormatAlign_delegate> GdipGetStringFormatAlign_ptr;
-            internal static Status GdipGetStringFormatAlign(IntPtr format, out StringAlignment align) => GdipGetStringFormatAlign_ptr.Delegate(format, out align);
-
-            private delegate Status GdipSetStringFormatLineAlign_delegate(IntPtr format, StringAlignment align);
-            private static FunctionWrapper<GdipSetStringFormatLineAlign_delegate> GdipSetStringFormatLineAlign_ptr;
-            internal static Status GdipSetStringFormatLineAlign(IntPtr format, StringAlignment align) => GdipSetStringFormatLineAlign_ptr.Delegate(format, align);
-
-            private delegate Status GdipGetStringFormatLineAlign_delegate(IntPtr format, out StringAlignment align);
-            private static FunctionWrapper<GdipGetStringFormatLineAlign_delegate> GdipGetStringFormatLineAlign_ptr;
-            internal static Status GdipGetStringFormatLineAlign(IntPtr format, out StringAlignment align) => GdipGetStringFormatLineAlign_ptr.Delegate(format, out align);
-
-            private delegate Status GdipSetStringFormatTrimming_delegate(IntPtr format, StringTrimming trimming);
-            private static FunctionWrapper<GdipSetStringFormatTrimming_delegate> GdipSetStringFormatTrimming_ptr;
-            internal static Status GdipSetStringFormatTrimming(IntPtr format, StringTrimming trimming) => GdipSetStringFormatTrimming_ptr.Delegate(format, trimming);
-
-            private delegate Status GdipGetStringFormatTrimming_delegate(IntPtr format, out StringTrimming trimming);
-            private static FunctionWrapper<GdipGetStringFormatTrimming_delegate> GdipGetStringFormatTrimming_ptr;
-            internal static Status GdipGetStringFormatTrimming(IntPtr format, out StringTrimming trimming) => GdipGetStringFormatTrimming_ptr.Delegate(format, out trimming);
-
-            private delegate Status GdipSetStringFormatHotkeyPrefix_delegate(IntPtr format, HotkeyPrefix hotkeyPrefix);
-            private static FunctionWrapper<GdipSetStringFormatHotkeyPrefix_delegate> GdipSetStringFormatHotkeyPrefix_ptr;
-            internal static Status GdipSetStringFormatHotkeyPrefix(IntPtr format, HotkeyPrefix hotkeyPrefix) => GdipSetStringFormatHotkeyPrefix_ptr.Delegate(format, hotkeyPrefix);
-
-            private delegate Status GdipGetStringFormatHotkeyPrefix_delegate(IntPtr format, out HotkeyPrefix hotkeyPrefix);
-            private static FunctionWrapper<GdipGetStringFormatHotkeyPrefix_delegate> GdipGetStringFormatHotkeyPrefix_ptr;
-            internal static Status GdipGetStringFormatHotkeyPrefix(IntPtr format, out HotkeyPrefix hotkeyPrefix) => GdipGetStringFormatHotkeyPrefix_ptr.Delegate(format, out hotkeyPrefix);
-
-            private delegate Status GdipSetStringFormatTabStops_delegate(IntPtr format, float firstTabOffset, int count, float[] tabStops);
-            private static FunctionWrapper<GdipSetStringFormatTabStops_delegate> GdipSetStringFormatTabStops_ptr;
-            internal static Status GdipSetStringFormatTabStops(IntPtr format, float firstTabOffset, int count, float[] tabStops) => GdipSetStringFormatTabStops_ptr.Delegate(format, firstTabOffset, count, tabStops);
-
-            private delegate Status GdipGetStringFormatDigitSubstitution_delegate(IntPtr format, int language, out StringDigitSubstitute substitute);
-            private static FunctionWrapper<GdipGetStringFormatDigitSubstitution_delegate> GdipGetStringFormatDigitSubstitution_ptr;
-            internal static Status GdipGetStringFormatDigitSubstitution(IntPtr format, int language, out StringDigitSubstitute substitute) => GdipGetStringFormatDigitSubstitution_ptr.Delegate(format, language, out substitute);
-
-            private delegate Status GdipSetStringFormatDigitSubstitution_delegate(IntPtr format, int language, StringDigitSubstitute substitute);
-            private static FunctionWrapper<GdipSetStringFormatDigitSubstitution_delegate> GdipSetStringFormatDigitSubstitution_ptr;
-            internal static Status GdipSetStringFormatDigitSubstitution(IntPtr format, int language, StringDigitSubstitute substitute) => GdipSetStringFormatDigitSubstitution_ptr.Delegate(format, language, substitute);
-
-            private delegate Status GdipGetStringFormatTabStopCount_delegate(IntPtr format, out int count);
-            private static FunctionWrapper<GdipGetStringFormatTabStopCount_delegate> GdipGetStringFormatTabStopCount_ptr;
-            internal static Status GdipGetStringFormatTabStopCount(IntPtr format, out int count) => GdipGetStringFormatTabStopCount_ptr.Delegate(format, out count);
-
-            private delegate Status GdipGetStringFormatTabStops_delegate(IntPtr format, int count, out float firstTabOffset, [In] [Out] float[] tabStops);
-            private static FunctionWrapper<GdipGetStringFormatTabStops_delegate> GdipGetStringFormatTabStops_ptr;
-            internal static Status GdipGetStringFormatTabStops(IntPtr format, int count, out float firstTabOffset, [In] [Out] float[] tabStops) => GdipGetStringFormatTabStops_ptr.Delegate(format, count, out firstTabOffset, tabStops);
 
             private delegate Status GdipCreateMetafileFromFile_delegate([MarshalAs(UnmanagedType.LPWStr)]string filename, out IntPtr metafile);
             private static FunctionWrapper<GdipCreateMetafileFromFile_delegate> GdipCreateMetafileFromFile_ptr;
