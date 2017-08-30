@@ -26,7 +26,7 @@ namespace System.Net.Security
         private const int FrameOverhead = 32;
         private const int ReadBufferSize = 4096 * 4 + FrameOverhead;         // We read in 16K chunks + headers.
 
-        private SslState _sslState;
+        private readonly SslState _sslState;
         private int _nestedWrite;
         private int _nestedRead;
         private AsyncProtocolRequest _readProtocolRequest; // cached, reusable AsyncProtocolRequest used for read operations
@@ -204,13 +204,16 @@ namespace System.Net.Security
             }
         }
 
-        private void EnsureInternalBufferSize()
+        private void ResetReadBuffer()
         {
+            Debug.Assert(_decryptedBytesCount == 0);
+            Debug.Assert(_internalBuffer == null || _internalBufferCount > 0);
+
             if (_internalBuffer == null)
             {
                 _internalBuffer = ArrayPool<byte>.Shared.Rent(ReadBufferSize);
             }
-            else if (_internalOffset > 0 && _internalBufferCount > 0)
+            else if (_internalOffset > 0)
             {
                 // We have buffered data at a non-zero offset.
                 // To maximize the buffer space available for the next read,
@@ -512,7 +515,7 @@ namespace System.Net.Security
                 return minSize;
             }
 
-            EnsureInternalBufferSize();
+            ResetReadBuffer();
 
             int bytesRead;
             if (asyncRequest != null)
