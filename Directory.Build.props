@@ -8,8 +8,10 @@
     -->
     <UsingMicrosoftNETSdk>true</UsingMicrosoftNETSdk>
   </PropertyGroup>
-  
+
   <PropertyGroup Condition="'$(UsingMicrosoftNETSdk)' == 'true'">
+    <!-- SDK-based projects' Platform should default to AnyCPU, not $(TargetArchitecture) like dir.props sets. -->
+    <Platform>AnyCPU</Platform>
     <UsingNETSdkCompiler>true</UsingNETSdkCompiler>
     <DisableBuildToolsRoslynVersion>true</DisableBuildToolsRoslynVersion>
   </PropertyGroup>
