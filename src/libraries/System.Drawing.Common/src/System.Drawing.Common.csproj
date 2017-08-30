@@ -50,6 +50,7 @@
     <Compile Include="System\Drawing\Pen.cs" />
     <Compile Include="System\Drawing\Pens.cs" />
     <Compile Include="System\Drawing\RotateFlipType.cs" />
+    <Compile Include="System\Drawing\SystemFonts.cs" />
     <Compile Include="System\Drawing\SystemPens.cs" />
     <Compile Include="System\Drawing\Printing\PrinterUnit.cs" />
     <Compile Include="System\Drawing\Printing\PreviewPageInfo.cs" />
@@ -237,7 +238,7 @@
     <Compile Include="System\Drawing\Region.Windows.cs" />
     <Compile Include="System\Drawing\StringFormat.cs" />
     <Compile Include="System\Drawing\SystemColors.cs" />
-    <Compile Include="System\Drawing\SystemFonts.cs" />
+    <Compile Include="System\Drawing\SystemFonts.Windows.cs" />
     <Compile Include="System\Drawing\SystemIcons.cs" />
     <Compile Include="System\Drawing\ToolboxBitmapAttribute.cs" />
     <Compile Include="System\Drawing\Text\PrivateFontCollection.Windows.cs" />
@@ -284,6 +285,7 @@
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <!-- Unix-specific -->
     <Compile Include="System\Drawing\Graphics.Unix.cs" />
+    <Compile Include="System\Drawing\SystemFonts.Unix.cs" />
     <Compile Include="Unix\System.Drawing\Bitmap.cs" />
     <Compile Include="Unix\System.Drawing\BufferedGraphics.cs" />
     <Compile Include="Unix\System.Drawing\BufferedGraphicsManager.cs" />
@@ -310,7 +312,6 @@
     <Compile Include="Unix\System.Drawing\SRDescriptionAttribute.cs" />
     <Compile Include="Unix\System.Drawing\StringFormat.cs" />
     <Compile Include="Unix\System.Drawing\SystemColors.cs" />
-    <Compile Include="Unix\System.Drawing\SystemFonts.cs" />
     <Compile Include="Unix\System.Drawing\SystemIcons.cs" />
     <Compile Include="Unix\System.Drawing\ToolboxBitmapAttribute.cs" />
     <Compile Include="System\Drawing\Drawing2D\AdjustableArrowCap.Unix.cs" />
