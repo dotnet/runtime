@@ -827,7 +827,7 @@ namespace System.Collections.Concurrent
             /// <summary>Mask for quickly accessing a position within the queue's array.</summary>
             internal readonly int _slotsMask;
             /// <summary>The head and tail positions, with padding to help avoid false sharing contention.</summary>
-            /// <remarks>Dequeueing happens from the head, enqueueing happens at the tail.</remarks>
+            /// <remarks>Dequeuing happens from the head, enqueuing happens at the tail.</remarks>
             internal PaddedHeadAndTail _headAndTail; // mutable struct: do not make this readonly
 
             /// <summary>Indicates whether the segment has been marked such that dequeues don't overwrite the removed data.</summary>

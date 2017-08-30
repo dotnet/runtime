@@ -9586,7 +9586,7 @@ namespace System.Xml
 
         /// <summary>
         /// This method should be called every time the reader is about to consume some number of
-        ///   characters from the input. It will count it agains the security counters and
+        ///   characters from the input. It will count it against the security counters and
         ///   may throw if some of the security limits are exceeded.
         /// </summary>
         /// <param name="characters">Number of characters to be consumed.</param>

@@ -10,7 +10,7 @@ namespace System.Globalization.Tests
     /// <summary>
     /// contained in Data\Unicode_Win7\IdnaTest_Win7.txt
     ///
-    /// The structure of the data set is a semicolon deliminated list with the following columns:
+    /// The structure of the data set is a semicolon delimited list with the following columns:
     ///
     /// Column 1: type - T for transitional, N for nontransitional, B for both
     /// Column 2: source - the source string to be tested

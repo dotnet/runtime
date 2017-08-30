@@ -699,7 +699,7 @@ namespace System.Data
         internal void BindExpression() => DataExpression.Bind(_table);
 
         /// <summary>
-        /// Gets or sets the expresssion used to either filter rows, calculate the column's
+        /// Gets or sets the expression used to either filter rows, calculate the column's
         /// value, or create an aggregate column.
         /// </summary>
         [RefreshProperties(RefreshProperties.All)]

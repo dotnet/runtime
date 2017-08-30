@@ -118,7 +118,7 @@ namespace System.ComponentModel
         ///    }
         ///    </code>
         ///    <para>
-        ///    For base classes, you should never override the Finalier (~Class in C#)
+        ///    For base classes, you should never override the Finalizer (~Class in C#)
         ///    or the Dispose method that takes no arguments, rather you should
         ///    always override the Dispose method that takes a bool. 
         ///    </para>

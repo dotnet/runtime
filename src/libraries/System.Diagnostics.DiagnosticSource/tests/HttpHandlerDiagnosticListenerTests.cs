@@ -453,7 +453,7 @@ namespace System.Diagnostics.Tests
         }
 
         /// <summary>
-        /// EventObserverAndRecorder is an observer that watches all Http diagnosticlistener events flowing
+        /// EventObserverAndRecorder is an observer that watches all Http diagnostic listener events flowing
         /// through, and record all of them
         /// </summary>
         private class EventObserverAndRecorder : IObserver<KeyValuePair<string, object>>, IDisposable

@@ -1566,7 +1566,7 @@ namespace System.ComponentModel
         ///     type description provider for the instance's type the delegator
         ///     would pick up the new type.  If a query is being made that does
         ///     not involve publicly exposing the type description provider for
-        ///     the instance, the query should pass in fase (the default) for
+        ///     the instance, the query should pass in false (the default) for
         ///     createDelegator because no object will be created.
         /// </summary>
         private static TypeDescriptionNode NodeFor(object instance, bool createDelegator)
