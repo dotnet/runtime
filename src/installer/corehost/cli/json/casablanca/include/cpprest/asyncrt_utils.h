@@ -40,9 +40,6 @@
 
 #ifndef _WIN32
 #include <sys/time.h>
-#ifdef __GLIBC__
-#include <xlocale.h>
-#endif
 #endif
 
 /// Various utilities for string conversions and date and time manipulation.
