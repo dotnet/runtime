@@ -123,7 +123,12 @@ case $OSName in
 esac
 
 function xunit_output_begin {
-    xunitOutputPath=$testRootDir/coreclrtests.xml
+    if [ -z "$xunitOutputPath" ]; then
+        xunitOutputPath=$testRootDir/coreclrtests.xml
+    fi
+    if ! [ -e $(basename "$xunitOutputPath") ]; then
+        xunitOutputPath=$testRootDir/coreclrtests.xml
+    fi
     xunitTestOutputPath=${xunitOutputPath}.test
     if [ -e "$xunitOutputPath" ]; then
         rm -f -r "$xunitOutputPath"
