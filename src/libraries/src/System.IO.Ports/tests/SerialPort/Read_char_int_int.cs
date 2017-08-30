@@ -434,7 +434,7 @@ namespace System.IO.Ports.Tests
                 char[] charXmitBuffer = TCSupport.GetRandomChars(1023, TCSupport.CharacterOptions.ASCII);
                 int readResult;
 
-                Debug.WriteLine("Verifying that Read(char[], int, int) will compact data in the buffer buffer");
+                Debug.WriteLine("Verifying that Read(char[], int, int) will compact data in the buffer");
 
                 com1.Encoding = Encoding.ASCII;
                 com2.Encoding = Encoding.ASCII;

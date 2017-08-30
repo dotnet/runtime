@@ -964,7 +964,7 @@ namespace System.Collections.Concurrent
                 Debug.Assert(
                     count == (_tailIndex - _headIndex) ||
                     count == (_tailIndex + 1 - _headIndex),
-                    "Count should be the same as tail - head, but allowing for the possibilty that " +
+                    "Count should be the same as tail - head, but allowing for the possibility that " +
                     "a peek decremented _tailIndex before seeing that a freeze was happening.");
                 Debug.Assert(arrayIndex <= array.Length - count);
 

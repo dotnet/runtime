@@ -42,7 +42,7 @@ namespace System.Xml.Xsl.Xslt
 
         public virtual void StartBuild()
         {
-            Debug.Assert(!_inTheBuild, "XPathBuilder is buisy!");
+            Debug.Assert(!_inTheBuild, "XPathBuilder is busy!");
             _inTheBuild = true;
             return;
         }

@@ -373,7 +373,7 @@ namespace System.IO.Ports.Tests
                 com1.BaseStream.ReadTimeout = readTimeout;
 
                 Assert.True(readTimeout == com1.BaseStream.ReadTimeout,
-                    string.Format("Err_7071ahpsb!!! Expected ReadTimeout to be {0} actaul {1}", readTimeout,
+                    string.Format("Err_7071ahpsb!!! Expected ReadTimeout to be {0} actual {1}", readTimeout,
                         com1.BaseStream.ReadTimeout));
 
                 VerifyLongTimeout(readMethod, com1, com2);
@@ -408,7 +408,7 @@ namespace System.IO.Ports.Tests
                 com1.BaseStream.ReadTimeout = readTimeout;
 
                 Assert.True(readTimeout == com1.BaseStream.ReadTimeout,
-                    string.Format("Err_236897ahpbm!!! Expected ReadTimeout to be {0} actaul {1}", readTimeout,
+                    string.Format("Err_236897ahpbm!!! Expected ReadTimeout to be {0} actual {1}", readTimeout,
                         com1.BaseStream.ReadTimeout));
 
                 VerifyTimeout(readMethod, com1.BaseStream);
@@ -477,7 +477,7 @@ namespace System.IO.Ports.Tests
                 com1.BaseStream.ReadTimeout = 0;
 
                 Assert.True(0 == com1.BaseStream.ReadTimeout,
-                    string.Format("Err_72072ahps!!! Expected ReadTimeout to be {0} actaul {1}", 0,
+                    string.Format("Err_72072ahps!!! Expected ReadTimeout to be {0} actual {1}", 0,
                         com1.BaseStream.ReadTimeout));
 
                 Verify0Timeout(readMethod, com1.BaseStream);
