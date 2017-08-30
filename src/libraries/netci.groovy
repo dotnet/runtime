@@ -22,7 +22,6 @@ def osGroupMap = ['Windows 7':'Windows_NT',
                   'Fedora24':'Linux',
                   'OSX10.12':'OSX',
                   'CentOS7.1': 'Linux',
-                  'OpenSUSE42.1': 'Linux',
                   'RHEL7.2': 'Linux',
                   'PortableLinux': 'Linux']
 
@@ -35,17 +34,16 @@ def osShortName = ['Windows 7' : 'win7',
                    'Fedora24' : 'fedora24',
                    'OSX10.12' : 'osx',
                    'CentOS7.1' : 'centos7.1',
-                   'OpenSUSE42.1' : 'opensuse42.1',
                    'RHEL7.2' : 'rhel7.2',
                    'PortableLinux' : 'portablelinux']
 
 def buildArchConfiguration = ['Debug': 'x86',
                               'Release': 'x64']
 
-def targetGroupOsMapOuterloop = ['netcoreapp': ['Windows 7', 'Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'CentOS7.1', 'OpenSUSE42.1',
+def targetGroupOsMapOuterloop = ['netcoreapp': ['Windows 7', 'Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'CentOS7.1',
                                         'RHEL7.2', 'Fedora24', 'Debian8.4', 'OSX10.12', 'PortableLinux']]
 
-def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'CentOS7.1', 'OpenSUSE42.1',
+def targetGroupOsMapInnerloop = ['netcoreapp': ['Windows_NT', 'Ubuntu14.04', 'Ubuntu16.04', 'Ubuntu16.10', 'CentOS7.1',
                                         'RHEL7.2', 'Fedora24', 'Debian8.4', 'OSX10.12', 'PortableLinux']]
 
 // **************************
