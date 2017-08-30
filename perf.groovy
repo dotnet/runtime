@@ -692,9 +692,6 @@ parallel(
                     def newJob = job(Utilities.getFullJobName(project, "perf_illink_${os}_${arch}_${opt_level}_${jit}", isPR)) {
 
                         def testEnv = ""
-
-                        // Set the label (currently we are only measuring size, therefore we are running on VM).
-                        label('20170427-elevated')
                         wrappers {
                             credentialsBinding {
                                 string('BV_UPLOAD_SAS_TOKEN', 'CoreCLR Perf BenchView Sas')
@@ -747,6 +744,8 @@ parallel(
                     archiveSettings.addFiles('bin/toArchive/**')
                     archiveSettings.addFiles('machinedata.json')
 
+                    // Set the label (currently we are only measuring size, therefore we are running on VM).
+                    Utilities.setMachineAffinity(newJob, "Windows_NT", '20170427-elevated')
                     Utilities.addArchival(newJob, archiveSettings)
                     Utilities.standardJobSetup(newJob, project, isPR, "*/${branch}")
 
