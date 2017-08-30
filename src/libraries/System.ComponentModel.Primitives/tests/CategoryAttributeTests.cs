@@ -27,6 +27,7 @@ namespace System.ComponentModel.Tests
 
         [Theory]
         [MemberData(nameof(Ctor_Category_TestData))]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Does not have the fix for https://github.com/dotnet/corefx/issues/21356")]
         public void Ctor_Category(string category, bool expectedIsDefaultAttribute)
         {
             var attribute = new CategoryAttribute(category);
