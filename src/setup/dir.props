@@ -276,14 +276,6 @@
         
   </PropertyGroup>
 
-  <!-- Disable some standard properties for building our projects -->
-  <PropertyGroup Condition="'$(UsingNETSdkCompiler)' != 'true'">
-    <NoStdLib>true</NoStdLib>
-    <NoExplicitReferenceToStdLib>true</NoExplicitReferenceToStdLib>
-    <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
-    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
-  </PropertyGroup>
-
   <!-- Set up handling of build warnings -->
   <PropertyGroup>
     <WarningLevel>4</WarningLevel>
@@ -394,6 +386,12 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(UsingNETSdkCompiler)' != 'true'">
+    <!-- Disable some standard properties for building our projects -->
+    <NoStdLib>true</NoStdLib>
+    <NoExplicitReferenceToStdLib>true</NoExplicitReferenceToStdLib>
+    <AddAdditionalExplicitAssemblyReferences>false</AddAdditionalExplicitAssemblyReferences>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+
     <!-- We don't use any of MSBuild's resolution logic for resolving the framework, so just set these two properties to any folder that exists to skip
          the GenerateReferenceAssemblyPaths task (not target) and to prevent it from outputting a warning (MSB3644). -->
     <_TargetFrameworkDirectories>$(MSBuildThisFileDirectory)documentation</_TargetFrameworkDirectories>
@@ -406,10 +404,9 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <!--
-    Never use the NuGet fallback folder that comes with the SDK we use to build. 
-    The NuGet fallback folder can/will contain packages we are building in this repo, and we
-    want to ensure we use the correct packages.
+    <!-- Never use the NuGet fallback folder that comes with the SDK we use to build. 
+         The NuGet fallback folder can/will contain packages we are building in this repo, and we
+         want to ensure we use the correct packages.
     -->
     <DisableImplicitNuGetFallbackFolder>true</DisableImplicitNuGetFallbackFolder>
   </PropertyGroup>
