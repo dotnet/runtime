@@ -666,6 +666,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
         case GT_NULLCHECK:
             // It requires a internal register on ARM, as it is implemented as a load
             assert(info->dstCount == 0);
+            assert(!tree->gtGetOp1()->isContained());
             info->srcCount         = 1;
             info->internalIntCount = 1;
             break;

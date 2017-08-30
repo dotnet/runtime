@@ -633,6 +633,7 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
             // Unlike ARM, ARM64 implements NULLCHECK as a load to REG_ZR, so no internal register
             // is required, and it is not a localDefUse.
             assert(info->dstCount == 0);
+            assert(!tree->gtGetOp1()->isContained());
             info->srcCount = 1;
             break;
 
