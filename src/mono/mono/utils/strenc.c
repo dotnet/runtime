@@ -90,8 +90,10 @@ mono_unicode_from_external (const gchar *in, gsize *bytes)
 	g_strfreev (encodings);
 	
 	if(g_utf8_validate (in, -1, NULL)) {
-		gunichar2 *unires=g_utf8_to_utf16 (in, -1, NULL, (glong *)bytes, NULL);
-		*bytes *= 2;
+		glong items_written;
+		gunichar2 *unires=g_utf8_to_utf16 (in, -1, NULL, &items_written, NULL);
+		items_written *= 2;
+		*bytes = items_written;
 		return(unires);
 	}
 
