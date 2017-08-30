@@ -36,7 +36,7 @@
 
   <Target Name="BatchRestorePackages" Condition="'$(RestoreDuringBuild)'=='true'">
     <Message Importance="High" Text="Restoring all packages..." />
-    <Exec Condition="'@(SdkRestoreProjects)' != ''" Command="$(DotnetRestoreCommand) &quot;%(SdkRestoreProjects.FullPath)&quot;" StandardOutputImportance="Low" />
+    <Exec Condition="'@(SdkRestoreProjects)' != ''" Command="$(DotnetRestoreCommand) &quot;%(SdkRestoreProjects.FullPath)&quot; $(MSBuildPassThroughPropertyList)" StandardOutputImportance="Low" />
   </Target>
 
   <Import Project="dir.targets" />
