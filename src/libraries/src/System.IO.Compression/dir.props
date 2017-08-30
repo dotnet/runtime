@@ -6,6 +6,5 @@
     <AssemblyKey>ECMA</AssemblyKey>
     <IsNETCoreApp>true</IsNETCoreApp>
     <IsUAP>true</IsUAP>
-    <IsNetFxNETStandard>true</IsNetFxNETStandard>
   </PropertyGroup>
 </Project>

@@ -43,6 +43,7 @@ namespace BasicEventSourceTests
         }
 
         [Fact]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, reason: "https://github.com/dotnet/corefx/issues/23661")]
         public void Test_Write_Metric_EventListener()
         {
             using (var listener = new EventListenerListener())
