@@ -311,6 +311,22 @@ namespace System.Drawing
                 GdipIsVisibleRegionRectI_ptr = LoadFunction<GdipIsVisibleRegionRectI_delegate>("GdipIsVisibleRegionRectI");
                 GdipGetRegionScansCount_ptr = LoadFunction<GdipGetRegionScansCount_delegate>("GdipGetRegionScansCount");
                 GdipGetRegionScans_ptr = LoadFunction<GdipGetRegionScans_delegate>("GdipGetRegionScans");
+                GdipSetClipGraphics_ptr = LoadFunction<GdipSetClipGraphics_delegate>("GdipSetClipGraphics");
+                GdipSetClipRect_ptr = LoadFunction<GdipSetClipRect_delegate>("GdipSetClipRect");
+                GdipSetClipRectI_ptr = LoadFunction<GdipSetClipRectI_delegate>("GdipSetClipRectI");
+                GdipSetClipPath_ptr = LoadFunction<GdipSetClipPath_delegate>("GdipSetClipPath");
+                GdipSetClipRegion_ptr = LoadFunction<GdipSetClipRegion_delegate>("GdipSetClipRegion");
+                GdipResetClip_ptr = LoadFunction<GdipResetClip_delegate>("GdipResetClip");
+                GdipTranslateClip_ptr = LoadFunction<GdipTranslateClip_delegate>("GdipTranslateClip");
+                GdipGetClip_ptr = LoadFunction<GdipGetClip_delegate>("GdipGetClip");
+                GdipGetClipBounds_ptr = LoadFunction<GdipGetClipBounds_delegate>("GdipGetClipBounds");
+                GdipIsClipEmpty_ptr = LoadFunction<GdipIsClipEmpty_delegate>("GdipIsClipEmpty");
+                GdipGetVisibleClipBounds_ptr = LoadFunction<GdipGetVisibleClipBounds_delegate>("GdipGetVisibleClipBounds");
+                GdipIsVisibleClipEmpty_ptr = LoadFunction<GdipIsVisibleClipEmpty_delegate>("GdipIsVisibleClipEmpty");
+                GdipIsVisiblePoint_ptr = LoadFunction<GdipIsVisiblePoint_delegate>("GdipIsVisiblePoint");
+                GdipIsVisiblePointI_ptr = LoadFunction<GdipIsVisiblePointI_delegate>("GdipIsVisiblePointI");
+                GdipIsVisibleRect_ptr = LoadFunction<GdipIsVisibleRect_delegate>("GdipIsVisibleRect");
+                GdipIsVisibleRectI_ptr = LoadFunction<GdipIsVisibleRectI_delegate>("GdipIsVisibleRectI");
             }
 
             // Shared function imports (all platforms)
@@ -1318,6 +1334,70 @@ namespace System.Drawing
             private delegate int GdipGetRegionScans_delegate(HandleRef region, IntPtr rects, out int count, HandleRef matrix);
             private static FunctionWrapper<GdipGetRegionScans_delegate> GdipGetRegionScans_ptr;
             internal static int GdipGetRegionScans(HandleRef region, IntPtr rects, out int count, HandleRef matrix) => GdipGetRegionScans_ptr.Delegate(region, rects, out count, matrix);
+
+            private delegate int GdipSetClipGraphics_delegate(HandleRef graphics, HandleRef srcgraphics, CombineMode mode);
+            private static FunctionWrapper<GdipSetClipGraphics_delegate> GdipSetClipGraphics_ptr;
+            internal static int GdipSetClipGraphics(HandleRef graphics, HandleRef srcgraphics, CombineMode mode) => GdipSetClipGraphics_ptr.Delegate(graphics, srcgraphics, mode);
+
+            private delegate int GdipSetClipRect_delegate(HandleRef graphics, float x, float y, float width, float height, CombineMode mode);
+            private static FunctionWrapper<GdipSetClipRect_delegate> GdipSetClipRect_ptr;
+            internal static int GdipSetClipRect(HandleRef graphics, float x, float y, float width, float height, CombineMode mode) => GdipSetClipRect_ptr.Delegate(graphics, x, y, width, height, mode);
+
+            private delegate int GdipSetClipRectI_delegate(HandleRef graphics, int x, int y, int width, int height, CombineMode mode);
+            private static FunctionWrapper<GdipSetClipRectI_delegate> GdipSetClipRectI_ptr;
+            internal static int GdipSetClipRectI(HandleRef graphics, int x, int y, int width, int height, CombineMode mode) => GdipSetClipRectI_ptr.Delegate(graphics, x, y, width, height, mode);
+
+            private delegate int GdipSetClipPath_delegate(HandleRef graphics, HandleRef path, CombineMode mode);
+            private static FunctionWrapper<GdipSetClipPath_delegate> GdipSetClipPath_ptr;
+            internal static int GdipSetClipPath(HandleRef graphics, HandleRef path, CombineMode mode) => GdipSetClipPath_ptr.Delegate(graphics, path, mode);
+
+            private delegate int GdipSetClipRegion_delegate(HandleRef graphics, HandleRef region, CombineMode mode);
+            private static FunctionWrapper<GdipSetClipRegion_delegate> GdipSetClipRegion_ptr;
+            internal static int GdipSetClipRegion(HandleRef graphics, HandleRef region, CombineMode mode) => GdipSetClipRegion_ptr.Delegate(graphics, region, mode);
+
+            private delegate int GdipResetClip_delegate(HandleRef graphics);
+            private static FunctionWrapper<GdipResetClip_delegate> GdipResetClip_ptr;
+            internal static int GdipResetClip(HandleRef graphics) => GdipResetClip_ptr.Delegate(graphics);
+
+            private delegate int GdipTranslateClip_delegate(HandleRef graphics, float dx, float dy);
+            private static FunctionWrapper<GdipTranslateClip_delegate> GdipTranslateClip_ptr;
+            internal static int GdipTranslateClip(HandleRef graphics, float dx, float dy) => GdipTranslateClip_ptr.Delegate(graphics, dx, dy);
+
+            private delegate int GdipGetClip_delegate(HandleRef graphics, HandleRef region);
+            private static FunctionWrapper<GdipGetClip_delegate> GdipGetClip_ptr;
+            internal static int GdipGetClip(HandleRef graphics, HandleRef region) => GdipGetClip_ptr.Delegate(graphics, region);
+
+            private delegate int GdipGetClipBounds_delegate(HandleRef graphics, ref GPRECTF rect);
+            private static FunctionWrapper<GdipGetClipBounds_delegate> GdipGetClipBounds_ptr;
+            internal static int GdipGetClipBounds(HandleRef graphics, ref GPRECTF rect) => GdipGetClipBounds_ptr.Delegate(graphics, ref rect);
+
+            private delegate int GdipIsClipEmpty_delegate(HandleRef graphics, out int boolean);
+            private static FunctionWrapper<GdipIsClipEmpty_delegate> GdipIsClipEmpty_ptr;
+            internal static int GdipIsClipEmpty(HandleRef graphics, out int boolean) => GdipIsClipEmpty_ptr.Delegate(graphics, out boolean);
+
+            private delegate int GdipGetVisibleClipBounds_delegate(HandleRef graphics, ref GPRECTF rect);
+            private static FunctionWrapper<GdipGetVisibleClipBounds_delegate> GdipGetVisibleClipBounds_ptr;
+            internal static int GdipGetVisibleClipBounds(HandleRef graphics, ref GPRECTF rect) => GdipGetVisibleClipBounds_ptr.Delegate(graphics, ref rect);
+
+            private delegate int GdipIsVisibleClipEmpty_delegate(HandleRef graphics, out int boolean);
+            private static FunctionWrapper<GdipIsVisibleClipEmpty_delegate> GdipIsVisibleClipEmpty_ptr;
+            internal static int GdipIsVisibleClipEmpty(HandleRef graphics, out int boolean) => GdipIsVisibleClipEmpty_ptr.Delegate(graphics, out boolean);
+
+            private delegate int GdipIsVisiblePoint_delegate(HandleRef graphics, float x, float y, out int boolean);
+            private static FunctionWrapper<GdipIsVisiblePoint_delegate> GdipIsVisiblePoint_ptr;
+            internal static int GdipIsVisiblePoint(HandleRef graphics, float x, float y, out int boolean) => GdipIsVisiblePoint_ptr.Delegate(graphics, x, y, out boolean);
+
+            private delegate int GdipIsVisiblePointI_delegate(HandleRef graphics, int x, int y, out int boolean);
+            private static FunctionWrapper<GdipIsVisiblePointI_delegate> GdipIsVisiblePointI_ptr;
+            internal static int GdipIsVisiblePointI(HandleRef graphics, int x, int y, out int boolean) => GdipIsVisiblePointI_ptr.Delegate(graphics, x, y, out boolean);
+
+            private delegate int GdipIsVisibleRect_delegate(HandleRef graphics, float x, float y, float width, float height, out int boolean);
+            private static FunctionWrapper<GdipIsVisibleRect_delegate> GdipIsVisibleRect_ptr;
+            internal static int GdipIsVisibleRect(HandleRef graphics, float x, float y, float width, float height, out int boolean) => GdipIsVisibleRect_ptr.Delegate(graphics, x, y, width, height, out boolean);
+
+            private delegate int GdipIsVisibleRectI_delegate(HandleRef graphics, int x, int y, int width, int height, out int boolean);
+            private static FunctionWrapper<GdipIsVisibleRectI_delegate> GdipIsVisibleRectI_ptr;
+            internal static int GdipIsVisibleRectI(HandleRef graphics, int x, int y, int width, int height, out int boolean) => GdipIsVisibleRectI_ptr.Delegate(graphics, x, y, width, height, out boolean);
         }
 
         [StructLayout(LayoutKind.Sequential)]
