@@ -14743,11 +14743,26 @@ void Compiler::gtCheckQuirkAddrExposedLclVar(GenTreePtr tree, GenTreeStack* pare
 #endif
 }
 
-// Checks to see if we're allowed to optimize Type::op_Equality or Type::op_Inequality on this operand.
-// We're allowed to convert to GT_EQ/GT_NE if one of the operands is:
-//  1) The result of Object::GetType
-//  2) The result of typeof(...)
-//  3) a local variable of type RuntimeType.
+//------------------------------------------------------------------------
+// gtCanOptimizeTypeEquality: check if tree is a suitable input for a type
+//    equality optimization
+//
+// Arguments:
+//    tree - tree to examine
+//
+// Return Value:
+//    True, if value of tree can be used to optimize type equality tests
+//
+// Notes:
+//    Checks to see if the jit is able to optimize Type::op_Equality or
+//    Type::op_Inequality calls that consume this tree.
+//
+//    The jit can safely convert these methods to GT_EQ/GT_NE if one of
+//    the operands is:
+//    1) The result of Object::GetType
+//    2) The result of typeof(...)
+//    3) Is otherwise known to have type RuntimeType
+
 bool Compiler::gtCanOptimizeTypeEquality(GenTreePtr tree)
 {
     if (tree->gtOper == GT_CALL)
@@ -14771,15 +14786,15 @@ bool Compiler::gtCanOptimizeTypeEquality(GenTreePtr tree)
     {
         return true;
     }
-    else if (tree->gtOper == GT_LCL_VAR)
+    else
     {
-        LclVarDsc* lcl = &(lvaTable[tree->gtLclVarCommon.gtLclNum]);
-        if (lcl->TypeGet() == TYP_REF)
+        bool                 isExact   = false;
+        bool                 isNonNull = false;
+        CORINFO_CLASS_HANDLE clsHnd    = gtGetClassHandle(tree, &isExact, &isNonNull);
+
+        if (clsHnd == info.compCompHnd->getBuiltinClass(CLASSID_RUNTIME_TYPE))
         {
-            if (lcl->lvVerTypeInfo.GetClassHandle() == info.compCompHnd->getBuiltinClass(CLASSID_RUNTIME_TYPE))
-            {
-                return true;
-            }
+            return true;
         }
     }
     return false;
