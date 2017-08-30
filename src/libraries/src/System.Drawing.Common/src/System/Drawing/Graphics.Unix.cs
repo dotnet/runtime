@@ -1449,21 +1449,6 @@ namespace System.Drawing
             throw new NotImplementedException();
         }
 
-        public void ExcludeClip(Rectangle rect)
-        {
-            Status status = SafeNativeMethods.Gdip.GdipSetClipRectI(nativeObject, rect.X, rect.Y, rect.Width, rect.Height, CombineMode.Exclude);
-            SafeNativeMethods.Gdip.CheckStatus(status);
-        }
-
-        public void ExcludeClip(Region region)
-        {
-            if (region == null)
-                throw new ArgumentNullException("region");
-            Status status = SafeNativeMethods.Gdip.GdipSetClipRegion(nativeObject, region._nativeRegion, CombineMode.Exclude);
-            SafeNativeMethods.Gdip.CheckStatus(status);
-        }
-
-
         public void FillClosedCurve(Brush brush, PointF[] points)
         {
             if (brush == null)
@@ -1846,90 +1831,6 @@ namespace System.Drawing
             return Color.FromArgb(argb);
         }
 
-
-        public void IntersectClip(Region region)
-        {
-            if (region == null)
-                throw new ArgumentNullException("region");
-            Status status = SafeNativeMethods.Gdip.GdipSetClipRegion(nativeObject, region._nativeRegion, CombineMode.Intersect);
-            SafeNativeMethods.Gdip.CheckStatus(status);
-        }
-
-        public void IntersectClip(RectangleF rect)
-        {
-            Status status = SafeNativeMethods.Gdip.GdipSetClipRect(nativeObject, rect.X, rect.Y, rect.Width, rect.Height, CombineMode.Intersect);
-            SafeNativeMethods.Gdip.CheckStatus(status);
-        }
-
-        public void IntersectClip(Rectangle rect)
-        {
-            Status status = SafeNativeMethods.Gdip.GdipSetClipRectI(nativeObject, rect.X, rect.Y, rect.Width, rect.Height, CombineMode.Intersect);
-            SafeNativeMethods.Gdip.CheckStatus(status);
-        }
-
-        public bool IsVisible(Point point)
-        {
-            bool isVisible = false;
-
-            Status status = SafeNativeMethods.Gdip.GdipIsVisiblePointI(nativeObject, point.X, point.Y, out isVisible);
-            SafeNativeMethods.Gdip.CheckStatus(status);
-
-            return isVisible;
-        }
-
-
-        public bool IsVisible(RectangleF rect)
-        {
-            bool isVisible = false;
-
-            Status status = SafeNativeMethods.Gdip.GdipIsVisibleRect(nativeObject, rect.X, rect.Y, rect.Width, rect.Height, out isVisible);
-            SafeNativeMethods.Gdip.CheckStatus(status);
-
-            return isVisible;
-        }
-
-        public bool IsVisible(PointF point)
-        {
-            bool isVisible = false;
-
-            Status status = SafeNativeMethods.Gdip.GdipIsVisiblePoint(nativeObject, point.X, point.Y, out isVisible);
-            SafeNativeMethods.Gdip.CheckStatus(status);
-
-            return isVisible;
-        }
-
-        public bool IsVisible(Rectangle rect)
-        {
-            bool isVisible = false;
-
-            Status status = SafeNativeMethods.Gdip.GdipIsVisibleRectI(nativeObject, rect.X, rect.Y, rect.Width, rect.Height, out isVisible);
-            SafeNativeMethods.Gdip.CheckStatus(status);
-
-            return isVisible;
-        }
-
-        public bool IsVisible(float x, float y)
-        {
-            return IsVisible(new PointF(x, y));
-        }
-
-        public bool IsVisible(int x, int y)
-        {
-            return IsVisible(new Point(x, y));
-        }
-
-        public bool IsVisible(float x, float y, float width, float height)
-        {
-            return IsVisible(new RectangleF(x, y, width, height));
-        }
-
-
-        public bool IsVisible(int x, int y, int width, int height)
-        {
-            return IsVisible(new Rectangle(x, y, width, height));
-        }
-
-
         public Region[] MeasureCharacterRanges(string text, Font font, RectangleF layoutRect, StringFormat stringFormat)
         {
             if ((text == null) || (text.Length == 0))
@@ -2070,12 +1971,6 @@ namespace System.Drawing
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
-        public void ResetClip()
-        {
-            Status status = SafeNativeMethods.Gdip.GdipResetClip(nativeObject);
-            SafeNativeMethods.Gdip.CheckStatus(status);
-        }
-
         public void Restore(GraphicsState gstate)
         {
             // the possible NRE thrown by gstate.nativeState match MS behaviour
@@ -2091,71 +1986,6 @@ namespace System.Drawing
 
             GraphicsState state = new GraphicsState((int)saveState);
             return state;
-        }
-
-        public void SetClip(RectangleF rect)
-        {
-            SetClip(rect, CombineMode.Replace);
-        }
-
-
-        public void SetClip(GraphicsPath path)
-        {
-            SetClip(path, CombineMode.Replace);
-        }
-
-
-        public void SetClip(Rectangle rect)
-        {
-            SetClip(rect, CombineMode.Replace);
-        }
-
-
-        public void SetClip(Graphics g)
-        {
-            SetClip(g, CombineMode.Replace);
-        }
-
-
-        public void SetClip(Graphics g, CombineMode combineMode)
-        {
-            if (g == null)
-                throw new ArgumentNullException("g");
-
-            Status status = SafeNativeMethods.Gdip.GdipSetClipGraphics(nativeObject, g.NativeObject, combineMode);
-            SafeNativeMethods.Gdip.CheckStatus(status);
-        }
-
-
-        public void SetClip(Rectangle rect, CombineMode combineMode)
-        {
-            Status status = SafeNativeMethods.Gdip.GdipSetClipRectI(nativeObject, rect.X, rect.Y, rect.Width, rect.Height, combineMode);
-            SafeNativeMethods.Gdip.CheckStatus(status);
-        }
-
-
-        public void SetClip(RectangleF rect, CombineMode combineMode)
-        {
-            Status status = SafeNativeMethods.Gdip.GdipSetClipRect(nativeObject, rect.X, rect.Y, rect.Width, rect.Height, combineMode);
-            SafeNativeMethods.Gdip.CheckStatus(status);
-        }
-
-
-        public void SetClip(Region region, CombineMode combineMode)
-        {
-            if (region == null)
-                throw new ArgumentNullException("region");
-            Status status = SafeNativeMethods.Gdip.GdipSetClipRegion(nativeObject, region._nativeRegion, combineMode);
-            SafeNativeMethods.Gdip.CheckStatus(status);
-        }
-
-
-        public void SetClip(GraphicsPath path, CombineMode combineMode)
-        {
-            if (path == null)
-                throw new ArgumentNullException("path");
-            Status status = SafeNativeMethods.Gdip.GdipSetClipPath(nativeObject, path.nativePath, combineMode);
-            SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
 
@@ -2183,46 +2013,6 @@ namespace System.Drawing
             SafeNativeMethods.Gdip.CheckStatus(status);
 
             GDIPlus.FromUnManagedMemoryToPointI(ptrPt, pts);
-        }
-
-
-        public void TranslateClip(int dx, int dy)
-        {
-            Status status = SafeNativeMethods.Gdip.GdipTranslateClipI(nativeObject, dx, dy);
-            SafeNativeMethods.Gdip.CheckStatus(status);
-        }
-
-
-        public void TranslateClip(float dx, float dy)
-        {
-            Status status = SafeNativeMethods.Gdip.GdipTranslateClip(nativeObject, dx, dy);
-            SafeNativeMethods.Gdip.CheckStatus(status);
-        }
-
-        public Region Clip
-        {
-            get
-            {
-                Region reg = new Region();
-                Status status = SafeNativeMethods.Gdip.GdipGetClip(nativeObject, reg._nativeRegion);
-                SafeNativeMethods.Gdip.CheckStatus(status);
-                return reg;
-            }
-            set
-            {
-                SetClip(value, CombineMode.Replace);
-            }
-        }
-
-        public RectangleF ClipBounds
-        {
-            get
-            {
-                RectangleF rect = new RectangleF();
-                Status status = SafeNativeMethods.Gdip.GdipGetClipBounds(nativeObject, out rect);
-                SafeNativeMethods.Gdip.CheckStatus(status);
-                return rect;
-            }
         }
 
         public CompositingMode CompositingMode
@@ -2297,30 +2087,6 @@ namespace System.Drawing
             {
                 Status status = SafeNativeMethods.Gdip.GdipSetInterpolationMode(nativeObject, value);
                 SafeNativeMethods.Gdip.CheckStatus(status);
-            }
-        }
-
-        public bool IsClipEmpty
-        {
-            get
-            {
-                bool isEmpty = false;
-
-                Status status = SafeNativeMethods.Gdip.GdipIsClipEmpty(nativeObject, out isEmpty);
-                SafeNativeMethods.Gdip.CheckStatus(status);
-                return isEmpty;
-            }
-        }
-
-        public bool IsVisibleClipEmpty
-        {
-            get
-            {
-                bool isEmpty = false;
-
-                Status status = SafeNativeMethods.Gdip.GdipIsVisibleClipEmpty(nativeObject, out isEmpty);
-                SafeNativeMethods.Gdip.CheckStatus(status);
-                return isEmpty;
             }
         }
 
@@ -2452,11 +2218,11 @@ namespace System.Drawing
         {
             get
             {
-                RectangleF rect;
-
-                Status status = SafeNativeMethods.Gdip.GdipGetVisibleClipBounds(nativeObject, out rect);
+                var rect = new GPRECTF();
+                int status = SafeNativeMethods.Gdip.GdipGetVisibleClipBounds(new HandleRef(this, NativeGraphics), ref rect);
                 SafeNativeMethods.Gdip.CheckStatus(status);
-                return rect;
+
+                return rect.ToRectangleF();
             }
         }
 
