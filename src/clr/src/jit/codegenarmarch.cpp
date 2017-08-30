@@ -1268,7 +1268,7 @@ void CodeGen::genCodeForNullCheck(GenTreeOp* tree)
 #ifdef _TARGET_ARM64_
     regNumber targetReg = REG_ZR;
 #else
-    regNumber targetReg = tree->gtRegNum;
+    regNumber targetReg = tree->GetSingleTempReg();
 #endif
 
     getEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, targetReg, addrReg, 0);
