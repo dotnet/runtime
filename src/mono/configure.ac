@@ -117,8 +117,8 @@ host_darwin=no
 
 
 if test "x$enable_wasm" = "xyes"; then
-CFLAGS="$CFLAGS -D_REENTRANT -D_GNU_SOURCE -DNO_UNALIGNED_ACCESS -s WASM=1 -DWASM -Os"
-CPPFLAGS="$CPPFLAGS -D_REENTRANT -DUSE_MMAP -D_GNU_SOURCE -DNO_UNALIGNED_ACCESS -s WASM=1 -DWASM -Os"
+CFLAGS="$CFLAGS -D_REENTRANT -D_GNU_SOURCE -DNO_UNALIGNED_ACCESS -s WASM=1"
+CPPFLAGS="$CPPFLAGS -D_REENTRANT -DUSE_MMAP -D_GNU_SOURCE -DNO_UNALIGNED_ACCESS -s WASM=1"
 libdl="-ldl"
 libgc_threads=pthreads
 
@@ -555,7 +555,18 @@ AC_CHECK_FUNCS(_finite, , AC_MSG_CHECKING(for _finite in math.h)
 AC_CHECK_HEADERS(linux/magic.h)
 
 # not 64 bit clean in cross-compile
-AC_CHECK_SIZEOF(void *, 4)
+if test "x$enable_wasm" = "xyes"; then
+AC_DEFINE(SIZEOF_VOID_P,4)
+AC_DEFINE(SIZEOF_LONG,4)
+ac_cv_sizeof_void_p="4"
+ac_cv_sizeof_long="4"
+else
+AC_CHECK_SIZEOF(void *)
+AC_CHECK_SIZEOF(long)
+fi
+
+AC_CHECK_SIZEOF(int)
+AC_CHECK_SIZEOF(long long)
 
 AC_CACHE_CHECK([for clang],
 	mono_cv_clang,[
@@ -3065,6 +3076,7 @@ TARGET=WASM
 HOST=WASM
 arch_target=wasm
 AC_DEFINE(TARGET_WASM, 1, [Target wasm])
+AC_DEFINE(HOST_WASM, 1, [Host wasm])
 BTLS_SUPPORTED=no
 with_tls=pthread
 target_mach=no
@@ -3750,10 +3762,6 @@ AC_SUBST(PIDTYPE)
 AC_DEFINE(HAVE_CLASSIC_WINAPI_SUPPORT, 1, [Use classic Windows API support])
 AC_DEFINE(HAVE_UWP_WINAPI_SUPPORT, 0, [Don't use UWP Windows API support])
 
-AC_CHECK_SIZEOF(int)
-AC_CHECK_SIZEOF(void *)
-AC_CHECK_SIZEOF(long)
-AC_CHECK_SIZEOF(long long)
 AC_CHECK_FUNCS(strlcpy stpcpy strtok_r rewinddir vasprintf strerror_r)
 AC_CHECK_FUNCS(getrlimit)
 AC_CHECK_FUNCS(fork execv execve)
