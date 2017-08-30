@@ -167,6 +167,7 @@ void genCodeForShiftRMW(GenTreeStoreInd* storeInd);
 
 void genCodeForCast(GenTreeOp* tree);
 void genCodeForLclAddr(GenTree* tree);
+void genCodeForIndexAddr(GenTreeIndexAddr* tree);
 void genCodeForIndir(GenTreeIndir* tree);
 void genCodeForNegNot(GenTree* tree);
 void genCodeForLclVar(GenTreeLclVar* tree);
