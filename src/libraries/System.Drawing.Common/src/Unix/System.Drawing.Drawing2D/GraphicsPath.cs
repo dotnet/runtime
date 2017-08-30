@@ -644,7 +644,7 @@ namespace System.Drawing.Drawing2D
             if (family == null)
                 throw new ArgumentException("family");
 
-            IntPtr sformat = (format == null) ? IntPtr.Zero : format.NativeObject;
+            IntPtr sformat = (format == null) ? IntPtr.Zero : format.nativeFormat;
             // note: the NullReferenceException on s.Length is the expected (MS) exception
             Status status = SafeNativeMethods.Gdip.GdipAddPathStringI(nativePath, s, s.Length, family.NativeFamily, style, emSize, ref layoutRect, sformat);
             SafeNativeMethods.Gdip.CheckStatus(status);
@@ -656,7 +656,7 @@ namespace System.Drawing.Drawing2D
             if (family == null)
                 throw new ArgumentException("family");
 
-            IntPtr sformat = (format == null) ? IntPtr.Zero : format.NativeObject;
+            IntPtr sformat = (format == null) ? IntPtr.Zero : format.nativeFormat;
             // note: the NullReferenceException on s.Length is the expected (MS) exception
             Status status = SafeNativeMethods.Gdip.GdipAddPathString(nativePath, s, s.Length, family.NativeFamily, style, emSize, ref layoutRect, sformat);
             SafeNativeMethods.Gdip.CheckStatus(status);
