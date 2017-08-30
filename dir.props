@@ -415,7 +415,7 @@
     <!-- These properties should be passed through to new msbuild instances (like 'dotnet build') 
          in order to get the correct output directories in the child project.
     -->
-    <MSBuildPassThroughPropertyList>/p:OSGroup=$(OSGroup) /p:Architecture=$(Architecture) /p:DistroRid=$(DistroRid) /p:TargetArchitecture=$(TargetArchitecture) /p:ConfigurationGroup=$(ConfigurationGroup)</MSBuildPassThroughPropertyList>
+    <MSBuildPassThroughPropertyList>/p:OSGroup=$(OSGroup) /p:Architecture=$(Architecture) /p:DistroRid=$(DistroRid) /p:PortableBuild=$(PortableBuild) /p:TargetArchitecture=$(TargetArchitecture) /p:ConfigurationGroup=$(ConfigurationGroup)</MSBuildPassThroughPropertyList>
   </PropertyGroup>
 
   <!-- Use Roslyn Compilers to build, if we are not using the .NET SDK to build --> 
