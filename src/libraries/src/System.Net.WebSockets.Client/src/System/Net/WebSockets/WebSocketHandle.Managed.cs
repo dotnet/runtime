@@ -21,7 +21,7 @@ namespace System.Net.WebSockets
         [ThreadStatic]
         private static StringBuilder t_cachedStringBuilder;
 
-        /// <summary>Default encoding for HTTP requests. Latin alphabeta no 1, ISO/IEC 8859-1.</summary>
+        /// <summary>Default encoding for HTTP requests. Latin alphabet no 1, ISO/IEC 8859-1.</summary>
         private static readonly Encoding s_defaultHttpEncoding = Encoding.GetEncoding(28591);
 
         /// <summary>Size of the receive buffer to use.</summary>

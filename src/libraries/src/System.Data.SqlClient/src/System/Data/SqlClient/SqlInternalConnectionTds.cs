@@ -644,7 +644,7 @@ namespace System.Data.SqlClient
         /// <para>
         /// When using Implicit transaction unbinding,
         /// verify that the enlisted transaction is active.
-        /// If it is not active, and the transaction object has been diposed, unbind from the transaction.
+        /// If it is not active, and the transaction object has been disposed, unbind from the transaction.
         /// If it is not active and not disposed, throw an exception.
         /// </para>
         /// </remarks>

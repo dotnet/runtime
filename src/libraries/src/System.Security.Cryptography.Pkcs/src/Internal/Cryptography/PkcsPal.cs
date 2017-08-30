@@ -70,7 +70,7 @@ namespace Internal.Cryptography
         public abstract Exception CreateDecryptAfterEncryptException();
 
         /// <summary>
-        /// If you call Decrupt() after a Decrypt(), the framework throws CryptographicException(CRYPT_E_INVALID_MSG_TYPE) on Windows.
+        /// If you call Decrypt() after a Encrypt(), the framework throws CryptographicException(CRYPT_E_INVALID_MSG_TYPE) on Windows.
         /// This method encapsulates what other OS's decide to throw in this situation.
         /// </summary>
         public abstract Exception CreateDecryptTwiceException();

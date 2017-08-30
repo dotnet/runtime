@@ -107,7 +107,7 @@ namespace System.Drawing.Imaging
         }
 
         /// <summary>
-        /// Specifies the Exchangable Image Format (EXIF).
+        /// Specifies the Exchangeable Image Format (EXIF).
         /// </summary>
         public static ImageFormat Exif
         {

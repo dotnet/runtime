@@ -131,7 +131,7 @@ namespace XmlCoreTest.Common
         /// <param name="Baseline"></param>
         /// <param name="baselineStartLine">The line to start comparison in the baseline file</param>
         /// <param name="OutFile"></param>
-        /// <param name="outFileStartLine">The line to start comparion in the output file</param>
+        /// <param name="outFileStartLine">The line to start comparison in the output file</param>
         /// <param name="driverVersion"></param>
         /// <param name="logger"></param>
         /// <returns></returns>

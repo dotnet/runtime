@@ -903,7 +903,7 @@ namespace System.Security.Cryptography.Xml
         ///     keyed hash algorithm
         /// </summary>
         /// <param name="signedXml">SignedXml object doing the verification</param>
-        /// <param name="mac">hash algoirthm doing the verification</param>
+        /// <param name="mac">hash algorithm doing the verification</param>
         /// <param name="actualHashValue">hash value of the signed info</param>
         /// <param name="signatureValue">raw signature value</param>
         internal static void LogVerifySignedInfo(SignedXml signedXml,

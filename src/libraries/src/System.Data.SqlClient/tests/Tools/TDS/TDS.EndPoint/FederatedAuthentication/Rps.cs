@@ -14,7 +14,7 @@ namespace Microsoft.SqlServer.TDS.EndPoint.FederatedAuthentication
     internal class RPS
     {
         /// <summary>
-        /// Instance of the dynamially loaded RPS assembly from Microsoft.Passport.RPS
+        /// Instance of the dynamically loaded RPS assembly from Microsoft.Passport.RPS
         /// </summary>
         private Assembly _rpsAssembly = null;
 

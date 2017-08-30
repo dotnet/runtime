@@ -717,7 +717,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         }
 
         /// <summary>
-        /// Expected: QName of the of the context node.
+        /// Expected: QName of the context node.
         /// name() (with prefix, element node)
         /// </summary>
         [Fact]
@@ -736,7 +736,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         }
 
         /// <summary>
-        /// Expected: QName of the of the context node.
+        /// Expected: QName of the context node.
         /// name() (with prefix, attribute node)
         /// </summary>
         [Fact]
@@ -793,7 +793,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         }
 
         /// <summary>
-        /// Expected: QName of the of the context node.
+        /// Expected: QName of the context node.
         /// local-name() (with prefix, element node)
         /// </summary>
         [Fact]
@@ -812,7 +812,7 @@ namespace XPathTests.FunctionalTests.CoreFunctionLibrary
         }
 
         /// <summary>
-        /// Expected: QName of the of the context node.
+        /// Expected: QName of the context node.
         /// local-name() (with prefix, attribute node)
         /// </summary>
         [Fact]

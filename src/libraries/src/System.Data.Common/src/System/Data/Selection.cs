@@ -439,7 +439,7 @@ namespace System.Data
         /// <summary>
         /// When searching by value for a specific record, the DataRow may require backdating to reflect the appropriate state
         /// otherwise on Delete of a DataRow in the Added state, would result in the <see cref="System.Comparison&lt;DataRow&gt;"/> where the row
-        /// reflection record would be in the Detatched instead of Added state.
+        /// reflection record would be in the Detached instead of Added state.
         /// </summary>
         private int GetIndex(int record, int changeRecord)
         {

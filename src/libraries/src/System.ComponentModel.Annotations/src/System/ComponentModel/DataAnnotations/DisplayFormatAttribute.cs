@@ -44,7 +44,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     </para>
         /// </remarks>
         /// <value>
-        ///     The null dispay text is generally used as placeholder when the value is not specified.
+        ///     The null display text is generally used as placeholder when the value is not specified.
         ///     A <c>null</c> or empty string is legal, and consumers must allow for that.
         /// </value>
         public string NullDisplayText
