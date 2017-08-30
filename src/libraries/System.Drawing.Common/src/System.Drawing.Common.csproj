@@ -44,12 +44,14 @@
     <Compile Include="System\Drawing\BitmapSuffixInSameAssemblyAttribute.cs" />
     <Compile Include="System\Drawing\BitmapSuffixInSatelliteAssemblyAttribute.cs" />
     <Compile Include="System\Drawing\Brushes.cs" />
+    <Compile Include="System\Drawing\CharacterRange.cs" />
     <Compile Include="System\Drawing\IDeviceContext.cs" />
     <Compile Include="System\Drawing\GdiplusNative.cs" />
     <Compile Include="System\Drawing\Graphics.cs" />
     <Compile Include="System\Drawing\Pen.cs" />
     <Compile Include="System\Drawing\Pens.cs" />
     <Compile Include="System\Drawing\RotateFlipType.cs" />
+    <Compile Include="System\Drawing\StringFormat.cs" />
     <Compile Include="System\Drawing\SystemFonts.cs" />
     <Compile Include="System\Drawing\SystemPens.cs" />
     <Compile Include="System\Drawing\Printing\PrinterUnit.cs" />
@@ -236,7 +238,6 @@
     <Compile Include="System\Drawing\Printing\PrintPreviewGraphics.cs" />
     <Compile Include="System\Drawing\Printing\TriState.cs" />
     <Compile Include="System\Drawing\Region.Windows.cs" />
-    <Compile Include="System\Drawing\StringFormat.cs" />
     <Compile Include="System\Drawing\SystemColors.cs" />
     <Compile Include="System\Drawing\SystemFonts.Windows.cs" />
     <Compile Include="System\Drawing\SystemIcons.cs" />
@@ -290,7 +291,6 @@
     <Compile Include="Unix\System.Drawing\BufferedGraphics.cs" />
     <Compile Include="Unix\System.Drawing\BufferedGraphicsManager.cs" />
     <Compile Include="Unix\System.Drawing\BufferedGraphicsContext.cs" />
-    <Compile Include="Unix\System.Drawing\CharacterRange.cs" />
     <Compile Include="Unix\System.Drawing\macFunctions.cs" />
     <Compile Include="Unix\System.Drawing\ColorTranslator.cs" />
     <Compile Include="Unix\System.Drawing\ComIStreamMarshaler.cs" />
@@ -310,7 +310,6 @@
     <Compile Include="System\Drawing\Pen.Unix.cs" />
     <Compile Include="System\Drawing\Region.Unix.cs" />
     <Compile Include="Unix\System.Drawing\SRDescriptionAttribute.cs" />
-    <Compile Include="Unix\System.Drawing\StringFormat.cs" />
     <Compile Include="Unix\System.Drawing\SystemColors.cs" />
     <Compile Include="Unix\System.Drawing\SystemIcons.cs" />
     <Compile Include="Unix\System.Drawing\ToolboxBitmapAttribute.cs" />
