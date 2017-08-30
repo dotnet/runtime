@@ -514,9 +514,7 @@ namespace System.Net.Security
             {
                 return minSize;
             }
-
-            ResetReadBuffer();
-
+                        
             int bytesRead;
             if (asyncRequest != null)
             {
@@ -546,11 +544,7 @@ namespace System.Net.Security
             _internalOffset += byteCount;
             _internalBufferCount -= byteCount;
 
-            if (_internalBufferCount == 0)
-            {
-                // No remaining buffered bytes, so reset the offset to the beginning for the next read.
-                _internalOffset = 0;
-            }
+            ReturnReadBufferIfEmpty();
         }
 
         private int CopyDecryptedData(byte[] buffer, int offset, int count)
@@ -663,6 +657,7 @@ namespace System.Net.Security
 
         private int StartFrameHeader(byte[] buffer, int offset, int count, AsyncProtocolRequest asyncRequest)
         {
+            ResetReadBuffer();
             int readBytes = EnsureBufferedBytes(SecureChannel.ReadHeaderSize, asyncRequest, s_readHeaderCallback);
             if (readBytes == -1)
             {
