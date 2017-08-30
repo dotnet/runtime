@@ -1767,7 +1767,7 @@ namespace System.Data
 
         internal object ConvertXmlToObject(string s)
         {
-            Debug.Assert(s != null, "Caller is resposible for missing element/attribure case");
+            Debug.Assert(s != null, "Caller is resposible for missing element/attribute case");
             InsureStorage();
             return _storage.ConvertXmlToObject(s);
         }

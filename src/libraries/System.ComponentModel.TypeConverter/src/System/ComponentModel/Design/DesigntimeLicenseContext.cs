@@ -76,7 +76,7 @@ namespace System.ComponentModel.Design
         {
             if (savedLicenseKeys == null || savedLicenseKeys[type.AssemblyQualifiedName] == null)
             {
-                Debug.WriteLineIf(s_runtimeLicenseContextSwitch.TraceVerbose, "savedLicenseKey is null or doesnt contain our type");
+                Debug.WriteLineIf(s_runtimeLicenseContextSwitch.TraceVerbose, "savedLicenseKey is null or doesn't contain our type");
                 if (savedLicenseKeys == null)
                 {
                     savedLicenseKeys = new Hashtable();
