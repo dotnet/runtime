@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using Xunit;
 
 namespace System.Tests
@@ -198,6 +199,53 @@ namespace System.Tests
 
                 yield return new object[] { theT };
             }
+        }
+
+        [Theory]
+        [MemberData(nameof(IsByRefLikeTestData))]
+        public static void TestIsByRefLike(Type type, bool expected)
+        {
+            Assert.Equal(expected, type.IsByRefLike);
+        }
+
+        public static IEnumerable<object[]> IsByRefLikeTestData
+        {
+            get
+            {
+                Type theT = typeof(Outside<>).GetTypeInfo().GenericTypeParameters[0];
+
+                yield return new object[] { typeof(TypedReference), true };
+                yield return new object[] { typeof(Span<>), true };
+                yield return new object[] { typeof(Span<int>), true };
+                yield return new object[] { typeof(Span<>).MakeGenericType(theT), true };
+                yield return new object[] { typeof(ByRefLikeStruct), true };
+                yield return new object[] { typeof(RegularStruct), false };
+                yield return new object[] { typeof(object), false };
+                yield return new object[] { typeof(Span<int>).MakeByRefType(), false };
+                yield return new object[] { typeof(Span<int>).MakePointerType(), false };
+                yield return new object[] { theT, false };
+                yield return new object[] { typeof(int[]), false };
+                yield return new object[] { typeof(int[,]), false };
+                if (PlatformDetection.IsWindows) // GetTypeFromCLSID is Windows only
+                {
+                    yield return new object[] { Type.GetTypeFromCLSID(default(Guid)), false };
+                }
+            }
+        }
+
+        [IsByRefLike]
+        private struct ByRefLikeStruct
+        {
+            public ByRefLikeStruct(int dummy)
+            {
+                S = default(Span<int>);
+            }
+
+            public Span<int> S;
+        }
+
+        private struct RegularStruct
+        {
         }
     }
 }
