@@ -299,7 +299,6 @@ void GenTree::InitNodeSize()
     GenTree::s_gtNodeSizes[GT_FTN_ADDR]         = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_BOX]              = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_INDEX]            = TREE_NODE_SZ_LARGE;
-    GenTree::s_gtNodeSizes[GT_INDEX_ADDR]        = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_ARR_BOUNDS_CHECK] = TREE_NODE_SZ_LARGE;
 #ifdef FEATURE_SIMD
     GenTree::s_gtNodeSizes[GT_SIMD_CHK] = TREE_NODE_SZ_LARGE;
@@ -1302,12 +1301,6 @@ AGAIN:
                         return false;
                     }
                     break;
-                case GT_INDEX_ADDR:
-                    if (op1->AsIndexAddr()->gtElemSize != op2->AsIndexAddr()->gtElemSize)
-                    {
-                        return false;
-                    }
-                    break;
 
                 // For the ones below no extra argument matters for comparison.
                 case GT_QMARK:
@@ -1883,9 +1876,6 @@ AGAIN:
                 case GT_INDEX:
                     hash += tree->gtIndex.gtIndElemSize;
                     break;
-                case GT_INDEX_ADDR:
-                    hash += tree->AsIndexAddr()->gtElemSize;
-                    break;
                 case GT_ALLOCOBJ:
                     hash = genTreeHashAdd(hash, static_cast<unsigned>(
                                                     reinterpret_cast<uintptr_t>(tree->gtAllocObj.gtAllocObjClsHnd)));
@@ -1948,7 +1938,6 @@ AGAIN:
                 case GT_ARR_INDEX:
                 case GT_QMARK:
                 case GT_INDEX:
-                case GT_INDEX_ADDR:
                     break;
 
 #ifdef FEATURE_SIMD
@@ -4787,23 +4776,6 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
         }
         break;
 
-        case GT_INDEX_ADDR:
-            costEx = 6; // cmp reg,reg; jae throw; mov reg, [addrmode]  (not taken)
-            costSz = 9; // jump to cold section
-
-            level = gtSetEvalOrder(tree->AsIndexAddr()->Index());
-            costEx += tree->AsIndexAddr()->Index()->gtCostEx;
-            costSz += tree->AsIndexAddr()->Index()->gtCostSz;
-
-            lvl2 = gtSetEvalOrder(tree->AsIndexAddr()->Arr());
-            if (level < lvl2)
-            {
-                level = lvl2;
-            }
-            costEx += tree->AsIndexAddr()->Arr()->gtCostEx;
-            costSz += tree->AsIndexAddr()->Arr()->gtCostSz;
-            break;
-
         default:
 #ifdef DEBUG
             if (verbose)
@@ -5836,7 +5808,6 @@ bool GenTree::OperMayThrow()
 #ifdef FEATURE_SIMD
         case GT_SIMD_CHK:
 #endif // FEATURE_SIMD
-        case GT_INDEX_ADDR:
             return true;
         default:
             break;
@@ -7437,19 +7408,6 @@ GenTreePtr Compiler::gtCloneExpr(
                 copy                = new (this, GT_INDEX)
                     GenTreeIndex(asInd->TypeGet(), asInd->Arr(), asInd->Index(), asInd->gtIndElemSize);
                 copy->AsIndex()->gtStructElemClass = asInd->gtStructElemClass;
-            }
-            break;
-
-            case GT_INDEX_ADDR:
-            {
-                GenTreeIndexAddr* asIndAddr = tree->AsIndexAddr();
-
-                copy = new (this, GT_INDEX_ADDR)
-                    GenTreeIndexAddr(asIndAddr->Arr(), asIndAddr->Index(), asIndAddr->gtElemType,
-                                     asIndAddr->gtStructElemClass, asIndAddr->gtElemSize, asIndAddr->gtLenOffset,
-                                     asIndAddr->gtElemOffset);
-                copy->AsIndexAddr()->gtIndRngFailBB = asIndAddr->gtIndRngFailBB;
-                copy->AsIndexAddr()->gtStkDepth     = asIndAddr->gtStkDepth;
             }
             break;
 
@@ -9621,7 +9579,6 @@ void Compiler::gtDispNode(GenTreePtr tree, IndentStack* indentStack, __in __in_z
                 __fallthrough;
 
             case GT_INDEX:
-            case GT_INDEX_ADDR:
 
                 if ((tree->gtFlags & (GTF_IND_VOLATILE | GTF_IND_UNALIGNED)) == 0) // We prefer printing V or U over R
                 {
@@ -15755,9 +15712,6 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
             case GT_INDEX:
                 structHnd = tree->gtIndex.gtStructElemClass;
                 break;
-            case GT_INDEX_ADDR:
-                structHnd = tree->AsIndexAddr()->gtStructElemClass;
-                break;
             case GT_FIELD:
                 info.compCompHnd->getFieldType(tree->gtField.gtFldHnd, &structHnd);
                 break;
@@ -15786,12 +15740,12 @@ CORINFO_CLASS_HANDLE Compiler::gtGetStructHandleIfPresent(GenTree* tree)
                 }
                 else
 #endif
+                    if (tree->gtFlags & GTF_IND_ARR_INDEX)
                 {
                     ArrayInfo arrInfo;
-                    if (TryGetArrayInfo(tree->AsIndir(), &arrInfo))
-                    {
-                        structHnd = EncodeElemType(arrInfo.m_elemType, arrInfo.m_elemStructType);
-                    }
+                    bool      b = GetArrayInfoMap()->Lookup(tree, &arrInfo);
+                    assert(b);
+                    structHnd = EncodeElemType(arrInfo.m_elemType, arrInfo.m_elemStructType);
                 }
                 break;
 #ifdef FEATURE_SIMD
