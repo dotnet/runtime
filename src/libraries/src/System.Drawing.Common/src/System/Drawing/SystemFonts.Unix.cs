@@ -31,46 +31,8 @@
 namespace System.Drawing
 {
 
-    public sealed class SystemFonts
+    public static partial class SystemFonts
     {
-
-        static SystemFonts()
-        {
-        }
-
-        private SystemFonts()
-        {
-        }
-
-        public static Font GetFontByName(string systemFontName)
-        {
-            if (systemFontName == "CaptionFont")
-                return CaptionFont;
-
-            if (systemFontName == "DefaultFont")
-                return DefaultFont;
-
-            if (systemFontName == "DialogFont")
-                return DialogFont;
-
-            if (systemFontName == "IconTitleFont")
-                return IconTitleFont;
-
-            if (systemFontName == "MenuFont")
-                return MenuFont;
-
-            if (systemFontName == "MessageBoxFont")
-                return MessageBoxFont;
-
-            if (systemFontName == "SmallCaptionFont")
-                return SmallCaptionFont;
-
-            if (systemFontName == "StatusFont")
-                return StatusFont;
-
-            return null;
-        }
-
         public static Font CaptionFont
         {
             get { return new Font("Microsoft Sans Serif", 11, "CaptionFont"); }
