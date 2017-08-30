@@ -5720,78 +5720,76 @@ void Compiler::fgMoveOpsLeft(GenTreePtr tree)
 
 /*****************************************************************************/
 
-void Compiler::fgSetRngChkTarget(GenTree* tree, bool delay)
+void Compiler::fgSetRngChkTarget(GenTreePtr tree, bool delay)
 {
-    if (tree->OperIsBoundsCheck())
+    GenTreeBoundsChk* bndsChk = nullptr;
+    SpecialCodeKind   kind    = SCK_RNGCHK_FAIL;
+
+#ifdef FEATURE_SIMD
+    if ((tree->gtOper == GT_ARR_BOUNDS_CHECK) || (tree->gtOper == GT_SIMD_CHK))
+#else  // FEATURE_SIMD
+    if (tree->gtOper == GT_ARR_BOUNDS_CHECK)
+#endif // FEATURE_SIMD
     {
-        GenTreeBoundsChk* const boundsChk = tree->AsBoundsChk();
-        BasicBlock* const failBlock = fgSetRngChkTargetInner(boundsChk->gtThrowKind, delay, &boundsChk->gtStkDepth);
-        if (failBlock != nullptr)
-        {
-            boundsChk->gtIndRngFailBB = gtNewCodeRef(failBlock);
-        }
-    }
-    else if (tree->OperIs(GT_INDEX_ADDR))
-    {
-        GenTreeIndexAddr* const indexAddr = tree->AsIndexAddr();
-        BasicBlock* const       failBlock = fgSetRngChkTargetInner(SCK_RNGCHK_FAIL, delay, &indexAddr->gtStkDepth);
-        if (failBlock != nullptr)
-        {
-            indexAddr->gtIndRngFailBB = gtNewCodeRef(failBlock);
-        }
+        bndsChk = tree->AsBoundsChk();
+        kind    = tree->gtBoundsChk.gtThrowKind;
     }
     else
     {
-        noway_assert(tree->OperIs(GT_ARR_ELEM, GT_ARR_INDEX));
-        fgSetRngChkTargetInner(SCK_RNGCHK_FAIL, delay, nullptr);
+        noway_assert((tree->gtOper == GT_ARR_ELEM) || (tree->gtOper == GT_ARR_INDEX));
     }
-}
 
-BasicBlock* Compiler::fgSetRngChkTargetInner(SpecialCodeKind kind, bool delay, unsigned* stkDepth)
-{
+#ifdef _TARGET_X86_
+    unsigned callStkDepth = fgPtrArgCntCur;
+#else
+    // only x86 pushes args
+    const unsigned callStkDepth          = 0;
+#endif
+
     if (opts.MinOpts())
     {
         delay = false;
 
-#ifdef _TARGET_X86_
         // we need to initialize this field
-        if (fgGlobalMorph && (stkDepth != nullptr))
+        if (fgGlobalMorph && bndsChk != nullptr)
         {
-            *stkDepth = fgPtrArgCntCur;
+            bndsChk->gtStkDepth = callStkDepth;
         }
-#endif // _TARGET_X86_
     }
 
     if (!opts.compDbgCode)
     {
         if (delay || compIsForInlining())
         {
-#ifdef _TARGET_X86_
-            // We delay this until after loop-oriented range check analysis. For now we merely store the current stack
-            // level in the tree node.
-            if (stkDepth != nullptr)
+            /*  We delay this until after loop-oriented range check
+                analysis. For now we merely store the current stack
+                level in the tree node.
+             */
+            if (bndsChk != nullptr)
             {
-                *stkDepth = fgPtrArgCntCur;
+                noway_assert(!bndsChk->gtIndRngFailBB || previousCompletedPhase >= PHASE_OPTIMIZE_LOOPS);
+                bndsChk->gtStkDepth = callStkDepth;
             }
-#endif // _TARGET_X86_
         }
         else
         {
-#ifdef _TARGET_X86_
-            // fgPtrArgCntCur is only valid for global morph or if we walk full stmt.
-            noway_assert(fgGlobalMorph || (stkDepth != nullptr));
-            const unsigned theStkDepth = fgGlobalMorph ? fgPtrArgCntCur : *stkDepth;
-#else
-            // only x86 pushes args
-            const unsigned theStkDepth   = 0;
-#endif
+            /* Create/find the appropriate "range-fail" label */
 
-            // Create/find the appropriate "range-fail" label
-            return fgRngChkTarget(compCurBB, theStkDepth, kind);
+            // fgPtrArgCntCur is only valid for global morph or if we walk full stmt.
+            noway_assert((bndsChk != nullptr) || fgGlobalMorph);
+
+            unsigned stkDepth = (bndsChk != nullptr) ? bndsChk->gtStkDepth : callStkDepth;
+
+            BasicBlock* rngErrBlk = fgRngChkTarget(compCurBB, stkDepth, kind);
+
+            /* Add the label to the indirection node */
+
+            if (bndsChk != nullptr)
+            {
+                bndsChk->gtIndRngFailBB = gtNewCodeRef(rngErrBlk);
+            }
         }
     }
-
-    return nullptr;
 }
 
 /*****************************************************************************
@@ -5846,6 +5844,9 @@ GenTreePtr Compiler::fgMorphArrayIndex(GenTreePtr tree)
     }
 #endif // FEATURE_SIMD
 
+    GenTreePtr arrRef = asIndex->Arr();
+    GenTreePtr index  = asIndex->Index();
+
     // Set up the the array length's offset into lenOffs
     // And    the the first element's offset into elemOffs
     ssize_t lenOffs;
@@ -5866,58 +5867,6 @@ GenTreePtr Compiler::fgMorphArrayIndex(GenTreePtr tree)
         lenOffs  = offsetof(CORINFO_Array, length);
         elemOffs = offsetof(CORINFO_Array, u1Elems);
     }
-
-#ifndef LEGACY_BACKEND
-    // In minopts, we expand GT_INDEX to GT_IND(GT_INDEX_ADDR) in order to minimize the size of the IR. As minopts
-    // compilation time is roughly proportional to the size of the IR, this helps keep compilation times down.
-    // Furthermore, this representation typically saves on code size in minopts w.r.t. the complete expansion
-    // performed when optimizing, as it does not require LclVar nodes (which are always stack loads/stores in
-    // minopts).
-    //
-    // When we *are* optimizing, we fully expand GT_INDEX to:
-    // 1. Evaluate the array address expression and store the result in a temp if the expression is complex or
-    //    side-effecting.
-    // 2. Evaluate the array index expression and store the result in a temp if the expression is complex or
-    //    side-effecting.
-    // 3. Perform an explicit bounds check: GT_ARR_BOUNDS_CHK(index, GT_ARR_LENGTH(array))
-    // 4. Compute the address of the element that will be accessed:
-    //    GT_ADD(GT_ADD(array, firstElementOffset), GT_MUL(index, elementSize))
-    // 5. Dereference the address with a GT_IND.
-    //
-    // This expansion explicitly exposes the bounds check and the address calculation to the optimizer, which allows
-    // for more straightforward bounds-check removal, CSE, etc.
-    if (opts.MinOpts())
-    {
-        GenTree* const array = fgMorphTree(asIndex->Arr());
-        GenTree* const index = fgMorphTree(asIndex->Index());
-
-        GenTreeIndexAddr* const indexAddr =
-            new (this, GT_INDEX_ADDR) GenTreeIndexAddr(array, index, elemTyp, elemStructType, elemSize,
-                                                       static_cast<unsigned>(lenOffs), static_cast<unsigned>(elemOffs));
-        indexAddr->gtFlags |= (array->gtFlags | index->gtFlags) & GTF_ALL_EFFECT;
-
-        // Mark the indirection node as needing a range check if necessary.
-        if ((indexAddr->gtFlags & GTF_INX_RNGCHK) != 0)
-        {
-            fgSetRngChkTarget(indexAddr);
-        }
-
-        // Change `tree` into an indirection and return.
-        tree->ChangeOper(GT_IND);
-        GenTreeIndir* const indir = tree->AsIndir();
-        indir->Addr()             = indexAddr;
-        indir->gtFlags            = GTF_IND_ARR_INDEX | (indexAddr->gtFlags & GTF_ALL_EFFECT);
-
-#ifdef DEBUG
-        indexAddr->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
-#endif // DEBUG
-
-        return indir;
-    }
-#endif // LEGACY_BACKEND
-
-    GenTreePtr arrRef = asIndex->Arr();
-    GenTreePtr index  = asIndex->Index();
 
     bool chkd = ((tree->gtFlags & GTF_INX_RNGCHK) != 0); // if false, range checking will be disabled
     bool nCSE = ((tree->gtFlags & GTF_DONT_CSE) != 0);
@@ -9944,9 +9893,6 @@ GenTreePtr Compiler::fgMorphGetStructAddr(GenTreePtr* pTree, CORINFO_CLASS_HANDL
             case GT_ARR_ELEM:
                 addr = gtNewOperNode(GT_ADDR, TYP_BYREF, tree);
                 break;
-            case GT_INDEX_ADDR:
-                addr = tree;
-                break;
             default:
             {
                 // TODO: Consider using lvaGrabTemp and gtNewTempAssign instead, since we're
@@ -9974,12 +9920,10 @@ GenTreePtr Compiler::fgMorphGetStructAddr(GenTreePtr* pTree, CORINFO_CLASS_HANDL
 
 GenTree* Compiler::fgMorphBlkNode(GenTreePtr tree, bool isDest)
 {
-    GenTree* handleTree = nullptr;
-    GenTree* addr       = nullptr;
-    if (tree->OperIs(GT_COMMA))
+    if (tree->gtOper == GT_COMMA)
     {
         GenTree* effectiveVal = tree->gtEffectiveVal();
-        addr                  = gtNewOperNode(GT_ADDR, TYP_BYREF, effectiveVal);
+        GenTree* addr         = gtNewOperNode(GT_ADDR, TYP_BYREF, effectiveVal);
 #ifdef DEBUG
         addr->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED;
 #endif
@@ -10002,24 +9946,13 @@ GenTree* Compiler::fgMorphBlkNode(GenTreePtr tree, bool isDest)
             lastComma->gtOp.gtOp2 = addr;
             addr                  = tree;
         }
-
-        handleTree = effectiveVal;
-    }
-    else if (tree->OperIs(GT_IND) && tree->AsIndir()->Addr()->OperIs(GT_INDEX_ADDR))
-    {
-        handleTree = tree;
-        addr       = tree->AsIndir()->Addr();
-    }
-
-    if (addr != nullptr)
-    {
-        var_types structType = handleTree->TypeGet();
+        var_types structType = effectiveVal->TypeGet();
         if (structType == TYP_STRUCT)
         {
-            CORINFO_CLASS_HANDLE structHnd = gtGetStructHandleIfPresent(handleTree);
+            CORINFO_CLASS_HANDLE structHnd = gtGetStructHandleIfPresent(effectiveVal);
             if (structHnd == NO_CLASS_HANDLE)
             {
-                tree = gtNewOperNode(GT_IND, structType, addr);
+                tree = gtNewOperNode(GT_IND, effectiveVal->TypeGet(), addr);
             }
             else
             {
@@ -15665,11 +15598,6 @@ GenTreePtr Compiler::fgMorphTree(GenTreePtr tree, MorphAddrContext* mac)
         case GT_DYN_BLK:
             tree->gtDynBlk.Addr()        = fgMorphTree(tree->gtDynBlk.Addr());
             tree->gtDynBlk.gtDynamicSize = fgMorphTree(tree->gtDynBlk.gtDynamicSize);
-            break;
-
-        case GT_INDEX_ADDR:
-            tree->AsIndexAddr()->Index() = fgMorphTree(tree->AsIndexAddr()->Index());
-            tree->AsIndexAddr()->Arr()   = fgMorphTree(tree->AsIndexAddr()->Arr());
             break;
 
         default:

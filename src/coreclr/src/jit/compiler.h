@@ -4670,8 +4670,6 @@ private:
 
     void fgSetRngChkTarget(GenTreePtr tree, bool delay = true);
 
-    BasicBlock* fgSetRngChkTargetInner(SpecialCodeKind kind, bool delay, unsigned* stkDepth);
-
 #if REARRANGE_ADDS
     void fgMoveOpsLeft(GenTreePtr tree);
 #endif
@@ -9329,26 +9327,6 @@ public:
             compRoot->m_arrayInfoMap = new (ialloc) NodeToArrayInfoMap(ialloc);
         }
         return compRoot->m_arrayInfoMap;
-    }
-
-    inline bool TryGetArrayInfo(GenTreeIndir* indir, ArrayInfo* arrayInfo)
-    {
-        if ((indir->gtFlags & GTF_IND_ARR_INDEX) == 0)
-        {
-            return false;
-        }
-
-        if (indir->gtOp1->OperIs(GT_INDEX_ADDR))
-        {
-            GenTreeIndexAddr* const indexAddr = indir->gtOp1->AsIndexAddr();
-            *arrayInfo = ArrayInfo(indexAddr->gtElemType, indexAddr->gtElemSize, indexAddr->gtElemOffset,
-                                   indexAddr->gtStructElemClass);
-            return true;
-        }
-
-        bool found = GetArrayInfoMap()->Lookup(indir, arrayInfo);
-        assert(found);
-        return true;
     }
 
     NodeToUnsignedMap* m_memorySsaMap[MemoryKindCount];
