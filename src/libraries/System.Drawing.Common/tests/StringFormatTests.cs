@@ -184,7 +184,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void SetTabStops_NegativeFirstTabOffset_ThrowsArgumentException()
         {
@@ -194,7 +193,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void SetTabStops_NegativeInfinityInTabStops_ThrowsNotImplementedException()
         {
@@ -279,7 +277,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(StringAlignment.Near - 1)]
         [InlineData(StringAlignment.Far + 1)]
@@ -301,7 +298,6 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => format.Alignment = StringAlignment.Center);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DigitSubstitutionMethod_GetSetWhenDisposed_ThrowsArgumentException()
         {
@@ -311,7 +307,6 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => format.DigitSubstitutionMethod);
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void DigitSubstitutionLanguage_GetSetWhenDisposed_ThrowsArgumentException()
         {
@@ -355,7 +350,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(StringAlignment.Near - 1)]
         [InlineData(StringAlignment.Far + 1)]
@@ -389,7 +383,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(HotkeyPrefix.None - 1)]
         [InlineData(HotkeyPrefix.Hide + 1)]
@@ -421,7 +414,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(StringTrimming.None - 1)]
         [InlineData(StringTrimming.EllipsisPath + 1)]

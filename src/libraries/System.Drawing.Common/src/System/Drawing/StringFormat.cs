@@ -255,12 +255,24 @@ namespace System.Drawing
         public void SetTabStops(float firstTabOffset, float[] tabStops)
         {
             if (firstTabOffset < 0)
+            {
                 throw new ArgumentException(SR.Format(SR.InvalidArgument, "firstTabOffset", firstTabOffset));
+            }
+
+            foreach (float tabStop in tabStops) // Emulate Windows GDI+ behavior.
+            {
+                if (float.IsNegativeInfinity(tabStop))
+                {
+                    throw new NotImplementedException();
+                }
+            }
 
             int status = SafeNativeMethods.Gdip.GdipSetStringFormatTabStops(new HandleRef(this, nativeFormat), firstTabOffset, tabStops.Length, tabStops);
 
             if (status != SafeNativeMethods.Gdip.Ok)
+            {
                 throw SafeNativeMethods.Gdip.StatusException(status);
+            }
         }
 
         /// <summary>
