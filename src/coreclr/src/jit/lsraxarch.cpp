@@ -613,6 +613,31 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
             JITDUMP("Unexpected node %s in Lower.\n", GenTree::OpName(tree->OperGet()));
             unreached();
             break;
+
+        case GT_INDEX_ADDR:
+            info->srcCount = 2;
+            info->dstCount = 1;
+
+            if (tree->AsIndexAddr()->Index()->TypeGet() == TYP_I_IMPL)
+            {
+                info->internalIntCount = 1;
+            }
+            else
+            {
+                switch (tree->AsIndexAddr()->gtElemSize)
+                {
+                    case 1:
+                    case 2:
+                    case 4:
+                    case 8:
+                        break;
+
+                    default:
+                        info->internalIntCount = 1;
+                        break;
+                }
+            }
+            break;
     } // end switch (tree->OperGet())
 
     // If op2 of a binary-op gets marked as contained, then binary-op srcCount will be 1.
