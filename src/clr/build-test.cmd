@@ -456,8 +456,6 @@ echo -priority=^<N^> : specify a set of test that will be built and run, with pr
 echo     0: Build only priority 0 cases as essential testcases (default)
 echo     1: Build all tests with priority 0 and 1
 echo     666: Build all tests with priority 0, 1 ... 666
-echo -sequential: force a non-parallel build ^(default is to build in parallel
-echo     using all processors^).
 echo -verbose: enables detailed file logging for the msbuild tasks into the msbuild log file.
 exit /b 1
 

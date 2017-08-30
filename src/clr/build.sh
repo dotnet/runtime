@@ -43,8 +43,6 @@ usage()
     echo "-verbose - optional argument to enable verbose build output."
     echo "-skiprestore: skip restoring packages ^(default: packages are restored during build^)."
 	echo "-disableoss: Disable Open Source Signing for System.Private.CoreLib."
-	echo "-sequential: force a non-parallel build ^(default is to build in parallel"
-	echo "   using all processors^)."
 	echo "-officialbuildid=^<ID^>: specify the official build ID to be used by this build."
 	echo "-Rebuild: passes /t:rebuild to the build projects."
     echo "-stripSymbols - Optional argument to strip native symbols during the build."
