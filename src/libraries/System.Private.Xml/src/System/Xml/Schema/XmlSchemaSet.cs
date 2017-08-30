@@ -621,7 +621,7 @@ namespace System.Xml.Schema
                     }
                     try
                     { //First thing to do in the try block is to acquire locks since finally will try to release them. 
-                        //If we dont accuire the locks first, and an exception occurs in the code before the locking code, then Threading.SynchronizationLockException will be thrown
+                        //If we don't acquire the locks first, and an exception occurs in the code before the locking code, then Threading.SynchronizationLockException will be thrown
                         //when attempting to release it in the finally block
                         XmlSchema currentSchema;
                         XmlSchema xmlNSSchema = Preprocessor.GetBuildInSchema();

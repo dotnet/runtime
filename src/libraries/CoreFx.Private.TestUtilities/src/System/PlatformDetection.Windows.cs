@@ -289,7 +289,7 @@ namespace System
         private static extern bool CloseHandle(IntPtr handle);
 
         [DllImport("advapi32.dll", SetLastError = true, ExactSpelling = true)]
-        private static extern bool OpenProcessToken(IntPtr ProcessHandle, uint DesiredAccesss, out IntPtr TokenHandle);
+        private static extern bool OpenProcessToken(IntPtr ProcessHandle, uint DesiredAccess, out IntPtr TokenHandle);
 
         // The process handle does NOT need closing
         [DllImport("kernel32.dll", ExactSpelling = true)]

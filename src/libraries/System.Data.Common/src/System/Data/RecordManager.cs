@@ -267,7 +267,7 @@ namespace System.Data
         [Conditional("DEBUG")]
         internal void VerifyRecord(int record)
         {
-            Debug.Assert((record < _lastFreeRecord) && (-1 == _freeRecordList.IndexOf(record)), "accesing free record");
+            Debug.Assert((record < _lastFreeRecord) && (-1 == _freeRecordList.IndexOf(record)), "accessing free record");
             Debug.Assert((null == _rows[record]) ||
                          (record == _rows[record]._oldRecord) ||
                          (record == _rows[record]._newRecord) ||
@@ -277,7 +277,7 @@ namespace System.Data
         [Conditional("DEBUG")]
         internal void VerifyRecord(int record, DataRow row)
         {
-            Debug.Assert((record < _lastFreeRecord) && (-1 == _freeRecordList.IndexOf(record)), "accesing free record");
+            Debug.Assert((record < _lastFreeRecord) && (-1 == _freeRecordList.IndexOf(record)), "accessing free record");
             Debug.Assert((null == _rows[record]) || (row == _rows[record]), "record of a different row");
         }
     }
