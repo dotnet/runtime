@@ -3,7 +3,7 @@
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.props))\dir.props" />
   <PropertyGroup>
     <IncludePerformanceTests>true</IncludePerformanceTests>
-    <ProjectGuid>{16568C86-E97E-42C6-B683-65A1B5AF2EC8}</ProjectGuid>
+    <ProjectGuid>{3842BE38-1A99-41B2-81B5-186E64077B95}</ProjectGuid>
     <DisableTests Condition="'$(TargetGroup)' == 'uap' AND ('$(ArchGroup)' == 'arm' OR '$(ArchGroup)' == 'arm64')">true</DisableTests>
   </PropertyGroup>
   <!-- Default configurations to help VS understand the configurations -->
