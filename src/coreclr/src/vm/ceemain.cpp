@@ -899,10 +899,6 @@ void EEStartupHelper(COINITIEE fFlags)
 
 #ifndef CROSSGEN_COMPILE
 
-        // This isn't done as part of InitializeGarbageCollector() above because thread
-        // creation requires AppDomains to have been set up.
-        FinalizerThread::FinalizerThreadCreate();
-
 #ifndef FEATURE_PAL
         // Watson initialization must precede InitializeDebugger() and InstallUnhandledExceptionFilter() 
         // because on CoreCLR when Waston is enabled, debugging service needs to be enabled and UEF will be used.
@@ -1008,6 +1004,10 @@ void EEStartupHelper(COINITIEE fFlags)
         // of InitJITHelpers1.
         hr = g_pGCHeap->Initialize();
         IfFailGo(hr);
+
+        // This isn't done as part of InitializeGarbageCollector() above because thread
+        // creation requires AppDomains to have been set up.
+        FinalizerThread::FinalizerThreadCreate();
 
         // Now we really have fully initialized the garbage collector
         SetGarbageCollectorFullyInitialized();
