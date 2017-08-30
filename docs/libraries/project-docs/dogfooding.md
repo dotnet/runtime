@@ -117,19 +117,6 @@ $ dotnet publish
 $ bin\Debug\netcoreapp2.0\win7-x64\publish\App.exe
 ```
 
-Note #1: There is a [bug](https://github.com/dotnet/sdk/issues/791) with `dotnet run` and
-self-contained applications. If you `dotnet run` and see an error `The library 'hostpolicy.dll'
-required to execute the application...`, you've hit this bug.
-
-Note #2: On non-Windows platforms, self-contained applications aren't runnable by default. You will
-see an error "Permission denied" when running the application. This is because of a
-[breaking change in the .NET Core runtime](https://github.com/dotnet/corefx/issues/15516) between 1.0 and 2.0.
-Either this breaking change needs to be fixed, or [NuGet will have to workaround the change]
-(https://github.com/NuGet/Home/issues/4424).
-
-To workaround this issue, run `chmod u+x bin/Debug/netcoreapp2.0/RID/publish/App` before executing
-your application.
-
 ## Using your local CoreFx build
 
 To use your local built corefx packages you will need to be a self-contained application and so you will
