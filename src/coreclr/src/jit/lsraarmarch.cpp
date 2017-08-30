@@ -159,7 +159,7 @@ void LinearScan::TreeNodeInfoInitGCWriteBarrier(GenTree* tree)
 //                       of an indirection operation.
 //
 // Arguments:
-//    indirTree - GT_IND, GT_STOREIND, block node or GT_NULLCHECK gentree node
+//    indirTree - GT_IND, GT_STOREIND or block gentree node
 //
 void LinearScan::TreeNodeInfoInitIndir(GenTreeIndir* indirTree)
 {
