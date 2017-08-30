@@ -98,13 +98,6 @@ namespace System.Drawing
                 GdipDrawCurve2I_ptr = LoadFunction<GdipDrawCurve2I_delegate>("GdipDrawCurve2I");
                 GdipDrawCurve3_ptr = LoadFunction<GdipDrawCurve3_delegate>("GdipDrawCurve3");
                 GdipDrawCurve3I_ptr = LoadFunction<GdipDrawCurve3I_delegate>("GdipDrawCurve3I");
-                GdipSetClipRect_ptr = LoadFunction<GdipSetClipRect_delegate>("GdipSetClipRect");
-                GdipSetClipRectI_ptr = LoadFunction<GdipSetClipRectI_delegate>("GdipSetClipRectI");
-                GdipSetClipPath_ptr = LoadFunction<GdipSetClipPath_delegate>("GdipSetClipPath");
-                GdipSetClipRegion_ptr = LoadFunction<GdipSetClipRegion_delegate>("GdipSetClipRegion");
-                GdipSetClipGraphics_ptr = LoadFunction<GdipSetClipGraphics_delegate>("GdipSetClipGraphics");
-                GdipResetClip_ptr = LoadFunction<GdipResetClip_delegate>("GdipResetClip");
-                GdipGetClip_ptr = LoadFunction<GdipGetClip_delegate>("GdipGetClip");
                 GdipFillClosedCurve_ptr = LoadFunction<GdipFillClosedCurve_delegate>("GdipFillClosedCurve");
                 GdipFillClosedCurveI_ptr = LoadFunction<GdipFillClosedCurveI_delegate>("GdipFillClosedCurveI");
                 GdipFillClosedCurve2_ptr = LoadFunction<GdipFillClosedCurve2_delegate>("GdipFillClosedCurve2");
@@ -113,15 +106,8 @@ namespace System.Drawing
                 GdipFillPieI_ptr = LoadFunction<GdipFillPieI_delegate>("GdipFillPieI");
                 GdipFillPath_ptr = LoadFunction<GdipFillPath_delegate>("GdipFillPath");
                 GdipGetNearestColor_ptr = LoadFunction<GdipGetNearestColor_delegate>("GdipGetNearestColor");
-                GdipIsVisiblePoint_ptr = LoadFunction<GdipIsVisiblePoint_delegate>("GdipIsVisiblePoint");
-                GdipIsVisiblePointI_ptr = LoadFunction<GdipIsVisiblePointI_delegate>("GdipIsVisiblePointI");
-                GdipIsVisibleRect_ptr = LoadFunction<GdipIsVisibleRect_delegate>("GdipIsVisibleRect");
-                GdipIsVisibleRectI_ptr = LoadFunction<GdipIsVisibleRectI_delegate>("GdipIsVisibleRectI");
                 GdipTransformPoints_ptr = LoadFunction<GdipTransformPoints_delegate>("GdipTransformPoints");
                 GdipTransformPointsI_ptr = LoadFunction<GdipTransformPointsI_delegate>("GdipTransformPointsI");
-                GdipTranslateClip_ptr = LoadFunction<GdipTranslateClip_delegate>("GdipTranslateClip");
-                GdipTranslateClipI_ptr = LoadFunction<GdipTranslateClipI_delegate>("GdipTranslateClipI");
-                GdipGetClipBounds_ptr = LoadFunction<GdipGetClipBounds_delegate>("GdipGetClipBounds");
                 GdipSetCompositingMode_ptr = LoadFunction<GdipSetCompositingMode_delegate>("GdipSetCompositingMode");
                 GdipGetCompositingMode_ptr = LoadFunction<GdipGetCompositingMode_delegate>("GdipGetCompositingMode");
                 GdipSetCompositingQuality_ptr = LoadFunction<GdipSetCompositingQuality_delegate>("GdipSetCompositingQuality");
@@ -130,8 +116,6 @@ namespace System.Drawing
                 GdipGetInterpolationMode_ptr = LoadFunction<GdipGetInterpolationMode_delegate>("GdipGetInterpolationMode");
                 GdipGetDpiX_ptr = LoadFunction<GdipGetDpiX_delegate>("GdipGetDpiX");
                 GdipGetDpiY_ptr = LoadFunction<GdipGetDpiY_delegate>("GdipGetDpiY");
-                GdipIsClipEmpty_ptr = LoadFunction<GdipIsClipEmpty_delegate>("GdipIsClipEmpty");
-                GdipIsVisibleClipEmpty_ptr = LoadFunction<GdipIsVisibleClipEmpty_delegate>("GdipIsVisibleClipEmpty");
                 GdipGetPageUnit_ptr = LoadFunction<GdipGetPageUnit_delegate>("GdipGetPageUnit");
                 GdipGetPageScale_ptr = LoadFunction<GdipGetPageScale_delegate>("GdipGetPageScale");
                 GdipSetPageUnit_ptr = LoadFunction<GdipSetPageUnit_delegate>("GdipSetPageUnit");
@@ -144,7 +128,6 @@ namespace System.Drawing
                 GdipGetTextContrast_ptr = LoadFunction<GdipGetTextContrast_delegate>("GdipGetTextContrast");
                 GdipSetTextRenderingHint_ptr = LoadFunction<GdipSetTextRenderingHint_delegate>("GdipSetTextRenderingHint");
                 GdipGetTextRenderingHint_ptr = LoadFunction<GdipGetTextRenderingHint_delegate>("GdipGetTextRenderingHint");
-                GdipGetVisibleClipBounds_ptr = LoadFunction<GdipGetVisibleClipBounds_delegate>("GdipGetVisibleClipBounds");
                 GdipFlush_ptr = LoadFunction<GdipFlush_delegate>("GdipFlush");
                 GdipAddPathString_ptr = LoadFunction<GdipAddPathString_delegate>("GdipAddPathString");
                 GdipAddPathStringI_ptr = LoadFunction<GdipAddPathStringI_delegate>("GdipAddPathStringI");
@@ -585,34 +568,6 @@ namespace System.Drawing
             private static FunctionWrapper<GdipDrawCurve3I_delegate> GdipDrawCurve3I_ptr;
             internal static Status GdipDrawCurve3I(IntPtr graphics, IntPtr pen, Point[] points, int count, int offset, int numberOfSegments, float tension) => GdipDrawCurve3I_ptr.Delegate(graphics, pen, points, count, offset, numberOfSegments, tension);
 
-            private delegate Status GdipSetClipRect_delegate(IntPtr graphics, float x, float y, float width, float height, CombineMode combineMode);
-            private static FunctionWrapper<GdipSetClipRect_delegate> GdipSetClipRect_ptr;
-            internal static Status GdipSetClipRect(IntPtr graphics, float x, float y, float width, float height, CombineMode combineMode) => GdipSetClipRect_ptr.Delegate(graphics, x, y, width, height, combineMode);
-
-            private delegate Status GdipSetClipRectI_delegate(IntPtr graphics, int x, int y, int width, int height, CombineMode combineMode);
-            private static FunctionWrapper<GdipSetClipRectI_delegate> GdipSetClipRectI_ptr;
-            internal static Status GdipSetClipRectI(IntPtr graphics, int x, int y, int width, int height, CombineMode combineMode) => GdipSetClipRectI_ptr.Delegate(graphics, x, y, width, height, combineMode);
-
-            private delegate Status GdipSetClipPath_delegate(IntPtr graphics, IntPtr path, CombineMode combineMode);
-            private static FunctionWrapper<GdipSetClipPath_delegate> GdipSetClipPath_ptr;
-            internal static Status GdipSetClipPath(IntPtr graphics, IntPtr path, CombineMode combineMode) => GdipSetClipPath_ptr.Delegate(graphics, path, combineMode);
-
-            private delegate Status GdipSetClipRegion_delegate(IntPtr graphics, IntPtr region, CombineMode combineMode);
-            private static FunctionWrapper<GdipSetClipRegion_delegate> GdipSetClipRegion_ptr;
-            internal static Status GdipSetClipRegion(IntPtr graphics, IntPtr region, CombineMode combineMode) => GdipSetClipRegion_ptr.Delegate(graphics, region, combineMode);
-
-            private delegate Status GdipSetClipGraphics_delegate(IntPtr graphics, IntPtr srcgraphics, CombineMode combineMode);
-            private static FunctionWrapper<GdipSetClipGraphics_delegate> GdipSetClipGraphics_ptr;
-            internal static Status GdipSetClipGraphics(IntPtr graphics, IntPtr srcgraphics, CombineMode combineMode) => GdipSetClipGraphics_ptr.Delegate(graphics, srcgraphics, combineMode);
-
-            private delegate Status GdipResetClip_delegate(IntPtr graphics);
-            private static FunctionWrapper<GdipResetClip_delegate> GdipResetClip_ptr;
-            internal static Status GdipResetClip(IntPtr graphics) => GdipResetClip_ptr.Delegate(graphics);
-
-            private delegate Status GdipGetClip_delegate(IntPtr graphics, IntPtr region);
-            private static FunctionWrapper<GdipGetClip_delegate> GdipGetClip_ptr;
-            internal static Status GdipGetClip(IntPtr graphics, IntPtr region) => GdipGetClip_ptr.Delegate(graphics, region);
-
             private delegate Status GdipFillClosedCurve_delegate(IntPtr graphics, IntPtr brush, PointF[] points, int count);
             private static FunctionWrapper<GdipFillClosedCurve_delegate> GdipFillClosedCurve_ptr;
             internal static Status GdipFillClosedCurve(IntPtr graphics, IntPtr brush, PointF[] points, int count) => GdipFillClosedCurve_ptr.Delegate(graphics, brush, points, count);
@@ -645,22 +600,6 @@ namespace System.Drawing
             private static FunctionWrapper<GdipGetNearestColor_delegate> GdipGetNearestColor_ptr;
             internal static Status GdipGetNearestColor(IntPtr graphics, out int argb) => GdipGetNearestColor_ptr.Delegate(graphics, out argb);
 
-            private delegate Status GdipIsVisiblePoint_delegate(IntPtr graphics, float x, float y, out bool result);
-            private static FunctionWrapper<GdipIsVisiblePoint_delegate> GdipIsVisiblePoint_ptr;
-            internal static Status GdipIsVisiblePoint(IntPtr graphics, float x, float y, out bool result) => GdipIsVisiblePoint_ptr.Delegate(graphics, x, y, out result);
-
-            private delegate Status GdipIsVisiblePointI_delegate(IntPtr graphics, int x, int y, out bool result);
-            private static FunctionWrapper<GdipIsVisiblePointI_delegate> GdipIsVisiblePointI_ptr;
-            internal static Status GdipIsVisiblePointI(IntPtr graphics, int x, int y, out bool result) => GdipIsVisiblePointI_ptr.Delegate(graphics, x, y, out result);
-
-            private delegate Status GdipIsVisibleRect_delegate(IntPtr graphics, float x, float y, float width, float height, out bool result);
-            private static FunctionWrapper<GdipIsVisibleRect_delegate> GdipIsVisibleRect_ptr;
-            internal static Status GdipIsVisibleRect(IntPtr graphics, float x, float y, float width, float height, out bool result) => GdipIsVisibleRect_ptr.Delegate(graphics, x, y, width, height, out result);
-
-            private delegate Status GdipIsVisibleRectI_delegate(IntPtr graphics, int x, int y, int width, int height, out bool result);
-            private static FunctionWrapper<GdipIsVisibleRectI_delegate> GdipIsVisibleRectI_ptr;
-            internal static Status GdipIsVisibleRectI(IntPtr graphics, int x, int y, int width, int height, out bool result) => GdipIsVisibleRectI_ptr.Delegate(graphics, x, y, width, height, out result);
-
             private delegate Status GdipTransformPoints_delegate(IntPtr graphics, CoordinateSpace destSpace, CoordinateSpace srcSpace, IntPtr points, int count);
             private static FunctionWrapper<GdipTransformPoints_delegate> GdipTransformPoints_ptr;
             internal static Status GdipTransformPoints(IntPtr graphics, CoordinateSpace destSpace, CoordinateSpace srcSpace, IntPtr points, int count) => GdipTransformPoints_ptr.Delegate(graphics, destSpace, srcSpace, points, count);
@@ -668,18 +607,6 @@ namespace System.Drawing
             private delegate Status GdipTransformPointsI_delegate(IntPtr graphics, CoordinateSpace destSpace, CoordinateSpace srcSpace, IntPtr points, int count);
             private static FunctionWrapper<GdipTransformPointsI_delegate> GdipTransformPointsI_ptr;
             internal static Status GdipTransformPointsI(IntPtr graphics, CoordinateSpace destSpace, CoordinateSpace srcSpace, IntPtr points, int count) => GdipTransformPointsI_ptr.Delegate(graphics, destSpace, srcSpace, points, count);
-
-            private delegate Status GdipTranslateClip_delegate(IntPtr graphics, float dx, float dy);
-            private static FunctionWrapper<GdipTranslateClip_delegate> GdipTranslateClip_ptr;
-            internal static Status GdipTranslateClip(IntPtr graphics, float dx, float dy) => GdipTranslateClip_ptr.Delegate(graphics, dx, dy);
-
-            private delegate Status GdipTranslateClipI_delegate(IntPtr graphics, int dx, int dy);
-            private static FunctionWrapper<GdipTranslateClipI_delegate> GdipTranslateClipI_ptr;
-            internal static Status GdipTranslateClipI(IntPtr graphics, int dx, int dy) => GdipTranslateClipI_ptr.Delegate(graphics, dx, dy);
-
-            private delegate Status GdipGetClipBounds_delegate(IntPtr graphics, out RectangleF rect);
-            private static FunctionWrapper<GdipGetClipBounds_delegate> GdipGetClipBounds_ptr;
-            internal static Status GdipGetClipBounds(IntPtr graphics, out RectangleF rect) => GdipGetClipBounds_ptr.Delegate(graphics, out rect);
 
             private delegate Status GdipSetCompositingMode_delegate(IntPtr graphics, CompositingMode compositingMode);
             private static FunctionWrapper<GdipSetCompositingMode_delegate> GdipSetCompositingMode_ptr;
@@ -712,14 +639,6 @@ namespace System.Drawing
             private delegate Status GdipGetDpiY_delegate(IntPtr graphics, out float dpi);
             private static FunctionWrapper<GdipGetDpiY_delegate> GdipGetDpiY_ptr;
             internal static Status GdipGetDpiY(IntPtr graphics, out float dpi) => GdipGetDpiY_ptr.Delegate(graphics, out dpi);
-
-            private delegate Status GdipIsClipEmpty_delegate(IntPtr graphics, out bool result);
-            private static FunctionWrapper<GdipIsClipEmpty_delegate> GdipIsClipEmpty_ptr;
-            internal static Status GdipIsClipEmpty(IntPtr graphics, out bool result) => GdipIsClipEmpty_ptr.Delegate(graphics, out result);
-
-            private delegate Status GdipIsVisibleClipEmpty_delegate(IntPtr graphics, out bool result);
-            private static FunctionWrapper<GdipIsVisibleClipEmpty_delegate> GdipIsVisibleClipEmpty_ptr;
-            internal static Status GdipIsVisibleClipEmpty(IntPtr graphics, out bool result) => GdipIsVisibleClipEmpty_ptr.Delegate(graphics, out result);
 
             private delegate Status GdipGetPageUnit_delegate(IntPtr graphics, out GraphicsUnit unit);
             private static FunctionWrapper<GdipGetPageUnit_delegate> GdipGetPageUnit_ptr;
@@ -768,10 +687,6 @@ namespace System.Drawing
             private delegate Status GdipGetTextRenderingHint_delegate(IntPtr graphics, out TextRenderingHint mode);
             private static FunctionWrapper<GdipGetTextRenderingHint_delegate> GdipGetTextRenderingHint_ptr;
             internal static Status GdipGetTextRenderingHint(IntPtr graphics, out TextRenderingHint mode) => GdipGetTextRenderingHint_ptr.Delegate(graphics, out mode);
-
-            private delegate Status GdipGetVisibleClipBounds_delegate(IntPtr graphics, out RectangleF rect);
-            private static FunctionWrapper<GdipGetVisibleClipBounds_delegate> GdipGetVisibleClipBounds_ptr;
-            internal static Status GdipGetVisibleClipBounds(IntPtr graphics, out RectangleF rect) => GdipGetVisibleClipBounds_ptr.Delegate(graphics, out rect);
 
             private delegate Status GdipFlush_delegate(IntPtr graphics, FlushIntention intention);
             private static FunctionWrapper<GdipFlush_delegate> GdipFlush_ptr;
