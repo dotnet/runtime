@@ -27,7 +27,7 @@ namespace System.Data
         /// is not for public use.
         /// </summary>
         /// <param name="info">SerializationInfo containing data to construct the object.</param>
-        /// <param name="context">The streaming context for the object being deserializad.</param>
+        /// <param name="context">The streaming context for the object being deserialized.</param>
         protected TypedTableBase(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context)
             : base(info, context) { }
 

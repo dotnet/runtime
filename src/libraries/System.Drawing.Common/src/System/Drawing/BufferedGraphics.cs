@@ -9,7 +9,7 @@ namespace System.Drawing
     /// <summary>
     /// The BufferedGraphics class can be thought of as a "Token" or "Reference" to the buffer that a
     /// BufferedGraphicsContext creates. While a BufferedGraphics is outstanding, the memory associated with the
-    /// buffer is locked. The general designis such that under normal conditions a single BufferedGraphics will be in
+    /// buffer is locked. The general design is such that under normal conditions a single BufferedGraphics will be in
     /// use at one time for a given BufferedGraphicsContext.
     /// </summary>
     public sealed class BufferedGraphics : IDisposable

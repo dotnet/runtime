@@ -467,13 +467,13 @@ namespace System.Drawing
         }
 
         /// <summary>
-        /// Translates the local geometrical transform by the specified dimmensions. This method prepends the translation
+        /// Translates the local geometrical transform by the specified dimensions. This method prepends the translation
         /// to the transform.
         /// </summary>
         public void TranslateTransform(float dx, float dy) => TranslateTransform(dx, dy, MatrixOrder.Prepend);
 
         /// <summary>
-        /// Translates the local geometrical transform by the specified dimmensions in the specified order.
+        /// Translates the local geometrical transform by the specified dimensions in the specified order.
         /// </summary>
         public void TranslateTransform(float dx, float dy, MatrixOrder order)
         {

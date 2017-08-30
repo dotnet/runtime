@@ -298,7 +298,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///     Initializes the test string according to the mask and populates the character descirptor table
+        ///     Initializes the test string according to the mask and populates the character descriptor table
         ///     (stringDescriptor).
         /// </summary>
         private void Initialize()

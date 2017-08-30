@@ -82,7 +82,7 @@ namespace System.Linq.Parallel
         }
 
         /// <summary>
-        /// This method is responsible for enumerating results and enqueueing them to
+        /// This method is responsible for enumerating results and enqueuing them to
         /// the output buffer as appropriate.  Each base class implements its own.
         /// </summary>
         protected override void SpoolingWork()

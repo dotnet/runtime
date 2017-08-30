@@ -16,7 +16,7 @@ namespace System.Linq.Parallel
     /// This enumerator merges multiple input channels into a single output stream. The merging process just
     /// goes from left-to-right, enumerating each channel in succession in its entirety.
     /// Assumptions:
-    ///     Before enumerating this object, all producers for all channels must have finished enqueueing new
+    ///     Before enumerating this object, all producers for all channels must have finished enqueuing new
     ///     elements.
     /// </summary>
     /// <typeparam name="T"></typeparam>

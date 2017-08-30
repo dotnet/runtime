@@ -14,7 +14,7 @@ namespace System.IO.MemoryMappedFiles
     {
         /// <summary>
         /// Used by the 2 Create factory method groups.  A null fileHandle specifies that the 
-        /// memory mapped file should not be associated with an exsiting file on disk (i.e. start
+        /// memory mapped file should not be associated with an existing file on disk (i.e. start
         /// out empty).
         /// </summary>
 

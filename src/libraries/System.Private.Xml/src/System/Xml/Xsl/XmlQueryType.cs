@@ -60,7 +60,7 @@ namespace System.Xml.Xsl
         public abstract XmlTypeCode TypeCode { get; }
 
         /// <summary>
-        /// Set of alowed names for element, document{element}, attribute and PI
+        /// Set of allowed names for element, document{element}, attribute and PI
         /// Returns XmlQualifiedName.Wildcard for all other types
         /// </summary>
         public abstract XmlQualifiedNameTest NameTest { get; }

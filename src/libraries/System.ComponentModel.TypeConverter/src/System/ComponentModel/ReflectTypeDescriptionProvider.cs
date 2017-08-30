@@ -147,10 +147,10 @@ namespace System.ComponentModel
 
         /// <summary>
         ///     Adds an editor table for the given editor base type.
-        ///     ypically, editors are specified as metadata on an object. If no metadata for a
-        ///     equested editor base type can be found on an object, however, the
-        ///     ypeDescriptor will search an editor
-        ///     able for the editor type, if one can be found.
+        ///     Typically, editors are specified as metadata on an object. If no metadata for a
+        ///     requested editor base type can be found on an object, however, the
+        ///     TypeDescriptor will search an editor
+        ///     table for the editor type, if one can be found.
         /// </summary>
         internal static void AddEditorTable(Type editorBaseType, Hashtable table)
         {

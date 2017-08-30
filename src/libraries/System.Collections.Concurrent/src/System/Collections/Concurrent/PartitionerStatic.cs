@@ -381,7 +381,7 @@ namespace System.Collections.Concurrent
 
             /// <summary>
             /// Dispose is abstract, and depends on the type of the source data:
-            /// - For source data type IList and Array, the type of the shared reader is just the dataitself.
+            /// - For source data type IList and Array, the type of the shared reader is just the data itself.
             ///   We don't do anything in Dispose method for IList and Array. 
             /// - For source data type IEnumerable, the type of the shared reader is an enumerator we created.
             ///   Thus we need to dispose this shared reader enumerator, when there is no more active partitions
