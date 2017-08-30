@@ -697,6 +697,10 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
 
     TreeNodeInfoInitCheckByteable(tree);
 
+    if (tree->IsUnusedValue() && (info->dstCount != 0))
+    {
+        info->isLocalDefUse = true;
+    }
     // We need to be sure that we've set info->srcCount and info->dstCount appropriately
     assert((info->dstCount < 2) || (tree->IsMultiRegCall() && info->dstCount == MAX_RET_REG_COUNT));
 }
