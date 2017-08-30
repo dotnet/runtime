@@ -14718,7 +14718,16 @@ void Compiler::gtCheckQuirkAddrExposedLclVar(GenTreePtr tree, GenTreeStack* pare
 //    the operands is:
 //    1) The result of Object::GetType
 //    2) The result of typeof(...)
-//    3) Is otherwise known to have type RuntimeType
+//    3) Is a null reference
+//    4) Is otherwise known to have type RuntimeType
+//
+//    The null reference case is surprisingly common because operator
+//    overloading turns the otherwise innocuous
+//
+//        Type t = ....;
+//        if (t == null)
+//
+//    into a method call.
 
 bool Compiler::gtCanOptimizeTypeEquality(GenTreePtr tree)
 {
@@ -14740,6 +14749,10 @@ bool Compiler::gtCanOptimizeTypeEquality(GenTreePtr tree)
         }
     }
     else if ((tree->gtOper == GT_INTRINSIC) && (tree->gtIntrinsic.gtIntrinsicId == CORINFO_INTRINSIC_Object_GetType))
+    {
+        return true;
+    }
+    else if ((tree->gtOper == GT_CNS_INT) && (tree->gtIntCon.gtIconVal == 0))
     {
         return true;
     }
