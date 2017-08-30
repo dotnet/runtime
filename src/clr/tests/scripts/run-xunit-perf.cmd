@@ -231,6 +231,7 @@ rem ****************************************************************************
     shift
     goto :parse_command_line_arguments
   )
+
   if /I [%~1] == [-?] (
     call :USAGE
     exit /b 0
@@ -239,7 +240,10 @@ rem ****************************************************************************
     call :USAGE
     exit /b 0
   )
-  if [%CORECLR_PERF%] == [] (
+
+  if not defined CORECLR_PERF call :USAGE
+  if not exist "%CORECLR_PERF%" (
+    call :print_error Specified testBinLoc: "%CORECLR_PERF%" does not exist.
     call :USAGE
   )
 
