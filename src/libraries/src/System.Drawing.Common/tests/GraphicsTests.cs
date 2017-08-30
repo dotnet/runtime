@@ -1821,6 +1821,7 @@ namespace System.Drawing.Tests
             }
         }
 
+        [ActiveIssue(23650)]
         [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(0, 0, 0, 0, 10, 10)]
