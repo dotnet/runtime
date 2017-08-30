@@ -219,7 +219,7 @@ namespace BasicEventSourceTests
                         Assert.True(timeSum < 2, $"FAILURE: {timeSum} < 2");    // But well under 2 sec.  
 
                             // Do all the things that depend on the count of events last so we know everything else is sane 
-                            Assert.True(4 <= evts.Count, "We expect two metrices at the begining trigger and two at the end trigger.  evts.Count = " + evts.Count);
+                            Assert.True(4 <= evts.Count, "We expect two metrics at the beginning trigger and two at the end trigger.  evts.Count = " + evts.Count);
                         Assert.True(evts.Count % 2 == 0, "We expect two metrics for every trigger.  evts.Count = " + evts.Count);
 
                         ValidateSingleEventCounter(evts[0], "Request", 0, 0, 0, float.PositiveInfinity, float.NegativeInfinity);
