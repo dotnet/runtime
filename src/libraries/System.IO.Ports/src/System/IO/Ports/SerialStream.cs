@@ -1794,7 +1794,7 @@ namespace System.IO.Ports
                         // We don't want to throw an exception from the background thread which is un-catchable and hence tear down the process.
                         // At present we don't have a first class event that we can raise for this class of fatal errors. One possibility is 
                         // to overload SeralErrors event to include another enum (perhaps CE_IOE) that we can use for this purpose. 
-                        // In the absene of that, it is better to eat this error silently than tearing down the process (lesser of the evil). 
+                        // In the absence of that, it is better to eat this error silently than tearing down the process (lesser of the evil). 
                         // This uncleared comm error will most likely blow up when the device is accessed by other APIs (such as Read) on the 
                         // main thread and hence become known. It is bit roundabout but acceptable.  
                         //  
