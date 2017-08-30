@@ -36,7 +36,7 @@ namespace System.Data
             }
         }
 
-        // This class exist to avoid alocatin of XmlNodeIdentety to every acces to the hash table.
+        // This class exist to avoid alocatin of XmlNodeIdentety to every access to the hash table.
         // Unfortunetely XmlNode doesn't export single identety object.
         internal sealed class XmlNodeIdHashtable : Hashtable
         {
