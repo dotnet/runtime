@@ -664,13 +664,10 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
         break;
 
         case GT_NULLCHECK:
-            // Although NULLCHECK is defined as GTK_NOVALUE, it requires a target
-            // register on ARM, as it is implemented as a load.
-            info->dstCount      = 1;
-            info->srcCount      = 1;
-            info->isLocalDefUse = true;
-            // null check is an indirection on an addr
-            TreeNodeInfoInitIndir(tree->AsIndir());
+            // It requires a internal register on ARM, as it is implemented as a load
+            assert(info->dstCount == 0);
+            info->srcCount         = 1;
+            info->internalIntCount = 1;
             break;
 
         case GT_IND:
