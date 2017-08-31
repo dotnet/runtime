@@ -368,11 +368,11 @@ rem ****************************************************************************
   if defined IS_SCENARIO_TEST set LV_PATTERN="%LV_RUNID%-%BENCHNAME%.xml" "%LV_RUNID%-*-%BENCHNAME%.xml"
 
   for %%f in (%LV_PATTERN%) do (
-    call :run_cmd py.exe "%BENCHVIEW_PATH%\measurement.py" %LV_MEASUREMENT_ARGS% "%%~f"
-
-    IF !ERRORLEVEL! NEQ 0 (
-      call :print_error Failed to generate BenchView measurement data.
-      exit /b 1
+    if exist "%%~f" (
+      call :run_cmd py.exe "%BENCHVIEW_PATH%\measurement.py" %LV_MEASUREMENT_ARGS% "%%~f" || (
+        call :print_error Failed to generate BenchView measurement data.
+        exit /b 1
+      )
     )
   )
 
