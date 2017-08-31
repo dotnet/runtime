@@ -246,7 +246,8 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentNullException, ArgumentException>("original", null, () => new Icon((Icon)null, new Size(32, 32)));
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        // libgdiplus causes a segfault when given an invalid Icon handle.
+        [PlatformSpecific(TestPlatforms.Windows)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_InvalidHandle_Success()
         {
@@ -282,7 +283,6 @@ namespace System.Drawing.Tests
             Assert.Throws<NullReferenceException>(() => new Icon(null, "48x48_multiple_entries_4bit.ico"));
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(typeof(Icon), null)]
         [InlineData(typeof(Icon), "")]
