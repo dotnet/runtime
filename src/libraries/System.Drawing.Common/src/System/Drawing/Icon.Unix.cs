@@ -44,14 +44,13 @@ using System.Runtime.InteropServices;
 
 namespace System.Drawing
 {
-    [Serializable]
 #if !NETCORE
 #if !MONOTOUCH
     [Editor ("System.Drawing.Design.IconEditor, " + Consts.AssemblySystem_Drawing_Design, typeof (System.Drawing.Design.UITypeEditor))]
 #endif
     [TypeConverter(typeof(IconConverter))]
 #endif
-    public sealed class Icon : MarshalByRefObject, ISerializable, ICloneable, IDisposable
+    public sealed partial class Icon : MarshalByRefObject, ISerializable, ICloneable, IDisposable
     {
         [StructLayout(LayoutKind.Sequential)]
         internal struct IconDirEntry
@@ -271,30 +270,7 @@ namespace System.Drawing
             }
         }
 
-        private Icon(SerializationInfo info, StreamingContext context)
-        {
-            MemoryStream dataStream = null;
-            int width = 0;
-            int height = 0;
-            foreach (SerializationEntry serEnum in info)
-            {
-                if (String.Compare(serEnum.Name, "IconData", true) == 0)
-                {
-                    dataStream = new MemoryStream((byte[])serEnum.Value);
-                }
-                if (String.Compare(serEnum.Name, "IconSize", true) == 0)
-                {
-                    Size iconSize = (Size)serEnum.Value;
-                    width = iconSize.Width;
-                    height = iconSize.Height;
-                }
-            }
-            if (dataStream != null)
-            {
-                dataStream.Seek(0, SeekOrigin.Begin);
-                InitFromStreamWithSize(dataStream, width, height);
-            }
-        }
+
 
         internal Icon(string resourceName, bool undisposable)
         {
@@ -308,14 +284,6 @@ namespace System.Drawing
                 InitFromStreamWithSize(s, 32, 32);      // 32x32 is default
             }
             this.undisposable = true;
-        }
-
-        void ISerializable.GetObjectData(SerializationInfo si, StreamingContext context)
-        {
-            MemoryStream ms = new MemoryStream();
-            Save(ms);
-            si.AddValue("IconSize", this.Size, typeof(Size));
-            si.AddValue("IconData", ms.ToArray());
         }
 
         public Icon(Stream stream, Size size) :
