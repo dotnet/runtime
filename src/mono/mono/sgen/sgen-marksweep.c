@@ -189,10 +189,15 @@ enum {
 	SWEEP_STATE_COMPACTING
 };
 
+typedef enum {
+	SGEN_SWEEP_SERIAL = FALSE,
+	SGEN_SWEEP_CONCURRENT = TRUE,
+} SgenSweepMode;
+
 static volatile int sweep_state = SWEEP_STATE_SWEPT;
 
 static gboolean concurrent_mark;
-static gboolean concurrent_sweep = TRUE;
+static gboolean concurrent_sweep = DEFAULT_SWEEP_MODE;
 
 int sweep_pool_context = -1;
 
