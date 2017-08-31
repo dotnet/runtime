@@ -7613,7 +7613,7 @@ GenTreePtr Compiler::gtCloneExpr(
             case GT_STORE_OBJ:
             {
                 ArrayInfo arrInfo;
-                if (TryGetArrayInfo(tree->AsIndir(), &arrInfo) && !tree->AsIndir()->gtOp1->OperIs(GT_INDEX_ADDR))
+                if (!tree->AsIndir()->gtOp1->OperIs(GT_INDEX_ADDR) && TryGetArrayInfo(tree->AsIndir(), &arrInfo))
                 {
                     GetArrayInfoMap()->Set(copy, arrInfo);
                 }
