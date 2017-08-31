@@ -61601,7 +61601,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchF\Adams\Adams\Adams.cmd
 WorkingDir=JIT\Performance\CodeQuality\BenchF\Adams\Adams
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [BenchMk2.cmd_7972]
@@ -61609,7 +61609,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchF\BenchMk2\BenchMk2\BenchMk2.cmd
 WorkingDir=JIT\Performance\CodeQuality\BenchF\BenchMk2\BenchMk2
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [BenchMrk.cmd_7973]
@@ -61617,7 +61617,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchF\BenchMrk\BenchMrk\BenchMrk.cmd
 WorkingDir=JIT\Performance\CodeQuality\BenchF\BenchMrk\BenchMrk
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [Bisect.cmd_7974]
@@ -61625,7 +61625,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchF\Bisect\Bisect\Bisect.cmd
 WorkingDir=JIT\Performance\CodeQuality\BenchF\Bisect\Bisect
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [DMath.cmd_7975]
@@ -61633,7 +61633,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchF\DMath\DMath\DMath.cmd
 WorkingDir=JIT\Performance\CodeQuality\BenchF\DMath\DMath
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [FFT.cmd_7976]
@@ -61641,7 +61641,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchF\FFT\FFT\FFT.cmd
 WorkingDir=JIT\Performance\CodeQuality\BenchF\FFT\FFT
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [InProd.cmd_7977]
@@ -61649,7 +61649,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchF\InProd\InProd\InProd.cmd
 WorkingDir=JIT\Performance\CodeQuality\BenchF\InProd\InProd
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [InvMt.cmd_7978]
@@ -61657,7 +61657,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchF\InvMt\InvMt\InvMt.cmd
 WorkingDir=JIT\Performance\CodeQuality\BenchF\InvMt\InvMt
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [LLoops.cmd_7979]
@@ -61665,7 +61665,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchF\LLoops\LLoops\LLoops.cmd
 WorkingDir=JIT\Performance\CodeQuality\BenchF\LLoops\LLoops
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [Lorenz.cmd_7980]
@@ -61673,7 +61673,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchF\Lorenz\Lorenz\Lorenz.cmd
 WorkingDir=JIT\Performance\CodeQuality\BenchF\Lorenz\Lorenz
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [MatInv4.cmd_7981]
@@ -61681,7 +61681,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchF\MatInv4\MatInv4\MatInv4.cmd
 WorkingDir=JIT\Performance\CodeQuality\BenchF\MatInv4\MatInv4
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [NewtE.cmd_7982]
@@ -61689,7 +61689,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchF\NewtE\NewtE\NewtE.cmd
 WorkingDir=JIT\Performance\CodeQuality\BenchF\NewtE\NewtE
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [NewtR.cmd_7983]
@@ -61697,7 +61697,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchF\NewtR\NewtR\NewtR.cmd
 WorkingDir=JIT\Performance\CodeQuality\BenchF\NewtR\NewtR
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [Regula.cmd_7984]
@@ -61705,7 +61705,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchF\Regula\Regula\Regula.cmd
 WorkingDir=JIT\Performance\CodeQuality\BenchF\Regula\Regula
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [Romber.cmd_7985]
@@ -61713,7 +61713,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchF\Romber\Romber\Romber.cmd
 WorkingDir=JIT\Performance\CodeQuality\BenchF\Romber\Romber
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [Secant.cmd_7986]
@@ -61721,7 +61721,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchF\Secant\Secant\Secant.cmd
 WorkingDir=JIT\Performance\CodeQuality\BenchF\Secant\Secant
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [Simpsn.cmd_7987]
@@ -61729,7 +61729,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchF\Simpsn\Simpsn\Simpsn.cmd
 WorkingDir=JIT\Performance\CodeQuality\BenchF\Simpsn\Simpsn
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [SqMtx.cmd_7988]
@@ -61737,7 +61737,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchF\SqMtx\SqMtx\SqMtx.cmd
 WorkingDir=JIT\Performance\CodeQuality\BenchF\SqMtx\SqMtx
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [Trap.cmd_7989]
@@ -61745,7 +61745,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchF\Trap\Trap\Trap.cmd
 WorkingDir=JIT\Performance\CodeQuality\BenchF\Trap\Trap
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [Whetsto.cmd_7990]
@@ -61753,7 +61753,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchF\Whetsto\Whetsto\Whetsto.cmd
 WorkingDir=JIT\Performance\CodeQuality\BenchF\Whetsto\Whetsto
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [8Queens.cmd_7991]
@@ -61761,7 +61761,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchI\8Queens\8Queens\8Queens.cmd
 WorkingDir=JIT\Performance\CodeQuality\BenchI\8Queens\8Queens
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [Ackermann.cmd_7992]
@@ -61769,7 +61769,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchI\Ackermann\Ackermann\Ackermann.cm
 WorkingDir=JIT\Performance\CodeQuality\BenchI\Ackermann\Ackermann
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [AddArray.cmd_7993]
@@ -61777,7 +61777,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchI\AddArray\AddArray\AddArray.cmd
 WorkingDir=JIT\Performance\CodeQuality\BenchI\AddArray\AddArray
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [AddArray2.cmd_7994]
@@ -61785,7 +61785,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchI\AddArray2\AddArray2\AddArray2.cm
 WorkingDir=JIT\Performance\CodeQuality\BenchI\AddArray2\AddArray2
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [Array1.cmd_7995]
@@ -61793,7 +61793,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchI\Array1\Array1\Array1.cmd
 WorkingDir=JIT\Performance\CodeQuality\BenchI\Array1\Array1
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [Array2.cmd_7996]
@@ -61801,7 +61801,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchI\Array2\Array2\Array2.cmd
 WorkingDir=JIT\Performance\CodeQuality\BenchI\Array2\Array2
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [BenchE.cmd_7997]
@@ -61809,7 +61809,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchI\BenchE\BenchE\BenchE.cmd
 WorkingDir=JIT\Performance\CodeQuality\BenchI\BenchE\BenchE
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [BubbleSort.cmd_7998]
@@ -61817,7 +61817,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchI\BubbleSort\BubbleSort\BubbleSort
 WorkingDir=JIT\Performance\CodeQuality\BenchI\BubbleSort\BubbleSort
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [BubbleSort2.cmd_7999]
@@ -61825,7 +61825,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchI\BubbleSort2\BubbleSort2\BubbleSo
 WorkingDir=JIT\Performance\CodeQuality\BenchI\BubbleSort2\BubbleSort2
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [CSieve.cmd_8000]
@@ -61833,7 +61833,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchI\CSieve\CSieve\CSieve.cmd
 WorkingDir=JIT\Performance\CodeQuality\BenchI\CSieve\CSieve
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [Fib.cmd_8001]
@@ -61841,7 +61841,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchI\Fib\Fib\Fib.cmd
 WorkingDir=JIT\Performance\CodeQuality\BenchI\Fib\Fib
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [HeapSort.cmd_8002]
@@ -61849,7 +61849,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchI\HeapSort\HeapSort\HeapSort.cmd
 WorkingDir=JIT\Performance\CodeQuality\BenchI\HeapSort\HeapSort
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [IniArray.cmd_8003]
@@ -61857,7 +61857,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchI\IniArray\IniArray\IniArray.cmd
 WorkingDir=JIT\Performance\CodeQuality\BenchI\IniArray\IniArray
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [LogicArray.cmd_8004]
@@ -61865,7 +61865,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchI\LogicArray\LogicArray\LogicArray
 WorkingDir=JIT\Performance\CodeQuality\BenchI\LogicArray\LogicArray
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [Midpoint.cmd_8005]
@@ -61873,7 +61873,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchI\Midpoint\Midpoint\Midpoint.cmd
 WorkingDir=JIT\Performance\CodeQuality\BenchI\Midpoint\Midpoint
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [MulMatrix.cmd_8006]
@@ -61881,7 +61881,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchI\MulMatrix\MulMatrix\MulMatrix.cm
 WorkingDir=JIT\Performance\CodeQuality\BenchI\MulMatrix\MulMatrix
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [NDhrystone.cmd_8007]
@@ -61889,7 +61889,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchI\NDhrystone\NDhrystone\NDhrystone
 WorkingDir=JIT\Performance\CodeQuality\BenchI\NDhrystone\NDhrystone
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [Permutate.cmd_8008]
@@ -61897,7 +61897,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchI\Permutate\Permutate\Permutate.cm
 WorkingDir=JIT\Performance\CodeQuality\BenchI\Permutate\Permutate
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [Pi.cmd_8009]
@@ -61905,7 +61905,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchI\Pi\Pi\Pi.cmd
 WorkingDir=JIT\Performance\CodeQuality\BenchI\Pi\Pi
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [Puzzle.cmd_8010]
@@ -61913,7 +61913,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchI\Puzzle\Puzzle\Puzzle.cmd
 WorkingDir=JIT\Performance\CodeQuality\BenchI\Puzzle\Puzzle
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [QuickSort.cmd_8011]
@@ -61921,7 +61921,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchI\QuickSort\QuickSort\QuickSort.cm
 WorkingDir=JIT\Performance\CodeQuality\BenchI\QuickSort\QuickSort
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [TreeInsert.cmd_8012]
@@ -61929,7 +61929,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchI\TreeInsert\TreeInsert\TreeInsert
 WorkingDir=JIT\Performance\CodeQuality\BenchI\TreeInsert\TreeInsert
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [TreeSort.cmd_8013]
@@ -61937,7 +61937,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchI\TreeSort\TreeSort\TreeSort.cmd
 WorkingDir=JIT\Performance\CodeQuality\BenchI\TreeSort\TreeSort
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [XposMatrix.cmd_8014]
@@ -61945,7 +61945,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchI\XposMatrix\XposMatrix\XposMatrix
 WorkingDir=JIT\Performance\CodeQuality\BenchI\XposMatrix\XposMatrix
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [binarytrees.cmd_8015]
@@ -61969,7 +61969,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchmarksGame\fastaredux\fastaredux\fa
 WorkingDir=JIT\Performance\CodeQuality\BenchmarksGame\fastaredux\fastaredux
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [nbody.cmd_8018]
@@ -61977,7 +61977,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchmarksGame\nbody\nbody\nbody.cmd
 WorkingDir=JIT\Performance\CodeQuality\BenchmarksGame\nbody\nbody
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [pi-digits.cmd_8019]
@@ -61993,7 +61993,7 @@ RelativePath=JIT\Performance\CodeQuality\BenchmarksGame\spectralnorm\spectralnor
 WorkingDir=JIT\Performance\CodeQuality\BenchmarksGame\spectralnorm\spectralnorm
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [Burgers.cmd_8021]
@@ -62017,7 +62017,7 @@ RelativePath=JIT\Performance\CodeQuality\FractalPerf\FractalPerf\FractalPerf.cmd
 WorkingDir=JIT\Performance\CodeQuality\FractalPerf\FractalPerf
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [Linq.cmd_8024]
@@ -62033,7 +62033,7 @@ RelativePath=JIT\Performance\CodeQuality\Math\Functions\Functions\Functions.cmd
 WorkingDir=JIT\Performance\CodeQuality\Math\Functions\Functions
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [CscBench.cmd_8026]
@@ -62073,7 +62073,7 @@ RelativePath=JIT\Performance\CodeQuality\SIMD\ConsoleMandel\ConsoleMandel\Consol
 WorkingDir=JIT\Performance\CodeQuality\SIMD\ConsoleMandel\ConsoleMandel
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [RayTracer.cmd_8031]
@@ -62105,7 +62105,7 @@ RelativePath=JIT\Performance\RunBenchmarks\RunBenchmarks\RunBenchmarks.cmd
 WorkingDir=JIT\Performance\RunBenchmarks\RunBenchmarks
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;Pri1
+Categories=EXPECTED_PASS
 HostStyle=0
 
 [b173569.cmd_8036]
@@ -81857,7 +81857,7 @@ RelativePath=JIT\Performance\CodeQuality\Inlining\NoThrowInline\NoThrowInline.cm
 WorkingDir=JIT\Performance\CodeQuality\Inlining\NoThrowInline
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW;Pri1
+Categories=EXPECTED_PASS;NEW
 HostStyle=0
 
 [Generated632.cmd_10536]
@@ -84193,7 +84193,7 @@ RelativePath=JIT\Performance\CodeQuality\Inlining\InlineGCStruct\InlineGCStruct.
 WorkingDir=JIT\Performance\CodeQuality\Inlining\InlineGCStruct
 Expected=0
 MaxAllowedDurationSeconds=600
-Categories=EXPECTED_PASS;NEW;Pri1
+Categories=EXPECTED_PASS;NEW
 HostStyle=0
 
 [Generated1429.cmd_10830]
