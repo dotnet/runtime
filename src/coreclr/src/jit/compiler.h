@@ -4670,6 +4670,8 @@ private:
 
     void fgSetRngChkTarget(GenTreePtr tree, bool delay = true);
 
+    BasicBlock* fgSetRngChkTargetInner(SpecialCodeKind kind, bool delay, unsigned* stkDepth);
+
 #if REARRANGE_ADDS
     void fgMoveOpsLeft(GenTreePtr tree);
 #endif
@@ -9327,6 +9329,37 @@ public:
             compRoot->m_arrayInfoMap = new (ialloc) NodeToArrayInfoMap(ialloc);
         }
         return compRoot->m_arrayInfoMap;
+    }
+
+    //-----------------------------------------------------------------------------------------------------------------
+    // Compiler::TryGetArrayInfo:
+    //    Given an indirection node, checks to see whether or not that indirection represents an array access, and
+    //    if so returns information about the array.
+    //
+    // Arguments:
+    //    indir           - The `GT_IND` node.
+    //    arrayInfo (out) - Information about the accessed array if this function returns true. Undefined otherwise.
+    //
+    // Returns:
+    //    True if the `GT_IND` node represents an array access; false otherwise.
+    inline bool TryGetArrayInfo(GenTreeIndir* indir, ArrayInfo* arrayInfo)
+    {
+        if ((indir->gtFlags & GTF_IND_ARR_INDEX) == 0)
+        {
+            return false;
+        }
+
+        if (indir->gtOp1->OperIs(GT_INDEX_ADDR))
+        {
+            GenTreeIndexAddr* const indexAddr = indir->gtOp1->AsIndexAddr();
+            *arrayInfo = ArrayInfo(indexAddr->gtElemType, indexAddr->gtElemSize, indexAddr->gtElemOffset,
+                                   indexAddr->gtStructElemClass);
+            return true;
+        }
+
+        bool found = GetArrayInfoMap()->Lookup(indir, arrayInfo);
+        assert(found);
+        return true;
     }
 
     NodeToUnsignedMap* m_memorySsaMap[MemoryKindCount];
