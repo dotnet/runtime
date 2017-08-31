@@ -3717,33 +3717,43 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			if (ins->dreg != ins->sreg1) {
 				s390_lgr  (code, ins->dreg, ins->sreg1);
 			}
-			if (s390_is_imm16 (ins->inst_imm)) {
-				s390_lghi (code, s390_r13, ins->inst_imm);
-			} else if (s390_is_imm32 (ins->inst_imm)) {
-				s390_lgfi (code, s390_r13, ins->inst_imm);
+			if ((mono_hwcap_s390x_has_gie) &&
+			    (s390_is_imm32 (ins->inst_imm))) {
+				s390_msgfi (code, ins->dreg, ins->inst_imm);
 			} else {
-				S390_SET (code, s390_r13, ins->inst_imm);
+				if (s390_is_imm16 (ins->inst_imm)) {
+					s390_lghi (code, s390_r13, ins->inst_imm);
+				} else if (s390_is_imm32 (ins->inst_imm)) {
+					s390_lgfi (code, s390_r13, ins->inst_imm);
+				} else {
+					S390_SET (code, s390_r13, ins->inst_imm);
+				}
+				s390_msgr (code, ins->dreg, s390_r13);
 			}
-			s390_msgr (code, ins->dreg, s390_r13);
 		}
 			break;
 		case OP_LMUL_OVF: {
 			short int *o[2];
-			s390_ltgr (code, s390_r1, ins->sreg1);
-			s390_jz   (code, 0); CODEPTR(code, o[0]);
-			s390_ltgr (code, s390_r0, ins->sreg2);
-			s390_jnz  (code, 6);
-			s390_lghi (code, s390_r1, 0);
-			s390_j    (code, 0); CODEPTR(code, o[1]);
-			s390_xgr  (code, s390_r0, s390_r1);
-			s390_msgr (code, s390_r1, ins->sreg2);
-			s390_xgr  (code, s390_r0, s390_r1);
-			s390_srlg (code, s390_r0, s390_r0, 0, 63);
-			s390_ltgr (code, s390_r0, s390_r0);
-			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_NZ, "OverflowException");
-			PTRSLOT	  (code, o[0]); 
-			PTRSLOT   (code, o[1]);
-			s390_lgr  (code, ins->dreg, s390_r1);
+			if (mono_hwcap_s390x_has_mie2) {
+				s390_msgrkc (code, ins->dreg, ins->sreg1, ins->sreg2);
+				EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
+			} else {
+				s390_ltgr (code, s390_r1, ins->sreg1);
+				s390_jz   (code, 0); CODEPTR(code, o[0]);
+				s390_ltgr (code, s390_r0, ins->sreg2);
+				s390_jnz  (code, 6);
+				s390_lghi (code, s390_r1, 0);
+				s390_j    (code, 0); CODEPTR(code, o[1]);
+				s390_xgr  (code, s390_r0, s390_r1);
+				s390_msgr (code, s390_r1, ins->sreg2);
+				s390_xgr  (code, s390_r0, s390_r1);
+				s390_srlg (code, s390_r0, s390_r0, 0, 63);
+				s390_ltgr (code, s390_r0, s390_r0);
+				EMIT_COND_SYSTEM_EXCEPTION (S390_CC_NZ, "OverflowException");
+				PTRSLOT	  (code, o[0]); 
+				PTRSLOT   (code, o[1]);
+				s390_lgr  (code, ins->dreg, s390_r1);
+			}
 		}
 			break;
 		case OP_LMUL_OVF_UN: {
@@ -3798,26 +3808,42 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_LADD_OVF:
 		case OP_S390_LADD_OVF: {
-			CHECK_SRCDST_COM;
-			s390_agr    (code, ins->dreg, src2);
+			if (mono_hwcap_s390x_has_mlt) {
+				s390_agrk (code, ins->dreg, ins->sreg1, ins->sreg2);
+			} else { 
+				CHECK_SRCDST_COM;
+				s390_agr    (code, ins->dreg, src2);
+			}
 			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
 		}
 			break;
 		case OP_LADD_OVF_UN:
 		case OP_S390_LADD_OVF_UN: {
-			CHECK_SRCDST_COM;
-			s390_algr  (code, ins->dreg, src2);
+			if (mono_hwcap_s390x_has_mlt) {
+				s390_algrk (code, ins->dreg, ins->sreg1, ins->sreg2);
+			} else { 
+				CHECK_SRCDST_COM;
+				s390_algr  (code, ins->dreg, src2);
+			}
 			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_CY, "OverflowException");
 		}
 			break;
 		case OP_ISUBCC: {
-			CHECK_SRCDST_NCOM_I;
-			s390_slgr (code, ins->dreg, src2);
+			if (mono_hwcap_s390x_has_mlt) {
+				s390_slgrk (code, ins->dreg, ins->sreg1, ins->sreg2);
+			} else {
+				CHECK_SRCDST_NCOM_I;
+				s390_slgr (code, ins->dreg, src2);
+			}
 		}
 			break;
 		case OP_ISUB: {
-			CHECK_SRCDST_NCOM_I;
-			s390_sgr  (code, ins->dreg, src2);
+			if (mono_hwcap_s390x_has_mlt) {
+				s390_sgrk (code, ins->dreg, ins->sreg1, ins->sreg2);
+			} else {
+				CHECK_SRCDST_NCOM_I;
+				s390_sgr  (code, ins->dreg, src2);
+			}
 		}
 			break;
 		case OP_ISBB: {
@@ -3843,24 +3869,37 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_ISUB_OVF:
 		case OP_S390_ISUB_OVF: {
-			CHECK_SRCDST_NCOM;
-			s390_sr   (code, ins->dreg, src2);
-			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
-			s390_lgfr (code, ins->dreg, ins->dreg);
+			if (mono_hwcap_s390x_has_mlt) {
+				s390_srk (code, ins->dreg, ins->sreg1, ins->sreg2);
+				EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
+			} else { 
+				CHECK_SRCDST_NCOM;
+				s390_sr   (code, ins->dreg, src2);
+				EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
+				s390_lgfr (code, ins->dreg, ins->dreg);
+			}
 		}
 			break;
 		case OP_ISUB_OVF_UN:
 		case OP_S390_ISUB_OVF_UN: {
-			CHECK_SRCDST_NCOM;
-			s390_slr  (code, ins->dreg, src2);
+			if (mono_hwcap_s390x_has_mlt) {
+				s390_slrk  (code, ins->dreg, ins->sreg1, ins->sreg2);
+			} else {
+				CHECK_SRCDST_NCOM;
+				s390_slr  (code, ins->dreg, src2);
+			}
 			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_NC, "OverflowException");
 			s390_llgfr(code, ins->dreg, ins->dreg);
 		}
 			break;
 		case OP_LSUB_OVF:
 		case OP_S390_LSUB_OVF: {
-			CHECK_SRCDST_NCOM;
-			s390_sgr   (code, ins->dreg, src2);
+			if (mono_hwcap_s390x_has_mlt) {
+				s390_sgrk  (code, ins->dreg, ins->sreg1, ins->sreg2);
+			} else {
+				CHECK_SRCDST_NCOM;
+				s390_sgr   (code, ins->dreg, src2);
+			}
 			EMIT_COND_SYSTEM_EXCEPTION (S390_CC_OV, "OverflowException");
 		}
 			break;

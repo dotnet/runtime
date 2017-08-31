@@ -63,7 +63,7 @@ typedef struct {
 	uint8_t	ee:1;		// 035 - Execute extensions
 	uint8_t	em:1;		// 036 - Enhanced monitor
 	uint8_t	fpe:1;		// 037 - Floating point extension
-	uint8_t	x001:1;		// 038 - Undefined
+	uint8_t	opcf:1;		// 038 - Order-preserving-compression facility
 	uint8_t	ibm03:1;	// 039 - Assigned to IBM
 	uint8_t	spp:1;		// 040 - Set program parameters
 	uint8_t	fpse:1;		// 041 - FP support enhancement
@@ -79,11 +79,11 @@ typedef struct {
 	uint8_t	ltlb:1;		// 051 - Local TLB clearing
 	uint8_t	ia:1;		// 052 - Interlocked access
 	uint8_t	lsoc2:1;	// 053 - Load/store on CC 2
-	uint8_t	x002:1;		// 054 - Undefined
+	uint8_t	eecf:1;		// 054 - Entropy-encoding compression facility
 	uint8_t	ibm05:1;	// 055 - Assigned to IBM
 	uint8_t	x003:1;		// 056 - Undefined
 	uint8_t	msa5:1;		// 057 - Message security assist 5
-	uint8_t	x004:1;		// 058 - Undefined
+	uint8_t	mie2:1;		// 058 - Miscellaneous execution facility 2
 	uint8_t	x005:1;		// 059 - Undefined
 	uint8_t	x006:1;		// 060 - Undefined
 	uint8_t	x007:1;		// 061 - Undefined
@@ -110,11 +110,27 @@ typedef struct {
 	uint8_t x012[5];	// 088-127 - Undefined
 	uint8_t ibm12:1;	// 128 - Assigned to IBM
 	uint8_t	vec:1;		// 129 - Vector facility
-	uint8_t	x013:6;		// 130-135 - Undefined
-	uint8_t x014:6;		// 136-141 - Undefined
+	uint8_t	iep:1; 		// 130 - Instruction Execution Protection Facility
+	uint8_t	sea:1; 		// 131 - Side-effect-access Faility
+	uint8_t	x013:1;		// 132 - Undefined
+	uint8_t	gs:1;  		// 133 - Guarded Storage Facility
+	uint8_t	vpd:1;		// 134 - Vector Packed Decimal Facility
+	uint8_t	ve1:1;		// 135 - Vector Enhancements Facilityty
+	uint8_t x014:2;		// 136-137 - Undefined
+	uint8_t cazm:1;		// 138 - Configuration-z/Architecture-arcitectural -mode Faciliy
+	uint8_t mef:1; 		// 139 - Multiple-epoch Facility ture-arcitectural -mode Faciliy
+	uint8_t ibm13:2;	// 140-141 - Assigned to IBM
 	uint8_t	sccm:1;		// 142 - Store CPU counter multiple
-	uint8_t ibm13:1;	// 143 - Assigned to IBM
-	uint8_t x015[14];	// 144-256 Undefined
+	uint8_t x015:1; 	// 143 - Assigned to IBM
+	uint8_t tpei:1; 	// 144 - Test Pending External Interrption Facility
+	uint8_t irbm:1; 	// 145 - Insert Reference Bits Multiple Facility
+	uint8_t mse8:1; 	// 146 - Message Security Assist Extension 8
+	uint8_t ibm14:1;	// 147 - Reserved for IBM use
+	uint8_t x016:4; 	// 148-151 - Undefined
+	uint8_t x017[2];	// 152-167 - Undefined
+	uint8_t esac:1; 	// 168 - ESA/390 Compatibility Mode Facility
+	uint8_t x018:7;  	// 169-175 - Undefined
+	uint8_t x019[10];	// 176-256 Undefined
 } __attribute__ ((__packed__)) __attribute__ ((__aligned__(8))) facilityList_t;
 
 void
@@ -131,9 +147,11 @@ mono_hwcap_arch_init (void)
 		: "0", "cc"
 	);
 
-	mono_hwcap_s390x_has_fpe = facs.fpe;
-	mono_hwcap_s390x_has_vec = facs.vec;
-	mono_hwcap_s390x_has_mlt = facs.multi;
-	mono_hwcap_s390x_has_ia  = facs.ia;
-	mono_hwcap_s390x_has_gie = facs.gie;
+	mono_hwcap_s390x_has_fpe  = facs.fpe;
+	mono_hwcap_s390x_has_vec  = facs.vec;
+	mono_hwcap_s390x_has_mlt  = facs.multi;
+	mono_hwcap_s390x_has_ia   = facs.ia;
+	mono_hwcap_s390x_has_gie  = facs.gie;
+	mono_hwcap_s390x_has_mie2 = facs.mie2;
+	mono_hwcap_s390x_has_gs   = facs.gs;
 }
