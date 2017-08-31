@@ -321,13 +321,11 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Dispose_IconData_DestroysHandle()
         {
             var icon = new Icon(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico"));
             icon.Dispose();
-
             Assert.Throws<ObjectDisposedException>(() => icon.Handle);
         }
 

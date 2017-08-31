@@ -671,8 +671,13 @@ namespace System.Drawing
         {
             get
             {
+                if (disposed)
+                {
+                    throw new ObjectDisposedException(GetType().Name);
+                }
+
                 // note: this handle doesn't survive the lifespan of the icon instance
-                if (!disposed && (handle == IntPtr.Zero))
+                if (handle == IntPtr.Zero)
                 {
                     if (GDIPlus.RunningOnUnix())
                     {
