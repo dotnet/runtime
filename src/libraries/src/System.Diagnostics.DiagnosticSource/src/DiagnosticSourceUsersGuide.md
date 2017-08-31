@@ -104,7 +104,7 @@ Perhaps confusingly you make a DiagnosticSource by creating a DiagnosticListener
 	static DiagnosticSource mySource = new DiagnosticListener("System.Net.Http");
 
 Basically a DiagnosticListener is a named place where a source sends its information (events).  
-From an implementation point of view, DiagnosticSource is a abstract class that has the two
+From an implementation point of view, DiagnosticSource is an abstract class that has the two
 instrumentation methods, and DiagnosticListener is something that implements that abstract class.
 Thus every DiagnosticListener is a DiagnosticSource, and by making a DiagnosticListener you 
 implicitly make a DiagnosticSource as well. 

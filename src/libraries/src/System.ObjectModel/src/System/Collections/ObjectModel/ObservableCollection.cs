@@ -268,7 +268,7 @@ namespace System.Collections.ObjectModel
         }
 
         /// <summary>
-        /// Disallow reentrant attempts to change this collection. E.g. a event handler
+        /// Disallow reentrant attempts to change this collection. E.g. an event handler
         /// of the CollectionChanged event is not allowed to make changes to this collection.
         /// </summary>
         /// <remarks>

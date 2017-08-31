@@ -1336,7 +1336,7 @@ namespace System.Configuration
                             ((lockType != ConfigurationLockCollectionType.LockedElements) &&
                             (lockType != ConfigurationLockCollectionType.LockedElementsExceptionList) &&
                             typeof(ConfigurationElement).IsAssignableFrom(propToLock.Type)) ||
-                            // or if not locking elements but the property is a element
+                            // or if not locking elements but the property is an element
                             (((lockType == ConfigurationLockCollectionType.LockedElements) ||
                             (lockType == ConfigurationLockCollectionType.LockedElementsExceptionList)) &&
                             !typeof(ConfigurationElement).IsAssignableFrom(propToLock.Type))

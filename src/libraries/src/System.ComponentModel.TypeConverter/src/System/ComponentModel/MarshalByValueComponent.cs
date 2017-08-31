@@ -42,7 +42,7 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        ///    <para>Adds a event handler to listen to the Disposed event on the component.</para>
+        ///    <para>Adds an event handler to listen to the Disposed event on the component.</para>
         /// </summary>
         public event EventHandler Disposed
         {

@@ -3685,7 +3685,7 @@ namespace System.Net.Sockets
 
         // Routine Description:
         // 
-        //    BeginAccept - Does a async winsock accept, creating a new socket on success
+        //    BeginAccept - Does an async winsock accept, creating a new socket on success
         // 
         //     Works by creating a pending accept request the first time,
         //     and subsequent calls are queued so that when the first accept completes,
