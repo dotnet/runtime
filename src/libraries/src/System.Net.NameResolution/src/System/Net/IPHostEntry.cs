@@ -6,7 +6,7 @@ namespace System.Net
 {
     // Host information
     /// <devdoc>
-    ///    <para>Provides a container class for Internet host address information..</para>
+    ///    <para>Provides a container class for Internet host address information.</para>
     /// </devdoc>
     public class IPHostEntry
     {

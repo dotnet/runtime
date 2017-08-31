@@ -2645,7 +2645,7 @@ namespace System.ComponentModel
         /// <summary>
         ///     This class is a type description provider that works with the IComNativeDescriptorHandler
         ///     interface.
-        //// </summary>
+        /// </summary>
         private sealed class ComNativeDescriptionProvider : TypeDescriptionProvider
         {
 #pragma warning disable 618
@@ -2656,14 +2656,14 @@ namespace System.ComponentModel
 
             /// <summary>
             ///     Returns the COM handler object.
-            //// </summary>
+            /// </summary>
             internal IComNativeDescriptorHandler Handler { get; set; }
 #pragma warning restore 618
             
             /// <summary>
             ///     Implements GetTypeDescriptor.  This creates a custom type
             ///     descriptor that walks the linked list for each of its calls.
-            //// </summary>
+            /// </summary>
             
             [SuppressMessage("Microsoft.Globalization", "CA1303:DoNotPassLiteralsAsLocalizedParameters")]
             public override ICustomTypeDescriptor GetTypeDescriptor(Type objectType, object instance)
@@ -2689,7 +2689,7 @@ namespace System.ComponentModel
             /// <summary>
             ///     This type descriptor sits on top of a native
             ///     descriptor handler.
-            //// </summary>
+            /// </summary>
             private sealed class ComNativeTypeDescriptor : ICustomTypeDescriptor
             {
 #pragma warning disable 618
@@ -2698,7 +2698,7 @@ namespace System.ComponentModel
 
                 /// <summary>
                 ///     Creates a new ComNativeTypeDescriptor.
-                //// </summary>
+                /// </summary>
                 internal ComNativeTypeDescriptor(IComNativeDescriptorHandler handler, object instance)
                 {
                     _handler = handler;
