@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Net.Sockets;
 using Xunit;
 
@@ -73,9 +74,6 @@ namespace System.Net.Primitives.Functional.Tests
 
         public static readonly object[][] InvalidIpv4Addresses =
         {
-            new object[] { "" }, // empty
-            new object[] { " " }, // whitespace
-            new object[] { "  " }, // whitespace
             new object[] { " 127.0.0.1" }, // leading whitespace
             new object[] { "127.0.0.1 " }, // trailing whitespace
             new object[] { " 127.0.0.1 " }, // leading and trailing whitespace
@@ -84,7 +82,6 @@ namespace System.Net.Primitives.Functional.Tests
             new object[] { "1.1.1.0x" }, // Empty trailing hex segment
             new object[] { "0000X9D.0x3B.0X19.0x1B" }, // Leading zeros on hex
             new object[] { "0x.1.1.1" }, // Empty leading hex segment
-            new object[] { "0.0.0.089" }, // Octal (leading zero) but with 8 or 9
             new object[] { "260.156" }, // Left dotted segments can't be more than 255
             new object[] { "255.260.156" }, // Left dotted segments can't be more than 255
             new object[] { "255.1.1.256" }, // Right dotted segment can't be more than 255
@@ -109,8 +106,17 @@ namespace System.Net.Primitives.Functional.Tests
             new object[] { "12.1.abc.5" }, // text in section
         };
 
+        public static readonly object[][] InvalidIpv4AddressesStandalone = // but valid as part of IPv6 addresses
+        {
+            new object[] { "" }, // empty
+            new object[] { " " }, // whitespace
+            new object[] { "  " }, // whitespace
+            new object[] { "0.0.0.089" }, // Octal (leading zero) but with 8 or 9
+        };
+
         [Theory]
         [MemberData(nameof(InvalidIpv4Addresses))]
+        [MemberData(nameof(InvalidIpv4AddressesStandalone))]
         public void ParseIPv4_InvalidAddress_Failure(string address)
         {
             ParseInvalidAddress(address, hasInnerSocketException: !PlatformDetection.IsFullFramework);
@@ -296,55 +302,66 @@ namespace System.Net.Primitives.Functional.Tests
             }
         }
 
-        public static readonly object[][] InvalidIpv6Addresses =
+        public static IEnumerable<object[]> InvalidIpv6Addresses()
         {
-            new object[] { ":::4df" },
-            new object[] { "4df:::" },
-            new object[] { "0:::4df" },
-            new object[] { "4df:::0" },
-            new object[] { "::4df:::" },
-            new object[] { "0::4df:::" },
-            new object[] { " ::1" },
-            new object[] { ":: 1" },
-            new object[] { ":" },
-            new object[] { "0:0:0:0:0:0:0:0:0" },
-            new object[] { "0:0:0:0:0:0:0" },
-            new object[] { "0FFFF::" },
-            new object[] { "FFFF0::" },
-            new object[] { "[::1" },
-            new object[] { "Fe08::/64" }, // with subnet
-            new object[] { "[Fe08::1]:80Z" }, // brackets and invalid port
-            new object[] { "[Fe08::1" }, // leading bracket
-            new object[] { "[[Fe08::1" }, // two leading brackets
-            new object[] { "Fe08::1]" }, // trailing bracket
-            new object[] { "Fe08::1]]" }, // two trailing brackets
-            new object[] { "[Fe08::1]]" }, // one leading and two trailing brackets
-            new object[] { ":1" }, // leading single colon
-            new object[] { "1:" }, // trailing single colon
-            new object[] { " ::1" }, // leading whitespace
-            new object[] { "::1 " }, // trailing whitespace
-            new object[] { " ::1 " }, // leading and trailing whitespace
-            new object[] { "1::1::1" }, // ambiguous failure
-            new object[] { "1234::ABCD:1234::ABCD:1234:ABCD" }, // can only use :: once
-            new object[] { "1:1\u67081:1:1" }, // invalid char
-            new object[] { "FE08::260.168.0.1" }, // out of range
-            new object[] { "::192.168.0.0x0" }, // hex failure
-            new object[] { "G::" }, // invalid hex
-            new object[] { "FFFFF::" }, // invalid value
-            new object[] { ":%12" }, // colon scope
-            new object[] { "::%1a" }, // alphanumeric scope
-            new object[] { "[2001:0db8:85a3:08d3:1319:8a2e:0370:7344]:443/" }, // errneous ending slash after ignored port
-            new object[] { "::1234%0x12" }, // invalid scope ID
+            yield return new object[] { ":::4df" };
+            yield return new object[] { "4df:::" };
+            yield return new object[] { "0:::4df" };
+            yield return new object[] { "4df:::0" };
+            yield return new object[] { "::4df:::" };
+            yield return new object[] { "0::4df:::" };
+            yield return new object[] { " ::1" };
+            yield return new object[] { ":: 1" };
+            yield return new object[] { ":" };
+            yield return new object[] { "0:0:0:0:0:0:0:0:0" };
+            yield return new object[] { "0:0:0:0:0:0:0" };
+            yield return new object[] { "0FFFF::" };
+            yield return new object[] { "FFFF0::" };
+            yield return new object[] { "[::1" }; // missing closing bracket
+            yield return new object[] { "Fe08::/64" }; // with subnet
+            yield return new object[] { "[Fe08::1]:80Z" }; // brackets and invalid port
+            yield return new object[] { "[Fe08::1" }; // leading bracket
+            yield return new object[] { "[[Fe08::1" }; // two leading brackets
+            yield return new object[] { "Fe08::1]" }; // trailing bracket
+            yield return new object[] { "Fe08::1]]" }; // two trailing brackets
+            yield return new object[] { "[Fe08::1]]" }; // one leading and two trailing brackets
+            yield return new object[] { ":1" }; // leading single colon
+            yield return new object[] { "1:" }; // trailing single colon
+            yield return new object[] { " ::1" }; // leading whitespace
+            yield return new object[] { "::1 " }; // trailing whitespace
+            yield return new object[] { " ::1 " }; // leading and trailing whitespace
+            yield return new object[] { "1::1::1" }; // ambiguous failure
+            yield return new object[] { "1234::ABCD:1234::ABCD:1234:ABCD" }; // can only use :: once
+            yield return new object[] { "1:1\u67081:1:1" }; // invalid char
+            yield return new object[] { "FE08::260.168.0.1" }; // out of range
+            yield return new object[] { "::192.168.0.0x0" }; // hex failure
+            yield return new object[] { "G::" }; // invalid hex
+            yield return new object[] { "FFFFF::" }; // invalid value
+            yield return new object[] { ":%12" }; // colon scope
+            yield return new object[] { "::%1a" }; // alphanumeric scope
+            yield return new object[] { "[2001:0db8:85a3:08d3:1319:8a2e:0370:7344]:443/" }; // errneous ending slash after ignored port
+            yield return new object[] { "::1234%0x12" }; // invalid scope ID
 
-            new object[] { "e3fff:ffff:ffff:ffff:ffff:ffff:ffff:abcd" }, // 1st number too long
-            new object[] { "3fff:effff:ffff:ffff:ffff:ffff:ffff:abcd" }, // 2nd number too long
-            new object[] { "3fff:ffff:effff:ffff:ffff:ffff:ffff:abcd" }, // 3rd number too long
-            new object[] { "3fff:ffff:ffff:effff:ffff:ffff:ffff:abcd" }, // 4th number too long
-            new object[] { "3fff:ffff:ffff:ffff:effff:ffff:ffff:abcd" }, // 5th number too long
-            new object[] { "3fff:ffff:ffff:ffff:ffff:effff:ffff:abcd" }, // 6th number too long
-            new object[] { "3fff:ffff:ffff:ffff:ffff:ffff:effff:abcd" }, // 7th number too long
-            new object[] { "3fff:ffff:ffff:ffff:ffff:ffff:ffff:eabcd" }, // 8th number too long
-        };
+            yield return new object[] { "e3fff:ffff:ffff:ffff:ffff:ffff:ffff:abcd" }; // 1st number too long
+            yield return new object[] { "3fff:effff:ffff:ffff:ffff:ffff:ffff:abcd" }; // 2nd number too long
+            yield return new object[] { "3fff:ffff:effff:ffff:ffff:ffff:ffff:abcd" }; // 3rd number too long
+            yield return new object[] { "3fff:ffff:ffff:effff:ffff:ffff:ffff:abcd" }; // 4th number too long
+            yield return new object[] { "3fff:ffff:ffff:ffff:effff:ffff:ffff:abcd" }; // 5th number too long
+            yield return new object[] { "3fff:ffff:ffff:ffff:ffff:effff:ffff:abcd" }; // 6th number too long
+            yield return new object[] { "3fff:ffff:ffff:ffff:ffff:ffff:effff:abcd" }; // 7th number too long
+            yield return new object[] { "3fff:ffff:ffff:ffff:ffff:ffff:ffff:eabcd" }; // 8th number too long
+
+            // Various IPv6 addresses including invalid IPv4 addresses
+            foreach (object[] invalidIPv4AddressArray in InvalidIpv4Addresses)
+            {
+                string invalidIPv4Address = (string)invalidIPv4AddressArray[0];
+                yield return new object[] { "3fff:ffff:ffff:ffff:ffff:ffff:ffff:" + invalidIPv4Address };
+                yield return new object[] { "::" + invalidIPv4Address }; // SIIT
+                yield return new object[] { "::FF:" + invalidIPv4Address }; // SIIT
+                yield return new object[] { "::5EFE:" + invalidIPv4Address }; // ISATAP
+                yield return new object[] { "1::5EFE:" + invalidIPv4Address }; // ISATAP
+            }
+        }
 
         [Theory]
         [MemberData(nameof(InvalidIpv6Addresses))]
