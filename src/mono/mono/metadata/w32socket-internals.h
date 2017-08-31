@@ -29,11 +29,6 @@
 #define TF_REUSE_SOCKET 0x02
 
 typedef struct {
-	guint32 len;
-	gpointer buf;
-} WSABUF, *LPWSABUF;
-
-typedef struct {
 	gpointer Head;
 	guint32 HeadLength;
 	gpointer Tail;

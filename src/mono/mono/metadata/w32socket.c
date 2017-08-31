@@ -1429,20 +1429,14 @@ ves_icall_System_Net_Sockets_Socket_Duplicate_internal (gpointer handle, gint32 
 }
 
 gint32
-ves_icall_System_Net_Sockets_Socket_Receive_internal (gsize sock, MonoArrayHandle buffer, gint32 offset, gint32 count, gint32 flags, gint32 *werror, gboolean blocking, MonoError *error)
+ves_icall_System_Net_Sockets_Socket_Receive_internal (gsize sock, gchar *buffer, gint32 count, gint32 flags, gint32 *werror, gboolean blocking, MonoError *error)
 {
 	int ret;
-	gint32 alen;
 	int recvflags = 0;
 	gboolean interrupted;
-	MonoInternalThread* curthread G_GNUC_UNUSED = mono_thread_internal_current ();
 	
 	error_init (error);
 	*werror = 0;
-	
-	alen = mono_array_handle_length (buffer);
-	if (offset > alen - count)
-		return 0;
 	
 	recvflags = convert_socketflags (flags);
 	if (recvflags == -1) {
@@ -1454,12 +1448,7 @@ ves_icall_System_Net_Sockets_Socket_Receive_internal (gsize sock, MonoArrayHandl
 	if (interrupted)
 		return 0;
 
-	uint32_t gchandle;
-	gchar *buf = MONO_ARRAY_HANDLE_PIN (buffer, gchar, offset, &gchandle);
-
-	ret = mono_w32socket_recv (sock, buf, count, recvflags, blocking);
-
-	mono_gchandle_free (gchandle);
+	ret = mono_w32socket_recv (sock, buffer, count, recvflags, blocking);
 	
 	if (ret == SOCKET_ERROR)
 		*werror = mono_w32socket_get_last_error ();
@@ -1475,17 +1464,15 @@ ves_icall_System_Net_Sockets_Socket_Receive_internal (gsize sock, MonoArrayHandl
 }
 
 gint32
-ves_icall_System_Net_Sockets_Socket_Receive_array_internal (gsize sock, MonoArrayHandle buffers, gint32 flags, gint32 *werror, gboolean blocking, MonoError *error)
+ves_icall_System_Net_Sockets_Socket_Receive_array_internal (gsize sock, WSABUF *buffers, gint32 count, gint32 flags, gint32 *werror, gboolean blocking, MonoError *error)
 {
-	int ret, count;
+	int ret;
 	gboolean interrupted;
 	guint32 recv;
 	guint32 recvflags = 0;
 	
 	error_init (error);
 	*werror = 0;
-	
-	count = mono_array_handle_length (buffers);
 	
 	recvflags = convert_socketflags (flags);
 	if (recvflags == -1) {
@@ -1499,12 +1486,7 @@ ves_icall_System_Net_Sockets_Socket_Receive_array_internal (gsize sock, MonoArra
 		return 0;
 	}
 
-	uint32_t gchandle;
-	WSABUF *wsabufs = MONO_ARRAY_HANDLE_PIN (buffers, WSABUF, 0, &gchandle);
-
-	ret = mono_w32socket_recvbuffers (sock, wsabufs, count, &recv, &recvflags, NULL, NULL, blocking);
-
-	mono_gchandle_free (gchandle);
+	ret = mono_w32socket_recvbuffers (sock, buffers, count, &recv, &recvflags, NULL, NULL, blocking);
 
 	if (ret == SOCKET_ERROR)
 		*werror = mono_w32socket_get_last_error ();
@@ -1520,11 +1502,9 @@ ves_icall_System_Net_Sockets_Socket_Receive_array_internal (gsize sock, MonoArra
 }
 
 gint32
-ves_icall_System_Net_Sockets_Socket_ReceiveFrom_internal (gsize sock, MonoArrayHandle buffer, gint32 offset, gint32 count, gint32 flags, MonoObjectHandle sockaddr, gint32 *werror, gboolean blocking, MonoError *error)
+ves_icall_System_Net_Sockets_Socket_ReceiveFrom_internal (gsize sock, gchar *buffer, gint32 count, gint32 flags, MonoObjectHandle sockaddr, gint32 *werror, gboolean blocking, MonoError *error)
 {
 	int ret;
-	gchar *buf;
-	gint32 alen;
 	int recvflags = 0;
 	struct sockaddr *sa;
 	socklen_t sa_size;
@@ -1532,10 +1512,6 @@ ves_icall_System_Net_Sockets_Socket_ReceiveFrom_internal (gsize sock, MonoArrayH
 	
 	error_init (error);
 	*werror = 0;
-	
-	alen = mono_array_handle_length (buffer);
-	if (offset > alen - count)
-		return 0;
 
 	sa = create_sockaddr_from_handle (sockaddr, &sa_size, werror, error);
 	if (*werror != 0)
@@ -1556,12 +1532,7 @@ ves_icall_System_Net_Sockets_Socket_ReceiveFrom_internal (gsize sock, MonoArrayH
 		return 0;
 	}
 
-	uint32_t gchandle;
-	buf = MONO_ARRAY_HANDLE_PIN (buffer, gchar, offset, &gchandle);
-
-	ret = mono_w32socket_recvfrom (sock, buf, count, recvflags, sa, &sa_size, blocking);
-
-	mono_gchandle_free (gchandle);
+	ret = mono_w32socket_recvfrom (sock, buffer, count, recvflags, sa, &sa_size, blocking);
 
 	if (ret == SOCKET_ERROR)
 		*werror = mono_w32socket_get_last_error ();
@@ -1596,21 +1567,14 @@ ves_icall_System_Net_Sockets_Socket_ReceiveFrom_internal (gsize sock, MonoArrayH
 }
 
 gint32
-ves_icall_System_Net_Sockets_Socket_Send_internal (gsize sock, MonoArrayHandle buffer, gint32 offset, gint32 count, gint32 flags, gint32 *werror, gboolean blocking, MonoError *error)
+ves_icall_System_Net_Sockets_Socket_Send_internal (gsize sock, gchar *buffer, gint32 count, gint32 flags, gint32 *werror, gboolean blocking, MonoError *error)
 {
 	int ret;
-	gint32 alen;
 	int sendflags = 0;
 	gboolean interrupted;
 	
 	error_init (error);
 	*werror = 0;
-	
-	alen = mono_array_handle_length (buffer);
-	if (offset > alen - count)
-		return 0;
-
-	LOGDEBUG (g_message("%s: alen: %d", __func__, alen));
 	
 	LOGDEBUG (g_message("%s: Sending %d bytes", __func__, count));
 
@@ -1626,12 +1590,7 @@ ves_icall_System_Net_Sockets_Socket_Send_internal (gsize sock, MonoArrayHandle b
 		return 0;
 	}
 
-	uint32_t gchandle;
-	gchar *buf = MONO_ARRAY_HANDLE_PIN (buffer, gchar, offset, &gchandle);
-
-	ret = mono_w32socket_send (sock, buf, count, sendflags, blocking);
-
-	mono_gchandle_free (gchandle);
+	ret = mono_w32socket_send (sock, buffer, count, sendflags, blocking);
 
 	if (ret == SOCKET_ERROR)
 		*werror = mono_w32socket_get_last_error ();
@@ -1647,17 +1606,15 @@ ves_icall_System_Net_Sockets_Socket_Send_internal (gsize sock, MonoArrayHandle b
 }
 
 gint32
-ves_icall_System_Net_Sockets_Socket_Send_array_internal (gsize sock, MonoArrayHandle buffers, gint32 flags, gint32 *werror, gboolean blocking, MonoError *error)
+ves_icall_System_Net_Sockets_Socket_Send_array_internal (gsize sock, WSABUF *buffers, gint32 count, gint32 flags, gint32 *werror, gboolean blocking, MonoError *error)
 {
-	int ret, count;
+	int ret;
 	guint32 sent;
 	guint32 sendflags = 0;
 	gboolean interrupted;
 	
 	error_init (error);
 	*werror = 0;
-	
-	count = mono_array_handle_length (buffers);
 	
 	sendflags = convert_socketflags (flags);
 	if (sendflags == -1) {
@@ -1671,12 +1628,7 @@ ves_icall_System_Net_Sockets_Socket_Send_array_internal (gsize sock, MonoArrayHa
 		return 0;
 	}
 
-	uint32_t gchandle;
-	WSABUF *wsabufs = MONO_ARRAY_HANDLE_PIN (buffers, WSABUF, 0, &gchandle);
-
-	ret = mono_w32socket_sendbuffers (sock, wsabufs, count, &sent, sendflags, NULL, NULL, blocking);
-
-	mono_gchandle_free (gchandle);
+	ret = mono_w32socket_sendbuffers (sock, buffers, count, &sent, sendflags, NULL, NULL, blocking);
 
 	if (ret == SOCKET_ERROR)
 		*werror = mono_w32socket_get_last_error ();
@@ -1692,28 +1644,20 @@ ves_icall_System_Net_Sockets_Socket_Send_array_internal (gsize sock, MonoArrayHa
 }
 
 gint32
-ves_icall_System_Net_Sockets_Socket_SendTo_internal (gsize sock, MonoArrayHandle buffer, gint32 offset, gint32 count, gint32 flags, MonoObjectHandle sockaddr, gint32 *werror, gboolean blocking, MonoError *error)
+ves_icall_System_Net_Sockets_Socket_SendTo_internal (gsize sock, gchar *buffer, gint32 count, gint32 flags, MonoObjectHandle sockaddr, gint32 *werror, gboolean blocking, MonoError *error)
 {
 	int ret;
-	gint32 alen;
 	int sendflags = 0;
 	struct sockaddr *sa;
 	socklen_t sa_size;
 	gboolean interrupted;
 	
 	*werror = 0;
-	
-	alen = mono_array_handle_length (buffer);
-	if (offset > alen - count) {
-		return 0;
-	}
 
 	sa = create_sockaddr_from_handle (sockaddr, &sa_size, werror, error);
 	if (*werror != 0)
 		return 0;
 	return_val_if_nok (error, 0);
-	
-	LOGDEBUG (g_message ("%s: alen: %d", __func__, alen));
 	
 	LOGDEBUG (g_message("%s: Sending %d bytes", __func__, count));
 
@@ -1731,12 +1675,7 @@ ves_icall_System_Net_Sockets_Socket_SendTo_internal (gsize sock, MonoArrayHandle
 		return 0;
 	}
 
-	uint32_t gchandle;
-	gchar *buf = MONO_ARRAY_HANDLE_PIN (buffer, gchar, offset, &gchandle);
-
-	ret = mono_w32socket_sendto (sock, buf, count, sendflags, sa, sa_size, blocking);
-
-	mono_gchandle_free (gchandle);
+	ret = mono_w32socket_sendto (sock, buffer, count, sendflags, sa, sa_size, blocking);
 
 	if (ret == SOCKET_ERROR)
 		*werror = mono_w32socket_get_last_error ();

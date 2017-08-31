@@ -21,6 +21,11 @@
 
 #ifndef HOST_WIN32
 typedef gint SOCKET;
+
+typedef struct {
+	guint32 len;
+	gpointer buf;
+} WSABUF, *LPWSABUF;
 #endif
 
 /* This is a copy of System.Net.Sockets.SocketType */
@@ -204,32 +209,28 @@ void
 ves_icall_System_Net_Sockets_Socket_Connect_internal (gsize sock, MonoObjectHandle sockaddr, gint32 *werror, gboolean blocking, MonoError *error);
 
 gint32
-ves_icall_System_Net_Sockets_Socket_Receive_internal (gsize sock, MonoArrayHandle buffer, gint32 offset, gint32 count,
+ves_icall_System_Net_Sockets_Socket_Receive_internal (gsize sock, gchar *buffer, gint32 count,
 						      gint32 flags, gint32 *werror, gboolean blocking, MonoError *error);
 
 gint32
-ves_icall_System_Net_Sockets_Socket_Receive_array_internal (gsize sock, MonoArrayHandle buffers, gint32 flags,
+ves_icall_System_Net_Sockets_Socket_Receive_array_internal (gsize sock, WSABUF *buffers, gint32 count, gint32 flags,
 							    gint32 *werror, gboolean blocking, MonoError *error);
 
-/* gint32 */
-/* ves_icall_System_Net_Sockets_Socket_ReceiveFrom_internal (gsize sock, MonoArray *buffer, gint32 offset, gint32 count, */
-/* 							  gint32 flags, MonoObject **sockaddr, gint32 *werror, gboolean blocking); */
-
 gint32
-ves_icall_System_Net_Sockets_Socket_ReceiveFrom_internal (gsize sock, MonoArrayHandle buffer, gint32 offset, gint32 count,
+ves_icall_System_Net_Sockets_Socket_ReceiveFrom_internal (gsize sock, gchar *buffer, gint32 count,
 							  gint32 flags, MonoObjectHandle sockaddr, gint32 *werror, gboolean blocking, MonoError *error);
 
 
 gint32
-ves_icall_System_Net_Sockets_Socket_Send_internal (gsize sock, MonoArrayHandle buffer, gint32 offset, gint32 count,
+ves_icall_System_Net_Sockets_Socket_Send_internal (gsize sock, gchar *buffer, gint32 count,
 						   gint32 flags, gint32 *werror, gboolean blocking, MonoError *error);
 
 gint32
-ves_icall_System_Net_Sockets_Socket_Send_array_internal (gsize sock, MonoArrayHandle buffers, gint32 flags,
+ves_icall_System_Net_Sockets_Socket_Send_array_internal (gsize sock, WSABUF *buffers, gint32 count, gint32 flags,
 							 gint32 *werror, gboolean blocking, MonoError *error);
 
 gint32
-ves_icall_System_Net_Sockets_Socket_SendTo_internal (gsize sock, MonoArrayHandle buffer, gint32 offset, gint32 count,
+ves_icall_System_Net_Sockets_Socket_SendTo_internal (gsize sock, gchar *buffer, gint32 count,
 						     gint32 flags, MonoObjectHandle sockaddr, gint32 *werror,
 						     gboolean blocking, MonoError *error);
 
