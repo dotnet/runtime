@@ -18,12 +18,6 @@
       "values": ["x86", "arm", "x64", "amd64"],
       "defaultValue": "x64"
     },
-    "Architecture":{
-      "description": "Build on the specified architecture (x64 or x86 (supported only on Windows), default: x64)",
-      "valueType": "property",
-      "values": ["x64", "x86"],
-      "defaultValue": "x64"
-    },
     "PortableBuild": {
       "description": "Indicates if this is a portable build.",
       "valueType": "property",
@@ -273,7 +267,6 @@
       "defaultValues":{
         "toolName": "msbuild",
         "settings": {
-          "Architecture": "default", 
            "TargetArchitecture": "default",
            "OSGroup": "default",
            "MsBuildLogging":"default",
@@ -300,7 +293,6 @@
       "defaultValues":{
         "toolName": "msbuild",
         "settings": {
-          "Architecture": "default", 
            "TargetArchitecture": "default",
            "Framework": "default",
            "OSGroup": "default",
