@@ -37,6 +37,9 @@
 #ifdef _MSC_VER
 // TODO: Find MSVC replacement for __builtin_unwind_init
 #define SAVE_REGS_ON_STACK g_assert_not_reached ();
+#elif defined (HOST_WASM)
+//TODO: figure out wasm stack scanning
+#define SAVE_REGS_ON_STACK do {} while (0)
 #else 
 #define SAVE_REGS_ON_STACK __builtin_unwind_init ();
 #endif
