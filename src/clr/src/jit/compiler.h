@@ -9331,6 +9331,17 @@ public:
         return compRoot->m_arrayInfoMap;
     }
 
+    //-----------------------------------------------------------------------------------------------------------------
+    // Compiler::TryGetArrayInfo:
+    //    Given an indirection node, checks to see whether or not that indirection represents an array access, and
+    //    if so returns information about the array.
+    //
+    // Arguments:
+    //    indir           - The `GT_IND` node.
+    //    arrayInfo (out) - Information about the accessed array if this function returns true. Undefined otherwise.
+    //
+    // Returns:
+    //    True if the `GT_IND` node represents an array access; false otherwise.
     inline bool TryGetArrayInfo(GenTreeIndir* indir, ArrayInfo* arrayInfo)
     {
         if ((indir->gtFlags & GTF_IND_ARR_INDEX) == 0)
