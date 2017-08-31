@@ -171,12 +171,11 @@
     </ItemGroup>
 
     <PropertyGroup>
-      <OutputArg>--output $(PackagesOutDir)</OutputArg>
-      <ConfigArg>--configuration $(ConfigurationGroup)</ConfigArg>
+      <PackArgs>--no-build --output $(PackagesOutDir)</PackArgs>
+      <PackArgs>$(PackArgs) $(MSBuildPassThroughPropertyList) /p:BaseOutputPath=$(IntermediateOutputForPackaging)</PackArgs>
     </PropertyGroup>
 
-    <Exec Command="$(DotnetToolCommand) pack %(PackageProjects.Identity) --no-build $(OutputArg) $(ConfigArg) /p:BaseOutputPath=$(IntermediateOutputForPackaging)"
-          Condition="'@(PackageProjects)' != ''" />
+    <Exec Command="$(DotnetToolCommand) pack %(PackageProjects.Identity) $(PackArgs)" />
   </Target>
   
 </Project>
