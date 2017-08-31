@@ -75,6 +75,7 @@ namespace System.Net.Primitives.Functional.Tests
 
         [Theory]
         [MemberData(nameof(InvalidIpv4Addresses))]
+        [MemberData(nameof(InvalidIpv4AddressesStandalone))]
         public void TryParseIPv4_InvalidAddress_Failure(string address)
         {
             Assert.False(IPAddress.TryParse(address.AsReadOnlySpan(), out IPAddress ip));
