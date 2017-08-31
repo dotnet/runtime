@@ -5219,8 +5219,7 @@ bool LinearScan::registerIsAvailable(RegRecord*    physRegRecord,
     if (regType == TYP_DOUBLE)
     {
         // Recurse, but check the other half this time (TYP_FLOAT)
-        if (!registerIsAvailable(getRegisterRecord(REG_NEXT(physRegRecord->regNum)), currentLoc, nextRefLocationPtr,
-                                 TYP_FLOAT))
+        if (!registerIsAvailable(findAnotherHalfRegRec(physRegRecord), currentLoc, nextRefLocationPtr, TYP_FLOAT))
             return false;
         nextRefLocation = *nextRefLocationPtr;
     }
