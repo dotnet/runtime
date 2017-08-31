@@ -215,7 +215,7 @@ namespace System.Collections.Concurrent
         }
 
         /// <summary>
-        /// Attempts to remove and return the the value with the specified key from the
+        /// Attempts to remove and return the value with the specified key from the
         /// <see cref="ConcurrentDictionary{TKey, TValue}"/>.
         /// </summary>
         /// <param name="key">The key of the element to remove and return.</param>
@@ -682,7 +682,7 @@ namespace System.Collections.Concurrent
         /// </summary>
         /// <exception cref="T:System.OverflowException">The dictionary contains too many
         /// elements.</exception>
-        /// <value>The number of key/value paris contained in the <see
+        /// <value>The number of key/value pairs contained in the <see
         /// cref="ConcurrentDictionary{TKey,TValue}"/>.</value>
         /// <remarks>Count has snapshot semantics and represents the number of items in the <see
         /// cref="ConcurrentDictionary{TKey,TValue}"/>

@@ -4047,7 +4047,7 @@ namespace System
 #endif // FEATURE_COMINTEROP && FEATURE_USE_LCID
             #endregion
 
-            #region Check that any named paramters are not null
+            #region Check that any named parameters are not null
             if (namedParams != null && Array.IndexOf(namedParams, null) != -1)
                 // "Named parameter value must not be null."
                 throw new ArgumentException(SR.Arg_NamedParamNull, nameof(namedParams));
@@ -4756,7 +4756,7 @@ namespace System
 
             internal void SetEntry(ActivatorCacheEntry ace)
             {
-                // fill the the array backwards to hit the most recently filled entries first in GetEntry
+                // fill the array backwards to hit the most recently filled entries first in GetEntry
                 int index = (hash_counter - 1) & (ActivatorCache.CACHE_SIZE - 1);
                 hash_counter = index;
                 Volatile.Write(ref cache[index], ace);

@@ -42,7 +42,7 @@ namespace System
 
             state = null;
 
-#region Map named parameters to candidate parameter postions
+#region Map named parameters to candidate parameter positions
             // We are creating an paramOrder array to act as a mapping
             //  between the order of the args and the actual order of the
             //  parameters in the method.  This order may differ because

@@ -395,7 +395,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         /// <remarks>
         /// This property lazily instantiates the ID in a non-thread-safe manner.  
-        /// It must only be used by the debugger and tracing pruposes, and only in a single-threaded manner
+        /// It must only be used by the debugger and tracing purposes, and only in a single-threaded manner
         /// when no other threads are in the middle of accessing this property or this.Task.
         /// </remarks>
         private object ObjectIdForDebugger { get { return this.Task; } }

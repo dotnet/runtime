@@ -739,7 +739,7 @@ namespace System
             return string.Compare(this, strB, StringComparison.CurrentCulture);
         }
 
-        // Determines whether a specified string is a suffix of the the current instance.
+        // Determines whether a specified string is a suffix of the current instance.
         //
         // The case-sensitive and culture-sensitive option is set by options,
         // and the default culture is used.
