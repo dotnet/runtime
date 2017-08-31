@@ -5255,9 +5255,23 @@ void Compiler::impImportAndPushBox(CORINFO_RESOLVED_TOKEN* pResolvedToken)
         // and the other you get
         //    *(temp+4) = expr
 
-        if (impBoxTempInUse || impBoxTemp == BAD_VAR_NUM)
+        if (opts.MinOpts() || opts.compDbgCode)
         {
-            impBoxTemp = lvaGrabTemp(true DEBUGARG("Box Helper"));
+            // For minopts/debug code, try and minimize the total number
+            // of box temps by reusing an existing temp when possible.
+            if (impBoxTempInUse || impBoxTemp == BAD_VAR_NUM)
+            {
+                impBoxTemp = lvaGrabTemp(true DEBUGARG("Reusable Box Helper"));
+            }
+        }
+        else
+        {
+            // When optimizing, use a new temp for each box operation
+            // since we then know the exact class of the box temp.
+            impBoxTemp                  = lvaGrabTemp(true DEBUGARG("Single-def Box Helper"));
+            lvaTable[impBoxTemp].lvType = TYP_REF;
+            const bool isExact          = true;
+            lvaSetClass(impBoxTemp, pResolvedToken->hClass, isExact);
         }
 
         // needs to stay in use until this box expression is appended
