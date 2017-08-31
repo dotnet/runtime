@@ -2670,7 +2670,7 @@ namespace System
         /// Converts the specified string, which encodes binary data as Base64 digits, to the equivalent byte array.
         /// </summary>
         /// <param name="s">The string to convert</param>
-        /// <returns>The array of bytes represented by the specifed Base64 string.</returns>
+        /// <returns>The array of bytes represented by the specified Base64 string.</returns>
         public static Byte[] FromBase64String(String s)
         {
             // "s" is an unfortunate parameter name, but we need to keep it for backward compat.

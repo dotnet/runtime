@@ -440,7 +440,7 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>
-        /// Initializes a new <see cref="Task"/> with the specified action, state, snd options.
+        /// Initializes a new <see cref="Task"/> with the specified action, state, and options.
         /// </summary>
         /// <param name="action">The delegate that represents the code to execute in the task.</param>
         /// <param name="state">An object representing data to be used by the action.</param>
@@ -457,7 +457,7 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>
-        /// Initializes a new <see cref="Task"/> with the specified action, state, snd options.
+        /// Initializes a new <see cref="Task"/> with the specified action, state, and options.
         /// </summary>
         /// <param name="action">The delegate that represents the code to execute in the task.</param>
         /// <param name="state">An object representing data to be used by the action.</param>
@@ -478,7 +478,7 @@ namespace System.Threading.Tasks
         }
 
         /// <summary>
-        /// Initializes a new <see cref="Task"/> with the specified action, state, snd options.
+        /// Initializes a new <see cref="Task"/> with the specified action, state, and options.
         /// </summary>
         /// <param name="action">The delegate that represents the code to execute in the task.</param>
         /// <param name="state">An object representing data to be used by the action.</param>
@@ -2489,7 +2489,7 @@ namespace System.Threading.Tasks
         private static readonly ContextCallback s_ecCallback = obj => ((Task)obj).InnerInvoke();
 
         /// <summary>
-        /// The actual code which invokes the body of the task. This can be overriden in derived types.
+        /// The actual code which invokes the body of the task. This can be overridden in derived types.
         /// </summary>
         internal virtual void InnerInvoke()
         {

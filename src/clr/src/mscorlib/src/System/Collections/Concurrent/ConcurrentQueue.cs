@@ -737,7 +737,7 @@ namespace System.Collections.Concurrent
 
         /// <summary>Attempts to retrieve the value for the first element in the queue.</summary>
         /// <param name="result">The value of the first element, if found.</param>
-        /// <param name="resultUsed">true if the result is neede; otherwise false if only the true/false outcome is needed.</param>
+        /// <param name="resultUsed">true if the result is needed; otherwise false if only the true/false outcome is needed.</param>
         /// <returns>true if an element was found; otherwise, false.</returns>
         private bool TryPeek(out T result, bool resultUsed)
         {

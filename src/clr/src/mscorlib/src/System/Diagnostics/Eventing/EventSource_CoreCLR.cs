@@ -77,7 +77,7 @@ namespace System.Diagnostics.Tracing
         /// This API marks the current thread as working on activity 'activityID'. It returns 
         /// whatever activity the thread was previously marked with. There is a convention that
         /// callers can assume that callees restore this activity mark before the callee returns. 
-        /// To encourage this this API returns the old activity, so that it can be restored later.
+        /// To encourage this, this API returns the old activity, so that it can be restored later.
         /// 
         /// All events created with the EventSource on this thread are also tagged with the 
         /// activity ID of the thread. 

@@ -442,13 +442,13 @@ namespace System.Threading
         }
 
         /// <summary>
-        /// Local helper function, waits on the monitor until the monitor recieves signal or the
+        /// Local helper function, waits on the monitor until the monitor receives signal or the
         /// timeout is expired
         /// </summary>
         /// <param name="millisecondsTimeout">The maximum timeout</param>
         /// <param name="startTime">The start ticks to calculate the elapsed time</param>
         /// <param name="cancellationToken">The CancellationToken to observe.</param>
-        /// <returns>true if the monitor recieved a signal, false if the timeout expired</returns>
+        /// <returns>true if the monitor received a signal, false if the timeout expired</returns>
         private bool WaitUntilCountOrTimeout(int millisecondsTimeout, uint startTime, CancellationToken cancellationToken)
         {
             int remainingWaitMilliseconds = Timeout.Infinite;
