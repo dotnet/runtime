@@ -1333,11 +1333,11 @@ public:
     bool OperIsMultiRegOp() const
     {
 #if !defined(LEGACY_BACKEND) && defined(_TARGET_ARM_)
-        if (gtOper == GT_MUL_LONG ||
 #ifdef ARM_SOFTFP
-            gtOper == GT_PUTARG_REG ||
+        if (gtOper == GT_MUL_LONG || gtOper == GT_PUTARG_REG)
+#else
+        if (gtOper == GT_MUL_LONG)
 #endif
-            gtOper == GT_COPY)
         {
             return true;
         }
