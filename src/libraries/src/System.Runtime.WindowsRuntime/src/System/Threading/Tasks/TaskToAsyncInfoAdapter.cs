@@ -77,7 +77,7 @@ namespace System.Threading.Tasks
             InvalidOperationException ex = (cause == null)
                             ? new InvalidOperationException(SR.InvalidOperation_CannotGetResultsFromIncompleteOperation)
                             : new InvalidOperationException(SR.InvalidOperation_CannotGetResultsFromIncompleteOperation, cause);
-            ex.SetErrorCode(HResults.E_ILLEGAL_METHOD_CALL);
+            ex.SetErrorCode(__HResults.E_ILLEGAL_METHOD_CALL);
             return ex;
         }
 
@@ -397,7 +397,7 @@ namespace System.Threading.Tasks
                 return;
 
             ObjectDisposedException ex = new ObjectDisposedException(SR.ObjectDisposed_AsyncInfoIsClosed);
-            ex.SetErrorCode(HResults.E_ILLEGAL_METHOD_CALL);
+            ex.SetErrorCode(__HResults.E_ILLEGAL_METHOD_CALL);
             throw ex;
         }
 
@@ -857,7 +857,7 @@ namespace System.Threading.Tasks
                 if (handlerBefore != null)
                 {
                     InvalidOperationException ex = new InvalidOperationException(SR.InvalidOperation_CannotSetCompletionHanlderMoreThanOnce);
-                    ex.SetErrorCode(HResults.E_ILLEGAL_DELEGATE_ASSIGNMENT);
+                    ex.SetErrorCode(__HResults.E_ILLEGAL_DELEGATE_ASSIGNMENT);
                     throw ex;
                 }
 
@@ -940,7 +940,7 @@ namespace System.Threading.Tasks
                 if (0 != (_state & STATEMASK_SELECT_ANY_ASYNC_STATE))
                 {
                     InvalidOperationException ex = new InvalidOperationException(SR.InvalidOperation_IllegalStateChange);
-                    ex.SetErrorCode(HResults.E_ILLEGAL_STATE_CHANGE);
+                    ex.SetErrorCode(__HResults.E_ILLEGAL_STATE_CHANGE);
                     throw ex;
                 }
             }
@@ -981,7 +981,7 @@ namespace System.Threading.Tasks
                 if (aggregateException == null)
                 {
                     error = new Exception(SR.WinRtCOM_Error);
-                    error.SetErrorCode(HResults.E_FAIL);
+                    error.SetErrorCode(__HResults.E_FAIL);
                 }
                 else
                 {
