@@ -8,8 +8,26 @@ using Xunit;
 
 namespace System.Net.Primitives.Functional.Tests
 {
+    public sealed class IPAddressParsing_String : IPAddressParsing
+    {
+        public override IPAddress Parse(string ipString) => IPAddress.Parse(ipString);
+        public override bool TryParse(string ipString, out IPAddress address) => IPAddress.TryParse(ipString, out address);
+
+        [Fact]
+        public void Parse_Null_Throws()
+        {
+            Assert.Throws<ArgumentNullException>(() => Parse((string)null));
+
+            Assert.False(TryParse((string)null, out IPAddress ipAddress));
+            Assert.Null(ipAddress);
+        }
+    }
+
     public abstract class IPAddressParsing
     {
+        public abstract IPAddress Parse(string ipString);
+        public abstract bool TryParse(string ipString, out IPAddress address);
+
         public static readonly object[][] ValidIpv4Addresses =
         {
             // Decimal
@@ -61,14 +79,14 @@ namespace System.Net.Primitives.Functional.Tests
         [MemberData(nameof(ValidIpv4Addresses))]
         public void ParseIPv4_ValidAddress_Success(string address, string expected)
         {
-            IPAddress ip = IPAddress.Parse(address);
+            IPAddress ip = Parse(address);
 
             // Validate the ToString of the parsed address matches the expected value
             Assert.Equal(expected, ip.ToString());
             Assert.Equal(AddressFamily.InterNetwork, ip.AddressFamily);
 
             // Validate the ToString representation can be parsed as well back into the same IP
-            IPAddress ip2 = IPAddress.Parse(ip.ToString());
+            IPAddress ip2 = Parse(ip.ToString());
             Assert.Equal(ip, ip2);
         }
 
@@ -282,14 +300,14 @@ namespace System.Net.Primitives.Functional.Tests
         [MemberData(nameof(ValidIpv6Addresses))]
         public void ParseIPv6_ValidAddress_RoundtripMatchesExpected(string address, string expected)
         {
-            IPAddress ip = IPAddress.Parse(address);
+            IPAddress ip = Parse(address);
 
             // Validate the ToString of the parsed address matches the expected value
             Assert.Equal(expected.ToLowerInvariant(), ip.ToString());
             Assert.Equal(AddressFamily.InterNetworkV6, ip.AddressFamily);
 
             // Validate the ToString representation can be parsed as well back into the same IP
-            IPAddress ip2 = IPAddress.Parse(ip.ToString());
+            IPAddress ip2 = Parse(ip.ToString());
             Assert.Equal(ip, ip2);
 
             // Validate that anything that doesn't already start with brackets
@@ -298,7 +316,31 @@ namespace System.Net.Primitives.Functional.Tests
             {
                 Assert.Equal(
                     expected.ToLowerInvariant(),
-                    IPAddress.Parse("[" + address + "]").ToString());
+                    Parse("[" + address + "]").ToString());
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(ValidIpv6Addresses))]
+        public void TryParseIPv6_ValidAddress_RoundtripMatchesExpected(string address, string expected)
+        {
+            Assert.True(TryParse(address, out IPAddress ip));
+
+            // Validate the ToString of the parsed address matches the expected value
+            Assert.Equal(expected.ToLowerInvariant(), ip.ToString());
+            Assert.Equal(AddressFamily.InterNetworkV6, ip.AddressFamily);
+
+            // Validate the ToString representation can be parsed as well back into the same IP
+            Assert.True(TryParse(ip.ToString(), out IPAddress ip2));
+            Assert.Equal(ip, ip2);
+
+            // Validate that anything that doesn't already start with brackets
+            // can be surrounded with brackets and still parse successfully.
+            if (!address.StartsWith("["))
+            {
+                Assert.Equal(
+                    expected.ToLowerInvariant(),
+                    Parse("[" + address + "]").ToString());
             }
         }
 
@@ -387,9 +429,9 @@ namespace System.Net.Primitives.Functional.Tests
             ParseInvalidAddress(invalidAddress, hasInnerSocketException: !PlatformDetection.IsFullFramework);
         }
 
-        private static void ParseInvalidAddress(string invalidAddress, bool hasInnerSocketException)
+        private void ParseInvalidAddress(string invalidAddress, bool hasInnerSocketException)
         {
-            FormatException fe = Assert.Throws<FormatException>(() => IPAddress.Parse(invalidAddress));
+            FormatException fe = Assert.Throws<FormatException>(() => Parse(invalidAddress));
             if (hasInnerSocketException)
             {
                 SocketException se = Assert.IsType<SocketException>(fe.InnerException);
@@ -401,18 +443,8 @@ namespace System.Net.Primitives.Functional.Tests
             }
 
             IPAddress result = IPAddress.Loopback;
-            Assert.False(IPAddress.TryParse(invalidAddress, out result));
+            Assert.False(TryParse(invalidAddress, out result));
             Assert.Null(result);
-        }
-
-        [Fact]
-        public void Parse_Null_Throws()
-        {
-            Assert.Throws<ArgumentNullException>(() => { IPAddress.Parse((string)null); });
-
-            IPAddress ipAddress;
-            Assert.False(IPAddress.TryParse((string)null, out ipAddress));
-            Assert.Null(ipAddress);
         }
     }
 }
