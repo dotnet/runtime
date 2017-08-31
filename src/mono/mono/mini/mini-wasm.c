@@ -177,18 +177,6 @@ mono_w32file_get_volume_information (const gunichar2 *path, gunichar2 *volumenam
 
 
 //llvm builtin's that we should not have used in the first place
-gpointer
-llvm_returnaddress (void)
-{
-	g_error ("llvm_returnaddress");
-	return NULL;
-}
-
-void
-llvm_eh_unwind_init (void)
-{
-	g_error ("llvm_eh_unwind_init");
-}
 
 
 //libc / libpthread missing bits from musl or shit we didn't detect :facepalm:

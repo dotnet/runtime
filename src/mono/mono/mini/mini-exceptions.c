@@ -3285,7 +3285,7 @@ mono_llvm_load_exception (void)
 
 	if (mono_ex->trace_ips) {
 		GList *trace_ips = NULL;
-		gpointer ip = __builtin_return_address (0);
+		gpointer ip = RETURN_ADDRESS ();
 
 		size_t upper = mono_array_length (mono_ex->trace_ips);
 

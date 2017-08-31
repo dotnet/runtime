@@ -33,25 +33,6 @@
 #  define fprintf(__ignore, ...) g_log ("mono-gc", G_LOG_LEVEL_MESSAGE, __VA_ARGS__)
 #endif
 
-#ifdef __GNUC__
-
-#define RETURN_ADDRESS_N(N) (__builtin_extract_return_addr (__builtin_return_address (N)))
-#define RETURN_ADDRESS() RETURN_ADDRESS_N(0)
-
-#elif defined(_MSC_VER)
-
-#include <intrin.h>
-#pragma intrinsic(_ReturnAddress)
-
-#define RETURN_ADDRESS() _ReturnAddress()
-#define RETURN_ADDRESS_N(N) NULL
-
-#else
-
-#error "Missing return address intrinsics implementation"
-
-#endif
-
 static MonoTraceSpec trace_spec;
 
 static volatile gint32 output_lock = 0;
