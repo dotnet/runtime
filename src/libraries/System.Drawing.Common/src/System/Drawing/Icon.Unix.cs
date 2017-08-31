@@ -159,7 +159,7 @@ namespace System.Drawing
         public Icon(Icon original, Size size)
         {
             if (original == null)
-                throw new ArgumentException("original");
+                throw new ArgumentNullException(nameof(original));
 
             iconSize = size;
             iconDir = original.iconDir;
