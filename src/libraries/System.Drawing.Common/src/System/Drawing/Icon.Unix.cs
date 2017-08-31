@@ -757,17 +757,7 @@ namespace System.Drawing
                 ide.bitCount = reader.ReadUInt16();
                 ide.bytesInRes = reader.ReadUInt32();
                 ide.imageOffset = reader.ReadUInt32();
-#if false
-Console.WriteLine ("Entry: {0}", i);
-Console.WriteLine ("\tide.width: {0}", ide.width);
-Console.WriteLine ("\tide.height: {0}", ide.height);
-Console.WriteLine ("\tide.colorCount: {0}", ide.colorCount);
-Console.WriteLine ("\tide.reserved: {0}", ide.reserved);
-Console.WriteLine ("\tide.planes: {0}", ide.planes);
-Console.WriteLine ("\tide.bitCount: {0}", ide.bitCount);
-Console.WriteLine ("\tide.bytesInRes: {0}", ide.bytesInRes);
-Console.WriteLine ("\tide.imageOffset: {0}", ide.imageOffset);
-#endif
+
                 // Vista 256x256 icons points directly to a PNG bitmap
                 // 256x256 icons are decoded as 0x0 (width and height are encoded as BYTE)
                 // and we ignore them just like MS does (at least up to fx 2.0) 
@@ -851,20 +841,6 @@ Console.WriteLine ("\tide.imageOffset: {0}", ide.imageOffset);
                 bih.biYPelsPerMeter = bihReader.ReadInt32();
                 bih.biClrUsed = bihReader.ReadUInt32();
                 bih.biClrImportant = bihReader.ReadUInt32();
-#if false
-Console.WriteLine ("Entry: {0}", j);
-Console.WriteLine ("\tbih.biSize: {0}", bih.biSize);
-Console.WriteLine ("\tbih.biWidth: {0}", bih.biWidth);
-Console.WriteLine ("\tbih.biHeight: {0}", bih.biHeight);
-Console.WriteLine ("\tbih.biPlanes: {0}", bih.biPlanes);
-Console.WriteLine ("\tbih.biBitCount: {0}", bih.biBitCount);
-Console.WriteLine ("\tbih.biCompression: {0}", bih.biCompression);
-Console.WriteLine ("\tbih.biSizeImage: {0}", bih.biSizeImage);
-Console.WriteLine ("\tbih.biXPelsPerMeter: {0}", bih.biXPelsPerMeter);
-Console.WriteLine ("\tbih.biYPelsPerMeter: {0}", bih.biYPelsPerMeter);
-Console.WriteLine ("\tbih.biClrUsed: {0}", bih.biClrUsed);
-Console.WriteLine ("\tbih.biClrImportant: {0}", bih.biClrImportant);
-#endif
                 iidata.iconHeader = bih;
                 //Read the number of colors used and corresponding memory occupied by
                 //color table. Fill this memory chunk into rgbquad[]
