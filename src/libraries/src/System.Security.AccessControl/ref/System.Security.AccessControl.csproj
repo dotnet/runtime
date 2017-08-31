@@ -4,6 +4,9 @@
   <PropertyGroup>
     <ProjectGuid>{F80C478C-48EE-46A5-89C4-EE0CFB23A14F}</ProjectGuid>
     <IsPartialFacadeAssembly Condition="'$(TargetGroup)' == 'netfx'">true</IsPartialFacadeAssembly>
+    <!-- Must match version supported by frameworks which support 4.1.* inbox.
+         Can be removed when API is added and this assembly is versioned to 4.2.* -->
+    <AssemblyVersion Condition="'$(TargetsNetFx)' != 'true'">4.1.1.0</AssemblyVersion>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netfx-Release|AnyCPU'" />
