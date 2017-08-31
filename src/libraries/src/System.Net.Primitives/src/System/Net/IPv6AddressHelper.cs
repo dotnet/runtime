@@ -242,9 +242,12 @@ namespace System
 
             if (sequenceLength != 0)
             {
+                if (sequenceLength > 4)
+                {
+                    return false;
+                }
+
                 ++sequenceCount;
-                lastSequence = i - sequenceLength;
-                sequenceLength = 0;
             }
 
             // these sequence counts are -1 because it is implied in end-of-sequence
@@ -252,7 +255,6 @@ namespace System
             const int ExpectedSequenceCount = 8;
             return
                 !expectingNumber &&
-                (sequenceLength <= 4) &&
                 (haveCompressor ? (sequenceCount < ExpectedSequenceCount) : (sequenceCount == ExpectedSequenceCount)) &&
                 !needsClosingBracket;
         }
