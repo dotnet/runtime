@@ -335,6 +335,15 @@ namespace System.Net.Primitives.Functional.Tests
             new object[] { "::%1a" }, // alphanumeric scope
             new object[] { "[2001:0db8:85a3:08d3:1319:8a2e:0370:7344]:443/" }, // errneous ending slash after ignored port
             new object[] { "::1234%0x12" }, // invalid scope ID
+
+            new object[] { "e3fff:ffff:ffff:ffff:ffff:ffff:ffff:abcd" }, // 1st number too long
+            new object[] { "3fff:effff:ffff:ffff:ffff:ffff:ffff:abcd" }, // 2nd number too long
+            new object[] { "3fff:ffff:effff:ffff:ffff:ffff:ffff:abcd" }, // 3rd number too long
+            new object[] { "3fff:ffff:ffff:effff:ffff:ffff:ffff:abcd" }, // 4th number too long
+            new object[] { "3fff:ffff:ffff:ffff:effff:ffff:ffff:abcd" }, // 5th number too long
+            new object[] { "3fff:ffff:ffff:ffff:ffff:effff:ffff:abcd" }, // 6th number too long
+            new object[] { "3fff:ffff:ffff:ffff:ffff:ffff:effff:abcd" }, // 7th number too long
+            new object[] { "3fff:ffff:ffff:ffff:ffff:ffff:ffff:eabcd" }, // 8th number too long
         };
 
         [Theory]
