@@ -32,7 +32,7 @@ namespace System.Data
             : base(info, context) { }
 
         /// <summary>
-        /// This property returns a enumerator of T for the TypedTable.  Note, this could
+        /// This property returns an enumerator of T for the TypedTable.  Note, this could
         /// execute the underlying Linq expression.
         /// </summary>
         /// <returns>IEnumerable of T.</returns>

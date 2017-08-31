@@ -60,7 +60,7 @@ namespace System.Drawing
         private static ReaderWriterLock s_rwImgListLock = new ReaderWriterLock();
 
         /// <summary>
-        ///     Flag to avoid a deadlock when waiting on a write-lock and a an attempt to acquire a read-lock is 
+        ///     Flag to avoid a deadlock when waiting on a write-lock and an attempt to acquire a read-lock is 
         ///     made in the same thread. If RWLock is currently owned by another thread, the current thread is going to wait on an 
         ///     event using CoWaitForMultipleHandles while pumps message. 
         ///     The comment above refers to the COM STA message pump, not to be confused with the UI message pump.

@@ -243,7 +243,7 @@ namespace System.Data.Tests
             string tblname = "";
             /* checking for a recently input table, expecting true */
             Assert.Equal(true, tbcol.Contains(_tables[0].TableName));
-            /* trying to check with a empty string, expecting false */
+            /* trying to check with an empty string, expecting false */
             Assert.Equal(false, tbcol.Contains(tblname));
             /* trying to check for a table that donot exist, expecting false */
             Assert.Equal(false, tbcol.Contains("InvalidTableName"));
@@ -267,7 +267,7 @@ namespace System.Data.Tests
             Assert.Equal("Table3", array[2].TableName);
             Assert.Equal("Table4", array[3].TableName);
 
-            /* copying with in a array */
+            /* copying with in an array */
             DataTable[] array1 = new DataTable[6];
             tbcol.CopyTo(array1, 2);
             Assert.Equal(null, array1[0]);

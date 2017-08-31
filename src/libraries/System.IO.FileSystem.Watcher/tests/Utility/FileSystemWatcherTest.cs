@@ -203,7 +203,7 @@ namespace System.IO.Tests
             string[] expectedFullPaths = expectedPaths == null ? null : expectedPaths.Select(e => Path.GetFullPath(e)).ToArray();
 
             // On OSX we get a number of extra events tacked onto valid events. As such, we can not ever confidently
-            // say that a event won't occur, only that one will occur.
+            // say that an event won't occur, only that one will occur.
             if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
             {
                 if (verifyChanged = ((expectedEvents & WatcherChangeTypes.Changed) > 0))

@@ -31,7 +31,7 @@ namespace System.Diagnostics
         /// </summary>
         /// <param name="name">The name of the event being written.</param>
         /// <param name="value">An object that represent the value being passed as a payload for the event.
-        /// This is often a anonymous type which contains several sub-values.</param>
+        /// This is often an anonymous type which contains several sub-values.</param>
         public abstract void Write(string name, object value);
 
         /// <summary>

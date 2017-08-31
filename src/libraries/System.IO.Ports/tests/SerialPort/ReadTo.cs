@@ -314,7 +314,7 @@ namespace System.IO.Ports.Tests
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
-                Debug.WriteLine("Verifying read method thows ArgumentExcpetion with a null NewLine string");
+                Debug.WriteLine("Verifying read method throws ArgumentExcpetion with a null NewLine string");
                 com.Open();
 
                 VerifyReadException(com, null, typeof(ArgumentNullException));
@@ -326,7 +326,7 @@ namespace System.IO.Ports.Tests
         {
             using (SerialPort com = new SerialPort(TCSupport.LocalMachineSerialInfo.FirstAvailablePortName))
             {
-                Debug.WriteLine("Verifying read method thows ArgumentExcpetion with a empty NewLine string");
+                Debug.WriteLine("Verifying read method throws ArgumentExcpetion with an empty NewLine string");
                 com.Open();
 
                 VerifyReadException(com, "", typeof(ArgumentException));

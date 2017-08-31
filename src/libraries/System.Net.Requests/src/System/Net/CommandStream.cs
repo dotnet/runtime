@@ -179,7 +179,7 @@ namespace System.Net
 
         ///     Pipelined command resolution.
         ///     How this works:
-        ///     A list of commands that need to be sent to the FTP server are spliced together into a array,
+        ///     A list of commands that need to be sent to the FTP server are spliced together into an array,
         ///     each command such STOR, PORT, etc, is sent to the server, then the response is parsed into a string,
         ///     with the response, the delegate is called, which returns an instruction (either continue, stop, or read additional
         ///     responses from server).

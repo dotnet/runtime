@@ -59,10 +59,10 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="ArrayInitializedStateNotEqual" xml:space="preserve">
-    <value>Object is not a array with the same initialization state as the array to compare it to.</value>
+    <value>Object is not an array with the same initialization state as the array to compare it to.</value>
   </data>
   <data name="ArrayLengthsNotEqual" xml:space="preserve">
-    <value>Object is not a array with the same number of elements as the array to compare it to.</value>
+    <value>Object is not an array with the same number of elements as the array to compare it to.</value>
   </data>
   <data name="CannotFindOldValue" xml:space="preserve">
     <value>Cannot find the old value</value>

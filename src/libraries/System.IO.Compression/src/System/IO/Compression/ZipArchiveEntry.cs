@@ -460,7 +460,7 @@ namespace System.IO.Compression
             BinaryWriter writer = new BinaryWriter(_archive.ArchiveStream);
 
             // _entryname only gets set when we read in or call moveTo. MoveTo does a check, and
-            // reading in should not be able to produce a entryname longer than ushort.MaxValue
+            // reading in should not be able to produce an entryname longer than ushort.MaxValue
             Debug.Assert(_storedEntryNameBytes.Length <= ushort.MaxValue);
 
             // decide if we need the Zip64 extra field:
@@ -786,7 +786,7 @@ namespace System.IO.Compression
             BinaryWriter writer = new BinaryWriter(_archive.ArchiveStream);
 
             // _entryname only gets set when we read in or call moveTo. MoveTo does a check, and
-            // reading in should not be able to produce a entryname longer than ushort.MaxValue
+            // reading in should not be able to produce an entryname longer than ushort.MaxValue
             Debug.Assert(_storedEntryNameBytes.Length <= ushort.MaxValue);
 
             // decide if we need the Zip64 extra field:

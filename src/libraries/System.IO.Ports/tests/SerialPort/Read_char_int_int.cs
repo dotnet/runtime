@@ -28,10 +28,10 @@ namespace System.IO.Ports.Tests
         private const int defaultCharOffset = 0;
         private const int defaultCharCount = 1;
 
-        //The maximum buffer size when a exception occurs
+        //The maximum buffer size when an exception occurs
         private const int maxBufferSizeForException = 255;
 
-        //The maximum buffer size when a exception is not expected
+        //The maximum buffer size when an exception is not expected
         private const int maxBufferSize = 8;
 
         public enum ReadDataFromEnum { NonBuffered, Buffered, BufferedAndNonBuffered };

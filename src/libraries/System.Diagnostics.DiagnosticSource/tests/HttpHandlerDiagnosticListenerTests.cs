@@ -437,7 +437,7 @@ namespace System.Diagnostics.Tests
         }
 
         /// <summary>
-        /// CallbackObserver is a adapter class that creates an observer (which you can pass
+        /// CallbackObserver is an adapter class that creates an observer (which you can pass
         /// to IObservable.Subscribe), and calls the given callback every time the 'next' 
         /// operation on the IObserver happens. 
         /// </summary>

@@ -12,7 +12,7 @@ using Windows.Storage.Streams;
 namespace System.Runtime.InteropServices.WindowsRuntime
 {
     /// <summary>
-    /// Contains a extension methods that expose operations on WinRT <code>Windows.Foundation.IBuffer</code>.
+    /// Contains extension methods that expose operations on WinRT <code>Windows.Foundation.IBuffer</code>.
     /// </summary>
     public static class WindowsRuntimeBufferExtensions
     {
