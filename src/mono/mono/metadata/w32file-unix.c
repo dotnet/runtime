@@ -4256,6 +4256,7 @@ static _wapi_drive_type _wapi_drive_types[] = {
 	{ DRIVE_REMOTE, "ftp" },
 	{ DRIVE_FIXED, "hfs" },
 	{ DRIVE_FIXED, "apfs" },
+	{ DRIVE_REMOTE, "kbfuse" },
 	{ DRIVE_FIXED, "msdos" },
 	{ DRIVE_REMOTE, "nfs" },
 	{ DRIVE_FIXED, "ntfs" },
