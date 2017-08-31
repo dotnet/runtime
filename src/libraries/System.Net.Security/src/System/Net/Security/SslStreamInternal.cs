@@ -219,9 +219,8 @@ namespace System.Net.Security
                 // To maximize the buffer space available for the next read,
                 // copy the existing data down to the beginning of the buffer.
                 Buffer.BlockCopy(_internalBuffer, _internalOffset, _internalBuffer, 0, _internalBufferCount);
+                _internalOffset = 0;
             }
-
-            _internalOffset = 0;
         }
 
         //
