@@ -432,7 +432,8 @@ namespace System
         values,
         task,
         s,
-        input
+        input,
+        ownedMemory
     }
 
     //
@@ -525,6 +526,8 @@ namespace System
         TaskT_TransitionToFinal_AlreadyCompleted,
         TaskCompletionSourceT_TrySetException_NullException,
         TaskCompletionSourceT_TrySetException_NoExceptions,
+        Memory_ThrowIfDisposed,
+        Memory_OutstandingReferences,
         InvalidOperation_WrongAsyncResultOrEndCalledMultiple,
         ConcurrentDictionary_ConcurrencyLevelMustBePositive,
         ConcurrentDictionary_CapacityMustNotBeNegative,

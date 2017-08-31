@@ -6856,7 +6856,8 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
         methInfo->options = (CorInfoOptions)0;
         return true;
     }
-    else if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__BYREF_AS)->GetMemberDef())
+    else if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__BYREF_AS)->GetMemberDef() ||
+             tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__OBJECT_AS)->GetMemberDef())
     {
         // Return the argument that was passed in.
         static const BYTE ilcode[] = { CEE_LDARG_0, CEE_RET };
@@ -6867,7 +6868,8 @@ bool getILIntrinsicImplementationForUnsafe(MethodDesc * ftn,
         methInfo->options = (CorInfoOptions)0;
         return true;
     }
-    else if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__BYREF_ADD)->GetMemberDef())
+    else if (tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__BYREF_ADD)->GetMemberDef() ||
+             tk == MscorlibBinder::GetMethod(METHOD__UNSAFE__PTR_ADD)->GetMemberDef())
     {
         mdToken tokGenericArg = FindGenericMethodArgTypeSpec(MscorlibBinder::GetModule()->GetMDImport());
 
