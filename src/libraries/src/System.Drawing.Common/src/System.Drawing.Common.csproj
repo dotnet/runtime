@@ -210,7 +210,7 @@
     <Compile Include="System\Drawing\GdiplusNative.Windows.cs" />
     <Compile Include="System\Drawing\Graphics.Windows.cs" />
     <Compile Include="System\Drawing\GraphicsContext.cs" />
-    <Compile Include="System\Drawing\Icon.cs" />
+    <Compile Include="System\Drawing\Icon.Windows.cs" />
     <Compile Include="System\Drawing\Icon.NotSerializable.cs" />
     <Compile Include="System\Drawing\Image.cs" />
     <Compile Include="System\Drawing\Image.NotSerializable.cs" />
@@ -286,6 +286,8 @@
   <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
     <!-- Unix-specific -->
     <Compile Include="System\Drawing\Graphics.Unix.cs" />
+    <Compile Include="System\Drawing\Icon.Unix.cs" />
+    <Compile Include="System\Drawing\Icon.NotSerializable.cs" />
     <Compile Include="System\Drawing\SystemFonts.Unix.cs" />
     <Compile Include="Unix\System.Drawing\Bitmap.cs" />
     <Compile Include="Unix\System.Drawing\BufferedGraphics.cs" />
@@ -303,7 +305,6 @@
     <Compile Include="Unix\System.Drawing\gdipFunctions.cs" />
     <Compile Include="System\Drawing\GdiplusNative.Unix.cs" />
     <Compile Include="Unix\System.Drawing\gdipStructs.cs" />
-    <Compile Include="Unix\System.Drawing\Icon.cs" />
     <Compile Include="Unix\System.Drawing\ImageAnimator.cs" />
     <Compile Include="Unix\System.Drawing\Image.cs" />
     <Compile Include="Unix\System.Drawing\KnownColors.cs" />
