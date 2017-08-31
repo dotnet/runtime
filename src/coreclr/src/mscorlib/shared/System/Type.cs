@@ -108,6 +108,8 @@ namespace System
         public bool IsValueType => IsValueTypeImpl();
         protected virtual bool IsValueTypeImpl() => IsSubclassOf(typeof(ValueType));
 
+        public virtual bool IsSignatureType => false;
+
         public virtual bool IsSecurityCritical { get { throw NotImplemented.ByDesign; } }
         public virtual bool IsSecuritySafeCritical { get { throw NotImplemented.ByDesign; } }
         public virtual bool IsSecurityTransparent { get { throw NotImplemented.ByDesign; } }
@@ -178,6 +180,27 @@ namespace System
         }
 
         protected abstract MethodInfo GetMethodImpl(string name, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers);
+
+        public MethodInfo GetMethod(string name, int genericParameterCount, Type[] types) => GetMethod(name, genericParameterCount, types, null);
+        public MethodInfo GetMethod(string name, int genericParameterCount, Type[] types, ParameterModifier[] modifiers) => GetMethod(name, genericParameterCount, Type.DefaultLookup, null, types, modifiers);
+        public MethodInfo GetMethod(string name, int genericParameterCount, BindingFlags bindingAttr, Binder binder, Type[] types, ParameterModifier[] modifiers) => GetMethod(name, genericParameterCount, bindingAttr, binder, CallingConventions.Any, types, modifiers);
+        public MethodInfo GetMethod(string name, int genericParameterCount, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers)
+        {
+            if (name == null)
+                throw new ArgumentNullException(nameof(name));
+            if (genericParameterCount < 0)
+                throw new ArgumentException(SR.ArgumentOutOfRange_NeedNonNegNum, nameof(genericParameterCount));
+            if (types == null)
+                throw new ArgumentNullException(nameof(types));
+            for (int i = 0; i < types.Length; i++)
+            {
+                if (types[i] == null)
+                    throw new ArgumentNullException(nameof(types));
+            }
+            return GetMethodImpl(name, genericParameterCount, bindingAttr, binder, callConvention, types, modifiers);
+        }
+
+        protected virtual MethodInfo GetMethodImpl(string name, int genericParameterCount, BindingFlags bindingAttr, Binder binder, CallingConventions callConvention, Type[] types, ParameterModifier[] modifiers) => throw new NotSupportedException();
 
         public MethodInfo[] GetMethods() => GetMethods(Type.DefaultLookup);
         public abstract MethodInfo[] GetMethods(BindingFlags bindingAttr);
@@ -318,6 +341,13 @@ namespace System
         public virtual Type MakeByRefType() { throw new NotSupportedException(); }
         public virtual Type MakeGenericType(params Type[] typeArguments) { throw new NotSupportedException(SR.NotSupported_SubclassOverride); }
         public virtual Type MakePointerType() { throw new NotSupportedException(); }
+
+        public static Type MakeGenericMethodParameter(int position)
+        {
+            if (position < 0)
+                throw new ArgumentException(SR.ArgumentOutOfRange_MustBeNonNegNum, nameof(position));
+            return new SignatureGenericMethodParameterType(position);
+        }
 
         public override string ToString() => "Type: " + Name;  // Why do we add the "Type: " prefix?
 
