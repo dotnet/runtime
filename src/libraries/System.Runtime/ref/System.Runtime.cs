@@ -3555,9 +3555,13 @@ namespace System
         public static bool operator <(System.Version v1, System.Version v2) { throw null; }
         public static bool operator <=(System.Version v1, System.Version v2) { throw null; }
         public static System.Version Parse(string input) { throw null; }
+        public static System.Version Parse(ReadOnlySpan<char> input) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(int fieldCount) { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten) { throw null; }
+        public bool TryFormat(System.Span<char> destination, int fieldCount, out int charsWritten) { throw null; }
         public static bool TryParse(string input, out System.Version result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> input, out System.Version result) { throw null; }
     }
     [System.Runtime.InteropServices.StructLayoutAttribute(System.Runtime.InteropServices.LayoutKind.Sequential, Size = 1)]
     public partial struct Void
