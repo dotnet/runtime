@@ -1219,7 +1219,7 @@ namespace System.Drawing
             if (s == null || s.Length == 0)
                 return;
 
-            Status status = SafeNativeMethods.Gdip.GdipDrawString(nativeObject, s, s.Length, font.NativeObject, ref layoutRectangle, format != null ? format.NativeObject : IntPtr.Zero, brush.NativeBrush);
+            Status status = SafeNativeMethods.Gdip.GdipDrawString(nativeObject, s, s.Length, font.NativeObject, ref layoutRectangle, format != null ? format.nativeFormat : IntPtr.Zero, brush.NativeBrush);
             SafeNativeMethods.Gdip.CheckStatus(status);
         }
 
@@ -1856,7 +1856,7 @@ namespace System.Drawing
             }
 
             Status status = SafeNativeMethods.Gdip.GdipMeasureCharacterRanges(nativeObject, text, text.Length,
-                font.NativeObject, ref layoutRect, stringFormat.NativeObject, regcount, out native_regions[0]);
+                font.NativeObject, ref layoutRect, stringFormat.nativeFormat, regcount, out native_regions[0]);
             SafeNativeMethods.Gdip.CheckStatus(status);
 
             return regions;
@@ -1900,21 +1900,21 @@ namespace System.Drawing
         public SizeF MeasureString(string text, Font font, SizeF layoutArea, StringFormat stringFormat)
         {
             RectangleF rect = new RectangleF(0, 0, layoutArea.Width, layoutArea.Height);
-            IntPtr format = (stringFormat == null) ? IntPtr.Zero : stringFormat.NativeObject;
+            IntPtr format = (stringFormat == null) ? IntPtr.Zero : stringFormat.nativeFormat;
             return GdipMeasureString(nativeObject, text, font, ref rect, format);
         }
 
         public SizeF MeasureString(string text, Font font, int width, StringFormat format)
         {
             RectangleF rect = new RectangleF(0, 0, width, Int32.MaxValue);
-            IntPtr stringFormat = (format == null) ? IntPtr.Zero : format.NativeObject;
+            IntPtr stringFormat = (format == null) ? IntPtr.Zero : format.nativeFormat;
             return GdipMeasureString(nativeObject, text, font, ref rect, stringFormat);
         }
 
         public SizeF MeasureString(string text, Font font, PointF origin, StringFormat stringFormat)
         {
             RectangleF rect = new RectangleF(origin.X, origin.Y, 0, 0);
-            IntPtr format = (stringFormat == null) ? IntPtr.Zero : stringFormat.NativeObject;
+            IntPtr format = (stringFormat == null) ? IntPtr.Zero : stringFormat.nativeFormat;
             return GdipMeasureString(nativeObject, text, font, ref rect, format);
         }
 
@@ -1933,7 +1933,7 @@ namespace System.Drawing
             RectangleF boundingBox = new RectangleF();
             RectangleF rect = new RectangleF(0, 0, layoutArea.Width, layoutArea.Height);
 
-            IntPtr format = (stringFormat == null) ? IntPtr.Zero : stringFormat.NativeObject;
+            IntPtr format = (stringFormat == null) ? IntPtr.Zero : stringFormat.nativeFormat;
 
             unsafe
             {
