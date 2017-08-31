@@ -5,6 +5,7 @@
     <ProjectGuid>{69B25962-B4C2-4295-8809-5653CD03FC75}</ProjectGuid>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <CLSCompliant>false</CLSCompliant>
+    <DefineConstants Condition="'$(TargetGroup)' == 'netstandard1.1'">$(DefineConstants);NETSTANDARD11</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Debug|AnyCPU'" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'netcoreapp-Release|AnyCPU'" />
