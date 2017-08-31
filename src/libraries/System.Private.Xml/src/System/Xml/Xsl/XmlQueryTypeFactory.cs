@@ -1529,7 +1529,7 @@ namespace System.Xml.Xsl
                 case XmlTypeCode.Element:
                     XmlSchemaType sourceSchemaType = sourceItem.SchemaType;
                     if (sourceSchemaType == XmlSchemaComplexType.UntypedAnyType) {
-                        // attfibutes of of xdt:untypedAny are attribute(*, xdt:untypedAtomic)*
+                        // attributes of xdt:untypedAny are attribute(*, xdt:untypedAtomic)*
                         card |= AddFilteredPrime(list, UntypedAttribute, filter) * XmlQueryCardinality.ZeroOrOne;
                     }
                     else {
