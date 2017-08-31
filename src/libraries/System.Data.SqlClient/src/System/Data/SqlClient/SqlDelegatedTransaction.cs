@@ -397,7 +397,7 @@ namespace System.Data.SqlClient
 
         // Event notification that transaction ended. This comes from the subscription to the Transaction's
         //  ended event via the internal connection. If it occurs without a prior Rollback or SinglePhaseCommit call,
-        //  it indicates the transaction was ended externally (generally that one the the DTC participants aborted
+        //  it indicates the transaction was ended externally (generally that one of the DTC participants aborted
         //  the transaction).
         internal void TransactionEnded(Transaction transaction)
         {
