@@ -9986,9 +9986,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             } cval;
 
             case CEE_PREFIX1:
-                opcode = (OPCODE)(getU1LittleEndian(codeAddr) + 256);
-                codeAddr += sizeof(__int8);
+                opcode     = (OPCODE)(getU1LittleEndian(codeAddr) + 256);
                 opcodeOffs = (IL_OFFSET)(codeAddr - info.compCode);
+                codeAddr += sizeof(__int8);
                 goto DECODE_OPCODE;
 
             SPILL_APPEND:
@@ -12462,9 +12462,9 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 impValidateMemoryAccessOpcode(codeAddr, codeEndp, false);
 
             PREFIX:
-                opcode = (OPCODE)getU1LittleEndian(codeAddr);
-                codeAddr += sizeof(__int8);
+                opcode     = (OPCODE)getU1LittleEndian(codeAddr);
                 opcodeOffs = (IL_OFFSET)(codeAddr - info.compCode);
+                codeAddr += sizeof(__int8);
                 goto DECODE_OPCODE;
 
             case CEE_VOLATILE:
