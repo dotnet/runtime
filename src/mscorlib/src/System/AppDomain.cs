@@ -874,7 +874,7 @@ namespace System
 
     /// <summary>
     ///     Handle used to marshal an AppDomain to the VM (eg QCall). When marshaled via a QCall, the target
-    ///     method in the VM will recieve a QCall::AppDomainHandle parameter.
+    ///     method in the VM will receive a QCall::AppDomainHandle parameter.
     /// </summary>
     internal struct AppDomainHandle
     {

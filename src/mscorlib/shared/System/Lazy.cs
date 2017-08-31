@@ -261,7 +261,7 @@ namespace System
         /// Initializes a new instance of the <see cref="T:System.Threading.Lazy{T}"/>
         /// class that uses <typeparamref name="T"/>'s default constructor and a specified thread-safety mode.
         /// </summary>
-        /// <param name="mode">The lazy thread-safety mode mode</param>
+        /// <param name="mode">The lazy thread-safety mode</param>
         /// <exception cref="System.ArgumentOutOfRangeException"><paramref name="mode"/> mode contains an invalid valuee</exception>
         public Lazy(LazyThreadSafetyMode mode) :
             this(null, mode, useDefaultConstructor:true)

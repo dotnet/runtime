@@ -1926,7 +1926,7 @@ namespace System.Text
                         Debug.Assert(gapEnd <= sourceChunk.m_ChunkLength, "gap too big");
                         if (delta != 0)     // can skip the sliding of gaps if source an target string are the same size.  
                         {
-                            // Copy the gap data between the current replacement and the the next replacement
+                            // Copy the gap data between the current replacement and the next replacement
                             fixed (char* sourcePtr = &sourceChunk.m_ChunkChars[gapStart])
                                 ReplaceInPlaceAtChunk(ref targetChunk, ref targetIndexInChunk, sourcePtr, gapEnd - gapStart);
                         }
@@ -1986,7 +1986,7 @@ namespace System.Text
         /// </summary>
         /// <param name="chunk">
         /// The chunk in which to start replacing characters.
-        /// Receieves the chunk in which character replacement ends.
+        /// Receives the chunk in which character replacement ends.
         /// </param>
         /// <param name="indexInChunk">
         /// The index in <paramref name="chunk"/> to start replacing characters at.

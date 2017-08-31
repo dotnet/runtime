@@ -265,7 +265,7 @@ namespace System.Diagnostics.Tracing
         public Guid Guid { get { return m_guid; } }
 
         /// <summary>
-        /// Returns true if the eventSource has been enabled at all. This is the prefered test
+        /// Returns true if the eventSource has been enabled at all. This is the preferred test
         /// to be performed before a relatively expensive EventSource operation.
         /// </summary>
         [SuppressMessage("Microsoft.Concurrency", "CA8001", Justification = "This does not need to be correct when racing with other threads")]
@@ -5622,7 +5622,7 @@ namespace System.Diagnostics.Tracing
         /// <summary>
         /// For the EventListener/EtwSession associated with 'filterList', add 'childActivityid'
         /// to list of active activities IF 'currentActivityId' is also active. Passing in a null
-        /// value for  'currentActivityid' is an indication tha caller has already verified
+        /// value for  'currentActivityid' is an indication the caller has already verified
         /// that the current activity is active.
         /// </summary>
         unsafe public static void FlowActivityIfNeeded(ActivityFilter filterList, Guid* currentActivityId, Guid* childActivityID)

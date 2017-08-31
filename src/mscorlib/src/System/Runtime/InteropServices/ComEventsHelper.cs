@@ -114,7 +114,7 @@ namespace System.Runtime.InteropServices
         /// <param name="rcw">COM object firing the events the caller would like to respond to</param>
         /// <param name="iid">identifier of the source interface used by COM object to fire events</param>
         /// <param name="dispid">dispatch identifier of the method on the source interface</param>
-        /// <param name="d">delegate to invoke when specifed COM event is fired</param>
+        /// <param name="d">delegate to invoke when specified COM event is fired</param>
         public static void Combine(object rcw, Guid iid, int dispid, System.Delegate d)
         {
             rcw = UnwrapIfTransparentProxy(rcw);
