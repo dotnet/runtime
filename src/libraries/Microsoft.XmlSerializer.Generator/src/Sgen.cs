@@ -244,7 +244,8 @@ namespace Microsoft.XmlSerializer.Generator
                     throw new ArgumentException(SR.Format(SR.ErrDirectoryNotExists, codePath, outputDirectory));
                 }
 
-                bool success;
+                bool success = false;
+                bool toDeleteFile = true;
 
                 try
                 {
@@ -260,7 +261,15 @@ namespace Microsoft.XmlSerializer.Generator
                 }
                 catch (UnauthorizedAccessException)
                 {
+                    toDeleteFile = false;
                     throw new UnauthorizedAccessException(SR.Format(SR.DirectoryAccessDenied, outputDirectory));
+                }
+                finally
+                {
+                    if (!success && toDeleteFile && File.Exists(codePath))
+                    {
+                        File.Delete(codePath);
+                    }
                 }
 
                 if (success)

@@ -22,17 +22,20 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include=".\AlwaysPassTest.cs" />
+    <Content Include="dotnet-Microsoft.XmlSerializer.Generator.runtimeconfig.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <ItemGroup>
-    <ReferenceFromRuntime Include="Microsoft.XmlSerializer.Generator" />
+    <ReferenceFromRuntime Include="dotnet-Microsoft.XmlSerializer.Generator" />
   </ItemGroup>
   <Target Name="GenerateSerializationAssembly" AfterTargets="Build" Condition=" '$(SkipTestsOnPlatform)' != 'true' " >
     <PropertyGroup>
       <SerializerName>$(AssemblyName).XmlSerializers</SerializerName>
     </PropertyGroup>
-    <Copy SourceFiles="$(ToolsDir)\csc.runtimeconfig.json" DestinationFiles="$(OutputPath)Microsoft.XmlSerializer.Generator.runtimeconfig.json" />
+    <Copy SourceFiles="$(ToolsDir)\csc.runtimeconfig.json" DestinationFiles="$(OutputPath)dotnet-Microsoft.XmlSerializer.Generator.runtimeconfig.json" />
     <Message Text="Running Serialization Tool" Importance="normal" />
-    <Exec ContinueOnError="true" Command="$(ToolsDir)\dotnetcli\dotnet $(OutputPath)Microsoft.XmlSerializer.Generator.dll $(OutputPath)Microsoft.XmlSerializer.Generator.Tests.dll /force /casesensitive"  />
+    <Exec ContinueOnError="true" Command="$(ToolsDir)\dotnetcli\dotnet $(OutputPath)dotnet-Microsoft.XmlSerializer.Generator.dll $(OutputPath)Microsoft.XmlSerializer.Generator.Tests.dll /force /casesensitive"  />
     <Warning Condition="Exists('$(OutputPath)$(SerializerName).cs') != 'true'" Text="Fail to generate $(OutputPath)$(SerializerName).cs"/>
     <Csc Condition="Exists('$(OutputPath)$(SerializerName).cs') == 'true'" ContinueOnError="true" 
          OutputAssembly="$(OutputPath)$(SerializerName).dll" 

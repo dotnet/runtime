@@ -1,0 +1,24 @@
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <SerializerName>$(AssemblyName).XmlSerializers</SerializerName>
+    <SerializerDllImmediatePath>$(IntermediateOutputPath)$(SerializerName).dll</SerializerDllImmediatePath>
+    <SerializerPdbImmediatePath>$(IntermediateOutputPath)$(SerializerName).pdb</SerializerPdbImmediatePath>
+    <SerializerCsImmediatePath>$(IntermediateOutputPath)$(SerializerName).cs</SerializerCsImmediatePath>
+    <SGenWarningText>SGEN : warning SGEN1: Fail to generate the serializer for $(AssemblyName).dll. Please check the build log for the details.</SGenWarningText>
+  </PropertyGroup>
+  <Target Name="GenerateSerializationAssembly" AfterTargets="Build">
+    <Delete Condition="Exists('$(SerializerDllImmediatePath)') == 'true'" Files="$(SerializerDllImmediatePath)" />
+    <Delete Condition="Exists('$(SerializerPdbImmediatePath)') == 'true'" Files="$(SerializerPdbImmediatePath)" />
+    <Delete Condition="Exists('$(SerializerCsImmediatePath)') == 'true'"  Files="$(SerializerCsImmediatePath)" />
+    <Message Text="Running Serialization Tool" Importance="normal" />
+    <Exec Command="dotnet Microsoft.XmlSerializer.Generator $(IntermediateOutputPath)$(AssemblyName).dll /force" ContinueOnError="true"/>
+    <Warning Condition="Exists('$(SerializerCsImmediatePath)') != 'true'" Text="$(SGenWarningText)" />
+    <Csc Condition="Exists('$(SerializerCsImmediatePath)') == 'true'" ContinueOnError="true" OutputAssembly="$(SerializerDllImmediatePath)" References="@(ReferencePath);@(IntermediateAssembly)" EmitDebugInformation="$(DebugSymbols)" Sources="$(SerializerCsImmediatePath)" TargetType="Library" ToolExe="$(CscToolExe)" ToolPath="$(CscToolPath)"/>
+    <Warning Condition="Exists('$(SerializerDllImmediatePath)') != 'true' And Exists('$(SerializerCsImmediatePath)') == 'true'" Text="$(SGenWarningText)"/>
+    <Copy Condition="Exists('$(SerializerDllImmediatePath)') == 'true'" SourceFiles="$(SerializerDllImmediatePath)" DestinationFolder="$(OutputPath)" />
+  </Target>
+  <Target Name="CleanSerializationAssembly" AfterTargets="CoreClean">
+    <Message Text="Cleaning serialization files..." Importance="normal"/>
+    <Delete Condition="Exists('$(OutputPath)\$(SerializerName).dll') == 'true'" Files="$(OutputPath)\$(SerializerName).dll" />
+  </Target>
+</Project>
