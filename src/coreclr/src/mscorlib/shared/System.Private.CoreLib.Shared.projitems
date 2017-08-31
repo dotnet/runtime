@@ -262,6 +262,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodBase.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodImplAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodInfo.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\MethodInfo.Internal.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Missing.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\Module.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ModuleResolveEventHandler.cs" />
@@ -279,6 +280,15 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ReflectionTypeLoadException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ResourceAttributes.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\ResourceLocation.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureArrayType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureByRefType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureConstructedGenericType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureGenericMethodParameterType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureGenericParameterType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureHasElementType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignaturePointerType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureType.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\SignatureTypeExtensions.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\StrongNameKeyPair.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\TargetException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Reflection\TargetInvocationException.cs" />

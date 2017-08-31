@@ -113,6 +113,8 @@ namespace System.Reflection
         public override Type GetElementType() => typeImpl.GetElementType();
         protected override bool HasElementTypeImpl() => typeImpl.HasElementType;
 
+        public override bool IsSignatureType => typeImpl.IsSignatureType;
+
         public override Type UnderlyingSystemType => typeImpl.UnderlyingSystemType;
 
         // ICustomAttributeProvider
