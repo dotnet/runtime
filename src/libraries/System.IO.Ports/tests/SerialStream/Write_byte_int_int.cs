@@ -23,10 +23,10 @@ namespace System.IO.Ports.Tests
         private const int DEFAULT_BUFFER_OFFSET = 0;
         private const int DEFAULT_BUFFER_COUNT = 1;
 
-        // The maximum buffer size when a exception occurs
+        // The maximum buffer size when an exception occurs
         private const int MAX_BUFFER_SIZE_FOR_EXCEPTION = 255;
 
-        // The maximum buffer size when a exception is not expected
+        // The maximum buffer size when an exception is not expected
         private const int MAX_BUFFER_SIZE = 8;
 
         // The default number of times the write method is called when verifying write

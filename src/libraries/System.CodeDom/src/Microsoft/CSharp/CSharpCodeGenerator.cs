@@ -2541,7 +2541,7 @@ namespace Microsoft.CSharp
             Output.WriteLine();
 
             // CSharp needs to put assembly attributes after using statements.
-            // Since we need to create a empty namespace even if we don't need it,
+            // Since we need to create an empty namespace even if we don't need it,
             // using will generated after assembly attributes.
             var importList = new SortedSet<string>(StringComparer.Ordinal);
             foreach (CodeNamespace nspace in e.Namespaces)

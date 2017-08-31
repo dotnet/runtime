@@ -41,7 +41,7 @@ namespace System.ComponentModel
         internal bool CanRaiseEventsInternal => CanRaiseEvents;
 
         /// <summary>
-        ///    <para>Adds a event handler to listen to the Disposed event on the component.</para>
+        ///    <para>Adds an event handler to listen to the Disposed event on the component.</para>
         /// </summary>
         [Browsable(false)]
         [EditorBrowsable(EditorBrowsableState.Advanced)]

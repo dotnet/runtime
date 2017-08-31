@@ -1782,7 +1782,7 @@ namespace System.ComponentModel
         ///     character and removes any remaining characters in the range unless the character at the specified position 
         ///     is to be escaped.
         ///     If specified range covers more than one assigned edit character, shift-left is performed after replacing
-        ///     the first character.  This is useful when in a edit box the user selects text and types a character to replace it.
+        ///     the first character.  This is useful when in an edit box the user selects text and types a character to replace it.
         ///     On exit the testPosition contains last position where the primary operation was actually performed if successful, 
         ///     otherwise the first position that made the test fail. This position is relative to the test string.
         ///     The MaskedTextResultHint out param gives more information about the operation result.

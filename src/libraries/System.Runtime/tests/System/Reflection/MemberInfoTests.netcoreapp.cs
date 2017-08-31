@@ -267,7 +267,7 @@ namespace System.Reflection.Tests
         [Fact]
         public static void HasSameMetadataDefinitionAs__CornerCase_HasElementTypes()
         {
-            // HasSameMetadataDefinitionAs on a array/byref/pointer type is uninteresting (they'll never be an actual member of a type)
+            // HasSameMetadataDefinitionAs on an array/byref/pointer type is uninteresting (they'll never be an actual member of a type)
             // but for future compat, we'll establish their known behavior here. Since these types all return a MetadataToken of 0x02000000,
             // they'll all "match" each other.
 

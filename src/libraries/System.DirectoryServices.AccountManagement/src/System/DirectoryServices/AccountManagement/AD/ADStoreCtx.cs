@@ -2078,7 +2078,7 @@ namespace System.DirectoryServices.AccountManagement
         // interact with other StoreCtxs to fulfill the request.
         //
         // This method is typically used by ResultSet implementations, when they're iterating over a collection
-        // (e.g., of group membership) and encounter a entry that represents a foreign principal.
+        // (e.g., of group membership) and encounter an entry that represents a foreign principal.
         internal override Principal ResolveCrossStoreRefToPrincipal(object o)
         {
             Debug.Assert(o is DirectoryEntry);
@@ -2200,7 +2200,7 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // Returns true if AccountInfo is supported for the specified principal, false otherwise.
-        // Used when a application tries to access the AccountInfo property of a newly-inserted
+        // Used when an application tries to access the AccountInfo property of a newly-inserted
         // (not yet persisted) AuthenticablePrincipal, to determine whether it should be allowed.
         internal override bool SupportsAccounts(AuthenticablePrincipal p)
         {
@@ -2213,7 +2213,7 @@ namespace System.DirectoryServices.AccountManagement
         }
 
         // Returns the set of credential types supported by this store for the specified principal.
-        // Used when a application tries to access the PasswordInfo property of a newly-inserted
+        // Used when an application tries to access the PasswordInfo property of a newly-inserted
         // (not yet persisted) AuthenticablePrincipal, to determine whether it should be allowed.
         // Also used to implement AuthenticablePrincipal.SupportedCredentialTypes.
         internal override CredentialTypes SupportedCredTypes(AuthenticablePrincipal p)

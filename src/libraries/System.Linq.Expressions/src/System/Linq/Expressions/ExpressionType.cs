@@ -334,7 +334,7 @@ namespace System.Linq.Expressions
         /// </summary>
         PostDecrementAssign,
         /// <summary>
-        /// A node that represents a exact type test.
+        /// A node that represents an exact type test.
         /// </summary>
         TypeEqual,
         /// <summary>

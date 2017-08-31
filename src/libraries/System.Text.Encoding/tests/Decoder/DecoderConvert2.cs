@@ -37,7 +37,7 @@ namespace System.Text.Tests
         private const int c_SIZE_OF_ARRAY = 127;
         private readonly RandomDataGenerator _generator = new RandomDataGenerator();
 
-        // PosTest1: Call Convert to convert a arbitrary byte array to character array by using ASCII decoder
+        // PosTest1: Call Convert to convert an arbitrary byte array to character array by using ASCII decoder
         [Fact]
         public void PosTest1()
         {
@@ -59,7 +59,7 @@ namespace System.Text.Tests
             decoder.Reset();
         }
 
-        // PosTest2: Call Convert to convert a arbitrary byte array to character array by using Unicode decoder"
+        // PosTest2: Call Convert to convert an arbitrary byte array to character array by using Unicode decoder"
         [Fact]
         public void PosTest2()
         {
