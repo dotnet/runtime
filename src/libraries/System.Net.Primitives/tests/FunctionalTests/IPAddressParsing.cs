@@ -2,13 +2,32 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
+using System.Collections.Generic;
 using System.Net.Sockets;
 using Xunit;
 
 namespace System.Net.Primitives.Functional.Tests
 {
+    public sealed class IPAddressParsing_String : IPAddressParsing
+    {
+        public override IPAddress Parse(string ipString) => IPAddress.Parse(ipString);
+        public override bool TryParse(string ipString, out IPAddress address) => IPAddress.TryParse(ipString, out address);
+
+        [Fact]
+        public void Parse_Null_Throws()
+        {
+            Assert.Throws<ArgumentNullException>(() => Parse((string)null));
+
+            Assert.False(TryParse((string)null, out IPAddress ipAddress));
+            Assert.Null(ipAddress);
+        }
+    }
+
     public abstract class IPAddressParsing
     {
+        public abstract IPAddress Parse(string ipString);
+        public abstract bool TryParse(string ipString, out IPAddress address);
+
         public static readonly object[][] ValidIpv4Addresses =
         {
             // Decimal
@@ -60,22 +79,19 @@ namespace System.Net.Primitives.Functional.Tests
         [MemberData(nameof(ValidIpv4Addresses))]
         public void ParseIPv4_ValidAddress_Success(string address, string expected)
         {
-            IPAddress ip = IPAddress.Parse(address);
+            IPAddress ip = Parse(address);
 
             // Validate the ToString of the parsed address matches the expected value
             Assert.Equal(expected, ip.ToString());
             Assert.Equal(AddressFamily.InterNetwork, ip.AddressFamily);
 
             // Validate the ToString representation can be parsed as well back into the same IP
-            IPAddress ip2 = IPAddress.Parse(ip.ToString());
+            IPAddress ip2 = Parse(ip.ToString());
             Assert.Equal(ip, ip2);
         }
 
         public static readonly object[][] InvalidIpv4Addresses =
         {
-            new object[] { "" }, // empty
-            new object[] { " " }, // whitespace
-            new object[] { "  " }, // whitespace
             new object[] { " 127.0.0.1" }, // leading whitespace
             new object[] { "127.0.0.1 " }, // trailing whitespace
             new object[] { " 127.0.0.1 " }, // leading and trailing whitespace
@@ -84,7 +100,6 @@ namespace System.Net.Primitives.Functional.Tests
             new object[] { "1.1.1.0x" }, // Empty trailing hex segment
             new object[] { "0000X9D.0x3B.0X19.0x1B" }, // Leading zeros on hex
             new object[] { "0x.1.1.1" }, // Empty leading hex segment
-            new object[] { "0.0.0.089" }, // Octal (leading zero) but with 8 or 9
             new object[] { "260.156" }, // Left dotted segments can't be more than 255
             new object[] { "255.260.156" }, // Left dotted segments can't be more than 255
             new object[] { "255.1.1.256" }, // Right dotted segment can't be more than 255
@@ -109,8 +124,17 @@ namespace System.Net.Primitives.Functional.Tests
             new object[] { "12.1.abc.5" }, // text in section
         };
 
+        public static readonly object[][] InvalidIpv4AddressesStandalone = // but valid as part of IPv6 addresses
+        {
+            new object[] { "" }, // empty
+            new object[] { " " }, // whitespace
+            new object[] { "  " }, // whitespace
+            new object[] { "0.0.0.089" }, // Octal (leading zero) but with 8 or 9
+        };
+
         [Theory]
         [MemberData(nameof(InvalidIpv4Addresses))]
+        [MemberData(nameof(InvalidIpv4AddressesStandalone))]
         public void ParseIPv4_InvalidAddress_Failure(string address)
         {
             ParseInvalidAddress(address, hasInnerSocketException: !PlatformDetection.IsFullFramework);
@@ -276,14 +300,14 @@ namespace System.Net.Primitives.Functional.Tests
         [MemberData(nameof(ValidIpv6Addresses))]
         public void ParseIPv6_ValidAddress_RoundtripMatchesExpected(string address, string expected)
         {
-            IPAddress ip = IPAddress.Parse(address);
+            IPAddress ip = Parse(address);
 
             // Validate the ToString of the parsed address matches the expected value
             Assert.Equal(expected.ToLowerInvariant(), ip.ToString());
             Assert.Equal(AddressFamily.InterNetworkV6, ip.AddressFamily);
 
             // Validate the ToString representation can be parsed as well back into the same IP
-            IPAddress ip2 = IPAddress.Parse(ip.ToString());
+            IPAddress ip2 = Parse(ip.ToString());
             Assert.Equal(ip, ip2);
 
             // Validate that anything that doesn't already start with brackets
@@ -292,50 +316,94 @@ namespace System.Net.Primitives.Functional.Tests
             {
                 Assert.Equal(
                     expected.ToLowerInvariant(),
-                    IPAddress.Parse("[" + address + "]").ToString());
+                    Parse("[" + address + "]").ToString());
             }
         }
 
-        public static readonly object[][] InvalidIpv6Addresses =
+        [Theory]
+        [MemberData(nameof(ValidIpv6Addresses))]
+        public void TryParseIPv6_ValidAddress_RoundtripMatchesExpected(string address, string expected)
         {
-            new object[] { ":::4df" },
-            new object[] { "4df:::" },
-            new object[] { "0:::4df" },
-            new object[] { "4df:::0" },
-            new object[] { "::4df:::" },
-            new object[] { "0::4df:::" },
-            new object[] { " ::1" },
-            new object[] { ":: 1" },
-            new object[] { ":" },
-            new object[] { "0:0:0:0:0:0:0:0:0" },
-            new object[] { "0:0:0:0:0:0:0" },
-            new object[] { "0FFFF::" },
-            new object[] { "FFFF0::" },
-            new object[] { "[::1" },
-            new object[] { "Fe08::/64" }, // with subnet
-            new object[] { "[Fe08::1]:80Z" }, // brackets and invalid port
-            new object[] { "[Fe08::1" }, // leading bracket
-            new object[] { "[[Fe08::1" }, // two leading brackets
-            new object[] { "Fe08::1]" }, // trailing bracket
-            new object[] { "Fe08::1]]" }, // two trailing brackets
-            new object[] { "[Fe08::1]]" }, // one leading and two trailing brackets
-            new object[] { ":1" }, // leading single colon
-            new object[] { "1:" }, // trailing single colon
-            new object[] { " ::1" }, // leading whitespace
-            new object[] { "::1 " }, // trailing whitespace
-            new object[] { " ::1 " }, // leading and trailing whitespace
-            new object[] { "1::1::1" }, // ambiguous failure
-            new object[] { "1234::ABCD:1234::ABCD:1234:ABCD" }, // can only use :: once
-            new object[] { "1:1\u67081:1:1" }, // invalid char
-            new object[] { "FE08::260.168.0.1" }, // out of range
-            new object[] { "::192.168.0.0x0" }, // hex failure
-            new object[] { "G::" }, // invalid hex
-            new object[] { "FFFFF::" }, // invalid value
-            new object[] { ":%12" }, // colon scope
-            new object[] { "::%1a" }, // alphanumeric scope
-            new object[] { "[2001:0db8:85a3:08d3:1319:8a2e:0370:7344]:443/" }, // errneous ending slash after ignored port
-            new object[] { "::1234%0x12" }, // invalid scope ID
-        };
+            Assert.True(TryParse(address, out IPAddress ip));
+
+            // Validate the ToString of the parsed address matches the expected value
+            Assert.Equal(expected.ToLowerInvariant(), ip.ToString());
+            Assert.Equal(AddressFamily.InterNetworkV6, ip.AddressFamily);
+
+            // Validate the ToString representation can be parsed as well back into the same IP
+            Assert.True(TryParse(ip.ToString(), out IPAddress ip2));
+            Assert.Equal(ip, ip2);
+
+            // Validate that anything that doesn't already start with brackets
+            // can be surrounded with brackets and still parse successfully.
+            if (!address.StartsWith("["))
+            {
+                Assert.Equal(
+                    expected.ToLowerInvariant(),
+                    Parse("[" + address + "]").ToString());
+            }
+        }
+
+        public static IEnumerable<object[]> InvalidIpv6Addresses()
+        {
+            yield return new object[] { ":::4df" };
+            yield return new object[] { "4df:::" };
+            yield return new object[] { "0:::4df" };
+            yield return new object[] { "4df:::0" };
+            yield return new object[] { "::4df:::" };
+            yield return new object[] { "0::4df:::" };
+            yield return new object[] { " ::1" };
+            yield return new object[] { ":: 1" };
+            yield return new object[] { ":" };
+            yield return new object[] { "0:0:0:0:0:0:0:0:0" };
+            yield return new object[] { "0:0:0:0:0:0:0" };
+            yield return new object[] { "0FFFF::" };
+            yield return new object[] { "FFFF0::" };
+            yield return new object[] { "[::1" }; // missing closing bracket
+            yield return new object[] { "Fe08::/64" }; // with subnet
+            yield return new object[] { "[Fe08::1]:80Z" }; // brackets and invalid port
+            yield return new object[] { "[Fe08::1" }; // leading bracket
+            yield return new object[] { "[[Fe08::1" }; // two leading brackets
+            yield return new object[] { "Fe08::1]" }; // trailing bracket
+            yield return new object[] { "Fe08::1]]" }; // two trailing brackets
+            yield return new object[] { "[Fe08::1]]" }; // one leading and two trailing brackets
+            yield return new object[] { ":1" }; // leading single colon
+            yield return new object[] { "1:" }; // trailing single colon
+            yield return new object[] { " ::1" }; // leading whitespace
+            yield return new object[] { "::1 " }; // trailing whitespace
+            yield return new object[] { " ::1 " }; // leading and trailing whitespace
+            yield return new object[] { "1::1::1" }; // ambiguous failure
+            yield return new object[] { "1234::ABCD:1234::ABCD:1234:ABCD" }; // can only use :: once
+            yield return new object[] { "1:1\u67081:1:1" }; // invalid char
+            yield return new object[] { "FE08::260.168.0.1" }; // out of range
+            yield return new object[] { "::192.168.0.0x0" }; // hex failure
+            yield return new object[] { "G::" }; // invalid hex
+            yield return new object[] { "FFFFF::" }; // invalid value
+            yield return new object[] { ":%12" }; // colon scope
+            yield return new object[] { "::%1a" }; // alphanumeric scope
+            yield return new object[] { "[2001:0db8:85a3:08d3:1319:8a2e:0370:7344]:443/" }; // errneous ending slash after ignored port
+            yield return new object[] { "::1234%0x12" }; // invalid scope ID
+
+            yield return new object[] { "e3fff:ffff:ffff:ffff:ffff:ffff:ffff:abcd" }; // 1st number too long
+            yield return new object[] { "3fff:effff:ffff:ffff:ffff:ffff:ffff:abcd" }; // 2nd number too long
+            yield return new object[] { "3fff:ffff:effff:ffff:ffff:ffff:ffff:abcd" }; // 3rd number too long
+            yield return new object[] { "3fff:ffff:ffff:effff:ffff:ffff:ffff:abcd" }; // 4th number too long
+            yield return new object[] { "3fff:ffff:ffff:ffff:effff:ffff:ffff:abcd" }; // 5th number too long
+            yield return new object[] { "3fff:ffff:ffff:ffff:ffff:effff:ffff:abcd" }; // 6th number too long
+            yield return new object[] { "3fff:ffff:ffff:ffff:ffff:ffff:effff:abcd" }; // 7th number too long
+            yield return new object[] { "3fff:ffff:ffff:ffff:ffff:ffff:ffff:eabcd" }; // 8th number too long
+
+            // Various IPv6 addresses including invalid IPv4 addresses
+            foreach (object[] invalidIPv4AddressArray in InvalidIpv4Addresses)
+            {
+                string invalidIPv4Address = (string)invalidIPv4AddressArray[0];
+                yield return new object[] { "3fff:ffff:ffff:ffff:ffff:ffff:ffff:" + invalidIPv4Address };
+                yield return new object[] { "::" + invalidIPv4Address }; // SIIT
+                yield return new object[] { "::FF:" + invalidIPv4Address }; // SIIT
+                yield return new object[] { "::5EFE:" + invalidIPv4Address }; // ISATAP
+                yield return new object[] { "1::5EFE:" + invalidIPv4Address }; // ISATAP
+            }
+        }
 
         [Theory]
         [MemberData(nameof(InvalidIpv6Addresses))]
@@ -361,9 +429,9 @@ namespace System.Net.Primitives.Functional.Tests
             ParseInvalidAddress(invalidAddress, hasInnerSocketException: !PlatformDetection.IsFullFramework);
         }
 
-        private static void ParseInvalidAddress(string invalidAddress, bool hasInnerSocketException)
+        private void ParseInvalidAddress(string invalidAddress, bool hasInnerSocketException)
         {
-            FormatException fe = Assert.Throws<FormatException>(() => IPAddress.Parse(invalidAddress));
+            FormatException fe = Assert.Throws<FormatException>(() => Parse(invalidAddress));
             if (hasInnerSocketException)
             {
                 SocketException se = Assert.IsType<SocketException>(fe.InnerException);
@@ -375,18 +443,8 @@ namespace System.Net.Primitives.Functional.Tests
             }
 
             IPAddress result = IPAddress.Loopback;
-            Assert.False(IPAddress.TryParse(invalidAddress, out result));
+            Assert.False(TryParse(invalidAddress, out result));
             Assert.Null(result);
-        }
-
-        [Fact]
-        public void Parse_Null_Throws()
-        {
-            Assert.Throws<ArgumentNullException>(() => { IPAddress.Parse((string)null); });
-
-            IPAddress ipAddress;
-            Assert.False(IPAddress.TryParse((string)null, out ipAddress));
-            Assert.Null(ipAddress);
         }
     }
 }
