@@ -766,6 +766,12 @@ void LinearScan::TreeNodeInfoInit(GenTree* tree)
                 unreached();
             }
             break;
+
+        case GT_INDEX_ADDR:
+            info->srcCount         = 2;
+            info->dstCount         = 1;
+            info->internalIntCount = 1;
+            break;
     } // end switch (tree->OperGet())
 
     // We need to be sure that we've set info->srcCount and info->dstCount appropriately
