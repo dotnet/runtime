@@ -1624,22 +1624,41 @@ FCIMPL1(FC_BOOL_RET, ThreadNative::IsThreadpoolThread, ThreadBaseObject* thread)
 }
 FCIMPLEND
 
+INT32 QCALLTYPE ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration()
+{
+    QCALL_CONTRACT;
+
+    INT32 optimalMaxNormalizedYieldsPerSpinIteration;
+
+    BEGIN_QCALL;
+
+    Thread::EnsureYieldProcessorNormalizedInitialized();
+    optimalMaxNormalizedYieldsPerSpinIteration = Thread::GetOptimalMaxNormalizedYieldsPerSpinIteration();
+
+    END_QCALL;
+
+    return optimalMaxNormalizedYieldsPerSpinIteration;
+}
 
 FCIMPL1(void, ThreadNative::SpinWait, int iterations)
 {
     FCALL_CONTRACT;
 
+    if (iterations <= 0)
+    {
+        return;
+    }
+
     //
     // If we're not going to spin for long, it's ok to remain in cooperative mode.
     // The threshold is determined by the cost of entering preemptive mode; if we're
     // spinning for less than that number of cycles, then switching to preemptive
-    // mode won't help a GC start any faster.  That number is right around 1000000 
-    // on my machine.
+    // mode won't help a GC start any faster.
     //
-    if (iterations <= 1000000)
+    if (iterations <= 100000 && Thread::IsYieldProcessorNormalizedInitialized())
     {
-        for(int i = 0; i < iterations; i++)
-            YieldProcessor();
+        for (int i = 0; i < iterations; i++)
+            Thread::YieldProcessorNormalized();
         return;
     }
 
@@ -1649,8 +1668,9 @@ FCIMPL1(void, ThreadNative::SpinWait, int iterations)
     HELPER_METHOD_FRAME_BEGIN_NOPOLL();
     GCX_PREEMP();
 
-    for(int i = 0; i < iterations; i++)
-        YieldProcessor();
+    Thread::EnsureYieldProcessorNormalizedInitialized();
+    for (int i = 0; i < iterations; i++)
+        Thread::YieldProcessorNormalized();
 
     HELPER_METHOD_FRAME_END();
 }

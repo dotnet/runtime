@@ -5362,6 +5362,70 @@ public:
         m_HijackReturnKind = returnKind;
     }
 #endif // FEATURE_HIJACK
+
+private:
+    static int s_yieldsPerNormalizedYield;
+    static int s_optimalMaxNormalizedYieldsPerSpinIteration;
+
+private:
+    static void InitializeYieldProcessorNormalized();
+
+public:
+    static bool IsYieldProcessorNormalizedInitialized()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return s_yieldsPerNormalizedYield != 0 && s_optimalMaxNormalizedYieldsPerSpinIteration != 0;
+    }
+
+public:
+    static void EnsureYieldProcessorNormalizedInitialized()
+    {
+        LIMITED_METHOD_CONTRACT;
+
+        if (!IsYieldProcessorNormalizedInitialized())
+        {
+            InitializeYieldProcessorNormalized();
+        }
+    }
+
+public:
+    static int GetOptimalMaxNormalizedYieldsPerSpinIteration()
+    {
+        WRAPPER_NO_CONTRACT;
+        _ASSERTE(IsYieldProcessorNormalizedInitialized());
+
+        return s_optimalMaxNormalizedYieldsPerSpinIteration;
+    }
+
+public:
+    static void YieldProcessorNormalized()
+    {
+        WRAPPER_NO_CONTRACT;
+        _ASSERTE(IsYieldProcessorNormalizedInitialized());
+
+        int n = s_yieldsPerNormalizedYield;
+        while (--n >= 0)
+        {
+            YieldProcessor();
+        }
+    }
+
+    static void YieldProcessorNormalizedWithBackOff(unsigned int spinIteration)
+    {
+        WRAPPER_NO_CONTRACT;
+        _ASSERTE(IsYieldProcessorNormalizedInitialized());
+
+        int n = s_optimalMaxNormalizedYieldsPerSpinIteration;
+        if (spinIteration <= 30 && (1 << spinIteration) < n)
+        {
+            n = 1 << spinIteration;
+        }
+        n *= s_yieldsPerNormalizedYield;
+        while (--n >= 0)
+        {
+            YieldProcessor();
+        }
+    }
 };
 
 // End of class Thread
