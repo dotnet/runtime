@@ -56,9 +56,9 @@ gboolean mono_print_vtable = FALSE;
 gboolean mono_align_small_structs = FALSE;
 
 /* Statistics */
-guint32 inflated_classes_size, inflated_methods_size;
-guint32 classes_size, class_ext_size, class_ext_count;
-guint32 class_def_count, class_gtd_count, class_ginst_count, class_gparam_count, class_array_count, class_pointer_count;
+gint32 inflated_classes_size, inflated_methods_size;
+gint32 classes_size;
+gint32 class_def_count, class_gtd_count, class_ginst_count, class_gparam_count, class_array_count, class_pointer_count;
 
 /* Low level lock which protects data structures in this module */
 static mono_mutex_t classes_mutex;
@@ -1092,7 +1092,7 @@ mono_class_inflate_generic_method_full_checked (MonoMethod *method, MonoClass *k
 
 	UnlockedIncrement (&mono_stats.inflated_method_count);
 
-	inflated_methods_size += sizeof (MonoMethodInflated);
+	UnlockedAdd (&inflated_methods_size,  sizeof (MonoMethodInflated));
 
 	sig = mono_method_signature (method);
 	if (!sig) {
@@ -5511,7 +5511,7 @@ mono_class_set_failure_and_error (MonoClass *klass, MonoError *error, const char
  * Create the MonoClass* representing the specified type token.
  * \p type_token must be a TypeDef token.
  *
- * FIXME: don't return NULL on failure, just the the caller figure it out.
+ * FIXME: don't return NULL on failure, just let the caller figure it out.
  */
 static MonoClass *
 mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError *error)
@@ -5550,12 +5550,12 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 	if (mono_metadata_has_generic_params (image, type_token)) {
 		klass = mono_image_alloc0 (image, sizeof (MonoClassGtd));
 		klass->class_kind = MONO_CLASS_GTD;
-		classes_size += sizeof (MonoClassGtd);
+		UnlockedAdd (&classes_size, sizeof (MonoClassGtd));
 		++class_gtd_count;
 	} else {
 		klass = mono_image_alloc0 (image, sizeof (MonoClassDef));
 		klass->class_kind = MONO_CLASS_DEF;
-		classes_size += sizeof (MonoClassDef);
+		UnlockedAdd (&classes_size, sizeof (MonoClassDef));
 		++class_def_count;
 	}
 
@@ -5994,8 +5994,8 @@ make_generic_param_class (MonoGenericParam *param, MonoGenericParamInfo *pinfo)
 
 	klass = (MonoClass *)mono_image_alloc0 (image, sizeof (MonoClassGenericParam));
 	klass->class_kind = MONO_CLASS_GPARAM;
-	classes_size += sizeof (MonoClassGenericParam);
-	++class_gparam_count;
+	UnlockedAdd (&classes_size, sizeof (MonoClassGenericParam));
+	UnlockedIncrement (&class_gparam_count);
 
 	if (pinfo) {
 		CHECKED_METADATA_WRITE_PTR_EXEMPT ( klass->name , pinfo->name );
@@ -6274,7 +6274,7 @@ mono_ptr_class_get (MonoType *type)
 	
 	result = (MonoClass *)mono_image_alloc0 (image, sizeof (MonoClassPointer));
 
-	classes_size += sizeof (MonoClassPointer);
+	UnlockedAdd (&classes_size, sizeof (MonoClassPointer));
 	++class_pointer_count;
 
 	result->parent = NULL; /* no parent for PTR types */
@@ -6364,7 +6364,7 @@ mono_fnptr_class_get (MonoMethodSignature *sig)
 
 	MONO_PROFILER_RAISE (class_loading, (result));
 
-	classes_size += sizeof (MonoClassPointer);
+	UnlockedAdd (&classes_size, sizeof (MonoClassPointer));
 	++class_pointer_count;
 
 	g_hash_table_insert (ptr_hash, sig, result);
@@ -6692,7 +6692,7 @@ mono_bounded_array_class_get (MonoClass *eclass, guint32 rank, gboolean bounded)
 
 	MONO_PROFILER_RAISE (class_loading, (klass));
 
-	classes_size += sizeof (MonoClassArray);
+	UnlockedAdd (&classes_size, sizeof (MonoClassArray));
 	++class_array_count;
 
 	if (rank == 1 && !bounded) {
@@ -9893,7 +9893,9 @@ mono_class_set_type_load_failure (MonoClass *klass, const char * fmt, ...)
  * mono_classes_init:
  *
  * Initialize the resources used by this module.
+ * Known racy counters: `class_gparam_count`, `classes_size` and `inflated_methods_size`
  */
+MONO_NO_SANITIZE_THREAD
 void
 mono_classes_init (void)
 {
