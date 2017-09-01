@@ -380,7 +380,7 @@ bool EventPipe::Enabled()
     return enabled;
 }
 
-EventPipeProvider* EventPipe::CreateProvider(const GUID &providerID, EventPipeCallback pCallbackFunction, void *pCallbackData)
+EventPipeProvider* EventPipe::CreateProvider(const SString &providerName, EventPipeCallback pCallbackFunction, void *pCallbackData)
 {
     CONTRACTL
     {
@@ -390,7 +390,7 @@ EventPipeProvider* EventPipe::CreateProvider(const GUID &providerID, EventPipeCa
     }
     CONTRACTL_END;
 
-    return new EventPipeProvider(providerID, pCallbackFunction, pCallbackData);
+    return new EventPipeProvider(providerName, pCallbackFunction, pCallbackData);
 }
 
 void EventPipe::DeleteProvider(EventPipeProvider *pProvider)
@@ -700,7 +700,7 @@ void QCALLTYPE EventPipeInternal::Disable()
 }
 
 INT_PTR QCALLTYPE EventPipeInternal::CreateProvider(
-    GUID providerID,
+    __in_z LPCWSTR providerName,
     EventPipeCallback pCallbackFunc)
 {
     QCALL_CONTRACT;
@@ -709,7 +709,7 @@ INT_PTR QCALLTYPE EventPipeInternal::CreateProvider(
 
     BEGIN_QCALL;
 
-    pProvider = EventPipe::CreateProvider(providerID, pCallbackFunc, NULL);
+    pProvider = EventPipe::CreateProvider(SL(providerName), pCallbackFunc, NULL);
 
     END_QCALL;
 

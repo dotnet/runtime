@@ -10,9 +10,7 @@
 
 #ifdef FEATURE_PERFTRACING
 
-// {5291C09C-2660-4D6A-83A3-C383FD020DEC}
-const GUID EventPipeConfiguration::s_configurationProviderID =
-    { 0x5291c09c, 0x2660, 0x4d6a, { 0x83, 0xa3, 0xc3, 0x83, 0xfd, 0x2, 0xd, 0xec } };
+const WCHAR* EventPipeConfiguration::s_configurationProviderName = W("Microsoft-DotNETCore-EventPipeConfiguration");
 
 EventPipeConfiguration::EventPipeConfiguration()
 {
@@ -74,7 +72,7 @@ void EventPipeConfiguration::Initialize()
     CONTRACTL_END;
 
     // Create the configuration provider.
-    m_pConfigProvider = EventPipe::CreateProvider(s_configurationProviderID);
+    m_pConfigProvider = EventPipe::CreateProvider(SL(s_configurationProviderName));
 
     // Create the metadata event.
     m_pMetadataEvent = m_pConfigProvider->AddEvent(
@@ -99,7 +97,7 @@ bool EventPipeConfiguration::RegisterProvider(EventPipeProvider &provider)
     CrstHolder _crst(EventPipe::GetLock());
 
     // See if we've already registered this provider.
-    EventPipeProvider *pExistingProvider = GetProviderNoLock(provider.GetProviderID());
+    EventPipeProvider *pExistingProvider = GetProviderNoLock(provider.GetProviderName());
     if(pExistingProvider != NULL)
     {
         return false;
@@ -162,7 +160,7 @@ bool EventPipeConfiguration::UnregisterProvider(EventPipeProvider &provider)
     return false;
 }
 
-EventPipeProvider* EventPipeConfiguration::GetProvider(const GUID &providerID)
+EventPipeProvider* EventPipeConfiguration::GetProvider(const SString &providerName)
 {
     CONTRACTL
     {
@@ -176,10 +174,10 @@ EventPipeProvider* EventPipeConfiguration::GetProvider(const GUID &providerID)
     // modify the list.
     CrstHolder _crst(EventPipe::GetLock());
 
-    return GetProviderNoLock(providerID);
+    return GetProviderNoLock(providerName);
 }
 
-EventPipeProvider* EventPipeConfiguration::GetProviderNoLock(const GUID &providerID)
+EventPipeProvider* EventPipeConfiguration::GetProviderNoLock(const SString &providerName)
 {
     CONTRACTL
     {
@@ -194,7 +192,7 @@ EventPipeProvider* EventPipeConfiguration::GetProviderNoLock(const GUID &provide
     while(pElem != NULL)
     {
         EventPipeProvider *pProvider = pElem->GetValue();
-        if(pProvider->GetProviderID() == providerID)
+        if(pProvider->GetProviderName().Equals(providerName))
         {
             return pProvider;
         }
@@ -321,8 +319,8 @@ void EventPipeConfiguration::EnableRundown()
     _ASSERTE(m_pEnabledProviderList == NULL);
     const unsigned int numRundownProviders = 2;
     EventPipeProviderConfiguration rundownProviders[numRundownProviders];
-    rundownProviders[0] = EventPipeProviderConfiguration(W("e13c0d23-ccbc-4e12-931b-d9cc2eee27e4"), 0x80020138, static_cast<unsigned int>(EventPipeEventLevel::Verbose)); // Public provider.
-    rundownProviders[1] = EventPipeProviderConfiguration(W("a669021c-c450-4609-a035-5af59af4df18"), 0x80020138, static_cast<unsigned int>(EventPipeEventLevel::Verbose)); // Rundown provider.
+    rundownProviders[0] = EventPipeProviderConfiguration(W("Microsoft-Windows-DotNETRuntime"), 0x80020138, static_cast<unsigned int>(EventPipeEventLevel::Verbose)); // Public provider.
+    rundownProviders[1] = EventPipeProviderConfiguration(W("Microsoft-Windows-DotNETRuntimeRundown"), 0x80020138, static_cast<unsigned int>(EventPipeEventLevel::Verbose)); // Rundown provider.
 
     // Enable rundown.
     m_rundownEnabled = true;
@@ -349,12 +347,13 @@ EventPipeEventInstance* EventPipeConfiguration::BuildEventMetadataEvent(EventPip
 
     // Calculate the size of the event.
     EventPipeEvent &sourceEvent = *sourceInstance.GetEvent();
-    const GUID &providerID = sourceEvent.GetProvider()->GetProviderID();
+    const SString &providerName = sourceEvent.GetProvider()->GetProviderName();
     unsigned int eventID = sourceEvent.GetEventID();
     unsigned int eventVersion = sourceEvent.GetEventVersion();
     BYTE *pPayloadData = sourceEvent.GetMetadata();
     unsigned int payloadLength = sourceEvent.GetMetadataLength();
-    unsigned int instancePayloadSize = sizeof(providerID) + sizeof(eventID) + sizeof(eventVersion) + sizeof(payloadLength) + payloadLength;
+    unsigned int providerNameLength = (providerName.GetCount() + 1) * sizeof(WCHAR);
+    unsigned int instancePayloadSize = providerNameLength + sizeof(eventID) + sizeof(eventVersion) + sizeof(payloadLength) + payloadLength;
 
     // Allocate the payload.
     BYTE *pInstancePayload = new BYTE[instancePayloadSize];
@@ -363,10 +362,10 @@ EventPipeEventInstance* EventPipeConfiguration::BuildEventMetadataEvent(EventPip
     BYTE *currentPtr = pInstancePayload;
 
     // Write the provider ID.
-    memcpy(currentPtr, (BYTE*)&providerID, sizeof(providerID));
-    currentPtr += sizeof(providerID);
+    memcpy(currentPtr, (BYTE*)providerName.GetUnicode(), providerNameLength);
+    currentPtr += providerNameLength;
 
-    // Write the event ID.
+    // Write the event name as null-terminated unicode.
     memcpy(currentPtr, &eventID, sizeof(eventID));
     currentPtr += sizeof(eventID);
 
@@ -515,16 +514,7 @@ EventPipeEnabledProvider* EventPipeEnabledProviderList::GetEnabledProvider(
         return NULL;
     }
 
-    // TEMPORARY: Convert the provider GUID to a string.
-    const unsigned int guidSize = 39;
-    WCHAR wszProviderID[guidSize];
-    if(!StringFromGUID2(pProvider->GetProviderID(), wszProviderID, guidSize))
-    {
-        wszProviderID[0] = '\0';
-    }
-
-    // Strip off the {}.
-    SString providerNameStr(&wszProviderID[1], guidSize-3);
+    SString providerNameStr = pProvider->GetProviderName();
     LPCWSTR providerName = providerNameStr.GetUnicode();
 
     EventPipeEnabledProvider *pEnabledProvider = NULL;

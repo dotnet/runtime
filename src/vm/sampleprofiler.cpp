@@ -13,7 +13,7 @@
 
 Volatile<BOOL> SampleProfiler::s_profilingEnabled = false;
 Thread* SampleProfiler::s_pSamplingThread = NULL;
-const GUID SampleProfiler::s_providerID = {0x3c530d44,0x97ae,0x513a,{0x1e,0x6d,0x78,0x3e,0x8f,0x8e,0x03,0xa9}}; // {3c530d44-97ae-513a-1e6d-783e8f8e03a9}
+const WCHAR* SampleProfiler::s_providerName = W("Microsoft-DotNETCore-SampleProfiler");
 EventPipeProvider* SampleProfiler::s_pEventPipeProvider = NULL;
 EventPipeEvent* SampleProfiler::s_pThreadTimeEvent = NULL;
 BYTE* SampleProfiler::s_pPayloadExternal = NULL;
@@ -36,7 +36,7 @@ void SampleProfiler::Enable()
 
     if(s_pEventPipeProvider == NULL)
     {
-        s_pEventPipeProvider = EventPipe::CreateProvider(s_providerID);
+        s_pEventPipeProvider = EventPipe::CreateProvider(SL(s_providerName));
         s_pThreadTimeEvent = s_pEventPipeProvider->AddEvent(
             0, /* eventID */
             0, /* keywords */
