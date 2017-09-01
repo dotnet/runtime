@@ -79,5 +79,30 @@ namespace System.SpanTests
             ReadOnlySpan<int> spanInt = segmentInt.AsReadOnlySpan();
             spanInt.Validate<int>();
         }
+
+        [Fact]
+        public static void StringAsReadOnlySpanNullary()
+        {
+            string s = "Hello";
+            ReadOnlySpan<char> span = s.AsReadOnlySpan();
+            char[] expected = s.ToCharArray();
+            span.Validate(expected);
+        }
+
+        [Fact]
+        public static void StringAsReadOnlySpanEmptyString()
+        {
+            string s = "";
+            ReadOnlySpan<char> span = s.AsReadOnlySpan();
+            char[] expected = s.ToCharArray();
+            span.Validate(expected);
+        }
+
+        [Fact]
+        public static void StringAsReadOnlySpanNullChecked()
+        {
+            string s = null;
+            Assert.Throws<ArgumentNullException>(() => s.AsReadOnlySpan().DontBox());
+        }
     }
 }
