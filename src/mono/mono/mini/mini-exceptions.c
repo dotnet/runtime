@@ -89,10 +89,6 @@
 #define MONO_ARCH_CONTEXT_DEF
 #endif
 
-#ifndef MONO_ARCH_STACK_GROWS_UP
-#define MONO_ARCH_STACK_GROWS_UP 0
-#endif
-
 /*
  * Raw frame information is stored in MonoException.trace_ips as an IntPtr[].
  * This structure represents one entry.
@@ -149,18 +145,6 @@ mono_thread_get_managed_sp (void)
 	return addr;
 }
 
-static inline int
-mini_abort_threshold_offset (gpointer threshold, gpointer sp)
-{
-	intptr_t stack_threshold = (intptr_t) threshold;
-	intptr_t stack_pointer = (intptr_t) sp;
-
-	const int direction = MONO_ARCH_STACK_GROWS_UP ? -1 : 1;
-	intptr_t magnitude = stack_pointer - stack_threshold;
-
-	return direction * magnitude;
-}
-
 static inline void
 mini_clear_abort_threshold (void)
 {
@@ -176,7 +160,7 @@ mini_set_abort_threshold (MonoContext *ctx)
 	// Only move it up, to avoid thrown/caught
 	// exceptions lower in the stack from triggering
 	// a rethrow
-	gboolean above_threshold = mini_abort_threshold_offset (jit_tls->abort_exc_stack_threshold, sp) >= 0;
+	gboolean above_threshold = (gsize) sp >= (gsize) jit_tls->abort_exc_stack_threshold;
 	if (!jit_tls->abort_exc_stack_threshold || above_threshold) {
 		jit_tls->abort_exc_stack_threshold = sp;
 	}
@@ -194,7 +178,7 @@ mini_above_abort_threshold (void)
 	if (!sp)
 		return TRUE;
 
-	gboolean above_threshold = mini_abort_threshold_offset (jit_tls->abort_exc_stack_threshold, sp) >= 0;
+	gboolean above_threshold = (gsize) sp >= (gsize) jit_tls->abort_exc_stack_threshold;
 
 	if (above_threshold)
 		jit_tls->abort_exc_stack_threshold = sp;
@@ -1685,10 +1669,7 @@ mono_handle_exception_internal_first_pass (MonoContext *ctx, MonoObject *obj, gi
 			dynamic_methods = g_slist_prepend (dynamic_methods, method);
 
 		if (stack_overflow) {
-			if (MONO_ARCH_STACK_GROWS_UP)
-				free_stack = (guint8*)(MONO_CONTEXT_GET_SP (&initial_ctx)) - (guint8*)(MONO_CONTEXT_GET_SP (ctx));
-			else
-				free_stack = (guint8*)(MONO_CONTEXT_GET_SP (ctx)) - (guint8*)(MONO_CONTEXT_GET_SP (&initial_ctx));
+			free_stack = (guint8*)(MONO_CONTEXT_GET_SP (ctx)) - (guint8*)(MONO_CONTEXT_GET_SP (&initial_ctx));
 		} else {
 			free_stack = 0xffffff;
 		}
@@ -2044,10 +2025,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 		//printf ("M: %s %d.\n", mono_method_full_name (method, TRUE), frame_count);
 
 		if (stack_overflow) {
-			if (MONO_ARCH_STACK_GROWS_UP)
-				free_stack = (guint8*)(MONO_CONTEXT_GET_SP (&initial_ctx)) - (guint8*)(MONO_CONTEXT_GET_SP (ctx));
-			else
-				free_stack = (guint8*)(MONO_CONTEXT_GET_SP (ctx)) - (guint8*)(MONO_CONTEXT_GET_SP (&initial_ctx));
+			free_stack = (guint8*)(MONO_CONTEXT_GET_SP (ctx)) - (guint8*)(MONO_CONTEXT_GET_SP (&initial_ctx));
 		} else {
 			free_stack = 0xffffff;
 		}
