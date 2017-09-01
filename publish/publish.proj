@@ -13,11 +13,17 @@
           Condition="'$(Finalize)' == 'true'"
           DependsOnTargets="PublishCoreHostPackagesToFeed;FinalizeBuildInAzure;UpdateVersionsRepo" />
 
+  <!--
+    Target wrapping UpdatePublishedVersions: ensures that ShippedNuGetPackage items are created and
+    disables versions repo update if no auth token is defined. Otherwise, not specifying an auth
+    token would cause an error.
+  -->
   <Target Name="UpdateVersionsRepo"
           Condition="'$(GitHubAuthToken)' != ''"
-          DependsOnTargets="UpdatePublishedVersions" />
+          DependsOnTargets="ExcludeSymbolsPackagesFromPublishedVersions;
+                            UpdatePublishedVersions" />
 
-  <Target Name="ExcludeSymbolsPackagesFromPublishedVersions" BeforeTargets="UpdateVersionsRepo" >
+  <Target Name="ExcludeSymbolsPackagesFromPublishedVersions">
     <ItemGroup>
       <PackagesToShip Include="$(BinDir)/ForPublishing/*.nupkg" Exclude="$(BinDir)/ForPublishing/*.symbols.nupkg" />
       <PackagesToShip Remove="%(PackagesToShip.Identity)" Condition="$([System.String]::Copy('%(PackagesToShip.Identity)').Contains('latest'))" />
