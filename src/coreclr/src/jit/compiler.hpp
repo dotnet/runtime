@@ -1121,8 +1121,21 @@ inline GenTreePtr Compiler::gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd, 
 
 /*****************************************************************************/
 
-inline GenTreeCall* Compiler::gtNewHelperCallNode(unsigned helper, var_types type, unsigned flags, GenTreeArgList* args)
+//------------------------------------------------------------------------------
+// gtNewHelperCallNode : Helper to create a call helper node.
+//
+//
+// Arguments:
+//    helper    - Call helper
+//    type      - Type of the node
+//    args      - Call args
+//
+// Return Value:
+//    New CT_HELPER node
+
+inline GenTreeCall* Compiler::gtNewHelperCallNode(unsigned helper, var_types type, GenTreeArgList* args)
 {
+    unsigned     flags  = s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper) ? 0 : GTF_EXCEPT;
     GenTreeCall* result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type, args);
     result->gtFlags |= flags;
 
@@ -1226,6 +1239,43 @@ inline GenTreePtr Compiler::gtNewIndexRef(var_types typ, GenTreePtr arrayOp, Gen
     GenTreeIndex* gtIndx = new (this, GT_INDEX) GenTreeIndex(typ, arrayOp, indexOp, genTypeSize(typ));
 
     return gtIndx;
+}
+
+//------------------------------------------------------------------------------
+// gtNewArrLen : Helper to create an array length node.
+//
+//
+// Arguments:
+//    typ      -  Type of the node
+//    arrayOp  -  Array node
+//    lenOffset - Offset of the length field
+//
+// Return Value:
+//    New GT_ARR_LENGTH node
+
+inline GenTreeArrLen* Compiler::gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset)
+{
+    GenTreeArrLen* arrLen = new (this, GT_ARR_LENGTH) GenTreeArrLen(typ, arrayOp, lenOffset);
+    static_assert_no_msg(GTF_ARRLEN_NONFAULTING == GTF_IND_NONFAULTING);
+    arrLen->SetIndirExceptionFlags(this);
+    return arrLen;
+}
+
+//------------------------------------------------------------------------------
+// gtNewIndir : Helper to create an indirection node.
+//
+// Arguments:
+//    typ   -  Type of the node
+//    addr  -  Address of the indirection
+//
+// Return Value:
+//    New GT_IND node
+
+inline GenTree* Compiler::gtNewIndir(var_types typ, GenTree* addr)
+{
+    GenTree* indir = gtNewOperNode(GT_IND, typ, addr);
+    indir->SetIndirExceptionFlags(this);
+    return indir;
 }
 
 /*****************************************************************************
@@ -1512,8 +1562,13 @@ inline void GenTree::ChangeOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
 {
     assert(!OperIsConst(oper)); // use ChangeOperLeaf() instead
 
+    unsigned mask = GTF_COMMON_MASK;
+    if (this->OperIsIndirOrArrLength() && OperIsIndirOrArrLength(oper))
+    {
+        mask |= GTF_IND_NONFAULTING;
+    }
     SetOper(oper, vnUpdate);
-    gtFlags &= GTF_COMMON_MASK;
+    gtFlags &= mask;
 
     // Do "oper"-specific initializations...
     switch (oper)
@@ -1529,8 +1584,13 @@ inline void GenTree::ChangeOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
 
 inline void GenTree::ChangeOperUnchecked(genTreeOps oper)
 {
+    unsigned mask = GTF_COMMON_MASK;
+    if (this->OperIsIndirOrArrLength() && OperIsIndirOrArrLength(oper))
+    {
+        mask |= GTF_IND_NONFAULTING;
+    }
     SetOperRaw(oper); // Trust the caller and don't use SetOper()
-    gtFlags &= GTF_COMMON_MASK;
+    gtFlags &= mask;
 }
 
 /*****************************************************************************

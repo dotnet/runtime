@@ -288,7 +288,7 @@ void Compiler::fgInstrumentMethod()
             // In such cases we still want to add the method entry callback node
 
             GenTreeArgList* args = gtNewArgList(gtNewIconEmbMethHndNode(info.compMethodHnd));
-            GenTreePtr      call = gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, 0, args);
+            GenTreePtr      call = gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, args);
 
             stmt = gtNewStmt(call);
         }
@@ -356,7 +356,7 @@ void Compiler::fgInstrumentMethod()
         }
 
         GenTreeArgList* args = gtNewArgList(arg);
-        GenTreePtr      call = gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, 0, args);
+        GenTreePtr      call = gtNewHelperCallNode(CORINFO_HELP_BBT_FCN_ENTER, TYP_VOID, args);
 
         GenTreePtr handle =
             gtNewIconEmbHndNode((void*)&bbProfileBufferStart->ExecutionCount, nullptr, GTF_ICON_BBC_PTR);
@@ -7031,12 +7031,10 @@ GenTreeCall* Compiler::fgGetStaticsCCtorHelper(CORINFO_CLASS_HANDLE cls, CorInfo
         argList = gtNewArgList(opModuleIDArg);
     }
 
-    if (!s_helperCallProperties.NoThrow(helper))
-    {
-        callFlags |= GTF_EXCEPT;
-    }
+    GenTreeCall* result = gtNewHelperCallNode(helper, type, argList);
+    result->gtFlags |= callFlags;
 
-    return gtNewHelperCallNode(helper, type, callFlags, argList);
+    return result;
 }
 
 GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
@@ -7056,13 +7054,39 @@ GenTreeCall* Compiler::fgGetSharedCCtor(CORINFO_CLASS_HANDLE cls)
     return fgGetStaticsCCtorHelper(cls, info.compCompHnd->getSharedCCtorHelper(cls));
 }
 
+//------------------------------------------------------------------------------
+// fgAddrCouldBeNull : Check whether the address tree can represent null.
 //
-// Returns true unless the address expression could
-// never represent a NULL
 //
+// Arguments:
+//    addr     -  Address to check
+//
+// Return Value:
+//    True if address could be null; false otherwise
+
 bool Compiler::fgAddrCouldBeNull(GenTreePtr addr)
 {
-    if (addr->gtOper == GT_ADDR)
+    if ((addr->gtOper == GT_CNS_INT) && addr->IsIconHandle())
+    {
+        return false;
+    }
+    else if (addr->gtOper == GT_LCL_VAR)
+    {
+        unsigned varNum = addr->AsLclVarCommon()->GetLclNum();
+
+        if (lvaIsImplicitByRefLocal(varNum))
+        {
+            return false;
+        }
+
+        LclVarDsc* varDsc = &lvaTable[varNum];
+
+        if (varDsc->lvStackByref)
+        {
+            return false;
+        }
+    }
+    else if (addr->gtOper == GT_ADDR)
     {
         if (addr->gtOp.gtOp1->gtOper == GT_CNS_INT)
         {
@@ -7074,10 +7098,7 @@ bool Compiler::fgAddrCouldBeNull(GenTreePtr addr)
                 return true;
             }
         }
-        else if (addr->gtOp.gtOp1->OperIsLocalAddr())
-        {
-            return false;
-        }
+
         return false; // we can't have a null address
     }
     else if (addr->gtOper == GT_ADD)
@@ -7228,7 +7249,7 @@ GenTreePtr Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
                     helperArgs         = gtNewArgList(thisPointer, targetObjPointers, ctxTree);
                     entryPoint         = genericLookup;
                 }
-                call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, GTF_EXCEPT, helperArgs);
+                call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, helperArgs);
                 call->setEntryPoint(entryPoint);
             }
         }
@@ -7239,7 +7260,7 @@ GenTreePtr Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
             GenTreePtr      targetObjPointers = call->gtCallArgs->Current();
             GenTreeArgList* helperArgs        = gtNewArgList(thisPointer, targetObjPointers);
 
-            call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, GTF_EXCEPT, helperArgs);
+            call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, helperArgs);
 
             CORINFO_LOOKUP entryPoint;
             info.compCompHnd->getReadyToRunDelegateCtorHelper(ldftnToken, clsHnd, &entryPoint);
@@ -7625,7 +7646,7 @@ GenTreePtr Compiler::fgGetCritSectOfStaticMethod()
                 tree = gtNewLclvNode(info.compTypeCtxtArg, TYP_I_IMPL);
                 // Call helper CORINFO_HELP_GETCLASSFROMMETHODPARAM to get the class handle
                 // from the method handle.
-                tree = gtNewHelperCallNode(CORINFO_HELP_GETCLASSFROMMETHODPARAM, TYP_I_IMPL, 0, gtNewArgList(tree));
+                tree = gtNewHelperCallNode(CORINFO_HELP_GETCLASSFROMMETHODPARAM, TYP_I_IMPL, gtNewArgList(tree));
                 break;
             }
 
@@ -7639,7 +7660,7 @@ GenTreePtr Compiler::fgGetCritSectOfStaticMethod()
         noway_assert(tree); // tree should now contain the CORINFO_CLASS_HANDLE for the exact class.
 
         // Given the class handle, get the pointer to the Monitor.
-        tree = gtNewHelperCallNode(CORINFO_HELP_GETSYNCFROMCLASSHANDLE, TYP_I_IMPL, 0, gtNewArgList(tree));
+        tree = gtNewHelperCallNode(CORINFO_HELP_GETSYNCFROMCLASSHANDLE, TYP_I_IMPL, gtNewArgList(tree));
     }
 
     noway_assert(tree);
@@ -7921,13 +7942,13 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
     if (info.compIsStatic)
     {
         tree = fgGetCritSectOfStaticMethod();
-        tree = gtNewHelperCallNode(enter ? CORINFO_HELP_MON_ENTER_STATIC : CORINFO_HELP_MON_EXIT_STATIC, TYP_VOID, 0,
+        tree = gtNewHelperCallNode(enter ? CORINFO_HELP_MON_ENTER_STATIC : CORINFO_HELP_MON_EXIT_STATIC, TYP_VOID,
                                    gtNewArgList(tree, varAddrNode));
     }
     else
     {
         tree = gtNewLclvNode(lvaThisVar, TYP_REF);
-        tree = gtNewHelperCallNode(enter ? CORINFO_HELP_MON_ENTER : CORINFO_HELP_MON_EXIT, TYP_VOID, 0,
+        tree = gtNewHelperCallNode(enter ? CORINFO_HELP_MON_ENTER : CORINFO_HELP_MON_EXIT, TYP_VOID,
                                    gtNewArgList(tree, varAddrNode));
     }
 
@@ -8048,7 +8069,7 @@ void Compiler::fgAddReversePInvokeEnterExit()
 
     tree = gtNewOperNode(GT_ADDR, TYP_I_IMPL, gtNewLclvNode(lvaReversePInvokeFrameVar, TYP_BLK));
 
-    tree = gtNewHelperCallNode(CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER, TYP_VOID, 0, gtNewArgList(tree));
+    tree = gtNewHelperCallNode(CORINFO_HELP_JIT_REVERSE_PINVOKE_ENTER, TYP_VOID, gtNewArgList(tree));
 
     fgEnsureFirstBBisScratch();
 
@@ -8068,7 +8089,7 @@ void Compiler::fgAddReversePInvokeEnterExit()
 
     tree = gtNewOperNode(GT_ADDR, TYP_I_IMPL, gtNewLclvNode(lvaReversePInvokeFrameVar, TYP_BLK));
 
-    tree = gtNewHelperCallNode(CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT, TYP_VOID, 0, gtNewArgList(tree));
+    tree = gtNewHelperCallNode(CORINFO_HELP_JIT_REVERSE_PINVOKE_EXIT, TYP_VOID, gtNewArgList(tree));
 
     assert(genReturnBB != nullptr);
 
@@ -8489,7 +8510,7 @@ void Compiler::fgAddInternal()
 
         tree = gtNewIconEmbMethHndNode(info.compMethodHnd);
 
-        tree = gtNewHelperCallNode(info.compCompHnd->getSecurityPrologHelper(info.compMethodHnd), TYP_VOID, 0,
+        tree = gtNewHelperCallNode(info.compCompHnd->getSecurityPrologHelper(info.compMethodHnd), TYP_VOID,
                                    gtNewArgList(tree, gtNewOperNode(GT_ADDR, TYP_BYREF,
                                                                     gtNewLclvNode(lvaSecurityObject, TYP_REF))));
 
@@ -8526,7 +8547,7 @@ void Compiler::fgAddInternal()
         {
             tree = fgGetCritSectOfStaticMethod();
 
-            tree = gtNewHelperCallNode(CORINFO_HELP_MON_ENTER_STATIC, TYP_VOID, 0, gtNewArgList(tree));
+            tree = gtNewHelperCallNode(CORINFO_HELP_MON_ENTER_STATIC, TYP_VOID, gtNewArgList(tree));
         }
         else
         {
@@ -8534,7 +8555,7 @@ void Compiler::fgAddInternal()
 
             tree = gtNewLclvNode(info.compThisArg, TYP_REF);
 
-            tree = gtNewHelperCallNode(CORINFO_HELP_MON_ENTER, TYP_VOID, 0, gtNewArgList(tree));
+            tree = gtNewHelperCallNode(CORINFO_HELP_MON_ENTER, TYP_VOID, gtNewArgList(tree));
         }
 
         /* Create a new basic block and stick the call in it */
@@ -8564,13 +8585,13 @@ void Compiler::fgAddInternal()
         {
             tree = fgGetCritSectOfStaticMethod();
 
-            tree = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT_STATIC, TYP_VOID, 0, gtNewArgList(tree));
+            tree = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT_STATIC, TYP_VOID, gtNewArgList(tree));
         }
         else
         {
             tree = gtNewLclvNode(info.compThisArg, TYP_REF);
 
-            tree = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT, TYP_VOID, 0, gtNewArgList(tree));
+            tree = gtNewHelperCallNode(CORINFO_HELP_MON_EXIT, TYP_VOID, gtNewArgList(tree));
         }
 
         fgInsertStmtAtEnd(genReturnBB, tree);
@@ -8601,7 +8622,7 @@ void Compiler::fgAddInternal()
 
         tree = gtNewIconEmbMethHndNode(info.compMethodHnd);
 
-        tree = gtNewHelperCallNode(CORINFO_HELP_VERIFICATION_RUNTIME_CHECK, TYP_VOID, 0, gtNewArgList(tree));
+        tree = gtNewHelperCallNode(CORINFO_HELP_VERIFICATION_RUNTIME_CHECK, TYP_VOID, gtNewArgList(tree));
 
         /* Create a new basic block and stick the call in it */
 
@@ -17946,7 +17967,7 @@ BasicBlock* Compiler::fgAddCodeRef(BasicBlock* srcBlk, unsigned refData, Special
     noway_assert(helper != CORINFO_HELP_UNDEF);
 
     // Add the appropriate helper call.
-    tree = gtNewHelperCallNode(helper, TYP_VOID, GTF_EXCEPT);
+    tree = gtNewHelperCallNode(helper, TYP_VOID);
 
     // There are no args here but fgMorphArgs has side effects
     // such as setting the outgoing arg area (which is necessary
@@ -20705,6 +20726,10 @@ void Compiler::fgDebugCheckFlags(GenTreePtr tree)
                 chkFlags |= GTF_ORDER_SIDEEFF;
                 break;
 
+            case GT_MEMORYBARRIER:
+                chkFlags |= GTF_GLOB_REF | GTF_ASG;
+                break;
+
             default:
                 break;
         }
@@ -20843,16 +20868,14 @@ void Compiler::fgDebugCheckFlags(GenTreePtr tree)
             */
         }
 
-        if (kind & GTK_ASGOP)
+        if (tree->OperRequiresAsgFlag())
         {
             chkFlags |= GTF_ASG;
         }
 
-        /* Note that it is OK for treeFlags not to have a GTF_EXCEPT,
-           AssertionProp's non-Null may have cleared it */
-        if (tree->OperMayThrow())
+        if (tree->OperMayThrow(this))
         {
-            chkFlags |= (treeFlags & GTF_EXCEPT);
+            chkFlags |= GTF_EXCEPT;
         }
 
         if (oper == GT_ADDR && (op1->OperIsLocal() || op1->gtOper == GT_CLS_VAR ||
@@ -20868,6 +20891,11 @@ void Compiler::fgDebugCheckFlags(GenTreePtr tree)
 
     else
     {
+        if (tree->OperMayThrow(this))
+        {
+            chkFlags |= GTF_EXCEPT;
+        }
+
         switch (tree->OperGet())
         {
             case GT_CALL:
@@ -20879,24 +20907,6 @@ void Compiler::fgDebugCheckFlags(GenTreePtr tree)
                 call = tree->AsCall();
 
                 chkFlags |= GTF_CALL;
-
-                if ((treeFlags & GTF_EXCEPT) && !(chkFlags & GTF_EXCEPT))
-                {
-                    switch (eeGetHelperNum(call->gtCallMethHnd))
-                    {
-                        // Is this a helper call that can throw an exception ?
-                        case CORINFO_HELP_LDIV:
-                        case CORINFO_HELP_LMOD:
-                        case CORINFO_HELP_METHOD_ACCESS_CHECK:
-                        case CORINFO_HELP_FIELD_ACCESS_CHECK:
-                        case CORINFO_HELP_CLASS_ACCESS_CHECK:
-                        case CORINFO_HELP_DELEGATE_SECURITY_CHECK:
-                            chkFlags |= GTF_EXCEPT;
-                            break;
-                        default:
-                            break;
-                    }
-                }
 
                 if (call->gtCallObjp)
                 {
@@ -20979,6 +20989,7 @@ void Compiler::fgDebugCheckFlags(GenTreePtr tree)
                 break;
 
             case GT_ARR_OFFSET:
+
                 fgDebugCheckFlags(tree->gtArrOffs.gtOffset);
                 chkFlags |= (tree->gtArrOffs.gtOffset->gtFlags & GTF_ALL_EFFECT);
                 fgDebugCheckFlags(tree->gtArrOffs.gtIndex);
@@ -20987,7 +20998,55 @@ void Compiler::fgDebugCheckFlags(GenTreePtr tree)
                 chkFlags |= (tree->gtArrOffs.gtArrObj->gtFlags & GTF_ALL_EFFECT);
                 break;
 
+            case GT_ARR_BOUNDS_CHECK:
+#ifdef FEATURE_SIMD
+            case GT_SIMD_CHK:
+#endif // FEATURE_SIMD
+
+                GenTreeBoundsChk* bndsChk;
+                bndsChk = tree->AsBoundsChk();
+                fgDebugCheckFlags(bndsChk->gtIndex);
+                chkFlags |= (bndsChk->gtIndex->gtFlags & GTF_ALL_EFFECT);
+                fgDebugCheckFlags(bndsChk->gtArrLen);
+                chkFlags |= (bndsChk->gtArrLen->gtFlags & GTF_ALL_EFFECT);
+                break;
+
+            case GT_CMPXCHG:
+
+                chkFlags |= (GTF_GLOB_REF | GTF_ASG);
+                GenTreeCmpXchg* cmpXchg;
+                cmpXchg = tree->AsCmpXchg();
+                fgDebugCheckFlags(cmpXchg->gtOpLocation);
+                chkFlags |= (cmpXchg->gtOpLocation->gtFlags & GTF_ALL_EFFECT);
+                fgDebugCheckFlags(cmpXchg->gtOpValue);
+                chkFlags |= (cmpXchg->gtOpValue->gtFlags & GTF_ALL_EFFECT);
+                fgDebugCheckFlags(cmpXchg->gtOpComparand);
+                chkFlags |= (cmpXchg->gtOpComparand->gtFlags & GTF_ALL_EFFECT);
+                break;
+
+            case GT_STORE_DYN_BLK:
+            case GT_DYN_BLK:
+
+                GenTreeDynBlk* dynBlk;
+                dynBlk = tree->AsDynBlk();
+                fgDebugCheckFlags(dynBlk->gtDynamicSize);
+                chkFlags |= (dynBlk->gtDynamicSize->gtFlags & GTF_ALL_EFFECT);
+                fgDebugCheckFlags(dynBlk->Addr());
+                chkFlags |= (dynBlk->Addr()->gtFlags & GTF_ALL_EFFECT);
+                if (tree->OperGet() == GT_STORE_DYN_BLK)
+                {
+                    fgDebugCheckFlags(dynBlk->Data());
+                    chkFlags |= (dynBlk->Data()->gtFlags & GTF_ALL_EFFECT);
+                }
+                break;
+
             default:
+
+#ifdef DEBUG
+                gtDispTree(tree);
+#endif
+
+                assert(!"Unknown operator for fgDebugCheckFlags");
                 break;
         }
     }
@@ -21027,19 +21086,11 @@ void Compiler::fgDebugCheckFlagsHelper(GenTreePtr tree, unsigned treeFlags, unsi
     }
     else if (treeFlags & ~chkFlags)
     {
-#if 0
-        // TODO-Cleanup:
-        /* The tree has extra flags set. However, this will happen if we
-        replace a subtree with something, but don't clear the flags up
-        the tree. Can't flag this unless we start clearing flags above.
-
-        Note: we need this working for GTF_CALL and CSEs, so I'm enabling
-        it for calls.
-        */
-        if (tree->OperGet() != GT_CALL && (treeFlags & GTF_CALL) && !(chkFlags & GTF_CALL))
+        // TODO: We are currently only checking extra GTF_EXCEPT and GTF_ASG flags.
+        if ((treeFlags & ~chkFlags & ~GTF_GLOB_REF & ~GTF_ORDER_SIDEEFF & ~GTF_CALL) != 0)
         {
             // Print the tree so we can see it in the log.
-            printf("Extra GTF_CALL flags on parent tree [%X]: ", tree);
+            printf("Extra flags on parent tree [%X]: ", tree);
             GenTree::gtDispFlags(treeFlags & ~chkFlags, GTF_DEBUG_NONE);
             printf("\n");
             gtDispTree(tree);
@@ -21047,12 +21098,11 @@ void Compiler::fgDebugCheckFlagsHelper(GenTreePtr tree, unsigned treeFlags, unsi
             noway_assert(!"Extra flags on tree");
 
             // Print the tree again so we can see it right after we hook up the debugger.
-            printf("Extra GTF_CALL flags on parent tree [%X]: ", tree);
+            printf("Extra flags on parent tree [%X]: ", tree);
             GenTree::gtDispFlags(treeFlags & ~chkFlags, GTF_DEBUG_NONE);
             printf("\n");
             gtDispTree(tree);
-    }
-#endif // 0
+        }
     }
 }
 
