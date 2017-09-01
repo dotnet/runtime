@@ -2403,7 +2403,7 @@ namespace System
                             for (int i = 0; i < parameterInfos.Length; i++)
                             {
                                 // a null argument type implies a null arg which is always a perfect match
-                                if ((object)argumentTypes[i] != null && !Object.ReferenceEquals(parameterInfos[i].ParameterType, argumentTypes[i]))
+                                if ((object)argumentTypes[i] != null && !argumentTypes[i].MatchesParameterTypeExactly(parameterInfos[i]))
                                     return false;
                             }
                         }
@@ -2485,8 +2485,11 @@ namespace System
         #region Type Overrides
 
         #region Get XXXInfo Candidates
+
+        private const int GenericParameterCountAny = -1;
+
         private ListBuilder<MethodInfo> GetMethodCandidates(
-            String name, BindingFlags bindingAttr, CallingConventions callConv,
+            String name, int genericParameterCount, BindingFlags bindingAttr, CallingConventions callConv,
             Type[] types, bool allowPrefixLookup)
         {
             bool prefixLookup, ignoreCase;
@@ -2499,6 +2502,9 @@ namespace System
             for (int i = 0; i < cache.Length; i++)
             {
                 RuntimeMethodInfo methodInfo = cache[i];
+                if (genericParameterCount != GenericParameterCountAny && genericParameterCount != methodInfo.GenericParameterCount)
+                    continue;
+
                 if (FilterApplyMethodInfo(methodInfo, bindingAttr, callConv, types) &&
                     (!prefixLookup || RuntimeType.FilterApplyPrefixLookup(methodInfo, name, ignoreCase)))
                 {
@@ -2636,7 +2642,7 @@ namespace System
         #region Get All XXXInfos
         public override MethodInfo[] GetMethods(BindingFlags bindingAttr)
         {
-            return GetMethodCandidates(null, bindingAttr, CallingConventions.Any, null, false).ToArray();
+            return GetMethodCandidates(null, GenericParameterCountAny, bindingAttr, CallingConventions.Any, null, false).ToArray();
         }
 
         public override ConstructorInfo[] GetConstructors(BindingFlags bindingAttr)
@@ -2676,7 +2682,7 @@ namespace System
 
         public override MemberInfo[] GetMembers(BindingFlags bindingAttr)
         {
-            ListBuilder<MethodInfo> methods = GetMethodCandidates(null, bindingAttr, CallingConventions.Any, null, false);
+            ListBuilder<MethodInfo> methods = GetMethodCandidates(null, GenericParameterCountAny, bindingAttr, CallingConventions.Any, null, false);
             ListBuilder<ConstructorInfo> constructors = GetConstructorCandidates(null, bindingAttr, CallingConventions.Any, null, false);
             ListBuilder<PropertyInfo> properties = GetPropertyCandidates(null, bindingAttr, null, false);
             ListBuilder<EventInfo> events = GetEventCandidates(null, bindingAttr, false);
@@ -2765,11 +2771,26 @@ namespace System
         #endregion
 
         #region Find XXXInfo
+
         protected override MethodInfo GetMethodImpl(
             String name, BindingFlags bindingAttr, Binder binder, CallingConventions callConv,
             Type[] types, ParameterModifier[] modifiers)
         {
-            ListBuilder<MethodInfo> candidates = GetMethodCandidates(name, bindingAttr, callConv, types, false);
+            return GetMethodImplCommon(name, GenericParameterCountAny, bindingAttr, binder, callConv, types, modifiers);
+        }
+
+        protected override MethodInfo GetMethodImpl(
+            String name, int genericParameterCount, BindingFlags bindingAttr, Binder binder, CallingConventions callConv,
+            Type[] types, ParameterModifier[] modifiers)
+        {
+            return GetMethodImplCommon(name, genericParameterCount, bindingAttr, binder, callConv, types, modifiers);
+        }
+
+        private MethodInfo GetMethodImplCommon(
+            String name, int genericParameterCount, BindingFlags bindingAttr, Binder binder, CallingConventions callConv,
+            Type[] types, ParameterModifier[] modifiers)
+        {
+            ListBuilder<MethodInfo> candidates = GetMethodCandidates(name, genericParameterCount, bindingAttr, callConv, types, false);
 
             if (candidates.Count == 0)
                 return null;
@@ -3029,7 +3050,7 @@ namespace System
             // Methods
             if ((type & MemberTypes.Method) != 0)
             {
-                methods = GetMethodCandidates(name, bindingAttr, CallingConventions.Any, null, true);
+                methods = GetMethodCandidates(name, GenericParameterCountAny, bindingAttr, CallingConventions.Any, null, true);
                 if (type == MemberTypes.Method)
                     return methods.ToArray();
                 totalCount += methods.Count;
@@ -3689,6 +3710,8 @@ namespace System
             if (GetGenericArguments().Length != instantiation.Length)
                 throw new ArgumentException(SR.Argument_GenericArgsCount, nameof(instantiation));
 
+            bool foundSigType = false;
+            bool foundNonRuntimeType = false;
             for (int i = 0; i < instantiation.Length; i++)
             {
                 Type instantiationElem = instantiation[i];
@@ -3699,14 +3722,22 @@ namespace System
 
                 if (rtInstantiationElem == null)
                 {
-                    Type[] instantiationCopy = new Type[instantiation.Length];
-                    for (int iCopy = 0; iCopy < instantiation.Length; iCopy++)
-                        instantiationCopy[iCopy] = instantiation[iCopy];
-                    instantiation = instantiationCopy;
-                    return System.Reflection.Emit.TypeBuilderInstantiation.MakeGenericType(this, instantiation);
+                    foundNonRuntimeType = true;
+                    if (instantiationElem.IsSignatureType)
+                    {
+                        foundSigType = true;
+                    }
                 }
 
                 instantiationRuntimeType[i] = rtInstantiationElem;
+            }
+
+            if (foundNonRuntimeType)
+            {
+                if (foundSigType)
+                    return new SignatureConstructedGenericType(this, instantiation);
+
+                return System.Reflection.Emit.TypeBuilderInstantiation.MakeGenericType(this, (Type[])(instantiation.Clone()));
             }
 
             RuntimeType[] genericParameters = GetGenericArgumentsInternal();

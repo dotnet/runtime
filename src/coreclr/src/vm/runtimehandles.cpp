@@ -2200,6 +2200,14 @@ FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::IsGenericMethodDefinition, MethodDesc 
 }
 FCIMPLEND
 
+FCIMPL1(INT32, RuntimeMethodHandle::GetGenericParameterCount, MethodDesc * pMethod)
+{
+    FCALL_CONTRACT;
+
+    return pMethod->GetNumGenericMethodArgs();
+}
+FCIMPLEND
+
 FCIMPL1(FC_BOOL_RET, RuntimeMethodHandle::IsDynamicMethod, MethodDesc * pMethod)
 {
     FCALL_CONTRACT;
