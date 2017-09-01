@@ -263,7 +263,6 @@ namespace System.Drawing
             {
                 if (s == null)
                 {
-                    string msg = string.Format("Resource '{0}' was not found.", resource);
                     throw new ArgumentException(null);
                 }
                 InitFromStreamWithSize(s, 32, 32);      // 32x32 is default

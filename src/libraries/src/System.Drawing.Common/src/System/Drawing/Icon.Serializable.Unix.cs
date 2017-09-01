@@ -11,6 +11,9 @@ namespace System.Drawing
     [Serializable]
     partial class Icon
     {
+        private const string IconSizeSerializationName = "IconSize";
+        private const string IconDataSerializationName = "IconData";
+
         private Icon(SerializationInfo info, StreamingContext context)
         {
             MemoryStream dataStream = null;
@@ -18,11 +21,11 @@ namespace System.Drawing
             int height = 0;
             foreach (SerializationEntry serEnum in info)
             {
-                if (String.Compare(serEnum.Name, "IconData", true) == 0)
+                if (string.Equals(serEnum.Name, IconDataSerializationName, StringComparison.CurrentCultureIgnoreCase))
                 {
                     dataStream = new MemoryStream((byte[])serEnum.Value);
                 }
-                if (String.Compare(serEnum.Name, "IconSize", true) == 0)
+                if (string.Equals(serEnum.Name, IconSizeSerializationName, StringComparison.CurrentCultureIgnoreCase))
                 {
                     Size iconSize = (Size)serEnum.Value;
                     width = iconSize.Width;
@@ -40,8 +43,8 @@ namespace System.Drawing
         {
             MemoryStream ms = new MemoryStream();
             Save(ms);
-            si.AddValue("IconSize", this.Size, typeof(Size));
-            si.AddValue("IconData", ms.ToArray());
+            si.AddValue(IconSizeSerializationName, this.Size, typeof(Size));
+            si.AddValue(IconDataSerializationName, ms.ToArray());
         }
     }
 }
