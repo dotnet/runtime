@@ -391,7 +391,6 @@ namespace System.Drawing.Tests
             Assert.Null(Icon.ExtractAssociatedIcon("http://microsoft.com"));
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void ExtractAssociatedIcon_NullFilePath_ThrowsArgumentNullException()
         {
