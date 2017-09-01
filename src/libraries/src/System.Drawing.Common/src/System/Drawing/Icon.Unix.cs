@@ -44,14 +44,13 @@ using System.Runtime.InteropServices;
 
 namespace System.Drawing
 {
-    [Serializable]
 #if !NETCORE
 #if !MONOTOUCH
     [Editor ("System.Drawing.Design.IconEditor, " + Consts.AssemblySystem_Drawing_Design, typeof (System.Drawing.Design.UITypeEditor))]
 #endif
     [TypeConverter(typeof(IconConverter))]
 #endif
-    public sealed class Icon : MarshalByRefObject, ISerializable, ICloneable, IDisposable
+    public sealed partial class Icon : MarshalByRefObject, ISerializable, ICloneable, IDisposable
     {
         [StructLayout(LayoutKind.Sequential)]
         internal struct IconDirEntry
@@ -160,7 +159,7 @@ namespace System.Drawing
         public Icon(Icon original, Size size)
         {
             if (original == null)
-                throw new ArgumentException("original");
+                throw new ArgumentNullException(nameof(original));
 
             iconSize = size;
             iconDir = original.iconDir;
@@ -264,37 +263,13 @@ namespace System.Drawing
             {
                 if (s == null)
                 {
-                    string msg = string.Format("Resource '{0}' was not found.", resource);
-                    throw new FileNotFoundException(msg);
+                    throw new ArgumentException(null);
                 }
                 InitFromStreamWithSize(s, 32, 32);      // 32x32 is default
             }
         }
 
-        private Icon(SerializationInfo info, StreamingContext context)
-        {
-            MemoryStream dataStream = null;
-            int width = 0;
-            int height = 0;
-            foreach (SerializationEntry serEnum in info)
-            {
-                if (String.Compare(serEnum.Name, "IconData", true) == 0)
-                {
-                    dataStream = new MemoryStream((byte[])serEnum.Value);
-                }
-                if (String.Compare(serEnum.Name, "IconSize", true) == 0)
-                {
-                    Size iconSize = (Size)serEnum.Value;
-                    width = iconSize.Width;
-                    height = iconSize.Height;
-                }
-            }
-            if (dataStream != null)
-            {
-                dataStream.Seek(0, SeekOrigin.Begin);
-                InitFromStreamWithSize(dataStream, width, height);
-            }
-        }
+
 
         internal Icon(string resourceName, bool undisposable)
         {
@@ -308,14 +283,6 @@ namespace System.Drawing
                 InitFromStreamWithSize(s, 32, 32);      // 32x32 is default
             }
             this.undisposable = true;
-        }
-
-        void ISerializable.GetObjectData(SerializationInfo si, StreamingContext context)
-        {
-            MemoryStream ms = new MemoryStream();
-            Save(ms);
-            si.AddValue("IconSize", this.Size, typeof(Size));
-            si.AddValue("IconData", ms.ToArray());
         }
 
         public Icon(Stream stream, Size size) :
@@ -342,8 +309,10 @@ namespace System.Drawing
         [MonoLimitation("The same icon, SystemIcons.WinLogo, is returned for all file types.")]
         public static Icon ExtractAssociatedIcon(string filePath)
         {
+            if (filePath == null)
+                throw new ArgumentNullException(nameof(filePath));
             if (String.IsNullOrEmpty(filePath))
-                throw new ArgumentException("Null or empty path.", "filePath");
+                throw new ArgumentException("Null or empty path.", "path");
             if (!File.Exists(filePath))
                 throw new FileNotFoundException("Couldn't find specified file.", filePath);
 
@@ -703,8 +672,13 @@ namespace System.Drawing
         {
             get
             {
+                if (disposed)
+                {
+                    throw new ObjectDisposedException(GetType().Name);
+                }
+
                 // note: this handle doesn't survive the lifespan of the icon instance
-                if (!disposed && (handle == IntPtr.Zero))
+                if (handle == IntPtr.Zero)
                 {
                     if (GDIPlus.RunningOnUnix())
                     {
@@ -729,6 +703,11 @@ namespace System.Drawing
         {
             get
             {
+                if (disposed)
+                {
+                    throw new ObjectDisposedException(GetType().Name);
+                }
+
                 return iconSize.Height;
             }
         }
@@ -737,6 +716,11 @@ namespace System.Drawing
         {
             get
             {
+                if (disposed)
+                {
+                    throw new ObjectDisposedException(GetType().Name);
+                }
+
                 return iconSize;
             }
         }
@@ -746,6 +730,11 @@ namespace System.Drawing
         {
             get
             {
+                if (disposed)
+                {
+                    throw new ObjectDisposedException(GetType().Name);
+                }
+
                 return iconSize.Width;
             }
         }
@@ -757,10 +746,13 @@ namespace System.Drawing
 
         private void InitFromStreamWithSize(Stream stream, int width, int height)
         {
-            //read the icon header
-            if (stream == null || stream.Length == 0)
+            if (stream == null)
+                throw new ArgumentNullException(nameof(stream));
+
+            if (stream.Length == 0)
                 throw new System.ArgumentException("The argument 'stream' must be a picture that can be used as a Icon", "stream");
 
+            //read the icon header
             BinaryReader reader = new BinaryReader(stream);
 
             //iconDir = new IconDir ();
@@ -789,17 +781,7 @@ namespace System.Drawing
                 ide.bitCount = reader.ReadUInt16();
                 ide.bytesInRes = reader.ReadUInt32();
                 ide.imageOffset = reader.ReadUInt32();
-#if false
-Console.WriteLine ("Entry: {0}", i);
-Console.WriteLine ("\tide.width: {0}", ide.width);
-Console.WriteLine ("\tide.height: {0}", ide.height);
-Console.WriteLine ("\tide.colorCount: {0}", ide.colorCount);
-Console.WriteLine ("\tide.reserved: {0}", ide.reserved);
-Console.WriteLine ("\tide.planes: {0}", ide.planes);
-Console.WriteLine ("\tide.bitCount: {0}", ide.bitCount);
-Console.WriteLine ("\tide.bytesInRes: {0}", ide.bytesInRes);
-Console.WriteLine ("\tide.imageOffset: {0}", ide.imageOffset);
-#endif
+
                 // Vista 256x256 icons points directly to a PNG bitmap
                 // 256x256 icons are decoded as 0x0 (width and height are encoded as BYTE)
                 // and we ignore them just like MS does (at least up to fx 2.0) 
@@ -883,20 +865,6 @@ Console.WriteLine ("\tide.imageOffset: {0}", ide.imageOffset);
                 bih.biYPelsPerMeter = bihReader.ReadInt32();
                 bih.biClrUsed = bihReader.ReadUInt32();
                 bih.biClrImportant = bihReader.ReadUInt32();
-#if false
-Console.WriteLine ("Entry: {0}", j);
-Console.WriteLine ("\tbih.biSize: {0}", bih.biSize);
-Console.WriteLine ("\tbih.biWidth: {0}", bih.biWidth);
-Console.WriteLine ("\tbih.biHeight: {0}", bih.biHeight);
-Console.WriteLine ("\tbih.biPlanes: {0}", bih.biPlanes);
-Console.WriteLine ("\tbih.biBitCount: {0}", bih.biBitCount);
-Console.WriteLine ("\tbih.biCompression: {0}", bih.biCompression);
-Console.WriteLine ("\tbih.biSizeImage: {0}", bih.biSizeImage);
-Console.WriteLine ("\tbih.biXPelsPerMeter: {0}", bih.biXPelsPerMeter);
-Console.WriteLine ("\tbih.biYPelsPerMeter: {0}", bih.biYPelsPerMeter);
-Console.WriteLine ("\tbih.biClrUsed: {0}", bih.biClrUsed);
-Console.WriteLine ("\tbih.biClrImportant: {0}", bih.biClrImportant);
-#endif
                 iidata.iconHeader = bih;
                 //Read the number of colors used and corresponding memory occupied by
                 //color table. Fill this memory chunk into rgbquad[]
