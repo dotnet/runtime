@@ -313,7 +313,7 @@ namespace System.Drawing
             if (filePath == null)
                 throw new ArgumentNullException(nameof(filePath));
             if (String.IsNullOrEmpty(filePath))
-                throw new ArgumentException("Null or empty path.", "filePath");
+                throw new ArgumentException("Null or empty path.", "path");
             if (!File.Exists(filePath))
                 throw new FileNotFoundException("Couldn't find specified file.", filePath);
 
@@ -704,6 +704,11 @@ namespace System.Drawing
         {
             get
             {
+                if (disposed)
+                {
+                    throw new ObjectDisposedException(GetType().Name);
+                }
+
                 return iconSize.Height;
             }
         }
@@ -712,6 +717,11 @@ namespace System.Drawing
         {
             get
             {
+                if (disposed)
+                {
+                    throw new ObjectDisposedException(GetType().Name);
+                }
+
                 return iconSize;
             }
         }
@@ -721,6 +731,11 @@ namespace System.Drawing
         {
             get
             {
+                if (disposed)
+                {
+                    throw new ObjectDisposedException(GetType().Name);
+                }
+
                 return iconSize.Width;
             }
         }
