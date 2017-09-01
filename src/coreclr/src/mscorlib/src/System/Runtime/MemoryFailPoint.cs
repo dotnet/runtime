@@ -251,7 +251,7 @@ namespace System.Runtime
                             {
                                 bool r = Win32Native.VirtualFree(pMemory, UIntPtr.Zero, Win32Native.MEM_RELEASE);
                                 if (!r)
-                                    __Error.WinIOError();
+                                    throw Win32Marshal.GetExceptionForLastWin32Error();
                             }
                         }
 
@@ -312,7 +312,7 @@ namespace System.Runtime
             Win32Native.MEMORYSTATUSEX memory = new Win32Native.MEMORYSTATUSEX();
             r = Win32Native.GlobalMemoryStatusEx(ref memory);
             if (!r)
-                __Error.WinIOError();
+                throw Win32Marshal.GetExceptionForLastWin32Error();
             availPageFile = memory.availPageFile;
             totalAddressSpaceFree = memory.availVirtual;
             //Console.WriteLine("Memory gate:  Mem load: {0}%  Available memory (physical + page file): {1} MB  Total free address space: {2} MB  GC Heap: {3} MB", memory.memoryLoad, memory.availPageFile >> 20, memory.availVirtual >> 20, GC.GetTotalMemory(true) >> 20);
@@ -361,7 +361,7 @@ namespace System.Runtime
             {
                 UIntPtr r = Win32Native.VirtualQuery(address, ref memInfo, sizeOfMemInfo);
                 if (r == UIntPtr.Zero)
-                    __Error.WinIOError();
+                    throw Win32Marshal.GetExceptionForLastWin32Error();
 
                 ulong regionSize = memInfo.RegionSize.ToUInt64();
                 if (memInfo.State == Win32Native.MEM_FREE)
