@@ -398,7 +398,7 @@ namespace System
         }
 
         [Obsolete("AppDomain.GetCurrentThreadId has been deprecated because it does not provide a stable Id when managed threads are running on fibers (aka lightweight threads). To get a stable identifier for a managed thread, use the ManagedThreadId property on Thread.  http://go.microsoft.com/fwlink/?linkid=14202", false)]
-        [DllImport(Microsoft.Win32.Win32Native.KERNEL32)]
+        [DllImport(Interop.Libraries.Kernel32)]
         public static extern int GetCurrentThreadId();
 
         private AppDomain()

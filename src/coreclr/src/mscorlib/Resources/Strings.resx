@@ -159,8 +159,9 @@
   <data name="AggregateException_DeserializationFailure" xml:space="preserve">
     <value>The serialization stream contains no inner exceptions.</value>
   </data>
-  <data name="AggregateException_ToString" xml:space="preserve">
-    <value>{0}{1}---&gt; (Inner Exception #{2}) {3}{4}{5}</value>
+  <data name="AggregateException_InnerException" xml:space="preserve">
+    <value>(Inner Exception #{0}) </value>
+    <comment>This text is prepended to each inner exception description during aggregate exception formatting</comment>
   </data>
   <data name="AppDomain_AppBaseNotSet" xml:space="preserve">
     <value>The ApplicationBase must be set before retrieving this property.</value>
