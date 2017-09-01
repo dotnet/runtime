@@ -338,6 +338,9 @@ public:
     static
     void QCALLTYPE StripMethodInstantiation(MethodDesc * pMethod, QCall::ObjectHandleOnStack refMethod);
 
+    static
+    FCDECL1(INT32, GetGenericParameterCount, MethodDesc * pMethod);
+
     // see comment in the cpp file
     static FCDECL3(MethodDesc*, GetStubIfNeeded, MethodDesc *pMethod, ReflectClassBaseObject *pType, PtrArray* instArray);
     static FCDECL2(MethodDesc*, GetMethodFromCanonical, MethodDesc *pMethod, PTR_ReflectClassBaseObject pType);
