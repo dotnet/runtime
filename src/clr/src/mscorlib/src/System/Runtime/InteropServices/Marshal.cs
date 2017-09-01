@@ -1742,15 +1742,15 @@ namespace System.Runtime.InteropServices
             return obj;
         }
 
-        [DllImport(Microsoft.Win32.Win32Native.OLE32, PreserveSig = false)]
+        [DllImport(Interop.Libraries.Ole32, PreserveSig = false)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void CreateBindCtx(UInt32 reserved, out IBindCtx ppbc);
 
-        [DllImport(Microsoft.Win32.Win32Native.OLE32, PreserveSig = false)]
+        [DllImport(Interop.Libraries.Ole32, PreserveSig = false)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void MkParseDisplayName(IBindCtx pbc, [MarshalAs(UnmanagedType.LPWStr)] String szUserName, out UInt32 pchEaten, out IMoniker ppmk);
 
-        [DllImport(Microsoft.Win32.Win32Native.OLE32, PreserveSig = false)]
+        [DllImport(Interop.Libraries.Ole32, PreserveSig = false)]
         [SuppressUnmanagedCodeSecurity]
         private static extern void BindMoniker(IMoniker pmk, UInt32 grfOpt, ref Guid iidResult, [MarshalAs(UnmanagedType.Interface)] out Object ppvResult);
 

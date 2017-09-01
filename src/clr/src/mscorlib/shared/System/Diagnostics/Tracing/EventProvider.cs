@@ -149,7 +149,7 @@ namespace System.Diagnostics.Tracing
             status = EventRegister(ref m_providerId, m_etwCallback);
             if (status != 0)
             {
-                throw new ArgumentException(Win32Native.GetMessage(unchecked((int)status)));
+                throw new ArgumentException(Interop.Kernel32.GetMessage(unchecked((int)status)));
             }
         }
 

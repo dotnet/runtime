@@ -109,7 +109,7 @@ using System.IO;
           get { return handle == IntPtr.Zero; }
       }
 
-      [DllImport(Win32Native.KERNEL32), SuppressUnmanagedCodeSecurity, ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
+      [DllImport(Interop.Libraries.Kernel32), SuppressUnmanagedCodeSecurity, ReliabilityContract(Consistency.WillNotCorruptState, Cer.Success)]
       private static extern bool CloseHandle(IntPtr handle);
 
       override protected bool ReleaseHandle()
@@ -123,7 +123,7 @@ using System.IO;
   Note that when returning a CriticalHandle like this, P/Invoke will call your
   classes default constructor.
 
-      [DllImport(Win32Native.KERNEL32)]
+      [DllImport(Interop.Libraries.Kernel32)]
       private static extern MyCriticalHandleSubclass CreateHandle(int someState);
 
  */
