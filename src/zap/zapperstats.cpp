@@ -73,6 +73,7 @@ static_assert_no_msg((sizeof(callReasons)/sizeof(callReasons[0])) == CORINFO_IND
 ZapperStats::ZapperStats()
     : m_methods( 0 )
     , m_failedMethods( 0 )
+    , m_failedILStubs( 0 )
     , m_ilCodeSize( 0 )
     , m_nativeCodeSize( 0 )
     , m_nativeColdCodeSize( 0 )
