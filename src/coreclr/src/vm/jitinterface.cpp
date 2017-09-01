@@ -9261,7 +9261,6 @@ CorInfoType CEEInfo::getHFAType(CORINFO_CLASS_HANDLE hClass)
 
     CorInfoType result = CORINFO_TYPE_UNDEF;
 
-#ifdef FEATURE_HFA
     JIT_TO_EE_TRANSITION();
 
     TypeHandle VMClsHnd(hClass);
@@ -9269,7 +9268,6 @@ CorInfoType CEEInfo::getHFAType(CORINFO_CLASS_HANDLE hClass)
     result = asCorInfoType(VMClsHnd.GetHFAType());
     
     EE_TO_JIT_TRANSITION();
-#endif
 
     return result;
 }

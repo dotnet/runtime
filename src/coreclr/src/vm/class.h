@@ -518,6 +518,7 @@ class EEClassLayoutInfo
         }
 #endif // FEATURE_UNIX_AMD64_STRUCT_PASSING
 
+        CorElementType GetNativeHFATypeRaw();
 #ifdef FEATURE_HFA
         bool IsNativeHFA()
         {
@@ -532,7 +533,16 @@ class EEClassLayoutInfo
                 return (m_bFlags & e_R4_HFA) ? ELEMENT_TYPE_R4 : ELEMENT_TYPE_R8;
             return ELEMENT_TYPE_END;
         }
-#endif
+#else // !FEATURE_HFA
+        bool IsNativeHFA()
+        {
+            return GetNativeHFATypeRaw() != ELEMENT_TYPE_END;
+        }
+        CorElementType GetNativeHFAType()
+        {
+            return GetNativeHFATypeRaw();
+        }
+#endif // !FEATURE_HFA
 
     private:
         void SetIsBlittable(BOOL isBlittable)
@@ -1617,6 +1627,13 @@ public:
         }
     }
 #endif // UNIX_AMD64_ABI && FEATURE_UNIX_AMD64_STRUCT_PASSING    
+
+#if defined(FEATURE_HFA)
+    bool CheckForHFA(MethodTable ** pByValueClassCache);
+    VOID CheckForNativeHFA();
+#else // !FEATURE_HFA
+    bool CheckForHFA();
+#endif // FEATURE_HFA
 
 #ifdef FEATURE_COMINTEROP
     inline TypeHandle GetCoClassForInterface()
