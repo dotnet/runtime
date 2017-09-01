@@ -18,13 +18,13 @@ namespace System.Diagnostics.Tracing
 
         // Register an event provider.
         unsafe uint IEventProvider.EventRegister(
-            ref Guid providerId,
+            EventSource eventSource,
             UnsafeNativeMethods.ManifestEtw.EtwEnableCallback enableCallback,
             void* callbackContext,
             ref long registrationHandle)
         {
             uint returnStatus = 0;
-            m_provHandle = EventPipeInternal.CreateProvider(providerId, enableCallback);
+            m_provHandle = EventPipeInternal.CreateProvider(eventSource.Name, enableCallback);
             if(m_provHandle != IntPtr.Zero)
             {
                 // Fixed registration handle because a new EventPipeEventProvider
