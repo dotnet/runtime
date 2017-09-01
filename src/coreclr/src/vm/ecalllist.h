@@ -710,6 +710,7 @@ FCFuncStart(gRuntimeThreadFuncs)
 #endif // FEATURE_COMINTEROP
     FCFuncElement("InterruptInternal", ThreadNative::Interrupt)
     FCFuncElement("JoinInternal", ThreadNative::Join)
+    QCFuncElement("GetOptimalMaxSpinWaitsPerSpinIterationInternal", ThreadNative::GetOptimalMaxSpinWaitsPerSpinIteration)
 FCFuncEnd()
 
 FCFuncStart(gThreadFuncs)
