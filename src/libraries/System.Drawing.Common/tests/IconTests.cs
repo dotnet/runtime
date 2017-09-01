@@ -143,7 +143,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_NullStream_ThrowsArgumentNullException()
         {
@@ -240,7 +239,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_NullIcon_ThrowsArgumentNullException()
         {
@@ -248,7 +246,8 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentNullException, ArgumentException>("original", null, () => new Icon((Icon)null, new Size(32, 32)));
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
+        // libgdiplus causes a segfault when given an invalid Icon handle.
+        [PlatformSpecific(TestPlatforms.Windows)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Ctor_InvalidHandle_Success()
         {
@@ -284,7 +283,6 @@ namespace System.Drawing.Tests
             Assert.Throws<NullReferenceException>(() => new Icon(null, "48x48_multiple_entries_4bit.ico"));
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalTheory(Helpers.GdiplusIsAvailable)]
         [InlineData(typeof(Icon), null)]
         [InlineData(typeof(Icon), "")]
@@ -323,13 +321,11 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Dispose_IconData_DestroysHandle()
         {
             var icon = new Icon(Helpers.GetTestBitmapPath("48x48_multiple_entries_4bit.ico"));
             icon.Dispose();
-
             Assert.Throws<ObjectDisposedException>(() => icon.Handle);
         }
 
@@ -395,7 +391,6 @@ namespace System.Drawing.Tests
             Assert.Null(Icon.ExtractAssociatedIcon("http://microsoft.com"));
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void ExtractAssociatedIcon_NullFilePath_ThrowsArgumentNullException()
         {
@@ -550,7 +545,6 @@ namespace System.Drawing.Tests
             }
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void ToBitmap_BitmapIconFromHandle_ReturnsExpected()
         {
@@ -731,7 +725,6 @@ namespace System.Drawing.Tests
             AssertExtensions.Throws<ArgumentException>(null, () => Icon.FromHandle(IntPtr.Zero));
         }
 
-        [ActiveIssue(20884, TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.GdiplusIsAvailable)]
         public void Size_GetWhenDisposed_ThrowsObjectDisposedException()
         {
