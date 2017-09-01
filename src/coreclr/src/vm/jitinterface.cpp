@@ -7192,31 +7192,41 @@ getMethodInfoHelper(
         bool fILIntrinsic = false;
 
         MethodTable * pMT  = ftn->GetMethodTable();
-      
-        if (MscorlibBinder::IsClass(pMT, CLASS__JIT_HELPERS))
+
+        if (pMT->GetModule()->IsSystem())
         {
-            fILIntrinsic = getILIntrinsicImplementation(ftn, methInfo);
-        }
-        else if (MscorlibBinder::IsClass(pMT, CLASS__UNSAFE))
-        {
-            fILIntrinsic = getILIntrinsicImplementationForUnsafe(ftn, methInfo);
-        }
-        else if (MscorlibBinder::IsClass(pMT, CLASS__INTERLOCKED))
-        {
-            fILIntrinsic = getILIntrinsicImplementationForInterlocked(ftn, methInfo);
-        }
-        else if (MscorlibBinder::IsClass(pMT, CLASS__VOLATILE))
-        {
-            fILIntrinsic = getILIntrinsicImplementationForVolatile(ftn, methInfo);
-        }
-        else if (MscorlibBinder::IsClass(pMT, CLASS__RUNTIME_HELPERS))
-        {
-            fILIntrinsic = getILIntrinsicImplementationForRuntimeHelpers(ftn, methInfo);
+            if (MscorlibBinder::IsClass(pMT, CLASS__JIT_HELPERS))
+            {
+                fILIntrinsic = getILIntrinsicImplementation(ftn, methInfo);
+            }
+            else if (MscorlibBinder::IsClass(pMT, CLASS__UNSAFE))
+            {
+                fILIntrinsic = getILIntrinsicImplementationForUnsafe(ftn, methInfo);
+            }
+            else if (MscorlibBinder::IsClass(pMT, CLASS__INTERLOCKED))
+            {
+                fILIntrinsic = getILIntrinsicImplementationForInterlocked(ftn, methInfo);
+            }
+            else if (MscorlibBinder::IsClass(pMT, CLASS__VOLATILE))
+            {
+                fILIntrinsic = getILIntrinsicImplementationForVolatile(ftn, methInfo);
+            }
+            else if (MscorlibBinder::IsClass(pMT, CLASS__RUNTIME_HELPERS))
+            {
+                fILIntrinsic = getILIntrinsicImplementationForRuntimeHelpers(ftn, methInfo);
+            }
         }
 
         if (!fILIntrinsic)
         {
             getMethodInfoILMethodHeaderHelper(header, methInfo);
+
+            // Workaround for https://github.com/dotnet/coreclr/issues/1279
+            // Set init locals bit to zero for system module unless profiler may have overrided it. Remove once we have
+            // better solution for this issue.
+            if (pMT->GetModule()->IsSystem() && !(CORProfilerDisableAllNGenImages() || CORProfilerUseProfileImages()))
+                methInfo->options = (CorInfoOptions)0;
+
             pLocalSig = header->LocalVarSig;
             cbLocalSig = header->cbLocalVarSig;
         }
