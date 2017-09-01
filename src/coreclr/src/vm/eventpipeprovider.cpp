@@ -7,10 +7,11 @@
 #include "eventpipeconfiguration.h"
 #include "eventpipeevent.h"
 #include "eventpipeprovider.h"
+#include "sha1.h"
 
 #ifdef FEATURE_PERFTRACING
 
-EventPipeProvider::EventPipeProvider(const GUID &providerID, EventPipeCallback pCallbackFunction, void *pCallbackData)
+EventPipeProvider::EventPipeProvider(const SString &providerName, EventPipeCallback pCallbackFunction, void *pCallbackData)
 {
     CONTRACTL
     {
@@ -20,7 +21,7 @@ EventPipeProvider::EventPipeProvider(const GUID &providerID, EventPipeCallback p
     }
     CONTRACTL_END;
 
-    m_providerID = providerID;
+    m_providerName = providerName;
     m_enabled = false;
     m_keywords = 0;
     m_providerLevel = EventPipeEventLevel::Critical;
@@ -75,11 +76,11 @@ EventPipeProvider::~EventPipeProvider()
     }
 }
 
-const GUID& EventPipeProvider::GetProviderID() const
+const SString& EventPipeProvider::GetProviderName() const
 {
     LIMITED_METHOD_CONTRACT;
 
-    return m_providerID;
+    return m_providerName;
 }
 
 bool EventPipeProvider::Enabled() const
@@ -200,7 +201,7 @@ void EventPipeProvider::InvokeCallback()
     if(m_pCallbackFunction != NULL && !g_fEEShutDown)
     {
         (*m_pCallbackFunction)(
-            &m_providerID,
+            NULL, /* providerId */
             m_enabled,
             (UCHAR) m_providerLevel,
             m_keywords,

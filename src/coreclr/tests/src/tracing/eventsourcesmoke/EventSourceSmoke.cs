@@ -32,7 +32,7 @@ namespace Tracing.Tests
             TraceConfiguration config = new TraceConfiguration(outputFile, circularBufferMB);
             // Setup the provider values.
             // Public provider.
-            string providerName = eventSource.Guid.ToString("D");
+            string providerName = eventSource.Name;
             UInt64 keywords = 0xffffffffffffffff;
 
             // Enable the provider.

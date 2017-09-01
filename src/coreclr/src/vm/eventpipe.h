@@ -244,7 +244,7 @@ class EventPipe
         static bool Enabled();
 
         // Create a provider.
-        static EventPipeProvider* CreateProvider(const GUID &providerID, EventPipeCallback pCallbackFunction = NULL, void *pCallbackData = NULL);
+        static EventPipeProvider* CreateProvider(const SString &providerName, EventPipeCallback pCallbackFunction = NULL, void *pCallbackData = NULL);
 
         // Delete a provider.
         static void DeleteProvider(EventPipeProvider *pProvider);
@@ -358,7 +358,7 @@ public:
     static void QCALLTYPE Disable();
 
     static INT_PTR QCALLTYPE CreateProvider(
-        GUID providerID,
+        __in_z LPCWSTR providerName,
         EventPipeCallback pCallbackFunc);
 
     static INT_PTR QCALLTYPE DefineEvent(

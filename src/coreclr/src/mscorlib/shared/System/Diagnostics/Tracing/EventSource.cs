@@ -1560,7 +1560,7 @@ namespace System.Diagnostics.Tracing
 
                 // Register the provider with ETW
                 var provider = new OverideEventProvider(this);
-                provider.Register(eventSourceGuid);
+                provider.Register(this);
 #endif
                 // Add the eventSource to the global (weak) list.  
                 // This also sets m_id, which is the index in the list. 

@@ -122,9 +122,9 @@ def generateClrEventPipeWriteEventsImpl(
     WriteEventImpl.append(
         "    EventPipeProvider" +
         providerPrettyName +
-        " = EventPipe::CreateProvider(" +
+        " = EventPipe::CreateProvider(SL(" +
         providerPrettyName +
-        "GUID);\n")
+        "Name));\n")
     for eventNode in eventNodes:
         eventName = eventNode.getAttribute('symbol')
         templateName = eventNode.getAttribute('template')
@@ -207,22 +207,8 @@ def generateWriteEventBody(template, providerName, eventName):
 
     return header + code + checking + body + footer
 
-providerGUIDMap = {}
-providerGUIDMap[
-    "{e13c0d23-ccbc-4e12-931b-d9cc2eee27e4}"] = "{0xe13c0d23,0xccbc,0x4e12,{0x93,0x1b,0xd9,0xcc,0x2e,0xee,0x27,0xe4}}"
-providerGUIDMap[
-    "{A669021C-C450-4609-A035-5AF59AF4DF18}"] = "{0xA669021C,0xC450,0x4609,{0xA0,0x35,0x5A,0xF5,0x9A,0xF4,0xDF,0x18}}"
-providerGUIDMap[
-    "{CC2BCBBA-16B6-4cf3-8990-D74C2E8AF500}"] = "{0xCC2BCBBA,0x16B6,0x4cf3,{0x89,0x90,0xD7,0x4C,0x2E,0x8A,0xF5,0x00}}"
-providerGUIDMap[
-    "{763FD754-7086-4dfe-95EB-C01A46FAF4CA}"] = "{0x763FD754,0x7086,0x4dfe,{0x95,0xEB,0xC0,0x1A,0x46,0xFA,0xF4,0xCA}}"
-
-
-def generateGUID(tmpGUID):
-    return providerGUIDMap[tmpGUID]
 
 keywordMap = {}
-
 
 def generateEventKeywords(eventKeywords):
     mask = 0
@@ -375,8 +361,6 @@ def generateEventPipeImplFiles(
     tree = DOM.parse(etwmanifest)
     coreclrRoot = os.getcwd()
     for providerNode in tree.getElementsByTagName('provider'):
-        providerGUID = providerNode.getAttribute('guid')
-        providerGUID = generateGUID(providerGUID)
         providerName = providerNode.getAttribute('name')
 
         providerPrettyName = providerName.replace("Windows-", '')
@@ -417,15 +401,16 @@ bool WriteToBuffer(const T &value, char *&buffer, unsigned int& offset, unsigned
 
         eventpipeImpl.write(header)
         eventpipeImpl.write(
-            "GUID const " +
-            providerPrettyName +
-            "GUID = " +
-            providerGUID +
-            ";\n")
+            "const WCHAR* %sName = W(\"%s\");\n" % (
+                providerPrettyName,
+                providerName
+            )
+        )
         eventpipeImpl.write(
-            "EventPipeProvider *EventPipeProvider" +
-            providerPrettyName +
-            " = nullptr;\n")
+            "EventPipeProvider *EventPipeProvider%s = nullptr;\n" % (
+                providerPrettyName,
+            )
+        )
         templateNodes = providerNode.getElementsByTagName('template')
         allTemplates = parseTemplateNodes(templateNodes)
         eventNodes = providerNode.getElementsByTagName('event')
