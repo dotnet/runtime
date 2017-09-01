@@ -182,14 +182,23 @@ unsigned LinearScan::getWeight(RefPosition* refPos)
             GenTreeLclVarCommon* lclCommon = treeNode->AsLclVarCommon();
             LclVarDsc*           varDsc    = &(compiler->lvaTable[lclCommon->gtLclNum]);
             weight                         = varDsc->lvRefCntWtd;
+            if (refPos->getInterval()->isSpilled)
+            {
+                // Decrease the weight if the interval has already been spilled.
+                weight -= BB_UNITY_WEIGHT;
+            }
         }
         else
         {
             // Non-candidate local ref or non-lcl tree node.
             // These are considered to have two references in the basic block:
-            // a def and a use and hence weighted ref count is 2 times
+            // a def and a use and hence weighted ref count would be 2 times
             // the basic block weight in which they appear.
-            weight = 2 * this->blockInfo[refPos->bbNum].weight;
+            // However, it is generally more harmful to spill tree temps, so we
+            // double that.
+            const unsigned TREE_TEMP_REF_COUNT    = 2;
+            const unsigned TREE_TEMP_BOOST_FACTOR = 2;
+            weight = TREE_TEMP_REF_COUNT * TREE_TEMP_BOOST_FACTOR * blockInfo[refPos->bbNum].weight;
         }
     }
     else
@@ -198,7 +207,7 @@ unsigned LinearScan::getWeight(RefPosition* refPos)
         // reference in the basic block and hence their weighted
         // refcount is equal to the block weight in which they
         // appear.
-        weight = this->blockInfo[refPos->bbNum].weight;
+        weight = blockInfo[refPos->bbNum].weight;
     }
 
     return weight;
@@ -1366,6 +1375,9 @@ void LinearScan::setBlockSequence()
     verifiedAllBBs           = false;
     hasCriticalEdges         = false;
     BasicBlock* nextBlock;
+    // We use a bbNum of 0 for entry RefPositions.
+    // The other information in blockInfo[0] will never be used.
+    blockInfo[0].weight = BB_UNITY_WEIGHT;
     for (BasicBlock* block = compiler->fgFirstBB; block != nullptr; block = nextBlock)
     {
         blockSequence[bbSeqCount] = block;
@@ -1375,11 +1387,12 @@ void LinearScan::setBlockSequence()
 
         // Initialize the blockInfo.
         // predBBNum will be set later.  0 is never used as a bbNum.
+        assert(block->bbNum != 0);
         blockInfo[block->bbNum].predBBNum = 0;
         // We check for critical edges below, but initialize to false.
         blockInfo[block->bbNum].hasCriticalInEdge  = false;
         blockInfo[block->bbNum].hasCriticalOutEdge = false;
-        blockInfo[block->bbNum].weight             = block->bbWeight;
+        blockInfo[block->bbNum].weight             = block->getBBWeight(compiler);
 
 #if TRACK_LSRA_STATS
         blockInfo[block->bbNum].spillCount         = 0;
@@ -4591,8 +4604,9 @@ void LinearScan::buildIntervals()
     }
     curBBNum = blockSequence[bbSeqCount - 1]->bbNum;
 
-    // Next, create ParamDef RefPositions for all the tracked parameters,
-    // in order of their varIndex
+    // Next, create ParamDef RefPositions for all the tracked parameters, in order of their varIndex.
+    // Assign these RefPositions to the (nonexistent) BB0.
+    curBBNum = 0;
 
     LclVarDsc*   argDsc;
     unsigned int lclNum;
