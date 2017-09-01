@@ -10,19 +10,14 @@
 //
 // =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.Runtime;
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Runtime.ExceptionServices;
-using System.Security;
-using System.Threading;
 using System.Diagnostics;
 using System.Diagnostics.Contracts;
-using Microsoft.Win32;
 using System.Diagnostics.Tracing;
+using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
+using Internal.Runtime.Augments;
 
 // Disable the "reference to volatile field not treated as volatile" error.
 #pragma warning disable 0420
@@ -2971,26 +2966,19 @@ namespace System.Threading.Tasks
                 return false;
             }
 
-            //This code is pretty similar to the custom spinning in MRES except there is no yieling after we exceed the spin count
-            int spinCount = PlatformHelper.IsSingleProcessor ? 1 : System.Threading.SpinWait.YIELD_THRESHOLD; //spin only once if we are running on a single CPU
-            for (int i = 0; i < spinCount; i++)
+            int spinCount = Threading.SpinWait.SpinCountforSpinBeforeWait;
+            var spinner = new SpinWait();
+            while (spinner.Count < spinCount)
             {
+                spinner.SpinOnce(Threading.SpinWait.Sleep1ThresholdForSpinBeforeWait);
+
                 if (IsCompleted)
                 {
                     return true;
                 }
-
-                if (i == spinCount / 2)
-                {
-                    Thread.Yield();
-                }
-                else
-                {
-                    Thread.SpinWait(4 << i);
-                }
             }
 
-            return IsCompleted;
+            return false;
         }
 
         /// <summary>
@@ -3227,7 +3215,7 @@ namespace System.Threading.Tasks
 
             // Skip synchronous execution of continuations if this task's thread was aborted
             bool bCanInlineContinuations = !(((m_stateFlags & TASK_STATE_THREAD_WAS_ABORTED) != 0) ||
-                                              (Thread.CurrentThread.ThreadState == ThreadState.AbortRequested) ||
+                                              (RuntimeThread.CurrentThread.ThreadState == ThreadState.AbortRequested) ||
                                               ((m_stateFlags & (int)TaskCreationOptions.RunContinuationsAsynchronously) != 0));
 
             // Handle the single-Action case
