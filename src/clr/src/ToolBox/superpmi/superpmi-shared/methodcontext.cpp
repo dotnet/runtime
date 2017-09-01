@@ -6095,11 +6095,18 @@ bool MethodContext::wasEnviromentChanged()
     }
     if (changed)
     {
-        if (prevEnviroment == nullptr)
+        if (prevEnviroment != nullptr)
         {
             delete prevEnviroment;
         }
-        prevEnviroment = new DenseLightWeightMap<Agnostic_Environment>(*Environment);
+        if (Environment != nullptr)
+        {
+            prevEnviroment = new DenseLightWeightMap<Agnostic_Environment>(*Environment);
+        }
+        else
+        {
+            prevEnviroment = nullptr;
+        }
         return true;
     }
     return false;
