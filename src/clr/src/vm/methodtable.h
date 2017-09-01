@@ -2068,7 +2068,17 @@ public:
         LIMITED_METHOD_CONTRACT;
         SetFlag(enum_flag_IsHFA);
     }
+#else // !FEATURE_HFA
+    bool IsHFA();
 #endif // FEATURE_HFA
+
+    // Get the HFA type. This is supported both with FEATURE_HFA, in which case it
+    // depends on the cached bit on the class, or without, in which case it is recomputed
+    // for each invocation.
+    CorElementType GetHFAType();
+    // The managed and unmanaged HFA type can differ for types with layout. The following two methods return the unmanaged HFA type.
+    bool IsNativeHFA();
+    CorElementType GetNativeHFAType();
 
 #if defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
     inline bool IsRegPassedStruct()
@@ -2083,15 +2093,6 @@ public:
         SetFlag(enum_flag_IsRegStructPassed);
     }
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
-
-#ifdef FEATURE_HFA
-
-    CorElementType GetHFAType();
-
-    // The managed and unmanaged HFA type can differ for types with layout. The following two methods return the unmanaged HFA type.
-    bool IsNativeHFA();
-    CorElementType GetNativeHFAType();
-#endif // FEATURE_HFA
 
 #ifdef FEATURE_64BIT_ALIGNMENT
     // Returns true iff the native view of this type requires 64-bit aligment.

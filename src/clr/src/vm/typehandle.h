@@ -394,10 +394,8 @@ public:
     CHECK CheckFullyLoaded();
 #endif
 
-#ifdef FEATURE_HFA
     bool IsHFA() const;   
     CorElementType GetHFAType() const;
-#endif // FEATURE_HFA
 
 #ifdef FEATURE_64BIT_ALIGNMENT
     bool RequiresAlign8() const;
