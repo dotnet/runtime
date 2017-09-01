@@ -978,7 +978,6 @@ namespace System
             return fRet;
         }
 
-
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern static bool IsTypicalMethodDefinition(IRuntimeMethodInfo method);
 
@@ -993,6 +992,11 @@ namespace System
 
             return method;
         }
+
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        private extern static int GetGenericParameterCount(RuntimeMethodHandleInternal method);
+
+        internal static int GetGenericParameterCount(IRuntimeMethodInfo method) => GetGenericParameterCount(method.Value);
 
         [DllImport(JitHelpers.QCall, CharSet = CharSet.Unicode)]
         [SuppressUnmanagedCodeSecurity]

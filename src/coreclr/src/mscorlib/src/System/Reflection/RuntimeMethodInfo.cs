@@ -184,6 +184,7 @@ namespace System.Reflection
             return m_declaringType;
         }
 
+        internal sealed override int GenericParameterCount => RuntimeMethodHandle.GetGenericParameterCount(this);
         #endregion
 
         #region Object Overrides
