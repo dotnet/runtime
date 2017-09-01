@@ -4921,8 +4921,7 @@ void Compiler::optPerformStaticOptimizations(unsigned loopNum, LoopCloneContext*
             {
                 LcJaggedArrayOptInfo* arrIndexInfo = optInfo->AsLcJaggedArrayOptInfo();
                 compCurBB                          = arrIndexInfo->arrIndex.useBlock;
-                optRemoveRangeCheck(arrIndexInfo->arrIndex.bndsChks[arrIndexInfo->dim], arrIndexInfo->stmt, true,
-                                    GTF_ASG, true);
+                optRemoveRangeCheck(arrIndexInfo->arrIndex.bndsChks[arrIndexInfo->dim], arrIndexInfo->stmt);
                 DBEXEC(dynamicPath, optDebugLogLoopCloning(arrIndexInfo->arrIndex.useBlock, arrIndexInfo->stmt));
             }
             break;
@@ -7924,35 +7923,25 @@ void Compiler::optRemoveTree(GenTreePtr deadTree, GenTreePtr keepList)
     fgWalkTreePre(&deadTree, optRemoveTreeVisitor, (void*)keepList);
 }
 
-/*****************************************************************************
- *
- *  Given an array index node, mark it as not needing a range check.
- */
+//------------------------------------------------------------------------------
+// optRemoveRangeCheck : Given an array index node, mark it as not needing a range check.
+//
+// Arguments:
+//    tree   -  Range check tree
+//    stmt   -  Statement the tree belongs to
 
-void Compiler::optRemoveRangeCheck(
-    GenTreePtr tree, GenTreePtr stmt, bool updateCSEcounts, unsigned sideEffFlags, bool forceRemove)
+void Compiler::optRemoveRangeCheck(GenTreePtr tree, GenTreePtr stmt)
 {
-    GenTreePtr  add1;
-    GenTreePtr* addp;
-
-    GenTreePtr  nop1;
-    GenTreePtr* nopp;
-
-    GenTreePtr icon;
-    GenTreePtr mult;
-
-    GenTreePtr base;
-
-    ssize_t ival;
-
 #if !REARRANGE_ADDS
     noway_assert(!"can't remove range checks without REARRANGE_ADDS right now");
 #endif
 
     noway_assert(stmt->gtOper == GT_STMT);
     noway_assert(tree->gtOper == GT_COMMA);
-    noway_assert(tree->gtOp.gtOp1->OperIsBoundsCheck());
-    noway_assert(forceRemove || optIsRangeCheckRemovable(tree->gtOp.gtOp1));
+
+    GenTree* bndsChkTree = tree->gtOp.gtOp1;
+
+    noway_assert(bndsChkTree->OperIsBoundsCheck());
 
     GenTreeBoundsChk* bndsChk = tree->gtOp.gtOp1->AsBoundsChk();
 
@@ -7965,20 +7954,19 @@ void Compiler::optRemoveRangeCheck(
 #endif
 
     GenTreePtr sideEffList = nullptr;
-    if (sideEffFlags)
-    {
-        gtExtractSideEffList(tree->gtOp.gtOp1, &sideEffList, sideEffFlags);
-    }
+
+    gtExtractSideEffList(bndsChkTree, &sideEffList, GTF_ASG);
 
     // Decrement the ref counts for any LclVars that are being deleted
     //
-    optRemoveTree(tree->gtOp.gtOp1, sideEffList);
+    optRemoveTree(bndsChkTree, sideEffList);
 
     // Just replace the bndsChk with a NOP as an operand to the GT_COMMA, if there are no side effects.
     tree->gtOp.gtOp1 = (sideEffList != nullptr) ? sideEffList : gtNewNothingNode();
-
     // TODO-CQ: We should also remove the GT_COMMA, but in any case we can no longer CSE the GT_COMMA.
     tree->gtFlags |= GTF_DONT_CSE;
+
+    gtUpdateSideEffects(stmt, tree);
 
     /* Recalculate the gtCostSz, etc... */
     gtSetStmtInfo(stmt);
@@ -8251,8 +8239,11 @@ bool Compiler::optIdentifyLoopOptInfo(unsigned loopNum, LoopCloneContext* contex
         compCurBB = block;
         for (GenTreePtr stmt = block->bbTreeList; stmt; stmt = stmt->gtNext)
         {
-            info.stmt = stmt;
-            fgWalkTreePre(&stmt->gtStmt.gtStmtExpr, optCanOptimizeByLoopCloningVisitor, &info, false, false);
+            info.stmt               = stmt;
+            const bool lclVarsOnly  = false;
+            const bool computeStack = false;
+            fgWalkTreePre(&stmt->gtStmt.gtStmtExpr, optCanOptimizeByLoopCloningVisitor, &info, lclVarsOnly,
+                          computeStack);
         }
     }
 

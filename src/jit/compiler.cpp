@@ -9765,7 +9765,7 @@ int cTreeFlagsIR(Compiler* comp, GenTree* tree)
 #endif
         if (tree->gtFlags & GTF_IND_NONFAULTING)
         {
-            if ((op == GT_IND) || (op == GT_STOREIND))
+            if (tree->OperIsIndirOrArrLength())
             {
                 chars += printf("[IND_NONFAULTING]");
             }
