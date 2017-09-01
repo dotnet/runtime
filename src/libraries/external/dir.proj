@@ -16,7 +16,6 @@
     <Project Include="portable\portable.depproj" />
     <Project Include="ilasm/ilasm.depproj" />
     <Project Include="docs/docs.depproj" />
-    <Project Include="ioNativeDependency/ioNativeDependency.depproj" />
     <Project Condition="'$(ILLinkTrimAssembly)' != 'false'" Include="ILLink/ILLink.depproj" />
   </ItemGroup>
 

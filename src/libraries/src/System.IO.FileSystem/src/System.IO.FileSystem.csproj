@@ -195,9 +195,6 @@
     <Compile Include="$(CommonPath)\System\Memory\FixedBufferExtensions.cs">
       <Link>Common\System\Memory\FixedBufferExtensions.cs</Link>
     </Compile>
-  </ItemGroup>
-  <!-- Windows : Win32 only -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(UWPCompatible)' != 'true'">
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.DeleteFile.cs">
       <Link>Common\Interop\Windows\Interop.DeleteFile.cs</Link>
     </Compile>
@@ -222,12 +219,6 @@
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.ReplaceFile.cs">
       <Link>Common\Interop\Windows\Interop.ReplaceFile.cs</Link>
     </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CreateFile.cs">
-      <Link>Common\Interop\Windows\Interop.CreateFile.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.UnsafeCreateFile.cs">
-      <Link>Common\Interop\Windows\Interop.UnsafeCreateFile.cs</Link>
-    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CopyFile.cs">
       <Link>Common\Interop\Windows\Interop.CopyFile.cs</Link>
     </Compile>
@@ -235,9 +226,23 @@
       <Link>Common\Interop\Windows\Interop.CopyFileEx.cs</Link>
     </Compile>
   </ItemGroup>
+  <!-- Windows : Win32 only -->
+  <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(UWPCompatible)' != 'true'">
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.UnsafeCreateFile.cs">
+      <Link>Common\Interop\Windows\Interop.UnsafeCreateFile.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CreateFile.cs">
+      <Link>Common\Interop\Windows\Interop.CreateFile.cs</Link>
+    </Compile>
+  </ItemGroup>
   <!-- Windows : UAP - Win32 + WinRT -->
   <ItemGroup Condition="'$(TargetsWindows)' == 'true' and '$(UWPCompatible)' == 'true'">
-    <Compile Include="System\IO\FromApp.Interop.cs" />
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.CreateFile2.cs">
+      <Link>Common\Interop\Windows\Interop.CreateFile2.cs</Link>
+    </Compile>
+    <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.UnsafeCreateFile.uap.cs">
+      <Link>Common\Interop\Windows\Interop.UnsafeCreateFile.uap.cs</Link>
+    </Compile>
     <Compile Include="$(CommonPath)\Interop\Windows\kernel32\Interop.COPYFILE2_EXTENDED_PARAMETERS.cs">
       <Link>Common\Interop\Windows\Interop.COPYFILE2_EXTENDED_PARAMETERS.cs</Link>
     </Compile>
