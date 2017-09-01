@@ -41,10 +41,6 @@
 
     <ExcludeFromDuplicateTypes Include="System.Private.Reflection.Metadata.Ecma335" />
 
-    <File Include="$(RuntimePath)\FileApiInterop.dll" Condition="'$(PackageTargetRuntime)' != ''">
-      <TargetPath>runtimes/$(PackageTargetRuntime)/native</TargetPath>
-    </File>
-
     <!-- Permit the following implementation-only assemblies -->
     <ValidatePackageSuppression Condition="'$(PackageTargetRuntime)' != ''" Include="PermitInbox">
       <Value>

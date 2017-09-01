@@ -53,9 +53,6 @@
     <Compile Include="File\ReadWriteAllTextAsync.cs" />
     <Compile Include="FileStream\ReadWriteSpan.netcoreapp.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetGroup)' == 'uapaot' or '$(TargetGroup)' == 'uap'">
-    <Compile Include="WinRT_BrokeredFunctions.cs" />
-  </ItemGroup>
   <ItemGroup>
     <!-- Rewritten -->
     <Compile Include="DirectoryInfo\GetSetAttributes.cs" />
