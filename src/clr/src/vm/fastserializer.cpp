@@ -226,8 +226,8 @@ void FastSerializer::WriteSerializationType(FastSerializableObject *pObject)
 
     // Write the SerializationType version fields.
     int serializationType[2];
-    serializationType[0] = 1; // Object Version.
-    serializationType[1] = 0; // Minimum Reader Version.
+    serializationType[0] = pObject->GetObjectVersion();
+    serializationType[1] = pObject->GetMinReaderVersion();
     WriteBuffer((BYTE*) &serializationType, sizeof(serializationType));
 
     // Write the SerializationType TypeName field.
