@@ -232,17 +232,41 @@ public static partial class DataContractJsonSerializerTests
 
         var testStrings = new[]
         {
-            new { value = "\u0008", baseline = "\\b" }, // BACKSPACE
-            new { value = "\u000C", baseline = "\\f" }, // FORM FEED (FF)
-            new { value = "\u000A", baseline = "\\n" }, // LINE FEED (LF)
-            new { value = "\u000D", baseline = "\\r" }, // CARRIAGE RETURN (CR)
-            new { value = "\u0009", baseline = "\\t" }, // HORIZONTAL TABULATION
-            new { value = "\u0022", baseline = "\\\"" }, // QUOTATION MARK
-            new { value = "\u005C", baseline = "\\\\" }, // REVERSE SOLIDUS
             new { value = "\u0000", baseline = "\\u0000" }, // NULL
+            new { value = "\u0001", baseline = "\\u0001" },
+            new { value = "\u0002", baseline = "\\u0002" },
+            new { value = "\u0003", baseline = "\\u0003" },
+            new { value = "\u0004", baseline = "\\u0004" },
+            new { value = "\u0005", baseline = "\\u0005" },
+            new { value = "\u0006", baseline = "\\u0006" },
+            new { value = "\u0007", baseline = "\\u0007" },
+            new { value = "\u0008", baseline = "\\b" }, // BACKSPACE
+            new { value = "\u0009", baseline = "\\t" }, // HORIZONTAL TABULATION
+            new { value = "\u000A", baseline = "\\n" }, // LINE FEED (LF)
             new { value = "\u000B", baseline = "\\u000b" }, // LINE TABULATION
+            new { value = "\u000C", baseline = "\\f" }, // FORM FEED (FF)
+            new { value = "\u000D", baseline = "\\r" }, // CARRIAGE RETURN (CR)
+            new { value = "\u000E", baseline = "\\u000e" },
             new { value = "\u000F", baseline = "\\u000f" }, // SHIFT IN
+            new { value = "\u0010", baseline = "\\u0010" },
+            new { value = "\u0011", baseline = "\\u0011" },
+            new { value = "\u0012", baseline = "\\u0012" },
+            new { value = "\u0013", baseline = "\\u0013" },
+            new { value = "\u0014", baseline = "\\u0014" },
+            new { value = "\u0015", baseline = "\\u0015" },
+            new { value = "\u0016", baseline = "\\u0016" },
+            new { value = "\u0017", baseline = "\\u0017" },
+            new { value = "\u0018", baseline = "\\u0018" },
+            new { value = "\u0019", baseline = "\\u0019" },
+            new { value = "\u001A", baseline = "\\u001a" },
+            new { value = "\u001B", baseline = "\\u001b" },
+            new { value = "\u001C", baseline = "\\u001c" },
+            new { value = "\u001D", baseline = "\\u001d" },
+            new { value = "\u001E", baseline = "\\u001e" },
+            new { value = "\u001F", baseline = "\\u001f" },
+            new { value = "\u0022", baseline = "\\\"" }, // QUOTATION MARK
             new { value = "\u0027", baseline = "'" },
+            new { value = "\u005C", baseline = "\\\\" }, // REVERSE SOLIDUS
         };
 
         foreach (var pair in testStrings)
