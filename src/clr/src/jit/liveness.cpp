@@ -2208,7 +2208,7 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                 if (!node->IsValue() || node->IsUnusedValue())
                 {
                     unsigned sideEffects = node->gtFlags & (GTF_SIDE_EFFECT | GTF_SET_FLAGS);
-                    if ((sideEffects == 0) || ((sideEffects == GTF_EXCEPT) && !node->OperMayThrow()))
+                    if ((sideEffects == 0) || ((sideEffects == GTF_EXCEPT) && !node->OperMayThrow(this)))
                     {
                         JITDUMP("Removing dead node:\n");
                         DISPNODE(node);
@@ -3202,6 +3202,7 @@ void Compiler::fgInterBlockLocalVarLiveness()
                 {
                     gtSetStmtInfo(compCurStmt);
                     fgSetStmtSeq(compCurStmt);
+                    gtUpdateStmtSideEffects(compCurStmt);
                 }
 
 #ifdef DEBUG

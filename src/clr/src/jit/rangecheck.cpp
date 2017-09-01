@@ -247,7 +247,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, GenTreePtr stmt, GenTreeP
         if (arrSize > 0 && idxVal < arrSize && idxVal >= 0)
         {
             JITDUMP("Removing range check\n");
-            m_pCompiler->optRemoveRangeCheck(treeParent, stmt, true, GTF_ASG, true /* force remove */);
+            m_pCompiler->optRemoveRangeCheck(treeParent, stmt);
             return;
         }
     }
@@ -289,7 +289,7 @@ void RangeCheck::OptimizeRangeCheck(BasicBlock* block, GenTreePtr stmt, GenTreeP
     if (BetweenBounds(range, 0, bndsChk->gtArrLen))
     {
         JITDUMP("[RangeCheck::OptimizeRangeCheck] Between bounds\n");
-        m_pCompiler->optRemoveRangeCheck(treeParent, stmt, true, GTF_ASG, true /* force remove */);
+        m_pCompiler->optRemoveRangeCheck(treeParent, stmt);
     }
     return;
 }
