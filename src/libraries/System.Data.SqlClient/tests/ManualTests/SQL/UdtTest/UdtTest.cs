@@ -40,6 +40,28 @@ namespace System.Data.SqlClient.ManualTesting.Tests
         }
 
         [CheckConnStrSetupFact]
+        public static void GetValueTest()
+        {
+            using (SqlConnection conn = new SqlConnection(DataTestUtility.TcpConnStr))
+            using (SqlCommand cmd = new SqlCommand("select hierarchyid::Parse('/1/') as col0", conn))
+            {
+                conn.Open();
+                using (SqlDataReader reader = cmd.ExecuteReader())
+                {
+                    Assert.True(reader.Read());
+
+                    object udtValue = reader.GetValue(0);
+                    Assert.True(udtValue != null, "Received null value from GetValue().");
+                    DataTestUtility.AssertEqualsWithDescription(typeof(byte[]), udtValue.GetType(), "Unexpected UDT type from GetValue()");
+
+                    object udtSqlValue = reader.GetSqlValue(0);
+                    Assert.True(udtSqlValue != null, "Received null value from GetSqlValue().");
+                    DataTestUtility.AssertEqualsWithDescription(typeof(SqlBinary), udtSqlValue.GetType(), "Unexpected UDT type from GetSqlValue()");
+                }
+            }
+        }
+
+        [CheckConnStrSetupFact]
         public static void TestUdtSqlParameterThrowsPlatformNotSupportedException()
         {
             using (SqlConnection connection = new SqlConnection(DataTestUtility.TcpConnStr))

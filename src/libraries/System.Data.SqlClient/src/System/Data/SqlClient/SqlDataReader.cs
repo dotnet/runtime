@@ -2349,24 +2349,8 @@ namespace System.Data.SqlClient
             }
             else if (_typeSystem != SqlConnectionString.TypeSystem.SQLServer2000)
             {
-                // TypeSystem.SQLServer2005
-
-                if (metaData.type == SqlDbType.Udt)
-                {
-                    var connection = _connection;
-                    if (connection != null)
-                    {
-                        throw ADP.DbTypeNotSupported(SqlDbType.Udt.ToString());
-                    }
-                    else
-                    {
-                        throw ADP.DataReaderClosed();
-                    }
-                }
-                else
-                {
-                    return data.SqlValue;
-                }
+                // TypeSystem.SQLServer2005 and above
+                return data.SqlValue;
             }
             else
             {
@@ -2535,24 +2519,8 @@ namespace System.Data.SqlClient
             }
             else if (_typeSystem != SqlConnectionString.TypeSystem.SQLServer2000)
             {
-                // TypeSystem.SQLServer2005
-
-                if (metaData.type != SqlDbType.Udt)
-                {
-                    return data.Value;
-                }
-                else
-                {
-                    var connection = _connection;
-                    if (connection != null)
-                    {
-                        throw ADP.DbTypeNotSupported(SqlDbType.Udt.ToString());
-                    }
-                    else
-                    {
-                        throw ADP.DataReaderClosed();
-                    }
-                }
+                // TypeSystem.SQLServer2005 and above
+                return data.Value;
             }
             else
             {
