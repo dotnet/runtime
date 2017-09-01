@@ -14,10 +14,10 @@ namespace Microsoft.Win32
     [SuppressUnmanagedCodeSecurityAttribute()]
     internal static class UnsafeNativeMethods
     {
-        [DllImport(Win32Native.KERNEL32, EntryPoint = "GetTimeZoneInformation", SetLastError = true, ExactSpelling = true)]
+        [DllImport(Interop.Libraries.Kernel32, EntryPoint = "GetTimeZoneInformation", SetLastError = true, ExactSpelling = true)]
         internal static extern int GetTimeZoneInformation(out Win32Native.TimeZoneInformation lpTimeZoneInformation);
 
-        [DllImport(Win32Native.KERNEL32, EntryPoint = "GetDynamicTimeZoneInformation", SetLastError = true, ExactSpelling = true)]
+        [DllImport(Interop.Libraries.Kernel32, EntryPoint = "GetDynamicTimeZoneInformation", SetLastError = true, ExactSpelling = true)]
         internal static extern int GetDynamicTimeZoneInformation(out Win32Native.DynamicTimeZoneInformation lpDynamicTimeZoneInformation);
 
         // 
@@ -31,7 +31,7 @@ namespace Microsoft.Win32
         //   PULONGLONG  pululEnumerator
         // );
         // 
-        [DllImport(Win32Native.KERNEL32, EntryPoint = "GetFileMUIPath", SetLastError = true, ExactSpelling = true)]
+        [DllImport(Interop.Libraries.Kernel32, EntryPoint = "GetFileMUIPath", SetLastError = true, ExactSpelling = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static extern bool GetFileMUIPath(
                                      int flags,

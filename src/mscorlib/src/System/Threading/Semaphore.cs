@@ -46,7 +46,7 @@ namespace System.Threading
                     throw new WaitHandleCannotBeOpenedException(
                         SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
 
-                __Error.WinIOError();
+                throw Win32Marshal.GetExceptionForLastWin32Error();
             }
             this.SafeWaitHandle = myHandle;
         }
@@ -76,7 +76,7 @@ namespace System.Threading
                 if (null != name && 0 != name.Length && Win32Native.ERROR_INVALID_HANDLE == errorCode)
                     throw new WaitHandleCannotBeOpenedException(
                         SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
-                __Error.WinIOError();
+                throw Win32Marshal.GetExceptionForLastWin32Error();
             }
             createdNew = errorCode != Win32Native.ERROR_ALREADY_EXISTS;
             this.SafeWaitHandle = myHandle;
@@ -116,7 +116,7 @@ namespace System.Threading
                 case OpenExistingResult.NameInvalid:
                     throw new WaitHandleCannotBeOpenedException(SR.Format(SR.Threading_WaitHandleCannotBeOpenedException_InvalidHandle, name));
                 case OpenExistingResult.PathNotFound:
-                    throw new IOException(Win32Native.GetMessage(Win32Native.ERROR_PATH_NOT_FOUND));
+                    throw new IOException(Interop.Kernel32.GetMessage(Win32Native.ERROR_PATH_NOT_FOUND));
                 default:
                     return result;
             }
@@ -155,7 +155,7 @@ namespace System.Threading
                 if (null != name && 0 != name.Length && Win32Native.ERROR_INVALID_HANDLE == errorCode)
                     return OpenExistingResult.NameInvalid;
                 //this is for passed through NativeMethods Errors
-                __Error.WinIOError();
+                throw Win32Marshal.GetExceptionForLastWin32Error();
             }
 
             result = new Semaphore(myHandle);

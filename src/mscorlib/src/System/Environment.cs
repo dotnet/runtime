@@ -124,7 +124,7 @@ namespace System
                 StringBuilder sb = new StringBuilder(Path.MaxPath);
                 int r = Win32Native.GetSystemDirectory(sb, Path.MaxPath);
                 Debug.Assert(r < Path.MaxPath, "r < Path.MaxPath");
-                if (r == 0) __Error.WinIOError();
+                if (r == 0) throw Win32Marshal.GetExceptionForLastWin32Error();
                 String path = sb.ToString();
 
                 return path;
@@ -714,7 +714,7 @@ namespace System
                         // which is not accurate.
                         throw new ArgumentException(SR.Format(SR.Argument_LongEnvVarValue));
                     default:
-                        throw new ArgumentException(Win32Native.GetMessage(errorCode));
+                        throw new ArgumentException(Interop.Kernel32.GetMessage(errorCode));
                 }
             }
         }
