@@ -57,8 +57,8 @@ public class Test
             
         DoAlloc();
 
-        long size = sizeMB * 1024 * 1024;
-        long sizeLOH = ((sizeMBLOH == -1) ? 0 : (sizeMBLOH * 1024 * 1024));
+        long size = (long)sizeMB * (long)1024 * (long)1024;
+        long sizeLOH = ((sizeMBLOH == -1) ? 0 : ((long)sizeMBLOH * (long)1024 * (long)1024));
         try
         {
             Console.WriteLine("\nCalling TryStartNoGCRegion(..) with totalSize = {0:N0} MB",
