@@ -1544,14 +1544,15 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instruction ins, regNumber reg1, re
     // If Byte 4 (which is 0xFF00) is zero, that's where the RM encoding goes.
     // Otherwise, it will be placed after the 4 byte encoding, making the total 5 bytes.
     // This would probably be better expressed as a different format or something?
-    if ((insCodeRM(ins) & 0xFF00) != 0)
+    code_t code = insCodeRM(ins);
+
+    if ((code & 0xFF00) != 0)
     {
         sz = 5;
     }
     else
     {
-        code_t code = insCodeRM(ins);
-        sz          = emitInsSize(insEncodeRMreg(ins, code));
+        sz = emitInsSize(insEncodeRMreg(ins, code));
     }
 
     // Most 16-bit operand instructions will need a prefix
@@ -1564,10 +1565,13 @@ inline UNATIVE_OFFSET emitter::emitInsSizeRR(instruction ins, regNumber reg1, re
     sz += emitGetVexPrefixAdjustedSize(ins, size, insCodeRM(ins));
 
     // REX prefix
-    if ((TakesRexWPrefix(ins, size) && ((ins != INS_xor) || (reg1 != reg2))) || IsExtendedReg(reg1, attr) ||
-        IsExtendedReg(reg2, attr))
+    if (!hasRexPrefix(code))
     {
-        sz += emitGetRexPrefixSize(ins);
+        if ((TakesRexWPrefix(ins, size) && ((ins != INS_xor) || (reg1 != reg2))) || IsExtendedReg(reg1, attr) ||
+            IsExtendedReg(reg2, attr))
+        {
+            sz += emitGetRexPrefixSize(ins);
+        }
     }
 
     return sz;
@@ -1902,7 +1906,6 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
         assert((attrSize == EA_4BYTE) || (attrSize == EA_PTRSIZE) // Only for x64
                || (attrSize == EA_16BYTE)                         // only for x64
                || (ins == INS_movzx) || (ins == INS_movsx));
-
         size = 3;
     }
     else
@@ -1935,7 +1938,8 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
         // REX.W prefix
         size += emitGetRexPrefixSize(ins);
     }
-    else if (IsExtendedReg(reg, EA_PTRSIZE) || IsExtendedReg(rgx, EA_PTRSIZE) || IsExtendedReg(id->idReg1(), attrSize))
+    else if (IsExtendedReg(reg, EA_PTRSIZE) || IsExtendedReg(rgx, EA_PTRSIZE) ||
+             ((ins != INS_call) && IsExtendedReg(id->idReg1(), attrSize)))
     {
         // Should have a REX byte
         size += emitGetRexPrefixSize(ins);
@@ -1958,6 +1962,14 @@ UNATIVE_OFFSET emitter::emitInsSizeAM(instrDesc* id, code_t code)
                 size++;
             }
 #endif
+            return size;
+        }
+
+        // If this is just "call reg", we're done.
+        if (id->idIsCallRegPtr())
+        {
+            assert(ins == INS_call);
+            assert(dsp == 0);
             return size;
         }
 
@@ -3517,6 +3529,10 @@ void emitter::emitIns_R_I(instruction ins, emitAttr attr, regNumber reg, ssize_t
                 {
                     sz = 5;
                 }
+                else if (size == EA_1BYTE && reg == REG_EAX && !instrIs3opImul(ins))
+                {
+                    sz = 2;
+                }
                 else
                 {
                     sz = 3;
@@ -4187,12 +4203,14 @@ void emitter::emitIns_R_L(instruction ins, emitAttr attr, BasicBlock* dst, regNu
     emitTotalIGjmps++;
 #endif
 
-    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
-    id->idCodeSize(sz);
-
     // Set the relocation flags - these give hint to zap to perform
     // relocation of the specified 32bit address.
+    //
+    // Note the relocation flags influence the size estimate.
     id->idSetRelocFlags(attr);
+
+    UNATIVE_OFFSET sz = emitInsSizeAM(id, insCodeRM(ins));
+    id->idCodeSize(sz);
 
     dispIns(id);
     emitCurIGsize += sz;
