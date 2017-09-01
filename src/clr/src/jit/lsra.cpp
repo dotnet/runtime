@@ -367,6 +367,7 @@ bool RegRecord::isFree()
  *****************************************************************************/
 RegRecord* LinearScan::getRegisterRecord(regNumber regNum)
 {
+    assert((unsigned)regNum < ArrLen(physRegs));
     return &physRegs[regNum];
 }
 
