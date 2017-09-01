@@ -5748,12 +5748,28 @@ GenTreePtr GenTree::gtGetParent(GenTreePtr** parentChildPtrPtr) const
     return parent;
 }
 
-/*****************************************************************************
- *
- *  Returns true if the given operator may cause an exception.
- */
+//------------------------------------------------------------------------------
+// OperMayThrow : Check whether the operation requires GTF_ASG flag regardless
+//                of the children's flags.
+//
 
-bool GenTree::OperMayThrow()
+bool GenTree::OperRequiresAsgFlag()
+{
+    return ((OperKind() & GTK_ASGOP) || (gtOper == GT_XADD) || (gtOper == GT_XCHG) || (gtOper == GT_LOCKADD) ||
+            (gtOper == GT_CMPXCHG) || (gtOper == GT_MEMORYBARRIER));
+}
+
+//------------------------------------------------------------------------------
+// OperMayThrow : Check whether the operation may throw.
+//
+//
+// Arguments:
+//    comp      -  Compiler instance
+//
+// Return Value:
+//    True if the given operator may cause an exception
+
+bool GenTree::OperMayThrow(Compiler* comp)
 {
     GenTreePtr op;
 
@@ -5780,30 +5796,6 @@ bool GenTree::OperMayThrow()
             }
             return true;
 
-        case GT_IND:
-            op = gtOp.gtOp1;
-
-            /* Indirections of handles are known to be safe */
-            if (op->gtOper == GT_CNS_INT)
-            {
-                if (op->IsIconHandle())
-                {
-                    /* No exception is thrown on this indirection */
-                    return false;
-                }
-            }
-            if (this->gtFlags & GTF_IND_NONFAULTING)
-            {
-                return false;
-            }
-            // Non-Null AssertionProp will remove the GTF_EXCEPT flag and mark the GT_IND with GTF_ORDER_SIDEEFF flag
-            if ((this->gtFlags & GTF_ALL_EFFECT) == GTF_ORDER_SIDEEFF)
-            {
-                return false;
-            }
-
-            return true;
-
         case GT_INTRINSIC:
             // If this is an intrinsic that represents the object.GetType(), it can throw an NullReferenceException.
             // Report it as may throw.
@@ -5819,20 +5811,30 @@ bool GenTree::OperMayThrow()
 
             break;
 
+        case GT_CALL:
+
+            CorInfoHelpFunc helper;
+            helper = comp->eeGetHelperNum(this->AsCall()->gtCallMethHnd);
+            return ((helper == CORINFO_HELP_UNDEF) || !comp->s_helperCallProperties.NoThrow(helper));
+
+        case GT_IND:
         case GT_BLK:
         case GT_OBJ:
         case GT_DYN_BLK:
         case GT_STORE_BLK:
-            return !Compiler::fgIsIndirOfAddrOfLocal(this);
+        case GT_NULLCHECK:
+            return (((this->gtFlags & GTF_IND_NONFAULTING) == 0) && comp->fgAddrCouldBeNull(this->AsIndir()->Addr()));
+
+        case GT_ARR_LENGTH:
+            return (((this->gtFlags & GTF_IND_NONFAULTING) == 0) && comp->fgAddrCouldBeNull(gtOp.gtOp1));
 
         case GT_ARR_BOUNDS_CHECK:
         case GT_ARR_ELEM:
         case GT_ARR_INDEX:
+        case GT_ARR_OFFSET:
         case GT_CATCH_ARG:
-        case GT_ARR_LENGTH:
         case GT_LCLHEAP:
         case GT_CKFINITE:
-        case GT_NULLCHECK:
 #ifdef FEATURE_SIMD
         case GT_SIMD_CHK:
 #endif // FEATURE_SIMD
@@ -6651,9 +6653,13 @@ GenTree* Compiler::gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTree* addr)
     if ((addr->gtFlags & GTF_GLOB_REF) == 0)
     {
         GenTreeLclVarCommon* lclNode = addr->IsLocalAddrExpr();
-        if ((lclNode != nullptr) && !lvaIsImplicitByRefLocal(lclNode->gtLclNum))
+        if (lclNode != nullptr)
         {
-            newBlkOrObjNode->gtFlags &= ~GTF_GLOB_REF;
+            newBlkOrObjNode->gtFlags |= GTF_IND_NONFAULTING;
+            if (!lvaIsImplicitByRefLocal(lclNode->gtLclNum))
+            {
+                newBlkOrObjNode->gtFlags &= ~GTF_GLOB_REF;
+            }
         }
     }
     return newBlkOrObjNode;
@@ -7462,8 +7468,7 @@ GenTreePtr Compiler::gtCloneExpr(
             break;
 
             case GT_ARR_LENGTH:
-                copy = new (this, GT_ARR_LENGTH)
-                    GenTreeArrLen(tree->TypeGet(), tree->gtOp.gtOp1, tree->gtArrLen.ArrLenOffset());
+                copy = gtNewArrLen(tree->TypeGet(), tree->gtOp.gtOp1, tree->gtArrLen.ArrLenOffset());
                 break;
 
             case GT_ARR_INDEX:
@@ -7894,6 +7899,7 @@ DONE:
 //
 // Notes:
 //    The caller must ensure that the original statement has been sequenced,
+//    and the side effect flags are updated on the statement nodes,
 //    but this method will sequence 'replacementTree', and insert it into the
 //    proper place in the statement sequence.
 
@@ -7971,51 +7977,145 @@ GenTreePtr Compiler::gtReplaceTree(GenTreePtr stmt, GenTreePtr tree, GenTreePtr 
             treeLastNode->gtNext = treeNextNode;
             treeNextNode->gtPrev = treeLastNode;
         }
-
-        // Propagate side-effect flags of "replacementTree" to its parents if needed.
-        gtUpdateSideEffects(treeParent, tree->gtFlags, replacementTree->gtFlags);
     }
 
     return replacementTree;
 }
 
 //------------------------------------------------------------------------
-// gtUpdateSideEffects: Update the side effects for ancestors.
+// gtUpdateSideEffects: Update the side effects of a tree and its ancestors
 //
 // Arguments:
-//    treeParent      - The immediate parent node.
-//    oldGtFlags      - The stale gtFlags.
-//    newGtFlags      - The new gtFlags.
+//    stmt            - The tree's statement
+//    tree            - Tree to update the side effects for
 //
+// Note: If tree's order hasn't been established, the method updates side effect
+//       flags on all statement's nodes.
+
+void Compiler::gtUpdateSideEffects(GenTree* stmt, GenTree* tree)
+{
+    if (fgStmtListThreaded)
+    {
+        gtUpdateTreeAncestorsSideEffects(tree);
+    }
+    else
+    {
+        gtUpdateStmtSideEffects(stmt);
+    }
+}
+
+//------------------------------------------------------------------------
+// gtUpdateTreeAncestorsSideEffects: Update the side effects of a tree and its ancestors
+//                                   when statement order has been established.
 //
-// Assumptions:
-//    Linear order of the stmt has been established.
+// Arguments:
+//    tree            - Tree to update the side effects for
+
+void Compiler::gtUpdateTreeAncestorsSideEffects(GenTree* tree)
+{
+    assert(fgStmtListThreaded);
+    while (tree != nullptr)
+    {
+        gtResetNodeSideEffects(tree);
+        unsigned nChildren = tree->NumChildren();
+        for (unsigned childNum = 0; childNum < nChildren; childNum++)
+        {
+            tree->gtFlags |= (tree->GetChild(childNum)->gtFlags & GTF_ALL_EFFECT);
+        }
+        tree = tree->gtGetParent(nullptr);
+    }
+}
+
+//------------------------------------------------------------------------
+// gtUpdateStmtSideEffects: Update the side effects for statement tree nodes.
+//
+// Arguments:
+//    stmt            - The statement to update side effects on
+
+void Compiler::gtUpdateStmtSideEffects(GenTree* stmt)
+{
+    fgWalkTree(&stmt->gtStmt.gtStmtExpr, fgUpdateSideEffectsPre, fgUpdateSideEffectsPost);
+}
+
+//------------------------------------------------------------------------
+// gtResetNodeSideEffects: Update the side effects based on the node operation.
+//
+// Arguments:
+//    tree            - Tree to update the side effects on
+//
+// Notes:
+//    This method currently only updates GTF_EXCEPT and GTF_ASG flags. The other side effect
+//    flags may remain unnecessarily (conservatively) set.
+//    The caller of this method is expected to update the flags based on the children's flags.
+
+void Compiler::gtResetNodeSideEffects(GenTree* tree)
+{
+    if (tree->OperMayThrow(this))
+    {
+        tree->gtFlags |= GTF_EXCEPT;
+    }
+    else
+    {
+        tree->gtFlags &= ~GTF_EXCEPT;
+        if (tree->OperIsIndirOrArrLength())
+        {
+            tree->gtFlags |= GTF_IND_NONFAULTING;
+        }
+    }
+
+    if (tree->OperRequiresAsgFlag())
+    {
+        tree->gtFlags |= GTF_ASG;
+    }
+    else
+    {
+        tree->gtFlags &= ~GTF_ASG;
+    }
+}
+
+//------------------------------------------------------------------------
+// fgUpdateSideEffectsPre: Update the side effects based on the tree operation.
+//
+// Arguments:
+//    pTree            - Pointer to the tree to update the side effects
+//    fgWalkPre        - Walk data
+//
+// Notes:
+//    This method currently only updates GTF_EXCEPT and GTF_ASG flags. The other side effect
+//    flags may remain unnecessarily (conservatively) set.
+
+Compiler::fgWalkResult Compiler::fgUpdateSideEffectsPre(GenTree** pTree, fgWalkData* fgWalkPre)
+{
+    fgWalkPre->compiler->gtResetNodeSideEffects(*pTree);
+
+    return WALK_CONTINUE;
+}
+
+//------------------------------------------------------------------------
+// fgUpdateSideEffectsPost: Update the side effects of the parent based on the tree's flags.
+//
+// Arguments:
+//    pTree            - Pointer to the tree
+//    fgWalkPost       - Walk data
 //
 // Notes:
 //    The routine is used for updating the stale side effect flags for ancestor
 //    nodes starting from treeParent up to the top-level stmt expr.
 
-void Compiler::gtUpdateSideEffects(GenTreePtr treeParent, unsigned oldGtFlags, unsigned newGtFlags)
+Compiler::fgWalkResult Compiler::fgUpdateSideEffectsPost(GenTree** pTree, fgWalkData* fgWalkPost)
 {
-    assert(fgStmtListThreaded);
-
-    oldGtFlags = oldGtFlags & GTF_ALL_EFFECT;
-    newGtFlags = newGtFlags & GTF_ALL_EFFECT;
-
-    if (oldGtFlags != newGtFlags)
+    GenTree* tree   = *pTree;
+    GenTree* parent = fgWalkPost->parent;
+    if (parent != nullptr)
     {
-        while (treeParent)
-        {
-            treeParent->gtFlags &= ~oldGtFlags;
-            treeParent->gtFlags |= newGtFlags;
-            treeParent = treeParent->gtGetParent(nullptr);
-        }
+        parent->gtFlags |= (tree->gtFlags & GTF_ALL_EFFECT);
     }
+    return WALK_CONTINUE;
 }
 
 /*****************************************************************************
  *
- *  Comapres two trees and returns true when both trees are the same.
+ *  Compares two trees and returns true when both trees are the same.
  *  Instead of fully comparing the two trees this method can just return false.
  *  Thus callers should not assume that the trees are different when false is returned.
  *  Only when true is returned can the caller perform code optimizations.
@@ -13372,7 +13472,7 @@ GenTreePtr Compiler::gtFoldExprConst(GenTreePtr tree)
             assert(op1);
 
             op2 = op1;
-            op1 = gtNewHelperCallNode(CORINFO_HELP_OVERFLOW, TYP_VOID, GTF_EXCEPT,
+            op1 = gtNewHelperCallNode(CORINFO_HELP_OVERFLOW, TYP_VOID,
                                       gtNewArgList(gtNewIconNode(compCurBB->bbTryIndex)));
 
             if (vnStore != nullptr)
@@ -13659,6 +13759,11 @@ GenTreePtr Compiler::gtFoldExprConst(GenTreePtr tree)
             }
 
         CNS_LONG:
+
+            if (fieldSeq != FieldSeqStore::NotAField())
+            {
+                return tree;
+            }
 
 #ifdef DEBUG
             if (verbose)
@@ -14106,7 +14211,7 @@ GenTreePtr Compiler::gtNewRefCOMfield(GenTreePtr              objPtr,
         args = gtNewListNode(objPtr, args);
     }
 
-    GenTreePtr tree = gtNewHelperCallNode(pFieldInfo->helper, genActualType(helperType), 0, args);
+    GenTreePtr tree = gtNewHelperCallNode(pFieldInfo->helper, genActualType(helperType), args);
 
     if (pFieldInfo->fieldAccessor == CORINFO_FIELD_INSTANCE_HELPER)
     {
@@ -14220,7 +14325,7 @@ bool Compiler::gtNodeHasSideEffects(GenTreePtr tree, unsigned flags)
 
     if (flags & GTF_EXCEPT)
     {
-        if (tree->OperMayThrow())
+        if (tree->OperMayThrow(this))
         {
             return true;
         }

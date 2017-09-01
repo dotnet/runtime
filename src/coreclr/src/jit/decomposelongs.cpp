@@ -1429,7 +1429,7 @@ GenTree* DecomposeLongs::DecomposeShift(LIR::Use& use)
 
         GenTreeArgList* argList = m_compiler->gtNewArgList(loOp1, hiOp1, shiftByOp);
 
-        GenTree* call = m_compiler->gtNewHelperCallNode(helper, TYP_LONG, 0, argList);
+        GenTree* call = m_compiler->gtNewHelperCallNode(helper, TYP_LONG, argList);
         call->gtFlags |= shift->gtFlags & GTF_ALL_EFFECT;
 
         if (shift->IsUnusedValue())
