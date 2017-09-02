@@ -44,6 +44,7 @@ namespace System.Net.Sockets.Tests
         // but also not so large that it takes too long to run.
         const int Timeout = 2000;
 
+        [ActiveIssue(23767, TestPlatforms.AnyUnix)]
         [OuterLoop] // TODO: Issue #11345
         [Theory]
         [InlineData(true)]

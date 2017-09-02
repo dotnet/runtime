@@ -285,6 +285,7 @@ namespace System.Net.WebSockets.Client.Tests
             }
         }
 
+        [ActiveIssue(23765)]
         [OuterLoop] // TODO: Issue #11345
         [ConditionalTheory(nameof(WebSocketsSupported)), MemberData(nameof(EchoServers))]
         public async Task SendReceive_VaryingLengthBuffers_Success(Uri server)

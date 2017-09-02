@@ -526,6 +526,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ActiveIssue(23769)]
         [ActiveIssue(22707, TestPlatforms.AnyUnix)]
         [OuterLoop] // TODO: Issue #11345
         [Theory, MemberData(nameof(RedirectStatusCodesOldMethodsNewMethods))]
@@ -1623,6 +1624,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ActiveIssue(23768)]
         [ActiveIssue(22191, TargetFrameworkMonikers.Uap)]
         [OuterLoop] // takes several seconds
         [Fact]
@@ -1895,6 +1897,7 @@ namespace System.Net.Http.Functional.Tests
             Assert.Equal(new Version(1, 1), receivedRequestVersion);
         }
 
+        [ActiveIssue(23770, TestPlatforms.AnyUnix)]
         [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Specifying Version(2,0) throws exception on netfx")]
         [OuterLoop] // TODO: Issue #11345
         [Theory]
