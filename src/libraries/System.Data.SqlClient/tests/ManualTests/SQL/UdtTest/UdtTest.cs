@@ -50,13 +50,9 @@ namespace System.Data.SqlClient.ManualTesting.Tests
                 {
                     Assert.True(reader.Read());
 
-                    object udtValue = reader.GetValue(0);
-                    Assert.True(udtValue != null, "Received null value from GetValue().");
-                    DataTestUtility.AssertEqualsWithDescription(typeof(byte[]), udtValue.GetType(), "Unexpected UDT type from GetValue()");
+                    Assert.Throws<PlatformNotSupportedException>(() => reader.GetValue(0));
 
-                    object udtSqlValue = reader.GetSqlValue(0);
-                    Assert.True(udtSqlValue != null, "Received null value from GetSqlValue().");
-                    DataTestUtility.AssertEqualsWithDescription(typeof(SqlBinary), udtSqlValue.GetType(), "Unexpected UDT type from GetSqlValue()");
+                    Assert.Throws<PlatformNotSupportedException>(() => reader.GetSqlValue(0));
                 }
             }
         }
