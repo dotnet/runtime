@@ -176,6 +176,7 @@ namespace System.Net.Tests
             yield return new object[] { new Uri($"http://{IPAddress.None}"), false };
         }
 
+        [ActiveIssue(23766, TestPlatforms.AnyUnix)]
         [Theory]
         [MemberData(nameof(BypassOnLocal_MemberData))]
         public static void WebProxy_BypassOnLocal_MatchesExpected(Uri destination, bool isLocal)
