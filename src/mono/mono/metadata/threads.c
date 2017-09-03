@@ -45,6 +45,7 @@
 #include <mono/utils/mono-error-internals.h>
 #include <mono/utils/os-event.h>
 #include <mono/utils/mono-threads-debug.h>
+#include <mono/utils/unlocked.h>
 #include <mono/metadata/w32handle.h>
 #include <mono/metadata/w32event.h>
 #include <mono/metadata/w32mutex.h>
@@ -152,7 +153,7 @@ static MonoGHashTable *threads_starting_up = NULL;
 /* Contains tids */
 /* Protected by the threads lock */
 static GHashTable *joinable_threads;
-static int joinable_thread_count;
+static gint32 joinable_thread_count;
 
 #define SET_CURRENT_OBJECT(x) mono_tls_set_thread (x)
 #define GET_CURRENT_OBJECT() (MonoInternalThread*) mono_tls_get_thread ()
@@ -5000,7 +5001,7 @@ mono_threads_add_joinable_thread (gpointer tid)
 	if (!joinable_threads)
 		joinable_threads = g_hash_table_new (NULL, NULL);
 	g_hash_table_insert (joinable_threads, tid, tid);
-	joinable_thread_count ++;
+	UnlockedIncrement (&joinable_thread_count);
 	joinable_threads_unlock ();
 
 	mono_gc_finalize_notify ();
@@ -5024,7 +5025,7 @@ mono_threads_join_threads (void)
 	gboolean found;
 
 	/* Fastpath */
-	if (!joinable_thread_count)
+	if (!UnlockedRead (&joinable_thread_count))
 		return;
 
 	while (TRUE) {
@@ -5035,7 +5036,7 @@ mono_threads_join_threads (void)
 			g_hash_table_iter_next (&iter, &key, (void**)&tid);
 			thread = (pthread_t)tid;
 			g_hash_table_remove (joinable_threads, key);
-			joinable_thread_count --;
+			UnlockedDecrement (&joinable_thread_count);
 			found = TRUE;
 		}
 		joinable_threads_unlock ();
@@ -5073,7 +5074,7 @@ mono_thread_join (gpointer tid)
 		joinable_threads = g_hash_table_new (NULL, NULL);
 	if (g_hash_table_lookup (joinable_threads, tid)) {
 		g_hash_table_remove (joinable_threads, tid);
-		joinable_thread_count --;
+		UnlockedDecrement (&joinable_thread_count);
 		found = TRUE;
 	}
 	joinable_threads_unlock ();

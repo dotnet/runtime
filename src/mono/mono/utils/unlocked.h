@@ -33,6 +33,13 @@ UnlockedIncrement (gint32 *val)
 
 MONO_UNLOCKED_ATTRS
 gint32
+UnlockedDecrement (gint32 *val)
+{
+	return --*val;
+}
+
+MONO_UNLOCKED_ATTRS
+gint32
 UnlockedAdd (gint32 *dest, gint32 add)
 {
 	return *dest += add;
