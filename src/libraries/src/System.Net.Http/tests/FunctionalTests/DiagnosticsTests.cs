@@ -168,6 +168,7 @@ namespace System.Net.Http.Functional.Tests
             }).Dispose();
         }
 
+        [ActiveIssue(23771, TestPlatforms.AnyUnix)]
         [OuterLoop] // TODO: Issue #11345
         [Fact]
         public void SendAsync_HttpTracingEnabled_Succeeds()
