@@ -44,12 +44,11 @@ namespace System.Net.Http.Functional.Tests
         }
     }
 
-    // TODO #23139: Tests on this class fail when the associated condition is enabled.
-    //public sealed class ManagedHandler_HttpClientEKUTest : HttpClientEKUTest, IDisposable
-    //{
-    //    public ManagedHandler_HttpClientEKUTest() => ManagedHandlerTestHelpers.SetEnvVar();
-    //    public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
-    //}
+    public sealed class ManagedHandler_HttpClientEKUTest : HttpClientEKUTest, IDisposable
+    {
+        public ManagedHandler_HttpClientEKUTest() => ManagedHandlerTestHelpers.SetEnvVar();
+        public void Dispose() => ManagedHandlerTestHelpers.RemoveEnvVar();
+    }
 
     public sealed class ManagedHandler_HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test : HttpClientHandler_DangerousAcceptAllCertificatesValidator_Test, IDisposable
     {
