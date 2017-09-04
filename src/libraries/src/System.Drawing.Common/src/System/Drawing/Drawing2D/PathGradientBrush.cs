@@ -250,44 +250,25 @@ namespace System.Drawing.Drawing2D
 
                 int count = retval;
 
-                IntPtr factors = IntPtr.Zero;
-                IntPtr positions = IntPtr.Zero;
+                var factors = new float[count];
+                var positions = new float[count];
 
-                try
+                // Retrieve horizontal blend factors
+
+                status = SafeNativeMethods.Gdip.GdipGetPathGradientBlend(new HandleRef(this, NativeBrush), factors, positions, count);
+
+                if (status != SafeNativeMethods.Gdip.Ok)
                 {
-                    int size = checked(4 * count);
-                    factors = Marshal.AllocHGlobal(size);
-                    positions = Marshal.AllocHGlobal(size);
-
-                    // Retrieve horizontal blend factors
-
-                    status = SafeNativeMethods.Gdip.GdipGetPathGradientBlend(new HandleRef(this, NativeBrush), factors, positions, count);
-
-                    if (status != SafeNativeMethods.Gdip.Ok)
-                    {
-                        throw SafeNativeMethods.Gdip.StatusException(status);
-                    }
-
-                    // Return the result in a managed array
-
-                    Blend blend = new Blend(count);
-
-                    Marshal.Copy(factors, blend.Factors, 0, count);
-                    Marshal.Copy(positions, blend.Positions, 0, count);
-
-                    return blend;
+                    throw SafeNativeMethods.Gdip.StatusException(status);
                 }
-                finally
-                {
-                    if (factors != IntPtr.Zero)
-                    {
-                        Marshal.FreeHGlobal(factors);
-                    }
-                    if (positions != IntPtr.Zero)
-                    {
-                        Marshal.FreeHGlobal(positions);
-                    }
-                }
+
+                // Return the result in a managed array
+
+                Blend blend = new Blend(count);
+                blend.Factors = factors;
+                blend.Positions = positions;
+
+                return blend;
             }
             set
             {
