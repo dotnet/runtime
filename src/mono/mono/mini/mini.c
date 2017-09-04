@@ -1380,9 +1380,8 @@ mono_allocate_stack_slots2 (MonoCompile *cfg, gboolean backward, guint32 *stack_
 				printf ("LAST: %s\n", mono_method_full_name (cfg->method, TRUE));
 			if (count > atoi (g_getenv ("COUNT3")))
 				slot = 0xffffff;
-			else {
+			else
 				mono_print_ins (inst);
-				}
 		}
 #endif
 
@@ -1614,20 +1613,19 @@ mono_allocate_stack_slots (MonoCompile *cfg, gboolean backward, guint32 *stack_s
 			}
 		}
 
+#if 0
 		{
 			static int count = 0;
 			count ++;
 
-			/*
 			if (count == atoi (g_getenv ("COUNT")))
 				printf ("LAST: %s\n", mono_method_full_name (cfg->method, TRUE));
 			if (count > atoi (g_getenv ("COUNT")))
 				slot = 0xffffff;
-			else {
+			else
 				mono_print_ins (inst);
-				}
-			*/
 		}
+#endif
 
 		if (inst->flags & MONO_INST_LMF) {
 			/*
