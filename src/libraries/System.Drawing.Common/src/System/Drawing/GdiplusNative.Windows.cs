@@ -572,7 +572,7 @@ namespace System.Drawing
             private static FunctionWrapper<GdipDisposeImage_delegate> GdipDisposeImage_ptr;
             internal static int IntGdipDisposeImage(HandleRef image) => GdipDisposeImage_ptr.Delegate(image);
 
-            private delegate int GdipSaveImageToFile_delegate(HandleRef image, string filename, ref Guid classId, HandleRef encoderParams);
+            private delegate int GdipSaveImageToFile_delegate(HandleRef image, [MarshalAs(UnmanagedType.LPWStr)] string filename, ref Guid classId, HandleRef encoderParams);
             private static FunctionWrapper<GdipSaveImageToFile_delegate> GdipSaveImageToFile_ptr;
             internal static int GdipSaveImageToFile(HandleRef image, string filename, ref Guid classId, HandleRef encoderParams) => GdipSaveImageToFile_ptr.Delegate(image, filename, ref classId, encoderParams);
 
