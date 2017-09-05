@@ -281,7 +281,6 @@ int EC_POINT_set_affine_coordinates_GF2m(const EC_GROUP *group, EC_POINT *p,
     PER_FUNCTION_BLOCK(SSL_shutdown, true) \
     PER_FUNCTION_BLOCK(SSL_state, true) \
     PER_FUNCTION_BLOCK(SSLv23_method, true) \
-    PER_FUNCTION_BLOCK(SSLv3_method, false) \
     PER_FUNCTION_BLOCK(SSL_write, true) \
     PER_FUNCTION_BLOCK(TLSv1_1_method, true) \
     PER_FUNCTION_BLOCK(TLSv1_2_method, true) \
@@ -572,7 +571,6 @@ FOR_ALL_OPENSSL_FUNCTIONS
 #define SSL_shutdown SSL_shutdown_ptr
 #define SSL_state SSL_state_ptr
 #define SSLv23_method SSLv23_method_ptr
-#define SSLv3_method SSLv3_method_ptr
 #define SSL_write SSL_write_ptr
 #define TLSv1_1_method TLSv1_1_method_ptr
 #define TLSv1_2_method TLSv1_2_method_ptr
