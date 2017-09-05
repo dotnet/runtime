@@ -39,11 +39,13 @@ namespace MonoTests.System.Data
 {
     public class EnumerableRowCollectionTest
     {
+        private string _testDataSet = "testdataset1.xml";
+        
         [Fact]
         public void QueryWhere()
         {
             var ds = new DataSet();
-            ds.ReadXml("Mono/testdataset1.xml");
+            ds.ReadXml(_testDataSet);
             var table = ds.Tables[0];
             /* schema generated as ...
             var table = ds.Tables.Add ("ScoreList");
@@ -70,7 +72,7 @@ namespace MonoTests.System.Data
         public void QueryWhereSelect ()
         {
             var ds = new DataSet ();
-            ds.ReadXml ("Mono/testdataset1.xml");
+            ds.ReadXml (_testDataSet);
             var table = ds.Tables [0];
             var q = from line in table.AsEnumerable ()
                 where line.Field<int> ("Score") > 80
@@ -91,7 +93,7 @@ namespace MonoTests.System.Data
         public void QueryWhereSelectOrderBy ()
         {
             var ds = new DataSet ();
-            ds.ReadXml ("Mono/testdataset1.xml");
+            ds.ReadXml (_testDataSet);
             var table = ds.Tables [0];
             var q = from line in table.AsEnumerable ()
                 where line.Field<int> ("Score") >= 80
@@ -121,7 +123,7 @@ namespace MonoTests.System.Data
         public void QueryWhereSelectOrderByDescending ()
         {
             var ds = new DataSet ();
-            ds.ReadXml ("Mono/testdataset1.xml");
+            ds.ReadXml (_testDataSet);
             var table = ds.Tables [0];
             var q = from line in table.AsEnumerable ()
                 where line.Field<int> ("Score") >= 80
@@ -151,7 +153,7 @@ namespace MonoTests.System.Data
         public void ThenBy ()
         {
             var ds = new DataSet ();
-            ds.ReadXml ("Mono/testdataset1.xml");
+            ds.ReadXml (_testDataSet);
             var table = ds.Tables [0];
             var q = from line in table.AsEnumerable ()
                 where line.Field<int> ("Score") >= 80
@@ -181,7 +183,7 @@ namespace MonoTests.System.Data
         public void ThenByDescending ()
         {
             var ds = new DataSet ();
-            ds.ReadXml ("Mono/testdataset1.xml");
+            ds.ReadXml (_testDataSet);
             var table = ds.Tables [0];
             var q = from line in table.AsEnumerable ()
                 where line.Field<int> ("Score") >= 80
