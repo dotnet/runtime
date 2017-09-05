@@ -1107,6 +1107,10 @@ HANDLE ZapImage::SaveImage(LPCWSTR wszOutputFileName, CORCOMPILE_NGEN_SIGNATURE 
 
     HANDLE hFile = GenerateFile(wszOutputFileName, pNativeImageSig);
 
+    if (m_zapper->m_pOpt->m_verbose)
+    {
+        PrintStats(wszOutputFileName);
+    }
 
     return hFile;
 }
