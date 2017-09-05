@@ -20,7 +20,7 @@
     </ProjectReference>
   </ItemGroup>
   <Target Name="RenameTestAssembly" AfterTargets="AfterBuild">
-    <Move SourceFiles="$(OutputPath)\System.Runtime.Loader.Noop.Assembly.dll" DestinationFiles="$(OutputPath)\System.Runtime.Loader.Noop.Assembly_test.dll" />
+    <Move SourceFiles="$(TestPath)\System.Runtime.Loader.Noop.Assembly.dll" DestinationFiles="$(TestPath)\System.Runtime.Loader.Noop.Assembly_test.dll" />
   </Target>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>
