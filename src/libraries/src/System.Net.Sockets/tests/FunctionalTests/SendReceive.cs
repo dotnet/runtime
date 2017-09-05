@@ -833,6 +833,70 @@ namespace System.Net.Sockets.Tests
                 Assert.Equal(e.SocketErrorCode, SocketError.InvalidArgument);
             }
         }
+
+        [Fact]
+        public void SendRecvIovMax_Success()
+        {
+            // sending/receiving more than IOV_MAX segments causes EMSGSIZE on some platforms.
+            // This is handled internally so this error shouldn't surface.
+
+            // Use more than IOV_MAX (1024 on Linux & macOS) segments.
+            const int segmentCount = 2400;
+            using (var server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+            {
+                server.BindToAnonymousPort(IPAddress.Loopback);
+                server.Listen(1);
+
+                var sendBuffer = new byte[segmentCount];
+                Task serverProcessingTask = Task.Run(async () =>
+                {
+                    using (Socket acceptSocket = await AcceptAsync(server))
+                    {
+                        // send data as segmentCount (> IOV_MAX) 1-byte segments.
+                        var sendSegments = new List<ArraySegment<byte>>();
+                        for (int i = 0; i < segmentCount; i++)
+                        {
+                            sendBuffer[i] = (byte)i;
+                            sendSegments.Add(new ArraySegment<byte>(sendBuffer, i, 1));
+                        }
+                        SocketError error;
+                        // Send blocks until all segments are sent.
+                        int bytesSent = acceptSocket.Send(sendSegments, SocketFlags.None, out error);
+
+                        Assert.Equal(segmentCount, bytesSent);
+                        Assert.Equal(SocketError.Success, error);
+                    }
+                });
+
+                using (var client = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp))
+                {
+                    client.Connect(server.LocalEndPoint);
+
+                    // receive data as 1-byte segments.
+                    var receiveBuffer = new byte[segmentCount];
+                    var receiveSegments = new List<ArraySegment<byte>>();
+                    for (int i = 0; i < segmentCount; i++)
+                    {
+                        receiveSegments.Add(new ArraySegment<byte>(receiveBuffer, i, 1));
+                    }
+                    var bytesReceivedTotal = 0;
+                    do
+                    {
+                        SocketError error;
+                        // Receive can return up to IOV_MAX segments.
+                        int bytesReceived = client.Receive(receiveSegments, SocketFlags.None, out error);
+                        bytesReceivedTotal += bytesReceived;
+                        // Offset receiveSegments for next Receive.
+                        receiveSegments.RemoveRange(0, bytesReceived);
+
+                        Assert.NotEqual(0, bytesReceived);
+                        Assert.Equal(SocketError.Success, error);
+                    } while (bytesReceivedTotal != segmentCount);
+
+                    Assert.Equal(sendBuffer, receiveBuffer);
+                }
+            }
+        }
     }
 
     public sealed class SendReceiveUdpClient : MemberDatas
