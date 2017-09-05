@@ -11876,12 +11876,31 @@ GenTreePtr Compiler::fgMorphSmpOp(GenTreePtr tree, MorphAddrContext* mac)
                 //
                 // a % b = a - (a / b) * b;
                 //
-                // NOTE: we should never need to perform this transformation when remorphing, since global morphing
-                //       should already have done so and we do not introduce new modulus nodes in later phases.
-                assert(!optValnumCSE_phase);
-                tree = fgMorphModToSubMulDiv(tree->AsOp());
-                op1  = tree->gtOp.gtOp1;
-                op2  = tree->gtOp.gtOp2;
+                // Use the suggested transform unless the special case tranform works:
+                //
+                // a % b = a & (b - 1);
+                //
+                {
+                    bool doMorph = !op2->IsIntegralConst() || op1->IsCnsIntOrI() || (tree->OperGet() == GT_MOD);
+
+                    if (!doMorph)
+                    {
+                        size_t divisorValue = (tree->OperGet() == GT_MOD) && (tree->TypeGet() == TYP_INT)
+                                                  ? op2->AsIntCon()->IconValue() & UINT32_MAX
+                                                  : op2->AsIntCon()->IconValue();
+
+                        doMorph |= !isPow2(divisorValue);
+                    }
+
+                    if (doMorph)
+                    {
+                        assert(!optValnumCSE_phase);
+
+                        tree = fgMorphModToSubMulDiv(tree->AsOp());
+                        op1  = tree->gtOp.gtOp1;
+                        op2  = tree->gtOp.gtOp2;
+                    }
+                }
 #else  //_TARGET_ARM64_
                 // If b is not a power of 2 constant then lowering replaces a % b
                 // with a - (a / b) * b and applies magic division optimization to
