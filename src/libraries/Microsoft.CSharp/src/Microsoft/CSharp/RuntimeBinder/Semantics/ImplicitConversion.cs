@@ -170,15 +170,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                     default:
                         Debug.Fail($"Bad type symbol kind: {_typeSrc.GetTypeKind()}");
                         break;
-                    case TypeKind.TK_MethodGroupType:
-                        if (_exprSrc is ExprMemberGroup memGrp)
-                        {
-                            ExprCall outExpr;
-                            bool retVal = _binder.BindGrpConversion(memGrp, _typeDest, _needsExprDest, out outExpr, false);
-                            _exprDest = outExpr;
-                            return retVal;
-                        }
-                        return false;
                     case TypeKind.TK_VoidType:
                     case TypeKind.TK_ErrorType:
                     case TypeKind.TK_ParameterModifierType:

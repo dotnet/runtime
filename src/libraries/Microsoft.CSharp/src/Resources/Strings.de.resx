@@ -105,9 +105,6 @@
   <data name="NoConstructors" xml:space="preserve">
     <value>Für den {0}-Typ sind keine Konstruktoren definiert.</value>
   </data>
-  <data name="BadDelegateConstructor" xml:space="preserve">
-    <value>Der Delegat "{0}" enthält keinen gültigen Konstruktor.</value>
-  </data>
   <data name="PropertyLacksGet" xml:space="preserve">
     <value>Die Eigenschaft oder der Indexer "{0}" kann in diesem Kontext nicht verwendet werden, weil der get-Accessor fehlt.</value>
   </data>
@@ -183,14 +180,8 @@
   <data name="TypeVarCantBeNull" xml:space="preserve">
     <value>NULL kann nicht in den {0}-Typparameter konvertiert werden, da dieser Werttyp möglicherweise nicht auf NULL festgelegt werden kann. Verwenden Sie stattdessen ggf. default({0}).</value>
   </data>
-  <data name="BadRetType" xml:space="preserve">
-    <value>Der Rückgabetyp von {1} {0} ist falsch.</value>
-  </data>
   <data name="CantInferMethTypeArgs" xml:space="preserve">
     <value>Die Typargumente der {0}-Methode können nicht per Rückschluss aus der Syntax abgeleitet werden. Geben Sie die Typargumente explizit an.</value>
-  </data>
-  <data name="MethGrpToNonDel" xml:space="preserve">
-    <value>Die {0}-Methodengruppe kann nicht in den Nichtdelegattyp "{1}" konvertiert werden. Wollten Sie die Methode aufrufen?</value>
   </data>
   <data name="RefConstraintNotSatisfied" xml:space="preserve">
     <value>Der {2}-Typ muss ein Referenztyp sein, damit er als {1}-Parameter im generischen Typ oder in der generischen {0}-Methode verwendet werden kann.</value>
@@ -263,9 +254,6 @@
   </data>
   <data name="RefReadonlyLocalCause" xml:space="preserve">
     <value>{0} ist ein(e) {1} und kann daher nicht als ref- oder out-Argument übergeben werden.</value>
-  </data>
-  <data name="DelegateOnNullable" xml:space="preserve">
-    <value>Kann Delegaten "{0}" keine Bindung an weil es ein Mitglied von "System.Nullable&lt;T&gt;ist"</value>
   </data>
   <data name="BadCtorArgCount" xml:space="preserve">
     <value>"{0}" enthält keinen Konstruktor, der {1}-Argumente akzeptiert.</value>

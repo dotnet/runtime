@@ -130,10 +130,6 @@
           <source>The type '{0}' has no constructors defined</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Für den {0}-Typ sind keine Konstruktoren definiert.</target>
         </trans-unit>
-        <trans-unit id="BadDelegateConstructor" translate="yes" xml:space="preserve">
-          <source>The delegate '{0}' does not have a valid constructor</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der Delegat "{0}" enthält keinen gültigen Konstruktor.</target>
-        </trans-unit>
         <trans-unit id="PropertyLacksGet" translate="yes" xml:space="preserve">
           <source>The property or indexer '{0}' cannot be used in this context because it lacks the get accessor</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Die Eigenschaft oder der Indexer "{0}" kann in diesem Kontext nicht verwendet werden, weil der get-Accessor fehlt.</target>
@@ -234,17 +230,9 @@
           <source>Cannot convert null to type parameter '{0}' because it could be a non-nullable value type. Consider using 'default({0})' instead.</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">NULL kann nicht in den {0}-Typparameter konvertiert werden, da dieser Werttyp möglicherweise nicht auf NULL festgelegt werden kann. Verwenden Sie stattdessen ggf. default({0}).</target>
         </trans-unit>
-        <trans-unit id="BadRetType" translate="yes" xml:space="preserve">
-          <source>'{1} {0}' has the wrong return type</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Der Rückgabetyp von {1} {0} ist falsch.</target>
-        </trans-unit>
         <trans-unit id="CantInferMethTypeArgs" translate="yes" xml:space="preserve">
           <source>The type arguments for method '{0}' cannot be inferred from the usage. Try specifying the type arguments explicitly.</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">Die Typargumente der {0}-Methode können nicht per Rückschluss aus der Syntax abgeleitet werden. Geben Sie die Typargumente explizit an.</target>
-        </trans-unit>
-        <trans-unit id="MethGrpToNonDel" translate="yes" xml:space="preserve">
-          <source>Cannot convert method group '{0}' to non-delegate type '{1}'. Did you intend to invoke the method?</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">Die {0}-Methodengruppe kann nicht in den Nichtdelegattyp "{1}" konvertiert werden. Wollten Sie die Methode aufrufen?</target>
         </trans-unit>
         <trans-unit id="RefConstraintNotSatisfied" translate="yes" xml:space="preserve">
           <source>The type '{2}' must be a reference type in order to use it as parameter '{1}' in the generic type or method '{0}'</source>
@@ -341,10 +329,6 @@
         <trans-unit id="RefReadonlyLocalCause" translate="yes" xml:space="preserve">
           <source>Cannot pass '{0}' as a ref or out argument because it is a '{1}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">{0} ist ein(e) {1} und kann daher nicht als ref- oder out-Argument übergeben werden.</target>
-        </trans-unit>
-        <trans-unit id="DelegateOnNullable" translate="yes" xml:space="preserve">
-          <source>Cannot bind delegate to '{0}' because it is a member of 'System.Nullable<it id="1" pos="open">&lt;T&gt;</it>'</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">Kann Delegaten "{0}" keine Bindung an weil es ein Mitglied von "System.Nullable<it id="1" pos="open">&lt;T&gt;</it>ist"</target>
         </trans-unit>
         <trans-unit id="BadCtorArgCount" translate="yes" xml:space="preserve">
           <source>'{0}' does not contain a constructor that takes '{1}' arguments</source>

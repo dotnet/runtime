@@ -129,7 +129,6 @@
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\LocalVariable.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\MemberGroup.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\MethodInfo.cs" />
-    <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\MethodReference.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\NamedArgumentSpecification.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\Property.cs" />
     <Compile Include="Microsoft\CSharp\RuntimeBinder\Semantics\Tree\PropertyInfo.cs" />

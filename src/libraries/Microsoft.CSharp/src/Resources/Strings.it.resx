@@ -105,9 +105,6 @@
   <data name="NoConstructors" xml:space="preserve">
     <value>Per il tipo '{0}' non sono definiti costruttori</value>
   </data>
-  <data name="BadDelegateConstructor" xml:space="preserve">
-    <value>Il delegato '{0}' non presenta un costruttore valido</value>
-  </data>
   <data name="PropertyLacksGet" xml:space="preserve">
     <value>Impossibile utilizzare la proprietà o l'indicizzatore '{0}' in questo contesto perché manca la funzione di accesso get.</value>
   </data>
@@ -183,14 +180,8 @@
   <data name="TypeVarCantBeNull" xml:space="preserve">
     <value>Impossibile convertire il valore Null nel parametro di tipo '{0}' perché potrebbe essere un tipo di valore non nullable. Si consiglia di utilizzare 'default({0})'.</value>
   </data>
-  <data name="BadRetType" xml:space="preserve">
-    <value>Il tipo restituito di '{1} {0}' è errato</value>
-  </data>
   <data name="CantInferMethTypeArgs" xml:space="preserve">
     <value>Impossibile dedurre gli argomenti di tipo per il metodo '{0}' dall'utilizzo. Provare a specificare gli argomenti di tipo in modo esplicito.</value>
-  </data>
-  <data name="MethGrpToNonDel" xml:space="preserve">
-    <value>Impossibile convertire il gruppo di metodi '{0}' nel tipo non delegato '{1}'. Si desiderava richiamare il metodo?</value>
   </data>
   <data name="RefConstraintNotSatisfied" xml:space="preserve">
     <value>È necessario che il tipo '{2}' sia un tipo di riferimento per essere utilizzato come parametro '{1}' nel tipo generico o nel metodo '{0}'</value>
@@ -263,9 +254,6 @@
   </data>
   <data name="RefReadonlyLocalCause" xml:space="preserve">
     <value>Impossibile passare '{0}' come argomento ref o out perché è '{1}'</value>
-  </data>
-  <data name="DelegateOnNullable" xml:space="preserve">
-    <value>Non è possibile associare il delegato a '{0}' perché è un membro di 'System. Nullable&lt;T&gt;'</value>
   </data>
   <data name="BadCtorArgCount" xml:space="preserve">
     <value>'{0}' non contiene un costruttore che accetta argomenti '{1}'</value>

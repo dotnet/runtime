@@ -64,7 +64,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         //EK_ALIAS,
         // End type exprs.
         //EK_ERROR,
-        FunctionPointer,
+        //FunctionPointer,
         Property,
         Multi,
         MultiGet,
