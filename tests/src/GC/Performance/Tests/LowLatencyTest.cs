@@ -25,7 +25,6 @@ namespace GCTest
             Console.WriteLine("LowLatency.exe <iterations> <lowlatency|interactive|batch>");
         }
 
-
         static void Main(string[] args)
         {
             if (args.Length != 2)
@@ -70,7 +69,9 @@ namespace GCTest
             Hashtable aMap = new Hashtable(count);
             byte[] aBuffer = null;
             long maxElapsed = 0;
-            using (StreamReader reader = new StreamReader("clunie_small.xml"))
+
+            string clunieFile = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "clunie_small.xml");
+            using (StreamReader reader = new StreamReader(clunieFile))
             {
                 aBuffer = new byte[reader.BaseStream.Length];
                 reader.BaseStream.Read(aBuffer, 0, (int)reader.BaseStream.Length);

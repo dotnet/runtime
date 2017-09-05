@@ -53,7 +53,8 @@ namespace GCTest
             byte[] aBuffer = null;
             long maxElapsed = 0;
 
-            using (StreamReader reader = new StreamReader("clunie_large.xml"))
+            string clunieFile = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "clunie_large.xml");
+            using (StreamReader reader = new StreamReader(clunieFile))
             {
                 aBuffer = new byte[reader.BaseStream.Length];
                 reader.BaseStream.Read(aBuffer, 0, (int)reader.BaseStream.Length);
