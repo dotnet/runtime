@@ -235,6 +235,8 @@ void CodeGen::genCodeForTreeNode(GenTreePtr treeNode)
         case GT_GE:
         case GT_GT:
         case GT_CMP:
+        case GT_TEST_EQ:
+        case GT_TEST_NE:
             genCodeForCompare(treeNode->AsOp());
             break;
 
