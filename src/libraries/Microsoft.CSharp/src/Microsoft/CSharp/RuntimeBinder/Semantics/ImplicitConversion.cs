@@ -93,7 +93,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                 switch (_typeDest.GetTypeKind())
                 {
                     case TypeKind.TK_ErrorType:
-                        Debug.Assert(((ErrorType)_typeDest).HasParent());
+                        Debug.Assert(((ErrorType)_typeDest).HasParent);
                         if (_typeSrc != _typeDest)
                         {
                             return false;

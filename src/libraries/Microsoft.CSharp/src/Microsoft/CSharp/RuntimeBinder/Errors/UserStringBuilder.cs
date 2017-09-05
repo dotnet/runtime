@@ -150,35 +150,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
             ErrAppendParentCore(sym.parent, pctx);
         }
 
-        private void ErrAppendParentType(CType pType, SubstContext pctx)
-        {
-            if (pType is ErrorType err)
-            {
-                if (err.HasTypeParent())
-                {
-                    ErrAppendType(err.GetTypeParent(), null);
-                    ErrAppendChar('.');
-                }
-                else
-                {
-                    ErrAppendParentCore(err.GetNSParent(), pctx);
-                }
-            }
-            else if (pType is AggregateType agg)
-            {
-                ErrAppendParentCore(agg.GetOwningAggregate(), pctx);
-            }
-            else
-            {
-                var part = pType.GetBaseOrParameterOrElementType();
-                if (part != null)
-                {
-                    ErrAppendType(part, null);
-                    ErrAppendChar('.');
-                }
-            }
-        }
-
         private void ErrAppendParentCore(Symbol parent, SubstContext pctx)
         {
             if (null == parent)
@@ -533,10 +504,9 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
 
                 case TypeKind.TK_ErrorType:
                     ErrorType err = (ErrorType)pType;
-                    if (err.HasParent())
+                    if (err.HasParent)
                     {
                         Debug.Assert(err.nameText != null && err.typeArgs != null);
-                        ErrAppendParentType(pType, pctx);
                         ErrAppendName(err.nameText);
                         ErrAppendTypeParameters(err.typeArgs, pctx, true);
                     }
