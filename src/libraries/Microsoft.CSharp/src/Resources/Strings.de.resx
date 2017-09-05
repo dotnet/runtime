@@ -159,9 +159,6 @@
   <data name="BadArity" xml:space="preserve">
     <value>Die Verwendung von {1} "{0}" (generisch) erfordert {2}-Typargumente.</value>
   </data>
-  <data name="BadTypeArgument" xml:space="preserve">
-    <value>Der Typ "{0}" darf nicht als Typargument verwendet werden.</value>
-  </data>
   <data name="TypeArgsNotAllowed" xml:space="preserve">
     <value>{1} "{0}" kann nicht mit Typargumenten verwendet werden.</value>
   </data>
@@ -212,9 +209,6 @@
   </data>
   <data name="ConvertToStaticClass" xml:space="preserve">
     <value>Die Konvertierung in den statischen {0}-Typ ist nicht möglich.</value>
-  </data>
-  <data name="GenericArgIsStaticClass" xml:space="preserve">
-    <value>{0}: Statische Typen können nicht als Typargumente verwendet werden.</value>
   </data>
   <data name="IncrementLvalueExpected" xml:space="preserve">
     <value>Der Operand eines Inkrement- oder Dekrementoperators muss eine Variable, eine Eigenschaft oder ein Indexer sein.</value>

@@ -159,9 +159,6 @@
   <data name="BadArity" xml:space="preserve">
     <value>ジェネリック {1} '{0}' の使用には、'{2}' 型の引数が必要です</value>
   </data>
-  <data name="BadTypeArgument" xml:space="preserve">
-    <value>型 '{0}' は型引数としては使えません</value>
-  </data>
   <data name="TypeArgsNotAllowed" xml:space="preserve">
     <value>{1} '{0}' は型引数と一緒には使用できません</value>
   </data>
@@ -212,9 +209,6 @@
   </data>
   <data name="ConvertToStaticClass" xml:space="preserve">
     <value>スタティック型 '{0}' へ変換できません</value>
-  </data>
-  <data name="GenericArgIsStaticClass" xml:space="preserve">
-    <value>'{0}': スタティック型を型引数として使用することはできません</value>
   </data>
   <data name="IncrementLvalueExpected" xml:space="preserve">
     <value>インクリメント演算子またはデクリメント演算子のオペランドには、変数、プロパティ、またはインデクサーを指定してください。</value>
