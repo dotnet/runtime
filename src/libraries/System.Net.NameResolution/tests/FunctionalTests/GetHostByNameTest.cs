@@ -101,5 +101,19 @@ namespace System.Net.NameResolution.Tests
             Assert.Equal(1, entry.AddressList.Length);
             Assert.Equal(IPAddress.IPv6Loopback, entry.AddressList[0]);
         }
+
+        [Fact]
+        public void DnsObsoleteGetHostByName_EmptyString_ReturnsHostName()
+        {
+            IPHostEntry entry = Dns.GetHostByName("");
+            Assert.Contains(Dns.GetHostName(), entry.HostName);
+        }
+
+        [Fact]
+        public void DnsObsoleteBeginEndGetHostByName_EmptyString_ReturnsHostName()
+        {
+            IPHostEntry entry = Dns.EndGetHostByName(Dns.BeginGetHostByName("", null, null));
+            Assert.Contains(Dns.GetHostName(), entry.HostName);
+        }
     }
 }
