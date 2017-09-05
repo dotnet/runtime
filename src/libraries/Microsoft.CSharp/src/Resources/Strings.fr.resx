@@ -105,9 +105,6 @@
   <data name="NoConstructors" xml:space="preserve">
     <value>Aucun constructeur n'est défini pour le type '{0}'</value>
   </data>
-  <data name="BadDelegateConstructor" xml:space="preserve">
-    <value>Le délégué '{0}' n'a pas de constructeur valide</value>
-  </data>
   <data name="PropertyLacksGet" xml:space="preserve">
     <value>Impossible d'utiliser la propriété ou l'indexeur '{0}' dans ce contexte, car il lui manque l'accesseur get</value>
   </data>
@@ -183,14 +180,8 @@
   <data name="TypeVarCantBeNull" xml:space="preserve">
     <value>Impossible de convertir null en paramètre de type '{0}' car il peut s'agir d'un type valeur qui n'autorise pas les valeurs null. Utilisez 'default({0})' à la place.</value>
   </data>
-  <data name="BadRetType" xml:space="preserve">
-    <value>'{1} {0}' n'a pas le type de retour correct</value>
-  </data>
   <data name="CantInferMethTypeArgs" xml:space="preserve">
     <value>Impossible de déduire les arguments de type pour la méthode '{0}' à partir de l'utilisation. Essayez de spécifier les arguments de type de façon explicite.</value>
-  </data>
-  <data name="MethGrpToNonDel" xml:space="preserve">
-    <value>Impossible de convertir le groupe de méthodes '{0}' en type non-délégué '{1}'. Souhaitiez-vous appeler la méthode ?</value>
   </data>
   <data name="RefConstraintNotSatisfied" xml:space="preserve">
     <value>Le type '{2}' doit être un type référence afin d'être utilisé comme paramètre '{1}' dans le type ou la méthode générique '{0}'</value>
@@ -263,9 +254,6 @@
   </data>
   <data name="RefReadonlyLocalCause" xml:space="preserve">
     <value>Impossible de passer '{0}' en tant qu'argument ref ou out, car il s'agit d'un '{1}'</value>
-  </data>
-  <data name="DelegateOnNullable" xml:space="preserve">
-    <value>Impossible de lier délégué à « {0} » parce que c'est un membre de « System.Nullable&lt;T&gt;»</value>
   </data>
   <data name="BadCtorArgCount" xml:space="preserve">
     <value>'{0}' ne contient pas de constructeur qui accepte des arguments '{1}'</value>

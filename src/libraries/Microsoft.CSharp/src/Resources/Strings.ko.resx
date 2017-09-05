@@ -105,9 +105,6 @@
   <data name="NoConstructors" xml:space="preserve">
     <value>'{0}' 형식에 정의된 생성자가 없습니다.</value>
   </data>
-  <data name="BadDelegateConstructor" xml:space="preserve">
-    <value>'{0}' 대리자에 올바른 생성자가 없습니다.</value>
-  </data>
   <data name="PropertyLacksGet" xml:space="preserve">
     <value>'{0}' 속성 또는 인덱서는 get 접근자가 없으므로 이 컨텍스트에서 사용할 수 없습니다.</value>
   </data>
@@ -183,14 +180,8 @@
   <data name="TypeVarCantBeNull" xml:space="preserve">
     <value>null을 허용하지 않는 값 형식일 수 있으므로 null을 형식 매개 변수 '{0}'(으)로 변환할 수 없습니다. 대신 'default({0})'를 사용하십시오.</value>
   </data>
-  <data name="BadRetType" xml:space="preserve">
-    <value>'{1} {0}'에 잘못된 반환 형식이 있습니다.</value>
-  </data>
   <data name="CantInferMethTypeArgs" xml:space="preserve">
     <value>'{0}' 메서드의 형식 인수를 유추할 수 없습니다. 형식 인수를 명시적으로 지정하십시오.</value>
-  </data>
-  <data name="MethGrpToNonDel" xml:space="preserve">
-    <value>'{0}' 메서드 그룹을 비대리자 형식 '{1}'(으)로 변환할 수 없습니다. 메서드를 호출하시겠습니까?</value>
   </data>
   <data name="RefConstraintNotSatisfied" xml:space="preserve">
     <value>제네릭 형식 또는 메서드 '{0}'에서 '{2}' 형식을 '{1}' 매개 변수로 사용하려면 해당 형식이 참조 형식이어야 합니다.</value>
@@ -263,9 +254,6 @@
   </data>
   <data name="RefReadonlyLocalCause" xml:space="preserve">
     <value>'{0}'은(는) '{1}'이므로 ref 또는 out 인수로 전달할 수 없습니다.</value>
-  </data>
-  <data name="DelegateOnNullable" xml:space="preserve">
-    <value>그것 'System.Nullable&lt;T&gt;'의 멤버 이므로 ' (0) '에 대리자를 바인딩할 수 없습니다.</value>
   </data>
   <data name="BadCtorArgCount" xml:space="preserve">
     <value>'{0}'에 '{1}'개의 인수를 사용하는 생성자가 없습니다.</value>

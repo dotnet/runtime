@@ -105,9 +105,6 @@
   <data name="NoConstructors" xml:space="preserve">
     <value>类型“{0}”未定义构造函数</value>
   </data>
-  <data name="BadDelegateConstructor" xml:space="preserve">
-    <value>委托“{0}”没有有效的构造函数</value>
-  </data>
   <data name="PropertyLacksGet" xml:space="preserve">
     <value>属性或索引器“{0}”不能用在此上下文中，因为它缺少 get 访问器</value>
   </data>
@@ -183,14 +180,8 @@
   <data name="TypeVarCantBeNull" xml:space="preserve">
     <value>无法将 null 转换为类型参数“{0}”，因为它可能是不可以为 null 的值类型。请考虑改用“default({0})”。</value>
   </data>
-  <data name="BadRetType" xml:space="preserve">
-    <value>“{1} {0}”的返回类型错误</value>
-  </data>
   <data name="CantInferMethTypeArgs" xml:space="preserve">
     <value>无法从用法中推断出方法“{0}”的类型参数。请尝试显式指定类型参数。</value>
-  </data>
-  <data name="MethGrpToNonDel" xml:space="preserve">
-    <value>无法将方法组“{0}”转换为非委托类型“{1}”。是否希望调用此方法?</value>
   </data>
   <data name="RefConstraintNotSatisfied" xml:space="preserve">
     <value>类型“{2}”必须是引用类型才能用作泛型类型或方法“{0}”中的参数“{1}”</value>
@@ -263,9 +254,6 @@
   </data>
   <data name="RefReadonlyLocalCause" xml:space="preserve">
     <value>“{0}”是一个“{1}”，无法作为 ref 或 out 参数进行传递</value>
-  </data>
-  <data name="DelegateOnNullable" xml:space="preserve">
-    <value>不能将委托绑定到 '{0}'，因为它是 'System.Nullable&lt;T&gt;' 成员</value>
   </data>
   <data name="BadCtorArgCount" xml:space="preserve">
     <value>“{0}”不包含采用“{1}”个参数的构造函数</value>
