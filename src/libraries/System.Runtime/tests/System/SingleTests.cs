@@ -211,6 +211,7 @@ namespace System.Tests
         [InlineData((float)789, (float)-789, false)]
         [InlineData((float)789, (float)0, false)]
         [InlineData(float.NaN, float.NaN, true)]
+        [InlineData(float.NaN, -float.NaN, true)]
         [InlineData((float)789, (double)789, false)]
         [InlineData((float)789, "789", false)]
         public static void Equals(float f1, object value, bool expected)
