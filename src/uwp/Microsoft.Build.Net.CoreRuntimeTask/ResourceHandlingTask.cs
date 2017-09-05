@@ -340,11 +340,13 @@ namespace Microsoft.Build.Net.CoreRuntimeTask
                 {
                     culturePath = neutralResourceLanguage + Path.DirectorySeparatorChar;
                 }
-                // Do not handle the case where culture is Invariant and no NeutralResourcesLanguageAttribute is declared
-                // This should already be taken care of in method ExtractAssemblyResWList
+                // Must have NeutralResourcesLanguageAttribute
+                // warning MSB3817: The assembly "<FullPath>\ClassLibrary1.dll" does not have a NeutralResourcesLanguageAttribute on it.
+                // To be used in an app package, portable libraries must define a NeutralResourcesLanguageAttribute on their main assembly
+                // (ie, the one containing code, not a satellite assembly).
                 else
                 {
-                    Debug.Assert(false, "Assembly with the Invariant culture and no NeutralResourcesLanguageAttribute is being extracted for embedded resources. This should have been caught by earlier checks.");
+                    return null;
                 }
 
                 if (resourceFileName.EndsWith("." + culture, StringComparison.OrdinalIgnoreCase))
@@ -423,14 +425,6 @@ namespace Microsoft.Build.Net.CoreRuntimeTask
                 return null;
             }
 
-            string neutralResourceLanguage;
-            if (String.IsNullOrEmpty(assembly.Culture) && !TryGetNeutralResourcesLanguageAttribute(assembly, out neutralResourceLanguage))
-            {
-                // Must have NeutralResourcesLanguageAttribute
-                // warning MSB3817: The assembly "<FullPath>\ClassLibrary1.dll" does not have a NeutralResourcesLanguageAttribute on it. To be used in an app package, portable libraries must define a NeutralResourcesLanguageAttribute on their main assembly (ie, the one containing code, not a satellite assembly).
-                return null;
-            }
-
             List<ResWInfo> reswInfoList = new List<ResWInfo>();
             string frameworkResourcesName = "FxResources." + assembly.Name.Value + ".SR.resources";
 
@@ -457,15 +451,18 @@ namespace Microsoft.Build.Net.CoreRuntimeTask
                         ms.Seek(0, SeekOrigin.Begin);
                         
                         string resourceFileName = resourceReference.Name.Value.Remove(resourceReference.Name.Value.Length - 10);
-                        if (resourceReference.Name.Value.Equals(frameworkResourcesName, StringComparison.OrdinalIgnoreCase))
+                        bool isFrameworkResource = resourceReference.Name.Value.Equals(frameworkResourcesName, StringComparison.OrdinalIgnoreCase);
+                        ResWInfo reswInfo = ExtractResourcesFromStream(ms, assembly, resourceFileName, isFrameworkResource);
+
+                        if (reswInfo != null)
+                        {
+                            reswInfoList.Add(reswInfo);
+                        }
+
+                        if (isFrameworkResource)
                         {
                             containsFrameworkResources = true;
-                            reswInfoList.Add(ExtractResourcesFromStream(ms, assembly, resourceFileName, true));
                             return reswInfoList;
-                        }
-                        else
-                        {
-                            reswInfoList.Add(ExtractResourcesFromStream(ms, assembly, resourceFileName, false));
                         }
                     }
                 }
