@@ -9,6 +9,7 @@
 #include "pal_safecrt.h"
 
 #include <stdlib.h>
+#include <limits.h>
 #include <pthread.h>
 #include <arpa/inet.h>
 #include <assert.h>
@@ -1145,11 +1146,16 @@ SystemNative_SetIPv6Address(uint8_t* socketAddress, int32_t socketAddressLen, ui
 
 static void ConvertMessageHeaderToMsghdr(msghdr* header, const MessageHeader& messageHeader)
 {
+    // sendmsg/recvmsg can return EMSGSIZE when msg_iovlen is greather than IOV_MAX.
+    // We avoid this by truncating msg_iovlen to IOV_MAX, this is ok since sendmsg is
+    // not required to send all data and recvmsg can be called again to receive more.
+    auto iovlen = static_cast<decltype(header->msg_iovlen)>(messageHeader.IOVectorCount);
+    iovlen = Min(iovlen, static_cast<decltype(iovlen)>(IOV_MAX));
     *header = {
         .msg_name = messageHeader.SocketAddress,
         .msg_namelen = static_cast<unsigned int>(messageHeader.SocketAddressLen),
         .msg_iov = reinterpret_cast<iovec*>(messageHeader.IOVectors),
-        .msg_iovlen = static_cast<decltype(header->msg_iovlen)>(messageHeader.IOVectorCount),
+        .msg_iovlen = iovlen,
         .msg_control = messageHeader.ControlBuffer,
         .msg_controllen = static_cast<decltype(header->msg_controllen)>(messageHeader.ControlBufferLen),
     };
