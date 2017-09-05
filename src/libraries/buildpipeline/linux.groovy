@@ -10,7 +10,7 @@ def submittedHelixJson = null
 
 simpleDockerNode('microsoft/dotnet-buildtools-prereqs:rhel7_prereqs_2') {
     stage ('Checkout source') {
-        checkout scm
+        checkoutRepo()
     }
 
     def logFolder = getLogFolder()
