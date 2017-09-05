@@ -18,17 +18,11 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public Name nameText;
         public TypeArray typeArgs;
 
-        public bool HasParent() { return _pParentType != null || _pParentNS != null; }
-
-        public bool HasTypeParent() { return _pParentType != null; }
-        public CType GetTypeParent() { return _pParentType; }
-        public void SetTypeParent(CType pType) { _pParentType = pType; }
-
-        public bool HasNSParent() { return _pParentNS != null; }
-        public AssemblyQualifiedNamespaceSymbol GetNSParent() { return _pParentNS; }
-        public void SetNSParent(AssemblyQualifiedNamespaceSymbol pNS) { _pParentNS = pNS; }
-
-        private CType _pParentType;
-        private AssemblyQualifiedNamespaceSymbol _pParentNS;
+        // ErrorTypes are always either the per-TypeManager singleton ErrorType
+        // that has a null nameText and no namespace parent, or else have a
+        // non-null nameText and have the root namespace as the namespace parent,
+        // so checking that nameText isn't null is equivalent to checking if the
+        // type has a parent.
+        public bool HasParent => nameText != null;
     }
 }
