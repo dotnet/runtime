@@ -49,7 +49,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         public string Value
         {
-            get { return _propertyValue; }
+            get => _propertyValue;
             set
             {
                 if (_propertyValue != value)
@@ -65,7 +65,7 @@ namespace System.ComponentModel.DataAnnotations
         /// </summary>
         public Type ResourceType
         {
-            get { return _resourceType; }
+            get => _resourceType;
             set
             {
                 if (_resourceType != value)
