@@ -13,7 +13,7 @@ namespace Tracing.Tests
         public SimpleEventSource() : base(true) { }
 
         [Event(1)]
-        internal void Message(string msg) { this.WriteEvent(1, msg); }
+        internal void MathResult(int x, int y, int z, string formula) { this.WriteEvent(1, x, y, z, formula); }
     }
 
     class EventPipeSmoke
@@ -71,9 +71,9 @@ namespace Tracing.Tests
             {
                 int x = generator.Next(1,1000);
                 int y = generator.Next(1,1000);
-                string result = String.Format("{0} + {1} = {2}", x, y, x+y);
+                string formula = String.Format("{0} + {1} = {2}", x, y, x+y);
                 
-                eventSource.Message(result);
+                eventSource.MathResult(x, y, x+y, formula);
             }
             Console.WriteLine("\tEnd: Messaging.\n");
 
