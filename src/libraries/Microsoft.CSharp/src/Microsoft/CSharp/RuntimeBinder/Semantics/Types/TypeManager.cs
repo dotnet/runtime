@@ -37,7 +37,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             _typeTable = new TypeTable();
 
             // special types with their own symbol kind.
-            _errorType = _typeFactory.CreateError(null, null, null, null, null);
+            _errorType = _typeFactory.CreateError(null, null, null);
             _voidType = _typeFactory.CreateVoid();
             _nullType = _typeFactory.CreateNull();
             _typeMethGrp = _typeFactory.CreateMethodGroup();
@@ -314,18 +314,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         }
 
         public ErrorType GetErrorType(
-                CType pParentType,
-                AssemblyQualifiedNamespaceSymbol pParentNS,
                 Name nameText,
                 TypeArray typeArgs)
         {
             Debug.Assert(nameText != null);
-            Debug.Assert(pParentType == null || pParentNS == null);
-            if (pParentType == null && pParentNS == null)
-            {
-                // Use the root namespace as the parent.
-                pParentNS = _BSymmgr.GetRootNsAid();
-            }
             if (typeArgs == null)
             {
                 typeArgs = BSYMMGR.EmptyTypeArray();
@@ -334,30 +326,14 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             Name name = _BSymmgr.GetNameFromPtrs(nameText, typeArgs);
             Debug.Assert(name != null);
 
-            ErrorType pError = null;
-            if (pParentType != null)
-            {
-                pError = _typeTable.LookupError(name, pParentType);
-            }
-            else
-            {
-                Debug.Assert(pParentNS != null);
-                pError = _typeTable.LookupError(name, pParentNS);
-            }
+            ErrorType pError = _typeTable.LookupError(name);
 
             if (pError == null)
             {
                 // No existing error symbol. Create a new one.
-                pError = _typeFactory.CreateError(name, pParentType, pParentNS, nameText, typeArgs);
+                pError = _typeFactory.CreateError(name, nameText, typeArgs);
                 pError.SetErrors(true);
-                if (pParentType != null)
-                {
-                    _typeTable.InsertError(name, pParentType, pError);
-                }
-                else
-                {
-                    _typeTable.InsertError(name, pParentNS, pError);
-                }
+                _typeTable.InsertError(name, pError);
             }
             else
             {
@@ -503,22 +479,16 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 case TypeKind.TK_ErrorType:
                     ErrorType err = (ErrorType)type;
-                    if (err.HasParent())
+                    if (err.HasParent)
                     {
                         Debug.Assert(err.nameText != null && err.typeArgs != null);
-
-                        CType pParentType = null;
-                        if (err.HasTypeParent())
-                        {
-                            pParentType = SubstTypeCore(err.GetTypeParent(), pctx);
-                        }
-
                         TypeArray typeArgs = SubstTypeArray(err.typeArgs, pctx);
-                        if (typeArgs != err.typeArgs || (err.HasTypeParent() && pParentType != err.GetTypeParent()))
+                        if (typeArgs != err.typeArgs)
                         {
-                            return GetErrorType(pParentType, err.GetNSParent(), err.nameText, typeArgs);
+                            return GetErrorType(err.nameText, typeArgs);
                         }
                     }
+
                     return type;
 
                 case TypeKind.TK_TypeParameterType:
@@ -658,45 +628,27 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 case TypeKind.TK_ErrorType:
                     ErrorType errSrc = (ErrorType)typeSrc;
-                    if (!(typeDst is ErrorType errDst) || !errSrc.HasParent() || !errDst.HasParent())
+                    if (!(typeDst is ErrorType errDst) || !errSrc.HasParent || !errDst.HasParent)
                         return false;
+
+                {
+                    Debug.Assert(errSrc.nameText != null && errSrc.typeArgs != null);
+                    Debug.Assert(errDst.nameText != null && errDst.typeArgs != null);
+
+                    if (errSrc.nameText != errDst.nameText || errSrc.typeArgs.Count != errDst.typeArgs.Count
+                        || errSrc.HasParent != errDst.HasParent)
                     {
-                        Debug.Assert(errSrc.nameText != null && errSrc.typeArgs != null);
-                        Debug.Assert(errDst.nameText != null && errDst.typeArgs != null);
-
-                        if (errSrc.nameText != errDst.nameText || errSrc.typeArgs.Count != errDst.typeArgs.Count)
-                            return false;
-
-                        if (errSrc.HasTypeParent() != errDst.HasTypeParent())
-                        {
-                            return false;
-                        }
-                        if (errSrc.HasTypeParent())
-                        {
-                            if (errSrc.GetTypeParent() != errDst.GetTypeParent())
-                            {
-                                return false;
-                            }
-                            if (!SubstEqualTypesCore(errDst.GetTypeParent(), errSrc.GetTypeParent(), pctx))
-                            {
-                                return false;
-                            }
-                        }
-                        else
-                        {
-                            if (errSrc.GetNSParent() != errDst.GetNSParent())
-                            {
-                                return false;
-                            }
-                        }
-
-                        // All the args must unify.
-                        for (int i = 0; i < errSrc.typeArgs.Count; i++)
-                        {
-                            if (!SubstEqualTypesCore(errDst.typeArgs[i], errSrc.typeArgs[i], pctx))
-                                return false;
-                        }
+                        return false;
                     }
+
+                    // All the args must unify.
+                    for (int i = 0; i < errSrc.typeArgs.Count; i++)
+                    {
+                        if (!SubstEqualTypesCore(errDst.typeArgs[i], errSrc.typeArgs[i], pctx))
+                            return false;
+                    }
+                }
+
                     return true;
 
                 case TypeKind.TK_TypeParameterType:
@@ -782,7 +734,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 case TypeKind.TK_ErrorType:
                     ErrorType err = (ErrorType)type;
-                    if (err.HasParent())
+                    if (err.HasParent)
                     {
                         Debug.Assert(err.nameText != null && err.typeArgs != null);
 
@@ -791,12 +743,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                             if (TypeContainsType(err.typeArgs[i], typeFind))
                                 return true;
                         }
-                        if (err.HasTypeParent())
-                        {
-                            type = err.GetTypeParent();
-                            goto LRecurse;
-                        }
                     }
+
                     return false;
 
                 case TypeKind.TK_TypeParameterType:
@@ -841,7 +789,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
                 case TypeKind.TK_ErrorType:
                     ErrorType err = (ErrorType)type;
-                    if (err.HasParent())
+                    if (err.HasParent)
                     {
                         Debug.Assert(err.nameText != null && err.typeArgs != null);
 
@@ -852,12 +800,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                                 return true;
                             }
                         }
-                        if (err.HasTypeParent())
-                        {
-                            type = err.GetTypeParent();
-                            goto LRecurse;
-                        }
                     }
+
                     return false;
 
                 case TypeKind.TK_TypeParameterType:

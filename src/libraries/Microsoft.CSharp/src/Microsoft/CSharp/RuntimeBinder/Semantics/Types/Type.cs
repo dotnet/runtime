@@ -179,7 +179,8 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         public void InitFromParent()
         {
             Debug.Assert(!(this is AggregateType));
-            _fHasErrors = (this is ErrorType err ? err.GetTypeParent() : GetBaseOrParameterOrElementType()).HasErrors();
+            Debug.Assert(!(this is ErrorType));
+            _fHasErrors = GetBaseOrParameterOrElementType().HasErrors();
         }
 
         public bool HasErrors()
@@ -514,7 +515,7 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         // be equivalent or convertible (like ANONMETHSYMs)
         public bool IsNeverSameType()
         {
-            return this is MethodGroupType || this is ErrorType err && !err.HasParent();
+            return this is MethodGroupType || this is ErrorType err && !err.HasParent;
         }
     }
 }
