@@ -30,6 +30,7 @@ namespace Microsoft.Extensions.DependencyModel.Tests
         public static readonly string ProjectType = "project";
         public static readonly string MsBuildProjectType = "msbuildproject";
         public static readonly string ReferenceAssemblyType = "referenceassembly";
+        public static readonly string ReferenceType = "reference";
         public static readonly string PackageType = "package";
 
         public static CompilationLibrary Create(

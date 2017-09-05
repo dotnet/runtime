@@ -169,9 +169,13 @@
   </PropertyGroup>
 
   <Target Name="GenerateNugetPackages" DependsOnTargets="InitPackage" Condition="'$(UsePrebuiltPortableBinariesForInstallers)' == 'false'">
+    <ItemGroup>
+      <!-- The list of packages we are servicing -->
+      <PackageProjects Include="$(ProjectDir)src\managed\Microsoft.Extensions.DependencyModel\Microsoft.Extensions.DependencyModel.csproj" />
+    </ItemGroup>
+
     <ItemGroup Condition="'$(BuildAllPackages)' == 'true'">
       <PackageProjects Include="$(ProjectDir)src\managed\Microsoft.DotNet.PlatformAbstractions\Microsoft.DotNet.PlatformAbstractions.csproj" />
-      <PackageProjects Include="$(ProjectDir)src\managed\Microsoft.Extensions.DependencyModel\Microsoft.Extensions.DependencyModel.csproj" />
     </ItemGroup>
 
     <PropertyGroup>
