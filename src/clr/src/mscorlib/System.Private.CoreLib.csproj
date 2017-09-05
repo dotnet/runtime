@@ -267,6 +267,28 @@
     <Compile Include="$(BclSourcesRoot)\System\Runtime\InteropServices\WindowsRuntime\CLRIKeyValuePairImpl.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\Vector128.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\Vector256.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Aes.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Avx.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Avx2.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Bmi1.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Bmi2.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Enums.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Fma.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Lzcnt.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Pclmulqdq.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Popcnt.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Sse.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Sse2.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Sse3.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Sse41.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Sse42.cs" />
+    <Compile Include="$(BclSourcesRoot)\System\Runtime\Intrinsics\X86\Ssse3.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="$(BclSourcesRoot)\System\AppContext\AppContext.cs" />
     <Compile Include="$(BclSourcesRoot)\System\AppContext\AppContextSwitches.cs" />
     <Compile Include="$(BclSourcesRoot)\System\AppContext\AppContextDefaultValues.cs" />
