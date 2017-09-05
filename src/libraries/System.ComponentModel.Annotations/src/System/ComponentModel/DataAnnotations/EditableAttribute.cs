@@ -42,7 +42,7 @@ namespace System.ComponentModel.DataAnnotations
         ///         When <c>false</c>, the field/property is not editable.
         ///     </para>
         /// </value>
-        public bool AllowEdit { get; private set; }
+        public bool AllowEdit { get; }
 
         /// <summary>
         ///     Indicates whether or not the field/property allows an initial value

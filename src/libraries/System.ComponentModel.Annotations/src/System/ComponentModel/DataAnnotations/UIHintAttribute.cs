@@ -51,32 +51,20 @@ namespace System.ComponentModel.DataAnnotations
         /// <summary>
         ///     Gets the name of the control that is most appropriate for this associated property or field
         /// </summary>
-        public string UIHint
-        {
-            get { return _implementation.UIHint; }
-        }
+        public string UIHint => _implementation.UIHint;
 
         /// <summary>
         ///     Gets the name of the presentation layer that supports the control type in <see cref="UIHint" />
         /// </summary>
-        public string PresentationLayer
-        {
-            get { return _implementation.PresentationLayer; }
-        }
+        public string PresentationLayer => _implementation.PresentationLayer;
 
         /// <summary>
         ///     Gets the name-value pairs used as parameters to the control's constructor
         /// </summary>
         /// <exception cref="InvalidOperationException"> is thrown if the current attribute is ill-formed.</exception>
-        public IDictionary<string, object> ControlParameters
-        {
-            get { return _implementation.ControlParameters; }
-        }
+        public IDictionary<string, object> ControlParameters => _implementation.ControlParameters;
 
-        public override int GetHashCode()
-        {
-            return _implementation.GetHashCode();
-        }
+        public override int GetHashCode() => _implementation.GetHashCode();
 
         public override bool Equals(object obj)
         {
@@ -107,12 +95,12 @@ namespace System.ComponentModel.DataAnnotations
             /// <summary>
             ///     Gets the name of the control that is most appropriate for this associated property or field
             /// </summary>
-            public string UIHint { get; private set; }
+            public string UIHint { get; }
 
             /// <summary>
             ///     Gets the name of the presentation layer that supports the control type in <see cref="UIHint" />
             /// </summary>
-            public string PresentationLayer { get; private set; }
+            public string PresentationLayer { get; }
 
             public IDictionary<string, object> ControlParameters
             {

@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using System.Globalization;
-using System.Reflection;
 
 namespace System.ComponentModel.DataAnnotations
 {
@@ -69,7 +68,7 @@ namespace System.ComponentModel.DataAnnotations
         ///     Gets the type of the <see cref="Minimum" /> and <see cref="Maximum" /> values (e.g. Int32, Double, or some custom
         ///     type)
         /// </summary>
-        public Type OperandType { get; private set; }
+        public Type OperandType { get; }
 
         private Func<object, object> Conversion { get; set; }
 
