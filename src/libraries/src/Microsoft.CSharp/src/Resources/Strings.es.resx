@@ -105,9 +105,6 @@
   <data name="NoConstructors" xml:space="preserve">
     <value>El tipo '{0}' no tiene constructores definidos.</value>
   </data>
-  <data name="BadDelegateConstructor" xml:space="preserve">
-    <value>El delegado '{0}' no tiene un constructor válido</value>
-  </data>
   <data name="PropertyLacksGet" xml:space="preserve">
     <value>La propiedad o el indizador '{0}' no se puede usar en este contexto porque carece del descriptor de acceso get.</value>
   </data>
@@ -183,14 +180,8 @@
   <data name="TypeVarCantBeNull" xml:space="preserve">
     <value>No se puede convertir NULL en el parámetro de tipo '{0}' porque podría ser un tipo de valor que no acepta valores NULL. Use 'default({0})' en su lugar.</value>
   </data>
-  <data name="BadRetType" xml:space="preserve">
-    <value>'{1} {0}' es un tipo de valor devuelto equivocado</value>
-  </data>
   <data name="CantInferMethTypeArgs" xml:space="preserve">
     <value>Los argumentos de tipo para el método '{0}' no se pueden inferir a partir del uso. Intente especificar los argumentos de tipo explícitamente.</value>
-  </data>
-  <data name="MethGrpToNonDel" xml:space="preserve">
-    <value>No se puede convertir el grupo de métodos '{0}' en tipo no delegado '{1}'. ¿Intentó invocar el método?</value>
   </data>
   <data name="RefConstraintNotSatisfied" xml:space="preserve">
     <value>El tipo '{2}' debe ser un tipo de referencia para poder usarlo como parámetro '{1}' en el tipo o método genérico '{0}'.</value>
@@ -263,9 +254,6 @@
   </data>
   <data name="RefReadonlyLocalCause" xml:space="preserve">
     <value>No se puede pasar '{0}' como argumento out o ref porque es '{1}'.</value>
-  </data>
-  <data name="DelegateOnNullable" xml:space="preserve">
-    <value>No se puede enlazar el delegado para '{0}' porque es un miembro de 'System.Nullable&lt;T&gt;'</value>
   </data>
   <data name="BadCtorArgCount" xml:space="preserve">
     <value>'{0}' no contiene un constructor que tome '{1}' argumentos</value>

@@ -105,9 +105,6 @@
   <data name="NoConstructors" xml:space="preserve">
     <value>型別 '{0}' 沒有已定義的建構函式</value>
   </data>
-  <data name="BadDelegateConstructor" xml:space="preserve">
-    <value>委派 '{0}' 沒有有效的建構函式</value>
-  </data>
   <data name="PropertyLacksGet" xml:space="preserve">
     <value>無法於此內容中使用屬性或索引子 '{0}'，因為其欠缺 get 存取子</value>
   </data>
@@ -183,14 +180,8 @@
   <data name="TypeVarCantBeNull" xml:space="preserve">
     <value>無法將 null 轉換成型別參數 '{0}'，因為它是不可為 null 的實值型別。請考慮使用 'default({0})' 代替。</value>
   </data>
-  <data name="BadRetType" xml:space="preserve">
-    <value>'{1} {0}' 的傳回型別錯誤</value>
-  </data>
   <data name="CantInferMethTypeArgs" xml:space="preserve">
     <value>方法 '{0}' 的型別引數不能從使用方式推斷。請嘗試明確指定型別引數。</value>
-  </data>
-  <data name="MethGrpToNonDel" xml:space="preserve">
-    <value>無法將方法群組 '{0}' 轉換為非委派型別 '{1}'。您是否想要叫用這個方法?</value>
   </data>
   <data name="RefConstraintNotSatisfied" xml:space="preserve">
     <value>型別 '{2}' 必須是參考型別，才能在泛型型別或方法 '{0}' 中做為參數 '{1}' 使用</value>
@@ -263,9 +254,6 @@
   </data>
   <data name="RefReadonlyLocalCause" xml:space="preserve">
     <value>無法將 '{0}' 當做 ref 或 out 引數傳遞，因為它是 '{1}'</value>
-  </data>
-  <data name="DelegateOnNullable" xml:space="preserve">
-    <value>不能將委託綁定到 '{0}'，因為它是 'System.Nullable&lt;T&gt;' 成員</value>
   </data>
   <data name="BadCtorArgCount" xml:space="preserve">
     <value>'{0}' 不包含接受 '{1}' 個引數的建構函式</value>

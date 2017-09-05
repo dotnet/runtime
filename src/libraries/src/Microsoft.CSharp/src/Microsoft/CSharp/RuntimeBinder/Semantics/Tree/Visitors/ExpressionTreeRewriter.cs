@@ -929,62 +929,10 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         {
             Debug.Assert(expr != null);
             Debug.Assert(expr.MethWithInst.Meth().IsConstructor());
-
-            // Realize a call to new DELEGATE(obj, FUNCPTR) as though it actually was
-            // (DELEGATE)CreateDelegate(typeof(DELEGATE), obj, GetMethInfoFromHandle(FUNCPTR))
-
-            if (IsDelegateConstructorCall(expr))
-            {
-                return GenerateDelegateConstructor(expr);
-            }
             Expr constructorInfo = GetExprFactory().CreateMethodInfo(expr.MethWithInst);
             Expr args = GenerateArgsList(expr.OptionalArguments);
             Expr Params = GenerateParamsArray(args, PredefinedType.PT_EXPRESSION);
             return GenerateCall(PREDEFMETH.PM_EXPRESSION_NEW, constructorInfo, Params);
-        }
-
-        private Expr GenerateDelegateConstructor(ExprCall expr)
-        {
-            // In:
-            //
-            // new DELEGATE(obj, &FUNC)
-            //
-            // Out:
-            //
-            //  Cast(
-            //      Call(
-            //          null,
-            //          (MethodInfo)GetMethodFromHandle(&CreateDelegate),
-            //          new Expression[3]{
-            //              Constant(typeof(DELEGATE)),
-            //              transformed-object,
-            //              Constant((MethodInfo)GetMethodFromHandle(&FUNC)}),
-            //      typeof(DELEGATE))
-            //
-
-            Debug.Assert(expr != null);
-            Debug.Assert(expr.MethWithInst.Meth().IsConstructor());
-            Debug.Assert(expr.Type.isDelegateType());
-
-            ExprList origArgs = (ExprList)expr.OptionalArguments;
-            Debug.Assert(origArgs != null);
-            Expr target = origArgs.OptionalElement;
-            Debug.Assert(origArgs.OptionalNextListNode.Kind == ExpressionKind.FunctionPointer);
-            ExprFuncPtr funcptr = (ExprFuncPtr)origArgs.OptionalNextListNode;
-            Debug.Assert(funcptr != null);
-            MethodSymbol createDelegateMethod = GetPreDefMethod(PREDEFMETH.PM_METHODINFO_CREATEDELEGATE_TYPE_OBJECT);
-            AggregateType delegateType = GetSymbolLoader().GetPredefindType(PredefinedType.PT_DELEGATE);
-            MethWithInst mwi = new MethWithInst(createDelegateMethod, delegateType);
-
-            Expr instance = GenerateConstant(GetExprFactory().CreateMethodInfo(funcptr.MethWithInst));
-            Expr methinfo = GetExprFactory().CreateMethodInfo(mwi);
-            Expr param1 = GenerateConstant(CreateTypeOf(expr.Type));
-            Expr param2 = Visit(target);
-            Expr paramsList = GetExprFactory().CreateList(param1, param2);
-            Expr Params = GenerateParamsArray(paramsList, PredefinedType.PT_EXPRESSION);
-            Expr call = GenerateCall(PREDEFMETH.PM_EXPRESSION_CALL, instance, methinfo, Params);
-            Expr pTypeOf = CreateTypeOf(expr.Type);
-            return GenerateCall(PREDEFMETH.PM_EXPRESSION_CONVERT, call, pTypeOf);
         }
 
         private Expr GenerateArgsList(Expr oldArgs)
@@ -1165,21 +1113,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             return pExpr is ExprProperty prop && prop.MemberGroup.OptionalObject == pObject && pObject.Type is NullableType;
         }
 
-        private bool IsDelegateConstructorCall(Expr pExpr)
-        {
-            Debug.Assert(pExpr != null);
-            if (!(pExpr is ExprCall pCall))
-            {
-                return false;
-            }
-
-            return pCall.MethWithInst.Meth() != null &&
-                pCall.MethWithInst.Meth().IsConstructor() &&
-                pCall.Type.isDelegateType() &&
-                pCall.OptionalArguments != null &&
-                pCall.OptionalArguments is ExprList list &&
-                list.OptionalNextListNode.Kind == ExpressionKind.FunctionPointer;
-        }
         private static bool isEnumToDecimalConversion(CType argtype, CType desttype) =>
             argtype.StripNubs().isEnumType() && desttype.StripNubs().isPredefType(PredefinedType.PT_DECIMAL);
     }

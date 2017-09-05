@@ -101,7 +101,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
 
 
         PM_EXPRESSION_INVOKE,
-        PM_METHODINFO_CREATEDELEGATE_TYPE_OBJECT,
 
         PM_G_OPTIONAL_CTOR,
         PM_G_OPTIONAL_GETVALUE,
@@ -212,46 +211,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
         private AggregateSymbol GetMethParent(PREDEFMETH method)
         {
             return GetOptPredefAgg(GetMethPredefType(method));
-        }
-
-        // delegate specific helpers
-        private MethodSymbol FindDelegateConstructor(AggregateSymbol delegateType, int[] signature)
-        {
-            Debug.Assert(delegateType != null && delegateType.IsDelegate());
-            Debug.Assert(signature != null);
-
-            return LoadMethod(
-                                delegateType,
-                                signature,
-                                0,                          // meth ty vars
-                                GetPredefName(PredefinedName.PN_CTOR),
-                                ACCESS.ACC_PUBLIC,
-                                false,                      // MethodCallingConventionEnum.Static
-                                false);                     // MethodCallingConventionEnum.Virtual
-        }
-
-        private MethodSymbol FindDelegateConstructor(AggregateSymbol delegateType)
-        {
-            Debug.Assert(delegateType != null && delegateType.IsDelegate());
-
-            MethodSymbol ctor = FindDelegateConstructor(delegateType, s_DelegateCtorSignature1);
-            if (ctor == null)
-            {
-                ctor = FindDelegateConstructor(delegateType, s_DelegateCtorSignature2);
-            }
-
-            return ctor;
-        }
-
-        public MethodSymbol FindDelegateConstructor(AggregateSymbol delegateType, bool fReportErrors)
-        {
-            MethodSymbol ctor = FindDelegateConstructor(delegateType);
-            if (ctor == null && fReportErrors)
-            {
-                throw GetErrorContext().Error(ErrorCode.ERR_BadDelegateConstructor, delegateType);
-            }
-
-            return ctor;
         }
 
         private PropertySymbol LoadProperty(PREDEFPROP property)
@@ -515,9 +474,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
                         IsMethVirtual(method));
         }
 
-        private static readonly int[] s_DelegateCtorSignature1 = { (int)PredefinedType.PT_VOID, 2, (int)PredefinedType.PT_OBJECT, (int)PredefinedType.PT_INTPTR };
-        private static readonly int[] s_DelegateCtorSignature2 = { (int)PredefinedType.PT_VOID, 2, (int)PredefinedType.PT_OBJECT, (int)PredefinedType.PT_UINTPTR };
-
         private static PredefinedName GetPropPredefName(PREDEFPROP property)
         {
             return GetPropInfo(property).name;
@@ -672,7 +628,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Semantics
             new PredefinedMethodInfo(   PREDEFMETH.PM_EXPRESSION_NEWARRAYINIT,                         PredefinedType.PT_EXPRESSION,          PredefinedName.PN_NEWARRAYINIT,            MethodCallingConventionEnum.Static,     ACCESS.ACC_PUBLIC,     0,  new int[] { (int)PredefinedType.PT_NEWARRAYEXPRESSION, 2, (int)PredefinedType.PT_TYPE, (int)MethodSignatureEnum.SIG_SZ_ARRAY, (int)PredefinedType.PT_EXPRESSION }),
             new PredefinedMethodInfo(   PREDEFMETH.PM_EXPRESSION_PROPERTY,                             PredefinedType.PT_EXPRESSION,          PredefinedName.PN_EXPRESSION_PROPERTY,     MethodCallingConventionEnum.Static,     ACCESS.ACC_PUBLIC,     0,  new int[] { (int)PredefinedType.PT_MEMBEREXPRESSION, 2, (int)PredefinedType.PT_EXPRESSION, (int)PredefinedType.PT_PROPERTYINFO }),
             new PredefinedMethodInfo(   PREDEFMETH.PM_EXPRESSION_INVOKE,                               PredefinedType.PT_EXPRESSION,          PredefinedName.PN_INVOKE,                  MethodCallingConventionEnum.Static,     ACCESS.ACC_PUBLIC,     0,  new int[] { (int)PredefinedType.PT_INVOCATIONEXPRESSION, 2, (int)PredefinedType.PT_EXPRESSION, (int)MethodSignatureEnum.SIG_SZ_ARRAY, (int)PredefinedType.PT_EXPRESSION }),
-            new PredefinedMethodInfo(   PREDEFMETH.PM_METHODINFO_CREATEDELEGATE_TYPE_OBJECT,           PredefinedType.PT_METHODINFO,          PredefinedName.PN_CREATEDELEGATE,          MethodCallingConventionEnum.Virtual,    ACCESS.ACC_PUBLIC,     0,  new int[] { (int)PredefinedType.PT_DELEGATE, 2, (int)PredefinedType.PT_TYPE, (int)PredefinedType.PT_OBJECT}),
             new PredefinedMethodInfo(   PREDEFMETH.PM_G_OPTIONAL_CTOR,                                 PredefinedType.PT_G_OPTIONAL,          PredefinedName.PN_CTOR,                    MethodCallingConventionEnum.Instance,   ACCESS.ACC_PUBLIC,     0,  new int[] { (int)PredefinedType.PT_VOID, 1, (int)MethodSignatureEnum.SIG_CLASS_TYVAR, 0  }),
             new PredefinedMethodInfo(   PREDEFMETH.PM_G_OPTIONAL_GETVALUE,                             PredefinedType.PT_G_OPTIONAL,          PredefinedName.PN_GETVALUE,                MethodCallingConventionEnum.Instance,   ACCESS.ACC_PUBLIC,     0,  new int[] { (int)MethodSignatureEnum.SIG_CLASS_TYVAR, 0, 0  }),
             new PredefinedMethodInfo(   PREDEFMETH.PM_STRING_CONCAT_OBJECT_2,                          PredefinedType.PT_STRING,              PredefinedName.PN_CONCAT,                  MethodCallingConventionEnum.Static,     ACCESS.ACC_PUBLIC,     0,  new int[] { (int)PredefinedType.PT_STRING, 2, (int)PredefinedType.PT_OBJECT, (int)PredefinedType.PT_OBJECT  }),
