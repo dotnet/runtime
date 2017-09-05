@@ -28,10 +28,10 @@ namespace System.ComponentModel.DataAnnotations
             SortDescending = sortDescending;
         }
 
-        public string DisplayColumn { get; private set; }
+        public string DisplayColumn { get; }
 
-        public string SortColumn { get; private set; }
+        public string SortColumn { get; }
 
-        public bool SortDescending { get; private set; }
+        public bool SortDescending { get; }
     }
 }
