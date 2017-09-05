@@ -4743,6 +4743,39 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
             }
             break;
 
+            case CEE_CALLI:
+
+                // CEE_CALLI should not be inlined if the call indirect target has a calling convention other than
+                // CORINFO_CALLCONV_DEFAULT. In the case where we have a no-marshal CALLI P/Invoke we end up calling
+                // the IL stub. We don't NGEN these stubs, so we'll have to JIT an IL stub for a trivial func.
+                // It's almost certainly a better choice to leave out the inline candidate so we can generate an inlined
+                // call frame.
+
+                // Consider skipping this bail-out for force inlines.
+                if (makeInlineObservations)
+                {
+                    if (codeAddr > codeEndp - sizeof(DWORD))
+                    {
+                        goto TOO_FAR;
+                    }
+
+                    CORINFO_SIG_INFO calliSig;
+                    eeGetSig(getU4LittleEndian(codeAddr), info.compScopeHnd, impTokenLookupContextHandle, &calliSig);
+
+                    if (calliSig.getCallConv() != CORINFO_CALLCONV_DEFAULT)
+                    {
+                        compInlineResult->Note(InlineObservation::CALLEE_UNSUPPORTED_OPCODE);
+
+                        // Fail fast if we're inlining
+                        if (isInlining)
+                        {
+                            assert(compInlineResult->IsFailure());
+                            return;
+                        }
+                    }
+                }
+                break;
+
             case CEE_JMP:
                 retBlocks++;
 
@@ -4764,20 +4797,9 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, BYTE*
 
                 __fallthrough;
 
-            case CEE_CALLI:
             case CEE_LOCALLOC:
             case CEE_MKREFANY:
             case CEE_RETHROW:
-                // CEE_CALLI should not be inlined because the JIT cannot generate an inlined call frame. If the call
-                // target
-                // is a no-marshal CALLI P/Invoke we end up calling the IL stub. We don't NGEN these stubs, so we'll
-                // have to
-                // JIT an IL stub for a trivial func. It's almost certainly a better choice to leave out the inline
-                // candidate so we can generate an inlined call frame. It might be nice to call getCallInfo to figure
-                // out
-                // what kind of call we have here.
-
-                // Consider making this only for not force inline.
                 if (makeInlineObservations)
                 {
                     // Arguably this should be NoteFatal, but the legacy behavior is
