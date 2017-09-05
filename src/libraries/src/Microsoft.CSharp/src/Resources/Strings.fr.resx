@@ -159,9 +159,6 @@
   <data name="BadArity" xml:space="preserve">
     <value>L'utilisation du {1} '{0}' générique requiert les arguments de type '{2}'</value>
   </data>
-  <data name="BadTypeArgument" xml:space="preserve">
-    <value>Le type '{0}' ne peut pas être utilisé comme argument de type</value>
-  </data>
   <data name="TypeArgsNotAllowed" xml:space="preserve">
     <value>Impossible d'utiliser le {1} '{0}' avec des arguments de type</value>
   </data>
@@ -212,9 +209,6 @@
   </data>
   <data name="ConvertToStaticClass" xml:space="preserve">
     <value>Impossible de convertir en type static '{0}'</value>
-  </data>
-  <data name="GenericArgIsStaticClass" xml:space="preserve">
-    <value>'{0}' : impossible d'utiliser les types static en tant qu'arguments de type</value>
   </data>
   <data name="IncrementLvalueExpected" xml:space="preserve">
     <value>L'opérande d'un opérateur d'incrémentation ou de décrémentation doit être une variable, une propriété ou un indexeur</value>

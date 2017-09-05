@@ -206,10 +206,6 @@
           <source>Using the generic {1} '{0}' requires '{2}' type arguments</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">使用泛型 {1}“{0}”需要“{2}”个类型参数</target>
         </trans-unit>
-        <trans-unit id="BadTypeArgument" translate="yes" xml:space="preserve">
-          <source>The type '{0}' may not be used as a type argument</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">类型"{0}"不可能用作类型参数</target>
-        </trans-unit>
         <trans-unit id="TypeArgsNotAllowed" translate="yes" xml:space="preserve">
           <source>The {1} '{0}' cannot be used with type arguments</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">{1}“{0}”不能与类型参数一起使用</target>
@@ -277,10 +273,6 @@
         <trans-unit id="ConvertToStaticClass" translate="yes" xml:space="preserve">
           <source>Cannot convert to static type '{0}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">无法转换为静态类型“{0}”</target>
-        </trans-unit>
-        <trans-unit id="GenericArgIsStaticClass" translate="yes" xml:space="preserve">
-          <source>'{0}': static types cannot be used as type arguments</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">“{0}”: 静态类型不能用作类型参数</target>
         </trans-unit>
         <trans-unit id="IncrementLvalueExpected" translate="yes" xml:space="preserve">
           <source>The operand of an increment or decrement operator must be a variable, property or indexer</source>

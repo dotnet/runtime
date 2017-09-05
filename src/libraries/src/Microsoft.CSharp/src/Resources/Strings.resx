@@ -205,9 +205,6 @@
   <data name="BadArity" xml:space="preserve">
     <value>Using the generic {1} '{0}' requires '{2}' type arguments</value>
   </data>
-  <data name="BadTypeArgument" xml:space="preserve">
-    <value>The type '{0}' may not be used as a type argument</value>
-  </data>
   <data name="TypeArgsNotAllowed" xml:space="preserve">
     <value>The {1} '{0}' cannot be used with type arguments</value>
   </data>
@@ -258,9 +255,6 @@
   </data>
   <data name="ConvertToStaticClass" xml:space="preserve">
     <value>Cannot convert to static type '{0}'</value>
-  </data>
-  <data name="GenericArgIsStaticClass" xml:space="preserve">
-    <value>'{0}': static types cannot be used as type arguments</value>
   </data>
   <data name="IncrementLvalueExpected" xml:space="preserve">
     <value>The operand of an increment or decrement operator must be a variable, property or indexer</value>

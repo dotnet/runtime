@@ -159,9 +159,6 @@
   <data name="BadArity" xml:space="preserve">
     <value>Использование универсального {1} "{0}" требует аргументов типа "{2}"</value>
   </data>
-  <data name="BadTypeArgument" xml:space="preserve">
-    <value>Тип '{0}' не может использоваться в качестве аргумента типа</value>
-  </data>
   <data name="TypeArgsNotAllowed" xml:space="preserve">
     <value>{1} "{0}" не может использоваться с аргументами типа</value>
   </data>
@@ -212,9 +209,6 @@
   </data>
   <data name="ConvertToStaticClass" xml:space="preserve">
     <value>Не удается выполнить преобразование к статическому типу "{0}"</value>
-  </data>
-  <data name="GenericArgIsStaticClass" xml:space="preserve">
-    <value>"{0}": нельзя использовать статические типы в качестве аргументов-типов</value>
   </data>
   <data name="IncrementLvalueExpected" xml:space="preserve">
     <value>Операндом оператора инкремента или декремента должна быть переменная, свойство или индексатор</value>

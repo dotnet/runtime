@@ -122,9 +122,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                 case ErrorCode.ERR_BadArity:
                     codeStr = SR.BadArity;
                     break;
-                case ErrorCode.ERR_BadTypeArgument:
-                    codeStr = SR.BadTypeArgument;
-                    break;
                 case ErrorCode.ERR_TypeArgsNotAllowed:
                     codeStr = SR.TypeArgsNotAllowed;
                     break;
@@ -175,9 +172,6 @@ namespace Microsoft.CSharp.RuntimeBinder.Errors
                     break;
                 case ErrorCode.ERR_ConvertToStaticClass:
                     codeStr = SR.ConvertToStaticClass;
-                    break;
-                case ErrorCode.ERR_GenericArgIsStaticClass:
-                    codeStr = SR.GenericArgIsStaticClass;
                     break;
                 case ErrorCode.ERR_IncrementLvalueExpected:
                     codeStr = SR.IncrementLvalueExpected;
