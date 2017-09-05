@@ -2346,7 +2346,6 @@ void Lowering::LowerCompare(GenTree* cmp)
     }
 #endif
 
-#ifdef _TARGET_XARCH_
 #ifdef _TARGET_AMD64_
     if (cmp->gtGetOp1()->TypeGet() != cmp->gtGetOp2()->TypeGet())
     {
@@ -2398,6 +2397,7 @@ void Lowering::LowerCompare(GenTree* cmp)
         GenTreeIntCon* op2      = cmp->gtGetOp2()->AsIntCon();
         ssize_t        op2Value = op2->IconValue();
 
+#ifdef _TARGET_XARCH_
         if (IsContainableMemoryOp(op1) && varTypeIsSmall(op1Type) && genTypeCanRepresentValue(op1Type, op2Value))
         {
             //
@@ -2454,7 +2454,9 @@ void Lowering::LowerCompare(GenTree* cmp)
                 }
             }
         }
-        else if (op1->OperIs(GT_AND) && cmp->OperIs(GT_EQ, GT_NE))
+        else 
+#endif
+        if (op1->OperIs(GT_AND) && cmp->OperIs(GT_EQ, GT_NE))
         {
             //
             // Transform ((x AND y) EQ|NE 0) into (x TEST_EQ|TEST_NE y) when possible.
@@ -2490,6 +2492,7 @@ void Lowering::LowerCompare(GenTree* cmp)
                 andOp1->ClearContained();
                 andOp2->ClearContained();
 
+#ifdef _TARGET_XARCH_
                 if (IsContainableMemoryOp(andOp1) && andOp2->IsIntegralConst())
                 {
                     //
@@ -2521,10 +2524,12 @@ void Lowering::LowerCompare(GenTree* cmp)
                         andOp2->gtType = TYP_CHAR;
                     }
                 }
+#endif
             }
         }
     }
 
+#ifdef _TARGET_XARCH_
     if (cmp->gtGetOp1()->TypeGet() == cmp->gtGetOp2()->TypeGet())
     {
         if (varTypeIsSmall(cmp->gtGetOp1()->TypeGet()) && varTypeIsUnsigned(cmp->gtGetOp1()->TypeGet()))
