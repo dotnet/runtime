@@ -202,7 +202,7 @@ namespace System.IO.Tests
             Assert.False(Directory.Exists(testDir));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), "IsNotRedHat69")]
         [OuterLoop("Needs sudo access")]
         [PlatformSpecific(TestPlatforms.Linux)]
         [Trait(XunitConstants.Category, XunitConstants.RequiresElevation)]
