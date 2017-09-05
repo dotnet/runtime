@@ -10,20 +10,20 @@
   -->
   <PropertyGroup>
     <CoreFxCurrentRef>6172bcdfb92aa38e057c58f3b14f0711b4d51d45</CoreFxCurrentRef>
-    <CoreClrCurrentRef>6172bcdfb92aa38e057c58f3b14f0711b4d51d45</CoreClrCurrentRef>
-    <StandardCurrentRef>6172bcdfb92aa38e057c58f3b14f0711b4d51d45</StandardCurrentRef>
-    <WCFCurrentRef>6172bcdfb92aa38e057c58f3b14f0711b4d51d45</WCFCurrentRef>
+    <CoreClrCurrentRef>a0226cb852d03b44e38825571b3019669b6fa60c</CoreClrCurrentRef>
+    <StandardCurrentRef>a0226cb852d03b44e38825571b3019669b6fa60c</StandardCurrentRef>
+    <WCFCurrentRef>a0226cb852d03b44e38825571b3019669b6fa60c</WCFCurrentRef>
   </PropertyGroup>
 
   <PropertyGroup>
     <CoreFxVersion>4.5.0-preview2-25701-02</CoreFxVersion>
     <PlatformPackageVersion>2.1.0-preview2-25701-02</PlatformPackageVersion>
-    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview2-25701-02</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
+    <MicrosoftNETCoreRuntimeCoreCLRPackageVersion>2.1.0-preview2-25705-02</MicrosoftNETCoreRuntimeCoreCLRPackageVersion>
     <MicrosoftNETCoreRuntimeJitPackageVersion>$(MicrosoftNETCoreRuntimeCoreCLRPackageVersion)</MicrosoftNETCoreRuntimeJitPackageVersion>
     <MicrosoftNetNativeCompilerPackageVersion>2.0.0-preview-25524-00</MicrosoftNetNativeCompilerPackageVersion>
-    <NETStandardVersion>2.1.0-preview1-25701-01</NETStandardVersion>
+    <NETStandardVersion>2.1.0-preview1-25705-01</NETStandardVersion>
     <DiaSymReaderNativeVersion>1.4.1</DiaSymReaderNativeVersion>
-    <WcfVersion>4.5.0-preview2-25701-01</WcfVersion>
+    <WcfVersion>4.5.0-preview2-25705-01</WcfVersion>
   </PropertyGroup>
 
   <!-- Package dependency verification/auto-upgrade configuration. -->
