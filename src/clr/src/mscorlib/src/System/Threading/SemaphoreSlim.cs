@@ -1,4 +1,4 @@
-// Licensed to the .NET Foundation under one or more agreements.
+﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 // See the LICENSE file in the project root for more information.
 
@@ -56,7 +56,13 @@ namespace System.Threading
         // The number of synchronously waiting threads, it is set to zero in the constructor and increments before blocking the
         // threading and decrements it back after that. It is used as flag for the release call to know if there are
         // waiting threads in the monitor or not.
-        private volatile int m_waitCount;
+        private int m_waitCount;
+
+        /// <summary>
+        /// This is used to help prevent waking more waiters than necessary. It's not perfect and sometimes more waiters than
+        /// necessary may still be woken, see <see cref="WaitUntilCountOrTimeout"/>.
+        /// </summary>
+        private int m_countOfWaitersPulsedToWake;
 
         // Dummy object used to in lock statements to protect the semaphore count, wait handle and cancelation
         private object m_lockObj;
@@ -348,15 +354,15 @@ namespace System.Threading
                 //
 
                 // Monitor.Enter followed by Monitor.Wait is much more expensive than waiting on an event as it involves another
-                // spin, contention, etc. The usual number of spin iterations that would otherwise be used here is doubled to
+                // spin, contention, etc. The usual number of spin iterations that would otherwise be used here is increased to
                 // lessen that extra expense of doing a proper wait.
-                int spinCount = SpinWait.SpinCountforSpinBeforeWait * 2;
-                int sleep1Threshold = SpinWait.Sleep1ThresholdForSpinBeforeWait * 2;
+                int spinCount = SpinWait.SpinCountforSpinBeforeWait * 4;
+                int sleep1Threshold = SpinWait.Sleep1ThresholdForSpinBeforeWait * 4;
 
-                SpinWait spin = new SpinWait();
-                while (true)
+                SpinWait spinner = new SpinWait();
+                while (spinner.Count < spinCount)
                 {
-                    spin.SpinOnce(sleep1Threshold);
+                    spinner.SpinOnce(sleep1Threshold);
 
                     if (m_currentCount != 0)
                     {
@@ -481,8 +487,22 @@ namespace System.Threading
                         return false;
                     }
                 }
+
                 // ** the actual wait **
-                if (!Monitor.Wait(m_lockObj, remainingWaitMilliseconds))
+                bool waitSuccessful = Monitor.Wait(m_lockObj, remainingWaitMilliseconds);
+
+                // This waiter has woken up and this needs to be reflected in the count of waiters pulsed to wake. Since we
+                // don't have thread-specific pulse state, there is not enough information to tell whether this thread woke up
+                // because it was pulsed. For instance, this thread may have timed out and may have been waiting to reacquire
+                // the lock before returning from Monitor.Wait, in which case we don't know whether this thread got pulsed. So
+                // in any woken case, decrement the count if possible. As such, timeouts could cause more waiters to wake than
+                // necessary.
+                if (m_countOfWaitersPulsedToWake != 0)
+                {
+                    --m_countOfWaitersPulsedToWake;
+                }
+
+                if (!waitSuccessful)
                 {
                     return false;
                 }
@@ -804,13 +824,27 @@ namespace System.Threading
                 // Increment the count by the actual release count
                 currentCount += releaseCount;
 
-                // Signal to any synchronous waiters
+                // Signal to any synchronous waiters, taking into account how many waiters have previously been pulsed to wake
+                // but have not yet woken
                 int waitCount = m_waitCount;
-
-                int waitersToNotify = Math.Min(releaseCount, waitCount);
-                for (int i = 0; i < waitersToNotify; i++)
+                Debug.Assert(m_countOfWaitersPulsedToWake <= waitCount);
+                int waitersToNotify = Math.Min(currentCount, waitCount) - m_countOfWaitersPulsedToWake;
+                if (waitersToNotify > 0)
                 {
-                    Monitor.Pulse(m_lockObj);
+                    // Ideally, limiting to a maximum of releaseCount would not be necessary and could be an assert instead, but
+                    // since WaitUntilCountOrTimeout() does not have enough information to tell whether a woken thread was
+                    // pulsed, it's possible for m_countOfWaitersPulsedToWake to be less than the number of threads that have
+                    // actually been pulsed to wake.
+                    if (waitersToNotify > releaseCount)
+                    {
+                        waitersToNotify = releaseCount;
+                    }
+
+                    m_countOfWaitersPulsedToWake += waitersToNotify;
+                    for (int i = 0; i < waitersToNotify; i++)
+                    {
+                        Monitor.Pulse(m_lockObj);
+                    }
                 }
 
                 // Now signal to any asynchronous waiters, if there are any.  While we've already

@@ -82,7 +82,7 @@ namespace System.Threading
         /// only a suggested value and typically works well when the proper wait is something like an event.
         /// 
         /// Spinning less can lead to early waiting and more context switching, spinning more can decrease latency but may use
-        /// up some CPU time unnecessarily. Depends on the situation too, for instance SemaphoreSlim uses double this number
+        /// up some CPU time unnecessarily. Depends on the situation too, for instance SemaphoreSlim uses more iterations
         /// because the waiting there is currently a lot more expensive (involves more spinning, taking a lock, etc.). It also
         /// depends on the likelihood of the spin being successful and how long the wait would be but those are not accounted
         /// for here.
