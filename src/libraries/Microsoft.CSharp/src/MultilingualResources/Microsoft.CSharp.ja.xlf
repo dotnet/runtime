@@ -202,10 +202,6 @@
           <source>Using the generic {1} '{0}' requires '{2}' type arguments</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">ジェネリック {1} '{0}' の使用には、'{2}' 型の引数が必要です</target>
         </trans-unit>
-        <trans-unit id="BadTypeArgument" translate="yes" xml:space="preserve">
-          <source>The type '{0}' may not be used as a type argument</source>
-          <target state="needs-review-translation" state-qualifier="mt-suggestion">型 '{0}' は型引数としては使えません</target>
-        </trans-unit>
         <trans-unit id="TypeArgsNotAllowed" translate="yes" xml:space="preserve">
           <source>The {1} '{0}' cannot be used with type arguments</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">{1} '{0}' は型引数と一緒には使用できません</target>
@@ -273,10 +269,6 @@
         <trans-unit id="ConvertToStaticClass" translate="yes" xml:space="preserve">
           <source>Cannot convert to static type '{0}'</source>
           <target state="needs-review-translation" state-qualifier="tm-suggestion">スタティック型 '{0}' へ変換できません</target>
-        </trans-unit>
-        <trans-unit id="GenericArgIsStaticClass" translate="yes" xml:space="preserve">
-          <source>'{0}': static types cannot be used as type arguments</source>
-          <target state="needs-review-translation" state-qualifier="tm-suggestion">'{0}': スタティック型を型引数として使用することはできません</target>
         </trans-unit>
         <trans-unit id="IncrementLvalueExpected" translate="yes" xml:space="preserve">
           <source>The operand of an increment or decrement operator must be a variable, property or indexer</source>

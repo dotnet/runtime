@@ -159,9 +159,6 @@
   <data name="BadArity" xml:space="preserve">
     <value>使用泛型 {1}“{0}”需要“{2}”个类型参数</value>
   </data>
-  <data name="BadTypeArgument" xml:space="preserve">
-    <value>类型"{0}"不可能用作类型参数</value>
-  </data>
   <data name="TypeArgsNotAllowed" xml:space="preserve">
     <value>{1}“{0}”不能与类型参数一起使用</value>
   </data>
@@ -212,9 +209,6 @@
   </data>
   <data name="ConvertToStaticClass" xml:space="preserve">
     <value>无法转换为静态类型“{0}”</value>
-  </data>
-  <data name="GenericArgIsStaticClass" xml:space="preserve">
-    <value>“{0}”: 静态类型不能用作类型参数</value>
   </data>
   <data name="IncrementLvalueExpected" xml:space="preserve">
     <value>递增或递减运算符的操作数必须是变量、属性或索引器</value>

@@ -159,9 +159,6 @@
   <data name="BadArity" xml:space="preserve">
     <value>使用泛型 {1} '{0}' 需要 '{2}' 個型別引數</value>
   </data>
-  <data name="BadTypeArgument" xml:space="preserve">
-    <value>類型"{0}"不可能用作類型參數</value>
-  </data>
   <data name="TypeArgsNotAllowed" xml:space="preserve">
     <value>{1} '{0}' 不能配合型別引數使用</value>
   </data>
@@ -212,9 +209,6 @@
   </data>
   <data name="ConvertToStaticClass" xml:space="preserve">
     <value>無法轉換為靜態型別 '{0}'</value>
-  </data>
-  <data name="GenericArgIsStaticClass" xml:space="preserve">
-    <value>'{0}': 靜態型別不能當做型別引數使用</value>
   </data>
   <data name="IncrementLvalueExpected" xml:space="preserve">
     <value>遞增或遞減運算子的運算元必須是變數、屬性或索引子。</value>
