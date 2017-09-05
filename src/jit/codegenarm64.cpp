@@ -3501,14 +3501,16 @@ void CodeGen::genCodeForCompare(GenTreeOp* tree)
             cmpSize = EA_8BYTE;
         }
 
+        instruction ins = tree->OperIs(GT_TEST_EQ, GT_TEST_NE) ? INS_tst : INS_cmp;
+
         if (op2->isContainedIntOrIImmed())
         {
             GenTreeIntConCommon* intConst = op2->AsIntConCommon();
-            emit->emitIns_R_I(INS_cmp, cmpSize, op1->gtRegNum, intConst->IconValue());
+            emit->emitIns_R_I(ins, cmpSize, op1->gtRegNum, intConst->IconValue());
         }
         else
         {
-            emit->emitIns_R_R(INS_cmp, cmpSize, op1->gtRegNum, op2->gtRegNum);
+            emit->emitIns_R_R(ins, cmpSize, op1->gtRegNum, op2->gtRegNum);
         }
     }
 
