@@ -76,7 +76,7 @@ EventPipeEventPayload::EventPipeEventPayload(EventData **pEventData, unsigned in
     S_UINT32 tmp_size = S_UINT32(0);
     for (unsigned int i=0; i<m_eventDataCount; i++)
     {
-        tmp_size += S_UINT32(m_pEventData[i]->Size);
+        tmp_size += S_UINT32((*m_pEventData)[i].Size);
     }
 
     if (tmp_size.IsOverflow())
@@ -156,8 +156,8 @@ void EventPipeEventPayload::CopyData(BYTE *pDst)
             unsigned int offset = 0;
             for(unsigned int i=0; i<m_eventDataCount; i++)
             {
-                memcpy(pDst + offset, (BYTE*)m_pEventData[i]->Ptr, m_pEventData[i]->Size);
-                offset += m_pEventData[i]->Size;
+                memcpy(pDst + offset, (BYTE*)(*m_pEventData)[i].Ptr, (*m_pEventData)[i].Size);
+                offset += (*m_pEventData)[i].Size;
             }
         }
     }
