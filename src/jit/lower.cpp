@@ -2133,7 +2133,7 @@ GenTree* Lowering::LowerTailCallViaHelper(GenTreeCall* call, GenTree* callTarget
 //    - Decomposes long comparisons that produce a value (X86 specific).
 //    - Ensures that we don't have a mix of int/long operands (XARCH specific).
 //    - Narrow operands to enable memory operand containment (XARCH specific).
-//    - Transform cmp(and(x, y), 0) into test(x, y) (XARCH specific but could
+//    - Transform cmp(and(x, y), 0) into test(x, y) (XARCH/Arm64 specific but could
 //      be used for ARM as well if support for GT_TEST_EQ/GT_TEST_NE is added).
 
 void Lowering::LowerCompare(GenTree* cmp)
@@ -2390,6 +2390,7 @@ void Lowering::LowerCompare(GenTree* cmp)
     }
 #endif // _TARGET_AMD64_
 
+#if defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
     if (cmp->gtGetOp2()->IsIntegralConst())
     {
         GenTree*       op1      = cmp->gtGetOp1();
@@ -2454,7 +2455,7 @@ void Lowering::LowerCompare(GenTree* cmp)
                 }
             }
         }
-        else 
+        else
 #endif
         if (op1->OperIs(GT_AND) && cmp->OperIs(GT_EQ, GT_NE))
         {
@@ -2528,6 +2529,7 @@ void Lowering::LowerCompare(GenTree* cmp)
             }
         }
     }
+#endif // defined(_TARGET_XARCH_) || defined(_TARGET_ARM64_)
 
 #ifdef _TARGET_XARCH_
     if (cmp->gtGetOp1()->TypeGet() == cmp->gtGetOp2()->TypeGet())
