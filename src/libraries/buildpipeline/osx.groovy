@@ -10,7 +10,7 @@ def submittedHelixJson = null
 
 simpleNode('OSX10.12','latest') {
     stage ('Checkout source') {
-        checkout scm
+        checkoutRepo()
     }
 
     def logFolder = getLogFolder()

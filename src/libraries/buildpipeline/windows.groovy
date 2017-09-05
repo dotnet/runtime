@@ -12,7 +12,7 @@ def submitToHelix = (params.TGroup == 'netcoreapp' || params.TGroup == 'uap')
 
 simpleNode('Windows_NT','latest') {
     stage ('Checkout source') {
-        checkout scm
+        checkoutRepo()
     }
 
     def logFolder = getLogFolder()
