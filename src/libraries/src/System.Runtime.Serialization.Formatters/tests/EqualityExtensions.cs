@@ -908,13 +908,15 @@ namespace System.Runtime.Serialization.Formatters.Tests
             return @this != null &&
                 other != null &&
                 // On full framework, line number may be method body start
-                (PlatformDetection.IsFullFramework ? true :
+                // On Net Native we can't reflect on Exceptions and change its StackTrace
+                ((PlatformDetection.IsFullFramework || PlatformDetection.IsNetNative) ? true :
                 (@this.StackTrace == other.StackTrace &&
                 @this.ToString() == other.ToString())) &&
                 BinaryFormatterTests.CheckSequenceEquals(@this.Data, other.Data) &&
                 @this.Message == other.Message &&
                 @this.Source == other.Source &&
-                @this.HResult == other.HResult &&
+                // On Net Native we can't reflect on Exceptions and change its HResult
+                (PlatformDetection.IsNetNative ? true : @this.HResult == other.HResult) &&
                 @this.HelpLink == other.HelpLink &&
                 BinaryFormatterTests.CheckEquals(@this.InnerException, other.InnerException);
         }

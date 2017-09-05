@@ -129,14 +129,23 @@ namespace System.Runtime.Serialization.Formatters.Tests
 
         private static void SanityCheckBlob(object obj, string[] blobs)
         {
+            // These types are unstable during serialization and produce different blobs.
+            if (obj is WeakReference<Point> ||
+                obj is Collections.Specialized.HybridDictionary ||
+                obj is TimeZoneInfo.AdjustmentRule)
+            {
+                return;
+            }
+
+            // Exceptions in Net Native can't be reflected and therefore skipping blob sanity check
+            if (obj is Exception && PlatformDetection.IsNetNative)
+            {
+                return;
+            }
+
             // Check if runtime generated blob is the same as the stored one
             int frameworkBlobNumber = PlatformDetection.IsFullFramework ? 1 : 0;
-            if (frameworkBlobNumber < blobs.Length &&
-                // WeakReference<Point> and HybridDictionary with default constructor are generating
-                // different blobs at runtime for some obscure reason. Excluding those from the check.
-                !(obj is WeakReference<Point>) &&
-                !(obj is Collections.Specialized.HybridDictionary) &&
-                !(obj is TimeZoneInfo.AdjustmentRule))
+            if (frameworkBlobNumber < blobs.Length)
             {
                 string runtimeBlob = SerializeObjectToBlob(obj, FormatterAssemblyStyle.Full);
 
