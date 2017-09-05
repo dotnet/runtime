@@ -20,10 +20,20 @@ namespace System.Net.NameResolution.Tests
             TestGetHostEntryAsync(() => Dns.GetHostEntryAsync(localIPAddress));
         }
 
-        [Fact]
-        public void Dns_GetHostEntryAsync_HostString_Ok()
+        [Theory]
+        [InlineData("")]
+        [InlineData(TestSettings.LocalHost)]
+        public void Dns_GetHostEntry_HostString_Ok(string hostName)
         {
-            TestGetHostEntryAsync(() => Dns.GetHostEntryAsync(TestSettings.LocalHost));
+            TestGetHostEntryAsync(() => Task.FromResult(Dns.GetHostEntry(hostName)));
+        }
+
+        [Theory]
+        [InlineData("")]
+        [InlineData(TestSettings.LocalHost)]
+        public void Dns_GetHostEntryAsync_HostString_Ok(string hostName)
+        {
+            TestGetHostEntryAsync(() => Dns.GetHostEntryAsync(hostName));
         }
 
         [Fact]
