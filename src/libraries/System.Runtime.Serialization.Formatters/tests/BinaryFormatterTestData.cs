@@ -96,44 +96,13 @@ namespace System.Runtime.Serialization.Formatters.Tests
             yield return new object[] { "minchar" + char.MinValue + "minchar", new string[] { "AAEAAAD/////AQAAAAAAAAAGAQAAAA9taW5jaGFyAG1pbmNoYXIL", "AAEAAAD/////AQAAAAAAAAAGAQAAAA9taW5jaGFyAG1pbmNoYXIL" } };
 
             // Exceptions
-            var exception = new Exception("Exception message", new Exception("Inner exception message"))
-            {
-                HelpLink = "http://msdn.microsoft.com",
-                Source = "Exception_Class_Samples",
-            };
-            typeof(Exception)
-                .GetField("_stackTraceString", BindingFlags.Instance | BindingFlags.NonPublic)
-                .SetValue(exception, "StackTrace string...");
-            typeof(Exception)
-                .GetField("_HResult", BindingFlags.Instance | BindingFlags.NonPublic)
-                .SetValue(exception, 1000);
-            typeof(Exception)
-                .GetField("_remoteStackTraceString", BindingFlags.Instance | BindingFlags.NonPublic)
-                .SetValue(exception, "Remote StackTrace string...");
-            exception.Data.Add("secret", true);
-            exception.Data.Add(1, "one");
+            var exception = new Exception("Exception message", new Exception("Inner exception message"));
+            PopulateException(exception);
             yield return new object[] { exception, new string[] { "AAEAAAD/////AQAAAAAAAAAEAQAAABBTeXN0ZW0uRXhjZXB0aW9uDAAAAAlDbGFzc05hbWUHTWVzc2FnZQREYXRhDklubmVyRXhjZXB0aW9uB0hlbHBVUkwQU3RhY2tUcmFjZVN0cmluZxZSZW1vdGVTdGFja1RyYWNlU3RyaW5nEFJlbW90ZVN0YWNrSW5kZXgPRXhjZXB0aW9uTWV0aG9kB0hSZXN1bHQGU291cmNlDVdhdHNvbkJ1Y2tldHMBAQMDAQEBAAEAAQcpU3lzdGVtLkNvbGxlY3Rpb25zLkxpc3REaWN0aW9uYXJ5SW50ZXJuYWwQU3lzdGVtLkV4Y2VwdGlvbggIAgYCAAAAEFN5c3RlbS5FeGNlcHRpb24GAwAAABFFeGNlcHRpb24gbWVzc2FnZQkEAAAACQUAAAAGBgAAABlodHRwOi8vbXNkbi5taWNyb3NvZnQuY29tBgcAAAAUU3RhY2tUcmFjZSBzdHJpbmcuLi4GCAAAABtSZW1vdGUgU3RhY2tUcmFjZSBzdHJpbmcuLi4AAAAACugDAAAGCQAAABdFeGNlcHRpb25fQ2xhc3NfU2FtcGxlcwoEBAAAAClTeXN0ZW0uQ29sbGVjdGlvbnMuTGlzdERpY3Rpb25hcnlJbnRlcm5hbAMAAAAEaGVhZAd2ZXJzaW9uBWNvdW50AwAAOFN5c3RlbS5Db2xsZWN0aW9ucy5MaXN0RGljdGlvbmFyeUludGVybmFsK0RpY3Rpb25hcnlOb2RlCAgJCgAAAAIAAAACAAAAAQUAAAABAAAACQIAAAAGDAAAABdJbm5lciBleGNlcHRpb24gbWVzc2FnZQoKCgoKAAAAAAoAFROACgoECgAAADhTeXN0ZW0uQ29sbGVjdGlvbnMuTGlzdERpY3Rpb25hcnlJbnRlcm5hbCtEaWN0aW9uYXJ5Tm9kZQMAAAADa2V5BXZhbHVlBG5leHQCAgM4U3lzdGVtLkNvbGxlY3Rpb25zLkxpc3REaWN0aW9uYXJ5SW50ZXJuYWwrRGljdGlvbmFyeU5vZGUGDQAAAAZzZWNyZXQIAQEJDgAAAAEOAAAACgAAAAgIAQAAAAYPAAAAA29uZQoL", "AAEAAAD/////AQAAAAAAAAAEAQAAABBTeXN0ZW0uRXhjZXB0aW9uDAAAAAlDbGFzc05hbWUHTWVzc2FnZQREYXRhDklubmVyRXhjZXB0aW9uB0hlbHBVUkwQU3RhY2tUcmFjZVN0cmluZxZSZW1vdGVTdGFja1RyYWNlU3RyaW5nEFJlbW90ZVN0YWNrSW5kZXgPRXhjZXB0aW9uTWV0aG9kB0hSZXN1bHQGU291cmNlDVdhdHNvbkJ1Y2tldHMBAQMDAQEBAAEAAQcpU3lzdGVtLkNvbGxlY3Rpb25zLkxpc3REaWN0aW9uYXJ5SW50ZXJuYWwQU3lzdGVtLkV4Y2VwdGlvbggIAgYCAAAAEFN5c3RlbS5FeGNlcHRpb24GAwAAABFFeGNlcHRpb24gbWVzc2FnZQkEAAAACQUAAAAGBgAAABlodHRwOi8vbXNkbi5taWNyb3NvZnQuY29tBgcAAAAUU3RhY2tUcmFjZSBzdHJpbmcuLi4GCAAAABtSZW1vdGUgU3RhY2tUcmFjZSBzdHJpbmcuLi4AAAAACugDAAAGCQAAABdFeGNlcHRpb25fQ2xhc3NfU2FtcGxlcwoEBAAAAClTeXN0ZW0uQ29sbGVjdGlvbnMuTGlzdERpY3Rpb25hcnlJbnRlcm5hbAMAAAAEaGVhZAd2ZXJzaW9uBWNvdW50AwAAOFN5c3RlbS5Db2xsZWN0aW9ucy5MaXN0RGljdGlvbmFyeUludGVybmFsK0RpY3Rpb25hcnlOb2RlCAgJCgAAAAIAAAACAAAAAQUAAAABAAAACQIAAAAGDAAAABdJbm5lciBleGNlcHRpb24gbWVzc2FnZQoKCgoKAAAAAAoAFROACgoECgAAADhTeXN0ZW0uQ29sbGVjdGlvbnMuTGlzdERpY3Rpb25hcnlJbnRlcm5hbCtEaWN0aW9uYXJ5Tm9kZQMAAAADa2V5BXZhbHVlBG5leHQCAgM4U3lzdGVtLkNvbGxlY3Rpb25zLkxpc3REaWN0aW9uYXJ5SW50ZXJuYWwrRGljdGlvbmFyeU5vZGUGDQAAAAZzZWNyZXQIAQEJDgAAAAEOAAAACgAAAAgIAQAAAAYPAAAAA29uZQoL" } };
 
-            // TODO: Remove after corert AggregateException field is renamed. Issue #23520
-            if (!PlatformDetection.IsNetNative)
-            {
-                var aggregatedException = new AggregateException("Aggregate exception message", new Exception("Exception message", new Exception("Inner exception message")))
-                {
-                    HelpLink = "http://docs.microsoft.com",
-                    Source = "TestData",
-                };
-                typeof(Exception)
-                    .GetField("_stackTraceString", BindingFlags.Instance | BindingFlags.NonPublic)
-                    .SetValue(aggregatedException, "StackTrace string...");
-                typeof(Exception)
-                    .GetField("_HResult", BindingFlags.Instance | BindingFlags.NonPublic)
-                    .SetValue(aggregatedException, 2000);
-                typeof(Exception)
-                    .GetField("_remoteStackTraceString", BindingFlags.Instance | BindingFlags.NonPublic)
-                    .SetValue(aggregatedException, "Remote StackTrace string...");
-                aggregatedException.Data.Add("two", 2);
-                yield return new object[] { aggregatedException, new string[] { "AAEAAAD/////AQAAAAAAAAAEAQAAABlTeXN0ZW0uQWdncmVnYXRlRXhjZXB0aW9uDQAAAAlDbGFzc05hbWUHTWVzc2FnZQREYXRhDklubmVyRXhjZXB0aW9uB0hlbHBVUkwQU3RhY2tUcmFjZVN0cmluZxZSZW1vdGVTdGFja1RyYWNlU3RyaW5nEFJlbW90ZVN0YWNrSW5kZXgPRXhjZXB0aW9uTWV0aG9kB0hSZXN1bHQGU291cmNlDVdhdHNvbkJ1Y2tldHMPSW5uZXJFeGNlcHRpb25zAQEDAwEBAQABAAEHAylTeXN0ZW0uQ29sbGVjdGlvbnMuTGlzdERpY3Rpb25hcnlJbnRlcm5hbBBTeXN0ZW0uRXhjZXB0aW9uCAgCElN5c3RlbS5FeGNlcHRpb25bXQYCAAAAGVN5c3RlbS5BZ2dyZWdhdGVFeGNlcHRpb24GAwAAABtBZ2dyZWdhdGUgZXhjZXB0aW9uIG1lc3NhZ2UJBAAAAAkFAAAABgYAAAAZaHR0cDovL2RvY3MubWljcm9zb2Z0LmNvbQYHAAAAFFN0YWNrVHJhY2Ugc3RyaW5nLi4uBggAAAAbUmVtb3RlIFN0YWNrVHJhY2Ugc3RyaW5nLi4uAAAAAArQBwAABgkAAAAIVGVzdERhdGEKCQoAAAAEBAAAAClTeXN0ZW0uQ29sbGVjdGlvbnMuTGlzdERpY3Rpb25hcnlJbnRlcm5hbAMAAAAEaGVhZAd2ZXJzaW9uBWNvdW50AwAAOFN5c3RlbS5Db2xsZWN0aW9ucy5MaXN0RGljdGlvbmFyeUludGVybmFsK0RpY3Rpb25hcnlOb2RlCAgJCwAAAAEAAAABAAAABAUAAAAQU3lzdGVtLkV4Y2VwdGlvbgwAAAAJQ2xhc3NOYW1lB01lc3NhZ2UERGF0YQ5Jbm5lckV4Y2VwdGlvbgdIZWxwVVJMEFN0YWNrVHJhY2VTdHJpbmcWUmVtb3RlU3RhY2tUcmFjZVN0cmluZxBSZW1vdGVTdGFja0luZGV4D0V4Y2VwdGlvbk1ldGhvZAdIUmVzdWx0BlNvdXJjZQ1XYXRzb25CdWNrZXRzAQEDAwEBAQABAAEHHlN5c3RlbS5Db2xsZWN0aW9ucy5JRGljdGlvbmFyeRBTeXN0ZW0uRXhjZXB0aW9uCAgCBgwAAAAQU3lzdGVtLkV4Y2VwdGlvbgYNAAAAEUV4Y2VwdGlvbiBtZXNzYWdlCgkOAAAACgoKAAAAAAoAFROACgoHCgAAAAABAAAAAQAAAAMQU3lzdGVtLkV4Y2VwdGlvbgkFAAAABAsAAAA4U3lzdGVtLkNvbGxlY3Rpb25zLkxpc3REaWN0aW9uYXJ5SW50ZXJuYWwrRGljdGlvbmFyeU5vZGUDAAAAA2tleQV2YWx1ZQRuZXh0AgIDOFN5c3RlbS5Db2xsZWN0aW9ucy5MaXN0RGljdGlvbmFyeUludGVybmFsK0RpY3Rpb25hcnlOb2RlBhAAAAADdHdvCAgCAAAACgEOAAAABQAAAAkMAAAABhIAAAAXSW5uZXIgZXhjZXB0aW9uIG1lc3NhZ2UKCgoKCgAAAAAKABUTgAoKCw==", "AAEAAAD/////AQAAAAAAAAAEAQAAABlTeXN0ZW0uQWdncmVnYXRlRXhjZXB0aW9uDQAAAAlDbGFzc05hbWUHTWVzc2FnZQREYXRhDklubmVyRXhjZXB0aW9uB0hlbHBVUkwQU3RhY2tUcmFjZVN0cmluZxZSZW1vdGVTdGFja1RyYWNlU3RyaW5nEFJlbW90ZVN0YWNrSW5kZXgPRXhjZXB0aW9uTWV0aG9kB0hSZXN1bHQGU291cmNlDVdhdHNvbkJ1Y2tldHMPSW5uZXJFeGNlcHRpb25zAQEDAwEBAQABAAEHAylTeXN0ZW0uQ29sbGVjdGlvbnMuTGlzdERpY3Rpb25hcnlJbnRlcm5hbBBTeXN0ZW0uRXhjZXB0aW9uCAgCElN5c3RlbS5FeGNlcHRpb25bXQYCAAAAGVN5c3RlbS5BZ2dyZWdhdGVFeGNlcHRpb24GAwAAABtBZ2dyZWdhdGUgZXhjZXB0aW9uIG1lc3NhZ2UJBAAAAAkFAAAABgYAAAAZaHR0cDovL2RvY3MubWljcm9zb2Z0LmNvbQYHAAAAFFN0YWNrVHJhY2Ugc3RyaW5nLi4uBggAAAAbUmVtb3RlIFN0YWNrVHJhY2Ugc3RyaW5nLi4uAAAAAArQBwAABgkAAAAIVGVzdERhdGEKCQoAAAAEBAAAAClTeXN0ZW0uQ29sbGVjdGlvbnMuTGlzdERpY3Rpb25hcnlJbnRlcm5hbAMAAAAEaGVhZAd2ZXJzaW9uBWNvdW50AwAAOFN5c3RlbS5Db2xsZWN0aW9ucy5MaXN0RGljdGlvbmFyeUludGVybmFsK0RpY3Rpb25hcnlOb2RlCAgJCwAAAAEAAAABAAAABAUAAAAQU3lzdGVtLkV4Y2VwdGlvbgwAAAAJQ2xhc3NOYW1lB01lc3NhZ2UERGF0YQ5Jbm5lckV4Y2VwdGlvbgdIZWxwVVJMEFN0YWNrVHJhY2VTdHJpbmcWUmVtb3RlU3RhY2tUcmFjZVN0cmluZxBSZW1vdGVTdGFja0luZGV4D0V4Y2VwdGlvbk1ldGhvZAdIUmVzdWx0BlNvdXJjZQ1XYXRzb25CdWNrZXRzAQEDAwEBAQABAAEHHlN5c3RlbS5Db2xsZWN0aW9ucy5JRGljdGlvbmFyeRBTeXN0ZW0uRXhjZXB0aW9uCAgCBgwAAAAQU3lzdGVtLkV4Y2VwdGlvbgYNAAAAEUV4Y2VwdGlvbiBtZXNzYWdlCgkOAAAACgoKAAAAAAoAFROACgoHCgAAAAABAAAAAQAAAAMQU3lzdGVtLkV4Y2VwdGlvbgkFAAAABAsAAAA4U3lzdGVtLkNvbGxlY3Rpb25zLkxpc3REaWN0aW9uYXJ5SW50ZXJuYWwrRGljdGlvbmFyeU5vZGUDAAAAA2tleQV2YWx1ZQRuZXh0AgIDOFN5c3RlbS5Db2xsZWN0aW9ucy5MaXN0RGljdGlvbmFyeUludGVybmFsK0RpY3Rpb25hcnlOb2RlBhAAAAADdHdvCAgCAAAACgEOAAAABQAAAAkMAAAABhIAAAAXSW5uZXIgZXhjZXB0aW9uIG1lc3NhZ2UKCgoKCgAAAAAKABUTgAoKCw==" } };
-            }
+            var aggregatedException = new AggregateException("Aggregate exception message", new Exception("Exception message", new Exception("Inner exception message")));
+            PopulateException(aggregatedException);
+            yield return new object[] { aggregatedException, new string[] { "AAEAAAD/////AQAAAAAAAAAEAQAAABlTeXN0ZW0uQWdncmVnYXRlRXhjZXB0aW9uDQAAAAlDbGFzc05hbWUHTWVzc2FnZQREYXRhDklubmVyRXhjZXB0aW9uB0hlbHBVUkwQU3RhY2tUcmFjZVN0cmluZxZSZW1vdGVTdGFja1RyYWNlU3RyaW5nEFJlbW90ZVN0YWNrSW5kZXgPRXhjZXB0aW9uTWV0aG9kB0hSZXN1bHQGU291cmNlDVdhdHNvbkJ1Y2tldHMPSW5uZXJFeGNlcHRpb25zAQEDAwEBAQABAAEHAylTeXN0ZW0uQ29sbGVjdGlvbnMuTGlzdERpY3Rpb25hcnlJbnRlcm5hbBBTeXN0ZW0uRXhjZXB0aW9uCAgCElN5c3RlbS5FeGNlcHRpb25bXQYCAAAAGVN5c3RlbS5BZ2dyZWdhdGVFeGNlcHRpb24GAwAAABtBZ2dyZWdhdGUgZXhjZXB0aW9uIG1lc3NhZ2UJBAAAAAkFAAAABgYAAAAZaHR0cDovL21zZG4ubWljcm9zb2Z0LmNvbQYHAAAAFFN0YWNrVHJhY2Ugc3RyaW5nLi4uBggAAAAbUmVtb3RlIFN0YWNrVHJhY2Ugc3RyaW5nLi4uAAAAAAroAwAABgkAAAAXRXhjZXB0aW9uX0NsYXNzX1NhbXBsZXMKCQoAAAAEBAAAAClTeXN0ZW0uQ29sbGVjdGlvbnMuTGlzdERpY3Rpb25hcnlJbnRlcm5hbAMAAAAEaGVhZAd2ZXJzaW9uBWNvdW50AwAAOFN5c3RlbS5Db2xsZWN0aW9ucy5MaXN0RGljdGlvbmFyeUludGVybmFsK0RpY3Rpb25hcnlOb2RlCAgJCwAAAAIAAAACAAAABAUAAAAQU3lzdGVtLkV4Y2VwdGlvbgwAAAAJQ2xhc3NOYW1lB01lc3NhZ2UERGF0YQ5Jbm5lckV4Y2VwdGlvbgdIZWxwVVJMEFN0YWNrVHJhY2VTdHJpbmcWUmVtb3RlU3RhY2tUcmFjZVN0cmluZxBSZW1vdGVTdGFja0luZGV4D0V4Y2VwdGlvbk1ldGhvZAdIUmVzdWx0BlNvdXJjZQ1XYXRzb25CdWNrZXRzAQEDAwEBAQABAAEHHlN5c3RlbS5Db2xsZWN0aW9ucy5JRGljdGlvbmFyeRBTeXN0ZW0uRXhjZXB0aW9uCAgCBgwAAAAQU3lzdGVtLkV4Y2VwdGlvbgYNAAAAEUV4Y2VwdGlvbiBtZXNzYWdlCgkOAAAACgoKAAAAAAoAFROACgoHCgAAAAABAAAAAQAAAAMQU3lzdGVtLkV4Y2VwdGlvbgkFAAAABAsAAAA4U3lzdGVtLkNvbGxlY3Rpb25zLkxpc3REaWN0aW9uYXJ5SW50ZXJuYWwrRGljdGlvbmFyeU5vZGUDAAAAA2tleQV2YWx1ZQRuZXh0AgIDOFN5c3RlbS5Db2xsZWN0aW9ucy5MaXN0RGljdGlvbmFyeUludGVybmFsK0RpY3Rpb25hcnlOb2RlBhAAAAAGc2VjcmV0CAEBCREAAAABDgAAAAUAAAAJDAAAAAYTAAAAF0lubmVyIGV4Y2VwdGlvbiBtZXNzYWdlCgoKCgoAAAAACgAVE4AKCgERAAAACwAAAAgIAQAAAAYUAAAAA29uZQoL", "AAEAAAD/////AQAAAAAAAAAEAQAAABlTeXN0ZW0uQWdncmVnYXRlRXhjZXB0aW9uDQAAAAlDbGFzc05hbWUHTWVzc2FnZQREYXRhDklubmVyRXhjZXB0aW9uB0hlbHBVUkwQU3RhY2tUcmFjZVN0cmluZxZSZW1vdGVTdGFja1RyYWNlU3RyaW5nEFJlbW90ZVN0YWNrSW5kZXgPRXhjZXB0aW9uTWV0aG9kB0hSZXN1bHQGU291cmNlDVdhdHNvbkJ1Y2tldHMPSW5uZXJFeGNlcHRpb25zAQEDAwEBAQABAAEHAylTeXN0ZW0uQ29sbGVjdGlvbnMuTGlzdERpY3Rpb25hcnlJbnRlcm5hbBBTeXN0ZW0uRXhjZXB0aW9uCAgCElN5c3RlbS5FeGNlcHRpb25bXQYCAAAAGVN5c3RlbS5BZ2dyZWdhdGVFeGNlcHRpb24GAwAAABtBZ2dyZWdhdGUgZXhjZXB0aW9uIG1lc3NhZ2UJBAAAAAkFAAAABgYAAAAZaHR0cDovL21zZG4ubWljcm9zb2Z0LmNvbQYHAAAAFFN0YWNrVHJhY2Ugc3RyaW5nLi4uBggAAAAbUmVtb3RlIFN0YWNrVHJhY2Ugc3RyaW5nLi4uAAAAAAroAwAABgkAAAAXRXhjZXB0aW9uX0NsYXNzX1NhbXBsZXMKCQoAAAAEBAAAAClTeXN0ZW0uQ29sbGVjdGlvbnMuTGlzdERpY3Rpb25hcnlJbnRlcm5hbAMAAAAEaGVhZAd2ZXJzaW9uBWNvdW50AwAAOFN5c3RlbS5Db2xsZWN0aW9ucy5MaXN0RGljdGlvbmFyeUludGVybmFsK0RpY3Rpb25hcnlOb2RlCAgJCwAAAAIAAAACAAAABAUAAAAQU3lzdGVtLkV4Y2VwdGlvbgwAAAAJQ2xhc3NOYW1lB01lc3NhZ2UERGF0YQ5Jbm5lckV4Y2VwdGlvbgdIZWxwVVJMEFN0YWNrVHJhY2VTdHJpbmcWUmVtb3RlU3RhY2tUcmFjZVN0cmluZxBSZW1vdGVTdGFja0luZGV4D0V4Y2VwdGlvbk1ldGhvZAdIUmVzdWx0BlNvdXJjZQ1XYXRzb25CdWNrZXRzAQEDAwEBAQABAAEHHlN5c3RlbS5Db2xsZWN0aW9ucy5JRGljdGlvbmFyeRBTeXN0ZW0uRXhjZXB0aW9uCAgCBgwAAAAQU3lzdGVtLkV4Y2VwdGlvbgYNAAAAEUV4Y2VwdGlvbiBtZXNzYWdlCgkOAAAACgoKAAAAAAoAFROACgoHCgAAAAABAAAAAQAAAAMQU3lzdGVtLkV4Y2VwdGlvbgkFAAAABAsAAAA4U3lzdGVtLkNvbGxlY3Rpb25zLkxpc3REaWN0aW9uYXJ5SW50ZXJuYWwrRGljdGlvbmFyeU5vZGUDAAAAA2tleQV2YWx1ZQRuZXh0AgIDOFN5c3RlbS5Db2xsZWN0aW9ucy5MaXN0RGljdGlvbmFyeUludGVybmFsK0RpY3Rpb25hcnlOb2RlBhAAAAAGc2VjcmV0CAEBCREAAAABDgAAAAUAAAAJDAAAAAYTAAAAF0lubmVyIGV4Y2VwdGlvbiBtZXNzYWdlCgoKCgoAAAAACgAVE4AKCgERAAAACwAAAAgIAQAAAAYUAAAAA29uZQoL" } };
 
             // Enum values
             yield return new object[] { DayOfWeek.Monday, new string[] { "AAEAAAD/////AQAAAAAAAAAEAQAAABBTeXN0ZW0uRGF5T2ZXZWVrAQAAAAd2YWx1ZV9fAAgBAAAACw==", "AAEAAAD/////AQAAAAAAAAAEAQAAABBTeXN0ZW0uRGF5T2ZXZWVrAQAAAAd2YWx1ZV9fAAgBAAAACw==" } };
@@ -668,7 +637,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
             // Extension of core serializable types
             if (PlatformDetection.IsNetfx471OrNewer())
             {
-                // ValueType isn't serializable before ntfx471.
+                // ValueType isn't serializable before netfx471.
                 yield return new object[] { new ValueTuple(), new string[] { "AAEAAAD/////AQAAAAAAAAAEAQAAABFTeXN0ZW0uVmFsdWVUdXBsZQAAAAAL", "AAEAAAD/////AQAAAAAAAAAEAQAAABFTeXN0ZW0uVmFsdWVUdXBsZQAAAAAL" } };
                 yield return new object[] { ValueTuple.Create(1), new string[] { "AAEAAAD/////AQAAAAAAAAAEAQAAAHBTeXN0ZW0uVmFsdWVUdXBsZWAxW1tTeXN0ZW0uSW50MzIsIG1zY29ybGliLCBWZXJzaW9uPTQuMC4wLjAsIEN1bHR1cmU9bmV1dHJhbCwgUHVibGljS2V5VG9rZW49Yjc3YTVjNTYxOTM0ZTA4OV1dAQAAAAVJdGVtMQAIAQAAAAs=", "AAEAAAD/////AQAAAAAAAAAEAQAAAHBTeXN0ZW0uVmFsdWVUdXBsZWAxW1tTeXN0ZW0uSW50MzIsIG1zY29ybGliLCBWZXJzaW9uPTQuMC4wLjAsIEN1bHR1cmU9bmV1dHJhbCwgUHVibGljS2V5VG9rZW49Yjc3YTVjNTYxOTM0ZTA4OV1dAQAAAAVJdGVtMQAIAQAAAAs=" } };
                 yield return new object[] { ValueTuple.Create(1, "2"), new string[] { "AAEAAAD/////AQAAAAAAAAAEAQAAAM0BU3lzdGVtLlZhbHVlVHVwbGVgMltbU3lzdGVtLkludDMyLCBtc2NvcmxpYiwgVmVyc2lvbj00LjAuMC4wLCBDdWx0dXJlPW5ldXRyYWwsIFB1YmxpY0tleVRva2VuPWI3N2E1YzU2MTkzNGUwODldLFtTeXN0ZW0uU3RyaW5nLCBtc2NvcmxpYiwgVmVyc2lvbj00LjAuMC4wLCBDdWx0dXJlPW5ldXRyYWwsIFB1YmxpY0tleVRva2VuPWI3N2E1YzU2MTkzNGUwODldXQIAAAAFSXRlbTEFSXRlbTIAAQgBAAAABgIAAAABMgs=", "AAEAAAD/////AQAAAAAAAAAEAQAAAM0BU3lzdGVtLlZhbHVlVHVwbGVgMltbU3lzdGVtLkludDMyLCBtc2NvcmxpYiwgVmVyc2lvbj00LjAuMC4wLCBDdWx0dXJlPW5ldXRyYWwsIFB1YmxpY0tleVRva2VuPWI3N2E1YzU2MTkzNGUwODldLFtTeXN0ZW0uU3RyaW5nLCBtc2NvcmxpYiwgVmVyc2lvbj00LjAuMC4wLCBDdWx0dXJlPW5ldXRyYWwsIFB1YmxpY0tleVRva2VuPWI3N2E1YzU2MTkzNGUwODldXQIAAAAFSXRlbTEFSXRlbTIAAQgBAAAABgIAAAABMgs=" } };
@@ -682,6 +651,30 @@ namespace System.Runtime.Serialization.Formatters.Tests
         }
 
         // *** NON AUTO UPDATED DATA ***
+
+        private static void PopulateException<T>(T exception)
+            where T : Exception
+        {
+            exception.HelpLink = "http://msdn.microsoft.com";
+            exception.Source = "Exception_Class_Samples";
+
+            exception.Data.Add("secret", true);
+            exception.Data.Add(1, "one");
+
+            // Exceptions are reflection blocked in uapaot
+            if (!PlatformDetection.IsNetNative)
+            {
+                typeof(Exception)
+                    .GetField("_stackTraceString", BindingFlags.Instance | BindingFlags.NonPublic)
+                    .SetValue(exception, "StackTrace string...");
+                typeof(Exception)
+                    .GetField("_HResult", BindingFlags.Instance | BindingFlags.NonPublic)
+                    .SetValue(exception, 1000);
+                typeof(Exception)
+                    .GetField("_remoteStackTraceString", BindingFlags.Instance | BindingFlags.NonPublic)
+                    .SetValue(exception, "Remote StackTrace string...");
+            }
+        }
 
         public static IEnumerable<object> NonSerializableObjects_MemberData()
         {
