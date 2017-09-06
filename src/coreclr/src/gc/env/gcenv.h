@@ -24,6 +24,7 @@
 #include "gcenv.sync.h"
 #include "gcinterface.h"
 #include "gcenv.ee.h"
+#include "volatile.h"
 
 #define MAX_LONGPATH 1024
 
