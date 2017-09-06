@@ -41,6 +41,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
+        [ActiveIssue(23702, TargetFrameworkMonikers.NetFramework)]
         [ActiveIssue(20010, TargetFrameworkMonikers.Uap)]
         [OuterLoop] // TODO: Issue #11345
         [Fact]
