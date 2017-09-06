@@ -76,6 +76,8 @@ void Lowering::LowerShift(GenTreeOp* shift)
         shift->gtOp2 = andOp->gtGetOp1();
         BlockRange().Remove(andOp);
         BlockRange().Remove(maskOp);
+        // The parent was replaced, clear contain and regOpt flag.
+        shift->gtOp2->ClearContained();
     }
     ContainCheckShiftRotate(shift);
 }
