@@ -51,5 +51,33 @@ namespace System.Data.SqlClient.Tests
             Assert.Same(typeof(SqlClientFactory), factory.GetType());
             Assert.Same(SqlClientFactory.Instance, factory);
         }
+
+        [Fact]
+        public void SqlConnectionValidParameters()
+        {
+            var con = new SqlConnection("Timeout=1234;packet Size=5678 ;;; ;");
+            Assert.Equal(1234, con.ConnectionTimeout);
+            Assert.Equal(5678, con.PacketSize);
+        }
+
+        [Fact]
+        public void SqlConnectionEmptyParameters()
+        {
+            var con = new SqlConnection("Timeout=;packet Size= ;Integrated Security=;");
+            //default values are defined in internal class DbConnectionStringDefaults
+            Assert.Equal(15, con.ConnectionTimeout);
+            Assert.Equal(8000, con.PacketSize);
+            Assert.False(new SqlConnectionStringBuilder(con.ConnectionString).IntegratedSecurity);
+        }
+
+        [Fact]
+        public void SqlConnectionInvalidParameters()
+        {
+            Assert.Throws<ArgumentException>(() => new SqlConnection("Timeout=null;"));
+            Assert.Throws<ArgumentException>(() => new SqlConnection("Timeout= null;"));
+            Assert.Throws<ArgumentException>(() => new SqlConnection("Timeout=1 1;"));
+            Assert.Throws<ArgumentException>(() => new SqlConnection("Timeout=1a;"));
+            Assert.Throws<ArgumentException>(() => new SqlConnection("Integrated Security=truee"));
+        }
     }
 }
