@@ -12,6 +12,7 @@
   <ItemGroup>
     <Compile Include="AllocationHelper.cs" />
     <Compile Include="TInt.cs" />
+    <Compile Include="TestHelpers.cs" />
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Span\AsBytes.cs" />
@@ -42,7 +43,6 @@
     <Compile Include="Span\Slice.cs" />
     <Compile Include="Span\StartsWith.T.cs" />
     <Compile Include="Span\StartsWith.byte.cs" />
-    <Compile Include="Span\TestHelpers.cs" />
     <Compile Include="Span\ToArray.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -71,8 +71,35 @@
     <Compile Include="ReadOnlySpan\Slice.cs" />
     <Compile Include="ReadOnlySpan\StartsWith.T.cs" />
     <Compile Include="ReadOnlySpan\StartsWith.byte.cs" />
-    <Compile Include="ReadOnlySpan\TestHelpers.cs" />
     <Compile Include="ReadOnlySpan\ToArray.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Memory\CtorArray.cs" />
+    <Compile Include="Memory\CtorArrayIntInt.cs" />
+    <Compile Include="Memory\CustomMemoryForTest.cs" />
+    <Compile Include="Memory\Empty.cs" />
+    <Compile Include="Memory\Equality.cs" />
+    <Compile Include="Memory\GetHashCode.cs" />
+    <Compile Include="Memory\ImplicitConversion.cs" />
+    <Compile Include="Memory\OwnedMemory.cs" />
+    <Compile Include="Memory\Retain.cs" />
+    <Compile Include="Memory\Slice.cs" />
+    <Compile Include="Memory\Span.cs" />
+    <Compile Include="Memory\ToArray.cs" />
+    <Compile Include="Memory\TryGetArray.cs" />
+  </ItemGroup>
+    <ItemGroup>
+    <Compile Include="ReadOnlyMemory\CtorArray.cs" />
+    <Compile Include="ReadOnlyMemory\CtorArrayIntInt.cs" />
+    <Compile Include="ReadOnlyMemory\DangerousTryGetArray.cs" />
+    <Compile Include="ReadOnlyMemory\Empty.cs" />
+    <Compile Include="ReadOnlyMemory\Equality.cs" />
+    <Compile Include="ReadOnlyMemory\GetHashCode.cs" />
+    <Compile Include="ReadOnlyMemory\ImplicitConversion.cs" />
+    <Compile Include="ReadOnlyMemory\Retain.cs" />
+    <Compile Include="ReadOnlyMemory\Slice.cs" />
+    <Compile Include="ReadOnlyMemory\Span.cs" />
+    <Compile Include="ReadOnlyMemory\ToArray.cs" />
   </ItemGroup>
   <Import Project="$([MSBuild]::GetDirectoryNameOfFileAbove($(MSBuildThisFileDirectory), dir.targets))\dir.targets" />
 </Project>

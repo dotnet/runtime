@@ -24,14 +24,14 @@ namespace System.SpanTests
         public static void PortableCastToTypeContainsReferences()
         {
             ReadOnlySpan<uint> span = new ReadOnlySpan<uint>(Array.Empty<uint>());
-            AssertThrows<ArgumentException, uint>(span, (_span) => _span.NonPortableCast<uint, StructWithReferences>().DontBox());
+            TestHelpers.AssertThrows<ArgumentException, uint>(span, (_span) => _span.NonPortableCast<uint, StructWithReferences>().DontBox());
         }
 
         [Fact]
         public static void PortableCastFromTypeContainsReferences()
         {
             ReadOnlySpan<StructWithReferences> span = new ReadOnlySpan<StructWithReferences>(Array.Empty<StructWithReferences>());
-            AssertThrows<ArgumentException, StructWithReferences>(span, (_span) => _span.NonPortableCast<StructWithReferences, uint>().DontBox());
+            TestHelpers.AssertThrows<ArgumentException, StructWithReferences>(span, (_span) => _span.NonPortableCast<StructWithReferences, uint>().DontBox());
         }
     }
 }

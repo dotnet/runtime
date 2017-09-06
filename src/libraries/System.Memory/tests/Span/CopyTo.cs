@@ -92,7 +92,7 @@ namespace System.SpanTests
             int[] dst = { 99, 100 };
 
             Span<int> srcSpan = new Span<int>(src);
-            AssertThrows<ArgumentException, int>(srcSpan, (_srcSpan) => _srcSpan.CopyTo(dst));
+            TestHelpers.AssertThrows<ArgumentException, int>(srcSpan, (_srcSpan) => _srcSpan.CopyTo(dst));
             int[] expected = { 99, 100 };
             Assert.Equal<int>(expected, dst);  // CopyTo() checks for sufficient space before doing any copying.
         }
@@ -177,7 +177,7 @@ namespace System.SpanTests
             int[] src = { 1, 2, 3 };
             int[] dst = { 99, 100 };
 
-            AssertThrows<ArgumentException, int>(src, (_src) => _src.CopyTo(dst));
+            TestHelpers.AssertThrows<ArgumentException, int>(src, (_src) => _src.CopyTo(dst));
             int[] expected = { 99, 100 };
             Assert.Equal<int>(expected, dst);  // CopyTo() checks for sufficient space before doing any copying.
         }

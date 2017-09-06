@@ -3,7 +3,6 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
 namespace System.SpanTests
@@ -41,7 +40,7 @@ namespace System.SpanTests
 
                         int bigIndex = checked(GuidTwoGiBLimit + 1);
                         uint byteOffset = checked((uint)bigIndex * (uint)sizeof(Guid));
-                        Assert.True(byteOffset > (uint)int.MaxValue);  // Make sure byteOffset actually overflows 2Gb, or this test is pointless.
+                        Assert.True(byteOffset > int.MaxValue);  // Make sure byteOffset actually overflows 2Gb, or this test is pointless.
                         Guid expectedGuid = Guid.NewGuid();
                         ref Guid expected = ref Unsafe.Add<Guid>(ref memory, bigIndex);
                         expected = expectedGuid;

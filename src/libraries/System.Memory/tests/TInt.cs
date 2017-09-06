@@ -5,8 +5,6 @@
 using System.Collections.Generic;
 using System.Linq;
 
-using Xunit;
-
 #pragma warning disable 0809  //warning CS0809: Obsolete member overrides non-obsolete member
 
 namespace System
