@@ -4455,7 +4455,9 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
             if ((regSet.rsMaskPreSpillRegs(false) & genRegMask(regNum)) == 0)
 #endif // _TARGET_ARM_
             {
-                noway_assert(xtraReg != varDsc->lvArgReg + i);
+#if !defined(UNIX_AMD64_ABI)
+                noway_assert(xtraReg != (varDsc->lvArgReg + i));
+#endif
                 noway_assert(regArgMaskLive & genRegMask(regNum));
             }
 
@@ -7505,7 +7507,9 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
         return;
     }
 
-#if defined(_TARGET_AMD64_) && !defined(UNIX_AMD64_ABI) // No profiling for System V systems yet.
+#if defined(_TARGET_AMD64_)
+#if !defined(UNIX_AMD64_ABI)
+
     unsigned   varNum;
     LclVarDsc* varDsc;
 
@@ -7634,6 +7638,57 @@ void CodeGen::genProfilingEnterCallback(regNumber initReg, bool* pInitRegZeroed)
         *pInitRegZeroed = false;
     }
 
+#else // !defined(UNIX_AMD64_ABI)
+
+    // Emit profiler EnterCallback(ProfilerMethHnd, caller's SP)
+    // R14 = ProfilerMethHnd
+    if (compiler->compProfilerMethHndIndirected)
+    {
+        // Profiler hooks enabled during Ngen time.
+        // Profiler handle needs to be accessed through an indirection of a pointer.
+        getEmitter()->emitIns_R_AI(INS_mov, EA_PTR_DSP_RELOC, REG_PROFILER_ENTER_ARG_0,
+                                   (ssize_t)compiler->compProfilerMethHnd);
+    }
+    else
+    {
+        // No need to record relocations, if we are generating ELT hooks under the influence
+        // of COMPlus_JitELTHookEnabled=1
+        if (compiler->opts.compJitELTHookEnabled)
+        {
+            genSetRegToIcon(REG_PROFILER_ENTER_ARG_0, (ssize_t)compiler->compProfilerMethHnd, TYP_I_IMPL);
+        }
+        else
+        {
+            instGen_Set_Reg_To_Imm(EA_8BYTE, REG_PROFILER_ENTER_ARG_0, (ssize_t)compiler->compProfilerMethHnd);
+        }
+    }
+
+    // R15 = caller's SP
+    // Notes
+    //   1) Here we can query caller's SP offset since prolog will be generated after final frame layout.
+    //   2) caller's SP relative offset to FramePointer will be negative.  We need to add absolute value
+    //      of that offset to FramePointer to obtain caller's SP value.
+    assert(compiler->lvaOutgoingArgSpaceVar != BAD_VAR_NUM);
+    int callerSPOffset = compiler->lvaToCallerSPRelativeOffset(0, isFramePointerUsed());
+    getEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_PROFILER_ENTER_ARG_1, genFramePointerReg(), -callerSPOffset);
+
+    // Can't have a call until we have enough padding for rejit
+    genPrologPadForReJit();
+
+    // We can use any callee trash register (other than RAX, RDI, RSI) for call target.
+    // We use R11 here. This will emit either
+    // "call ip-relative 32-bit offset" or
+    // "mov r11, helper addr; call r11"
+    genEmitHelperCall(CORINFO_HELP_PROF_FCN_ENTER, 0, EA_UNKNOWN, REG_DEFAULT_PROFILER_CALL_TARGET);
+
+    // If initReg is one of RBM_CALLEE_TRASH, then it needs to be zero'ed before using.
+    if ((RBM_CALLEE_TRASH & genRegMask(initReg)) != 0)
+    {
+        *pInitRegZeroed = false;
+    }
+
+#endif // !defined(UNIX_AMD64_ABI)
+
 #elif defined(_TARGET_X86_) || (defined(_TARGET_ARM_) && defined(LEGACY_BACKEND))
 
     unsigned saveStackLvl2 = genStackLevel;
@@ -7754,7 +7809,8 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper /*= CORINFO_HELP_PROF_FC
     // Need to save on to the stack level, since the helper call will pop the argument
     unsigned saveStackLvl2 = genStackLevel;
 
-#if defined(_TARGET_AMD64_) && !defined(UNIX_AMD64_ABI) // No profiling for System V systems yet.
+#if defined(_TARGET_AMD64_)
+#if !defined(UNIX_AMD64_ABI)
 
     // Since the method needs to make a profiler callback, it should have out-going arg space allocated.
     noway_assert(compiler->lvaOutgoingArgSpaceVar != BAD_VAR_NUM);
@@ -7824,6 +7880,48 @@ void CodeGen::genProfilingLeaveCallback(unsigned helper /*= CORINFO_HELP_PROF_FC
     // "call ip-relative 32-bit offset" or
     // "mov r8, helper addr; call r8"
     genEmitHelperCall(helper, 0, EA_UNKNOWN, REG_ARG_2);
+
+#else // !defined(UNIX_AMD64_ABI)
+
+    // RDI = ProfilerMethHnd
+    if (compiler->compProfilerMethHndIndirected)
+    {
+        getEmitter()->emitIns_R_AI(INS_mov, EA_PTR_DSP_RELOC, REG_ARG_0, (ssize_t)compiler->compProfilerMethHnd);
+    }
+    else
+    {
+        if (compiler->opts.compJitELTHookEnabled)
+        {
+            genSetRegToIcon(REG_ARG_0, (ssize_t)compiler->compProfilerMethHnd, TYP_I_IMPL);
+        }
+        else
+        {
+            instGen_Set_Reg_To_Imm(EA_8BYTE, REG_ARG_0, (ssize_t)compiler->compProfilerMethHnd);
+        }
+    }
+
+    // RSI = caller's SP
+    if (compiler->lvaDoneFrameLayout == Compiler::FINAL_FRAME_LAYOUT)
+    {
+        int callerSPOffset = compiler->lvaToCallerSPRelativeOffset(0, isFramePointerUsed());
+        getEmitter()->emitIns_R_AR(INS_lea, EA_PTRSIZE, REG_ARG_1, genFramePointerReg(), -callerSPOffset);
+    }
+    else
+    {
+        LclVarDsc* varDsc = compiler->lvaTable;
+        NYI_IF((varDsc == nullptr) || !varDsc->lvIsParam, "Profiler ELT callback for a method without any params");
+
+        // lea rdx, [FramePointer + Arg0's offset]
+        getEmitter()->emitIns_R_S(INS_lea, EA_PTRSIZE, REG_ARG_1, 0, 0);
+    }
+
+    // We can use any callee trash register (other than RAX, RDI, RSI) for call target.
+    // We use R11 here. This will emit either
+    // "call ip-relative 32-bit offset" or
+    // "mov r11, helper addr; call r11"
+    genEmitHelperCall(helper, 0, EA_UNKNOWN, REG_DEFAULT_PROFILER_CALL_TARGET);
+
+#endif // !defined(UNIX_AMD64_ABI)
 
 #elif defined(_TARGET_X86_)
 
@@ -8265,6 +8363,14 @@ void CodeGen::genFinalizeFrame()
         noway_assert(isFramePointerUsed()); // Setup of Pinvoke frame currently requires an EBP style frame
         regSet.rsSetRegsModified(RBM_INT_CALLEE_SAVED & ~RBM_FPBASE);
     }
+
+#ifdef UNIX_AMD64_ABI
+    // On Unix x64 we also save R14 and R15 for ELT profiler hook generation.
+    if (compiler->compIsProfilerHookNeeded())
+    {
+        regSet.rsSetRegsModified(RBM_PROFILER_ENTER_ARG_0 | RBM_PROFILER_ENTER_ARG_1);
+    }
+#endif
 
     /* Count how many callee-saved registers will actually be saved (pushed) */
 
