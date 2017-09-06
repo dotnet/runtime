@@ -3650,7 +3650,7 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 #define EXTRA_CODE_SPACE (16)
 
-		if (G_UNLIKELY (offset > (cfg->code_size - max_len - EXTRA_CODE_SPACE))) {
+		if (G_UNLIKELY ((offset + max_len + EXTRA_CODE_SPACE) > cfg->code_size)) {
 			cfg->code_size *= 2;
 			cfg->native_code = (unsigned char *)mono_realloc_native_code(cfg);
 			code = cfg->native_code + offset;
@@ -4487,6 +4487,17 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 
 			g_assert (!cfg->method->save_lmf);
 
+			/* the size of the tailcall op depends on signature, let's check for enough
+			 * space in the code buffer here again */
+			max_len += AMD64_NREG * 4 + call->stack_usage * 15 + EXTRA_CODE_SPACE;
+
+			if (G_UNLIKELY (offset + max_len > cfg->code_size)) {
+				cfg->code_size *= 2;
+				cfg->native_code = (unsigned char *) mono_realloc_native_code(cfg);
+				code = cfg->native_code + offset;
+				cfg->stat_code_reallocs++;
+			}
+
 			/* Restore callee saved registers */
 			save_area_offset = cfg->arch.reg_save_area_offset;
 			for (i = 0; i < AMD64_NREG; ++i)
@@ -4517,7 +4528,6 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 #endif
 			}
 
-			offset = code - cfg->native_code;
 			mono_add_patch_info (cfg, code - cfg->native_code, MONO_PATCH_INFO_METHOD_JUMP, call->method);
 			if (cfg->compile_aot)
 				amd64_mov_reg_membase (code, AMD64_R11, AMD64_RIP, 0, 8);
