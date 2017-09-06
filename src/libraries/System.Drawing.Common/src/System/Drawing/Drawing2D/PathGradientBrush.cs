@@ -173,26 +173,16 @@ namespace System.Drawing.Drawing2D
             }
             set
             {
-                int status = SafeNativeMethods.Gdip.GdipGetPathGradientSurroundColorCount(new HandleRef(this, NativeBrush),
-                                                                           out int count);
-
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
-
-                if ((value.Length > count) || (count <= 0))
-                    throw SafeNativeMethods.Gdip.StatusException(SafeNativeMethods.Gdip.InvalidParameter);
-
-                count = value.Length;
+                int count = value.Length;
                 int[] argbs = new int[count];
                 for (int i = 0; i < value.Length; i++)
                     argbs[i] = value[i].ToArgb();
 
-                status = SafeNativeMethods.Gdip.GdipSetPathGradientSurroundColorsWithCount(new HandleRef(this, NativeBrush),
+                int status = SafeNativeMethods.Gdip.GdipSetPathGradientSurroundColorsWithCount(new HandleRef(this, NativeBrush),
                                                                             argbs,
                                                                             ref count);
 
-                if (status != SafeNativeMethods.Gdip.Ok)
-                    throw SafeNativeMethods.Gdip.StatusException(status);
+                SafeNativeMethods.Gdip.CheckStatus(status);
             }
         }
 
@@ -439,7 +429,24 @@ namespace System.Drawing.Drawing2D
             }
             set
             {
+                // The Desktop implementation will throw various exceptions - ranging from NullReferenceExceptions to Argument(OutOfRange)Exceptions
+                // depending on how sane the input is. These checks exist to replicate the exact Desktop behavior.
                 int count = value.Colors.Length;
+
+                if (value.Positions == null)
+                {
+                    throw new ArgumentNullException("source");
+                }
+
+                if (value.Colors.Length > value.Positions.Length)
+                {
+                    throw new ArgumentOutOfRangeException();
+                }
+
+                if (value.Colors.Length < value.Positions.Length)
+                {
+                    throw new ArgumentException();
+                }
 
                 float[] positions = value.Positions;
                 int[] argbs = new int[count];
