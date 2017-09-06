@@ -1398,7 +1398,7 @@ void CodeGen::genReturn(GenTreePtr treeNode)
         // right after the "return", we need to preserve the return reg's GC state
         // across the call until actual method return.
         ReturnTypeDesc retTypeDesc;
-        unsigned       regCount;
+        unsigned       regCount = 0;
         if (compiler->compMethodReturnsMultiRegRetType())
         {
             if (varTypeIsLong(compiler->info.compRetNativeType))
