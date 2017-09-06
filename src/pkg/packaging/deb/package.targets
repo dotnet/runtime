@@ -12,8 +12,12 @@
   </PropertyGroup>
 
   <Target Name="InitializeDotnetDebTool">
+    <PropertyGroup>
+      <VersionSuffixArg Condition="'$(VersionSuffix)' != ''">--version-suffix $(VersionSuffix)</VersionSuffixArg>
+    </PropertyGroup>
+
     <Exec Command="$(DotnetRestoreCommand) $(dotnetDebToolSource)"/>
-    <Exec Command="$(DotnetToolCommand) pack $(dotnetDebToolSource) --output $(PackagesOutDir)intermediate/ --version-suffix $(VersionSuffix)"/>
+    <Exec Command="$(DotnetToolCommand) pack $(dotnetDebToolSource) --output $(PackagesOutDir)intermediate/ $(VersionSuffixArg)"/>
 
     <ItemGroup>
       <pkFiles Include="$(PackagesOutDir)intermediate/dotnet-deb-tool.*.nupkg"
@@ -43,7 +47,7 @@
           DependsOnTargets="TestDebuild;
                             BuildDebs;"
           Condition="'$(BuildDebPackage)'=='true'" />
-          
+
   <Target Name="BuildDebs"
           DependsOnTargets="InitializeDotnetDebTool;GenerateSharedHostDeb;GenerateHostFxrDeb;GenerateSharedFrameworkDeb"
           Condition="'$(BuildDebPackage)'=='true' and '$(DebuildPresent)' == 'true'" />
@@ -85,7 +89,7 @@
       <SHManpages Include="$(ManPagesDir)/**/*" />
     </ItemGroup>
 
-    <Copy SourceFiles="@(SHFiles)" DestinationFiles="@(SHFiles->'$(debLayoutPackageRoot)/%(RecursiveDir)%(Filename)%(Extension)')" /> 
+    <Copy SourceFiles="@(SHFiles)" DestinationFiles="@(SHFiles->'$(debLayoutPackageRoot)/%(RecursiveDir)%(Filename)%(Extension)')" />
     <Copy SourceFiles="@(SHManpages)" DestinationFiles="@(SHManpages->'$(debLayoutDocs)/%(RecursiveDir)%(Filename)%(Extension)')" />
 
     <!-- Replace config json variables -->
@@ -153,7 +157,7 @@
       <HFFiles Include="$(InputRoot)/**/*" />
     </ItemGroup>
 
-    <Copy SourceFiles="@(HFFiles)" DestinationFiles="@(HFFiles->'$(debLayoutPackageRoot)/%(RecursiveDir)%(Filename)%(Extension)')" /> 
+    <Copy SourceFiles="@(HFFiles)" DestinationFiles="@(HFFiles->'$(debLayoutPackageRoot)/%(RecursiveDir)%(Filename)%(Extension)')" />
 
     <!-- Replace config json variables -->
     <ItemGroup>
@@ -191,7 +195,7 @@
           OverwriteReadOnlyFiles="True"
           SkipUnchangedFiles="False"
           UseHardlinksIfPossible="False" />
-    
+
   </Target>
 
   <Target Name="GenerateSharedFrameworkDeb">
@@ -215,12 +219,12 @@
 
     <RemoveDir Condition="Exists('$(debIntermediatesDir)')" Directories="$(debIntermediatesDir)" />
     <MakeDir Directories="$(debIntermediatesDir)" />
-    
-    <!-- Compute ICU Version -->   
-    <Exec Command="apt-cache search --names-only '^libicu[0-9]+$' | cut -d' ' -f1"   
-          ConsoleToMSBuild="true">   
-        <Output TaskParameter="ConsoleOutput" PropertyName="LibIcuPackageName" />   
-    </Exec>   
+
+    <!-- Compute ICU Version -->
+    <Exec Command="apt-cache search --names-only '^libicu[0-9]+$' | cut -d' ' -f1"
+          ConsoleToMSBuild="true">
+        <Output TaskParameter="ConsoleOutput" PropertyName="LibIcuPackageName" />
+    </Exec>
 
     <!-- Create empty debian layout -->
     <RemoveDir Condition="Exists('$(debLayoutDirectory)')" Directories="$(debLayoutDirectory)" />
@@ -232,10 +236,10 @@
 
     <!-- Copy files to debian layout -->
     <ItemGroup>
-      <SFFiles Include="$(InputRoot)/**/*" /> 
+      <SFFiles Include="$(InputRoot)/**/*" />
     </ItemGroup>
 
-    <Copy SourceFiles="@(SFFiles)" DestinationFiles="@(SFFiles->'$(debLayoutPackageRoot)/%(RecursiveDir)%(Filename)%(Extension)')"/> 
+    <Copy SourceFiles="@(SFFiles)" DestinationFiles="@(SFFiles->'$(debLayoutPackageRoot)/%(RecursiveDir)%(Filename)%(Extension)')"/>
 
     <!-- Replace config json variables -->
     <ItemGroup>
@@ -254,9 +258,9 @@
       <SharedFrameworkTokenValue Include="%SHARED_FRAMEWORK_BRAND_NAME%">
         <ReplacementString>$(SharedFrameworkBrandName)</ReplacementString>
       </SharedFrameworkTokenValue>
-      <SharedFrameworkTokenValue Include="%LIBICU_PACKAGE_NAME%">  
-        <ReplacementString>$(LibIcuPackageName)</ReplacementString>  
-      </SharedFrameworkTokenValue>  
+      <SharedFrameworkTokenValue Include="%LIBICU_PACKAGE_NAME%">
+        <ReplacementString>$(LibIcuPackageName)</ReplacementString>
+      </SharedFrameworkTokenValue>
 
     </ItemGroup>
 
