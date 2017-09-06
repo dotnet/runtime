@@ -21,10 +21,10 @@ namespace System.SpanTests
             Span<int> span;
 
             span = new Span<int>(a);
-            span.Validate<int>(91, 92, -93, 94);
+            span.Validate(91, 92, -93, 94);
 
             span = new Span<int>(a, 0, a.Length);
-            span.Validate<int>(91, 92, -93, 94);
+            span.Validate(91, 92, -93, 94);
         }
 
         [Fact]
@@ -34,10 +34,10 @@ namespace System.SpanTests
             Span<long> span;
 
             span = new Span<long>(a);
-            span.Validate<long>(91, -92, 93, 94, -95);
+            span.Validate(91, -92, 93, 94, -95);
 
             span = new Span<long>(a, 0, a.Length);
-            span.Validate<long>(91, -92, 93, 94, -95);
+            span.Validate(91, -92, 93, 94, -95);
         }
 
         [Fact]
@@ -49,10 +49,10 @@ namespace System.SpanTests
             Span<object> span;
 
             span = new Span<object>(a);
-            span.Validate<object>(o1, o2);
+            span.ValidateReferenceType(o1, o2);
 
             span = new Span<object>(a, 0, a.Length);
-            span.Validate<object>(o1, o2);
+            span.ValidateReferenceType(o1, o2);
         }
 
         [Fact]
@@ -62,17 +62,17 @@ namespace System.SpanTests
             Span<int> span;
 
             span = new Span<int>(empty);
-            span.Validate<int>();
+            span.Validate();
 
             span = new Span<int>(empty, 0, empty.Length);
-            span.Validate<int>();
+            span.Validate();
         }
 
         [Fact]
         public static void CtorArrayNullArray()
         {
-            Assert.Throws<ArgumentNullException>(() => new Span<int>((int[])null).DontBox());
-            Assert.Throws<ArgumentNullException>(() => new Span<int>((int[])null, 0, 0).DontBox());
+            Assert.Throws<ArgumentNullException>(() => new Span<int>(null).DontBox());
+            Assert.Throws<ArgumentNullException>(() => new Span<int>(null, 0, 0).DontBox());
         }
 
         [Fact]
@@ -94,10 +94,10 @@ namespace System.SpanTests
             Span<int> span;
 
             span = new Span<int>(aAsIntArray);
-            span.Validate<int>(42, -1);
+            span.Validate(42, -1);
 
             span = new Span<int>(aAsIntArray, 0, aAsIntArray.Length);
-            span.Validate<int>(42, -1);
+            span.Validate(42, -1);
         }
     }
 }

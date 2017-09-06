@@ -20,8 +20,8 @@ namespace System.SpanTests
                 fixed (int *pa = a)
                 {
                     ReadOnlySpan<int> span = new ReadOnlySpan<int>(pa, 3);
-                    span.Validate<int>(90, 91, 92);
-                    Assert.True(Unsafe.AreSame<int>(ref Unsafe.AsRef<int>(pa), ref span.DangerousGetPinnableReference()));
+                    span.Validate(90, 91, 92);
+                    Assert.True(Unsafe.AreSame(ref Unsafe.AsRef<int>(pa), ref span.DangerousGetPinnableReference()));
                 }
             }
         }
@@ -32,8 +32,8 @@ namespace System.SpanTests
             unsafe
             {
                 ReadOnlySpan<int> span = new ReadOnlySpan<int>((void*)null, 0);
-                span.Validate<int>();
-                Assert.True(Unsafe.AreSame<int>(ref Unsafe.AsRef<int>((void*)null), ref span.DangerousGetPinnableReference()));
+                span.Validate();
+                Assert.True(Unsafe.AreSame(ref Unsafe.AsRef<int>((void*)null), ref span.DangerousGetPinnableReference()));
             }
         }
 
