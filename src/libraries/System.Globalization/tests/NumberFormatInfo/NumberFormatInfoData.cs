@@ -8,17 +8,7 @@ namespace System.Globalization.Tests
     {
         public static int[] UrINNumberGroupSizes()
         {
-            if (
-                (PlatformDetection.IsWindows && PlatformDetection.WindowsVersion >= 10)
-#if !uap
-                ||
-                (PlatformDetection.IsOSX && PlatformDetection.OSXKernelVersion >= new Version(15, 0))
-#endif
-                || (PlatformDetection.IsUbuntu && !PlatformDetection.IsUbuntu1404)
-                || PlatformDetection.IsFedora
-                || (PlatformDetection.IsDebian && !PlatformDetection.IsDebian8)
-                || PlatformDetection.IsTizen
-               )
+            if (PlatformDetection.WindowsVersion >= 10 || PlatformDetection.ICUVersion.Major >= 55)
             {
                 return new int[] { 3 };
             }
