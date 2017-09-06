@@ -3,8 +3,8 @@
 // See the LICENSE file in the project root for more information.
 
 using Xunit;
-using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
+using static System.TestHelpers;
 
 namespace System.SpanTests
 {
@@ -13,17 +13,19 @@ namespace System.SpanTests
         [Fact]
         public static void DangerousCreate1()
         {
-            TestClass testClass = new TestClass();
-            testClass.C0 = 'a';
-            testClass.C1 = 'b';
-            testClass.C2 = 'c';
-            testClass.C3 = 'd';
-            testClass.C4 = 'e';
+            TestClass testClass = new TestClass
+            {
+                C0 = 'a',
+                C1 = 'b',
+                C2 = 'c',
+                C3 = 'd',
+                C4 = 'e'
+            };
             Span<char> span = Span<char>.DangerousCreate(testClass, ref testClass.C1, 3);
-            span.Validate<char>('b', 'c', 'd');
+            span.Validate('b', 'c', 'd');
 
             ref char pc1 = ref span.DangerousGetPinnableReference();
-            Assert.True(Unsafe.AreSame<char>(ref testClass.C1, ref pc1));
+            Assert.True(Unsafe.AreSame(ref testClass.C1, ref pc1));
         }
     }
 }

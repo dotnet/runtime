@@ -92,7 +92,7 @@ namespace System.SpanTests
             int[] dst = { 99, 100 };
 
             ReadOnlySpan<int> srcSpan = new ReadOnlySpan<int>(src);
-            AssertThrows<ArgumentException, int>(srcSpan, (_srcSpan) => _srcSpan.CopyTo(dst));
+            TestHelpers.AssertThrows<ArgumentException, int>(srcSpan, (_srcSpan) => _srcSpan.CopyTo(dst));
             int[] expected = { 99, 100 };
             Assert.Equal<int>(expected, dst);  // CopyTo() checks for sufficient space before doing any copying.
         }
