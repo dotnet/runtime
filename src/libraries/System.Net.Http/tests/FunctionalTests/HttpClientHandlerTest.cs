@@ -813,12 +813,6 @@ namespace System.Net.Http.Functional.Tests
         [Fact]
         public async Task GetAsync_CredentialIsNetworkCredentialUriRedirect_StatusCodeUnauthorized()
         {
-            if (ManagedHandlerTestHelpers.IsEnabled)
-            {
-                // TODO #23129: The managed handler is currently getting Ok when it should be getting Unauthorized.
-                return;
-            }
-
             var handler = new HttpClientHandler();
             handler.Credentials = _credential;
             using (var client = new HttpClient(handler))
