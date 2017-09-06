@@ -304,6 +304,7 @@ TESTS_CS_SRC=		\
 	delegate-async-exit.cs	\
 	delegate-delegate-exit.cs	\
 	delegate-exit.cs	\
+	delegate-disposed-hashcode.cs	\
 	finalizer-abort.cs	\
 	finalizer-exception.cs	\
 	finalizer-exit.cs	\
