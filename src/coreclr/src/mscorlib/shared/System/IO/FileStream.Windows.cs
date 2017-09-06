@@ -48,7 +48,6 @@ namespace System.IO
 
         private static unsafe IOCompletionCallback s_ioCallback = FileStreamCompletionSource.IOCallback;
 
-        private Task<int> _lastSynchronouslyCompletedTask = null;   // cached task for read ops that complete synchronously
         private Task _activeBufferOperation = null;                 // tracks in-progress async ops using the buffer
         private PreAllocatedOverlapped _preallocatedOverlapped;     // optimization for async ops to avoid per-op allocations
         private FileStreamCompletionSource _currentOverlappedOwner; // async op currently using the preallocated overlapped
@@ -313,7 +312,7 @@ namespace System.IO
             // If the buffer is already flushed, don't spin up the OS write
             if (_writePos == 0) return Task.CompletedTask;
 
-            Task flushTask = WriteInternalCoreAsync(GetBuffer(), 0, _writePos, cancellationToken);
+            Task flushTask = WriteAsyncInternalCore(new ReadOnlyMemory<byte>(GetBuffer(), 0, _writePos), cancellationToken);
             _writePos = 0;
 
             // Update the active buffer operation
@@ -485,20 +484,10 @@ namespace System.IO
             Debug.Assert(CanRead, "CanRead");
         }
 
-        [Conditional("DEBUG")]
-        private void AssertCanRead(byte[] buffer, int offset, int count)
-        {
-            AssertCanRead();
-            Debug.Assert(buffer != null, "buffer != null");
-            Debug.Assert(_writePos == 0, "_writePos == 0");
-            Debug.Assert(offset >= 0, "offset is negative");
-            Debug.Assert(count >= 0, "count is negative");
-        }
-
         /// <summary>Reads from the file handle into the buffer, overwriting anything in it.</summary>
         private int FillReadBufferForReadByte() =>
             _useAsyncIO ?
-                ReadNativeAsync(_buffer, 0, _bufferLength, 0, CancellationToken.None).GetAwaiter().GetResult() :
+                ReadNativeAsync(new Memory<byte>(_buffer), 0, CancellationToken.None).GetAwaiter().GetResult() :
                 ReadNative(_buffer);
 
         private unsafe int ReadNative(Span<byte> buffer)
@@ -586,7 +575,6 @@ namespace System.IO
                 {
                     if (_readPos > 0)
                     {
-                        //Console.WriteLine("Seek: seeked for 0, adjusting buffer back by: "+_readPos+"  _readLen: "+_readLen);
                         Buffer.BlockCopy(GetBuffer(), _readPos, GetBuffer(), 0, _readLength - _readPos);
                         _readLength -= _readPos;
                         _readPos = 0;
@@ -599,7 +587,6 @@ namespace System.IO
                 else if (oldPos - _readPos < pos && pos < oldPos + _readLength - _readPos)
                 {
                     int diff = (int)(pos - oldPos);
-                    //Console.WriteLine("Seek: diff was "+diff+", readpos was "+_readPos+"  adjusting buffer - shrinking by "+ (_readPos + diff));
                     Buffer.BlockCopy(GetBuffer(), _readPos + diff, GetBuffer(), 0, _readLength - (_readPos + diff));
                     _readLength -= (_readPos + diff);
                     _readPos = 0;
@@ -752,15 +739,9 @@ namespace System.IO
             return;
         }
 
-        private Task<int> ReadAsyncInternal(byte[] array, int offset, int numBytes, CancellationToken cancellationToken)
+        private Task<int> ReadAsyncInternal(Memory<byte> destination, CancellationToken cancellationToken, out int synchronousResult)
         {
-            // If async IO is not supported on this platform or 
-            // if this Win32FileStream was not opened with FileOptions.Asynchronous.
-            if (!_useAsyncIO)
-            {
-                return base.ReadAsync(array, offset, numBytes, cancellationToken);
-            }
-
+            Debug.Assert(_useAsyncIO);
             if (!CanRead) throw Error.GetReadNotSupported();
 
             Debug.Assert((_readPos == 0 && _readLength == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLength), "We're either reading or writing, but not both.");
@@ -782,18 +763,17 @@ namespace System.IO
                 // pipes.  But don't completely ignore buffered data either.  
                 if (_readPos < _readLength)
                 {
-                    int n = _readLength - _readPos;
-                    if (n > numBytes) n = numBytes;
-                    Buffer.BlockCopy(GetBuffer(), _readPos, array, offset, n);
+                    int n = Math.Min(_readLength - _readPos, destination.Length);
+                    new Span<byte>(GetBuffer(), _readPos, n).CopyTo(destination.Span);
                     _readPos += n;
-
-                    // Return a completed task
-                    return TaskFromResultOrCache(n);
+                    synchronousResult = n;
+                    return null;
                 }
                 else
                 {
                     Debug.Assert(_writePos == 0, "Win32FileStream must not have buffered write data here!  Pipes should be unidirectional.");
-                    return ReadNativeAsync(array, offset, numBytes, 0, cancellationToken);
+                    synchronousResult = 0;
+                    return ReadNativeAsync(destination, 0, cancellationToken);
                 }
             }
 
@@ -814,17 +794,16 @@ namespace System.IO
                 // problem, and any async read less than 64K gets turned into a
                 // synchronous read by NT anyways...       -- 
 
-                if (numBytes < _bufferLength)
+                if (destination.Length < _bufferLength)
                 {
-                    Task<int> readTask = ReadNativeAsync(GetBuffer(), 0, _bufferLength, 0, cancellationToken);
+                    Task<int> readTask = ReadNativeAsync(new Memory<byte>(GetBuffer()), 0, cancellationToken);
                     _readLength = readTask.GetAwaiter().GetResult();
-                    int n = _readLength;
-                    if (n > numBytes) n = numBytes;
-                    Buffer.BlockCopy(GetBuffer(), 0, array, offset, n);
+                    int n = Math.Min(_readLength, destination.Length);
+                    new Span<byte>(GetBuffer(), 0, n).CopyTo(destination.Span);
                     _readPos = n;
 
-                    // Return a completed task (recycling the one above if possible)
-                    return (_readLength == n ? readTask : TaskFromResultOrCache(n));
+                    synchronousResult = n;
+                    return null;
                 }
                 else
                 {
@@ -832,20 +811,21 @@ namespace System.IO
                     // with our read buffer.  Throw away the read buffer's contents.
                     _readPos = 0;
                     _readLength = 0;
-                    return ReadNativeAsync(array, offset, numBytes, 0, cancellationToken);
+                    synchronousResult = 0;
+                    return ReadNativeAsync(destination, 0, cancellationToken);
                 }
             }
             else
             {
-                int n = _readLength - _readPos;
-                if (n > numBytes) n = numBytes;
-                Buffer.BlockCopy(GetBuffer(), _readPos, array, offset, n);
+                int n = Math.Min(_readLength - _readPos, destination.Length);
+                new Span<byte>(GetBuffer(), _readPos, n).CopyTo(destination.Span);
                 _readPos += n;
 
-                if (n >= numBytes)
+                if (n == destination.Length)
                 {
                     // Return a completed task
-                    return TaskFromResultOrCache(n);
+                    synchronousResult = n;
+                    return null;
                 }
                 else
                 {
@@ -856,18 +836,21 @@ namespace System.IO
                     // Throw away read buffer.
                     _readPos = 0;
                     _readLength = 0;
-                    return ReadNativeAsync(array, offset + n, numBytes - n, n, cancellationToken);
+                    synchronousResult = 0;
+                    return ReadNativeAsync(destination.Slice(n), n, cancellationToken);
                 }
             }
         }
 
-        unsafe private Task<int> ReadNativeAsync(byte[] bytes, int offset, int numBytes, int numBufferedBytesRead, CancellationToken cancellationToken)
+        unsafe private Task<int> ReadNativeAsync(Memory<byte> destination, int numBufferedBytesRead, CancellationToken cancellationToken)
         {
-            AssertCanRead(bytes, offset, numBytes);
+            AssertCanRead();
             Debug.Assert(_useAsyncIO, "ReadNativeAsync doesn't work on synchronous file streams!");
 
             // Create and store async stream class library specific data in the async result
-            FileStreamCompletionSource completionSource = new FileStreamCompletionSource(this, numBufferedBytesRead, bytes, cancellationToken);
+            FileStreamCompletionSource completionSource = destination.TryGetArray(out ArraySegment<byte> memoryArray) ?
+                new FileStreamCompletionSource(this, numBufferedBytesRead, memoryArray.Array) :
+                new MemoryFileStreamCompletionSource(this, numBufferedBytesRead, destination);
             NativeOverlapped* intOverlapped = completionSource.Overlapped;
 
             // Calculate position in the file we should be at after the read is done
@@ -878,12 +861,16 @@ namespace System.IO
                 // Make sure we are reading from the position that we think we are
                 VerifyOSHandlePosition();
 
-                if (_filePosition + numBytes > len)
+                if (_filePosition + destination.Length > len)
                 {
                     if (_filePosition <= len)
-                        numBytes = (int)(len - _filePosition);
+                    {
+                        destination = destination.Slice(0, (int)(len - _filePosition));
+                    }
                     else
-                        numBytes = 0;
+                    {
+                        destination = default(Memory<byte>);
+                    }
                 }
 
                 // Now set the position to read from in the NativeOverlapped struct
@@ -900,12 +887,13 @@ namespace System.IO
                 // the file pointer when writing to a UNC path!   
                 // So changed the code below to seek to an absolute 
                 // location, not a relative one.  ReadFile seems consistent though.
-                SeekCore(_fileHandle, numBytes, SeekOrigin.Current);
+                SeekCore(_fileHandle, destination.Length, SeekOrigin.Current);
             }
 
             // queue an async ReadFile operation and pass in a packed overlapped
             int errorCode = 0;
-            int r = ReadFileNative(_fileHandle, new Span<byte>(bytes, offset, numBytes), intOverlapped, out errorCode);
+            int r = ReadFileNative(_fileHandle, destination.Span, intOverlapped, out errorCode);
+
             // ReadFile, the OS version, will return 0 on failure.  But
             // my ReadFileNative wrapper returns -1.  My wrapper will return
             // the following:
@@ -916,7 +904,7 @@ namespace System.IO
             // read back from this call when using overlapped structures!  You must
             // not pass in a non-null lpNumBytesRead to ReadFile when using 
             // overlapped structures!  This is by design NT behavior.
-            if (r == -1 && numBytes != -1)
+            if (r == -1)
             {
                 // For pipes, when they hit EOF, they will come here.
                 if (errorCode == ERROR_BROKEN_PIPE)
@@ -947,10 +935,10 @@ namespace System.IO
                         throw Win32Marshal.GetExceptionForWin32Error(errorCode);
                     }
                 }
-                else
+                else if (cancellationToken.CanBeCanceled) // ERROR_IO_PENDING
                 {
                     // Only once the IO is pending do we register for cancellation
-                    completionSource.RegisterForCancellation();
+                    completionSource.RegisterForCancellation(cancellationToken);
                 }
             }
             else
@@ -962,25 +950,18 @@ namespace System.IO
                 // synchronously or asynchronously.  We absolutely must not
                 // set asyncResult._numBytes here, since will never have correct
                 // results.  
-                //Console.WriteLine("ReadFile returned: "+r+" (0x"+Int32.Format(r, "x")+")  The IO completed synchronously, but the user callback was called on a separate thread");
             }
 
             return completionSource.Task;
         }
 
-        private Task WriteAsyncInternal(byte[] array, int offset, int numBytes, CancellationToken cancellationToken)
+        private Task WriteAsyncInternal(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
-            // If async IO is not supported on this platform or 
-            // if this Win32FileStream was not opened with FileOptions.Asynchronous.
-            if (!_useAsyncIO)
-            {
-                return base.WriteAsync(array, offset, numBytes, cancellationToken);
-            }
-
-            if (!CanWrite) throw Error.GetWriteNotSupported();
-
+            Debug.Assert(_useAsyncIO);
             Debug.Assert((_readPos == 0 && _readLength == 0 && _writePos >= 0) || (_writePos == 0 && _readPos <= _readLength), "We're either reading or writing, but not both.");
             Debug.Assert(!_isPipe || (_readPos == 0 && _readLength == 0), "Win32FileStream must not have buffered data here!  Pipes should be unidirectional.");
+
+            if (!CanWrite) throw Error.GetWriteNotSupported();
 
             bool writeDataStoredInBuffer = false;
             if (!_isPipe) // avoid async buffering with pipes, as doing so can lead to deadlocks (see comments in ReadInternalAsyncCore)
@@ -1005,10 +986,10 @@ namespace System.IO
                 // - There's no active flush operation, such that we don't have to worry about the existing buffer being in use.
                 // - And the data we're trying to write fits in the buffer, meaning it wasn't already filled by previous writes.
                 // In that case, just store it in the buffer.
-                if (numBytes < _bufferLength && !HasActiveBufferOperation && numBytes <= remainingBuffer)
+                if (source.Length < _bufferLength && !HasActiveBufferOperation && source.Length <= remainingBuffer)
                 {
-                    Buffer.BlockCopy(array, offset, GetBuffer(), _writePos, numBytes);
-                    _writePos += numBytes;
+                    source.Span.CopyTo(new Span<byte>(GetBuffer(), _writePos, source.Length));
+                    _writePos += source.Length;
                     writeDataStoredInBuffer = true;
 
                     // There is one special-but-common case, common because devs often use
@@ -1017,7 +998,7 @@ namespace System.IO
                     // then we're done and can return a completed task now.  But if we filled the buffer
                     // completely, we want to do the asynchronous flush/write as part of this operation 
                     // rather than waiting until the next write that fills the buffer.
-                    if (numBytes != remainingBuffer)
+                    if (source.Length != remainingBuffer)
                         return Task.CompletedTask;
 
                     Debug.Assert(_writePos == _bufferLength);
@@ -1073,40 +1054,37 @@ namespace System.IO
 
             // Finally, issue the write asynchronously, and return a Task that logically
             // represents the write operation, including any flushing done.
-            Task writeTask = WriteInternalCoreAsync(array, offset, numBytes, cancellationToken);
+            Task writeTask = WriteAsyncInternalCore(source, cancellationToken);
             return
                 (flushTask == null || flushTask.Status == TaskStatus.RanToCompletion) ? writeTask :
                 (writeTask.Status == TaskStatus.RanToCompletion) ? flushTask :
                 Task.WhenAll(flushTask, writeTask);
         }
 
-        private unsafe Task WriteInternalCoreAsync(byte[] bytes, int offset, int numBytes, CancellationToken cancellationToken)
+        private unsafe Task WriteAsyncInternalCore(ReadOnlyMemory<byte> source, CancellationToken cancellationToken)
         {
             Debug.Assert(!_fileHandle.IsClosed, "!_handle.IsClosed");
             Debug.Assert(CanWrite, "_parent.CanWrite");
-            Debug.Assert(bytes != null, "bytes != null");
             Debug.Assert(_readPos == _readLength, "_readPos == _readLen");
             Debug.Assert(_useAsyncIO, "WriteInternalCoreAsync doesn't work on synchronous file streams!");
-            Debug.Assert(offset >= 0, "offset is negative");
-            Debug.Assert(numBytes >= 0, "numBytes is negative");
 
             // Create and store async stream class library specific data in the async result
-            FileStreamCompletionSource completionSource = new FileStreamCompletionSource(this, 0, bytes, cancellationToken);
+            FileStreamCompletionSource completionSource = source.DangerousTryGetArray(out ArraySegment<byte> array) ?
+                new FileStreamCompletionSource(this, 0, array.Array) :
+                new MemoryFileStreamCompletionSource(this, 0, source);
             NativeOverlapped* intOverlapped = completionSource.Overlapped;
 
             if (CanSeek)
             {
                 // Make sure we set the length of the file appropriately.
                 long len = Length;
-                //Console.WriteLine("WriteInternalCoreAsync - Calculating end pos.  pos: "+pos+"  len: "+len+"  numBytes: "+numBytes);
 
                 // Make sure we are writing to the position that we think we are
                 VerifyOSHandlePosition();
 
-                if (_filePosition + numBytes > len)
+                if (_filePosition + source.Length > len)
                 {
-                    //Console.WriteLine("WriteInternalCoreAsync - Setting length to: "+(pos + numBytes));
-                    SetLengthCore(_filePosition + numBytes);
+                    SetLengthCore(_filePosition + source.Length);
                 }
 
                 // Now set the position to read from in the NativeOverlapped struct
@@ -1117,14 +1095,12 @@ namespace System.IO
                 // When using overlapped IO, the OS is not supposed to 
                 // touch the file pointer location at all.  We will adjust it 
                 // ourselves.  This isn't threadsafe.
-                SeekCore(_fileHandle, numBytes, SeekOrigin.Current);
+                SeekCore(_fileHandle, source.Length, SeekOrigin.Current);
             }
-
-            //Console.WriteLine("WriteInternalCoreAsync finishing.  pos: "+pos+"  numBytes: "+numBytes+"  _pos: "+_pos+"  Position: "+Position);
 
             int errorCode = 0;
             // queue an async WriteFile operation and pass in a packed overlapped
-            int r = WriteFileNative(_fileHandle, new ReadOnlySpan<byte>(bytes, offset, numBytes), intOverlapped, out errorCode);
+            int r = WriteFileNative(_fileHandle, source.Span, intOverlapped, out errorCode);
 
             // WriteFile, the OS version, will return 0 on failure.  But
             // my WriteFileNative wrapper returns -1.  My wrapper will return
@@ -1136,10 +1112,8 @@ namespace System.IO
             // written back from this call when using overlapped IO!  You must
             // not pass in a non-null lpNumBytesWritten to WriteFile when using 
             // overlapped structures!  This is ByDesign NT behavior.
-            if (r == -1 && numBytes != -1)
+            if (r == -1)
             {
-                //Console.WriteLine("WriteFile returned 0;  Write will complete asynchronously (if errorCode==3e5)  errorCode: 0x{0:x}", errorCode);
-
                 // For pipes, when they are closed on the other side, they will come here.
                 if (errorCode == ERROR_NO_DATA)
                 {
@@ -1166,10 +1140,10 @@ namespace System.IO
                         throw Win32Marshal.GetExceptionForWin32Error(errorCode);
                     }
                 }
-                else // ERROR_IO_PENDING
+                else if (cancellationToken.CanBeCanceled) // ERROR_IO_PENDING
                 {
                     // Only once the IO is pending do we register for cancellation
-                    completionSource.RegisterForCancellation();
+                    completionSource.RegisterForCancellation(cancellationToken);
                 }
             }
             else
@@ -1181,7 +1155,6 @@ namespace System.IO
                 // synchronously or asynchronously.  We absolutely must not
                 // set asyncResult._numBytes here, since will never have correct
                 // results.  
-                //Console.WriteLine("WriteFile returned: "+r+" (0x"+Int32.Format(r, "x")+")  The IO completed synchronously, but the user callback was called on another thread.");
             }
 
             return completionSource.Task;
@@ -1644,20 +1617,6 @@ namespace System.IO
             {
                 return Task.CompletedTask;
             }
-        }
-
-        private Task<int> TaskFromResultOrCache(int result)
-        {
-            Task<int> completedTask = _lastSynchronouslyCompletedTask;
-            Debug.Assert(completedTask == null || completedTask.Status == TaskStatus.RanToCompletion, "Cached task should have completed successfully");
-
-            if ((completedTask == null) || (completedTask.Result != result))
-            {
-                completedTask = Task.FromResult(result);
-                _lastSynchronouslyCompletedTask = completedTask;
-            }
-
-            return completedTask;
         }
 
         private void LockInternal(long position, long length)

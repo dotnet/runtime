@@ -471,6 +471,28 @@ namespace System.IO
         }
 
         /// <summary>
+        /// Reads bytes from stream and puts them into the buffer
+        /// </summary>
+        /// <param name="destination">Buffer to read the bytes to.</param>
+        /// <param name="cancellationToken">Token that can be used to cancel this operation.</param>
+        public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
+            }
+
+            try
+            {
+                return new ValueTask<int>(Read(destination.Span));
+            }
+            catch (Exception ex)
+            {
+                return new ValueTask<int>(Task.FromException<int>(ex));
+            }
+        }
+
+        /// <summary>
         /// Returns the byte at the stream current Position and advances the Position.
         /// </summary>
         /// <returns></returns>
@@ -724,6 +746,29 @@ namespace System.IO
             catch (Exception ex)
             {
                 Debug.Assert(!(ex is OperationCanceledException));
+                return Task.FromException(ex);
+            }
+        }
+
+        /// <summary>
+        /// Writes buffer into the stream. The operation completes synchronously.
+        /// </summary>
+        /// <param name="buffer">Buffer that will be written.</param>
+        /// <param name="cancellationToken">Token that can be used to cancel the operation.</param>
+        public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+
+            try
+            {
+                Write(source.Span);
+                return Task.CompletedTask;
+            }
+            catch (Exception ex)
+            {
                 return Task.FromException(ex);
             }
         }

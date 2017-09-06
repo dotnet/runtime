@@ -416,6 +416,33 @@ namespace System.IO
                         : BeginEndReadAsync(buffer, offset, count);
         }
 
+        public virtual ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (destination.TryGetArray(out ArraySegment<byte> array))
+            {
+                return new ValueTask<int>(ReadAsync(array.Array, array.Offset, array.Count, cancellationToken));
+            }
+            else
+            {
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(destination.Length);
+                return FinishReadAsync(ReadAsync(buffer, 0, destination.Length, cancellationToken), buffer, destination);
+
+                async ValueTask<int> FinishReadAsync(Task<int> readTask, byte[] localBuffer, Memory<byte> localDestination)
+                {
+                    try
+                    {
+                        int result = await readTask.ConfigureAwait(false);
+                        new Span<byte>(localBuffer, 0, result).CopyTo(localDestination.Span);
+                        return result;
+                    }
+                    finally
+                    {
+                        ArrayPool<byte>.Shared.Return(localBuffer);
+                    }
+                }
+            }
+        }
+
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         private extern bool HasOverriddenBeginEndRead();
 
@@ -694,8 +721,6 @@ namespace System.IO
             return WriteAsync(buffer, offset, count, CancellationToken.None);
         }
 
-
-
         public virtual Task WriteAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             // If cancellation was requested, bail early with an already completed task.
@@ -703,6 +728,32 @@ namespace System.IO
             return cancellationToken.IsCancellationRequested
                         ? Task.FromCanceled(cancellationToken)
                         : BeginEndWriteAsync(buffer, offset, count);
+        }
+
+        public virtual Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (source.DangerousTryGetArray(out ArraySegment<byte> array))
+            {
+                return WriteAsync(array.Array, array.Offset, array.Count, cancellationToken);
+            }
+            else
+            {
+                byte[] buffer = ArrayPool<byte>.Shared.Rent(source.Length);
+                source.Span.CopyTo(buffer);
+                return FinishWriteAsync(WriteAsync(buffer, 0, source.Length, cancellationToken), buffer);
+
+                async Task FinishWriteAsync(Task writeTask, byte[] localBuffer)
+                {
+                    try
+                    {
+                        await writeTask.ConfigureAwait(false);
+                    }
+                    finally
+                    {
+                        ArrayPool<byte>.Shared.Return(localBuffer);
+                    }
+                }
+            }
         }
 
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -991,12 +1042,13 @@ namespace System.IO
 
             public override Task<int> ReadAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
-                var nullReadTask = s_nullReadTask;
-                if (nullReadTask == null)
-                    s_nullReadTask = nullReadTask = new Task<int>(false, 0, (TaskCreationOptions)InternalTaskOptions.DoNotDispose, CancellationToken.None); // benign race condition
-                return nullReadTask;
+                return AsyncTaskMethodBuilder<int>.s_defaultResultTask;
             }
-            private static Task<int> s_nullReadTask;
+
+            public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default(CancellationToken))
+            {
+                return new ValueTask<int>(0);
+            }
 
             public override int ReadByte()
             {
@@ -1012,6 +1064,13 @@ namespace System.IO
             }
 
             public override Task WriteAsync(Byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+            {
+                return cancellationToken.IsCancellationRequested ?
+                    Task.FromCanceled(cancellationToken) :
+                    Task.CompletedTask;
+            }
+
+            public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default(CancellationToken))
             {
                 return cancellationToken.IsCancellationRequested ?
                     Task.FromCanceled(cancellationToken) :
