@@ -13,6 +13,7 @@
   <ItemGroup>
     <Compile Include="CharReaderTests.cs" />
     <Compile Include="InheritedCases.cs" />
+    <Compile Include="$(CommonTestPath)\System\Xml\DisableParallelization.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="$(CommonTestPath)\System\Xml\ModuleCore\ModuleCore.csproj" />
