@@ -62,10 +62,10 @@ static mono_mutex_t global_loader_data_mutex;
 static gboolean loader_lock_inited;
 
 /* Statistics */
-static guint32 inflated_signatures_size;
-static guint32 memberref_sig_cache_size;
-static guint32 methods_size;
-static guint32 signatures_size;
+static gint32 inflated_signatures_size;
+static gint32 memberref_sig_cache_size;
+static gint32 methods_size;
+static gint32 signatures_size;
 
 /*
  * This TLS variable holds how many times the current thread has acquired the loader 
@@ -74,7 +74,6 @@ static guint32 signatures_size;
 MonoNativeTlsKey loader_lock_nest_id;
 
 static void dllmap_cleanup (void);
-
 
 static void
 global_loader_data_lock (void)
@@ -164,7 +163,7 @@ cache_memberref_sig (MonoImage *image, guint32 sig_idx, gpointer sig)
 	else {
 		g_hash_table_insert (image->memberref_signatures, GUINT_TO_POINTER (sig_idx), sig);
 		/* An approximation based on glib 2.18 */
-		memberref_sig_cache_size += sizeof (gpointer) * 4;
+		InterlockedAdd (&memberref_sig_cache_size, sizeof (gpointer) * 4);
 	}
 	mono_image_unlock (image);
 
@@ -725,7 +724,7 @@ mono_method_get_signature_checked (MonoMethod *method, MonoImage *image, guint32
 		if (cached != sig)
 			mono_metadata_free_inflated_signature (sig);
 		else
-			inflated_signatures_size += mono_metadata_signature_size (cached);
+			InterlockedAdd (&inflated_signatures_size, mono_metadata_signature_size (cached));
 		sig = cached;
 	}
 
@@ -1655,7 +1654,7 @@ mono_get_method_from_token (MonoImage *image, guint32 token, MonoClass *klass,
 		result = (MonoMethod *)mono_image_alloc0 (image, sizeof (MonoMethodPInvoke));
 	} else {
 		result = (MonoMethod *)mono_image_alloc0 (image, sizeof (MonoMethod));
-		methods_size += sizeof (MonoMethod);
+		InterlockedAdd (&methods_size, sizeof (MonoMethod));
 	}
 
 	InterlockedIncrement (&mono_stats.method_count);
@@ -2394,7 +2393,7 @@ mono_method_signature_checked (MonoMethod *m, MonoError *error)
 		if (!mono_error_ok (error))
 			return NULL;
 
-		inflated_signatures_size += mono_metadata_signature_size (signature);
+		InterlockedAdd (&inflated_signatures_size, mono_metadata_signature_size (signature));
 
 		mono_image_lock (img);
 
@@ -2451,7 +2450,7 @@ mono_method_signature_checked (MonoMethod *m, MonoError *error)
 			mono_image_unlock (img);
 		}
 
-		signatures_size += mono_metadata_signature_size (signature);
+		InterlockedAdd (&signatures_size, mono_metadata_signature_size (signature));
 	}
 
 	/* Verify metadata consistency */
