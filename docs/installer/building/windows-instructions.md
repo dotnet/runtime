@@ -11,12 +11,12 @@ You must install several components to build the Core-Setup repo. These instruct
 ## Visual Studio
 
 Visual Studio must be installed. Supported versions:
-- [Visual Studio 2015](https://www.visualstudio.com/vs/older-downloads/) (Community, Professional, Enterprise).  The community version is completely free.  
+- [Visual Studio 2015 Update 3](https://www.visualstudio.com/vs/older-downloads/) (Community, Professional, Enterprise).  The community version is completely free.
 
 For Visual Studio 2015:
-* To debug managed code, ensure you have installed at least [Visual Studio 2015 Update 3](https://www.visualstudio.com/en-us/news/releasenotes/vs2015-update3-vs).
-* Make sure that you install "VC++ Tools". By default, they will not be installed.
-* To build for Arm32, Make sure that you have the Windows SDK for Windows 10 installed (or selected to be installed as part of VS installation). To explicitly install Windows SDK, download it from here: [Windows SDK for Windows 10](https://developer.microsoft.com/en-us/windows/downloads)
+* Required installer options that need to be manually enabled:
+  * Universal Windows App Development Tools: Tools and Windows 10 SDK (10.0.14393) + Windows 10 SDK (10.0.10586)
+  * Visual C++
 
 Visual Studio Express is not supported.
 
