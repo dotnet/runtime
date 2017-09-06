@@ -9431,11 +9431,19 @@ public:
     static var_types GetTypeFromClassificationAndSizes(SystemVClassificationType classType, int size);
     static var_types GetEightByteType(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR& structDesc,
                                       unsigned                                                   slotNum);
+
     static void GetStructTypeOffset(const SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR& structDesc,
                                     var_types*                                                 type0,
                                     var_types*                                                 type1,
                                     unsigned __int8*                                           offset0,
                                     unsigned __int8*                                           offset1);
+
+    void GetStructTypeOffset(CORINFO_CLASS_HANDLE typeHnd,
+                             var_types*           type0,
+                             var_types*           type1,
+                             unsigned __int8*     offset0,
+                             unsigned __int8*     offset1);
+
     void fgMorphSystemVStructArgs(GenTreeCall* call, bool hasStructArgument);
 #endif // defined(FEATURE_UNIX_AMD64_STRUCT_PASSING)
 

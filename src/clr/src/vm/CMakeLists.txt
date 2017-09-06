@@ -394,6 +394,7 @@ else(WIN32)
 
     if(CLR_CMAKE_TARGET_ARCH_AMD64)
         set(VM_SOURCES_WKS_ARCH_ASM
+            ${ARCH_SOURCES_DIR}/asmhelpers.S
             ${ARCH_SOURCES_DIR}/calldescrworkeramd64.S
             ${ARCH_SOURCES_DIR}/crthelpers.S
             ${ARCH_SOURCES_DIR}/externalmethodfixupthunk.S
