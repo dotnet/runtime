@@ -399,117 +399,61 @@ namespace System.Drawing.Drawing2D
             get
             {
                 // Figure out the size of blend factor array
-                int status = SafeNativeMethods.Gdip.GdipGetPathGradientPresetBlendCount(new HandleRef(this, NativeBrush), out int retval);
+                int status = SafeNativeMethods.Gdip.GdipGetPathGradientPresetBlendCount(new HandleRef(this, NativeBrush), out int count);
+                SafeNativeMethods.Gdip.CheckStatus(status);
 
-                if (status != SafeNativeMethods.Gdip.Ok)
-                {
-                    throw SafeNativeMethods.Gdip.StatusException(status);
-                }
-
-                // If retVal is 0, then there is nothing to marshal.
+                // If count is 0, then there is nothing to marshal.
                 // In this case, we'll return an empty ColorBlend...
-                //
-                if (retval == 0)
+                if (count == 0)
                 {
                     return new ColorBlend();
                 }
 
-                // Allocate temporary native memory buffer
+                int[] colors = new int[count];
+                float[] positions = new float[count];
 
-                int count = retval;
+                ColorBlend blend = new ColorBlend(count);
 
-                IntPtr colors = IntPtr.Zero;
-                IntPtr positions = IntPtr.Zero;
-
-                try
+                // status would fail if we ask points or types with a < 2 count
+                if (count > 1)
                 {
-                    int size = checked(4 * count);
-                    colors = Marshal.AllocHGlobal(size);
-                    positions = Marshal.AllocHGlobal(size);
-
                     // Retrieve horizontal blend factors
-
                     status = SafeNativeMethods.Gdip.GdipGetPathGradientPresetBlend(new HandleRef(this, NativeBrush), colors, positions, count);
 
-                    if (status != SafeNativeMethods.Gdip.Ok)
-                    {
-                        throw SafeNativeMethods.Gdip.StatusException(status);
-                    }
+                    SafeNativeMethods.Gdip.CheckStatus(status);
 
                     // Return the result in a managed array
 
-                    ColorBlend blend = new ColorBlend(count);
-
-                    int[] argb = new int[count];
-                    Marshal.Copy(colors, argb, 0, count);
-                    Marshal.Copy(positions, blend.Positions, 0, count);
+                    blend.Positions = positions;
 
                     // copy ARGB values into Color array of ColorBlend
-                    blend.Colors = new Color[argb.Length];
+                    blend.Colors = new Color[count];
 
-                    for (int i = 0; i < argb.Length; i++)
+                    for (int i = 0; i < count; i++)
                     {
-                        blend.Colors[i] = Color.FromArgb(argb[i]);
-                    }
-
-                    return blend;
-                }
-                finally
-                {
-                    if (colors != IntPtr.Zero)
-                    {
-                        Marshal.FreeHGlobal(colors);
-                    }
-                    if (positions != IntPtr.Zero)
-                    {
-                        Marshal.FreeHGlobal(positions);
+                        blend.Colors[i] = Color.FromArgb(colors[i]);
                     }
                 }
+
+                return blend;
             }
             set
             {
-                // Allocate temporary native memory buffer
-                // and copy input blend factors into it.
-
                 int count = value.Colors.Length;
 
-                IntPtr colors = IntPtr.Zero;
-                IntPtr positions = IntPtr.Zero;
-
-                try
+                float[] positions = value.Positions;
+                int[] argbs = new int[count];
+                for (int i = 0; i < count; i++)
                 {
-                    int size = checked(4 * count);
-                    colors = Marshal.AllocHGlobal(size);
-                    positions = Marshal.AllocHGlobal(size);
-
-                    int[] argbs = new int[count];
-                    for (int i = 0; i < count; i++)
-                    {
-                        argbs[i] = value.Colors[i].ToArgb();
-                    }
-
-                    Marshal.Copy(argbs, 0, colors, count);
-                    Marshal.Copy(value.Positions, 0, positions, count);
-
-                    // Set blend factors
-
-                    int status = SafeNativeMethods.Gdip.GdipSetPathGradientPresetBlend(new HandleRef(this, NativeBrush), new HandleRef(null, colors), new HandleRef(null, positions), count);
-
-                    if (status != SafeNativeMethods.Gdip.Ok)
-                    {
-                        throw SafeNativeMethods.Gdip.StatusException(status);
-                    }
+                    argbs[i] = value.Colors[i].ToArgb();
                 }
-                finally
+
+                // Set blend factors
+                int status = SafeNativeMethods.Gdip.GdipSetPathGradientPresetBlend(new HandleRef(this, NativeBrush), argbs, positions, count);
+
+                if (status != SafeNativeMethods.Gdip.Ok)
                 {
-                    if (colors != IntPtr.Zero)
-                    {
-                        Marshal.FreeHGlobal(colors);
-                    }
-                    if (positions != IntPtr.Zero)
-                    {
-                        Marshal.FreeHGlobal(positions);
-                    }
+                    throw SafeNativeMethods.Gdip.StatusException(status);
                 }
             }
         }
