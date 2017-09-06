@@ -51,7 +51,7 @@ def static getOSGroup(def os) {
 
                         def newJob = job(Utilities.getFullJobName(project, jobName, isPR)) {
                             // Set the label.
-                            label('windows_clr_perf')
+                            label('windows_server_2016_clr_perf')
                             wrappers {
                                 credentialsBinding {
                                     string('BV_UPLOAD_SAS_TOKEN', 'CoreCLR Perf BenchView Sas')
@@ -194,7 +194,7 @@ def static getOSGroup(def os) {
 
                     def newJob = job(Utilities.getFullJobName(project, "perf_throughput_perflab_${os}_${arch}_${opt_level}_${jit}", isPR)) {
                         // Set the label.
-                        label('windows_clr_perf')
+                        label('windows_server_2016_clr_perf')
                         wrappers {
                             credentialsBinding {
                                 string('BV_UPLOAD_SAS_TOKEN', 'CoreCLR Perf BenchView Sas')
@@ -572,7 +572,7 @@ parallel(
                         }
 
                         // Set the label.
-                        label('windows_clr_perf')
+                        label('windows_server_2016_clr_perf')
                         wrappers {
                             credentialsBinding {
                                 string('BV_UPLOAD_SAS_TOKEN', 'CoreCLR Perf BenchView Sas')
