@@ -740,7 +740,7 @@ namespace System.Drawing
                 }
                 else
                 {
-                    pattern = new float[0];
+                    throw new OutOfMemoryException();
                 }
                 return pattern;
             }
