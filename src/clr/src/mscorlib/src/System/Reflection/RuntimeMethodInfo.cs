@@ -466,7 +466,7 @@ namespace System.Reflection
         {
             object[] arguments = InvokeArgumentsCheck(obj, invokeAttr, binder, parameters, culture);
 
-            return UnsafeInvokeInternal(obj, parameters, arguments);
+            return UnsafeInvokeInternal(obj, invokeAttr, parameters, arguments);
         }
 
         [DebuggerStepThroughAttribute]
@@ -475,18 +475,19 @@ namespace System.Reflection
         {
             object[] arguments = InvokeArgumentsCheck(obj, invokeAttr, binder, parameters, culture);
 
-            return UnsafeInvokeInternal(obj, parameters, arguments);
+            return UnsafeInvokeInternal(obj, invokeAttr, parameters, arguments);
         }
 
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        private object UnsafeInvokeInternal(Object obj, Object[] parameters, Object[] arguments)
+        private object UnsafeInvokeInternal(Object obj, BindingFlags invokeAttr, Object[] parameters, Object[] arguments)
         {
+            bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
             if (arguments == null || arguments.Length == 0)
-                return RuntimeMethodHandle.InvokeMethod(obj, null, Signature, false);
+                return RuntimeMethodHandle.InvokeMethod(obj, null, Signature, false, wrapExceptions);
             else
             {
-                Object retValue = RuntimeMethodHandle.InvokeMethod(obj, arguments, Signature, false);
+                Object retValue = RuntimeMethodHandle.InvokeMethod(obj, arguments, Signature, false, wrapExceptions);
 
                 // copy out. This should be made only if ByRef are present.
                 for (int index = 0; index < arguments.Length; index++)

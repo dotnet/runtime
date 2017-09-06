@@ -4629,7 +4629,7 @@ namespace System
         }
 
         internal Object CreateInstanceImpl(
-            BindingFlags bindingAttr, Binder binder, Object[] args, CultureInfo culture, Object[] activationAttributes, ref StackCrawlMark stackMark)
+            BindingFlags bindingAttr, Binder binder, Object[] args, CultureInfo culture, Object[] activationAttributes)
         {
             CreateInstanceCheckThis();
 
@@ -4646,10 +4646,12 @@ namespace System
 
             // deal with the __COMObject case first. It is very special because from a reflection point of view it has no ctors
             // so a call to GetMemberCons would fail
+            bool publicOnly = (bindingAttr & BindingFlags.NonPublic) == 0;
+            bool wrapExceptions = (bindingAttr & BindingFlags.DoNotWrapExceptions) == 0;
             if (argCnt == 0 && (bindingAttr & BindingFlags.Public) != 0 && (bindingAttr & BindingFlags.Instance) != 0
                 && (IsGenericCOMObjectImpl() || IsValueType))
             {
-                server = CreateInstanceDefaultCtor((bindingAttr & BindingFlags.NonPublic) == 0, false, true, ref stackMark);
+                server = CreateInstanceDefaultCtor(publicOnly, false, true, wrapExceptions);
             }
             else
             {
@@ -4707,7 +4709,7 @@ namespace System
                     }
 
                     // fast path??
-                    server = Activator.CreateInstance(this, true);
+                    server = Activator.CreateInstance(this, nonPublic: true, wrapExceptions: wrapExceptions);
                 }
                 else
                 {
@@ -4801,7 +4803,7 @@ namespace System
         private static volatile ActivatorCache s_ActivatorCache;
 
         // the slow path of CreateInstanceDefaultCtor
-        internal Object CreateInstanceSlow(bool publicOnly, bool skipCheckThis, bool fillCache, ref StackCrawlMark stackMark)
+        internal Object CreateInstanceSlow(bool publicOnly, bool wrapExceptions, bool skipCheckThis, bool fillCache)
         {
             RuntimeMethodHandleInternal runtime_ctor = default(RuntimeMethodHandleInternal);
             bool bCanBeCached = false;
@@ -4809,7 +4811,7 @@ namespace System
             if (!skipCheckThis)
                 CreateInstanceCheckThis();
 
-            Object instance = RuntimeTypeHandle.CreateInstance(this, publicOnly, ref bCanBeCached, ref runtime_ctor);
+            Object instance = RuntimeTypeHandle.CreateInstance(this, publicOnly, wrapExceptions, ref bCanBeCached, ref runtime_ctor);
 
             if (bCanBeCached && fillCache)
             {
@@ -4833,7 +4835,7 @@ namespace System
         // fillCache is set in the SL2/3 compat mode or when called from Marshal.PtrToStructure.
         [DebuggerStepThroughAttribute]
         [Diagnostics.DebuggerHidden]
-        internal Object CreateInstanceDefaultCtor(bool publicOnly, bool skipCheckThis, bool fillCache, ref StackCrawlMark stackMark)
+        internal Object CreateInstanceDefaultCtor(bool publicOnly, bool skipCheckThis, bool fillCache, bool wrapExceptions)
         {
             if (GetType() == typeof(ReflectionOnlyType))
                 throw new InvalidOperationException(SR.InvalidOperation_NotAllowedInReflectionOnly);
@@ -4866,7 +4868,7 @@ namespace System
                         {
                             ace.m_ctor(instance);
                         }
-                        catch (Exception e)
+                        catch (Exception e) when (wrapExceptions)
                         {
                             throw new TargetInvocationException(e);
                         }
@@ -4874,7 +4876,7 @@ namespace System
                     return instance;
                 }
             }
-            return CreateInstanceSlow(publicOnly, skipCheckThis, fillCache, ref stackMark);
+            return CreateInstanceSlow(publicOnly, wrapExceptions, skipCheckThis, fillCache);
         }
 
         internal void InvalidateCachedNestedType()
