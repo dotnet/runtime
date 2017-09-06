@@ -210,10 +210,20 @@ namespace System.IO
             return _unmanagedStream.ReadAsync(buffer, offset, count, cancellationToken);
         }
 
+        public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return _unmanagedStream.ReadAsync(destination, cancellationToken);
+        }
+
 
         public override Task WriteAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken)
         {
             return _unmanagedStream.WriteAsync(buffer, offset, count, cancellationToken);
+        }
+
+        public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            return _unmanagedStream.WriteAsync(source, cancellationToken);
         }
     }  // class UnmanagedMemoryStreamWrapper
 }  // namespace
