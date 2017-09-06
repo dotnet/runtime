@@ -456,6 +456,27 @@ namespace System.IO
             }
         }
 
+        public override ValueTask<int> ReadAsync(Memory<byte> destination, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return new ValueTask<int>(Task.FromCanceled<int>(cancellationToken));
+            }
+
+            try
+            {
+                return new ValueTask<int>(Read(destination.Span));
+            }
+            catch (OperationCanceledException oce)
+            {
+                return new ValueTask<int>(Task.FromCancellation<int>(oce));
+            }
+            catch (Exception exception)
+            {
+                return new ValueTask<int>(Task.FromException<int>(exception));
+            }
+        }
+
 
         public override int ReadByte()
         {
@@ -730,6 +751,28 @@ namespace System.IO
             try
             {
                 Write(buffer, offset, count);
+                return Task.CompletedTask;
+            }
+            catch (OperationCanceledException oce)
+            {
+                return Task.FromCancellation<VoidTaskResult>(oce);
+            }
+            catch (Exception exception)
+            {
+                return Task.FromException(exception);
+            }
+        }
+
+        public override Task WriteAsync(ReadOnlyMemory<byte> source, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return Task.FromCanceled(cancellationToken);
+            }
+
+            try
+            {
+                Write(source.Span);
                 return Task.CompletedTask;
             }
             catch (OperationCanceledException oce)
